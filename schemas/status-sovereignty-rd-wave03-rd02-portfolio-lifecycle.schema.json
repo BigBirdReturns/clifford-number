@@ -1,0 +1,978 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clifford-number.local/schemas/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.schema.json",
+  "title": "SSC RD-02 Wave-03 portfolio lifecycle terminal matrix",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "wave_id",
+    "lane_id",
+    "class_id",
+    "issue",
+    "as_of",
+    "class_label",
+    "status",
+    "required_fields",
+    "source_product",
+    "rows",
+    "counts",
+    "current_result",
+    "boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "ssc-rd-wave03-rd02-portfolio-lifecycle-terminal-matrix@1"
+    },
+    "wave_id": {
+      "const": "SSC-RD-W03"
+    },
+    "lane_id": {
+      "const": "RD-02"
+    },
+    "class_id": {
+      "const": "RD-02-C05"
+    },
+    "issue": {
+      "const": 1015
+    },
+    "as_of": {
+      "const": "2026-08-04"
+    },
+    "class_label": {
+      "const": "complete portfolio investment, follow-on, exit, write-off, default, return, and repayment ledger"
+    },
+    "status": {
+      "const": "eighteen_row_portfolio_lifecycle_terminal_bounded_source_unavailable"
+    },
+    "required_fields": {
+      "const": [
+        "canonical_cohort_row_and_legal_vehicle_or_withheld_state_label",
+        "publicly_identified_portfolio_investments",
+        "publicly_identified_follow_on_investments",
+        "publicly_identified_exits",
+        "publicly_identified_write_offs_or_realized_losses",
+        "publicly_identified_defaults_or_cures",
+        "publicly_identified_realized_fund_returns",
+        "sba_guaranteed_leverage_repayment_or_loss_allocation",
+        "source_identities_and_exact_custody",
+        "field_and_row_terminal_state"
+      ]
+    },
+    "source_product": {
+      "type": "object"
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 18,
+      "maxItems": 18,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "unit_ordinal",
+          "unit_id",
+          "legal_vehicle",
+          "withheld_state_label",
+          "identity_state",
+          "fields",
+          "row_result"
+        ],
+        "properties": {
+          "unit_ordinal": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 18
+          },
+          "unit_id": {
+            "type": "string",
+            "pattern": "^SBICCT-FIRST-COHORT-[0-9]{2}$"
+          },
+          "legal_vehicle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "withheld_state_label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "identity_state": {
+            "enum": [
+              "publicly_named",
+              "identity_withheld_under_policy"
+            ]
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "canonical_cohort_row_and_legal_vehicle_or_withheld_state_label",
+              "publicly_identified_portfolio_investments",
+              "publicly_identified_follow_on_investments",
+              "publicly_identified_exits",
+              "publicly_identified_write_offs_or_realized_losses",
+              "publicly_identified_defaults_or_cures",
+              "publicly_identified_realized_fund_returns",
+              "sba_guaranteed_leverage_repayment_or_loss_allocation",
+              "source_identities_and_exact_custody",
+              "field_and_row_terminal_state"
+            ],
+            "properties": {
+              "canonical_cohort_row_and_legal_vehicle_or_withheld_state_label": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "custody_paths",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "identity_withheld_under_policy",
+                      "source_restricted",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "custody_paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              },
+              "publicly_identified_portfolio_investments": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "custody_paths",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "identity_withheld_under_policy",
+                      "source_restricted",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "custody_paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              },
+              "publicly_identified_follow_on_investments": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "custody_paths",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "identity_withheld_under_policy",
+                      "source_restricted",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "custody_paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              },
+              "publicly_identified_exits": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "custody_paths",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "identity_withheld_under_policy",
+                      "source_restricted",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "custody_paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              },
+              "publicly_identified_write_offs_or_realized_losses": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "custody_paths",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "identity_withheld_under_policy",
+                      "source_restricted",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "custody_paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              },
+              "publicly_identified_defaults_or_cures": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "custody_paths",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "identity_withheld_under_policy",
+                      "source_restricted",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "custody_paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              },
+              "publicly_identified_realized_fund_returns": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "custody_paths",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "identity_withheld_under_policy",
+                      "source_restricted",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "custody_paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              },
+              "sba_guaranteed_leverage_repayment_or_loss_allocation": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "custody_paths",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "identity_withheld_under_policy",
+                      "source_restricted",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "custody_paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              },
+              "source_identities_and_exact_custody": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "custody_paths",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "identity_withheld_under_policy",
+                      "source_restricted",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "custody_paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              },
+              "field_and_row_terminal_state": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state",
+                  "value",
+                  "source_ids",
+                  "custody_paths",
+                  "note",
+                  "fixed_protocol_complete",
+                  "terminal_for_class_closure"
+                ],
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "observed",
+                      "identity_withheld_under_policy",
+                      "source_restricted",
+                      "not_publicly_recovered"
+                    ]
+                  },
+                  "value": {},
+                  "source_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "custody_paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 20
+                  },
+                  "fixed_protocol_complete": {
+                    "const": true
+                  },
+                  "terminal_for_class_closure": {
+                    "const": true
+                  }
+                }
+              }
+            }
+          },
+          "row_result": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fixed_protocol_executed",
+              "required_fields",
+              "terminal_fields",
+              "state_counts",
+              "lifecycle_events_observed",
+              "row_terminal_state",
+              "row_closed"
+            ],
+            "properties": {
+              "fixed_protocol_executed": {
+                "const": true
+              },
+              "required_fields": {
+                "const": 10
+              },
+              "terminal_fields": {
+                "const": 10
+              },
+              "state_counts": {
+                "type": "object"
+              },
+              "lifecycle_events_observed": {
+                "const": 0
+              },
+              "row_terminal_state": {
+                "enum": [
+                  "bounded_source_unavailable",
+                  "bounded_source_restricted"
+                ]
+              },
+              "row_closed": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cohort_rows",
+        "publicly_named_rows",
+        "identity_withheld_rows",
+        "required_fields_per_row",
+        "required_fields",
+        "observed_fields",
+        "identity_withheld_under_policy_fields",
+        "source_restricted_fields",
+        "not_publicly_recovered_fields",
+        "terminal_fields",
+        "bounded_source_unavailable_rows",
+        "bounded_source_restricted_rows",
+        "search_routes",
+        "unique_search_candidates",
+        "candidate_followup_routes",
+        "same_host_followup_routes",
+        "disclosure_leaf_routes",
+        "failed_route_replays",
+        "admitted_leaf_sources",
+        "admitted_bounded_observations",
+        "lifecycle_events_observed",
+        "publicly_identified_portfolio_investments_observed",
+        "publicly_identified_follow_on_investments_observed",
+        "publicly_identified_exits_observed",
+        "publicly_identified_write_offs_or_realized_losses_observed",
+        "publicly_identified_defaults_or_cures_observed",
+        "publicly_identified_realized_fund_returns_observed",
+        "sba_repayment_or_loss_allocation_events_observed",
+        "result_spawned_requests",
+        "external_contacts",
+        "external_reviews"
+      ],
+      "properties": {
+        "cohort_rows": {
+          "const": 18
+        },
+        "publicly_named_rows": {
+          "const": 17
+        },
+        "identity_withheld_rows": {
+          "const": 1
+        },
+        "required_fields_per_row": {
+          "const": 10
+        },
+        "required_fields": {
+          "const": 180
+        },
+        "observed_fields": {
+          "const": 53
+        },
+        "identity_withheld_under_policy_fields": {
+          "const": 1
+        },
+        "source_restricted_fields": {
+          "const": 7
+        },
+        "not_publicly_recovered_fields": {
+          "const": 119
+        },
+        "terminal_fields": {
+          "const": 180
+        },
+        "bounded_source_unavailable_rows": {
+          "const": 17
+        },
+        "bounded_source_restricted_rows": {
+          "const": 1
+        },
+        "search_routes": {
+          "const": 51
+        },
+        "unique_search_candidates": {
+          "const": 210
+        },
+        "candidate_followup_routes": {
+          "const": 10
+        },
+        "same_host_followup_routes": {
+          "const": 5
+        },
+        "disclosure_leaf_routes": {
+          "const": 2
+        },
+        "failed_route_replays": {
+          "const": 1
+        },
+        "admitted_leaf_sources": {
+          "const": 2
+        },
+        "admitted_bounded_observations": {
+          "const": 11
+        },
+        "lifecycle_events_observed": {
+          "const": 0
+        },
+        "publicly_identified_portfolio_investments_observed": {
+          "const": 0
+        },
+        "publicly_identified_follow_on_investments_observed": {
+          "const": 0
+        },
+        "publicly_identified_exits_observed": {
+          "const": 0
+        },
+        "publicly_identified_write_offs_or_realized_losses_observed": {
+          "const": 0
+        },
+        "publicly_identified_defaults_or_cures_observed": {
+          "const": 0
+        },
+        "publicly_identified_realized_fund_returns_observed": {
+          "const": 0
+        },
+        "sba_repayment_or_loss_allocation_events_observed": {
+          "const": 0
+        },
+        "result_spawned_requests": {
+          "const": 0
+        },
+        "external_contacts": {
+          "const": 0
+        },
+        "external_reviews": {
+          "const": 0
+        }
+      }
+    },
+    "current_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "terminal_state",
+        "fixed_protocol_complete",
+        "automatic_additional_search_pass_authorized",
+        "all_eighteen_rows_preserved",
+        "all_one_hundred_eighty_fields_terminal",
+        "complete_portfolio_lifecycle_ledger_observed",
+        "admitted_leaf_sources",
+        "admitted_bounded_observations",
+        "lifecycle_events_observed",
+        "class_closed",
+        "capital_conversion_finding",
+        "favoritism_finding",
+        "extraction_finding",
+        "coordination_finding",
+        "common_purpose_finding",
+        "reviewed_disposition_changed",
+        "complete_compact_finding",
+        "racial_order_finding",
+        "prevalence_finding",
+        "outside_human_dependency",
+        "project_blocking",
+        "publication_effect",
+        "adoption_effect",
+        "graph_effect"
+      ],
+      "properties": {
+        "terminal_state": {
+          "const": "bounded_source_unavailable"
+        },
+        "fixed_protocol_complete": {
+          "const": true
+        },
+        "automatic_additional_search_pass_authorized": {
+          "const": false
+        },
+        "all_eighteen_rows_preserved": {
+          "const": true
+        },
+        "all_one_hundred_eighty_fields_terminal": {
+          "const": true
+        },
+        "complete_portfolio_lifecycle_ledger_observed": {
+          "const": false
+        },
+        "admitted_leaf_sources": {
+          "const": 2
+        },
+        "admitted_bounded_observations": {
+          "const": 11
+        },
+        "lifecycle_events_observed": {
+          "const": 0
+        },
+        "class_closed": {
+          "const": true
+        },
+        "capital_conversion_finding": {
+          "const": false
+        },
+        "favoritism_finding": {
+          "const": false
+        },
+        "extraction_finding": {
+          "const": false
+        },
+        "coordination_finding": {
+          "const": false
+        },
+        "common_purpose_finding": {
+          "const": false
+        },
+        "reviewed_disposition_changed": {
+          "const": false
+        },
+        "complete_compact_finding": {
+          "const": false
+        },
+        "racial_order_finding": {
+          "const": false
+        },
+        "prevalence_finding": {
+          "const": false
+        },
+        "outside_human_dependency": {
+          "const": false
+        },
+        "project_blocking": {
+          "const": false
+        },
+        "publication_effect": {
+          "const": "none"
+        },
+        "adoption_effect": {
+          "const": "none"
+        },
+        "graph_effect": {
+          "const": "none"
+        }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "program_projection_is_fund_investment",
+        "private_capital_commitment_is_portfolio_investment",
+        "manager_lineage_is_vehicle_lifecycle",
+        "fund_investment_is_follow_on_or_exit",
+        "exit_is_positive_realized_return",
+        "missing_public_write_off_is_no_loss",
+        "missing_public_default_is_no_default",
+        "missing_public_return_is_zero_return",
+        "private_return_is_sba_repayment_or_public_recovery",
+        "license_or_leverage_eligibility_is_sba_repayment",
+        "search_candidate_is_admitted_source",
+        "search_silence_is_event_absence",
+        "not_publicly_recovered_is_event_nonoccurrence",
+        "source_restricted_is_nonparticipation",
+        "withheld_identity_is_nonparticipation",
+        "class_closure_is_complete_compact",
+        "capital_conversion_finding",
+        "favoritism_finding",
+        "extraction_finding",
+        "coordination_finding",
+        "common_purpose_finding",
+        "racial_order_finding",
+        "prevalence_finding",
+        "publication_effect",
+        "adoption_effect",
+        "graph_effect"
+      ],
+      "properties": {
+        "program_projection_is_fund_investment": {
+          "const": false
+        },
+        "private_capital_commitment_is_portfolio_investment": {
+          "const": false
+        },
+        "manager_lineage_is_vehicle_lifecycle": {
+          "const": false
+        },
+        "fund_investment_is_follow_on_or_exit": {
+          "const": false
+        },
+        "exit_is_positive_realized_return": {
+          "const": false
+        },
+        "missing_public_write_off_is_no_loss": {
+          "const": false
+        },
+        "missing_public_default_is_no_default": {
+          "const": false
+        },
+        "missing_public_return_is_zero_return": {
+          "const": false
+        },
+        "private_return_is_sba_repayment_or_public_recovery": {
+          "const": false
+        },
+        "license_or_leverage_eligibility_is_sba_repayment": {
+          "const": false
+        },
+        "search_candidate_is_admitted_source": {
+          "const": false
+        },
+        "search_silence_is_event_absence": {
+          "const": false
+        },
+        "not_publicly_recovered_is_event_nonoccurrence": {
+          "const": false
+        },
+        "source_restricted_is_nonparticipation": {
+          "const": false
+        },
+        "withheld_identity_is_nonparticipation": {
+          "const": false
+        },
+        "class_closure_is_complete_compact": {
+          "const": false
+        },
+        "capital_conversion_finding": {
+          "const": false
+        },
+        "favoritism_finding": {
+          "const": false
+        },
+        "extraction_finding": {
+          "const": false
+        },
+        "coordination_finding": {
+          "const": false
+        },
+        "common_purpose_finding": {
+          "const": false
+        },
+        "racial_order_finding": {
+          "const": false
+        },
+        "prevalence_finding": {
+          "const": false
+        },
+        "publication_effect": {
+          "const": "none"
+        },
+        "adoption_effect": {
+          "const": "none"
+        },
+        "graph_effect": {
+          "const": "none"
+        }
+      }
+    }
+  }
+}
