@@ -1,0 +1,197 @@
+name: TEMP census Wave-03 remaining intake sources
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ssc-rd-wave03-remaining-intake-source-census-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  census:
+    if: >-
+      github.event.pull_request.base.ref == 'agent/ssc-rd-wave03-five-lane-intake-materializer-base-v1' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd-wave03-five-lane-intake-materializer-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out canonical main with complete refs
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - name: Census exact remaining-lane source custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd-wave03-remaining-intake-source-census-v1"
+          rm -rf "$OUT"
+          mkdir -p "$OUT/matches" "$OUT/lanes"
+          exec > >(tee "$OUT/execution.log") 2>&1
+
+          for branch in \
+            agent/ssc-rd-wave03-rd04-state-implementation \
+            agent/ssc-rd-wave03-rd05-member-participation \
+            agent/ssc-rd-wave03-rd06-evaluation-custody; do
+            git fetch --no-tags origin "$branch:refs/remotes/origin/$branch"
+          done
+
+          git rev-parse HEAD > "$OUT/main-head.txt"
+          git ls-files | sort > "$OUT/main-tracked-paths.txt"
+          git for-each-ref --format='%(refname) %(objectname)' \
+            'refs/remotes/origin/agent/ssc-rd-wave03-rd0[456]-*' | sort > "$OUT/lane-refs.txt"
+
+          python - "$OUT" <<'PY'
+          import hashlib
+          import json
+          import re
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          out = Path(sys.argv[1])
+          patterns = [
+              r'\bACES\b',
+              r'Advisory Committee on Economic Security',
+              r'member-specific votes',
+              r'published subcommittees',
+              r'Capability Drop',
+              r'CD1-PROP-',
+              r'General Dynamics Mission Systems',
+              r'Raytheon',
+              r'Palantir',
+              r'SNAP',
+              r'ABAWD',
+              r'discretionary exemption',
+              r'fitness[- ]for[- ]work',
+              r'RD-04-C02',
+              r'RD-05-C02',
+              r'RD-06-C04',
+          ]
+          rx = re.compile('|'.join(f'(?:{p})' for p in patterns), re.I)
+          path_rx = re.compile(r'(aces|rd05|snap|rd04|capability[-_ ]drop|rd06)', re.I)
+
+          def run(*args, check=True):
+              return subprocess.run(['git', *args], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=check)
+
+          tracked = run('ls-files', '-z').stdout.split(b'\0')
+          matches = []
+          total_bytes = 0
+          max_total = 80 * 1024 * 1024
+          for raw_path in tracked:
+              if not raw_path:
+                  continue
+              rel = raw_path.decode('utf-8', 'surrogateescape')
+              path = Path(rel)
+              try:
+                  size = path.stat().st_size
+              except OSError:
+                  continue
+              if size > 5 * 1024 * 1024:
+                  continue
+              try:
+                  data = path.read_bytes()
+                  text = data.decode('utf-8')
+              except Exception:
+                  continue
+              content_hit = bool(rx.search(text))
+              path_hit = bool(path_rx.search(rel))
+              if not (content_hit or path_hit):
+                  continue
+              if total_bytes + len(data) > max_total:
+                  continue
+              target = out / 'matches' / rel
+              target.parent.mkdir(parents=True, exist_ok=True)
+              target.write_bytes(data)
+              total_bytes += len(data)
+              snippets = []
+              if content_hit:
+                  lines = text.splitlines()
+                  for index, line in enumerate(lines, start=1):
+                      if rx.search(line):
+                          snippets.append({'line': index, 'text': line[:500]})
+                          if len(snippets) >= 25:
+                              break
+              matches.append({
+                  'path': rel,
+                  'bytes': len(data),
+                  'sha256': hashlib.sha256(data).hexdigest(),
+                  'git_blob_sha': run('hash-object', '--', rel).stdout.decode().strip(),
+                  'path_match': path_hit,
+                  'content_match': content_hit,
+                  'snippets': snippets,
+              })
+
+          branches = [
+              'agent/ssc-rd-wave03-rd04-state-implementation',
+              'agent/ssc-rd-wave03-rd05-member-participation',
+              'agent/ssc-rd-wave03-rd06-evaluation-custody',
+          ]
+          lane_rows = []
+          for branch in branches:
+              ref = f'refs/remotes/origin/{branch}'
+              head = run('rev-parse', ref).stdout.decode().strip()
+              diff_paths = run('diff', '--name-only', 'HEAD...' + ref).stdout.decode().splitlines()
+              branch_dir = out / 'lanes' / branch.replace('/', '__')
+              branch_dir.mkdir(parents=True, exist_ok=True)
+              files = []
+              for rel in sorted(set(diff_paths)):
+                  proc = run('show', f'{ref}:{rel}', check=False)
+                  if proc.returncode != 0:
+                      continue
+                  data = proc.stdout
+                  target = branch_dir / rel
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(data)
+                  files.append({
+                      'path': rel,
+                      'bytes': len(data),
+                      'sha256': hashlib.sha256(data).hexdigest(),
+                      'git_blob_sha': run('rev-parse', f'{ref}:{rel}').stdout.decode().strip(),
+                  })
+              lane_rows.append({
+                  'branch': branch,
+                  'head': head,
+                  'main_merge_base': run('merge-base', 'HEAD', ref).stdout.decode().strip(),
+                  'changed_paths': files,
+              })
+
+          report = {
+              'schema_version': 'ssc-rd-wave03-remaining-intake-source-census@1',
+              'main_head': run('rev-parse', 'HEAD').stdout.decode().strip(),
+              'pattern_count': len(patterns),
+              'matching_files': sorted(matches, key=lambda row: row['path']),
+              'matching_file_count': len(matches),
+              'matching_bytes': total_bytes,
+              'lane_refs': lane_rows,
+              'publication_effect': 'none',
+              'branch_effect': 'none',
+              'outside_human_dependency': False,
+          }
+          (out / 'census.json').write_text(json.dumps(report, indent=2) + '\n')
+          (out / 'matching-paths.txt').write_text(''.join(row['path'] + '\n' for row in report['matching_files']))
+          print(json.dumps({
+              'main_head': report['main_head'],
+              'matching_file_count': report['matching_file_count'],
+              'matching_bytes': report['matching_bytes'],
+              'lane_heads': {row['branch']: row['head'] for row in lane_rows},
+          }, indent=2))
+          PY
+      - name: Upload exact source census
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd-wave03-remaining-intake-source-census-v1
+          path: ${{ runner.temp }}/ssc-rd-wave03-remaining-intake-source-census-v1
+          if-no-files-found: error
+          retention-days: 90
