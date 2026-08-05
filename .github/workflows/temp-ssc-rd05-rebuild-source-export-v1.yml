@@ -1,0 +1,111 @@
+name: TEMP export exact RD-05 rebuild sources
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-rd05-rebuild-source-export-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd05-candidate-object-recovery-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact recovery head with complete history
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Export canonical main, exact intake, and failed materializer surfaces
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd05-rebuild-source-export-v1"
+          INPUT_HEAD='bc9800dcd3a3768288a5dfeaf0f7144969994ffa'
+          CANDIDATE_REF='origin/agent/ssc-rd-wave03-rd05-candidate-materializer-v1'
+          TERMINAL_REF='origin/agent/ssc-rd05-wave03-terminal-materializer-v1'
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+
+          git fetch --no-tags origin \
+            '+refs/heads/*:refs/remotes/origin/*' \
+            '+refs/tags/*:refs/tags/*'
+
+          MAIN_HEAD=$(git rev-parse origin/main)
+          test "$(git rev-parse "$INPUT_HEAD^{commit}")" = "$INPUT_HEAD"
+          test "$(git rev-parse "$CANDIDATE_REF^{commit}")" = '4a51f185be6bf1e687f8492b80b707bb721034c8'
+          test "$(git rev-parse "$TERMINAL_REF^{commit}")" = 'd3a4089a5956e0bdb01a7f2dfc36e546d53d75e9'
+
+          git archive --format=tar.gz -o "$OUT/current-main.tar.gz" "$MAIN_HEAD"
+
+          cat > "$OUT/intake-paths.txt" <<'PATHS'
+          .github/workflows/status-sovereignty-rd-wave03-rd05-member-participation-intake.yml
+          data/intake/status-sovereignty-rd-wave03-rd05-member-participation/field-matrix-contract.json
+          data/intake/status-sovereignty-rd-wave03-rd05-member-participation/intake-product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd05-member-participation/source-census-protocol.json
+          data/project/ssc-residual-wave03/seeds/RD-05-C02.json
+          docs/milestones/ssc-rd-wave03-rd05-member-participation-intake.md
+          schemas/status-sovereignty-rd-wave03-rd05-member-participation-intake.schema.json
+          test/status-sovereignty-rd-wave03-rd05-member-participation-intake.test.js
+          tools/acquisition/status-sovereignty-rd-wave03-rd05/run-source-census.py
+          tools/build-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs
+          PATHS
+          git archive --format=tar.gz -o "$OUT/exact-intake-head.tar.gz" "$INPUT_HEAD" \
+            $(cat "$OUT/intake-paths.txt")
+
+          git archive --format=tar.gz -o "$OUT/candidate-materializer-surface.tar.gz" "$CANDIDATE_REF" \
+            .github/workflows/temp-rd05-object-base-tree-v1.yml \
+            .github/workflows/temp-ssc-rd-wave03-rd05-candidate-materializer-v1.yml \
+            .transport/ssc-rd-wave03-rd05-candidate-v1
+
+          git archive --format=tar.gz -o "$OUT/terminal-materializer-surface.tar.gz" "$TERMINAL_REF" \
+            .github/workflows/temp-ssc-rd05-wave03-terminal-materializer-v1.yml \
+            .transport/ssc-rd05-wave03-terminal-v1
+
+          python - "$OUT/metadata.json" "$MAIN_HEAD" "$INPUT_HEAD" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          path, main_head, input_head = sys.argv[1:]
+          Path(path).write_text(json.dumps({
+              'schema_version': 'ssc-rd05-rebuild-source-export@1',
+              'main_head': main_head,
+              'input_head': input_head,
+              'candidate_materializer_head': '4a51f185be6bf1e687f8492b80b707bb721034c8',
+              'terminal_materializer_head': 'd3a4089a5956e0bdb01a7f2dfc36e546d53d75e9',
+              'source_census_run': 30989139364,
+              'source_census_artifact': 8923361634,
+              'source_census_artifact_digest': 'sha256:0829f39c45dc5308c031dcde3efb6514a1f65ec5787ed19c9490bf49e6c1289b',
+              'repository_writes': 0,
+              'outside_human_dependency': False,
+          }, indent=2, sort_keys=True) + '\n')
+          PY
+
+          (
+            cd "$OUT"
+            find . -maxdepth 1 -type f ! -name SHA256SUMS -print0 \
+              | sort -z \
+              | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - name: Upload exact source export
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-rebuild-source-export-v1
+          path: ${{ runner.temp }}/ssc-rd05-rebuild-source-export-v1
+          if-no-files-found: error
+          retention-days: 90
