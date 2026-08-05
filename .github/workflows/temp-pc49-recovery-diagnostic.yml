@@ -1,0 +1,78 @@
+name: TEMP diagnose PC-49 exact-file recovery
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - synchronize
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.head_ref == 'agent/pc49-source-carrier'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact carrier head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Record carrier bytes and recovered member
+        run: |
+          set -euo pipefail
+          sha256sum \
+            .pc49-carrier-v3/product.part00 \
+            .pc49-carrier-v3/product.part01 \
+            .pc49-carrier-v3/product.part02 \
+            .pc49-carrier-v3/product.part03 \
+            .pc49-carrier-v3/run.part00 \
+            | tee /tmp/pc49-byte-census.txt
+          python3 - <<'PY' | tee -a /tmp/pc49-byte-census.txt
+          from pathlib import Path
+          import base64
+          import hashlib
+          import io
+          import tarfile
+          import zlib
+
+          raw = b''.join(
+              Path(f'.pc49-carrier-v3/product.part0{index}').read_bytes()
+              for index in range(4)
+          )
+          normalized = b''.join(raw.split())
+          print(f'raw_bytes={len(raw)}')
+          print(f'normalized_bytes={len(normalized)}')
+          print(f'padding_count={normalized.count(b"=")}')
+          print(f'padding_offsets={[i for i, b in enumerate(normalized) if b == ord("=")]}')
+          print(f'normalized_sha256={hashlib.sha256(normalized).hexdigest()}')
+          if b'=' in normalized:
+              prefix = normalized[:normalized.index(b'=')]
+              decoded = base64.b64decode(prefix + b'=' * ((-len(prefix)) % 4), validate=True)
+              print(f'prefix_base64_bytes={len(prefix)}')
+              print(f'prefix_decoded_bytes={len(decoded)}')
+              print(f'prefix_decoded_sha256={hashlib.sha256(decoded).hexdigest()}')
+              print(f'gzip_header={decoded[:10].hex()}')
+              inflater = zlib.decompressobj(-15)
+              tar_bytes = inflater.decompress(decoded[10:]) + inflater.flush()
+              print(f'inflater_eof={inflater.eof}')
+              print(f'tar_bytes={len(tar_bytes)}')
+              print(f'tar_sha256={hashlib.sha256(tar_bytes).hexdigest()}')
+              try:
+                  with tarfile.open(fileobj=io.BytesIO(tar_bytes), mode='r:') as package:
+                      members = [member for member in package.getmembers() if member.isfile()]
+                      print(f'tar_file_members={len(members)}')
+                      for member in members:
+                          data = package.extractfile(member).read()
+                          print(f'file={member.name} bytes={len(data)} sha256={hashlib.sha256(data).hexdigest()}')
+              except Exception as exc:
+                  print(f'tar_error={type(exc).__name__}:{exc}')
+          PY
+      - name: Upload byte census
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc49-exact-file-recovery-diagnostic
+          path: /tmp/pc49-byte-census.txt
+          if-no-files-found: error
