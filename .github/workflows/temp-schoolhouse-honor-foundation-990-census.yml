@@ -1,0 +1,203 @@
+name: TEMP capture School.House related-charity Form 990 candidate surface
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-honor-foundation-990-census.yml'
+      - '.schoolhouse-honor-foundation-990-census/EXECUTE'
+      - '.schoolhouse-honor-foundation-990-census/capture.py.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: temp-schoolhouse-honor-foundation-990-census-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact acquisition head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate parent, exact filing denominator, and runner custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          BASE_MAIN='d87172a41e88c1709b37a114b50df733545126c8'
+          BUNDLE='.schoolhouse-honor-foundation-990-census/capture.py.gz.b64'
+          EXECUTE='.schoolhouse-honor-foundation-990-census/EXECUTE'
+          WORKFLOW='.github/workflows/temp-schoolhouse-honor-foundation-990-census.yml'
+          RUNNER='/tmp/capture-schoolhouse-honor-foundation-990-census.py'
+          EXPECTED_RUNNER_SHA='b597bbe3ff3c30f175de16af469af6a464df0a86b26bf3d25452c9ee993f0ea5'
+          EXPECTED_BUNDLE_SHA='4a07d18c9c0a925cf1a3eb42f1076ba9b8967ddafb2bb400a9409db53424a428'
+
+          git fetch --no-tags origin main
+          MAIN_SHA=$(git rev-parse origin/main)
+          MERGE_BASE=$(git merge-base HEAD origin/main)
+          printf 'main_sha=%s\nmerge_base=%s\n' "$MAIN_SHA" "$MERGE_BASE"
+          git merge-base --is-ancestor "$BASE_MAIN" "$MAIN_SHA"
+          test "$MERGE_BASE" = "$BASE_MAIN"
+
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = "$EXPECTED_BUNDLE_SHA"
+          grep -Fx "runner_sha256=$EXPECTED_RUNNER_SHA" "$EXECUTE"
+          grep -Fx "bundle_sha256=$EXPECTED_BUNDLE_SHA" "$EXECUTE"
+          grep -Fx "base_main=$BASE_MAIN" "$EXECUTE"
+          grep -Fx 'expected_ein=462952873' "$EXECUTE"
+          grep -Fx 'declared_filing_rows=3' "$EXECUTE"
+          grep -Fx 'object_ids=202432149349300938,202521839349300822,202641259349300124' "$EXECUTE"
+          grep -Fx 'candidate_routes_per_filing=3' "$EXECUTE"
+          grep -Fx 'maximum_total_requests=9' "$EXECUTE"
+          grep -Fx 'maximum_parallel_workers=1' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+
+          mapfile -t CHANGED < <(git diff --name-only "$BASE_MAIN"..HEAD | sort)
+          EXPECTED=(
+            '.github/workflows/temp-schoolhouse-honor-foundation-990-census.yml'
+            '.schoolhouse-honor-foundation-990-census/EXECUTE'
+            '.schoolhouse-honor-foundation-990-census/capture.py.gz.b64'
+          )
+          test "${#CHANGED[@]}" -eq "${#EXPECTED[@]}"
+          for i in "${!EXPECTED[@]}"; do
+            test "${CHANGED[$i]}" = "${EXPECTED[$i]}"
+          done
+          git diff --exit-code -- "$BUNDLE" "$EXECUTE" "$WORKFLOW"
+
+          base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = "$EXPECTED_RUNNER_SHA"
+          python -m py_compile "$RUNNER"
+
+      - name: Execute bounded three-filing public XML census
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          OUT='/tmp/schoolhouse-honor-foundation-990-census'
+          rm -rf "$OUT"
+          python /tmp/capture-schoolhouse-honor-foundation-990-census.py --output "$OUT"
+
+          for file in \
+            route-attempts.jsonl \
+            filing-receipts.jsonl \
+            term-hits.jsonl \
+            structural-signals.jsonl \
+            adjudication.json \
+            route-policy.json \
+            summary.json \
+            artifact-manifest.json \
+            SHA256SUMS; do
+            test -f "$OUT/$file"
+          done
+
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          cat "$OUT/summary.json"
+
+          jq -e '
+            .declared_filings == 3 and
+            .terminal_filing_rows == 3 and
+            .successful_filing_rows >= 0 and
+            .successful_filing_rows <= 3 and
+            .source_unavailable_filing_rows == (3 - .successful_filing_rows) and
+            .request_attempts >= 3 and
+            .request_attempts <= 9 and
+            .maximum_total_requests == 9 and
+            .structural_signal_rows == .successful_filing_rows and
+            .raw_xml_retained == false and
+            .full_visible_text_retained == false and
+            .street_address_rows_retained == 0 and
+            .contact_detail_rows_retained == 0 and
+            .private_support_rows == 0 and
+            .identities_admitted == 0 and
+            .relationships_admitted == 0 and
+            .negative_existence_claims_created == 0 and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/summary.json"
+
+          test "$(grep -cve '^$' "$OUT/filing-receipts.jsonl")" -eq 3
+          test "$(grep -cve '^$' "$OUT/route-attempts.jsonl")" -ge 3
+          test "$(grep -cve '^$' "$OUT/route-attempts.jsonl")" -le 9
+
+          jq -s -e '
+            length == 3 and
+            all(
+              .expected_ein == "462952873" and
+              .raw_xml_retained == false and
+              .full_text_retained == false and
+              .street_address_rows_retained == 0 and
+              .contact_detail_rows_retained == 0 and
+              .private_support_rows == 0 and
+              .identity_admitted == false and
+              .relationship_admitted == false and
+              .negative_existence_claim_created == false and
+              .outside_human_dependency == false and
+              .publication_effect == "none" and
+              .adoption_effect == "none" and
+              .graph_effect == "none" and
+              .promotes_to == "candidate_only"
+            )
+          ' "$OUT/filing-receipts.jsonl"
+
+          jq -e '
+            .selection_contract.declared_filings == 3 and
+            .selection_contract.expected_ein == "462952873" and
+            .selection_contract.no_result_spawned_routes == true and
+            .selection_contract.no_person_selected_because_of_private_contact == true and
+            .request_bounds.request_methods == ["GET"] and
+            .request_bounds.candidate_routes_per_filing == 3 and
+            .request_bounds.maximum_total_requests == 9 and
+            .request_bounds.maximum_parallel_workers == 1 and
+            .request_bounds.interactive_search_submissions == 0 and
+            .request_bounds.forms_submitted == 0 and
+            .request_bounds.external_discovered_links_fetched == 0 and
+            .retention.raw_xml_retained == false and
+            .retention.full_visible_text_retained == false and
+            .retention.street_address_rows_retained == 0 and
+            .retention.contact_detail_rows_retained == 0 and
+            .retention.private_support_rows == 0 and
+            .retention.matched_source_values_retained == false and
+            .interpretation.person_name_is_context_only == true and
+            .interpretation.zero_term_hits_are_not_absence_evidence == true and
+            .interpretation.provider_errors_are_not_absence_evidence == true and
+            .interpretation.no_identity_or_relationship_may_be_admitted_by_this_acquisition == true and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/route-policy.json"
+
+          jq -e '
+            .declared_filings == 3 and
+            .legal_identity_admitted == false and
+            .fiscal_sponsor_relationship_admitted == false and
+            .related_party_relationship_admitted == false and
+            .negative_existence_claim_created == false and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none" and
+            .promotes_to == "candidate_only"
+          ' "$OUT/adjudication.json"
+
+      - name: Upload terminal acquisition artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: schoolhouse-honor-foundation-990-census
+          path: /tmp/schoolhouse-honor-foundation-990-census
+          if-no-files-found: error
+          retention-days: 90
