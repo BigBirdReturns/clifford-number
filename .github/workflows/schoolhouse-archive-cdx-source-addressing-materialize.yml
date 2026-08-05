@@ -49,6 +49,7 @@ jobs:
           EXECUTE='.schoolhouse-archive-cdx-source-addressing-materializer-v1/EXECUTE'
           REPAIR='/tmp/repair-schoolhouse-archive-cdx-source-addressing.py'
           WORKTREE='/tmp/schoolhouse-archive-cdx-source-addressing-product'
+          PRESERVE='/tmp/schoolhouse-archive-cdx-source-addressing-preserve'
           RECEIPT_DIR='/tmp/schoolhouse-archive-cdx-source-addressing-materialization-receipt'
           EXPECTED_REPAIR_SHA='5f9370ee1a04a09270d5bcf116179f2bd7445fbb6fe4d0d764dae18311920529'
 
@@ -75,7 +76,7 @@ jobs:
             exit 1
           fi
 
-          rm -rf "$WORKTREE" "$RECEIPT_DIR"
+          rm -rf "$WORKTREE" "$PRESERVE" "$RECEIPT_DIR"
           git worktree add --detach "$WORKTREE" "$MAIN_SHA"
           trap 'git worktree remove --force "$WORKTREE" >/dev/null 2>&1 || true' EXIT
 
@@ -90,13 +91,29 @@ jobs:
           npm run release:check
           python3 "$REPAIR" --check --root "$WORKTREE"
 
-          mapfile -t CHANGED < <(git status --porcelain=v1 | sed -E 's/^.. //' | sort)
           EXPECTED=(
             'data/intake/bvvc-defense-capital/manifest.json'
             'data/intake/bvvc-defense-capital/source-inventory-14.jsonl'
             'tools/build-schoolhouse-first-party-archive-locator-custody.mjs'
             'tools/validate-bvvc-defense-capital.mjs'
           )
+
+          # The complete release gate intentionally rebuilds generated repository
+          # surfaces. Preserve the already-qualified four-path repair, restore the
+          # exact live-main tree, then reapply and recheck only those four files.
+          for path in "${EXPECTED[@]}"; do
+            mkdir -p "$PRESERVE/$(dirname "$path")"
+            cp "$path" "$PRESERVE/$path"
+          done
+          git reset --hard "$MAIN_SHA"
+          git clean -fdx
+          for path in "${EXPECTED[@]}"; do
+            mkdir -p "$(dirname "$path")"
+            cp "$PRESERVE/$path" "$path"
+          done
+          python3 "$REPAIR" --check --root "$WORKTREE"
+
+          mapfile -t CHANGED < <(git status --porcelain=v1 | sed -E 's/^.. //' | sort)
           test "${#CHANGED[@]}" -eq "${#EXPECTED[@]}"
           for i in "${!EXPECTED[@]}"; do
             test "${CHANGED[$i]}" = "${EXPECTED[$i]}"
