@@ -1,0 +1,121 @@
+name: TEMP materialize School.House Magnolia corporate resolution
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-fl-magnolia-corporate-materialize.yml'
+      - '.schoolhouse-fl-magnolia-corporate-materialize/EXECUTE'
+      - 'tools/build-schoolhouse-fl-magnolia-corporate-resolution.mjs'
+      - 'tools/repair-schoolhouse-fl-magnolia-builder.mjs'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download terminal Magnolia corporate artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          rm -rf /tmp/schoolhouse-fl-magnolia-corporate-resolution
+          mkdir -p /tmp/schoolhouse-fl-magnolia-corporate-resolution
+          gh run download 30977237597 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name schoolhouse-fl-magnolia-corporate-resolution \
+            --dir /tmp/schoolhouse-fl-magnolia-corporate-resolution
+          test -f /tmp/schoolhouse-fl-magnolia-corporate-resolution/summary.json
+          test -f /tmp/schoolhouse-fl-magnolia-corporate-resolution/source-receipt.json
+          test -f /tmp/schoolhouse-fl-magnolia-corporate-resolution/remote-zip-index.json
+          test -f /tmp/schoolhouse-fl-magnolia-corporate-resolution/corporate-records.jsonl
+          test -f /tmp/schoolhouse-fl-magnolia-corporate-resolution/cross-registry-adjudication.json
+
+      - name: Build, qualify, and publish clean current-main product
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          TARGET='agent/schoolhouse-fl-magnolia-corporate-resolution-product-v1'
+          MAIN_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+          SOURCE_BUILDER="$GITHUB_WORKSPACE/tools/build-schoolhouse-fl-magnolia-corporate-resolution.mjs"
+          REPAIR="$GITHUB_WORKSPACE/tools/repair-schoolhouse-fl-magnolia-builder.mjs"
+          test -f "$SOURCE_BUILDER"
+          test -f "$REPAIR"
+
+          rm -rf /tmp/schoolhouse-fl-magnolia-builder
+          mkdir -p /tmp/schoolhouse-fl-magnolia-builder
+          cp "$SOURCE_BUILDER" /tmp/schoolhouse-fl-magnolia-builder/build.mjs
+          node "$REPAIR" /tmp/schoolhouse-fl-magnolia-builder/build.mjs
+          node --check /tmp/schoolhouse-fl-magnolia-builder/build.mjs
+
+          rm -rf /tmp/schoolhouse-fl-magnolia-corporate-product
+          git fetch --no-tags origin "$MAIN_SHA"
+          git worktree add --detach /tmp/schoolhouse-fl-magnolia-corporate-product "$MAIN_SHA"
+          cd /tmp/schoolhouse-fl-magnolia-corporate-product
+          mkdir -p tools
+          cp /tmp/schoolhouse-fl-magnolia-builder/build.mjs tools/build-schoolhouse-fl-magnolia-corporate-resolution.mjs
+
+          node tools/build-schoolhouse-fl-magnolia-corporate-resolution.mjs \
+            /tmp/schoolhouse-fl-magnolia-corporate-resolution
+          node tools/validate-bvvc-defense-capital.mjs
+          node test/person-routers.test.js
+          npm run release:check
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            data/intake/bvvc-defense-capital/README.md \
+            data/intake/bvvc-defense-capital/acquisition-frontier.json \
+            data/intake/bvvc-defense-capital/coverage-matrix.json \
+            data/intake/bvvc-defense-capital/manifest.json \
+            data/intake/bvvc-defense-capital/schoolhouse.json \
+            data/intake/bvvc-defense-capital/schoolhouse-fl-magnolia-corporate-resolution-source-receipt.json \
+            data/intake/bvvc-defense-capital/schoolhouse-fl-magnolia-corporate-resolution-remote-zip-index.json \
+            data/intake/bvvc-defense-capital/schoolhouse-fl-magnolia-corporate-resolution-range-request-receipts.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-fl-magnolia-corporate-resolution-member-receipts.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-fl-magnolia-corporate-resolution-records.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-fl-magnolia-corporate-resolution-matrix.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-fl-magnolia-corporate-resolution-adjudication.json \
+            tools/build-schoolhouse-fl-magnolia-corporate-resolution.mjs \
+            tools/validate-bvvc-defense-capital.mjs
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = '14'
+          git commit -m 'Add School.House Magnolia corporate resolution custody'
+          PRODUCT_SHA=$(git rev-parse HEAD)
+
+          START=$(git ls-remote origin "refs/heads/$TARGET" | awk '{print $1}')
+          if [[ -n "$START" ]]; then
+            git push origin "HEAD:refs/heads/$TARGET" --force-with-lease="refs/heads/$TARGET:$START"
+          else
+            git push origin "HEAD:refs/heads/$TARGET"
+          fi
+
+          mkdir -p /tmp/schoolhouse-fl-magnolia-materialization-receipt
+          jq -n \
+            --arg base_main "$MAIN_SHA" \
+            --arg product_sha "$PRODUCT_SHA" \
+            --arg target "$TARGET" \
+            '{schema_version:"schoolhouse-fl-magnolia-corporate-materialization-receipt@1",base_main:$base_main,product_sha:$product_sha,target_branch:$target,changed_paths:14,source_bytes:1819049954,remote_zip_members:10,selected_partitions:2,selected_partition_rows_scanned:2561478,target_documents:2,resolved_documents:2,shared_ein_reporting_entities:2,identifier_grade_irs_candidate_resolutions:1,public_schoolhouse_identities_admitted:0,private_support_rows:0,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+            > /tmp/schoolhouse-fl-magnolia-materialization-receipt/status.json
+          sha256sum /tmp/schoolhouse-fl-magnolia-materialization-receipt/status.json \
+            > /tmp/schoolhouse-fl-magnolia-materialization-receipt/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-fl-magnolia-corporate-materialization-receipt
+          path: /tmp/schoolhouse-fl-magnolia-materialization-receipt
+          if-no-files-found: error
+          retention-days: 90
