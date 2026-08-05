@@ -1,0 +1,112 @@
+name: TEMP acquire School.House first-party archive locators
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-first-party-archive-locator-census.yml'
+      - '.schoolhouse-first-party-archive-locator-census/EXECUTE'
+      - '.schoolhouse-first-party-archive-locator-census/capture.py.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: temp-schoolhouse-first-party-archive-locator-census-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate exact parent, source denominator, and runner
+        run: |
+          set -Eeuo pipefail
+          BASE_MAIN='a4a9ced8a702ab5f6ba57b15073683246295035d'
+          INPUT='data/intake/bvvc-defense-capital/schoolhouse-first-party-legal-surface-route-results.jsonl'
+          BUNDLE='.schoolhouse-first-party-archive-locator-census/capture.py.gz.b64'
+          EXECUTE='.schoolhouse-first-party-archive-locator-census/EXECUTE'
+          RUNNER='/tmp/capture-schoolhouse-first-party-archive-locator-census.py'
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE_MAIN"
+          test "$(git merge-base HEAD origin/main)" = "$BASE_MAIN"
+          test "$(git hash-object "$INPUT")" = '0e004bc38eb4d4c895af3d862f0e7569112a8b1a'
+          test "$(grep -cve '^$' "$INPUT")" = '46'
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'ffee879ea21ce5a6dc792644e853d83adc1683bf01bbabd5b2f5c678a16295fd'
+          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = '62fc8cf5e468fddb6030cff04906488b11f99ad2eaa19ce127f8601df7d2e8cd'
+          base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = 'cc8322e872cc89d85222ffc55d405b290f7ad8f2f5396052a4e2139b22b5ee15'
+          python -m py_compile "$RUNNER"
+
+      - name: Execute exact-URL public archive metadata census
+        run: |
+          set -Eeuo pipefail
+          OUT='/tmp/schoolhouse-first-party-archive-locator-census'
+          rm -rf "$OUT"
+          python /tmp/capture-schoolhouse-first-party-archive-locator-census.py --output "$OUT"
+
+          for file in summary.json route-policy.json artifact-manifest.json archive-route-results.jsonl archive-snapshot-locators.jsonl SHA256SUMS; do
+            test -f "$OUT/$file"
+          done
+
+          jq -e '
+            .declared_source_routes == 46 and
+            .terminal_archive_query_rows == 46 and
+            .archive_api_queries == 46 and
+            .maximum_parallel_workers == 4 and
+            .maximum_results_per_route == 1000 and
+            .result_caps_exhausted == 0 and
+            .archived_bodies_fetched == 0 and
+            .interactive_search_submissions == 0 and
+            .organization_name_submissions == 0 and
+            .identifier_submissions == 0 and
+            .source_rows_acquired == 0 and
+            .street_address_rows_retained == 0 and
+            .contact_detail_rows_retained == 0 and
+            .private_support_rows == 0 and
+            .identities_admitted == 0 and
+            .negative_existence_claims_created == 0 and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/summary.json"
+          test "$(grep -cve '^$' "$OUT/archive-route-results.jsonl")" = '46'
+          jq -e '
+            .source_denominator.routes == 46 and
+            .archive_api.exact_url_queries == 46 and
+            .archive_api.archived_page_bodies_fetched == false and
+            .interpretation.zero_rows_is_not_absence == true and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/route-policy.json"
+          jq -e '
+            .raw_source_retained == false and
+            .archived_bodies_fetched == false and
+            .identity_admitted == false and
+            .negative_existence_claim_created == false and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/artifact-manifest.json"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-first-party-archive-locator-census
+          path: /tmp/schoolhouse-first-party-archive-locator-census
+          if-no-files-found: error
+          retention-days: 90
