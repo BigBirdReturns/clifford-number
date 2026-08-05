@@ -1,0 +1,236 @@
+name: SSC RD-04 responsive-link field adjudication materializer
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd04-responsive-field-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd04-responsive-field-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Reconstruct, qualify, and lease-publish the exact ten-file product
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          export GIT_AUTHOR_NAME='github-actions[bot]'
+          export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+
+          readonly BASE_PARENT=d87172a41e88c1709b37a114b50df733545126c8
+          readonly TARGET_BRANCH=agent/ssc-rd-wave03-rd04-responsive-link-field-adjudication-v1
+          readonly TARGET_LEASE=47533eaaede25828b960fcde8d0ed956deb4879c
+          readonly STANDING=.github/workflows/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.yml
+          readonly ARCHIVE=/tmp/rd04-responsive-field-adjudication.tar.xz
+          readonly PACKAGE=/tmp/rd04-responsive-field-adjudication-package
+          readonly WORK=/tmp/rd04-responsive-field-adjudication-worktree
+          readonly RECEIPT=/tmp/rd04-responsive-field-materializer-receipt
+          readonly PATHS=/tmp/rd04-responsive-field-product-paths.txt
+
+          rm -rf "$ARCHIVE" "$PACKAGE" "$WORK" "$RECEIPT" "$PATHS"
+          mkdir -p "$PACKAGE" "$RECEIPT"
+          trap 'status=$?; printf "exit_status=%s\n" "$status" >> "$RECEIPT/terminal.txt"; exit "$status"' EXIT
+          printf 'base_parent=%s\ntarget_branch=%s\ntarget_lease=%s\n' \
+            "$BASE_PARENT" "$TARGET_BRANCH" "$TARGET_LEASE" > "$RECEIPT/start.txt"
+
+          python - "$ARCHIVE" "$PACKAGE" "$PATHS" <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import sys
+          import tarfile
+          import urllib.request
+
+          archive = pathlib.Path(sys.argv[1])
+          package = pathlib.Path(sys.argv[2])
+          paths_file = pathlib.Path(sys.argv[3])
+          repo = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GITHUB_TOKEN']
+
+          blobs = [
+              ('24b1be4c6ce96d481bc8e09e103068ac9129d8d6', 6000, 'a54035c39abb5029e1d28e6767e068c9654a239e7fe38bae8294b66b02c46d74'),
+              ('31c6c50ea4f545502164c97a79b543dbc2e76cea', 6000, 'c4fb028e959e05a7cee6349c237cf397830cd70bd4b54719cf3a17ca5b9bb940'),
+              ('a193b9634281c4afd40d891cc462724e53ad6476', 6000, 'c2b2c034c49ba34218f75fe3160f9f82bcf41600c8e8e336bb478b8a7078f731'),
+              ('b20f0679429c2d14e92253e0afe69c9d9d9eb988', 6000, '65b92728556c07030e51960b7c649ac629a3a5a1bd545edc7f37c32e0cee0aa8'),
+              ('73e169654663cbdc9509ddda90dd587ff8a0fd7e', 6000, 'f9949aeb3acd34aacf2e70ca20b6876be1ba9dc97bb46993e24761c7182cdd02'),
+              ('6c53807b53b95d8fb8010ef33a97536e53d34034', 1500, '178058e65c593a4d6ddcf8401add289aec0b5fea73dd4db691090ea45705efa0'),
+              ('ee5a66908bc2abb04664593cc51990b76f35cfc3', 1500, 'e840d1dace2d8511d7a20be342a098e5d3a502dca0c739c0fda294b1a67141a7'),
+              ('61ebe073c31fcc76f9de080cfd9759467b89a4dc', 1500, 'fcf2c6a8a51d3ab8731f44abc23ad090e9fa0998f995ae36e3c8803ab5244722'),
+              ('25ca2db773b40a900a8e031c3a690a9b25fc565d', 1500, 'daf15b95a4119a18bcbd1cd4fe489afc14f3dad97f4fc469901bbcdd24f50f2d'),
+              ('75d38d74755c93f2cac68d7e6fa4b5f01fa47b91', 1500, 'b3dd68892a90d56b0b9856109d97ff53bda2d0788c62d10fc752aaa2cd93651d'),
+              ('819a2ac32e1b236d056ee48864a85498b9598cff', 220, '170e3da1c6ef9c4c7b62e1eafdb60189f858b38c9c0d9b247c4726d5e1c2540c'),
+          ]
+
+          expected_paths = [
+              'data/intake/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication/authored-field-decisions.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication/field-adjudications.jsonl',
+              'data/intake/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication/index.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication/product-manifest.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication/promotion-candidate-protocol.json',
+              'docs/milestones/ssc-rd-wave03-rd04-responsive-link-field-adjudication.md',
+              'schemas/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.schema.json',
+              'test/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.test.js',
+              'tools/build-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs',
+              'tools/validate-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs',
+          ]
+
+          expected_files = {
+              expected_paths[0]: (418952, '9a8082544c43851f0f8760b13cf2fc145f0bb63b48223cb6c994c2c2cb39e0e9'),
+              expected_paths[1]: (295198, 'f4bf44248a7af34fc67e512c978fd8e73445da30b562af84f41cda39861eab3e'),
+              expected_paths[2]: (6971, '096a9c573dcd4b907a0612e7e7f0efd571ea828d9297720f4e57564d05c3f683'),
+              expected_paths[3]: (1410, '4e229ecde58ff36ec931966d398a2731eacd32294a5969356d50562abeda184e'),
+              expected_paths[4]: (92198, '26cb4a60c4d0a76cf87a39af5e5201abf2ac2f8767498f65bcc9e6ae77d177a4'),
+              expected_paths[5]: (6797, '67865cb5c5b371eec95af789003bec23753dc1f51eff02308826d5294bf988cc'),
+              expected_paths[6]: (10436, 'ee964f95319ae3eb208765b240fb78649d021f340eb5c8ded1c26e238d024371'),
+              expected_paths[7]: (5163, 'cd1d924abd9d92b3cf16db42e77ee62fff2a71d45479e8b310bf9106f250eb2d'),
+              expected_paths[8]: (24319, 'bd9cb3fd8280bf7a70a2a43f231cd21ac580551cca83395bb13e4863703bf293'),
+              expected_paths[9]: (11637, 'c79f1337f399509b630466da41b41f400d187a72a85b52341ea0c332cf2d7de5'),
+          }
+
+          chunks = []
+          chunk_receipt = []
+          for sha, size, digest in blobs:
+              request = urllib.request.Request(
+                  f'https://api.github.com/repos/{repo}/git/blobs/{sha}',
+                  headers={
+                      'Authorization': f'Bearer {token}',
+                      'Accept': 'application/vnd.github+json',
+                      'X-GitHub-Api-Version': '2022-11-28',
+                      'User-Agent': 'ssc-rd04-responsive-field-materializer',
+                  },
+              )
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  payload = json.load(response)
+              data = base64.b64decode(payload['content'].replace('\n', ''))
+              computed_git_sha = hashlib.sha1(f'blob {len(data)}\0'.encode() + data).hexdigest()
+              assert payload['sha'] == sha and computed_git_sha == sha, sha
+              assert len(data) == size, (sha, len(data), size)
+              assert hashlib.sha256(data).hexdigest() == digest, sha
+              chunks.append(data)
+              chunk_receipt.append({'sha': sha, 'bytes': size, 'sha256': digest})
+
+          archive_bytes = b''.join(chunks)
+          assert len(archive_bytes) == 37720, len(archive_bytes)
+          assert hashlib.sha256(archive_bytes).hexdigest() == 'cd0dbe63767628658d785a14ff41f78f4a92f985e631833d57c946f2106ca6e9'
+          archive.write_bytes(archive_bytes)
+
+          with tarfile.open(archive, mode='r:xz') as tf:
+              members = [member for member in tf.getmembers() if member.isfile()]
+              normalized = sorted(member.name.lstrip('./') for member in members)
+              assert normalized == expected_paths, normalized
+              assert len(members) == 10
+              assert all(not member.issym() and not member.islnk() for member in tf.getmembers())
+              for member in tf.getmembers():
+                  target = (package / member.name).resolve()
+                  assert target == package.resolve() or package.resolve() in target.parents
+              tf.extractall(package, filter='data')
+
+          found = sorted(str(path.relative_to(package)) for path in package.rglob('*') if path.is_file())
+          assert found == expected_paths, found
+          for rel, (size, digest) in expected_files.items():
+              data = (package / rel).read_bytes()
+              assert len(data) == size, (rel, len(data), size)
+              assert hashlib.sha256(data).hexdigest() == digest, rel
+
+          paths_file.write_text('\n'.join(expected_paths) + '\n')
+          pathlib.Path('/tmp/rd04-responsive-field-materializer-receipt/chunks.json').write_text(
+              json.dumps(chunk_receipt, indent=2, sort_keys=True) + '\n'
+          )
+          print('sealed_archive_bytes=37720')
+          print('sealed_archive_sha256=cd0dbe63767628658d785a14ff41f78f4a92f985e631833d57c946f2106ca6e9')
+          print('sealed_nonworkflow_paths=10')
+          PY
+
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          LIVE_TARGET=$(git rev-parse "origin/$TARGET_BRANCH")
+          test "$LIVE_TARGET" = "$TARGET_LEASE"
+          test "$(git rev-parse "$LIVE_TARGET^")" = "$BASE_PARENT"
+          test "$(git rev-list --count "$BASE_PARENT..$LIVE_TARGET")" = 1
+          test "$(git diff --name-only "$BASE_PARENT..$LIVE_TARGET")" = "$STANDING"
+          test "$(git diff --name-status "$BASE_PARENT..$LIVE_TARGET" | awk '$1 != "A" {n++} END {print n+0}')" = 0
+
+          git worktree add --detach "$WORK" "$LIVE_TARGET"
+          cp -a "$PACKAGE"/. "$WORK"/
+          cd "$WORK"
+          while IFS= read -r path; do git add -- "$path"; done < "$PATHS"
+          git diff --cached --name-only | sort > "$RECEIPT/staged-paths.txt"
+          cmp "$PATHS" "$RECEIPT/staged-paths.txt"
+          test "$(git diff --cached --name-status | wc -l | tr -d ' ')" = 10
+          test "$(git diff --cached --name-status | awk '$1 != "A" {n++} END {print n+0}')" = 0
+          if grep -E '(^|/)(tmp|transport|carrier|materializer|trigger)(/|$)' "$RECEIPT/staged-paths.txt"; then exit 1; fi
+          if grep -E '^\.github/workflows/' "$RECEIPT/staged-paths.txt"; then exit 1; fi
+          git diff --cached --check
+
+          git commit -m 'Adjudicate RD-04 responsive-link source fields and freeze promotion candidates'
+          FINAL_COMMIT=$(git rev-parse HEAD)
+          FINAL_TREE=$(git rev-parse 'HEAD^{tree}')
+          test "$(git rev-parse HEAD^)" = "$LIVE_TARGET"
+          test "$(git rev-list --count "$LIVE_TARGET..HEAD")" = 1
+          git diff --name-only "$LIVE_TARGET..HEAD" | sort > "$RECEIPT/committed-paths.txt"
+          cmp "$PATHS" "$RECEIPT/committed-paths.txt"
+          test "$(git diff --name-status "$LIVE_TARGET..HEAD" | awk '$1 != "A" {n++} END {print n+0}')" = 0
+
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+
+          git restore --worktree -- .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$LIVE_TARGET"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH" \
+            --force-with-lease="refs/heads/$TARGET_BRANCH:$LIVE_TARGET"
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$FINAL_COMMIT"
+
+          printf 'base_parent=%s\nstanding_workflow_commit=%s\nfinal_commit=%s\nfinal_tree=%s\npermanent_nonworkflow_paths=10\nreview_sources=36\nstates_represented=24\ncandidate_pairs=127\nevidence_complete_bounded_finding=38\npartial_support_hold_open=18\ntemporal_or_scope_ambiguity_hold_open=19\nno_relevant_support_hold_open=52\nmatrix_updates=0\nfield_terminalizations=0\nterminal_cells=100/450\nstill_open_substantive_cells=350\nclass_closed=false\noutside_human_dependency=false\n' \
+            "$BASE_PARENT" "$LIVE_TARGET" "$FINAL_COMMIT" "$FINAL_TREE" > "$RECEIPT/final.txt"
+          cp "$PATHS" "$RECEIPT/product-paths.txt"
+          cp "$ARCHIVE" "$RECEIPT/rd04-responsive-field-adjudication.tar.xz"
+          sha256sum "$ARCHIVE" "$RECEIPT"/*.txt > "$RECEIPT/sha256sums.txt"
+          cat "$RECEIPT/final.txt"
+
+      - name: Preserve exact field-adjudication materializer receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-responsive-field-materializer-receipt
+          path: /tmp/rd04-responsive-field-materializer-receipt
+          if-no-files-found: error
+          retention-days: 90
