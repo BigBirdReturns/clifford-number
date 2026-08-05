@@ -1,0 +1,82 @@
+name: TEMP sweep merged PC-49 transport
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - synchronize
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  sweep:
+    if: github.head_ref == 'agent/pc49-source-carrier'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout canonical main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Verify PC-49 is already canonical and retire transport
+        run: |
+          set -euo pipefail
+          cat > /tmp/paths <<'EOF'
+          .github/workflows/preference-custody-v47.yml
+          .github/workflows/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.yml
+          data/research/preference-custody/control-manifest-v47.json
+          data/research/preference-custody/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.fixture.json
+          docs/preference-custody-laboratory-floor-v47.md
+          docs/preference-custody-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.md
+          test/preference-custody-manifest-v47.test.js
+          test/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.test.js
+          tools/compile-preference-custody-manifest-v47.mjs
+          tools/compile-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+          tools/lib/preference-custody-manifest-v47.mjs
+          tools/lib/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+          tools/validate-preference-custody-manifest-v47.mjs
+          tools/validate-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+          EOF
+          sed -i 's/^          //' /tmp/paths
+          while IFS= read -r path; do test -f "$path"; done < /tmp/paths
+
+          product_pr="$(gh pr list --repo "$GITHUB_REPOSITORY" --state merged --search 'PC-49 in:title' --json number,mergedAt --jq 'sort_by(.mergedAt) | last | .number // empty')"
+          test -n "$product_pr"
+          merge_sha="$(gh pr view "$product_pr" --repo "$GITHUB_REPOSITORY" --json mergeCommit --jq .mergeCommit.oid)"
+          main_sha="$(git rev-parse HEAD^{commit})"
+          git merge-base --is-ancestor "$merge_sha" "$main_sha"
+
+          if [ "$(gh issue view 1120 --repo "$GITHUB_REPOSITORY" --json state --jq .state)" = OPEN ]; then
+            gh issue close 1120 --repo "$GITHUB_REPOSITORY" --reason completed --comment "Completed by merged PC-49 product PR #${product_pr}."
+          fi
+          if [ "$(gh pr view 1127 --repo "$GITHUB_REPOSITORY" --json state --jq .state)" = OPEN ]; then
+            gh pr close 1127 --repo "$GITHUB_REPOSITORY" --comment "Superseded by merged PC-49 product PR #${product_pr}; this carrier was never merged."
+          fi
+          for branch in agent/pc49-source-carrier-v3-stage agent/pc49-materializer-verify agent/pc49-materializer; do
+            git push origin --delete "$branch" 2>/dev/null || true
+          done
+          git push origin --delete agent/pc49-source-carrier
+          {
+            printf 'product_pr=%s\n' "$product_pr"
+            printf 'merge_sha=%s\n' "$merge_sha"
+            printf 'canonical_main=%s\n' "$main_sha"
+            printf 'paths_present=14\n'
+            printf 'issue_1120=closed\n'
+            printf 'carrier_1127=closed_without_merge\n'
+            printf 'transport_refs=retired\n'
+          } > /tmp/pc49-postmerge-sweeper.txt
+          cat /tmp/pc49-postmerge-sweeper.txt
+      - name: Upload post-merge sweep receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc49-postmerge-sweeper-receipt
+          path: /tmp/pc49-postmerge-sweeper.txt
+          if-no-files-found: warn
