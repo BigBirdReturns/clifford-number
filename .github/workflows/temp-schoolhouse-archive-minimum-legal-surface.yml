@@ -1,0 +1,207 @@
+name: TEMP acquire minimum School.House archived legal surfaces
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-archive-minimum-legal-surface.yml'
+      - '.schoolhouse-archive-minimum-legal-surface/EXECUTE'
+      - '.schoolhouse-archive-minimum-legal-surface/capture.py.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: temp-schoolhouse-archive-minimum-legal-surface-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact acquisition head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate parent, fixed locator selection, and runner custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          BASE_PRODUCT='ee88d215bf85f6d3033fb07d6f236bcb71a54546'
+          INPUT='data/intake/bvvc-defense-capital/schoolhouse-first-party-archive-locators.jsonl'
+          BUNDLE='.schoolhouse-archive-minimum-legal-surface/capture.py.gz.b64'
+          EXECUTE='.schoolhouse-archive-minimum-legal-surface/EXECUTE'
+          WORKFLOW='.github/workflows/temp-schoolhouse-archive-minimum-legal-surface.yml'
+          RUNNER='/tmp/capture-schoolhouse-archive-minimum-legal-surface.py'
+          EXPECTED_RUNNER_SHA='1d4316c5c9dac832543f905d563c2cea3c9abccd1ad2423cbc13b56393c085d3'
+
+          git fetch --no-tags origin main
+          MAIN_SHA=$(git rev-parse origin/main)
+          MERGE_BASE=$(git merge-base HEAD origin/main)
+          printf 'main_sha=%s\nmerge_base=%s\n' "$MAIN_SHA" "$MERGE_BASE"
+          git merge-base --is-ancestor "$BASE_PRODUCT" "$MAIN_SHA"
+          test "$MERGE_BASE" = "$BASE_PRODUCT"
+
+          test "$(git hash-object "$INPUT")" = '474eafcae9009beb0f75f3fd10a8a262e3c2802e'
+          test "$(grep -cve '^$' "$INPUT")" -eq 66
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'fd7f9ab8d99b35b6a58ac7f8f2172fd96580a5a4cb26701358a2c80242e7c848'
+          grep -Fx "runner_sha256=$EXPECTED_RUNNER_SHA" "$EXECUTE"
+          grep -Fx 'selected_locator_rows=5' "$EXECUTE"
+          grep -Fx 'maximum_total_requests=5' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+
+          mapfile -t CHANGED < <(git diff --name-only "$BASE_PRODUCT"..HEAD | sort)
+          EXPECTED=(
+            '.github/workflows/temp-schoolhouse-archive-minimum-legal-surface.yml'
+            '.schoolhouse-archive-minimum-legal-surface/EXECUTE'
+            '.schoolhouse-archive-minimum-legal-surface/capture.py.gz.b64'
+          )
+          test "${#CHANGED[@]}" -eq "${#EXPECTED[@]}"
+          for i in "${!EXPECTED[@]}"; do
+            test "${CHANGED[$i]}" = "${EXPECTED[$i]}"
+          done
+          git diff --exit-code -- "$BUNDLE" "$EXECUTE" "$WORKFLOW"
+
+          base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = "$EXPECTED_RUNNER_SHA"
+          python -m py_compile "$RUNNER"
+
+      - name: Execute five-locator privacy-minimized acquisition
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          OUT='/tmp/schoolhouse-archive-minimum-legal-surface'
+          rm -rf "$OUT"
+          python /tmp/capture-schoolhouse-archive-minimum-legal-surface.py --output "$OUT"
+
+          for file in \
+            selected-locators.jsonl \
+            archived-content-route-results.jsonl \
+            archived-content-legal-signals.jsonl \
+            archived-content-discovered-legal-links.jsonl \
+            route-policy.json \
+            summary.json \
+            artifact-manifest.json \
+            SHA256SUMS; do
+            test -f "$OUT/$file"
+          done
+
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          cat "$OUT/summary.json"
+
+          jq -e '
+            .declared_locator_rows == 5 and
+            .selected_locator_rows == 5 and
+            .terminal_route_rows == 5 and
+            .request_attempts == 5 and
+            .replay_locators_dereferenced == 5 and
+            .archived_body_fetches >= 0 and
+            .archived_body_fetches <= 5 and
+            .archived_html_body_custody_rows >= 0 and
+            .archived_html_body_custody_rows <= .archived_body_fetches and
+            (.archived_html_body_custody_rows + .provider_error_routes + .http_error_routes + .other_terminal_routes) == 5 and
+            .forms_submitted == 0 and
+            .interactive_search_submissions == 0 and
+            .organization_name_submissions == 0 and
+            .identifier_submissions == 0 and
+            .raw_source_retained == false and
+            .visible_text_retained == false and
+            .street_address_rows_retained == 0 and
+            .contact_detail_rows_retained == 0 and
+            .private_support_rows == 0 and
+            .identities_admitted == 0 and
+            .negative_existence_claims_created == 0 and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/summary.json"
+
+          test "$(grep -cve '^$' "$OUT/selected-locators.jsonl")" -eq 5
+          test "$(grep -cve '^$' "$OUT/archived-content-route-results.jsonl")" -eq 5
+          jq -s -e '
+            length == 5 and
+            all(
+              .request_method == "GET" and
+              .request_attempts == 1 and
+              .replay_locator_dereferenced == true and
+              .raw_body_retained == false and
+              .visible_text_retained == false and
+              .jsonld_raw_retained == false and
+              .form_values_retained == false and
+              .forms_submitted == 0 and
+              .interactive_search_submissions == 0 and
+              .organization_name_submissions == 0 and
+              .identifier_submissions == 0 and
+              .street_address_rows_retained == 0 and
+              .contact_detail_rows_retained == 0 and
+              .private_support_rows == 0 and
+              .identity_admitted == false and
+              .negative_existence_claim_created == false and
+              .outside_human_dependency == false and
+              .publication_effect == "none" and
+              .adoption_effect == "none" and
+              .graph_effect == "none" and
+              .promotes_to == "candidate_only"
+            )
+          ' "$OUT/archived-content-route-results.jsonl"
+
+          jq -e '
+            .selection_contract.input_rows == 66 and
+            .selection_contract.input_git_blob == "474eafcae9009beb0f75f3fd10a8a262e3c2802e" and
+            .selection_contract.selected_locators == 5 and
+            .selection_contract.selection_is_minimum_hypothesis_test == true and
+            .selection_contract.complete_archive_locator_denominator_must_not_be_repeated == true and
+            .request_bounds.archive_host == "web.archive.org" and
+            .request_bounds.request_methods == ["GET"] and
+            .request_bounds.requests_per_locator == 1 and
+            .request_bounds.retries_per_locator == 0 and
+            .request_bounds.maximum_total_requests == 5 and
+            .request_bounds.maximum_response_bytes_per_locator == 2097152 and
+            .request_bounds.external_links_fetched == 0 and
+            .request_bounds.forms_submitted == 0 and
+            .retention.raw_archive_bodies_retained == false and
+            .retention.full_visible_text_retained == false and
+            .interpretation.zero_signal_result_is_not_absence == true and
+            .interpretation.provider_or_http_error_is_not_absence == true and
+            .interpretation.no_identity_may_be_admitted_by_this_acquisition == true and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/route-policy.json"
+
+          jq -e '
+            .input_git_blob == "474eafcae9009beb0f75f3fd10a8a262e3c2802e" and
+            .raw_source_retained == false and
+            .archived_visible_text_retained == false and
+            .street_address_rows_retained == 0 and
+            .contact_detail_rows_retained == 0 and
+            .private_support_rows == 0 and
+            .identity_admitted == false and
+            .negative_existence_claim_created == false and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none" and
+            .promotes_to == "candidate_only"
+          ' "$OUT/artifact-manifest.json"
+
+      - name: Upload terminal acquisition artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: schoolhouse-archive-minimum-legal-surface
+          path: /tmp/schoolhouse-archive-minimum-legal-surface
+          if-no-files-found: error
+          retention-days: 90
