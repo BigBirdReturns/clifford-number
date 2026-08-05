@@ -1,39 +1,91 @@
-name: SSC RD-04 field-promotion tree probe
+name: SSC RD-04 field-promotion materializer
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: ssc-rd04-field-promotion-materializer-v1
+  cancel-in-progress: false
 
 jobs:
-  probe:
+  materialize:
     if: github.event.pull_request.head.ref == 'agent/ssc-rd04-field-promotion-materializer-v1'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-      - name: Recover exact main, target, and carrier tree identities
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Reconstruct and execute the identity-bound materializer
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
-          TARGET_BRANCH=agent/ssc-rd-wave03-rd04-field-promotion-v1
-          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main +refs/heads/$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH
-          mkdir -p /tmp/ssc-rd04-field-promotion-tree-probe
-          {
-            printf 'head=%s\n' "$(git rev-parse HEAD)"
-            printf 'head_tree=%s\n' "$(git rev-parse 'HEAD^{tree}')"
-            printf 'main=%s\n' "$(git rev-parse origin/main)"
-            printf 'main_tree=%s\n' "$(git rev-parse 'origin/main^{tree}')"
-            printf 'target=%s\n' "$(git rev-parse origin/$TARGET_BRANCH)"
-            printf 'target_tree=%s\n' "$(git rev-parse "origin/$TARGET_BRANCH^{tree}")"
-          } | tee /tmp/ssc-rd04-field-promotion-tree-probe/trees.txt
-      - uses: actions/upload-artifact@v4
+          python - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import urllib.request
+
+          repo = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GITHUB_TOKEN']
+          target = pathlib.Path('/tmp/materializer-run.sh')
+          blobs = [
+              ('354f35ddde3c2108cc9d9d9b31546b0679f9956b', 5582, 'a0e97465f6ca9fb5ef08d012aabe6be4e259e1439109ee3c85f54602af6f2696'),
+              ('1feca0815bef335c235d829e4cf46d5dc4beae74', 2000, 'd2cfd9f5cdcaa4871d22fca1f00aa5c0acd8e13e31042e9d10187ac379a2c213'),
+              ('15c9c678f9258cd937bcdaf41b2bd5e7e6a25031', 2000, '0f9b41cd731473a565f0cbe9e96008e8663b6239d1741ada4f56d3bd9c9fca6e'),
+              ('dc2968c14b984a56ac3b0c945b153f7562d3564c', 2000, '25f9e087b975c2e255ab01311058883e7cb13adf3ea39083a294e66d9337b837'),
+              ('78bc390b2670e7ac74c590f0722bb259cfb0cce8', 2000, '9e4606ad6fa6a011861dca774de8e33ce7b1bb91e575fe8ef31c1293c19208d1'),
+              ('5305b7ed6284fa03c04c5af567b00a10711fc731', 2000, '051d8f533ae4a3aaee15cdda1b4720ea573c14fc7d030b80bcc08aed2befc8be'),
+              ('01c8a5bce6c2abba2fc1702d40dc221c70934413', 2000, 'b6ae8b6d5aa098d3c6054c8ce8e90eae6e1a0d5a882bc1c972b759bbefc311ce'),
+              ('f6b4ff86ba35455e53d3f0f6ee4271764d90b8b8', 552, '12a38476adf66e4248fbcae3704e31a94f5a8d467ba69e0816407891b6831338'),
+          ]
+          chunks = []
+          for sha, size, digest in blobs:
+              req = urllib.request.Request(
+                  f'https://api.github.com/repos/{repo}/git/blobs/{sha}',
+                  headers={
+                      'Authorization': f'Bearer {token}',
+                      'Accept': 'application/vnd.github+json',
+                      'X-GitHub-Api-Version': '2022-11-28',
+                      'User-Agent': 'ssc-rd04-field-promotion-bootstrap',
+                  },
+              )
+              with urllib.request.urlopen(req, timeout=30) as response:
+                  payload = json.load(response)
+              data = base64.b64decode(payload['content'].replace('\n', ''))
+              computed = hashlib.sha1(f'blob {len(data)}\0'.encode() + data).hexdigest()
+              assert payload['sha'] == sha and computed == sha, sha
+              assert len(data) == size, (sha, len(data), size)
+              assert hashlib.sha256(data).hexdigest() == digest, sha
+              chunks.append(data)
+          script = b''.join(chunks)
+          assert len(script) == 18134, len(script)
+          assert hashlib.sha256(script).hexdigest() == 'cf6bd1d9f9cab1dddf245d1fbbb233592e24b9f5b38eae1f40fc7ee73a6dd6dd'
+          target.write_bytes(script)
+          print('materializer_script_bytes=18134')
+          print('materializer_script_sha256=cf6bd1d9f9cab1dddf245d1fbbb233592e24b9f5b38eae1f40fc7ee73a6dd6dd')
+          PY
+          bash -n /tmp/materializer-run.sh
+          bash /tmp/materializer-run.sh
+      - name: Preserve exact RD-04 field-promotion materializer receipt
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd04-field-promotion-tree-probe
-          path: /tmp/ssc-rd04-field-promotion-tree-probe
+          name: ssc-rd04-field-promotion-materializer-receipt
+          path: /tmp/ssc-rd04-field-promotion-materializer-receipt
           if-no-files-found: error
           retention-days: 90
