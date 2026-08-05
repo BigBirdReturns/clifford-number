@@ -41,7 +41,7 @@ jobs:
           test "$(git rev-parse origin/main)" = "$BASE_MAIN"
           test "$(git merge-base HEAD origin/main)" = "$BASE_MAIN"
           test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'e445f22bf5e509043d388bbfdb558a7c7bcc85974c332ed342dcded144254964'
-          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = 'b72fe42926c1d52f090a7baae9cf4871b55e3daffe6f3025c226c5b3d102e407'
+          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = 'e86f20f64b157ff70639678f8f5b995cb4c3d50a5e9dbaa83979994535be3a89'
           base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
           test "$(sha256sum "$RUNNER" | awk '{print $1}')" = '9c9baa8c5bf553a12612336bf7db83f039b53d3cf4ab119fa1d3b0c9b6d2d5ef'
           python -m py_compile "$RUNNER"
@@ -100,7 +100,7 @@ jobs:
             .adoption_effect == "none" and
             .graph_effect == "none"
           ' "$OUT/artifact-manifest.json"
-          jq -e '.http_202_is_representation_bearing_source == false' "$OUT/route-policy.json"
+          jq -e '.interpretation.http_202_is_representation_bearing_source == false' "$OUT/route-policy.json"
 
       - uses: actions/upload-artifact@v4
         with:
