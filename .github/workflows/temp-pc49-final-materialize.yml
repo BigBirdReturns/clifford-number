@@ -1,0 +1,140 @@
+name: TEMP materialize recovered PC-49 product
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - synchronize
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.head_ref == 'agent/pc49-source-carrier'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout exact carrier head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Recover and verify frozen PC-49 archive and materializer
+        run: |
+          set -euo pipefail
+          test "$(sha256sum .pc49-carrier-v3/product.part00 | awk '{print $1}')" = "2081ea8d85452d2b813a8a0d4ce636dd26c27b686b8583ec479a7b30ca77f07f"
+          test "$(sha256sum .pc49-carrier-v3/product.part01 | awk '{print $1}')" = "0a95bf5288b5bae15fadc4006cb5fde510cfe7bbbde138ea8d764868e126b622"
+          test "$(sha256sum .pc49-carrier-v3/product.part02 | awk '{print $1}')" = "4c1bb8547c709f0b1783b221f8475ebe43f9991fa19d763af116ac40b51b9084"
+          test "$(sha256sum .pc49-carrier-v3/product.part03 | awk '{print $1}')" = "ed59e6b7670e718e675aae9157a701cffc58f8f6541dc2cfeebeefcf8c02d323"
+          test "$(sha256sum .pc49-carrier-v3/run.part00 | awk '{print $1}')" = "692397591d98aeab0a12e40bb8780e70ec610c229fd690fd212dea449d16306a"
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64
+          import hashlib
+          import tarfile
+
+          whitespace = set(b' \t\r\n')
+          raw = b''.join(
+              Path(f'.pc49-carrier-v3/product.part0{index}').read_bytes()
+              for index in range(4)
+          )
+          normalized = bytes(byte for byte in raw if byte not in whitespace)
+          if len(normalized) != 41142:
+              raise SystemExit(f'unexpected normalized carrier length: {len(normalized)}')
+          if normalized.count(b'=') != 1:
+              raise SystemExit(f'unexpected internal padding count: {normalized.count(b"=")}')
+          padding_offset = normalized.index(b'=')
+          if padding_offset != 38986:
+              raise SystemExit(f'unexpected internal padding offset: {padding_offset}')
+
+          prefix = normalized[:padding_offset]
+          suffix = normalized[padding_offset + 1:]
+          for offset, recovered in ((366, b'/'), (3764, b'm'), (37584, b'f')):
+              prefix = prefix[:offset] + recovered + prefix[offset:]
+          recovered_base64 = prefix + suffix
+          if len(recovered_base64) != 41144 or len(recovered_base64) % 4 != 0:
+              raise SystemExit('recovered carrier has invalid canonical length')
+
+          archive = base64.b64decode(recovered_base64, validate=True)
+          archive_sha256 = hashlib.sha256(archive).hexdigest()
+          expected_archive_sha256 = '914e5e46f29fd07612e8c9089bec59a4d37bc34d9d1f4159638a2b417cc94774'
+          if archive_sha256 != expected_archive_sha256:
+              raise SystemExit(f'archive mismatch: {archive_sha256}')
+          archive_path = Path('/tmp/pc49-product.tar.gz')
+          archive_path.write_bytes(archive)
+          with tarfile.open(archive_path, mode='r:gz') as package:
+              members = [member for member in package.getmembers() if member.isfile()]
+              if len(members) != 14:
+                  raise SystemExit(f'unexpected permanent file count: {len(members)}')
+              if any(member.name.startswith('/') or '..' in Path(member.name).parts for member in members):
+                  raise SystemExit('unsafe product archive member')
+
+          Path('/tmp/pc49-recovered-carrier-receipt.txt').write_text(
+              '\n'.join((
+                  f'normalized_carrier_bytes={len(normalized)}',
+                  'recovered_insertions=366:/,3764:m,37584:f',
+                  f'removed_internal_padding_offset={padding_offset}',
+                  f'recovered_base64_bytes={len(recovered_base64)}',
+                  f'archive_bytes={len(archive)}',
+                  f'archive_sha256={archive_sha256}',
+                  f'permanent_files={len(members)}',
+                  '',
+              ))
+          )
+          PY
+
+          base64 -d .pc49-carrier-v3/run.part00 > /tmp/pc49-run.sh
+          test "$(sha256sum /tmp/pc49-run.sh | awk '{print $1}')" = "5cb101569f6630052cf154e1cf2704dbc0b4f094f677dfb8071096f2cd25e879"
+          chmod +x /tmp/pc49-run.sh
+          cat /tmp/pc49-recovered-carrier-receipt.txt
+      - name: Checkout exact live-main parent
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          clean: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Rebind, qualify, and publish exact PC-49 product
+        run: |
+          set -euo pipefail
+          parent="$(git rev-parse HEAD^{commit})"
+          parent_tree="$(git rev-parse HEAD^{tree})"
+          python3 - "$parent" <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path('/tmp/pc49-run.sh')
+          text = path.read_text()
+          old = 'PARENT=7f960c30b6c58c70e3a996d4239e363e50d848ef'
+          new = f'PARENT={sys.argv[1]}'
+          if text.count(old) != 1:
+              raise SystemExit(f'unexpected parent anchor count: {text.count(old)}')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          {
+            printf 'live_parent=%s\n' "$parent"
+            printf 'live_parent_tree=%s\n' "$parent_tree"
+            printf 'rebound_materializer_sha256=%s\n' "$(sha256sum /tmp/pc49-run.sh | awk '{print $1}')"
+          } > /tmp/pc49-live-parent-receipt.txt
+          cat /tmp/pc49-live-parent-receipt.txt
+          bash /tmp/pc49-run.sh
+      - name: Upload PC-49 recovery and materialization custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc49-recovered-materialization-custody
+          path: |
+            /tmp/pc49-recovered-carrier-receipt.txt
+            /tmp/pc49-live-parent-receipt.txt
+            /tmp/pc49-product-receipt.txt
+            /tmp/pc49-materialization-diagnostic.txt
+            /tmp/pc49-standalone.log
+            /tmp/pc49-floor.log
+            /tmp/pc49-release.log
+            /tmp/pc49-push.log
+          if-no-files-found: warn
