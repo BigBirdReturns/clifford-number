@@ -1,4 +1,4 @@
-name: TEMP materialize recursive PC-48 cache repair
+name: TEMP retire PC-48 refs
 
 on:
   pull_request:
@@ -12,46 +12,56 @@ permissions:
   contents: write
 
 jobs:
-  repair:
+  cleanup:
     if: github.head_ref == 'agent/pc48-source-export'
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 30
     steps:
-      - name: Checkout exact checksum-bound repair carrier
+      - name: Checkout current main with ref-deletion authority
         uses: actions/checkout@v4
         with:
-          ref: 5659135d85bee22cd77fcfff5c5ff1dc70a3f975
+          ref: main
           fetch-depth: 0
 
-      - name: Preserve exact repair programs
+      - name: Prove merged custody and delete exact temporary refs
         run: |
-          set -euo pipefail
-          cp .pc48-repair/cache-v3.py /tmp/cache-v3.py
-          cp .pc48-repair/cache-v3-run.sh /tmp/cache-v3-run.sh
-          sha256sum /tmp/cache-v3.py /tmp/cache-v3-run.sh
+          set -Eeuo pipefail
 
-      - name: Checkout exact first cache-repair candidate
-        uses: actions/checkout@v4
-        with:
-          ref: 517637995fcf44d3d099d15a23372da5e2fcb2b2
-          fetch-depth: 0
-          clean: true
+          MERGE_RECEIPT=5e926c349071dc8372ac2beca148f90f1d1b8900
+          PRODUCT_HEAD=705a1b06325d9362a02411c6736a4a8e7c0b1956
+          MATERIALIZER_HEAD=d7f668a4522be902c50ad8bdce8100fc58341116
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
+          git fetch --prune origin \
+            +refs/heads/main:refs/remotes/origin/main \
+            +refs/heads/agent/pc48-materializer:refs/remotes/origin/agent/pc48-materializer \
+            +refs/heads/agent/pc48-postmerge-cache-repair:refs/remotes/origin/agent/pc48-postmerge-cache-repair \
+            +refs/heads/agent/pc48-source-export:refs/remotes/origin/agent/pc48-source-export
 
-      - name: Reconstruct, rebind, qualify, and publish exact candidate
-        run: bash /tmp/cache-v3-run.sh
+          current_main="$(git rev-parse refs/remotes/origin/main)"
+          test "$(git rev-parse refs/remotes/origin/agent/pc48-postmerge-cache-repair)" = "$PRODUCT_HEAD"
+          test "$(git rev-parse refs/remotes/origin/agent/pc48-materializer)" = "$MATERIALIZER_HEAD"
+          git merge-base --is-ancestor "$MERGE_RECEIPT" "$current_main"
+          git merge-base --is-ancestor "$PRODUCT_HEAD" "$current_main"
+          git merge-base --is-ancestor "$MATERIALIZER_HEAD" "$current_main"
 
-      - name: Upload exact recursive cache-repair custody
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pc48-recursive-cache-safety-repair-v4
-          path: |
-            /tmp/pc48-cache-v3-receipt.txt
-            /tmp/pc48-cache-v3-diagnostic.txt
-            /tmp/pc48-cache-v3-push.log
-            /tmp/pc48-cache-v3-test.log
-          if-no-files-found: error
+          git push origin --delete \
+            agent/pc48-materializer \
+            agent/pc48-postmerge-cache-repair
+
+          test -z "$(git ls-remote --heads origin \
+            refs/heads/agent/pc48-materializer \
+            refs/heads/agent/pc48-postmerge-cache-repair)"
+
+          git push origin --delete agent/pc48-source-export
+          test -z "$(git ls-remote --heads origin refs/heads/agent/pc48-source-export)"
+
+          {
+            echo '## PC-48 temporary-ref retirement'
+            echo
+            echo "- current main: \`$current_main\`"
+            echo "- merge receipt: \`$MERGE_RECEIPT\`"
+            echo "- retired: \`agent/pc48-materializer\`"
+            echo "- retired: \`agent/pc48-postmerge-cache-repair\`"
+            echo "- retired: \`agent/pc48-source-export\`"
+            echo '- outside-human dependency: false'
+          } >> "$GITHUB_STEP_SUMMARY"
