@@ -57,8 +57,9 @@ jobs:
 
           test "$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/8946106351" --jq .digest)" = 'sha256:1d3167516a2db6e39fc08d9cac4726b38d2abb04a87c8fb46aa749105caa5718'
           curl --version
-          curl --help all | grep -q -- '--ipv4'
-          curl --help all | grep -q -- '--http1.1'
+          CURL_HELP="$(curl --help all)"
+          grep -Fq -- '--ipv4' <<<"$CURL_HELP"
+          grep -Fq -- '--http1.1' <<<"$CURL_HELP"
 
           test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '32399e5255d4af57854bc0a3641ffb07d4297d408951966faba7dca863108fb2'
           base64 -d "$BUNDLE" > "$GZIP"
