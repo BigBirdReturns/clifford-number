@@ -24,6 +24,7 @@ REPLACEMENT = '''def scan_archive(source: Path) -> tuple[list[dict[str, Any]], l
             physical_width_counts: Counter[int] = Counter()
             physical_separator_counts: Counter[str] = Counter()
             external_separator_counts: Counter[str] = Counter()
+            reassembly_mode_counts: Counter[str] = Counter()
             physical_line_count = 0
             row_count = 0
             match_count = 0
@@ -32,20 +33,25 @@ REPLACEMENT = '''def scan_archive(source: Path) -> tuple[list[dict[str, Any]], l
             fragment_line_count = 0
             member_digest = hashlib.sha256()
             reassembly_groups: list[dict[str, Any]] = []
-            pending = bytearray()
-            pending_payload_widths: list[int] = []
+            pending_payloads: list[bytes] = []
+            pending_separator_states: list[str] = []
             pending_start_line: int | None = None
 
-            def split_physical_line(line: bytes) -> tuple[bytes, str, int]:
+            def split_physical_line(line: bytes) -> tuple[bytes, str]:
                 if line.endswith(b"\\r\\n"):
-                    return line[:-2], "crlf", 2
+                    return line[:-2], "crlf"
                 if line.endswith(b"\\n"):
-                    return line[:-1], "lf", 1
+                    return line[:-1], "lf"
                 if line.endswith(b"\\r"):
-                    return line[:-1], "cr", 1
-                return line, "none", 0
+                    return line[:-1], "cr"
+                return line, "none"
 
-            def accept_record(record: bytes, fragment_count: int, external_separator: str) -> None:
+            def accept_record(
+                record: bytes,
+                fragment_count: int,
+                external_separator: str,
+                reassembly_mode: str,
+            ) -> None:
                 nonlocal row_count, match_count
                 if len(record) != RECORD_LENGTH:
                     raise RuntimeError(
@@ -53,13 +59,36 @@ REPLACEMENT = '''def scan_archive(source: Path) -> tuple[list[dict[str, Any]], l
                     )
                 row_count += 1
                 external_separator_counts[external_separator] += 1
+                reassembly_mode_counts[reassembly_mode] += 1
                 candidate = parse_candidate(record, info.filename, row_count)
                 if candidate is not None:
                     candidate["source_record_bytes"] = len(record)
                     candidate["schema_defined_prefix_bytes"] = RECORD_LENGTH
                     candidate["physical_fragment_count"] = fragment_count
+                    candidate["reassembly_mode"] = reassembly_mode
                     candidates.append(candidate)
                     match_count += 1
+
+            def resolve_pending() -> tuple[bytes, str] | None:
+                if not pending_payloads:
+                    return None
+                choices = [
+                    (b"".join(pending_payloads), "concatenate_fragments"),
+                    (b"\\n".join(pending_payloads), "join_fragments_with_lf"),
+                    (b"\\r\\n".join(pending_payloads), "join_fragments_with_crlf"),
+                    (b"\\r".join(pending_payloads), "join_fragments_with_cr"),
+                ]
+                for record, mode in choices:
+                    if len(record) == RECORD_LENGTH:
+                        return record, mode
+                if len(choices[0][0]) > RECORD_LENGTH:
+                    widths = [len(payload) for payload in pending_payloads]
+                    raise RuntimeError(
+                        f"fragment payloads exceeded logical record width in {info.filename} "
+                        f"at physical lines {pending_start_line}-{physical_line_count}: "
+                        f"payload_widths={widths}"
+                    )
+                return None
 
             with archive.open(info, "r") as handle:
                 while True:
@@ -72,81 +101,50 @@ REPLACEMENT = '''def scan_archive(source: Path) -> tuple[list[dict[str, Any]], l
                         )
                     member_digest.update(line)
                     physical_line_count += 1
-                    payload, separator_state, _separator_bytes = split_physical_line(line)
+                    payload, separator_state = split_physical_line(line)
                     physical_width_counts[len(payload)] += 1
                     physical_separator_counts[separator_state] += 1
 
-                    if not pending and len(payload) == RECORD_LENGTH:
+                    if not pending_payloads and len(payload) == RECORD_LENGTH:
                         direct_record_count += 1
-                        accept_record(payload, 1, separator_state)
+                        accept_record(payload, 1, separator_state, "direct_fixed_width_line")
                         continue
 
-                    if not pending:
+                    if not pending_payloads:
                         pending_start_line = physical_line_count
-                    pending.extend(line)
-                    pending_payload_widths.append(len(payload))
+                    pending_payloads.append(payload)
+                    pending_separator_states.append(separator_state)
                     fragment_line_count += 1
 
-                    complete = False
-                    external_separator = "none"
-                    record = b""
-                    if len(pending) == RECORD_LENGTH + 2 and pending.endswith(b"\\r\\n"):
-                        record = bytes(pending[:-2])
-                        external_separator = "crlf"
-                        complete = True
-                    elif len(pending) == RECORD_LENGTH + 1 and pending.endswith(b"\\n"):
-                        record = bytes(pending[:-1])
-                        external_separator = "lf"
-                        complete = True
-                    elif len(pending) == RECORD_LENGTH and not pending.endswith((b"\\r", b"\\n")):
-                        record = bytes(pending)
-                        external_separator = "none"
-                        complete = True
-                    elif len(pending) > RECORD_LENGTH + 2:
-                        raise RuntimeError(
-                            f"fragment group exceeded logical record width in {info.filename} "
-                            f"at physical lines {pending_start_line}-{physical_line_count}: {len(pending)} bytes"
-                        )
-
-                    if complete:
+                    resolved = resolve_pending()
+                    if resolved is not None:
+                        record, mode = resolved
                         reassembled_record_count += 1
-                        accept_record(record, len(pending_payload_widths), external_separator)
+                        external_separator = pending_separator_states[-1]
+                        accept_record(record, len(pending_payloads), external_separator, mode)
                         reassembly_groups.append(
                             {
                                 "logical_row_number": row_count,
                                 "physical_line_start": pending_start_line,
                                 "physical_line_end": physical_line_count,
-                                "physical_fragment_count": len(pending_payload_widths),
-                                "fragment_payload_widths": pending_payload_widths,
-                                "group_bytes_including_external_separator": len(pending),
+                                "physical_fragment_count": len(pending_payloads),
+                                "fragment_payload_widths": [len(payload) for payload in pending_payloads],
+                                "physical_separator_states": pending_separator_states,
+                                "payload_bytes_without_separators": sum(len(payload) for payload in pending_payloads),
                                 "logical_record_bytes": len(record),
+                                "reassembly_mode": mode,
                                 "external_separator": external_separator,
                             }
                         )
-                        pending = bytearray()
-                        pending_payload_widths = []
+                        pending_payloads = []
+                        pending_separator_states = []
                         pending_start_line = None
 
-            if pending:
-                if len(pending) == RECORD_LENGTH:
-                    reassembled_record_count += 1
-                    accept_record(bytes(pending), len(pending_payload_widths), "none")
-                    reassembly_groups.append(
-                        {
-                            "logical_row_number": row_count,
-                            "physical_line_start": pending_start_line,
-                            "physical_line_end": physical_line_count,
-                            "physical_fragment_count": len(pending_payload_widths),
-                            "fragment_payload_widths": pending_payload_widths,
-                            "group_bytes_including_external_separator": len(pending),
-                            "logical_record_bytes": len(pending),
-                            "external_separator": "none",
-                        }
-                    )
-                else:
-                    raise RuntimeError(
-                        f"unterminated fragment group in {info.filename}: {len(pending)} bytes"
-                    )
+            if pending_payloads:
+                widths = [len(payload) for payload in pending_payloads]
+                raise RuntimeError(
+                    f"unterminated fragment group in {info.filename}: payload_widths={widths}"
+                )
 
             member_receipts.append(
                 {
@@ -162,6 +160,7 @@ REPLACEMENT = '''def scan_archive(source: Path) -> tuple[list[dict[str, Any]], l
                     "physical_record_width_counts": {str(key): value for key, value in sorted(physical_width_counts.items())},
                     "physical_separator_counts": dict(sorted(physical_separator_counts.items())),
                     "external_separator_counts": dict(sorted(external_separator_counts.items())),
+                    "reassembly_mode_counts": dict(sorted(reassembly_mode_counts.items())),
                     "row_count": row_count,
                     "direct_record_count": direct_record_count,
                     "reassembled_record_count": reassembled_record_count,
