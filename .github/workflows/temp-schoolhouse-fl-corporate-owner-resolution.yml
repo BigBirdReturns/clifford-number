@@ -1,0 +1,176 @@
+name: TEMP resolve School.House Florida owner charter records
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-fl-corporate-owner-resolution.yml'
+      - '.schoolhouse-fl-corporate-owner-resolution/EXECUTE'
+      - 'tools/acquisition/schoolhouse-fl-corporate-owner-resolution/acquire.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile bounded corporate-resolution runner
+        run: python -m py_compile tools/acquisition/schoolhouse-fl-corporate-owner-resolution/acquire.py
+
+      - name: Execute seven-partition corporate owner resolution
+        id: acquisition
+        continue-on-error: true
+        env:
+          FL_SFTP_USERNAME: Public
+          FL_SFTP_PASSWORD: PubAccess1845!
+        run: |
+          set +e
+          OUT=/tmp/schoolhouse-fl-corporate-owner-resolution
+          rm -rf "$OUT"
+          python tools/acquisition/schoolhouse-fl-corporate-owner-resolution/acquire.py \
+            --output "$OUT" \
+            --retries 3
+          status=$?
+          mkdir -p "$OUT"
+          printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
+          exit "$status"
+
+      - name: Upload exact acquisition artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-fl-corporate-owner-resolution
+          path: /tmp/schoolhouse-fl-corporate-owner-resolution
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal privacy-minimized owner resolution
+        if: always()
+        run: |
+          test -f /tmp/schoolhouse-fl-corporate-owner-resolution/RUNNER_EXIT_CODE
+          test "$(cat /tmp/schoolhouse-fl-corporate-owner-resolution/RUNNER_EXIT_CODE)" = '0'
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/schoolhouse-fl-corporate-owner-resolution')
+          summary = json.loads((root / 'summary.json').read_text())
+          source = json.loads((root / 'source-receipt.json').read_text())
+          index = json.loads((root / 'remote-zip-index.json').read_text())
+          requests = [json.loads(line) for line in (root / 'range-request-receipts.jsonl').read_text().splitlines() if line]
+          members = [json.loads(line) for line in (root / 'member-receipts.jsonl').read_text().splitlines() if line]
+          targets = [json.loads(line) for line in (root / 'owner-charter-targets.jsonl').read_text().splitlines() if line]
+          records = [json.loads(line) for line in (root / 'corporate-records.jsonl').read_text().splitlines() if line]
+          matrix = [json.loads(line) for line in (root / 'resolution-matrix.jsonl').read_text().splitlines() if line]
+
+          assert summary['source_bytes'] == 1_819_049_954
+          assert summary['remote_zip_members'] == 10
+          assert summary['target_partitions'] == 7
+          assert set(summary['target_partition_digits']) == {'0', '1', '2', '3', '4', '7', '9'}
+          assert summary['target_charters'] == 15
+          assert summary['resolved_target_charters'] + summary['unresolved_target_charters'] == 15
+          assert summary['corporate_records_retained'] == len(records) == summary['resolved_target_charters']
+          assert summary['selected_partition_rows_scanned'] == sum(row['row_count'] for row in members)
+          assert summary['selected_compressed_bytes'] == sum(row['compressed_size'] for row in members)
+          assert summary['selected_uncompressed_bytes'] == sum(row['uncompressed_size'] for row in members)
+          assert summary['range_requests'] == len(requests)
+          assert summary['all_target_partitions_complete'] is True
+          assert summary['all_target_charters_terminal'] is True
+          assert summary['full_source_downloaded'] is False
+          assert summary['raw_source_retained'] is False
+          assert summary['street_address_rows_retained'] == 0
+          assert summary['mailing_address_rows_retained'] == 0
+          assert summary['postal_code_rows_retained'] == 0
+          assert summary['contact_detail_rows_retained'] == 0
+          assert summary['private_support_rows'] == 0
+          assert summary['schoolhouse_identity_admitted'] is False
+          assert summary['outside_human_dependency'] is False
+          assert summary['graph_effect'] == 'none'
+
+          assert source['source_bytes'] == 1_819_049_954
+          assert source['remote_zip_members'] == 10
+          assert source['selected_partition_count'] == 7
+          assert source['target_charters'] == 15
+          assert source['resolved_target_charters'] + source['unresolved_target_charters'] == 15
+          assert source['full_source_downloaded'] is False
+          assert source['raw_source_retained'] is False
+          assert source['raw_compressed_members_retained'] is False
+          assert source['raw_uncompressed_members_retained'] is False
+          assert source['public_credential_password_retained'] is False
+          assert source['street_address_rows_retained'] == 0
+          assert source['mailing_address_rows_retained'] == 0
+          assert source['postal_code_rows_retained'] == 0
+          assert source['contact_detail_rows_retained'] == 0
+          assert source['private_support_rows'] == 0
+          assert source['schoolhouse_identity_admitted'] is False
+          assert source['outside_human_dependency'] is False
+          assert source['graph_effect'] == 'none'
+
+          assert index['source_bytes'] == 1_819_049_954
+          assert index['declared_partitions'] == 10
+          assert len(index['members']) == 10
+          assert {row['partition_digit'] for row in index['members']} == set('0123456789')
+          assert index['selected_partition_count'] == 7
+          assert set(index['selected_partitions']) == {'0', '1', '2', '3', '4', '7', '9'}
+          assert index['target_charter_count'] == 15
+          assert index['full_source_downloaded'] is False
+          assert index['raw_source_retained'] is False
+          assert index['outside_human_dependency'] is False
+          assert index['graph_effect'] == 'none'
+
+          assert len(targets) == len(matrix) == 15
+          assert len({row['target_charter_number'] for row in targets}) == 15
+          assert len({row['target_charter_number'] for row in matrix}) == 15
+          assert all(row['matched_corporate_record_count'] in {0, 1} for row in matrix)
+          assert all(row['resolution_state'] in {'exact_corporate_record_resolved', 'no_match_in_complete_final_digit_partition'} for row in matrix)
+          assert all(row['schoolhouse_identity_admitted'] is False for row in matrix)
+          assert all(row['graph_effect'] == 'none' for row in matrix)
+
+          assert len(members) == 7
+          assert all(row['state'] == 'complete_partition_scanned' for row in members)
+          assert all(row['target_charter_count'] > 0 for row in members)
+          assert all(row['row_count'] == row['direct_record_count'] + row['reassembled_record_count'] for row in members)
+          assert all(row['physical_line_count'] == row['direct_record_count'] + row['fragment_line_count'] for row in members)
+          assert all(row['raw_compressed_member_retained'] is False for row in members)
+          assert all(row['raw_uncompressed_member_retained'] is False for row in members)
+          assert all(row['street_address_rows_retained'] == 0 for row in members)
+          assert all(row['postal_code_rows_retained'] == 0 for row in members)
+          assert all(row['contact_detail_rows_retained'] == 0 for row in members)
+          assert all(row['private_support_rows'] == 0 for row in members)
+          assert all(row['schoolhouse_identity_admitted'] is False for row in members)
+          assert all(row['graph_effect'] == 'none' for row in members)
+
+          assert requests[0]['method'] == 'HEAD' and requests[0]['status'] == 200
+          assert all(row['state'] == 'captured' for row in requests)
+          assert all(row['status'] in {200, 206} for row in requests)
+          assert all(row['method'] == 'HEAD' or row.get('content_range') for row in requests)
+
+          assert len({row['document_number'] for row in records}) == len(records)
+          assert all(row['resolution_state'] == 'exact_owner_charter_resolved' for row in records)
+          assert all(row['schoolhouse_identity_state'] == 'resolved_owner_entity_not_admitted_as_schoolhouse' for row in records)
+          assert all(row['schoolhouse_identity_admitted'] is False for row in records)
+          assert all(row['street_address_retained'] is False for row in records)
+          assert all(row['mailing_address_retained'] is False for row in records)
+          assert all(row['postal_code_retained'] is False for row in records)
+          assert all(row['contact_details_retained'] is False for row in records)
+          assert all(row['private_support_rows'] == 0 for row in records)
+          assert all(row['graph_effect'] == 'none' for row in records)
+          assert all(
+              officer['street_address_retained'] is False
+              and officer['postal_code_retained'] is False
+              and officer['contact_details_retained'] is False
+              for row in records for officer in row['officers']
+          )
+
+          assert not any(path.suffix.lower() in {'.zip', '.txt', '.compressed'} for path in root.rglob('*') if path.is_file())
+          print(json.dumps(summary, sort_keys=True))
+          PY
