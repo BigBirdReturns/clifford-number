@@ -1,0 +1,154 @@
+name: TEMP qualify exact PC-49 product head
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - synchronize
+
+permissions:
+  checks: write
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pc49-exact-head-qualification
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  qualify:
+    if: github.head_ref == 'agent/pc49-source-carrier'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Resolve and verify exact product head
+        uses: actions/checkout@v4
+        with:
+          ref: agent/pc49-materializer
+          fetch-depth: 0
+      - name: Bind product identity
+        run: |
+          set -euo pipefail
+          product_sha="$(git rev-parse HEAD^{commit})"
+          product_parent="$(git rev-parse HEAD^1^{commit})"
+          product_tree="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-list --count "${product_parent}..${product_sha}")" -eq 1
+          cat > /tmp/pc49-expected-paths.txt <<'EOF'
+          .github/workflows/preference-custody-v47.yml
+          .github/workflows/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.yml
+          data/research/preference-custody/control-manifest-v47.json
+          data/research/preference-custody/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.fixture.json
+          docs/preference-custody-laboratory-floor-v47.md
+          docs/preference-custody-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.md
+          test/preference-custody-manifest-v47.test.js
+          test/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.test.js
+          tools/compile-preference-custody-manifest-v47.mjs
+          tools/compile-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+          tools/lib/preference-custody-manifest-v47.mjs
+          tools/lib/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+          tools/validate-preference-custody-manifest-v47.mjs
+          tools/validate-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+          EOF
+          sed -i 's/^          //' /tmp/pc49-expected-paths.txt
+          sort -o /tmp/pc49-expected-paths.txt /tmp/pc49-expected-paths.txt
+          git diff --name-only --diff-filter=A "$product_parent" "$product_sha" | sort > /tmp/pc49-product-paths.txt
+          test "$(wc -l < /tmp/pc49-product-paths.txt)" -eq 14
+          cmp /tmp/pc49-expected-paths.txt /tmp/pc49-product-paths.txt
+          test -z "$(git diff --name-only --diff-filter=CDMRTUXB "$product_parent" "$product_sha")"
+          {
+            printf 'product_sha=%s\n' "$product_sha"
+            printf 'product_parent=%s\n' "$product_parent"
+            printf 'product_tree=%s\n' "$product_tree"
+          } > /tmp/pc49-exact-head-identity.txt
+          cat /tmp/pc49-exact-head-identity.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install exact dependencies
+        run: npm ci
+      - name: Qualify standalone PC-49 control
+        run: |
+          set -euo pipefail
+          source /tmp/pc49-exact-head-identity.txt
+          name='PC-49 standalone exact-head'
+          if {
+            node tools/compile-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+            node tools/validate-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+            node --test test/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.test.js
+            git diff --exit-code -- \
+              data/research/preference-custody/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.fixture.json \
+              docs/preference-custody-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.md
+          }; then
+            conclusion=success
+            summary='Exact standalone PC-49 compiler, validator, and 673-mutation test passed.'
+          else
+            conclusion=failure
+            summary='Standalone PC-49 exact-head qualification failed.'
+          fi
+          gh api --method POST \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/${GITHUB_REPOSITORY}/check-runs" \
+            -f name="$name" -f head_sha="$product_sha" \
+            -f status=completed -f conclusion="$conclusion" \
+            -f output[title]="$name" -f output[summary]="$summary"
+          test "$conclusion" = success
+      - name: Qualify compositional floor v47
+        run: |
+          set -euo pipefail
+          source /tmp/pc49-exact-head-identity.txt
+          name='PC-49 floor-v47 exact-head'
+          if {
+            node tools/compile-preference-custody-manifest-v47.mjs
+            node tools/validate-preference-custody-manifest-v47.mjs
+            node --test test/preference-custody-manifest-v47.test.js
+            git diff --exit-code -- \
+              data/research/preference-custody/control-manifest-v47.json \
+              docs/preference-custody-laboratory-floor-v47.md
+          }; then
+            conclusion=success
+            summary='Exact floor-v47 compiler, validator, and 166-mutation compositional test passed.'
+          else
+            conclusion=failure
+            summary='Floor-v47 exact-head qualification failed.'
+          fi
+          gh api --method POST \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/${GITHUB_REPOSITORY}/check-runs" \
+            -f name="$name" -f head_sha="$product_sha" \
+            -f status=completed -f conclusion="$conclusion" \
+            -f output[title]="$name" -f output[summary]="$summary"
+          test "$conclusion" = success
+      - name: Run repository-wide exact-head gate
+        run: |
+          set -euo pipefail
+          source /tmp/pc49-exact-head-identity.txt
+          name='PC-49 repository exact-head'
+          if npm test; then
+            conclusion=success
+            summary='Repository-wide npm test gate passed on the exact PC-49 product head.'
+          else
+            conclusion=failure
+            summary='Repository-wide npm test gate failed on the exact PC-49 product head.'
+          fi
+          gh api --method POST \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/${GITHUB_REPOSITORY}/check-runs" \
+            -f name="$name" -f head_sha="$product_sha" \
+            -f status=completed -f conclusion="$conclusion" \
+            -f output[title]="$name" -f output[summary]="$summary"
+          test "$conclusion" = success
+      - name: Upload exact-head qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc49-exact-head-qualification
+          path: |
+            /tmp/pc49-exact-head-identity.txt
+            /tmp/pc49-expected-paths.txt
+            /tmp/pc49-product-paths.txt
+          if-no-files-found: warn
