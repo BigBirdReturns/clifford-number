@@ -1,0 +1,191 @@
+name: TEMP materialize qualified PC-49 v4 product
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc49-v4-materialize-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: github.head_ref == 'agent/pc49-source-carrier'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Checkout exact checksum-bound carrier head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Reconstruct exact fourteen-path product
+        run: |
+          set -Eeuo pipefail
+          test "$(sha256sum .pc49-carrier-v4/manifest.json | awk '{print $1}')" = "7460a59b0cfa20eab2c8ef846e65f189f7a652db83558618c5c6c58e3cbdb0b1"
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, hashlib, io, json, shutil, tarfile
+
+          carrier = Path('.pc49-carrier-v4')
+          manifest = json.loads((carrier / 'manifest.json').read_text())
+          paths = manifest.get('permanent_paths', [])
+          expected_parts = [f'product.part{i:02d}' for i in range(8)]
+          if manifest.get('schema_version') != 'pc49-v4-carrier-manifest@1':
+              raise SystemExit('unexpected carrier schema')
+          if len(paths) != 14 or len(set(paths)) != 14 or paths != sorted(paths):
+              raise SystemExit('permanent path denominator mismatch')
+          if [part.get('path') for part in manifest.get('parts', [])] != expected_parts:
+              raise SystemExit('carrier part denominator mismatch')
+          chunks = []
+          for part in manifest['parts']:
+              raw = (carrier / part['path']).read_bytes()
+              if len(raw) != part['bytes'] or hashlib.sha256(raw).hexdigest() != part['sha256']:
+                  raise SystemExit(f"carrier part mismatch: {part['path']}")
+              chunks.append(b''.join(raw.split()))
+          encoded = b''.join(chunks)
+          if len(encoded) != manifest['base64_bytes'] or hashlib.sha256(encoded).hexdigest() != manifest['base64_sha256']:
+              raise SystemExit('aggregate base64 mismatch')
+          archive = base64.b64decode(encoded, validate=True)
+          if len(archive) != manifest['archive_bytes'] or hashlib.sha256(archive).hexdigest() != manifest['archive_sha256']:
+              raise SystemExit('archive mismatch')
+          root = Path('/tmp/pc49-v4-product')
+          shutil.rmtree(root, ignore_errors=True)
+          root.mkdir(parents=True)
+          with tarfile.open(fileobj=io.BytesIO(archive), mode='r:gz') as package:
+              members = [member for member in package.getmembers() if member.isfile()]
+              if [member.name for member in members] != paths:
+                  raise SystemExit('archive path mismatch')
+              for member in members:
+                  if member.name.startswith('/') or '..' in Path(member.name).parts:
+                      raise SystemExit(f'unsafe path: {member.name}')
+                  data = package.extractfile(member).read()
+                  if hashlib.sha256(data).hexdigest() != manifest['permanent_file_sha256'][member.name]:
+                      raise SystemExit(f'permanent file mismatch: {member.name}')
+                  target = root / member.name
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(data)
+          Path('/tmp/pc49-v4-reconstruction.json').write_text(json.dumps({
+              'carrier_head': '${{ github.event.pull_request.head.sha }}',
+              'archive_bytes': len(archive),
+              'archive_sha256': hashlib.sha256(archive).hexdigest(),
+              'permanent_paths': paths,
+              'permanent_files': len(paths),
+          }, indent=2) + '\n')
+          PY
+          cat /tmp/pc49-v4-reconstruction.json
+
+      - name: Checkout exact live-main parent
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          clean: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Qualify and publish one clean product commit
+        run: |
+          set -Eeuo pipefail
+          parent="$(git rev-parse HEAD^{commit})"
+          parent_tree="$(git rev-parse HEAD^{tree})"
+          install_product() {
+            python3 - <<'PY'
+          from pathlib import Path
+          import json, shutil
+          root = Path('/tmp/pc49-v4-product')
+          paths = json.loads(Path('/tmp/pc49-v4-reconstruction.json').read_text())['permanent_paths']
+          for name in paths:
+              source = root / name
+              target = Path(name)
+              target.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copyfile(source, target)
+          PY
+          }
+          install_product
+          for file in \
+            tools/lib/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs \
+            tools/compile-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs \
+            tools/validate-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs \
+            test/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.test.js \
+            tools/lib/preference-custody-manifest-v47.mjs \
+            tools/compile-preference-custody-manifest-v47.mjs \
+            tools/validate-preference-custody-manifest-v47.mjs \
+            test/preference-custody-manifest-v47.test.js; do
+            node --check "$file"
+          done
+          {
+            node tools/compile-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+            node tools/validate-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+            node test/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.test.js
+            node tools/compile-preference-custody-manifest-v47.mjs
+            node tools/validate-preference-custody-manifest-v47.mjs
+            node test/preference-custody-manifest-v47.test.js
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          } 2>&1 | tee /tmp/pc49-v4-focused.log
+          npm run release:check 2>&1 | tee /tmp/pc49-v4-release.log
+
+          git reset --hard "$parent"
+          git clean -fdx
+          install_product
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, subprocess
+          expected = json.loads(Path('/tmp/pc49-v4-reconstruction.json').read_text())['permanent_paths']
+          actual = [line[3:] for line in subprocess.check_output(
+              ['git', 'status', '--porcelain=v1', '--untracked-files=all'], text=True
+          ).splitlines()]
+          if sorted(actual) != expected:
+              raise SystemExit(f'clean product path mismatch: {sorted(actual)}')
+          PY
+          git config user.name "PC-49 materializer"
+          git config user.email "pc49-materializer@users.noreply.github.com"
+          mapfile -t paths < <(python3 - <<'PY'
+          from pathlib import Path
+          import json
+          print('\n'.join(json.loads(Path('/tmp/pc49-v4-reconstruction.json').read_text())['permanent_paths']))
+          PY
+          )
+          git add -- "${paths[@]}"
+          test "$(git diff --cached --name-only | wc -l)" -eq 14
+          diff -u <(printf '%s\n' "${paths[@]}" | sort) <(git diff --cached --name-only | sort)
+          git diff --cached --check
+          git commit -m "Add PC-49 runtime artifact and deterministic replay custody" -m "Recover six intact frozen custody surfaces and install a newly qualified eight-file implementation and adversarial test layer. Compose floor v47 over the exact v46 base with 49 new promotion requirements, preserve every independent successor frontier, require no outside-human action, and create no graph, publication, adoption, authority, effect, prevalence, coordination, common-purpose, or intent conclusion."
+          product_commit="$(git rev-parse HEAD^{commit})"
+          product_tree="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^1)" = "$parent"
+          test "$(git rev-list --count "$parent"..HEAD)" -eq 1
+          test "$(git diff --name-only "$parent" HEAD | wc -l)" -eq 14
+          diff -u <(printf '%s\n' "${paths[@]}" | sort) <(git diff --name-only "$parent" HEAD | sort)
+          git fetch origin agent/pc49-materializer:refs/remotes/origin/agent/pc49-materializer || true
+          git push --force-with-lease origin HEAD:refs/heads/agent/pc49-materializer 2>&1 | tee /tmp/pc49-v4-push.log
+          {
+            printf 'parent=%s\n' "$parent"
+            printf 'parent_tree=%s\n' "$parent_tree"
+            printf 'product_commit=%s\n' "$product_commit"
+            printf 'product_tree=%s\n' "$product_tree"
+            printf 'permanent_paths=14\ntransport_paths=0\n'
+            printf 'outside_human_dependency=false\ngraph_effect=none\n'
+          } | tee /tmp/pc49-v4-product-receipt.txt
+
+      - name: Upload exact PC-49 v4 custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc49-v4-materialization-custody
+          path: |
+            /tmp/pc49-v4-reconstruction.json
+            /tmp/pc49-v4-focused.log
+            /tmp/pc49-v4-release.log
+            /tmp/pc49-v4-push.log
+            /tmp/pc49-v4-product-receipt.txt
+          if-no-files-found: warn
+          retention-days: 90
