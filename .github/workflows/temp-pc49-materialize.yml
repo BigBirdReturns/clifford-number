@@ -1,4 +1,4 @@
-name: TEMP export exact live-main source for PC-49 recovery
+name: TEMP export exact main history for PC-49 qualification
 
 on:
   pull_request:
@@ -14,33 +14,35 @@ jobs:
   export:
     if: github.head_ref == 'agent/pc49-source-carrier'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
-      - name: Checkout exact live main
+      - name: Checkout complete live-main history
         uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
+          fetch-tags: true
           clean: true
-      - name: Export exact tracked source tree
+      - name: Export verified main-history bundle
         run: |
           set -euo pipefail
-          test -z "$(git status --porcelain)"
           commit="$(git rev-parse HEAD)"
           tree="$(git rev-parse 'HEAD^{tree}')"
-          tracked="$(git ls-files | wc -l | tr -d ' ')"
-          printf 'main_commit=%s\nmain_tree=%s\ntracked_paths=%s\n' "$commit" "$tree" "$tracked" | tee /tmp/pc49-current-main-receipt.txt
-          git ls-files -z | tar --null -T - -czf /tmp/clifford-current-main.tar.gz
-          sha256sum /tmp/clifford-current-main.tar.gz | tee /tmp/clifford-current-main.tar.gz.sha256
-          wc -c /tmp/clifford-current-main.tar.gz | tee /tmp/clifford-current-main.tar.gz.bytes
-      - name: Upload exact live-main source
+          git branch -f pc49-history-export "$commit"
+          git bundle create /tmp/clifford-main-history.bundle refs/heads/pc49-history-export
+          git bundle verify /tmp/clifford-main-history.bundle 2>&1 | tee /tmp/clifford-main-history.verify.txt
+          printf 'main_commit=%s\nmain_tree=%s\ncommit_count=%s\n' "$commit" "$tree" "$(git rev-list --count "$commit")" | tee /tmp/pc49-main-history-receipt.txt
+          sha256sum /tmp/clifford-main-history.bundle | tee /tmp/clifford-main-history.bundle.sha256
+          wc -c /tmp/clifford-main-history.bundle | tee /tmp/clifford-main-history.bundle.bytes
+      - name: Upload exact main history
         uses: actions/upload-artifact@v4
         with:
-          name: pc49-current-main-source
+          name: pc49-main-history-bundle
           path: |
-            /tmp/clifford-current-main.tar.gz
-            /tmp/clifford-current-main.tar.gz.sha256
-            /tmp/clifford-current-main.tar.gz.bytes
-            /tmp/pc49-current-main-receipt.txt
+            /tmp/clifford-main-history.bundle
+            /tmp/clifford-main-history.bundle.sha256
+            /tmp/clifford-main-history.bundle.bytes
+            /tmp/clifford-main-history.verify.txt
+            /tmp/pc49-main-history-receipt.txt
           if-no-files-found: error
           include-hidden-files: true
