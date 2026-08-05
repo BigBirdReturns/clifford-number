@@ -1,0 +1,55 @@
+name: TEMP export exact current main for RD-02 Wave-03 terminal classification
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-ssc-rd02-wave03-terminal-source-export.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    env:
+      MAIN_LEASE: 778aa08a7d701da8248942466347a08cf3e3ffe6
+      OUT: /tmp/ssc-rd02-wave03-terminal-source-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Export exact canonical source
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$MAIN_LEASE"
+          git cat-file -e "$MAIN_LEASE^{commit}"
+
+          git archive --format=tar.gz --prefix=clifford-number/ \
+            --output="$OUT/clifford-number-main.tar.gz" "$MAIN_LEASE"
+          git ls-tree -r --name-only "$MAIN_LEASE" > "$OUT/tracked-paths.txt"
+          sha256sum "$OUT/clifford-number-main.tar.gz" > "$OUT/clifford-number-main.tar.gz.sha256"
+          sha256sum "$OUT/tracked-paths.txt" > "$OUT/tracked-paths.txt.sha256"
+
+          {
+            echo 'status=complete'
+            echo "main_lease=$MAIN_LEASE"
+            echo "tree=$(git rev-parse "$MAIN_LEASE^{tree}")"
+            echo "tracked_paths=$(wc -l < "$OUT/tracked-paths.txt")"
+            echo "archive_bytes=$(stat -c '%s' "$OUT/clifford-number-main.tar.gz")"
+            echo "archive_sha256=$(sha256sum "$OUT/clifford-number-main.tar.gz" | awk '{print $1}')"
+          } > "$OUT/receipt.txt"
+
+          cat "$OUT/receipt.txt"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-wave03-terminal-source-v1
+          path: /tmp/ssc-rd02-wave03-terminal-source-v1
+          retention-days: 90
+          if-no-files-found: error
