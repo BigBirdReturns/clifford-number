@@ -11,6 +11,8 @@ import {
   PROTOCOL_PATH,
   MANIFEST_PATH,
   SCHEMA_PATH,
+  TEST_PATH,
+  VALIDATOR_PATH,
   PRODUCT_PATHS,
   CURRENT_MAIN_AT_DESIGN,
   CONSTITUTION_MERGE,
@@ -26,6 +28,26 @@ export const FIRST_PASS_PATH = 'data/intake/status-sovereignty-f02-snap-gate-fir
 export const REMEDY_PATH = 'data/intake/status-sovereignty-rd04-snap-state-remedy.json';
 export const PARENT_RECEIPT_PATH = 'data/research/status-sovereignty-rd-wave02-rd04-version-history/class-receipt.json';
 export const PARENT_CLOSURE_PATH = 'data/project/ssc-residual-wave02/closures/RD-04-C01.json';
+export const SOURCE_CENSUS_TRIGGER_PATH = '.ssc-rd04-wave03-source-census-trigger/EXECUTE';
+export const SOURCE_CENSUS_TRIGGER_LINES = Object.freeze([
+  'canonical_intake_merge=b9d09c28bcaa0b00c699ff40e893df7b9675ff0f',
+  'class_id=RD-04-C02',
+  'state_rows=50',
+  'required_cells=450',
+  'fixed_routes=204',
+  'maximum_attempts_per_route=1',
+  'result_spawned_requests=0',
+  'automatic_source_admission=false',
+  'automatic_field_closure=false',
+  'automatic_class_closure=false',
+  'outside_human_dependency=false'
+]);
+export const EXPECTED_SOURCE_CENSUS_TRIGGER_TEXT = `${SOURCE_CENSUS_TRIGGER_LINES.join('\n')}\n`;
+export const TRIGGER_GUARD_REPAIR_PATHS = Object.freeze([
+  MANIFEST_PATH,
+  TEST_PATH,
+  VALIDATOR_PATH
+]);
 
 export const EXPECTED_BLOBS = Object.freeze({
   [SEED_PATH]: 'bf60cadae4d0f586646dd18366431614628adb1e',
@@ -45,6 +67,21 @@ const ok = (condition, message) => { if (!condition) throw new Error(message); }
 const same = (actual, expected, message) => ok(JSON.stringify(actual) === JSON.stringify(expected), message);
 const exactKeys = (value, keys, message) => same(Object.keys(value).sort(), [...keys].sort(), message);
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
+const sortedPaths = (paths) => [...paths].filter(Boolean).sort();
+const samePathSet = (actual, expected) => JSON.stringify(sortedPaths(actual)) === JSON.stringify(sortedPaths(expected));
+
+export function classifyChangedPathSurface(changed) {
+  if (samePathSet(changed, [])) return 'canonical_main';
+  if (samePathSet(changed, [...PRODUCT_PATHS, MANIFEST_PATH])) return 'permanent_product';
+  if (samePathSet(changed, TRIGGER_GUARD_REPAIR_PATHS)) return 'trigger_guard_repair';
+  if (samePathSet(changed, [SOURCE_CENSUS_TRIGGER_PATH])) return 'source_census_trigger';
+  throw new Error(`unauthorized changed path surface: ${sortedPaths(changed).join(',') || '<empty>'}`);
+}
+
+export function validateSourceCensusTriggerText(value) {
+  ok(value === EXPECTED_SOURCE_CENSUS_TRIGGER_TEXT, 'source-census trigger content changed');
+  return true;
+}
 
 function gitBlobId(data) {
   const header = Buffer.from(`blob ${data.length}\0`, 'utf8');
@@ -381,9 +418,24 @@ export async function validateBundle(bundle, root = ROOT, options = {}) {
       comparisonRef = CURRENT_MAIN_AT_DESIGN;
     }
     const changed = git(root, ['diff', '--name-only', `${comparisonRef}...HEAD`]).split('\n').filter(Boolean);
-    ok(changed.length === 11, `permanent path denominator ${changed.length}/11`);
-    const expected = [...PRODUCT_PATHS, MANIFEST_PATH].sort();
-    same(changed.sort(), expected, 'permanent path set changed');
+    const surface = classifyChangedPathSurface(changed);
+    const permanentPaths = [...PRODUCT_PATHS, MANIFEST_PATH];
+
+    if (surface === 'canonical_main') {
+      ok(comparisonRef === 'origin/main', 'empty changed surface requires origin/main custody');
+      ok(git(root, ['rev-parse', 'HEAD']) === git(root, ['rev-parse', 'origin/main']), 'canonical-main HEAD differs from origin/main');
+    } else if (surface === 'trigger_guard_repair') {
+      ok(comparisonRef === 'origin/main', 'trigger-guard repair requires origin/main custody');
+      for (const rel of permanentPaths.filter((pathName) => !TRIGGER_GUARD_REPAIR_PATHS.includes(pathName))) {
+        ok(git(root, ['rev-parse', `HEAD:${rel}`]) === git(root, ['rev-parse', `origin/main:${rel}`]), `${rel}: unrelated product byte changed during trigger-guard repair`);
+      }
+    } else if (surface === 'source_census_trigger') {
+      ok(comparisonRef === 'origin/main', 'source-census trigger requires origin/main custody');
+      for (const rel of permanentPaths) {
+        ok(git(root, ['rev-parse', `HEAD:${rel}`]) === git(root, ['rev-parse', `origin/main:${rel}`]), `${rel}: product byte changed in source-census trigger`);
+      }
+      validateSourceCensusTriggerText(fs.readFileSync(abs(root, SOURCE_CENSUS_TRIGGER_PATH), 'utf8'));
+    }
   }
   return true;
 }

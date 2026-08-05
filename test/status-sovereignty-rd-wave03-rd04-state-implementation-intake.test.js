@@ -9,13 +9,19 @@ import {
   MATRIX_PATH,
   PROTOCOL_PATH,
   MANIFEST_PATH,
-  SCHEMA_PATH
+  SCHEMA_PATH,
+  PRODUCT_PATHS
 } from '../tools/build-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs';
 import {
   FIRST_PASS_PATH,
   REMEDY_PATH,
   PARENT_RECEIPT_PATH,
   PARENT_CLOSURE_PATH,
+  SOURCE_CENSUS_TRIGGER_PATH,
+  EXPECTED_SOURCE_CENSUS_TRIGGER_TEXT,
+  TRIGGER_GUARD_REPAIR_PATHS,
+  classifyChangedPathSurface,
+  validateSourceCensusTriggerText,
   validateSchemaContract,
   validateImmutableSources,
   validateValue,
@@ -73,6 +79,54 @@ function manifestMutation(name, mutate) {
     }
   });
 }
+function pathSurfaceMutation(name, changed) {
+  tests.push({
+    name,
+    async run() {
+      assert.throws(() => classifyChangedPathSurface(changed), undefined, name);
+    }
+  });
+}
+function triggerTextMutation(name, mutate) {
+  tests.push({
+    name,
+    async run() {
+      const lines = EXPECTED_SOURCE_CENSUS_TRIGGER_TEXT.trimEnd().split('\n');
+      mutate(lines);
+      assert.throws(() => validateSourceCensusTriggerText(`${lines.join('\n')}\n`), undefined, name);
+    }
+  });
+}
+
+assert.equal(classifyChangedPathSurface([]), 'canonical_main');
+assert.equal(classifyChangedPathSurface([...PRODUCT_PATHS, MANIFEST_PATH]), 'permanent_product');
+assert.equal(classifyChangedPathSurface([...TRIGGER_GUARD_REPAIR_PATHS]), 'trigger_guard_repair');
+assert.equal(classifyChangedPathSurface([SOURCE_CENSUS_TRIGGER_PATH]), 'source_census_trigger');
+assert.equal(validateSourceCensusTriggerText(EXPECTED_SOURCE_CENSUS_TRIGGER_TEXT), true);
+
+pathSurfaceMutation('partial permanent product surface', [...PRODUCT_PATHS, MANIFEST_PATH].slice(0, -1));
+pathSurfaceMutation('permanent product plus trigger surface', [...PRODUCT_PATHS, MANIFEST_PATH, SOURCE_CENSUS_TRIGGER_PATH]);
+pathSurfaceMutation('wrong source-census trigger path', ['.ssc-rd04-wave03-source-census-trigger/RUN']);
+pathSurfaceMutation('source-census trigger plus extra path', [SOURCE_CENSUS_TRIGGER_PATH, 'README.md']);
+pathSurfaceMutation('partial trigger-guard repair surface', [...TRIGGER_GUARD_REPAIR_PATHS].slice(0, -1));
+pathSurfaceMutation('trigger-guard repair plus extra path', [...TRIGGER_GUARD_REPAIR_PATHS, 'README.md']);
+pathSurfaceMutation('single permanent path is not an authorized transaction', [PRODUCT_PATHS[0]]);
+
+for (let index = 0; index < EXPECTED_SOURCE_CENSUS_TRIGGER_TEXT.trimEnd().split('\n').length; index += 1) {
+  triggerTextMutation(`source-census trigger line ${index + 1} mutation`, (lines) => {
+    const [key] = lines[index].split('=', 1);
+    lines[index] = `${key}=changed`;
+  });
+}
+triggerTextMutation('source-census trigger line removal', (lines) => { lines.pop(); });
+triggerTextMutation('source-census trigger line reorder', (lines) => { [lines[0], lines[1]] = [lines[1], lines[0]]; });
+triggerTextMutation('source-census trigger extra authority line', (lines) => { lines.push('automatic_source_admission=true'); });
+tests.push({
+  name: 'source-census trigger final newline removal',
+  async run() {
+    assert.throws(() => validateSourceCensusTriggerText(EXPECTED_SOURCE_CENSUS_TRIGGER_TEXT.trimEnd()), undefined, 'source-census trigger final newline removal');
+  }
+});
 
 for (const [key, replacement] of Object.entries({
   schema_version: 'ssc-rd-wave03-rd04-state-implementation-source-census-protocol@2',
