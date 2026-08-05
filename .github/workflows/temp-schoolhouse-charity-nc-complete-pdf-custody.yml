@@ -1,0 +1,124 @@
+name: TEMP capture School.House complete PDF custody
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-charity-nc-complete-pdf-custody.yml'
+      - '.schoolhouse-charity-nc-complete-pdf-custody/EXECUTE'
+      - 'tools/acquisition/schoolhouse-charity-nc-complete-pdf-custody/capture.py'
+  workflow_dispatch:
+
+concurrency:
+  group: temp-schoolhouse-charity-nc-complete-pdf-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify exact runner and PDF tooling
+        run: |
+          set -Eeuo pipefail
+          RUNNER='tools/acquisition/schoolhouse-charity-nc-complete-pdf-custody/capture.py'
+          test "$(git hash-object "$RUNNER")" = '98a38fcb464f796756c0578618ccd9add3f022c8'
+          python -m py_compile "$RUNNER"
+          if ! command -v pdfinfo >/dev/null || ! command -v pdftotext >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq poppler-utils
+          fi
+          pdfinfo -v
+          pdftotext -v
+      - name: Execute fixed fifteen-PDF complete-hash pass
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/schoolhouse-charity-nc-complete-pdf-custody
+          mkdir -p /tmp/schoolhouse-charity-nc-complete-pdf-custody
+          python tools/acquisition/schoolhouse-charity-nc-complete-pdf-custody/capture.py \
+            --input data/intake/bvvc-defense-capital/schoolhouse-charity-nc-final-static-residual-file-samples.jsonl \
+            --out /tmp/schoolhouse-charity-nc-complete-pdf-custody
+      - name: Require terminal privacy-minimized artifact
+        run: |
+          set -Eeuo pipefail
+          D=/tmp/schoolhouse-charity-nc-complete-pdf-custody
+          for f in input-pdf-routes.jsonl full-file-custody.jsonl content-field-classification.jsonl summary.json route-policy.json artifact-manifest.json SHA256SUMS; do
+            test -f "$D/$f"
+          done
+          jq -e '
+            .input_pdf_routes == 15 and
+            .terminal_route_rows == 15 and
+            .all_routes_terminal == true and
+            .complete_file_hash_rows >= 0 and .complete_file_hash_rows <= 15 and
+            .length_match_rows >= 0 and .length_match_rows <= .complete_file_hash_rows and
+            (.text_extraction_success_rows + .text_extraction_non_success_rows) == 15 and
+            .requests_per_route == 1 and
+            .result_spawned_requests == 0 and
+            .search_submissions == 0 and
+            .organization_name_submissions == 0 and
+            .license_number_submissions == 0 and
+            .source_rows_acquired == 0 and
+            .raw_source_retained == false and
+            .complete_remote_files_retained == false and
+            .extracted_text_retained == false and
+            .hidden_form_values_retained == false and
+            .street_address_rows_retained == 0 and
+            .contact_detail_rows_retained == 0 and
+            .private_support_rows == 0 and
+            .identity_admitted == false and
+            .negative_existence_claim_created == false and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$D/summary.json"
+          jq -e '
+            .maximum_attempts_per_route == 1 and
+            .publisher_automation_policy_controlling == true and
+            .search_submissions == 0 and
+            .source_rows_acquired == 0 and
+            .raw_source_retained == false and
+            .complete_remote_files_retained == false and
+            .extracted_text_retained == false and
+            .identity_admitted == false and
+            .negative_existence_claim_created == false and
+            .outside_human_dependency == false and
+            .graph_effect == "none"
+          ' "$D/route-policy.json"
+          jq -s -e '
+            length == 15 and
+            all(.[];
+              .request_method == "GET" and
+              .request_count == 1 and
+              .range_requested == false and
+              .query_submitted == false and
+              .organization_name_submitted == false and
+              .license_number_submitted == false and
+              .source_rows_acquired == 0 and
+              .raw_source_retained == false and
+              .complete_remote_file_retained == false and
+              .identity_admitted == false and
+              .outside_human_dependency == false and
+              .graph_effect == "none")
+          ' "$D/full-file-custody.jsonl"
+          jq -s -e '
+            length == 15 and
+            all(.[];
+              .public_schoolhouse_identity_admitted == false and
+              .identity_admission_state != "admitted" and
+              .graph_effect == "none" and
+              .promotes_to == "candidate_only")
+          ' "$D/content-field-classification.jsonl"
+          (cd "$D" && sha256sum -c SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-charity-nc-complete-pdf-custody
+          path: /tmp/schoolhouse-charity-nc-complete-pdf-custody
+          if-no-files-found: error
+          retention-days: 90
