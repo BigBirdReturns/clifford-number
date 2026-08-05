@@ -14,15 +14,21 @@ export const RD01_MANIFEST_PATH = 'data/research/status-sovereignty-rd-wave03-rd
 export const RD03_CLOSURE_PATH = 'data/project/ssc-residual-wave03/closures/RD-03-C05.json';
 export const RD03_RECEIPT_PATH = 'data/research/status-sovereignty-rd-wave03-rd03-lifecycle-recovery/class-receipt.json';
 export const RD03_MANIFEST_PATH = 'data/research/status-sovereignty-rd-wave03-rd03-lifecycle-recovery/manifest.json';
+export const RD02_CLOSURE_PATH = 'data/project/ssc-residual-wave03/closures/RD-02-C05.json';
+export const RD02_RECEIPT_PATH = 'data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/class-receipt.json';
+export const RD02_MANIFEST_PATH = 'data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/manifest.json';
 
 export const WAVE02_PROMOTION_MERGE = '2af6bb7819a37e51c7198fb48da894445a29e494';
 export const RD01_MERGE = 'c27e7d3cde2c94c1cde5d66dcce8eb06b514ff8a';
 export const RD03_MERGE = 'eadf234983ae61eb25286c9472435c052a241854';
+export const RD02_MERGE = '61a33f5459e64f1978d9c55c1b7ea7f925358cd8';
 export const RD01_MANIFEST = '9b59871cf7ce40e68d0a2a89b41148a6c92b7201702d91a7724d1310ddbcc461';
 export const RD03_MANIFEST = '595b2d1fd0a2315657935d44c87d984dd33043eff1f33b6b0e209c689299a35a';
+export const RD02_MANIFEST = '068330d24a8bc378964cee2d88c3ebe1c5b48b36154f58636e72d78d40e71e82';
 export const RD01_LABEL = 'methodology correction, appeal, and re-evaluation records';
 export const RD03_LABEL = 'commitment, closing, draw, disbursement, amendment, waiver, default, cure, repayment, and recovery chronology';
 export const RD03_RECEIPT_LABEL = 'commitment through repayment and public recovery chronology';
+export const RD02_LABEL = 'complete portfolio investment, follow-on, exit, write-off, default, return, and repayment ledger';
 export const RD03_LABEL_RECONCILIATION = 'receipt_label_summarizes_the_constitutional_scope_as_commitment_through_repayment_and_public_recovery_chronology; class identity remains bound by RD-03-C05, issue 1016, and the exact closure label';
 
 export const INHERITED_CLOSED_IDS = Object.freeze([
@@ -46,11 +52,11 @@ export const WAVE03_SELECTED_IDS = Object.freeze([
 export const CLOSED_IDS = Object.freeze([
   ...INHERITED_CLOSED_IDS,
   'RD-01-C06',
-  'RD-03-C05'
+  'RD-03-C05',
+  'RD-02-C05'
 ]);
 
 export const OPEN_SELECTED_IDS = Object.freeze([
-  'RD-02-C05',
   'RD-04-C02',
   'RD-05-C02',
   'RD-06-C04'
@@ -229,6 +235,151 @@ function validateRD03(closure, receipt, manifest, attempt) {
   ok(manifest?.combined_sha256 === RD03_MANIFEST, 'RD-03 manifest object changed');
 }
 
+
+function validateRD02(closure, receipt, manifest, attempt) {
+  ok(closure?.schema_version === 'ssc-residual-denominator-wave03-class-closure-reference@1', 'RD-02 closure schema changed');
+  ok(closure?.wave_issue === 1013 && closure?.child_issue === 1015 && closure?.source_pr === 1098, 'RD-02 closure custody changed');
+  ok(closure?.lane_id === 'RD-02' && closure?.class_id === 'RD-02-C05', 'RD-02 closure identity changed');
+  ok(closure?.exact_label === RD02_LABEL, 'RD-02 closure label changed');
+  ok(closure?.terminal_state === 'bounded_source_unavailable' && closure?.class_closed === true, 'RD-02 closure state changed');
+  ok(closure?.product?.manifest_combined_sha256 === RD02_MANIFEST, 'RD-02 closure manifest changed');
+  ok(closure?.product?.class_receipt_path === RD02_RECEIPT_PATH, 'RD-02 closure receipt path changed');
+  same(closure?.residual_atlas_effect_if_promoted, {
+    canonical_classes: 42,
+    open_before: 34,
+    closed_before: 8,
+    open_after: 33,
+    closed_after: 9
+  }, 'RD-02 residual-atlas effect changed');
+  same(closure?.source_custody, {
+    canonical_source_merge: '41a1e46f8981001aeaf027662ed2f16ad9468d99',
+    admitted_leaf_sources: 2,
+    admitted_bounded_observations: 11,
+    lifecycle_events_observed: 0,
+    fixed_protocol_complete: true,
+    automatic_additional_search_pass_authorized: false
+  }, 'RD-02 source custody changed');
+  validateEffects(closure.authority, 'RD-02 closure authority');
+  for (const key of [
+    'reviewed_disposition_changed',
+    'complete_compact_finding',
+    'capital_conversion_finding',
+    'favoritism_finding',
+    'extraction_finding',
+    'coordination_finding',
+    'common_purpose_finding',
+    'racial_order_finding',
+    'prevalence_finding'
+  ]) ok(closure?.authority?.[key] === false, `RD-02 closure authority.${key} changed`);
+
+  ok(receipt?.schema_version === 'ssc-rd-wave03-rd02-portfolio-lifecycle-class-receipt@1', 'RD-02 receipt schema changed');
+  ok(receipt?.wave_id === 'SSC-RD-W03' && receipt?.lane_id === 'RD-02' && receipt?.class_id === 'RD-02-C05', 'RD-02 receipt identity changed');
+  ok(receipt?.issue === 1015, 'RD-02 receipt issue changed');
+  ok(receipt?.class_label === RD02_LABEL, 'RD-02 receipt label changed');
+  ok(receipt?.terminal_state === 'bounded_source_unavailable' && receipt?.class_closed === true, 'RD-02 receipt state changed');
+  same(receipt?.label_custody, {
+    constitutional_class_label: RD02_LABEL,
+    seed_closure_target: RD02_LABEL,
+    labels_exact_match: true,
+    reconciliation: 'none'
+  }, 'RD-02 receipt label custody changed');
+  same(receipt?.counts, {
+    cohort_rows: 18,
+    publicly_named_rows: 17,
+    identity_withheld_rows: 1,
+    required_fields_per_row: 10,
+    required_fields: 180,
+    observed_fields: 53,
+    identity_withheld_under_policy_fields: 1,
+    source_restricted_fields: 7,
+    not_publicly_recovered_fields: 119,
+    terminal_fields: 180,
+    bounded_source_unavailable_rows: 17,
+    bounded_source_restricted_rows: 1,
+    search_routes: 51,
+    unique_search_candidates: 210,
+    candidate_followup_routes: 10,
+    same_host_followup_routes: 5,
+    disclosure_leaf_routes: 2,
+    failed_route_replays: 1,
+    admitted_leaf_sources: 2,
+    admitted_bounded_observations: 11,
+    lifecycle_events_observed: 0,
+    publicly_identified_portfolio_investments_observed: 0,
+    publicly_identified_follow_on_investments_observed: 0,
+    publicly_identified_exits_observed: 0,
+    publicly_identified_write_offs_or_realized_losses_observed: 0,
+    publicly_identified_defaults_or_cures_observed: 0,
+    publicly_identified_realized_fund_returns_observed: 0,
+    sba_repayment_or_loss_allocation_events_observed: 0,
+    result_spawned_requests: 0,
+    external_contacts: 0,
+    external_reviews: 0
+  }, 'RD-02 class-receipt counts changed');
+  same(receipt?.residual_atlas_effect_if_promoted, {
+    canonical_classes: 42,
+    open_before: 34,
+    closed_before: 8,
+    open_after: 33,
+    closed_after: 9
+  }, 'RD-02 receipt residual-atlas effect changed');
+  ok(receipt?.current_result?.fixed_protocol_complete === true, 'RD-02 fixed-protocol state changed');
+  ok(receipt?.current_result?.automatic_additional_search_pass_authorized === false, 'RD-02 automatic-search boundary changed');
+  ok(receipt?.current_result?.all_eighteen_rows_preserved === true, 'RD-02 row denominator changed');
+  ok(receipt?.current_result?.all_one_hundred_eighty_fields_terminal === true, 'RD-02 terminal field state changed');
+  ok(receipt?.current_result?.complete_portfolio_lifecycle_ledger_observed === false, 'RD-02 complete-ledger observation was invented');
+  ok(receipt?.current_result?.admitted_leaf_sources === 2 && receipt?.current_result?.admitted_bounded_observations === 11, 'RD-02 admitted source custody changed');
+  ok(receipt?.current_result?.lifecycle_events_observed === 0, 'RD-02 lifecycle event count changed');
+  ok(receipt?.current_result?.class_closed === true, 'RD-02 receipt reopened');
+  validateEffects(receipt.authority, 'RD-02 receipt authority');
+  for (const location of [receipt.current_result, receipt.authority]) {
+    for (const key of [
+      'reviewed_disposition_changed',
+      'complete_compact_finding',
+      'capital_conversion_finding',
+      'favoritism_finding',
+      'extraction_finding',
+      'coordination_finding',
+      'common_purpose_finding',
+      'racial_order_finding',
+      'prevalence_finding'
+    ]) ok(location?.[key] === false, `RD-02 ${key} changed`);
+  }
+  for (const [key, expected] of Object.entries({
+    program_projection_is_fund_investment: false,
+    private_capital_commitment_is_portfolio_investment: false,
+    manager_lineage_is_vehicle_lifecycle: false,
+    fund_investment_is_follow_on_or_exit: false,
+    exit_is_positive_realized_return: false,
+    missing_public_write_off_is_no_loss: false,
+    missing_public_default_is_no_default: false,
+    missing_public_return_is_zero_return: false,
+    private_return_is_sba_repayment_or_public_recovery: false,
+    license_or_leverage_eligibility_is_sba_repayment: false,
+    search_candidate_is_admitted_source: false,
+    search_silence_is_event_absence: false,
+    not_publicly_recovered_is_event_nonoccurrence: false,
+    source_restricted_is_nonparticipation: false,
+    withheld_identity_is_nonparticipation: false,
+    class_closure_is_complete_compact: false,
+    capital_conversion_finding: false,
+    favoritism_finding: false,
+    extraction_finding: false,
+    coordination_finding: false,
+    common_purpose_finding: false,
+    racial_order_finding: false,
+    prevalence_finding: false
+  })) ok(receipt?.boundaries?.[key] === expected, `RD-02 receipt boundary ${key} changed`);
+  for (const key of ['publication_effect', 'adoption_effect', 'graph_effect']) {
+    ok(receipt?.boundaries?.[key] === 'none', `RD-02 receipt boundary ${key} changed`);
+  }
+
+  ok(attempt?.lane_id === 'RD-02' && attempt?.issue === 1015, 'RD-02 constitution binding changed');
+  ok(attempt?.exact_label === RD02_LABEL, 'RD-02 constitutional label changed');
+  ok(receipt.class_label === attempt.exact_label, 'RD-02 exact label custody changed');
+  ok(manifest?.combined_sha256 === RD02_MANIFEST, 'RD-02 manifest object changed');
+}
+
 function promotionFromWave02(row) {
   return { ...row };
 }
@@ -242,12 +393,16 @@ export function deriveCurrent(root = ROOT) {
   const rd03Closure = read(root, RD03_CLOSURE_PATH);
   const rd03Receipt = read(root, RD03_RECEIPT_PATH);
   const rd03Manifest = read(root, RD03_MANIFEST_PATH);
+  const rd02Closure = read(root, RD02_CLOSURE_PATH);
+  const rd02Receipt = read(root, RD02_RECEIPT_PATH);
+  const rd02Manifest = read(root, RD02_MANIFEST_PATH);
 
   validateWave02(wave02);
   validateConstitution(constitution);
   const byClass = new Map(constitution.lane_attempts.map((row) => [row.class_id, row]));
   validateRD01(rd01Closure, rd01Receipt, rd01Manifest, byClass.get('RD-01-C06'));
   validateRD03(rd03Closure, rd03Receipt, rd03Manifest, byClass.get('RD-03-C05'));
+  validateRD02(rd02Closure, rd02Receipt, rd02Manifest, byClass.get('RD-02-C05'));
 
   const rd01Promotion = {
     lane_id: 'RD-01',
@@ -283,6 +438,24 @@ export function deriveCurrent(root = ROOT) {
     class_closed: true
   };
 
+
+  const rd02Promotion = {
+    lane_id: 'RD-02',
+    class_id: 'RD-02-C05',
+    issue: 1015,
+    source_pr: 1098,
+    merge_commit: RD02_MERGE,
+    constitutional_exact_label: RD02_LABEL,
+    receipt_class_label: RD02_LABEL,
+    labels_exact_match: true,
+    label_reconciliation: 'none',
+    terminal_state: 'bounded_source_unavailable',
+    closure_reference_path: RD02_CLOSURE_PATH,
+    class_receipt_path: RD02_RECEIPT_PATH,
+    manifest_combined_sha256: RD02_MANIFEST,
+    class_closed: true
+  };
+
   const selectedClassesOpen = OPEN_SELECTED_IDS.map((classId) => {
     const attempt = byClass.get(classId);
     ok(attempt, `${classId}: constitution attempt missing`);
@@ -302,7 +475,7 @@ export function deriveCurrent(root = ROOT) {
     hypothesis_id: 'SSC-H01',
     issue: 1013,
     as_of: '2026-08-04',
-    authority: 'two_wave03_terminal_class_receipts_promoted_without_cross_lane_empirical_authority',
+    authority: 'three_wave03_terminal_class_receipts_promoted_without_cross_lane_empirical_authority',
     source_snapshots: {
       wave_02_current_ledger_path: WAVE02_PATH,
       wave_02_cumulative_promotion_merge: WAVE02_PROMOTION_MERGE,
@@ -312,22 +485,26 @@ export function deriveCurrent(root = ROOT) {
       rd01_merge_commit: RD01_MERGE,
       rd03_closure_reference_path: RD03_CLOSURE_PATH,
       rd03_class_receipt_path: RD03_RECEIPT_PATH,
-      rd03_merge_commit: RD03_MERGE
+      rd03_merge_commit: RD03_MERGE,
+      rd02_closure_reference_path: RD02_CLOSURE_PATH,
+      rd02_class_receipt_path: RD02_RECEIPT_PATH,
+      rd02_merge_commit: RD02_MERGE
     },
     promoted_class_receipts: [
       ...wave02.promoted_class_receipts.map(promotionFromWave02),
       rd01Promotion,
-      rd03Promotion
+      rd03Promotion,
+      rd02Promotion
     ],
     selected_classes_open: selectedClassesOpen,
     counts: {
       canonical_residual_classes: 42,
       classes_closed_before_wave: 6,
       wave_03_selected_class_attempts: 6,
-      wave_03_terminal_class_receipts: 2,
-      classes_closed_this_wave: 2,
-      closed_residual_classes: 8,
-      open_residual_classes: 34,
+      wave_03_terminal_class_receipts: 3,
+      classes_closed_this_wave: 3,
+      closed_residual_classes: 9,
+      open_residual_classes: 33,
       label_reconciliations: 2,
       wave_03_label_reconciliations: 1,
       outside_human_dependencies: 0,
@@ -344,11 +521,11 @@ export function deriveCurrent(root = ROOT) {
       adoption_effects: 0
     },
     current_result: {
-      terminal_state: 'two_of_six_wave03_selected_classes_terminal_eight_of_forty_two_residual_classes_closed',
-      classes_closed: 8,
-      classes_open: 34,
+      terminal_state: 'three_of_six_wave03_selected_classes_terminal_nine_of_forty_two_residual_classes_closed',
+      classes_closed: 9,
+      classes_open: 33,
       closed_class_ids: [...CLOSED_IDS],
-      wave_03_selected_attempts_terminal: 2,
+      wave_03_selected_attempts_terminal: 3,
       open_selected_class_ids: [...OPEN_SELECTED_IDS],
       all_six_selected_classes_closed: false,
       wave_complete: false,
@@ -370,7 +547,7 @@ export function deriveCurrent(root = ROOT) {
       outstanding_balance_is_default: false,
       scheduled_payment_is_observed_payment: false,
       class_closure_is_selector_accuracy_or_technical_superiority: false,
-      eight_closures_are_complete_compact: false,
+      nine_closures_are_complete_compact: false,
       functional_convergence_is_coordination_or_common_purpose: false,
       graph_effect: 'none',
       publication_effect: 'none',
@@ -384,13 +561,13 @@ function run() {
   const derived = deriveCurrent(ROOT);
   if (mode === '--write') {
     write(ROOT, CURRENT_PATH, derived);
-    console.log('Wave-03 current ledger written: 34 open / 8 closed; RD-01-C06 and RD-03-C05 promoted');
+    console.log('Wave-03 current ledger written: 33 open / 9 closed; RD-01-C06, RD-03-C05, and RD-02-C05 promoted');
     return;
   }
   if (mode !== '--check') throw new Error(`unsupported mode: ${mode}`);
   const committed = read(ROOT, CURRENT_PATH);
   same(committed, derived, 'committed Wave-03 current ledger differs from deterministic derivation');
-  console.log('Wave-03 current ledger: 34 open / 8 closed; RD-01-C06 and RD-03-C05 promoted');
+  console.log('Wave-03 current ledger: 33 open / 9 closed; RD-01-C06, RD-03-C05, and RD-02-C05 promoted');
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) run();
