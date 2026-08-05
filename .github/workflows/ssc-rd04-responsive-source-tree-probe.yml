@@ -1,0 +1,25 @@
+name: SSC RD-04 responsive-source current-main tree probe
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd04-responsive-source-tree-probe'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Print exact current-main commit and tree
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin main
+          MAIN=$(git rev-parse origin/main)
+          TREE=$(git rev-parse 'origin/main^{tree}')
+          printf 'main=%s\nmain_tree=%s\n' "$MAIN" "$TREE"
+          test "$MAIN" = c81de1c073d0a9ff6d35d8b6f1f4396941026203
