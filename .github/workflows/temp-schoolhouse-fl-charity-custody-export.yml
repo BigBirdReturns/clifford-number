@@ -1,0 +1,57 @@
+name: TEMP export School.House Florida charity custody inputs
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Export exact canonical BVVC custody package
+        run: |
+          set -Eeuo pipefail
+          EXPECTED_MAIN='d87172a41e88c1709b37a114b50df733545126c8'
+          OUT='/tmp/schoolhouse-fl-charity-custody-main-export'
+
+          git fetch --no-tags --depth=1 origin "$EXPECTED_MAIN"
+          test "$(git rev-parse "$EXPECTED_MAIN^{commit}")" = "$EXPECTED_MAIN"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+
+          git archive "$EXPECTED_MAIN" \
+            data/intake/bvvc-defense-capital \
+            tools/validate-bvvc-defense-capital.mjs \
+            tools/build-schoolhouse-archive-minimum-legal-surface-reconciliation-custody.mjs \
+            package.json \
+          | tar -x -C "$OUT"
+
+          {
+            printf 'main_commit=%s\n' "$EXPECTED_MAIN"
+            printf 'main_tree=%s\n' "$(git rev-parse "$EXPECTED_MAIN^{tree}")"
+            printf 'export_workflow_head=%s\n' "$GITHUB_SHA"
+          } > "$OUT/EXPORT-METADATA"
+
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | sort -z \
+              | xargs -0 sha256sum \
+              > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-fl-charity-custody-main-export
+          path: /tmp/schoolhouse-fl-charity-custody-main-export
+          if-no-files-found: error
+          retention-days: 90
