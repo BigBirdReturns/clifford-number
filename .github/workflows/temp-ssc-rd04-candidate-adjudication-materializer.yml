@@ -41,7 +41,7 @@ jobs:
           test "$(wc -c < "$CONTROLLER" | tr -d ' ')" = 9019
           test "$(sha256sum "$CONTROLLER" | awk '{print $1}')" = 9b41991b4b0f5f4e41de0b5530aed589835bfd5f3320e9f103d2957c2e00b888
           bash -n "$CONTROLLER"
-          bash "$CONTROLLER"
+          bash -x "$CONTROLLER"
 
       - name: Preserve exact materialization receipt
         uses: actions/upload-artifact@v4
