@@ -1,0 +1,257 @@
+name: SSC RD-04 state-source v2 exact materializer
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd04-state-source-v2-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd04-state-source-v2-materializer'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Reconstruct, qualify, and lease-publish the exact fourteen-path v2 product
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          export GIT_AUTHOR_NAME='github-actions[bot]'
+          export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+
+          readonly MAIN_LEASE=1099c9f53fa2b07a96ea9d0cd108d9332eccfb96
+          readonly TARGET_BRANCH=agent/ssc-rd-wave03-rd04-state-source-adjudication-v1
+          readonly TARGET_LEASE=08dcb3843b6295bf3339f70f4654c6ce3b7d3c42
+          readonly STANDING=.github/workflows/status-sovereignty-rd-wave03-rd04-state-source-adjudication.yml
+          readonly STANDING_BLOB=9656e0f229fbd3245ee767480a34b8efd7874ac5
+          readonly ARCHIVE=/tmp/rd04-state-source-v2.tar.xz
+          readonly PACKAGE=/tmp/rd04-state-source-v2-package
+          readonly WORK=/tmp/rd04-state-source-v2-worktree
+          readonly RECEIPT=/tmp/rd04-state-source-v2-materializer-receipt
+          readonly PATHS=/tmp/rd04-state-source-v2-paths.txt
+
+          rm -rf "$ARCHIVE" "$PACKAGE" "$WORK" "$RECEIPT" "$PATHS"
+          mkdir -p "$PACKAGE" "$RECEIPT"
+          trap 'status=$?; printf "exit_status=%s\n" "$status" >> "$RECEIPT/terminal.txt"; exit "$status"' EXIT
+          printf 'main_lease=%s\ntarget_branch=%s\ntarget_lease=%s\n' "$MAIN_LEASE" "$TARGET_BRANCH" "$TARGET_LEASE" > "$RECEIPT/start.txt"
+
+          python - "$ARCHIVE" "$PACKAGE" "$PATHS" <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import tarfile
+          import urllib.request
+
+          archive = pathlib.Path(__import__('sys').argv[1])
+          package = pathlib.Path(__import__('sys').argv[2])
+          paths_file = pathlib.Path(__import__('sys').argv[3])
+          repo = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GITHUB_TOKEN']
+
+          blobs = [
+              ('e090a29166d02fc4c13287d1bb43f8169f3b5394', 6000, 'bf7004cd120aaa3eb96a243aec0c02ea65307e3021c334153e384f4ecc919494'),
+              ('d91346c1c0365b62ea4a538ba0436c15e1c01786', 6000, 'a0e6b67c11dcf076c9e59507323e6667e07f23a7f9e79642a39fd7767bbc2dd4'),
+              ('8ef333167c96c4294b13fcf69ae6c45b8b4b187f', 6000, '0f37aa917a7a94fd1013e218bff49198e18040ef34cc9d2c071e72dbefa8526e'),
+              ('e6071f6cac164252d3707a155fd206517bd035bc', 6000, '6c0bd29fa0c98bc1f7f5e940f62f15b705da02162ff72cda3dbccbbf690b9783'),
+              ('bd451ffdebee92b18e9d2ea2c7b2aa8d14b02285', 6000, 'd785a2647f9087ae4a17641bbee2cd7fcc07c8ace1cd7c1cb989c1bcf6083cf0'),
+              ('26f2cbdbc4dee40684bedf06677d4f9a6dad974f', 6000, '3fb82ff370c4896f3fefffe1b5b47610d9821c86ce0de9d88f49fa97fa23daea'),
+              ('f0e11ffc5aa9b64c6b15928f470167ac0060d48e', 6000, 'e6bab06e1fe2924d7d396756a7c7f01f7b0ac08a70a641fe363cf5fc7a863ff4'),
+              ('bba9048683ec060e3ee152c71a7121876882e1b4', 6000, '4f4bb1ff8097657ee08ffd41c69c7e6bb6bdef9d8ab7ab5881aab0354881732a'),
+              ('3f2a2898fac29c96689b7a70ff6a5c9e571ed561', 6000, 'e05e89870fbf100276f3c842469481a481f412bb264b97c81aa02a7186e8cf6c'),
+              ('f310f31d12a79166840df8515ef97eca85c664a3', 1036, '5991011ef5a0a65d3073d5ca0cb588d6ca3b65e3484b0941992e36da69e85dee'),
+          ]
+          expected_paths = [
+              'data/intake/status-sovereignty-rd-wave03-rd04-state-source-adjudication/execution-receipt.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-state-source-adjudication/index.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-state-source-adjudication/link-candidates.jsonl',
+              'data/intake/status-sovereignty-rd-wave03-rd04-state-source-adjudication/product-manifest.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-state-source-adjudication/route-adjudications.jsonl',
+              'data/intake/status-sovereignty-rd-wave03-rd04-state-source-adjudication/selected-followup-protocol.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-state-source-adjudication/state-source-observations.jsonl',
+              'docs/milestones/ssc-rd-wave03-rd04-state-source-adjudication.md',
+              'schemas/status-sovereignty-rd-wave03-rd04-state-source-adjudication.schema.json',
+              'test/status-sovereignty-rd-wave03-rd04-state-source-adjudication.test.js',
+              'tools/acquisition/status-sovereignty-rd-wave03-rd04/run-responsive-link-protocol.py',
+              'tools/build-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs',
+              'tools/validate-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs',
+          ]
+          expected_files = {
+              expected_paths[0]: (2414, 'b5236c145015616f0c88764e8c4a60d6a17b4b3062bc6c068f8f185eaac999fe'),
+              expected_paths[1]: (2471, 'ca3c778b9007542075ed8dc6c2c59f40d45d66fd0173eb4e7206803a8fadc978'),
+              expected_paths[2]: (313700, '11175ac28b0991c98e7c5fa3b01a27d7bd9b1b684047ac97a4a4cb3f49d3b8e0'),
+              expected_paths[3]: (1150, 'e1b05f743a6cab988819aeefd780def94683dd795cc6a17f5c87fbfb51d9f485'),
+              expected_paths[4]: (78730, '6297660a3119de8d2d3ae5e7c7d87d48eee7228f79f42c857c7eaa4dfa8e692e'),
+              expected_paths[5]: (59715, 'd8e6b24448956ca495d387ac753ad7d2172d0fe5842fb1c2c800f7a98dc93a2c'),
+              expected_paths[6]: (46849, '76872478c6f38ba0e3f447a75491b9ee4e8b07a6ae21b5b47904578222e1dc81'),
+              expected_paths[7]: (7117, 'faac2874226c9e913ac6d999747f262036a5db9d2bbafa4c24ceb07e92c93040'),
+              expected_paths[8]: (7286, '78446efb6de360718a3f3677486bf772909dc465446b6f1abe1f8ac9f6f8c593'),
+              expected_paths[9]: (13888, '1ace5604a6849c09c96e20d2a7b87a704ef5821368cf35e066244da7c89ea2f2'),
+              expected_paths[10]: (11263, '3978b56ec3acfcde4b6b92dba9969b2c0ba381f5f619eb585f562ebf4b65dbe8'),
+              expected_paths[11]: (32247, 'e614d8e4529417be2c5b88086dda758e577854a93aaa55eee36d44139eaefb2e'),
+              expected_paths[12]: (7543, 'bf3ad11a2d1787baaee13ea0b0fd79028ea62473f784687e276ce78179324985'),
+          }
+
+          chunks = []
+          for sha, size, digest in blobs:
+              request = urllib.request.Request(
+                  f'https://api.github.com/repos/{repo}/git/blobs/{sha}',
+                  headers={
+                      'Authorization': f'Bearer {token}',
+                      'Accept': 'application/vnd.github+json',
+                      'X-GitHub-Api-Version': '2022-11-28',
+                      'User-Agent': 'ssc-rd04-state-source-v2-materializer',
+                  },
+              )
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  payload = json.load(response)
+              data = base64.b64decode(payload['content'].replace('\n', ''))
+              computed_git_sha = hashlib.sha1(f'blob {len(data)}\0'.encode() + data).hexdigest()
+              assert payload['sha'] == sha and computed_git_sha == sha, sha
+              assert len(data) == size, (sha, len(data), size)
+              assert hashlib.sha256(data).hexdigest() == digest, sha
+              chunks.append(data)
+
+          archive_bytes = b''.join(chunks)
+          assert len(archive_bytes) == 55036, len(archive_bytes)
+          assert hashlib.sha256(archive_bytes).hexdigest() == 'cbc3cc181afaf7843f4be96f7d873cf9e79b95bf1f2116acc7da064c236897b0'
+          archive.write_bytes(archive_bytes)
+
+          with tarfile.open(archive, mode='r:xz') as tf:
+              members = [member for member in tf.getmembers() if member.isfile()]
+              normalized = sorted(member.name.lstrip('./') for member in members)
+              assert normalized == expected_paths, normalized
+              assert all(not member.issym() and not member.islnk() for member in tf.getmembers())
+              for member in tf.getmembers():
+                  target = (package / member.name).resolve()
+                  assert target == package.resolve() or package.resolve() in target.parents
+              tf.extractall(package, filter='data')
+
+          found = sorted(str(path.relative_to(package)) for path in package.rglob('*') if path.is_file())
+          assert found == expected_paths, found
+          for rel, (size, digest) in expected_files.items():
+              data = (package / rel).read_bytes()
+              assert len(data) == size, (rel, len(data), size)
+              assert hashlib.sha256(data).hexdigest() == digest, rel
+          paths_file.write_text('\n'.join(expected_paths) + '\n')
+          print('sealed_v2_archive_bytes=55036')
+          print('sealed_v2_archive_sha256=cbc3cc181afaf7843f4be96f7d873cf9e79b95bf1f2116acc7da064c236897b0')
+          print('sealed_nonworkflow_paths=13')
+          PY
+
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          LIVE_MAIN=$(git rev-parse origin/main)
+          LIVE_TARGET=$(git rev-parse "origin/$TARGET_BRANCH")
+          test "$LIVE_MAIN" = "$MAIN_LEASE"
+          test "$LIVE_TARGET" = "$TARGET_LEASE"
+          test "$(git rev-parse "$LIVE_TARGET:$STANDING")" = "$STANDING_BLOB"
+          test "$(git rev-list --count "$MAIN_LEASE..$LIVE_TARGET")" = 1
+
+          mkdir -p "$PACKAGE/$(dirname "$STANDING")"
+          git show "$LIVE_TARGET:$STANDING" > "$PACKAGE/$STANDING"
+          python - "$PACKAGE/$STANDING" <<'PY'
+          import pathlib, sys
+          path = pathlib.Path(sys.argv[1])
+          text = path.read_text()
+          replacements = [
+              ('Validate 54 route decisions, 329 candidates, and 79 fixed followups', 'Validate 54 route decisions, 329 candidates, 17 deferred appeal/hearing links, and 62 fixed followups', 1),
+              ('Revalidate the exact 79-route responsive-link protocol before requests', 'Revalidate the exact 62-route responsive-link protocol before requests', 1),
+              ('Execute the fixed responsive-link protocol', 'Execute the fixed 62-route responsive-link protocol', 1),
+              ('ssc-rd04-wave03-responsive-link-v1', 'ssc-rd04-wave03-responsive-link-v2', 3),
+              ('runs-on: ubuntu-latest', 'runs-on: ubuntu-24.04', 2),
+          ]
+          for old, new, count in replacements:
+              assert text.count(old) == count, (old, text.count(old), count)
+              assert new not in text, new
+              text = text.replace(old, new)
+          assert '79-route' not in text and '79 fixed followups' not in text
+          assert text.count('62-route') == 2
+          path.write_text(text)
+          PY
+          printf '%s\n' "$STANDING" >> "$PATHS"
+          sort -o "$PATHS" "$PATHS"
+          test "$(wc -l < "$PATHS" | tr -d ' ')" = 14
+
+          git worktree add --detach "$WORK" "$LIVE_MAIN"
+          cp -a "$PACKAGE"/. "$WORK"/
+          cd "$WORK"
+          while IFS= read -r path; do git add -- "$path"; done < "$PATHS"
+          git diff --cached --name-only | sort > "$RECEIPT/staged-paths.txt"
+          cmp "$PATHS" "$RECEIPT/staged-paths.txt"
+          test "$(git diff --cached --name-status | wc -l | tr -d ' ')" = 14
+          test "$(git diff --cached --name-status | awk '$1 != "A" {n++} END {print n+0}')" = 0
+          if grep -E '(^|/)(tmp|transport|carrier|materializer)(/|$)' "$RECEIPT/staged-paths.txt"; then exit 1; fi
+
+          git commit -m 'Adjudicate RD-04 state-source outcomes and freeze 62-route responsive-link protocol'
+          FINAL_COMMIT=$(git rev-parse HEAD)
+          FINAL_TREE=$(git rev-parse 'HEAD^{tree}')
+          test "$(git rev-parse HEAD^)" = "$LIVE_MAIN"
+          test "$(git rev-list --count "$LIVE_MAIN..HEAD")" = 1
+          git diff --name-only "$LIVE_MAIN..HEAD" | sort > "$RECEIPT/committed-paths.txt"
+          cmp "$PATHS" "$RECEIPT/committed-paths.txt"
+          test "$(git diff --name-status "$LIVE_MAIN..HEAD" | awk '$1 != "A" {n++} END {print n+0}')" = 0
+
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-state-source-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-state-source-adjudication.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd04/run-responsive-link-protocol.py
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-responsive-link-protocol.py --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+
+          git restore --worktree -- .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-state-source-adjudication.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-responsive-link-protocol.py --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          test "$(git rev-parse origin/main)" = "$LIVE_MAIN"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$LIVE_TARGET"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$LIVE_TARGET"
+          git fetch --no-tags origin "$TARGET_BRANCH"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$FINAL_COMMIT"
+
+          printf 'live_main=%s\nprior_target=%s\nfinal_commit=%s\nfinal_tree=%s\npermanent_paths=14\nroute_adjudications=54\ncontext_admissions=36\nresponsive_link_candidates=329\ndeferred_appeal_hearing=17\nselected_followups=62\nselected_states=30\nterminal_cells=100/450\nsubstantive_field_terminalizations=0\nclass_closed=false\noutside_human_dependency=false\n' \
+            "$LIVE_MAIN" "$LIVE_TARGET" "$FINAL_COMMIT" "$FINAL_TREE" > "$RECEIPT/final.txt"
+          cp "$PATHS" "$RECEIPT/product-paths.txt"
+          cp "$ARCHIVE" "$RECEIPT/rd04-state-source-v2.tar.xz"
+          sha256sum "$ARCHIVE" "$RECEIPT"/*.txt > "$RECEIPT/sha256sums.txt"
+          cat "$RECEIPT/final.txt"
+
+      - name: Preserve exact v2 materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-state-source-v2-materializer-receipt
+          path: /tmp/rd04-state-source-v2-materializer-receipt
+          if-no-files-found: error
+          retention-days: 90
