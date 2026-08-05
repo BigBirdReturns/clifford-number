@@ -1,0 +1,75 @@
+name: TEMP export exact PC-49 v4 product
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pc49-v4-export-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  export:
+    if: github.head_ref == 'agent/pc49-source-carrier'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact carrier head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+
+      - name: Reconstruct checksum-bound archive
+        run: |
+          set -Eeuo pipefail
+          test "$(sha256sum .pc49-carrier-v4/manifest.json | awk '{print $1}')" = "7460a59b0cfa20eab2c8ef846e65f189f7a652db83558618c5c6c58e3cbdb0b1"
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, hashlib, json
+
+          carrier = Path('.pc49-carrier-v4')
+          manifest = json.loads((carrier / 'manifest.json').read_text())
+          expected_parts = [f'product.part{i:02d}' for i in range(8)]
+          if manifest.get('schema_version') != 'pc49-v4-carrier-manifest@1':
+              raise SystemExit('unexpected carrier schema')
+          if len(manifest.get('permanent_paths', [])) != 14:
+              raise SystemExit('permanent path denominator mismatch')
+          if [part.get('path') for part in manifest.get('parts', [])] != expected_parts:
+              raise SystemExit('carrier part denominator mismatch')
+          chunks = []
+          for part in manifest['parts']:
+              raw = (carrier / part['path']).read_bytes()
+              if len(raw) != part['bytes'] or hashlib.sha256(raw).hexdigest() != part['sha256']:
+                  raise SystemExit(f"carrier part mismatch: {part['path']}")
+              chunks.append(b''.join(raw.split()))
+          encoded = b''.join(chunks)
+          if len(encoded) != manifest['base64_bytes'] or hashlib.sha256(encoded).hexdigest() != manifest['base64_sha256']:
+              raise SystemExit('aggregate base64 mismatch')
+          archive = base64.b64decode(encoded, validate=True)
+          if len(archive) != manifest['archive_bytes'] or hashlib.sha256(archive).hexdigest() != manifest['archive_sha256']:
+              raise SystemExit('archive mismatch')
+          Path('/tmp/pc49-v4-product.tar.gz').write_bytes(archive)
+          Path('/tmp/pc49-v4-export.json').write_text(json.dumps({
+              'carrier_head': '${{ github.event.pull_request.head.sha }}',
+              'archive_bytes': len(archive),
+              'archive_sha256': hashlib.sha256(archive).hexdigest(),
+              'permanent_paths': manifest['permanent_paths'],
+              'permanent_file_sha256': manifest['permanent_file_sha256'],
+          }, indent=2) + '\n')
+          PY
+          sha256sum /tmp/pc49-v4-product.tar.gz
+
+      - name: Upload exact product archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc49-v4-exact-product
+          path: |
+            /tmp/pc49-v4-product.tar.gz
+            /tmp/pc49-v4-export.json
+          if-no-files-found: error
+          retention-days: 90
