@@ -1,0 +1,91 @@
+name: TEMP probe School.House state-registry lawful routes
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-state-registry-route-probe.yml'
+      - '.schoolhouse-state-registry-route-probe/EXECUTE'
+      - 'tools/acquisition/schoolhouse-state-registry/probe.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile bounded route probe
+        run: python -m py_compile tools/acquisition/schoolhouse-state-registry/probe.py
+
+      - name: Execute lawful route probe
+        id: probe
+        continue-on-error: true
+        env:
+          FL_SFTP_USERNAME: Public
+          FL_SFTP_PASSWORD: PubAccess1845!
+        run: |
+          set +e
+          OUT=/tmp/schoolhouse-state-registry-route-probe
+          rm -rf "$OUT"
+          python tools/acquisition/schoolhouse-state-registry/probe.py --output "$OUT"
+          status=$?
+          mkdir -p "$OUT"
+          printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
+          exit "$status"
+
+      - name: Upload exact route-probe artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-state-registry-route-probe
+          path: /tmp/schoolhouse-state-registry-route-probe
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal lawful route custody
+        if: always()
+        run: |
+          test -f /tmp/schoolhouse-state-registry-route-probe/RUNNER_EXIT_CODE
+          test "$(cat /tmp/schoolhouse-state-registry-route-probe/RUNNER_EXIT_CODE)" = '0'
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/schoolhouse-state-registry-route-probe')
+          summary = json.loads((root / 'summary.json').read_text())
+          policy = json.loads((root / 'route-policy.json').read_text())
+          receipts = [json.loads(line) for line in (root / 'route-receipts.jsonl').read_text().splitlines() if line]
+
+          assert summary['declared_routes'] == 16
+          assert summary['route_receipts'] == 16
+          assert summary['all_routes_terminal'] is True
+          assert summary['north_carolina_search_submissions'] == 0
+          assert summary['florida_charity_search_submissions'] == 0
+          assert summary['source_rows_acquired'] == 0
+          assert summary['raw_source_retained'] is False
+          assert summary['street_address_rows_retained'] == 0
+          assert summary['contact_detail_rows_retained'] == 0
+          assert summary['private_support_rows'] == 0
+          assert summary['identity_admitted'] is False
+          assert summary['outside_human_dependency'] is False
+          assert summary['graph_effect'] == 'none'
+          assert policy['north_carolina']['interactive_search_automation_permitted'] is False
+          assert policy['north_carolina']['business_search_submissions'] == 0
+          assert policy['north_carolina']['charity_search_submissions'] == 0
+          assert policy['outside_human_dependency'] is False
+          assert policy['graph_effect'] == 'none'
+          assert len(receipts) == 16
+          assert all(row['query_submitted'] is False for row in receipts)
+          assert all(row['identity_admitted'] is False for row in receipts)
+          assert all(row['graph_effect'] == 'none' for row in receipts)
+          print(json.dumps(summary, sort_keys=True))
+          PY
