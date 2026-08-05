@@ -1,0 +1,126 @@
+name: TEMP replay School.House Archive locator transport failures
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-first-party-archive-locator-replay.yml'
+      - '.schoolhouse-first-party-archive-locator-replay/EXECUTE'
+      - '.schoolhouse-first-party-archive-locator-replay/retry-input.json.gz.b64'
+      - '.schoolhouse-first-party-archive-locator-replay/replay.py.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: temp-schoolhouse-first-party-archive-locator-replay-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate exact retry denominator and runner
+        run: |
+          set -Eeuo pipefail
+          BASE_MAIN='1099c9f53fa2b07a96ea9d0cd108d9332eccfb96'
+          INPUT_BUNDLE='.schoolhouse-first-party-archive-locator-replay/retry-input.json.gz.b64'
+          INPUT='/tmp/schoolhouse-first-party-archive-locator-retry-input.json'
+          BUNDLE='.schoolhouse-first-party-archive-locator-replay/replay.py.gz.b64'
+          EXECUTE='.schoolhouse-first-party-archive-locator-replay/EXECUTE'
+          RUNNER='/tmp/replay-schoolhouse-first-party-archive-locator.py'
+
+          git fetch --no-tags origin main
+          test "$(git merge-base HEAD origin/main)" = "$BASE_MAIN"
+          git merge-base --is-ancestor "$BASE_MAIN" origin/main
+          test "$(sha256sum "$INPUT_BUNDLE" | awk '{print $1}')" = 'e6abf675f77271321b54b4d343ace845bab4eb7149029a7e76c5edf8d586247d'
+          base64 -d "$INPUT_BUNDLE" | gzip -dc > "$INPUT"
+          test "$(sha256sum "$INPUT" | awk '{print $1}')" = '66e50114a328785bd7dca89e321bfde05027d77d21bab4023868af6ed5197a85'
+          jq -e '.routes | length == 26' "$INPUT"
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '669a668728b74a54ba71f00ac1fa9333f3c4afd99928a80d823fe5a6dde8a485'
+          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = 'b6af04704b34d156771f13571d3c0213f2af5d8a236951570689ae3b6ef534e0'
+          base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = '090c126d323ecae340c878239a6731fedac4a43a976554d26b2dacd404ff13b7'
+          python -m py_compile "$RUNNER"
+
+      - name: Execute one bounded replay attempt per failed route
+        run: |
+          set -Eeuo pipefail
+          INPUT='/tmp/schoolhouse-first-party-archive-locator-retry-input.json'
+          OUT='/tmp/schoolhouse-first-party-archive-locator-replay'
+          rm -rf "$OUT"
+          python /tmp/replay-schoolhouse-first-party-archive-locator.py --input "$INPUT" --output "$OUT"
+
+          for file in summary.json route-policy.json artifact-manifest.json replay-route-results.jsonl archive-snapshot-locators.jsonl SHA256SUMS; do
+            test -f "$OUT/$file"
+          done
+
+          cat "$OUT/summary.json"
+          jq -e '
+            .declared_retry_routes == 26 and
+            .terminal_replay_rows == 26 and
+            .archive_api_queries == 26 and
+            .replay_request_attempts == 26 and
+            .maximum_parallel_workers == 1 and
+            .inter_query_delay_seconds == 3 and
+            .maximum_results_per_route == 1000 and
+            .result_caps_exhausted >= 0 and
+            .result_caps_exhausted <= 26 and
+            .archived_bodies_fetched == 0 and
+            .interactive_search_submissions == 0 and
+            .organization_name_submissions == 0 and
+            .identifier_submissions == 0 and
+            .source_rows_acquired == 0 and
+            .street_address_rows_retained == 0 and
+            .contact_detail_rows_retained == 0 and
+            .private_support_rows == 0 and
+            .identities_admitted == 0 and
+            .negative_existence_claims_created == 0 and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/summary.json"
+          test "$(grep -cve '^$' "$OUT/replay-route-results.jsonl")" = '26'
+          jq -e '
+            .source_denominator.replayed_transport_error_routes == 26 and
+            .source_denominator.source_baseline_routes == 46 and
+            .archive_api.exact_url_queries == 26 and
+            .archive_api.maximum_parallel_workers == 1 and
+            .archive_api.archived_page_bodies_fetched == false and
+            .interpretation.zero_rows_after_replay_is_not_absence == true and
+            .interpretation.provider_error_after_replay_is_not_absence == true and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/route-policy.json"
+          jq -e '
+            .raw_source_retained == false and
+            .archived_bodies_fetched == false and
+            .identity_admitted == false and
+            .negative_existence_claim_created == false and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/artifact-manifest.json"
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: schoolhouse-first-party-archive-locator-replay
+          path: /tmp/schoolhouse-first-party-archive-locator-replay
+          if-no-files-found: error
+          retention-days: 90
