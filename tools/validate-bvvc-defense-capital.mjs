@@ -553,8 +553,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const secondLevelForms = readJsonl(path.join(dir, 'schoolhouse-charity-nc-second-level-surface-forms.jsonl'));
     const secondLevelRoutes = [...secondLevelRoots, ...secondLevelFollowed];
 
-    check(manifest.counts.source_inventory_rows === 275, 'second-level source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 21, 'second-level coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 290, 'second-level source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 22, 'second-level coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'second-level explicit-gap count drift');
     check(manifest.counts.schoolhouse_charity_nc_second_level_root_route_rows === secondLevelRoots.length && secondLevelRoots.length === 8, 'second-level root-route denominator drift');
     check(manifest.counts.schoolhouse_charity_nc_second_level_followed_route_rows === secondLevelFollowed.length && secondLevelFollowed.length === 80, 'second-level followed-route denominator drift');
@@ -623,8 +623,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const finalResidualForms = readJsonl(path.join(dir, 'schoolhouse-charity-nc-final-static-residual-surface-forms.jsonl'));
     const finalResidualFiles = readJsonl(path.join(dir, 'schoolhouse-charity-nc-final-static-residual-file-samples.jsonl'));
 
-    check(manifest.counts.source_inventory_rows === 275, 'final residual source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 21, 'final residual coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 290, 'final residual source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 22, 'final residual coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'final residual explicit-gap count drift');
     check(manifest.counts.schoolhouse_charity_nc_final_static_residual_input_rows === finalResidualInputs.length && finalResidualInputs.length === 51, 'final residual input denominator drift');
     check(manifest.counts.schoolhouse_charity_nc_final_static_residual_terminal_route_rows === finalResidualRoutes.length && finalResidualRoutes.length === 51, 'final residual route denominator drift');
@@ -674,6 +674,59 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     check(coverage.denominators.some(row => row.surface === 'School.House North Carolina final static residual route custody' && row.enumerated_total === 51 && row.terminal_file_target_total === 16 && row.bounded_file_sample_routes === 15 && row.http_error_routes === 2 && row.search_submissions === 0), 'final residual coverage denominator missing');
   }
 
+
+  {
+    const completePdfCustody = readJson(path.join(dir, 'schoolhouse-charity-nc-complete-pdf-custody.json'));
+    const completePdfInputs = readJsonl(path.join(dir, 'schoolhouse-charity-nc-complete-pdf-input-routes.jsonl'));
+    const completePdfFull = readJsonl(path.join(dir, 'schoolhouse-charity-nc-complete-pdf-full-file-custody.jsonl'));
+    const completePdfClass = readJsonl(path.join(dir, 'schoolhouse-charity-nc-complete-pdf-content-field-classification.jsonl'));
+    const completePdfPolicy = readJson(path.join(dir, 'schoolhouse-charity-nc-complete-pdf-route-policy.json'));
+    const completePdfSummary = readJson(path.join(dir, 'schoolhouse-charity-nc-complete-pdf-field-summary.json'));
+
+    check(manifest.counts.source_inventory_rows === 290, 'complete-PDF source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 22, 'complete-PDF coverage-denominator count drift');
+    check(manifest.counts.explicit_gap_rows === 16, 'complete-PDF explicit-gap count drift');
+    check(manifest.counts.schoolhouse_charity_nc_complete_pdf_input_rows === completePdfInputs.length && completePdfInputs.length === 15, 'complete-PDF input denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_complete_pdf_terminal_route_rows === completePdfFull.length && completePdfFull.length === 15, 'complete-PDF terminal denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_complete_pdf_complete_file_hash_rows === completePdfFull.filter(row => row.state === 'complete_file_hashed').length && manifest.counts.schoolhouse_charity_nc_complete_pdf_complete_file_hash_rows === 15, 'complete-PDF hash denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_complete_pdf_exact_length_match_rows === completePdfFull.filter(row => row.expected_length_matches === true).length && manifest.counts.schoolhouse_charity_nc_complete_pdf_exact_length_match_rows === 15, 'complete-PDF length-match denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_complete_pdf_text_extraction_success_rows === completePdfClass.filter(row => row.text_extraction_state === 'success').length && manifest.counts.schoolhouse_charity_nc_complete_pdf_text_extraction_success_rows === 15, 'complete-PDF text-extraction denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_complete_pdf_total_pages === completePdfClass.reduce((sum, row) => sum + row.page_count, 0) && manifest.counts.schoolhouse_charity_nc_complete_pdf_total_pages === 377, 'complete-PDF page denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_complete_pdf_screened_text_chars === completePdfClass.reduce((sum, row) => sum + row.extracted_text_chars, 0) && manifest.counts.schoolhouse_charity_nc_complete_pdf_screened_text_chars === 332175, 'complete-PDF screened-text denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_complete_pdf_subject_term_hit_rows === completePdfClass.filter(row => row.subject_term_hit).length && manifest.counts.schoolhouse_charity_nc_complete_pdf_subject_term_hit_rows === 0, 'complete-PDF subject-hit row drift');
+    check(manifest.counts.schoolhouse_charity_nc_complete_pdf_subject_term_total_hits === completePdfClass.reduce((sum, row) => sum + row.subject_term_hits, 0) && manifest.counts.schoolhouse_charity_nc_complete_pdf_subject_term_total_hits === 0, 'complete-PDF subject-hit total drift');
+    check(manifest.counts.schoolhouse_charity_nc_complete_pdf_field_term_total_hits === completePdfClass.reduce((sum, row) => sum + row.field_term_hits, 0) && manifest.counts.schoolhouse_charity_nc_complete_pdf_field_term_total_hits === 586, 'complete-PDF field-term total drift');
+    check(manifest.counts.schoolhouse_charity_nc_complete_pdf_search_submissions === 0 && manifest.counts.schoolhouse_charity_nc_complete_pdf_source_rows_acquired === 0 && manifest.counts.schoolhouse_charity_nc_complete_pdf_admitted_identity_rows === 0, 'complete-PDF authority-count drift');
+
+    check(unique(completePdfInputs.map(row => row.route_id)) && unique(completePdfInputs.map(row => row.receipt_id)), 'complete-PDF input IDs must be unique');
+    check(completePdfInputs.every(row => knownReceiptIds.has(row.receipt_id) && row.complete_remote_file_retained === false && row.graph_effect === 'none' && row.promotes_to === 'candidate_only'), 'complete-PDF input custody drift');
+    check(unique(completePdfFull.map(row => row.route_id)) && unique(completePdfFull.map(row => row.receipt_id)), 'complete-PDF full-file IDs must be unique');
+    check(completePdfFull.every(row => knownReceiptIds.has(row.receipt_id) && row.state === 'complete_file_hashed' && row.status === 200 && row.complete_file_hash_claimed === true && row.expected_length_matches === true && typeof row.full_file_sha256 === 'string' && row.full_file_sha256.length === 64), 'complete-PDF full-file state drift');
+    check(completePdfFull.every(row => row.request_method === 'GET' && row.request_count === 1 && row.range_requested === false && row.query_submitted === false && row.organization_name_submitted === false && row.license_number_submitted === false), 'complete-PDF request-bound drift');
+    check(completePdfFull.every(row => row.source_rows_acquired === 0 && row.raw_source_retained === false && row.complete_remote_file_retained === false && row.hidden_form_values_retained === false && row.street_address_rows_retained === 0 && row.contact_detail_rows_retained === 0 && row.private_support_rows === 0), 'complete-PDF privacy drift');
+    check(completePdfFull.every(row => row.identity_admitted === false && row.negative_existence_claim_created === false && row.outside_human_dependency === false && row.graph_effect === 'none' && row.promotes_to === 'candidate_only'), 'complete-PDF authority drift');
+    check(unique(completePdfClass.map(row => row.route_id)) && unique(completePdfClass.map(row => row.receipt_id)), 'complete-PDF classification IDs must be unique');
+    check(completePdfClass.every(row => knownReceiptIds.has(row.receipt_id) && row.pdfinfo_state === 'success' && row.text_extraction_state === 'success' && row.content_classification_state === 'aggregate_term_counts_complete_file'), 'complete-PDF classification state drift');
+    check(completePdfClass.every(row => row.subject_term_hit === false && row.subject_term_hits === 0 && row.identity_admission_state === 'no_subject_term_observed_in_extracted_text' && row.public_schoolhouse_identity_admitted === false && row.graph_effect === 'none'), 'complete-PDF subject/identity drift');
+
+    check(completePdfPolicy.artifact_workflow_run_id === 30988735386 && completePdfPolicy.artifact_id === 8923190161 && completePdfPolicy.artifact_digest === 'sha256:173219a9ffe5dcdd22cccf533eb980f094e5b2fd8cc94e8a0ba7e886b9e33bd8', 'complete-PDF policy artifact drift');
+    check(completePdfPolicy.maximum_attempts_per_route === 1 && completePdfPolicy.search_submissions === 0 && completePdfPolicy.raw_source_retained === false && completePdfPolicy.complete_remote_files_retained === false && completePdfPolicy.extracted_text_retained === false && completePdfPolicy.identity_admitted === false && completePdfPolicy.graph_effect === 'none', 'complete-PDF policy authority drift');
+    check(completePdfSummary.complete_file_hash_rows === 15 && completePdfSummary.text_extraction_success_rows === 15 && completePdfSummary.total_pdf_pages === 377 && completePdfSummary.total_extracted_text_chars_screened === 332175 && completePdfSummary.subject_term_total_hits === 0 && completePdfSummary.field_term_total_hits === 586, 'complete-PDF field summary denominator drift');
+    check(completePdfSummary.extracted_text_retained === false && completePdfSummary.public_schoolhouse_identity_admitted === false && completePdfSummary.negative_existence_claim_created === false && completePdfSummary.graph_effect === 'none', 'complete-PDF field summary authority drift');
+
+    check(completePdfCustody.acquisition.workflow_run_id === 30988735386 && completePdfCustody.acquisition.artifact_id === 8923190161 && completePdfCustody.acquisition.artifact_digest === 'sha256:173219a9ffe5dcdd22cccf533eb980f094e5b2fd8cc94e8a0ba7e886b9e33bd8' && completePdfCustody.acquisition.acquisition_head === '91a16438fecb1bde772dd88147c06f2c72eca38a', 'complete-PDF acquisition custody drift');
+    check(completePdfCustody.counts.input_pdf_routes === 15 && completePdfCustody.counts.terminal_route_rows === 15 && completePdfCustody.counts.complete_file_hash_rows === 15 && completePdfCustody.counts.text_extraction_success_rows === 15 && completePdfCustody.counts.total_pdf_pages === 377 && completePdfCustody.counts.subject_term_total_hits === 0 && completePdfCustody.counts.field_term_total_hits === 586, 'complete-PDF custody denominator drift');
+    check(completePdfCustody.terminal_frontier.complete_file_hash_denominator_terminal === true && completePdfCustody.terminal_frontier.fixed_subject_term_screen_terminal === true && completePdfCustody.terminal_frontier.outside_human_dependency === false, 'complete-PDF terminal frontier drift');
+    check(completePdfCustody.privacy.raw_source_retained === false && completePdfCustody.privacy.complete_remote_files_retained === false && completePdfCustody.privacy.extracted_text_retained === false && completePdfCustody.privacy.street_address_rows_retained === 0 && completePdfCustody.privacy.contact_detail_rows_retained === 0 && completePdfCustody.privacy.private_support_rows === 0, 'complete-PDF custody privacy drift');
+    check(completePdfCustody.public_schoolhouse_identity_admitted === false && completePdfCustody.negative_existence_claim_created === false && completePdfCustody.outside_human_dependency === false && completePdfCustody.publication_effect === 'none' && completePdfCustody.adoption_effect === 'none' && completePdfCustody.graph_effect === 'none' && completePdfCustody.promotes_to === 'candidate_only', 'complete-PDF custody authority drift');
+
+    const completePdfProjection = schoolhouse.state_registry_identity_census?.charity_north_carolina_complete_pdf_custody;
+    check(completePdfProjection?.complete_file_hash_rows === 15 && completePdfProjection?.text_extraction_success_rows === 15 && completePdfProjection?.total_pdf_pages === 377 && completePdfProjection?.subject_term_total_hits === 0 && completePdfProjection?.field_term_total_hits === 586, 'School.House complete-PDF projection drift');
+    check(completePdfProjection?.identity_state === 'unresolved_after_complete_pdf_content_screen_no_public_identity_admitted' && completePdfProjection?.admitted_legal_name === null && completePdfProjection?.admitted_ein === null, 'School.House complete-PDF identity authority drift');
+    const completePdfFrontier = frontier.tasks.find(task => task.task_id === 'bvvc-frontier-schoolhouse-legal-governance')?.prior_charity_nc_complete_pdf_custody;
+    check(completePdfFrontier?.complete_file_hash_rows === 15 && completePdfFrontier?.text_extraction_success_rows === 15 && completePdfFrontier?.total_pdf_pages === 377 && completePdfFrontier?.subject_term_total_hits === 0 && completePdfFrontier?.field_term_total_hits === 586 && completePdfFrontier?.admitted_identities === 0, 'School.House complete-PDF frontier projection drift');
+    check(coverage.denominators.some(row => row.surface === 'School.House North Carolina complete official PDF hash and fixed-term content custody' && row.enumerated_total === 15 && row.complete_file_hash_rows === 15 && row.total_pdf_pages === 377 && row.subject_term_total_hits === 0 && row.field_term_total_hits === 586 && row.search_submissions === 0), 'complete-PDF coverage denominator missing');
+  }
   return errors;
 }
 
