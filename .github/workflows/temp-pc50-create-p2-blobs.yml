@@ -24,7 +24,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
 
-      - name: Decode and verify exact P2 patch
+      - name: Decode and verify exact-tree P2 patch
         run: |
           set -Eeuo pipefail
           python3 - <<'PY'
@@ -33,24 +33,24 @@ jobs:
 
           raw = Path('.pc50-carrier/p2-repair.patch.gz.b64').read_bytes()
           encoded = b''.join(raw.split())
-          if len(encoded) != 6104:
+          if len(encoded) != 6120:
               raise SystemExit(f'base64 length mismatch: {len(encoded)}')
-          if hashlib.sha256(encoded).hexdigest() != '4982e472bb446ac2dbfc0a37c0c79b01c866ca16d1ae301904f11638180eef10':
+          if hashlib.sha256(encoded).hexdigest() != '75a813193bc2771a48271b7ea4dcab2cbf7d091ca39c2ca1038777c7deead3e8':
               raise SystemExit('base64 SHA-256 mismatch')
           compressed = base64.b64decode(encoded, validate=True)
-          if len(compressed) != 4578:
+          if len(compressed) != 4588:
               raise SystemExit(f'gzip length mismatch: {len(compressed)}')
-          if hashlib.sha256(compressed).hexdigest() != 'e56d8ed3310b1ae235d0878b7f1300f03afd2aea9ba8fc032809060de98beb3e':
+          if hashlib.sha256(compressed).hexdigest() != '7428306547cd3e9dc40a06e61e1ac30fe93c7967a04473c491504164d5474e63':
               raise SystemExit('gzip SHA-256 mismatch')
           patch = gzip.decompress(compressed)
-          if len(patch) != 21229:
+          if len(patch) != 21253:
               raise SystemExit(f'patch length mismatch: {len(patch)}')
-          if hashlib.sha256(patch).hexdigest() != 'bb5cf14d0d8b059343ed9b156f9cbfa16f51f81360fedc24973b1063d06dbcab':
+          if hashlib.sha256(patch).hexdigest() != 'a6ef14c0493939a57a8e82771413888c6a5e5c05cca2a1bcc91962eba58fbee8':
               raise SystemExit('patch SHA-256 mismatch')
           Path('/tmp/pc50-p2-repair.patch.gz').write_bytes(compressed)
           Path('/tmp/pc50-p2-repair.patch').write_bytes(patch)
-          print('patch_bytes=21229')
-          print('patch_sha256=bb5cf14d0d8b059343ed9b156f9cbfa16f51f81360fedc24973b1063d06dbcab')
+          print('patch_bytes=21253')
+          print('patch_sha256=a6ef14c0493939a57a8e82771413888c6a5e5c05cca2a1bcc91962eba58fbee8')
           PY
 
       - name: Checkout exact original PC-50 product head
@@ -68,6 +68,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           test "$(git rev-parse HEAD^{commit})" = "63c3c8eda8144ec7596efc88a6d7b56239249a58"
+          test "$(git rev-parse HEAD^{tree})" = "772abfbb3285284a5e6f3056592ac65acef4eff1"
           git apply --check /tmp/pc50-p2-repair.patch
           git apply /tmp/pc50-p2-repair.patch
 
@@ -87,9 +88,9 @@ jobs:
 
           expected = {
               'tools/lib/preference-custody-manifest-v48.mjs': {
-                  'bytes': 47436,
-                  'sha256': '6240f956ecb8d1518a1e74980c7b6d93e3cc9a8cd79148b2f9da492eb1a397ee',
-                  'blob': 'eba50e876485005ee1cd0971b5110d5df4da9064',
+                  'bytes': 44888,
+                  'sha256': '7834c9625a6bf83f837947758ebc59beb76f69fd35f190718af3c8d405416afc',
+                  'blob': '46d60485a089932f18d5567382f9ce0d7f4b7f8c',
               },
               'tools/lib/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs': {
                   'bytes': 44657,
@@ -97,9 +98,9 @@ jobs:
                   'blob': '3a9647dda955bd980c863f8ef068f36115e5ef39',
               },
               'test/preference-custody-manifest-v48.test.js': {
-                  'bytes': 13461,
-                  'sha256': '72bb6fbe85a4b35ec10d0becb050f16486b57a5ac82a81ab2475c00c1e5f44a2',
-                  'blob': '5410fa206893ef3f65688180d719daf59c6a0fc8',
+                  'bytes': 13085,
+                  'sha256': '78dfaf1e65845d3dad2adec129e8d0dd1e1de5d92d7020b774a386d24e31d1aa',
+                  'blob': 'f47b3e502d0785ba826f62265ff296c2a77de055',
               },
               'test/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.test.js': {
                   'bytes': 9591,
@@ -159,7 +160,7 @@ jobs:
           set -Eeuo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          import base64, hashlib, json, os, urllib.error, urllib.request
+          import base64, json, os, urllib.error, urllib.request
 
           expected = json.loads(Path('/tmp/pc50-p2-local-blob-receipt.json').read_text())
           repo = os.environ['GITHUB_REPOSITORY']
@@ -201,7 +202,7 @@ jobs:
               'original_product_commit': '63c3c8eda8144ec7596efc88a6d7b56239249a58',
               'original_product_tree': '772abfbb3285284a5e6f3056592ac65acef4eff1',
               'qualified_parent_commit': 'd87172a41e88c1709b37a114b50df733545126c8',
-              'patch_sha256': 'bb5cf14d0d8b059343ed9b156f9cbfa16f51f81360fedc24973b1063d06dbcab',
+              'patch_sha256': 'a6ef14c0493939a57a8e82771413888c6a5e5c05cca2a1bcc91962eba58fbee8',
               'changed_permanent_files': 4,
               'remote_blobs': remote,
               'ref_updated': False,
