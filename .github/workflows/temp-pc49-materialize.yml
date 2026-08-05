@@ -1,4 +1,4 @@
-name: TEMP materialize qualified PC-49 product v3
+name: TEMP export PC-49 carrier bytes for exact recovery
 
 on:
   pull_request:
@@ -8,19 +8,18 @@ on:
       - synchronize
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  materialize:
+  export:
     if: github.head_ref == 'agent/pc49-source-carrier'
     runs-on: ubuntu-latest
-    timeout-minutes: 180
     steps:
       - name: Checkout checksum-bound carrier
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Reconstruct exact qualified carrier inputs
+      - name: Verify current carrier identities
         run: |
           set -euo pipefail
           test "$(sha256sum .pc49-carrier-v3/product.part00 | awk '{print $1}')" = "2081ea8d85452d2b813a8a0d4ce636dd26c27b686b8583ec479a7b30ca77f07f"
@@ -28,124 +27,17 @@ jobs:
           test "$(sha256sum .pc49-carrier-v3/product.part02 | awk '{print $1}')" = "4c1bb8547c709f0b1783b221f8475ebe43f9991fa19d763af116ac40b51b9084"
           test "$(sha256sum .pc49-carrier-v3/product.part03 | awk '{print $1}')" = "ed59e6b7670e718e675aae9157a701cffc58f8f6541dc2cfeebeefcf8c02d323"
           test "$(sha256sum .pc49-carrier-v3/run.part00 | awk '{print $1}')" = "692397591d98aeab0a12e40bb8780e70ec610c229fd690fd212dea449d16306a"
-
-          python3 - <<'PY'
-          from pathlib import Path
-          import base64
-          import hashlib
-
-          expected = '914e5e46f29fd07612e8c9089bec59a4d37bc34d9d1f4159638a2b417cc94774'
-          alphabet = b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-          whitespace = set(b' \t\r\n')
-          paths = [Path(f'.pc49-carrier-v3/product.part0{i}') for i in range(4)]
-          raw_parts = [path.read_bytes() for path in paths]
-          parts = [bytes(byte for byte in raw if byte not in whitespace) for raw in raw_parts]
-
-          first = b''.join(parts[:3])
-          second = parts[3] + b'='
-          if not first.endswith(b'='):
-              raise SystemExit('first encoded segment does not preserve its terminal padding')
-          if len(first) % 4 != 3:
-              raise SystemExit(f'unexpected first-segment modulo: {len(first) % 4}')
-          if len(second) % 4 != 0:
-              raise SystemExit(f'unexpected second-segment modulo: {len(second) % 4}')
-
-          second_decoded = base64.b64decode(second, validate=True)
-          if base64.b64encode(second_decoded) != second:
-              raise SystemExit('second encoded segment is not canonical after terminal padding recovery')
-
-          boundary_offsets = {0, len(first) - 1}
-          normalized_offset = 0
-          for part_index, raw in enumerate(raw_parts[:3]):
-              for byte in raw:
-                  if byte in whitespace:
-                      if byte == 10:
-                          boundary_offsets.add(normalized_offset)
-                  else:
-                      normalized_offset += 1
-              boundary_offsets.add(normalized_offset)
-              print(
-                  f'part={part_index} normalized_end={normalized_offset} '
-                  f'raw_bytes={len(raw)} raw_lines={raw.count(bytes([10]))}'
-              )
-          if normalized_offset != len(first):
-              raise SystemExit('line-boundary census did not cover the normalized first segment')
-
-          boundary_offsets = sorted(offset for offset in boundary_offsets if 0 <= offset <= len(first) - 1)
-          matches = []
-          checked = 0
-          for offset in boundary_offsets:
-              for restored_byte in alphabet:
-                  candidate = first[:offset] + bytes([restored_byte]) + first[offset:]
-                  checked += 1
-                  try:
-                      first_decoded = base64.b64decode(candidate, validate=True)
-                  except Exception:
-                      continue
-                  if base64.b64encode(first_decoded) != candidate:
-                      continue
-                  decoded = first_decoded + second_decoded
-                  digest = hashlib.sha256(decoded).hexdigest()
-                  if digest == expected:
-                      matches.append((offset, restored_byte, candidate, decoded))
-
-          print(
-              f'line_boundary_count={len(boundary_offsets)} candidate_count={checked} '
-              f'exact_match_count={len(matches)}'
-          )
-          if len(matches) != 1:
-              raise SystemExit(f'exact archive reconstruction count={len(matches)}')
-
-          offset, restored_byte, first_candidate, decoded = matches[0]
-          print(
-              f'selected_normalized_offset={offset} '
-              f'restored_base64_byte={bytes([restored_byte])!r} '
-              f'first_candidate_sha256={hashlib.sha256(first_candidate).hexdigest()} '
-              f'second_candidate_sha256={hashlib.sha256(second).hexdigest()} '
-              f'decoded_bytes={len(decoded)} decoded_sha256={hashlib.sha256(decoded).hexdigest()}'
-          )
-          Path('/tmp/pc49-product.tar.gz').write_bytes(decoded)
-          Path('/tmp/pc49-product.tar.gz.b64').write_bytes(base64.encodebytes(decoded))
-          PY
-          test "$(sha256sum /tmp/pc49-product.tar.gz | awk '{print $1}')" = "914e5e46f29fd07612e8c9089bec59a4d37bc34d9d1f4159638a2b417cc94774"
-
-          cat .pc49-carrier-v3/run.part00 > /tmp/pc49-run.sh.b64
-          base64 -d /tmp/pc49-run.sh.b64 > /tmp/pc49-run.sh
-          test "$(sha256sum /tmp/pc49-run.sh | awk '{print $1}')" = "5cb101569f6630052cf154e1cf2704dbc0b4f094f677dfb8071096f2cd25e879"
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('/tmp/pc49-run.sh')
-          text = path.read_text()
-          old = 'PARENT=7f960c30b6c58c70e3a996d4239e363e50d848ef'
-          new = 'PARENT=320287946785fba28b3f84850e90b16e849f7dbc'
-          if text.count(old) != 1:
-              raise SystemExit(f'unexpected parent anchor count: {text.count(old)}')
-          path.write_text(text.replace(old, new, 1))
-          PY
-          test "$(sha256sum /tmp/pc49-run.sh | awk '{print $1}')" = "95fa0f259363c31c25ee35564e12ca93de85163402b3afdbced70b4b6fa7bd3a"
-          chmod +x /tmp/pc49-run.sh
-          sha256sum /tmp/pc49-product.tar.gz /tmp/pc49-product.tar.gz.b64 /tmp/pc49-run.sh
-      - name: Checkout exact current-main parent
-        uses: actions/checkout@v4
-        with:
-          ref: 320287946785fba28b3f84850e90b16e849f7dbc
-          fetch-depth: 0
-          clean: true
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - name: Reconstruct, qualify, and publish exact PC-49 product
-        run: bash /tmp/pc49-run.sh
-      - name: Upload PC-49 materialization custody
-        if: always()
+          sha256sum .pc49-carrier-v3/product.part* .pc49-carrier-v3/run.part00 > /tmp/pc49-carrier-identities.txt
+      - name: Upload exact carrier bytes
         uses: actions/upload-artifact@v4
         with:
-          name: pc49-materialization-custody-v3-current-main
+          name: pc49-exact-carrier-bytes
           path: |
-            /tmp/pc49-product-receipt.txt
-            /tmp/pc49-materialization-diagnostic.txt
-            /tmp/pc49-standalone.log
-            /tmp/pc49-floor.log
-            /tmp/pc49-release.log
-            /tmp/pc49-push.log
-          if-no-files-found: warn
+            .pc49-carrier-v3/product.part00
+            .pc49-carrier-v3/product.part01
+            .pc49-carrier-v3/product.part02
+            .pc49-carrier-v3/product.part03
+            .pc49-carrier-v3/run.part00
+            /tmp/pc49-carrier-identities.txt
+          include-hidden-files: true
+          if-no-files-found: error
