@@ -47,24 +47,50 @@ jobs:
           EXECUTE='.schoolhouse-launch-era-archive-content-materializer/EXECUTE'
           BUNDLE='.schoolhouse-launch-era-archive-content-materializer/runner.sh.gz.b64'
           RUNNER='/tmp/materialize-schoolhouse-launch-era-archive-content.sh'
-          OLD_BASE='c81de1c073d0a9ff6d35d8b6f1f4396941026203'
-          NEW_BASE='ee88d215bf85f6d3033fb07d6f236bcb71a54546'
           test -s "$EXECUTE"
           test -s "$BUNDLE"
           grep -Fx 'materialize=schoolhouse-launch-era-archive-content-custody-v1' "$EXECUTE"
-          grep -Fx "known_safe_main=$NEW_BASE" "$EXECUTE"
-          grep -Fx "runner_patch_from=$OLD_BASE" "$EXECUTE"
-          grep -Fx "runner_patch_to=$NEW_BASE" "$EXECUTE"
+          grep -Fx 'known_safe_main=ee88d215bf85f6d3033fb07d6f236bcb71a54546' "$EXECUTE"
+          grep -Fx 'builder_patch_from=a.candidate_id.localeCompare(b.candidate_id)' "$EXECUTE"
+          grep -Fx 'builder_patch_to=a.candidate_observation_id.localeCompare(b.candidate_observation_id)' "$EXECUTE"
+          grep -Fx 'builder_sha256=b41c45f7a8e4fdb7dcbd489b47b8127f3453dca774759c79f4e809ced2a0fd5b' "$EXECUTE"
           grep -Fx 'replay_artifact_digest=sha256:3fcc4191cf2e6aa3f84eadc5b5265c4e9af13a58a7391b2407a194d6d147a6c9' "$EXECUTE"
           test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '68e48fa3ae8f20fd1e56145bf6648f69a602dec3333dcaf8fd462f5e66ddcf9c'
           base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
           test "$(sha256sum "$RUNNER" | awk '{print $1}')" = 'bea3a21ec1c80e46e265f07cea64fa05e1b1c7755c01d4f9f1e0f948e1da2d89'
-          test "$(grep -o "$OLD_BASE" "$RUNNER" | wc -l | tr -d ' ')" = '1'
-          test "$(grep -o "$NEW_BASE" "$RUNNER" | wc -l | tr -d ' ')" = '0'
-          sed -i "s/$OLD_BASE/$NEW_BASE/" "$RUNNER"
-          test "$(grep -o "$OLD_BASE" "$RUNNER" | wc -l | tr -d ' ')" = '0'
-          test "$(grep -o "$NEW_BASE" "$RUNNER" | wc -l | tr -d ' ')" = '1'
-          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = '535c0bcb0c287b817dc186d29621672e84b179dbd6eca612f60cf1a4007a3d58'
+          python - "$RUNNER" <<'PYPATCH'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          source = path.read_text()
+          old_base = 'c81de1c073d0a9ff6d35d8b6f1f4396941026203'
+          new_base = 'ee88d215bf85f6d3033fb07d6f236bcb71a54546'
+          old_receipt = "--arg builder_sha256 '66f8203313f98590f1f6b292a43418a3564e3b5b7923e734fcd10c7f16f7dd8e' \\"
+          new_receipt = "--arg builder_sha256 'b41c45f7a8e4fdb7dcbd489b47b8127f3453dca774759c79f4e809ced2a0fd5b' \\"
+          marker = 'node --check "$BUILDER"'
+          replacement = '''python - "$BUILDER" <<'PYFIX'
+          from pathlib import Path
+          import sys
+          p = Path(sys.argv[1])
+          s = p.read_text()
+          old = 'a.candidate_id.localeCompare(b.candidate_id)'
+          new = 'a.candidate_observation_id.localeCompare(b.candidate_observation_id)'
+          assert s.count(old) == 1, s.count(old)
+          assert s.count(new) == 0, s.count(new)
+          p.write_text(s.replace(old, new))
+          PYFIX
+          test "$(sha256sum "$BUILDER" | awk '{print $1}')" = 'b41c45f7a8e4fdb7dcbd489b47b8127f3453dca774759c79f4e809ced2a0fd5b'
+          node --check "$BUILDER"'''
+          assert source.count(old_base) == 1, source.count(old_base)
+          assert source.count(old_receipt) == 1, source.count(old_receipt)
+          assert source.count(marker) == 1, source.count(marker)
+          source = source.replace(old_base, new_base)
+          source = source.replace(old_receipt, new_receipt)
+          source = source.replace(marker, replacement)
+          path.write_text(source)
+          PYPATCH
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = 'aca9a4ea18905e4803b21ce1fd2aab6642bbcddb752ebe0915102b11f6a7166c'
           bash -n "$RUNNER"
           bash "$RUNNER"
 
