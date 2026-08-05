@@ -1,0 +1,152 @@
+name: TEMP clean-rebind RD-04 candidate adjudication
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-ssc-rd04-candidate-adjudication-clean-rebind.yml'
+      - '.ssc-rd04-candidate-adjudication-rebind/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd04-candidate-adjudication-clean-rebind-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  rebind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Prove the fifteen-file product and synthesize one clean sixteen-path commit
+        shell: bash
+        run: |
+          set -Eeuxo pipefail
+          export GIT_AUTHOR_NAME='github-actions[bot]'
+          export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+
+          readonly PRODUCT_BASE=320287946785fba28b3f84850e90b16e849f7dbc
+          readonly TARGET_BRANCH=agent/ssc-rd-wave03-rd04-candidate-adjudication-v1
+          readonly TARGET_LEASE=77bff8c71e714f0d3ea8157d9986f88ce3872988
+          readonly PRODUCT_PATHS=.ssc-rd04-candidate-adjudication-materializer/product-paths.txt
+          readonly PRODUCT_MANIFEST=.ssc-rd04-candidate-adjudication-materializer/product-file-manifest.json
+          readonly WORKFLOW_CARRIER=.ssc-rd04-candidate-adjudication-rebind/standing-workflow.yml
+          readonly WORKFLOW_PATH=.github/workflows/status-sovereignty-rd-wave03-rd04-candidate-adjudication.yml
+          readonly WORKFLOW_BLOB=530d282b87e9444f343ff879790ead2b022a3fea
+          readonly WORK=/tmp/ssc-rd04-candidate-adjudication-clean-rebind-worktree
+          readonly RECEIPT=/tmp/ssc-rd04-candidate-adjudication-clean-rebind-receipt
+
+          rm -rf "$WORK" "$RECEIPT"
+          mkdir -p "$RECEIPT"
+          test "$(git hash-object "$WORKFLOW_CARRIER")" = "$WORKFLOW_BLOB"
+          test "$(sha256sum "$PRODUCT_PATHS" | awk '{print $1}')" = 790c1b54eaf3c7a6dd32276c22cf85ba1d2dfd3497f1739500e2b95a7d92cde3
+          test "$(sha256sum "$PRODUCT_MANIFEST" | awk '{print $1}')" = 2bcd05478cb1ff307bf27199cb5a18a004b87df38e3624e544bc7b5a201ddc8d
+
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          LIVE_MAIN=$(git rev-parse origin/main)
+          LIVE_TARGET=$(git rev-parse "origin/$TARGET_BRANCH")
+          test "$LIVE_TARGET" = "$TARGET_LEASE"
+          test "$(git rev-parse "origin/$TARGET_BRANCH^")" = "$PRODUCT_BASE"
+          git merge-base --is-ancestor "$PRODUCT_BASE" "$LIVE_MAIN"
+
+          git diff --name-only "$PRODUCT_BASE..$LIVE_TARGET" | sort > "$RECEIPT/product-actual-paths.txt"
+          cmp "$PRODUCT_PATHS" "$RECEIPT/product-actual-paths.txt"
+          test "$(git diff --name-status "$PRODUCT_BASE..$LIVE_TARGET" | awk '$1 != "A" {n++} END {print n+0}')" = 0
+          test "$(git rev-list --count "$PRODUCT_BASE..$LIVE_TARGET")" = 1
+
+          {
+            cat "$PRODUCT_PATHS"
+            printf '%s\n' "$WORKFLOW_PATH"
+          } | sort > "$RECEIPT/permanent-paths.txt"
+          test "$(wc -l < "$RECEIPT/permanent-paths.txt" | tr -d ' ')" = 16
+          git diff --name-only "$PRODUCT_BASE..$LIVE_MAIN" | sort > "$RECEIPT/main-increment-paths.txt"
+          comm -12 "$RECEIPT/permanent-paths.txt" "$RECEIPT/main-increment-paths.txt" > "$RECEIPT/overlap.txt"
+          test ! -s "$RECEIPT/overlap.txt"
+
+          git worktree add --detach "$WORK" "$LIVE_MAIN"
+          while IFS= read -r path; do
+            mkdir -p "$WORK/$(dirname "$path")"
+            git show "origin/$TARGET_BRANCH:$path" > "$WORK/$path"
+          done < "$PRODUCT_PATHS"
+          mkdir -p "$WORK/$(dirname "$WORKFLOW_PATH")"
+          cp "$WORKFLOW_CARRIER" "$WORK/$WORKFLOW_PATH"
+          test "$(git -C "$WORK" hash-object "$WORKFLOW_PATH")" = "$WORKFLOW_BLOB"
+
+          python - "$WORK" "$PRODUCT_MANIFEST" "$PRODUCT_PATHS" <<'PY'
+          import hashlib, json, pathlib, sys
+          root = pathlib.Path(sys.argv[1])
+          manifest = json.loads(pathlib.Path(sys.argv[2]).read_text(encoding='utf-8'))
+          paths = pathlib.Path(sys.argv[3]).read_text(encoding='utf-8').splitlines()
+          assert manifest['file_count'] == 15 == len(paths)
+          assert [row['path'] for row in manifest['files']] == paths
+          for row in manifest['files']:
+              data = (root / row['path']).read_bytes()
+              assert len(data) == row['bytes'], (row['path'], len(data), row['bytes'])
+              assert hashlib.sha256(data).hexdigest() == row['sha256'], row['path']
+          print('exact_product_file_manifest_complete=15')
+          PY
+
+          cd "$WORK"
+          while IFS= read -r path; do git add -- "$path"; done < "$RECEIPT/permanent-paths.txt"
+          git diff --cached --name-only | sort > "$RECEIPT/staged-paths.txt"
+          cmp "$RECEIPT/permanent-paths.txt" "$RECEIPT/staged-paths.txt"
+          test "$(git diff --cached --name-status | awk '$1 != "A" {n++} END {print n+0}')" = 0
+          if grep -E '(^|/)(tmp|transport|carrier|materializer|trigger)(/|$)' "$RECEIPT/staged-paths.txt"; then exit 1; fi
+          git commit -m 'Adjudicate RD-04 candidates and freeze official redirect replay'
+          FINAL_COMMIT=$(git rev-parse HEAD)
+          FINAL_TREE=$(git rev-parse HEAD^{tree})
+          test "$(git rev-parse HEAD^)" = "$LIVE_MAIN"
+          test "$(git rev-list --count "$LIVE_MAIN..HEAD")" = 1
+
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-candidate-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-candidate-adjudication.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd04/run-official-redirect-replay.py
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-official-redirect-replay.py --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+
+          git restore --worktree -- .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-candidate-adjudication.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-official-redirect-replay.py --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          test "$(git rev-parse origin/main)" = "$LIVE_MAIN"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$TARGET_LEASE"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_LEASE"
+
+          printf 'product_base=%s\nlive_main=%s\nreplaced_product_commit=%s\nfinal_commit=%s\nfinal_tree=%s\npermanent_paths=16\ncommits_ahead=1\ncandidate_rows_terminal=1500\nselected_candidate_followups=0\nofficial_redirect_replay_routes=54\nadversarial_refusals=1576\nfield_cells_terminal=0/450\nclass_closed=false\noutside_human_dependency=false\n' \
+            "$PRODUCT_BASE" "$LIVE_MAIN" "$TARGET_LEASE" "$FINAL_COMMIT" "$FINAL_TREE" > "$RECEIPT/final.txt"
+          sha256sum "$PRODUCT_PATHS" "$PRODUCT_MANIFEST" "$WORKFLOW_CARRIER" > "$RECEIPT/hashes.txt"
+
+      - name: Preserve exact clean-rebind receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-candidate-adjudication-clean-rebind-v1
+          path: /tmp/ssc-rd04-candidate-adjudication-clean-rebind-receipt
+          if-no-files-found: error
+          retention-days: 90
