@@ -46,8 +46,9 @@ jobs:
           test "$(git hash-object "$BUNDLE")" = "$TREE_BLOB"
           git diff --exit-code -- "$BUNDLE" "$EXECUTE"
           base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
-          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = 'e9a75e4aef41aff999f383644b72ae866f08bc9310600febfc182d7a3acfc0fa'
-          grep -Fx 'runner_sha256=e9a75e4aef41aff999f383644b72ae866f08bc9310600febfc182d7a3acfc0fa' "$EXECUTE"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = 'c46e86a2f7c2fa34fed60077c2336b05d074d241f556d965b320150a8453d182'
+          grep -Fx 'runner_sha256=c46e86a2f7c2fa34fed60077c2336b05d074d241f556d965b320150a8453d182' "$EXECUTE"
+          grep -Fx 'materialize_from_live_main=true' "$EXECUTE"
           grep -Fx 'outside_human_dependency=false' "$EXECUTE"
           bash -n "$RUNNER"
           bash "$RUNNER"
