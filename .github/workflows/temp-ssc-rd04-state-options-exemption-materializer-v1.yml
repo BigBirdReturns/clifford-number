@@ -51,20 +51,42 @@ jobs:
           python-version: '3.13'
       - name: Install pinned JSON Schema validator
         run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
-      - name: Recover and patch the sealed v1 transaction
+      - name: Recover, patch, and execute the sealed v1 transaction
         shell: bash
         run: |
           set -Eeuo pipefail
-          SEALED="$RUNNER_TEMP/rd04-materializer-sealed-v1.yml"
-          SCRIPT="$RUNNER_TEMP/rd04-materializer-repaired-v1.sh"
+          WRAPPER_RECEIPT="$RUNNER_TEMP/ssc-rd04-state-options-exemption-wrapper-v1"
+          SEALED="$WRAPPER_RECEIPT/sealed-v1.yml"
+          SCRIPT="$WRAPPER_RECEIPT/repaired-v1.sh"
+          rm -rf "$WRAPPER_RECEIPT"
+          mkdir -p "$WRAPPER_RECEIPT"
+          exec > >(tee "$WRAPPER_RECEIPT/execution.log") 2>&1
+          STAGE=init
+          finish() {
+            rc=$?
+            printf 'status=%s\nstage=%s\nexit_code=%s\nutc=%s\n' \
+              "$([[ $rc -eq 0 ]] && echo complete || echo failed_closed)" \
+              "$STAGE" "$rc" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$WRAPPER_RECEIPT/checkpoint.txt"
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          STAGE=recover-sealed-v1
+          git cat-file -e "$SEALED_V1_COMMIT^{commit}"
           git show "$SEALED_V1_COMMIT:$V1_WORKFLOW" > "$SEALED"
           test "$(git hash-object "$SEALED")" = "$SEALED_V1_BLOB"
-          python - "$SEALED" "$SCRIPT" <<'PY'
+
+          STAGE=derive-repaired-script
+          python - "$SEALED" "$SCRIPT" "$WRAPPER_RECEIPT/derivation.json" <<'PY'
           from pathlib import Path
+          import hashlib
+          import json
           import sys
 
-          source = Path(sys.argv[1]).read_text()
+          source_path = Path(sys.argv[1])
           output = Path(sys.argv[2])
+          receipt = Path(sys.argv[3])
+          source = source_path.read_text()
           step_marker = '      - name: Reconstruct, qualify, and publish transport-safe product\n'
           next_marker = '      - name: Preserve exact materialization receipt\n'
           if source.count(step_marker) != 1 or source.count(next_marker) != 1:
@@ -83,28 +105,40 @@ jobs:
               else:
                   raise SystemExit(f'unexpected sealed-v1 indentation: {line!r}')
           script = '\n'.join(script_lines) + '\n'
-          find_line = "find \"$PACKAGE\" -type f -printf '%P\\\\n' | sort > \"$RECEIPT/archive-paths.txt\""
           old = 'cmp "$RECEIPT/expected-paths.txt" "$RECEIPT/archive-paths.txt"'
           new = 'sort "$RECEIPT/expected-paths.txt" > "$RECEIPT/expected-paths-sorted.txt"\ncmp "$RECEIPT/expected-paths-sorted.txt" "$RECEIPT/archive-paths.txt"'
-          if script.count(find_line) != 1:
-              raise SystemExit(f'expected one archive path-list producer, found {script.count(find_line)}')
           matches = script.count(old)
           if matches != 1:
               raise SystemExit(f'expected one path-list seam, found {matches}')
           repaired = script.replace(old, new, 1)
           if repaired.count('expected-paths-sorted.txt') != 2:
               raise SystemExit('repaired seam count changed')
-          output.write_text('#!/usr/bin/env bash\n' + repaired)
+          payload = ('#!/usr/bin/env bash\n' + repaired).encode()
+          output.write_bytes(payload)
           output.chmod(0o700)
+          receipt.write_text(json.dumps({
+              'schema_version': 'ssc-rd04-state-options-exemption-wrapper-derivation@1',
+              'sealed_workflow_blob': '252c05a486329be56c034812f9009f478b15623a',
+              'sealed_workflow_sha256': hashlib.sha256(source_path.read_bytes()).hexdigest(),
+              'replacement_count': matches,
+              'repaired_script_bytes': len(payload),
+              'repaired_script_sha256': hashlib.sha256(payload).hexdigest(),
+          }, indent=2) + '\n')
           PY
+          bash -n "$SCRIPT"
           test "$(grep -Fc 'sort "$RECEIPT/expected-paths.txt" > "$RECEIPT/expected-paths-sorted.txt"' "$SCRIPT")" = 1
           test "$(grep -Fc 'cmp "$RECEIPT/expected-paths-sorted.txt" "$RECEIPT/archive-paths.txt"' "$SCRIPT")" = 1
+
+          STAGE=execute-sealed-transaction
           "$SCRIPT"
-      - name: Preserve exact materialization receipt
+          STAGE=complete
+      - name: Preserve exact wrapper and materialization receipts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ssc-rd04-state-options-exemption-materializer-v1-repaired
-          path: ${{ runner.temp }}/ssc-rd04-state-options-exemption-materializer-v1/receipt
+          path: |
+            ${{ runner.temp }}/ssc-rd04-state-options-exemption-wrapper-v1
+            ${{ runner.temp }}/ssc-rd04-state-options-exemption-materializer-v1/receipt
           if-no-files-found: error
           retention-days: 90
