@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Apply line-aware framing repair
+      - name: Apply embedded-linebreak reassembly repair
         run: |
           python -m py_compile tools/acquisition/schoolhouse-fl-fictitious/repair_framing.py
           python tools/acquisition/schoolhouse-fl-fictitious/repair_framing.py \
@@ -82,8 +82,11 @@ jobs:
           assert summary['source_rows_scanned'] == sum(row['row_count'] for row in members)
           assert summary['candidate_rows'] == len(candidates)
           assert summary['all_members_scanned'] is True
-          assert all(row['record_framing'] == 'line_delimited_defined_prefix' for row in members)
+          assert all(row['record_framing'] == 'fixed_width_with_embedded_linebreak_reassembly' for row in members)
           assert all(row['short_record_count'] == 0 for row in members)
+          assert all(row['row_count'] == row['direct_record_count'] + row['reassembled_record_count'] for row in members)
+          assert all(row['physical_line_count'] == row['direct_record_count'] + row['fragment_line_count'] for row in members)
+          assert all(row['reassembled_record_count'] == len(row['reassembly_groups']) for row in members)
           assert receipt['route_probe']['workflow_run_id'] == 30973871220
           assert receipt['route_probe']['artifact_id'] == 8917541589
           assert receipt['route_probe']['state'] == 'accessible'
