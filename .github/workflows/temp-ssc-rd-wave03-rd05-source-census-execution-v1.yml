@@ -1,0 +1,178 @@
+name: TEMP execute RD-05 Wave-03 fixed source census v1
+
+on:
+  pull_request:
+    types: [opened]
+    paths:
+      - '.github/workflows/temp-ssc-rd-wave03-rd05-source-census-execution-v1.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-ssc-rd-wave03-rd05-source-census-execution-v1
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    if: >-
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd-wave03-rd05-source-census-execution-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      INPUT_BRANCH: agent/ssc-rd-wave03-rd05-member-participation
+      INPUT_HEAD: bc9800dcd3a3768288a5dfeaf0f7144969994ffa
+      PROTOCOL_PATH: data/intake/status-sovereignty-rd-wave03-rd05-member-participation/source-census-protocol.json
+      PROTOCOL_SHA256: 96a566d1b1972a69505845862f0614f79b9db1eb28017bd47b484fe15ab1d998
+      RUNNER_PATH: tools/acquisition/status-sovereignty-rd-wave03-rd05/run-source-census.py
+      RUNNER_SHA256: f7675b39ae40cc3eb9107f4c5e9170f7a71dabe829fe167533b69e05a448f7ef
+    steps:
+      - name: Check out exact qualified RD-05 lane
+        uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave03-rd05-member-participation
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Bind exact input and prove zero-request plan
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$INPUT_HEAD"
+          test "$(sha256sum "$PROTOCOL_PATH" | awk '{print $1}')" = "$PROTOCOL_SHA256"
+          test "$(sha256sum "$RUNNER_PATH" | awk '{print $1}')" = "$RUNNER_SHA256"
+          node tools/build-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs
+          node test/status-sovereignty-rd-wave03-rd05-member-participation-intake.test.js
+          DRY="$RUNNER_TEMP/rd05-wave03-source-census-dry-run"
+          python "$RUNNER_PATH" --dry-run --output "$DRY"
+          python - "$DRY/plan.json" "$DRY/execution-receipt.json" <<'PY'
+          import json, sys
+          plan = json.load(open(sys.argv[1]))
+          receipt = json.load(open(sys.argv[2]))
+          assert plan['fixed_routes'] == 161
+          assert plan['exact_official_routes'] == 25
+          assert plan['candidate_census_routes'] == 136
+          assert plan['request_attempts_authorized'] == 161
+          assert plan['result_spawned_requests_authorized'] == 0
+          assert plan['candidate_followups_authorized'] == 0
+          assert receipt['mode'] == 'dry_run'
+          assert receipt['request_attempts'] == 0
+          assert receipt['terminal_route_receipts'] == 0
+          assert receipt['candidate_rows'] == 0
+          assert receipt['admitted_evidence_sources'] == 0
+          assert receipt['outside_human_dependency'] is False
+          assert receipt['graph_effect'] == 'none'
+          PY
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+
+      - name: Execute every fixed route exactly once
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/rd05-wave03-source-census-v1"
+          STARTED=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          python "$RUNNER_PATH" --output "$OUT" --workers 2
+          FINISHED=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          python - "$OUT" "$STARTED" "$FINISHED" <<'PY'
+          import hashlib, json, os, pathlib, sys
+          out = pathlib.Path(sys.argv[1])
+          receipt = json.load(open(out / 'execution-receipt.json'))
+          routes = json.load(open(out / 'route-results.json'))
+          candidates = json.load(open(out / 'candidate-index.json'))
+          manifest = json.load(open(out / 'manifest.json'))
+          assert receipt['mode'] == 'execute'
+          assert receipt['status'] == 'all_fixed_routes_attempted_once'
+          assert receipt['fixed_routes'] == 161
+          assert receipt['request_attempts'] == 161
+          assert receipt['terminal_route_receipts'] == 161
+          assert receipt['candidate_rows'] == len(candidates)
+          assert receipt['admitted_evidence_sources'] == 0
+          assert receipt['result_spawned_requests'] == 0
+          assert receipt['candidate_followups'] == 0
+          assert receipt['member_fields_materialized'] == 0
+          assert receipt['terminal_cells'] == 0
+          assert receipt['class_closed'] is False
+          assert receipt['record_absence_inferred'] is False
+          assert receipt['member_event_absence_inferred'] is False
+          assert receipt['outside_human_dependency'] is False
+          assert receipt['publication_effect'] == 'none'
+          assert receipt['adoption_effect'] == 'none'
+          assert receipt['graph_effect'] == 'none'
+          assert len(routes) == 161
+          assert [row['ordinal'] for row in routes] == list(range(1, 162))
+          assert len({row['route_id'] for row in routes}) == 161
+          assert all(row['attempts'] == 1 for row in routes)
+          assert all(row['result_spawned_requests'] == 0 for row in routes)
+          assert all(row['candidate_rows_are_admitted_sources'] is False for row in routes)
+          assert all(row['evidence_admission_authorized'] is False for row in routes)
+          assert manifest['candidate_rows_are_admitted_sources'] is False
+          assert manifest['result_spawned_requests'] == 0
+          assert manifest['graph_effect'] == 'none'
+          assert receipt['capture_manifest_sha256'] == manifest['combined_sha256']
+          context = {
+              'schema_version': 'ssc-rd-wave03-rd05-source-census-workflow-custody@1',
+              'workflow_run_id': int(os.environ['GITHUB_RUN_ID']),
+              'workflow_run_attempt': int(os.environ['GITHUB_RUN_ATTEMPT']),
+              'workflow_job': os.environ['GITHUB_JOB'],
+              'input_branch': os.environ['INPUT_BRANCH'],
+              'input_head': os.environ['INPUT_HEAD'],
+              'protocol_path': os.environ['PROTOCOL_PATH'],
+              'protocol_sha256': os.environ['PROTOCOL_SHA256'],
+              'runner_path': os.environ['RUNNER_PATH'],
+              'runner_sha256': os.environ['RUNNER_SHA256'],
+              'started_utc': sys.argv[2],
+              'finished_utc': sys.argv[3],
+              'fixed_routes': 161,
+              'request_attempts': 161,
+              'terminal_route_receipts': 161,
+              'candidate_rows': len(candidates),
+              'admitted_evidence_sources': 0,
+              'result_spawned_requests': 0,
+              'candidate_followups': 0,
+              'class_closed': False,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'capture_manifest_sha256': manifest['combined_sha256'],
+          }
+          (out / 'workflow-custody.json').write_text(json.dumps(context, indent=2) + '\n')
+          rows = []
+          for path in sorted(out.rglob('*')):
+              if path.is_file():
+                  data = path.read_bytes()
+                  rows.append({'path': path.relative_to(out).as_posix(), 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()})
+          package = {
+              'schema_version': 'ssc-rd-wave03-rd05-source-census-artifact-package@1',
+              'entries': rows,
+              'combined_sha256': hashlib.sha256(''.join(f"{r['path']}\0{r['sha256']}\0{r['bytes']}\n" for r in rows).encode()).hexdigest(),
+              'raw_capture_is_permanent_git_content': False,
+              'candidate_rows_are_admitted_sources': False,
+              'class_closed': False,
+              'graph_effect': 'none',
+          }
+          (out / 'artifact-package.json').write_text(json.dumps(package, indent=2) + '\n')
+          print(json.dumps(context, indent=2))
+          print(json.dumps({'artifact_entries': len(rows), 'artifact_combined_sha256': package['combined_sha256']}, indent=2))
+          PY
+
+      - name: Upload exact raw capture and execution custody
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd-wave03-rd05-source-census-v1
+          path: ${{ runner.temp }}/rd05-wave03-source-census-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 6
