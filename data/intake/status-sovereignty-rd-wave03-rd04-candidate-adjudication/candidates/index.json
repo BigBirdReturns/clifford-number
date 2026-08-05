@@ -1,0 +1,96 @@
+{
+  "schema_version": "ssc-rd04-wave03-candidate-adjudication-index@1",
+  "wave_id": "SSC-RD-W03",
+  "lane_id": "RD-04",
+  "class_id": "RD-04-C02",
+  "issue": 1017,
+  "source_execution_receipt_path": "source-census-execution-receipt.json",
+  "source_candidate_index_sha256": "93ddb1e52e741c1e177565dd90b026dc06e7357459204dfd8ba10af6d5e875ff",
+  "classification_contract": {
+    "normalized_surface": "lowercase concatenation of title, snippet, and URL",
+    "responsive_terms": [
+      "snap",
+      "supplemental nutrition assistance",
+      "food stamp",
+      "food stamps",
+      "abawd",
+      "work requirement",
+      "work requirements",
+      "waiver",
+      "discretionary exemption",
+      "fitness for work",
+      "eligibility screening"
+    ],
+    "responsive_term_required_for_followup": true,
+    "official_government_host_rule": "URL hostname ends with .gov"
+  },
+  "shards": [
+    {
+      "path": "part-00.jsonl",
+      "first_candidate_ordinal": 1,
+      "last_candidate_ordinal": 300,
+      "rows": 300,
+      "bytes": 292267,
+      "sha256": "e60488ac6aed2da16f3d991a308e79d707c2742bcfa9ef2e3043a607cc6bd463"
+    },
+    {
+      "path": "part-01.jsonl",
+      "first_candidate_ordinal": 301,
+      "last_candidate_ordinal": 600,
+      "rows": 300,
+      "bytes": 290791,
+      "sha256": "a9ce27be3ddca9c3d60ea1720787b1b1af2adf008f9b1d563469e98ff90a2179"
+    },
+    {
+      "path": "part-02.jsonl",
+      "first_candidate_ordinal": 601,
+      "last_candidate_ordinal": 900,
+      "rows": 300,
+      "bytes": 289731,
+      "sha256": "1b75fcefeb62f21eba9331d8b9f9eada446ca69e7a06903a841c08c8c5ff2ca2"
+    },
+    {
+      "path": "part-03.jsonl",
+      "first_candidate_ordinal": 901,
+      "last_candidate_ordinal": 1200,
+      "rows": 300,
+      "bytes": 288563,
+      "sha256": "71449ec98ba589ec7d1ae69880dc056d3ae94eb71023868af50ff2fba28d61e4"
+    },
+    {
+      "path": "part-04.jsonl",
+      "first_candidate_ordinal": 1201,
+      "last_candidate_ordinal": 1500,
+      "rows": 300,
+      "bytes": 293411,
+      "sha256": "d6fa5d3fd326570d303b291b9855c9053faf4083d8f1be33de07bad63c5c348b"
+    }
+  ],
+  "counts": {
+    "candidate_rows": 1500,
+    "terminal_candidate_rows": 1500,
+    "unique_candidate_ids": 1500,
+    "unique_candidate_urls": 500,
+    "responsive_term_candidates": 0,
+    "official_domain_nonresponsive_without_snap_scope": 164,
+    "nonofficial_nonresponsive_without_snap_scope": 1336,
+    "selected_followups": 0,
+    "admitted_sources": 0,
+    "field_classifications": 0,
+    "result_spawned_requests": 0
+  },
+  "current_result": {
+    "candidate_adjudication_complete": true,
+    "all_candidate_rows_terminal": true,
+    "exact_candidate_followups_selected": 0,
+    "official_redirect_replay_routes": 54,
+    "field_matrix_terminal": false,
+    "class_state": "still_open",
+    "class_closed": false,
+    "outside_human_dependency": false,
+    "publication_effect": "none",
+    "adoption_effect": "none",
+    "graph_effect": "none"
+  },
+  "next_bounded_operation": "execute exactly the 54-route official redirect replay and separately adjudicate captured response bodies before any field classification"
+}

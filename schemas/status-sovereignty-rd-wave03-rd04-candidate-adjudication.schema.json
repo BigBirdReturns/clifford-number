@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clifford-number.local/schemas/status-sovereignty-rd-wave03-rd04-candidate-adjudication.schema.json",
+  "title": "RD-04 Wave-03 candidate adjudication index",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version","wave_id","lane_id","class_id","issue","source_execution_receipt_path","source_candidate_index_sha256","classification_contract","shards","counts","current_result","next_bounded_operation"],
+  "properties": {
+    "schema_version": {"const":"ssc-rd04-wave03-candidate-adjudication-index@1"},
+    "wave_id": {"const":"SSC-RD-W03"},
+    "lane_id": {"const":"RD-04"},
+    "class_id": {"const":"RD-04-C02"},
+    "issue": {"const":1017},
+    "source_execution_receipt_path": {"const":"source-census-execution-receipt.json"},
+    "source_candidate_index_sha256": {"const":"93ddb1e52e741c1e177565dd90b026dc06e7357459204dfd8ba10af6d5e875ff"},
+    "classification_contract": {
+      "type":"object","additionalProperties":false,
+      "required":["normalized_surface","responsive_terms","responsive_term_required_for_followup","official_government_host_rule"],
+      "properties": {
+        "normalized_surface":{"const":"lowercase concatenation of title, snippet, and URL"},
+        "responsive_terms":{"const":["snap","supplemental nutrition assistance","food stamp","food stamps","abawd","work requirement","work requirements","waiver","discretionary exemption","fitness for work","eligibility screening"]},
+        "responsive_term_required_for_followup":{"const":true},
+        "official_government_host_rule":{"const":"URL hostname ends with .gov"}
+      }
+    },
+    "shards": {
+      "type":"array","minItems":5,"maxItems":5,
+      "items":{"type":"object","additionalProperties":false,"required":["path","first_candidate_ordinal","last_candidate_ordinal","rows","bytes","sha256"],"properties":{"path":{"pattern":"^part-[0-4][0-9]?\\.jsonl$"},"first_candidate_ordinal":{"type":"integer"},"last_candidate_ordinal":{"type":"integer"},"rows":{"const":300},"bytes":{"type":"integer","minimum":1},"sha256":{"pattern":"^[0-9a-f]{64}$"}}}
+    },
+    "counts": {
+      "type":"object","additionalProperties":false,
+      "required":["candidate_rows","terminal_candidate_rows","unique_candidate_ids","unique_candidate_urls","responsive_term_candidates","official_domain_nonresponsive_without_snap_scope","nonofficial_nonresponsive_without_snap_scope","selected_followups","admitted_sources","field_classifications","result_spawned_requests"],
+      "properties": {
+        "candidate_rows":{"const":1500},"terminal_candidate_rows":{"const":1500},"unique_candidate_ids":{"const":1500},"unique_candidate_urls":{"const":500},"responsive_term_candidates":{"const":0},"official_domain_nonresponsive_without_snap_scope":{"const":164},"nonofficial_nonresponsive_without_snap_scope":{"const":1336},"selected_followups":{"const":0},"admitted_sources":{"const":0},"field_classifications":{"const":0},"result_spawned_requests":{"const":0}
+      }
+    },
+    "current_result": {
+      "type":"object","additionalProperties":false,
+      "required":["candidate_adjudication_complete","all_candidate_rows_terminal","exact_candidate_followups_selected","official_redirect_replay_routes","field_matrix_terminal","class_state","class_closed","outside_human_dependency","publication_effect","adoption_effect","graph_effect"],
+      "properties": {
+        "candidate_adjudication_complete":{"const":true},"all_candidate_rows_terminal":{"const":true},"exact_candidate_followups_selected":{"const":0},"official_redirect_replay_routes":{"const":54},"field_matrix_terminal":{"const":false},"class_state":{"const":"still_open"},"class_closed":{"const":false},"outside_human_dependency":{"const":false},"publication_effect":{"const":"none"},"adoption_effect":{"const":"none"},"graph_effect":{"const":"none"}
+      }
+    },
+    "next_bounded_operation": {"const":"execute exactly the 54-route official redirect replay and separately adjudicate captured response bodies before any field classification"}
+  }
+}

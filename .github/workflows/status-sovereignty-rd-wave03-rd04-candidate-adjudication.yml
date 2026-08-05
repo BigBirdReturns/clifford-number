@@ -1,0 +1,131 @@
+name: SSC RD-04 Wave 03 candidate adjudication and official redirect replay
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-candidate-adjudication.yml'
+      - '.ssc-rd04-wave03-official-redirect-replay-trigger/EXECUTE'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-candidate-adjudication/**'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-candidate-adjudication.schema.json'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd04-candidate-adjudication.test.js'
+      - 'tools/acquisition/status-sovereignty-rd-wave03-rd04/run-official-redirect-replay.py'
+      - 'docs/milestones/ssc-rd-wave03-rd04-candidate-adjudication.md'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-candidate-adjudication.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-candidate-adjudication/**'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-candidate-adjudication.schema.json'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd04-candidate-adjudication.test.js'
+      - 'tools/acquisition/status-sovereignty-rd-wave03-rd04/run-official-redirect-replay.py'
+      - 'docs/milestones/ssc-rd-wave03-rd04-candidate-adjudication.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd04-wave03-candidate-adjudication-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Validate 1500 candidate dispositions and 54 exact replay routes
+        run: |
+          set -Eeuo pipefail
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-candidate-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-candidate-adjudication.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd04/run-official-redirect-replay.py
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-official-redirect-replay.py --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - name: Restore volatile outputs and replay exact adjudication derivation
+        run: |
+          set -Eeuo pipefail
+          git restore --worktree -- .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-candidate-adjudication.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-official-redirect-replay.py --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Preserve exact candidate-adjudication custody
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-wave03-candidate-adjudication
+          path: |
+            data/intake/status-sovereignty-rd-wave03-rd04-candidate-adjudication/source-census-execution-receipt.json
+            data/intake/status-sovereignty-rd-wave03-rd04-candidate-adjudication/official-redirect-replay-protocol.json
+            data/intake/status-sovereignty-rd-wave03-rd04-candidate-adjudication/candidates
+            schemas/status-sovereignty-rd-wave03-rd04-candidate-adjudication.schema.json
+            docs/milestones/ssc-rd-wave03-rd04-candidate-adjudication.md
+          if-no-files-found: error
+          retention-days: 90
+
+  replay:
+    if: startsWith(github.head_ref, 'agent/ssc-rd-wave03-rd04-official-redirect-replay-trigger-')
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Revalidate the exact 54-route replay protocol before requests
+        run: |
+          set -Eeuo pipefail
+          node tools/build-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-candidate-adjudication.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-official-redirect-replay.py --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+
+      - name: Execute the fixed official redirect replay
+        run: python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-official-redirect-replay.py --output /tmp/ssc-rd04-wave03-official-redirect-replay-v1
+
+      - name: Preserve exact replay responses and receipts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-wave03-official-redirect-replay-v1
+          path: /tmp/ssc-rd04-wave03-official-redirect-replay-v1
+          if-no-files-found: error
+          retention-days: 90
