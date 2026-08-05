@@ -1,0 +1,183 @@
+name: TEMP materialize RD-04 official source adjudication
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-ssc-rd04-official-source-adjudication-materializer.yml'
+      - '.ssc-rd04-official-source-adjudication-materializer/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd04-official-source-adjudication-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Reconstruct, qualify, and lease-publish the thirteen-file product increment
+        shell: bash
+        run: |
+          set -Eeuxo pipefail
+          export GIT_AUTHOR_NAME='github-actions[bot]'
+          export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+
+          readonly FLOOR=632d55fd7a38e84f849c9de19e6fe302b6dc36e3
+          readonly TARGET_BRANCH=agent/ssc-rd-wave03-rd04-official-source-adjudication-v1
+          readonly TARGET_LEASE=c361bb14c3b790646d616f5d809ead5eb5e60055
+          readonly CARRIER=.ssc-rd04-official-source-adjudication-materializer
+          readonly WORKFLOW_PATH=.github/workflows/status-sovereignty-rd-wave03-rd04-official-source-adjudication.yml
+          readonly WORKFLOW_BLOB=3c6b0ef45b12ebcb7691400c9edf463e6a9d4097
+          readonly RECEIPT=/tmp/ssc-rd04-official-source-adjudication-materializer-receipt
+          readonly PACKAGE=/tmp/ssc-rd04-official-source-adjudication-package
+          readonly WORK=/tmp/ssc-rd04-official-source-adjudication-worktree
+          readonly B64=/tmp/ssc-rd04-official-source-adjudication.tar.xz.b64
+          readonly ARCHIVE=/tmp/ssc-rd04-official-source-adjudication.tar.xz
+
+          rm -rf "$RECEIPT" "$PACKAGE" "$WORK" "$B64" "$ARCHIVE"
+          mkdir -p "$RECEIPT" "$PACKAGE"
+
+          cat > "$RECEIPT/shard-contract.txt" <<'EOF'
+          part-00 5500 7c7dfd3ab2848ac11345356fcad3e1421056e4452220c7d15c4f4b829cfae6f0
+          part-01 5500 44e97806fd54a5d5a0b6d1cb912ec43fe4e0b2b16e8cc01d2dbf252598022d3c
+          part-02 5500 ed3247e984a2934aa7081c602ad51cc22eaa9279b74bb2088ce3307fce2f0c4a
+          part-03 5500 221ee4bb9de71bc2321bbc9c4c391822792a51228083eede13c2f60ed839813a
+          part-04 11000 cff1c6827198c69cc3185659a57ddfcb997efbc9aa0cc78cffa6095bf76cefef
+          part-05 9508 c69dec3b5fdce305210c7f6e71805777e080301f350c7dd99de933dcb0ac552b
+          EOF
+          sed -i 's/^          //' "$RECEIPT/shard-contract.txt"
+
+          while read -r name bytes digest; do
+            path="$CARRIER/carrier/$name"
+            test "$(wc -c < "$path" | tr -d ' ')" = "$bytes"
+            test "$(sha256sum "$path" | awk '{print $1}')" = "$digest"
+          done < "$RECEIPT/shard-contract.txt"
+
+          cat "$CARRIER"/carrier/part-* > "$B64"
+          test "$(wc -c < "$B64" | tr -d ' ')" = 42508
+          test "$(sha256sum "$B64" | awk '{print $1}')" = bb043d2965f4e73efa4c920fc18854e9556ff84c1ea6c6964d5ca0de7faa68ac
+          base64 --decode "$B64" > "$ARCHIVE"
+          test "$(wc -c < "$ARCHIVE" | tr -d ' ')" = 31880
+          test "$(sha256sum "$ARCHIVE" | awk '{print $1}')" = 93966e7b561c4ec4af2cf2b80d91f0ba50788a9d3dc6badb23bc964600d02d91
+
+          test "$(sha256sum "$CARRIER/product-paths.txt" | awk '{print $1}')" = 2a7e77415ade43a98cd833096e33490d602d04dfbb238cab5520cebcc25a169e
+          test "$(sha256sum "$CARRIER/nonworkflow-paths.txt" | awk '{print $1}')" = d6feed603185846958c34c87a0b2efaaba0dc63e166c57c4818f7a5b927e228e
+          test "$(sha256sum "$CARRIER/product-file-manifest.json" | awk '{print $1}')" = f0bfb1386b3dd1b5db75324a990705dfec48ec80a7bea50ca684c2e20039352e
+          cp "$CARRIER/product-paths.txt" "$RECEIPT/product-paths.txt"
+          cp "$CARRIER/nonworkflow-paths.txt" "$RECEIPT/nonworkflow-paths.txt"
+          cp "$CARRIER/product-file-manifest.json" "$RECEIPT/product-file-manifest.json"
+
+          tar -tJf "$ARCHIVE" > "$RECEIPT/archive-paths.txt"
+          cmp "$RECEIPT/product-paths.txt" "$RECEIPT/archive-paths.txt"
+          tar -xJf "$ARCHIVE" -C "$PACKAGE"
+          test "$(find "$PACKAGE" -type f | wc -l | tr -d ' ')" = 14
+          test "$(find "$PACKAGE" -type l | wc -l | tr -d ' ')" = 0
+          test "$(git hash-object "$PACKAGE/$WORKFLOW_PATH")" = "$WORKFLOW_BLOB"
+
+          python - "$PACKAGE" "$RECEIPT/product-file-manifest.json" "$RECEIPT/product-paths.txt" <<'PY'
+          import hashlib, json, pathlib, sys
+          root = pathlib.Path(sys.argv[1])
+          manifest = json.loads(pathlib.Path(sys.argv[2]).read_text(encoding='utf-8'))
+          paths = pathlib.Path(sys.argv[3]).read_text(encoding='utf-8').splitlines()
+          assert manifest['file_count'] == 14 == len(paths)
+          assert [row['path'] for row in manifest['files']] == paths
+          for row in manifest['files']:
+              data = (root / row['path']).read_bytes()
+              assert len(data) == row['bytes'], (row['path'], len(data), row['bytes'])
+              assert hashlib.sha256(data).hexdigest() == row['sha256'], row['path']
+          print('exact_package_file_manifest_complete=14')
+          PY
+
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          LIVE_MAIN=$(git rev-parse origin/main)
+          LIVE_TARGET=$(git rev-parse "origin/$TARGET_BRANCH")
+          test "$LIVE_TARGET" = "$TARGET_LEASE"
+          test "$(git rev-parse "origin/$TARGET_BRANCH^")" = "$FLOOR"
+          test "$(git rev-list --count "$FLOOR..origin/$TARGET_BRANCH")" = 1
+          test "$(git rev-parse "origin/$TARGET_BRANCH:$WORKFLOW_PATH")" = "$WORKFLOW_BLOB"
+          git merge-base --is-ancestor "$FLOOR" "$LIVE_MAIN"
+
+          git diff --name-only "$FLOOR..origin/$TARGET_BRANCH" | sort > "$RECEIPT/target-reservation-paths.txt"
+          printf '%s\n' "$WORKFLOW_PATH" > "$RECEIPT/expected-reservation-paths.txt"
+          cmp "$RECEIPT/expected-reservation-paths.txt" "$RECEIPT/target-reservation-paths.txt"
+          test "$(git diff --name-status "$FLOOR..origin/$TARGET_BRANCH" | awk '$1 != "A" {n++} END {print n+0}')" = 0
+
+          git diff --name-only "$FLOOR..$LIVE_MAIN" | sort > "$RECEIPT/main-increment-paths.txt"
+          comm -12 "$RECEIPT/product-paths.txt" "$RECEIPT/main-increment-paths.txt" > "$RECEIPT/overlap.txt"
+          test ! -s "$RECEIPT/overlap.txt"
+
+          git worktree add --detach "$WORK" "origin/$TARGET_BRANCH"
+          while IFS= read -r path; do
+            mkdir -p "$WORK/$(dirname "$path")"
+            cp "$PACKAGE/$path" "$WORK/$path"
+          done < "$RECEIPT/nonworkflow-paths.txt"
+          cd "$WORK"
+          while IFS= read -r path; do git add -- "$path"; done < "$RECEIPT/nonworkflow-paths.txt"
+          git diff --cached --name-only | sort > "$RECEIPT/staged-paths.txt"
+          cmp "$RECEIPT/nonworkflow-paths.txt" "$RECEIPT/staged-paths.txt"
+          test "$(git diff --cached --name-status | awk '$1 != "A" {n++} END {print n+0}')" = 0
+          if grep -E '(^|/)(tmp|transport|carrier|materializer|trigger)(/|$)' "$RECEIPT/staged-paths.txt"; then exit 1; fi
+
+          git commit -m 'Adjudicate RD-04 official replay sources and freeze state-source protocol'
+          PRODUCT_COMMIT=$(git rev-parse HEAD)
+          PRODUCT_TREE=$(git rev-parse HEAD^{tree})
+          test "$(git rev-parse HEAD^)" = "$TARGET_LEASE"
+          git diff --name-only "$LIVE_MAIN...HEAD" | sort > "$RECEIPT/final-product-paths.txt"
+          cmp "$RECEIPT/product-paths.txt" "$RECEIPT/final-product-paths.txt"
+          test "$(git diff --name-status "$LIVE_MAIN...HEAD" | awk '$1 != "A" {n++} END {print n+0}')" = 0
+
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-official-source-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-official-source-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-official-source-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-official-source-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-official-source-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-official-source-adjudication.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd04/run-state-source-protocol.py
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-state-source-protocol.py --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+
+          git restore --worktree -- .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-official-source-adjudication.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-official-source-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-official-source-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-official-source-adjudication.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-state-source-protocol.py --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          test "$(git rev-parse origin/main)" = "$LIVE_MAIN"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$TARGET_LEASE"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_LEASE"
+
+          printf 'floor=%s\nlive_main=%s\ntarget_lease=%s\nproduct_commit=%s\nproduct_tree=%s\npermanent_paths=14\nnonworkflow_increment=13\nscoped_source_decisions=54\nfield_cells_materialized=450\nfield_cells_terminal=100\nsuccessor_routes=54\nadversarial_refusals=796\nclass_closed=false\noutside_human_dependency=false\n' \
+            "$FLOOR" "$LIVE_MAIN" "$TARGET_LEASE" "$PRODUCT_COMMIT" "$PRODUCT_TREE" > "$RECEIPT/final.txt"
+          sha256sum "$B64" "$ARCHIVE" "$RECEIPT/product-paths.txt" "$RECEIPT/nonworkflow-paths.txt" "$RECEIPT/product-file-manifest.json" > "$RECEIPT/hashes.txt"
+
+      - name: Preserve exact materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-official-source-adjudication-materializer-v1
+          path: /tmp/ssc-rd04-official-source-adjudication-materializer-receipt
+          if-no-files-found: error
+          retention-days: 90
