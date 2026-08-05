@@ -42,6 +42,49 @@ if text.count(old) != 1:
 path.write_text(text.replace(old, new, 1))
 PY
 
+phase=preserve_chronology_diagnostics
+python3 - <<'PY'
+from pathlib import Path
+
+path = Path('/tmp/cache-v3.py')
+text = path.read_text()
+old = '''build_source_replacement = """  if (!baseSources) errors.push('compiled v46 complete v45 source bundle is required');
+  const qualifiedBaseErrors = baseBuild && baseSources ? validateQualifiedV45Base(baseBuild, baseSources) : [];
+  if (qualifiedBaseErrors.length) errors.push(...qualifiedBaseErrors.map(error => `compiled v46 base invalid: ${error}`));
+  if (manifest && !qualifiedBaseErrors.length) errors.push(...validateDirectSourceChronology(manifest.captured_at, baseBuild, targetBuild, targetFixture, baseSources));
+  if (baseBuild && !qualifiedBaseErrors.length) {
+"""
+'''
+new = '''build_source_replacement = """  if (!baseSources) errors.push('compiled v46 complete v45 source bundle is required');
+  const cachePreflightErrors = [];
+  let cacheSnapshot = null;
+  if (baseBuild && baseSources) {
+    requireExactKeys(baseBuild, EXPECTED_BUILD_KEYS, 'v46 v45 base build', cachePreflightErrors);
+    requireExactKeys(baseSources, EXPECTED_BASE_SOURCE_KEYS, 'v46 v45 source bundle', cachePreflightErrors);
+    cacheSnapshot = snapshotCacheSafeV45Inputs(baseBuild, baseSources, cachePreflightErrors);
+  }
+  if (cachePreflightErrors.length) errors.push(...cachePreflightErrors.map(error => `compiled v46 base invalid: ${error}`));
+  if (manifest && cacheSnapshot) {
+    errors.push(...validateDirectSourceChronology(
+      manifest.captured_at,
+      cacheSnapshot.baseBuild,
+      targetBuild,
+      targetFixture,
+      cacheSnapshot.baseSources
+    ));
+  }
+  const qualifiedBaseErrors = cacheSnapshot ? validateQualifiedV45Base(baseBuild, baseSources) : cachePreflightErrors;
+  if (!cachePreflightErrors.length && qualifiedBaseErrors.length) {
+    errors.push(...qualifiedBaseErrors.map(error => `compiled v46 base invalid: ${error}`));
+  }
+  if (baseBuild && cacheSnapshot && !qualifiedBaseErrors.length) {
+"""
+'''
+if text.count(old) != 1:
+    raise SystemExit(f'unexpected build chronology anchor count: {text.count(old)}')
+path.write_text(text.replace(old, new, 1))
+PY
+
 phase=apply_recursive_cache_safety
 python3 /tmp/cache-v3.py
 cat > /tmp/pc48-cache-v3-expected-paths.txt <<'EOF'
@@ -104,6 +147,7 @@ repaired_lib_sha256=$repaired_lib_sha256
 repaired_test_sha256=$repaired_test_sha256
 recursive_cache_safe_json_preflight=pass
 transitive_key_diagnostics_before_full_v45_validation=pass
+chronology_diagnostics_before_full_v45_validation=pass
 compile_preflight_before_base_or_chronology_validation=pass
 build_validation_preflight_before_source_hashing=pass
 structured_clone_snapshot=pass
