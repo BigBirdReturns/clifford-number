@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 240
     env:
-      BASE_MAIN: b9d09c28bcaa0b00c699ff40e893df7b9675ff0f
+      BASE_MAIN_FLOOR: b9d09c28bcaa0b00c699ff40e893df7b9675ff0f
       TARGET_BRANCH: agent/ssc-rd04-wave03-trigger-path-validator-repair-product-v1
       TARGET_LEASE: b9d09c28bcaa0b00c699ff40e893df7b9675ff0f
       CARRIER_PATH: .ssc-rd04-trigger-guard-repair/carrier.b64
@@ -61,6 +61,22 @@ jobs:
           sed -i 's/^          //' "$RECEIPT/expected-paths.txt"
           test "$(sha256sum "$RECEIPT/expected-paths.txt" | awk '{print $1}')" = "$PATHS_SHA256"
 
+          cat > "$RECEIPT/permanent-product-paths.txt" <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-state-implementation-intake.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-state-implementation/field-matrix-contract.json
+          data/intake/status-sovereignty-rd-wave03-rd04-state-implementation/intake-product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-state-implementation/source-census-protocol.json
+          data/project/ssc-residual-wave03/seeds/RD-04-C02.json
+          docs/milestones/ssc-rd-wave03-rd04-state-implementation-intake.md
+          schemas/status-sovereignty-rd-wave03-rd04-state-implementation-intake.schema.json
+          test/status-sovereignty-rd-wave03-rd04-state-implementation-intake.test.js
+          tools/acquisition/status-sovereignty-rd-wave03-rd04/run-source-census.py
+          tools/build-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs
+          EOF
+          sed -i 's/^          //' "$RECEIPT/permanent-product-paths.txt"
+          sort -o "$RECEIPT/permanent-product-paths.txt" "$RECEIPT/permanent-product-paths.txt"
+
           cp "$CARRIER_PATH" "$RECEIPT/package.tar.xz.b64"
           test "$(sha256sum "$RECEIPT/package.tar.xz.b64" | awk '{print $1}')" = "$CARRIER_B64_SHA256"
           base64 --decode "$RECEIPT/package.tar.xz.b64" > "$ARCHIVE"
@@ -72,11 +88,16 @@ jobs:
           test "$(find "$PACKAGE" -type l | wc -l | tr -d ' ')" = 0
 
           git fetch --no-tags origin main "$TARGET_BRANCH"
-          test "$(git rev-parse origin/main)" = "$BASE_MAIN"
+          LIVE_MAIN=$(git rev-parse origin/main)
           test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$TARGET_LEASE"
-          git merge-base --is-ancestor b9d09c28bcaa0b00c699ff40e893df7b9675ff0f "$BASE_MAIN"
+          git merge-base --is-ancestor "$BASE_MAIN_FLOOR" "$LIVE_MAIN"
+          git diff --name-only "$BASE_MAIN_FLOOR..$LIVE_MAIN" | sort > "$RECEIPT/main-increment-paths.txt"
+          if comm -12 "$RECEIPT/permanent-product-paths.txt" "$RECEIPT/main-increment-paths.txt" | grep -q .; then
+            echo 'current-main increment overlaps the RD-04 permanent intake surface' >&2
+            exit 1
+          fi
 
-          git worktree add --detach "$WORK" "$BASE_MAIN"
+          git worktree add --detach "$WORK" "$LIVE_MAIN"
           cp -a "$PACKAGE"/. "$WORK"/
           cd "$WORK"
           while IFS= read -r path; do git add -- "$path"; done < "$RECEIPT/expected-paths.txt"
@@ -109,12 +130,12 @@ jobs:
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
 
           git fetch --no-tags origin main "$TARGET_BRANCH"
-          test "$(git rev-parse origin/main)" = "$BASE_MAIN"
+          test "$(git rev-parse origin/main)" = "$LIVE_MAIN"
           test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$TARGET_LEASE"
           git push origin "HEAD:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_LEASE"
 
-          printf 'base_main=%s\ntarget_lease=%s\nproduct_commit=%s\nproduct_tree=%s\nmodified_paths=3\nadversarial_refusals=526\nnetwork_requests=0\nclass_closed=false\noutside_human_dependency=false\n' \
-            "$BASE_MAIN" "$TARGET_LEASE" "$PRODUCT_COMMIT" "$PRODUCT_TREE" > "$RECEIPT/final.txt"
+          printf 'base_main_floor=%s\nlive_main=%s\ntarget_lease=%s\nproduct_commit=%s\nproduct_tree=%s\nmodified_paths=3\nadversarial_refusals=526\nnetwork_requests=0\nclass_closed=false\noutside_human_dependency=false\n' \
+            "$BASE_MAIN_FLOOR" "$LIVE_MAIN" "$TARGET_LEASE" "$PRODUCT_COMMIT" "$PRODUCT_TREE" > "$RECEIPT/final.txt"
           sha256sum "$RECEIPT/package.tar.xz.b64" "$ARCHIVE" "$RECEIPT/expected-paths.txt" > "$RECEIPT/hashes.txt"
 
       - name: Preserve repair receipt
