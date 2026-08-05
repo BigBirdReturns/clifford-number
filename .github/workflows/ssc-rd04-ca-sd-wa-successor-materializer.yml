@@ -1,0 +1,154 @@
+name: TEMP materialize RD-04 CA-SD-WA successor protocol
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd04-ca-sd-wa-successor-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd04-ca-sd-wa-successor-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input jsonschema==4.25.1
+      - name: Reconstruct, qualify, and lease-publish exact thirteen-file product
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          export GIT_AUTHOR_NAME='github-actions[bot]'
+          export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+          readonly MAIN_LEASE=efcf6bc094facb72dec6b966a7e8e3b2acdf4d06
+          readonly TARGET_BRANCH=agent/ssc-rd-wave03-rd04-ca-sd-wa-successor-protocol-v1
+          readonly TARGET_LEASE=ef5b3a07dea3ede06d5e464e30942da8e43cbc61
+          readonly STANDING=.github/workflows/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol.yml
+          readonly ARCHIVE=/tmp/rd04-ca-sd-wa-successor.tar.xz
+          readonly PACKAGE=/tmp/rd04-ca-sd-wa-successor-package
+          readonly WORK=/tmp/rd04-ca-sd-wa-successor-worktree
+          readonly RECEIPT=/tmp/rd04-ca-sd-wa-successor-materializer-receipt
+          readonly PATHS=/tmp/rd04-ca-sd-wa-successor-paths.txt
+          rm -rf "$ARCHIVE" "$PACKAGE" "$WORK" "$RECEIPT" "$PATHS"
+          mkdir -p "$PACKAGE" "$RECEIPT"
+          trap 'status=$?; printf "exit_status=%s\n" "$status" >> "$RECEIPT/terminal.txt"; exit "$status"' EXIT
+          python - "$ARCHIVE" "$PACKAGE" "$PATHS" <<'PY2'
+          import base64, hashlib, json, os, pathlib, sys, tarfile, urllib.request
+          archive=pathlib.Path(sys.argv[1]); package=pathlib.Path(sys.argv[2]); paths_file=pathlib.Path(sys.argv[3])
+          repo=os.environ['GITHUB_REPOSITORY']; token=os.environ['GITHUB_TOKEN']
+          blobs=[["680f0ac292eb22b4a79806bc260839a6868b25c7", 6000, "dece54c17254407e06fedf5f0b70f7ee954f48bc0ce4a9503819ade050ff87ea"], ["2f7fc992335abc725bfe53a609fdb96f04e4af53", 6000, "6ba46ab97bd49e2d313771e60f42cbc89d7b80e45cb1c85d29f2af7cd98f8f33"], ["2f01b5805b9dc2da2a4d4f4a974603dad9edd8d8", 3356, "ed630a14bc2d3b2589f43eb30abfed09e24629cba0813d9541c1572c74178e90"]]
+          expected_paths=["data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol/authored-protocol.json", "data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol/execution-receipt-template.json", "data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol/index.json", "data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol/product-manifest.json", "data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol/route-ledger.json", "data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol/source-interpretation-constraints.json", "data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol/target-cell-ledger.json", "docs/milestones/ssc-rd-wave03-rd04-ca-sd-wa-successor-protocol.md", "schemas/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol.schema.json", "test/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol.test.js", "tools/acquisition/status-sovereignty-rd-wave03-rd04/run-ca-sd-wa-successor-protocol.py", "tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol.mjs", "tools/validate-status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol.mjs"]
+          expected_files={"data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol/authored-protocol.json": [62458, "d817fe7fc92d6581e559a4a7ff82dd6048029fa11c7c266157233f460d5c7ced"], "data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol/execution-receipt-template.json": [1377, "08a4bdbdd2d5e5f1252e398ed2527ccaa0a6dcd084cfcb21f4cc49c4616683b3"], "data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol/index.json": [2217, "c1de8bef8cf247aaaf48a8dc97387812bbe4ce26c228d983a9e0add2ea170490"], "data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol/product-manifest.json": [1480, "f11dcb6c1bf75cbdf53fabaf719dfa2a4b75b66e681cbf0d669a713b549d239e"], "data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol/route-ledger.json": [47953, "8d19466ae0b99958ec2bb6034ad8585d41ec10cb630020d03ea3aa84b1c777bc"], "data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol/source-interpretation-constraints.json": [2975, "98c27b4aada72b05e4d328d4f8d09a77fe488a03fe8cae9a6438682a0de12a09"], "data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol/target-cell-ledger.json": [13361, "a45b118d23679d2759fea1580a567d533c0a2eb45168e32fad70862fccdfa153"], "docs/milestones/ssc-rd-wave03-rd04-ca-sd-wa-successor-protocol.md": [2924, "7e3fab2c7b80238f0163f049afadba8ce010c4b3f4ea86f77edefdb5c733dcb1"], "schemas/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol.schema.json": [9878, "3d0ff98a34619555a09bd448d40ac529c559180b8747592fb825336b286d032e"], "test/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol.test.js": [4624, "789fdb74c190fcc4727aeb6232bfff3cd1483443cd2a766d04e743227e9bcd02"], "tools/acquisition/status-sovereignty-rd-wave03-rd04/run-ca-sd-wa-successor-protocol.py": [6610, "ab3678843c33bc92753e141838aa7a0d61d90ecb2939ef91c0fe3a930f78760b"], "tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol.mjs": [12648, "1cab9f61ceed73df98d8aea5a003ce2cecaf2f63ca4fdfd73cb9d9e382044bb0"], "tools/validate-status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol.mjs": [3217, "1616f47f91adba4dc9abf2cfaf2a4f476e3190633f348ca5675a767a42b0c377"]}
+          parts=[]; receipt=[]
+          for sha,size,digest in blobs:
+              req=urllib.request.Request(f'https://api.github.com/repos/{repo}/git/blobs/{sha}',headers={'Authorization':f'Bearer {token}','Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','User-Agent':'ssc-rd04-ca-sd-wa-successor-materializer'})
+              with urllib.request.urlopen(req,timeout=30) as response: payload=json.load(response)
+              data=base64.b64decode(payload['content'].replace('\n',''))
+              assert payload['sha']==sha
+              assert hashlib.sha1(f'blob {len(data)}\0'.encode()+data).hexdigest()==sha
+              assert len(data)==size and hashlib.sha256(data).hexdigest()==digest
+              parts.append(data); receipt.append({'sha':sha,'bytes':size,'sha256':digest})
+          archive_bytes=b''.join(parts)
+          assert len(archive_bytes)==15356
+          assert hashlib.sha256(archive_bytes).hexdigest()=='d99bd741065f4dbbe7f9b99d17073c35204633a2edfc85d1a88a3f0dfa3df1b4'
+          archive.write_bytes(archive_bytes)
+          with tarfile.open(archive,mode='r:xz') as tf:
+              members=[m for m in tf.getmembers() if m.isfile()]
+              normalized=sorted(m.name.lstrip('./') for m in members)
+              assert normalized==expected_paths, normalized
+              assert all(not m.issym() and not m.islnk() for m in tf.getmembers())
+              for m in tf.getmembers():
+                  target=(package/m.name).resolve(); assert target==package.resolve() or package.resolve() in target.parents
+              tf.extractall(package,filter='data')
+          found=sorted(str(p.relative_to(package)) for p in package.rglob('*') if p.is_file())
+          assert found==expected_paths
+          for rel,(size,digest) in expected_files.items():
+              data=(package/rel).read_bytes(); assert len(data)==size; assert hashlib.sha256(data).hexdigest()==digest
+          paths_file.write_text('\n'.join(expected_paths)+'\n')
+          pathlib.Path('/tmp/rd04-ca-sd-wa-successor-materializer-receipt/chunks.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          print('sealed_archive_bytes=15356')
+          print('sealed_archive_sha256=d99bd741065f4dbbe7f9b99d17073c35204633a2edfc85d1a88a3f0dfa3df1b4')
+          print('sealed_nonworkflow_paths=13')
+          PY2
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          LIVE_MAIN=$(git rev-parse origin/main)
+          LIVE_TARGET=$(git rev-parse "origin/$TARGET_BRANCH")
+          test "$LIVE_MAIN" = "$MAIN_LEASE"
+          test "$LIVE_TARGET" = "$TARGET_LEASE"
+          test "$(git rev-parse "$LIVE_TARGET^")" = "$LIVE_MAIN"
+          test "$(git rev-list --count "$LIVE_MAIN..$LIVE_TARGET")" = 1
+          test "$(git diff --name-only "$LIVE_MAIN..$LIVE_TARGET")" = "$STANDING"
+          git worktree add --detach "$WORK" "$LIVE_TARGET"
+          cp -a "$PACKAGE"/. "$WORK"/
+          cd "$WORK"
+          while IFS= read -r path; do git add -- "$path"; done < "$PATHS"
+          git diff --cached --name-only | sort > "$RECEIPT/staged-paths.txt"
+          cmp "$PATHS" "$RECEIPT/staged-paths.txt"
+          test "$(git diff --cached --name-status | wc -l | tr -d ' ')" = 13
+          test "$(git diff --cached --name-status | awk '$1 != "A" {n++} END {print n+0}')" = 0
+          if grep -E '(^|/)(tmp|transport|carrier|materializer|trigger)(/|$)' "$RECEIPT/staged-paths.txt"; then exit 1; fi
+          git diff --cached --check
+          git commit -m 'Freeze RD-04 California South Dakota Washington successor protocol'
+          FINAL_COMMIT=$(git rev-parse HEAD)
+          FINAL_TREE=$(git rev-parse 'HEAD^{tree}')
+          test "$(git rev-parse HEAD^)" = "$LIVE_TARGET"
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd04/run-ca-sd-wa-successor-protocol.py
+          node tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol.mjs
+          node test/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-ca-sd-wa-successor-protocol.py --validate-only
+          python - <<'PY3'
+          import json
+          from pathlib import Path
+          import jsonschema
+          schema=json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol.schema.json').read_text())
+          files=sorted(Path('data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol').glob('*.json'))
+          assert len(files)==7
+          for p in files: jsonschema.validate(json.loads(p.read_text()),schema)
+          print('closed_schema_validation=pass')
+          PY3
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+          git restore --worktree -- .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol.mjs
+          node test/status-sovereignty-rd-wave03-rd04-ca-sd-wa-successor-protocol.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-ca-sd-wa-successor-protocol.py --validate-only
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          test "$(git rev-parse origin/main)" = "$MAIN_LEASE"
+          test "$(git rev-parse origin/$TARGET_BRANCH)" = "$TARGET_LEASE"
+          printf 'main_lease=%s\ntarget_lease=%s\nfinal_commit=%s\nfinal_tree=%s\n' "$MAIN_LEASE" "$TARGET_LEASE" "$FINAL_COMMIT" "$FINAL_TREE" > "$RECEIPT/product.txt"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_LEASE"
+      - name: Preserve exact materializer receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-ca-sd-wa-successor-materializer-receipt
+          path: /tmp/rd04-ca-sd-wa-successor-materializer-receipt
+          if-no-files-found: error
+          retention-days: 90
