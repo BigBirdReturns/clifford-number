@@ -60,8 +60,9 @@ jobs:
           MAIN_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
           SOURCE_BUNDLE="$GITHUB_WORKSPACE/.schoolhouse-charity-nc-final-static-residual-custody/builder.mjs.gz.b64"
           SOURCE_BUILDER=/tmp/build-schoolhouse-charity-nc-final-static-residual-custody.mjs
-          test "$(sha256sum "$SOURCE_BUNDLE" | awk '{print $1}')" = 'e84b61a0d48e7cb894841a289891b2b4dccebbd246d1c17d0036f7a470ccb6b1'
+          echo "bundle_sha256=$(sha256sum "$SOURCE_BUNDLE" | awk '{print $1}')"
           base64 -d "$SOURCE_BUNDLE" | gzip -dc > "$SOURCE_BUILDER"
+          echo "builder_sha256=$(sha256sum "$SOURCE_BUILDER" | awk '{print $1}')"
           test "$(sha256sum "$SOURCE_BUILDER" | awk '{print $1}')" = '76de3145ae1c764086ef3dce8bf29973d3ffc7b89efbf467754a89ab4bf0a986'
           node --check "$SOURCE_BUILDER"
 
