@@ -38,11 +38,16 @@ jobs:
           RUNNER='/tmp/capture-schoolhouse-official-site-legal-route-census.py'
 
           git fetch --no-tags origin main
+          echo "main_sha=$(git rev-parse origin/main)"
+          echo "merge_base=$(git merge-base HEAD origin/main)"
+          echo "bundle_sha256=$(sha256sum "$BUNDLE" | awk '{print $1}')"
+          echo "execute_sha256=$(sha256sum "$EXECUTE" | awk '{print $1}')"
           test "$(git rev-parse origin/main)" = "$BASE_MAIN"
           test "$(git merge-base HEAD origin/main)" = "$BASE_MAIN"
-          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'd60d2abd9a763472e6740b72123ce9b44df5a6f11881776d03b773dc96468447'
-          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = 'c074e50ba4266cc3564b4a8e03603d333d0e6c052467e5dd4ea5f8b6ef17426e'
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'e773c084201210a4302cf7a736d88c0cabaf1f09892aab01e965b82c0e26a2c4'
+          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = 'db6a82afcc5985fc06b4b8ecb263ec412b138d766cf236e2496f2156bf912587'
           base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
+          echo "runner_sha256=$(sha256sum "$RUNNER" | awk '{print $1}')"
           test "$(sha256sum "$RUNNER" | awk '{print $1}')" = '639ce7646d25cc3023c424bbc38f867906f53de0aec56015a93a16a0bede6689'
           python -m py_compile "$RUNNER"
 
