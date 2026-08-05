@@ -1,0 +1,242 @@
+name: TEMP acquire School.House launch-era archived legal surfaces
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-launch-era-archive-content-census.yml'
+      - '.schoolhouse-launch-era-archive-content-census/EXECUTE'
+      - '.schoolhouse-launch-era-archive-content-census/input.json.gz.b64'
+      - '.schoolhouse-launch-era-archive-content-census/capture.py.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: temp-schoolhouse-launch-era-archive-content-census-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate exact seven-snapshot denominator and runner
+        run: |
+          set -Eeuo pipefail
+          BASE_MAIN='c81de1c073d0a9ff6d35d8b6f1f4396941026203'
+          SOURCE='data/intake/bvvc-defense-capital/schoolhouse-first-party-archive-locators.jsonl'
+          SOURCE_BLOB='474eafcae9009beb0f75f3fd10a8a262e3c2802e'
+          CUSTODY='data/intake/bvvc-defense-capital/schoolhouse-first-party-archive-locator-custody.json'
+          CUSTODY_BLOB='97f210b2bec49c6962251130327a8880aa1106df'
+          EXECUTE='.schoolhouse-launch-era-archive-content-census/EXECUTE'
+          INPUT_BUNDLE='.schoolhouse-launch-era-archive-content-census/input.json.gz.b64'
+          INPUT='/tmp/schoolhouse-launch-era-archive-content-input.json'
+          RUNNER_BUNDLE='.schoolhouse-launch-era-archive-content-census/capture.py.gz.b64'
+          RUNNER='/tmp/capture-schoolhouse-launch-era-archive-content.py'
+          OUT='/tmp/schoolhouse-launch-era-archive-content-census'
+
+          mkdir -p "$OUT"
+          printf 'validation_started\n' > "$OUT/validation-state.txt"
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$BASE_MAIN" origin/main
+          test "$(git merge-base HEAD origin/main)" = "$BASE_MAIN"
+          test "$(git rev-parse "HEAD:$SOURCE")" = "$SOURCE_BLOB"
+          test "$(git rev-parse "origin/main:$SOURCE")" = "$SOURCE_BLOB"
+          test "$(git rev-parse "HEAD:$CUSTODY")" = "$CUSTODY_BLOB"
+          test "$(git rev-parse "origin/main:$CUSTODY")" = "$CUSTODY_BLOB"
+
+          for file in "$EXECUTE" "$INPUT_BUNDLE" "$RUNNER_BUNDLE"; do
+            TREE_BLOB=$(git ls-tree HEAD -- "$file" | awk '{print $3}')
+            test -n "$TREE_BLOB"
+            test "$(git hash-object "$file")" = "$TREE_BLOB"
+          done
+          git diff --exit-code -- "$EXECUTE" "$INPUT_BUNDLE" "$RUNNER_BUNDLE"
+
+          grep -Fx 'declared_snapshots=7' "$EXECUTE"
+          grep -Fx 'home_snapshots=5' "$EXECUTE"
+          grep -Fx 'bvvc_connect_snapshots=2' "$EXECUTE"
+          grep -Fx 'maximum_attempts_per_snapshot=1' "$EXECUTE"
+          grep -Fx 'maximum_parallel_workers=1' "$EXECUTE"
+          grep -Fx 'inter_request_delay_seconds=2' "$EXECUTE"
+          grep -Fx 'embedded_resources_fetched=0' "$EXECUTE"
+          grep -Fx 'followup_links_fetched=0' "$EXECUTE"
+          grep -Fx 'forms_submitted=0' "$EXECUTE"
+          grep -Fx 'raw_source_retained=false' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+
+          base64 -d "$INPUT_BUNDLE" | gzip -dc > "$INPUT"
+          test "$(sha256sum "$INPUT" | awk '{print $1}')" = '385b260b5cb04bcd87b26b6907e8aaf401ec862089201f6fba9b52eac905e833'
+          base64 -d "$RUNNER_BUNDLE" | gzip -dc > "$RUNNER"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = 'e43b9b9b625baec68cc4fd31419b42098bae71f21721988b6ceca892a1f651b8'
+          python -m py_compile "$RUNNER"
+
+          python - "$INPUT" "$SOURCE" <<'PY'
+          import json
+          import sys
+
+          input_path, source_path = sys.argv[1:]
+          specification = json.load(open(input_path, encoding="utf-8"))
+          source_rows = {}
+          with open(source_path, encoding="utf-8") as handle:
+              for line in handle:
+                  if line.strip():
+                      row = json.loads(line)
+                      source_rows[row["locator_id"]] = row
+
+          assert specification["schema_version"] == "schoolhouse-launch-era-archive-content-input@1"
+          assert specification["canonical_main"] == "c81de1c073d0a9ff6d35d8b6f1f4396941026203"
+          snapshots = specification["snapshots"]
+          assert len(snapshots) == 7
+          assert len({row["selection_id"] for row in snapshots}) == 7
+          assert len({row["canonical_locator_id"] for row in snapshots}) == 7
+          assert sum(row["source_route_id"] == "root-schoolhouse-home" for row in snapshots) == 5
+          assert sum(row["source_route_id"] == "root-schoolhouse-connect" for row in snapshots) == 2
+
+          fields = [
+              ("source_route_id", "source_route_id"),
+              ("source_receipt_id", "source_receipt_id"),
+              ("queried_url", "queried_url"),
+              ("timestamp", "timestamp"),
+              ("original_url", "original_url"),
+              ("status_code", "status_code"),
+              ("mime_type", "mime_type"),
+              ("archive_digest", "archive_digest"),
+              ("archived_length", "archived_length"),
+              ("replay_locator", "replay_locator"),
+          ]
+          for snapshot in snapshots:
+              canonical = source_rows[snapshot["canonical_locator_id"]]
+              for input_field, source_field in fields:
+                  assert snapshot[input_field] == canonical[source_field], (
+                      snapshot["selection_id"], input_field, snapshot[input_field], canonical[source_field]
+                  )
+              prefix = f'https://web.archive.org/web/{snapshot["timestamp"]}id_/'
+              assert snapshot["replay_locator"].startswith(prefix)
+              assert canonical["archived_body_fetched"] is False
+              assert canonical["replay_dereferenced"] is False
+              assert canonical["identity_admitted"] is False
+
+          bounds = specification["bounds"]
+          assert bounds["declared_snapshots"] == 7
+          assert bounds["maximum_attempts_per_snapshot"] == 1
+          assert bounds["maximum_parallel_workers"] == 1
+          assert bounds["inter_request_delay_seconds"] == 2
+          assert bounds["maximum_response_bytes"] == 2097152
+          assert bounds["embedded_resources_fetched"] == 0
+          assert bounds["followup_links_fetched"] == 0
+          assert bounds["forms_submitted"] == 0
+          assert bounds["interactive_searches_submitted"] == 0
+          assert specification["outside_human_dependency"] is False
+          assert specification["graph_effect"] == "none"
+          PY
+          printf 'validation_passed\n' > "$OUT/validation-state.txt"
+
+      - name: Execute exact archived-content acquisition
+        run: |
+          set -Eeuo pipefail
+          INPUT='/tmp/schoolhouse-launch-era-archive-content-input.json'
+          RUNNER='/tmp/capture-schoolhouse-launch-era-archive-content.py'
+          OUT='/tmp/schoolhouse-launch-era-archive-content-census'
+          rm -rf "$OUT"
+          python "$RUNNER" --input "$INPUT" --output "$OUT"
+
+          for file in summary.json route-policy.json artifact-manifest.json archived-route-results.jsonl archived-surface-evidence.jsonl archived-candidate-observations.jsonl archived-link-inventory.jsonl SHA256SUMS; do
+            test -f "$OUT/$file"
+          done
+
+          cat "$OUT/summary.json"
+          jq -e '
+            .declared_snapshots == 7 and
+            .terminal_route_rows == 7 and
+            .request_attempts == 7 and
+            .successful_routes >= 0 and
+            .successful_routes <= 7 and
+            .provider_error_routes >= 0 and
+            .provider_error_routes <= 7 and
+            (.successful_routes + .provider_error_routes) == 7 and
+            .surface_evidence_rows == .successful_html_routes and
+            .candidate_observation_rows >= 0 and
+            .legal_governance_link_rows >= 0 and
+            .organization_structured_data_rows >= 0 and
+            .form_rows >= 0 and
+            .screened_visible_text_chars >= 0 and
+            .maximum_attempts_per_snapshot == 1 and
+            .maximum_parallel_workers == 1 and
+            .inter_request_delay_seconds == 2 and
+            .request_timeout_seconds == 60 and
+            .maximum_redirects == 3 and
+            .maximum_response_bytes == 2097152 and
+            .embedded_resources_fetched == 0 and
+            .followup_links_fetched == 0 and
+            .forms_submitted == 0 and
+            .interactive_searches_submitted == 0 and
+            .organization_name_submissions == 0 and
+            .identifier_submissions == 0 and
+            .source_rows_acquired == 0 and
+            .raw_source_retained == false and
+            .full_visible_text_retained == false and
+            .hidden_form_values_retained == false and
+            .field_names_retained == false and
+            .street_address_rows_retained == 0 and
+            .contact_detail_rows_retained == 0 and
+            .private_support_rows == 0 and
+            .identities_admitted == 0 and
+            .negative_existence_claims_created == 0 and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/summary.json"
+          test "$(grep -cve '^$' "$OUT/archived-route-results.jsonl")" = '7'
+          jq -e '
+            .source_denominator.declared_snapshots == 7 and
+            .request_policy.maximum_attempts_per_snapshot == 1 and
+            .request_policy.maximum_parallel_workers == 1 and
+            .request_policy.embedded_resources_fetched == 0 and
+            .request_policy.followup_links_fetched == 0 and
+            .request_policy.forms_submitted == 0 and
+            .retention_policy.raw_source_retained == false and
+            .retention_policy.full_visible_text_retained == false and
+            .interpretation.provider_error_is_not_absence == true and
+            .interpretation.bounded_no_candidate_result_is_not_absence == true and
+            .identity_admitted == false and
+            .negative_existence_claim_created == false and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/route-policy.json"
+          jq -e '
+            .raw_source_retained == false and
+            .full_visible_text_retained == false and
+            .hidden_form_values_retained == false and
+            .field_names_retained == false and
+            .street_address_rows_retained == 0 and
+            .contact_detail_rows_retained == 0 and
+            .private_support_rows == 0 and
+            .identity_admitted == false and
+            .negative_existence_claim_created == false and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/artifact-manifest.json"
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: schoolhouse-launch-era-archive-content-census
+          path: /tmp/schoolhouse-launch-era-archive-content-census
+          if-no-files-found: error
+          retention-days: 90
