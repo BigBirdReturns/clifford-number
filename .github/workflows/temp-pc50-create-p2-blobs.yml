@@ -1,4 +1,4 @@
-name: TEMP qualify and materialize PC-50 P2 repair blobs
+name: TEMP qualify and materialize exact PC-50 P2 repair blobs
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: pc50-p2-repair-${{ github.event.pull_request.number }}
+  group: pc50-p2-exact-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
@@ -17,6 +17,8 @@ jobs:
     if: github.head_ref == 'agent/pc50-product-carrier'
     runs-on: ubuntu-24.04
     timeout-minutes: 240
+    env:
+      CARRIER_HEAD: ${{ github.event.pull_request.head.sha }}
     steps:
       - name: Checkout exact repair carrier
         uses: actions/checkout@v4
@@ -24,33 +26,73 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
 
-      - name: Decode and verify exact-tree P2 patch
+      - name: Reconstruct exact four-file repair archive
         run: |
           set -Eeuo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          import base64, gzip, hashlib
+          import base64, hashlib, io, json, shutil, tarfile
 
-          raw = Path('.pc50-carrier/p2-repair.patch.gz.b64').read_bytes()
-          encoded = b''.join(raw.split())
-          if len(encoded) != 6120:
-              raise SystemExit(f'base64 length mismatch: {len(encoded)}')
-          if hashlib.sha256(encoded).hexdigest() != '75a813193bc2771a48271b7ea4dcab2cbf7d091ca39c2ca1038777c7deead3e8':
-              raise SystemExit('base64 SHA-256 mismatch')
-          compressed = base64.b64decode(encoded, validate=True)
-          if len(compressed) != 4588:
-              raise SystemExit(f'gzip length mismatch: {len(compressed)}')
-          if hashlib.sha256(compressed).hexdigest() != '7428306547cd3e9dc40a06e61e1ac30fe93c7967a04473c491504164d5474e63':
-              raise SystemExit('gzip SHA-256 mismatch')
-          patch = gzip.decompress(compressed)
-          if len(patch) != 21253:
-              raise SystemExit(f'patch length mismatch: {len(patch)}')
-          if hashlib.sha256(patch).hexdigest() != 'a6ef14c0493939a57a8e82771413888c6a5e5c05cca2a1bcc91962eba58fbee8':
-              raise SystemExit('patch SHA-256 mismatch')
-          Path('/tmp/pc50-p2-repair.patch.gz').write_bytes(compressed)
-          Path('/tmp/pc50-p2-repair.patch').write_bytes(patch)
-          print('patch_bytes=21253')
-          print('patch_sha256=a6ef14c0493939a57a8e82771413888c6a5e5c05cca2a1bcc91962eba58fbee8')
+          carrier = Path('.pc50-carrier/p2-exact')
+          manifest_bytes = (carrier / 'manifest.json').read_bytes()
+          manifest = json.loads(manifest_bytes)
+          if manifest.get('schema_version') != 'pc50-p2-exact-carrier@1':
+              raise SystemExit('unexpected carrier schema')
+          if manifest.get('original_product_commit') != '63c3c8eda8144ec7596efc88a6d7b56239249a58':
+              raise SystemExit('original product commit drift')
+          if manifest.get('original_product_tree') != '772abfbb3285284a5e6f3056592ac65acef4eff1':
+              raise SystemExit('original product tree drift')
+          if manifest.get('qualified_parent_commit') != 'd87172a41e88c1709b37a114b50df733545126c8':
+              raise SystemExit('qualified parent drift')
+          if manifest.get('changed_permanent_files') != 4:
+              raise SystemExit('repair denominator drift')
+
+          parts = manifest.get('parts', [])
+          if len(parts) != 11:
+              raise SystemExit('repair shard denominator mismatch')
+          chunks = []
+          for index, part in enumerate(parts):
+              expected = f'part{index:02d}'
+              if part.get('path') != expected:
+                  raise SystemExit(f'repair shard order mismatch: {part}')
+              raw = (carrier / expected).read_bytes()
+              if len(raw) != part['chars'] or hashlib.sha256(raw).hexdigest() != part['sha256']:
+                  raise SystemExit(f'repair shard mismatch: {expected}')
+              chunks.append(raw)
+          encoded = b''.join(chunks)
+          if len(encoded) != manifest['base64_chars'] or hashlib.sha256(encoded).hexdigest() != manifest['base64_sha256']:
+              raise SystemExit('aggregate repair base64 mismatch')
+          archive = base64.b64decode(encoded, validate=True)
+          if len(archive) != manifest['archive_bytes'] or hashlib.sha256(archive).hexdigest() != manifest['archive_sha256']:
+              raise SystemExit('repair archive mismatch')
+
+          root = Path('/tmp/pc50-p2-exact')
+          shutil.rmtree(root, ignore_errors=True)
+          root.mkdir(parents=True)
+          with tarfile.open(fileobj=io.BytesIO(archive), mode='r:gz') as package:
+              members = [member for member in package.getmembers() if member.isfile()]
+              expected_paths = [row['path'] for row in manifest['files']]
+              if [member.name for member in members] != expected_paths:
+                  raise SystemExit('repair archive path mismatch')
+              for member, expected in zip(members, manifest['files'], strict=True):
+                  if member.name.startswith('/') or '..' in Path(member.name).parts:
+                      raise SystemExit(f'unsafe repair path: {member.name}')
+                  data = package.extractfile(member).read()
+                  digest = hashlib.sha256(data).hexdigest()
+                  blob = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+                  if len(data) != expected['bytes'] or digest != expected['sha256'] or blob != expected['git_blob_sha1']:
+                      raise SystemExit(f'exact repaired file mismatch: {member.name}')
+                  target = root / member.name
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(data)
+
+          Path('/tmp/pc50-p2-exact.tar.gz').write_bytes(archive)
+          Path('/tmp/pc50-p2-manifest.json').write_bytes(manifest_bytes)
+          print(json.dumps({
+              'archive_bytes': len(archive),
+              'archive_sha256': hashlib.sha256(archive).hexdigest(),
+              'repair_files': len(manifest['files']),
+          }, indent=2))
           PY
 
       - name: Checkout exact original PC-50 product head
@@ -64,61 +106,32 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Apply exact repair and verify four permanent blobs
+      - name: Install and verify exact four-file repair
         run: |
           set -Eeuo pipefail
           test "$(git rev-parse HEAD^{commit})" = "63c3c8eda8144ec7596efc88a6d7b56239249a58"
           test "$(git rev-parse HEAD^{tree})" = "772abfbb3285284a5e6f3056592ac65acef4eff1"
-          git apply --check /tmp/pc50-p2-repair.patch
-          git apply /tmp/pc50-p2-repair.patch
-
-          cat > /tmp/pc50-p2-paths.txt <<'EOF'
-          test/preference-custody-manifest-v48.test.js
-          test/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.test.js
-          tools/lib/preference-custody-manifest-v48.mjs
-          tools/lib/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs
-          EOF
-          git diff --name-only | sort > /tmp/pc50-p2-actual-paths.txt
-          diff -u /tmp/pc50-p2-paths.txt /tmp/pc50-p2-actual-paths.txt
-          git diff --check
-
           python3 - <<'PY'
           from pathlib import Path
-          import hashlib, json
-
-          expected = {
-              'tools/lib/preference-custody-manifest-v48.mjs': {
-                  'bytes': 44888,
-                  'sha256': '7834c9625a6bf83f837947758ebc59beb76f69fd35f190718af3c8d405416afc',
-                  'blob': '46d60485a089932f18d5567382f9ce0d7f4b7f8c',
-              },
-              'tools/lib/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs': {
-                  'bytes': 44657,
-                  'sha256': '361c3cff55bcfb428432966f224e0b47683091d3fbdaafde0fc1a3ab626749c6',
-                  'blob': '3a9647dda955bd980c863f8ef068f36115e5ef39',
-              },
-              'test/preference-custody-manifest-v48.test.js': {
-                  'bytes': 13085,
-                  'sha256': '78dfaf1e65845d3dad2adec129e8d0dd1e1de5d92d7020b774a386d24e31d1aa',
-                  'blob': 'f47b3e502d0785ba826f62265ff296c2a77de055',
-              },
-              'test/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.test.js': {
-                  'bytes': 9591,
-                  'sha256': 'a08294ea94f8b424e6f7c9cfe5232206b881e7fe03521099925b81ad76583fbe',
-                  'blob': 'd382e183e9fc6559b27a84d321c6fc7a1779dc58',
-              },
-          }
-          receipt = []
-          for name, meta in expected.items():
-              data = Path(name).read_bytes()
-              digest = hashlib.sha256(data).hexdigest()
-              blob = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
-              if len(data) != meta['bytes'] or digest != meta['sha256'] or blob != meta['blob']:
-                  raise SystemExit(f'exact repaired file mismatch: {name}')
-              receipt.append({'path': name, **meta})
-          Path('/tmp/pc50-p2-local-blob-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          import json, shutil
+          root = Path('/tmp/pc50-p2-exact')
+          manifest = json.loads(Path('/tmp/pc50-p2-manifest.json').read_text())
+          for row in manifest['files']:
+              source = root / row['path']
+              target = Path(row['path'])
+              target.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copyfile(source, target)
           PY
-
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, subprocess
+          manifest = json.loads(Path('/tmp/pc50-p2-manifest.json').read_text())
+          expected = sorted(row['path'] for row in manifest['files'])
+          actual = sorted(subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines())
+          if actual != expected:
+              raise SystemExit(f'repair path mismatch: {actual}')
+          PY
+          git diff --check
           for file in \
             tools/lib/preference-custody-manifest-v48.mjs \
             tools/lib/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs \
@@ -162,48 +175,43 @@ jobs:
           from pathlib import Path
           import base64, json, os, urllib.error, urllib.request
 
-          expected = json.loads(Path('/tmp/pc50-p2-local-blob-receipt.json').read_text())
+          manifest = json.loads(Path('/tmp/pc50-p2-manifest.json').read_text())
           repo = os.environ['GITHUB_REPOSITORY']
           token = os.environ['GH_TOKEN']
-
-          def api(method, endpoint, payload):
-              url = f'https://api.github.com/repos/{repo}{endpoint}'
+          def api(payload):
+              url = f'https://api.github.com/repos/{repo}/git/blobs'
               body = json.dumps(payload, separators=(',', ':')).encode()
-              req = urllib.request.Request(url, data=body, method=method)
-              req.add_header('Accept', 'application/vnd.github+json')
-              req.add_header('Authorization', f'Bearer {token}')
-              req.add_header('X-GitHub-Api-Version', '2022-11-28')
-              req.add_header('User-Agent', 'pc50-p2-blob-materializer')
+              request = urllib.request.Request(url, data=body, method='POST')
+              request.add_header('Accept', 'application/vnd.github+json')
+              request.add_header('Authorization', f'Bearer {token}')
+              request.add_header('X-GitHub-Api-Version', '2022-11-28')
+              request.add_header('User-Agent', 'pc50-p2-exact-blob-materializer')
               try:
-                  with urllib.request.urlopen(req, timeout=120) as response:
+                  with urllib.request.urlopen(request, timeout=120) as response:
                       return json.loads(response.read())
               except urllib.error.HTTPError as exc:
-                  raise SystemExit(f'GitHub API failure HTTP {exc.code}: {exc.read().decode(errors="replace")}')
+                  raise SystemExit(f'GitHub blob API failed HTTP {exc.code}: {exc.read().decode(errors="replace")}')
 
           remote = []
-          for meta in expected:
-              data = Path(meta['path']).read_bytes()
-              response = api('POST', '/git/blobs', {
-                  'content': base64.b64encode(data).decode(),
-                  'encoding': 'base64',
-              })
-              if response.get('sha') != meta['blob']:
-                  raise SystemExit(f'remote blob mismatch: {meta["path"]}')
+          for row in manifest['files']:
+              data = Path(row['path']).read_bytes()
+              response = api({'content': base64.b64encode(data).decode(), 'encoding': 'base64'})
+              if response.get('sha') != row['git_blob_sha1']:
+                  raise SystemExit(f'remote blob mismatch: {row["path"]}')
               remote.append({
-                  'path': meta['path'],
-                  'bytes': meta['bytes'],
-                  'sha256': meta['sha256'],
+                  'path': row['path'],
+                  'bytes': row['bytes'],
+                  'sha256': row['sha256'],
                   'git_blob_sha1': response['sha'],
               })
-
           receipt = {
-              'schema_version': 'pc50-p2-remote-blob-receipt@1',
-              'carrier_head': os.environ['GITHUB_SHA'],
-              'original_product_commit': '63c3c8eda8144ec7596efc88a6d7b56239249a58',
-              'original_product_tree': '772abfbb3285284a5e6f3056592ac65acef4eff1',
-              'qualified_parent_commit': 'd87172a41e88c1709b37a114b50df733545126c8',
-              'patch_sha256': 'a6ef14c0493939a57a8e82771413888c6a5e5c05cca2a1bcc91962eba58fbee8',
-              'changed_permanent_files': 4,
+              'schema_version': 'pc50-p2-exact-remote-blob-receipt@1',
+              'carrier_head': os.environ['CARRIER_HEAD'],
+              'original_product_commit': manifest['original_product_commit'],
+              'original_product_tree': manifest['original_product_tree'],
+              'qualified_parent_commit': manifest['qualified_parent_commit'],
+              'archive_sha256': manifest['archive_sha256'],
+              'changed_permanent_files': len(remote),
               'remote_blobs': remote,
               'ref_updated': False,
               'outside_human_dependency': False,
@@ -211,8 +219,8 @@ jobs:
           }
           Path('/tmp/pc50-p2-remote-blob-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
           print(json.dumps({
+              'archive_sha256': receipt['archive_sha256'],
               'changed_permanent_files': receipt['changed_permanent_files'],
-              'patch_sha256': receipt['patch_sha256'],
               'ref_updated': receipt['ref_updated'],
           }, indent=2))
           PY
@@ -221,11 +229,10 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pc50-p2-repair-custody
+          name: pc50-p2-exact-repair-custody
           path: |
-            /tmp/pc50-p2-repair.patch.gz
-            /tmp/pc50-p2-repair.patch
-            /tmp/pc50-p2-local-blob-receipt.json
+            /tmp/pc50-p2-exact.tar.gz
+            /tmp/pc50-p2-manifest.json
             /tmp/pc50-p2-remote-blob-receipt.json
             /tmp/pc50-p2-standalone.log
             /tmp/pc50-p2-floor-v48.log
