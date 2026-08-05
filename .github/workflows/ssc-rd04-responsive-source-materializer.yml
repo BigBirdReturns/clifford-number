@@ -186,7 +186,9 @@ jobs:
           test "$(git diff --cached --name-status | awk '$1 != "A" {n++} END {print n+0}')" = 0
           if grep -E '(^|/)(tmp|transport|carrier|materializer|trigger)(/|$)' "$RECEIPT/staged-paths.txt"; then exit 1; fi
           if grep -E '^\.github/workflows/' "$RECEIPT/staged-paths.txt"; then exit 1; fi
-          git diff --cached --check
+          # The milestone intentionally uses Markdown hard-break spaces on three metadata lines.
+          # Preserve every other whitespace check while disabling only blank-at-EOL diagnostics.
+          git -c core.whitespace=-blank-at-eol diff --cached --check
 
           git commit -m 'Adjudicate RD-04 responsive-link sources and freeze offline field review'
           FINAL_COMMIT=$(git rev-parse HEAD)
