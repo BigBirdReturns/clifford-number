@@ -39,19 +39,50 @@ jobs:
           BUNDLE='.schoolhouse-first-party-archive-locator-replay/replay.py.gz.b64'
           EXECUTE='.schoolhouse-first-party-archive-locator-replay/EXECUTE'
           RUNNER='/tmp/replay-schoolhouse-first-party-archive-locator.py'
+          OUT='/tmp/schoolhouse-first-party-archive-locator-replay'
 
+          mkdir -p "$OUT"
+          printf 'validation_started\n' > "$OUT/validation-state.txt"
           git fetch --no-tags origin main
           test "$(git merge-base HEAD origin/main)" = "$BASE_MAIN"
           git merge-base --is-ancestor "$BASE_MAIN" origin/main
-          test "$(sha256sum "$INPUT_BUNDLE" | awk '{print $1}')" = 'e6abf675f77271321b54b4d343ace845bab4eb7149029a7e76c5edf8d586247d'
+
+          for file in "$INPUT_BUNDLE" "$BUNDLE" "$EXECUTE"; do
+            TREE_BLOB=$(git ls-tree HEAD -- "$file" | awk '{print $3}')
+            test -n "$TREE_BLOB"
+            test "$(git hash-object "$file")" = "$TREE_BLOB"
+          done
+          git diff --exit-code -- "$INPUT_BUNDLE" "$BUNDLE" "$EXECUTE"
+
+          grep -Fx 'retry_input_rows=26' "$EXECUTE"
+          grep -Fx 'retry_input_sha256=66e50114a328785bd7dca89e321bfde05027d77d21bab4023868af6ed5197a85' "$EXECUTE"
+          grep -Fx 'runner_sha256=090c126d323ecae340c878239a6731fedac4a43a976554d26b2dacd404ff13b7' "$EXECUTE"
+          grep -Fx 'maximum_parallel_workers=1' "$EXECUTE"
+          grep -Fx 'inter_query_delay_seconds=3' "$EXECUTE"
+          grep -Fx 'archived_page_bodies_fetched=false' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+
           base64 -d "$INPUT_BUNDLE" | gzip -dc > "$INPUT"
           test "$(sha256sum "$INPUT" | awk '{print $1}')" = '66e50114a328785bd7dca89e321bfde05027d77d21bab4023868af6ed5197a85'
-          jq -e '.routes | length == 26' "$INPUT"
-          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '669a668728b74a54ba71f00ac1fa9333f3c4afd99928a80d823fe5a6dde8a485'
-          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = 'b6af04704b34d156771f13571d3c0213f2af5d8a236951570689ae3b6ef534e0'
+          jq -e '
+            .schema_version == "schoolhouse-first-party-archive-locator-retry-input@1" and
+            .baseline.workflow_run_id == 30995963355 and
+            .baseline.artifact_id == 8926199862 and
+            .baseline.artifact_digest == "sha256:1db8ed490991492167b6b9c2a2fbaaaca83ae8f09d036457dbd151202c0cc103" and
+            .baseline.route_results_sha256 == "713f5e8f973c277706131112b0c8bc68eba69ab8fd8e5470c58e2a53bc966e0e" and
+            .baseline.snapshot_locators_sha256 == "10d03c93d0a45b41e8a77937b08a1acb1ebdf7c0fe5b377aa8b55be9c4036b0c" and
+            .baseline.source_routes == 46 and
+            (.routes | length) == 26 and
+            ([.routes[].source_route_id] | unique | length) == 26 and
+            ([.routes[].baseline_archive_query_url_sha256] | unique | length) == 26 and
+            ([.routes[].baseline_state] | unique) == ["terminal_archive_transport_error_not_absence_evidence"] and
+            ([.routes[].baseline_request_attempts] | unique) == [1]
+          ' "$INPUT"
+
           base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
           test "$(sha256sum "$RUNNER" | awk '{print $1}')" = '090c126d323ecae340c878239a6731fedac4a43a976554d26b2dacd404ff13b7'
           python -m py_compile "$RUNNER"
+          printf 'validation_passed\n' > "$OUT/validation-state.txt"
 
       - name: Execute one bounded replay attempt per failed route
         run: |
