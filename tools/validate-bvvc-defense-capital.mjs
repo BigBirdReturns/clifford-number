@@ -92,7 +92,7 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   check(schoolhouse.demo_day_2024.panelists.length === 6, '2024 Demo Day must contain 6 panelists');
   check(schoolhouse.demo_day_2024.sponsors_and_partners.length === 9, '2024 Demo Day must contain 9 sponsors and partners');
   check(vehicles.length === 7, 'vehicle plane must contain 7 filed or filed-related entity rows');
-  check(transactions.length === 14, 'transaction plane must contain 14 typed observations');
+  check(transactions.length === 17, 'transaction plane must contain 17 typed observations');
   check(rejected.length === 16, 'rejected-join ledger must contain 16 rows');
   check(frontier.tasks.length === 7, 'acquisition frontier must contain 7 tasks');
 

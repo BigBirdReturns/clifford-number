@@ -7,7 +7,7 @@ It sits inside the existing `us-defense-natsec100` selection lane. Primary custo
 ## Current frozen surfaces
 
 ```text
-public-source receipts                         76
+public-source receipts                         79
 current BVVC leadership labels                 27 / 27
 historical-only leadership labels               4
 current Portfolio Universe labels              30 / 30
@@ -18,7 +18,7 @@ School.House faculty labels                    18 / 18
 2024 Demo Day tagged organizers                 5
 visible School.House employee labels            4
 vehicle and filed-related-entity rows           7
-transaction or investment observations         14
+transaction or investment observations         17
 institutional self-claim rows                  10
 explicit rejected joins                        16
 bounded continuation tasks                      7
@@ -37,7 +37,7 @@ The current leadership and Portfolio Universe pages are complete as rendered on 
 - `portfolio-current-01.jsonl` through `portfolio-current-03.jsonl` freeze all thirty current Portfolio Universe labels, descriptions, profile state, named founder or CEO where the acquired BVVC detail page supplies one, and every unresolved legal and control field.
 - `schoolhouse.json` preserves source-specific identity and timeline claims, eighteen current faculty labels, one dated twenty-company Demo Day surface, panelists, sponsors, organizers, founder mappings, two counterpart confirmations, and the public company-profile snapshot.
 - `vehicles-offerings.jsonl` separates Fund I, its GP and management company, SPV I, SPV IX, its manager, and SPV X, while carrying the SEC Form D accuracy caveat and refusing transaction-to-vehicle joins.
-- `transactions.jsonl` separates eight dated counterparty or syndicated financing announcements from six undated firm-self-represented investment observations.
+- `transactions.jsonl` separates eleven dated counterparty or syndicated financing announcements from six undated firm-self-represented investment observations.
 - `institutional-claims.jsonl` preserves BVVC and School.House public claims about access, relationships, program machinery, portfolio support, and cultural positioning with allowed and forbidden language.
 - `rejected-joins.jsonl` records sixteen tempting but unsupported inferences that the lake must continue to refuse.
 - `coverage-matrix.json` freezes complete, partial, open, and explicit-null surfaces.
