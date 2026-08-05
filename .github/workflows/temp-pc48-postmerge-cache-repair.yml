@@ -1,4 +1,4 @@
-name: TEMP materialize PC-48 recursive cache-safety repair
+name: TEMP materialize recursive PC-48 cache repair
 
 on:
   pull_request:
@@ -17,10 +17,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
-      - name: Checkout exact current main
+      - name: Checkout exact checksum-bound repair carrier
         uses: actions/checkout@v4
         with:
-          ref: cd47338ccc869dc8d8591fc288d39b09762dcc9a
+          ref: 795a3c3b87183a2e9ecaa613fc9136dc08c0ade7
+          fetch-depth: 0
+
+      - name: Preserve exact repair programs
+        run: |
+          set -euo pipefail
+          cp .pc48-repair/cache-v3.py /tmp/cache-v3.py
+          cp .pc48-repair/cache-v3-run.sh /tmp/cache-v3-run.sh
+          sha256sum /tmp/cache-v3.py /tmp/cache-v3-run.sh
+
+      - name: Checkout exact first cache-repair candidate
+        uses: actions/checkout@v4
+        with:
+          ref: 517637995fcf44d3d099d15a23372da5e2fcb2b2
           fetch-depth: 0
           clean: true
 
@@ -28,361 +41,17 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Patch, qualify, and publish exact repair candidate
-        env:
-          CURRENT_MAIN: cd47338ccc869dc8d8591fc288d39b09762dcc9a
-          TARGET_BRANCH: agent/pc48-postmerge-cache-repair
-          TARGET_LEASE: cd47338ccc869dc8d8591fc288d39b09762dcc9a
-          BASE_LIB_SHA256: 56fb1e1eef6c93dbab6f9c4a8ce94702e5a53036613ca022d0aa7d128a33d0b0
-          BASE_TEST_SHA256: 668e8fbbba6ecac376d3e66ca2685609da2080224b8cd2af287a4dfe1e3b17ba
-        run: |
-          set -Eeuo pipefail
-          phase=initialize
-          trap 'status=$?; printf "status=%s\nphase=%s\ncommand=%s\n" "$status" "$phase" "$BASH_COMMAND" > /tmp/pc48-cache-repair-v2-diagnostic.txt; exit "$status"' ERR
-          cd "$GITHUB_WORKSPACE"
-          test "$(git rev-parse HEAD)" = "$CURRENT_MAIN"
-          test -z "$(git status --porcelain)"
-          test "$(sha256sum tools/lib/preference-custody-manifest-v46.mjs | awk '{print $1}')" = "$BASE_LIB_SHA256"
-          test "$(sha256sum test/preference-custody-manifest-v46.test.js | awk '{print $1}')" = "$BASE_TEST_SHA256"
+      - name: Reconstruct, rebind, qualify, and publish exact candidate
+        run: bash /tmp/cache-v3-run.sh
 
-          phase=apply_recursive_cache_preflight_repair
-          python3 - <<'PY'
-          from pathlib import Path
-
-          lib_path = Path('tools/lib/preference-custody-manifest-v46.mjs')
-          test_path = Path('test/preference-custody-manifest-v46.test.js')
-          lib = lib_path.read_text()
-          test = test_path.read_text()
-
-          exact_keys_anchor = """function requireExactKeys(value, expected, label, errors) {
-            const keys = Object.keys(object(value));
-            if (stable(sorted(keys)) !== stable(sorted(expected)) || keys.length !== expected.length) errors.push(`${label} key ledger mismatch`);
-          }
-          """
-          exact_keys_replacement = """function requireExactKeys(value, expected, label, errors) {
-            const keys = Reflect.ownKeys(object(value));
-            const stringKeys = keys.filter(key => typeof key === 'string');
-            if (
-              stringKeys.length !== keys.length ||
-              stable(sorted(stringKeys)) !== stable(sorted(expected)) ||
-              stringKeys.length !== expected.length
-            ) errors.push(`${label} key ledger mismatch`);
-          }
-          function validateCacheSafeJsonTree(value, label, errors) {
-            const seen = new WeakSet();
-            const walk = (current, path) => {
-              const type = typeof current;
-              if (current === null || type === 'string' || type === 'boolean') return;
-              if (type === 'number') {
-                if (!Number.isFinite(current)) errors.push(`${path} must contain only finite JSON numbers`);
-                return;
-              }
-              if (type !== 'object') {
-                errors.push(`${path} contains unsupported JSON value type ${type}`);
-                return;
-              }
-              if (seen.has(current)) {
-                errors.push(`${path} contains a repeated or cyclic object`);
-                return;
-              }
-              seen.add(current);
-              let prototype;
-              let keys;
-              try {
-                prototype = Object.getPrototypeOf(current);
-                keys = Reflect.ownKeys(current);
-              } catch {
-                errors.push(`${path} must be inspectable cache-safe JSON data`);
-                return;
-              }
-              if (Array.isArray(current)) {
-                if (prototype !== Array.prototype) errors.push(`${path} must use the canonical array prototype`);
-                const expectedKeys = new Set(['length', ...Array.from({ length: current.length }, (_, index) => String(index))]);
-                if (keys.length !== expectedKeys.size || keys.some(key => typeof key !== 'string' || !expectedKeys.has(key))) {
-                  errors.push(`${path} array key ledger mismatch`);
-                }
-                for (let index = 0; index < current.length; index += 1) {
-                  const key = String(index);
-                  if (!Object.hasOwn(current, key)) {
-                    errors.push(`${path}[${index}] must not be sparse`);
-                    continue;
-                  }
-                  let descriptor;
-                  try { descriptor = Object.getOwnPropertyDescriptor(current, key); }
-                  catch { descriptor = null; }
-                  if (!descriptor || !descriptor.enumerable || !Object.hasOwn(descriptor, 'value')) {
-                    errors.push(`${path}[${index}] must be an enumerable data property`);
-                    continue;
-                  }
-                  walk(descriptor.value, `${path}[${index}]`);
-                }
-                return;
-              }
-              if (prototype !== Object.prototype) errors.push(`${path} must use the canonical object prototype`);
-              for (const key of keys) {
-                if (typeof key !== 'string') {
-                  errors.push(`${path} must not contain symbol keys`);
-                  continue;
-                }
-                let descriptor;
-                try { descriptor = Object.getOwnPropertyDescriptor(current, key); }
-                catch { descriptor = null; }
-                if (!descriptor || !descriptor.enumerable || !Object.hasOwn(descriptor, 'value')) {
-                  errors.push(`${path}.${key} must be an enumerable data property`);
-                  continue;
-                }
-                walk(descriptor.value, `${path}.${key}`);
-              }
-            };
-            walk(value, label);
-          }
-          function snapshotCacheSafeV45Inputs(baseBuild, baseSources, errors) {
-            validateCacheSafeJsonTree(baseBuild, 'v46 v45 base build cache input', errors);
-            validateCacheSafeJsonTree(baseSources, 'v46 v45 source bundle cache input', errors);
-            if (errors.length) return null;
-            let snapshot;
-            try { snapshot = structuredClone({ baseBuild, baseSources }); }
-            catch {
-              errors.push('v46 v45 cache inputs must be structured-cloneable canonical JSON data');
-              return null;
-            }
-            const snapshotErrors = [];
-            validateCacheSafeJsonTree(snapshot.baseBuild, 'v46 v45 base build cache snapshot', snapshotErrors);
-            validateCacheSafeJsonTree(snapshot.baseSources, 'v46 v45 source bundle cache snapshot', snapshotErrors);
-            errors.push(...snapshotErrors);
-            return errors.length ? null : snapshot;
-          }
-          """
-          if lib.count(exact_keys_anchor) != 1:
-              raise SystemExit('unexpected requireExactKeys anchor count')
-          lib = lib.replace(exact_keys_anchor, exact_keys_replacement, 1)
-
-          cache_anchor = """function validateQualifiedV45Base(baseBuild, baseSources) {
-            const cacheKey = sha256({ baseBuild, baseSources });
-            const cached = QUALIFIED_V45_BASE_VALIDATION_CACHE.get(cacheKey);
-            if (cached) return [...cached];
-            const errors = validatePreferenceCustodyManifestV45Build(
-              baseBuild,
-              baseSources?.manifest,
-              baseSources?.baseBuild,
-              baseSources?.targetBuild,
-              baseSources?.targetFixture,
-              baseSources?.baseSources
-            );
-            QUALIFIED_V45_BASE_VALIDATION_CACHE.set(cacheKey, Object.freeze([...errors]));
-            return errors;
-          }
-          """
-          cache_replacement = """function validateQualifiedV45Base(baseBuild, baseSources) {
-            const keyErrors = [];
-            requireExactKeys(baseBuild, EXPECTED_BUILD_KEYS, 'v46 v45 base build', keyErrors);
-            requireExactKeys(baseSources, EXPECTED_BASE_SOURCE_KEYS, 'v46 v45 source bundle', keyErrors);
-            const snapshot = snapshotCacheSafeV45Inputs(baseBuild, baseSources, keyErrors);
-            if (!snapshot) return keyErrors;
-            const cacheKey = sha256(snapshot);
-            if (sha256({ baseBuild, baseSources }) !== cacheKey) return ['v46 v45 cache inputs changed during snapshot preflight'];
-            const cached = QUALIFIED_V45_BASE_VALIDATION_CACHE.get(cacheKey);
-            if (cached) return [...cached];
-            const errors = validatePreferenceCustodyManifestV45Build(
-              snapshot.baseBuild,
-              snapshot.baseSources?.manifest,
-              snapshot.baseSources?.baseBuild,
-              snapshot.baseSources?.targetBuild,
-              snapshot.baseSources?.targetFixture,
-              snapshot.baseSources?.baseSources
-            );
-            if (sha256({ baseBuild, baseSources }) !== cacheKey) errors.push('v46 v45 cache inputs changed during full validation');
-            QUALIFIED_V45_BASE_VALIDATION_CACHE.set(cacheKey, Object.freeze([...errors]));
-            return errors;
-          }
-          """
-          if lib.count(cache_anchor) != 1:
-              raise SystemExit('unexpected v45 cache anchor count')
-          lib = lib.replace(cache_anchor, cache_replacement, 1)
-
-          mutations_anchor = """  ['schema', x => x.schema_version = 'bad'],
-            ['manifest', x => x.manifest_id = 'bad']
-          ];
-          """
-          mutations_replacement = """  ['schema', x => x.schema_version = 'bad'],
-            ['manifest', x => x.manifest_id = 'bad'],
-            ['undefined extra key after cache warmup', x => x.controller = undefined],
-            ['function extra key after cache warmup', x => x.controller = () => 'external'],
-            ['non-enumerable extra key after cache warmup', x => Object.defineProperty(x, 'controller', { value: undefined, enumerable: false, configurable: true })],
-            ['symbol extra key after cache warmup', x => x[Symbol('controller')] = undefined],
-            ['nested undefined extra key after cache warmup', x => x.controls[0].controller = undefined],
-            ['nested function extra key after cache warmup', x => x.controls[0].controller = () => 'external'],
-            ['nested non-enumerable extra key after cache warmup', x => Object.defineProperty(x.controls[0], 'controller', { value: undefined, enumerable: false, configurable: true })],
-            ['nested symbol extra key after cache warmup', x => x.controls[0][Symbol('controller')] = undefined],
-            ['nested accessor after cache warmup', x => Object.defineProperty(x.controls[0], 'controller', { get: () => undefined, enumerable: true, configurable: true })],
-            ['nested custom prototype after cache warmup', x => Object.setPrototypeOf(x.controls[0], { controller: undefined })],
-            ['nested cycle after cache warmup', x => x.controls[0].cycle = x.controls[0]],
-            ['nested sparse array after cache warmup', x => delete x.controls[0].required_refusal_rules[0]]
-          ];
-          """
-          if test.count(mutations_anchor) != 1:
-              raise SystemExit('unexpected baseBuildMutations anchor count')
-          test = test.replace(mutations_anchor, mutations_replacement, 1)
-
-          refusal_anchor = """const deepExtraKeyBaseSources = clone(baseSources);
-          """
-          refusal_replacement = """const undefinedExtraBaseAfterCacheWarmup = clone(baseBuild);
-          undefinedExtraBaseAfterCacheWarmup.controller = undefined;
-          assert.throws(
-            () => compilePreferenceCustodyManifestV46(manifest, undefinedExtraBaseAfterCacheWarmup, targetBuild, targetFixture, baseSources),
-            /v46 v45 base build key ledger mismatch/,
-            'undefined-valued v45 base extra key reused cached validation'
-          );
-
-          const functionExtraBaseAfterCacheWarmup = clone(baseBuild);
-          functionExtraBaseAfterCacheWarmup.controller = () => 'external';
-          assert.throws(
-            () => compilePreferenceCustodyManifestV46(manifest, functionExtraBaseAfterCacheWarmup, targetBuild, targetFixture, baseSources),
-            /v46 v45 base build key ledger mismatch/,
-            'function-valued v45 base extra key reused cached validation'
-          );
-
-          const nestedUndefinedExtraBaseAfterCacheWarmup = clone(baseBuild);
-          nestedUndefinedExtraBaseAfterCacheWarmup.controls[0].controller = undefined;
-          assert.throws(
-            () => compilePreferenceCustodyManifestV46(manifest, nestedUndefinedExtraBaseAfterCacheWarmup, targetBuild, targetFixture, baseSources),
-            /unsupported JSON value type undefined/,
-            'nested undefined-valued v45 base extra key reused cached validation'
-          );
-
-          const nestedFunctionExtraBaseAfterCacheWarmup = clone(baseBuild);
-          nestedFunctionExtraBaseAfterCacheWarmup.controls[0].controller = () => 'external';
-          assert.throws(
-            () => compilePreferenceCustodyManifestV46(manifest, nestedFunctionExtraBaseAfterCacheWarmup, targetBuild, targetFixture, baseSources),
-            /unsupported JSON value type function/,
-            'nested function-valued v45 base extra key reused cached validation'
-          );
-
-          const nestedUndefinedExtraSourceAfterCacheWarmup = clone(baseSources);
-          nestedUndefinedExtraSourceAfterCacheWarmup.baseBuild.controls[0].controller = undefined;
-          assert.throws(
-            () => compilePreferenceCustodyManifestV46(manifest, baseBuild, targetBuild, targetFixture, nestedUndefinedExtraSourceAfterCacheWarmup),
-            /unsupported JSON value type undefined/,
-            'nested undefined-valued v45 source extra key reused cached validation'
-          );
-
-          const nestedFunctionExtraSourceAfterCacheWarmup = clone(baseSources);
-          nestedFunctionExtraSourceAfterCacheWarmup.baseBuild.controls[0].controller = () => 'external';
-          assert.throws(
-            () => compilePreferenceCustodyManifestV46(manifest, baseBuild, targetBuild, targetFixture, nestedFunctionExtraSourceAfterCacheWarmup),
-            /unsupported JSON value type function/,
-            'nested function-valued v45 source extra key reused cached validation'
-          );
-
-          const deepExtraKeyBaseSources = clone(baseSources);
-          """
-          if test.count(refusal_anchor) != 1:
-              raise SystemExit('unexpected cache refusal insertion anchor count')
-          test = test.replace(refusal_anchor, refusal_replacement, 1)
-
-          source_mutation_anchor = """  ['deep extra source field', x => x.baseSources.baseSources.controller = 'external'],
-          """
-          source_mutation_replacement = source_mutation_anchor + """  ['nested source undefined extra key after cache warmup', x => x.baseBuild.controls[0].controller = undefined],
-            ['nested source function extra key after cache warmup', x => x.baseBuild.controls[0].controller = () => 'external'],
-            ['nested source non-enumerable extra key after cache warmup', x => Object.defineProperty(x.baseBuild.controls[0], 'controller', { value: undefined, enumerable: false, configurable: true })],
-            ['nested source symbol extra key after cache warmup', x => x.baseBuild.controls[0][Symbol('controller')] = undefined],
-            ['nested source accessor after cache warmup', x => Object.defineProperty(x.baseBuild.controls[0], 'controller', { get: () => undefined, enumerable: true, configurable: true })],
-            ['nested source cycle after cache warmup', x => x.baseBuild.controls[0].cycle = x.baseBuild.controls[0]],
-          """
-          if test.count(source_mutation_anchor) != 1:
-              raise SystemExit('unexpected baseSourceMutations anchor count')
-          test = test.replace(source_mutation_anchor, source_mutation_replacement, 1)
-
-          console_anchor = """console.log(`Preference custody floor v46 adversarial tests: PASS (${cases.length} mutations plus an unqualified-v45-base compile refusal, chronology-bound fresh-manifest, fresh-PC-48, stale-build, and transitive-source succession checks)`);
-          """
-          console_replacement = """console.log(`Preference custody floor v46 adversarial tests: PASS (${cases.length} mutations plus unqualified-v45-base and recursive cache-safety compile refusals, chronology-bound fresh-manifest, fresh-PC-48, stale-build, and transitive-source succession checks)`);
-          """
-          if test.count(console_anchor) != 1:
-              raise SystemExit('unexpected console anchor count')
-          test = test.replace(console_anchor, console_replacement, 1)
-
-          lib_path.write_text(lib)
-          test_path.write_text(test)
-          PY
-
-          cat > /tmp/pc48-cache-repair-v2-expected-paths.txt <<'EOF'
-          test/preference-custody-manifest-v46.test.js
-          tools/lib/preference-custody-manifest-v46.mjs
-          EOF
-          sed -i 's/^          //' /tmp/pc48-cache-repair-v2-expected-paths.txt
-          git diff --name-only | sort > /tmp/pc48-cache-repair-v2-actual-paths.txt
-          diff -u /tmp/pc48-cache-repair-v2-expected-paths.txt /tmp/pc48-cache-repair-v2-actual-paths.txt
-          repaired_lib_sha256="$(sha256sum tools/lib/preference-custody-manifest-v46.mjs | awk '{print $1}')"
-          repaired_test_sha256="$(sha256sum test/preference-custody-manifest-v46.test.js | awk '{print $1}')"
-
-          phase=qualify_focused_repair
-          node tools/compile-preference-linkage-interval-method-partition-replication-deployment-assurance.mjs
-          node tools/validate-preference-linkage-interval-method-partition-replication-deployment-assurance.mjs
-          node test/preference-linkage-interval-method-partition-replication-deployment-assurance.test.js
-          node tools/compile-preference-custody-manifest-v46.mjs
-          node tools/validate-preference-custody-manifest-v46.mjs
-          node test/preference-custody-manifest-v46.test.js | tee /tmp/pc48-cache-repair-v2-test.log
-          grep -F 'PASS (179 mutations' /tmp/pc48-cache-repair-v2-test.log
-          node tools/validate-no-magic-human-gate.mjs
-          node test/no-magic-human-gate.test.js
-          npm run release:check
-
-          phase=normalize_generated_volatility
-          git restore --source="$CURRENT_MAIN" --staged --worktree -- build 2>/dev/null || true
-          git clean -fd -- build
-          git diff --name-only | sort > /tmp/pc48-cache-repair-v2-postgate-paths.txt
-          diff -u /tmp/pc48-cache-repair-v2-expected-paths.txt /tmp/pc48-cache-repair-v2-postgate-paths.txt
-
-          phase=create_clean_repair_commit
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add --pathspec-from-file=/tmp/pc48-cache-repair-v2-expected-paths.txt
-          git commit -m 'Reject non-canonical v45 cache inputs recursively'
-          repaired_commit="$(git rev-parse HEAD)"
-          repaired_tree="$(git rev-parse HEAD^{tree})"
-          test "$(git rev-parse HEAD^)" = "$CURRENT_MAIN"
-          test "$(git rev-list --count "$CURRENT_MAIN"..HEAD)" -eq 1
-          test "$(git diff --name-only "$CURRENT_MAIN"..HEAD | wc -l)" -eq 2
-          test "$(git diff --name-status "$CURRENT_MAIN"..HEAD | awk '$1 != "M" {count++} END {print count+0}')" -eq 0
-          test -z "$(git status --porcelain)"
-
-          phase=publish_candidate
-          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_LEASE" origin "HEAD:refs/heads/$TARGET_BRANCH" > /tmp/pc48-cache-repair-v2-push.log 2>&1
-          cat /tmp/pc48-cache-repair-v2-push.log
-
-          phase=complete
-          cat > /tmp/pc48-cache-repair-v2-receipt.txt <<EOF
-          current_main=$CURRENT_MAIN
-          repaired_commit=$repaired_commit
-          repaired_tree=$repaired_tree
-          changed_paths=2
-          repaired_lib_sha256=$repaired_lib_sha256
-          repaired_test_sha256=$repaired_test_sha256
-          recursive_cache_safe_json_preflight=pass
-          structured_clone_snapshot=pass
-          pre_and_post_validation_digest_stability=pass
-          top_level_undefined_function_non_enumerable_symbol=refused
-          nested_base_undefined_function_non_enumerable_symbol_accessor_prototype_cycle_sparse=refused
-          nested_source_undefined_function_non_enumerable_symbol_accessor_cycle=refused
-          floor_v46_mutations=179
-          focused_pc48=pass
-          floor_v46=pass
-          no_magic_human=pass
-          release_check=pass
-          outside_human_dependency=false
-          graph_effect=none
-          EOF
-          printf 'status=success\nphase=%s\nrepaired_commit=%s\nrepaired_tree=%s\n' "$phase" "$repaired_commit" "$repaired_tree" > /tmp/pc48-cache-repair-v2-diagnostic.txt
-          cat /tmp/pc48-cache-repair-v2-receipt.txt
-
-      - name: Upload exact repair custody
+      - name: Upload exact recursive cache-repair custody
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pc48-recursive-cache-safety-repair
+          name: pc48-recursive-cache-safety-repair-v3
           path: |
-            /tmp/pc48-cache-repair-v2-receipt.txt
-            /tmp/pc48-cache-repair-v2-diagnostic.txt
-            /tmp/pc48-cache-repair-v2-push.log
-            /tmp/pc48-cache-repair-v2-test.log
+            /tmp/pc48-cache-v3-receipt.txt
+            /tmp/pc48-cache-v3-diagnostic.txt
+            /tmp/pc48-cache-v3-push.log
+            /tmp/pc48-cache-v3-test.log
           if-no-files-found: error
