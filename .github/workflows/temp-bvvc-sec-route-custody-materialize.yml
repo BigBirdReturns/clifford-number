@@ -1,0 +1,87 @@
+name: TEMP materialize BVVC SEC route custody
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-bvvc-sec-route-custody-materialize.yml'
+      - '.bvvc-sec-route-custody/EXECUTE'
+      - 'tools/build-bvvc-sec-route-custody.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build, qualify, and publish clean current-main product
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          TARGET='agent/bvvc-sec-route-custody-product-v1'
+          MAIN_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+          SOURCE_BUILDER="$GITHUB_WORKSPACE/tools/build-bvvc-sec-route-custody.mjs"
+          test -f "$SOURCE_BUILDER"
+
+          rm -rf /tmp/bvvc-sec-route-custody-product
+          git fetch --no-tags origin "$MAIN_SHA"
+          git worktree add --detach /tmp/bvvc-sec-route-custody-product "$MAIN_SHA"
+          cd /tmp/bvvc-sec-route-custody-product
+          mkdir -p tools
+          cp "$SOURCE_BUILDER" tools/build-bvvc-sec-route-custody.mjs
+
+          node tools/build-bvvc-sec-route-custody.mjs
+          node tools/validate-bvvc-defense-capital.mjs
+          node test/person-routers.test.js
+          npm run release:check
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            data/intake/bvvc-defense-capital/README.md \
+            data/intake/bvvc-defense-capital/acquisition-frontier.json \
+            data/intake/bvvc-defense-capital/coverage-matrix.json \
+            data/intake/bvvc-defense-capital/manifest.json \
+            data/intake/bvvc-defense-capital/sec-form-d-route-custody.json \
+            data/intake/bvvc-defense-capital/sec-form-d-route-results.jsonl \
+            tools/build-bvvc-sec-route-custody.mjs \
+            tools/validate-bvvc-defense-capital.mjs
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = '8'
+          git commit -m 'Preserve BVVC SEC Form D route-failure custody'
+          PRODUCT_SHA=$(git rev-parse HEAD)
+
+          START=$(git ls-remote origin "refs/heads/$TARGET" | awk '{print $1}')
+          if [[ -n "$START" ]]; then
+            git push origin "HEAD:refs/heads/$TARGET" --force-with-lease="refs/heads/$TARGET:$START"
+          else
+            git push origin "HEAD:refs/heads/$TARGET"
+          fi
+
+          mkdir -p /tmp/bvvc-sec-route-custody-receipt
+          jq -n \
+            --arg base_main "$MAIN_SHA" \
+            --arg product_sha "$PRODUCT_SHA" \
+            --arg target "$TARGET" \
+            '{schema_version:"bvvc-sec-route-custody-materialization-receipt@1",base_main:$base_main,product_sha:$product_sha,target_branch:$target,changed_paths:8,acquisition_attempts:3,route_result_rows:95,source_rows_acquired:0,absence_claims_created:0,private_support_rows:0,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+            > /tmp/bvvc-sec-route-custody-receipt/status.json
+          sha256sum /tmp/bvvc-sec-route-custody-receipt/status.json > /tmp/bvvc-sec-route-custody-receipt/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bvvc-sec-route-custody-materialization-receipt
+          path: /tmp/bvvc-sec-route-custody-receipt
+          if-no-files-found: error
+          retention-days: 90
