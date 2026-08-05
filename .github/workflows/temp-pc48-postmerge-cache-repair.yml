@@ -1,0 +1,221 @@
+name: TEMP materialize PC-48 post-merge cache repair
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - reopened
+      - synchronize
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.head_ref == 'agent/pc48-source-export'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout exact merged main
+        uses: actions/checkout@v4
+        with:
+          ref: d7f668a4522be902c50ad8bdce8100fc58341116
+          fetch-depth: 0
+          clean: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Patch, qualify, and publish exact repair candidate
+        env:
+          MERGED_MAIN: d7f668a4522be902c50ad8bdce8100fc58341116
+          TARGET_BRANCH: agent/pc48-postmerge-cache-repair
+          TARGET_LEASE: d7f668a4522be902c50ad8bdce8100fc58341116
+          BASE_LIB_SHA256: 56fb1e1eef6c93dbab6f9c4a8ce94702e5a53036613ca022d0aa7d128a33d0b0
+          BASE_TEST_SHA256: 668e8fbbba6ecac376d3e66ca2685609da2080224b8cd2af287a4dfe1e3b17ba
+        run: |
+          set -Eeuo pipefail
+          phase=initialize
+          trap 'status=$?; printf "status=%s\nphase=%s\ncommand=%s\n" "$status" "$phase" "$BASH_COMMAND" > /tmp/pc48-cache-repair-diagnostic.txt; exit "$status"' ERR
+          cd "$GITHUB_WORKSPACE"
+          test "$(git rev-parse HEAD)" = "$MERGED_MAIN"
+          test -z "$(git status --porcelain)"
+          test "$(sha256sum tools/lib/preference-custody-manifest-v46.mjs | awk '{print $1}')" = "$BASE_LIB_SHA256"
+          test "$(sha256sum test/preference-custody-manifest-v46.test.js | awk '{print $1}')" = "$BASE_TEST_SHA256"
+
+          phase=apply_cache_preflight_repair
+          python3 - <<'PY'
+          from pathlib import Path
+
+          lib_path = Path('tools/lib/preference-custody-manifest-v46.mjs')
+          test_path = Path('test/preference-custody-manifest-v46.test.js')
+          lib = lib_path.read_text()
+          test = test_path.read_text()
+
+          exact_keys_anchor = """function requireExactKeys(value, expected, label, errors) {
+            const keys = Object.keys(object(value));
+            if (stable(sorted(keys)) !== stable(sorted(expected)) || keys.length !== expected.length) errors.push(`${label} key ledger mismatch`);
+          }
+          """
+          exact_keys_replacement = """function requireExactKeys(value, expected, label, errors) {
+            const keys = Reflect.ownKeys(object(value));
+            const stringKeys = keys.filter(key => typeof key === 'string');
+            if (
+              stringKeys.length !== keys.length ||
+              stable(sorted(stringKeys)) !== stable(sorted(expected)) ||
+              stringKeys.length !== expected.length
+            ) errors.push(`${label} key ledger mismatch`);
+          }
+          """
+          if lib.count(exact_keys_anchor) != 1:
+              raise SystemExit('unexpected requireExactKeys anchor count')
+          lib = lib.replace(exact_keys_anchor, exact_keys_replacement, 1)
+
+          cache_anchor = """function validateQualifiedV45Base(baseBuild, baseSources) {
+            const cacheKey = sha256({ baseBuild, baseSources });
+          """
+          cache_replacement = """function validateQualifiedV45Base(baseBuild, baseSources) {
+            const keyErrors = [];
+            requireExactKeys(baseBuild, EXPECTED_BUILD_KEYS, 'v46 v45 base build', keyErrors);
+            requireExactKeys(baseSources, EXPECTED_BASE_SOURCE_KEYS, 'v46 v45 source bundle', keyErrors);
+            if (keyErrors.length) return keyErrors;
+            const cacheKey = sha256({ baseBuild, baseSources });
+          """
+          if lib.count(cache_anchor) != 1:
+              raise SystemExit('unexpected v45 cache anchor count')
+          lib = lib.replace(cache_anchor, cache_replacement, 1)
+
+          mutations_anchor = """  ['schema', x => x.schema_version = 'bad'],
+            ['manifest', x => x.manifest_id = 'bad']
+          ];
+          """
+          mutations_replacement = """  ['schema', x => x.schema_version = 'bad'],
+            ['manifest', x => x.manifest_id = 'bad'],
+            ['undefined extra key after cache warmup', x => x.controller = undefined],
+            ['function extra key after cache warmup', x => x.controller = () => 'external'],
+            ['non-enumerable extra key after cache warmup', x => Object.defineProperty(x, 'controller', { value: undefined, enumerable: false, configurable: true })],
+            ['symbol extra key after cache warmup', x => x[Symbol('controller')] = undefined]
+          ];
+          """
+          if test.count(mutations_anchor) != 1:
+              raise SystemExit('unexpected baseBuildMutations anchor count')
+          test = test.replace(mutations_anchor, mutations_replacement, 1)
+
+          refusal_anchor = """const deepExtraKeyBaseSources = clone(baseSources);
+          """
+          refusal_replacement = """const undefinedExtraBaseAfterCacheWarmup = clone(baseBuild);
+          undefinedExtraBaseAfterCacheWarmup.controller = undefined;
+          assert.throws(
+            () => compilePreferenceCustodyManifestV46(manifest, undefinedExtraBaseAfterCacheWarmup, targetBuild, targetFixture, baseSources),
+            /v46 v45 base build key ledger mismatch/,
+            'undefined-valued v45 base extra key reused cached validation'
+          );
+
+          const functionExtraBaseAfterCacheWarmup = clone(baseBuild);
+          functionExtraBaseAfterCacheWarmup.controller = () => 'external';
+          assert.throws(
+            () => compilePreferenceCustodyManifestV46(manifest, functionExtraBaseAfterCacheWarmup, targetBuild, targetFixture, baseSources),
+            /v46 v45 base build key ledger mismatch/,
+            'function-valued v45 base extra key reused cached validation'
+          );
+
+          const deepExtraKeyBaseSources = clone(baseSources);
+          """
+          if test.count(refusal_anchor) != 1:
+              raise SystemExit('unexpected cache refusal insertion anchor count')
+          test = test.replace(refusal_anchor, refusal_replacement, 1)
+
+          console_anchor = """console.log(`Preference custody floor v46 adversarial tests: PASS (${cases.length} mutations plus an unqualified-v45-base compile refusal, chronology-bound fresh-manifest, fresh-PC-48, stale-build, and transitive-source succession checks)`);
+          """
+          console_replacement = """console.log(`Preference custody floor v46 adversarial tests: PASS (${cases.length} mutations plus unqualified-v45-base and unhashable-cache-key compile refusals, chronology-bound fresh-manifest, fresh-PC-48, stale-build, and transitive-source succession checks)`);
+          """
+          if test.count(console_anchor) != 1:
+              raise SystemExit('unexpected console anchor count')
+          test = test.replace(console_anchor, console_replacement, 1)
+
+          lib_path.write_text(lib)
+          test_path.write_text(test)
+          PY
+
+          cat > /tmp/pc48-cache-repair-expected-paths.txt <<'EOF'
+          test/preference-custody-manifest-v46.test.js
+          tools/lib/preference-custody-manifest-v46.mjs
+          EOF
+          sed -i 's/^          //' /tmp/pc48-cache-repair-expected-paths.txt
+          git diff --name-only | sort > /tmp/pc48-cache-repair-actual-paths.txt
+          diff -u /tmp/pc48-cache-repair-expected-paths.txt /tmp/pc48-cache-repair-actual-paths.txt
+          repaired_lib_sha256="$(sha256sum tools/lib/preference-custody-manifest-v46.mjs | awk '{print $1}')"
+          repaired_test_sha256="$(sha256sum test/preference-custody-manifest-v46.test.js | awk '{print $1}')"
+
+          phase=qualify_focused_repair
+          node tools/compile-preference-linkage-interval-method-partition-replication-deployment-assurance.mjs
+          node tools/validate-preference-linkage-interval-method-partition-replication-deployment-assurance.mjs
+          node test/preference-linkage-interval-method-partition-replication-deployment-assurance.test.js
+          node tools/compile-preference-custody-manifest-v46.mjs
+          node tools/validate-preference-custody-manifest-v46.mjs
+          node test/preference-custody-manifest-v46.test.js | tee /tmp/pc48-cache-repair-test.log
+          grep -F 'PASS (165 mutations' /tmp/pc48-cache-repair-test.log
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+          phase=normalize_generated_volatility
+          git restore --source="$MERGED_MAIN" --staged --worktree -- build 2>/dev/null || true
+          git clean -fd -- build
+          git diff --name-only | sort > /tmp/pc48-cache-repair-postgate-paths.txt
+          diff -u /tmp/pc48-cache-repair-expected-paths.txt /tmp/pc48-cache-repair-postgate-paths.txt
+
+          phase=create_clean_repair_commit
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --pathspec-from-file=/tmp/pc48-cache-repair-expected-paths.txt
+          git commit -m 'Reject unhashable v45 base keys before cache hits'
+          repaired_commit="$(git rev-parse HEAD)"
+          repaired_tree="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$MERGED_MAIN"
+          test "$(git rev-list --count "$MERGED_MAIN"..HEAD)" -eq 1
+          test "$(git diff --name-only "$MERGED_MAIN"..HEAD | wc -l)" -eq 2
+          test "$(git diff --name-status "$MERGED_MAIN"..HEAD | awk '$1 != "M" {count++} END {print count+0}')" -eq 0
+          test -z "$(git status --porcelain)"
+
+          phase=publish_candidate
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_LEASE" origin "HEAD:refs/heads/$TARGET_BRANCH" > /tmp/pc48-cache-repair-push.log 2>&1
+          cat /tmp/pc48-cache-repair-push.log
+
+          phase=complete
+          cat > /tmp/pc48-cache-repair-receipt.txt <<EOF
+          merged_main=$MERGED_MAIN
+          repaired_commit=$repaired_commit
+          repaired_tree=$repaired_tree
+          changed_paths=2
+          repaired_lib_sha256=$repaired_lib_sha256
+          repaired_test_sha256=$repaired_test_sha256
+          exact_own_key_preflight=pass
+          undefined_extra_key_after_cache_warmup=refused
+          function_extra_key_after_cache_warmup=refused
+          non_enumerable_extra_key_after_cache_warmup=refused
+          symbol_extra_key_after_cache_warmup=refused
+          floor_v46_mutations=165
+          focused_pc48=pass
+          floor_v46=pass
+          no_magic_human=pass
+          release_check=pass
+          outside_human_dependency=false
+          graph_effect=none
+          EOF
+          printf 'status=success\nphase=%s\nrepaired_commit=%s\nrepaired_tree=%s\n' "$phase" "$repaired_commit" "$repaired_tree" > /tmp/pc48-cache-repair-diagnostic.txt
+          cat /tmp/pc48-cache-repair-receipt.txt
+
+      - name: Upload exact repair custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc48-postmerge-cache-repair
+          path: |
+            /tmp/pc48-cache-repair-receipt.txt
+            /tmp/pc48-cache-repair-diagnostic.txt
+            /tmp/pc48-cache-repair-push.log
+            /tmp/pc48-cache-repair-test.log
+          if-no-files-found: error
