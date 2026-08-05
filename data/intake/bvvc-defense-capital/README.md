@@ -7,7 +7,7 @@ It sits inside the existing `us-defense-natsec100` selection lane. Primary custo
 ## Current frozen surfaces
 
 ```text
-public-source receipts                        431
+public-source receipts                        447
 current BVVC leadership labels                 27 / 27
 historical-only leadership labels               4
 current Portfolio Universe labels              30 / 30
@@ -146,6 +146,13 @@ Florida charity terminal query results                     0
 Florida charity candidate rows/links                    0 / 0
 Florida charity source rows acquired                       0
 Florida charity public identities admitted                 0
+related-charity Form 990 public requests             16
+related-charity declared filings                    3 / 3
+official index exact object resolutions             3 / 3
+filings screened / source-unavailable               2 / 1
+fixed subject/mechanism/person-context hits        0 / 0 / 0
+Schedule I / L / R / O structural rows            1 / 0 / 2 / 2
+identities / relationships admitted                0 / 0
 institutional self-claim rows                  10
 explicit rejected joins                        16
 bounded continuation tasks                      7
@@ -158,7 +165,7 @@ The current leadership and Portfolio Universe pages are complete as rendered on 
 ## Files
 
 - `manifest.json` records selection, custody, exact counts, source classes, file hashes, interpretation rules, and the release boundary.
-- `source-inventory-01.jsonl` through `source-inventory-16.jsonl` preserve every public locator and its evidence class in manifest-bound order.
+- `source-inventory-01.jsonl` through `source-inventory-18.jsonl` preserve every public locator and its evidence class in manifest-bound order.
 - `leadership-current-01.jsonl` and `leadership-current-02.jsonl` freeze all twenty-seven current leadership labels and the role language supported by each official profile.
 - `leadership-history.jsonl` preserves four names visible in a prior search-indexed leadership snapshot without inventing departure dates.
 - `portfolio-current-01.jsonl` through `portfolio-current-03.jsonl` freeze all thirty current Portfolio Universe labels, descriptions, profile state, named founder or CEO where the acquired BVVC detail page supplies one, and every unresolved legal and control field.
@@ -182,6 +189,7 @@ The current leadership and Portfolio Universe pages are complete as rendered on 
 - `schoolhouse-launch-era-archive-content-custody.json`, the ten-attempt, seven-route, privacy-minimized surface, candidate, and link ledgers, and `source-inventory-15.jsonl` preserve six successful archived HTML surfaces and one repeated provider error. The four prelaunch successes are one parked-domain and three domain-marketplace surfaces; two 2024 successes are early first-party School.House surfaces. Two tax-status phrases remain historical self-description rather than registry identity, and zero legal names, EINs, exemption records, or fiscal sponsors are admitted.
 - `schoolhouse-archive-minimum-legal-surface-reconciliation-custody.json`, the seven-attempt, five-route overlap ledger, the three marketplace-signal rows, the two unfetched legal-link rows, and `source-inventory-16.jsonl` reconcile the later minimum-surface acquisition without inflating the unique snapshot denominator. Three overlaps reproduce exact content hashes, the prior April 18 provider error is recovered, and the July 25 home snapshot is novel. The cumulative plane contains eight unique successful snapshots and still admits no legal name, EIN, exemption record, fiscal sponsor, or public identity.
 - `schoolhouse-fl-charity-exact-query-custody.json`, `schoolhouse-fl-charity-exact-query-executions.jsonl`, `schoolhouse-fl-charity-exact-query-attempt-results.jsonl`, and `source-inventory-17.jsonl` preserve three bounded Florida FDACS Check-A-Charity source executions across urllib and IPv4/HTTP1.1. The package records three guidance captures, six application-host transport errors across nine route attempts, zero registry query submissions, zero result or candidate rows, and the provider-condition-change stopping rule without retaining raw pages, hidden form values, addresses, or contact details.
+- `schoolhouse-honor-foundation-990-custody.json`, the sixteen-attempt public-source ledger, three exact annual-index resolutions, three effective filing rows, two structural rows, empty fixed-term ledger, and `source-inventory-18.jsonl` preserve one bounded related-charity candidate screen. Two available Form 990 XML filings were privacy-minimized and screened with zero School.House, BVVC, fiscal-sponsor, or person-context hits; the 2026 exact XML member remained unavailable after one replay. The lane admits no School.House identity, sponsor, related party, funding, governance, or control relationship.
 - `schoolhouse-fl-fictitious-source-receipt.json`, `schoolhouse-fl-fictitious-member-inventory.jsonl`, `schoolhouse-fl-fictitious-candidates.jsonl`, and `schoolhouse-fl-fictitious-adjudication.json` preserve the exact 761,040-record Florida fictitious-name census, forty repaired embedded-linebreak records, twenty-nine sanitized phrase candidates, and the zero-admission decision.
 - `schoolhouse-fl-corporate-owner-resolution-source-receipt.json`, `schoolhouse-fl-corporate-owner-resolution-remote-zip-index.json`, `schoolhouse-fl-corporate-owner-resolution-member-receipts.jsonl`, `schoolhouse-fl-corporate-owner-resolution-records.jsonl`, `schoolhouse-fl-corporate-owner-resolution-matrix.jsonl`, and `schoolhouse-fl-corporate-owner-resolution-adjudication.json` preserve the bounded seven-partition corporate scan, all fifteen exact owner-entity resolutions, and the continued zero-admission decision.
 - The seven `schoolhouse-fl-magnolia-corporate-resolution-*` files preserve the complete two-partition cross-registry pass for IRS candidate EIN 39-2669585, both exact Florida corporate records, the shared-EIN conflict, and the refusal to identify either 2025 Vero Beach entity as the public School.House platform.
@@ -217,6 +225,8 @@ The launch-era archived-content successor then selected seven exact change-point
 The late minimum-surface reconciliation then compared five separately acquired Archive locators against that sealed seven-snapshot product. Four locators overlap: three reproduce exact archived content hashes and the April 18, 2024 connect route converts from repeated provider-error custody to privacy-minimized HTML. The July 25, 2024 home snapshot is the sole novel locator. April 18 repeats 501(c)(3), nonprofit, and public-charity terminology without a registry-grade identity candidate; July 25 contains zero fixed legal-identity term hits across 23,430 screened visible-text characters. The cumulative union is eight unique snapshots, all eight successfully screened, with zero residual provider errors and zero identity admissions.
 
 The Florida Check-A-Charity exact-query successor then froze three public-name variants and executed them under two materially different transport profiles. The official guidance page was captured in each of three source executions, while both the application-host robots route and search application timed out in every execution. The middle IPv4 diagnostic completed its source step but lost its artifact only after a local validator schema error; the final packaging replay preserves the same zero-submission terminal state. Across nine route attempts, no registry query was submitted, no search result or candidate row was obtained, and no identity or absence claim was created. The exact matrix is terminal until the provider condition observably changes.
+
+The related-charity Form 990 successor then used public role continuity to select one candidate filer without treating that selection as relationship evidence. Three fixed object IDs were resolved through the complete official annual IRS indexes. The 2024 and 2025 XML members were acquired, hashed, structurally screened, and discarded after privacy-minimized extraction; the 2026 batch was downloaded twice but the exact member remained unavailable. Across the two acquired filings, the fixed School.House, BVVC, fiscal-sponsor, and Joe/Joseph Musselman term protocol returned zero hits. Schedule I, R, and O presence remains structural metadata only, and no identity, fiscal sponsor, related party, grant, governance, funding, or control relationship is admitted.
 
 The checked-in frontier now directs the next bounded pass toward the complete BVVC vehicle denominator, transaction-specific evidence for all thirty current portfolio labels, exact legal entities, government award and acceptance surfaces, dated leadership history, School.House legal and governance records, complete annual cohorts and outcomes, and receipt-byte archival. Every task preserves nulls, failed routes, unresolved identities, and forbidden inferences.
 
