@@ -7,7 +7,7 @@ It sits inside the existing `us-defense-natsec100` selection lane. Primary custo
 ## Current frozen surfaces
 
 ```text
-public-source receipts                        104
+public-source receipts                        136
 current BVVC leadership labels                 27 / 27
 historical-only leadership labels               4
 current Portfolio Universe labels              30 / 30
@@ -44,6 +44,16 @@ Florida Magnolia rows scanned                      2,561,478
 Florida Magnolia records reporting EIN 39-2669585         2
 Florida Magnolia IRS candidate resolutions                1
 state-registry identities admitted                     0
+charity/NC root routes                              8 / 8
+charity/NC followed routes                         24 / 24
+charity/NC terminal route rows                     32 / 32
+charity/NC discovered link rows                         65
+charity/NC unique discovered links                      55
+charity/NC HTML surfaces                                12
+charity/NC privacy-minimized form rows                   8
+charity/NC scripted or interactive searches              0
+charity/NC source rows acquired                           0
+charity/NC public identities admitted                     0
 institutional self-claim rows                  10
 explicit rejected joins                        16
 bounded continuation tasks                      7
@@ -56,7 +66,7 @@ The current leadership and Portfolio Universe pages are complete as rendered on 
 ## Files
 
 - `manifest.json` records selection, custody, exact counts, source classes, file hashes, interpretation rules, and the release boundary.
-- `source-inventory-01.jsonl` through `source-inventory-04.jsonl` preserve every public locator and its evidence class in manifest-bound order.
+- `source-inventory-01.jsonl` through `source-inventory-09.jsonl` preserve every public locator and its evidence class in manifest-bound order.
 - `leadership-current-01.jsonl` and `leadership-current-02.jsonl` freeze all twenty-seven current leadership labels and the role language supported by each official profile.
 - `leadership-history.jsonl` preserves four names visible in a prior search-indexed leadership snapshot without inventing departure dates.
 - `portfolio-current-01.jsonl` through `portfolio-current-03.jsonl` freeze all thirty current Portfolio Universe labels, descriptions, profile state, named founder or CEO where the acquired BVVC detail page supplies one, and every unresolved legal and control field.
@@ -71,6 +81,7 @@ The current leadership and Portfolio Universe pages are complete as rendered on 
 - `sec-form-d-route-custody.json` binds those route results to their workflow runs and retained artifacts without converting provider failure into an absence claim.
 - `schoolhouse-irs-source-routes.jsonl`, the four `schoolhouse-irs-candidates-*.jsonl` shards, and `schoolhouse-irs-identity-adjudication.json` preserve the complete sanitized six-route IRS name-candidate census and the no-admission decision.
 - `state-registry-route-results.jsonl` and `state-registry-route-custody.json` preserve sixteen lawful Florida and North Carolina route dispositions, zero scripted search submissions, exact accessible bulk paths, publisher policy, and strict transport boundaries.
+- `schoolhouse-charity-nc-route-custody.json` and the five `schoolhouse-charity-nc-*.jsonl` route, link, surface, and form files preserve eight root routes, twenty-four bounded official follow-ups, sixty-five discovered-link observations, twelve HTML surfaces, eight privacy-minimized form rows, zero interactive searches, and the controlling North Carolina publisher policy.
 - `schoolhouse-fl-fictitious-source-receipt.json`, `schoolhouse-fl-fictitious-member-inventory.jsonl`, `schoolhouse-fl-fictitious-candidates.jsonl`, and `schoolhouse-fl-fictitious-adjudication.json` preserve the exact 761,040-record Florida fictitious-name census, forty repaired embedded-linebreak records, twenty-nine sanitized phrase candidates, and the zero-admission decision.
 - `schoolhouse-fl-corporate-owner-resolution-source-receipt.json`, `schoolhouse-fl-corporate-owner-resolution-remote-zip-index.json`, `schoolhouse-fl-corporate-owner-resolution-member-receipts.jsonl`, `schoolhouse-fl-corporate-owner-resolution-records.jsonl`, `schoolhouse-fl-corporate-owner-resolution-matrix.jsonl`, and `schoolhouse-fl-corporate-owner-resolution-adjudication.json` preserve the bounded seven-partition corporate scan, all fifteen exact owner-entity resolutions, and the continued zero-admission decision.
 - The seven `schoolhouse-fl-magnolia-corporate-resolution-*` files preserve the complete two-partition cross-registry pass for IRS candidate EIN 39-2669585, both exact Florida corporate records, the shared-EIN conflict, and the refusal to identify either 2025 Vero Beach entity as the public School.House platform.
@@ -95,7 +106,7 @@ No direct message, screenshot, owner-supplied LinkedIn export, contact detail, o
 
 The off-roster delta now proves that the frozen current Portfolio Universe page is not a complete ledger of all public firm and counterparty backing claims. It preserves the discrepancy as an acquisition state rather than silently expanding current membership.
 
-The IRS legal-identity pass scanned 4,428,541 public rows across six complete routes, retained 641 sanitized phrase candidates representing 438 EINs, and admitted no School.House identity. The next pass completed sixteen lawful state-registry route dispositions with zero scripted searches and scanned all 761,040 records in Florida's quarterly fictitious-name file. It retained twenty-nine privacy-minimized phrase candidates, found zero exact public-name candidates, and found two distinctly named Tampa phrase candidates. The corporate follow-up then indexed the ten-member 1,819,049,954-byte Florida source, acquired the seven complete final-digit partitions needed for the frozen target set, scanned 8,965,926 records, and resolved all fifteen owner charter numbers exactly once. Those records type seventeen phrase candidates to distinct owner entities; none is admitted as the public School.House identity. The Magnolia cross-registry pass then scanned complete corporate partitions 5 and 7, resolved both exact documents tied to IRS candidate EIN 39-2669585, and found that the nonprofit and LLC official bulk records both report that identifier. The nonprofit is an identifier-grade resolution of the IRS candidate, while the LLC creates a source-specific shared-EIN conflict. Neither 2025 Vero Beach entity is admitted as the public 2023 Tampa Bay or Fayetteville School.House identity. The next lawful boundary is Florida charity and North Carolina entity or charity custody that respects publisher automation policy.
+The IRS legal-identity pass scanned 4,428,541 public rows across six complete routes, retained 641 sanitized phrase candidates representing 438 EINs, and admitted no School.House identity. The next pass completed sixteen lawful state-registry route dispositions with zero scripted searches and scanned all 761,040 records in Florida's quarterly fictitious-name file. It retained twenty-nine privacy-minimized phrase candidates, found zero exact public-name candidates, and found two distinctly named Tampa phrase candidates. The corporate follow-up then indexed the ten-member 1,819,049,954-byte Florida source, acquired the seven complete final-digit partitions needed for the frozen target set, scanned 8,965,926 records, and resolved all fifteen owner charter numbers exactly once. Those records type seventeen phrase candidates to distinct owner entities; none is admitted as the public School.House identity. The Magnolia cross-registry pass then scanned complete corporate partitions 5 and 7, resolved both exact documents tied to IRS candidate EIN 39-2669585, and found that the nonprofit and LLC official bulk records both report that identifier. The nonprofit is an identifier-grade resolution of the IRS candidate, while the LLC creates a source-specific shared-EIN conflict. Neither 2025 Vero Beach entity is admitted as the public 2023 Tampa Bay or Fayetteville School.House identity. The lawful-route successor then enumerated eight official roots and twenty-four bounded official follow-ups, preserving sixty-five discovered links, twelve HTML surfaces, eight privacy-minimized form rows, and zero organization-name or license-number submissions. Florida Check-A-Charity timed out in this transport, while North Carolina policy continued to prohibit scripted interactive searches and direct bulk users to reports, listings, subscriptions, and distinct downloadable documents. The next boundary is a targeted second-level pass over those official static surfaces, with no interactive search and no public-identity admission by route inference.
 
 The checked-in frontier now directs the next bounded pass toward the complete BVVC vehicle denominator, transaction-specific evidence for all thirty current portfolio labels, exact legal entities, government award and acceptance surfaces, dated leadership history, School.House legal and governance records, complete annual cohorts and outcomes, and receipt-byte archival. Every task preserves nulls, failed routes, unresolved identities, and forbidden inferences.
 
