@@ -1,0 +1,201 @@
+name: TEMP finalize PC-49 using latest checks
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - synchronize
+
+permissions:
+  actions: read
+  checks: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: pc49-latest-check-finalization
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  finalize:
+    if: github.head_ref == 'agent/pc49-source-carrier'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout authenticated carrier
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Verify immutable product and disjoint main advance
+        run: |
+          set -euo pipefail
+          git fetch --force origin \
+            main:refs/remotes/origin/main \
+            agent/pc49-materializer:refs/remotes/origin/agent/pc49-materializer
+          main_sha="$(git rev-parse refs/remotes/origin/main^{commit})"
+          product_sha="$(git rev-parse refs/remotes/origin/agent/pc49-materializer^{commit})"
+          product_parent="$(git rev-parse "${product_sha}^"^{commit})"
+          product_tree="$(git rev-parse "${product_sha}^{tree}")"
+          git merge-base --is-ancestor "$product_parent" "$main_sha"
+          test "$(git rev-list --count "${product_parent}..${product_sha}")" -eq 1
+
+          cat > /tmp/expected <<'EOF'
+          .github/workflows/preference-custody-v47.yml
+          .github/workflows/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.yml
+          data/research/preference-custody/control-manifest-v47.json
+          data/research/preference-custody/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.fixture.json
+          docs/preference-custody-laboratory-floor-v47.md
+          docs/preference-custody-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.md
+          test/preference-custody-manifest-v47.test.js
+          test/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.test.js
+          tools/compile-preference-custody-manifest-v47.mjs
+          tools/compile-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+          tools/lib/preference-custody-manifest-v47.mjs
+          tools/lib/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+          tools/validate-preference-custody-manifest-v47.mjs
+          tools/validate-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+          EOF
+          sed -i 's/^          //' /tmp/expected
+          sort -o /tmp/expected /tmp/expected
+          git diff --name-only --diff-filter=A "$product_parent" "$product_sha" | sort > /tmp/product_paths
+          test "$(wc -l < /tmp/product_paths)" -eq 14
+          cmp /tmp/expected /tmp/product_paths
+          test -z "$(git diff --name-only --diff-filter=CDMRTUXB "$product_parent" "$product_sha")"
+
+          git diff --name-only "$product_parent" "$main_sha" | sort > /tmp/main_advance
+          comm -12 /tmp/expected /tmp/main_advance > /tmp/overlap
+          test ! -s /tmp/overlap
+
+          pr_number="$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --head agent/pc49-materializer --base main --json number --jq '.[0].number // empty')"
+          test -n "$pr_number"
+          test "$(gh pr view "$pr_number" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = false
+          {
+            printf 'main_sha=%s\n' "$main_sha"
+            printf 'product_sha=%s\n' "$product_sha"
+            printf 'product_parent=%s\n' "$product_parent"
+            printf 'product_tree=%s\n' "$product_tree"
+            printf 'product_pr=%s\n' "$pr_number"
+            printf 'main_advance_commits=%s\n' "$(git rev-list --count "${product_parent}..${main_sha}")"
+            printf 'main_advance_overlap=0\n'
+          } > /tmp/receipt
+          cat /tmp/receipt
+      - name: Require newest run of every current check to be green
+        run: |
+          set -euo pipefail
+          source /tmp/receipt
+          ready=false
+          for attempt in $(seq 1 180); do
+            gh api -H 'Accept: application/vnd.github+json' \
+              "repos/${GITHUB_REPOSITORY}/commits/${product_sha}/check-runs?per_page=100" \
+              > /tmp/all_checks.json
+            python3 - <<'PY'
+          import json
+          from pathlib import Path
+          payload=json.loads(Path('/tmp/all_checks.json').read_text())
+          latest={}
+          for item in payload.get('check_runs',[]):
+              name=item.get('name','')
+              prior=latest.get(name)
+              if prior is None or int(item.get('id',0)) > int(prior.get('id',0)):
+                  latest[name]=item
+          Path('/tmp/latest_checks.json').write_text(json.dumps(list(latest.values()),indent=2))
+          required={
+              'PC-49 standalone exact-head',
+              'PC-49 floor-v47 exact-head',
+              'PC-49 repository exact-head',
+          }
+          names=set(latest)
+          missing=sorted(required-names)
+          pending=sorted(name for name,item in latest.items() if item.get('status')!='completed')
+          bad=sorted((name,item.get('conclusion')) for name,item in latest.items() if item.get('status')=='completed' and item.get('conclusion') not in {'success','neutral','skipped'})
+          state={'count':len(latest),'missing':missing,'pending':pending,'bad':bad}
+          Path('/tmp/check_state.json').write_text(json.dumps(state))
+          PY
+            count="$(jq -r .count /tmp/check_state.json)"
+            missing="$(jq -r '.missing|length' /tmp/check_state.json)"
+            pending="$(jq -r '.pending|length' /tmp/check_state.json)"
+            bad="$(jq -r '.bad|length' /tmp/check_state.json)"
+            printf 'poll=%s latest=%s missing=%s pending=%s bad=%s\n' "$attempt" "$count" "$missing" "$pending" "$bad"
+            if [ "$bad" -gt 0 ]; then
+              cat /tmp/check_state.json
+              exit 1
+            fi
+            if [ "$missing" -eq 0 ] && [ "$pending" -eq 0 ]; then
+              ready=true
+              break
+            fi
+            sleep 10
+          done
+          test "$ready" = true
+
+          review_decision="$(gh pr view "$product_pr" --repo "$GITHUB_REPOSITORY" --json reviewDecision --jq '.reviewDecision // ""')"
+          test "$review_decision" != CHANGES_REQUESTED
+          jq -r 'sort_by(.name)[] | [.name,.status,.conclusion,.id] | @tsv' /tmp/latest_checks.json > /tmp/green_checks
+          printf 'latest_check_names=%s\nreview_decision=%s\n' "$(jq length /tmp/latest_checks.json)" "${review_decision:-none}" >> /tmp/receipt
+          cat /tmp/green_checks
+      - name: Merge once and verify exact PC-49 bytes on canonical main
+        run: |
+          set -euo pipefail
+          source /tmp/receipt
+          mergeable=UNKNOWN
+          for attempt in $(seq 1 60); do
+            read -r state mergeable < <(gh pr view "$product_pr" --repo "$GITHUB_REPOSITORY" --json state,mergeable --jq '[.state,.mergeable]|@tsv')
+            test "$state" = OPEN
+            test "$mergeable" != CONFLICTING
+            [ "$mergeable" = MERGEABLE ] && break
+            sleep 5
+          done
+          test "$mergeable" = MERGEABLE
+
+          settings="$(gh api "repos/${GITHUB_REPOSITORY}")"
+          if [ "$(jq -r .allow_squash_merge <<<"$settings")" = true ]; then method=--squash
+          elif [ "$(jq -r .allow_merge_commit <<<"$settings")" = true ]; then method=--merge
+          elif [ "$(jq -r .allow_rebase_merge <<<"$settings")" = true ]; then method=--rebase
+          else exit 1; fi
+          gh pr merge "$product_pr" --repo "$GITHUB_REPOSITORY" "$method" --delete-branch
+          test "$(gh pr view "$product_pr" --repo "$GITHUB_REPOSITORY" --json state --jq .state)" = MERGED
+          merge_sha="$(gh pr view "$product_pr" --repo "$GITHUB_REPOSITORY" --json mergeCommit --jq .mergeCommit.oid)"
+          git fetch --force origin main:refs/remotes/origin/main
+          canonical_main="$(git rev-parse refs/remotes/origin/main^{commit})"
+          test "$canonical_main" = "$merge_sha"
+          mapfile -t paths < /tmp/expected
+          git diff --exit-code "$product_sha" "$canonical_main" -- "${paths[@]}"
+          printf 'merge_method=%s\nmerge_sha=%s\ncanonical_main=%s\n' "${method#--}" "$merge_sha" "$canonical_main" >> /tmp/receipt
+      - name: Close issue, close carrier without merge, and retire refs
+        run: |
+          set -euo pipefail
+          source /tmp/receipt
+          if [ "$(gh issue view 1120 --repo "$GITHUB_REPOSITORY" --json state --jq .state)" = OPEN ]; then
+            gh issue close 1120 --repo "$GITHUB_REPOSITORY" --reason completed --comment "Completed by merged PC-49 product PR #${product_pr}."
+          fi
+          if [ "$(gh pr view 1127 --repo "$GITHUB_REPOSITORY" --json state --jq .state)" = OPEN ]; then
+            gh pr close 1127 --repo "$GITHUB_REPOSITORY" --comment "Superseded by merged PC-49 product PR #${product_pr}; this carrier was never merged."
+          fi
+          for branch in agent/pc49-source-carrier-v3-stage agent/pc49-materializer-verify agent/pc49-materializer; do
+            git push origin --delete "$branch" 2>/dev/null || true
+          done
+          git push origin --delete agent/pc49-source-carrier
+          printf 'issue_1120=closed\ncarrier_pr_1127=closed_without_merge\ntransport_refs=retired\n' >> /tmp/receipt
+          cat /tmp/receipt
+      - name: Upload latest-check final receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc49-latest-check-finalization-receipt
+          path: |
+            /tmp/receipt
+            /tmp/expected
+            /tmp/product_paths
+            /tmp/main_advance
+            /tmp/overlap
+            /tmp/all_checks.json
+            /tmp/latest_checks.json
+            /tmp/check_state.json
+            /tmp/green_checks
+          if-no-files-found: warn
