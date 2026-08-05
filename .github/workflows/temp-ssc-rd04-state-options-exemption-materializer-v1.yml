@@ -1,0 +1,190 @@
+name: TEMP materialize RD-04 State Options exemption promotion v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-rd04-state-options-exemption-materializer-v1.yml'
+      - '.transport/ssc-rd04-state-options-exemption-v1/shards/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd04-state-options-exemption-materializer-v1-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-state-options-exemption-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      CARRIER_ROOT: .transport/ssc-rd04-state-options-exemption-v1/shards
+      PRODUCT_BRANCH: agent/ssc-rd04-state-options-exemption-promotion-v1
+      PRODUCT_LEASE: efcf6bc094facb72dec6b966a7e8e3b2acdf4d06
+      CANONICAL_BASE: efcf6bc094facb72dec6b966a7e8e3b2acdf4d06
+      PERMANENT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.yml
+      BASE64_BYTES: '35180'
+      BASE64_SHA256: 4059f1dcd17b225da24562e2cdeb5f93f7e44fe6aad964647574a44005ef0ace
+      ARCHIVE_BYTES: '26384'
+      ARCHIVE_SHA256: 97886246a6d8742b2da4a25797324b107368d0a3ececa2a215a0ca0862d74595
+      PATHS_SHA256: 8717e0baadd372702e28bf63d165e4737625c3a92f46945e6ba2ebd929450192
+    steps:
+      - name: Check out exact pull-request head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+      - name: Reconstruct, qualify, and publish transport-safe product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export GIT_AUTHOR_NAME='github-actions[bot]'
+          export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+
+          WORK="$RUNNER_TEMP/ssc-rd04-state-options-exemption-materializer-v1"
+          PACKAGE="$WORK/package"
+          RECEIPT="$WORK/receipt"
+          rm -rf "$WORK"
+          mkdir -p "$PACKAGE" "$RECEIPT"
+          exec > >(tee "$RECEIPT/execution.log") 2>&1
+          STAGE=init
+          finish() {
+            rc=$?
+            printf 'status=%s\nstage=%s\nexit_code=%s\nutc=%s\n' \
+              "$([[ $rc -eq 0 ]] && echo complete || echo failed_closed)" \
+              "$STAGE" "$rc" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$RECEIPT/checkpoint.txt"
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          STAGE=verify-carrier
+          test "$(find "$CARRIER_ROOT" -maxdepth 1 -type f -name '*.b64' | wc -l | tr -d ' ')" = 2
+          test "$(sha256sum "$CARRIER_ROOT/000.b64" | awk '{print $1}')" = e0ff1c1d9c6e0fa32da7551fbaa4998d893e8aa094c2eb67fc57b28387109917
+          test "$(sha256sum "$CARRIER_ROOT/001.b64" | awk '{print $1}')" = 534bf0c4ef4cda4332e8198a2267f743a26bd4a0381398e6637202156eec3382
+          cat "$CARRIER_ROOT/000.b64" "$CARRIER_ROOT/001.b64" > "$WORK/product.b64"
+          test "$(stat -c '%s' "$WORK/product.b64")" = "$BASE64_BYTES"
+          test "$(sha256sum "$WORK/product.b64" | awk '{print $1}')" = "$BASE64_SHA256"
+          base64 -d "$WORK/product.b64" > "$WORK/product.tar.xz"
+          test "$(stat -c '%s' "$WORK/product.tar.xz")" = "$ARCHIVE_BYTES"
+          test "$(sha256sum "$WORK/product.tar.xz" | awk '{print $1}')" = "$ARCHIVE_SHA256"
+          tar -xJf "$WORK/product.tar.xz" -C "$PACKAGE"
+
+          cat > "$RECEIPT/expected-paths.txt" <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/promoted-partial-field-matrix.json
+          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/promotion-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/remaining-open-field-census.json
+          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/source-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/source-page-11.txt
+          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/state-field-register.jsonl
+          docs/milestones/ssc-rd-wave03-rd04-state-options-exemption-promotion.md
+          schemas/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.schema.json
+          test/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.mjs
+          EOF
+          sed -i 's/^          //' "$RECEIPT/expected-paths.txt"
+          test "$(wc -l < "$RECEIPT/expected-paths.txt" | tr -d ' ')" = 13
+          test "$(sha256sum "$RECEIPT/expected-paths.txt" | awk '{print $1}')" = "$PATHS_SHA256"
+          find "$PACKAGE" -type f -printf '%P\n' | sort > "$RECEIPT/archive-paths.txt"
+          cmp "$RECEIPT/expected-paths.txt" "$RECEIPT/archive-paths.txt"
+          test "$(find "$PACKAGE" -type l | wc -l | tr -d ' ')" = 0
+
+          STAGE=bind-leases
+          git fetch --no-tags origin main "$PRODUCT_BRANCH"
+          test "$(git rev-parse origin/main)" = "$CANONICAL_BASE"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PRODUCT_LEASE"
+          printf 'canonical_base=%s\nproduct_branch=%s\nproduct_lease=%s\n' \
+            "$CANONICAL_BASE" "$PRODUCT_BRANCH" "$PRODUCT_LEASE" > "$RECEIPT/leases.txt"
+
+          STAGE=compose
+          git checkout --detach "$CANONICAL_BASE"
+          while IFS= read -r rel; do test ! -e "$rel"; done < "$RECEIPT/expected-paths.txt"
+          cp -a "$PACKAGE"/. .
+          xargs -d '\n' git add -- < "$RECEIPT/expected-paths.txt"
+          git diff --cached --name-status > "$RECEIPT/full-name-status.txt"
+          test "$(wc -l < "$RECEIPT/full-name-status.txt" | tr -d ' ')" = 13
+          test "$(awk '$1 != "A" {n++} END {print n+0}' "$RECEIPT/full-name-status.txt")" = 0
+
+          run_focused() {
+            node --check tools/build-status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.mjs
+            node --check tools/validate-status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.mjs
+            node --check test/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.test.js
+            node tools/build-status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.mjs --check
+            node tools/validate-status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.mjs
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          import jsonschema
+          root = Path('.')
+          schema = json.loads((root / 'schemas/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.schema.json').read_text())
+          data = root / 'data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion'
+          for name in ['source-custody.json','promoted-partial-field-matrix.json','remaining-open-field-census.json','promotion-summary.json','product-manifest.json']:
+              jsonschema.Draft202012Validator(schema).validate(json.loads((data / name).read_text()))
+          print('closed_schema_validation=pass')
+          PY
+            node test/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.test.js
+            node tools/validate-no-magic-human-gate.mjs
+          }
+
+          STAGE=focused-gates
+          run_focused
+          git diff --check "$CANONICAL_BASE"
+
+          STAGE=full-release-gate
+          npm run release:check
+
+          STAGE=clean-replay
+          git restore --worktree -- .
+          git clean -fdx
+          run_focused
+          git diff --exit-code
+
+          STAGE=strip-workflow-transport
+          git restore --staged -- "$PERMANENT_WORKFLOW"
+          rm -f "$PERMANENT_WORKFLOW"
+          git diff --cached --name-status > "$RECEIPT/name-status.txt"
+          test "$(wc -l < "$RECEIPT/name-status.txt" | tr -d ' ')" = 12
+          test "$(awk '$1 != "A" {n++} END {print n+0}' "$RECEIPT/name-status.txt")" = 0
+          ! grep -F -- "$PERMANENT_WORKFLOW" "$RECEIPT/name-status.txt"
+
+          STAGE=commit
+          git commit -m 'Promote FFY 2024 RD-04 discretionary-exemption state practice'
+          PRODUCT_HEAD=$(git rev-parse HEAD)
+          PRODUCT_TREE=$(git rev-parse HEAD^{tree})
+
+          STAGE=publish
+          git fetch --no-tags origin main "$PRODUCT_BRANCH"
+          test "$(git rev-parse origin/main)" = "$CANONICAL_BASE"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PRODUCT_LEASE"
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH" \
+            --force-with-lease="refs/heads/$PRODUCT_BRANCH:$PRODUCT_LEASE"
+          test "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$PRODUCT_HEAD"
+          printf 'status=complete\ncanonical_base=%s\ntransport_safe_head=%s\ntransport_safe_tree=%s\npermanent_paths=12\nworkflow_path_omitted=%s\nterminal_cells_before=131\nterminal_cells_after=181\nstill_open_substantive_cells=219\nclass_closed=false\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' \
+            "$CANONICAL_BASE" "$PRODUCT_HEAD" "$PRODUCT_TREE" "$PERMANENT_WORKFLOW" > "$RECEIPT/final.txt"
+          STAGE=complete
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-state-options-exemption-materializer-v1
+          path: ${{ runner.temp }}/ssc-rd04-state-options-exemption-materializer-v1/receipt
+          if-no-files-found: error
+          retention-days: 90
