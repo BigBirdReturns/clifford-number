@@ -7,7 +7,7 @@ It sits inside the existing `us-defense-natsec100` selection lane. Primary custo
 ## Current frozen surfaces
 
 ```text
-public-source receipts                         79
+public-source receipts                         86
 current BVVC leadership labels                 27 / 27
 historical-only leadership labels               4
 current Portfolio Universe labels              30 / 30
@@ -19,6 +19,7 @@ School.House faculty labels                    18 / 18
 visible School.House employee labels            4
 vehicle and filed-related-entity rows           7
 transaction or investment observations         17
+off-roster public-claim candidates                 9
 institutional self-claim rows                  10
 explicit rejected joins                        16
 bounded continuation tasks                      7
@@ -38,6 +39,7 @@ The current leadership and Portfolio Universe pages are complete as rendered on 
 - `schoolhouse.json` preserves source-specific identity and timeline claims, eighteen current faculty labels, one dated twenty-company Demo Day surface, panelists, sponsors, organizers, founder mappings, two counterpart confirmations, and the public company-profile snapshot.
 - `vehicles-offerings.jsonl` separates Fund I, its GP and management company, SPV I, SPV IX, its manager, and SPV X, while carrying the SEC Form D accuracy caveat and refusing transaction-to-vehicle joins.
 - `transactions.jsonl` separates eleven dated counterparty or syndicated financing announcements from six undated firm-self-represented investment observations.
+- `portfolio-delta-candidates.jsonl` preserves nine public backing or transaction claims that are absent from the frozen current Portfolio Universe page without admitting them as current-page members.
 - `institutional-claims.jsonl` preserves BVVC and School.House public claims about access, relationships, program machinery, portfolio support, and cultural positioning with allowed and forbidden language.
 - `rejected-joins.jsonl` records sixteen tempting but unsupported inferences that the lake must continue to refuse.
 - `coverage-matrix.json` freezes complete, partial, open, and explicit-null surfaces.
@@ -57,6 +59,8 @@ The SEC rows preserve filer-reported identities, exemptions, offering amounts, s
 No direct message, screenshot, owner-supplied LinkedIn export, contact detail, or private-life fact appears in this public package. Private support material may suggest a public-source query but contributes zero public rows and cannot support a public assertion.
 
 ## Continuation
+
+The off-roster delta now proves that the frozen current Portfolio Universe page is not a complete ledger of all public firm and counterparty backing claims. It preserves the discrepancy as an acquisition state rather than silently expanding current membership.
 
 The checked-in frontier now directs the next bounded pass toward the complete BVVC vehicle denominator, transaction-specific evidence for all thirty current portfolio labels, exact legal entities, government award and acceptance surfaces, dated leadership history, School.House legal and governance records, complete annual cohorts and outcomes, and receipt-byte archival. Every task preserves nulls, failed routes, unresolved identities, and forbidden inferences.
 
