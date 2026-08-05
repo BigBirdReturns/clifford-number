@@ -34,6 +34,7 @@ jobs:
       ARCHIVE_SHA256: 97886246a6d8742b2da4a25797324b107368d0a3ececa2a215a0ca0862d74595
       PATHS_SHA256: 8717e0baadd372702e28bf63d165e4737625c3a92f46945e6ba2ebd929450192
       V1_WORKFLOW: .github/workflows/temp-ssc-rd04-state-options-exemption-materializer-v1.yml
+      SEALED_V1_COMMIT: dcf5dbed25a2b0b4e617d23d3584df2ce1d1666b
       SEALED_V1_BLOB: 252c05a486329be56c034812f9009f478b15623a
     steps:
       - name: Check out exact pull-request head
@@ -56,7 +57,7 @@ jobs:
           set -Eeuo pipefail
           SEALED="$RUNNER_TEMP/rd04-materializer-sealed-v1.yml"
           SCRIPT="$RUNNER_TEMP/rd04-materializer-repaired-v1.sh"
-          git show "HEAD^:$V1_WORKFLOW" > "$SEALED"
+          git show "$SEALED_V1_COMMIT:$V1_WORKFLOW" > "$SEALED"
           test "$(git hash-object "$SEALED")" = "$SEALED_V1_BLOB"
           python - "$SEALED" "$SCRIPT" <<'PY'
           from pathlib import Path
@@ -82,11 +83,11 @@ jobs:
               else:
                   raise SystemExit(f'unexpected sealed-v1 indentation: {line!r}')
           script = '\n'.join(script_lines) + '\n'
-          old = '''find "$PACKAGE" -type f -printf '%P\\n' | sort > "$RECEIPT/archive-paths.txt"
-cmp "$RECEIPT/expected-paths.txt" "$RECEIPT/archive-paths.txt"'''
-          new = '''find "$PACKAGE" -type f -printf '%P\\n' | sort > "$RECEIPT/archive-paths.txt"
-sort "$RECEIPT/expected-paths.txt" > "$RECEIPT/expected-paths-sorted.txt"
-cmp "$RECEIPT/expected-paths-sorted.txt" "$RECEIPT/archive-paths.txt"'''
+          find_line = "find \"$PACKAGE\" -type f -printf '%P\\\\n' | sort > \"$RECEIPT/archive-paths.txt\""
+          old = 'cmp "$RECEIPT/expected-paths.txt" "$RECEIPT/archive-paths.txt"'
+          new = 'sort "$RECEIPT/expected-paths.txt" > "$RECEIPT/expected-paths-sorted.txt"\ncmp "$RECEIPT/expected-paths-sorted.txt" "$RECEIPT/archive-paths.txt"'
+          if script.count(find_line) != 1:
+              raise SystemExit(f'expected one archive path-list producer, found {script.count(find_line)}')
           matches = script.count(old)
           if matches != 1:
               raise SystemExit(f'expected one path-list seam, found {matches}')
