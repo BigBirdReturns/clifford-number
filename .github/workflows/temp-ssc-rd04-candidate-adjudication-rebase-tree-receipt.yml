@@ -1,0 +1,72 @@
+name: TEMP record RD-04 candidate rebase tree
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-ssc-rd04-candidate-adjudication-rebase-tree-receipt.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Record current-main tree and all sixteen exact RD-04 blobs
+        shell: bash
+        run: |
+          set -Eeuxo pipefail
+          readonly TARGET=agent/ssc-rd-wave03-rd04-candidate-adjudication-v1
+          readonly PRODUCT_PATHS=.ssc-rd04-candidate-adjudication-materializer/product-paths.txt
+          readonly WORKFLOW_PATH=.github/workflows/status-sovereignty-rd-wave03-rd04-candidate-adjudication.yml
+          readonly OUT=/tmp/ssc-rd04-candidate-adjudication-rebase-tree-receipt
+          readonly INDEX=/tmp/ssc-rd04-candidate-adjudication-rebase-index
+          rm -rf "$OUT" "$INDEX"
+          mkdir -p "$OUT"
+
+          git fetch --no-tags origin main "$TARGET"
+          MAIN=$(git rev-parse origin/main)
+          TARGET_COMMIT=$(git rev-parse "origin/$TARGET")
+          MAIN_TREE=$(git rev-parse "origin/main^{tree}")
+          TARGET_TREE=$(git rev-parse "origin/$TARGET^{tree}")
+          TARGET_PARENT=$(git rev-parse "origin/$TARGET^")
+
+          {
+            cat "$PRODUCT_PATHS"
+            printf '%s\n' "$WORKFLOW_PATH"
+          } | sort > "$OUT/permanent-paths.txt"
+          test "$(wc -l < "$OUT/permanent-paths.txt" | tr -d ' ')" = 16
+
+          : > "$OUT/tree-elements.jsonl"
+          while IFS= read -r path; do
+            blob=$(git rev-parse "origin/$TARGET:$path")
+            printf '{"path":"%s","mode":"100644","type":"blob","sha":"%s"}\n' "$path" "$blob" >> "$OUT/tree-elements.jsonl"
+          done < "$OUT/permanent-paths.txt"
+          test "$(wc -l < "$OUT/tree-elements.jsonl" | tr -d ' ')" = 16
+
+          export GIT_INDEX_FILE="$INDEX"
+          git read-tree origin/main
+          while IFS= read -r row; do
+            path=$(printf '%s' "$row" | python -c 'import json,sys; print(json.load(sys.stdin)["path"])')
+            blob=$(printf '%s' "$row" | python -c 'import json,sys; print(json.load(sys.stdin)["sha"])')
+            git update-index --add --cacheinfo "100644,$blob,$path"
+          done < "$OUT/tree-elements.jsonl"
+          REBASED_TREE=$(git write-tree)
+
+          printf 'main=%s\nmain_tree=%s\ntarget=%s\ntarget_tree=%s\ntarget_parent=%s\nrebased_tree=%s\npermanent_paths=16\n' \
+            "$MAIN" "$MAIN_TREE" "$TARGET_COMMIT" "$TARGET_TREE" "$TARGET_PARENT" "$REBASED_TREE" | tee "$OUT/final.txt"
+          sha256sum "$OUT/permanent-paths.txt" "$OUT/tree-elements.jsonl" > "$OUT/hashes.txt"
+
+      - name: Preserve exact tree receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-candidate-adjudication-rebase-tree-receipt-v1
+          path: /tmp/ssc-rd04-candidate-adjudication-rebase-tree-receipt
+          if-no-files-found: error
+          retention-days: 30
