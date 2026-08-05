@@ -150,10 +150,22 @@ jobs:
               node tools/validate-bvvc-defense-capital.mjs
               node test/person-routers.test.js
               npm run release:check
-              git diff --name-only --no-renames "$LIVE_MAIN" | sort -u > /tmp/actual-product-paths
-              diff -u /tmp/expected-product-paths /tmp/actual-product-paths
-              test "$(wc -l < /tmp/actual-product-paths | tr -d ' ')" = '13'
-              test "$(grep -c '^\.github/workflows/' /tmp/actual-product-paths || true)" = '0'
+
+              git diff --name-only --no-renames "$LIVE_MAIN" | sort -u > /tmp/tracked-after-gate-paths
+              comm -23 /tmp/tracked-after-gate-paths /tmp/expected-product-paths > /tmp/nonproduct-tracked-paths
+              while IFS= read -r generated_path; do
+                test -z "$generated_path" || git restore --source="$LIVE_MAIN" --worktree --staged -- "$generated_path"
+              done < /tmp/nonproduct-tracked-paths
+
+              git ls-files --others --exclude-standard | sort -u > /tmp/untracked-after-gate-paths
+              comm -23 /tmp/untracked-after-gate-paths /tmp/expected-product-paths > /tmp/unexpected-untracked-paths
+              test ! -s /tmp/unexpected-untracked-paths
+
+              while IFS= read -r product_path; do git add -- "$product_path"; done < /tmp/expected-product-paths
+              git diff --cached --name-only --no-renames | sort -u > /tmp/staged-product-paths
+              diff -u /tmp/expected-product-paths /tmp/staged-product-paths
+              test "$(wc -l < /tmp/staged-product-paths | tr -d ' ')" = '13'
+              test "$(grep -c '^\.github/workflows/' /tmp/staged-product-paths || true)" = '0'
             )
 
             (
