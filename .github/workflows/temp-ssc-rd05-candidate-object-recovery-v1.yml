@@ -1,0 +1,242 @@
+name: TEMP recover exact RD-05 candidate package from Git objects
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-rd05-candidate-object-recovery-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  RECOVERY_BRANCH: agent/ssc-rd05-candidate-object-recovery-v1
+  SOURCE_BRANCH: agent/ssc-rd-wave03-rd05-candidate-materializer-v1
+  EXPECTED_BASE64_BYTES: '173112'
+  EXPECTED_BASE64_SHA256: 9670f55522cf4f58ad5adb800fba361b58cf22760f647aae485135e5184533b6
+  EXPECTED_ARCHIVE_BYTES: '129832'
+  EXPECTED_ARCHIVE_SHA256: 41f17e3df0ddf520920f589bf0cfff26245ee41a3dbc95063dff971042773939
+
+jobs:
+  recover:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd05-candidate-object-recovery-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out exact recovery head with complete reachable history
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Scan every reachable Git object and reconstruct exact package when possible
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd05-candidate-object-recovery-v1"
+          rm -rf "$OUT"
+          mkdir -p "$OUT/recovered-shards" "$OUT/package"
+
+          git fetch --no-tags origin \
+            '+refs/heads/*:refs/remotes/origin/*' \
+            '+refs/tags/*:refs/tags/*'
+
+          python - "$OUT" <<'PY'
+          from __future__ import annotations
+
+          import base64
+          import hashlib
+          import io
+          import json
+          import pathlib
+          import subprocess
+          import sys
+          import tarfile
+
+          out = pathlib.Path(sys.argv[1])
+          shard_dir = out / 'recovered-shards'
+          package_dir = out / 'package'
+
+          expected = {
+              '000.b64': (21639, '207c9813cd8b957a082f564270eb4cc203236ad8202d4ea5a655a7790538abd0'),
+              '001.b64': (19239, 'e3181146943d127ad530fc2b9bc68ab76623746d076b2a112fe2207f599c6309'),
+              '002.b64': (19239, 'c41a6a241e627f7711e61db33ab7286b87dbf1bd4c7b9a35048d1505cad3408a'),
+              '003.b64': (19239, '4bf1841c1f95583b6919f24011cc0e7825dc8e4d9c020aa706e988096cea338d'),
+              '004.b64': (19239, '06ac1c44b0b3fd4861b147436e2297b359fd660b4d47e0cf2de6c7edf89f68b1'),
+              '005.b64': (19239, '298b9ddd35e6f83e7777750d44230cfb4e780a052794d608639af3e3c716c6e4'),
+              '006.b64': (19239, '376497095cfd34748fef1453c60ed0b391084c2520bd9445a11871f0eba4ccca'),
+              '007.b64': (19239, '49af396a13081d821218f58fb0da88ab692b20ffb8a102786b9c598d421c9897'),
+              '008.b64': (17400, '9f62f12504d96311a04dcf59370101c6d8dc1175c6bf184020a692ded69db629'),
+          }
+          root = '.transport/ssc-rd-wave03-rd05-candidate-v1/shards'
+          expected_paths = [
+              '.github/workflows/status-sovereignty-rd-wave03-rd05-candidate-adjudication.yml',
+              'data/intake/status-sovereignty-rd-wave03-rd05-candidate-adjudication/candidates/index.json',
+              'data/intake/status-sovereignty-rd-wave03-rd05-candidate-adjudication/candidates/part-00.jsonl',
+              'data/intake/status-sovereignty-rd-wave03-rd05-candidate-adjudication/candidates/part-01.jsonl',
+              'data/intake/status-sovereignty-rd-wave03-rd05-candidate-adjudication/candidates/part-02.jsonl',
+              'data/intake/status-sovereignty-rd-wave03-rd05-candidate-adjudication/candidates/part-03.jsonl',
+              'data/intake/status-sovereignty-rd-wave03-rd05-candidate-adjudication/candidates/part-04.jsonl',
+              'data/intake/status-sovereignty-rd-wave03-rd05-candidate-adjudication/candidates/product-manifest.json',
+              'data/intake/status-sovereignty-rd-wave03-rd05-candidate-adjudication/official-body-observation-protocol.json',
+              'data/intake/status-sovereignty-rd-wave03-rd05-candidate-adjudication/source-census-execution-receipt.json',
+              'docs/milestones/ssc-rd-wave03-rd05-candidate-adjudication.md',
+              'schemas/status-sovereignty-rd-wave03-rd05-candidate-adjudication.schema.json',
+              'test/status-sovereignty-rd-wave03-rd05-candidate-adjudication.test.js',
+              'tools/acquisition/status-sovereignty-rd-wave03-rd05/observe-official-bodies.py',
+              'tools/build-status-sovereignty-rd-wave03-rd05-candidate-adjudication.mjs',
+              'tools/validate-status-sovereignty-rd-wave03-rd05-candidate-adjudication.mjs',
+          ]
+
+          def run(*args: str, input_bytes: bytes | None = None, check: bool = True) -> bytes:
+              proc = subprocess.run(args, input=input_bytes, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+              if check and proc.returncode != 0:
+                  raise RuntimeError(f'{args!r} failed: {proc.stderr.decode(errors="replace")}')
+              return proc.stdout
+
+          def normalized(data: bytes) -> bytes:
+              return data.rstrip(b'\r\n')
+
+          def identify(data: bytes) -> list[str]:
+              clean = normalized(data)
+              digest = hashlib.sha256(clean).hexdigest()
+              return [name for name, (size, sha) in expected.items() if len(clean) == size and digest == sha]
+
+          matches: dict[str, list[dict[str, object]]] = {name: [] for name in expected}
+          seen_objects: set[str] = set()
+
+          # First inspect every historical value at the declared paths.
+          for name in expected:
+              path = f'{root}/{name}'
+              commits = run('git', 'log', '--all', '--format=%H', '--', path).decode().splitlines()
+              for commit in commits:
+                  spec = f'{commit}:{path}'
+                  exists = subprocess.run(['git', 'cat-file', '-e', spec], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                  if exists.returncode != 0:
+                      continue
+                  blob = run('git', 'rev-parse', spec).decode().strip()
+                  data = run('git', 'cat-file', 'blob', blob)
+                  seen_objects.add(blob)
+                  for identified in identify(data):
+                      matches[identified].append({
+                          'source': 'path_history',
+                          'commit': commit,
+                          'path': path,
+                          'blob': blob,
+                          'stored_bytes': len(data),
+                          'terminal_framing_bytes': len(data) - len(normalized(data)),
+                      })
+
+          # Then scan every reachable local blob at one of the exact allowed sizes.
+          allowed_sizes = {size + delta for size, _ in expected.values() for delta in (0, 1, 2)}
+          object_rows = run(
+              'git', 'cat-file', '--batch-all-objects',
+              '--batch-check=%(objectname) %(objecttype) %(objectsize)'
+          ).decode().splitlines()
+          for row in object_rows:
+              fields = row.split()
+              if len(fields) != 3 or fields[1] != 'blob':
+                  continue
+              blob, _, size_text = fields
+              if blob in seen_objects or int(size_text) not in allowed_sizes:
+                  continue
+              data = run('git', 'cat-file', 'blob', blob)
+              for identified in identify(data):
+                  matches[identified].append({
+                      'source': 'all_reachable_objects',
+                      'blob': blob,
+                      'stored_bytes': len(data),
+                      'terminal_framing_bytes': len(data) - len(normalized(data)),
+                  })
+
+          recovered: dict[str, bytes] = {}
+          selected_sources: dict[str, dict[str, object]] = {}
+          for name in sorted(expected):
+              unique_by_blob = {str(row['blob']): row for row in matches[name]}
+              ordered = sorted(unique_by_blob.values(), key=lambda row: (str(row['source']), str(row['blob'])))
+              matches[name] = ordered
+              if ordered:
+                  source = ordered[0]
+                  data = run('git', 'cat-file', 'blob', str(source['blob']))
+                  clean = normalized(data)
+                  recovered[name] = clean
+                  selected_sources[name] = source
+                  (shard_dir / name).write_bytes(clean)
+
+          receipt: dict[str, object] = {
+              'schema_version': 'ssc-rd05-candidate-object-recovery@1',
+              'expected_shards': len(expected),
+              'recovered_shards': len(recovered),
+              'missing_shards': sorted(set(expected) - set(recovered)),
+              'matches': matches,
+              'selected_sources': selected_sources,
+              'expected_base64_bytes': 173112,
+              'expected_base64_sha256': '9670f55522cf4f58ad5adb800fba361b58cf22760f647aae485135e5184533b6',
+              'expected_archive_bytes': 129832,
+              'expected_archive_sha256': '41f17e3df0ddf520920f589bf0cfff26245ee41a3dbc95063dff971042773939',
+              'repository_mutations': 0,
+              'outside_human_dependency': False,
+          }
+
+          if len(recovered) == len(expected):
+              aggregate = b''.join(recovered[name] for name in sorted(expected))
+              aggregate_sha = hashlib.sha256(aggregate).hexdigest()
+              receipt['aggregate_bytes'] = len(aggregate)
+              receipt['aggregate_sha256'] = aggregate_sha
+              (out / 'candidate-package.b64').write_bytes(aggregate)
+              if len(aggregate) != 173112 or aggregate_sha != receipt['expected_base64_sha256']:
+                  receipt['status'] = 'all_shards_found_but_aggregate_mismatch'
+              else:
+                  archive = base64.b64decode(aggregate, validate=True)
+                  archive_sha = hashlib.sha256(archive).hexdigest()
+                  receipt['archive_bytes'] = len(archive)
+                  receipt['archive_sha256'] = archive_sha
+                  (out / 'candidate-package.tar.xz').write_bytes(archive)
+                  if len(archive) != 129832 or archive_sha != receipt['expected_archive_sha256']:
+                      receipt['status'] = 'aggregate_valid_but_archive_mismatch'
+                  else:
+                      with tarfile.open(fileobj=io.BytesIO(archive), mode='r:xz') as tf:
+                          members = tf.getmembers()
+                          file_members = [member for member in members if member.isfile()]
+                          paths = sorted(member.name.lstrip('./') for member in file_members)
+                          if paths != sorted(expected_paths):
+                              receipt['status'] = 'archive_path_denominator_mismatch'
+                              receipt['archive_paths'] = paths
+                          elif any(member.issym() or member.islnk() for member in members):
+                              receipt['status'] = 'archive_link_member_refused'
+                          else:
+                              for member in members:
+                                  target = (package_dir / member.name).resolve()
+                                  if package_dir.resolve() not in target.parents and target != package_dir.resolve():
+                                      raise RuntimeError(f'unsafe archive member: {member.name}')
+                              tf.extractall(package_dir, filter='data')
+                              receipt['status'] = 'complete_exact_candidate_package_recovered'
+                              receipt['archive_paths'] = paths
+          else:
+              receipt['status'] = 'incomplete_exact_blob_recovery'
+
+          (out / 'recovery.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          checksum_paths = sorted(path for path in out.rglob('*') if path.is_file() and path.name != 'SHA256SUMS')
+          with (out / 'SHA256SUMS').open('w') as handle:
+              for path in checksum_paths:
+                  handle.write(f'{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(out)}\n')
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          PY
+
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+
+      - name: Upload exact recovery receipt and recovered package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-candidate-object-recovery-v1
+          path: ${{ runner.temp }}/ssc-rd05-candidate-object-recovery-v1
+          if-no-files-found: error
+          retention-days: 90
