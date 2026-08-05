@@ -19,14 +19,22 @@ jobs:
       - name: Export exact canonical BVVC custody package
         run: |
           set -Eeuo pipefail
-          EXPECTED_MAIN='d87172a41e88c1709b37a114b50df733545126c8'
+          EXPECTED_MAIN='1f04c0abbf89f1529dfd428389392b3425499bc3'
+          SAFE_MAIN='d87172a41e88c1709b37a114b50df733545126c8'
           OUT='/tmp/schoolhouse-fl-charity-custody-main-export'
 
-          git fetch --no-tags --depth=1 origin "$EXPECTED_MAIN"
+          git fetch --no-tags --depth=2 origin "$EXPECTED_MAIN" "$SAFE_MAIN"
           test "$(git rev-parse "$EXPECTED_MAIN^{commit}")" = "$EXPECTED_MAIN"
+          test "$(git rev-parse "$SAFE_MAIN^{commit}")" = "$SAFE_MAIN"
+          git merge-base --is-ancestor "$SAFE_MAIN" "$EXPECTED_MAIN"
+          git diff --name-only --no-renames "$SAFE_MAIN..$EXPECTED_MAIN" | sort -u > /tmp/main-advance-paths
+          if grep -Eq '^(data/intake/bvvc-defense-capital/|tools/validate-bvvc-defense-capital\.mjs$|tools/build-schoolhouse-archive-minimum-legal-surface-reconciliation-custody\.mjs$)' /tmp/main-advance-paths; then
+            echo 'Current-main advance overlaps the exported custody package' >&2
+            exit 1
+          fi
+
           rm -rf "$OUT"
           mkdir -p "$OUT"
-
           git archive "$EXPECTED_MAIN" \
             data/intake/bvvc-defense-capital \
             tools/validate-bvvc-defense-capital.mjs \
@@ -34,7 +42,9 @@ jobs:
             package.json \
           | tar -x -C "$OUT"
 
+          cp /tmp/main-advance-paths "$OUT/safe-anchor-to-export-paths.txt"
           {
+            printf 'safe_main=%s\n' "$SAFE_MAIN"
             printf 'main_commit=%s\n' "$EXPECTED_MAIN"
             printf 'main_tree=%s\n' "$(git rev-parse "$EXPECTED_MAIN^{tree}")"
             printf 'export_workflow_head=%s\n' "$GITHUB_SHA"
