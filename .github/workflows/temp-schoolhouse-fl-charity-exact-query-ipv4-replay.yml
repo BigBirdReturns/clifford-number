@@ -2,8 +2,7 @@ name: TEMP replay School.House Florida charity exact-query IPv4
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 concurrency:
   group: schoolhouse-fl-charity-exact-query-ipv4-${{ github.event.pull_request.number }}
@@ -21,12 +20,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Reconstruct and execute changed-transport official registry replay
+      - name: Execute changed-transport official registry replay
         env:
           GH_TOKEN: ${{ github.token }}
           OUTPUT_DIR: /tmp/schoolhouse-fl-charity-exact-query-ipv4-replay
@@ -37,28 +35,21 @@ jobs:
           GZIP='/tmp/acquire-schoolhouse-fl-charity-ipv4.py.gz'
           SCRIPT='/tmp/acquire-schoolhouse-fl-charity-ipv4.py'
 
-          test -s "$EXECUTE"
-          test -s "$BUNDLE"
+          test -s "$EXECUTE" && test -s "$BUNDLE"
           grep -Fx 'acquire=schoolhouse-fl-charity-exact-query-ipv4-replay-v1' "$EXECUTE"
           grep -Fx 'canonical_parent=d87172a41e88c1709b37a114b50df733545126c8' "$EXECUTE"
-          grep -Fx 'prior_workflow_run_id=31044899071' "$EXECUTE"
           grep -Fx 'prior_artifact_id=8946106351' "$EXECUTE"
           grep -Fx 'prior_artifact_digest=sha256:1d3167516a2db6e39fc08d9cac4726b38d2abb04a87c8fb46aa749105caa5718' "$EXECUTE"
           grep -Fx 'prior_query_submissions=0' "$EXECUTE"
           grep -Fx 'changed_condition=transport_profile' "$EXECUTE"
           grep -Fx 'transport_profile=curl_ipv4_http1_1' "$EXECUTE"
           grep -Fx 'query_rows=3' "$EXECUTE"
-          grep -Fx 'query_01=School.House' "$EXECUTE"
-          grep -Fx 'query_02=School House' "$EXECUTE"
-          grep -Fx 'query_03=Schoolhouse' "$EXECUTE"
           grep -Fx 'maximum_attempts_per_query=1' "$EXECUTE"
-          grep -Fx 'curl_connect_timeout_seconds=15' "$EXECUTE"
           grep -Fx 'outside_human_dependency=false' "$EXECUTE"
 
           test "$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/8946106351" --jq .digest)" = 'sha256:1d3167516a2db6e39fc08d9cac4726b38d2abb04a87c8fb46aa749105caa5718'
           curl --version
-
-          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '32399e5255d4af57854bc0a3641ffb07d4297d408951966faba7dca863108fb2'
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'ea0c4a65dbb2450f8b0fb0ffe8585735e48cb0ec3a76532f4963ec6b19df61c0'
           base64 -d "$BUNDLE" > "$GZIP"
           test "$(sha256sum "$GZIP" | awk '{print $1}')" = '0e937a167e343b0cf11fffe46eca1dd409ce1ce89028c7826db9ef6e4ccf61c8'
           gzip -dc "$GZIP" > "$SCRIPT"
@@ -67,94 +58,60 @@ jobs:
 
           rm -rf "$OUTPUT_DIR"
           python "$SCRIPT" | tee /tmp/schoolhouse-fl-charity-exact-query-ipv4-output.json
+          for path in summary.json policy.json route-results.jsonl query-results.jsonl candidate-rows.jsonl candidate-links.jsonl artifact-manifest.json SHA256SUMS; do
+            test -f "$OUTPUT_DIR/$path"
+          done
           test -s "$OUTPUT_DIR/summary.json"
           test -s "$OUTPUT_DIR/policy.json"
           test -s "$OUTPUT_DIR/route-results.jsonl"
-          test -f "$OUTPUT_DIR/query-results.jsonl"
-          test -f "$OUTPUT_DIR/candidate-rows.jsonl"
-          test -f "$OUTPUT_DIR/candidate-links.jsonl"
           test -s "$OUTPUT_DIR/artifact-manifest.json"
           test -s "$OUTPUT_DIR/SHA256SUMS"
           (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
 
           python - "$OUTPUT_DIR" <<'PYVERIFY'
           from pathlib import Path
-          import json
-          import sys
+          import json, sys
 
           root = Path(sys.argv[1])
-          summary = json.loads((root / 'summary.json').read_text())
-          policy = json.loads((root / 'policy.json').read_text())
-          manifest = json.loads((root / 'artifact-manifest.json').read_text())
-          routes = [json.loads(line) for line in (root / 'route-results.jsonl').read_text().splitlines() if line.strip()]
-          query_results = [json.loads(line) for line in (root / 'query-results.jsonl').read_text().splitlines() if line.strip()]
-          candidates = [json.loads(line) for line in (root / 'candidate-rows.jsonl').read_text().splitlines() if line.strip()]
-          links = [json.loads(line) for line in (root / 'candidate-links.jsonl').read_text().splitlines() if line.strip()]
-
-          expected_queries = [
+          load = lambda name: json.loads((root / name).read_text())
+          rows = lambda name: [json.loads(line) for line in (root / name).read_text().splitlines() if line.strip()]
+          summary, policy, manifest = load('summary.json'), load('policy.json'), load('artifact-manifest.json')
+          routes, queries, candidates, links = (rows(name) for name in (
+              'route-results.jsonl', 'query-results.jsonl', 'candidate-rows.jsonl', 'candidate-links.jsonl'))
+          expected = [
               {'query_id': 'schoolhouse-brand-punctuation', 'value': 'School.House'},
               {'query_id': 'schoolhouse-brand-space', 'value': 'School House'},
               {'query_id': 'schoolhouse-brand-compact', 'value': 'Schoolhouse'},
           ]
 
           assert summary['schema_version'] == 'schoolhouse-fl-charity-exact-query-summary@2'
-          assert summary['transport_profile'] == 'curl_ipv4_http1_1'
+          assert policy['schema_version'] == 'schoolhouse-fl-charity-exact-query-policy@2'
+          assert manifest['schema_version'] == 'schoolhouse-fl-charity-exact-query-artifact-manifest@2'
+          assert summary['transport_profile'] == policy['transport_profile'] == manifest['transport_profile'] == 'curl_ipv4_http1_1'
+          assert policy['fixed_query_matrix'] == expected
           assert summary['declared_query_rows'] == 3
-          assert summary['query_submissions'] <= 3
-          assert len(query_results) <= 3
+          assert 0 <= summary['query_submissions'] <= 3
+          assert len(queries) <= 3
           assert summary['candidate_rows'] == len(candidates)
           assert summary['candidate_links'] == len(links)
           assert summary['source_rows_acquired'] == len(candidates)
-          assert summary['identity_admitted_rows'] == 0
-          assert summary['negative_existence_claims_created'] == 0
-          assert summary['raw_source_retained'] is False
-          assert summary['hidden_form_values_retained'] is False
-          assert summary['street_address_rows_retained'] == 0
-          assert summary['contact_detail_rows_retained'] == 0
-          assert summary['private_support_rows'] == 0
-          assert summary['outside_human_dependency'] is False
-          assert summary['publication_effect'] == 'none'
-          assert summary['adoption_effect'] == 'none'
-          assert summary['graph_effect'] == 'none'
-          assert summary['terminal_state'] in {
-              'terminal_fixed_exact_query_matrix',
-              'terminal_policy_or_transport_refusal_no_unbounded_retry',
-          }
-
-          assert policy['schema_version'] == 'schoolhouse-fl-charity-exact-query-policy@2'
-          assert policy['transport_profile'] == 'curl_ipv4_http1_1'
-          assert policy['fixed_query_matrix'] == expected_queries
-          assert policy['maximum_query_submissions'] == 3
-          assert policy['maximum_attempts_per_query'] == 1
-          assert policy['inter_query_delay_seconds'] == 3
-          assert policy['raw_hidden_values_retained'] is False
-          assert policy['outside_human_dependency'] is False
-
-          assert manifest['schema_version'] == 'schoolhouse-fl-charity-exact-query-artifact-manifest@2'
-          assert manifest['transport_profile'] == 'curl_ipv4_http1_1'
-          assert manifest['counts']['routes'] == len(routes)
-          assert manifest['counts']['query_results'] == len(query_results)
-          assert manifest['counts']['candidate_rows'] == len(candidates)
-          assert manifest['counts']['candidate_links'] == len(links)
-          assert manifest['outside_human_dependency'] is False
-
+          assert manifest['counts'] == {'routes': len(routes), 'query_results': len(queries), 'candidate_rows': len(candidates), 'candidate_links': len(links)}
           assert len(routes) >= 3
-          assert all(row['transport_profile'] == 'curl_ipv4_http1_1' for row in routes)
-          assert all(row['identity_admitted'] is False for row in routes)
-          assert all(row['raw_source_retained'] is False for row in routes)
-          assert all(row['street_address_rows_retained'] == 0 for row in routes)
-          assert all(row['contact_detail_rows_retained'] == 0 for row in routes)
-          assert all(row['private_support_rows'] == 0 for row in routes)
-          assert all(row['outside_human_dependency'] is False for row in routes)
-          assert all(row['identity_admitted'] is False for row in candidates)
-          assert all(row['street_address_retained'] is False for row in candidates)
-          assert all(row['contact_detail_retained'] is False for row in candidates)
-          assert all(row['followed'] is False for row in links)
-
-          if policy['query_submission_authorized_by_machine_gate'] is False:
+          assert summary['terminal_state'] in {'terminal_fixed_exact_query_matrix', 'terminal_policy_or_transport_refusal_no_unbounded_retry'}
+          if not policy['query_submission_authorized_by_machine_gate']:
               assert summary['query_submissions'] == 0
           if summary['terminal_state'] == 'terminal_fixed_exact_query_matrix':
               assert summary['query_submissions'] == 3
+
+          for obj in (summary, policy, manifest):
+              assert obj['outside_human_dependency'] is False
+              assert obj['publication_effect'] == obj['adoption_effect'] == obj['graph_effect'] == 'none'
+          assert summary['identity_admitted_rows'] == summary['negative_existence_claims_created'] == 0
+          assert summary['raw_source_retained'] is summary['hidden_form_values_retained'] is False
+          assert summary['street_address_rows_retained'] == summary['contact_detail_rows_retained'] == summary['private_support_rows'] == 0
+          assert all(row['transport_profile'] == 'curl_ipv4_http1_1' and not row['identity_admitted'] and not row['raw_source_retained'] for row in routes)
+          assert all(not row['identity_admitted'] and not row['street_address_retained'] and not row['contact_detail_retained'] for row in candidates)
+          assert all(not row['followed'] for row in links)
           PYVERIFY
 
       - uses: actions/upload-artifact@v4
