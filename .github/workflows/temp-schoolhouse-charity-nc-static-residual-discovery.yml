@@ -1,0 +1,90 @@
+name: TEMP discover School.House charity and NC static residual
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-charity-nc-static-residual-discovery.yml'
+      - '.schoolhouse-charity-nc-static-residual-discovery/EXECUTE'
+      - 'tools/acquisition/schoolhouse-charity-nc-static-residual-discovery/discover.py.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: temp-schoolhouse-charity-nc-static-residual-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reconstruct and compile exact runner
+        run: |
+          set -Eeuo pipefail
+          BUNDLE='tools/acquisition/schoolhouse-charity-nc-static-residual-discovery/discover.py.gz.b64'
+          RUNNER=/tmp/schoolhouse-charity-nc-static-residual-discover.py
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'e46f148eddb98a92ec7d865b0ec4cc973af1cc905cbe1586a6ed5aed5326be22'
+          base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = 'e20bc8f8814165d4d350d9483e118fd5936550ac63dc9de3dd06f07bda645032'
+          python -m py_compile "$RUNNER"
+      - name: Execute frozen no-submission residual pass
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/schoolhouse-charity-nc-static-residual
+          mkdir -p /tmp/schoolhouse-charity-nc-static-residual
+          python /tmp/schoolhouse-charity-nc-static-residual-discover.py \
+            --out /tmp/schoolhouse-charity-nc-static-residual
+      - name: Require terminal bounded artifact
+        run: |
+          set -Eeuo pipefail
+          D=/tmp/schoolhouse-charity-nc-static-residual
+          for f in selection.jsonl route-results.jsonl html-surfaces.jsonl surface-forms.jsonl discovered-links.jsonl file-metadata.jsonl summary.json route-policy.json artifact-manifest.json SHA256SUMS; do test -f "$D/$f"; done
+          jq -e '
+            .selection_rows == 51 and
+            .terminal_route_rows == 51 and
+            .declared_file_routes == 16 and
+            .all_routes_terminal == true and
+            .search_submissions == 0 and
+            .organization_name_submissions == 0 and
+            .license_number_submissions == 0 and
+            .source_rows_acquired == 0 and
+            .raw_source_retained == false and
+            .raw_files_retained == false and
+            .hidden_form_values_retained == false and
+            .street_address_rows_retained == 0 and
+            .contact_detail_rows_retained == 0 and
+            .private_support_rows == 0 and
+            .identity_admitted == false and
+            .negative_existence_claim_created == false and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$D/summary.json"
+          jq -e '
+            .north_carolina.automated_or_scripted_interactive_searches_not_permitted == true and
+            .north_carolina.interactive_search_submissions == 0 and
+            .florida.check_a_charity_query_submissions == 0 and
+            .florida.automation_permission_inferred == false and
+            .search_submissions == 0 and
+            .source_rows_acquired == 0 and
+            .raw_source_retained == false and
+            .raw_files_retained == false and
+            .identity_admitted == false and
+            .negative_existence_claim_created == false and
+            .outside_human_dependency == false and
+            .graph_effect == "none"
+          ' "$D/route-policy.json"
+          (cd "$D" && sha256sum -c SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-charity-nc-static-residual-discovery
+          path: /tmp/schoolhouse-charity-nc-static-residual
+          if-no-files-found: error
+          retention-days: 90
