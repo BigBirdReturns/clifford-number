@@ -20,6 +20,8 @@ visible School.House employee labels            4
 vehicle and filed-related-entity rows           7
 transaction or investment observations         17
 off-roster public-claim candidates                 9
+SEC Form D route dispositions                      95
+SEC Form D source rows acquired                     0
 institutional self-claim rows                  10
 explicit rejected joins                        16
 bounded continuation tasks                      7
@@ -43,6 +45,8 @@ The current leadership and Portfolio Universe pages are complete as rendered on 
 - `institutional-claims.jsonl` preserves BVVC and School.House public claims about access, relationships, program machinery, portfolio support, and cultural positioning with allowed and forbidden language.
 - `rejected-joins.jsonl` records sixteen tempting but unsupported inferences that the lake must continue to refuse.
 - `coverage-matrix.json` freezes complete, partial, open, and explicit-null surfaces.
+- `sec-form-d-route-results.jsonl` preserves all ninety-five official-route dispositions across three bounded acquisition attempts.
+- `sec-form-d-route-custody.json` binds those route results to their workflow runs and retained artifacts without converting provider failure into an absence claim.
 - `acquisition-frontier.json` defines seven machine-actionable continuation tasks with no outside-human dependency.
 - `lake.json` remains the first bounded seed snapshot. The modular files above are the expanded v2 public-source plane.
 
@@ -53,6 +57,8 @@ Current listing, individual role claim, firm self-representation, counterparty f
 The current leadership, portfolio, and faculty pages are dense surfaces and are not hop-eligible. A portfolio listing does not establish ownership, current holding, a fund vehicle, security terms, board rights, operating control, or contact with every listed person. A fellowship title does not establish direct contact with William McRaven or selection by him. School.House faculty, founder, company, panelist, sponsor, and organizer labels are preserved as separate predicates.
 
 The SEC rows preserve filer-reported identities, exemptions, offering amounts, sales, investor counts, and related persons. They also carry the SEC's warning that Form D information has not necessarily been reviewed for accuracy or completeness. No SPV is assigned to a portfolio transaction without a transaction-specific instrument.
+
+Three bounded expansion attempts then exercised ninety-five official SEC route objects. Every route returned provider HTTP 403 from the GitHub Actions transport, so the lake preserves the route failures, request families, run IDs, artifact digests, and zero acquired rows. That custody narrows the transport problem but does not establish that the denominator contains no additional filings.
 
 ## Public-material boundary
 

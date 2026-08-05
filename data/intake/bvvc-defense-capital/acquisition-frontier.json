@@ -15,7 +15,16 @@
       "selection_unit": "every exact BVVC-branded filer and filed related person",
       "source_family": "SEC EDGAR / Form D",
       "stopping_rule": "Stop when every exact-name query variant and every result-linked filer has a terminal disposition.",
-      "task_id": "bvvc-frontier-sec-vehicle-denominator"
+      "task_id": "bvvc-frontier-sec-vehicle-denominator",
+      "prior_route_custody": {
+        "attempts": 3,
+        "route_result_rows": 95,
+        "state": "provider_http_403_all_declared_routes",
+        "source_rows_acquired": 0,
+        "custody_file": "sec-form-d-route-custody.json",
+        "route_file": "sec-form-d-route-results.jsonl"
+      },
+      "next_transition": "Do not repeat an identical blocked route. Retry only after a material provider-route or transport condition changes, or acquire exact filing instruments through a distinct lawful official surface."
     },
     {
       "forbidden_inference": "Portfolio listing is not itself a financing or ownership record.",
