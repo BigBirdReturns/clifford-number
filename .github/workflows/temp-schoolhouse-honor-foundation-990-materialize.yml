@@ -1,177 +1,84 @@
-name: TEMP qualify School.House Form 990 product identity
+name: TEMP retire School.House Form 990 transport refs
 
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened]
+    types: [reopened]
 
 permissions:
-  actions: read
-  contents: read
+  contents: write
+  pull-requests: write
 
 concurrency:
-  group: schoolhouse-honor-foundation-990-materializer-v1
+  group: schoolhouse-honor-foundation-990-terminal-cleanup-v1
   cancel-in-progress: false
 
 jobs:
-  qualify:
-    if: github.head_ref == 'agent/schoolhouse-honor-foundation-990-materializer-v1'
+  retire:
+    if: github.head_ref == 'agent/schoolhouse-honor-foundation-990-materializer-v1' && github.event.pull_request.number == 1210
     runs-on: ubuntu-24.04
-    timeout-minutes: 180
+    timeout-minutes: 20
     steps:
-      - name: Check out exact qualifier carrier head
+      - name: Check out exact cleanup carrier head
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-
-      - name: Prove qualified-tree equivalence and rerun all gates
+      - name: Verify merged authority and retire every temporary ref
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -Eeuo pipefail
 
+          MERGE_SHA='118af97aae3e1472331ba1e77e03a4bcc7a9e74e'
+          PRODUCT_SHA='f96745620bad39b5c33a8cfc594b9048ab5cf5b8'
           CARRIER_BRANCH='agent/schoolhouse-honor-foundation-990-materializer-v1'
           PRODUCT_BRANCH='agent/schoolhouse-honor-foundation-990-custody-product-v1'
-          EXPECTED_PARENT='efcf6bc094facb72dec6b966a7e8e3b2acdf4d06'
-          QUALIFIED_PRODUCT='2784d0a72d414c4c1c86d0d5d8fce5fdbc3d88e5'
-          CURRENT_PRODUCT='f96745620bad39b5c33a8cfc594b9048ab5cf5b8'
-          EXPECTED_TREE='9172b95399d887cd22c594beeee4a9b57c48a222'
-          RECEIPT_ARTIFACT_ID='8950110609'
-          RECEIPT_ZIP_SHA256='ef39858ce8dadc9806de86267d8fb454b750891158c993a3ddff92947647bd5e'
-          WORKTREE='/tmp/schoolhouse-honor-foundation-990-qualified-product'
-          RECEIPT_ZIP='/tmp/schoolhouse-honor-foundation-990-materialization-receipt-v3.zip'
-          RECEIPT_DIR='/tmp/schoolhouse-honor-foundation-990-materialization-receipt-v3'
-          PROOF_DIR='/tmp/schoolhouse-honor-foundation-990-tree-equivalence-proof'
 
-          EXPECTED_PATHS=(
-            'data/intake/bvvc-defense-capital/README.md'
-            'data/intake/bvvc-defense-capital/acquisition-frontier.json'
-            'data/intake/bvvc-defense-capital/coverage-matrix.json'
-            'data/intake/bvvc-defense-capital/manifest.json'
-            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-attempt-results.jsonl'
-            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-custody.json'
-            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-filing-results.jsonl'
-            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-index-resolutions.jsonl'
-            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-structural-signals.jsonl'
-            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-term-hits.jsonl'
-            'data/intake/bvvc-defense-capital/schoolhouse.json'
-            'data/intake/bvvc-defense-capital/source-inventory-18.jsonl'
-            'tools/validate-bvvc-defense-capital.mjs'
-            'tools/validate-schoolhouse-honor-foundation-990-custody.mjs'
-          )
+          declare -A EXPECTED=()
+          EXPECTED['agent/schoolhouse-honor-foundation-990-census-v1']='f60ebdd31a489384a783c562c1d8e185543d58fa'
+          EXPECTED['agent/schoolhouse-honor-foundation-990-index-resolution-v1']='a4fbee683c4b9c28b4c30fbe106b9f9e409aa1dd'
+          EXPECTED['agent/schoolhouse-honor-foundation-990-official-xml-v1']='2e1457613b2d30385ab5314c1babd6568581468a'
+          EXPECTED['agent/schoolhouse-honor-foundation-990-official-xml-replay-v1']='34aa675b124d18ce5eda98fa1465576ace748681'
+          EXPECTED["$PRODUCT_BRANCH"]="$PRODUCT_SHA"
+          EXPECTED["$CARRIER_BRANCH"]='${{ github.event.pull_request.head.sha }}'
 
-          test "$GITHUB_HEAD_REF" = "$CARRIER_BRANCH"
+          test "${GITHUB_HEAD_REF}" = "$CARRIER_BRANCH"
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
           git fetch --prune --no-tags origin main
-          git fetch --no-tags origin "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
-          git fetch --no-tags origin "$QUALIFIED_PRODUCT"
+          git merge-base --is-ancestor "$MERGE_SHA" origin/main
 
-          test "$(git rev-parse origin/main)" = "$EXPECTED_PARENT"
-          test "$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)" = "$CURRENT_PRODUCT"
-          test "$(git rev-parse "$QUALIFIED_PRODUCT^")" = "$EXPECTED_PARENT"
-          test "$(git rev-parse "$CURRENT_PRODUCT^")" = "$EXPECTED_PARENT"
-          test "$(git rev-parse "$QUALIFIED_PRODUCT^{tree}")" = "$EXPECTED_TREE"
-          test "$(git rev-parse "$CURRENT_PRODUCT^{tree}")" = "$EXPECTED_TREE"
-          git diff --exit-code "$QUALIFIED_PRODUCT" "$CURRENT_PRODUCT" --
-
-          mapfile -t ACTUAL_PATHS < <(git diff --name-only "$EXPECTED_PARENT".."$CURRENT_PRODUCT" | sort)
-          test "${#ACTUAL_PATHS[@]}" -eq "${#EXPECTED_PATHS[@]}"
-          for i in "${!EXPECTED_PATHS[@]}"; do
-            test "${ACTUAL_PATHS[$i]}" = "${EXPECTED_PATHS[$i]}"
+          test "$(gh api "/repos/${GITHUB_REPOSITORY}/pulls/1214" --jq '.merged')" = true
+          test "$(gh api "/repos/${GITHUB_REPOSITORY}/pulls/1214" --jq '.merge_commit_sha')" = "$MERGE_SHA"
+          for number in 1200 1201 1204 1207; do
+            test "$(gh api "/repos/${GITHUB_REPOSITORY}/pulls/$number" --jq '.state')" = closed
+            test "$(gh api "/repos/${GITHUB_REPOSITORY}/pulls/$number" --jq '.merged')" = false
           done
-          test -z "$(printf '%s\n' "${ACTUAL_PATHS[@]}" | grep -E '(^|/)(\.github/workflows|\.schoolhouse-honor-foundation-990-materializer)(/|$)' || true)"
 
-          rm -rf "$WORKTREE" "$RECEIPT_ZIP" "$RECEIPT_DIR" "$PROOF_DIR"
-          gh api -H 'Accept: application/vnd.github+json' \
-            "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${RECEIPT_ARTIFACT_ID}/zip" > "$RECEIPT_ZIP"
-          test "$(sha256sum "$RECEIPT_ZIP" | awk '{print $1}')" = "$RECEIPT_ZIP_SHA256"
-          mkdir -p "$RECEIPT_DIR"
-          unzip -q "$RECEIPT_ZIP" -d "$RECEIPT_DIR"
+          for branch in "${!EXPECTED[@]}"; do
+            observed=$(git ls-remote --heads origin "refs/heads/$branch" | awk '{print $1}')
+            test "$observed" = "${EXPECTED[$branch]}"
+          done
 
-          jq -e \
-            --arg parent "$EXPECTED_PARENT" \
-            --arg qualified "$QUALIFIED_PRODUCT" \
-            --arg tree "$EXPECTED_TREE" \
-            '.canonical_parent_commit == $parent and
-             .product_commit == $qualified and
-             .product_tree == $tree and
-             .permanent_changed_paths == 14 and
-             .source_inventory_rows_before == 431 and
-             .source_inventory_rows_after == 447 and
-             .coverage_denominator_rows_before == 27 and
-             .coverage_denominator_rows_after == 28 and
-             .official_receipts_after == 222 and
-             .primary_public_receipts_after == 54 and
-             .state_charity_receipts_after == 6 and
-             .propublica_rows_reclassified == 3 and
-             .declared_filings == 3 and
-             .successful_xml_screens == 2 and
-             .source_unavailable_after_replay == 1 and
-             .fixed_term_hits == 0 and
-             .identities_admitted == 0 and
-             .relationships_admitted == 0 and
-             .private_support_rows == 0 and
-             .outside_human_dependency == false and
-             .publication_effect == "none" and
-             .adoption_effect == "none" and
-             .graph_effect == "none"' \
-            "$RECEIPT_DIR/product.json"
+          for branch in \
+            'agent/schoolhouse-honor-foundation-990-census-v1' \
+            'agent/schoolhouse-honor-foundation-990-index-resolution-v1' \
+            'agent/schoolhouse-honor-foundation-990-official-xml-v1' \
+            'agent/schoolhouse-honor-foundation-990-official-xml-replay-v1' \
+            "$PRODUCT_BRANCH"
+          do
+            gh api --method DELETE "/repos/${GITHUB_REPOSITORY}/git/refs/heads/$branch"
+            ! git ls-remote --exit-code --heads origin "refs/heads/$branch" >/dev/null 2>&1
+          done
 
-          diff -u <(printf '%s\n' "${EXPECTED_PATHS[@]}") "$RECEIPT_DIR/changed-paths.txt"
+          gh api --method PATCH "/repos/${GITHUB_REPOSITORY}/pulls/1210" -f state=closed >/dev/null
+          gh api --method DELETE "/repos/${GITHUB_REPOSITORY}/git/refs/heads/$CARRIER_BRANCH"
+          ! git ls-remote --exit-code --heads origin "refs/heads/$CARRIER_BRANCH" >/dev/null 2>&1
 
-          git worktree add --detach "$WORKTREE" "$CURRENT_PRODUCT"
-          trap 'git worktree remove --force "$WORKTREE" >/dev/null 2>&1 || true' EXIT
-          cd "$WORKTREE"
-          sha256sum -c "$RECEIPT_DIR/qualified-sha256sums.txt"
-          node --check tools/validate-schoolhouse-honor-foundation-990-custody.mjs
-          node --check tools/validate-bvvc-defense-capital.mjs
-          node tools/validate-schoolhouse-honor-foundation-990-custody.mjs
-          node tools/validate-bvvc-defense-capital.mjs
-          node test/person-routers.test.js
-          node tools/validate-no-magic-human-gate.mjs
-          npm run release:check
-          sha256sum -c "$RECEIPT_DIR/qualified-sha256sums.txt"
-          git diff --check "$EXPECTED_PARENT"..HEAD
-          test -z "$(git status --porcelain=v1 --untracked-files=all)"
-
-          mkdir -p "$PROOF_DIR"
-          cp "$RECEIPT_DIR/product.json" "$PROOF_DIR/materialization-product.json"
-          cp "$RECEIPT_DIR/rebase.json" "$PROOF_DIR/rebase.json"
-          cp "$RECEIPT_DIR/qualified-sha256sums.txt" "$PROOF_DIR/qualified-sha256sums.txt"
-          cp "$RECEIPT_DIR/changed-paths.txt" "$PROOF_DIR/changed-paths.txt"
-          cat > "$PROOF_DIR/tree-equivalence.json" <<JSON
-          {
-            "schema_version": "schoolhouse-honor-foundation-990-tree-equivalence@1",
-            "canonical_parent_commit": "$EXPECTED_PARENT",
-            "qualified_product_commit": "$QUALIFIED_PRODUCT",
-            "current_product_commit": "$CURRENT_PRODUCT",
-            "shared_product_tree": "$EXPECTED_TREE",
-            "permanent_changed_paths": 14,
-            "qualified_file_sha256s_rechecked": true,
-            "dedicated_validator": "pass",
-            "complete_bvvc_validator": "pass",
-            "person_router_tests": "pass",
-            "no_magic_human_gate": "pass",
-            "complete_release_gate": "pass",
-            "outside_human_dependency": false,
-            "publication_effect": "none",
-            "adoption_effect": "none",
-            "graph_effect": "none"
-          }
-          JSON
-          find "$PROOF_DIR" -type f -print0 | sort -z | xargs -0 sha256sum > "$PROOF_DIR/SHA256SUMS"
-
-      - name: Upload exact tree-equivalence proof
-        uses: actions/upload-artifact@v4
-        with:
-          name: schoolhouse-honor-foundation-990-tree-equivalence-proof
-          path: /tmp/schoolhouse-honor-foundation-990-tree-equivalence-proof
-          if-no-files-found: error
-          retention-days: 90
+          printf '%s\n' \
+            'merged_authority_verified=true' \
+            'temporary_pull_requests_closed=5' \
+            'temporary_refs_deleted=6' \
+            'outside_human_dependency=false'
