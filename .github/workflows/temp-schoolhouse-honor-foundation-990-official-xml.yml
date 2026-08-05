@@ -115,6 +115,8 @@ jobs:
           cat "$OUT/structural-signals.jsonl"
           cat "$OUT/term-hits.jsonl"
 
+          count_rows() { awk 'NF { count++ } END { print count + 0 }' "$1"; }
+
           jq -e '
             .declared_filings == 3 and
             .official_batch_requests == 3 and
@@ -144,16 +146,28 @@ jobs:
             .graph_effect == "none"
           ' "$OUT/summary.json"
 
-          test "$(grep -cve '^$' "$OUT/batch-attempts.jsonl")" -eq 3
-          test "$(grep -cve '^$' "$OUT/filing-receipts.jsonl")" -eq 3
-          test "$(grep -cve '^$' "$OUT/structural-signals.jsonl")" -eq "$(jq -r '.structural_signal_rows' "$OUT/summary.json")"
-          test "$(grep -cve '^$' "$OUT/term-hits.jsonl")" -eq "$(jq -r '.term_hit_rows' "$OUT/summary.json")"
+          test "$(count_rows "$OUT/batch-attempts.jsonl")" -eq 3
+          test "$(count_rows "$OUT/filing-receipts.jsonl")" -eq 3
+          test "$(count_rows "$OUT/structural-signals.jsonl")" -eq "$(jq -r '.structural_signal_rows' "$OUT/summary.json")"
+          test "$(count_rows "$OUT/term-hits.jsonl")" -eq "$(jq -r '.term_hit_rows' "$OUT/summary.json")"
 
           jq -s -e '
             length == 3 and
             all(
               .request_method == "GET" and
-              .expected_ein? // "462952873" | true
+              .raw_zip_retained == false and
+              .raw_xml_retained == false and
+              .street_address_rows_retained == 0 and
+              .contact_detail_rows_retained == 0 and
+              .private_support_rows == 0 and
+              .identity_admitted == false and
+              .relationship_admitted == false and
+              .negative_existence_claim_created == false and
+              .outside_human_dependency == false and
+              .publication_effect == "none" and
+              .adoption_effect == "none" and
+              .graph_effect == "none" and
+              .promotes_to == "candidate_only"
             )
           ' "$OUT/batch-attempts.jsonl"
 
