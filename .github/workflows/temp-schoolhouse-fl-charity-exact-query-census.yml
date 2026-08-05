@@ -1,0 +1,116 @@
+name: TEMP acquire School.House Florida charity exact-query census
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: schoolhouse-fl-charity-exact-query-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Reconstruct and execute bounded official registry query lane
+        env:
+          OUTPUT_DIR: /tmp/schoolhouse-fl-charity-exact-query-census
+        run: |
+          set -Eeuo pipefail
+          EXECUTE='.schoolhouse-fl-charity-exact-query/EXECUTE'
+          BUNDLE='.schoolhouse-fl-charity-exact-query/acquire.py.gz.b64'
+          GZIP='/tmp/acquire-schoolhouse-fl-charity.py.gz'
+          SCRIPT='/tmp/acquire-schoolhouse-fl-charity.py'
+
+          test -s "$EXECUTE"
+          test -s "$BUNDLE"
+          grep -Fx 'acquire=schoolhouse-fl-charity-exact-query-census-v1' "$EXECUTE"
+          grep -Fx 'canonical_parent=d87172a41e88c1709b37a114b50df733545126c8' "$EXECUTE"
+          grep -Fx 'query_rows=3' "$EXECUTE"
+          grep -Fx 'query_01=School.House' "$EXECUTE"
+          grep -Fx 'query_02=School House' "$EXECUTE"
+          grep -Fx 'query_03=Schoolhouse' "$EXECUTE"
+          grep -Fx 'maximum_attempts_per_query=1' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'ce0168a9396d8a18e3b4bd4b5d904e7a82c529c814f22b6e2e96a5c33cf1f5cc'
+          base64 -d "$BUNDLE" > "$GZIP"
+          test "$(sha256sum "$GZIP" | awk '{print $1}')" = '3cff63b048e5549a3b1a08d033f36bcfb0b6c1c1aaf30004b0f18c788ca92d6d'
+          gzip -dc "$GZIP" > "$SCRIPT"
+          test "$(sha256sum "$SCRIPT" | awk '{print $1}')" = 'a54fa614a0ef4678d1df2fce4dbf25a1cc2bf9a84cd018c19f7aaf1081c990aa'
+          python -m py_compile "$SCRIPT"
+
+          rm -rf "$OUTPUT_DIR"
+          python "$SCRIPT" | tee /tmp/schoolhouse-fl-charity-exact-query-output.json
+          test -s "$OUTPUT_DIR/summary.json"
+          test -s "$OUTPUT_DIR/policy.json"
+          test -s "$OUTPUT_DIR/route-results.jsonl"
+          test -s "$OUTPUT_DIR/query-results.jsonl"
+          test -s "$OUTPUT_DIR/candidate-rows.jsonl"
+          test -s "$OUTPUT_DIR/candidate-links.jsonl"
+          test -s "$OUTPUT_DIR/artifact-manifest.json"
+          test -s "$OUTPUT_DIR/SHA256SUMS"
+          (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
+
+          python - "$OUTPUT_DIR" <<'PYVERIFY'
+          from pathlib import Path
+          import json
+          import sys
+
+          root = Path(sys.argv[1])
+          summary = json.loads((root / 'summary.json').read_text())
+          policy = json.loads((root / 'policy.json').read_text())
+          query_results = [json.loads(line) for line in (root / 'query-results.jsonl').read_text().splitlines() if line.strip()]
+          candidates = [json.loads(line) for line in (root / 'candidate-rows.jsonl').read_text().splitlines() if line.strip()]
+          links = [json.loads(line) for line in (root / 'candidate-links.jsonl').read_text().splitlines() if line.strip()]
+
+          assert summary['declared_query_rows'] == 3
+          assert summary['query_submissions'] <= 3
+          assert len(query_results) <= 3
+          assert summary['candidate_rows'] == len(candidates)
+          assert summary['candidate_links'] == len(links)
+          assert summary['identity_admitted_rows'] == 0
+          assert summary['negative_existence_claims_created'] == 0
+          assert summary['raw_source_retained'] is False
+          assert summary['hidden_form_values_retained'] is False
+          assert summary['street_address_rows_retained'] == 0
+          assert summary['contact_detail_rows_retained'] == 0
+          assert summary['private_support_rows'] == 0
+          assert summary['outside_human_dependency'] is False
+          assert summary['publication_effect'] == 'none'
+          assert summary['adoption_effect'] == 'none'
+          assert summary['graph_effect'] == 'none'
+          assert policy['fixed_query_matrix'] == [
+              {'query_id': 'schoolhouse-brand-punctuation', 'value': 'School.House'},
+              {'query_id': 'schoolhouse-brand-space', 'value': 'School House'},
+              {'query_id': 'schoolhouse-brand-compact', 'value': 'Schoolhouse'},
+          ]
+          assert policy['maximum_attempts_per_query'] == 1
+          assert policy['inter_query_delay_seconds'] == 3
+          assert policy['raw_hidden_values_retained'] is False
+          assert policy['outside_human_dependency'] is False
+          assert all(row['identity_admitted'] is False for row in candidates)
+          assert all(row['street_address_retained'] is False for row in candidates)
+          assert all(row['contact_detail_retained'] is False for row in candidates)
+          assert all(row['followed'] is False for row in links)
+          PYVERIFY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-fl-charity-exact-query-census
+          path: /tmp/schoolhouse-fl-charity-exact-query-census
+          if-no-files-found: error
+          retention-days: 90
