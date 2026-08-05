@@ -56,6 +56,7 @@ jobs:
           SOURCE_CHUNKS="$GITHUB_WORKSPACE/.schoolhouse-first-party-legal-surface-materializer/chunks"
           SOURCE_BUNDLE=/tmp/build-schoolhouse-first-party-legal-surface-custody.mjs.gz.b64
           SOURCE_BUILDER=/tmp/build-schoolhouse-first-party-legal-surface-custody.mjs
+          PATCHED_BUILDER=/tmp/build-schoolhouse-first-party-legal-surface-custody.patched.mjs
 
           test "$(find "$SOURCE_CHUNKS" -maxdepth 1 -type f -name '*.b64' | wc -l | tr -d ' ')" = '13'
           for chunk in 00 01 02 03 04 05 06 07 08 09 10 11 12; do
@@ -81,24 +82,44 @@ jobs:
           test "$BUNDLE_SHA" = '38d70b08d260f218dd2c922641373d6c7be68c8aef72916d4f5e617bbbd7f60a'
           base64 -d "$SOURCE_BUNDLE" | gzip -dc > "$SOURCE_BUILDER"
           BUILDER_SHA=$(sha256sum "$SOURCE_BUILDER" | awk '{print $1}')
-          echo "MATERIALIZER_SOURCE_SHA=$BUILDER_SHA"
+          echo "MATERIALIZER_HISTORICAL_SOURCE_SHA=$BUILDER_SHA"
           test "$BUILDER_SHA" = '213bd65a768b30ccbadcd7c20fcd857bd5522da2aae06f7833e89c1181ccd549'
           node --check "$SOURCE_BUILDER"
 
-          echo 'MATERIALIZER_ASSERT_CONTEXT_BEGIN'
-          nl -ba "$SOURCE_BUILDER" | sed -n '455,495p'
-          echo 'MATERIALIZER_ASSERT_CONTEXT_END'
-          echo 'LIVE_VALIDATOR_SOURCE_COUNT_MARKERS_BEGIN'
-          grep -nE 'source_inventory_rows|sourceInventory\.length|coverage_denominator_rows' \
-            "$GITHUB_WORKSPACE/tools/validate-bvvc-defense-capital.mjs" || true
-          echo 'LIVE_VALIDATOR_SOURCE_COUNT_MARKERS_END'
+          python - "$SOURCE_BUILDER" "$PATCHED_BUILDER" <<'PY'
+          from pathlib import Path
+          import sys
+
+          source_path = Path(sys.argv[1])
+          patched_path = Path(sys.argv[2])
+          source = source_path.read_text()
+
+          source_old = "assert(validator.split(sourceCountPattern).length - 1 === 2, 'validator predecessor source count occurrence drift');"
+          source_new = "assert(validator.split(sourceCountPattern).length - 1 === 3, 'validator predecessor source count occurrence drift');"
+          coverage_old = "assert(validator.split(coverageCountPattern).length - 1 === 2, 'validator predecessor coverage count occurrence drift');"
+          coverage_new = "assert(validator.split(coverageCountPattern).length - 1 === 3, 'validator predecessor coverage count occurrence drift');"
+
+          assert source.count(source_old) == 1, 'historical source-count assertion occurrence drift'
+          assert source.count(coverage_old) == 1, 'historical coverage-count assertion occurrence drift'
+          assert source.count(source_new) == 0, 'successor source-count assertion already present'
+          assert source.count(coverage_new) == 0, 'successor coverage-count assertion already present'
+
+          patched = source.replace(source_old, source_new).replace(coverage_old, coverage_new)
+          assert patched.count(source_old) == 0 and patched.count(source_new) == 1
+          assert patched.count(coverage_old) == 0 and patched.count(coverage_new) == 1
+          patched_path.write_text(patched)
+          PY
+
+          PATCHED_SHA=$(sha256sum "$PATCHED_BUILDER" | awk '{print $1}')
+          echo "MATERIALIZER_PATCHED_SOURCE_SHA=$PATCHED_SHA"
+          node --check "$PATCHED_BUILDER"
 
           rm -rf /tmp/schoolhouse-first-party-legal-surface-product
           git fetch --no-tags origin "$MAIN_SHA"
           git worktree add --detach /tmp/schoolhouse-first-party-legal-surface-product "$MAIN_SHA"
           cd /tmp/schoolhouse-first-party-legal-surface-product
           mkdir -p tools
-          cp "$SOURCE_BUILDER" tools/build-schoolhouse-first-party-legal-surface-custody.mjs
+          cp "$PATCHED_BUILDER" tools/build-schoolhouse-first-party-legal-surface-custody.mjs
 
           node tools/build-schoolhouse-first-party-legal-surface-custody.mjs \
             /tmp/schoolhouse-first-party-legal-surface-census
@@ -139,9 +160,11 @@ jobs:
           mkdir -p /tmp/schoolhouse-first-party-legal-surface-materialization-receipt
           jq -n \
             --arg base_main "$MAIN_SHA" \
+            --arg historical_builder_sha "$BUILDER_SHA" \
+            --arg patched_builder_sha "$PATCHED_SHA" \
             --arg product_sha "$PRODUCT_SHA" \
             --arg target "$TARGET" \
-            '{schema_version:"schoolhouse-first-party-legal-surface-materialization-receipt@1",base_main:$base_main,product_sha:$product_sha,target_branch:$target,changed_paths:14,source_inventory_rows:336,coverage_denominator_rows:23,root_routes:5,followed_routes:41,terminal_routes:46,accessible_html_routes:39,accessible_xml_routes:6,accessible_text_routes:1,eligible_query_free_same_host_unique_links:43,unfollowed_eligible_links:0,first_party_tax_status_claim_rows:39,footer_brand_string_rows:38,exact_legal_name_candidate_rows:0,structured_data_rows:0,form_rows:8,search_submissions:0,source_rows_acquired:0,admitted_identities:0,private_support_rows:0,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+            '{schema_version:"schoolhouse-first-party-legal-surface-materialization-receipt@1",base_main:$base_main,historical_builder_sha256:$historical_builder_sha,patched_builder_sha256:$patched_builder_sha,product_sha:$product_sha,target_branch:$target,changed_paths:14,source_inventory_rows:336,coverage_denominator_rows:23,root_routes:5,followed_routes:41,terminal_routes:46,accessible_html_routes:39,accessible_xml_routes:6,accessible_text_routes:1,eligible_query_free_same_host_unique_links:43,unfollowed_eligible_links:0,first_party_tax_status_claim_rows:39,footer_brand_string_rows:38,exact_legal_name_candidate_rows:0,structured_data_rows:0,form_rows:8,search_submissions:0,source_rows_acquired:0,admitted_identities:0,private_support_rows:0,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
             > /tmp/schoolhouse-first-party-legal-surface-materialization-receipt/status.json
           sha256sum /tmp/schoolhouse-first-party-legal-surface-materialization-receipt/status.json \
             > /tmp/schoolhouse-first-party-legal-surface-materialization-receipt/SHA256SUMS
