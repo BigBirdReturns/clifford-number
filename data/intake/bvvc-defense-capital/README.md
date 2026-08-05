@@ -7,7 +7,7 @@ It sits inside the existing `us-defense-natsec100` selection lane. Primary custo
 ## Current frozen surfaces
 
 ```text
-public-source receipts                        408
+public-source receipts                        418
 current BVVC leadership labels                 27 / 27
 historical-only leadership labels               4
 current Portfolio Universe labels              30 / 30
@@ -109,6 +109,18 @@ first-party Archive unique digests                         64
 first-party Archive bodies/replay dereferences           0 / 0
 first-party Archive searches or submissions                 0
 first-party Archive public identities admitted              0
+launch-era archived snapshots                         7 / 7
+launch-era archived baseline/replay attempts          7 / 3
+launch-era archived total attempts                        10
+launch-era archived successful HTML routes                 6
+launch-era archived residual provider-error routes         1
+launch-era archived surface/candidate/link rows       6 / 11 / 6
+launch-era archived privacy-minimized form rows             4
+launch-era archived screened visible-text chars        21,641
+launch-era archived structured-data rows                    0
+launch-era archived tax-status self-description rows        2
+launch-era archived exact legal-name/EIN candidates       0 / 0
+launch-era archived public identities admitted               0
 institutional self-claim rows                  10
 explicit rejected joins                        16
 bounded continuation tasks                      7
@@ -121,7 +133,7 @@ The current leadership and Portfolio Universe pages are complete as rendered on 
 ## Files
 
 - `manifest.json` records selection, custody, exact counts, source classes, file hashes, interpretation rules, and the release boundary.
-- `source-inventory-01.jsonl` through `source-inventory-14.jsonl` preserve every public locator and its evidence class in manifest-bound order.
+- `source-inventory-01.jsonl` through `source-inventory-15.jsonl` preserve every public locator and its evidence class in manifest-bound order.
 - `leadership-current-01.jsonl` and `leadership-current-02.jsonl` freeze all twenty-seven current leadership labels and the role language supported by each official profile.
 - `leadership-history.jsonl` preserves four names visible in a prior search-indexed leadership snapshot without inventing departure dates.
 - `portfolio-current-01.jsonl` through `portfolio-current-03.jsonl` freeze all thirty current Portfolio Universe labels, descriptions, profile state, named founder or CEO where the acquired BVVC detail page supplies one, and every unresolved legal and control field.
@@ -142,6 +154,7 @@ The current leadership and Portfolio Universe pages are complete as rendered on 
 - `schoolhouse-charity-nc-complete-pdf-custody.json`, the fixed input, complete-hash, content-classification, policy, and field-summary files, and `source-inventory-12.jsonl` preserve exact full-file SHA-256 custody for all fifteen accessible North Carolina PDFs, 377 privacy-minimized page mechanics, 332,175 screened text characters with no text retained, 586 fixed field-term hits, zero School.House/BVVC subject-term hits, zero searches, and zero identity admissions.
 - `schoolhouse-first-party-legal-surface-custody.json`, the combined route, link, surface-evidence, adjudicated-candidate, and external-link files, and `source-inventory-13.jsonl` preserve terminal custody for five fixed roots and all forty-three discovered query-free same-host routes. The package distinguishes thirty-nine repeated first-party tax-status self-descriptions, thirty-eight footer brand strings, one context-pattern collision, zero exact legal-name candidates, zero organization JSON-LD rows, eight unsubmitted form-mechanics rows, and zero identity admissions.
 - `schoolhouse-first-party-archive-locator-custody.json`, the attempt, effective-route, and locator ledgers, and `source-inventory-14.jsonl` preserve 72 exact-URL Archive metadata attempts across the complete forty-six-route first-party denominator. The bounded protocol leaves 21 routes with public replay locators, 3 bounded zero-row routes, and 22 residual provider-error routes; it dereferences zero locators, acquires zero archived page bodies, and admits zero identities.
+- `schoolhouse-launch-era-archive-content-custody.json`, the ten-attempt, seven-route, privacy-minimized surface, candidate, and link ledgers, and `source-inventory-15.jsonl` preserve six successful archived HTML surfaces and one repeated provider error. The four prelaunch successes are one parked-domain and three domain-marketplace surfaces; two 2024 successes are early first-party School.House surfaces. Two tax-status phrases remain historical self-description rather than registry identity, and zero legal names, EINs, exemption records, or fiscal sponsors are admitted.
 - `schoolhouse-fl-fictitious-source-receipt.json`, `schoolhouse-fl-fictitious-member-inventory.jsonl`, `schoolhouse-fl-fictitious-candidates.jsonl`, and `schoolhouse-fl-fictitious-adjudication.json` preserve the exact 761,040-record Florida fictitious-name census, forty repaired embedded-linebreak records, twenty-nine sanitized phrase candidates, and the zero-admission decision.
 - `schoolhouse-fl-corporate-owner-resolution-source-receipt.json`, `schoolhouse-fl-corporate-owner-resolution-remote-zip-index.json`, `schoolhouse-fl-corporate-owner-resolution-member-receipts.jsonl`, `schoolhouse-fl-corporate-owner-resolution-records.jsonl`, `schoolhouse-fl-corporate-owner-resolution-matrix.jsonl`, and `schoolhouse-fl-corporate-owner-resolution-adjudication.json` preserve the bounded seven-partition corporate scan, all fifteen exact owner-entity resolutions, and the continued zero-admission decision.
 - The seven `schoolhouse-fl-magnolia-corporate-resolution-*` files preserve the complete two-partition cross-registry pass for IRS candidate EIN 39-2669585, both exact Florida corporate records, the shared-EIN conflict, and the refusal to identify either 2025 Vero Beach entity as the public School.House platform.
@@ -171,6 +184,8 @@ The IRS legal-identity pass scanned 4,428,541 public rows across six complete ro
 The first-party successor then placed the home page, faculty surface, robots file, WordPress sitemap family, fixed BVVC connect page, and every discovered query-free same-host route into terminal custody. All forty-three eligible same-host URLs were acquired within the route and depth bounds. Thirty-nine route-specific phrases repeat a 501(c)(3), tax-exempt, nonprofit, or public-charity self-description, while thirty-eight footers repeat © 2026 School House. No exact legal-name candidate or organization JSON-LD row was observed. The tax-status phrases remain self-description, the copyright string remains a brand string, and neither supplies a registry-grade legal name, EIN, exemption, board, officer, governance, funding, sponsor, or control record. Eight public form surfaces were described mechanically and never submitted.
 
 The Archive-locator successor then issued one exact-URL public CDX metadata query for each of the forty-six frozen first-party routes and one serialized replay only for the twenty-six baseline transport failures. The terminal protocol preserves 66 public locator rows over 21 routes, 3 bounded zero-row routes, and 22 residual provider-error routes after replay. No replay locator was dereferenced, no archived page body or visible text was acquired, and no timestamp, digest, MIME type, status, archived length, or replay locator was promoted into legal-identity or absence evidence.
+
+The launch-era archived-content successor then selected seven exact change-point snapshots from the terminal Archive locator plane and replayed only the three initial transport failures once. The effective result preserves six privacy-minimized archived HTML surfaces and one repeated provider error across ten attempts. November 2022 was a parked-domain surface; June, September, and December 2023 were Dan.com marketplace pages. The recovered March 5, 2024 connect surface contains nonprofit and public-charity self-description, while the March 24 home surface supplies no identity candidate. No archived surface supplies a registry-grade legal name, EIN, exemption record, fiscal sponsor, formation, officer, board, governance, funding, control, or related-party record.
 
 The checked-in frontier now directs the next bounded pass toward the complete BVVC vehicle denominator, transaction-specific evidence for all thirty current portfolio labels, exact legal entities, government award and acceptance surfaces, dated leadership history, School.House legal and governance records, complete annual cohorts and outcomes, and receipt-byte archival. Every task preserves nulls, failed routes, unresolved identities, and forbidden inferences.
 
