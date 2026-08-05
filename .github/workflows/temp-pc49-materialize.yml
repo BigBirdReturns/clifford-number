@@ -31,45 +31,70 @@ jobs:
 
           python3 - <<'PY'
           from pathlib import Path
+          from itertools import combinations_with_replacement
           import base64
           import hashlib
-          import string
 
           expected = '914e5e46f29fd07612e8c9089bec59a4d37bc34d9d1f4159638a2b417cc94774'
-          paths = [Path(f'.pc49-carrier-v3/product.part0{i}') for i in range(4)]
-          allowed = set((string.ascii_letters + string.digits + '+/=').encode())
-          whitespace = set(b' \t\r\n')
-          chunks = []
-          for path in paths:
-              raw = path.read_bytes()
-              chunks.append(raw)
-              invalid = [(i, byte) for i, byte in enumerate(raw) if byte not in allowed and byte not in whitespace]
-              print(f'part={path} bytes={len(raw)} lines={raw.count(bytes([10]))} invalid_count={len(invalid)}')
-              for offset, byte in invalid[:40]:
-                  print(f'invalid part={path} offset={offset} byte=0x{byte:02x} repr={bytes([byte])!r}')
-          merged = b''.join(chunks)
-          variants = {
-              'raw': merged,
-              'without_whitespace': bytes(byte for byte in merged if byte not in whitespace),
-              'alphabet_only': bytes(byte for byte in merged if byte in allowed),
-          }
+          alphabet = b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+          source_paths = [Path(f'.pc49-carrier-v3/product.part0{i}') for i in range(4)]
+          parts = [b''.join(path.read_bytes().split()) for path in source_paths]
+
+          for index, part in enumerate(parts):
+              padding = [offset for offset, byte in enumerate(part) if byte == ord('=')]
+              print(
+                  f'part={index} normalized_bytes={len(part)} mod4={len(part) % 4} '
+                  f'padding_count={len(padding)} padding_positions={padding} '
+                  f'head={part[:12]!r} tail={part[-12:]!r}'
+              )
+
+          total = sum(len(part) for part in parts)
+          print(f'normalized_total={total} mod4={total % 4}')
+          if total % 4 != 2:
+              raise SystemExit(f'unexpected normalized carrier length modulo: {total % 4}')
+
           matches = []
-          for name, payload in variants.items():
-              print(f'variant={name} bytes={len(payload)} mod4={len(payload) % 4} text_sha256={hashlib.sha256(payload).hexdigest()}')
-              try:
-                  decoded = base64.b64decode(payload, validate=(name != 'raw'))
-              except Exception as exc:
-                  print(f'variant={name} decode_error={type(exc).__name__}:{exc}')
-                  continue
-              digest = hashlib.sha256(decoded).hexdigest()
-              print(f'variant={name} decoded_bytes={len(decoded)} decoded_sha256={digest}')
-              if digest == expected:
-                  matches.append((name, decoded))
+          checked = 0
+          for first_seam, second_seam in combinations_with_replacement(range(3), 2):
+              for first_byte in alphabet:
+                  for second_byte in alphabet:
+                      inserts = [bytearray(), bytearray(), bytearray()]
+                      inserts[first_seam].append(first_byte)
+                      inserts[second_seam].append(second_byte)
+                      candidate = b''.join(
+                          parts[index] + (bytes(inserts[index]) if index < 3 else b'')
+                          for index in range(4)
+                      )
+                      checked += 1
+                      try:
+                          decoded = base64.b64decode(candidate, validate=True)
+                      except Exception:
+                          continue
+                      digest = hashlib.sha256(decoded).hexdigest()
+                      if digest == expected:
+                          matches.append(
+                              (
+                                  first_seam,
+                                  second_seam,
+                                  bytes([first_byte, second_byte]),
+                                  candidate,
+                                  decoded,
+                              )
+                          )
+
+          print(f'candidate_count={checked} exact_match_count={len(matches)}')
           if len(matches) != 1:
               raise SystemExit(f'exact archive reconstruction count={len(matches)}')
-          name, decoded = matches[0]
+
+          first_seam, second_seam, restored, candidate, decoded = matches[0]
+          print(
+              f'selected_first_seam={first_seam} selected_second_seam={second_seam} '
+              f'restored_base64_bytes={restored!r} '
+              f'candidate_sha256={hashlib.sha256(candidate).hexdigest()} '
+              f'decoded_bytes={len(decoded)} decoded_sha256={hashlib.sha256(decoded).hexdigest()}'
+          )
           Path('/tmp/pc49-product.tar.gz').write_bytes(decoded)
-          print(f'selected_product_variant={name}')
+          Path('/tmp/pc49-product.tar.gz.b64').write_bytes(base64.encodebytes(decoded))
           PY
           test "$(sha256sum /tmp/pc49-product.tar.gz | awk '{print $1}')" = "914e5e46f29fd07612e8c9089bec59a4d37bc34d9d1f4159638a2b417cc94774"
 
@@ -88,7 +113,7 @@ jobs:
           PY
           test "$(sha256sum /tmp/pc49-run.sh | awk '{print $1}')" = "95fa0f259363c31c25ee35564e12ca93de85163402b3afdbced70b4b6fa7bd3a"
           chmod +x /tmp/pc49-run.sh
-          sha256sum /tmp/pc49-product.tar.gz /tmp/pc49-run.sh
+          sha256sum /tmp/pc49-product.tar.gz /tmp/pc49-product.tar.gz.b64 /tmp/pc49-run.sh
       - name: Checkout exact current-main parent
         uses: actions/checkout@v4
         with:
