@@ -26,6 +26,10 @@ jobs:
       CARRIER_DIR: .ssc-rd04-wave03-intake-materializer/carrier
       CARRIER_B64_SHA256: 24f27445a185212661b3721a4cf6f14fb0df84feb18eda6a3f24bf9047722eb4
       CARRIER_TAR_SHA256: e921f60acebbe00c8f656eb4b63a5ebd42a0e9dad8d24f3ef31423780561c61d
+      OVERLAY_DIR: .ssc-rd04-wave03-intake-materializer/overlay
+      OVERLAY_B64_SHA256: b7739bf9de96a3a8e77f4ae1db02b1af1dc71178b5a263e0163ccb0991a9dce6
+      OVERLAY_TAR_SHA256: fb7356f1c8ce4ca7aaa9666b0026121cadbf370192c4cb1032c18f99e39fe203
+      OVERLAY_PATHS_SHA256: 80352c0ecef2042bbe8f7841d300d2797534b3420e07cd2eb602b396b32b8de5
       ORDINARY_PATHS_SHA256: 5d130a3f173a9c1968649fa758f05c242acf87178c1df525e528b5285caef4d9
     steps:
       - uses: actions/checkout@v4
@@ -52,7 +56,8 @@ jobs:
           FULL=/tmp/ssc-rd04-wave03-intake-full
           TARGET=/tmp/ssc-rd04-wave03-intake-target
           ARCHIVE=/tmp/ssc-rd04-wave03-intake-ordinary.tar.xz
-          rm -rf "$RECEIPT" "$PACKAGE" "$FULL" "$TARGET" "$ARCHIVE"
+          OVERLAY=/tmp/ssc-rd04-wave03-intake-overlay.tar.xz
+          rm -rf "$RECEIPT" "$PACKAGE" "$FULL" "$TARGET" "$ARCHIVE" "$OVERLAY"
           mkdir -p "$RECEIPT" "$PACKAGE"
 
           cat > "$RECEIPT/ordinary-paths.txt" <<'EOF'
@@ -87,11 +92,32 @@ jobs:
           test "$(find "$PACKAGE" -type f | wc -l | tr -d ' ')" = 10
           test "$(find "$PACKAGE" -type l | wc -l | tr -d ' ')" = 0
 
+          cat > "$RECEIPT/overlay-paths.txt" <<'EOF'
+          data/intake/status-sovereignty-rd-wave03-rd04-state-implementation/intake-product-manifest.json
+          tools/validate-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs
+          EOF
+          sed -i 's/^          //' "$RECEIPT/overlay-paths.txt"
+          test "$(sha256sum "$RECEIPT/overlay-paths.txt" | awk '{print $1}')" = "$OVERLAY_PATHS_SHA256"
+          cat "$OVERLAY_DIR"/part-* > "$RECEIPT/overlay.tar.xz.b64"
+          test "$(sha256sum "$RECEIPT/overlay.tar.xz.b64" | awk '{print $1}')" = "$OVERLAY_B64_SHA256"
+          base64 --decode "$RECEIPT/overlay.tar.xz.b64" > "$OVERLAY"
+          test "$(sha256sum "$OVERLAY" | awk '{print $1}')" = "$OVERLAY_TAR_SHA256"
+          tar -tJf "$OVERLAY" > "$RECEIPT/overlay-archive-paths.txt"
+          cmp "$RECEIPT/overlay-paths.txt" "$RECEIPT/overlay-archive-paths.txt"
+          tar -xJf "$OVERLAY" -C "$PACKAGE"
+          test "$(find "$PACKAGE" -type f | wc -l | tr -d ' ')" = 10
+          test "$(find "$PACKAGE" -type l | wc -l | tr -d ' ')" = 0
+
           git fetch --no-tags origin main "$TARGET_BRANCH"
           LIVE_MAIN=$(git rev-parse origin/main)
           LIVE_TARGET=$(git rev-parse "origin/$TARGET_BRANCH")
-          test "$LIVE_MAIN" = "$BASE_MAIN"
+          git merge-base --is-ancestor "$BASE_MAIN" "$LIVE_MAIN"
           test "$LIVE_TARGET" = "$TARGET_LEASE"
+          git diff --name-only "$BASE_MAIN..$LIVE_MAIN" | sort > "$RECEIPT/main-delta-paths.txt"
+          if comm -12 "$RECEIPT/full-paths.txt" "$RECEIPT/main-delta-paths.txt" | grep -q .; then
+            echo 'current-main increment overlaps the permanent RD-04 intake surface' >&2
+            exit 1
+          fi
           git merge-base --is-ancestor 2374980372d98e7f9ca68fe373d25c9bb812c374 "$BASE_MAIN"
           git merge-base --is-ancestor dc47681a9ad43e1c64c86e3d823dbb7c203a18c2 "$BASE_MAIN"
           git merge-base --is-ancestor 7b21d1f2b0606a5550b9c26fadc0cb465ba88b7e "$BASE_MAIN"
@@ -156,13 +182,14 @@ jobs:
           git diff --exit-code
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
 
-          test "$(git rev-parse origin/main)" = "$BASE_MAIN"
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          test "$(git rev-parse origin/main)" = "$LIVE_MAIN"
           test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$TARGET_LEASE"
           git push origin "HEAD:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_LEASE"
 
           printf 'base_main=%s\ntarget_lease=%s\nqualified_commit=%s\nqualified_tree=%s\npublished_commit=%s\npublished_tree=%s\npermanent_paths=11\nordinary_paths=10\nstate_rows=50\nrequired_cells=450\nfixed_routes=204\nadversarial_refusals=504\noutside_human_dependency=false\n' \
             "$BASE_MAIN" "$TARGET_LEASE" "$QUALIFIED_COMMIT" "$QUALIFIED_TREE" "$PUBLISHED_COMMIT" "$PUBLISHED_TREE" > "$RECEIPT/final.txt"
-          sha256sum "$RECEIPT/ordinary.tar.xz.b64" "$ARCHIVE" "$RECEIPT/ordinary-paths.txt" "$RECEIPT/full-paths.txt" > "$RECEIPT/hashes.txt"
+          sha256sum "$RECEIPT/ordinary.tar.xz.b64" "$ARCHIVE" "$RECEIPT/overlay.tar.xz.b64" "$OVERLAY" "$RECEIPT/ordinary-paths.txt" "$RECEIPT/overlay-paths.txt" "$RECEIPT/full-paths.txt" > "$RECEIPT/hashes.txt"
 
       - name: Preserve materialization receipt
         uses: actions/upload-artifact@v4
