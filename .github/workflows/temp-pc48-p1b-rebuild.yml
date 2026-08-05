@@ -1,0 +1,219 @@
+name: TEMP rebuild exact PC-48 recursive-lineage repair
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    if: github.head_ref == 'agent/pc48-source-export'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout exact reviewed product
+        uses: actions/checkout@v4
+        with:
+          ref: 5e46d763dcba74cc442c907f7f96ce8646dfe9db
+          fetch-depth: 0
+          clean: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Patch, qualify, amend, and upload candidate object
+        env:
+          PUBLICATION_PARENT: 15fbe32735c85be44b833040f3b630966287871c
+          REVIEWED_PRODUCT: 5e46d763dcba74cc442c907f7f96ce8646dfe9db
+          PINNED_V45_BRIDGE: 4a5a6fa449f45750e836ae9ca8890b958f72e0a9
+          TARGET_BRANCH: agent/pc48-materializer
+          TARGET_LEASE: 5e46d763dcba74cc442c907f7f96ce8646dfe9db
+          BASE_LIB_SHA256: 5ca4235d7060c71ae26ed4051bd50f2183410014f272728c02794f1184e5b98e
+          BASE_TEST_SHA256: 89c9913aa7eca6e0d508ff1999a08f8ca32bead03ebbe02cb89b561cf31bdeec
+        run: |
+          set -Eeuo pipefail
+          phase=initialize
+          trap 'status=$?; printf "status=%s\nphase=%s\ncommand=%s\n" "$status" "$phase" "$BASH_COMMAND" > /tmp/pc48-p1b-rebuild-diagnostic.txt; exit "$status"' ERR
+          cd "$GITHUB_WORKSPACE"
+          test "$(git rev-parse HEAD)" = "$REVIEWED_PRODUCT"
+          test "$(git rev-parse HEAD^)" = "$PUBLICATION_PARENT"
+          test -z "$(git status --porcelain)"
+          test "$(sha256sum tools/lib/preference-custody-manifest-v46.mjs | awk '{print $1}')" = "$BASE_LIB_SHA256"
+          test "$(sha256sum test/preference-custody-manifest-v46.test.js | awk '{print $1}')" = "$BASE_TEST_SHA256"
+          git fetch --no-tags origin "$PINNED_V45_BRIDGE"
+          git cat-file -e "$PINNED_V45_BRIDGE^{commit}"
+
+          phase=apply_recursive_key_repair
+          python3 - <<'PY'
+          from pathlib import Path
+
+          lib_path = Path('tools/lib/preference-custody-manifest-v46.mjs')
+          test_path = Path('test/preference-custody-manifest-v46.test.js')
+          lib = lib_path.read_text()
+          test = test_path.read_text()
+
+          constants_anchor = "const EXPECTED_BASE_SOURCE_KEYS = Object.freeze(['manifest','baseBuild','targetBuild','targetFixture','baseSources']);\n"
+          constants_replacement = constants_anchor + """const EXPECTED_V43_SOURCE_KEYS = Object.freeze(['manifest','baseBuild','intervalBuild','intervalFixture','baseSources']);
+          const EXPECTED_V42_SOURCE_KEYS = Object.freeze(['manifest','baseBuild','uncertaintyBuild','uncertaintyFixture','baseSources']);
+          const EXPECTED_V41_SOURCE_KEYS = Object.freeze(['manifest','baseBuild','probabilityBuild','probabilityFixture','baseSources']);
+          const EXPECTED_V40_SOURCE_KEYS = Object.freeze(['manifest','baseBuild','scoreBuild','scoreFixture','baseSources']);
+          const EXPECTED_V39_SOURCE_KEYS = Object.freeze(['manifest','baseBuild','candidateBuild','candidateFixture','baseSources']);
+          const EXPECTED_V38_SOURCE_KEYS = Object.freeze(['manifest','baseBuild','confidenceBuild','confidenceFixture','v37SourceCutoff']);
+          const EXPECTED_V37_SOURCE_KEYS = Object.freeze(['manifest','baseBuild','linkageBuild','linkageFixture']);
+          """
+          if lib.count(constants_anchor) != 1:
+              raise SystemExit('unexpected v46 source-key constant anchor count')
+          lib = lib.replace(constants_anchor, constants_replacement, 1)
+
+          function_anchor = "function validateBaseSources(baseBuild, baseSources) {\n"
+          helper = """function validateTransitiveSourceBundleKeys(baseSources) {
+            const errors = [];
+            const v44 = baseSources?.baseSources;
+            const v43 = v44?.baseSources;
+            const v42 = v43?.baseSources;
+            const v41 = v42?.baseSources;
+            const v40 = v41?.baseSources;
+            const v39 = v40?.baseSources;
+            const v38 = v39?.baseSources;
+            const v37 = v38?.v37SourceCutoff;
+            const ledgers = [
+              [v43, EXPECTED_V43_SOURCE_KEYS, 'v46 v43 source bundle', 'preference-custody-laboratory-floor-v43'],
+              [v42, EXPECTED_V42_SOURCE_KEYS, 'v46 v42 source bundle', 'preference-custody-laboratory-floor-v42'],
+              [v41, EXPECTED_V41_SOURCE_KEYS, 'v46 v41 source bundle', 'preference-custody-laboratory-floor-v41'],
+              [v40, EXPECTED_V40_SOURCE_KEYS, 'v46 v40 source bundle', 'preference-custody-laboratory-floor-v40'],
+              [v39, EXPECTED_V39_SOURCE_KEYS, 'v46 v39 source bundle', 'preference-custody-laboratory-floor-v39'],
+              [v38, EXPECTED_V38_SOURCE_KEYS, 'v46 v38 source bundle', 'preference-custody-laboratory-floor-v38'],
+              [v37, EXPECTED_V37_SOURCE_KEYS, 'v46 v37 source cutoff', 'preference-custody-laboratory-floor-v37']
+            ];
+            const seen = new Set([baseSources, v44].filter(value => value && typeof value === 'object' && !Array.isArray(value)));
+            for (const [value, expected, label, manifestId] of ledgers) {
+              requireExactKeys(value, expected, label, errors);
+              if (!value || typeof value !== 'object' || Array.isArray(value)) continue;
+              if (seen.has(value)) errors.push(`${label} source bundle object repeated`);
+              seen.add(value);
+              if (value?.manifest?.manifest_id !== manifestId) errors.push(`${label} manifest identity mismatch`);
+            }
+            return errors;
+          }
+
+          """
+          if lib.count(function_anchor) != 1:
+              raise SystemExit('unexpected validateBaseSources anchor count')
+          lib = lib.replace(function_anchor, helper + function_anchor, 1)
+
+          errors_anchor = "  const errors = [];\n  requireExactKeys(baseSources, EXPECTED_BASE_SOURCE_KEYS, 'v46 v45 source bundle', errors);\n"
+          errors_replacement = "  const errors = [];\n  requireExactKeys(baseSources, EXPECTED_BASE_SOURCE_KEYS, 'v46 v45 source bundle', errors);\n  errors.push(...validateTransitiveSourceBundleKeys(baseSources));\n"
+          if lib.count(errors_anchor) != 1:
+              raise SystemExit('unexpected validateBaseSources error anchor count')
+          lib = lib.replace(errors_anchor, errors_replacement, 1)
+
+          test_anchor = "const baseSourceMutations = [\n  ['extra source field', x => x.controller = 'external'],\n"
+          test_replacement = """const deepExtraKeyBaseSources = clone(baseSources);
+          deepExtraKeyBaseSources.baseSources.baseSources.controller = 'external';
+          assert.throws(
+            () => compilePreferenceCustodyManifestV46(manifest, baseBuild, targetBuild, targetFixture, deepExtraKeyBaseSources),
+            /v46 v43 source bundle key ledger mismatch/,
+            'deep transitive source extra key escaped compilation'
+          );
+
+          const baseSourceMutations = [
+            ['extra source field', x => x.controller = 'external'],
+            ['deep extra source field', x => x.baseSources.baseSources.controller = 'external'],
+          """
+          if test.count(test_anchor) != 1:
+              raise SystemExit('unexpected baseSourceMutations anchor count')
+          test = test.replace(test_anchor, test_replacement, 1)
+
+          lib_path.write_text(lib)
+          test_path.write_text(test)
+          PY
+
+          cat > /tmp/pc48-p1b-rebuild-expected-paths.txt <<'EOF'
+          test/preference-custody-manifest-v46.test.js
+          tools/lib/preference-custody-manifest-v46.mjs
+          EOF
+          sed -i 's/^          //' /tmp/pc48-p1b-rebuild-expected-paths.txt
+          git diff --name-only | sort > /tmp/pc48-p1b-rebuild-actual-paths.txt
+          diff -u /tmp/pc48-p1b-rebuild-expected-paths.txt /tmp/pc48-p1b-rebuild-actual-paths.txt
+          repaired_lib_sha256="$(sha256sum tools/lib/preference-custody-manifest-v46.mjs | awk '{print $1}')"
+          repaired_test_sha256="$(sha256sum test/preference-custody-manifest-v46.test.js | awk '{print $1}')"
+
+          phase=qualify_repair
+          node tools/compile-preference-linkage-interval-method-partition-replication-deployment-assurance.mjs
+          node tools/validate-preference-linkage-interval-method-partition-replication-deployment-assurance.mjs
+          node test/preference-linkage-interval-method-partition-replication-deployment-assurance.test.js
+          node tools/compile-preference-custody-manifest-v46.mjs
+          node tools/validate-preference-custody-manifest-v46.mjs
+          node test/preference-custody-manifest-v46.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+
+          phase=normalize_generated_volatility
+          git restore --source="$REVIEWED_PRODUCT" --staged --worktree -- build 2>/dev/null || true
+          git clean -fd -- build
+          git diff --name-only | sort > /tmp/pc48-p1b-rebuild-postgate-paths.txt
+          diff -u /tmp/pc48-p1b-rebuild-expected-paths.txt /tmp/pc48-p1b-rebuild-postgate-paths.txt
+
+          phase=amend_clean_product
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --pathspec-from-file=/tmp/pc48-p1b-rebuild-expected-paths.txt
+          git commit --amend --no-edit
+          repaired_commit="$(git rev-parse HEAD)"
+          repaired_tree="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$PUBLICATION_PARENT"
+          test "$(git rev-list --count "$PUBLICATION_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$PUBLICATION_PARENT"..HEAD | wc -l)" -eq 14
+          test "$(git diff --name-status "$PUBLICATION_PARENT"..HEAD | awk '$1 != "A" {count++} END {print count+0}')" -eq 0
+          test -z "$(git status --porcelain)"
+
+          phase=upload_candidate_object
+          set +e
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_LEASE" origin "HEAD:refs/heads/$TARGET_BRANCH" > /tmp/pc48-p1b-rebuild-push.log 2>&1
+          push_status=$?
+          set -e
+          cat /tmp/pc48-p1b-rebuild-push.log
+
+          phase=complete
+          cat > /tmp/pc48-p1b-rebuild-receipt.txt <<EOF
+          publication_parent=$PUBLICATION_PARENT
+          reviewed_product=$REVIEWED_PRODUCT
+          repaired_commit=$repaired_commit
+          repaired_tree=$repaired_tree
+          permanent_paths=14
+          repaired_paths=2
+          repaired_lib_sha256=$repaired_lib_sha256
+          repaired_test_sha256=$repaired_test_sha256
+          focused_pc48=pass
+          floor_v46=pass
+          full_v45_base_validation=pass
+          recursive_transitive_source_key_validation=pass
+          exact_child_manifest_identity_validation=pass
+          deep_extra_key_compile_regression=pass
+          floor_v46_mutations=158
+          no_magic_human=pass
+          push_status=$push_status
+          outside_human_dependency=false
+          graph_effect=none
+          EOF
+          printf 'status=success\nphase=%s\nrepaired_commit=%s\nrepaired_tree=%s\npush_status=%s\n' "$phase" "$repaired_commit" "$repaired_tree" "$push_status" > /tmp/pc48-p1b-rebuild-diagnostic.txt
+          cat /tmp/pc48-p1b-rebuild-receipt.txt
+
+      - name: Upload rebuilt candidate custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc48-p1b-rebuild-candidate
+          path: |
+            /tmp/pc48-p1b-rebuild-receipt.txt
+            /tmp/pc48-p1b-rebuild-diagnostic.txt
+            /tmp/pc48-p1b-rebuild-push.log
+          if-no-files-found: error
