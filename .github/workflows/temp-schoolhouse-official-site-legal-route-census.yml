@@ -40,10 +40,10 @@ jobs:
           git fetch --no-tags origin main
           test "$(git rev-parse origin/main)" = "$BASE_MAIN"
           test "$(git merge-base HEAD origin/main)" = "$BASE_MAIN"
-          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'd5a551a2cd53027c0540e2ad0103f59982cf4139943cefd2e3f4de0ca041e034'
-          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = '720d21e225e97d52b5b3916fe8a802c26ea575c875f943b87205a8bd7f2368f9'
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'e445f22bf5e509043d388bbfdb558a7c7bcc85974c332ed342dcded144254964'
+          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = 'b72fe42926c1d52f090a7baae9cf4871b55e3daffe6f3025c226c5b3d102e407'
           base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
-          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = '7242accf3ec045ccfa5de5913101a8105fe58ebd2643ab660fda48ef33a8305a'
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = '9c9baa8c5bf553a12612336bf7db83f039b53d3cf4ab119fa1d3b0c9b6d2d5ef'
           python -m py_compile "$RUNNER"
 
       - name: Execute bounded no-submission census
@@ -66,6 +66,8 @@ jobs:
           jq -e '
             .declared_routes == 20 and
             .terminal_route_rows == 20 and
+            .successful_routes == .representation_bearing_routes and
+            (.provider_challenge_routes | type == "number") and
             .query_submissions == 0 and
             .form_submissions == 0 and
             .organization_name_submissions == 0 and
@@ -98,6 +100,7 @@ jobs:
             .adoption_effect == "none" and
             .graph_effect == "none"
           ' "$OUT/artifact-manifest.json"
+          jq -e '.http_202_is_representation_bearing_source == false' "$OUT/route-policy.json"
 
       - uses: actions/upload-artifact@v4
         with:
