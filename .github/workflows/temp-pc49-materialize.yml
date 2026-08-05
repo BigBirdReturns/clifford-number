@@ -29,8 +29,48 @@ jobs:
           test "$(sha256sum .pc49-carrier-v3/product.part03 | awk '{print $1}')" = "ed59e6b7670e718e675aae9157a701cffc58f8f6541dc2cfeebeefcf8c02d323"
           test "$(sha256sum .pc49-carrier-v3/run.part00 | awk '{print $1}')" = "692397591d98aeab0a12e40bb8780e70ec610c229fd690fd212dea449d16306a"
 
-          cat .pc49-carrier-v3/product.part00 .pc49-carrier-v3/product.part01 .pc49-carrier-v3/product.part02 .pc49-carrier-v3/product.part03 > /tmp/pc49-product.tar.gz.b64
-          base64 -d /tmp/pc49-product.tar.gz.b64 > /tmp/pc49-product.tar.gz
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64
+          import hashlib
+          import string
+
+          expected = '914e5e46f29fd07612e8c9089bec59a4d37bc34d9d1f4159638a2b417cc94774'
+          paths = [Path(f'.pc49-carrier-v3/product.part0{i}') for i in range(4)]
+          allowed = set((string.ascii_letters + string.digits + '+/=').encode())
+          whitespace = set(b' \t\r\n')
+          chunks = []
+          for path in paths:
+              raw = path.read_bytes()
+              chunks.append(raw)
+              invalid = [(i, byte) for i, byte in enumerate(raw) if byte not in allowed and byte not in whitespace]
+              print(f'part={path} bytes={len(raw)} lines={raw.count(bytes([10]))} invalid_count={len(invalid)}')
+              for offset, byte in invalid[:40]:
+                  print(f'invalid part={path} offset={offset} byte=0x{byte:02x} repr={bytes([byte])!r}')
+          merged = b''.join(chunks)
+          variants = {
+              'raw': merged,
+              'without_whitespace': bytes(byte for byte in merged if byte not in whitespace),
+              'alphabet_only': bytes(byte for byte in merged if byte in allowed),
+          }
+          matches = []
+          for name, payload in variants.items():
+              print(f'variant={name} bytes={len(payload)} mod4={len(payload) % 4} text_sha256={hashlib.sha256(payload).hexdigest()}')
+              try:
+                  decoded = base64.b64decode(payload, validate=(name != 'raw'))
+              except Exception as exc:
+                  print(f'variant={name} decode_error={type(exc).__name__}:{exc}')
+                  continue
+              digest = hashlib.sha256(decoded).hexdigest()
+              print(f'variant={name} decoded_bytes={len(decoded)} decoded_sha256={digest}')
+              if digest == expected:
+                  matches.append((name, decoded))
+          if len(matches) != 1:
+              raise SystemExit(f'exact archive reconstruction count={len(matches)}')
+          name, decoded = matches[0]
+          Path('/tmp/pc49-product.tar.gz').write_bytes(decoded)
+          print(f'selected_product_variant={name}')
+          PY
           test "$(sha256sum /tmp/pc49-product.tar.gz | awk '{print $1}')" = "914e5e46f29fd07612e8c9089bec59a4d37bc34d9d1f4159638a2b417cc94774"
 
           cat .pc49-carrier-v3/run.part00 > /tmp/pc49-run.sh.b64
