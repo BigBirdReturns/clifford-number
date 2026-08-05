@@ -50,6 +50,7 @@ jobs:
           CARRIER_BRANCH='agent/schoolhouse-honor-foundation-990-materializer-v1'
           PRODUCT_BRANCH='agent/schoolhouse-honor-foundation-990-custody-product-v1'
           BASE_MAIN='1f04c0abbf89f1529dfd428389392b3425499bc3'
+          EXPECTED_OLD_PRODUCT='06c23806d88b370f0f3122e68b768b626735aef2'
           EXECUTE='.schoolhouse-honor-foundation-990-materializer/EXECUTE'
           WORKFLOW='.github/workflows/temp-schoolhouse-honor-foundation-990-materialize.yml'
           RUNNER='/tmp/materialize-schoolhouse-honor-foundation-990.py'
@@ -77,12 +78,13 @@ jobs:
 
           test "${GITHUB_HEAD_REF}" = "$CARRIER_BRANCH"
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
-          git fetch --prune --no-tags origin main
+          git fetch --prune --no-tags origin main "$PRODUCT_BRANCH"
           MAIN_SHA=$(git rev-parse origin/main)
           test "$MAIN_SHA" = "$BASE_MAIN"
           test "$(git merge-base HEAD origin/main)" = "$BASE_MAIN"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$EXPECTED_OLD_PRODUCT"
           MAIN_TREE=$(git rev-parse "$MAIN_SHA^{tree}")
-          printf 'main_sha=%s\nmain_tree=%s\n' "$MAIN_SHA" "$MAIN_TREE"
+          printf 'main_sha=%s\nmain_tree=%s\nold_product=%s\n' "$MAIN_SHA" "$MAIN_TREE" "$EXPECTED_OLD_PRODUCT"
 
           mapfile -t CARRIER_CHANGED < <(git diff --name-only "$BASE_MAIN"..HEAD | sort)
           CARRIER_EXPECTED=(
@@ -141,11 +143,6 @@ jobs:
           grep -Fx 'adoption_effect=none' "$EXECUTE"
           grep -Fx 'graph_effect=none' "$EXECUTE"
 
-          if git ls-remote --exit-code --heads origin "$PRODUCT_BRANCH" >/dev/null 2>&1; then
-            echo "refusing existing product branch: $PRODUCT_BRANCH" >&2
-            exit 1
-          fi
-
           rm -rf "$WORKTREE" "$PRESERVE" "$ARTIFACT_ROOT" "$RECEIPT_DIR" "$MATERIALIZATION_RECEIPT"
           mkdir -p "$ARTIFACT_ROOT"
 
@@ -184,6 +181,83 @@ jobs:
             --parent-commit "$MAIN_SHA" \
             --parent-tree "$MAIN_TREE" \
             --receipt "$MATERIALIZATION_RECEIPT"
+
+          python - "$WORKTREE" "$MATERIALIZATION_RECEIPT" <<'PY'
+          import hashlib
+          import json
+          import pathlib
+          import sys
+          from urllib.parse import urlparse
+
+          root = pathlib.Path(sys.argv[1])
+          receipt_path = pathlib.Path(sys.argv[2])
+          data_dir = root / 'data/intake/bvvc-defense-capital'
+          source_path = data_dir / 'source-inventory-17.jsonl'
+          manifest_path = data_dir / 'manifest.json'
+          validator_path = root / 'tools/validate-schoolhouse-honor-foundation-990-custody.mjs'
+
+          rows = [json.loads(line) for line in source_path.read_text(encoding='utf-8').splitlines() if line]
+          changed = 0
+          for row in rows:
+              if urlparse(row['locator_url']).hostname == 'projects.propublica.org':
+                  assert row['evidence_class'] == 'official'
+                  assert row['source_type'] == 'official_form_990_object_route_attempt'
+                  row['evidence_class'] = 'primary_public'
+                  row['source_type'] = 'primary_public_form_990_object_route_attempt'
+                  row['note'] = 'Bounded primary-public bridge request for an IRS Form 990 object; source failure is not absence evidence.'
+                  changed += 1
+          assert changed == 3, changed
+          source_path.write_text(''.join(json.dumps(row, separators=(',', ':')) + '\n' for row in rows), encoding='utf-8')
+
+          validator = validator_path.read_text(encoding='utf-8')
+          old = "  check(sourceRows.every(row => row.evidence_class === 'official' && row.raw_source_retained === false && row.full_visible_text_retained === false && row.source_value_text_retained === false && row.street_address_retained === false && row.contact_details_retained === false), 'Form 990 source-inventory evidence/privacy drift');"
+          new = """  const officialSourceRows = sourceRows.filter(row => row.evidence_class === 'official');
+          const primaryPublicSourceRows = sourceRows.filter(row => row.evidence_class === 'primary_public');
+          check(officialSourceRows.length === 13 && primaryPublicSourceRows.length === 3, 'Form 990 source-inventory provenance denominator drift');
+          check(primaryPublicSourceRows.every(row => row.locator_url.startsWith('https://projects.propublica.org/') && row.source_type === 'primary_public_form_990_object_route_attempt'), 'Form 990 primary-public bridge provenance drift');
+          check(sourceRows.every(row => row.raw_source_retained === false && row.full_visible_text_retained === false && row.source_value_text_retained === false && row.street_address_retained === false && row.contact_details_retained === false), 'Form 990 source-inventory privacy drift');"""
+          assert validator.count(old) == 1
+          validator = validator.replace(old, new)
+          manifest_check = "  check(manifest.counts.source_inventory_rows === 441 && manifest.counts.coverage_denominator_rows === 27 && manifest.counts.explicit_gap_rows === 16, 'Form 990 manifest headline denominator drift');"
+          manifest_check_new = manifest_check + "\n  check(manifest.source_inventory.evidence_class_counts.official === 222 && manifest.source_inventory.evidence_class_counts.primary_public === 54, 'Form 990 manifest provenance count drift');"
+          assert validator.count(manifest_check) == 1
+          validator_path.write_text(validator.replace(manifest_check, manifest_check_new), encoding='utf-8')
+
+          manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+          evidence_counts = manifest['source_inventory']['evidence_class_counts']
+          assert evidence_counts['official'] == 225
+          assert evidence_counts['primary_public'] == 51
+          evidence_counts['official'] = 222
+          evidence_counts['primary_public'] = 54
+          source_bytes = source_path.read_bytes()
+          manifest['files']['source-inventory-17.jsonl'] = {
+              'bytes': len(source_bytes),
+              'sha256': hashlib.sha256(source_bytes).hexdigest(),
+          }
+          manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+
+          receipt = json.loads(receipt_path.read_text(encoding='utf-8'))
+          for relative in [
+              'data/intake/bvvc-defense-capital/source-inventory-17.jsonl',
+              'data/intake/bvvc-defense-capital/manifest.json',
+              'tools/validate-schoolhouse-honor-foundation-990-custody.mjs',
+          ]:
+              target = root / relative
+              payload = target.read_bytes()
+              receipt['files'][relative] = {
+                  'bytes': len(payload),
+                  'sha256': hashlib.sha256(payload).hexdigest(),
+              }
+          receipt['provenance_repair'] = {
+              'official_receipts_after': 222,
+              'primary_public_receipts_after': 54,
+              'propublica_rows_reclassified': 3,
+              'relationship_effect': 'none',
+              'identity_effect': 'none',
+              'graph_effect': 'none',
+          }
+          receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          PY
 
           cd "$WORKTREE"
           node tools/validate-schoolhouse-honor-foundation-990-custody.mjs
@@ -252,25 +326,30 @@ jobs:
             .counts.schoolhouse_honor_foundation_990_structural_signal_rows == 2 and
             .counts.schoolhouse_honor_foundation_990_admitted_identity_rows == 0 and
             .counts.schoolhouse_honor_foundation_990_admitted_relationship_rows == 0 and
+            .source_inventory.evidence_class_counts.official == 222 and
+            .source_inventory.evidence_class_counts.primary_public == 54 and
             .counts.private_support_rows == 0 and
             .counts.public_graph_rows_created == 0 and
             .graph_effect == "none" and
             .promotes_to == "candidate_only"
           ' data/intake/bvvc-defense-capital/manifest.json
 
+          test "$(jq -r 'select(.locator_url | startswith("https://projects.propublica.org/")) | .evidence_class' data/intake/bvvc-defense-capital/source-inventory-17.jsonl | sort | uniq -c | awk '{print $1":"$2}')" = '3:primary_public'
+          test "$(jq -r 'select(.locator_url | startswith("https://projects.propublica.org/")) | .source_type' data/intake/bvvc-defense-capital/source-inventory-17.jsonl | sort | uniq -c | awk '{print $1":"$2}')" = '3:primary_public_form_990_object_route_attempt'
+
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -- "${EXPECTED[@]}"
           git diff --cached --exit-code --quiet && { echo 'materializer produced no staged product' >&2; exit 1; }
           git commit -m 'Preserve School.House related-charity Form 990 candidate custody' \
-            -m 'Freeze three exact IRS-index resolutions, two privacy-minimized official XML screens, one exact member unavailable after one replay, zero fixed term hits, two structural rows, zero identity or relationship admissions, no outside-human dependency, and no publication, adoption, or graph effect.'
+            -m 'Freeze three exact IRS-index resolutions, two privacy-minimized official XML screens, one exact member unavailable after one replay, correct three ProPublica bridge receipts to primary-public provenance, preserve zero fixed term hits and two structural rows, admit no identity or relationship, require no outside-human action, and create no publication, adoption, or graph effect.'
 
           PRODUCT_SHA=$(git rev-parse HEAD)
           PRODUCT_TREE=$(git rev-parse 'HEAD^{tree}')
           test "$(git rev-list --count "$MAIN_SHA"..HEAD)" -eq 1
           test "$(git rev-list --count HEAD.."$MAIN_SHA")" -eq 0
           test "$(git diff --name-only "$MAIN_SHA"..HEAD | sort | wc -l)" -eq 14
-          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$EXPECTED_OLD_PRODUCT" origin "HEAD:refs/heads/$PRODUCT_BRANCH"
 
           mkdir -p "$RECEIPT_DIR"
           cp "$MATERIALIZATION_RECEIPT" "$RECEIPT_DIR/materialization-input-receipt.json"
@@ -278,17 +357,21 @@ jobs:
           python - <<PY > "$RECEIPT_DIR/product.json"
           import json
           print(json.dumps({
-              'schema_version': 'schoolhouse-honor-foundation-990-product@1',
+              'schema_version': 'schoolhouse-honor-foundation-990-product@2',
               'carrier_branch': '$CARRIER_BRANCH',
               'carrier_head': '${{ github.event.pull_request.head.sha }}',
               'canonical_parent_commit': '$MAIN_SHA',
               'canonical_parent_tree': '$MAIN_TREE',
+              'superseded_product_commit': '$EXPECTED_OLD_PRODUCT',
               'product_branch': '$PRODUCT_BRANCH',
               'product_commit': '$PRODUCT_SHA',
               'product_tree': '$PRODUCT_TREE',
               'permanent_changed_paths': 14,
               'source_inventory_rows_before': 425,
               'source_inventory_rows_after': 441,
+              'official_receipts_after': 222,
+              'primary_public_receipts_after': 54,
+              'propublica_rows_reclassified': 3,
               'coverage_denominator_rows_before': 26,
               'coverage_denominator_rows_after': 27,
               'declared_filings': 3,
