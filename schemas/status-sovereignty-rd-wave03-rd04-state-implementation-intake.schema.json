@@ -1,0 +1,669 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clifford-number.local/schemas/status-sovereignty-rd-wave03-rd04-state-implementation-intake.schema.json",
+  "title": "SSC RD-04 Wave-03 fifty-state source-census intake",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "wave_id",
+    "lane_id",
+    "class_id",
+    "issue",
+    "as_of",
+    "title",
+    "authority",
+    "source_custody",
+    "denominator",
+    "inherited_source_custody",
+    "query_specs",
+    "route_derivation",
+    "routes",
+    "execution_contract",
+    "output_contract",
+    "current_result",
+    "authority_boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "ssc-rd-wave03-rd04-state-implementation-source-census-protocol@1"
+    },
+    "wave_id": {
+      "const": "SSC-RD-W03"
+    },
+    "lane_id": {
+      "const": "RD-04"
+    },
+    "class_id": {
+      "const": "RD-04-C02"
+    },
+    "issue": {
+      "const": 1017
+    },
+    "as_of": {
+      "const": "2026-08-05"
+    },
+    "title": {
+      "const": "RD-04 Wave 03 fixed fifty-state implementation, waiver, exemption, and screening source census"
+    },
+    "authority": {
+      "const": "fixed_source_availability_census_not_state_implementation_or_class_receipt"
+    },
+    "source_custody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "current_main_at_design",
+        "constitution_merge",
+        "wave03_current_ledger_merge_at_design",
+        "seed_path",
+        "seed_git_blob",
+        "matrix_path",
+        "matrix_git_blob",
+        "first_pass_path",
+        "first_pass_git_blob",
+        "bounded_remedy_path",
+        "bounded_remedy_git_blob",
+        "bounded_remedy_merge",
+        "parent_class_receipt_path",
+        "parent_closure_reference_path",
+        "parent_terminal_merge",
+        "intake_product_manifest_path"
+      ],
+      "properties": {
+        "current_main_at_design": {
+          "const": "36b453139c2c5040f5df0148838ea232607b95d3"
+        },
+        "constitution_merge": {
+          "const": "dc47681a9ad43e1c64c86e3d823dbb7c203a18c2"
+        },
+        "wave03_current_ledger_merge_at_design": {
+          "const": "2374980372d98e7f9ca68fe373d25c9bb812c374"
+        },
+        "seed_path": {
+          "const": "data/project/ssc-residual-wave03/seeds/RD-04-C02.json"
+        },
+        "seed_git_blob": {
+          "const": "bf60cadae4d0f586646dd18366431614628adb1e"
+        },
+        "matrix_path": {
+          "const": "data/intake/status-sovereignty-rd-wave03-rd04-state-implementation/field-matrix-contract.json"
+        },
+        "matrix_git_blob": {
+          "const": "5b2f094adbd860ac3e28161de0bfd00f67b2db8d"
+        },
+        "first_pass_path": {
+          "const": "data/intake/status-sovereignty-f02-snap-gate-first-pass.json"
+        },
+        "first_pass_git_blob": {
+          "const": "e50b9b09c13b8cb6730194077ee5eed119cb1b7e"
+        },
+        "bounded_remedy_path": {
+          "const": "data/intake/status-sovereignty-rd04-snap-state-remedy.json"
+        },
+        "bounded_remedy_git_blob": {
+          "const": "4e4ef3d0e207f4eea1a3af7987dd2e040d254ebd"
+        },
+        "bounded_remedy_merge": {
+          "const": "346e6881e68f85bbf204911b7915b4d5869efd2d"
+        },
+        "parent_class_receipt_path": {
+          "const": "data/research/status-sovereignty-rd-wave02-rd04-version-history/class-receipt.json"
+        },
+        "parent_closure_reference_path": {
+          "const": "data/project/ssc-residual-wave02/closures/RD-04-C01.json"
+        },
+        "parent_terminal_merge": {
+          "const": "7b21d1f2b0606a5550b9c26fadc0cb465ba88b7e"
+        },
+        "intake_product_manifest_path": {
+          "const": "data/intake/status-sovereignty-rd-wave03-rd04-state-implementation/intake-product-manifest.json"
+        }
+      }
+    },
+    "denominator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state_rows",
+        "district_of_columbia_rows",
+        "territorial_rows",
+        "required_fields_per_state",
+        "required_cells",
+        "shared_exact_official_routes",
+        "state_exact_directory_routes",
+        "candidate_query_classes_per_state",
+        "candidate_census_routes",
+        "fixed_routes",
+        "maximum_candidate_rows"
+      ],
+      "properties": {
+        "state_rows": {
+          "const": 50
+        },
+        "district_of_columbia_rows": {
+          "const": 0
+        },
+        "territorial_rows": {
+          "const": 0
+        },
+        "required_fields_per_state": {
+          "const": 9
+        },
+        "required_cells": {
+          "const": 450
+        },
+        "shared_exact_official_routes": {
+          "const": 4
+        },
+        "state_exact_directory_routes": {
+          "const": 50
+        },
+        "candidate_query_classes_per_state": {
+          "const": 3
+        },
+        "candidate_census_routes": {
+          "const": 150
+        },
+        "fixed_routes": {
+          "const": 204
+        },
+        "maximum_candidate_rows": {
+          "const": 1500
+        }
+      }
+    },
+    "inherited_source_custody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "federal_first_pass_source_identities",
+        "bounded_california_source_identities",
+        "wave02_exact_source_identities",
+        "inherited_sources_are_not_current_state_practice",
+        "inherited_sources_are_not_reopened_or_rewritten",
+        "california_deep_dive_is_not_highest_coverage_state_finding"
+      ],
+      "properties": {
+        "federal_first_pass_source_identities": {
+          "const": 7
+        },
+        "bounded_california_source_identities": {
+          "const": 6
+        },
+        "wave02_exact_source_identities": {
+          "const": 97
+        },
+        "inherited_sources_are_not_current_state_practice": {
+          "const": true
+        },
+        "inherited_sources_are_not_reopened_or_rewritten": {
+          "const": true
+        },
+        "california_deep_dive_is_not_highest_coverage_state_finding": {
+          "const": true
+        }
+      }
+    },
+    "query_specs": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "query_class",
+          "order",
+          "terms"
+        ],
+        "properties": {
+          "query_class": {
+            "enum": [
+              "implementation",
+              "waiver",
+              "screening"
+            ]
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "terms": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "route_derivation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "shared_route_order",
+        "unit_order",
+        "per_state_route_order",
+        "state_directory_url_template",
+        "candidate_query_template",
+        "candidate_search_base_url",
+        "url_encoding",
+        "route_ledger_columns",
+        "route_ledger_bytes",
+        "route_ledger_sha256",
+        "route_ids_unique",
+        "result_spawned_requests"
+      ],
+      "properties": {
+        "shared_route_order": {
+          "const": [
+            "RD04-W03-FED-STATE-DIRECTORY",
+            "RD04-W03-FED-STATE-OPTIONS",
+            "RD04-W03-FED-FITNESS-WORK",
+            "RD04-W03-FED-WORK-REQUIREMENTS"
+          ]
+        },
+        "unit_order": {
+          "const": "matrix.units ascending unit_ordinal"
+        },
+        "per_state_route_order": {
+          "const": [
+            "directory",
+            "implementation",
+            "waiver",
+            "screening"
+          ]
+        },
+        "state_directory_url_template": {
+          "const": "https://www.fns.usda.gov/snap-directory-entry/{state_name_lower_hyphen}"
+        },
+        "candidate_query_template": {
+          "const": "\"{state_name}\" {terms}"
+        },
+        "candidate_search_base_url": {
+          "const": "https://www.bing.com/search?format=rss&q="
+        },
+        "url_encoding": {
+          "const": "RFC3986 percent encoding with no additional safe characters"
+        },
+        "route_ledger_columns": {
+          "const": [
+            "route_id",
+            "route_type",
+            "scope",
+            "unit_ordinal",
+            "postal_code",
+            "query_class",
+            "state_name",
+            "query",
+            "requested_url",
+            "allowed_final_host_suffix",
+            "maximum_attempts",
+            "maximum_body_bytes",
+            "candidate_rows_are_admitted_sources",
+            "result_spawned_requests"
+          ]
+        },
+        "route_ledger_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "route_ledger_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "route_ids_unique": {
+          "const": true
+        },
+        "result_spawned_requests": {
+          "const": 0
+        }
+      }
+    },
+    "routes": {
+      "type": "array",
+      "minItems": 204,
+      "maxItems": 204,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "route_id",
+          "route_type",
+          "scope",
+          "purpose",
+          "requested_url",
+          "allowed_final_host_suffix",
+          "maximum_attempts",
+          "maximum_body_bytes",
+          "candidate_rows_are_admitted_sources",
+          "result_spawned_requests"
+        ],
+        "properties": {
+          "route_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "route_type": {
+            "enum": [
+              "exact_official_get",
+              "candidate_census_rss"
+            ]
+          },
+          "scope": {
+            "enum": [
+              "shared_federal",
+              "state"
+            ]
+          },
+          "unit_ordinal": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "unit_id": {
+            "type": "string",
+            "pattern": "^US-STATE-[A-Z]{2}$"
+          },
+          "postal_code": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          },
+          "state_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "query_class": {
+            "enum": [
+              "directory",
+              "implementation",
+              "waiver",
+              "screening"
+            ]
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          },
+          "query": {
+            "type": "string",
+            "minLength": 1
+          },
+          "requested_url": {
+            "type": "string",
+            "pattern": "^https://"
+          },
+          "allowed_final_host_suffix": {
+            "enum": [
+              "fns.usda.gov",
+              "bing.com"
+            ]
+          },
+          "maximum_attempts": {
+            "const": 1
+          },
+          "maximum_body_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 52428800
+          },
+          "maximum_candidate_rows": {
+            "const": 10
+          },
+          "candidate_rows_are_admitted_sources": {
+            "const": false
+          },
+          "result_spawned_requests": {
+            "const": 0
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "scope": {
+                  "const": "state"
+                }
+              },
+              "required": [
+                "scope"
+              ]
+            },
+            "then": {
+              "required": [
+                "unit_ordinal",
+                "unit_id",
+                "postal_code",
+                "state_name",
+                "query_class"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "route_type": {
+                  "const": "candidate_census_rss"
+                }
+              },
+              "required": [
+                "route_type"
+              ]
+            },
+            "then": {
+              "required": [
+                "unit_ordinal",
+                "unit_id",
+                "postal_code",
+                "state_name",
+                "query_class",
+                "query",
+                "maximum_candidate_rows"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "execution_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maximum_attempts_per_route",
+        "maximum_parallel_workers",
+        "user_agent",
+        "exact_route_http_failure_is_typed_transport_state",
+        "candidate_rows_are_admitted_sources",
+        "candidate_followup_without_separate_protocol",
+        "result_spawned_requests",
+        "federal_rule_is_state_implementation",
+        "waiver_authority_is_requested_approved_or_current_waiver",
+        "exemption_authority_is_observed_use",
+        "screening_rule_is_uniform_staff_practice",
+        "missing_state_record_is_no_policy_or_practice",
+        "automatic_field_closure",
+        "automatic_class_closure"
+      ],
+      "properties": {
+        "maximum_attempts_per_route": {
+          "const": 1
+        },
+        "maximum_parallel_workers": {
+          "const": 8
+        },
+        "user_agent": {
+          "const": "clifford-number-rd04-wave03-source-census/1.0"
+        },
+        "exact_route_http_failure_is_typed_transport_state": {
+          "const": true
+        },
+        "candidate_rows_are_admitted_sources": {
+          "const": false
+        },
+        "candidate_followup_without_separate_protocol": {
+          "const": false
+        },
+        "result_spawned_requests": {
+          "const": 0
+        },
+        "federal_rule_is_state_implementation": {
+          "const": false
+        },
+        "waiver_authority_is_requested_approved_or_current_waiver": {
+          "const": false
+        },
+        "exemption_authority_is_observed_use": {
+          "const": false
+        },
+        "screening_rule_is_uniform_staff_practice": {
+          "const": false
+        },
+        "missing_state_record_is_no_policy_or_practice": {
+          "const": false
+        },
+        "automatic_field_closure": {
+          "const": false
+        },
+        "automatic_class_closure": {
+          "const": false
+        }
+      }
+    },
+    "output_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route_receipts",
+        "exact_request_query_and_url_required",
+        "headers_body_stderr_and_transport_metadata_required",
+        "candidate_index_required",
+        "route_result_index_required",
+        "execution_receipt_required",
+        "artifact_manifest_required",
+        "candidate_admission_requires_separate_adjudication"
+      ],
+      "properties": {
+        "route_receipts": {
+          "const": 204
+        },
+        "exact_request_query_and_url_required": {
+          "const": true
+        },
+        "headers_body_stderr_and_transport_metadata_required": {
+          "const": true
+        },
+        "candidate_index_required": {
+          "const": true
+        },
+        "route_result_index_required": {
+          "const": true
+        },
+        "execution_receipt_required": {
+          "const": true
+        },
+        "artifact_manifest_required": {
+          "const": true
+        },
+        "candidate_admission_requires_separate_adjudication": {
+          "const": true
+        }
+      }
+    },
+    "current_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol_frozen",
+        "requests_executed_by_this_object",
+        "candidate_urls_admitted",
+        "field_matrix_terminal",
+        "class_state",
+        "class_closed",
+        "outside_human_dependency",
+        "project_blocking"
+      ],
+      "properties": {
+        "protocol_frozen": {
+          "const": true
+        },
+        "requests_executed_by_this_object": {
+          "const": false
+        },
+        "candidate_urls_admitted": {
+          "const": 0
+        },
+        "field_matrix_terminal": {
+          "const": false
+        },
+        "class_state": {
+          "const": "still_open"
+        },
+        "class_closed": {
+          "const": false
+        },
+        "outside_human_dependency": {
+          "const": false
+        },
+        "project_blocking": {
+          "const": false
+        }
+      }
+    },
+    "authority_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "external_contacts",
+        "external_reviews",
+        "reviewed_disposition_changed",
+        "unlawful_discrimination_finding",
+        "racial_hierarchy_finding",
+        "national_prevalence_finding",
+        "coordination_finding",
+        "common_purpose_finding",
+        "complete_compact_finding",
+        "publication_effect",
+        "adoption_effect",
+        "graph_effect"
+      ],
+      "properties": {
+        "external_contacts": {
+          "const": 0
+        },
+        "external_reviews": {
+          "const": 0
+        },
+        "reviewed_disposition_changed": {
+          "const": false
+        },
+        "unlawful_discrimination_finding": {
+          "const": false
+        },
+        "racial_hierarchy_finding": {
+          "const": false
+        },
+        "national_prevalence_finding": {
+          "const": false
+        },
+        "coordination_finding": {
+          "const": false
+        },
+        "common_purpose_finding": {
+          "const": false
+        },
+        "complete_compact_finding": {
+          "const": false
+        },
+        "publication_effect": {
+          "const": "none"
+        },
+        "adoption_effect": {
+          "const": "none"
+        },
+        "graph_effect": {
+          "const": "none"
+        }
+      }
+    }
+  }
+}
