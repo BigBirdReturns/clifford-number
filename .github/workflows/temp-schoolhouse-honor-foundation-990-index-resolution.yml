@@ -1,0 +1,199 @@
+name: TEMP resolve School.House related-charity Form 990 objects in IRS indexes
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-honor-foundation-990-index-resolution.yml'
+      - '.schoolhouse-honor-foundation-990-index-resolution/EXECUTE'
+      - '.schoolhouse-honor-foundation-990-index-resolution/capture.py.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: temp-schoolhouse-honor-foundation-990-index-resolution-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact index-resolution head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate parent, prior failed acquisition, and runner custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          BASE_MAIN='d87172a41e88c1709b37a114b50df733545126c8'
+          BUNDLE='.schoolhouse-honor-foundation-990-index-resolution/capture.py.gz.b64'
+          EXECUTE='.schoolhouse-honor-foundation-990-index-resolution/EXECUTE'
+          WORKFLOW='.github/workflows/temp-schoolhouse-honor-foundation-990-index-resolution.yml'
+          RUNNER='/tmp/capture-schoolhouse-honor-foundation-990-index-resolution.py'
+          EXPECTED_RUNNER_SHA='5a4b448206681e9c79fe2699a3186c7237596ee9d60c2b8333526514ec6cf887'
+          EXPECTED_BUNDLE_SHA='d2c3862aaca7cd1f4d5753eee077902cd18e02d1c16e2dc5fda70937a57c8a06'
+
+          git fetch --no-tags origin main
+          MAIN_SHA=$(git rev-parse origin/main)
+          MERGE_BASE=$(git merge-base HEAD origin/main)
+          printf 'main_sha=%s\nmerge_base=%s\n' "$MAIN_SHA" "$MERGE_BASE"
+          git merge-base --is-ancestor "$BASE_MAIN" "$MAIN_SHA"
+          test "$MERGE_BASE" = "$BASE_MAIN"
+
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = "$EXPECTED_BUNDLE_SHA"
+          grep -Fx "runner_sha256=$EXPECTED_RUNNER_SHA" "$EXECUTE"
+          grep -Fx "bundle_sha256=$EXPECTED_BUNDLE_SHA" "$EXECUTE"
+          grep -Fx "base_main=$BASE_MAIN" "$EXECUTE"
+          grep -Fx 'prior_workflow_run_id=31044808840' "$EXECUTE"
+          grep -Fx 'prior_artifact_id=8946051286' "$EXECUTE"
+          grep -Fx 'prior_artifact_digest=sha256:0b25fd3ecc7da6ac6dd58febc077dad04d20a0ee8048a9be3eb42097b939add9' "$EXECUTE"
+          grep -Fx 'expected_ein=462952873' "$EXECUTE"
+          grep -Fx 'declared_filing_rows=3' "$EXECUTE"
+          grep -Fx 'object_ids=202432149349300938,202521839349300822,202641259349300124' "$EXECUTE"
+          grep -Fx 'official_index_routes=3' "$EXECUTE"
+          grep -Fx 'maximum_total_requests=3' "$EXECUTE"
+          grep -Fx 'maximum_parallel_workers=1' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+
+          mapfile -t CHANGED < <(git diff --name-only "$BASE_MAIN"..HEAD | sort)
+          EXPECTED=(
+            '.github/workflows/temp-schoolhouse-honor-foundation-990-index-resolution.yml'
+            '.schoolhouse-honor-foundation-990-index-resolution/EXECUTE'
+            '.schoolhouse-honor-foundation-990-index-resolution/capture.py.gz.b64'
+          )
+          test "${#CHANGED[@]}" -eq "${#EXPECTED[@]}"
+          for i in "${!EXPECTED[@]}"; do
+            test "${CHANGED[$i]}" = "${EXPECTED[$i]}"
+          done
+          git diff --exit-code -- "$BUNDLE" "$EXECUTE" "$WORKFLOW"
+
+          base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = "$EXPECTED_RUNNER_SHA"
+          python -m py_compile "$RUNNER"
+
+      - name: Execute bounded three-index official IRS resolution
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          OUT='/tmp/schoolhouse-honor-foundation-990-index-resolution'
+          rm -rf "$OUT"
+          python /tmp/capture-schoolhouse-honor-foundation-990-index-resolution.py --output "$OUT"
+
+          for file in \
+            index-attempts.jsonl \
+            index-resolutions.jsonl \
+            adjudication.json \
+            route-policy.json \
+            summary.json \
+            artifact-manifest.json \
+            SHA256SUMS; do
+            test -f "$OUT/$file"
+          done
+
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          cat "$OUT/summary.json"
+          cat "$OUT/index-resolutions.jsonl"
+
+          jq -e '
+            .declared_filings == 3 and
+            .official_index_requests == 3 and
+            .terminal_resolution_rows == 3 and
+            (.exact_object_row_resolutions + .duplicate_exact_object_row_resolutions + .zero_exact_object_row_resolutions + .official_index_provider_error_rows) == 3 and
+            .resolved_archive_locator_rows >= 0 and
+            .resolved_archive_locator_rows <= 3 and
+            .raw_index_rows_retained == 0 and
+            .raw_index_bytes_retained == 0 and
+            .street_address_rows_retained == 0 and
+            .contact_detail_rows_retained == 0 and
+            .private_support_rows == 0 and
+            .identities_admitted == 0 and
+            .relationships_admitted == 0 and
+            .negative_existence_claims_created == 0 and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/summary.json"
+
+          test "$(grep -cve '^$' "$OUT/index-attempts.jsonl")" -eq 3
+          test "$(grep -cve '^$' "$OUT/index-resolutions.jsonl")" -eq 3
+
+          jq -s -e '
+            length == 3 and
+            all(
+              .expected_ein == "462952873" and
+              .raw_index_retained == false and
+              .street_address_rows_retained == 0 and
+              .contact_detail_rows_retained == 0 and
+              .private_support_rows == 0 and
+              .identity_admitted == false and
+              .relationship_admitted == false and
+              .negative_existence_claim_created == false and
+              .outside_human_dependency == false and
+              .publication_effect == "none" and
+              .adoption_effect == "none" and
+              .graph_effect == "none" and
+              .promotes_to == "candidate_only"
+            )
+          ' "$OUT/index-resolutions.jsonl"
+
+          jq -e '
+            .selection_contract.declared_filings == 3 and
+            .selection_contract.expected_ein == "462952873" and
+            .selection_contract.no_result_spawned_routes == true and
+            .selection_contract.no_person_selected_because_of_private_contact == true and
+            .request_bounds.request_methods == ["GET"] and
+            .request_bounds.maximum_total_requests == 3 and
+            .request_bounds.maximum_parallel_workers == 1 and
+            .request_bounds.interactive_search_submissions == 0 and
+            .request_bounds.forms_submitted == 0 and
+            .request_bounds.external_discovered_links_fetched == 0 and
+            .retention.raw_index_retained == false and
+            .retention.full_index_rows_retained == false and
+            .retention.exact_object_rows_retained == true and
+            .retention.street_address_rows_retained == 0 and
+            .retention.contact_detail_rows_retained == 0 and
+            .retention.private_support_rows == 0 and
+            .interpretation.index_row_is_archive_routing_evidence_only == true and
+            .interpretation.zero_object_rows_are_not_absence_evidence == true and
+            .interpretation.provider_errors_are_not_absence_evidence == true and
+            .interpretation.no_identity_or_relationship_may_be_admitted_by_this_acquisition == true and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/route-policy.json"
+
+          jq -e '
+            .declared_filings == 3 and
+            .legal_identity_admitted == false and
+            .fiscal_sponsor_relationship_admitted == false and
+            .related_party_relationship_admitted == false and
+            .negative_existence_claim_created == false and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none" and
+            .promotes_to == "candidate_only"
+          ' "$OUT/adjudication.json"
+
+      - name: Upload terminal index-resolution artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: schoolhouse-honor-foundation-990-index-resolution
+          path: /tmp/schoolhouse-honor-foundation-990-index-resolution
+          if-no-files-found: error
+          retention-days: 90
