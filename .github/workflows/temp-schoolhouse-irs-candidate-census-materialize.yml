@@ -6,6 +6,7 @@ on:
       - '.github/workflows/temp-schoolhouse-irs-candidate-census-materialize.yml'
       - '.schoolhouse-irs-candidate-census/EXECUTE'
       - 'tools/build-schoolhouse-irs-candidate-census.mjs'
+      - 'tools/patch-schoolhouse-irs-candidate-census-count.mjs'
   workflow_dispatch:
 
 permissions:
@@ -49,7 +50,9 @@ jobs:
           TARGET='agent/schoolhouse-irs-candidate-census-product-v1'
           MAIN_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
           SOURCE_BUILDER="$GITHUB_WORKSPACE/tools/build-schoolhouse-irs-candidate-census.mjs"
+          FIXTURE_REPAIR="$GITHUB_WORKSPACE/tools/patch-schoolhouse-irs-candidate-census-count.mjs"
           test -f "$SOURCE_BUILDER"
+          test -f "$FIXTURE_REPAIR"
 
           rm -rf /tmp/schoolhouse-irs-candidate-census-product
           git fetch --no-tags origin "$MAIN_SHA"
@@ -57,6 +60,7 @@ jobs:
           cd /tmp/schoolhouse-irs-candidate-census-product
           mkdir -p tools
           cp "$SOURCE_BUILDER" tools/build-schoolhouse-irs-candidate-census.mjs
+          node "$FIXTURE_REPAIR" tools/build-schoolhouse-irs-candidate-census.mjs
 
           node tools/build-schoolhouse-irs-candidate-census.mjs /tmp/schoolhouse-irs-acquisition
           node tools/validate-bvvc-defense-capital.mjs
@@ -96,7 +100,7 @@ jobs:
             --arg base_main "$MAIN_SHA" \
             --arg product_sha "$PRODUCT_SHA" \
             --arg target "$TARGET" \
-            '{schema_version:"schoolhouse-irs-candidate-census-materialization-receipt@1",base_main:$base_main,product_sha:$product_sha,target_branch:$target,changed_paths:14,source_routes:6,source_rows_scanned:4394541,candidate_rows:641,unique_candidate_eins:438,admitted_identities:0,source_inventory_rows:95,private_support_rows:0,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+            '{schema_version:"schoolhouse-irs-candidate-census-materialization-receipt@1",base_main:$base_main,product_sha:$product_sha,target_branch:$target,changed_paths:14,source_routes:6,source_rows_scanned:7020930,candidate_rows:641,unique_candidate_eins:438,admitted_identities:0,source_inventory_rows:95,private_support_rows:0,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
             > /tmp/schoolhouse-irs-candidate-census-receipt/status.json
           sha256sum /tmp/schoolhouse-irs-candidate-census-receipt/status.json > /tmp/schoolhouse-irs-candidate-census-receipt/SHA256SUMS
 
