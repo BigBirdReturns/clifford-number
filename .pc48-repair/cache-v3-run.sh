@@ -21,6 +21,27 @@ test "$(sha256sum test/preference-custody-manifest-v46.test.js | awk '{print $1}
 git fetch --no-tags origin "$CURRENT_MAIN"
 git cat-file -e "$CURRENT_MAIN^{commit}"
 
+phase=preserve_transitive_key_diagnostics
+python3 - <<'PY'
+from pathlib import Path
+
+path = Path('/tmp/cache-v3.py')
+text = path.read_text()
+old = """  const snapshot = snapshotCacheSafeV45Inputs(baseBuild, baseSources, keyErrors);
+  if (!snapshot) return keyErrors;
+  const cacheKey = sha256(snapshot);
+"""
+new = """  const snapshot = snapshotCacheSafeV45Inputs(baseBuild, baseSources, keyErrors);
+  if (!snapshot) return keyErrors;
+  const transitiveKeyErrors = validateTransitiveSourceBundleKeys(snapshot.baseSources);
+  if (transitiveKeyErrors.length) return transitiveKeyErrors;
+  const cacheKey = sha256(snapshot);
+"""
+if text.count(old) != 1:
+    raise SystemExit(f'unexpected recursive cache preflight anchor count: {text.count(old)}')
+path.write_text(text.replace(old, new, 1))
+PY
+
 phase=apply_recursive_cache_safety
 python3 /tmp/cache-v3.py
 cat > /tmp/pc48-cache-v3-expected-paths.txt <<'EOF'
@@ -56,7 +77,7 @@ node tools/validate-preference-linkage-interval-method-partition-replication-dep
 node test/preference-linkage-interval-method-partition-replication-deployment-assurance.test.js
 node tools/compile-preference-custody-manifest-v46.mjs
 node tools/validate-preference-custody-manifest-v46.mjs
-node test/preference-custody-manifest-v46.test.js | tee /tmp/pc48-cache-v3-test.log
+node test/preference-custody-manifest-v46.test.js 2>&1 | tee /tmp/pc48-cache-v3-test.log
 grep -F 'PASS (179 mutations' /tmp/pc48-cache-v3-test.log
 node tools/validate-no-magic-human-gate.mjs
 node test/no-magic-human-gate.test.js
@@ -82,6 +103,7 @@ changed_paths=2
 repaired_lib_sha256=$repaired_lib_sha256
 repaired_test_sha256=$repaired_test_sha256
 recursive_cache_safe_json_preflight=pass
+transitive_key_diagnostics_before_full_v45_validation=pass
 compile_preflight_before_base_or_chronology_validation=pass
 build_validation_preflight_before_source_hashing=pass
 structured_clone_snapshot=pass
