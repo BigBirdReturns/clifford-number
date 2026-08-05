@@ -23,9 +23,9 @@ jobs:
       - name: Reconstruct exact qualified carrier inputs
         run: |
           set -euo pipefail
-          test "$(sha256sum .pc49-carrier-v3/product.part00 | awk '{print $1}')" = "2081e693aa312a31e7ee07e99346411e96480d6f2ca62b95bca3dba510c0b2db"
-          test "$(sha256sum .pc49-carrier-v3/product.part01 | awk '{print $1}')" = "0a95ebf2a27afd8ad27465ba13c4fe64d4dca9a1e810f256053596fd4c0eb654"
-          test "$(sha256sum .pc49-carrier-v3/product.part02 | awk '{print $1}')" = "4c1db53eb1e61cf67e75c434b7420676aa1d248462179c63387b077a3ee901e4"
+          test "$(sha256sum .pc49-carrier-v3/product.part00 | awk '{print $1}')" = "2081ea8d85452d2b813a8a0d4ce636dd26c27b686b8583ec479a7b30ca77f07f"
+          test "$(sha256sum .pc49-carrier-v3/product.part01 | awk '{print $1}')" = "0a95bf5288b5bae15fadc4006cb5fde510cfe7bbbde138ea8d764868e126b622"
+          test "$(sha256sum .pc49-carrier-v3/product.part02 | awk '{print $1}')" = "4c1bb8547c709f0b1783b221f8475ebe43f9991fa19d763af116ac40b51b9084"
           test "$(sha256sum .pc49-carrier-v3/product.part03 | awk '{print $1}')" = "ed59e6b7670e718e675aae9157a701cffc58f8f6541dc2cfeebeefcf8c02d323"
           test "$(sha256sum .pc49-carrier-v3/run.part00 | awk '{print $1}')" = "692397591d98aeab0a12e40bb8780e70ec610c229fd690fd212dea449d16306a"
 
