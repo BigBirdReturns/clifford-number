@@ -1,0 +1,264 @@
+name: TEMP replay School.House launch-era archived legal surfaces
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-launch-era-archive-content-replay.yml'
+      - '.schoolhouse-launch-era-archive-content-replay/EXECUTE'
+      - '.schoolhouse-launch-era-archive-content-replay/input.json.gz.b64'
+      - '.schoolhouse-launch-era-archive-content-replay/chunks/*.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: temp-schoolhouse-launch-era-archive-content-replay-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate exact failed-route denominator and replay runner
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          BASE_MAIN='c81de1c073d0a9ff6d35d8b6f1f4396941026203'
+          EXECUTE='.schoolhouse-launch-era-archive-content-replay/EXECUTE'
+          INPUT_BUNDLE='.schoolhouse-launch-era-archive-content-replay/input.json.gz.b64'
+          INPUT='/tmp/schoolhouse-launch-era-archive-content-replay-input.json'
+          CHUNKS='.schoolhouse-launch-era-archive-content-replay/chunks'
+          RUNNER_BUNDLE='/tmp/schoolhouse-launch-era-archive-content-replay.py.gz.b64'
+          RUNNER='/tmp/replay-schoolhouse-launch-era-archive-content.py'
+          BASELINE='/tmp/schoolhouse-launch-era-archive-content-baseline'
+          OUT='/tmp/schoolhouse-launch-era-archive-content-replay'
+
+          mkdir -p "$OUT"
+          printf 'validation_started\n' > "$OUT/validation-state.txt"
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$BASE_MAIN" origin/main
+          test "$(git merge-base HEAD origin/main)" = "$BASE_MAIN"
+
+          for file in "$EXECUTE" "$INPUT_BUNDLE" "$CHUNKS/00.b64" "$CHUNKS/01.b64" "$CHUNKS/02.b64" "$CHUNKS/03.b64"; do
+            TREE_BLOB=$(git ls-tree HEAD -- "$file" | awk '{print $3}')
+            test -n "$TREE_BLOB"
+            test "$(git hash-object "$file")" = "$TREE_BLOB"
+          done
+          git diff --exit-code -- "$EXECUTE" "$INPUT_BUNDLE" "$CHUNKS"
+          test "$(find "$CHUNKS" -maxdepth 1 -type f -name '*.b64' | wc -l | tr -d ' ')" = '4'
+
+          grep -Fx 'attempt=02' "$EXECUTE"
+          grep -Fx 'baseline_workflow_run_id=31024272835' "$EXECUTE"
+          grep -Fx 'baseline_artifact_id=8937954996' "$EXECUTE"
+          grep -Fx 'baseline_artifact_digest=sha256:e9d4346b9ff2831cbe0b7a2e3cae3aaebcc654f6af0742d80534904d9ca3b8b1' "$EXECUTE"
+          grep -Fx 'retry_snapshots=3' "$EXECUTE"
+          grep -Fx 'maximum_attempts_per_snapshot=1' "$EXECUTE"
+          grep -Fx 'maximum_parallel_workers=1' "$EXECUTE"
+          grep -Fx 'inter_request_delay_seconds=3' "$EXECUTE"
+          grep -Fx 'embedded_resources_fetched=0' "$EXECUTE"
+          grep -Fx 'followup_links_fetched=0' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+
+          base64 -d "$INPUT_BUNDLE" | gzip -dc > "$INPUT"
+          test "$(sha256sum "$INPUT" | awk '{print $1}')" = '08670c1ea3a69a7317fba88d770501d810721869ef7f386a7bc9cdb9950b17bf'
+          cat "$CHUNKS/00.b64" "$CHUNKS/01.b64" "$CHUNKS/02.b64" "$CHUNKS/03.b64" > "$RUNNER_BUNDLE"
+          test "$(sha256sum "$RUNNER_BUNDLE" | awk '{print $1}')" = '09038ab3032091d9360440d7b1b169125f95d2a9382fcf3ea33b00860b2b5330'
+          base64 -d "$RUNNER_BUNDLE" | gzip -dc > "$RUNNER"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = 'b6017571707a15363fbb582f4744423ca5ceae7f5f444ad46420146a8385725b'
+          python -m py_compile "$RUNNER"
+
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/8937954996" --jq .digest)" = 'sha256:e9d4346b9ff2831cbe0b7a2e3cae3aaebcc654f6af0742d80534904d9ca3b8b1'
+          rm -rf "$BASELINE"
+          mkdir -p "$BASELINE"
+          gh run download 31024272835 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name schoolhouse-launch-era-archive-content-census \
+            --dir "$BASELINE"
+          (cd "$BASELINE" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$BASELINE/archived-route-results.jsonl" | awk '{print $1}')" = 'aa55078fbbd5feeeb3c205eba6facf797c7c3f9862285345a175af0f5e94ea58'
+          test "$(sha256sum "$BASELINE/summary.json" | awk '{print $1}')" = '0ce462c2cbdc2b3ad8ead43cef56fc86c7fd742106b728cc5d07f4f248edb65a'
+
+          python - "$INPUT" "$BASELINE/archived-route-results.jsonl" <<'PY'
+          import hashlib
+          import json
+          import sys
+
+          input_path, route_path = sys.argv[1:]
+          specification = json.load(open(input_path, encoding="utf-8"))
+          assert specification["schema_version"] == "schoolhouse-launch-era-archive-content-replay-input@1"
+          baseline = specification["baseline_artifact"]
+          assert baseline == {
+              "workflow_run_id": 31024272835,
+              "artifact_id": 8937954996,
+              "artifact_digest": "sha256:e9d4346b9ff2831cbe0b7a2e3cae3aaebcc654f6af0742d80534904d9ca3b8b1",
+              "route_results_sha256": "aa55078fbbd5feeeb3c205eba6facf797c7c3f9862285345a175af0f5e94ea58",
+              "summary_sha256": "0ce462c2cbdc2b3ad8ead43cef56fc86c7fd742106b728cc5d07f4f248edb65a",
+          }
+          snapshots = specification["snapshots"]
+          assert len(snapshots) == 3
+          assert len({row["selection_id"] for row in snapshots}) == 3
+          assert {row["selection_id"] for row in snapshots} == {
+              "launch-archive-connect-2024-03-05",
+              "launch-archive-home-2024-03-24",
+              "launch-archive-connect-2024-04-18",
+          }
+
+          baseline_rows = {}
+          with open(route_path, encoding="utf-8") as handle:
+              for raw in handle:
+                  line = raw.rstrip("\n")
+                  if not line:
+                      continue
+                  row = json.loads(line)
+                  baseline_rows[row["route_id"]] = (line, row)
+          failed = {
+              key for key, (_, row) in baseline_rows.items()
+              if row["state"] == "terminal_archive_replay_transport_error_not_absence_evidence"
+          }
+          assert failed == {row["selection_id"] for row in snapshots}
+
+          fields = {
+              "timestamp": "timestamp",
+              "original_url": "original_url",
+              "replay_locator": "replay_locator",
+              "archive_digest": "expected_archive_digest",
+              "archived_length": "expected_archived_length",
+              "source_route_id": "source_route_id",
+              "source_receipt_id": "source_receipt_id",
+          }
+          for snapshot in snapshots:
+              line, row = baseline_rows[snapshot["selection_id"]]
+              assert snapshot["baseline_state"] == row["state"]
+              assert snapshot["baseline_error_class"] == row["error_class"]
+              assert snapshot["baseline_error_message_sha256"] == row["error_message_sha256"]
+              assert snapshot["baseline_request_attempts"] == 1 == row["request_attempts"]
+              assert snapshot["replay_attempt_number"] == 2
+              assert snapshot["baseline_route_result_sha256"] == hashlib.sha256(line.encode()).hexdigest()
+              for input_field, baseline_field in fields.items():
+                  assert snapshot[input_field] == row[baseline_field], (
+                      snapshot["selection_id"], input_field, snapshot[input_field], row[baseline_field]
+                  )
+              assert snapshot["replay_locator"].startswith(
+                  f'https://web.archive.org/web/{snapshot["timestamp"]}id_/'
+              )
+          bounds = specification["bounds"]
+          assert bounds["declared_snapshots"] == 3
+          assert bounds["maximum_attempts_per_snapshot"] == 1
+          assert bounds["maximum_parallel_workers"] == 1
+          assert bounds["inter_request_delay_seconds"] == 3
+          assert bounds["request_timeout_seconds"] == 90
+          assert bounds["maximum_response_bytes"] == 2097152
+          assert specification["outside_human_dependency"] is False
+          assert specification["graph_effect"] == "none"
+          PY
+          printf 'validation_passed\n' > "$OUT/validation-state.txt"
+
+      - name: Execute one bounded replay attempt per failed snapshot
+        run: |
+          set -Eeuo pipefail
+          INPUT='/tmp/schoolhouse-launch-era-archive-content-replay-input.json'
+          RUNNER='/tmp/replay-schoolhouse-launch-era-archive-content.py'
+          OUT='/tmp/schoolhouse-launch-era-archive-content-replay'
+          rm -rf "$OUT"
+          python "$RUNNER" --input "$INPUT" --output "$OUT"
+
+          for file in summary.json route-policy.json artifact-manifest.json archived-route-results.jsonl archived-surface-evidence.jsonl archived-candidate-observations.jsonl archived-link-inventory.jsonl SHA256SUMS; do
+            test -f "$OUT/$file"
+          done
+
+          cat "$OUT/summary.json"
+          jq -e '
+            .schema_version == "schoolhouse-launch-era-archive-content-replay@1" and
+            .declared_snapshots == 3 and
+            .terminal_route_rows == 3 and
+            .replay_attempt_rows == 3 and
+            .request_attempts == 3 and
+            .successful_routes >= 0 and
+            .successful_routes <= 3 and
+            .provider_error_routes >= 0 and
+            .provider_error_routes <= 3 and
+            (.successful_routes + .provider_error_routes) == 3 and
+            .surface_evidence_rows == .successful_html_routes and
+            .baseline_workflow_run_id == 31024272835 and
+            .baseline_artifact_id == 8937954996 and
+            .baseline_artifact_digest == "sha256:e9d4346b9ff2831cbe0b7a2e3cae3aaebcc654f6af0742d80534904d9ca3b8b1" and
+            .maximum_attempts_per_snapshot == 1 and
+            .maximum_parallel_workers == 1 and
+            .inter_request_delay_seconds == 3 and
+            .request_timeout_seconds == 90 and
+            .embedded_resources_fetched == 0 and
+            .followup_links_fetched == 0 and
+            .forms_submitted == 0 and
+            .interactive_searches_submitted == 0 and
+            .source_rows_acquired == 0 and
+            .raw_source_retained == false and
+            .full_visible_text_retained == false and
+            .street_address_rows_retained == 0 and
+            .contact_detail_rows_retained == 0 and
+            .private_support_rows == 0 and
+            .identities_admitted == 0 and
+            .negative_existence_claims_created == 0 and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/summary.json"
+          test "$(grep -cve '^$' "$OUT/archived-route-results.jsonl")" = '3'
+          jq -e -s '
+            length == 3 and
+            ([.[].attempt_number] | unique) == [2] and
+            ([.[].baseline_artifact_id] | unique) == [8937954996] and
+            ([.[].baseline_workflow_run_id] | unique) == [31024272835] and
+            ([.[].baseline_state] | unique) == ["terminal_archive_replay_transport_error_not_absence_evidence"]
+          ' "$OUT/archived-route-results.jsonl"
+          jq -e '
+            .schema_version == "schoolhouse-launch-era-archive-replay-route-policy@1" and
+            .source_denominator.declared_snapshots == 3 and
+            .source_denominator.baseline_artifact.artifact_id == 8937954996 and
+            .request_policy.maximum_attempts_per_snapshot == 1 and
+            .request_policy.maximum_parallel_workers == 1 and
+            .interpretation.replay_success_supersedes_only_effective_disposition_and_does_not_erase_baseline_attempt == true and
+            .interpretation.repeated_provider_error_is_not_absence == true and
+            .identity_admitted == false and
+            .negative_existence_claim_created == false and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/route-policy.json"
+          jq -e '
+            .schema_version == "schoolhouse-launch-era-archive-replay-artifact-manifest@1" and
+            .raw_source_retained == false and
+            .full_visible_text_retained == false and
+            .street_address_rows_retained == 0 and
+            .contact_detail_rows_retained == 0 and
+            .private_support_rows == 0 and
+            .identity_admitted == false and
+            .negative_existence_claim_created == false and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/artifact-manifest.json"
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: schoolhouse-launch-era-archive-content-replay
+          path: /tmp/schoolhouse-launch-era-archive-content-replay
+          if-no-files-found: error
+          retention-days: 90
