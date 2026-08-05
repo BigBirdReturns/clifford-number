@@ -553,8 +553,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const secondLevelForms = readJsonl(path.join(dir, 'schoolhouse-charity-nc-second-level-surface-forms.jsonl'));
     const secondLevelRoutes = [...secondLevelRoots, ...secondLevelFollowed];
 
-    check(manifest.counts.source_inventory_rows === 418, 'second-level source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 25, 'second-level coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 425, 'second-level source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 26, 'second-level coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'second-level explicit-gap count drift');
     check(manifest.counts.schoolhouse_charity_nc_second_level_root_route_rows === secondLevelRoots.length && secondLevelRoots.length === 8, 'second-level root-route denominator drift');
     check(manifest.counts.schoolhouse_charity_nc_second_level_followed_route_rows === secondLevelFollowed.length && secondLevelFollowed.length === 80, 'second-level followed-route denominator drift');
@@ -623,8 +623,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const finalResidualForms = readJsonl(path.join(dir, 'schoolhouse-charity-nc-final-static-residual-surface-forms.jsonl'));
     const finalResidualFiles = readJsonl(path.join(dir, 'schoolhouse-charity-nc-final-static-residual-file-samples.jsonl'));
 
-    check(manifest.counts.source_inventory_rows === 418, 'final residual source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 25, 'final residual coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 425, 'final residual source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 26, 'final residual coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'final residual explicit-gap count drift');
     check(manifest.counts.schoolhouse_charity_nc_final_static_residual_input_rows === finalResidualInputs.length && finalResidualInputs.length === 51, 'final residual input denominator drift');
     check(manifest.counts.schoolhouse_charity_nc_final_static_residual_terminal_route_rows === finalResidualRoutes.length && finalResidualRoutes.length === 51, 'final residual route denominator drift');
@@ -683,8 +683,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const completePdfPolicy = readJson(path.join(dir, 'schoolhouse-charity-nc-complete-pdf-route-policy.json'));
     const completePdfSummary = readJson(path.join(dir, 'schoolhouse-charity-nc-complete-pdf-field-summary.json'));
 
-    check(manifest.counts.source_inventory_rows === 418, 'complete-PDF source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 25, 'complete-PDF coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 425, 'complete-PDF source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 26, 'complete-PDF coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'complete-PDF explicit-gap count drift');
     check(manifest.counts.schoolhouse_charity_nc_complete_pdf_input_rows === completePdfInputs.length && completePdfInputs.length === 15, 'complete-PDF input denominator drift');
     check(manifest.counts.schoolhouse_charity_nc_complete_pdf_terminal_route_rows === completePdfFull.length && completePdfFull.length === 15, 'complete-PDF terminal denominator drift');
@@ -738,8 +738,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const firstPartyHtml = firstPartyEvidence.filter(row => row.surface_evidence_type === 'html_surface');
     const firstPartyForms = firstPartyEvidence.filter(row => row.surface_evidence_type === 'form_metadata');
 
-    check(manifest.counts.source_inventory_rows === 418, 'first-party source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 25, 'first-party coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 425, 'first-party source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 26, 'first-party coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'first-party explicit-gap count drift');
     check(manifest.counts.schoolhouse_first_party_legal_surface_root_route_rows === firstPartyRoutes.filter(row => row.route_class === 'fixed_root').length && manifest.counts.schoolhouse_first_party_legal_surface_root_route_rows === 5, 'first-party root-route denominator drift');
     check(manifest.counts.schoolhouse_first_party_legal_surface_followed_route_rows === firstPartyRoutes.filter(row => row.route_class === 'query_free_same_host_follow').length && manifest.counts.schoolhouse_first_party_legal_surface_followed_route_rows === 41, 'first-party followed-route denominator drift');
@@ -828,8 +828,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const archiveBoundedZeroRoutes = archiveRoutes.filter(row => row.effective_state_class === 'bounded_zero_archive_locator_metadata');
     const archiveResidualProviderErrors = archiveRoutes.filter(row => row.effective_state_class === 'archive_locator_provider_error');
 
-    check(manifest.counts.source_inventory_rows === 418, 'archive source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 25, 'archive coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 425, 'archive source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 26, 'archive coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'archive explicit-gap count drift');
     check(manifest.counts.schoolhouse_first_party_archive_locator_source_route_rows === archiveRoutes.length && archiveRoutes.length === 46, 'archive source-route denominator drift');
     check(manifest.counts.schoolhouse_first_party_archive_locator_baseline_attempt_rows === archiveBaselineAttempts.length && archiveBaselineAttempts.length === 46, 'archive baseline-attempt denominator drift');
@@ -910,8 +910,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const residualErrors = launchRoutes.filter(row => row.effective_state_class === 'archive_content_provider_error_not_absence');
     const taxSelfClaims = launchCandidates.filter(row => row.adjudication_state === 'early_first_party_tax_status_self_description_not_registry_identity');
 
-    check(manifest.counts.source_inventory_rows === 418, 'launch-era source denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 25, 'launch-era coverage denominator drift');
+    check(manifest.counts.source_inventory_rows === 425, 'launch-era source denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 26, 'launch-era coverage denominator drift');
     check(manifest.counts.explicit_gap_rows === 16, 'launch-era gap denominator drift');
     check(launchAttempts.length === 10 && baselineAttempts.length === 7 && replayAttempts.length === 3, 'launch-era attempt denominator drift');
     check(launchRoutes.length === 7 && successfulRoutes.length === 6 && residualErrors.length === 1, 'launch-era route denominator drift');
@@ -948,6 +948,61 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const frontierProjection = frontier.tasks.find(task => task.task_id === 'bvvc-frontier-schoolhouse-legal-governance')?.prior_launch_era_archive_content_custody;
     check(frontierProjection?.source_routes === 7 && frontierProjection?.total_attempt_rows === 10 && frontierProjection?.successful_archived_html_routes === 6 && frontierProjection?.residual_provider_error_routes === 1 && frontierProjection?.admitted_identities === 0, 'launch-era frontier projection drift');
     check(coverage.denominators.some(row => row.surface === 'School.House launch-era archived legal-surface content custody' && row.enumerated_total === 7 && row.total_attempt_rows === 10 && row.successful_archived_html_routes === 6 && row.residual_provider_error_routes === 1 && row.surface_evidence_rows === 6 && row.candidate_observation_rows === 11 && row.legal_governance_link_rows === 6 && row.admitted_identities === 0), 'launch-era coverage denominator missing');
+  }
+
+
+  {
+    const reconciliationCustody = readJson(path.join(dir, 'schoolhouse-archive-minimum-legal-surface-reconciliation-custody.json'));
+    const reconciliationAttempts = readJsonl(path.join(dir, 'schoolhouse-archive-minimum-legal-surface-attempt-results.jsonl'));
+    const reconciliationRoutes = readJsonl(path.join(dir, 'schoolhouse-archive-minimum-legal-surface-route-reconciliation.jsonl'));
+    const reconciliationSignals = readJsonl(path.join(dir, 'schoolhouse-archive-minimum-legal-surface-legal-signals.jsonl'));
+    const reconciliationLinks = readJsonl(path.join(dir, 'schoolhouse-archive-minimum-legal-surface-link-inventory.jsonl'));
+    const priorLaunchRoutes = readJsonl(path.join(dir, 'schoolhouse-launch-era-archive-content-route-results.jsonl'));
+    const receiptIds = new Set(sourceInventory.map(row => row.receipt_id));
+    const baselineAttempts = reconciliationAttempts.filter(row => row.acquisition_phase === 'minimum_legal_surface_baseline');
+    const replayAttempts = reconciliationAttempts.filter(row => row.acquisition_phase === 'bounded_transport_replay');
+    const exactMatches = reconciliationRoutes.filter(row => row.exact_content_match_to_prior);
+    const recoveredErrors = reconciliationRoutes.filter(row => row.prior_provider_error_recovered);
+    const novelRoutes = reconciliationRoutes.filter(row => row.novel_unique_snapshot);
+    const uniqueUnion = new Set([...priorLaunchRoutes, ...reconciliationRoutes].map(row => row.timestamp + '\u0000' + row.original_url));
+
+    check(manifest.counts.source_inventory_rows === 425, 'archive reconciliation source denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 26, 'archive reconciliation coverage denominator drift');
+    check(manifest.counts.explicit_gap_rows === 16, 'archive reconciliation gap denominator drift');
+    check(reconciliationAttempts.length === 7 && baselineAttempts.length === 5 && replayAttempts.length === 2, 'archive reconciliation attempt denominator drift');
+    check(reconciliationRoutes.length === 5 && reconciliationRoutes.every(row => row.status === 200 && row.effective_state_class === 'captured_archived_html_surface_privacy_minimized'), 'archive reconciliation route denominator drift');
+    check(exactMatches.length === 3 && recoveredErrors.length === 1 && novelRoutes.length === 1 && uniqueUnion.size === 8, 'archive reconciliation overlap/union drift');
+    check(reconciliationSignals.length === 3 && reconciliationLinks.length === 2, 'archive reconciliation evidence denominator drift');
+    check(reconciliationRoutes.reduce((total, row) => total + row.form_rows_observed, 0) === 2 && reconciliationRoutes.reduce((total, row) => total + row.form_control_rows_observed, 0) === 6, 'archive reconciliation form denominator drift');
+    check(reconciliationRoutes.reduce((total, row) => total + row.screened_visible_text_chars, 0) === 40799, 'archive reconciliation screened-text denominator drift');
+    check(reconciliationRoutes.reduce((total, row) => total + row.fixed_legal_term_total_hits, 0) === 5, 'archive reconciliation fixed-term denominator drift');
+    check(reconciliationRoutes.find(row => row.timestamp === '20240418064153')?.fixed_legal_term_total_hits === 3, 'archive reconciliation April 18 self-description drift');
+    check(reconciliationRoutes.find(row => row.timestamp === '20240725192225')?.fixed_legal_term_total_hits === 0, 'archive reconciliation July 25 fixed-term drift');
+
+    check(unique(reconciliationAttempts.map(row => row.attempt_id)) && unique(reconciliationAttempts.map(row => row.attempt_receipt_id)), 'archive reconciliation attempt IDs must be unique');
+    check(unique(reconciliationRoutes.map(row => row.route_reconciliation_id)) && unique(reconciliationRoutes.map(row => row.locator_id)), 'archive reconciliation route IDs must be unique');
+    check(reconciliationAttempts.every(row => receiptIds.has(row.attempt_receipt_id) && row.request_attempts === 1 && row.request_method === 'GET'), 'archive reconciliation attempt receipt/request drift');
+    check(reconciliationAttempts.every(row => row.raw_source_retained === false && row.visible_text_retained === false && row.form_values_retained === false && row.jsonld_raw_retained === false && row.street_address_rows_retained === 0 && row.contact_detail_rows_retained === 0 && row.private_support_rows === 0), 'archive reconciliation attempt privacy drift');
+    check(reconciliationAttempts.every(row => row.identity_admitted === false && row.negative_existence_claim_created === false && row.outside_human_dependency === false && row.publication_effect === 'none' && row.adoption_effect === 'none' && row.graph_effect === 'none' && row.promotes_to === 'candidate_only'), 'archive reconciliation attempt authority drift');
+    check(reconciliationRoutes.every(row => receiptIds.has(row.baseline_attempt_receipt_id) && (row.replay_attempt_receipt_id === null || receiptIds.has(row.replay_attempt_receipt_id))), 'archive reconciliation route receipt linkage drift');
+    check(reconciliationRoutes.every(row => row.raw_source_retained === false && row.visible_text_retained === false && row.source_rows_acquired === 0 && row.identity_admitted === false && row.negative_existence_claim_created === false && row.outside_human_dependency === false && row.graph_effect === 'none'), 'archive reconciliation route authority drift');
+    check(reconciliationSignals.every(row => receiptIds.has(row.attempt_receipt_id) && row.registry_grade === false && row.identifier_grade === false && row.identity_admitted === false && row.adjudication_state === 'third_party_domain_marketplace_signal_not_schoolhouse_legal_identity' && row.graph_effect === 'none'), 'archive reconciliation signal authority drift');
+    check(reconciliationLinks.every(row => receiptIds.has(row.attempt_receipt_id) && row.fetched === false && row.query_value_retained === false && row.identity_admitted === false && row.adjudication_state === 'third_party_domain_marketplace_legal_link_not_schoolhouse_governance_or_identity' && row.graph_effect === 'none'), 'archive reconciliation link authority drift');
+
+    check(reconciliationCustody.canonical_parent.commit === '170cffa6c2a0c1e6fcd5124d713f054d228b4979' && reconciliationCustody.canonical_parent.tree === 'a991c88abe08aeb11687a22de1cb584431dfb99b', 'archive reconciliation parent custody drift');
+    check(reconciliationCustody.acquisitions.minimum_surface_baseline.workflow_run_id === 31030908630 && reconciliationCustody.acquisitions.minimum_surface_baseline.artifact_id === 8940650245 && reconciliationCustody.acquisitions.minimum_surface_baseline.artifact_digest === 'sha256:dc499ff1899811f84be3873df2787835dd70f95a73a64d7652ede4d51f48f7da' && reconciliationCustody.acquisitions.minimum_surface_baseline.route_results_sha256 === 'e951990ff347b4ad08f6edfeb52189244b7d58d8a852251a1cb2bbe4f13c83b6', 'archive reconciliation baseline acquisition drift');
+    check(reconciliationCustody.acquisitions.bounded_transport_replay.workflow_run_id === 31032164683 && reconciliationCustody.acquisitions.bounded_transport_replay.artifact_id === 8941112372 && reconciliationCustody.acquisitions.bounded_transport_replay.artifact_digest === 'sha256:ae34561d531c077e56473553b09fc2fe834c32d23f03d7eef3f422c700daf831' && reconciliationCustody.acquisitions.bounded_transport_replay.route_results_sha256 === '38355d7ed95c3aec373c0eb9174d71b158318b6068a258abd76a70cd1f5667d2', 'archive reconciliation replay acquisition drift');
+    check(reconciliationCustody.counts.selected_locator_rows === 5 && reconciliationCustody.counts.total_attempt_rows === 7 && reconciliationCustody.counts.successful_archived_html_routes === 5 && reconciliationCustody.counts.residual_provider_error_routes === 0 && reconciliationCustody.counts.cumulative_unique_archive_snapshots === 8 && reconciliationCustody.counts.cumulative_successful_archive_snapshots === 8, 'archive reconciliation custody denominator drift');
+    check(reconciliationCustody.relationship_to_prior_launch_era_custody.overlapping_locator_rows === 4 && reconciliationCustody.relationship_to_prior_launch_era_custody.exact_content_match_overlap_rows === 3 && reconciliationCustody.relationship_to_prior_launch_era_custody.prior_provider_error_recovered_rows === 1 && reconciliationCustody.relationship_to_prior_launch_era_custody.novel_locator_rows === 1 && reconciliationCustody.relationship_to_prior_launch_era_custody.denominator_inflation_prohibited === true, 'archive reconciliation relationship drift');
+    check(reconciliationCustody.interpretation.overlap_rows_do_not_inflate_unique_snapshot_denominator === true && reconciliationCustody.interpretation.recovered_archived_first_party_tax_status_language_is_self_description_not_registry_identity === true && reconciliationCustody.interpretation.bounded_zero_fixed_term_result_is_not_absence === true, 'archive reconciliation interpretation drift');
+    check(reconciliationCustody.privacy.raw_archive_bodies_retained === false && reconciliationCustody.privacy.full_visible_text_retained === false && reconciliationCustody.privacy.raw_jsonld_retained === false && reconciliationCustody.privacy.form_values_retained === false && reconciliationCustody.privacy.street_address_rows_retained === 0 && reconciliationCustody.privacy.contact_detail_rows_retained === 0 && reconciliationCustody.privacy.private_support_rows === 0, 'archive reconciliation privacy drift');
+    check(reconciliationCustody.public_schoolhouse_identity_admitted === false && reconciliationCustody.admitted_legal_name === null && reconciliationCustody.admitted_ein === null && reconciliationCustody.admitted_exemption_record === null && reconciliationCustody.admitted_fiscal_sponsor === null && reconciliationCustody.negative_existence_claim_created === false && reconciliationCustody.outside_human_dependency === false && reconciliationCustody.graph_effect === 'none', 'archive reconciliation identity authority drift');
+
+    const projection = schoolhouse.state_registry_identity_census?.archive_minimum_legal_surface_reconciliation;
+    check(projection?.selected_locator_rows === 5 && projection?.overlap_locator_rows === 4 && projection?.novel_locator_rows === 1 && projection?.prior_provider_error_recovered_rows === 1 && projection?.cumulative_unique_archive_snapshots === 8 && projection?.cumulative_successful_archive_snapshots === 8 && projection?.cumulative_residual_provider_error_routes === 0 && projection?.public_schoolhouse_identity_admitted === false, 'archive reconciliation School.House projection drift');
+    const frontierProjection = frontier.tasks.find(task => task.task_id === 'bvvc-frontier-schoolhouse-legal-governance')?.prior_archive_minimum_legal_surface_reconciliation;
+    check(frontierProjection?.selected_locator_rows === 5 && frontierProjection?.overlap_locator_rows === 4 && frontierProjection?.novel_locator_rows === 1 && frontierProjection?.cumulative_unique_archive_snapshots === 8 && frontierProjection?.admitted_identities === 0, 'archive reconciliation frontier projection drift');
+    check(coverage.denominators.some(row => row.surface === 'School.House archived legal-surface minimum-lane reconciliation custody' && row.enumerated_total === 5 && row.overlap_locator_rows === 4 && row.novel_locator_rows === 1 && row.successful_archived_html_routes === 5 && row.residual_provider_error_routes === 0 && row.cumulative_unique_archive_snapshots === 8 && row.admitted_identities === 0), 'archive reconciliation coverage denominator missing');
   }
 
   return errors;
