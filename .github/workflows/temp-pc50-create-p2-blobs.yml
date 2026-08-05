@@ -1,4 +1,4 @@
-name: TEMP qualify and materialize exact PC-50 P2 repair blobs
+name: TEMP qualify and materialize PC-50 final-review repair
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: pc50-p2-exact-${{ github.event.pull_request.number }}
+  group: pc50-final-review-repair-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
@@ -26,79 +26,37 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
 
-      - name: Reconstruct exact four-file repair archive
+      - name: Decode and verify exact final-review repair patch
         run: |
           set -Eeuo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          import base64, hashlib, io, json, shutil, tarfile
+          import base64, gzip, hashlib
 
-          carrier = Path('.pc50-carrier/p2-exact')
-          manifest_bytes = (carrier / 'manifest.json').read_bytes()
-          manifest = json.loads(manifest_bytes)
-          if manifest.get('schema_version') != 'pc50-p2-exact-carrier@1':
-              raise SystemExit('unexpected carrier schema')
-          if manifest.get('original_product_commit') != '63c3c8eda8144ec7596efc88a6d7b56239249a58':
-              raise SystemExit('original product commit drift')
-          if manifest.get('original_product_tree') != '772abfbb3285284a5e6f3056592ac65acef4eff1':
-              raise SystemExit('original product tree drift')
-          if manifest.get('qualified_parent_commit') != 'd87172a41e88c1709b37a114b50df733545126c8':
-              raise SystemExit('qualified parent drift')
-          if manifest.get('changed_permanent_files') != 4:
-              raise SystemExit('repair denominator drift')
-
-          parts = manifest.get('parts', [])
-          if len(parts) != 11:
-              raise SystemExit('repair shard denominator mismatch')
-          chunks = []
-          for index, part in enumerate(parts):
-              expected = f'part{index:02d}'
-              if part.get('path') != expected:
-                  raise SystemExit(f'repair shard order mismatch: {part}')
-              raw = (carrier / expected).read_bytes()
-              if len(raw) != part['chars'] or hashlib.sha256(raw).hexdigest() != part['sha256']:
-                  raise SystemExit(f'repair shard mismatch: {expected}')
-              chunks.append(raw)
-          encoded = b''.join(chunks)
-          if len(encoded) != manifest['base64_chars'] or hashlib.sha256(encoded).hexdigest() != manifest['base64_sha256']:
-              raise SystemExit('aggregate repair base64 mismatch')
-          archive = base64.b64decode(encoded, validate=True)
-          if len(archive) != manifest['archive_bytes'] or hashlib.sha256(archive).hexdigest() != manifest['archive_sha256']:
-              raise SystemExit('repair archive mismatch')
-
-          root = Path('/tmp/pc50-p2-exact')
-          shutil.rmtree(root, ignore_errors=True)
-          root.mkdir(parents=True)
-          with tarfile.open(fileobj=io.BytesIO(archive), mode='r:gz') as package:
-              members = [member for member in package.getmembers() if member.isfile()]
-              expected_paths = [row['path'] for row in manifest['files']]
-              if [member.name for member in members] != expected_paths:
-                  raise SystemExit('repair archive path mismatch')
-              for member, expected in zip(members, manifest['files'], strict=True):
-                  if member.name.startswith('/') or '..' in Path(member.name).parts:
-                      raise SystemExit(f'unsafe repair path: {member.name}')
-                  data = package.extractfile(member).read()
-                  digest = hashlib.sha256(data).hexdigest()
-                  blob = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
-                  if len(data) != expected['bytes'] or digest != expected['sha256'] or blob != expected['git_blob_sha1']:
-                      raise SystemExit(f'exact repaired file mismatch: {member.name}')
-                  target = root / member.name
-                  target.parent.mkdir(parents=True, exist_ok=True)
-                  target.write_bytes(data)
-
-          Path('/tmp/pc50-p2-exact.tar.gz').write_bytes(archive)
-          Path('/tmp/pc50-p2-manifest.json').write_bytes(manifest_bytes)
-          print(json.dumps({
-              'archive_bytes': len(archive),
-              'archive_sha256': hashlib.sha256(archive).hexdigest(),
-              'repair_files': len(manifest['files']),
-          }, indent=2))
+          raw = Path('.pc50-carrier/final-review-repair.patch.gz.b64').read_bytes()
+          encoded = b''.join(raw.split())
+          if len(encoded) != 9452:
+              raise SystemExit(f'base64 length mismatch: {len(encoded)}')
+          if hashlib.sha256(encoded).hexdigest() != 'f3f772c55f7a6a85a2e26b3a4dbd8f712c326894fcad736058de3b6f6d34f02d':
+              raise SystemExit('base64 SHA-256 mismatch')
+          compressed = base64.b64decode(encoded, validate=True)
+          if len(compressed) != 7087:
+              raise SystemExit(f'gzip length mismatch: {len(compressed)}')
+          if hashlib.sha256(compressed).hexdigest() != '4d446302b929658695aa812b3fe48e896103bf21445a68f6a53f127327f83f26':
+              raise SystemExit('gzip SHA-256 mismatch')
+          patch = gzip.decompress(compressed)
+          if len(patch) != 36052:
+              raise SystemExit(f'patch length mismatch: {len(patch)}')
+          if hashlib.sha256(patch).hexdigest() != '4ff92a71270c8dffb3ab9819ae973e079d0af241c54a852e0d37dfa5bf6a937d':
+              raise SystemExit('patch SHA-256 mismatch')
+          Path('/tmp/pc50-final-review-repair.patch.gz').write_bytes(compressed)
+          Path('/tmp/pc50-final-review-repair.patch').write_bytes(patch)
           PY
 
-      - name: Checkout exact original PC-50 product head
+      - name: Checkout exact repaired PC-50 product head
         uses: actions/checkout@v4
         with:
-          ref: 63c3c8eda8144ec7596efc88a6d7b56239249a58
+          ref: a73690d05bcf83fa5110f8320df3d92e2dd94ffe
           fetch-depth: 1
           clean: true
 
@@ -106,39 +64,74 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Install and verify exact four-file repair
+      - name: Apply and verify exact six-file repair
         run: |
           set -Eeuo pipefail
-          test "$(git rev-parse HEAD^{commit})" = "63c3c8eda8144ec7596efc88a6d7b56239249a58"
-          test "$(git rev-parse HEAD^{tree})" = "772abfbb3285284a5e6f3056592ac65acef4eff1"
-          python3 - <<'PY'
-          from pathlib import Path
-          import json, shutil
-          root = Path('/tmp/pc50-p2-exact')
-          manifest = json.loads(Path('/tmp/pc50-p2-manifest.json').read_text())
-          for row in manifest['files']:
-              source = root / row['path']
-              target = Path(row['path'])
-              target.parent.mkdir(parents=True, exist_ok=True)
-              shutil.copyfile(source, target)
-          PY
-          python3 - <<'PY'
-          from pathlib import Path
-          import json, subprocess
-          manifest = json.loads(Path('/tmp/pc50-p2-manifest.json').read_text())
-          expected = sorted(row['path'] for row in manifest['files'])
-          actual = sorted(subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines())
-          if actual != expected:
-              raise SystemExit(f'repair path mismatch: {actual}')
-          PY
+          test "$(git rev-parse HEAD^{commit})" = "a73690d05bcf83fa5110f8320df3d92e2dd94ffe"
+          test "$(git rev-parse HEAD^{tree})" = "56c363fc980c506aa3913f4245fc43e03f3e348f"
+          git apply --check /tmp/pc50-final-review-repair.patch
+          git apply /tmp/pc50-final-review-repair.patch
+
+          cat > /tmp/pc50-final-review-paths.txt <<'EOF'
+          test/preference-custody-manifest-v48.test.js
+          test/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.test.js
+          tools/compile-preference-custody-manifest-v48.mjs
+          tools/lib/preference-custody-manifest-v48.mjs
+          tools/lib/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs
+          tools/validate-preference-custody-manifest-v48.mjs
+          EOF
+          git diff --name-only | sort > /tmp/pc50-final-review-actual-paths.txt
+          diff -u /tmp/pc50-final-review-paths.txt /tmp/pc50-final-review-actual-paths.txt
           git diff --check
-          for file in \
-            tools/lib/preference-custody-manifest-v48.mjs \
-            tools/lib/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs \
-            test/preference-custody-manifest-v48.test.js \
-            test/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.test.js; do
-            node --check "$file"
-          done
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+
+          expected = {
+              'test/preference-custody-manifest-v48.test.js': {
+                  'bytes': 16045,
+                  'sha256': '0b59c44fe6271254824f2e1cfc3a8cc82d891a83366036972562fc3687eecfa6',
+                  'blob': 'e320a320eb61e0a172dab067364d6732226bb14a',
+              },
+              'test/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.test.js': {
+                  'bytes': 13633,
+                  'sha256': 'cfa7ba840d82d5974a26d353449d8aeea69ef3551ec822ae8894ed57e9684331',
+                  'blob': 'b88e8c97691fcb02f54dd672c6c5632255dc73c0',
+              },
+              'tools/compile-preference-custody-manifest-v48.mjs': {
+                  'bytes': 2317,
+                  'sha256': '4c7ee2047a3f3d39412435274f82e29007c965c8f1077439fd9483df550f17e0',
+                  'blob': 'a969d67ed794b3428f833d32541f901c5df351f7',
+              },
+              'tools/lib/preference-custody-manifest-v48.mjs': {
+                  'bytes': 45825,
+                  'sha256': 'e286158aaf3569c86ab912cf36b0e4ab33f690bdf29894029169f02dc07d7411',
+                  'blob': 'e488acd2d0934bca920b7a62ecdc6b46e5bb4993',
+              },
+              'tools/lib/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs': {
+                  'bytes': 45633,
+                  'sha256': '3104456c69c06bd597f72d78630fabbcf2e119f1dc9737e2bdc79751a7d747ce',
+                  'blob': '9179cfbefb8ee1867dfecda7494d683855d199fa',
+              },
+              'tools/validate-preference-custody-manifest-v48.mjs': {
+                  'bytes': 1418,
+                  'sha256': 'f5954af611b4f8e813966d5ef2f9867014d2ea1d3c415e795796ae235eaae27c',
+                  'blob': 'cad86f5ec74cc929851d2f0f5b3632955ccd64f2',
+              },
+          }
+          receipt = []
+          for path, meta in expected.items():
+              data = Path(path).read_bytes()
+              digest = hashlib.sha256(data).hexdigest()
+              blob = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+              if len(data) != meta['bytes'] or digest != meta['sha256'] or blob != meta['blob']:
+                  raise SystemExit(f'exact repaired file mismatch: {path}')
+              receipt.append({'path': path, **meta})
+          Path('/tmp/pc50-final-review-local-blob-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          PY
+
+          while read -r file; do node --check "$file"; done < /tmp/pc50-final-review-paths.txt
 
       - name: Qualify repaired standalone PC-50
         run: |
@@ -147,7 +140,7 @@ jobs:
             node tools/compile-preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs
             node tools/validate-preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs
             node test/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.test.js
-          } 2>&1 | tee /tmp/pc50-p2-standalone.log
+          } 2>&1 | tee /tmp/pc50-final-review-standalone.log
 
       - name: Qualify repaired floor v48 and complete ancestry
         run: |
@@ -156,7 +149,7 @@ jobs:
             node tools/compile-preference-custody-manifest-v48.mjs
             node tools/validate-preference-custody-manifest-v48.mjs
             node test/preference-custody-manifest-v48.test.js
-          } 2>&1 | tee /tmp/pc50-p2-floor-v48.log
+          } 2>&1 | tee /tmp/pc50-final-review-floor-v48.log
 
       - name: Enforce no-magic-human gate
         run: |
@@ -164,7 +157,7 @@ jobs:
           {
             node tools/validate-no-magic-human-gate.mjs
             node test/no-magic-human-gate.test.js
-          } 2>&1 | tee /tmp/pc50-p2-no-magic-human.log
+          } 2>&1 | tee /tmp/pc50-final-review-no-magic-human.log
 
       - name: Create exact repaired Git blobs without moving a ref
         env:
@@ -175,17 +168,18 @@ jobs:
           from pathlib import Path
           import base64, json, os, urllib.error, urllib.request
 
-          manifest = json.loads(Path('/tmp/pc50-p2-manifest.json').read_text())
+          expected = json.loads(Path('/tmp/pc50-final-review-local-blob-receipt.json').read_text())
           repo = os.environ['GITHUB_REPOSITORY']
           token = os.environ['GH_TOKEN']
-          def api(payload):
+
+          def create_blob(data):
               url = f'https://api.github.com/repos/{repo}/git/blobs'
-              body = json.dumps(payload, separators=(',', ':')).encode()
+              body = json.dumps({'content': base64.b64encode(data).decode(), 'encoding': 'base64'}, separators=(',', ':')).encode()
               request = urllib.request.Request(url, data=body, method='POST')
               request.add_header('Accept', 'application/vnd.github+json')
               request.add_header('Authorization', f'Bearer {token}')
               request.add_header('X-GitHub-Api-Version', '2022-11-28')
-              request.add_header('User-Agent', 'pc50-p2-exact-blob-materializer')
+              request.add_header('User-Agent', 'pc50-final-review-blob-materializer')
               try:
                   with urllib.request.urlopen(request, timeout=120) as response:
                       return json.loads(response.read())
@@ -193,49 +187,46 @@ jobs:
                   raise SystemExit(f'GitHub blob API failed HTTP {exc.code}: {exc.read().decode(errors="replace")}')
 
           remote = []
-          for row in manifest['files']:
-              data = Path(row['path']).read_bytes()
-              response = api({'content': base64.b64encode(data).decode(), 'encoding': 'base64'})
-              if response.get('sha') != row['git_blob_sha1']:
-                  raise SystemExit(f'remote blob mismatch: {row["path"]}')
+          for meta in expected:
+              data = Path(meta['path']).read_bytes()
+              response = create_blob(data)
+              if response.get('sha') != meta['blob']:
+                  raise SystemExit(f'remote blob mismatch: {meta["path"]}')
               remote.append({
-                  'path': row['path'],
-                  'bytes': row['bytes'],
-                  'sha256': row['sha256'],
+                  'path': meta['path'],
+                  'bytes': meta['bytes'],
+                  'sha256': meta['sha256'],
                   'git_blob_sha1': response['sha'],
               })
+
           receipt = {
-              'schema_version': 'pc50-p2-exact-remote-blob-receipt@1',
+              'schema_version': 'pc50-final-review-remote-blob-receipt@1',
               'carrier_head': os.environ['CARRIER_HEAD'],
-              'original_product_commit': manifest['original_product_commit'],
-              'original_product_tree': manifest['original_product_tree'],
-              'qualified_parent_commit': manifest['qualified_parent_commit'],
-              'archive_sha256': manifest['archive_sha256'],
+              'prior_product_commit': 'a73690d05bcf83fa5110f8320df3d92e2dd94ffe',
+              'prior_product_tree': '56c363fc980c506aa3913f4245fc43e03f3e348f',
+              'qualified_parent_commit': 'd87172a41e88c1709b37a114b50df733545126c8',
+              'patch_sha256': '4ff92a71270c8dffb3ab9819ae973e079d0af241c54a852e0d37dfa5bf6a937d',
               'changed_permanent_files': len(remote),
               'remote_blobs': remote,
               'ref_updated': False,
               'outside_human_dependency': False,
               'graph_effect': 'none',
           }
-          Path('/tmp/pc50-p2-remote-blob-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
-          print(json.dumps({
-              'archive_sha256': receipt['archive_sha256'],
-              'changed_permanent_files': receipt['changed_permanent_files'],
-              'ref_updated': receipt['ref_updated'],
-          }, indent=2))
+          Path('/tmp/pc50-final-review-remote-blob-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
           PY
 
-      - name: Upload exact PC-50 P2 repair custody
+      - name: Upload exact PC-50 final-review repair custody
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pc50-p2-exact-repair-custody
+          name: pc50-final-review-repair-custody
           path: |
-            /tmp/pc50-p2-exact.tar.gz
-            /tmp/pc50-p2-manifest.json
-            /tmp/pc50-p2-remote-blob-receipt.json
-            /tmp/pc50-p2-standalone.log
-            /tmp/pc50-p2-floor-v48.log
-            /tmp/pc50-p2-no-magic-human.log
+            /tmp/pc50-final-review-repair.patch.gz
+            /tmp/pc50-final-review-repair.patch
+            /tmp/pc50-final-review-local-blob-receipt.json
+            /tmp/pc50-final-review-remote-blob-receipt.json
+            /tmp/pc50-final-review-standalone.log
+            /tmp/pc50-final-review-floor-v48.log
+            /tmp/pc50-final-review-no-magic-human.log
           if-no-files-found: warn
           retention-days: 90
