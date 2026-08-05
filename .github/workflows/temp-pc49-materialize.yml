@@ -1,4 +1,4 @@
-name: TEMP search Git object history for exact PC-49 custody
+name: TEMP export PC-49 predecessor reference bundle
 
 on:
   pull_request:
@@ -11,168 +11,63 @@ permissions:
   contents: read
 
 jobs:
-  search:
+  export:
     if: github.head_ref == 'agent/pc49-source-carrier'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
     steps:
-      - name: Checkout every reachable ref and object
+      - name: Checkout exact live main
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
-          fetch-tags: true
-      - name: Search all reachable Git objects and carrier revisions
+      - name: Collect bounded predecessor surfaces
         run: |
           set -euo pipefail
-          mkdir -p /tmp/pc49-object-matches
-          git log --all --date-order --decorate --oneline -- .pc49-carrier-v3 > /tmp/pc49-carrier-history.txt || true
+          mkdir -p /tmp/pc49-reference
+          printf 'main_commit=%s\nmain_tree=%s\n' "$(git rev-parse HEAD)" "$(git rev-parse 'HEAD^{tree}')" > /tmp/pc49-reference/main-custody.txt
           python3 - <<'PY'
-          from __future__ import annotations
-
-          from collections import defaultdict
           from pathlib import Path
-          import hashlib
-          import json
-          import subprocess
+          import shutil
 
-          targets = {
-              '2476656f9be5fe43415fa044834bc0dd662b3dcef5db59f67d24bad2e34a16e4': 'carrier-product-part00',
-              '17419fe8399295d831fd79748325932a98cb16a885d63c885ac9b9feb1e386f7': 'carrier-product-part01',
-              'ab467387b57a09346052fbe573f3f1549100091236c37f476308cde5af269131': 'carrier-product-part02',
-              'ed59e6b7670e718e675aae9157a701cffc58f8f6541dc2cfeebeefcf8c02d323': 'carrier-product-part03',
-              '692397591d98aeab0a12e40bb8780e70ec610c229fd690fd212dea449d16306a': 'carrier-runner-base64-without-final-newline',
-              'a7b6426ea0cd3bca13d63b7184a0b144e429c297295aa86acfb710437f5edb74': 'carrier-runner-base64-with-final-newline',
-              '5cb101569f6630052cf154e1cf2704dbc0b4f094f677dfb8071096f2cd25e879': 'decoded-materializer',
-              '914e5e46f29fd07612e8c9089bec59a4d37bc34d9d1f4159638a2b417cc94774': 'qualified-product-archive',
-              'cfa2c1246fae6e63a1a7b1134c66076f5f3e2f62b2aa43b3726b06f858178e2d': 'preference-custody-v47-workflow',
-              'ce03c3a87942eafb8e61fb272fdb8eb3d00fc92e40d744f419cb20f1cdcd60df': 'runtime-assurance-workflow',
-              'b3deedbbf9c2dab16ae536335080f0c44c5a5ff24e5f851ed2b2d569de503b3a': 'control-manifest-v47-json',
-              '6b0d5c50e966f184648d4fa6dfd240491bd725358aea19c6c5a63e0b761e61f1': 'runtime-assurance-fixture-json',
-              'de7b4a7627381769b514a888e2b7429ae2d221a0d25c558d17a5e41614da35f1': 'floor-v47-doc',
-              '3a2ed2e9b66b9f5a69a3eea7aca5efd1254bb6d2578a80d8510864afe6abae37': 'runtime-assurance-doc',
-              '61fa8ad415bd74a066344a601731f7ec059eaf6cf3250a1a6f981ccd6c8de95d': 'floor-v47-test',
-              'de627a46f83c8de48391bc0e2c38a63103899aa63bf8fc8e4407d4ed82a02eca': 'runtime-assurance-test',
-              'd67bad5b816ef6a21ae37b5bcd7b07dce1471703925d49278415cb9cf357cc65': 'floor-v47-compiler',
-              '77523d12c3e9b90db78accca7c724f4dce919b597e6bc3715143b62e383dd43d': 'runtime-assurance-compiler',
-              '3502c070cc3b9bd59183af734ee7e60a7654d9b4ed9e7dd20c633c10b8362026': 'floor-v47-library',
-              'cba021f0dde587a7709a6d5d037424e590a298bc8c74091bdd05e4c3b0c7f892': 'runtime-assurance-library',
-              '58c148e2c68a129fae49d95202f08220053746dbb529a18e1e5fdac3f16385d8': 'floor-v47-validator',
-              'ad64c6cd5691c5b55ceaa65828cf836acd6f3974d9b583a95c57d2287aa13b9b': 'runtime-assurance-validator',
-          }
-
-          object_paths: dict[str, set[str]] = defaultdict(set)
-          rev_list = subprocess.check_output(
-              ['git', 'rev-list', '--objects', '--all'], text=True
-          ).splitlines()
-          for line in rev_list:
-              oid, *path = line.split(' ', 1)
-              if path:
-                  object_paths[oid].add(path[0])
-              else:
-                  object_paths.setdefault(oid, set())
-
-          oids = list(object_paths)
-          proc = subprocess.Popen(
-              ['git', 'cat-file', '--batch'],
-              stdin=subprocess.PIPE,
-              stdout=subprocess.PIPE,
-          )
-          assert proc.stdin is not None
-          assert proc.stdout is not None
-
-          report = {
-              'reachable_object_count': len(oids),
-              'matches': [],
-              'carrier_revisions': {},
-          }
-          output_dir = Path('/tmp/pc49-object-matches')
-
-          for oid in oids:
-              proc.stdin.write((oid + '\n').encode())
-              proc.stdin.flush()
-              header = proc.stdout.readline().decode().rstrip('\n')
-              fields = header.split()
-              if len(fields) == 2 and fields[1] == 'missing':
-                  continue
-              if len(fields) != 3:
-                  raise SystemExit(f'unexpected cat-file header for {oid}: {header!r}')
-              returned_oid, object_type, size_text = fields
-              size = int(size_text)
-              data = proc.stdout.read(size)
-              delimiter = proc.stdout.read(1)
-              if delimiter != b'\n':
-                  raise SystemExit(f'missing cat-file delimiter for {oid}')
-              if object_type != 'blob':
-                  continue
-              digest = hashlib.sha256(data).hexdigest()
-              label = targets.get(digest)
-              if label is None:
-                  continue
-              suffix = '.bin'
-              if b'\x00' not in data:
-                  suffix = '.txt'
-              output_path = output_dir / f'{label}__{returned_oid}{suffix}'
-              output_path.write_bytes(data)
-              report['matches'].append({
-                  'label': label,
-                  'sha256': digest,
-                  'git_oid': returned_oid,
-                  'bytes': len(data),
-                  'paths': sorted(object_paths.get(returned_oid, set())),
-                  'artifact_path': str(output_path),
-              })
-
-          proc.stdin.close()
-          proc.wait(timeout=30)
-          if proc.returncode != 0:
-              raise SystemExit(f'git cat-file exited {proc.returncode}')
-
-          carrier_paths = [
-              '.pc49-carrier-v3/product.part00',
-              '.pc49-carrier-v3/product.part01',
-              '.pc49-carrier-v3/product.part02',
-              '.pc49-carrier-v3/product.part03',
-              '.pc49-carrier-v3/run.part00',
+          roots = [
+              Path('.github/workflows'),
+              Path('data/research/preference-custody'),
+              Path('docs'),
+              Path('test'),
+              Path('tools'),
           ]
-          for path in carrier_paths:
-              commits = subprocess.check_output(
-                  ['git', 'log', '--all', '--full-history', '--format=%H', '--', path],
-                  text=True,
-              ).splitlines()
-              revisions = []
-              seen = set()
-              for commit in commits:
-                  try:
-                      data = subprocess.check_output(['git', 'show', f'{commit}:{path}'])
-                  except subprocess.CalledProcessError:
-                      continue
-                  digest = hashlib.sha256(data).hexdigest()
-                  identity = (digest, len(data))
-                  if identity in seen:
-                      continue
-                  seen.add(identity)
-                  revisions.append({
-                      'commit': commit,
-                      'sha256': digest,
-                      'bytes': len(data),
-                      'target_label': targets.get(digest),
-                      'head_hex': data[:24].hex(),
-                      'tail_hex': data[-24:].hex(),
-                  })
-              report['carrier_revisions'][path] = revisions
-
-          Path('/tmp/pc49-object-search.json').write_text(
-              json.dumps(report, indent=2, sort_keys=True) + '\n'
+          needles = (
+              'preference-custody-v45',
+              'preference-custody-v46',
+              'preference-custody-manifest-v45',
+              'preference-custody-manifest-v46',
+              'preference-linkage-event-estimand-scope-interpretation-assurance',
+              'preference-linkage-interval-method-partition-replication-deployment-assurance',
           )
-          print(json.dumps(report, indent=2, sort_keys=True))
+          destination = Path('/tmp/pc49-reference/repository')
+          selected = []
+          for root in roots:
+              if not root.exists():
+                  continue
+              for path in root.rglob('*'):
+                  if not path.is_file():
+                      continue
+                  rendered = path.as_posix()
+                  if any(needle in rendered for needle in needles):
+                      target = destination / path
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      shutil.copyfile(path, target)
+                      selected.append(rendered)
+          Path('/tmp/pc49-reference/selected-paths.txt').write_text('\n'.join(sorted(selected)) + '\n')
+          if not selected:
+              raise SystemExit('reference selection is empty')
+          print('\n'.join(sorted(selected)))
           PY
-      - name: Upload object-search custody
+          find /tmp/pc49-reference/repository -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/pc49-reference/reference-sha256.txt
+      - name: Upload predecessor reference bundle
         uses: actions/upload-artifact@v4
         with:
-          name: pc49-git-object-search
-          path: |
-            /tmp/pc49-object-search.json
-            /tmp/pc49-carrier-history.txt
-            /tmp/pc49-object-matches
+          name: pc49-predecessor-reference
+          path: /tmp/pc49-reference
           if-no-files-found: error
           include-hidden-files: true
