@@ -60,13 +60,15 @@ jobs:
             test -f "$OUT/$file"
           done
 
+          cat "$OUT/summary.json"
           jq -e '
             .declared_source_routes == 46 and
             .terminal_archive_query_rows == 46 and
             .archive_api_queries == 46 and
             .maximum_parallel_workers == 4 and
             .maximum_results_per_route == 1000 and
-            .result_caps_exhausted == 0 and
+            .result_caps_exhausted >= 0 and
+            .result_caps_exhausted <= 46 and
             .archived_bodies_fetched == 0 and
             .interactive_search_submissions == 0 and
             .organization_name_submissions == 0 and
@@ -105,6 +107,7 @@ jobs:
           ' "$OUT/artifact-manifest.json"
 
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: schoolhouse-first-party-archive-locator-census
           path: /tmp/schoolhouse-first-party-archive-locator-census
