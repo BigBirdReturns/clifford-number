@@ -9,15 +9,22 @@ on:
       - '.schoolhouse-launch-era-archive-content-materializer/EXECUTE'
       - '.schoolhouse-launch-era-archive-content-materializer/chunks/*.b64'
       - '.schoolhouse-launch-era-archive-content-materializer/runner.sh.gz.b64'
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-launch-era-archive-content-materializer.yml'
+      - '.schoolhouse-launch-era-archive-content-materializer/EXECUTE'
+      - '.schoolhouse-launch-era-archive-content-materializer/chunks/*.b64'
+      - '.schoolhouse-launch-era-archive-content-materializer/runner.sh.gz.b64'
   workflow_dispatch:
 
 concurrency:
-  group: temp-schoolhouse-launch-era-archive-content-materializer-${{ github.ref }}
+  group: temp-schoolhouse-launch-era-archive-content-materializer-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
   actions: read
   contents: write
+  pull-requests: read
 
 jobs:
   materialize:
