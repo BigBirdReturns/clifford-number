@@ -1,0 +1,124 @@
+name: TEMP materialize School.House charity and NC final static residual custody
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-charity-nc-final-static-residual-custody-materialize.yml'
+      - '.schoolhouse-charity-nc-final-static-residual-custody/EXECUTE'
+      - '.schoolhouse-charity-nc-final-static-residual-custody/builder.mjs.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: temp-schoolhouse-charity-nc-final-static-residual-custody-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download terminal final static residual artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/schoolhouse-charity-nc-final-static-residual
+          mkdir -p /tmp/schoolhouse-charity-nc-final-static-residual
+          gh run download 30986284127 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name schoolhouse-charity-nc-final-static-residual \
+            --dir /tmp/schoolhouse-charity-nc-final-static-residual
+          test -f /tmp/schoolhouse-charity-nc-final-static-residual/summary.json
+          test -f /tmp/schoolhouse-charity-nc-final-static-residual/route-policy.json
+          test -f /tmp/schoolhouse-charity-nc-final-static-residual/artifact-manifest.json
+          test -f /tmp/schoolhouse-charity-nc-final-static-residual/input-residual-links.jsonl
+          test -f /tmp/schoolhouse-charity-nc-final-static-residual/route-results.jsonl
+          test -f /tmp/schoolhouse-charity-nc-final-static-residual/html-surfaces.jsonl
+          test -f /tmp/schoolhouse-charity-nc-final-static-residual/surface-forms.jsonl
+          test -f /tmp/schoolhouse-charity-nc-final-static-residual/file-samples.jsonl
+
+      - name: Build, qualify, and publish clean current-main product
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          TARGET='agent/schoolhouse-charity-nc-final-static-residual-custody-product-v1'
+          MAIN_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+          SOURCE_BUNDLE="$GITHUB_WORKSPACE/.schoolhouse-charity-nc-final-static-residual-custody/builder.mjs.gz.b64"
+          SOURCE_BUILDER=/tmp/build-schoolhouse-charity-nc-final-static-residual-custody.mjs
+          test "$(sha256sum "$SOURCE_BUNDLE" | awk '{print $1}')" = '739873003d7dca5da09a294e93bb69163843ae1ee6ba403f8524c1e17c765e5d'
+          base64 -d "$SOURCE_BUNDLE" | gzip -dc > "$SOURCE_BUILDER"
+          test "$(sha256sum "$SOURCE_BUILDER" | awk '{print $1}')" = '8c0ef467045293502a8ccad4d9ab13757e1305e22df77964a3b7426bafecf4ec'
+          node --check "$SOURCE_BUILDER"
+
+          rm -rf /tmp/schoolhouse-charity-nc-final-static-residual-custody-product
+          git fetch --no-tags origin "$MAIN_SHA"
+          git worktree add --detach /tmp/schoolhouse-charity-nc-final-static-residual-custody-product "$MAIN_SHA"
+          cd /tmp/schoolhouse-charity-nc-final-static-residual-custody-product
+          mkdir -p tools
+          cp "$SOURCE_BUILDER" tools/build-schoolhouse-charity-nc-final-static-residual-custody.mjs
+
+          node tools/build-schoolhouse-charity-nc-final-static-residual-custody.mjs \
+            /tmp/schoolhouse-charity-nc-final-static-residual
+          node tools/validate-bvvc-defense-capital.mjs
+          node test/person-routers.test.js
+          npm run release:check
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            data/intake/bvvc-defense-capital/README.md \
+            data/intake/bvvc-defense-capital/acquisition-frontier.json \
+            data/intake/bvvc-defense-capital/coverage-matrix.json \
+            data/intake/bvvc-defense-capital/manifest.json \
+            data/intake/bvvc-defense-capital/schoolhouse.json \
+            data/intake/bvvc-defense-capital/source-inventory-11.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-charity-nc-final-static-residual-custody.json \
+            data/intake/bvvc-defense-capital/schoolhouse-charity-nc-final-static-residual-input-links.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-charity-nc-final-static-residual-route-results.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-charity-nc-final-static-residual-html-surfaces.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-charity-nc-final-static-residual-surface-forms.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-charity-nc-final-static-residual-file-samples.jsonl \
+            tools/build-schoolhouse-charity-nc-final-static-residual-custody.mjs \
+            tools/validate-bvvc-defense-capital.mjs
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = '14'
+          git commit -m 'Preserve School.House final static residual custody'
+          PRODUCT_SHA=$(git rev-parse HEAD)
+
+          START=$(git ls-remote origin "refs/heads/$TARGET" | awk '{print $1}')
+          if [[ -n "$START" ]]; then
+            git push origin "HEAD:refs/heads/$TARGET" --force-with-lease="refs/heads/$TARGET:$START"
+          else
+            git push origin "HEAD:refs/heads/$TARGET"
+          fi
+
+          mkdir -p /tmp/schoolhouse-charity-nc-final-static-residual-custody-receipt
+          jq -n \
+            --arg base_main "$MAIN_SHA" \
+            --arg product_sha "$PRODUCT_SHA" \
+            --arg target "$TARGET" \
+            '{schema_version:"schoolhouse-charity-nc-final-static-residual-custody-materialization-receipt@1",base_main:$base_main,product_sha:$product_sha,target_branch:$target,changed_paths:14,source_inventory_rows:275,input_routes:51,terminal_routes:51,file_targets:16,terminal_file_targets:16,html_success_routes:34,bounded_file_sample_routes:15,http_error_routes:2,html_surface_rows:35,form_rows:0,file_sample_rows:15,search_submissions:0,source_rows_acquired:0,admitted_identities:0,private_support_rows:0,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+            > /tmp/schoolhouse-charity-nc-final-static-residual-custody-receipt/status.json
+          sha256sum /tmp/schoolhouse-charity-nc-final-static-residual-custody-receipt/status.json \
+            > /tmp/schoolhouse-charity-nc-final-static-residual-custody-receipt/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-charity-nc-final-static-residual-custody-materialization-receipt
+          path: /tmp/schoolhouse-charity-nc-final-static-residual-custody-receipt
+          if-no-files-found: error
+          retention-days: 90
