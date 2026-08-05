@@ -68,6 +68,12 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   const schoolhouseFlFictitiousMembers = readJsonl(path.join(dir, 'schoolhouse-fl-fictitious-member-inventory.jsonl'));
   const schoolhouseFlFictitiousCandidates = readJsonl(path.join(dir, 'schoolhouse-fl-fictitious-candidates.jsonl'));
   const schoolhouseFlFictitiousAdjudication = readJson(path.join(dir, 'schoolhouse-fl-fictitious-adjudication.json'));
+  const schoolhouseFlCorporateSource = readJson(path.join(dir, 'schoolhouse-fl-corporate-owner-resolution-source-receipt.json'));
+  const schoolhouseFlCorporateIndex = readJson(path.join(dir, 'schoolhouse-fl-corporate-owner-resolution-remote-zip-index.json'));
+  const schoolhouseFlCorporateMembers = readJsonl(path.join(dir, 'schoolhouse-fl-corporate-owner-resolution-member-receipts.jsonl'));
+  const schoolhouseFlCorporateRecords = readJsonl(path.join(dir, 'schoolhouse-fl-corporate-owner-resolution-records.jsonl'));
+  const schoolhouseFlCorporateMatrix = readJsonl(path.join(dir, 'schoolhouse-fl-corporate-owner-resolution-matrix.jsonl'));
+  const schoolhouseFlCorporateAdjudication = readJson(path.join(dir, 'schoolhouse-fl-corporate-owner-resolution-adjudication.json'));
 
   check(manifest.schema_version === 'bvvc-defense-capital-manifest@2', 'manifest schema must be v2');
   check(manifest.graph_effect === 'none' && manifest.promotes_to === 'candidate_only', 'manifest must remain graph-inert candidate custody');
@@ -108,7 +114,19 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     fl_fictitious_post_2023_candidate_rows: schoolhouseFlFictitiousCandidates.filter(row => row.filed_2023_or_later).length,
     fl_fictitious_owner_charter_numbers: new Set(schoolhouseFlFictitiousCandidates.flatMap(row => row.owners.map(owner => owner.owner_charter_number)).filter(Boolean)).size,
     fl_fictitious_owner_feis: new Set(schoolhouseFlFictitiousCandidates.flatMap(row => row.owners.map(owner => owner.owner_fei)).filter(Boolean)).size,
-    state_registry_admitted_identity_rows: schoolhouseFlFictitiousAdjudication.identity_decision.admitted_document_number === null ? 0 : 1
+    state_registry_admitted_identity_rows: schoolhouseFlFictitiousAdjudication.identity_decision.admitted_document_number === null ? 0 : 1,
+    fl_corporate_remote_zip_members: schoolhouseFlCorporateIndex.members.length,
+    fl_corporate_target_partitions: schoolhouseFlCorporateMembers.length,
+    fl_corporate_selected_partition_rows: schoolhouseFlCorporateMembers.reduce((sum, row) => sum + row.row_count, 0),
+    fl_corporate_selected_compressed_bytes: schoolhouseFlCorporateMembers.reduce((sum, row) => sum + row.compressed_size, 0),
+    fl_corporate_selected_uncompressed_bytes: schoolhouseFlCorporateMembers.reduce((sum, row) => sum + row.uncompressed_size, 0),
+    fl_corporate_range_requests: schoolhouseFlCorporateSource.range_requests.length,
+    fl_corporate_owner_charter_targets: schoolhouseFlCorporateMatrix.length,
+    fl_corporate_owner_charters_resolved: schoolhouseFlCorporateMatrix.filter(row => row.matched_corporate_record_count === 1).length,
+    fl_corporate_owner_charters_unresolved: schoolhouseFlCorporateMatrix.filter(row => row.matched_corporate_record_count === 0).length,
+    fl_corporate_records: schoolhouseFlCorporateRecords.length,
+    fl_corporate_owner_linked_fictitious_candidates: new Set(schoolhouseFlCorporateMatrix.flatMap(row => row.fictitious_candidate_links.map(link => link.fictitious_candidate_id))).size,
+    fl_corporate_schoolhouse_admitted_identity_rows: schoolhouseFlCorporateAdjudication.identity_decision.admitted_document_number === null ? 0 : 1
   };
   for (const [key, actual] of Object.entries(countChecks)) {
     check(manifest.counts[key] === actual, `manifest count drift for ${key}: expected ${manifest.counts[key]}, got ${actual}`);
@@ -140,6 +158,13 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   check(schoolhouseFlFictitiousCandidates.length === 29, 'Florida fictitious candidate census must contain 29 rows');
   check(schoolhouseFlFictitiousAdjudication.identity_decision.state === 'unresolved_no_florida_fictitious_name_identity_admitted', 'Florida fictitious identity must remain unresolved');
   check(schoolhouseFlFictitiousAdjudication.identity_decision.admitted_document_number === null, 'Florida fictitious pass must admit no document number');
+  check(schoolhouseFlCorporateIndex.members.length === 10, 'Florida corporate remote ZIP must contain ten members');
+  check(schoolhouseFlCorporateMembers.length === 7, 'Florida corporate owner resolution must scan seven target partitions');
+  check(schoolhouseFlCorporateMembers.reduce((sum, row) => sum + row.row_count, 0) === 8965926, 'Florida corporate owner resolution must scan 8,965,926 rows');
+  check(schoolhouseFlCorporateMatrix.length === 15, 'Florida corporate owner resolution must contain fifteen targets');
+  check(schoolhouseFlCorporateRecords.length === 15, 'Florida corporate owner resolution must retain fifteen exact records');
+  check(schoolhouseFlCorporateAdjudication.identity_decision.state === 'unresolved_after_exact_florida_owner_corporate_resolution_no_identity_admitted', 'Florida corporate owner resolution must preserve unresolved School.House identity');
+  check(schoolhouseFlCorporateAdjudication.identity_decision.admitted_document_number === null, 'Florida corporate owner resolution must admit no document number');
 
   check(unique(leadership.map(row => row.actor_id)), 'leadership actor IDs must be unique');
   check(unique(portfolio.map(row => row.organization_id)), 'portfolio organization IDs must be unique');
@@ -151,6 +176,9 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   check(unique(schoolhouseIrsCandidates.map(row => row.candidate_row_id)), 'School.House IRS candidate-row IDs must be unique');
   check(unique(stateRegistryRouteResults.map(row => row.route_id)), 'state-registry route-result IDs must be unique');
   check(unique(schoolhouseFlFictitiousCandidates.map(row => row.candidate_id)), 'Florida fictitious candidate IDs must be unique');
+  check(unique(schoolhouseFlCorporateMembers.map(row => row.partition_digit)), 'Florida corporate partition digits must be unique');
+  check(unique(schoolhouseFlCorporateRecords.map(row => row.document_number)), 'Florida corporate document numbers must be unique');
+  check(unique(schoolhouseFlCorporateMatrix.map(row => row.target_charter_number)), 'Florida corporate target charter numbers must be unique');
 
   for (const row of leadership) {
     check(row.surface_population === 27, `${row.actor_id} must carry the 27-row denominator`);
@@ -246,6 +274,67 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   check(schoolhouseFlFictitiousAdjudication.privacy.street_address_rows_retained === 0 && schoolhouseFlFictitiousAdjudication.privacy.postal_code_rows_retained === 0 && schoolhouseFlFictitiousAdjudication.privacy.contact_detail_rows_retained === 0, 'Florida fictitious adjudication must retain no contact fields');
   check(schoolhouseFlFictitiousAdjudication.identity_admitted === false && schoolhouseFlFictitiousAdjudication.graph_effect === 'none', 'Florida fictitious adjudication must remain graph-inert');
 
+  const expectedCorporateMembers = {"0":{"member":"cordata0.txt","compressed_size":181786383,"uncompressed_size":1846759306,"row_count":1280693,"crc32":"a10eac21","uncompressed_sha256":"4631c816b34fee06184920e80332eab096ed058a61f3daa168313b72cf103286"},"1":{"member":"cordata1.txt","compressed_size":181868847,"uncompressed_size":1847134226,"row_count":1280953,"crc32":"931cb9e1","uncompressed_sha256":"f961da32f2d251312fe247bdf5cb92bdf39dcafd3c2f490e2a8c6828caf3c5ec"},"2":{"member":"cordata2.txt","compressed_size":181880423,"uncompressed_size":1847037612,"row_count":1280886,"crc32":"278d9bb2","uncompressed_sha256":"8fa76b88491dca7a7598f343848b4486ae81e48b540db9a87c122c1aa235c571"},"3":{"member":"cordata3.txt","compressed_size":181950040,"uncompressed_size":1847163066,"row_count":1280973,"crc32":"01b448c3","uncompressed_sha256":"126afe3874a0422091cc05ecb06298505dce61f555347650a8068117f192fc65"},"4":{"member":"cordata4.txt","compressed_size":181950007,"uncompressed_size":1847093850,"row_count":1280925,"crc32":"a4c610a1","uncompressed_sha256":"afd4a8d0d97268e8cc408772b29393d91f48040c65cc06731f804f6efaaa972b"},"7":{"member":"cordata7.txt","compressed_size":181947770,"uncompressed_size":1846838616,"row_count":1280748,"crc32":"2bd6f2f3","uncompressed_sha256":"795784a64b6a004afd46e08c346f0ed90222dd15dd63d3f0bd496a71fb5719fa"},"9":{"member":"cordata9.txt","compressed_size":181872843,"uncompressed_size":1846838616,"row_count":1280748,"crc32":"1106a6cd","uncompressed_sha256":"286486856e0621bcff1879d64ca05af616f8ee97063b6ee0ada90e0bda0ea126"}};
+  const expectedCorporateNames = {"L16000000673":"BOUTIQUE APARTMENTS III LLC","L17000090349":"AMELIA SCHOOLHOUSE PROJECT, LLC","L20000357931":"SIJ SCHOOLHOUSE LLC","L22000000212":"LUCE EDUCATIONAL SERVICES, LLC","L22000358309":"COLOBELA LLC","L23000133581":"STRUVEDMUNDS LLC","L23000411942":"CSI TUTORING SERVICES LLC","L28059":"LITTLE RED SCHOOL HOUSE OF PENSACOLA, INC.","N12000000884":"CLUB RECOVERY OF CITRUS COUNTY, INC.","N22000010097":"MODPOD INC.","N96000004081":"BOYNTON CULTURAL CENTRE, INC.","P02000130432":"MY LITTLE SCHOOL HOUSE, INC.","P07000017144":"THREE ANGELS PRESCHOOL INC.","P12000066520":"TANGERINE SCHOOLHOUSE INC.","P17000074851":"SYMBIO GLOBAL, INC."};
+  check(schoolhouseFlCorporateSource.receipt_id === 'r-fl-sunbiz-quarterly-corporate-bulk-2026-08-05', 'Florida corporate source receipt ID drift');
+  check(schoolhouseFlCorporateSource.source_bytes === 1819049954 && schoolhouseFlCorporateSource.remote_zip_members === 10, 'Florida corporate source denominator drift');
+  check(schoolhouseFlCorporateSource.selected_partition_count === 7 && schoolhouseFlCorporateSource.selected_partition_rows_scanned === 8965926, 'Florida corporate selected-partition denominator drift');
+  check(schoolhouseFlCorporateSource.target_charters === 15 && schoolhouseFlCorporateSource.resolved_target_charters === 15 && schoolhouseFlCorporateSource.unresolved_target_charters === 0, 'Florida corporate target-resolution denominator drift');
+  check(schoolhouseFlCorporateSource.range_request_count === 24 && schoolhouseFlCorporateSource.range_requests.length === 24, 'Florida corporate range-request denominator drift');
+  check(schoolhouseFlCorporateSource.full_source_sha256 === null && schoolhouseFlCorporateSource.full_source_downloaded === false, 'Florida corporate source must not claim a full-source hash or download');
+  check(schoolhouseFlCorporateSource.raw_source_retained === false && schoolhouseFlCorporateSource.raw_compressed_members_retained === false && schoolhouseFlCorporateSource.raw_uncompressed_members_retained === false, 'Florida corporate source must retain no raw source');
+  check(schoolhouseFlCorporateSource.public_credential_password_retained === false, 'Florida corporate source must retain no public password');
+  check(schoolhouseFlCorporateSource.street_address_rows_retained === 0 && schoolhouseFlCorporateSource.mailing_address_rows_retained === 0 && schoolhouseFlCorporateSource.postal_code_rows_retained === 0 && schoolhouseFlCorporateSource.contact_detail_rows_retained === 0, 'Florida corporate source must retain no contact fields');
+  check(schoolhouseFlCorporateSource.private_support_rows === 0 && schoolhouseFlCorporateSource.schoolhouse_identity_admitted === false && schoolhouseFlCorporateSource.outside_human_dependency === false && schoolhouseFlCorporateSource.graph_effect === 'none', 'Florida corporate source authority drift');
+  check(schoolhouseFlCorporateSource.range_requests[0].request_id === 'head-source' && schoolhouseFlCorporateSource.range_requests[0].status === 200, 'Florida corporate HEAD receipt drift');
+  check(schoolhouseFlCorporateSource.range_requests.slice(1).every(row => row.status === 206 && Boolean(row.content_range) && row.state === 'captured'), 'Florida corporate range receipts must be terminal HTTP 206 captures');
+  check(schoolhouseFlCorporateIndex.central_directory_sha256 === '5524144b32429b336a2799a164f4fa5278e7825023fff638d65e8f8bdc577330', 'Florida corporate central-directory SHA-256 drift');
+  check(schoolhouseFlCorporateIndex.declared_partitions === 10 && schoolhouseFlCorporateIndex.selected_partition_count === 7, 'Florida corporate remote ZIP partition drift');
+  check(new Set(schoolhouseFlCorporateIndex.members.map(row => row.partition_digit)).size === 10, 'Florida corporate remote ZIP member digits must be complete');
+  for (const member of schoolhouseFlCorporateMembers) {
+    const expected = expectedCorporateMembers[member.partition_digit];
+    check(Boolean(expected), `unexpected Florida corporate partition ${member.partition_digit}`);
+    if (expected) {
+      for (const key of ['member','compressed_size','uncompressed_size','row_count','crc32','uncompressed_sha256']) {
+        check(member[key] === expected[key], `Florida corporate partition ${member.partition_digit} ${key} drift`);
+      }
+    }
+    check(member.receipt_id === 'r-fl-sunbiz-quarterly-corporate-bulk-2026-08-05', `Florida corporate partition ${member.partition_digit} source receipt drift`);
+    check(member.state === 'complete_partition_scanned' && member.direct_record_count === member.row_count && member.reassembled_record_count === 0 && member.fragment_line_count === 0 && member.physical_line_count === member.row_count, `Florida corporate partition ${member.partition_digit} scan-state drift`);
+    check(member.raw_compressed_member_retained === false && member.raw_uncompressed_member_retained === false, `Florida corporate partition ${member.partition_digit} must retain no raw member`);
+    check(member.street_address_rows_retained === 0 && member.postal_code_rows_retained === 0 && member.contact_detail_rows_retained === 0 && member.private_support_rows === 0, `Florida corporate partition ${member.partition_digit} must retain no contact fields`);
+    check(member.schoolhouse_identity_admitted === false && member.graph_effect === 'none' && member.promotes_to === 'candidate_only', `Florida corporate partition ${member.partition_digit} authority drift`);
+  }
+  const allowedCorporateRecordKeys = new Set(['annual_reports','contact_details_retained','corporate_record_id','corporation_name_as_recorded','document_number','external_separator','fei','fictitious_candidate_links','file_date','file_date_as_recorded','filing_type','graph_effect','last_transaction_date','last_transaction_date_as_recorded','mailing_address_retained','more_than_six_officers','officers','physical_fragment_count','postal_code_retained','principal_city','principal_country','principal_state','private_support_rows','promotes_to','reassembly_mode','registered_agent_name_as_recorded','registered_agent_type','resolution_state','schoolhouse_identity_admitted','schoolhouse_identity_state','source_member','source_row_number','state_country','status','street_address_retained','receipt_id']);
+  const allowedCorporateOfficerKeys = new Set(['actor_type','contact_details_retained','name_as_recorded','officer_index','postal_code_retained','street_address_retained','title_as_recorded']);
+  for (const row of schoolhouseFlCorporateRecords) {
+    check(Object.keys(row).every(key => allowedCorporateRecordKeys.has(key)), `${row.document_number} contains an unapproved corporate field`);
+    check(row.corporation_name_as_recorded === expectedCorporateNames[row.document_number], `${row.document_number} corporate name drift`);
+    check(row.receipt_id === 'r-fl-sunbiz-quarterly-corporate-bulk-2026-08-05', `${row.document_number} source receipt drift`);
+    check(row.status === 'A' && row.resolution_state === 'exact_owner_charter_resolved', `${row.document_number} resolution-state drift`);
+    check(row.schoolhouse_identity_state === 'resolved_owner_entity_not_admitted_as_schoolhouse' && row.schoolhouse_identity_admitted === false, `${row.document_number} must not be admitted as School.House`);
+    check(row.street_address_retained === false && row.mailing_address_retained === false && row.postal_code_retained === false && row.contact_details_retained === false && row.private_support_rows === 0, `${row.document_number} must retain no contact fields`);
+    check(row.graph_effect === 'none' && row.promotes_to === 'candidate_only', `${row.document_number} must remain graph-inert`);
+    for (const officer of row.officers) {
+      check(Object.keys(officer).every(key => allowedCorporateOfficerKeys.has(key)), `${row.document_number} officer contains an unapproved field`);
+      check(officer.street_address_retained === false && officer.postal_code_retained === false && officer.contact_details_retained === false, `${row.document_number} officer must retain no contact fields`);
+    }
+  }
+  for (const row of schoolhouseFlCorporateMatrix) {
+    check(row.receipt_id === 'r-fl-sunbiz-quarterly-corporate-bulk-2026-08-05', `${row.target_charter_number} matrix source receipt drift`);
+    check(row.target_denominator === 15 && row.matched_corporate_record_count === 1 && row.resolution_state === 'exact_corporate_record_resolved', `${row.target_charter_number} matrix resolution drift`);
+    check(row.resolved_corporation_name_as_recorded === expectedCorporateNames[row.target_charter_number], `${row.target_charter_number} matrix corporate name drift`);
+    check(row.schoolhouse_identity_disposition === 'not_admitted_distinct_owner_entity' && row.schoolhouse_identity_admitted === false, `${row.target_charter_number} matrix must not admit School.House identity`);
+    check(row.street_address_retained === false && row.postal_code_retained === false && row.contact_details_retained === false && row.private_support_rows === 0, `${row.target_charter_number} matrix must retain no contact fields`);
+    check(row.graph_effect === 'none' && row.promotes_to === 'candidate_only', `${row.target_charter_number} matrix must remain graph-inert`);
+  }
+  check(new Set(schoolhouseFlCorporateMatrix.flatMap(row => row.fictitious_candidate_links.map(link => link.fictitious_candidate_id))).size === 17, 'Florida corporate matrix must type seventeen fictitious-name candidates');
+  check(schoolhouseFlCorporateAdjudication.frozen_target_denominator.target_charters === 15 && schoolhouseFlCorporateAdjudication.frozen_target_denominator.resolved_target_charters === 15 && schoolhouseFlCorporateAdjudication.frozen_target_denominator.unresolved_target_charters === 0, 'Florida corporate adjudication target denominator drift');
+  check(schoolhouseFlCorporateAdjudication.frozen_target_denominator.owner_linked_fictitious_candidates === 17 && schoolhouseFlCorporateAdjudication.frozen_target_denominator.fictitious_candidates_without_owner_charter === 12 && schoolhouseFlCorporateAdjudication.frozen_target_denominator.tampa_bay_phrase_candidates_with_owner_charter === 0, 'Florida corporate adjudication candidate-link boundary drift');
+  check(schoolhouseFlCorporateAdjudication.identity_decision.admitted_document_number === null && schoolhouseFlCorporateAdjudication.identity_decision.admitted_legal_name === null && schoolhouseFlCorporateAdjudication.identity_decision.admitted_ein === null, 'Florida corporate adjudication must admit no identity');
+  check(schoolhouseFlCorporateAdjudication.privacy.raw_source_retained === false && schoolhouseFlCorporateAdjudication.privacy.street_address_rows_retained === 0 && schoolhouseFlCorporateAdjudication.privacy.mailing_address_rows_retained === 0 && schoolhouseFlCorporateAdjudication.privacy.postal_code_rows_retained === 0 && schoolhouseFlCorporateAdjudication.privacy.contact_detail_rows_retained === 0, 'Florida corporate adjudication must retain no raw or contact fields');
+  check(schoolhouseFlCorporateAdjudication.schoolhouse_identity_admitted === false && schoolhouseFlCorporateAdjudication.outside_human_dependency === false && schoolhouseFlCorporateAdjudication.graph_effect === 'none' && schoolhouseFlCorporateAdjudication.promotes_to === 'candidate_only', 'Florida corporate adjudication authority drift');
+
   for (const row of secRouteResults) {
     check(row.state === 'source_unavailable_after_search', `${row.route_id} must preserve the source-unavailable state`);
     check(row.http_status === 403, `${row.route_id} must preserve HTTP 403`);
@@ -296,7 +385,9 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     leadership, leadershipHistory, portfolio, schoolhouse, vehicles,
     transactions, claims, coverage, portfolioDelta, schoolhouseIrsCandidates, schoolhouseIrsAdjudication,
     stateRegistryRouteResults, stateRegistryRouteCustody, schoolhouseFlFictitiousSource,
-    schoolhouseFlFictitiousCandidates, schoolhouseFlFictitiousAdjudication
+    schoolhouseFlFictitiousCandidates, schoolhouseFlFictitiousAdjudication,
+    schoolhouseFlCorporateSource, schoolhouseFlCorporateIndex, schoolhouseFlCorporateMembers,
+    schoolhouseFlCorporateRecords, schoolhouseFlCorporateMatrix, schoolhouseFlCorporateAdjudication
   ]);
   for (const receiptId of referencedReceiptIds) {
     check(knownReceiptIds.has(receiptId), `referenced receipt is missing from source inventory: ${receiptId}`);

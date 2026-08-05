@@ -1,6 +1,6 @@
 {
   "as_of": "2026-08-05",
-  "coverage_state": "bounded_current_surfaces_plus_one_dated_demo_day_plus_registry_candidate_custody",
+  "coverage_state": "bounded_current_surfaces_plus_registry_candidate_and_owner_resolution_custody",
   "demo_day_2024": {
     "boundary": "Listing, sponsorship, tagging, and participation are distinct predicates and do not establish investment, procurement, customer status, selection influence, or coordination.",
     "companies": [
@@ -352,7 +352,7 @@
     "filed_2023_or_later_candidate_rows": 16,
     "unique_owner_charter_numbers": 15,
     "unique_owner_feis": 15,
-    "identity_state": "unresolved_no_florida_fictitious_name_identity_admitted",
+    "identity_state": "unresolved_after_exact_florida_owner_corporate_resolution_no_identity_admitted",
     "admitted_document_number": null,
     "admitted_legal_name": null,
     "receipt_ids": [
@@ -372,8 +372,44 @@
     "member_inventory_file": "schoolhouse-fl-fictitious-member-inventory.jsonl",
     "candidate_file": "schoolhouse-fl-fictitious-candidates.jsonl",
     "adjudication_file": "schoolhouse-fl-fictitious-adjudication.json",
-    "boundary": "The route custody and Florida fictitious-name census create no legal-identity join. The complete phrase pass contains no exact public-name candidate, and the two Tampa phrase candidates remain distinct and not admitted.",
+    "boundary": "The route, fictitious-name, and exact owner-corporate custody create no School.House legal-identity join. The complete fictitious-name phrase pass has no exact public-name candidate, all fifteen available owner charter numbers resolve to distinct owner entities, and no identity is admitted.",
     "graph_effect": "none",
-    "promotes_to": "candidate_only"
+    "promotes_to": "candidate_only",
+    "florida_corporate_owner_resolution": {
+      "as_of": "2026-08-05",
+      "receipt_id": "r-fl-sunbiz-quarterly-corporate-bulk-2026-08-05",
+      "remote_zip_members": 10,
+      "selected_partition_digits": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "7",
+        "9"
+      ],
+      "selected_partitions": 7,
+      "selected_partition_rows_scanned": 8965926,
+      "selected_compressed_bytes": 1273256313,
+      "selected_uncompressed_bytes": 12928865292,
+      "range_requests": 24,
+      "owner_charter_targets": 15,
+      "owner_charters_resolved": 15,
+      "owner_charters_unresolved": 0,
+      "corporate_records": 15,
+      "owner_linked_fictitious_candidates": 17,
+      "fictitious_candidates_without_owner_charter": 12,
+      "tampa_bay_phrase_candidates_with_owner_charter": 0,
+      "identity_state": "owner_entities_resolved_no_schoolhouse_identity_admitted",
+      "source_receipt_file": "schoolhouse-fl-corporate-owner-resolution-source-receipt.json",
+      "remote_zip_index_file": "schoolhouse-fl-corporate-owner-resolution-remote-zip-index.json",
+      "member_receipt_file": "schoolhouse-fl-corporate-owner-resolution-member-receipts.jsonl",
+      "record_file": "schoolhouse-fl-corporate-owner-resolution-records.jsonl",
+      "resolution_matrix_file": "schoolhouse-fl-corporate-owner-resolution-matrix.jsonl",
+      "adjudication_file": "schoolhouse-fl-corporate-owner-resolution-adjudication.json",
+      "boundary": "All fifteen frozen owner charter numbers resolve exact corporate owners behind seventeen phrase candidates. These owner entities are not admitted as the public School.House legal entity, and the two Tampa phrase candidates have no owner-charter route in this denominator.",
+      "graph_effect": "none",
+      "promotes_to": "candidate_only"
+    }
   }
 }

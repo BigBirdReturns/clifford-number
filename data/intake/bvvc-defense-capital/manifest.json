@@ -10,12 +10,13 @@
     "Current-page absence is not an exact departure event, and source failure is not evidence of absence.",
     "No private material contributes to public coverage or assertion.",
     "A state-registry route result, fictitious-name phrase match, owner name, FEI, or charter number is not a legal-identity join.",
-    "Publisher automation prohibitions and strict transport validation are custody boundaries and may not be bypassed."
+    "Publisher automation prohibitions and strict transport validation are custody boundaries and may not be bypassed.",
+    "An exact corporate owner record resolves the owner behind a fictitious-name candidate but does not establish that owner as the public School.House legal entity, fiscal sponsor, or governing organization."
   ],
   "conclusion_generated": false,
   "counts": {
     "acquisition_frontier_tasks": 7,
-    "coverage_denominator_rows": 16,
+    "coverage_denominator_rows": 17,
     "explicit_gap_rows": 16,
     "institutional_self_claim_rows": 10,
     "leadership_current_rows": 27,
@@ -49,7 +50,19 @@
     "fl_fictitious_post_2023_candidate_rows": 16,
     "fl_fictitious_owner_charter_numbers": 15,
     "fl_fictitious_owner_feis": 15,
-    "state_registry_admitted_identity_rows": 0
+    "state_registry_admitted_identity_rows": 0,
+    "fl_corporate_remote_zip_members": 10,
+    "fl_corporate_target_partitions": 7,
+    "fl_corporate_selected_partition_rows": 8965926,
+    "fl_corporate_selected_compressed_bytes": 1273256313,
+    "fl_corporate_selected_uncompressed_bytes": 12928865292,
+    "fl_corporate_range_requests": 24,
+    "fl_corporate_owner_charter_targets": 15,
+    "fl_corporate_owner_charters_resolved": 15,
+    "fl_corporate_owner_charters_unresolved": 0,
+    "fl_corporate_records": 15,
+    "fl_corporate_owner_linked_fictitious_candidates": 17,
+    "fl_corporate_schoolhouse_admitted_identity_rows": 0
   },
   "coverage": {
     "historical_rosters": "partial_search_index_snapshot",
@@ -77,10 +90,11 @@
     "sec_vehicle_denominator_routes": "95_of_95_declared_official_routes_source_unavailable_after_search_http_403",
     "schoolhouse_irs_legal_identity": "6_of_6_routes_complete_641_candidates_438_unique_eins_zero_admitted_identity",
     "schoolhouse_state_registry_routes": "16_of_16_terminal_zero_search_submissions",
-    "schoolhouse_fl_fictitious_identity": "761040_rows_29_phrase_candidates_zero_exact_public_name_two_tampa_zero_admitted_identity"
+    "schoolhouse_fl_fictitious_identity": "761040_rows_29_phrase_candidates_zero_exact_public_name_two_tampa_zero_admitted_identity",
+    "schoolhouse_fl_corporate_owner_resolution": "15_of_15_owner_charters_resolved_across_7_complete_partitions_8965926_rows_zero_schoolhouse_identity"
   },
   "custody": {
-    "next_waterline": "corporate_owner_identifier_resolution_charity_registry_and_source_archival",
+    "next_waterline": "charity_registry_north_carolina_entity_resolution_and_source_archival",
     "primary_estate_id": "us-defense-estate",
     "related_case_ids": [
       "anduril-access-ownership"
@@ -96,12 +110,12 @@
   },
   "files": {
     "acquisition-frontier.json": {
-      "bytes": 7861,
-      "sha256": "e78f1c782028372bffad91e5d0d58fbcb74455b683caf3733a1192996bd9fa5a"
+      "bytes": 8518,
+      "sha256": "d0a548651df1d3a40dca5b8263b6e30dd327d07ccbe45a33b1ddb06dc1160156"
     },
     "coverage-matrix.json": {
-      "bytes": 6462,
-      "sha256": "faf20c781b0043b1f186f83dcd7f35d8a5d26c425861b323aa1e623da30f608a"
+      "bytes": 6901,
+      "sha256": "dacd41a1f15c74c702bb1ed4e51f2090a04e5af1725dc1628bbb05309d155cc1"
     },
     "institutional-claims.jsonl": {
       "bytes": 5940,
@@ -136,8 +150,8 @@
       "sha256": "909415fc6286f83026a5c7b63792f21a2a03063cc03142ac7749ad022862a246"
     },
     "schoolhouse.json": {
-      "bytes": 12480,
-      "sha256": "7960a0f1529efd4c29423bac1453c4ae3af87f4330359374877205cd8d167910"
+      "bytes": 14396,
+      "sha256": "07f96a271590e18e2f8936fade0087c00982022f8ff2cd7880dbc17f7d7f9834"
     },
     "source-inventory-01.jsonl": {
       "bytes": 6070,
@@ -212,8 +226,8 @@
       "sha256": "25f946f80172079f5d7a20f2f510dfaeda3ac1fb5f79dc4ec1810649deec921f"
     },
     "source-inventory-08.jsonl": {
-      "bytes": 4826,
-      "sha256": "c02052f7759274c3a901c4eff4ecebfb9a6db8ee1a9c8d6478f26cd1263b9fcd"
+      "bytes": 5028,
+      "sha256": "4b37f8b8d7132558eb3cd1f48f09ea024ae9bcba9c7966d8ac4d26cb4afd8a85"
     },
     "state-registry-route-results.jsonl": {
       "bytes": 14616,
@@ -238,6 +252,30 @@
     "schoolhouse-fl-fictitious-adjudication.json": {
       "bytes": 14645,
       "sha256": "0ee71ed00f0315cc9b348d443eaef2b62f571f5f4f48521d3b3189017b153f85"
+    },
+    "schoolhouse-fl-corporate-owner-resolution-source-receipt.json": {
+      "bytes": 14265,
+      "sha256": "36d3d3c9aba221de601f874e34ad0f6455f89aacbd1442598f3b280f4df62a84"
+    },
+    "schoolhouse-fl-corporate-owner-resolution-remote-zip-index.json": {
+      "bytes": 4348,
+      "sha256": "98eb115295e0ebcdf01ab1ca61a26627858dd218374ab0b4100a76d8ebb8403a"
+    },
+    "schoolhouse-fl-corporate-owner-resolution-member-receipts.jsonl": {
+      "bytes": 11639,
+      "sha256": "94bc2ecaab4afc6d8ac6b22629caf4c94bd03a1bf57065db0d97874b995c6310"
+    },
+    "schoolhouse-fl-corporate-owner-resolution-records.jsonl": {
+      "bytes": 32155,
+      "sha256": "0986324e8e9b163846fef21cb656907bc2252a962cfd933bebd7a7dec4fff392"
+    },
+    "schoolhouse-fl-corporate-owner-resolution-matrix.jsonl": {
+      "bytes": 15204,
+      "sha256": "60974448c4d497d8f31a9efedf6ca64e6745a0fd8bfa0cd06c3dc47d68f970d0"
+    },
+    "schoolhouse-fl-corporate-owner-resolution-adjudication.json": {
+      "bytes": 12708,
+      "sha256": "10c17b9dd59ecf3ac8c6df0b0440fcd94bd03ebfb1f9f328be0c997425f29c98"
     }
   },
   "graph_effect": "none",
@@ -247,7 +285,7 @@
     "what_this_is_not": "A finding of wrongdoing, coordination, motive, influence, government preference, technical performance, legal control, or completeness outside the declared surfaces."
   },
   "promotes_to": "candidate_only",
-  "purpose": "A source-addressed, graph-inert public-record lake for BVVC, School.House, current and historical roster observations, legal vehicles, financing announcements, institutional self-claims, explicit rejected joins, IRS and state-registry legal-identity candidate custody, coverage nulls, and deterministic continuation work.",
+  "purpose": "A source-addressed, graph-inert public-record lake for BVVC, School.House, current and historical roster observations, legal vehicles, financing announcements, institutional self-claims, explicit rejected joins, IRS and state-registry legal-identity candidate custody, exact Florida fictitious-name owner-corporate resolution, coverage nulls, and deterministic continuation work.",
   "schema_version": "bvvc-defense-capital-manifest@2",
   "selection": {
     "exclusion_rules": [
@@ -285,9 +323,9 @@
       "captured_route_surface": 4,
       "live_locator": 71,
       "provider_blocked_no_query": 2,
-      "route_accessible_not_acquired": 1,
       "search_index_only": 16,
       "search_index_snapshot": 2,
+      "seven_complete_partitions_captured_and_scanned": 1,
       "source_unavailable_after_search": 1
     }
   },
@@ -320,6 +358,12 @@
       "schoolhouse-irs-candidates-auto-revocation.jsonl"
     ],
     "schoolhouse_state_registry_route_results": "state-registry-route-results.jsonl",
-    "schoolhouse_fl_fictitious_candidate_file": "schoolhouse-fl-fictitious-candidates.jsonl"
+    "schoolhouse_fl_fictitious_candidate_file": "schoolhouse-fl-fictitious-candidates.jsonl",
+    "schoolhouse_fl_corporate_owner_resolution_source_receipt": "schoolhouse-fl-corporate-owner-resolution-source-receipt.json",
+    "schoolhouse_fl_corporate_owner_resolution_remote_zip_index": "schoolhouse-fl-corporate-owner-resolution-remote-zip-index.json",
+    "schoolhouse_fl_corporate_owner_resolution_member_receipts": "schoolhouse-fl-corporate-owner-resolution-member-receipts.jsonl",
+    "schoolhouse_fl_corporate_owner_resolution_records": "schoolhouse-fl-corporate-owner-resolution-records.jsonl",
+    "schoolhouse_fl_corporate_owner_resolution_matrix": "schoolhouse-fl-corporate-owner-resolution-matrix.jsonl",
+    "schoolhouse_fl_corporate_owner_resolution_adjudication": "schoolhouse-fl-corporate-owner-resolution-adjudication.json"
   }
 }
