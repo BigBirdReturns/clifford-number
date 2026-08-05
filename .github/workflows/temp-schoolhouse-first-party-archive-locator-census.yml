@@ -53,7 +53,7 @@ jobs:
           test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = '626c7d6623b19f1993ee4debd2e70dbf520d95fbd8f1e0dcc2c3bac0dbf8af50'
           base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
           echo "runner_sha256=$(sha256sum "$RUNNER" | awk '{print $1}')"
-          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = '3746c1ccc939e687bc915bbaefbd45c678416caa6bfc4331158746654bc16701'
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = '30277e76e0b9d8d73b243a11cb66d1c86d2d78167cd2fef71002f61a89e8cafc'
           python -m py_compile "$RUNNER"
 
       - name: Execute exact-URL public archive metadata census
