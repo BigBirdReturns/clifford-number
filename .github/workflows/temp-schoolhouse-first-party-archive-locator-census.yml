@@ -29,7 +29,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Validate exact parent, source denominator, and runner
+      - name: Validate exact parent, source denominator, and checked-out runner
         run: |
           set -Eeuo pipefail
           BASE_MAIN='a4a9ced8a702ab5f6ba57b15073683246295035d'
@@ -39,18 +39,27 @@ jobs:
           RUNNER='/tmp/capture-schoolhouse-first-party-archive-locator-census.py'
 
           git fetch --no-tags origin main
+          BUNDLE_TREE=$(git ls-tree HEAD -- "$BUNDLE" | awk '{print $3}')
+          EXECUTE_TREE=$(git ls-tree HEAD -- "$EXECUTE" | awk '{print $3}')
           echo "main_sha=$(git rev-parse origin/main)"
           echo "merge_base=$(git merge-base HEAD origin/main)"
           echo "input_blob=$(git hash-object "$INPUT")"
           echo "input_rows=$(grep -cve '^$' "$INPUT")"
-          echo "bundle_blob=$(git hash-object "$BUNDLE")"
-          echo "execute_blob=$(git hash-object "$EXECUTE")"
+          echo "bundle_tree_blob=$BUNDLE_TREE"
+          echo "bundle_worktree_blob=$(git hash-object "$BUNDLE")"
+          echo "execute_tree_blob=$EXECUTE_TREE"
+          echo "execute_worktree_blob=$(git hash-object "$EXECUTE")"
+
           test "$(git rev-parse origin/main)" = "$BASE_MAIN"
           test "$(git merge-base HEAD origin/main)" = "$BASE_MAIN"
           test "$(git hash-object "$INPUT")" = '0e004bc38eb4d4c895af3d862f0e7569112a8b1a'
           test "$(grep -cve '^$' "$INPUT")" = '46'
-          test "$(git hash-object "$BUNDLE")" = '550cc212007507d5a7f68605ca661346802ce7f1'
-          test "$(git hash-object "$EXECUTE")" = '621f48651aa0b4c46d6f8668dafd3991269ca168'
+          test -n "$BUNDLE_TREE"
+          test -n "$EXECUTE_TREE"
+          test "$(git hash-object "$BUNDLE")" = "$BUNDLE_TREE"
+          test "$(git hash-object "$EXECUTE")" = "$EXECUTE_TREE"
+          git diff --exit-code -- "$BUNDLE" "$EXECUTE"
+
           base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
           echo "runner_sha256=$(sha256sum "$RUNNER" | awk '{print $1}')"
           python -m py_compile "$RUNNER"
