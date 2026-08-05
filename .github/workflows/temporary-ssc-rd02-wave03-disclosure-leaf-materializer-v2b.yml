@@ -1,0 +1,155 @@
+name: TEMP materialize SSC RD-02 Wave-03 disclosure leaf v2b
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd02-wave03-disclosure-leaf-materializer-v2b.yml'
+      - '.ssc-rd02-wave03-disclosure-leaf-materializer-v2b/**'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-ssc-rd02-wave03-disclosure-leaf-v2b-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd02-wave03-disclosure-leaf-materializer-trigger-v2b'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave03-rd02-disclosure-leaf-v2
+      TARGET_HEAD: c52f03d4055f85abaec0012d79c9dd61014e72b2
+      TARGET_BASE: c52f03d4055f85abaec0012d79c9dd61014e72b2
+      CARRIER_BRANCH: agent/ssc-rd02-wave03-disclosure-leaf-materializer-base-v2
+      PRODUCT_B64_SHA256: 2407a609baa99e0dc8d1004dbfb8a5e4258953c666d2f526aa69f756a6ec8aa9
+      PRODUCT_XZ_SHA256: b7a925a7c30cf682ac605cae163b0cee23d7030fbca69b9a0911187069b53729
+      PATH_LIST_SHA256: 9237f76faf3d514adc4e7cf5e579555e2d6c40cae714fe17596e7e4409236d3f
+      PACKAGE_PATH_COUNT: '8'
+      SHARD_COUNT: '6'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/ssc-rd-wave03-rd02-disclosure-leaf-v2
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Reconstruct, qualify, replay, and publish exact non-workflow package
+        run: |
+          set -Eeuo pipefail
+          out="$RUNNER_TEMP/ssc-rd02-wave03-disclosure-leaf-v2b-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          product="$RUNNER_TEMP/ssc-rd02-wave03-disclosure-leaf-product-v2b"
+          encoded="$RUNNER_TEMP/ssc-rd02-wave03-disclosure-leaf-v2b.b64"
+          archive="$RUNNER_TEMP/ssc-rd02-wave03-disclosure-leaf-v2b.tar.xz"
+          rm -rf "$out" "$product" "$encoded" "$archive"
+          mkdir -p "$out" "$product"
+          echo "RECEIPT_DIR=$out" >> "$GITHUB_ENV"
+          exec > >(tee "$out/trace.log") 2>&1
+
+          step=initialize
+          finish() {
+            rc=$?
+            set +e
+            trap - EXIT
+            printf '%s\n' "$rc" > "$out/exit-code.txt"
+            printf '%s\n' "$step" > "$out/final-step.txt"
+            git rev-parse HEAD > "$out/head.txt" 2>&1 || true
+            git rev-parse 'HEAD^{tree}' > "$out/tree.txt" 2>&1 || true
+            git status --porcelain=v1 --untracked-files=all > "$out/status.txt" 2>&1 || true
+            git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" > "$out/remote-target.txt" 2>&1 || true
+            git ls-remote --heads origin refs/heads/main > "$out/remote-main.txt" 2>&1 || true
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          step=verify-exact-leases
+          test "$(git rev-parse HEAD)" = "$TARGET_HEAD"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$TARGET_HEAD"
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$TARGET_BASE"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          git fetch origin "+refs/heads/$CARRIER_BRANCH:refs/remotes/origin/$CARRIER_BRANCH"
+
+          step=reconstruct-checksum-bound-package
+          git ls-tree -r --name-only "origin/$CARRIER_BRANCH" -- '.ssc-rd02-wave03-disclosure-leaf-materializer-v2' \
+            | grep '/payload\.b64\.part-' | sort > "$out/shards.txt"
+          test "$(wc -l < "$out/shards.txt" | tr -d ' ')" = "$SHARD_COUNT"
+          : > "$encoded"
+          while IFS= read -r shard; do
+            git show "origin/$CARRIER_BRANCH:$shard" | tr -d '\r\n\t ' >> "$encoded"
+          done < "$out/shards.txt"
+          test "$(sha256sum "$encoded" | awk '{print $1}')" = "$PRODUCT_B64_SHA256"
+          base64 -d "$encoded" > "$archive"
+          test "$(sha256sum "$archive" | awk '{print $1}')" = "$PRODUCT_XZ_SHA256"
+          tar -tJf "$archive" | sed 's#^\./##' | sort > "$out/package-paths.txt"
+          test "$(wc -l < "$out/package-paths.txt" | tr -d ' ')" = "$PACKAGE_PATH_COUNT"
+          test "$(sha256sum "$out/package-paths.txt" | awk '{print $1}')" = "$PATH_LIST_SHA256"
+          tar -xJf "$archive" -C "$product"
+          find "$product" -type f -printf '%P\n' | sort > "$out/extracted-paths.txt"
+          cmp "$out/package-paths.txt" "$out/extracted-paths.txt"
+
+          step=build-exact-target-commit
+          while IFS= read -r rel; do
+            mkdir -p "$(dirname "$rel")"
+            cp "$product/$rel" "$rel"
+          done < "$out/package-paths.txt"
+          git diff --name-only | sort > "$out/working-diff.txt"
+          cmp "$out/package-paths.txt" "$out/working-diff.txt"
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --pathspec-from-file="$out/package-paths.txt"
+          git commit -m 'Freeze RD-02 Wave-03 disclosure-leaf protocol'
+          product_commit="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$product_commit" > "$out/product-commit.txt"
+          printf '%s\n' "$product_tree" > "$out/product-tree.txt"
+          git diff --name-status "$TARGET_BASE" HEAD | sort > "$out/main-relative-name-status.txt"
+          test "$(wc -l < "$out/main-relative-name-status.txt" | tr -d ' ')" = "$PACKAGE_PATH_COUNT"
+          test "$(awk '$1 != "A" { count += 1 } END { print count + 0 }' "$out/main-relative-name-status.txt")" = '0'
+          cut -f2 "$out/main-relative-name-status.txt" | sort > "$out/main-relative-paths.txt"
+          cmp "$out/package-paths.txt" "$out/main-relative-paths.txt"
+
+          step=qualify-product
+          node --check tools/validate-status-sovereignty-rd-wave03-rd02-disclosure-leaf.mjs
+          node --check test/status-sovereignty-rd-wave03-rd02-disclosure-leaf.test.js
+          node tools/validate-status-sovereignty-rd-wave03-rd02-disclosure-leaf.mjs
+          node test/status-sovereignty-rd-wave03-rd02-disclosure-leaf.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd02/run-disclosure-leaves.py
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          npm run release:check
+
+          step=clean-replay
+          git restore --worktree -- .
+          git clean -fdx
+          node tools/validate-status-sovereignty-rd-wave03-rd02-disclosure-leaf.mjs
+          node test/status-sovereignty-rd-wave03-rd02-disclosure-leaf.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd02/run-disclosure-leaves.py
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$product_tree"
+
+          step=publish-under-exact-leases
+          test "$(git ls-remote --heads origin refs/heads/main | cut -f1)" = "$TARGET_BASE"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$TARGET_HEAD"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_HEAD" origin "HEAD:refs/heads/$TARGET_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$product_commit"
+          step=materialization-complete
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-wave03-disclosure-leaf-materialization-v2b
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
