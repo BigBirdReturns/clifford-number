@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import hashlib, json, pathlib, sys
+from urllib.parse import urlsplit, urlunsplit
+
+RESPONSIVE_TERMS = [
+  'snap','supplemental nutrition assistance','food stamp','food stamps','abawd',
+  'work requirement','work requirements','waiver','discretionary exemption',
+  'fitness for work','eligibility screening'
+]
+
+def sha256(path: pathlib.Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def write_json(path: pathlib.Path, value: object) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+
+def write_jsonl(path: pathlib.Path, rows: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open('w', encoding='utf-8', newline='\n') as fh:
+        for row in rows:
+            fh.write(json.dumps(row, ensure_ascii=False, separators=(',', ':')) + '\n')
+
+def main() -> int:
+    if len(sys.argv) != 3:
+        raise SystemExit('usage: generate SOURCE_ARTIFACT_DIR OUTPUT_REPO_ROOT')
+    src = pathlib.Path(sys.argv[1]).resolve()
+    root = pathlib.Path(sys.argv[2]).resolve()
+    data = root / 'data/intake/status-sovereignty-rd-wave03-rd04-candidate-adjudication'
+    cand_dir = data / 'candidates'
+
+    expected = {
+      'candidate-index.json': '93ddb1e52e741c1e177565dd90b026dc06e7357459204dfd8ba10af6d5e875ff',
+      'route-results.json': 'bf0b0588348ef5ffef4fc943de7a5a43af8dc681566b4099fddd9409f9f12f21',
+      'summary.json': 'fcf63696c8edd759fb5ee68942142b96cd35fec207970414f844c8e036af35b2',
+      'execution-receipt.json': '30306f545ade2daed52cebc6f82ed4c8b1e162a79c08d4dc5eb1b821997f96c7',
+      'manifest.json': '504c7c174d43fb230f8749a1e46d5082b14317aa8cac593b4c038084af1b1dd1',
+    }
+    for rel, digest in expected.items():
+        actual = sha256(src / rel)
+        if actual != digest:
+            raise SystemExit(f'{rel}: {actual} != {digest}')
+
+    source_index = json.loads((src / 'candidate-index.json').read_text(encoding='utf-8'))
+    source_routes = json.loads((src / 'route-results.json').read_text(encoding='utf-8'))['routes']
+    plan = json.loads((src / 'plan.json').read_text(encoding='utf-8'))
+    plan_by_id = {route['route_id']: route for route in plan['routes']}
+
+    rows: list[dict] = []
+    for source in source_index['candidates']:
+        split = urlsplit(source['url'])
+        host = (split.hostname or '').lower()
+        surface = f"{source['title']} {source['snippet']} {source['url']}".lower()
+        hits = [term for term in RESPONSIVE_TERMS if term in surface]
+        if hits:
+            raise SystemExit(f"{source['candidate_id']}: responsive candidate requires separate adjudication: {hits}")
+        gov = host.endswith('.gov')
+        row = {
+          'candidate_id': source['candidate_id'],
+          'route_id': source['route_id'],
+          'unit_ordinal': source['unit_ordinal'],
+          'unit_id': source['unit_id'],
+          'postal_code': source['postal_code'],
+          'state_name': source['state_name'],
+          'query_class': source['query_class'],
+          'candidate_ordinal_within_route': source['candidate_ordinal_within_route'],
+          'title': source['title'],
+          'url': source['url'],
+          'snippet': source['snippet'],
+          'published_text': source['published_text'],
+          'url_host': host,
+          'official_government_host': gov,
+          'responsive_term_hits': hits,
+          'terminal_disposition': 'official_domain_nonresponsive_without_snap_scope' if gov else 'nonofficial_nonresponsive_without_snap_scope',
+          'selected_for_followup': False,
+          'admitted_source': False,
+          'state_implementation_observed': False,
+          'field_classification_effect': 'none',
+          'result_spawned_requests': 0,
+        }
+        rows.append(row)
+    if len(rows) != 1500 or len({row['candidate_id'] for row in rows}) != 1500 or len({row['url'] for row in rows}) != 500:
+        raise SystemExit('candidate denominator changed')
+    for idx in range(5):
+        write_jsonl(cand_dir / f'part-{idx:02d}.jsonl', rows[idx*300:(idx+1)*300])
+
+    replay_rows = [r for r in source_routes if r['terminal_route_state'] == 'terminal_disallowed_final_host']
+    if len(replay_rows) != 54:
+        raise SystemExit('redirect denominator changed')
+    replay_routes: list[dict] = []
+    for ordinal, source in enumerate(replay_rows, 1):
+        planned = plan_by_id[source['route_id']]
+        raw = urlsplit(source['requested_url'])
+        final = urlsplit(source['final_url'])
+        transport = urlunsplit((final.scheme, 'www.fna.usda.gov', raw.path, raw.query, ''))
+        replay_routes.append({
+          'replay_ordinal': ordinal,
+          'replay_route_id': f'RD04-W03-FNA-{ordinal:03d}',
+          'source_route_id': source['route_id'],
+          'scope': source['scope'],
+          'unit_ordinal': source['unit_ordinal'],
+          'unit_id': source['unit_id'],
+          'postal_code': source['postal_code'],
+          'state_name': source['state_name'],
+          'raw_requested_url': source['requested_url'],
+          'redirected_final_url': source['final_url'],
+          'transport_url': transport,
+          'allowed_final_host': 'www.fna.usda.gov',
+          'original_http_status': source['http_status'],
+          'original_body_bytes': source['body_bytes'],
+          'original_body_sha256': source['body_sha256'],
+          'original_headers_sha256': source['headers_sha256'],
+          'maximum_attempts': 1,
+          'maximum_body_bytes': planned['maximum_body_bytes'],
+          'candidate_rows_are_admitted_sources': False,
+          'automatic_source_admission': False,
+          'automatic_field_classification': False,
+          'automatic_class_closure': False,
+          'result_spawned_requests': 0,
+        })
+    replay = {
+      'schema_version': 'ssc-rd04-wave03-official-redirect-replay-protocol@1',
+      'wave_id': 'SSC-RD-W03',
+      
