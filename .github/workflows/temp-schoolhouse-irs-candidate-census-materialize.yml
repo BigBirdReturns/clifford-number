@@ -1,0 +1,108 @@
+name: TEMP materialize School.House IRS candidate census
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-irs-candidate-census-materialize.yml'
+      - '.schoolhouse-irs-candidate-census/EXECUTE'
+      - 'tools/build-schoolhouse-irs-candidate-census.mjs'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download terminal sanitized IRS acquisition artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          rm -rf /tmp/schoolhouse-irs-acquisition
+          mkdir -p /tmp/schoolhouse-irs-acquisition
+          gh run download 30970977853 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name schoolhouse-irs-legal-identity-candidates-complete-attempt02 \
+            --dir /tmp/schoolhouse-irs-acquisition
+          test -f /tmp/schoolhouse-irs-acquisition/summary.json
+          test -f /tmp/schoolhouse-irs-acquisition/identity-candidates.jsonl
+          test -f /tmp/schoolhouse-irs-acquisition/source-routes.jsonl
+
+      - name: Build, qualify, and publish clean current-main product
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          TARGET='agent/schoolhouse-irs-candidate-census-product-v1'
+          MAIN_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+          SOURCE_BUILDER="$GITHUB_WORKSPACE/tools/build-schoolhouse-irs-candidate-census.mjs"
+          test -f "$SOURCE_BUILDER"
+
+          rm -rf /tmp/schoolhouse-irs-candidate-census-product
+          git fetch --no-tags origin "$MAIN_SHA"
+          git worktree add --detach /tmp/schoolhouse-irs-candidate-census-product "$MAIN_SHA"
+          cd /tmp/schoolhouse-irs-candidate-census-product
+          mkdir -p tools
+          cp "$SOURCE_BUILDER" tools/build-schoolhouse-irs-candidate-census.mjs
+
+          node tools/build-schoolhouse-irs-candidate-census.mjs /tmp/schoolhouse-irs-acquisition
+          node tools/validate-bvvc-defense-capital.mjs
+          node test/person-routers.test.js
+          npm run release:check
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            data/intake/bvvc-defense-capital/README.md \
+            data/intake/bvvc-defense-capital/acquisition-frontier.json \
+            data/intake/bvvc-defense-capital/coverage-matrix.json \
+            data/intake/bvvc-defense-capital/manifest.json \
+            data/intake/bvvc-defense-capital/schoolhouse.json \
+            data/intake/bvvc-defense-capital/schoolhouse-irs-candidates-auto-revocation.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-irs-candidates-eo-bmf.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-irs-candidates-form-990n.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-irs-candidates-publication-78.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-irs-identity-adjudication.json \
+            data/intake/bvvc-defense-capital/schoolhouse-irs-source-routes.jsonl \
+            data/intake/bvvc-defense-capital/source-inventory-07.jsonl \
+            tools/build-schoolhouse-irs-candidate-census.mjs \
+            tools/validate-bvvc-defense-capital.mjs
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = '14'
+          git commit -m 'Add School.House IRS legal-identity candidate census'
+          PRODUCT_SHA=$(git rev-parse HEAD)
+
+          START=$(git ls-remote origin "refs/heads/$TARGET" | awk '{print $1}')
+          if [[ -n "$START" ]]; then
+            git push origin "HEAD:refs/heads/$TARGET" --force-with-lease="refs/heads/$TARGET:$START"
+          else
+            git push origin "HEAD:refs/heads/$TARGET"
+          fi
+
+          mkdir -p /tmp/schoolhouse-irs-candidate-census-receipt
+          jq -n \
+            --arg base_main "$MAIN_SHA" \
+            --arg product_sha "$PRODUCT_SHA" \
+            --arg target "$TARGET" \
+            '{schema_version:"schoolhouse-irs-candidate-census-materialization-receipt@1",base_main:$base_main,product_sha:$product_sha,target_branch:$target,changed_paths:14,source_routes:6,source_rows_scanned:4394541,candidate_rows:641,unique_candidate_eins:438,admitted_identities:0,source_inventory_rows:95,private_support_rows:0,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+            > /tmp/schoolhouse-irs-candidate-census-receipt/status.json
+          sha256sum /tmp/schoolhouse-irs-candidate-census-receipt/status.json > /tmp/schoolhouse-irs-candidate-census-receipt/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-candidate-census-materialization-receipt
+          path: /tmp/schoolhouse-irs-candidate-census-receipt
+          if-no-files-found: error
+          retention-days: 90
