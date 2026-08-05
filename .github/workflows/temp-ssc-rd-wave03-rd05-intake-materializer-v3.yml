@@ -1,0 +1,218 @@
+name: TEMP materialize RD-05 Wave-03 clean intake product v3
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-rd-wave03-rd05-intake-materializer-v3.yml'
+      - '.transport/ssc-rd-wave03-rd05-intake-v3/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd-wave03-rd05-intake-materializer-v3-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd-wave03-rd05-intake-materializer-v3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      CARRIER_ROOT: .transport/ssc-rd-wave03-rd05-intake-v3/shards
+      PRODUCT_BRANCH: agent/ssc-rd-wave03-rd05-intake-product-v3
+      PRODUCT_LEASE: 632d55fd7a38e84f849c9de19e6fe302b6dc36e3
+      LANE_BRANCH: agent/ssc-rd-wave03-rd05-member-participation
+      LANE_LEASE: aa72bd3706f2a5c2ee0e36a3ee0c1cd544c24017
+      PROMOTION_ANCESTOR: 2374980372d98e7f9ca68fe373d25c9bb812c374
+      PATH_LIST_SHA256: 635db7275ad98e41cba8d67759bbf3730479ad108c7b1189a229d2d1cd7a006e
+      ARCHIVE_BYTES: 28684
+      ARCHIVE_SHA256: e25ba79cd273352826b3b3b1fdca4ba57008f202f24238665d9fbbce492408bb
+      BASE64_BYTES: 38248
+      BASE64_SHA256: b065478c554eadfaf726d6e5444063c34f9159170d35683f1aba464698c202d8
+    steps:
+      - name: Check out exact pull-request head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct, qualify, and publish exact eleven-path product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export GIT_AUTHOR_NAME='github-actions[bot]'
+          export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+
+          WORK="$RUNNER_TEMP/ssc-rd-wave03-rd05-intake-v3"
+          PACKAGE="$WORK/package"
+          RECEIPT="$WORK/receipt"
+          DRY="$WORK/dry-run"
+          rm -rf "$WORK"
+          mkdir -p "$PACKAGE" "$RECEIPT"
+          exec > >(tee "$RECEIPT/execution.log") 2>&1
+          STAGE=init
+          finish() {
+            rc=$?
+            printf 'status=%s\nstage=%s\nexit_code=%s\nutc=%s\n' \
+              "$([[ $rc -eq 0 ]] && echo complete || echo failed_closed)" \
+              "$STAGE" "$rc" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$RECEIPT/checkpoint.txt"
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          STAGE=verify-carrier
+          cat > "$RECEIPT/shards.sha256" <<'EOF'
+          cc8626d03c720072b78dec48860c55ad33844ef856f486006c1be54f2bdfde92  000.b64
+          e278979ee4fab5d5738384838b1a1849ba2eecef5b292f11c306c2514f43fb12  001.b64
+          9e418b1a78ee38946a6b33c4c5be43a458d23682a391dd21dbb25370d67113ff  002.b64
+          9102d22799b3a935282cefdbbb4c437baa6105c6c2cca97728c4075a0501fd69  003.b64
+          2df0a4685fffe6d94d692e8a34520958294e671e6d126a97a490a35647441ef8  004.b64
+          12452c91fa391f4eb7b2ee492887867a11a0a8896c3771ad2d0a7fda63f22658  005.b64
+          e60d5393a61834f86e191d6086d6354945a34b80acff00e24238e2b36b5d85ab  006.b64
+          d9066e22d974fe1928a672b531bed8d19405d222c6ceeaa078befffbfc4ca28a  007.b64
+          05366195d953f05ad1ad33b35d1423a3dedc99cf5ee699670164e0d1f17f5338  008.b64
+          2ce4dfa49fe3315d842b7a8b0226dd34f013d223e42a21aa179a0ca88eb098cb  009.b64
+          EOF
+          sed -i 's/^          //' "$RECEIPT/shards.sha256"
+          test "$(find "$CARRIER_ROOT" -maxdepth 1 -type f -name '*.b64' | wc -l | tr -d ' ')" = 10
+          (cd "$CARRIER_ROOT" && sha256sum -c "$RECEIPT/shards.sha256")
+          cat "$CARRIER_ROOT"/*.b64 > "$WORK/product.b64"
+          test "$(stat -c '%s' "$WORK/product.b64")" = "$BASE64_BYTES"
+          test "$(sha256sum "$WORK/product.b64" | awk '{print $1}')" = "$BASE64_SHA256"
+          base64 -d "$WORK/product.b64" > "$WORK/product.tar.xz"
+          test "$(stat -c '%s' "$WORK/product.tar.xz")" = "$ARCHIVE_BYTES"
+          test "$(sha256sum "$WORK/product.tar.xz" | awk '{print $1}')" = "$ARCHIVE_SHA256"
+          tar -xJf "$WORK/product.tar.xz" -C "$PACKAGE"
+
+          cat > "$RECEIPT/expected-paths.txt" <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd05-member-participation-intake.yml
+          data/project/ssc-residual-wave03/seeds/RD-05-C02.json
+          data/intake/status-sovereignty-rd-wave03-rd05-member-participation/field-matrix-contract.json
+          data/intake/status-sovereignty-rd-wave03-rd05-member-participation/source-census-protocol.json
+          data/intake/status-sovereignty-rd-wave03-rd05-member-participation/intake-product-manifest.json
+          docs/milestones/ssc-rd-wave03-rd05-member-participation-intake.md
+          schemas/status-sovereignty-rd-wave03-rd05-member-participation-intake.schema.json
+          test/status-sovereignty-rd-wave03-rd05-member-participation-intake.test.js
+          tools/acquisition/status-sovereignty-rd-wave03-rd05/run-source-census.py
+          tools/build-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs
+          EOF
+          sed -i 's/^          //' "$RECEIPT/expected-paths.txt"
+          test "$(wc -l < "$RECEIPT/expected-paths.txt" | tr -d ' ')" = 11
+          test "$(sha256sum "$RECEIPT/expected-paths.txt" | awk '{print $1}')" = "$PATH_LIST_SHA256"
+          find "$PACKAGE" -type f -printf '%P\n' | sort > "$RECEIPT/archive-paths.txt"
+          sort "$RECEIPT/expected-paths.txt" > "$RECEIPT/expected-paths-sorted.txt"
+          cmp "$RECEIPT/expected-paths-sorted.txt" "$RECEIPT/archive-paths.txt"
+          test "$(find "$PACKAGE" -type l | wc -l | tr -d ' ')" = 0
+
+          cat > "$RECEIPT/product.sha256" <<'EOF'
+          349b26702ce724adc1bf095fa2a5a066ed5f4730718b18c6052528ff301fabfa  .github/workflows/status-sovereignty-rd-wave03-rd05-member-participation-intake.yml
+          846d12a60ea44c374b227570bf241fa15c8a9e4de7fb56633ee84e94d6a214b1  data/project/ssc-residual-wave03/seeds/RD-05-C02.json
+          690f6614e71493037e7ee3d14350857c238382db2a65aae45bad804eea89ab42  data/intake/status-sovereignty-rd-wave03-rd05-member-participation/field-matrix-contract.json
+          96a566d1b1972a69505845862f0614f79b9db1eb28017bd47b484fe15ab1d998  data/intake/status-sovereignty-rd-wave03-rd05-member-participation/source-census-protocol.json
+          615fda8287fe891cfdb993e13c6dda424f27433741b9d407702e8c9508fab71b  data/intake/status-sovereignty-rd-wave03-rd05-member-participation/intake-product-manifest.json
+          06867de839eb6179503156e2035515c72211d3c9050976cad31fb68ac209bd59  docs/milestones/ssc-rd-wave03-rd05-member-participation-intake.md
+          fb4d8ee50cf2363ef00a1c041cf6172149244c37cc6606356c6ed87a1e2696f1  schemas/status-sovereignty-rd-wave03-rd05-member-participation-intake.schema.json
+          f080239006219795480b3b191bfa481d6074635130cd7b89555923ee20382eab  test/status-sovereignty-rd-wave03-rd05-member-participation-intake.test.js
+          f7675b39ae40cc3eb9107f4c5e9170f7a71dabe829fe167533b69e05a448f7ef  tools/acquisition/status-sovereignty-rd-wave03-rd05/run-source-census.py
+          06e80f8d3e4b375fe26cca64220ee9e44fe3fdd71c5486a4208d9c315f159b81  tools/build-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs
+          0e6e43a0f49c4defb8f93092aea8a144dac8cbcf217500ed3ff0eaffe4c68c51  tools/validate-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs
+          EOF
+          sed -i 's/^          //' "$RECEIPT/product.sha256"
+          (cd "$PACKAGE" && sha256sum -c "$RECEIPT/product.sha256")
+
+          STAGE=bind-leases
+          git fetch --no-tags origin main "$PRODUCT_BRANCH" "$LANE_BRANCH"
+          LIVE_MAIN=$(git rev-parse origin/main)
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PRODUCT_LEASE"
+          test "$(git rev-parse "origin/$LANE_BRANCH")" = "$LANE_LEASE"
+          git merge-base --is-ancestor "$PROMOTION_ANCESTOR" "$LIVE_MAIN"
+          printf 'live_main=%s\nproduct_branch=%s\nproduct_lease=%s\nlane_branch=%s\nlane_lease=%s\n' \
+            "$LIVE_MAIN" "$PRODUCT_BRANCH" "$PRODUCT_LEASE" "$LANE_BRANCH" "$LANE_LEASE" > "$RECEIPT/leases.txt"
+
+          STAGE=compose
+          git checkout --detach "$LIVE_MAIN"
+          while IFS= read -r rel; do test ! -e "$rel"; done < "$RECEIPT/expected-paths.txt"
+          cp -a "$PACKAGE"/. .
+          git ls-files --others --exclude-standard | sort > "$RECEIPT/untracked-paths.txt"
+          cmp "$RECEIPT/expected-paths-sorted.txt" "$RECEIPT/untracked-paths.txt"
+          xargs -d '\n' git add -- < "$RECEIPT/expected-paths.txt"
+          git diff --cached --name-status > "$RECEIPT/name-status.txt"
+          test "$(wc -l < "$RECEIPT/name-status.txt" | tr -d ' ')" = 11
+          test "$(awk '$1 != "A" {n++} END {print n+0}' "$RECEIPT/name-status.txt")" = 0
+          git commit -m 'Freeze RD-05 Wave-03 member-participation intake protocol'
+          PRODUCT_HEAD=$(git rev-parse HEAD)
+          PRODUCT_TREE=$(git rev-parse HEAD^{tree})
+
+          run_focused() {
+            node --check tools/build-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs
+            node --check tools/validate-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs
+            node --check test/status-sovereignty-rd-wave03-rd05-member-participation-intake.test.js
+            python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd05/run-source-census.py
+            node tools/build-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs --check
+            node tools/validate-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs
+            node test/status-sovereignty-rd-wave03-rd05-member-participation-intake.test.js
+            rm -rf "$DRY"
+            python tools/acquisition/status-sovereignty-rd-wave03-rd05/run-source-census.py --dry-run --output "$DRY"
+            python - "$DRY/execution-receipt.json" <<'PY'
+          import json, sys
+          row=json.load(open(sys.argv[1]))
+          assert row['mode']=='dry_run'
+          assert row['fixed_routes']==161
+          assert row['request_attempts']==0
+          assert row['candidate_rows']==0
+          assert row['admitted_evidence_sources']==0
+          assert row['outside_human_dependency'] is False
+          assert row['graph_effect']=='none'
+          PY
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          }
+
+          STAGE=focused-gates
+          run_focused
+          git diff --check HEAD^
+
+          STAGE=full-release-gate
+          npm run release:check
+
+          STAGE=clean-replay
+          git restore --worktree -- .
+          git clean -fdx
+          run_focused
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          sha256sum -c "$RECEIPT/product.sha256"
+
+          STAGE=publish-product-branch
+          git fetch --no-tags origin main "$PRODUCT_BRANCH" "$LANE_BRANCH"
+          test "$(git rev-parse origin/main)" = "$LIVE_MAIN"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PRODUCT_LEASE"
+          test "$(git rev-parse "origin/$LANE_BRANCH")" = "$LANE_LEASE"
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH" \
+            --force-with-lease="refs/heads/$PRODUCT_BRANCH:$PRODUCT_LEASE"
+          test "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$PRODUCT_HEAD"
+          printf 'status=complete\nlive_main=%s\nproduct_head=%s\nproduct_tree=%s\npermanent_paths=11\nmembers=17\ncells=170\nfixed_routes=161\nrequest_attempts=0\noutside_human_dependency=false\npublication_effect=none\ngraph_effect=none\n' \
+            "$LIVE_MAIN" "$PRODUCT_HEAD" "$PRODUCT_TREE" > "$RECEIPT/final.txt"
+          STAGE=complete
+
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd-wave03-rd05-intake-materializer-v3
+          path: ${{ runner.temp }}/ssc-rd-wave03-rd05-intake-v3/receipt
+          if-no-files-found: error
+          retention-days: 90
