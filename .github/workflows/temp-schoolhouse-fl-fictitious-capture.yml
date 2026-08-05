@@ -1,0 +1,97 @@
+name: TEMP capture School.House Florida fictitious-name denominator
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-fl-fictitious-capture.yml'
+      - '.schoolhouse-fl-fictitious-capture/EXECUTE'
+      - 'tools/acquisition/schoolhouse-fl-fictitious/acquire.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile acquisition runner
+        run: python -m py_compile tools/acquisition/schoolhouse-fl-fictitious/acquire.py
+
+      - name: Execute complete Florida fictitious-name scan
+        id: acquisition
+        continue-on-error: true
+        env:
+          FL_SFTP_USERNAME: Public
+          FL_SFTP_PASSWORD: PubAccess1845!
+        run: |
+          set +e
+          OUT=/tmp/schoolhouse-fl-fictitious-capture
+          rm -rf "$OUT"
+          python tools/acquisition/schoolhouse-fl-fictitious/acquire.py \
+            --output "$OUT" \
+            --retries 3
+          status=$?
+          mkdir -p "$OUT"
+          printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
+          exit "$status"
+
+      - name: Upload exact acquisition artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-fl-fictitious-name-denominator
+          path: /tmp/schoolhouse-fl-fictitious-capture
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal privacy-minimized census
+        if: always()
+        run: |
+          test -f /tmp/schoolhouse-fl-fictitious-capture/RUNNER_EXIT_CODE
+          test "$(cat /tmp/schoolhouse-fl-fictitious-capture/RUNNER_EXIT_CODE)" = '0'
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/schoolhouse-fl-fictitious-capture')
+          summary = json.loads((root / 'summary.json').read_text())
+          receipt = json.loads((root / 'source-receipt.json').read_text())
+          tests = json.loads((root / 'exact-tests.json').read_text())
+          members = [json.loads(line) for line in (root / 'member-inventory.jsonl').read_text().splitlines() if line]
+          candidates = [json.loads(line) for line in (root / 'fictitious-name-candidates.jsonl').read_text().splitlines() if line]
+
+          assert summary['source_bytes'] == 74_947_584
+          assert len(summary['source_sha256']) == 64
+          assert summary['archive_members'] == len(members) and len(members) > 0
+          assert summary['source_rows_scanned'] == sum(row['row_count'] for row in members)
+          assert summary['candidate_rows'] == len(candidates)
+          assert summary['all_members_scanned'] is True
+          assert receipt['route_probe']['workflow_run_id'] == 30973871220
+          assert receipt['route_probe']['artifact_id'] == 8917541589
+          assert receipt['route_probe']['state'] == 'accessible'
+          assert receipt['bytes'] == 74_947_584
+          assert receipt['raw_source_retained'] is False
+          assert tests['identity_admitted'] is False
+          assert tests['graph_effect'] == 'none'
+          assert summary['street_address_rows_retained'] == 0
+          assert summary['postal_code_rows_retained'] == 0
+          assert summary['contact_detail_rows_retained'] == 0
+          assert summary['private_support_rows'] == 0
+          assert summary['identity_admitted'] is False
+          assert summary['outside_human_dependency'] is False
+          assert summary['graph_effect'] == 'none'
+          assert all(row['street_address_retained'] is False for row in candidates)
+          assert all(row['contact_details_retained'] is False for row in candidates)
+          assert all(row['identity_admitted'] is False for row in candidates)
+          assert not Path('/tmp/schoolhouse-fl-fictitious-capture/florida-fictitious-quarterly.zip').exists()
+          print(json.dumps(summary, sort_keys=True))
+          PY
