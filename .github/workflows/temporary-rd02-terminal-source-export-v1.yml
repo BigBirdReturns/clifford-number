@@ -12,7 +12,7 @@ permissions:
 jobs:
   export:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
     env:
       SOURCE_HEAD: fd46638c2d60d2e06e51b1ea25ac5899168f6fd2
     steps:
@@ -20,23 +20,26 @@ jobs:
         with:
           ref: ${{ env.SOURCE_HEAD }}
           fetch-depth: 0
-      - name: Preserve exact cleaned source tree
+      - name: Preserve full reachable source history
         run: |
           set -Eeuo pipefail
           test "$(git rev-parse HEAD)" = "$SOURCE_HEAD"
-          out="$RUNNER_TEMP/rd02-terminal-clean-source"
+          out="$RUNNER_TEMP/rd02-terminal-source-history"
           mkdir -p "$out"
-          git archive --format=tar "$SOURCE_HEAD" | gzip -9 > "$out/clifford-number-clean-source.tar.gz"
-          git ls-tree -r --name-only "$SOURCE_HEAD" > "$out/tracked-paths.txt"
-          git ls-tree -r -l "$SOURCE_HEAD" > "$out/git-tree-manifest.txt"
-          printf 'source_head=%s\nsource_tree=%s\ntracked_paths=%s\n' \
-            "$SOURCE_HEAD" "$(git rev-parse "$SOURCE_HEAD^{tree}")" "$(wc -l < "$out/tracked-paths.txt" | tr -d ' ')" \
+          bundle="$out/clifford-number-source-history.bundle"
+          git bundle create "$bundle" HEAD
+          git bundle verify "$bundle" > "$out/bundle-verify.txt" 2>&1
+          git bundle list-heads "$bundle" > "$out/bundle-heads.txt"
+          test "$(awk '$2=="HEAD" {print $1}' "$out/bundle-heads.txt")" = "$SOURCE_HEAD"
+          printf 'source_head=%s\nsource_tree=%s\nbundle_bytes=%s\nbundle_sha256=%s\n' \
+            "$SOURCE_HEAD" "$(git rev-parse "$SOURCE_HEAD^{tree}")" \
+            "$(wc -c < "$bundle" | tr -d ' ')" "$(sha256sum "$bundle" | cut -d' ' -f1)" \
             > "$out/receipt.txt"
-          (cd "$out" && sha256sum clifford-number-clean-source.tar.gz tracked-paths.txt git-tree-manifest.txt receipt.txt > SHA256SUMS)
+          (cd "$out" && sha256sum clifford-number-source-history.bundle bundle-verify.txt bundle-heads.txt receipt.txt > SHA256SUMS)
           echo "EXPORT_DIR=$out" >> "$GITHUB_ENV"
       - uses: actions/upload-artifact@v4
         with:
-          name: rd02-terminal-clean-source-fd466
+          name: rd02-terminal-source-history-fd466
           path: ${{ env.EXPORT_DIR }}
           if-no-files-found: error
           retention-days: 7
