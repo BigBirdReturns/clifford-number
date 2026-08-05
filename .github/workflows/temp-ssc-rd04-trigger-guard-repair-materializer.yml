@@ -22,8 +22,8 @@ jobs:
       BASE_MAIN_FLOOR: b9d09c28bcaa0b00c699ff40e893df7b9675ff0f
       TARGET_BRANCH: agent/ssc-rd04-wave03-trigger-path-validator-repair-product-v1
       TARGET_LEASE: b9d09c28bcaa0b00c699ff40e893df7b9675ff0f
-      CARRIER_PATH: .ssc-rd04-trigger-guard-repair/carrier.b64
-      CARRIER_B64_SHA256: 998a1cf4c5d975730c2bef2d5c5884c81da9717ff80c8e6f9a02171aa4328eb2
+      CARRIER_DIR: .ssc-rd04-trigger-guard-repair/carrier
+      CARRIER_B64_SHA256: 37e171dd694e511c4b1cb171515685c430b7052721ebbdf4dc9e21f1ac36e8d3
       CARRIER_TAR_SHA256: cccec760a7acd895bfeb1b907aa7cb31449f41ecba443ef3dd388dbbb3062028
       PATHS_SHA256: 51c03b0f79a93357366b8203d237e94ebd88027982bc953bded905bc5eaf3693
     steps:
@@ -77,7 +77,8 @@ jobs:
           sed -i 's/^          //' "$RECEIPT/permanent-product-paths.txt"
           sort -o "$RECEIPT/permanent-product-paths.txt" "$RECEIPT/permanent-product-paths.txt"
 
-          cp "$CARRIER_PATH" "$RECEIPT/package.tar.xz.b64"
+          test "$(find "$CARRIER_DIR" -maxdepth 1 -type f -name 'part-*' | wc -l | tr -d ' ')" = 4
+          cat "$CARRIER_DIR"/part-* | tr -d '\r\n' > "$RECEIPT/package.tar.xz.b64"
           test "$(sha256sum "$RECEIPT/package.tar.xz.b64" | awk '{print $1}')" = "$CARRIER_B64_SHA256"
           base64 --decode "$RECEIPT/package.tar.xz.b64" > "$ARCHIVE"
           test "$(sha256sum "$ARCHIVE" | awk '{print $1}')" = "$CARRIER_TAR_SHA256"
