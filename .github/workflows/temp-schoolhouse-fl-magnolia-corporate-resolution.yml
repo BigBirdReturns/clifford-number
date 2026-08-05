@@ -1,0 +1,185 @@
+name: TEMP resolve School.House Magnolia corporate candidates
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-fl-magnolia-corporate-resolution.yml'
+      - '.schoolhouse-fl-magnolia-corporate-resolution/EXECUTE'
+      - 'tools/acquisition/schoolhouse-fl-corporate-owner-resolution/acquire_magnolia.py'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile qualified range and Magnolia runners
+        run: |
+          python -m py_compile \
+            tools/acquisition/schoolhouse-fl-corporate-owner-resolution/acquire.py \
+            tools/acquisition/schoolhouse-fl-corporate-owner-resolution/acquire_magnolia.py
+
+      - name: Download strict exact-FEI candidate artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          rm -rf /tmp/schoolhouse-state-registry-exact-fei
+          mkdir -p /tmp/schoolhouse-state-registry-exact-fei
+          gh run download 30975237852 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name schoolhouse-state-registry-candidates-attempt03-strict \
+            --dir /tmp/schoolhouse-state-registry-exact-fei
+          test -f /tmp/schoolhouse-state-registry-exact-fei/registry-candidates.jsonl
+          test -f /tmp/schoolhouse-state-registry-exact-fei/summary.json
+
+      - name: Acquire exact Magnolia corporate records through remote ZIP ranges
+        id: acquisition
+        continue-on-error: true
+        env:
+          FL_SFTP_USERNAME: Public
+          FL_SFTP_PASSWORD: PubAccess1845!
+        run: |
+          set +e
+          OUT=/tmp/schoolhouse-fl-magnolia-corporate-resolution
+          rm -rf "$OUT"
+          python tools/acquisition/schoolhouse-fl-corporate-owner-resolution/acquire_magnolia.py \
+            --output "$OUT" \
+            --exact-fei-artifact /tmp/schoolhouse-state-registry-exact-fei \
+            --retries 3
+          status=$?
+          mkdir -p "$OUT"
+          printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
+          exit "$status"
+
+      - name: Upload exact privacy-minimized artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-fl-magnolia-corporate-resolution
+          path: /tmp/schoolhouse-fl-magnolia-corporate-resolution
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require exact candidate, source, and authority custody
+        if: always()
+        run: |
+          test -f /tmp/schoolhouse-fl-magnolia-corporate-resolution/RUNNER_EXIT_CODE
+          test "$(cat /tmp/schoolhouse-fl-magnolia-corporate-resolution/RUNNER_EXIT_CODE)" = '0'
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/schoolhouse-fl-magnolia-corporate-resolution')
+          summary = json.loads((root / 'summary.json').read_text())
+          receipt = json.loads((root / 'source-receipt.json').read_text())
+          adjudication = json.loads((root / 'cross-registry-adjudication.json').read_text())
+          targets = [json.loads(line) for line in (root / 'target-documents.jsonl').read_text().splitlines() if line]
+          records = [json.loads(line) for line in (root / 'corporate-records.jsonl').read_text().splitlines() if line]
+          matrix = [json.loads(line) for line in (root / 'resolution-matrix.jsonl').read_text().splitlines() if line]
+          members = [json.loads(line) for line in (root / 'member-receipts.jsonl').read_text().splitlines() if line]
+          ranges = [json.loads(line) for line in (root / 'range-request-receipts.jsonl').read_text().splitlines() if line]
+
+          assert summary['source_bytes'] == 1819049954
+          assert summary['remote_zip_members'] == 10
+          assert summary['target_partitions'] == 2
+          assert summary['target_partition_digits'] == ['5', '7']
+          assert summary['target_documents'] == 2
+          assert summary['resolved_target_documents'] == 2
+          assert summary['corporate_records_retained'] == 2
+          assert summary['all_target_partitions_complete'] is True
+          assert summary['all_target_documents_terminal'] is True
+          assert summary['magnolia_nonprofit_identifier_grade_irs_resolution'] is True
+          assert summary['public_schoolhouse_identity_admitted'] is False
+          assert summary['negative_existence_claim_created'] is False
+          assert summary['full_source_downloaded'] is False
+          assert summary['raw_source_retained'] is False
+          assert summary['street_address_rows_retained'] == 0
+          assert summary['mailing_address_rows_retained'] == 0
+          assert summary['postal_code_rows_retained'] == 0
+          assert summary['registered_agent_name_rows_retained'] == 0
+          assert summary['officer_name_rows_retained'] == 0
+          assert summary['officer_address_rows_retained'] == 0
+          assert summary['contact_detail_rows_retained'] == 0
+          assert summary['private_support_rows'] == 0
+          assert summary['outside_human_dependency'] is False
+          assert summary['graph_effect'] == 'none'
+
+          assert len(targets) == 2
+          assert {row['target_document_number'] for row in targets} == {'L25000047895', 'N25000006947'}
+          assert all(row['public_schoolhouse_identity_admitted'] is False for row in targets)
+          assert all(row['graph_effect'] == 'none' for row in targets)
+
+          assert len(records) == 2
+          by_document = {row['document_number']: row for row in records}
+          nonprofit = by_document['N25000006947']
+          llc = by_document['L25000047895']
+          assert nonprofit['corporation_name_as_recorded'] == 'THE MAGNOLIA SCHOOLHOUSE, INC.'
+          assert nonprofit['fei'] == '392669585'
+          assert nonprofit['filing_type'] == 'DOMNP'
+          assert nonprofit['file_date'] == '2025-06-11'
+          assert nonprofit['principal_city'] == 'VERO BEACH'
+          assert nonprofit['principal_state'] == 'FL'
+          assert nonprofit['irs_candidate_resolution_state'] == 'identifier_grade_irs_candidate_identity_resolved'
+          assert llc['corporation_name_as_recorded'] == 'THE MAGNOLIA SCHOOLHOUSE LLC'
+          assert llc['irs_candidate_resolution_state'] == 'exact_fei_search_association_not_identifier_grade'
+          assert llc['exact_fei_search_association_state'] in {
+              'bulk_reports_no_fei_exact_search_association_not_confirmed',
+              'bulk_reports_same_fei_requires_cross_surface_conflict_adjudication',
+              'bulk_reports_distinct_fei_exact_search_association_rejected',
+          }
+          assert all(row['registered_agent_name_retained'] is False for row in records)
+          assert all(row['officer_names_retained'] is False for row in records)
+          assert all(row['officer_addresses_retained'] is False for row in records)
+          assert all(row['public_schoolhouse_brand_join_state'] == 'not_established' for row in records)
+          assert all(row['public_schoolhouse_identity_admitted'] is False for row in records)
+          assert all(row['outside_human_dependency'] is False for row in records)
+          assert all(row['graph_effect'] == 'none' for row in records)
+          assert not any('registered_agent_name_as_recorded' in row for row in records)
+          assert not any('officers' in row for row in records)
+
+          assert len(matrix) == 2
+          assert all(row['matched_corporate_record_count'] == 1 for row in matrix)
+          assert all(row['resolution_state'] == 'exact_corporate_record_resolved' for row in matrix)
+          assert all(row['public_schoolhouse_brand_join_state'] == 'not_established' for row in matrix)
+          assert all(row['public_schoolhouse_identity_admitted'] is False for row in matrix)
+
+          assert len(members) == 2
+          assert {row['partition_digit'] for row in members} == {'5', '7'}
+          assert all(row['state'] == 'complete_partition_scanned' for row in members)
+          assert all(row['raw_compressed_member_retained'] is False for row in members)
+          assert all(row['raw_uncompressed_member_retained'] is False for row in members)
+          assert sum(row['target_match_counts'][row['target_charters'][0]] for row in members) == 2
+
+          assert receipt['source_bytes'] == 1819049954
+          assert receipt['selected_partition_count'] == 2
+          assert receipt['target_documents'] == 2
+          assert receipt['resolved_target_documents'] == 2
+          assert receipt['full_source_downloaded'] is False
+          assert receipt['raw_source_retained'] is False
+          assert receipt['public_credential_password_retained'] is False
+          assert receipt['outside_human_dependency'] is False
+          assert receipt['graph_effect'] == 'none'
+
+          assert adjudication['strict_exact_fei_predecessor']['document_numbers'] == ['L25000047895', 'N25000006947']
+          assert adjudication['corporate_bulk_resolution']['resolved_documents'] == 2
+          assert adjudication['corporate_bulk_resolution']['nonprofit_identifier_grade_irs_resolution'] is True
+          assert adjudication['public_schoolhouse_identity_decision']['state'] == 'unresolved_no_florida_corporate_identity_admitted'
+          assert adjudication['public_schoolhouse_identity_decision']['negative_existence_claim_created'] is False
+          assert adjudication['outside_human_dependency'] is False
+          assert adjudication['graph_effect'] == 'none'
+
+          assert len(ranges) >= 8
+          assert all(row['state'] == 'captured' for row in ranges)
+          print(json.dumps(summary, sort_keys=True))
+          PY
