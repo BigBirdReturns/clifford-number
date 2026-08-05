@@ -1,0 +1,46 @@
+name: TEMP export exact PC-50 parent source
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pc50-source-export-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  export:
+    if: github.head_ref == 'agent/pc50-source-export'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact qualified parent
+        uses: actions/checkout@v4
+        with:
+          ref: d87172a41e88c1709b37a114b50df733545126c8
+          fetch-depth: 1
+      - name: Freeze source archive and receipt
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^{commit})" = "d87172a41e88c1709b37a114b50df733545126c8"
+          git archive --format=tar.gz --output=/tmp/clifford-number-pc50-parent-d87172a.tar.gz HEAD
+          {
+            printf 'parent_commit=%s\n' "$(git rev-parse HEAD^{commit})"
+            printf 'parent_tree=%s\n' "$(git rev-parse HEAD^{tree})"
+            printf 'archive_bytes=%s\n' "$(stat -c %s /tmp/clifford-number-pc50-parent-d87172a.tar.gz)"
+            printf 'archive_sha256=%s\n' "$(sha256sum /tmp/clifford-number-pc50-parent-d87172a.tar.gz | awk '{print $1}')"
+          } | tee /tmp/pc50-parent-source-receipt.txt
+      - name: Upload exact parent source
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc50-parent-source-d87172a
+          path: |
+            /tmp/clifford-number-pc50-parent-d87172a.tar.gz
+            /tmp/pc50-parent-source-receipt.txt
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
