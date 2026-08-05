@@ -57,8 +57,8 @@ jobs:
           SOURCE_BUNDLE=/tmp/build-schoolhouse-first-party-legal-surface-custody.mjs.gz.b64
           SOURCE_BUILDER=/tmp/build-schoolhouse-first-party-legal-surface-custody.mjs
 
-          test "$(find "$SOURCE_CHUNKS" -maxdepth 1 -type f -name '*.b64' | wc -l | tr -d ' ')" = '7'
-          for chunk in 00 01 02 03 04 05 06; do
+          test "$(find "$SOURCE_CHUNKS" -maxdepth 1 -type f -name '*.b64' | wc -l | tr -d ' ')" = '13'
+          for chunk in 00 01 02 03 04 05 06 07 08 09 10 11 12; do
             test -s "$SOURCE_CHUNKS/$chunk.b64"
           done
           cat \
@@ -69,8 +69,16 @@ jobs:
             "$SOURCE_CHUNKS/04.b64" \
             "$SOURCE_CHUNKS/05.b64" \
             "$SOURCE_CHUNKS/06.b64" \
+            "$SOURCE_CHUNKS/07.b64" \
+            "$SOURCE_CHUNKS/08.b64" \
+            "$SOURCE_CHUNKS/09.b64" \
+            "$SOURCE_CHUNKS/10.b64" \
+            "$SOURCE_CHUNKS/11.b64" \
+            "$SOURCE_CHUNKS/12.b64" \
             > "$SOURCE_BUNDLE"
-          echo "MATERIALIZER_ASSEMBLED_BUNDLE_SHA=$(sha256sum "$SOURCE_BUNDLE" | awk '{print $1}')"
+          BUNDLE_SHA=$(sha256sum "$SOURCE_BUNDLE" | awk '{print $1}')
+          echo "MATERIALIZER_ASSEMBLED_BUNDLE_SHA=$BUNDLE_SHA"
+          test "$BUNDLE_SHA" = '38d70b08d260f218dd2c922641373d6c7be68c8aef72916d4f5e617bbbd7f60a'
           base64 -d "$SOURCE_BUNDLE" | gzip -dc > "$SOURCE_BUILDER"
           BUILDER_SHA=$(sha256sum "$SOURCE_BUILDER" | awk '{print $1}')
           echo "MATERIALIZER_SOURCE_SHA=$BUILDER_SHA"
