@@ -1,0 +1,173 @@
+name: TEMP materialize RD-04 Wave 03 fifty-state intake
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-ssc-rd04-wave03-intake-materializer.yml'
+      - '.ssc-rd04-wave03-intake-materializer/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd04-wave03-intake-materializer-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      BASE_MAIN: 36b453139c2c5040f5df0148838ea232607b95d3
+      TARGET_BRANCH: agent/ssc-rd-wave03-rd04-state-implementation-intake-v1
+      TARGET_LEASE: d446b6a7a982b0ae41f1c949658f50359e5f9205
+      PERMANENT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-state-implementation-intake.yml
+      CARRIER_DIR: .ssc-rd04-wave03-intake-materializer/carrier
+      CARRIER_B64_SHA256: 24f27445a185212661b3721a4cf6f14fb0df84feb18eda6a3f24bf9047722eb4
+      CARRIER_TAR_SHA256: e921f60acebbe00c8f656eb4b63a5ebd42a0e9dad8d24f3ef31423780561c61d
+      ORDINARY_PATHS_SHA256: 5d130a3f173a9c1968649fa758f05c242acf87178c1df525e528b5285caef4d9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Reconstruct, qualify, and lease-publish the exact permanent product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export GIT_AUTHOR_NAME='github-actions[bot]'
+          export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+
+          RECEIPT=/tmp/ssc-rd04-wave03-intake-materializer-receipt
+          PACKAGE=/tmp/ssc-rd04-wave03-intake-package
+          FULL=/tmp/ssc-rd04-wave03-intake-full
+          TARGET=/tmp/ssc-rd04-wave03-intake-target
+          ARCHIVE=/tmp/ssc-rd04-wave03-intake-ordinary.tar.xz
+          rm -rf "$RECEIPT" "$PACKAGE" "$FULL" "$TARGET" "$ARCHIVE"
+          mkdir -p "$RECEIPT" "$PACKAGE"
+
+          cat > "$RECEIPT/ordinary-paths.txt" <<'EOF'
+          data/intake/status-sovereignty-rd-wave03-rd04-state-implementation/field-matrix-contract.json
+          data/intake/status-sovereignty-rd-wave03-rd04-state-implementation/source-census-protocol.json
+          data/intake/status-sovereignty-rd-wave03-rd04-state-implementation/intake-product-manifest.json
+          data/project/ssc-residual-wave03/seeds/RD-04-C02.json
+          docs/milestones/ssc-rd-wave03-rd04-state-implementation-intake.md
+          schemas/status-sovereignty-rd-wave03-rd04-state-implementation-intake.schema.json
+          test/status-sovereignty-rd-wave03-rd04-state-implementation-intake.test.js
+          tools/acquisition/status-sovereignty-rd-wave03-rd04/run-source-census.py
+          tools/build-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs
+          EOF
+          sed -i 's/^          //' "$RECEIPT/ordinary-paths.txt"
+          test "$(sha256sum "$RECEIPT/ordinary-paths.txt" | awk '{print $1}')" = "$ORDINARY_PATHS_SHA256"
+
+          {
+            printf '%s\n' "$PERMANENT_WORKFLOW"
+            cat "$RECEIPT/ordinary-paths.txt"
+          } | sort > "$RECEIPT/full-paths.txt"
+          test "$(wc -l < "$RECEIPT/ordinary-paths.txt" | tr -d ' ')" = 10
+          test "$(wc -l < "$RECEIPT/full-paths.txt" | tr -d ' ')" = 11
+
+          cat "$CARRIER_DIR"/part-* > "$RECEIPT/ordinary.tar.xz.b64"
+          test "$(sha256sum "$RECEIPT/ordinary.tar.xz.b64" | awk '{print $1}')" = "$CARRIER_B64_SHA256"
+          base64 --decode "$RECEIPT/ordinary.tar.xz.b64" > "$ARCHIVE"
+          test "$(sha256sum "$ARCHIVE" | awk '{print $1}')" = "$CARRIER_TAR_SHA256"
+          tar -tJf "$ARCHIVE" > "$RECEIPT/archive-paths.txt"
+          cmp "$RECEIPT/ordinary-paths.txt" "$RECEIPT/archive-paths.txt"
+          tar -xJf "$ARCHIVE" -C "$PACKAGE"
+          test "$(find "$PACKAGE" -type f | wc -l | tr -d ' ')" = 10
+          test "$(find "$PACKAGE" -type l | wc -l | tr -d ' ')" = 0
+
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          LIVE_MAIN=$(git rev-parse origin/main)
+          LIVE_TARGET=$(git rev-parse "origin/$TARGET_BRANCH")
+          test "$LIVE_MAIN" = "$BASE_MAIN"
+          test "$LIVE_TARGET" = "$TARGET_LEASE"
+          git merge-base --is-ancestor 2374980372d98e7f9ca68fe373d25c9bb812c374 "$BASE_MAIN"
+          git merge-base --is-ancestor dc47681a9ad43e1c64c86e3d823dbb7c203a18c2 "$BASE_MAIN"
+          git merge-base --is-ancestor 7b21d1f2b0606a5550b9c26fadc0cb465ba88b7e "$BASE_MAIN"
+          git merge-base --is-ancestor 346e6881e68f85bbf204911b7915b4d5869efd2d "$BASE_MAIN"
+
+          git worktree add --detach "$FULL" "$BASE_MAIN"
+          cp -a "$PACKAGE"/. "$FULL"/
+          mkdir -p "$FULL/$(dirname "$PERMANENT_WORKFLOW")"
+          git show "origin/$TARGET_BRANCH:$PERMANENT_WORKFLOW" > "$FULL/$PERMANENT_WORKFLOW"
+          cd "$FULL"
+          git add -- "$PERMANENT_WORKFLOW"
+          while IFS= read -r path; do git add -- "$path"; done < "$RECEIPT/ordinary-paths.txt"
+          git diff --cached --name-only | sort > "$RECEIPT/full-actual-paths.txt"
+          cmp "$RECEIPT/full-paths.txt" "$RECEIPT/full-actual-paths.txt"
+          test "$(git diff --cached --name-status | awk '$1 != "A" {n++} END {print n+0}')" = 0
+          if grep -E '(^|/)(tmp|transport)(/|$)|materializer|carrier|trigger' "$RECEIPT/full-actual-paths.txt"; then exit 1; fi
+          git commit -m 'Synthetic qualification commit for RD-04 Wave-03 fifty-state intake'
+          QUALIFIED_COMMIT=$(git rev-parse HEAD)
+          QUALIFIED_TREE=$(git rev-parse HEAD^{tree})
+
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-state-implementation-intake.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs
+          node test/status-sovereignty-rd-wave03-rd04-state-implementation-intake.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd04/run-source-census.py
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-source-census.py --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+          git restore --worktree -- .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs
+          node test/status-sovereignty-rd-wave03-rd04-state-implementation-intake.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-source-census.py --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          git worktree add --detach "$TARGET" "$TARGET_LEASE"
+          cp -a "$PACKAGE"/. "$TARGET"/
+          cd "$TARGET"
+          while IFS= read -r path; do git add -- "$path"; done < "$RECEIPT/ordinary-paths.txt"
+          git diff --cached --name-only | sort > "$RECEIPT/ordinary-actual-paths.txt"
+          sort "$RECEIPT/ordinary-paths.txt" > "$RECEIPT/ordinary-paths-sorted.txt"
+          cmp "$RECEIPT/ordinary-paths-sorted.txt" "$RECEIPT/ordinary-actual-paths.txt"
+          test "$(git diff --cached --name-status | awk '$1 != "A" {n++} END {print n+0}')" = 0
+          git commit -m 'Freeze RD-04 Wave-03 fifty-state source-census intake'
+          PUBLISHED_COMMIT=$(git rev-parse HEAD)
+          PUBLISHED_TREE=$(git rev-parse HEAD^{tree})
+          test "$PUBLISHED_TREE" = "$QUALIFIED_TREE"
+          git diff --name-only "$BASE_MAIN...HEAD" | sort > "$RECEIPT/published-paths.txt"
+          cmp "$RECEIPT/full-paths.txt" "$RECEIPT/published-paths.txt"
+          test "$(git diff --name-status "$BASE_MAIN...HEAD" | awk '$1 != "A" {n++} END {print n+0}')" = 0
+
+          node tools/build-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs
+          node test/status-sovereignty-rd-wave03-rd04-state-implementation-intake.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-source-census.py --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          test "$(git rev-parse origin/main)" = "$BASE_MAIN"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$TARGET_LEASE"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_LEASE"
+
+          printf 'base_main=%s\ntarget_lease=%s\nqualified_commit=%s\nqualified_tree=%s\npublished_commit=%s\npublished_tree=%s\npermanent_paths=11\nordinary_paths=10\nstate_rows=50\nrequired_cells=450\nfixed_routes=204\nadversarial_refusals=504\noutside_human_dependency=false\n' \
+            "$BASE_MAIN" "$TARGET_LEASE" "$QUALIFIED_COMMIT" "$QUALIFIED_TREE" "$PUBLISHED_COMMIT" "$PUBLISHED_TREE" > "$RECEIPT/final.txt"
+          sha256sum "$RECEIPT/ordinary.tar.xz.b64" "$ARCHIVE" "$RECEIPT/ordinary-paths.txt" "$RECEIPT/full-paths.txt" > "$RECEIPT/hashes.txt"
+
+      - name: Preserve materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-wave03-intake-materialization-v1
+          path: /tmp/ssc-rd04-wave03-intake-materializer-receipt
+          if-no-files-found: error
+          retention-days: 90
