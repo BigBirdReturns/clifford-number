@@ -1,0 +1,45 @@
+exact_file_manifest_complete=15')
+PY
+
+cd "$WORK"
+while IFS= read -r path; do git add -- "$path"; done < "$RECEIPT/product-paths.txt"
+git diff --cached --name-only | sort > "$RECEIPT/staged-paths.txt"
+cmp "$RECEIPT/product-paths.txt" "$RECEIPT/staged-paths.txt"
+test "$(git diff --cached --name-status | awk '$1 != "A" {n++} END {print n+0}')" = 0
+if grep -E '(^|/)(tmp|transport|carrier|materializer|trigger)(/|$)' "$RECEIPT/staged-paths.txt"; then exit 1; fi
+git commit -m 'Adjudicate RD-04 candidates and freeze official redirect replay'
+PRODUCT_COMMIT=$(git rev-parse HEAD)
+PRODUCT_TREE=$(git rev-parse HEAD^{tree})
+
+# Full qualification and clean deterministic replay.
+node --check tools/build-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs
+node --check tools/validate-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs
+node --check test/status-sovereignty-rd-wave03-rd04-candidate-adjudication.test.js
+node tools/build-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs --check
+node tools/validate-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs
+node test/status-sovereignty-rd-wave03-rd04-candidate-adjudication.test.js
+python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd04/run-official-redirect-replay.py
+python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-official-redirect-replay.py --validate-only
+node tools/validate-no-magic-human-gate.mjs
+npm run release:check
+git restore --worktree -- .
+git clean -fdx
+node tools/build-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs --write
+node tools/build-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs --check
+node tools/validate-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs
+node test/status-sovereignty-rd-wave03-rd04-candidate-adjudication.test.js
+python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-official-redirect-replay.py --validate-only
+node tools/validate-no-magic-human-gate.mjs
+git diff --check
+git diff --exit-code
+test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+# Recheck both leases immediately before publication.
+git fetch --no-tags origin main "$TARGET_BRANCH"
+test "$(git rev-parse origin/main)" = "$LIVE_MAIN"
+test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$TARGET_LEASE"
+git push origin "HEAD:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_LEASE"
+
+printf 'floor=%s\nlive_main=%s\ntarget_lease=%s\nproduct_commit=%s\nproduct_tree=%s\nnonworkflow_paths=15\nstanding_workflow_reattach_required=true\ncandidate_rows_terminal=1500\nselected_candidate_followups=0\nofficial_redirect_replay_routes=54\nadversarial_refusals=1576\nfield_cells_terminal=0/450\nclass_closed=false\noutside_human_dependency=false\n' \
+  "$FLOOR" "$LIVE_MAIN" "$TARGET_LEASE" "$PRODUCT_COMMIT" "$PRODUCT_TREE" > "$RECEIPT/final.txt"
+sha256sum "$STATIC_B64" "$STATIC_ARCHIVE" "$GENERATOR" "$SOURCE_ZIP" "$RECEIPT/product-paths.txt" "$RECEIPT/product-file-manifest.json" > "$RECEIPT/hashes.txt"
