@@ -30,62 +30,16 @@ jobs:
 
           EXECUTE='.schoolhouse-archive-minimum-reconciliation-materializer/EXECUTE'
           BUNDLE='.schoolhouse-archive-minimum-reconciliation-materializer/builder.mjs.gz.b64'
+          UNPATCHED_BUILDER='/tmp/build-schoolhouse-archive-minimum-reconciliation.unpatched.mjs'
           BUILDER='/tmp/build-schoolhouse-archive-minimum-legal-surface-reconciliation-custody.mjs'
           BASELINE='/tmp/schoolhouse-archive-minimum-legal-surface'
           REPLAY='/tmp/schoolhouse-archive-minimum-legal-surface-replay'
           PRODUCT='/tmp/schoolhouse-archive-minimum-reconciliation-product'
+          REPRO='/tmp/schoolhouse-archive-minimum-reconciliation-reproduction'
           RECEIPT='/tmp/schoolhouse-archive-minimum-reconciliation-materialization-receipt'
-          PARENT='88e9ff60e581ec386ad4673bc709ec0350ebe163'
-          PARENT_TREE='a54307dfaae7feb2ea44379e6ff6c4f22a4ac1ac'
+          SAFE_MAIN='88e9ff60e581ec386ad4673bc709ec0350ebe163'
+          SAFE_TREE='a54307dfaae7feb2ea44379e6ff6c4f22a4ac1ac'
           TARGET='agent/schoolhouse-archive-minimum-legal-surface-reconciliation-product-v1'
-
-          test -s "$EXECUTE"
-          test -s "$BUNDLE"
-          grep -Fx 'materialize=schoolhouse-archive-minimum-legal-surface-reconciliation-custody-v1' "$EXECUTE"
-          grep -Fx "canonical_parent_commit=$PARENT" "$EXECUTE"
-          grep -Fx "canonical_parent_tree=$PARENT_TREE" "$EXECUTE"
-          grep -Fx 'baseline_workflow_run_id=31030908630' "$EXECUTE"
-          grep -Fx 'baseline_artifact_id=8940650245' "$EXECUTE"
-          grep -Fx 'baseline_artifact_digest=sha256:dc499ff1899811f84be3873df2787835dd70f95a73a64d7652ede4d51f48f7da' "$EXECUTE"
-          grep -Fx 'replay_workflow_run_id=31032164683' "$EXECUTE"
-          grep -Fx 'replay_artifact_id=8941112372' "$EXECUTE"
-          grep -Fx 'replay_artifact_digest=sha256:ae34561d531c077e56473553b09fc2fe834c32d23f03d7eef3f422c700daf831' "$EXECUTE"
-          grep -Fx 'target_product_branch=agent/schoolhouse-archive-minimum-legal-surface-reconciliation-product-v1' "$EXECUTE"
-          grep -Fx 'expected_permanent_paths=13' "$EXECUTE"
-          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
-
-          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '8534808a37f5dac5fc0f32da391d73226c21271bedf6c1bb06e90693774c307a'
-          base64 -d "$BUNDLE" > /tmp/builder.mjs.gz
-          test "$(sha256sum /tmp/builder.mjs.gz | awk '{print $1}')" = '4b2c956c32652d43743879d9b5b94c34f57aaf426dc769ccb013d7479cdbd759'
-          gzip -dc /tmp/builder.mjs.gz > "$BUILDER"
-          test "$(sha256sum "$BUILDER" | awk '{print $1}')" = '186c06c6b9c7ef7152df39147173f2f00348d258b1f6456b01215c25ca21905d'
-          node --check "$BUILDER"
-
-          git fetch --no-tags origin main "$PARENT"
-          LIVE_MAIN="$(git rev-parse origin/main^{commit})"
-          test "$LIVE_MAIN" = "$PARENT"
-          test "$(git rev-parse "$PARENT^{tree}")" = "$PARENT_TREE"
-
-          test "$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/8940650245" --jq .digest)" = 'sha256:dc499ff1899811f84be3873df2787835dd70f95a73a64d7652ede4d51f48f7da'
-          test "$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/8941112372" --jq .digest)" = 'sha256:ae34561d531c077e56473553b09fc2fe834c32d23f03d7eef3f422c700daf831'
-
-          rm -rf "$BASELINE" "$REPLAY" "$PRODUCT" "$RECEIPT"
-          mkdir -p "$BASELINE" "$REPLAY" "$RECEIPT"
-          gh run download 31030908630 --repo "$GITHUB_REPOSITORY" --name schoolhouse-archive-minimum-legal-surface --dir "$BASELINE"
-          gh run download 31032164683 --repo "$GITHUB_REPOSITORY" --name schoolhouse-archive-minimum-legal-surface-replay --dir "$REPLAY"
-          (cd "$BASELINE" && sha256sum -c SHA256SUMS)
-          (cd "$REPLAY" && sha256sum -c SHA256SUMS)
-
-          git worktree add --detach "$PRODUCT" "$PARENT"
-          install -m 0644 "$BUILDER" "$PRODUCT/tools/build-schoolhouse-archive-minimum-legal-surface-reconciliation-custody.mjs"
-          cd "$PRODUCT"
-
-          node tools/build-schoolhouse-archive-minimum-legal-surface-reconciliation-custody.mjs "$BASELINE" "$REPLAY" | tee "$RECEIPT/build-output.json"
-          node --check tools/build-schoolhouse-archive-minimum-legal-surface-reconciliation-custody.mjs
-          node --check tools/validate-bvvc-defense-capital.mjs
-          node tools/validate-bvvc-defense-capital.mjs
-          node test/person-routers.test.js
-          npm run release:check
 
           cat > /tmp/expected-product-paths <<'PATHS'
           data/intake/bvvc-defense-capital/README.md
@@ -103,54 +57,162 @@ jobs:
           tools/validate-bvvc-defense-capital.mjs
           PATHS
           sed -i 's/^          //' /tmp/expected-product-paths
-          sort -o /tmp/expected-product-paths /tmp/expected-product-paths
-          git diff --name-only --no-renames "$PARENT" | sort > /tmp/actual-product-paths
-          diff -u /tmp/expected-product-paths /tmp/actual-product-paths
-          test "$(wc -l < /tmp/actual-product-paths | tr -d ' ')" = '13'
-          test "$(grep -c '^\.github/workflows/' /tmp/actual-product-paths || true)" = '0'
+          sort -u -o /tmp/expected-product-paths /tmp/expected-product-paths
+          test "$(wc -l < /tmp/expected-product-paths | tr -d ' ')" = '13'
 
-          cat > /tmp/product-sha256sums <<'SUMS'
-          6fc0d118ce57aeb3e6955b8049368cd89297de0c168b79ac669c12688fe5cf84  data/intake/bvvc-defense-capital/README.md
-          75e85e45243628b5afe1835d54eb18e26d3a5798a1be2e207513e1abb64dd9a8  data/intake/bvvc-defense-capital/acquisition-frontier.json
-          21c0c39bcfee20f467d6ed1b2a0340d5236db47a6b76e97483716ed3fb1503b5  data/intake/bvvc-defense-capital/coverage-matrix.json
-          94ea10990cff8ddc6030042e8a7c2b663fd632147379f3737250db9daa44ba88  data/intake/bvvc-defense-capital/manifest.json
-          a8d8e73801d25926416d788ef8c5a90bd25e8eae3afbf76703fc83e29538b8f9  data/intake/bvvc-defense-capital/schoolhouse.json
-          45e78e30bdc7bd787815bf8708ed32fd908aada11ddc6e3b2a44875a045add87  data/intake/bvvc-defense-capital/schoolhouse-archive-minimum-legal-surface-attempt-results.jsonl
-          7a30538dff1cbed8da0f740c1b53eaeb4ef3c32d8aed7d3c0e818d53fb98f18e  data/intake/bvvc-defense-capital/schoolhouse-archive-minimum-legal-surface-legal-signals.jsonl
-          3165b8b9779328c430d8a03215b87b0be5c6a665e7315a4f77745c62da062ca5  data/intake/bvvc-defense-capital/schoolhouse-archive-minimum-legal-surface-link-inventory.jsonl
-          1fbfa643eca7abb1c9dd53a5b9d9f4dd96c0f9aea53c50a8e26314e096710882  data/intake/bvvc-defense-capital/schoolhouse-archive-minimum-legal-surface-reconciliation-custody.json
-          86847670dff40dbf052b700bf71994528876525031ba9d9b6647b7d801da8c29  data/intake/bvvc-defense-capital/schoolhouse-archive-minimum-legal-surface-route-reconciliation.jsonl
-          02688e863d8012ab812f34f5903bd91a77c9243f2a2f62d972dad2600ddac071  data/intake/bvvc-defense-capital/source-inventory-16.jsonl
-          186c06c6b9c7ef7152df39147173f2f00348d258b1f6456b01215c25ca21905d  tools/build-schoolhouse-archive-minimum-legal-surface-reconciliation-custody.mjs
-          ddd1472921f7e1d3cc0ac7ff4cef94b2f2c043356c697a16aba523316c6e8d14  tools/validate-bvvc-defense-capital.mjs
-          SUMS
-          sed -i 's/^          //' /tmp/product-sha256sums
+          test -s "$EXECUTE"
+          test -s "$BUNDLE"
+          grep -Fx 'materialize=schoolhouse-archive-minimum-legal-surface-reconciliation-custody-v1' "$EXECUTE"
+          grep -Fx "known_safe_main=$SAFE_MAIN" "$EXECUTE"
+          grep -Fx "known_safe_tree=$SAFE_TREE" "$EXECUTE"
+          grep -Fx 'materialize_from_live_main=true' "$EXECUTE"
+          grep -Fx 'baseline_workflow_run_id=31030908630' "$EXECUTE"
+          grep -Fx 'baseline_artifact_id=8940650245' "$EXECUTE"
+          grep -Fx 'baseline_artifact_digest=sha256:dc499ff1899811f84be3873df2787835dd70f95a73a64d7652ede4d51f48f7da' "$EXECUTE"
+          grep -Fx 'replay_workflow_run_id=31032164683' "$EXECUTE"
+          grep -Fx 'replay_artifact_id=8941112372' "$EXECUTE"
+          grep -Fx 'replay_artifact_digest=sha256:ae34561d531c077e56473553b09fc2fe834c32d23f03d7eef3f422c700daf831' "$EXECUTE"
+          grep -Fx 'builder_parent_commit_occurrences=1' "$EXECUTE"
+          grep -Fx 'builder_parent_tree_occurrences=1' "$EXECUTE"
+          grep -Fx "target_product_branch=$TARGET" "$EXECUTE"
+          grep -Fx 'expected_permanent_paths=13' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '8534808a37f5dac5fc0f32da391d73226c21271bedf6c1bb06e90693774c307a'
+          base64 -d "$BUNDLE" > /tmp/builder.mjs.gz
+          test "$(sha256sum /tmp/builder.mjs.gz | awk '{print $1}')" = '4b2c956c32652d43743879d9b5b94c34f57aaf426dc769ccb013d7479cdbd759'
+          gzip -dc /tmp/builder.mjs.gz > "$UNPATCHED_BUILDER"
+          test "$(sha256sum "$UNPATCHED_BUILDER" | awk '{print $1}')" = '186c06c6b9c7ef7152df39147173f2f00348d258b1f6456b01215c25ca21905d'
+          test "$(grep -o "$SAFE_MAIN" "$UNPATCHED_BUILDER" | wc -l | tr -d ' ')" = '1'
+          test "$(grep -o "$SAFE_TREE" "$UNPATCHED_BUILDER" | wc -l | tr -d ' ')" = '1'
+          node --check "$UNPATCHED_BUILDER"
+
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/8940650245" --jq .digest)" = 'sha256:dc499ff1899811f84be3873df2787835dd70f95a73a64d7652ede4d51f48f7da'
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/8941112372" --jq .digest)" = 'sha256:ae34561d531c077e56473553b09fc2fe834c32d23f03d7eef3f422c700daf831'
+
+          rm -rf "$BASELINE" "$REPLAY" "$RECEIPT"
+          mkdir -p "$BASELINE" "$REPLAY" "$RECEIPT"
+          gh run download 31030908630 --repo "$GITHUB_REPOSITORY" --name schoolhouse-archive-minimum-legal-surface --dir "$BASELINE"
+          gh run download 31032164683 --repo "$GITHUB_REPOSITORY" --name schoolhouse-archive-minimum-legal-surface-replay --dir "$REPLAY"
+          (cd "$BASELINE" && sha256sum -c SHA256SUMS)
+          (cd "$REPLAY" && sha256sum -c SHA256SUMS)
+
+          MATERIALIZATION_PASS=0
+          while :; do
+            MATERIALIZATION_PASS=$((MATERIALIZATION_PASS + 1))
+            test "$MATERIALIZATION_PASS" -le 3
+
+            git fetch --no-tags origin main "$SAFE_MAIN"
+            LIVE_MAIN="$(git rev-parse origin/main^{commit})"
+            LIVE_TREE="$(git rev-parse "$LIVE_MAIN^{tree}")"
+            test "$(git rev-parse "$SAFE_MAIN^{commit}")" = "$SAFE_MAIN"
+            test "$(git rev-parse "$SAFE_MAIN^{tree}")" = "$SAFE_TREE"
+            git merge-base --is-ancestor "$SAFE_MAIN" "$LIVE_MAIN"
+
+            git diff --name-only --no-renames "$SAFE_MAIN..$LIVE_MAIN" | sort -u > /tmp/live-main-advance-paths
+            comm -12 /tmp/expected-product-paths /tmp/live-main-advance-paths > /tmp/live-main-overlap-paths
+            test ! -s /tmp/live-main-overlap-paths
+
+            cp "$UNPATCHED_BUILDER" "$BUILDER"
+            python - "$BUILDER" "$SAFE_MAIN" "$LIVE_MAIN" "$SAFE_TREE" "$LIVE_TREE" <<'PYPATCH'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          old_commit, new_commit, old_tree, new_tree = sys.argv[2:]
+          source = path.read_text()
+          assert source.count(old_commit) == 1, source.count(old_commit)
+          assert source.count(old_tree) == 1, source.count(old_tree)
+          if new_commit != old_commit:
+              assert source.count(new_commit) == 0, source.count(new_commit)
+              source = source.replace(old_commit, new_commit)
+          if new_tree != old_tree:
+              assert source.count(new_tree) == 0, source.count(new_tree)
+              source = source.replace(old_tree, new_tree)
+          path.write_text(source)
+          PYPATCH
+            PATCHED_BUILDER_SHA="$(sha256sum "$BUILDER" | awk '{print $1}')"
+            node --check "$BUILDER"
+
+            git worktree remove --force "$PRODUCT" 2>/dev/null || true
+            git worktree remove --force "$REPRO" 2>/dev/null || true
+            rm -rf "$PRODUCT" "$REPRO"
+            git worktree add --detach "$PRODUCT" "$LIVE_MAIN"
+            git worktree add --detach "$REPRO" "$LIVE_MAIN"
+            install -m 0644 "$BUILDER" "$PRODUCT/tools/build-schoolhouse-archive-minimum-legal-surface-reconciliation-custody.mjs"
+            install -m 0644 "$BUILDER" "$REPRO/tools/build-schoolhouse-archive-minimum-legal-surface-reconciliation-custody.mjs"
+
+            (
+              cd "$PRODUCT"
+              node tools/build-schoolhouse-archive-minimum-legal-surface-reconciliation-custody.mjs "$BASELINE" "$REPLAY" | tee "$RECEIPT/build-output.json"
+              node --check tools/build-schoolhouse-archive-minimum-legal-surface-reconciliation-custody.mjs
+              node --check tools/validate-bvvc-defense-capital.mjs
+              node tools/validate-bvvc-defense-capital.mjs
+              node test/person-routers.test.js
+              npm run release:check
+              git diff --name-only --no-renames "$LIVE_MAIN" | sort -u > /tmp/actual-product-paths
+              diff -u /tmp/expected-product-paths /tmp/actual-product-paths
+              test "$(wc -l < /tmp/actual-product-paths | tr -d ' ')" = '13'
+              test "$(grep -c '^\.github/workflows/' /tmp/actual-product-paths || true)" = '0'
+            )
+
+            (
+              cd "$REPRO"
+              node tools/build-schoolhouse-archive-minimum-legal-surface-reconciliation-custody.mjs "$BASELINE" "$REPLAY" > /tmp/reproduction-build-output.json
+              node tools/validate-bvvc-defense-capital.mjs
+            )
+            diff -u "$RECEIPT/build-output.json" /tmp/reproduction-build-output.json
+            while IFS= read -r product_path; do
+              cmp "$PRODUCT/$product_path" "$REPRO/$product_path"
+            done < /tmp/expected-product-paths
+
+            git fetch --no-tags origin main
+            OBSERVED_MAIN="$(git rev-parse origin/main^{commit})"
+            if test "$OBSERVED_MAIN" != "$LIVE_MAIN"; then
+              git merge-base --is-ancestor "$LIVE_MAIN" "$OBSERVED_MAIN"
+              git diff --name-only --no-renames "$LIVE_MAIN..$OBSERVED_MAIN" | sort -u > /tmp/during-gate-advance-paths
+              comm -12 /tmp/expected-product-paths /tmp/during-gate-advance-paths > /tmp/during-gate-overlap-paths
+              test ! -s /tmp/during-gate-overlap-paths
+              continue
+            fi
+            break
+          done
+
+          cd "$PRODUCT"
+          while IFS= read -r product_path; do sha256sum "$product_path"; done < /tmp/expected-product-paths > /tmp/product-sha256sums
           sha256sum -c /tmp/product-sha256sums
 
           git config user.name 'School.House Archive Custody Materializer'
           git config user.email 'actions@users.noreply.github.com'
           while IFS= read -r product_path; do git add -- "$product_path"; done < /tmp/expected-product-paths
-          git diff --cached --name-only --no-renames | sort > /tmp/staged-product-paths
+          git diff --cached --name-only --no-renames | sort -u > /tmp/staged-product-paths
           diff -u /tmp/expected-product-paths /tmp/staged-product-paths
           git commit -m 'Reconcile School.House archived legal-surface minimum lane'
 
           PRODUCT_COMMIT="$(git rev-parse HEAD)"
           PRODUCT_TREE="$(git rev-parse HEAD^{tree})"
-          test "$(git rev-parse HEAD^1)" = "$PARENT"
-          test "$(git rev-list --count "$PARENT..HEAD")" = '1'
-          git diff-tree --no-commit-id --name-only -r HEAD | sort > /tmp/committed-product-paths
+          test "$(git rev-parse HEAD^1)" = "$LIVE_MAIN"
+          test "$(git rev-list --count "$LIVE_MAIN..HEAD")" = '1'
+          git diff-tree --no-commit-id --name-only -r HEAD | sort -u > /tmp/committed-product-paths
           diff -u /tmp/expected-product-paths /tmp/committed-product-paths
           test -z "$(git status --porcelain)"
 
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main^{commit})" = "$LIVE_MAIN"
           git push --force origin "HEAD:refs/heads/$TARGET"
 
           cp /tmp/expected-product-paths "$RECEIPT/permanent-paths.txt"
           cp /tmp/product-sha256sums "$RECEIPT/product-SHA256SUMS"
+          cp /tmp/live-main-advance-paths "$RECEIPT/safe-anchor-to-parent-paths.txt"
           cat > "$RECEIPT/materialization.txt" <<RECEIPT_DATA
           materializer_workflow_run_id=$GITHUB_RUN_ID
           materializer_workflow_head=$GITHUB_SHA
-          canonical_parent_commit=$PARENT
-          canonical_parent_tree=$PARENT_TREE
+          known_safe_main=$SAFE_MAIN
+          known_safe_tree=$SAFE_TREE
+          canonical_parent_commit=$LIVE_MAIN
+          canonical_parent_tree=$LIVE_TREE
+          materialization_passes=$MATERIALIZATION_PASS
+          patched_builder_sha256=$PATCHED_BUILDER_SHA
           product_commit=$PRODUCT_COMMIT
           product_tree=$PRODUCT_TREE
           product_branch=$TARGET
@@ -174,7 +236,7 @@ jobs:
           graph_effect=none
           RECEIPT_DATA
           sed -i 's/^          //' "$RECEIPT/materialization.txt"
-          (cd "$RECEIPT" && sha256sum build-output.json materialization.txt permanent-paths.txt product-SHA256SUMS > SHA256SUMS)
+          (cd "$RECEIPT" && sha256sum build-output.json materialization.txt permanent-paths.txt product-SHA256SUMS safe-anchor-to-parent-paths.txt > SHA256SUMS)
 
       - uses: actions/upload-artifact@v4
         with:
