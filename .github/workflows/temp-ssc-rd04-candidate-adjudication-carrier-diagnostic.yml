@@ -1,0 +1,60 @@
+name: TEMP diagnose RD-04 candidate-adjudication carrier
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-ssc-rd04-candidate-adjudication-carrier-diagnostic.yml'
+      - '.ssc-rd04-candidate-adjudication-materializer/carrier/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reconstruct and inventory the carrier without publication
+        shell: bash
+        run: |
+          set -Eeuxo pipefail
+          OUT=/tmp/ssc-rd04-candidate-adjudication-carrier-diagnostic
+          PACKAGE=/tmp/ssc-rd04-candidate-adjudication-carrier-package
+          ARCHIVE=/tmp/ssc-rd04-candidate-adjudication-product.tar.xz
+          rm -rf "$OUT" "$PACKAGE" "$ARCHIVE"
+          mkdir -p "$OUT" "$PACKAGE"
+
+          find .ssc-rd04-candidate-adjudication-materializer/carrier -maxdepth 1 -type f -name 'part-*' -print | sort > "$OUT/shard-paths.txt"
+          test -s "$OUT/shard-paths.txt"
+          xargs -a "$OUT/shard-paths.txt" wc -c | tee "$OUT/shard-bytes.txt"
+          xargs -a "$OUT/shard-paths.txt" sha256sum | tee "$OUT/shard-hashes.txt"
+          xargs -a "$OUT/shard-paths.txt" cat > "$OUT/product.tar.xz.b64"
+          wc -c "$OUT/product.tar.xz.b64" | tee "$OUT/base64-bytes.txt"
+          sha256sum "$OUT/product.tar.xz.b64" | tee "$OUT/base64-hash.txt"
+          base64 --decode "$OUT/product.tar.xz.b64" > "$ARCHIVE"
+          wc -c "$ARCHIVE" | tee "$OUT/archive-bytes.txt"
+          sha256sum "$ARCHIVE" | tee "$OUT/archive-hash.txt"
+          tar -tJf "$ARCHIVE" | tee "$OUT/archive-paths.txt"
+          tar -xJf "$ARCHIVE" -C "$PACKAGE"
+          find "$PACKAGE" -type f -printf '%P\n' | sort | tee "$OUT/extracted-paths.txt"
+          find "$PACKAGE" -type l -printf '%P\n' | sort | tee "$OUT/symlinks.txt"
+          test ! -s "$OUT/symlinks.txt"
+          while IFS= read -r rel; do
+            bytes=$(wc -c < "$PACKAGE/$rel" | tr -d ' ')
+            digest=$(sha256sum "$PACKAGE/$rel" | awk '{print $1}')
+            printf '%s  %s  %s\n' "$digest" "$bytes" "$rel"
+          done < "$OUT/extracted-paths.txt" | tee "$OUT/file-manifest.txt"
+          cp "$ARCHIVE" "$OUT/product.tar.xz"
+
+      - name: Preserve exact diagnostic package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-candidate-adjudication-carrier-diagnostic-v1
+          path: /tmp/ssc-rd04-candidate-adjudication-carrier-diagnostic
+          if-no-files-found: error
+          retention-days: 30
