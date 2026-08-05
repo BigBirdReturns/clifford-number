@@ -1,0 +1,112 @@
+name: TEMP discover School.House charity and North Carolina routes
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-charity-nc-route-discovery.yml'
+      - '.schoolhouse-charity-nc-route-discovery/EXECUTE'
+      - 'tools/acquisition/schoolhouse-charity-nc-route-discovery/discover.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile bounded route-discovery runner
+        run: python -m py_compile tools/acquisition/schoolhouse-charity-nc-route-discovery/discover.py
+
+      - name: Execute GET-only official-route discovery
+        id: discovery
+        continue-on-error: true
+        run: |
+          set +e
+          OUT=/tmp/schoolhouse-charity-nc-route-discovery
+          rm -rf "$OUT"
+          python tools/acquisition/schoolhouse-charity-nc-route-discovery/discover.py \
+            --output "$OUT"
+          status=$?
+          mkdir -p "$OUT"
+          printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
+          exit "$status"
+
+      - name: Upload exact route-discovery artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-charity-nc-route-discovery
+          path: /tmp/schoolhouse-charity-nc-route-discovery
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal no-submission route custody
+        if: always()
+        run: |
+          test -f /tmp/schoolhouse-charity-nc-route-discovery/RUNNER_EXIT_CODE
+          test "$(cat /tmp/schoolhouse-charity-nc-route-discovery/RUNNER_EXIT_CODE)" = '0'
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/schoolhouse-charity-nc-route-discovery')
+          summary = json.loads((root / 'summary.json').read_text())
+          policy = json.loads((root / 'route-policy.json').read_text())
+          roots = [json.loads(line) for line in (root / 'root-route-receipts.jsonl').read_text().splitlines() if line]
+          discovered = [json.loads(line) for line in (root / 'discovered-links.jsonl').read_text().splitlines() if line]
+          followed = [json.loads(line) for line in (root / 'followed-route-receipts.jsonl').read_text().splitlines() if line]
+          surfaces = [json.loads(line) for line in (root / 'html-surfaces.jsonl').read_text().splitlines() if line]
+          forms = [json.loads(line) for line in (root / 'surface-forms.jsonl').read_text().splitlines() if line]
+
+          assert summary['declared_root_routes'] == 8
+          assert summary['root_route_receipts'] == len(roots) == 8
+          assert summary['discovered_link_rows'] == len(discovered)
+          assert summary['followed_routes'] == len(followed)
+          assert summary['html_surface_rows'] == len(surfaces)
+          assert summary['form_rows'] == len(forms)
+          assert summary['all_route_receipts_terminal'] is True
+          assert summary['search_submissions'] == 0
+          assert summary['source_rows_acquired'] == 0
+          assert summary['raw_source_retained'] is False
+          assert summary['hidden_form_values_retained'] is False
+          assert summary['street_address_rows_retained'] == 0
+          assert summary['contact_detail_rows_retained'] == 0
+          assert summary['private_support_rows'] == 0
+          assert summary['identity_admitted'] is False
+          assert summary['outside_human_dependency'] is False
+          assert summary['graph_effect'] == 'none'
+
+          assert policy['search_submissions'] == 0
+          assert policy['source_rows_acquired'] == 0
+          assert policy['florida']['search_submissions'] == 0
+          assert policy['florida']['hidden_form_values_retained'] is False
+          assert policy['florida']['automation_permission_inferred'] is False
+          assert policy['north_carolina']['search_submissions'] == 0
+          assert policy['north_carolina']['forbidden_next_surface'] == 'scripted interactive business or charity search'
+          assert policy['outside_human_dependency'] is False
+          assert policy['graph_effect'] == 'none'
+
+          assert all(row['query_submitted'] is False for row in roots + followed)
+          assert all(row['source_rows_acquired'] == 0 for row in roots + followed)
+          assert all(row['raw_source_retained'] is False for row in roots + followed)
+          assert all(row['identity_admitted'] is False for row in roots + followed)
+          assert all(row['outside_human_dependency'] is False for row in roots + followed)
+          assert all(row['graph_effect'] == 'none' for row in roots + followed)
+          assert all(row['query_submitted'] is False for row in forms)
+          assert all(row['hidden_values_retained'] is False for row in forms)
+          assert all(row['graph_effect'] == 'none' for row in forms)
+          assert all(row['raw_body_retained'] is False for row in surfaces)
+          assert all(row['query_submitted'] is False for row in surfaces)
+          assert all(row['graph_effect'] == 'none' for row in surfaces)
+          assert not any(path.suffix.lower() in {'.html', '.htm', '.pdf', '.csv', '.xlsx', '.zip'} for path in root.rglob('*') if path.is_file())
+          print(json.dumps(summary, sort_keys=True))
+          PY
