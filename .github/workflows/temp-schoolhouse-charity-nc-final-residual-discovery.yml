@@ -35,7 +35,7 @@ jobs:
           RUNNER=/tmp/schoolhouse-charity-nc-final-residual-discover.py
           test -f "$INPUT"
           test "$(wc -l < "$INPUT" | tr -d ' ')" = '524'
-          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'd4608da8460114230d755a6a38ec100ae7d97b28e4e70dbb9fb3bc39b29c8785'
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '54d99b90b363fb1305546636724f3b2122c011d49cbcc7aa514faa31ef003b81'
           base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
           test "$(sha256sum "$RUNNER" | awk '{print $1}')" = 'dec9391120646106ca618e0cf6ead71372e0b46ce23e66083d8af0e05f99b914'
           python -m py_compile "$RUNNER"
