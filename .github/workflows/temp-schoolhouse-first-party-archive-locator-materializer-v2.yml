@@ -1,0 +1,151 @@
+name: TEMP materialize School.House archive locator custody v2
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-first-party-archive-locator-materializer-v2.yml'
+      - '.schoolhouse-first-party-archive-locator-materializer-v2/EXECUTE'
+      - '.schoolhouse-first-party-archive-locator-materializer-v2/chunks/*.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: temp-schoolhouse-first-party-archive-locator-materializer-v2-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download checksum-bound baseline and replay artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          BASELINE='/tmp/schoolhouse-first-party-archive-locator-census'
+          REPLAY='/tmp/schoolhouse-first-party-archive-locator-replay'
+          rm -rf "$BASELINE" "$REPLAY"
+          mkdir -p "$BASELINE" "$REPLAY"
+
+          gh run download 30995963355 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name schoolhouse-first-party-archive-locator-census \
+            --dir "$BASELINE"
+          gh run download 31019907916 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name schoolhouse-first-party-archive-locator-replay \
+            --dir "$REPLAY"
+
+          for file in archive-route-results.jsonl archive-snapshot-locators.jsonl summary.json route-policy.json artifact-manifest.json SHA256SUMS; do
+            test -f "$BASELINE/$file"
+          done
+          for file in replay-route-results.jsonl archive-snapshot-locators.jsonl summary.json route-policy.json artifact-manifest.json SHA256SUMS; do
+            test -f "$REPLAY/$file"
+          done
+          (cd "$BASELINE" && sha256sum -c SHA256SUMS)
+          (cd "$REPLAY" && sha256sum -c SHA256SUMS)
+
+      - name: Reconstruct exact combined-custody builder
+        run: |
+          set -Eeuo pipefail
+          CHUNKS='.schoolhouse-first-party-archive-locator-materializer-v2/chunks'
+          BUNDLE='/tmp/build-schoolhouse-first-party-archive-locator-custody-v2.mjs.gz.b64'
+          BUILDER='/tmp/build-schoolhouse-first-party-archive-locator-custody-v2.mjs'
+          EXECUTE='.schoolhouse-first-party-archive-locator-materializer-v2/EXECUTE'
+
+          for file in "$CHUNKS/00.b64" "$CHUNKS/01.b64" "$EXECUTE"; do
+            TREE_BLOB=$(git ls-tree HEAD -- "$file" | awk '{print $3}')
+            test -n "$TREE_BLOB"
+            test "$(git hash-object "$file")" = "$TREE_BLOB"
+          done
+          git diff --exit-code -- "$CHUNKS/00.b64" "$CHUNKS/01.b64" "$EXECUTE"
+
+          cat "$CHUNKS/00.b64" "$CHUNKS/01.b64" > "$BUNDLE"
+          echo "builder_bundle_sha256=$(sha256sum "$BUNDLE" | awk '{print $1}')"
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'f707f43b3abf4a23bc5413cbd30ed149552501ed398cee5b8e9455f0899b99fd'
+          base64 -d "$BUNDLE" | gzip -dc > "$BUILDER"
+          echo "builder_sha256=$(sha256sum "$BUILDER" | awk '{print $1}')"
+          test "$(sha256sum "$BUILDER" | awk '{print $1}')" = '000031320caa0cf19c056157b6c2dc80c58e5f90eacb850b949feb5db2310db8'
+          node --check "$BUILDER"
+          grep -n 'process.argv' "$BUILDER" || true
+          tail -n 20 "$BUILDER"
+
+      - name: Build and qualify clean current-main product
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          TARGET='agent/schoolhouse-first-party-archive-locator-custody-product-v1'
+          MAIN_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+          BASELINE='/tmp/schoolhouse-first-party-archive-locator-census'
+          REPLAY='/tmp/schoolhouse-first-party-archive-locator-replay'
+          BUILDER='/tmp/build-schoolhouse-first-party-archive-locator-custody-v2.mjs'
+          PRODUCT='/tmp/schoolhouse-first-party-archive-locator-product-v2'
+
+          echo "live_main=$MAIN_SHA"
+          rm -rf "$PRODUCT"
+          git fetch --no-tags origin "$MAIN_SHA"
+          git worktree add --detach "$PRODUCT" "$MAIN_SHA"
+          cd "$PRODUCT"
+          mkdir -p tools
+          cp "$BUILDER" tools/build-schoolhouse-first-party-archive-locator-custody.mjs
+
+          node tools/build-schoolhouse-first-party-archive-locator-custody.mjs "$BASELINE" "$REPLAY"
+          node tools/validate-bvvc-defense-capital.mjs
+          node test/person-routers.test.js
+          npm run release:check
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          mapfile -t CHANGED < <(git diff --cached --name-only)
+          printf 'permanent_path=%s\n' "${CHANGED[@]}"
+          test "${#CHANGED[@]}" = '12'
+          test -z "$(printf '%s\n' "${CHANGED[@]}" | grep -E '^\.github/workflows/|^\.schoolhouse-first-party-archive-locator-materializer' || true)"
+          test -z "$(printf '%s\n' "${CHANGED[@]}" | grep -Ev '^(data/intake/bvvc-defense-capital/|tools/)' || true)"
+          test -z "$(git diff --cached --diff-filter=D --name-only)"
+
+          git commit -m 'Preserve School.House archive locator custody'
+          PRODUCT_SHA=$(git rev-parse HEAD)
+          PRODUCT_PARENT=$(git rev-parse HEAD^)
+          test "$PRODUCT_PARENT" = "$MAIN_SHA"
+
+          START=$(git ls-remote origin "refs/heads/$TARGET" | awk '{print $1}')
+          if [[ -n "$START" ]]; then
+            git push origin "HEAD:refs/heads/$TARGET" --force-with-lease="refs/heads/$TARGET:$START"
+          else
+            git push origin "HEAD:refs/heads/$TARGET"
+          fi
+
+          mkdir -p /tmp/schoolhouse-first-party-archive-locator-materialization-v2-receipt
+          jq -n \
+            --arg base_main "$MAIN_SHA" \
+            --arg product_sha "$PRODUCT_SHA" \
+            --arg target_branch "$TARGET" \
+            '{schema_version:"schoolhouse-first-party-archive-locator-materialization-v2-receipt@1",base_main:$base_main,product_sha:$product_sha,target_branch:$target_branch,permanent_paths:12,source_inventory_rows:408,coverage_denominator_rows:24,source_routes:46,baseline_attempt_rows:46,replay_attempt_rows:26,total_attempt_rows:72,routes_with_locators:21,bounded_zero_routes:3,residual_provider_error_routes:22,archive_locator_rows:66,unique_archive_digests:64,archived_page_bodies_fetched:0,replay_locators_dereferenced:0,interactive_search_submissions:0,identities_admitted:0,negative_existence_claims_created:0,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+            > /tmp/schoolhouse-first-party-archive-locator-materialization-v2-receipt/status.json
+          sha256sum /tmp/schoolhouse-first-party-archive-locator-materialization-v2-receipt/status.json \
+            > /tmp/schoolhouse-first-party-archive-locator-materialization-v2-receipt/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: schoolhouse-first-party-archive-locator-materialization-v2-receipt
+          path: /tmp/schoolhouse-first-party-archive-locator-materialization-v2-receipt
+          if-no-files-found: warn
+          retention-days: 90
