@@ -1,0 +1,114 @@
+name: TEMP preserve RD-04 repair classification trace
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-ssc-rd04-trigger-guard-repair-debug-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build a synthetic repair commit and preserve every comparison surface
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          OUT=/tmp/ssc-rd04-trigger-guard-repair-debug-v3
+          PACKAGE=/tmp/ssc-rd04-trigger-guard-repair-debug-v3-package
+          WORK=/tmp/ssc-rd04-trigger-guard-repair-debug-v3-worktree
+          ARCHIVE=/tmp/ssc-rd04-trigger-guard-repair-debug-v3.tar.xz
+          rm -rf "$OUT" "$PACKAGE" "$WORK" "$ARCHIVE"
+          mkdir -p "$OUT" "$PACKAGE"
+
+          cat > "$OUT/expected-paths.txt" <<'EOF'
+          data/intake/status-sovereignty-rd-wave03-rd04-state-implementation/intake-product-manifest.json
+          test/status-sovereignty-rd-wave03-rd04-state-implementation-intake.test.js
+          tools/validate-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs
+          EOF
+          sed -i 's/^          //' "$OUT/expected-paths.txt"
+
+          sha256sum .ssc-rd04-trigger-guard-repair/carrier.b64 > "$OUT/carrier-hash.txt" 2>&1
+          base64 --decode .ssc-rd04-trigger-guard-repair/carrier.b64 > "$ARCHIVE" 2> "$OUT/base64-stderr.txt"
+          sha256sum "$ARCHIVE" > "$OUT/archive-hash.txt" 2>&1
+          tar -tJf "$ARCHIVE" > "$OUT/archive-paths.txt" 2> "$OUT/tar-list-stderr.txt"
+          tar -xJf "$ARCHIVE" -C "$PACKAGE" 2> "$OUT/tar-extract-stderr.txt"
+          find "$PACKAGE" -type f -print | sort > "$OUT/package-files.txt"
+
+          git fetch --no-tags origin main agent/ssc-rd04-wave03-trigger-path-validator-repair-product-v1 > "$OUT/fetch.txt" 2>&1
+          LIVE_MAIN=$(git rev-parse origin/main 2> "$OUT/live-main-stderr.txt")
+          LIVE_TARGET=$(git rev-parse origin/agent/ssc-rd04-wave03-trigger-path-validator-repair-product-v1 2> "$OUT/live-target-stderr.txt")
+          printf 'live_main=%s\nlive_target=%s\n' "$LIVE_MAIN" "$LIVE_TARGET" > "$OUT/live-refs.txt"
+          git diff --name-status b9d09c28bcaa0b00c699ff40e893df7b9675ff0f.."$LIVE_MAIN" > "$OUT/main-increment-name-status.txt" 2>&1
+
+          git worktree add --detach "$WORK" "$LIVE_MAIN" > "$OUT/worktree-add.txt" 2>&1
+          cp -a "$PACKAGE"/. "$WORK"/ 2> "$OUT/copy-stderr.txt"
+          cd "$WORK" || exit 0
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          while IFS= read -r path; do git add -- "$path"; done < "$OUT/expected-paths.txt"
+          git diff --cached --name-status > "$OUT/staged-name-status.txt" 2>&1
+          git diff --cached --name-only | sort > "$OUT/staged-paths.txt" 2>&1
+          git commit -m 'Synthetic diagnostic commit for RD-04 trigger-guard repair' > "$OUT/commit.txt" 2>&1
+
+          {
+            printf 'head=%s\n' "$(git rev-parse HEAD 2>/dev/null)"
+            printf 'parent=%s\n' "$(git rev-parse HEAD^ 2>/dev/null)"
+            printf 'origin_main=%s\n' "$(git rev-parse origin/main 2>/dev/null)"
+            printf 'merge_base=%s\n' "$(git merge-base origin/main HEAD 2>/dev/null)"
+            printf 'head_tree=%s\n' "$(git rev-parse HEAD^{tree} 2>/dev/null)"
+          } > "$OUT/worktree-refs.txt"
+
+          git show -s --format=raw HEAD > "$OUT/head.txt" 2>&1
+          git diff --name-status origin/main...HEAD > "$OUT/origin-main-triple-name-status.txt" 2>&1
+          git diff --name-only origin/main...HEAD | sort > "$OUT/origin-main-triple-paths.txt" 2>&1
+          git diff --name-status HEAD^...HEAD > "$OUT/parent-triple-name-status.txt" 2>&1
+          git status --porcelain=v1 --untracked-files=all > "$OUT/status.txt" 2>&1
+
+          node --input-type=module > "$OUT/classification.txt" 2>&1 <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import {
+            PRODUCT_PATHS,
+            MANIFEST_PATH,
+            TEST_PATH,
+            VALIDATOR_PATH
+          } from './tools/build-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs';
+          const triggerPath = '.ssc-rd04-wave03-source-census-trigger/EXECUTE';
+          const expectedProduct = [...PRODUCT_PATHS, MANIFEST_PATH].sort();
+          const expectedRepair = [MANIFEST_PATH, TEST_PATH, VALIDATOR_PATH].sort();
+          const changed = execFileSync('git', ['diff', '--name-only', 'origin/main...HEAD'], { encoding: 'utf8' })
+            .split('\n').map((value) => value.trim()).filter(Boolean).sort();
+          const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
+          let surface = 'invalid';
+          if (changed.length === 0) surface = 'canonical_main';
+          else if (same(changed, expectedProduct)) surface = 'permanent_product';
+          else if (same(changed, expectedRepair)) surface = 'trigger_guard_repair';
+          else if (same(changed, [triggerPath])) surface = 'source_census_trigger';
+          console.log(JSON.stringify({ changed, expectedProduct, expectedRepair, expectedTrigger: [triggerPath], surface }, null, 2));
+          NODE
+
+          nl -ba tools/validate-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs | sed -n '395,450p' > "$OUT/validator-lines.txt" 2>&1
+          node tools/build-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs --check > "$OUT/builder-check.txt" 2>&1
+          node --trace-uncaught tools/validate-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs > "$OUT/validator-run.txt" 2>&1
+          printf 'validator_exit=%s\n' "$?" > "$OUT/final.txt"
+          exit 0
+
+      - name: Preserve diagnostic trace even after the trace command fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-trigger-guard-repair-debug-v3
+          path: /tmp/ssc-rd04-trigger-guard-repair-debug-v3
+          if-no-files-found: warn
+          retention-days: 30
