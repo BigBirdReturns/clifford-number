@@ -85,6 +85,14 @@ jobs:
           test "$BUILDER_SHA" = '213bd65a768b30ccbadcd7c20fcd857bd5522da2aae06f7833e89c1181ccd549'
           node --check "$SOURCE_BUILDER"
 
+          echo 'MATERIALIZER_ASSERT_CONTEXT_BEGIN'
+          nl -ba "$SOURCE_BUILDER" | sed -n '455,495p'
+          echo 'MATERIALIZER_ASSERT_CONTEXT_END'
+          echo 'LIVE_VALIDATOR_SOURCE_COUNT_MARKERS_BEGIN'
+          grep -nE 'source_inventory_rows|sourceInventory\.length|coverage_denominator_rows' \
+            "$GITHUB_WORKSPACE/tools/validate-bvvc-defense-capital.mjs" || true
+          echo 'LIVE_VALIDATOR_SOURCE_COUNT_MARKERS_END'
+
           rm -rf /tmp/schoolhouse-first-party-legal-surface-product
           git fetch --no-tags origin "$MAIN_SHA"
           git worktree add --detach /tmp/schoolhouse-first-party-legal-surface-product "$MAIN_SHA"
