@@ -19,56 +19,62 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Record every carrier identity before enforcement
+      - name: Record every carrier identity without enforcing
+        continue-on-error: true
         run: |
-          set -uo pipefail
-          {
-            echo 'raw_shards:'
-            sha256sum \
-              .pc49-carrier-v3/product.part00 \
-              .pc49-carrier-v3/product.part01 \
-              .pc49-carrier-v3/product.part02 \
-              .pc49-carrier-v3/product.part03 \
-              .pc49-carrier-v3/run.part00
+          set +e
+          exec > /tmp/pc49-carrier-preflight.txt 2>&1
+          echo 'raw_shards:'
+          sha256sum \
+            .pc49-carrier-v3/product.part00 \
+            .pc49-carrier-v3/product.part01 \
+            .pc49-carrier-v3/product.part02 \
+            .pc49-carrier-v3/product.part03 \
+            .pc49-carrier-v3/run.part00
+          echo "raw_shards_status=$?"
 
-            cat \
-              .pc49-carrier-v3/product.part00 \
-              .pc49-carrier-v3/product.part01 \
-              .pc49-carrier-v3/product.part02 \
-              .pc49-carrier-v3/product.part03 \
-              > /tmp/pc49-product-no-terminal-newline.b64
-            cp /tmp/pc49-product-no-terminal-newline.b64 /tmp/pc49-product-with-terminal-newline.b64
-            printf '\n' >> /tmp/pc49-product-with-terminal-newline.b64
-            echo 'product_reconstructions:'
-            sha256sum /tmp/pc49-product-no-terminal-newline.b64 /tmp/pc49-product-with-terminal-newline.b64
-            base64 -d /tmp/pc49-product-no-terminal-newline.b64 > /tmp/pc49-product-no-terminal-newline.tar.gz 2>/tmp/product-decode-a.err
-            printf 'product_decode_without_terminal_newline=%s\n' "$?"
-            base64 -d /tmp/pc49-product-with-terminal-newline.b64 > /tmp/pc49-product-with-terminal-newline.tar.gz 2>/tmp/product-decode-b.err
-            printf 'product_decode_with_terminal_newline=%s\n' "$?"
-            sha256sum /tmp/pc49-product-no-terminal-newline.tar.gz /tmp/pc49-product-with-terminal-newline.tar.gz 2>/dev/null || true
+          cat \
+            .pc49-carrier-v3/product.part00 \
+            .pc49-carrier-v3/product.part01 \
+            .pc49-carrier-v3/product.part02 \
+            .pc49-carrier-v3/product.part03 \
+            > /tmp/pc49-product-no-terminal-newline.b64
+          echo "product_cat_status=$?"
+          cp /tmp/pc49-product-no-terminal-newline.b64 /tmp/pc49-product-with-terminal-newline.b64
+          printf '\n' >> /tmp/pc49-product-with-terminal-newline.b64
+          echo 'product_reconstructions:'
+          sha256sum /tmp/pc49-product-no-terminal-newline.b64 /tmp/pc49-product-with-terminal-newline.b64
+          base64 -d /tmp/pc49-product-no-terminal-newline.b64 > /tmp/pc49-product-no-terminal-newline.tar.gz 2>/tmp/product-decode-a.err
+          echo "product_decode_without_terminal_newline=$?"
+          base64 -d /tmp/pc49-product-with-terminal-newline.b64 > /tmp/pc49-product-with-terminal-newline.tar.gz 2>/tmp/product-decode-b.err
+          echo "product_decode_with_terminal_newline=$?"
+          sha256sum /tmp/pc49-product-no-terminal-newline.tar.gz /tmp/pc49-product-with-terminal-newline.tar.gz
 
-            cat .pc49-carrier-v3/run.part00 > /tmp/pc49-run-no-terminal-newline.b64
-            cp /tmp/pc49-run-no-terminal-newline.b64 /tmp/pc49-run-with-terminal-newline.b64
-            printf '\n' >> /tmp/pc49-run-with-terminal-newline.b64
-            echo 'run_reconstructions:'
-            sha256sum /tmp/pc49-run-no-terminal-newline.b64 /tmp/pc49-run-with-terminal-newline.b64
-            base64 -d /tmp/pc49-run-no-terminal-newline.b64 > /tmp/pc49-run-no-terminal-newline.sh 2>/tmp/run-decode-a.err
-            printf 'run_decode_without_terminal_newline=%s\n' "$?"
-            base64 -d /tmp/pc49-run-with-terminal-newline.b64 > /tmp/pc49-run-with-terminal-newline.sh 2>/tmp/run-decode-b.err
-            printf 'run_decode_with_terminal_newline=%s\n' "$?"
-            sha256sum /tmp/pc49-run-no-terminal-newline.sh /tmp/pc49-run-with-terminal-newline.sh 2>/dev/null || true
-            printf 'old_parent_count_without_terminal_newline=%s\n' "$(grep -c 'PARENT=7f960c30b6c58c70e3a996d4239e363e50d848ef' /tmp/pc49-run-no-terminal-newline.sh 2>/dev/null || true)"
-            printf 'old_parent_count_with_terminal_newline=%s\n' "$(grep -c 'PARENT=7f960c30b6c58c70e3a996d4239e363e50d848ef' /tmp/pc49-run-with-terminal-newline.sh 2>/dev/null || true)"
-          } | tee /tmp/pc49-carrier-preflight.txt
+          cat .pc49-carrier-v3/run.part00 > /tmp/pc49-run-no-terminal-newline.b64
+          echo "run_cat_status=$?"
+          cp /tmp/pc49-run-no-terminal-newline.b64 /tmp/pc49-run-with-terminal-newline.b64
+          printf '\n' >> /tmp/pc49-run-with-terminal-newline.b64
+          echo 'run_reconstructions:'
+          sha256sum /tmp/pc49-run-no-terminal-newline.b64 /tmp/pc49-run-with-terminal-newline.b64
+          base64 -d /tmp/pc49-run-no-terminal-newline.b64 > /tmp/pc49-run-no-terminal-newline.sh 2>/tmp/run-decode-a.err
+          echo "run_decode_without_terminal_newline=$?"
+          base64 -d /tmp/pc49-run-with-terminal-newline.b64 > /tmp/pc49-run-with-terminal-newline.sh 2>/tmp/run-decode-b.err
+          echo "run_decode_with_terminal_newline=$?"
+          sha256sum /tmp/pc49-run-no-terminal-newline.sh /tmp/pc49-run-with-terminal-newline.sh
+          grep -c 'PARENT=7f960c30b6c58c70e3a996d4239e363e50d848ef' /tmp/pc49-run-no-terminal-newline.sh
+          echo "old_parent_grep_without_terminal_newline=$?"
+          grep -c 'PARENT=7f960c30b6c58c70e3a996d4239e363e50d848ef' /tmp/pc49-run-with-terminal-newline.sh
+          echo "old_parent_grep_with_terminal_newline=$?"
           exit 0
       - name: Upload carrier preflight receipt
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pc49-carrier-preflight-v3
+          name: pc49-carrier-preflight-v3b
           path: |
             /tmp/pc49-carrier-preflight.txt
             /tmp/product-decode-a.err
             /tmp/product-decode-b.err
             /tmp/run-decode-a.err
             /tmp/run-decode-b.err
-          if-no-files-found: error
+          if-no-files-found: warn
