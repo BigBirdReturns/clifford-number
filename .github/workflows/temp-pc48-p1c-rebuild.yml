@@ -1,0 +1,304 @@
+name: TEMP rebuild exact PC-48 transitive-manifest repair
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    if: github.head_ref == 'agent/pc48-source-export'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout exact reviewed product
+        uses: actions/checkout@v4
+        with:
+          ref: e4ac27b9c8d4b321d38b9383bff67912fd866568
+          fetch-depth: 0
+          clean: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Patch, qualify, amend, and upload candidate object
+        env:
+          PUBLICATION_PARENT: 15fbe32735c85be44b833040f3b630966287871c
+          REVIEWED_PRODUCT: e4ac27b9c8d4b321d38b9383bff67912fd866568
+          PINNED_V45_BRIDGE: 4a5a6fa449f45750e836ae9ca8890b958f72e0a9
+          TARGET_BRANCH: agent/pc48-materializer
+          TARGET_LEASE: e4ac27b9c8d4b321d38b9383bff67912fd866568
+          BASE_LIB_SHA256: 8728f7ce9440dc488ed81ce246e0f35b12b08f8e4ec22bc1033cd0a1d94a7a4e
+          BASE_TEST_SHA256: 3018de3615340090d670a3450177048c6055f5d9a8bfdba7bcb4ec40475c0fc4
+        run: |
+          set -Eeuo pipefail
+          phase=initialize
+          trap 'status=$?; printf "status=%s\nphase=%s\ncommand=%s\n" "$status" "$phase" "$BASH_COMMAND" > /tmp/pc48-p1c-rebuild-diagnostic.txt; exit "$status"' ERR
+          cd "$GITHUB_WORKSPACE"
+          test "$(git rev-parse HEAD)" = "$REVIEWED_PRODUCT"
+          test "$(git rev-parse HEAD^)" = "$PUBLICATION_PARENT"
+          test -z "$(git status --porcelain)"
+          test "$(sha256sum tools/lib/preference-custody-manifest-v46.mjs | awk '{print $1}')" = "$BASE_LIB_SHA256"
+          test "$(sha256sum test/preference-custody-manifest-v46.test.js | awk '{print $1}')" = "$BASE_TEST_SHA256"
+          git fetch --no-tags origin "$PINNED_V45_BRIDGE"
+          git cat-file -e "$PINNED_V45_BRIDGE^{commit}"
+
+          phase=verify_canonical_manifest_shapes
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          expected = {
+              'root': {
+                  'schema_version','manifest_id','issue','control_issue','captured_at','status','graph_effect',
+                  'counts_toward_thesis_evidence','base_floor','extension_control','identification_requirement',
+                  'frontier_transition','real_case_requirements_added','prohibited_inferences','interpretation_contract'
+              },
+              'base_floor': {'manifest_id','source_manifest_path','expected_build_schema','expected_control_count'},
+              'extension_control': {'control_id','fixture_id','failure_class','source_fixture_path','build_artifact_path','expected_build_schema','required_refusal_rules'},
+              'identification_requirement': {'stage','required_state','refused_inference'},
+              'frontier_transition': {'resolved_base_frontier','successor_frontiers'},
+              'interpretation_contract': {'contract_id','what_this_is','what_this_is_not','copy_ready_caveat'},
+          }
+          for version in range(37, 45):
+              path = Path(f'data/research/preference-custody/control-manifest-v{version}.json')
+              manifest = json.loads(path.read_text())
+              observed = {
+                  'root': set(manifest),
+                  'base_floor': set(manifest.get('base_floor', {})),
+                  'extension_control': set(manifest.get('extension_control', {})),
+                  'identification_requirement': set(manifest.get('identification_requirement', {})),
+                  'frontier_transition': set(manifest.get('frontier_transition', {})),
+                  'interpretation_contract': set(manifest.get('interpretation_contract', {})),
+              }
+              for label, keys in expected.items():
+                  if observed[label] != keys:
+                      raise SystemExit(f'v{version} {label} shape mismatch: {sorted(observed[label])}')
+              if manifest.get('schema_version') != f'preference-custody-control-manifest-v{version}@1':
+                  raise SystemExit(f'v{version} schema identity mismatch')
+              if manifest.get('manifest_id') != f'preference-custody-laboratory-floor-v{version}':
+                  raise SystemExit(f'v{version} manifest identity mismatch')
+          PY
+
+          phase=apply_transitive_manifest_repair
+          python3 - <<'PY'
+          from pathlib import Path
+
+          lib_path = Path('tools/lib/preference-custody-manifest-v46.mjs')
+          test_path = Path('test/preference-custody-manifest-v46.test.js')
+          lib = lib_path.read_text()
+          test = test_path.read_text()
+
+          constants_anchor = "const EXPECTED_V37_SOURCE_KEYS = Object.freeze(['manifest','baseBuild','linkageBuild','linkageFixture']);\n"
+          constants_replacement = constants_anchor + """const EXPECTED_TRANSITIVE_MANIFEST_KEYS = Object.freeze([
+            'schema_version','manifest_id','issue','control_issue','captured_at','status','graph_effect',
+            'counts_toward_thesis_evidence','base_floor','extension_control','identification_requirement',
+            'frontier_transition','real_case_requirements_added','prohibited_inferences','interpretation_contract'
+          ]);
+          const EXPECTED_TRANSITIVE_BASE_FLOOR_KEYS = Object.freeze(['manifest_id','source_manifest_path','expected_build_schema','expected_control_count']);
+          const EXPECTED_TRANSITIVE_EXTENSION_KEYS = Object.freeze(['control_id','fixture_id','failure_class','source_fixture_path','build_artifact_path','expected_build_schema','required_refusal_rules']);
+          const EXPECTED_TRANSITIVE_IDENTIFICATION_KEYS = Object.freeze(['stage','required_state','refused_inference']);
+          const EXPECTED_TRANSITIVE_FRONTIER_KEYS = Object.freeze(['resolved_base_frontier','successor_frontiers']);
+          const EXPECTED_TRANSITIVE_INTERPRETATION_KEYS = Object.freeze(['contract_id','what_this_is','what_this_is_not','copy_ready_caveat']);
+          """
+          if lib.count(constants_anchor) != 1:
+              raise SystemExit('unexpected transitive manifest constant anchor count')
+          lib = lib.replace(constants_anchor, constants_replacement, 1)
+
+          function_start = lib.index('function validateTransitiveSourceBundleKeys(baseSources) {')
+          function_end = lib.index('\n\nfunction validateBaseSources(baseBuild, baseSources) {', function_start)
+          replacement = """function validateTransitiveManifest(manifest, label, schemaVersion, manifestId, errors) {
+            requireExactKeys(manifest, EXPECTED_TRANSITIVE_MANIFEST_KEYS, label, errors);
+            requireExactKeys(manifest?.base_floor, EXPECTED_TRANSITIVE_BASE_FLOOR_KEYS, `${label} base_floor`, errors);
+            requireExactKeys(manifest?.extension_control, EXPECTED_TRANSITIVE_EXTENSION_KEYS, `${label} extension_control`, errors);
+            requireExactKeys(manifest?.identification_requirement, EXPECTED_TRANSITIVE_IDENTIFICATION_KEYS, `${label} identification_requirement`, errors);
+            requireExactKeys(manifest?.frontier_transition, EXPECTED_TRANSITIVE_FRONTIER_KEYS, `${label} frontier_transition`, errors);
+            requireExactKeys(manifest?.interpretation_contract, EXPECTED_TRANSITIVE_INTERPRETATION_KEYS, `${label} interpretation_contract`, errors);
+            if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) return;
+            if (manifest.schema_version !== schemaVersion) errors.push(`${label} schema mismatch`);
+            if (manifest.manifest_id !== manifestId) errors.push(`${label} identity mismatch`);
+          }
+          function validateTransitiveSourceBundleKeys(baseSources) {
+            const errors = [];
+            const v44 = baseSources?.baseSources;
+            const v43 = v44?.baseSources;
+            const v42 = v43?.baseSources;
+            const v41 = v42?.baseSources;
+            const v40 = v41?.baseSources;
+            const v39 = v40?.baseSources;
+            const v38 = v39?.baseSources;
+            const v37 = v38?.v37SourceCutoff;
+            const bundleLedgers = [
+              [v43, EXPECTED_V43_SOURCE_KEYS, 'v46 v43 source bundle'],
+              [v42, EXPECTED_V42_SOURCE_KEYS, 'v46 v42 source bundle'],
+              [v41, EXPECTED_V41_SOURCE_KEYS, 'v46 v41 source bundle'],
+              [v40, EXPECTED_V40_SOURCE_KEYS, 'v46 v40 source bundle'],
+              [v39, EXPECTED_V39_SOURCE_KEYS, 'v46 v39 source bundle'],
+              [v38, EXPECTED_V38_SOURCE_KEYS, 'v46 v38 source bundle'],
+              [v37, EXPECTED_V37_SOURCE_KEYS, 'v46 v37 source cutoff']
+            ];
+            const manifestLedgers = [
+              [v44?.manifest, 'v46 v44 manifest', 'preference-custody-control-manifest-v44@1', 'preference-custody-laboratory-floor-v44'],
+              [v43?.manifest, 'v46 v43 manifest', 'preference-custody-control-manifest-v43@1', 'preference-custody-laboratory-floor-v43'],
+              [v42?.manifest, 'v46 v42 manifest', 'preference-custody-control-manifest-v42@1', 'preference-custody-laboratory-floor-v42'],
+              [v41?.manifest, 'v46 v41 manifest', 'preference-custody-control-manifest-v41@1', 'preference-custody-laboratory-floor-v41'],
+              [v40?.manifest, 'v46 v40 manifest', 'preference-custody-control-manifest-v40@1', 'preference-custody-laboratory-floor-v40'],
+              [v39?.manifest, 'v46 v39 manifest', 'preference-custody-control-manifest-v39@1', 'preference-custody-laboratory-floor-v39'],
+              [v38?.manifest, 'v46 v38 manifest', 'preference-custody-control-manifest-v38@1', 'preference-custody-laboratory-floor-v38'],
+              [v37?.manifest, 'v46 v37 manifest', 'preference-custody-control-manifest-v37@1', 'preference-custody-laboratory-floor-v37']
+            ];
+            const seenBundles = new Set([baseSources, v44].filter(value => value && typeof value === 'object' && !Array.isArray(value)));
+            for (const [value, expected, label] of bundleLedgers) {
+              requireExactKeys(value, expected, label, errors);
+              if (!value || typeof value !== 'object' || Array.isArray(value)) continue;
+              if (seenBundles.has(value)) errors.push(`${label} source bundle object repeated`);
+              seenBundles.add(value);
+            }
+            const seenManifests = new Set();
+            for (const [manifest, label, schemaVersion, manifestId] of manifestLedgers) {
+              validateTransitiveManifest(manifest, label, schemaVersion, manifestId, errors);
+              if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) continue;
+              if (seenManifests.has(manifest)) errors.push(`${label} manifest object repeated`);
+              seenManifests.add(manifest);
+            }
+            return errors;
+          }"""
+          lib = lib[:function_start] + replacement + lib[function_end:]
+
+          explicit_anchor = "const baseSourceMutations = [\n"
+          explicit_replacement = """const deepExtraManifestKeyBaseSources = clone(baseSources);
+          deepExtraManifestKeyBaseSources.baseSources.baseSources.manifest.controller = 'external';
+          assert.throws(
+            () => compilePreferenceCustodyManifestV46(manifest, baseBuild, targetBuild, targetFixture, deepExtraManifestKeyBaseSources),
+            /v46 v43 manifest key ledger mismatch/,
+            'deep transitive manifest extra key escaped compilation'
+          );
+
+          const deepExtraManifestNestedKeyBaseSources = clone(baseSources);
+          deepExtraManifestNestedKeyBaseSources.baseSources.baseSources.manifest.extension_control.controller = 'external';
+          assert.throws(
+            () => compilePreferenceCustodyManifestV46(manifest, baseBuild, targetBuild, targetFixture, deepExtraManifestNestedKeyBaseSources),
+            /v46 v43 manifest extension_control key ledger mismatch/,
+            'deep transitive manifest nested extra key escaped compilation'
+          );
+
+          const deepManifestSchemaBaseSources = clone(baseSources);
+          deepManifestSchemaBaseSources.baseSources.baseSources.manifest.schema_version = 'bad';
+          assert.throws(
+            () => compilePreferenceCustodyManifestV46(manifest, baseBuild, targetBuild, targetFixture, deepManifestSchemaBaseSources),
+            /v46 v43 manifest schema mismatch/,
+            'deep transitive manifest schema substitution escaped compilation'
+          );
+
+          const baseSourceMutations = [
+          """
+          if test.count(explicit_anchor) != 1:
+              raise SystemExit('unexpected base source mutation anchor count')
+          test = test.replace(explicit_anchor, explicit_replacement, 1)
+
+          mutation_anchor = "  ['deep extra source field', x => x.baseSources.baseSources.controller = 'external'],\n"
+          mutation_replacement = mutation_anchor + """  ['deep extra manifest field', x => x.baseSources.baseSources.manifest.controller = 'external'],
+            ['deep extra manifest nested field', x => x.baseSources.baseSources.manifest.extension_control.controller = 'external'],
+            ['deep manifest schema', x => x.baseSources.baseSources.manifest.schema_version = 'bad'],
+          """
+          if test.count(mutation_anchor) != 1:
+              raise SystemExit('unexpected deep source mutation anchor count')
+          test = test.replace(mutation_anchor, mutation_replacement, 1)
+
+          lib_path.write_text(lib)
+          test_path.write_text(test)
+          PY
+
+          cat > /tmp/pc48-p1c-rebuild-expected-paths.txt <<'EOF'
+          test/preference-custody-manifest-v46.test.js
+          tools/lib/preference-custody-manifest-v46.mjs
+          EOF
+          sed -i 's/^          //' /tmp/pc48-p1c-rebuild-expected-paths.txt
+          git diff --name-only | sort > /tmp/pc48-p1c-rebuild-actual-paths.txt
+          diff -u /tmp/pc48-p1c-rebuild-expected-paths.txt /tmp/pc48-p1c-rebuild-actual-paths.txt
+          repaired_lib_sha256="$(sha256sum tools/lib/preference-custody-manifest-v46.mjs | awk '{print $1}')"
+          repaired_test_sha256="$(sha256sum test/preference-custody-manifest-v46.test.js | awk '{print $1}')"
+
+          phase=qualify_repair
+          node tools/compile-preference-linkage-interval-method-partition-replication-deployment-assurance.mjs
+          node tools/validate-preference-linkage-interval-method-partition-replication-deployment-assurance.mjs
+          node test/preference-linkage-interval-method-partition-replication-deployment-assurance.test.js
+          node tools/compile-preference-custody-manifest-v46.mjs
+          node tools/validate-preference-custody-manifest-v46.mjs
+          node test/preference-custody-manifest-v46.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+
+          phase=normalize_generated_volatility
+          git restore --source="$REVIEWED_PRODUCT" --staged --worktree -- build 2>/dev/null || true
+          git clean -fd -- build
+          git diff --name-only | sort > /tmp/pc48-p1c-rebuild-postgate-paths.txt
+          diff -u /tmp/pc48-p1c-rebuild-expected-paths.txt /tmp/pc48-p1c-rebuild-postgate-paths.txt
+
+          phase=amend_clean_product
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --pathspec-from-file=/tmp/pc48-p1c-rebuild-expected-paths.txt
+          git commit --amend --no-edit
+          repaired_commit="$(git rev-parse HEAD)"
+          repaired_tree="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$PUBLICATION_PARENT"
+          test "$(git rev-list --count "$PUBLICATION_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$PUBLICATION_PARENT"..HEAD | wc -l)" -eq 14
+          test "$(git diff --name-status "$PUBLICATION_PARENT"..HEAD | awk '$1 != "A" {count++} END {print count+0}')" -eq 0
+          test -z "$(git status --porcelain)"
+
+          phase=upload_candidate_object
+          set +e
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_LEASE" origin "HEAD:refs/heads/$TARGET_BRANCH" > /tmp/pc48-p1c-rebuild-push.log 2>&1
+          push_status=$?
+          set -e
+          cat /tmp/pc48-p1c-rebuild-push.log
+
+          phase=complete
+          cat > /tmp/pc48-p1c-rebuild-receipt.txt <<EOF
+          publication_parent=$PUBLICATION_PARENT
+          reviewed_product=$REVIEWED_PRODUCT
+          repaired_commit=$repaired_commit
+          repaired_tree=$repaired_tree
+          permanent_paths=14
+          repaired_paths=2
+          repaired_lib_sha256=$repaired_lib_sha256
+          repaired_test_sha256=$repaired_test_sha256
+          focused_pc48=pass
+          floor_v46=pass
+          full_v45_base_validation=pass
+          recursive_transitive_source_key_validation=pass
+          recursive_v44_v37_manifest_exact_key_validation=pass
+          recursive_v44_v37_manifest_nested_key_validation=pass
+          recursive_v44_v37_manifest_schema_identity_validation=pass
+          deep_manifest_extra_key_compile_regression=pass
+          deep_manifest_nested_extra_key_compile_regression=pass
+          deep_manifest_schema_compile_regression=pass
+          floor_v46_mutations=161
+          no_magic_human=pass
+          push_status=$push_status
+          outside_human_dependency=false
+          graph_effect=none
+          EOF
+          printf 'status=success\nphase=%s\nrepaired_commit=%s\nrepaired_tree=%s\npush_status=%s\n' "$phase" "$repaired_commit" "$repaired_tree" "$push_status" > /tmp/pc48-p1c-rebuild-diagnostic.txt
+          cat /tmp/pc48-p1c-rebuild-receipt.txt
+
+      - name: Upload rebuilt candidate custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc48-p1c-rebuild-candidate
+          path: |
+            /tmp/pc48-p1c-rebuild-receipt.txt
+            /tmp/pc48-p1c-rebuild-diagnostic.txt
+            /tmp/pc48-p1c-rebuild-push.log
+          if-no-files-found: error
