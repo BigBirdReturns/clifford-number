@@ -6,6 +6,7 @@ on:
       - '.github/workflows/temp-schoolhouse-irs-legal-identity-capture.yml'
       - '.schoolhouse-irs-legal-identity-capture/EXECUTE'
       - 'tools/acquisition/schoolhouse-irs-legal-identity/run.py'
+      - 'tools/acquisition/schoolhouse-irs-legal-identity/run-complete.py'
   workflow_dispatch:
 
 permissions:
@@ -22,19 +23,22 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Compile acquisition runner
-        run: python -m py_compile tools/acquisition/schoolhouse-irs-legal-identity/run.py
+      - name: Compile acquisition runners
+        run: |
+          python -m py_compile \
+            tools/acquisition/schoolhouse-irs-legal-identity/run.py \
+            tools/acquisition/schoolhouse-irs-legal-identity/run-complete.py
 
-      - name: Execute bounded IRS legal-identity scan
+      - name: Execute complete bounded IRS legal-identity scan
         id: acquisition
         continue-on-error: true
         env:
-          IRS_USER_AGENT: CliffordNumber-SchoolHouse-IRS/1.0 219768509+BigBirdReturns@users.noreply.github.com
+          IRS_USER_AGENT: CliffordNumber-SchoolHouse-IRS/1.1 219768509+BigBirdReturns@users.noreply.github.com
         run: |
           set +e
-          OUT=/tmp/schoolhouse-irs-legal-identity-candidates
+          OUT=/tmp/schoolhouse-irs-legal-identity-candidates-complete
           rm -rf "$OUT"
-          python tools/acquisition/schoolhouse-irs-legal-identity/run.py \
+          python tools/acquisition/schoolhouse-irs-legal-identity/run-complete.py \
             --output "$OUT" \
             --retries 4 \
             --sleep-seconds 0.25
@@ -47,8 +51,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: schoolhouse-irs-legal-identity-candidates
-          path: /tmp/schoolhouse-irs-legal-identity-candidates
+          name: schoolhouse-irs-legal-identity-candidates-complete-attempt02
+          path: /tmp/schoolhouse-irs-legal-identity-candidates-complete
           if-no-files-found: error
           retention-days: 90
           compression-level: 9
@@ -56,14 +60,15 @@ jobs:
       - name: Require complete bounded route scan
         if: always()
         run: |
-          test -f /tmp/schoolhouse-irs-legal-identity-candidates/RUNNER_EXIT_CODE
-          test "$(cat /tmp/schoolhouse-irs-legal-identity-candidates/RUNNER_EXIT_CODE)" = '0'
+          test -f /tmp/schoolhouse-irs-legal-identity-candidates-complete/RUNNER_EXIT_CODE
+          test "$(cat /tmp/schoolhouse-irs-legal-identity-candidates-complete/RUNNER_EXIT_CODE)" = '0'
           python - <<'PY'
           import json
           from pathlib import Path
-          root = Path('/tmp/schoolhouse-irs-legal-identity-candidates')
+          root = Path('/tmp/schoolhouse-irs-legal-identity-candidates-complete')
           summary = json.loads((root / 'summary.json').read_text())
           receipt = json.loads((root / 'acquisition-receipt.json').read_text())
+          routes = [json.loads(line) for line in (root / 'source-routes.jsonl').read_text().splitlines() if line.strip()]
           assert summary['route_count'] == 6
           assert summary['all_routes_terminal'] is True
           assert summary['registry_identity_admitted'] is False
@@ -74,5 +79,10 @@ jobs:
           assert summary['graph_effect'] == 'none'
           assert receipt['all_routes_terminal'] is True
           assert receipt['registry_identity_admitted'] is False
+          assert all(member['state'] == 'scanned' for route in routes for member in route['members'])
+          for dataset in ('publication_78', 'form_990n', 'auto_revocation'):
+              route = next(row for row in routes if row['dataset'] == dataset)
+              assert route['members'][0]['schema_source'] == 'official_irs_teos_data_dictionary'
+              assert route['members'][0]['row_count'] > 0
           print(json.dumps(summary, sort_keys=True))
           PY
