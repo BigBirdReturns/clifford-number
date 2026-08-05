@@ -1,0 +1,181 @@
+name: TEMP republish PC-49 only if needed
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - synchronize
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pc49-republication
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  republish:
+    if: github.head_ref == 'agent/pc49-source-carrier'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout exact carrier
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Decide whether republication is required
+        id: decide
+        run: |
+          set -euo pipefail
+          git fetch --force origin main:refs/remotes/origin/main
+          main_sha="$(git rev-parse refs/remotes/origin/main^{commit})"
+          cat > /tmp/expected <<'EOF'
+          .github/workflows/preference-custody-v47.yml
+          .github/workflows/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.yml
+          data/research/preference-custody/control-manifest-v47.json
+          data/research/preference-custody/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.fixture.json
+          docs/preference-custody-laboratory-floor-v47.md
+          docs/preference-custody-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.md
+          test/preference-custody-manifest-v47.test.js
+          test/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.test.js
+          tools/compile-preference-custody-manifest-v47.mjs
+          tools/compile-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+          tools/lib/preference-custody-manifest-v47.mjs
+          tools/lib/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+          tools/validate-preference-custody-manifest-v47.mjs
+          tools/validate-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+          EOF
+          sed -i 's/^          //' /tmp/expected
+          sort -o /tmp/expected /tmp/expected
+
+          canonical=true
+          while IFS= read -r path; do
+            git cat-file -e "${main_sha}:${path}" 2>/dev/null || canonical=false
+          done < /tmp/expected
+          if [ "$canonical" = true ]; then
+            echo 'required=false' >> "$GITHUB_OUTPUT"
+            echo 'reason=already_canonical' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          required=true
+          reason=product_absent
+          if git ls-remote --exit-code --heads origin agent/pc49-materializer >/dev/null 2>&1; then
+            git fetch --force origin agent/pc49-materializer:refs/remotes/origin/agent/pc49-materializer
+            product_sha="$(git rev-parse refs/remotes/origin/agent/pc49-materializer^{commit})"
+            product_parent="$(git rev-parse "${product_sha}^1"^{commit})"
+            git diff --name-only --diff-filter=A "$product_parent" "$product_sha" | sort > /tmp/product_paths
+            product_valid=false
+            if [ "$(wc -l < /tmp/product_paths)" -eq 14 ] && cmp -s /tmp/expected /tmp/product_paths && [ -z "$(git diff --name-only --diff-filter=CDMRTUXB "$product_parent" "$product_sha")" ]; then
+              product_valid=true
+            fi
+            if [ "$product_valid" = true ] && git merge-base --is-ancestor "$product_parent" "$main_sha"; then
+              git diff --name-only "$product_parent" "$main_sha" | sort > /tmp/main_advance
+              comm -12 /tmp/expected /tmp/main_advance > /tmp/overlap
+              if [ ! -s /tmp/overlap ]; then
+                required=false
+                reason=existing_product_disjoint
+              else
+                reason=current_main_overlap
+              fi
+            else
+              reason=invalid_or_nonancestor_product
+            fi
+          fi
+          echo "required=$required" >> "$GITHUB_OUTPUT"
+          echo "reason=$reason" >> "$GITHUB_OUTPUT"
+          printf 'main_sha=%s\nrequired=%s\nreason=%s\n' "$main_sha" "$required" "$reason" | tee /tmp/pc49-republish-decision.txt
+      - name: Recover exact product bytes and materializer
+        if: steps.decide.outputs.required == 'true'
+        run: |
+          set -euo pipefail
+          test "$(sha256sum .pc49-carrier-v3/product.part00 | awk '{print $1}')" = "2081e693aa312a31e7ee07e99346411e96480d6f2ca62b95bca3dba510c0b2db"
+          test "$(sha256sum .pc49-carrier-v3/product.part01 | awk '{print $1}')" = "0a95ebf2a27afd8ad27465ba13c4fe64d4dca9a1e810f256053596fd4c0eb654"
+          test "$(sha256sum .pc49-carrier-v3/product.part02 | awk '{print $1}')" = "4c1db53eb1e61cf67e75c434b7420676aa1d248462179c63387b077a3ee901e4"
+          test "$(sha256sum .pc49-carrier-v3/product.part03 | awk '{print $1}')" = "ed59e6b7670e718e675aae9157a701cffc58f8f6541dc2cfeebeefcf8c02d323"
+          test "$(sha256sum .pc49-carrier-v3/run.part00 | awk '{print $1}')" = "692397591d98aeab0a12e40bb8780e70ec610c229fd690fd212dea449d16306a"
+          base64 -d .pc49-carrier-v3/run.part00 > /tmp/pc49-run.sh
+          test "$(sha256sum /tmp/pc49-run.sh | awk '{print $1}')" = "5cb101569f6630052cf154e1cf2704dbc0b4f094f677dfb8071096f2cd25e879"
+          chmod +x /tmp/pc49-run.sh
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64,gzip,hashlib,io,tarfile,zlib
+          expected=set(Path('/tmp/expected').read_text().splitlines())
+          raw=b''.join(Path(f'.pc49-carrier-v3/product.part0{i}').read_bytes() for i in range(4))
+          normalized=b''.join(raw.split())
+          if len(normalized)!=41142 or normalized.count(b'=')!=1 or normalized.index(b'=')!=38986:
+              raise SystemExit('carrier identity mismatch')
+          prefix=normalized[:38986]
+          decoded=base64.b64decode(prefix+b'='*((-len(prefix))%4),validate=True)
+          if hashlib.sha256(decoded).hexdigest()!='3665eb25774de97931b3858e6979b134ec5bcf2893d1f6063444259833dbfb00':
+              raise SystemExit('decoded prefix mismatch')
+          inflater=zlib.decompressobj(-15)
+          tar_bytes=inflater.decompress(decoded[10:])+inflater.flush()
+          if not inflater.eof or len(tar_bytes)!=196915 or hashlib.sha256(tar_bytes).hexdigest()!='b50dbe6d7f63f1109356994240b45c59fdbbbca6f29628f6fa752604ae4e0f21':
+              raise SystemExit('tar recovery mismatch')
+          files={}
+          with tarfile.open(fileobj=io.BytesIO(tar_bytes),mode='r:') as src:
+              members=[m for m in src.getmembers() if m.isfile()]
+              if {m.name for m in members}!=expected: raise SystemExit('path set mismatch')
+              for m in members: files[m.name]=src.extractfile(m).read()
+          out=Path('/tmp/pc49-product.tar.gz')
+          with out.open('wb') as rawout:
+              with gzip.GzipFile(filename='',mode='wb',fileobj=rawout,compresslevel=9,mtime=0) as gz:
+                  with tarfile.open(fileobj=gz,mode='w',format=tarfile.PAX_FORMAT) as pkg:
+                      for name in sorted(files):
+                          data=files[name]; info=tarfile.TarInfo(name); info.size=len(data); info.mode=0o644; info.uid=info.gid=0; info.uname=info.gname=''; info.mtime=0; info.pax_headers={}; pkg.addfile(info,io.BytesIO(data))
+          archive=out.read_bytes(); sha=hashlib.sha256(archive).hexdigest()
+          Path('/tmp/pc49-product.tar.gz.b64').write_bytes(base64.b64encode(archive)+b'\n')
+          Path('/tmp/archive_sha').write_text(sha+'\n')
+          PY
+      - name: Checkout exact live main
+        if: steps.decide.outputs.required == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          clean: true
+      - uses: actions/setup-node@v4
+        if: steps.decide.outputs.required == 'true'
+        with:
+          node-version: '24'
+      - name: Rebind, qualify, and republish clean product
+        if: steps.decide.outputs.required == 'true'
+        run: |
+          set -euo pipefail
+          parent="$(git rev-parse HEAD^{commit})"
+          python3 - "$parent" <<'PY'
+          from pathlib import Path
+          import sys
+          p=Path('/tmp/pc49-run.sh'); text=p.read_text()
+          oldp='PARENT=7f960c30b6c58c70e3a996d4239e363e50d848ef'
+          olda='ARCHIVE_SHA256=914e5e46f29fd07612e8c9089bec59a4d37bc34d9d1f4159638a2b417cc94774'
+          newp='PARENT='+sys.argv[1]
+          newa='ARCHIVE_SHA256='+Path('/tmp/archive_sha').read_text().strip()
+          if text.count(oldp)!=1 or text.count(olda)!=1: raise SystemExit('materializer anchor mismatch')
+          p.write_text(text.replace(oldp,newp,1).replace(olda,newa,1))
+          PY
+          open_pr="$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --head agent/pc49-materializer --base main --json number --jq '.[0].number // empty')"
+          if [ -n "$open_pr" ]; then gh pr close "$open_pr" --repo "$GITHUB_REPOSITORY" --comment 'Closed for exact current-main PC-49 rebind; a fresh product PR will follow.'; fi
+          git push origin --delete agent/pc49-materializer 2>/dev/null || true
+          bash /tmp/pc49-run.sh
+      - name: Upload republication receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc49-republish-if-needed
+          path: |
+            /tmp/pc49-republish-decision.txt
+            /tmp/pc49-product-receipt.txt
+            /tmp/pc49-materialization-diagnostic.txt
+            /tmp/pc49-standalone.log
+            /tmp/pc49-floor.log
+            /tmp/pc49-release.log
+            /tmp/pc49-push.log
+          if-no-files-found: warn
