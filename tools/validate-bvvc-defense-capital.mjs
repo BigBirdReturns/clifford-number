@@ -543,6 +543,77 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     check(coverage.denominators.some(row => row.surface === 'School.House Florida-charity and North Carolina lawful-route discovery' && row.enumerated_total === 32 && row.search_submissions === 0), 'charity/NC coverage denominator missing');
   }
 
+
+  {
+    const secondLevelCustody = readJson(path.join(dir, 'schoolhouse-charity-nc-second-level-route-custody.json'));
+    const secondLevelRoots = readJsonl(path.join(dir, 'schoolhouse-charity-nc-second-level-root-route-results.jsonl'));
+    const secondLevelFollowed = readJsonl(path.join(dir, 'schoolhouse-charity-nc-second-level-followed-route-results.jsonl'));
+    const secondLevelDiscovered = readJsonl(path.join(dir, 'schoolhouse-charity-nc-second-level-discovered-links.jsonl'));
+    const secondLevelHtml = readJsonl(path.join(dir, 'schoolhouse-charity-nc-second-level-html-surfaces.jsonl'));
+    const secondLevelForms = readJsonl(path.join(dir, 'schoolhouse-charity-nc-second-level-surface-forms.jsonl'));
+    const secondLevelRoutes = [...secondLevelRoots, ...secondLevelFollowed];
+
+    check(manifest.counts.source_inventory_rows === 224, 'second-level source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 20, 'second-level coverage-denominator count drift');
+    check(manifest.counts.explicit_gap_rows === 16, 'second-level explicit-gap count drift');
+    check(manifest.counts.schoolhouse_charity_nc_second_level_root_route_rows === secondLevelRoots.length && secondLevelRoots.length === 8, 'second-level root-route denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_second_level_followed_route_rows === secondLevelFollowed.length && secondLevelFollowed.length === 80, 'second-level followed-route denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_second_level_terminal_route_rows === secondLevelRoutes.length && secondLevelRoutes.length === 88, 'second-level terminal-route denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_second_level_discovered_link_rows === secondLevelDiscovered.length && secondLevelDiscovered.length === 524, 'second-level discovered-link denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_second_level_unique_discovered_links === new Set(secondLevelDiscovered.map(row => row.href)).size && manifest.counts.schoolhouse_charity_nc_second_level_unique_discovered_links === 185, 'second-level unique-link denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_second_level_bounded_file_sample_routes === secondLevelRoutes.filter(row => row.state === 'accessible_file_sample').length && manifest.counts.schoolhouse_charity_nc_second_level_bounded_file_sample_routes === 68, 'second-level file-sample denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_second_level_html_surface_rows === secondLevelHtml.length && secondLevelHtml.length === 19, 'second-level HTML denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_second_level_form_rows === secondLevelForms.length && secondLevelForms.length === 3, 'second-level form denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_second_level_timeout_routes === secondLevelRoutes.filter(row => row.state === 'timeout').length && manifest.counts.schoolhouse_charity_nc_second_level_timeout_routes === 1, 'second-level timeout denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_second_level_search_submissions === 0 && manifest.counts.schoolhouse_charity_nc_second_level_source_rows_acquired === 0 && manifest.counts.schoolhouse_charity_nc_second_level_admitted_identity_rows === 0, 'second-level authority count drift');
+
+    check(unique(secondLevelRoutes.map(row => row.route_id)), 'second-level route IDs must be unique');
+    check(unique(secondLevelRoutes.map(row => row.receipt_id)), 'second-level receipt IDs must be unique');
+    check(secondLevelRoutes.every(row => knownReceiptIds.has(row.receipt_id)), 'second-level route receipt missing from source inventory');
+    check(secondLevelRoutes.every(row => row.query_submitted === false && row.source_rows_acquired === 0 && row.raw_source_retained === false && row.hidden_form_values_retained === false), 'second-level route search/source/privacy drift');
+    check(secondLevelRoutes.every(row => row.street_address_rows_retained === 0 && row.contact_detail_rows_retained === 0 && row.private_support_rows === 0), 'second-level route retained private/contact data');
+    check(secondLevelRoutes.every(row => row.identity_admitted === false && row.outside_human_dependency === false && row.graph_effect === 'none' && row.promotes_to === 'candidate_only'), 'second-level route authority drift');
+    check(secondLevelRoutes.filter(row => row.depth === 0).length === 8 && secondLevelRoutes.filter(row => row.depth === 1).length === 80 && secondLevelRoutes.filter(row => row.depth === 2).length === 0, 'second-level depth denominator drift');
+    check(secondLevelRoutes.filter(row => row.state === 'accessible_file_sample').length === 68 && secondLevelRoutes.filter(row => row.state === 'accessible_html').length === 19 && secondLevelRoutes.filter(row => row.state === 'timeout').length === 1, 'second-level state denominator drift');
+    check(secondLevelRoots.some(row => row.route_id === 'fl-check-a-charity-retry' && row.state === 'timeout'), 'Florida Check-A-Charity timeout custody missing');
+
+    const secondLevelRouteById = new Map(secondLevelRoutes.map(row => [row.route_id, row]));
+    check(secondLevelFollowed.every(row => secondLevelRouteById.has(row.source_route_id)), 'second-level followed route has no source route');
+    check(secondLevelDiscovered.every(row => secondLevelRouteById.has(row.source_route_id) && knownReceiptIds.has(row.source_receipt_id) && row.official_host === true && row.query_submission_required === false && row.graph_effect === 'none'), 'second-level discovered-link boundary drift');
+    check(secondLevelHtml.every(row => secondLevelRouteById.has(row.route_id) && knownReceiptIds.has(row.receipt_id) && row.query_submitted === false && row.raw_body_retained === false && row.graph_effect === 'none'), 'second-level HTML boundary drift');
+    check(secondLevelForms.every(row => secondLevelRouteById.has(row.route_id) && knownReceiptIds.has(row.receipt_id) && row.query_submitted === false && row.hidden_values_retained === false && row.graph_effect === 'none'), 'second-level form boundary drift');
+    check(secondLevelForms.every(row => (row.controls || []).every(control => control.raw_value_retained === false && !Object.hasOwn(control, 'value'))), 'second-level form retained a raw value');
+
+    const secondLevelProbedUrls = new Set(secondLevelRoutes.map(row => row.requested_url));
+    const secondLevelUniqueLinks = new Map();
+    for (const row of secondLevelDiscovered) if (!secondLevelUniqueLinks.has(row.href)) secondLevelUniqueLinks.set(row.href, row);
+    const secondLevelResidual = [...secondLevelUniqueLinks.values()].filter(row => !secondLevelProbedUrls.has(row.href));
+    const secondLevelRelevantResidual = secondLevelResidual.filter(row => row.relevant === true);
+    const secondLevelFileSuffixes = new Set(['.csv','.doc','.docx','.json','.pdf','.txt','.xls','.xlsx','.xml','.zip']);
+    const secondLevelResidualFiles = secondLevelRelevantResidual.filter(row => {
+      try { return secondLevelFileSuffixes.has(path.posix.extname(new URL(row.href).pathname).toLowerCase()); } catch { return false; }
+    });
+    check(secondLevelResidual.length === 101 && manifest.counts.schoolhouse_charity_nc_second_level_residual_unique_links === 101, 'second-level residual-unique denominator drift');
+    check(secondLevelRelevantResidual.length === 51 && manifest.counts.schoolhouse_charity_nc_second_level_residual_relevant_links === 51, 'second-level residual-relevant denominator drift');
+    check(secondLevelResidualFiles.length === 16 && manifest.counts.schoolhouse_charity_nc_second_level_residual_file_links === 16, 'second-level residual-file denominator drift');
+
+    check(secondLevelCustody.acquisition.workflow_run_id === 30982778498 && secondLevelCustody.acquisition.artifact_id === 8920802436 && secondLevelCustody.acquisition.artifact_digest === 'sha256:f109b0c3c1b0b582cdf124029cd5bf6663dc1510eec89eed6ee8bf25f1e55eec' && secondLevelCustody.acquisition.acquisition_head === '75c8f50ab1a31e5b115e3d6973cbd6ffb7c750ee', 'second-level acquisition custody drift');
+    check(secondLevelCustody.bounds.maximum_followed_routes === 80 && secondLevelCustody.bounds.maximum_depth === 2 && secondLevelCustody.bounds.followed_route_cap_exhausted === true && secondLevelCustody.bounds.depth_two_routes_followed === 0, 'second-level bound custody drift');
+    check(secondLevelCustody.counts.terminal_route_rows === 88 && secondLevelCustody.counts.discovered_link_rows === 524 && secondLevelCustody.counts.unique_discovered_links === 185 && secondLevelCustody.counts.bounded_file_sample_routes === 68 && secondLevelCustody.counts.html_surface_rows === 19 && secondLevelCustody.counts.form_rows === 3, 'second-level custody denominator drift');
+    check(secondLevelCustody.counts.residual_unique_links === 101 && secondLevelCustody.counts.residual_relevant_links === 51 && secondLevelCustody.counts.residual_file_links === 16, 'second-level custody residual drift');
+    check(secondLevelCustody.florida.check_a_charity_state === 'timeout' && secondLevelCustody.florida.query_submissions === 0 && secondLevelCustody.florida.automation_permission_inferred === false, 'second-level Florida custody drift');
+    check(secondLevelCustody.north_carolina.automated_or_scripted_interactive_searches_not_permitted === true && secondLevelCustody.north_carolina.interactive_search_submissions === 0, 'second-level North Carolina policy custody drift');
+    check(secondLevelCustody.privacy.raw_source_retained === false && secondLevelCustody.privacy.hidden_form_values_retained === false && secondLevelCustody.privacy.street_address_rows_retained === 0 && secondLevelCustody.privacy.contact_detail_rows_retained === 0 && secondLevelCustody.privacy.private_support_rows === 0, 'second-level custody privacy drift');
+    check(secondLevelCustody.public_schoolhouse_identity_admitted === false && secondLevelCustody.negative_existence_claim_created === false && secondLevelCustody.outside_human_dependency === false && secondLevelCustody.publication_effect === 'none' && secondLevelCustody.adoption_effect === 'none' && secondLevelCustody.graph_effect === 'none' && secondLevelCustody.promotes_to === 'candidate_only', 'second-level custody authority drift');
+
+    const secondLevelProjection = schoolhouse.state_registry_identity_census?.charity_north_carolina_second_level_route_discovery;
+    check(secondLevelProjection?.terminal_route_rows === 88 && secondLevelProjection?.discovered_link_rows === 524 && secondLevelProjection?.residual_relevant_links === 51 && secondLevelProjection?.residual_file_links === 16, 'School.House second-level projection drift');
+    check(secondLevelProjection?.identity_state === 'unresolved_after_terminal_second_level_static_route_discovery_no_public_identity_admitted' && secondLevelProjection?.admitted_legal_name === null && secondLevelProjection?.admitted_ein === null, 'School.House second-level identity authority drift');
+    const secondLevelFrontier = frontier.tasks.find(task => task.task_id === 'bvvc-frontier-schoolhouse-legal-governance')?.prior_charity_nc_second_level_route_discovery;
+    check(secondLevelFrontier?.terminal_route_rows === 88 && secondLevelFrontier?.residual_relevant_links === 51 && secondLevelFrontier?.residual_file_links === 16 && secondLevelFrontier?.admitted_identities === 0, 'School.House second-level frontier projection drift');
+    check(coverage.denominators.some(row => row.surface === 'School.House Florida-charity and North Carolina second-level static-route discovery' && row.enumerated_total === 88 && row.residual_relevant_links === 51 && row.residual_file_links === 16 && row.search_submissions === 0), 'second-level coverage denominator missing');
+  }
+
   return errors;
 }
 
