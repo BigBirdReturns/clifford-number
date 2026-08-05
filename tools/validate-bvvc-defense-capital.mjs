@@ -62,6 +62,12 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   const schoolhouseIrsRoutes = readJsonl(path.join(dir, 'schoolhouse-irs-source-routes.jsonl'));
   const schoolhouseIrsCandidates = manifest.storage_contract.schoolhouse_irs_candidate_parts.flatMap(file => readJsonl(path.join(dir, file)));
   const schoolhouseIrsAdjudication = readJson(path.join(dir, 'schoolhouse-irs-identity-adjudication.json'));
+  const stateRegistryRouteResults = readJsonl(path.join(dir, 'state-registry-route-results.jsonl'));
+  const stateRegistryRouteCustody = readJson(path.join(dir, 'state-registry-route-custody.json'));
+  const schoolhouseFlFictitiousSource = readJson(path.join(dir, 'schoolhouse-fl-fictitious-source-receipt.json'));
+  const schoolhouseFlFictitiousMembers = readJsonl(path.join(dir, 'schoolhouse-fl-fictitious-member-inventory.jsonl'));
+  const schoolhouseFlFictitiousCandidates = readJsonl(path.join(dir, 'schoolhouse-fl-fictitious-candidates.jsonl'));
+  const schoolhouseFlFictitiousAdjudication = readJson(path.join(dir, 'schoolhouse-fl-fictitious-adjudication.json'));
 
   check(manifest.schema_version === 'bvvc-defense-capital-manifest@2', 'manifest schema must be v2');
   check(manifest.graph_effect === 'none' && manifest.promotes_to === 'candidate_only', 'manifest must remain graph-inert candidate custody');
@@ -92,7 +98,17 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     schoolhouse_irs_source_route_rows: schoolhouseIrsRoutes.length,
     schoolhouse_irs_candidate_rows: schoolhouseIrsCandidates.length,
     schoolhouse_irs_unique_candidate_eins: new Set(schoolhouseIrsCandidates.map(row => row.ein).filter(Boolean)).size,
-    schoolhouse_irs_admitted_identity_rows: schoolhouseIrsAdjudication.identity_decision.admitted_ein === null ? 0 : 1
+    schoolhouse_irs_admitted_identity_rows: schoolhouseIrsAdjudication.identity_decision.admitted_ein === null ? 0 : 1,
+    state_registry_route_result_rows: stateRegistryRouteResults.length,
+    state_registry_search_submissions: stateRegistryRouteResults.filter(row => row.query_submitted).length,
+    fl_fictitious_source_rows: schoolhouseFlFictitiousMembers.reduce((sum, row) => sum + row.row_count, 0),
+    fl_fictitious_candidate_rows: schoolhouseFlFictitiousCandidates.length,
+    fl_fictitious_exact_public_name_rows: schoolhouseFlFictitiousCandidates.filter(row => row.match_basis === 'exact_public_name').length,
+    fl_fictitious_tampa_bay_candidate_rows: schoolhouseFlFictitiousCandidates.filter(row => row.public_tampa_bay_city_match).length,
+    fl_fictitious_post_2023_candidate_rows: schoolhouseFlFictitiousCandidates.filter(row => row.filed_2023_or_later).length,
+    fl_fictitious_owner_charter_numbers: new Set(schoolhouseFlFictitiousCandidates.flatMap(row => row.owners.map(owner => owner.owner_charter_number)).filter(Boolean)).size,
+    fl_fictitious_owner_feis: new Set(schoolhouseFlFictitiousCandidates.flatMap(row => row.owners.map(owner => owner.owner_fei)).filter(Boolean)).size,
+    state_registry_admitted_identity_rows: schoolhouseFlFictitiousAdjudication.identity_decision.admitted_document_number === null ? 0 : 1
   };
   for (const [key, actual] of Object.entries(countChecks)) {
     check(manifest.counts[key] === actual, `manifest count drift for ${key}: expected ${manifest.counts[key]}, got ${actual}`);
@@ -116,6 +132,14 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   check(new Set(schoolhouseIrsCandidates.map(row => row.ein).filter(Boolean)).size === 438, 'School.House IRS unique EIN count must be 438');
   check(schoolhouseIrsAdjudication.identity_decision.state === 'unresolved_no_registry_candidate_admitted', 'School.House IRS identity must remain unresolved');
   check(schoolhouseIrsAdjudication.identity_decision.admitted_ein === null, 'School.House IRS pass must admit no EIN');
+  check(stateRegistryRouteResults.length === 16, 'School.House state-registry route denominator must contain 16 rows');
+  check(stateRegistryRouteCustody.counts.declared_routes === 16 && stateRegistryRouteCustody.counts.terminal_route_rows === 16, 'state-registry route custody must be terminal');
+  check(stateRegistryRouteCustody.counts.north_carolina_search_submissions === 0 && stateRegistryRouteCustody.counts.florida_charity_search_submissions === 0, 'state-registry route custody must preserve zero search submissions');
+  check(schoolhouseFlFictitiousMembers.length === 1, 'Florida fictitious member denominator must contain one member');
+  check(schoolhouseFlFictitiousMembers[0].row_count === 761040, 'Florida fictitious source denominator must contain 761,040 rows');
+  check(schoolhouseFlFictitiousCandidates.length === 29, 'Florida fictitious candidate census must contain 29 rows');
+  check(schoolhouseFlFictitiousAdjudication.identity_decision.state === 'unresolved_no_florida_fictitious_name_identity_admitted', 'Florida fictitious identity must remain unresolved');
+  check(schoolhouseFlFictitiousAdjudication.identity_decision.admitted_document_number === null, 'Florida fictitious pass must admit no document number');
 
   check(unique(leadership.map(row => row.actor_id)), 'leadership actor IDs must be unique');
   check(unique(portfolio.map(row => row.organization_id)), 'portfolio organization IDs must be unique');
@@ -125,6 +149,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   check(unique(portfolioDelta.map(row => row.candidate_id)), 'portfolio-delta candidate IDs must be unique');
   check(unique(secRouteResults.map(row => row.route_id)), 'SEC route-result IDs must be unique');
   check(unique(schoolhouseIrsCandidates.map(row => row.candidate_row_id)), 'School.House IRS candidate-row IDs must be unique');
+  check(unique(stateRegistryRouteResults.map(row => row.route_id)), 'state-registry route-result IDs must be unique');
+  check(unique(schoolhouseFlFictitiousCandidates.map(row => row.candidate_id)), 'Florida fictitious candidate IDs must be unique');
 
   for (const row of leadership) {
     check(row.surface_population === 27, `${row.actor_id} must carry the 27-row denominator`);
@@ -174,6 +200,52 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   check(schoolhouseIrsAdjudication.post_2023_fl_nc_bmf_candidates.length === 5, 'School.House IRS pass must preserve five distinct recent FL/NC BMF candidates');
   check(schoolhouseIrsAdjudication.privacy.street_address_rows_retained === 0 && schoolhouseIrsAdjudication.privacy.contact_detail_rows_retained === 0 && schoolhouseIrsAdjudication.privacy.officer_name_rows_retained === 0, 'School.House IRS adjudication must retain no private contact fields');
 
+  for (const row of stateRegistryRouteResults) {
+    check(row.query_submitted === false, `${row.route_id} must preserve zero search submission`);
+    check(row.source_rows_acquired === 0, `${row.route_id} must preserve zero acquired identity rows`);
+    check(row.raw_source_retained === false, `${row.route_id} must retain no raw source`);
+    check(row.street_address_rows_retained === 0 && row.contact_detail_rows_retained === 0, `${row.route_id} must retain no contact fields`);
+    check(row.identity_admitted === false, `${row.route_id} must admit no identity`);
+    check(row.graph_effect === 'none' && row.promotes_to === 'candidate_only', `${row.route_id} must remain graph-inert`);
+  }
+  check(stateRegistryRouteCustody.florida.weakened_host_key_policy_used === false, 'state-registry custody must not weaken SSH host-key validation');
+  check(stateRegistryRouteCustody.north_carolina.interactive_search_automation_permitted === false, 'North Carolina scripted-search prohibition must remain explicit');
+  check(stateRegistryRouteCustody.interpretation.publisher_automation_policy_must_not_be_bypassed === true, 'publisher automation policy must remain binding');
+  check(stateRegistryRouteCustody.graph_effect === 'none' && stateRegistryRouteCustody.promotes_to === 'candidate_only', 'state-registry route custody must remain graph-inert');
+
+  check(schoolhouseFlFictitiousSource.bytes === 74947584, 'Florida fictitious source byte count must remain 74,947,584');
+  check(schoolhouseFlFictitiousSource.sha256 === '38576d314638f16d074d963eb6fba784de095ca2146c04016638a43fe48da113', 'Florida fictitious source SHA-256 drift');
+  check(schoolhouseFlFictitiousSource.source_rows_scanned === 761040 && schoolhouseFlFictitiousSource.candidate_rows_retained === 29, 'Florida fictitious source receipt denominator drift');
+  check(schoolhouseFlFictitiousSource.raw_source_retained === false && schoolhouseFlFictitiousSource.street_address_rows_retained === 0 && schoolhouseFlFictitiousSource.postal_code_rows_retained === 0 && schoolhouseFlFictitiousSource.contact_detail_rows_retained === 0, 'Florida fictitious source receipt must retain no raw or contact fields');
+  const flFictitiousMember = schoolhouseFlFictitiousMembers[0];
+  check(flFictitiousMember.member === 'FICFILE.TXT', 'Florida fictitious member name drift');
+  check(flFictitiousMember.zip_crc32 === 'aa36329a', 'Florida fictitious member CRC drift');
+  check(flFictitiousMember.uncompressed_stream_sha256 === 'e74d9999516e4b87b9b5200e2792eff190a9c54e3da77dfb49aba71e11838da1', 'Florida fictitious member stream SHA-256 drift');
+  check(flFictitiousMember.physical_line_count === 761101 && flFictitiousMember.direct_record_count === 761000 && flFictitiousMember.reassembled_record_count === 40 && flFictitiousMember.fragment_line_count === 101, 'Florida fictitious record-framing denominator drift');
+  check(flFictitiousMember.reassembly_mode_counts.join_fragments_with_lf === 40, 'Florida fictitious embedded-linebreak reassembly drift');
+  check(flFictitiousMember.short_record_count === 0 && flFictitiousMember.trailing_bytes === 0 && flFictitiousMember.state === 'scanned', 'Florida fictitious member must be completely scanned');
+  const allowedFlCandidateKeys = new Set(['candidate_id','source_member','source_row_number','document_number','fictitious_name_as_recorded','normalized_fictitious_name','match_basis','county','city','state','filing_date','status','cancellation_date','expiration_date','declared_owner_count','fictitious_name_fei','more_than_ten_owners','owners','public_tampa_bay_city_match','filed_2023_or_later','identity_state','street_address_retained','postal_code_retained','contact_details_retained','private_support_rows','identity_admitted','graph_effect','promotes_to','source_record_bytes','schema_defined_prefix_bytes','physical_fragment_count','reassembly_mode','receipt_id']);
+  const allowedFlOwnerKeys = new Set(['owner_index','owner_document_number','owner_name_as_recorded','owner_name_format','owner_fei','owner_charter_number','street_address_retained','contact_details_retained']);
+  for (const row of schoolhouseFlFictitiousCandidates) {
+    check(Object.keys(row).every(key => allowedFlCandidateKeys.has(key)), `${row.candidate_id} contains an unapproved field`);
+    check(row.receipt_id === 'r-fl-sunbiz-quarterly-fictitious-bulk-2026-08-05', `${row.candidate_id} must bind the source receipt`);
+    check(row.identity_state === 'fictitious_name_candidate_not_admitted' && row.identity_admitted === false, `${row.candidate_id} must not be admitted`);
+    check(row.street_address_retained === false && row.postal_code_retained === false && row.contact_details_retained === false, `${row.candidate_id} must retain no contact fields`);
+    check(row.graph_effect === 'none' && row.promotes_to === 'candidate_only', `${row.candidate_id} must remain graph-inert`);
+    for (const owner of row.owners) {
+      check(Object.keys(owner).every(key => allowedFlOwnerKeys.has(key)), `${row.candidate_id} owner contains an unapproved field`);
+      check(owner.street_address_retained === false && owner.contact_details_retained === false, `${row.candidate_id} owner must retain no contact fields`);
+    }
+  }
+  check(schoolhouseFlFictitiousCandidates.filter(row => row.match_basis === 'exact_public_name').length === 0, 'Florida fictitious pass must preserve zero exact public-name candidates');
+  check(schoolhouseFlFictitiousCandidates.filter(row => row.public_tampa_bay_city_match).length === 2, 'Florida fictitious pass must preserve two Tampa Bay phrase candidates');
+  check(schoolhouseFlFictitiousCandidates.filter(row => row.filed_2023_or_later).length === 16, 'Florida fictitious pass must preserve sixteen post-2023 phrase candidates');
+  check(new Set(schoolhouseFlFictitiousCandidates.flatMap(row => row.owners.map(owner => owner.owner_charter_number)).filter(Boolean)).size === 15, 'Florida fictitious pass must preserve fifteen owner charter numbers');
+  check(new Set(schoolhouseFlFictitiousCandidates.flatMap(row => row.owners.map(owner => owner.owner_fei)).filter(Boolean)).size === 15, 'Florida fictitious pass must preserve fifteen owner FEIs');
+  check(schoolhouseFlFictitiousAdjudication.exact_tests.exact_public_name_candidate_count === 0 && schoolhouseFlFictitiousAdjudication.exact_tests.tampa_bay_city_candidate_count === 2 && schoolhouseFlFictitiousAdjudication.exact_tests.filed_2023_or_later_candidate_count === 16, 'Florida fictitious adjudication exact-test drift');
+  check(schoolhouseFlFictitiousAdjudication.privacy.street_address_rows_retained === 0 && schoolhouseFlFictitiousAdjudication.privacy.postal_code_rows_retained === 0 && schoolhouseFlFictitiousAdjudication.privacy.contact_detail_rows_retained === 0, 'Florida fictitious adjudication must retain no contact fields');
+  check(schoolhouseFlFictitiousAdjudication.identity_admitted === false && schoolhouseFlFictitiousAdjudication.graph_effect === 'none', 'Florida fictitious adjudication must remain graph-inert');
+
   for (const row of secRouteResults) {
     check(row.state === 'source_unavailable_after_search', `${row.route_id} must preserve the source-unavailable state`);
     check(row.http_status === 403, `${row.route_id} must preserve HTTP 403`);
@@ -222,7 +294,9 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   const knownReceiptIds = new Set(sourceInventory.map(row => row.receipt_id));
   const referencedReceiptIds = collectReceiptIds([
     leadership, leadershipHistory, portfolio, schoolhouse, vehicles,
-    transactions, claims, coverage, portfolioDelta, schoolhouseIrsCandidates, schoolhouseIrsAdjudication
+    transactions, claims, coverage, portfolioDelta, schoolhouseIrsCandidates, schoolhouseIrsAdjudication,
+    stateRegistryRouteResults, stateRegistryRouteCustody, schoolhouseFlFictitiousSource,
+    schoolhouseFlFictitiousCandidates, schoolhouseFlFictitiousAdjudication
   ]);
   for (const receiptId of referencedReceiptIds) {
     check(knownReceiptIds.has(receiptId), `referenced receipt is missing from source inventory: ${receiptId}`);

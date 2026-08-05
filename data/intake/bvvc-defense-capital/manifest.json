@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-08-04",
+  "as_of": "2026-08-05",
   "boundaries": [
     "Current roster and portfolio listing surfaces are dense and not hop-eligible.",
     "A current portfolio listing is not a legal ownership, current-holding, control, board-right, or exact-vehicle record.",
@@ -8,13 +8,15 @@
     "A Form D notice identifies filer-reported offering facts but does not map a vehicle to a portfolio-company transaction.",
     "A firm or company announcement is not an independently verified technical, operational, acceptance, or performance record.",
     "Current-page absence is not an exact departure event, and source failure is not evidence of absence.",
-    "No private material contributes to public coverage or assertion."
+    "No private material contributes to public coverage or assertion.",
+    "A state-registry route result, fictitious-name phrase match, owner name, FEI, or charter number is not a legal-identity join.",
+    "Publisher automation prohibitions and strict transport validation are custody boundaries and may not be bypassed."
   ],
   "conclusion_generated": false,
   "counts": {
     "acquisition_frontier_tasks": 7,
-    "coverage_denominator_rows": 14,
-    "explicit_gap_rows": 14,
+    "coverage_denominator_rows": 16,
+    "explicit_gap_rows": 16,
     "institutional_self_claim_rows": 10,
     "leadership_current_rows": 27,
     "leadership_historical_only_rows": 4,
@@ -28,7 +30,7 @@
     "schoolhouse_demo_day_sponsor_partner_rows": 9,
     "schoolhouse_faculty_rows": 18,
     "schoolhouse_visible_employee_rows": 4,
-    "source_inventory_rows": 95,
+    "source_inventory_rows": 104,
     "transaction_and_investment_observation_rows": 17,
     "vehicle_and_related_entity_rows": 7,
     "portfolio_delta_candidate_rows": 9,
@@ -37,7 +39,17 @@
     "schoolhouse_irs_source_route_rows": 6,
     "schoolhouse_irs_candidate_rows": 641,
     "schoolhouse_irs_unique_candidate_eins": 438,
-    "schoolhouse_irs_admitted_identity_rows": 0
+    "schoolhouse_irs_admitted_identity_rows": 0,
+    "state_registry_route_result_rows": 16,
+    "state_registry_search_submissions": 0,
+    "fl_fictitious_source_rows": 761040,
+    "fl_fictitious_candidate_rows": 29,
+    "fl_fictitious_exact_public_name_rows": 0,
+    "fl_fictitious_tampa_bay_candidate_rows": 2,
+    "fl_fictitious_post_2023_candidate_rows": 16,
+    "fl_fictitious_owner_charter_numbers": 15,
+    "fl_fictitious_owner_feis": 15,
+    "state_registry_admitted_identity_rows": 0
   },
   "coverage": {
     "historical_rosters": "partial_search_index_snapshot",
@@ -63,10 +75,12 @@
     "transactions": "17_of_30_current_labels_have_transaction_or_explicit_investment_observations",
     "portfolio_delta_candidates": "9_public_claim_candidates_not_reconciled_to_frozen_current_page",
     "sec_vehicle_denominator_routes": "95_of_95_declared_official_routes_source_unavailable_after_search_http_403",
-    "schoolhouse_irs_legal_identity": "6_of_6_routes_complete_641_candidates_438_unique_eins_zero_admitted_identity"
+    "schoolhouse_irs_legal_identity": "6_of_6_routes_complete_641_candidates_438_unique_eins_zero_admitted_identity",
+    "schoolhouse_state_registry_routes": "16_of_16_terminal_zero_search_submissions",
+    "schoolhouse_fl_fictitious_identity": "761040_rows_29_phrase_candidates_zero_exact_public_name_two_tampa_zero_admitted_identity"
   },
   "custody": {
-    "next_waterline": "source_archival_identity_resolution_and_human_evidence_review",
+    "next_waterline": "corporate_owner_identifier_resolution_charity_registry_and_source_archival",
     "primary_estate_id": "us-defense-estate",
     "related_case_ids": [
       "anduril-access-ownership"
@@ -82,12 +96,12 @@
   },
   "files": {
     "acquisition-frontier.json": {
-      "bytes": 6947,
-      "sha256": "8e6d7049ad76f8a2ba46cb6c1034070a2879c194efaf079820e36a6a7bed1efb"
+      "bytes": 7861,
+      "sha256": "e78f1c782028372bffad91e5d0d58fbcb74455b683caf3733a1192996bd9fa5a"
     },
     "coverage-matrix.json": {
-      "bytes": 5473,
-      "sha256": "e795f53d30af49cda00837a47ecb7b2d1bc26ab799077e0989053be16b87c36b"
+      "bytes": 6462,
+      "sha256": "faf20c781b0043b1f186f83dcd7f35d8a5d26c425861b323aa1e623da30f608a"
     },
     "institutional-claims.jsonl": {
       "bytes": 5940,
@@ -122,8 +136,8 @@
       "sha256": "909415fc6286f83026a5c7b63792f21a2a03063cc03142ac7749ad022862a246"
     },
     "schoolhouse.json": {
-      "bytes": 10552,
-      "sha256": "b976f067c682e31b0b578b2838ff98fd47460719e4d86c34c44ad10c70ae7fc6"
+      "bytes": 12480,
+      "sha256": "7960a0f1529efd4c29423bac1453c4ae3af87f4330359374877205cd8d167910"
     },
     "source-inventory-01.jsonl": {
       "bytes": 6070,
@@ -196,6 +210,34 @@
     "schoolhouse-irs-candidates-auto-revocation.jsonl": {
       "bytes": 142956,
       "sha256": "25f946f80172079f5d7a20f2f510dfaeda3ac1fb5f79dc4ec1810649deec921f"
+    },
+    "source-inventory-08.jsonl": {
+      "bytes": 4826,
+      "sha256": "c02052f7759274c3a901c4eff4ecebfb9a6db8ee1a9c8d6478f26cd1263b9fcd"
+    },
+    "state-registry-route-results.jsonl": {
+      "bytes": 14616,
+      "sha256": "3e2c5ec90be1c7a1446d3774283e99f39da05135c7eac861299b1f96c783f86b"
+    },
+    "state-registry-route-custody.json": {
+      "bytes": 3419,
+      "sha256": "340d5aa8e06778c14aa4788de22aad94a44a232c19120a108b37f09585e2f7d6"
+    },
+    "schoolhouse-fl-fictitious-source-receipt.json": {
+      "bytes": 1780,
+      "sha256": "eed7fa2abce243406cd5d44ca4b7b06986e21b0b401ce4e1aa6e995bd0008a26"
+    },
+    "schoolhouse-fl-fictitious-member-inventory.jsonl": {
+      "bytes": 14810,
+      "sha256": "fb18d06b8a76f8fc1e8e7132ebaf58d39d96836beef5cd8bfc9f5dd25fdebaec"
+    },
+    "schoolhouse-fl-fictitious-candidates.jsonl": {
+      "bytes": 38030,
+      "sha256": "5bec143f1dcd0650ad2623eaf96077d4054a8d28801ef0841c10458f5e7aa040"
+    },
+    "schoolhouse-fl-fictitious-adjudication.json": {
+      "bytes": 14645,
+      "sha256": "0ee71ed00f0315cc9b348d443eaef2b62f571f5f4f48521d3b3189017b153f85"
     }
   },
   "graph_effect": "none",
@@ -205,7 +247,7 @@
     "what_this_is_not": "A finding of wrongdoing, coordination, motive, influence, government preference, technical performance, legal control, or completeness outside the declared surfaces."
   },
   "promotes_to": "candidate_only",
-  "purpose": "A source-addressed, graph-inert public-record lake for BVVC, School.House, current and historical roster observations, legal vehicles, financing announcements, institutional self-claims, explicit rejected joins, coverage nulls, and deterministic continuation work.",
+  "purpose": "A source-addressed, graph-inert public-record lake for BVVC, School.House, current and historical roster observations, legal vehicles, financing announcements, institutional self-claims, explicit rejected joins, IRS and state-registry legal-identity candidate custody, coverage nulls, and deterministic continuation work.",
   "schema_version": "bvvc-defense-capital-manifest@2",
   "selection": {
     "exclusion_rules": [
@@ -230,7 +272,7 @@
       "counterparty_primary_public": 11,
       "counterparty_primary_public_platform_post": 4,
       "counterparty_syndicated": 1,
-      "official": 14,
+      "official": 23,
       "primary_public": 51,
       "primary_public_platform_post": 6,
       "primary_public_platform_profile": 1,
@@ -239,9 +281,14 @@
     "receipt_uniqueness": "required",
     "sec_filing_caveat": "The SEC has not necessarily reviewed Form D information and has not determined it accurate and complete.",
     "source_state_counts": {
-      "live_locator": 77,
+      "captured_and_scanned": 7,
+      "captured_route_surface": 4,
+      "live_locator": 71,
+      "provider_blocked_no_query": 2,
+      "route_accessible_not_acquired": 1,
       "search_index_only": 16,
-      "search_index_snapshot": 2
+      "search_index_snapshot": 2,
+      "source_unavailable_after_search": 1
     }
   },
   "storage_contract": {
@@ -262,7 +309,8 @@
       "source-inventory-04.jsonl",
       "source-inventory-05.jsonl",
       "source-inventory-06.jsonl",
-      "source-inventory-07.jsonl"
+      "source-inventory-07.jsonl",
+      "source-inventory-08.jsonl"
     ],
     "split_reason": "bounded human-reviewable shards; concatenation order is manifest-bound",
     "schoolhouse_irs_candidate_parts": [
@@ -270,6 +318,8 @@
       "schoolhouse-irs-candidates-publication-78.jsonl",
       "schoolhouse-irs-candidates-form-990n.jsonl",
       "schoolhouse-irs-candidates-auto-revocation.jsonl"
-    ]
+    ],
+    "schoolhouse_state_registry_route_results": "state-registry-route-results.jsonl",
+    "schoolhouse_fl_fictitious_candidate_file": "schoolhouse-fl-fictitious-candidates.jsonl"
   }
 }
