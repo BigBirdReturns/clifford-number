@@ -96,8 +96,105 @@ const isoDate = value => {
 };
 const requireFalse = (value, label, errors) => { if (value !== false) errors.push(`${label} must remain false`); };
 function requireExactKeys(value, expected, label, errors) {
-  const keys = Object.keys(object(value));
-  if (stable(sorted(keys)) !== stable(sorted(expected)) || keys.length !== expected.length) errors.push(`${label} key ledger mismatch`);
+  const keys = Reflect.ownKeys(object(value));
+  const stringKeys = keys.filter(key => typeof key === 'string');
+  if (
+    stringKeys.length !== keys.length ||
+    stable(sorted(stringKeys)) !== stable(sorted(expected)) ||
+    stringKeys.length !== expected.length
+  ) errors.push(`${label} key ledger mismatch`);
+}
+function validateCacheSafeJsonTree(value, label, errors, seen = new WeakSet()) {
+  const walk = (current, path) => {
+    const type = typeof current;
+    if (current === null || type === 'string' || type === 'boolean') return;
+    if (type === 'number') {
+      if (!Number.isFinite(current)) errors.push(`${path} must contain only finite JSON numbers`);
+      return;
+    }
+    if (type !== 'object') {
+      errors.push(`${path} contains unsupported JSON value type ${type}`);
+      return;
+    }
+    if (seen.has(current)) {
+      errors.push(`${path} contains a repeated or cyclic object`);
+      return;
+    }
+    seen.add(current);
+    let prototype;
+    let keys;
+    try {
+      prototype = Object.getPrototypeOf(current);
+      keys = Reflect.ownKeys(current);
+    } catch {
+      errors.push(`${path} must be inspectable cache-safe JSON data`);
+      return;
+    }
+    if (Array.isArray(current)) {
+      if (prototype !== Array.prototype) errors.push(`${path} must use the canonical array prototype`);
+      const expectedKeys = new Set(['length', ...Array.from({ length: current.length }, (_, index) => String(index))]);
+      if (keys.length !== expectedKeys.size || keys.some(key => typeof key !== 'string' || !expectedKeys.has(key))) {
+        errors.push(`${path} array key ledger mismatch`);
+      }
+      for (let index = 0; index < current.length; index += 1) {
+        const key = String(index);
+        if (!Object.hasOwn(current, key)) {
+          errors.push(`${path}[${index}] must not be sparse`);
+          continue;
+        }
+        let descriptor;
+        try {
+          descriptor = Object.getOwnPropertyDescriptor(current, key);
+        } catch {
+          descriptor = null;
+        }
+        if (!descriptor || !descriptor.enumerable || !Object.hasOwn(descriptor, 'value')) {
+          errors.push(`${path}[${index}] must be an enumerable data property`);
+          continue;
+        }
+        walk(descriptor.value, `${path}[${index}]`);
+      }
+      return;
+    }
+    if (prototype !== Object.prototype) errors.push(`${path} must use the canonical object prototype`);
+    for (const key of keys) {
+      if (typeof key !== 'string') {
+        errors.push(`${path} must not contain symbol keys`);
+        continue;
+      }
+      let descriptor;
+      try {
+        descriptor = Object.getOwnPropertyDescriptor(current, key);
+      } catch {
+        descriptor = null;
+      }
+      if (!descriptor || !descriptor.enumerable || !Object.hasOwn(descriptor, 'value')) {
+        errors.push(`${path}.${key} must be an enumerable data property`);
+        continue;
+      }
+      walk(descriptor.value, `${path}.${key}`);
+    }
+  };
+  walk(value, label);
+}
+function snapshotCacheSafeV45Inputs(baseBuild, baseSources, errors) {
+  const inputSeen = new WeakSet();
+  validateCacheSafeJsonTree(baseBuild, 'v46 v45 base build cache input', errors, inputSeen);
+  validateCacheSafeJsonTree(baseSources, 'v46 v45 source bundle cache input', errors, inputSeen);
+  if (errors.length) return null;
+  let snapshot;
+  try {
+    snapshot = structuredClone({ baseBuild, baseSources });
+  } catch {
+    errors.push('v46 v45 cache inputs must be structured-cloneable canonical JSON data');
+    return null;
+  }
+  const snapshotErrors = [];
+  const snapshotSeen = new WeakSet();
+  validateCacheSafeJsonTree(snapshot.baseBuild, 'v46 v45 base build cache snapshot', snapshotErrors, snapshotSeen);
+  validateCacheSafeJsonTree(snapshot.baseSources, 'v46 v45 source bundle cache snapshot', snapshotErrors, snapshotSeen);
+  errors.push(...snapshotErrors);
+  return errors.length ? null : snapshot;
 }
 function seal(event, previousEventSha256) {
   const unsigned = { ...canonical(event), previous_event_sha256: previousEventSha256 };
@@ -215,17 +312,26 @@ function v45SourceBundlePayload(baseSources) {
 function v45SourceBundleSha256(baseSources) { return sha256(v45SourceBundlePayload(baseSources)); }
 const QUALIFIED_V45_BASE_VALIDATION_CACHE = new Map();
 function validateQualifiedV45Base(baseBuild, baseSources) {
-  const cacheKey = sha256({ baseBuild, baseSources });
+  const keyErrors = [];
+  requireExactKeys(baseBuild, EXPECTED_BUILD_KEYS, 'v46 v45 base build', keyErrors);
+  requireExactKeys(baseSources, EXPECTED_BASE_SOURCE_KEYS, 'v46 v45 source bundle', keyErrors);
+  const snapshot = snapshotCacheSafeV45Inputs(baseBuild, baseSources, keyErrors);
+  if (!snapshot) return keyErrors;
+  const transitiveKeyErrors = validateTransitiveSourceBundleKeys(snapshot.baseSources);
+  if (transitiveKeyErrors.length) return transitiveKeyErrors;
+  const cacheKey = sha256(snapshot);
+  if (sha256({ baseBuild, baseSources }) !== cacheKey) return ['v46 v45 cache inputs changed during snapshot preflight'];
   const cached = QUALIFIED_V45_BASE_VALIDATION_CACHE.get(cacheKey);
   if (cached) return [...cached];
   const errors = validatePreferenceCustodyManifestV45Build(
-    baseBuild,
-    baseSources?.manifest,
-    baseSources?.baseBuild,
-    baseSources?.targetBuild,
-    baseSources?.targetFixture,
-    baseSources?.baseSources
+    snapshot.baseBuild,
+    snapshot.baseSources?.manifest,
+    snapshot.baseSources?.baseBuild,
+    snapshot.baseSources?.targetBuild,
+    snapshot.baseSources?.targetFixture,
+    snapshot.baseSources?.baseSources
   );
+  if (sha256({ baseBuild, baseSources }) !== cacheKey) errors.push('v46 v45 cache inputs changed during full validation');
   QUALIFIED_V45_BASE_VALIDATION_CACHE.set(cacheKey, Object.freeze([...errors]));
   return errors;
 }
@@ -424,12 +530,14 @@ export function validatePreferenceCustodyManifestV46(manifest) {
 
 export function compilePreferenceCustodyManifestV46(manifest, baseBuild, targetBuild, targetFixture, baseSources) {
   const qualifiedBaseErrors = validateQualifiedV45Base(baseBuild, baseSources);
+  const baseSourceErrors = qualifiedBaseErrors.length ? [] : validateBaseSources(baseBuild, baseSources);
+  const chronologyErrors = qualifiedBaseErrors.length ? [] : validateSourceChronology(manifest?.captured_at, baseBuild, targetBuild, targetFixture, baseSources);
   const errors = [
     ...validatePreferenceCustodyManifestV46(manifest),
-    ...validateBaseSources(baseBuild, baseSources),
+    ...baseSourceErrors,
     ...qualifiedBaseErrors.map(error => `v46 v45 build invalid: ${error}`),
     ...validatePreferenceLinkageIntervalMethodPartitionReplicationDeploymentBuild(targetBuild, targetFixture),
-    ...validateSourceChronology(manifest?.captured_at, baseBuild, targetBuild, targetFixture, baseSources)
+    ...chronologyErrors
   ];
   if (errors.length) throw new Error(errors.join('; '));
   const baseRequirements = unique(baseBuild?.promotion_boundary?.real_case_requires);
@@ -570,8 +678,28 @@ export function validatePreferenceCustodyManifestV46Build(compiled, manifest, ba
   if (!targetBuild) errors.push('compiled v46 PC-48 source is required');
   if (!targetFixture) errors.push('compiled v46 PC-48 fixture source is required');
   if (!baseSources) errors.push('compiled v46 complete v45 source bundle is required');
-  if (manifest) errors.push(...validateDirectSourceChronology(manifest.captured_at, baseBuild, targetBuild, targetFixture, baseSources));
-  if (baseBuild) {
+  const cachePreflightErrors = [];
+  let cacheSnapshot = null;
+  if (baseBuild && baseSources) {
+    requireExactKeys(baseBuild, EXPECTED_BUILD_KEYS, 'v46 v45 base build', cachePreflightErrors);
+    requireExactKeys(baseSources, EXPECTED_BASE_SOURCE_KEYS, 'v46 v45 source bundle', cachePreflightErrors);
+    cacheSnapshot = snapshotCacheSafeV45Inputs(baseBuild, baseSources, cachePreflightErrors);
+  }
+  if (cachePreflightErrors.length) errors.push(...cachePreflightErrors.map(error => `compiled v46 base invalid: ${error}`));
+  if (manifest && cacheSnapshot) {
+    errors.push(...validateDirectSourceChronology(
+      manifest.captured_at,
+      cacheSnapshot.baseBuild,
+      targetBuild,
+      targetFixture,
+      cacheSnapshot.baseSources
+    ));
+  }
+  const qualifiedBaseErrors = cacheSnapshot ? validateQualifiedV45Base(baseBuild, baseSources) : cachePreflightErrors;
+  if (!cachePreflightErrors.length && qualifiedBaseErrors.length) {
+    errors.push(...qualifiedBaseErrors.map(error => `compiled v46 base invalid: ${error}`));
+  }
+  if (baseBuild && cacheSnapshot && !qualifiedBaseErrors.length) {
     if (stable(controls.slice(0, 47)) !== stable(baseBuild.controls)) errors.push('compiled v46 preserved base controls mismatch');
     if (stable(composition.base_open_frontiers) !== stable(unique(baseBuild.open_frontiers))) errors.push('compiled v46 base frontier snapshot mismatch');
     const baseRequirements = unique(baseBuild?.promotion_boundary?.real_case_requires);
@@ -604,7 +732,7 @@ export function validatePreferenceCustodyManifestV46Build(compiled, manifest, ba
   requireExactKeys(compiled?.control_integrity, EXPECTED_INTEGRITY_KEYS, 'compiled v46 control integrity', errors);
   for (const key of EXPECTED_INTEGRITY_KEYS) if (compiled?.control_integrity?.[key] !== true) errors.push(`compiled v46 integrity flag false: ${key}`);
   if (stable(compiled?.frontier_transition) !== stable(REQUIRED_FRONTIER_TRANSITION)) errors.push('compiled v46 frontier transition mismatch');
-  if (baseBuild) {
+  if (baseBuild && !qualifiedBaseErrors.length) {
     const expectedOpen = unique([...array(baseBuild.open_frontiers).filter(frontier => frontier !== RESOLVED_FRONTIER), ...REQUIRED_SUCCESSORS]);
     if (stable(compiled?.open_frontiers) !== stable(expectedOpen)) errors.push('compiled v46 open-frontier ledger mismatch');
   }
@@ -613,7 +741,7 @@ export function validatePreferenceCustodyManifestV46Build(compiled, manifest, ba
   for (const successor of [PC47_EVENT_SUCCESSOR, PC47_ESTIMAND_SUCCESSOR]) if (!array(compiled?.open_frontiers).includes(successor)) errors.push(`compiled v46 lost PC-47 successor: ${successor}`);
   if (compiled?.promotion_boundary?.promotion_requirement_count !== 1871 || unique(compiled?.promotion_boundary?.real_case_requires).length !== 1871) errors.push('compiled v46 promotion boundary mismatch');
   requireFalse(compiled?.promotion_boundary?.laboratory_controls_are_real_world_evidence, 'compiled v46 laboratory evidence', errors);
-  if (manifest && baseBuild && targetBuild) {
+  if (manifest && baseBuild && targetBuild && !qualifiedBaseErrors.length) {
     const expectedIdentification = [...array(baseBuild.identification_requirements), canonical(REQUIRED_IDENTIFICATION_REQUIREMENT)];
     const expectedRefusal = unique([...array(baseBuild.refusal_rule_union), ...REQUIRED_LINKAGE_INTERVAL_METHOD_PARTITION_REPLICATION_DEPLOYMENT_REFUSAL_RULES]);
     const expectedProhibited = [...array(baseBuild.prohibited_inferences), ...REQUIRED_PROHIBITED_INFERENCES];
