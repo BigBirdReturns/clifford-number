@@ -1,0 +1,129 @@
+name: SSC RD-04 Wave 03 state-source adjudication
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-state-source-adjudication.yml'
+      - '.ssc-rd04-wave03-responsive-link-trigger/EXECUTE'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-state-source-adjudication/**'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-state-source-adjudication.schema.json'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd04-state-source-adjudication.test.js'
+      - 'tools/acquisition/status-sovereignty-rd-wave03-rd04/run-responsive-link-protocol.py'
+      - 'docs/milestones/ssc-rd-wave03-rd04-state-source-adjudication.md'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-state-source-adjudication.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-state-source-adjudication/**'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-state-source-adjudication.schema.json'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd04-state-source-adjudication.test.js'
+      - 'tools/acquisition/status-sovereignty-rd-wave03-rd04/run-responsive-link-protocol.py'
+      - 'docs/milestones/ssc-rd-wave03-rd04-state-source-adjudication.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd04-wave03-state-source-adjudication-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Validate 54 route decisions, 329 candidates, 17 deferred appeal/hearing links, and 62 fixed followups
+        run: |
+          set -Eeuo pipefail
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-state-source-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-state-source-adjudication.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd04/run-responsive-link-protocol.py
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-responsive-link-protocol.py --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - name: Restore volatile outputs and replay exact state-source derivation
+        run: |
+          set -Eeuo pipefail
+          git restore --worktree -- .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-state-source-adjudication.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-responsive-link-protocol.py --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Preserve exact state-source adjudication custody
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-wave03-state-source-adjudication
+          path: |
+            data/intake/status-sovereignty-rd-wave03-rd04-state-source-adjudication
+            schemas/status-sovereignty-rd-wave03-rd04-state-source-adjudication.schema.json
+            docs/milestones/ssc-rd-wave03-rd04-state-source-adjudication.md
+          if-no-files-found: error
+          retention-days: 90
+
+  capture:
+    if: startsWith(github.head_ref, 'agent/ssc-rd-wave03-rd04-responsive-link-trigger-')
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Revalidate the exact 62-route responsive-link protocol before requests
+        run: |
+          set -Eeuo pipefail
+          node tools/build-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-state-source-adjudication.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-responsive-link-protocol.py --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+
+      - name: Execute the fixed 62-route responsive-link protocol
+        run: python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-responsive-link-protocol.py --output /tmp/ssc-rd04-wave03-responsive-link-v2
+
+      - name: Preserve exact responsive-link responses and receipts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-wave03-responsive-link-v2
+          path: /tmp/ssc-rd04-wave03-responsive-link-v2
+          if-no-files-found: error
+          retention-days: 90
