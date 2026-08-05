@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Replace the first-pass fixed-span scanner with flexible record separators."""
+"""Replace the first-pass fixed-span scanner with line-aware prefix parsing."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from pathlib import Path
 REPLACEMENT = '''def scan_archive(source: Path) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     candidates: list[dict[str, Any]] = []
     member_receipts: list[dict[str, Any]] = []
+    max_line_bytes = 256 * 1024
     with zipfile.ZipFile(source, "r") as archive:
         bad_member = archive.testzip()
         if bad_member is not None:
@@ -22,50 +23,56 @@ REPLACEMENT = '''def scan_archive(source: Path) -> tuple[list[dict[str, Any]], l
             initial_span, initial_framing = detect_record_span(archive, info)
             width_counts: Counter[int] = Counter()
             separator_counts: Counter[str] = Counter()
+            extension_width_counts: Counter[int] = Counter()
             row_count = 0
             match_count = 0
-            trailing_bytes = 0
+            short_record_count = 0
+            extension_record_count = 0
+            extension_bytes_total = 0
             member_digest = hashlib.sha256()
             with archive.open(info, "r") as handle:
                 while True:
-                    record = read_exact(handle, RECORD_LENGTH)
-                    if not record:
+                    line = handle.readline(max_line_bytes + 1)
+                    if not line:
                         break
-                    if len(record) != RECORD_LENGTH:
-                        member_digest.update(record)
-                        trailing_bytes = len(record)
-                        if record.strip(b"\\x00\\r\\n\\t \\x1a"):
-                            raise RuntimeError(
-                                f"non-padding trailing bytes in {info.filename}: {len(record)}"
-                            )
-                        break
-
-                    member_digest.update(record)
-                    width_counts[len(record)] += 1
+                    if len(line) > max_line_bytes and not line.endswith((b"\\n", b"\\r")):
+                        raise RuntimeError(
+                            f"record line exceeds {max_line_bytes} bytes in {info.filename} at row {row_count + 1}"
+                        )
+                    member_digest.update(line)
                     row_count += 1
-                    candidate = parse_candidate(record, info.filename, row_count)
+
+                    if line.endswith(b"\\r\\n"):
+                        record = line[:-2]
+                        separator_state = "crlf"
+                    elif line.endswith(b"\\n"):
+                        record = line[:-1]
+                        separator_state = "lf"
+                    elif line.endswith(b"\\r"):
+                        record = line[:-1]
+                        separator_state = "cr"
+                    else:
+                        record = line
+                        separator_state = "none"
+                    separator_counts[separator_state] += 1
+                    width_counts[len(record)] += 1
+
+                    if len(record) < RECORD_LENGTH:
+                        short_record_count += 1
+                        continue
+                    if len(record) > RECORD_LENGTH:
+                        extension = len(record) - RECORD_LENGTH
+                        extension_record_count += 1
+                        extension_bytes_total += extension
+                        extension_width_counts[extension] += 1
+                    defined_record = record[:RECORD_LENGTH]
+                    candidate = parse_candidate(defined_record, info.filename, row_count)
                     if candidate is not None:
+                        candidate["source_record_bytes"] = len(record)
+                        candidate["schema_defined_prefix_bytes"] = RECORD_LENGTH
+                        candidate["unparsed_extension_bytes"] = max(0, len(record) - RECORD_LENGTH)
                         candidates.append(candidate)
                         match_count += 1
-
-                    lookahead = handle.peek(2)[:2]
-                    separator = b""
-                    separator_state = "none"
-                    if lookahead.startswith(b"\\r\\n"):
-                        separator = read_exact(handle, 2)
-                        separator_state = "crlf"
-                    elif lookahead.startswith(b"\\n"):
-                        separator = read_exact(handle, 1)
-                        separator_state = "lf"
-                    elif lookahead.startswith(b"\\r"):
-                        separator = read_exact(handle, 1)
-                        separator_state = "cr"
-                        if handle.peek(1)[:1] == b"\\n":
-                            separator += read_exact(handle, 1)
-                            separator_state = "crlf"
-                    if separator:
-                        member_digest.update(separator)
-                    separator_counts[separator_state] += 1
 
             member_receipts.append(
                 {
@@ -75,12 +82,17 @@ REPLACEMENT = '''def scan_archive(source: Path) -> tuple[list[dict[str, Any]], l
                     "zip_crc32": f"{info.CRC:08x}",
                     "initial_record_span": initial_span,
                     "initial_record_framing": initial_framing,
-                    "record_framing": "fixed_width_flexible_separator",
+                    "record_framing": "line_delimited_defined_prefix",
+                    "schema_defined_prefix_bytes": RECORD_LENGTH,
                     "separator_counts": dict(sorted(separator_counts.items())),
                     "row_count": row_count,
                     "match_count": match_count,
                     "record_width_counts": {str(key): value for key, value in sorted(width_counts.items())},
-                    "trailing_bytes": trailing_bytes,
+                    "short_record_count": short_record_count,
+                    "extension_record_count": extension_record_count,
+                    "extension_bytes_total": extension_bytes_total,
+                    "extension_width_counts": {str(key): value for key, value in sorted(extension_width_counts.items())},
+                    "trailing_bytes": 0,
                     "uncompressed_stream_sha256": member_digest.hexdigest(),
                     "state": "scanned",
                 }
@@ -106,7 +118,7 @@ def main() -> int:
     if "record framing drift" in repaired or "read_exact(handle, span)" in repaired:
         raise RuntimeError("stale fixed-span scanner survived repair")
     target.write_text(repaired, encoding="utf-8")
-    print(f"repaired flexible record separators in {target}")
+    print(f"repaired line-aware defined-prefix parsing in {target}")
     return 0
 
 
