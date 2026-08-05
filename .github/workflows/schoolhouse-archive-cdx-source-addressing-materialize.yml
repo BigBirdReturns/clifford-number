@@ -1,0 +1,159 @@
+name: Materialize School.House Archive CDX source-addressing repair
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: schoolhouse-archive-cdx-source-addressing-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.head_ref == 'agent/schoolhouse-archive-cdx-source-addressing-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out exact carrier head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate carrier and publish clean product
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          CARRIER_BRANCH='agent/schoolhouse-archive-cdx-source-addressing-materializer-v1'
+          PRODUCT_BRANCH='agent/schoolhouse-archive-cdx-source-addressing-product-v1'
+          BASE_PRODUCT='c81de1c073d0a9ff6d35d8b6f1f4396941026203'
+          BUNDLE='.schoolhouse-archive-cdx-source-addressing-materializer-v1/repair.py.gz.b64'
+          EXECUTE='.schoolhouse-archive-cdx-source-addressing-materializer-v1/EXECUTE'
+          REPAIR='/tmp/repair-schoolhouse-archive-cdx-source-addressing.py'
+          WORKTREE='/tmp/schoolhouse-archive-cdx-source-addressing-product'
+          RECEIPT_DIR='/tmp/schoolhouse-archive-cdx-source-addressing-materialization-receipt'
+          EXPECTED_REPAIR_SHA='5f9370ee1a04a09270d5bcf116179f2bd7445fbb6fe4d0d764dae18311920529'
+
+          test "${GITHUB_HEAD_REF}" = "$CARRIER_BRANCH"
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          git diff --exit-code -- "$BUNDLE" "$EXECUTE" '.github/workflows/schoolhouse-archive-cdx-source-addressing-materialize.yml'
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'e8465318c69289dcc5c092bea057a4e4c2e1b0afc86d6aa160d7dcfacbc328a5'
+          grep -Fx "repair_sha256=$EXPECTED_REPAIR_SHA" "$EXECUTE"
+          grep -Fx "base_product=$BASE_PRODUCT" "$EXECUTE"
+          grep -Fx "product_branch=$PRODUCT_BRANCH" "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+
+          base64 -d "$BUNDLE" | gzip -dc > "$REPAIR"
+          test "$(sha256sum "$REPAIR" | awk '{print $1}')" = "$EXPECTED_REPAIR_SHA"
+          python3 -m py_compile "$REPAIR"
+
+          git fetch --prune origin main
+          MAIN_SHA=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$BASE_PRODUCT" "$MAIN_SHA"
+          printf 'live_main=%s\n' "$MAIN_SHA"
+
+          if git ls-remote --exit-code --heads origin "$PRODUCT_BRANCH" >/dev/null 2>&1; then
+            echo "refusing existing product branch: $PRODUCT_BRANCH" >&2
+            exit 1
+          fi
+
+          rm -rf "$WORKTREE" "$RECEIPT_DIR"
+          git worktree add --detach "$WORKTREE" "$MAIN_SHA"
+          trap 'git worktree remove --force "$WORKTREE" >/dev/null 2>&1 || true' EXIT
+
+          python3 "$REPAIR" \
+            --root "$WORKTREE" \
+            --receipt /tmp/schoolhouse-archive-cdx-source-addressing-repair.json
+          python3 "$REPAIR" --check --root "$WORKTREE"
+
+          cd "$WORKTREE"
+          node tools/validate-bvvc-defense-capital.mjs
+          node test/person-routers.test.js
+          npm run release:check
+          python3 "$REPAIR" --check --root "$WORKTREE"
+
+          mapfile -t CHANGED < <(git status --porcelain=v1 | sed -E 's/^.. //' | sort)
+          EXPECTED=(
+            'data/intake/bvvc-defense-capital/manifest.json'
+            'data/intake/bvvc-defense-capital/source-inventory-14.jsonl'
+            'tools/build-schoolhouse-first-party-archive-locator-custody.mjs'
+            'tools/validate-bvvc-defense-capital.mjs'
+          )
+          test "${#CHANGED[@]}" -eq "${#EXPECTED[@]}"
+          for i in "${!EXPECTED[@]}"; do
+            test "${CHANGED[$i]}" = "${EXPECTED[$i]}"
+          done
+
+          test "$(wc -l < data/intake/bvvc-defense-capital/source-inventory-14.jsonl)" -eq 72
+          test "$(wc -c < data/intake/bvvc-defense-capital/source-inventory-14.jsonl)" -eq 133819
+          test "$(sha256sum data/intake/bvvc-defense-capital/source-inventory-14.jsonl | awk '{print $1}')" = '5d0517a14fc1da51b9e090ca17c9ff33ea315dd477bb813c407d976c47d5503c'
+          test "$(git hash-object data/intake/bvvc-defense-capital/source-inventory-14.jsonl)" = '2e872d7bd8fbe92c812867d18d82aa74e712ffc2'
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "${EXPECTED[@]}"
+          git diff --cached --exit-code --quiet && { echo 'repair produced no staged change' >&2; exit 1; }
+          git commit -m 'Repair School.House Archive CDX receipt source addressing' \
+            -m 'Bind all 72 Archive metadata receipts to their exact CDX request URLs while preserving the original subject URLs separately. Denominators, acquisition state, identity state, privacy boundary, publication effect, adoption effect, and graph effect remain unchanged.'
+
+          PRODUCT_SHA=$(git rev-parse HEAD)
+          PRODUCT_TREE=$(git rev-parse 'HEAD^{tree}')
+          test "$(git rev-list --count "$MAIN_SHA"..HEAD)" -eq 1
+          test "$(git rev-list --count HEAD.."$MAIN_SHA")" -eq 0
+          test "$(git diff --name-only "$MAIN_SHA"..HEAD | sort | wc -l)" -eq 4
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+
+          mkdir -p "$RECEIPT_DIR"
+          cp /tmp/schoolhouse-archive-cdx-source-addressing-repair.json "$RECEIPT_DIR/repair.json"
+          git diff --name-only "$MAIN_SHA"..HEAD | sort > "$RECEIPT_DIR/changed-paths.txt"
+          python3 - <<PY > "$RECEIPT_DIR/materialization.json"
+          import json
+          print(json.dumps({
+              'schema_version': 'schoolhouse-archive-cdx-source-addressing-materialization@1',
+              'carrier_branch': '$CARRIER_BRANCH',
+              'carrier_head': '${{ github.event.pull_request.head.sha }}',
+              'live_main': '$MAIN_SHA',
+              'base_product': '$BASE_PRODUCT',
+              'product_branch': '$PRODUCT_BRANCH',
+              'product_commit': '$PRODUCT_SHA',
+              'product_tree': '$PRODUCT_TREE',
+              'permanent_changed_paths': 4,
+              'source_inventory_rows': 72,
+              'source_inventory_bytes': 133819,
+              'source_inventory_sha256': '5d0517a14fc1da51b9e090ca17c9ff33ea315dd477bb813c407d976c47d5503c',
+              'source_inventory_git_blob': '2e872d7bd8fbe92c812867d18d82aa74e712ffc2',
+              'acquisition_effect': 'none',
+              'denominator_effect': 'none',
+              'identity_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }, indent=2, sort_keys=True))
+          PY
+
+      - name: Upload materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-archive-cdx-source-addressing-materialization-receipt
+          path: /tmp/schoolhouse-archive-cdx-source-addressing-materialization-receipt
+          if-no-files-found: error
+          retention-days: 90
