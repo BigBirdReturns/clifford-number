@@ -1,0 +1,99 @@
+name: TEMP capture School.House state-registry candidates
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-state-registry-capture.yml'
+      - '.schoolhouse-state-registry-capture/EXECUTE'
+      - 'tools/acquisition/schoolhouse-state-registries/run.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile acquisition runner
+        run: python -m py_compile tools/acquisition/schoolhouse-state-registries/run.py
+
+      - name: Execute bounded state-registry acquisition
+        id: acquisition
+        continue-on-error: true
+        env:
+          STATE_REGISTRY_USER_AGENT: CliffordNumber-SchoolHouse-State-Registry/1.0 219768509+BigBirdReturns@users.noreply.github.com
+        run: |
+          set +e
+          OUT=/tmp/schoolhouse-state-registry-candidates
+          rm -rf "$OUT"
+          python tools/acquisition/schoolhouse-state-registries/run.py \
+            --output "$OUT" \
+            --retries 4 \
+            --sleep-seconds 0.35 \
+            --max-detail-pages 30
+          status=$?
+          mkdir -p "$OUT"
+          printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
+          exit "$status"
+
+      - name: Upload exact acquisition artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-state-registry-candidates
+          path: /tmp/schoolhouse-state-registry-candidates
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal bounded route custody
+        if: always()
+        run: |
+          test -f /tmp/schoolhouse-state-registry-candidates/RUNNER_EXIT_CODE
+          test "$(cat /tmp/schoolhouse-state-registry-candidates/RUNNER_EXIT_CODE)" = '0'
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/schoolhouse-state-registry-candidates')
+          summary = json.loads((root / 'summary.json').read_text())
+          receipt = json.loads((root / 'acquisition-receipt.json').read_text())
+          adjudication = json.loads((root / 'adjudication.json').read_text())
+
+          assert summary['route_count'] == 26
+          assert summary['terminal_route_count'] == 26
+          assert summary['all_routes_terminal'] is True
+          assert summary['florida_query_route_count'] == 20
+          assert summary['florida_captured_route_count'] >= 1
+          assert summary['north_carolina_automated_queries_executed'] == 0
+          assert summary['registry_identity_admitted'] is False
+          assert summary['negative_existence_claim_created'] is False
+          assert summary['street_address_rows_retained'] == 0
+          assert summary['contact_detail_rows_retained'] == 0
+          assert summary['officer_name_rows_retained'] == 0
+          assert summary['private_support_rows'] == 0
+          assert summary['outside_human_dependency'] is False
+          assert summary['graph_effect'] == 'none'
+
+          assert receipt['all_routes_terminal'] is True
+          assert receipt['registry_identity_admitted'] is False
+          assert receipt['negative_existence_claim_created'] is False
+          assert receipt['north_carolina_automation_boundary_respected'] is True
+          assert receipt['outside_human_dependency'] is False
+          assert receipt['graph_effect'] == 'none'
+
+          assert adjudication['identity_decision']['state'] == 'registry_candidates_not_admitted'
+          assert adjudication['identity_decision']['negative_existence_claim_created'] is False
+          assert adjudication['north_carolina_boundary']['automated_queries_executed'] == 0
+          assert adjudication['outside_human_dependency'] is False
+          assert adjudication['graph_effect'] == 'none'
+          print(json.dumps(summary, sort_keys=True))
+          PY
