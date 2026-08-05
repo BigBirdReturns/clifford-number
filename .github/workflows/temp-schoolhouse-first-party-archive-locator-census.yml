@@ -39,14 +39,21 @@ jobs:
           RUNNER='/tmp/capture-schoolhouse-first-party-archive-locator-census.py'
 
           git fetch --no-tags origin main
+          echo "main_sha=$(git rev-parse origin/main)"
+          echo "merge_base=$(git merge-base HEAD origin/main)"
+          echo "input_blob=$(git hash-object "$INPUT")"
+          echo "input_rows=$(grep -cve '^$' "$INPUT")"
+          echo "bundle_sha256=$(sha256sum "$BUNDLE" | awk '{print $1}')"
+          echo "execute_sha256=$(sha256sum "$EXECUTE" | awk '{print $1}')"
           test "$(git rev-parse origin/main)" = "$BASE_MAIN"
           test "$(git merge-base HEAD origin/main)" = "$BASE_MAIN"
           test "$(git hash-object "$INPUT")" = '0e004bc38eb4d4c895af3d862f0e7569112a8b1a'
           test "$(grep -cve '^$' "$INPUT")" = '46'
-          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'ffee879ea21ce5a6dc792644e853d83adc1683bf01bbabd5b2f5c678a16295fd'
-          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = '62fc8cf5e468fddb6030cff04906488b11f99ad2eaa19ce127f8601df7d2e8cd'
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '000a9732ed3a03e90c19534d95463496c11261d279837f2c7483234631c74bf6'
+          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = 'ac4a22247a64dc65abd7d53de369843a77f077ed0d82f90d7cbfd2c1cd8c998b'
           base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
-          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = 'cc8322e872cc89d85222ffc55d405b290f7ad8f2f5396052a4e2139b22b5ee15'
+          echo "runner_sha256=$(sha256sum "$RUNNER" | awk '{print $1}')"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = '3746c1ccc939e687bc915bbaefbd45c678416caa6bfc4331158746654bc16701'
           python -m py_compile "$RUNNER"
 
       - name: Execute exact-URL public archive metadata census
@@ -87,6 +94,7 @@ jobs:
           test "$(grep -cve '^$' "$OUT/archive-route-results.jsonl")" = '46'
           jq -e '
             .source_denominator.routes == 46 and
+            .source_denominator.url_field_precedence == ["url","requested_url","final_url"] and
             .archive_api.exact_url_queries == 46 and
             .archive_api.archived_page_bodies_fetched == false and
             .interpretation.zero_rows_is_not_absence == true and
