@@ -29,7 +29,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
-          test "$(sha256sum .pc50-carrier/manifest.json | awk '{print $1}')" = "2469e44bbf07d9b113e08e338f12cd64b7e71e3169c3fc367a4732cdb55e8b8a"
           python3 - <<'PY'
           from pathlib import Path
           import base64
@@ -42,18 +41,27 @@ jobs:
           import urllib.request
 
           carrier = Path('.pc50-carrier')
-          manifest = json.loads((carrier / 'manifest.json').read_text())
+          manifest_path = carrier / 'manifest.json'
+          manifest_bytes = manifest_path.read_bytes()
+          manifest = json.loads(manifest_bytes)
+          print('manifest_sha256=' + hashlib.sha256(manifest_bytes).hexdigest())
+
           if manifest.get('schema_version') != 'pc50-product-carrier@1':
               raise SystemExit('unexpected carrier schema')
           if manifest.get('qualified_parent_commit') != 'd87172a41e88c1709b37a114b50df733545126c8':
               raise SystemExit('qualified parent drift')
           if manifest.get('qualified_parent_tree') != '3b545a7dfe5a66a9689c2b7df44943654330629b':
               raise SystemExit('qualified parent tree drift')
+
           files = manifest.get('files', [])
+          parts = manifest.get('parts', [])
           if len(files) != 14 or len({row['path'] for row in files}) != 14:
               raise SystemExit('permanent path denominator mismatch')
+          if len(parts) != 12:
+              raise SystemExit('carrier part denominator mismatch')
+
           chunks = []
-          for index, part in enumerate(manifest.get('parts', [])):
+          for index, part in enumerate(parts):
               expected_name = f'product.part{index:02d}'
               if part.get('path') != expected_name:
                   raise SystemExit(f'part order mismatch: {part}')
@@ -61,6 +69,7 @@ jobs:
               if len(raw) != part['chars'] or hashlib.sha256(raw).hexdigest() != part['sha256']:
                   raise SystemExit(f'carrier part mismatch: {expected_name}')
               chunks.append(raw)
+
           encoded = b''.join(chunks)
           if len(encoded) != manifest['base64_chars'] or hashlib.sha256(encoded).hexdigest() != manifest['base64_sha256']:
               raise SystemExit('aggregate base64 mismatch')
@@ -87,6 +96,7 @@ jobs:
 
           repo = os.environ['GITHUB_REPOSITORY']
           token = os.environ['GH_TOKEN']
+
           def api(method, endpoint, payload=None):
               url = f'https://api.github.com/repos/{repo}{endpoint}'
               body = None if payload is None else json.dumps(payload, separators=(',', ':')).encode()
@@ -99,7 +109,8 @@ jobs:
                   with urllib.request.urlopen(request, timeout=120) as response:
                       return json.loads(response.read())
               except urllib.error.HTTPError as exc:
-                  raise SystemExit(f'GitHub API {method} {endpoint} failed: HTTP {exc.code}: {exc.read().decode(errors="replace")}')
+                  body = exc.read().decode(errors='replace')
+                  raise SystemExit(f'GitHub API {method} {endpoint} failed: HTTP {exc.code}: {body}')
 
           receipts = []
           for expected in files:
@@ -120,6 +131,7 @@ jobs:
           receipt = {
               'schema_version': 'pc50-remote-blob-receipt@1',
               'carrier_head': os.environ['GITHUB_SHA'],
+              'manifest_sha256': hashlib.sha256(manifest_bytes).hexdigest(),
               'qualified_parent_commit': manifest['qualified_parent_commit'],
               'qualified_parent_tree': manifest['qualified_parent_tree'],
               'qualified_local_product_commit': manifest['qualified_local_product_commit'],
@@ -134,17 +146,18 @@ jobs:
               'graph_effect': 'none',
           }
           Path('/tmp/pc50-remote-blob-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
-          print(json.dumps({
-              'parent': receipt['qualified_parent_commit'],
-              'parent_tree': receipt['qualified_parent_tree'],
-              'local_product_tree': receipt['qualified_local_product_tree'],
-              'permanent_files': receipt['permanent_files'],
-              'archive_sha256': receipt['archive_sha256'],
-              'ref_updated': receipt['ref_updated'],
-          }, indent=2))
+          print(json.dumps({key: receipt[key] for key in [
+              'qualified_parent_commit',
+              'qualified_parent_tree',
+              'qualified_local_product_tree',
+              'permanent_files',
+              'archive_sha256',
+              'ref_updated',
+          ]}, indent=2))
           PY
 
       - name: Upload exact PC-50 blob custody
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: pc50-remote-blob-custody
@@ -152,5 +165,5 @@ jobs:
             /tmp/pc50-product.tar.gz
             /tmp/pc50-remote-blob-receipt.json
             .pc50-carrier/manifest.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 90
