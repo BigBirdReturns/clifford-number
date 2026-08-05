@@ -402,6 +402,97 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     }
   }
 
+
+  const schoolhouseFlMagnoliaSource = readJson(path.join(dir, 'schoolhouse-fl-magnolia-corporate-resolution-source-receipt.json'));
+  const schoolhouseFlMagnoliaIndex = readJson(path.join(dir, 'schoolhouse-fl-magnolia-corporate-resolution-remote-zip-index.json'));
+  const schoolhouseFlMagnoliaRequests = readJsonl(path.join(dir, 'schoolhouse-fl-magnolia-corporate-resolution-range-request-receipts.jsonl'));
+  const schoolhouseFlMagnoliaMembers = readJsonl(path.join(dir, 'schoolhouse-fl-magnolia-corporate-resolution-member-receipts.jsonl'));
+  const schoolhouseFlMagnoliaRecords = readJsonl(path.join(dir, 'schoolhouse-fl-magnolia-corporate-resolution-records.jsonl'));
+  const schoolhouseFlMagnoliaMatrix = readJsonl(path.join(dir, 'schoolhouse-fl-magnolia-corporate-resolution-matrix.jsonl'));
+  const schoolhouseFlMagnoliaAdjudication = readJson(path.join(dir, 'schoolhouse-fl-magnolia-corporate-resolution-adjudication.json'));
+
+  check(manifest.counts.fl_magnolia_remote_zip_members === schoolhouseFlMagnoliaIndex.members.length, 'Magnolia remote ZIP member count drift');
+  check(manifest.counts.fl_magnolia_target_partitions === schoolhouseFlMagnoliaMembers.length, 'Magnolia target partition count drift');
+  check(manifest.counts.fl_magnolia_selected_partition_rows === schoolhouseFlMagnoliaMembers.reduce((sum, row) => sum + row.row_count, 0), 'Magnolia selected-row count drift');
+  check(manifest.counts.fl_magnolia_selected_compressed_bytes === schoolhouseFlMagnoliaMembers.reduce((sum, row) => sum + row.compressed_size, 0), 'Magnolia compressed-byte count drift');
+  check(manifest.counts.fl_magnolia_selected_uncompressed_bytes === schoolhouseFlMagnoliaMembers.reduce((sum, row) => sum + row.uncompressed_size, 0), 'Magnolia uncompressed-byte count drift');
+  check(manifest.counts.fl_magnolia_range_requests === schoolhouseFlMagnoliaRequests.length, 'Magnolia range-request count drift');
+  check(manifest.counts.fl_magnolia_target_documents === schoolhouseFlMagnoliaMatrix.length, 'Magnolia target-document count drift');
+  check(manifest.counts.fl_magnolia_documents_resolved === schoolhouseFlMagnoliaMatrix.filter(row => row.matched_corporate_record_count === 1).length, 'Magnolia resolved-document count drift');
+  check(manifest.counts.fl_magnolia_corporate_records === schoolhouseFlMagnoliaRecords.length, 'Magnolia corporate-record count drift');
+  check(manifest.counts.fl_magnolia_shared_ein_reporting_entities === schoolhouseFlMagnoliaRecords.filter(row => row.fei === '392669585').length, 'Magnolia shared-EIN reporting-entity count drift');
+  check(manifest.counts.fl_magnolia_identifier_grade_irs_candidate_resolution_rows === schoolhouseFlMagnoliaRecords.filter(row => row.irs_candidate_resolution_state === 'identifier_grade_irs_candidate_identity_resolved').length, 'Magnolia identifier-grade IRS resolution count drift');
+  check(manifest.counts.fl_magnolia_public_schoolhouse_admitted_identity_rows === 0, 'Magnolia must admit no public School.House identity');
+
+  check(schoolhouseFlMagnoliaSource.source_receipt_id === 'r-fl-sunbiz-quarterly-corporate-bulk-2026-08-05', 'Magnolia source receipt ID drift');
+  check(schoolhouseFlMagnoliaSource.source_bytes === 1819049954 && schoolhouseFlMagnoliaSource.remote_zip_members === 10, 'Magnolia source denominator drift');
+  check(schoolhouseFlMagnoliaSource.selected_partition_count === 2 && schoolhouseFlMagnoliaSource.selected_partition_rows === 2561478, 'Magnolia selected-partition denominator drift');
+  check(schoolhouseFlMagnoliaSource.target_documents === 2 && schoolhouseFlMagnoliaSource.resolved_target_documents === 2, 'Magnolia target-resolution denominator drift');
+  check(schoolhouseFlMagnoliaSource.range_request_count === 9, 'Magnolia source range-request denominator drift');
+  check(schoolhouseFlMagnoliaSource.full_source_downloaded === false && schoolhouseFlMagnoliaSource.raw_source_retained === false && schoolhouseFlMagnoliaSource.raw_compressed_members_retained === false && schoolhouseFlMagnoliaSource.raw_uncompressed_members_retained === false, 'Magnolia source must retain no raw source');
+  check(schoolhouseFlMagnoliaSource.public_credential_password_retained === false, 'Magnolia source must retain no public password');
+  check(schoolhouseFlMagnoliaSource.street_address_rows_retained === 0 && schoolhouseFlMagnoliaSource.mailing_address_rows_retained === 0 && schoolhouseFlMagnoliaSource.postal_code_rows_retained === 0 && schoolhouseFlMagnoliaSource.registered_agent_name_rows_retained === 0 && schoolhouseFlMagnoliaSource.officer_name_rows_retained === 0 && schoolhouseFlMagnoliaSource.officer_address_rows_retained === 0 && schoolhouseFlMagnoliaSource.contact_detail_rows_retained === 0 && schoolhouseFlMagnoliaSource.private_support_rows === 0, 'Magnolia source privacy drift');
+  check(schoolhouseFlMagnoliaSource.public_schoolhouse_identity_admitted === false && schoolhouseFlMagnoliaSource.negative_existence_claim_created === false && schoolhouseFlMagnoliaSource.outside_human_dependency === false && schoolhouseFlMagnoliaSource.graph_effect === 'none', 'Magnolia source authority drift');
+
+  check(schoolhouseFlMagnoliaIndex.central_directory_sha256 === '5524144b32429b336a2799a164f4fa5278e7825023fff638d65e8f8bdc577330', 'Magnolia central-directory SHA-256 drift');
+  check(schoolhouseFlMagnoliaIndex.declared_partitions === 10 && schoolhouseFlMagnoliaIndex.selected_partition_count === 2, 'Magnolia ZIP partition drift');
+  check(JSON.stringify(schoolhouseFlMagnoliaIndex.selected_partitions) === JSON.stringify(['5','7']), 'Magnolia selected partition digits drift');
+  check(new Set(schoolhouseFlMagnoliaIndex.members.map(row => row.partition_digit)).size === 10, 'Magnolia ZIP member digits must be complete');
+
+  check(schoolhouseFlMagnoliaRequests.length === 9 && unique(schoolhouseFlMagnoliaRequests.map(row => row.request_id)), 'Magnolia range-request receipt drift');
+  const schoolhouseFlMagnoliaHeadRequest = schoolhouseFlMagnoliaRequests.find(row => row.request_id === 'head-source');
+  const schoolhouseFlMagnoliaRangeRequests = schoolhouseFlMagnoliaRequests.filter(row => row.request_id !== 'head-source');
+  check(Boolean(schoolhouseFlMagnoliaHeadRequest) && schoolhouseFlMagnoliaHeadRequest.status === 200 && schoolhouseFlMagnoliaHeadRequest.state === 'captured', 'Magnolia HEAD receipt drift');
+  check(schoolhouseFlMagnoliaRangeRequests.length === 8 && schoolhouseFlMagnoliaRangeRequests.every(row => row.status === 206 && Boolean(row.content_range) && row.state === 'captured'), 'Magnolia range receipts must be eight terminal HTTP 206 captures');
+  check(schoolhouseFlMagnoliaRequests.every(row => row.source_receipt_id === 'r-fl-sunbiz-quarterly-corporate-bulk-2026-08-05' && row.public_credential_password_retained === false && row.outside_human_dependency === false && row.graph_effect === 'none'), 'Magnolia range-request authority drift');
+
+  const expectedMagnoliaMembers = {"5":{"member":"cordata5.txt","compressed_size":181873253,"uncompressed_size":1846812660,"row_count":1280730,"crc32":"39f1a07a","uncompressed_sha256":"b4427a149b3ffa1df69c50173bc1e2dae1c5eeab53a00d7eb8f3fd7b82439b0a","target_document":"L25000047895"},"7":{"member":"cordata7.txt","compressed_size":181947770,"uncompressed_size":1846838616,"row_count":1280748,"crc32":"2bd6f2f3","uncompressed_sha256":"795784a64b6a004afd46e08c346f0ed90222dd15dd63d3f0bd496a71fb5719fa","target_document":"N25000006947"}};
+  check(schoolhouseFlMagnoliaMembers.length === 2 && unique(schoolhouseFlMagnoliaMembers.map(row => row.partition_digit)), 'Magnolia member denominator drift');
+  for (const member of schoolhouseFlMagnoliaMembers) {
+    const expected = expectedMagnoliaMembers[member.partition_digit];
+    check(Boolean(expected), `unexpected Magnolia partition ${member.partition_digit}`);
+    if (expected) {
+      for (const key of ['member','compressed_size','uncompressed_size','row_count','crc32','uncompressed_sha256']) {
+        check(member[key] === expected[key], `Magnolia partition ${member.partition_digit} ${key} drift`);
+      }
+      check(member.target_charter_count === 1 && member.target_charters[0] === expected.target_document && member.target_match_counts[expected.target_document] === 1, `Magnolia partition ${member.partition_digit} target match drift`);
+    }
+    check(member.state === 'complete_partition_scanned' && member.direct_record_count === member.row_count && member.reassembled_record_count === 0 && member.fragment_line_count === 0 && member.physical_line_count === member.row_count, `Magnolia partition ${member.partition_digit} scan-state drift`);
+    check(member.raw_compressed_member_retained === false && member.raw_uncompressed_member_retained === false, `Magnolia partition ${member.partition_digit} retained raw data`);
+    check(member.street_address_rows_retained === 0 && member.mailing_address_rows_retained === 0 && member.postal_code_rows_retained === 0 && member.registered_agent_name_rows_retained === 0 && member.officer_name_rows_retained === 0 && member.officer_address_rows_retained === 0 && member.contact_detail_rows_retained === 0 && member.private_support_rows === 0, `Magnolia partition ${member.partition_digit} privacy drift`);
+    check(member.public_schoolhouse_identity_admitted === false && member.outside_human_dependency === false && member.graph_effect === 'none', `Magnolia partition ${member.partition_digit} authority drift`);
+  }
+
+  check(schoolhouseFlMagnoliaRecords.length === 2 && unique(schoolhouseFlMagnoliaRecords.map(row => row.document_number)), 'Magnolia corporate-record denominator drift');
+  check(schoolhouseFlMagnoliaMatrix.length === 2 && unique(schoolhouseFlMagnoliaMatrix.map(row => row.target_document_number)), 'Magnolia matrix denominator drift');
+  const magnoliaRecordByDocument = new Map(schoolhouseFlMagnoliaRecords.map(row => [row.document_number, row]));
+  const magnoliaLlc = magnoliaRecordByDocument.get('L25000047895');
+  const magnoliaNonprofit = magnoliaRecordByDocument.get('N25000006947');
+  check(Boolean(magnoliaLlc) && Boolean(magnoliaNonprofit), 'Magnolia exact records missing');
+  if (magnoliaLlc) {
+    check(magnoliaLlc.corporation_name_as_recorded === 'THE MAGNOLIA SCHOOLHOUSE LLC' && magnoliaLlc.filing_type === 'FLAL' && magnoliaLlc.file_date === '2025-01-28' && magnoliaLlc.principal_city === 'VERO BEACH' && magnoliaLlc.principal_state === 'FL' && magnoliaLlc.fei === '392669585', 'Magnolia LLC exact fields drift');
+    check(magnoliaLlc.exact_fei_search_association_state === 'bulk_reports_same_fei_requires_cross_surface_conflict_adjudication' && magnoliaLlc.irs_candidate_resolution_state === 'exact_fei_search_association_not_identifier_grade', 'Magnolia LLC conflict classification drift');
+  }
+  if (magnoliaNonprofit) {
+    check(magnoliaNonprofit.corporation_name_as_recorded === 'THE MAGNOLIA SCHOOLHOUSE, INC.' && magnoliaNonprofit.filing_type === 'DOMNP' && magnoliaNonprofit.file_date === '2025-06-11' && magnoliaNonprofit.principal_city === 'VERO BEACH' && magnoliaNonprofit.principal_state === 'FL' && magnoliaNonprofit.fei === '392669585', 'Magnolia nonprofit exact fields drift');
+    check(magnoliaNonprofit.exact_fei_search_association_state === 'bulk_confirms_exact_irs_candidate_ein' && magnoliaNonprofit.irs_candidate_resolution_state === 'identifier_grade_irs_candidate_identity_resolved', 'Magnolia nonprofit IRS classification drift');
+  }
+  for (const record of schoolhouseFlMagnoliaRecords) {
+    check(record.source_receipt_id === 'r-fl-sunbiz-quarterly-corporate-bulk-2026-08-05', `Magnolia record ${record.document_number} source receipt drift`);
+    check(record.shared_ein_conflict_state === 'two_distinct_florida_legal_entities_report_same_ein_no_control_or_tax_inference', `Magnolia record ${record.document_number} shared-EIN state drift`);
+    check(record.street_address_retained === false && record.mailing_address_retained === false && record.postal_code_retained === false && record.registered_agent_name_retained === false && record.officer_names_retained === false && record.officer_addresses_retained === false && record.contact_details_retained === false && record.private_support_rows === 0, `Magnolia record ${record.document_number} privacy drift`);
+    check(!Object.hasOwn(record, 'registered_agent_name_as_recorded') && !Object.hasOwn(record, 'officers'), `Magnolia record ${record.document_number} retained forbidden identity detail`);
+    check(record.public_schoolhouse_brand_join_state === 'not_established' && record.public_schoolhouse_identity_admitted === false && record.outside_human_dependency === false && record.graph_effect === 'none' && record.promotes_to === 'candidate_only', `Magnolia record ${record.document_number} authority drift`);
+  }
+  check(schoolhouseFlMagnoliaMatrix.every(row => row.matched_corporate_record_count === 1 && row.resolution_state === 'exact_corporate_record_resolved' && row.target_denominator === 2 && row.public_schoolhouse_brand_join_state === 'not_established' && row.public_schoolhouse_identity_admitted === false && row.graph_effect === 'none'), 'Magnolia matrix authority drift');
+  check(schoolhouseFlMagnoliaAdjudication.shared_identifier_conflict.state === 'two_distinct_florida_legal_entities_report_same_ein', 'Magnolia shared-EIN conflict adjudication drift');
+  check(schoolhouseFlMagnoliaAdjudication.shared_identifier_conflict.reporting_entity_count === 2, 'Magnolia shared-EIN reporting-entity denominator drift');
+  check(schoolhouseFlMagnoliaAdjudication.public_schoolhouse_identity_decision.state === 'unresolved_no_florida_corporate_identity_admitted' && schoolhouseFlMagnoliaAdjudication.public_schoolhouse_identity_decision.admitted_document_number === null && schoolhouseFlMagnoliaAdjudication.public_schoolhouse_identity_decision.negative_existence_claim_created === false, 'Magnolia public School.House identity decision drift');
+  check(schoolhouseFlMagnoliaAdjudication.public_schoolhouse_identity_admitted === false && schoolhouseFlMagnoliaAdjudication.outside_human_dependency === false && schoolhouseFlMagnoliaAdjudication.graph_effect === 'none', 'Magnolia adjudication authority drift');
+  check(schoolhouse.state_registry_identity_census.florida_magnolia_corporate_resolution.resolved_documents === 2, 'School.House Magnolia resolution projection drift');
+  check(schoolhouse.state_registry_identity_census.florida_magnolia_corporate_resolution.shared_ein_reporting_entities === 2, 'School.House Magnolia shared-EIN projection drift');
+  check(schoolhouse.state_registry_identity_census.florida_magnolia_corporate_resolution.public_schoolhouse_identity_state === 'unresolved_no_florida_corporate_identity_admitted', 'School.House Magnolia identity projection drift');
+
   return errors;
 }
 

@@ -1,6 +1,6 @@
 {
   "as_of": "2026-08-05",
-  "coverage_state": "bounded_current_surfaces_plus_registry_candidate_and_owner_resolution_custody",
+  "coverage_state": "bounded_current_surfaces_plus_registry_owner_and_magnolia_resolution_custody",
   "demo_day_2024": {
     "boundary": "Listing, sponsorship, tagging, and participation are distinct predicates and do not establish investment, procurement, customer status, selection influence, or coordination.",
     "companies": [
@@ -335,9 +335,21 @@
     ],
     "route_file": "schoolhouse-irs-source-routes.jsonl",
     "adjudication_file": "schoolhouse-irs-identity-adjudication.json",
-    "boundary": "The candidate census is complete only for the declared IRS source and phrase matrix. It does not prove that School.House lacks a legal entity, fiscal sponsor, differently named charity, or state registration.",
+    "boundary": "The declared IRS phrase matrix is complete. One IRS candidate EIN is now resolved to two Florida corporate records that report the same identifier, but neither 2025 Vero Beach entity is admitted as the public School.House legal identity, fiscal sponsor, or governing organization.",
     "graph_effect": "none",
-    "promotes_to": "candidate_only"
+    "promotes_to": "candidate_only",
+    "resolved_candidate_eins": 1,
+    "resolved_candidate_entities": 2,
+    "magnolia_candidate_resolution": {
+      "ein": "392669585",
+      "irs_legal_name_as_recorded": "THE MAGNOLIA SCHOOLHOUSE INC",
+      "nonprofit_document_number": "N25000006947",
+      "nonprofit_resolution_state": "identifier_grade_irs_candidate_identity_resolved",
+      "llc_document_number": "L25000047895",
+      "llc_resolution_state": "same_ein_distinct_legal_entity_requires_conflict_adjudication",
+      "public_schoolhouse_brand_join_state": "not_established",
+      "adjudication_file": "schoolhouse-fl-magnolia-corporate-resolution-adjudication.json"
+    }
   },
   "state_registry_identity_census": {
     "as_of": "2026-08-05",
@@ -352,7 +364,7 @@
     "filed_2023_or_later_candidate_rows": 16,
     "unique_owner_charter_numbers": 15,
     "unique_owner_feis": 15,
-    "identity_state": "unresolved_after_exact_florida_owner_corporate_resolution_no_identity_admitted",
+    "identity_state": "unresolved_after_exact_florida_owner_and_magnolia_corporate_resolution_no_public_identity_admitted",
     "admitted_document_number": null,
     "admitted_legal_name": null,
     "receipt_ids": [
@@ -372,7 +384,7 @@
     "member_inventory_file": "schoolhouse-fl-fictitious-member-inventory.jsonl",
     "candidate_file": "schoolhouse-fl-fictitious-candidates.jsonl",
     "adjudication_file": "schoolhouse-fl-fictitious-adjudication.json",
-    "boundary": "The route, fictitious-name, and exact owner-corporate custody create no School.House legal-identity join. The complete fictitious-name phrase pass has no exact public-name candidate, all fifteen available owner charter numbers resolve to distinct owner entities, and no identity is admitted.",
+    "boundary": "The route, fictitious-name, owner-corporate, and Magnolia cross-registry custody create no public School.House legal-identity join. Fifteen phrase-candidate owners resolve to distinct entities. One IRS candidate resolves to a Magnolia nonprofit, while a Magnolia LLC reports the same EIN; both are 2025 Vero Beach entities and neither matches the public 2023 Tampa Bay or Fayetteville identity surface.",
     "graph_effect": "none",
     "promotes_to": "candidate_only",
     "florida_corporate_owner_resolution": {
@@ -408,6 +420,40 @@
       "resolution_matrix_file": "schoolhouse-fl-corporate-owner-resolution-matrix.jsonl",
       "adjudication_file": "schoolhouse-fl-corporate-owner-resolution-adjudication.json",
       "boundary": "All fifteen frozen owner charter numbers resolve exact corporate owners behind seventeen phrase candidates. These owner entities are not admitted as the public School.House legal entity, and the two Tampa phrase candidates have no owner-charter route in this denominator.",
+      "graph_effect": "none",
+      "promotes_to": "candidate_only"
+    },
+    "florida_magnolia_corporate_resolution": {
+      "as_of": "2026-08-05",
+      "source_receipt_id": "r-fl-sunbiz-quarterly-corporate-bulk-2026-08-05",
+      "source_bytes": 1819049954,
+      "remote_zip_members": 10,
+      "selected_partition_digits": [
+        "5",
+        "7"
+      ],
+      "selected_partitions": 2,
+      "selected_partition_rows_scanned": 2561478,
+      "selected_compressed_bytes": 363821023,
+      "selected_uncompressed_bytes": 3693651276,
+      "range_requests": 9,
+      "target_documents": 2,
+      "resolved_documents": 2,
+      "irs_candidate_ein": "392669585",
+      "nonprofit_document_number": "N25000006947",
+      "nonprofit_irs_candidate_resolution_state": "identifier_grade_irs_candidate_identity_resolved",
+      "llc_document_number": "L25000047895",
+      "llc_shared_ein_state": "bulk_reports_same_fei_requires_cross_surface_conflict_adjudication",
+      "shared_ein_reporting_entities": 2,
+      "public_schoolhouse_identity_state": "unresolved_no_florida_corporate_identity_admitted",
+      "source_receipt_file": "schoolhouse-fl-magnolia-corporate-resolution-source-receipt.json",
+      "remote_zip_index_file": "schoolhouse-fl-magnolia-corporate-resolution-remote-zip-index.json",
+      "range_request_receipt_file": "schoolhouse-fl-magnolia-corporate-resolution-range-request-receipts.jsonl",
+      "member_receipt_file": "schoolhouse-fl-magnolia-corporate-resolution-member-receipts.jsonl",
+      "record_file": "schoolhouse-fl-magnolia-corporate-resolution-records.jsonl",
+      "resolution_matrix_file": "schoolhouse-fl-magnolia-corporate-resolution-matrix.jsonl",
+      "adjudication_file": "schoolhouse-fl-magnolia-corporate-resolution-adjudication.json",
+      "boundary": "The Magnolia nonprofit resolves one IRS candidate, and the Magnolia LLC reports the same EIN. Both are 2025 Vero Beach entities and neither is admitted as BVVC's public School.House.",
       "graph_effect": "none",
       "promotes_to": "candidate_only"
     }
