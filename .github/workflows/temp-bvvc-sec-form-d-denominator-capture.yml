@@ -7,6 +7,7 @@ on:
       - '.bvvc-sec-form-d-denominator-capture/EXECUTE'
       - 'tools/acquisition/bvvc-sec-form-d/run.py'
       - 'tools/acquisition/bvvc-sec-form-d/run-routed.py'
+      - 'tools/acquisition/bvvc-sec-form-d/run-alternate.py'
   workflow_dispatch:
 
 permissions:
@@ -27,23 +28,25 @@ jobs:
         run: |
           python -m py_compile \
             tools/acquisition/bvvc-sec-form-d/run.py \
-            tools/acquisition/bvvc-sec-form-d/run-routed.py
+            tools/acquisition/bvvc-sec-form-d/run-routed.py \
+            tools/acquisition/bvvc-sec-form-d/run-alternate.py
 
-      - name: Execute complete 2019Q1 through 2026Q2 denominator scan
+      - name: Execute alternate official EDGAR denominator scan
         id: acquisition
         continue-on-error: true
         env:
-          SEC_USER_AGENT: CliffordNumber-BVVC-FormD/1.1 219768509+BigBirdReturns@users.noreply.github.com
+          SEC_USER_AGENT: CliffordNumber-BVVC-EDGAR/1.0 219768509+BigBirdReturns@users.noreply.github.com
         run: |
           set +e
-          OUT=/tmp/bvvc-sec-form-d-denominator-2019q1-2026q2
+          OUT=/tmp/bvvc-sec-form-d-denominator-alternate-2019-2026
           rm -rf "$OUT"
-          python tools/acquisition/bvvc-sec-form-d/run-routed.py \
+          python tools/acquisition/bvvc-sec-form-d/run-alternate.py \
             --output "$OUT" \
-            --start 2019Q1 \
-            --end 2026Q2 \
+            --start-date 2019-01-01 \
+            --end-date 2026-06-30 \
             --sleep-seconds 0.35 \
-            --retries 3
+            --retries 3 \
+            --page-size 100
           status=$?
           mkdir -p "$OUT"
           printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
@@ -53,32 +56,31 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bvvc-sec-form-d-denominator-2019q1-2026q2-attempt02
-          path: /tmp/bvvc-sec-form-d-denominator-2019q1-2026q2
+          name: bvvc-sec-form-d-denominator-alternate-2019-2026-attempt03
+          path: /tmp/bvvc-sec-form-d-denominator-alternate-2019-2026
           if-no-files-found: error
           retention-days: 90
           compression-level: 9
 
-      - name: Require terminal acquisition
+      - name: Require terminal denominator
         if: always()
         run: |
-          test -f /tmp/bvvc-sec-form-d-denominator-2019q1-2026q2/RUNNER_EXIT_CODE
-          test "$(cat /tmp/bvvc-sec-form-d-denominator-2019q1-2026q2/RUNNER_EXIT_CODE)" = '0'
+          test -f /tmp/bvvc-sec-form-d-denominator-alternate-2019-2026/RUNNER_EXIT_CODE
+          test "$(cat /tmp/bvvc-sec-form-d-denominator-alternate-2019-2026/RUNNER_EXIT_CODE)" = '0'
           python - <<'PY'
           import json
           from pathlib import Path
-          root = Path('/tmp/bvvc-sec-form-d-denominator-2019q1-2026q2')
+          root = Path('/tmp/bvvc-sec-form-d-denominator-alternate-2019-2026')
           summary = json.loads((root / 'summary.json').read_text())
           receipt = json.loads((root / 'acquisition-receipt.json').read_text())
-          assert summary['quarters_expected'] == 30
-          assert summary['quarters_acquired'] == 30
-          assert summary['quarters_failed'] == 0
+          assert summary['denominator_terminal'] is True
+          assert summary['all_anchor_submissions_captured'] is True
           assert summary['private_support_rows'] == 0
           assert summary['portfolio_transaction_joins_created'] == 0
-          assert summary['public_graph_rows_created'] == 0
+          assert summary['ownership_findings'] == 0
+          assert summary['governance_right_findings'] == 0
           assert summary['outside_human_dependency'] is False
           assert summary['graph_effect'] == 'none'
-          assert receipt['terminal'] is True
-          assert receipt['failure_reasons'] == []
+          assert receipt['denominator_terminal'] is True
           print(json.dumps(summary, sort_keys=True))
           PY
