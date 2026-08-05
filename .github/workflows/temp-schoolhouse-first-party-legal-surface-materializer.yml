@@ -53,9 +53,13 @@ jobs:
           SOURCE_BUNDLE="$GITHUB_WORKSPACE/.schoolhouse-first-party-legal-surface-materializer/builder.mjs.gz.b64"
           SOURCE_BUILDER=/tmp/build-schoolhouse-first-party-legal-surface-custody.mjs
 
-          test "$(sha256sum "$SOURCE_BUNDLE" | awk '{print $1}')" = '38d70b08d260f218dd2c922641373d6c7be68c8aef72916d4f5e617bbbd7f60a'
+          BUNDLE_SHA=$(sha256sum "$SOURCE_BUNDLE" | awk '{print $1}')
+          echo "MATERIALIZER_BUNDLE_SHA=$BUNDLE_SHA"
+          test "$BUNDLE_SHA" = '38d70b08d260f218dd2c922641373d6c7be68c8aef72916d4f5e617bbbd7f60a'
           base64 -d "$SOURCE_BUNDLE" | gzip -dc > "$SOURCE_BUILDER"
-          test "$(sha256sum "$SOURCE_BUILDER" | awk '{print $1}')" = '213bd65a768b30ccbadcd7c20fcd857bd5522da2aae06f7833e89c1181ccd549'
+          BUILDER_SHA=$(sha256sum "$SOURCE_BUILDER" | awk '{print $1}')
+          echo "MATERIALIZER_SOURCE_SHA=$BUILDER_SHA"
+          test "$BUILDER_SHA" = '213bd65a768b30ccbadcd7c20fcd857bd5522da2aae06f7833e89c1181ccd549'
           node --check "$SOURCE_BUILDER"
 
           rm -rf /tmp/schoolhouse-first-party-legal-surface-product
