@@ -59,6 +59,9 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   const portfolioDelta = readJsonl(path.join(dir, 'portfolio-delta-candidates.jsonl'));
   const secRouteResults = readJsonl(path.join(dir, 'sec-form-d-route-results.jsonl'));
   const secRouteCustody = readJson(path.join(dir, 'sec-form-d-route-custody.json'));
+  const schoolhouseIrsRoutes = readJsonl(path.join(dir, 'schoolhouse-irs-source-routes.jsonl'));
+  const schoolhouseIrsCandidates = manifest.storage_contract.schoolhouse_irs_candidate_parts.flatMap(file => readJsonl(path.join(dir, file)));
+  const schoolhouseIrsAdjudication = readJson(path.join(dir, 'schoolhouse-irs-identity-adjudication.json'));
 
   check(manifest.schema_version === 'bvvc-defense-capital-manifest@2', 'manifest schema must be v2');
   check(manifest.graph_effect === 'none' && manifest.promotes_to === 'candidate_only', 'manifest must remain graph-inert candidate custody');
@@ -85,7 +88,11 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     acquisition_frontier_tasks: frontier.tasks.length,
     portfolio_delta_candidate_rows: portfolioDelta.length,
     sec_form_d_acquisition_attempts: secRouteCustody.official_route_attempts.length,
-    sec_form_d_route_result_rows: secRouteResults.length
+    sec_form_d_route_result_rows: secRouteResults.length,
+    schoolhouse_irs_source_route_rows: schoolhouseIrsRoutes.length,
+    schoolhouse_irs_candidate_rows: schoolhouseIrsCandidates.length,
+    schoolhouse_irs_unique_candidate_eins: new Set(schoolhouseIrsCandidates.map(row => row.ein).filter(Boolean)).size,
+    schoolhouse_irs_admitted_identity_rows: schoolhouseIrsAdjudication.identity_decision.admitted_ein === null ? 0 : 1
   };
   for (const [key, actual] of Object.entries(countChecks)) {
     check(manifest.counts[key] === actual, `manifest count drift for ${key}: expected ${manifest.counts[key]}, got ${actual}`);
@@ -104,6 +111,11 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   check(portfolioDelta.length === 9, 'portfolio delta must contain 9 public-claim candidates');
   check(secRouteCustody.official_route_attempts.length === 3, 'SEC route custody must contain 3 bounded attempts');
   check(secRouteResults.length === 95, 'SEC route-result denominator must contain 95 rows');
+  check(schoolhouseIrsRoutes.length === 6, 'School.House IRS route denominator must contain 6 rows');
+  check(schoolhouseIrsCandidates.length === 641, 'School.House IRS candidate census must contain 641 rows');
+  check(new Set(schoolhouseIrsCandidates.map(row => row.ein).filter(Boolean)).size === 438, 'School.House IRS unique EIN count must be 438');
+  check(schoolhouseIrsAdjudication.identity_decision.state === 'unresolved_no_registry_candidate_admitted', 'School.House IRS identity must remain unresolved');
+  check(schoolhouseIrsAdjudication.identity_decision.admitted_ein === null, 'School.House IRS pass must admit no EIN');
 
   check(unique(leadership.map(row => row.actor_id)), 'leadership actor IDs must be unique');
   check(unique(portfolio.map(row => row.organization_id)), 'portfolio organization IDs must be unique');
@@ -112,6 +124,7 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   check(unique(rejected.map(row => row.rejection_id)), 'rejection IDs must be unique');
   check(unique(portfolioDelta.map(row => row.candidate_id)), 'portfolio-delta candidate IDs must be unique');
   check(unique(secRouteResults.map(row => row.route_id)), 'SEC route-result IDs must be unique');
+  check(unique(schoolhouseIrsCandidates.map(row => row.candidate_row_id)), 'School.House IRS candidate-row IDs must be unique');
 
   for (const row of leadership) {
     check(row.surface_population === 27, `${row.actor_id} must carry the 27-row denominator`);
@@ -142,6 +155,25 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   check(secRouteCustody.counts.source_rows_acquired === 0, 'SEC route attempts must not invent source rows');
   check(secRouteCustody.interpretation.source_failure_is_not_absence === true, 'SEC route custody must preserve source-failure boundary');
   check(secRouteCustody.graph_effect === 'none' && secRouteCustody.promotes_to === 'candidate_only', 'SEC route custody must remain graph-inert');
+  const allowedSchoolhouseIrsCandidateKeys = new Set(["candidate_row_id","identity_candidate_key","source_id","receipt_id","dataset","source_member","source_row_number","ein","legal_name_as_recorded","normalized_name","matched_name_as_recorded","matched_name_field","match_basis","city","state","country","public_location_state_match","subsection","ruling_date","organization_status","deductibility_status","tax_period","filing_type","filing_date","revocation_date","reinstatement_date","cross_dataset_occurrence_count","identity_state","street_address_retained","contact_details_retained","graph_effect","promotes_to"]);
+  for (const route of schoolhouseIrsRoutes) {
+    check(route.state === 'captured_and_scanned', `${route.source_id} must be terminal`);
+    check(route.street_address_retained === false && route.contact_details_retained === false, `${route.source_id} must retain no contact data`);
+    check(route.graph_effect === 'none' && route.promotes_to === 'candidate_only', `${route.source_id} must remain graph-inert`);
+  }
+  for (const row of schoolhouseIrsCandidates) {
+    check(Object.keys(row).every(key => allowedSchoolhouseIrsCandidateKeys.has(key)), `${row.candidate_row_id} contains an unapproved field`);
+    check(row.street_address_retained === false && row.contact_details_retained === false, `${row.candidate_row_id} must retain no contact data`);
+    check(row.identity_state === 'registry_candidate_not_admitted', `${row.candidate_row_id} must not be admitted`);
+    check(row.graph_effect === 'none' && row.promotes_to === 'candidate_only', `${row.candidate_row_id} must remain graph-inert`);
+  }
+  check(schoolhouseIrsAdjudication.route_denominator.source_rows_scanned === 4428541, 'School.House IRS scanned-row count must remain 4,428,541');
+  check(schoolhouseIrsAdjudication.exact_tests.schoolhouse_1776_name_rows === 0, 'School.House IRS pass must preserve zero 1776-name matches');
+  check(schoolhouseIrsAdjudication.exact_tests.exact_fayetteville_rows === 0, 'School.House IRS pass must preserve zero Fayetteville matches');
+  check(schoolhouseIrsAdjudication.exact_tests.exact_tampa_rows.length === 1, 'School.House IRS pass must preserve one distinct historical Tampa candidate');
+  check(schoolhouseIrsAdjudication.post_2023_fl_nc_bmf_candidates.length === 5, 'School.House IRS pass must preserve five distinct recent FL/NC BMF candidates');
+  check(schoolhouseIrsAdjudication.privacy.street_address_rows_retained === 0 && schoolhouseIrsAdjudication.privacy.contact_detail_rows_retained === 0 && schoolhouseIrsAdjudication.privacy.officer_name_rows_retained === 0, 'School.House IRS adjudication must retain no private contact fields');
+
   for (const row of secRouteResults) {
     check(row.state === 'source_unavailable_after_search', `${row.route_id} must preserve the source-unavailable state`);
     check(row.http_status === 403, `${row.route_id} must preserve HTTP 403`);
@@ -190,7 +222,7 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   const knownReceiptIds = new Set(sourceInventory.map(row => row.receipt_id));
   const referencedReceiptIds = collectReceiptIds([
     leadership, leadershipHistory, portfolio, schoolhouse, vehicles,
-    transactions, claims, coverage, portfolioDelta
+    transactions, claims, coverage, portfolioDelta, schoolhouseIrsCandidates, schoolhouseIrsAdjudication
   ]);
   for (const receiptId of referencedReceiptIds) {
     check(knownReceiptIds.has(receiptId), `referenced receipt is missing from source inventory: ${receiptId}`);

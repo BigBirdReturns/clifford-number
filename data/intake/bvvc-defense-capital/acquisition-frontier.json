@@ -72,7 +72,17 @@
       "selection_unit": "the exact School.House legal entity and every named governing officer",
       "source_family": "IRS TEOS, state charity registries, corporate registries, filed reports",
       "stopping_rule": "Stop when legal identity is registry-grade or every plausible entity is explicitly rejected.",
-      "task_id": "bvvc-frontier-schoolhouse-legal-governance"
+      "task_id": "bvvc-frontier-schoolhouse-legal-governance",
+      "prior_irs_candidate_census": {
+        "source_routes": 6,
+        "source_rows_scanned": 4428541,
+        "candidate_rows": 641,
+        "unique_candidate_eins": 438,
+        "admitted_identities": 0,
+        "state": "unresolved_no_registry_candidate_admitted",
+        "adjudication_file": "schoolhouse-irs-identity-adjudication.json"
+      },
+      "next_transition": "Search the bounded Florida and North Carolina corporate and charity registries, then test any exact legal-entity candidates against IRS EIN, formation date, officers, and the public School.House brand without using private contact data."
     },
     {
       "forbidden_inference": "Program participation or sponsor presence does not establish investment, customer, procurement, or influence.",
