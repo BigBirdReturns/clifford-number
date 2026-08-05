@@ -159,14 +159,21 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           xargs -d '\n' git add -- < "$RECEIPT_DIR/expected-paths.txt"
-          git commit -m 'Close RD-02 Wave-03 portfolio-lifecycle matrix'
+          QUALIFIED_FULL_TREE=$(git write-tree)
+          git reset
+          tail -n +2 "$RECEIPT_DIR/expected-paths.txt" > "$RECEIPT_DIR/nonworkflow-paths.txt"
+          test "$(wc -l < "$RECEIPT_DIR/nonworkflow-paths.txt" | tr -d ' ')" -eq 10
+          xargs -d '\n' git add -- < "$RECEIPT_DIR/nonworkflow-paths.txt"
+          git commit -m 'Materialize RD-02 terminal matrix without workflow transport'
           PRODUCT_HEAD=$(git rev-parse HEAD)
           PRODUCT_TREE=$(git rev-parse HEAD^{tree})
           git diff --name-status "$LIVE_MAIN" HEAD > "$RECEIPT_DIR/product-name-status.txt"
-          test "$(wc -l < "$RECEIPT_DIR/product-name-status.txt" | tr -d ' ')" -eq 11
-          test "$(awk '$1 != "A" {n++} END {print n+0}' "$RECEIPT_DIR/product-name-status.txt")" -eq 0
+          test "$(wc -l < "$RECEIPT_DIR/product-name-status.txt" | tr -d ' ')" -eq 10
+          test "$(awk '$1 != \"A\" {n++} END {print n+0}' "$RECEIPT_DIR/product-name-status.txt")" -eq 0
           cut -f2- "$RECEIPT_DIR/product-name-status.txt" | sort > "$RECEIPT_DIR/product-paths.txt"
-          cmp "$RECEIPT_DIR/expected-paths.txt" "$RECEIPT_DIR/product-paths.txt"
+          cmp "$RECEIPT_DIR/nonworkflow-paths.txt" "$RECEIPT_DIR/product-paths.txt"
+          test -f .github/workflows/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-terminal.yml
+          test -z "$(git ls-files .github/workflows/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-terminal.yml)"
 
           STAGE=publish-under-leases
           git fetch origin main "$TARGET_BRANCH"
@@ -180,8 +187,10 @@ jobs:
             echo "live_main=$LIVE_MAIN"
             echo "product_head=$PRODUCT_HEAD"
             echo "product_tree=$PRODUCT_TREE"
+            echo "qualified_full_tree=$QUALIFIED_FULL_TREE"
             echo "target_branch=$TARGET_BRANCH"
             echo 'permanent_paths=11'
+            echo 'published_nonworkflow_paths=10'
             echo 'terminal_cells=180'
             echo 'terminal_rows=18'
             echo 'terminal_state=bounded_source_unavailable'
