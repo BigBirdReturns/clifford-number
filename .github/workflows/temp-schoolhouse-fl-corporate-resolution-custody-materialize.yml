@@ -1,0 +1,121 @@
+name: TEMP materialize School.House Florida corporate owner custody
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-fl-corporate-resolution-custody-materialize.yml'
+      - '.schoolhouse-fl-corporate-resolution-custody/EXECUTE'
+      - 'tools/build-schoolhouse-fl-corporate-resolution-custody.mjs'
+      - 'tools/repair-schoolhouse-fl-corporate-resolution-builder.mjs'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download terminal Florida corporate owner-resolution artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          rm -rf /tmp/schoolhouse-fl-corporate-owner-resolution-artifact
+          mkdir -p /tmp/schoolhouse-fl-corporate-owner-resolution-artifact
+          gh run download 30976259865 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name schoolhouse-fl-corporate-owner-resolution \
+            --dir /tmp/schoolhouse-fl-corporate-owner-resolution-artifact
+          test -f /tmp/schoolhouse-fl-corporate-owner-resolution-artifact/summary.json
+          test -f /tmp/schoolhouse-fl-corporate-owner-resolution-artifact/source-receipt.json
+          test -f /tmp/schoolhouse-fl-corporate-owner-resolution-artifact/remote-zip-index.json
+          test -f /tmp/schoolhouse-fl-corporate-owner-resolution-artifact/range-request-receipts.jsonl
+          test -f /tmp/schoolhouse-fl-corporate-owner-resolution-artifact/member-receipts.jsonl
+          test -f /tmp/schoolhouse-fl-corporate-owner-resolution-artifact/owner-charter-targets.jsonl
+          test -f /tmp/schoolhouse-fl-corporate-owner-resolution-artifact/corporate-records.jsonl
+          test -f /tmp/schoolhouse-fl-corporate-owner-resolution-artifact/resolution-matrix.jsonl
+
+      - name: Build, qualify, and publish clean current-main product
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          TARGET='agent/schoolhouse-fl-corporate-resolution-custody-product-v1'
+          MAIN_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+          SOURCE_BUILDER="$GITHUB_WORKSPACE/tools/build-schoolhouse-fl-corporate-resolution-custody.mjs"
+          BUILDER_REPAIR="$GITHUB_WORKSPACE/tools/repair-schoolhouse-fl-corporate-resolution-builder.mjs"
+          test -f "$SOURCE_BUILDER"
+          test -f "$BUILDER_REPAIR"
+
+          rm -rf /tmp/schoolhouse-fl-corporate-resolution-custody-product
+          git fetch --no-tags origin "$MAIN_SHA"
+          git worktree add --detach /tmp/schoolhouse-fl-corporate-resolution-custody-product "$MAIN_SHA"
+          cd /tmp/schoolhouse-fl-corporate-resolution-custody-product
+          mkdir -p tools
+          cp "$SOURCE_BUILDER" tools/build-schoolhouse-fl-corporate-resolution-custody.mjs
+          node "$BUILDER_REPAIR" tools/build-schoolhouse-fl-corporate-resolution-custody.mjs
+          node --check tools/build-schoolhouse-fl-corporate-resolution-custody.mjs
+
+          node tools/build-schoolhouse-fl-corporate-resolution-custody.mjs \
+            /tmp/schoolhouse-fl-corporate-owner-resolution-artifact
+          node --check tools/validate-bvvc-defense-capital.mjs
+          node tools/validate-bvvc-defense-capital.mjs
+          node test/person-routers.test.js
+          npm run release:check
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            data/intake/bvvc-defense-capital/README.md \
+            data/intake/bvvc-defense-capital/acquisition-frontier.json \
+            data/intake/bvvc-defense-capital/coverage-matrix.json \
+            data/intake/bvvc-defense-capital/manifest.json \
+            data/intake/bvvc-defense-capital/schoolhouse.json \
+            data/intake/bvvc-defense-capital/source-inventory-08.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-fl-corporate-owner-resolution-source-receipt.json \
+            data/intake/bvvc-defense-capital/schoolhouse-fl-corporate-owner-resolution-remote-zip-index.json \
+            data/intake/bvvc-defense-capital/schoolhouse-fl-corporate-owner-resolution-member-receipts.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-fl-corporate-owner-resolution-records.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-fl-corporate-owner-resolution-matrix.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-fl-corporate-owner-resolution-adjudication.json \
+            tools/build-schoolhouse-fl-corporate-resolution-custody.mjs \
+            tools/validate-bvvc-defense-capital.mjs
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = '14'
+          git commit -m 'Add School.House Florida corporate owner-resolution custody'
+          PRODUCT_SHA=$(git rev-parse HEAD)
+
+          START=$(git ls-remote origin "refs/heads/$TARGET" | awk '{print $1}')
+          if [[ -n "$START" ]]; then
+            git push origin "HEAD:refs/heads/$TARGET" --force-with-lease="refs/heads/$TARGET:$START"
+          else
+            git push origin "HEAD:refs/heads/$TARGET"
+          fi
+
+          mkdir -p /tmp/schoolhouse-fl-corporate-resolution-custody-receipt
+          jq -n \
+            --arg base_main "$MAIN_SHA" \
+            --arg product_sha "$PRODUCT_SHA" \
+            --arg target "$TARGET" \
+            '{schema_version:"schoolhouse-fl-corporate-resolution-custody-materialization-receipt@1",base_main:$base_main,product_sha:$product_sha,target_branch:$target,changed_paths:14,source_inventory_rows:104,remote_zip_members:10,target_partitions:7,selected_partition_rows:8965926,selected_compressed_bytes:1273256313,selected_uncompressed_bytes:12928865292,range_requests:24,target_charters:15,resolved_target_charters:15,unresolved_target_charters:0,corporate_records:15,owner_linked_fictitious_candidates:17,admitted_identities:0,private_support_rows:0,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+            > /tmp/schoolhouse-fl-corporate-resolution-custody-receipt/status.json
+          sha256sum /tmp/schoolhouse-fl-corporate-resolution-custody-receipt/status.json \
+            > /tmp/schoolhouse-fl-corporate-resolution-custody-receipt/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-fl-corporate-resolution-custody-materialization-receipt
+          path: /tmp/schoolhouse-fl-corporate-resolution-custody-receipt
+          if-no-files-found: error
+          retention-days: 90
