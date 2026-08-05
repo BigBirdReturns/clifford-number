@@ -36,8 +36,10 @@ jobs:
 
           expected = '914e5e46f29fd07612e8c9089bec59a4d37bc34d9d1f4159638a2b417cc94774'
           alphabet = b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+          whitespace = set(b' \t\r\n')
           paths = [Path(f'.pc49-carrier-v3/product.part0{i}') for i in range(4)]
-          parts = [b''.join(path.read_bytes().split()) for path in paths]
+          raw_parts = [path.read_bytes() for path in paths]
+          parts = [bytes(byte for byte in raw if byte not in whitespace) for raw in raw_parts]
 
           first = b''.join(parts[:3])
           second = parts[3] + b'='
@@ -52,14 +54,27 @@ jobs:
           if base64.b64encode(second_decoded) != second:
               raise SystemExit('second encoded segment is not canonical after terminal padding recovery')
 
-          insertion_points = {
-              'part00_part01_seam': len(parts[0]),
-              'part01_part02_seam': len(parts[0]) + len(parts[1]),
-              'before_first_segment_padding': len(first) - 1,
-          }
+          boundary_offsets = {0, len(first) - 1}
+          normalized_offset = 0
+          for part_index, raw in enumerate(raw_parts[:3]):
+              for byte in raw:
+                  if byte in whitespace:
+                      if byte == 10:
+                          boundary_offsets.add(normalized_offset)
+                  else:
+                      normalized_offset += 1
+              boundary_offsets.add(normalized_offset)
+              print(
+                  f'part={part_index} normalized_end={normalized_offset} '
+                  f'raw_bytes={len(raw)} raw_lines={raw.count(bytes([10]))}'
+              )
+          if normalized_offset != len(first):
+              raise SystemExit('line-boundary census did not cover the normalized first segment')
+
+          boundary_offsets = sorted(offset for offset in boundary_offsets if 0 <= offset <= len(first) - 1)
           matches = []
           checked = 0
-          for label, offset in insertion_points.items():
+          for offset in boundary_offsets:
               for restored_byte in alphabet:
                   candidate = first[:offset] + bytes([restored_byte]) + first[offset:]
                   checked += 1
@@ -72,19 +87,18 @@ jobs:
                   decoded = first_decoded + second_decoded
                   digest = hashlib.sha256(decoded).hexdigest()
                   if digest == expected:
-                      matches.append((label, offset, restored_byte, candidate, decoded))
+                      matches.append((offset, restored_byte, candidate, decoded))
 
           print(
-              f'first_normalized_bytes={len(first)} first_mod4={len(first) % 4} '
-              f'second_normalized_bytes={len(parts[3])} recovered_second_bytes={len(second)} '
-              f'candidate_count={checked} exact_match_count={len(matches)}'
+              f'line_boundary_count={len(boundary_offsets)} candidate_count={checked} '
+              f'exact_match_count={len(matches)}'
           )
           if len(matches) != 1:
               raise SystemExit(f'exact archive reconstruction count={len(matches)}')
 
-          label, offset, restored_byte, first_candidate, decoded = matches[0]
+          offset, restored_byte, first_candidate, decoded = matches[0]
           print(
-              f'selected_insertion={label} selected_offset={offset} '
+              f'selected_normalized_offset={offset} '
               f'restored_base64_byte={bytes([restored_byte])!r} '
               f'first_candidate_sha256={hashlib.sha256(first_candidate).hexdigest()} '
               f'second_candidate_sha256={hashlib.sha256(second).hexdigest()} '
