@@ -9,8 +9,8 @@ if (!process.argv[2] || !fs.existsSync(target)) {
 let source = fs.readFileSync(target, 'utf8');
 const numericMatches = source.match(/4394541/g) || [];
 const formattedMatches = source.match(/4,394,541/g) || [];
-if (numericMatches.length !== 5) {
-  throw new Error(`expected 5 numeric scanned-row fixtures, found ${numericMatches.length}`);
+if (numericMatches.length !== 6) {
+  throw new Error(`expected 6 numeric scanned-row fixtures, found ${numericMatches.length}`);
 }
 if (formattedMatches.length !== 2) {
   throw new Error(`expected 2 formatted scanned-row fixtures, found ${formattedMatches.length}`);
