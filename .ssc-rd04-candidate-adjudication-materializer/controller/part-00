@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+export GIT_AUTHOR_NAME='github-actions[bot]'
+export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+
+readonly FLOOR=7f960c30b6c58c70e3a996d4239e363e50d848ef
+readonly TARGET_BRANCH=agent/ssc-rd-wave03-rd04-candidate-adjudication-v1
+readonly TARGET_LEASE=fe814b4592279e5b24283e0eb704d8ac4b8ac765
+readonly SOURCE_ARTIFACT_ID=8918943097
+readonly SOURCE_ZIP_SHA=1852f324ec72c6f84642a5185579318cf7428ca28ee55f83caac1979b8b5ff63
+readonly CARRIER=.ssc-rd04-candidate-adjudication-materializer
+readonly WORKFLOW=.github/workflows/status-sovereignty-rd-wave03-rd04-candidate-adjudication.yml
+readonly RECEIPT=/tmp/ssc-rd04-candidate-adjudication-materializer-receipt
+readonly PACKAGE=/tmp/ssc-rd04-candidate-adjudication-static
+readonly SOURCE=/tmp/ssc-rd04-source-census-artifact
+readonly SOURCE_ZIP=/tmp/ssc-rd04-source-census-artifact.zip
+readonly WORK=/tmp/ssc-rd04-candidate-adjudication-worktree
+readonly STATIC_B64=/tmp/ssc-rd04-candidate-static.tar.xz.b64
+readonly STATIC_ARCHIVE=/tmp/ssc-rd04-candidate-static.tar.xz
+readonly GENERATOR=/tmp/ssc-rd04-generate-from-artifact.py
+
+rm -rf "$RECEIPT" "$PACKAGE" "$SOURCE" "$SOURCE_ZIP" "$WORK" "$STATIC_B64" "$STATIC_ARCHIVE" "$GENERATOR"
+mkdir -p "$RECEIPT" "$PACKAGE" "$SOURCE"
+
+# Exact transport custody: every small shard, then the reconstructed static kernel and generator.
+test "$(wc -c < "$CARRIER/static/part-00" | tr -d ' ')" = 6000
+test "$(sha256sum "$CARRIER/static/part-00" | awk '{print $1}')" = ede1e924f8ccc8c545bff9f379a0489963ca2aa184dd4eb7d852117830eaeb78
+test "$(wc -c < "$CARRIER/static/part-01" | tr -d ' ')" = 6000
+test "$(sha256sum "$CARRIER/static/part-01" | awk '{print $1}')" = 2c359f8f5dbc098038b13c1ca1ef445edb68c2645a7be0308476be162a63f5ab
+test "$(wc -c < "$CARRIER/static/part-02" | tr -d ' ')" = 952
+test "$(sha256sum "$CARRIER/static/part-02" | awk '{print $1}')" = dbadbc6b7fcacb469a5e194f77036107c6a902dafafcd684f5f35f9b355b3841
+cat "$CARRIER"/static/part-* > "$STATIC_B64"
+test "$(wc -c < "$STATIC_B64" | tr -d ' ')" = 12952
+test "$(sha256sum "$STATIC_B64" | awk '{print $1}')" = 5ab53112e2e7d94457ccefe77cd3cf49c2026e2ff6b001794c045bdb26087af8
+base64 --decode "$STATIC_B64" > "$STATIC_ARCHIVE"
+test "$(wc -c < "$STATIC_ARCHIVE" | tr -d ' ')" = 9712
+test "$(sha256sum "$STATIC_ARCHIVE" | awk '{print $1}')" = 6bf134da69c8183634e855371196920621c274ba580e375394e0230020fc86d2
+
+cat > "$RECEIPT/static-paths.txt" <<'EOF'
+docs/milestones/ssc-rd-wave03-rd04-candidate-adjudication.md
+schemas/status-sovereignty-rd-wave03-rd04-candidate-adjudication.schema.json
+test/status-sovereignty-rd-wave03-rd04-candidate-adjudication.test.js
+tools/acquisition/status-sovereignty-rd-wave03-rd04/run-official-redirect-replay.py
+tools/build-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs
+tools/validate-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs
+EOF
+tar -tJf "$STATIC_ARCHIVE" > "$RECEIPT/static-archive-paths.txt"
+cmp "$RECEIPT/static-paths.txt" "$RECEIPT/static-archive-paths.txt"
+tar -xJf "$STATIC_ARCHIVE" -C "$PACKAGE"
+test "$(find "$PACKAGE" -type f | wc -l | tr -d ' ')" = 6
+test "$(find "$PACKAGE" -type l | wc -l | tr -d ' ')" = 0
+
+cat "$CARRIER"/generator/part-* > "$GENERATOR"
+test "$(wc -c < "$GENERATOR" | tr -d ' ')" = 9005
+test "$(sha256sum "$GENERATOR" | awk '{print $1}')" = 7de56c1f11c192297c847f0edb7dcee84b0885333a8cb7d1936161b7321f21f4
+python -m py_compile "$GENERATOR"
+test "$(sha256sum "$CARRIER/product-paths.txt" | awk '{print $1}')" = 790c1b54eaf3c7a6dd32276c22cf85ba1d2dfd3497f1739500e2b95a7d92cde3
+test "$(sha256sum "$CARRIER/product-file-manifest.json" | awk '{print $1}')" = 2bcd05478cb1ff307bf27199cb5a18a004b87df38e3624e544bc7b5a201ddc8d
+cp "$CARRIER/product-paths.txt" "$RECEIPT/product-paths.txt"
+cp "$CARRIER/product-file-manifest.json" "$RECEIPT/product-file-manifest.json"
+
+# Recover the retained native source-census artifact; no research request is made here.
+curl --fail-with-body --location --retry 3 \
+  -H 'Accept: application/vnd.github+json' \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H 'X-GitHub-Api-Version: 2022-11-28' \
+  -o "$SOURCE_ZIP" \
+  "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${SOURCE_ARTIFACT_ID}/zip"
+test "$(wc -c < "$SOURCE_ZIP" | tr -d ' ')" = 2311000
+test "$(sha256sum "$SOURCE_ZIP" | awk '{print $1}')" = "$SOURCE_ZIP_SHA"
+unzip -q "$SOURCE_ZIP" -d "$SOURCE"
+
+# Exact leases and disjoint-current-main proof.
+git fetch --no-tags origin main "$TARGET_BRANCH"
+LIVE_MAIN=$(git rev-parse origin/main)
+LIVE_TARGET=$(git rev-parse "origin/$TARGET_BRANCH")
+test "$LIVE_TARGET" = "$TARGET_LEASE"
+git merge-base --is-ancestor "$FLOOR" "$LIVE_MAIN"
+{
+  cat "$CARRIER/product-paths.txt"
+  printf '%s\n' "$WORKFLOW"
+} | sort > "$RECEIPT/permanent-paths.txt"
+git diff --name-only "$FLOOR..$LIVE_MAIN" | sort > "$RECEIPT/main-increment-paths.txt"
+comm -12 "$RECEIPT/permanent-paths.txt" "$RECEIPT/main-increment-paths.txt" > "$RECEIPT/overlap.txt"
+test ! -s "$RECEIPT/overlap.txt"
+
+# Rebuild the complete fifteen-file non-workflow product from retained custody.
+git worktree add --detach "$WORK" "$LIVE_MAIN"
+cp -a "$PACKAGE"/. "$WORK"/
+python "$GENERATOR" "$SOURCE" "$WORK"
+node "$WORK/tools/build-status-sovereignty-rd-wave03-rd04-candidate-adjudication.mjs" --write
+
+python - "$WORK" "$CARRIER/product-file-manifest.json" "$CARRIER/product-paths.txt" <<'PY'
+import hashlib, json, pathlib, sys
+root=pathlib.Path(sys.argv[1])
+manifest=json.loads(pathlib.Path(sys.argv[2]).read_text())
+paths=pathlib.Path(sys.argv[3]).read_text().splitlines()
+assert manifest['file_count']==15==len(paths)
+assert [row['path'] for row in manifest['files']]==paths
+for row in manifest['files']:
+    data=(root/row['path']).read_bytes()
+    assert len(data)==row['bytes'], (row['path'],len(data),row['bytes'])
+    assert hashlib.sha256(data).hexdigest()==row['sha256'], row['path']
+print('
