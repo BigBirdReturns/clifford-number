@@ -1,0 +1,91 @@
+name: Status sovereignty RD-05 Wave-03 member participation intake
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd05-member-participation-intake.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd05-member-participation/**'
+      - 'data/project/ssc-residual-wave03/seeds/RD-05-C02.json'
+      - 'docs/milestones/ssc-rd-wave03-rd05-member-participation-intake.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd05-member-participation-intake.schema.json'
+      - 'test/status-sovereignty-rd-wave03-rd05-member-participation-intake.test.js'
+      - 'tools/acquisition/status-sovereignty-rd-wave03-rd05/run-source-census.py'
+      - 'tools/build-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd05-member-participation-intake.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd05-member-participation/**'
+      - 'data/project/ssc-residual-wave03/seeds/RD-05-C02.json'
+      - 'docs/milestones/ssc-rd-wave03-rd05-member-participation-intake.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd05-member-participation-intake.schema.json'
+      - 'test/status-sovereignty-rd-wave03-rd05-member-participation-intake.test.js'
+      - 'tools/acquisition/status-sovereignty-rd-wave03-rd05/run-source-census.py'
+      - 'tools/build-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: status-sovereignty-rd05-wave03-intake-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Validate deterministic intake product
+        run: |
+          set -Eeuo pipefail
+          node --check tools/build-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd05/run-source-census.py
+          node tools/build-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs
+          node test/status-sovereignty-rd-wave03-rd05-member-participation-intake.test.js
+      - name: Prove zero-request executable plan
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/rd05-wave03-intake-dry-run"
+          python tools/acquisition/status-sovereignty-rd-wave03-rd05/run-source-census.py --dry-run --output "$OUT"
+          node - "$OUT" <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const out = process.argv[2];
+          const plan = JSON.parse(fs.readFileSync(path.join(out, 'plan.json'), 'utf8'));
+          const receipt = JSON.parse(fs.readFileSync(path.join(out, 'execution-receipt.json'), 'utf8'));
+          if (plan.fixed_routes !== 161 || plan.exact_official_routes !== 25 || plan.candidate_census_routes !== 136) throw new Error('dry-run denominator changed');
+          if (receipt.request_attempts !== 0 || receipt.terminal_route_receipts !== 0 || receipt.status !== 'protocol_validated_acquisition_not_executed') throw new Error('dry run executed requests');
+          NODE
+      - name: Enforce repository gates
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run validate:release
+      - name: Clean deterministic replay
+        run: |
+          set -Eeuo pipefail
+          BEFORE=$(sha256sum \
+            data/intake/status-sovereignty-rd-wave03-rd05-member-participation/source-census-protocol.json \
+            data/intake/status-sovereignty-rd-wave03-rd05-member-participation/intake-product-manifest.json \
+            schemas/status-sovereignty-rd-wave03-rd05-member-participation-intake.schema.json)
+          node tools/build-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs --write
+          AFTER=$(sha256sum \
+            data/intake/status-sovereignty-rd-wave03-rd05-member-participation/source-census-protocol.json \
+            data/intake/status-sovereignty-rd-wave03-rd05-member-participation/intake-product-manifest.json \
+            schemas/status-sovereignty-rd-wave03-rd05-member-participation-intake.schema.json)
+          test "$BEFORE" = "$AFTER"
+          git diff --exit-code
