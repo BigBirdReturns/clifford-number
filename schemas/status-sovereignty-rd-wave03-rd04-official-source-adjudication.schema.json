@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clifford-number.local/schemas/status-sovereignty-rd-wave03-rd04-official-source-adjudication.schema.json",
+  "title": "RD-04 Wave 03 official source adjudication index",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "wave_id",
+    "lane_id",
+    "class_id",
+    "issue",
+    "replay_execution_receipt_path",
+    "replay_artifact_id",
+    "replay_artifact_zip_sha256",
+    "source_classes",
+    "counts",
+    "derived_products",
+    "current_result",
+    "next_bounded_operation"
+  ],
+  "properties": {
+    "schema_version": { "const": "ssc-rd04-wave03-official-source-adjudication-index@1" },
+    "wave_id": { "const": "SSC-RD-W03" },
+    "lane_id": { "const": "RD-04" },
+    "class_id": { "const": "RD-04-C02" },
+    "issue": { "const": 1017 },
+    "replay_execution_receipt_path": { "const": "replay-execution-receipt.json" },
+    "replay_artifact_id": { "const": 8920892364 },
+    "replay_artifact_zip_sha256": {
+      "const": "c0c7ffe98f37547580948e6b394eb518ce2e6e98b2c2de3fb1ee80c5656c31f8"
+    },
+    "source_classes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "official_federal_context_sources",
+        "official_federal_state_directory_locator_sources",
+        "state_implementation_sources_admitted"
+      ],
+      "properties": {
+        "official_federal_context_sources": { "const": 4 },
+        "official_federal_state_directory_locator_sources": { "const": 50 },
+        "state_implementation_sources_admitted": { "const": 0 }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "replay_routes_adjudicated",
+        "scoped_source_decisions",
+        "scoped_sources_admitted",
+        "state_locator_sources",
+        "federal_context_sources",
+        "state_implementation_sources_admitted",
+        "materialized_field_cells",
+        "terminal_field_cells",
+        "still_open_field_cells",
+        "terminal_units",
+        "next_fixed_routes",
+        "result_spawned_requests"
+      ],
+      "properties": {
+        "replay_routes_adjudicated": { "const": 54 },
+        "scoped_source_decisions": { "const": 54 },
+        "scoped_sources_admitted": { "const": 54 },
+        "state_locator_sources": { "const": 50 },
+        "federal_context_sources": { "const": 4 },
+        "state_implementation_sources_admitted": { "const": 0 },
+        "materialized_field_cells": { "const": 450 },
+        "terminal_field_cells": { "const": 100 },
+        "still_open_field_cells": { "const": 350 },
+        "terminal_units": { "const": 0 },
+        "next_fixed_routes": { "const": 54 },
+        "result_spawned_requests": { "const": 0 }
+      }
+    },
+    "derived_products": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "partial_field_matrix_path",
+        "partial_field_matrix_sha256",
+        "next_source_protocol_path",
+        "next_source_protocol_sha256"
+      ],
+      "properties": {
+        "partial_field_matrix_path": { "const": "partial-field-matrix.json" },
+        "partial_field_matrix_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "next_source_protocol_path": { "const": "next-source-protocol.json" },
+        "next_source_protocol_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "current_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "replay_source_adjudication_complete",
+        "canonical_state_identity_terminal",
+        "source_identity_and_custody_terminal",
+        "state_implementation_universe_complete",
+        "field_matrix_terminal",
+        "class_state",
+        "class_closed",
+        "outside_human_dependency",
+        "publication_effect",
+        "adoption_effect",
+        "graph_effect"
+      ],
+      "properties": {
+        "replay_source_adjudication_complete": { "const": true },
+        "canonical_state_identity_terminal": { "const": "50/50" },
+        "source_identity_and_custody_terminal": { "const": "50/50" },
+        "state_implementation_universe_complete": { "const": false },
+        "field_matrix_terminal": { "const": false },
+        "class_state": { "const": "still_open" },
+        "class_closed": { "const": false },
+        "outside_human_dependency": { "const": false },
+        "publication_effect": { "const": "none" },
+        "adoption_effect": { "const": "none" },
+        "graph_effect": { "const": "none" }
+      }
+    },
+    "next_bounded_operation": { "type": "string", "minLength": 1 }
+  }
+}
