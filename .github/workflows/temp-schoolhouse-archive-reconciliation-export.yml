@@ -1,0 +1,69 @@
+name: TEMP export School.House archive reconciliation main inputs
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Export exact current-main School.House inputs
+        run: |
+          set -Eeuo pipefail
+          EXPECTED_MAIN='88e9ff60e581ec386ad4673bc709ec0350ebe163'
+          git fetch --no-tags origin "$EXPECTED_MAIN"
+          test "$(git rev-parse "$EXPECTED_MAIN^{commit}")" = "$EXPECTED_MAIN"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_MAIN"
+
+          OUT='/tmp/schoolhouse-archive-reconciliation-main-export'
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+
+          git archive "$EXPECTED_MAIN" \
+            data/intake/bvvc-defense-capital/README.md \
+            data/intake/bvvc-defense-capital/acquisition-frontier.json \
+            data/intake/bvvc-defense-capital/coverage-matrix.json \
+            data/intake/bvvc-defense-capital/manifest.json \
+            data/intake/bvvc-defense-capital/schoolhouse.json \
+            data/intake/bvvc-defense-capital/schoolhouse-launch-era-archive-content-attempt-results.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-launch-era-archive-content-candidate-observations.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-launch-era-archive-content-custody.json \
+            data/intake/bvvc-defense-capital/schoolhouse-launch-era-archive-content-link-inventory.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-launch-era-archive-content-route-results.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-launch-era-archive-content-surface-evidence.jsonl \
+            data/intake/bvvc-defense-capital/source-inventory-15.jsonl \
+            tools/build-schoolhouse-launch-era-archive-content-custody.mjs \
+            tools/validate-bvvc-defense-capital.mjs \
+            package.json \
+          | tar -x -C "$OUT"
+
+          {
+            printf 'main_commit=%s\n' "$EXPECTED_MAIN"
+            printf 'main_tree=%s\n' "$(git rev-parse "$EXPECTED_MAIN^{tree}")"
+            printf 'export_workflow_head=%s\n' "$GITHUB_SHA"
+          } > "$OUT/EXPORT-METADATA"
+
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | sort -z \
+              | xargs -0 sha256sum \
+              > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-archive-reconciliation-main-export
+          path: /tmp/schoolhouse-archive-reconciliation-main-export
+          if-no-files-found: error
+          retention-days: 90
