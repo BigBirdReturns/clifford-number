@@ -13,6 +13,9 @@ on:
       - 'data/project/ssc-residual-wave03/closures/RD-03-C05.json'
       - 'data/research/status-sovereignty-rd-wave03-rd03-lifecycle-recovery/class-receipt.json'
       - 'data/research/status-sovereignty-rd-wave03-rd03-lifecycle-recovery/manifest.json'
+      - 'data/project/ssc-residual-wave03/closures/RD-02-C05.json'
+      - 'data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/class-receipt.json'
+      - 'data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/manifest.json'
       - 'docs/milestones/ssc-residual-denominator-wave-03-current.md'
       - 'schemas/status-sovereignty-residual-denominator-wave-03-current.schema.json'
       - 'test/status-sovereignty-residual-denominator-wave-03-current.test.js'
@@ -31,6 +34,9 @@ on:
       - 'data/project/ssc-residual-wave03/closures/RD-03-C05.json'
       - 'data/research/status-sovereignty-rd-wave03-rd03-lifecycle-recovery/class-receipt.json'
       - 'data/research/status-sovereignty-rd-wave03-rd03-lifecycle-recovery/manifest.json'
+      - 'data/project/ssc-residual-wave03/closures/RD-02-C05.json'
+      - 'data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/class-receipt.json'
+      - 'data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/manifest.json'
       - 'docs/milestones/ssc-residual-denominator-wave-03-current.md'
       - 'schemas/status-sovereignty-residual-denominator-wave-03-current.schema.json'
       - 'test/status-sovereignty-residual-denominator-wave-03-current.test.js'
@@ -57,7 +63,7 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Validate exact eight-closure cumulative ledger
+      - name: Validate exact nine-closure cumulative ledger
         run: |
           set -Eeuo pipefail
           node --check tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs

@@ -4,7 +4,7 @@
   "hypothesis_id": "SSC-H01",
   "issue": 1013,
   "as_of": "2026-08-04",
-  "authority": "two_wave03_terminal_class_receipts_promoted_without_cross_lane_empirical_authority",
+  "authority": "three_wave03_terminal_class_receipts_promoted_without_cross_lane_empirical_authority",
   "source_snapshots": {
     "wave_02_current_ledger_path": "data/research/status-sovereignty-residual-denominator-wave-02-current.json",
     "wave_02_cumulative_promotion_merge": "2af6bb7819a37e51c7198fb48da894445a29e494",
@@ -14,7 +14,10 @@
     "rd01_merge_commit": "c27e7d3cde2c94c1cde5d66dcce8eb06b514ff8a",
     "rd03_closure_reference_path": "data/project/ssc-residual-wave03/closures/RD-03-C05.json",
     "rd03_class_receipt_path": "data/research/status-sovereignty-rd-wave03-rd03-lifecycle-recovery/class-receipt.json",
-    "rd03_merge_commit": "eadf234983ae61eb25286c9472435c052a241854"
+    "rd03_merge_commit": "eadf234983ae61eb25286c9472435c052a241854",
+    "rd02_closure_reference_path": "data/project/ssc-residual-wave03/closures/RD-02-C05.json",
+    "rd02_class_receipt_path": "data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/class-receipt.json",
+    "rd02_merge_commit": "61a33f5459e64f1978d9c55c1b7ea7f925358cd8"
   },
   "promoted_class_receipts": [
     {
@@ -144,17 +147,25 @@
       "class_receipt_path": "data/research/status-sovereignty-rd-wave03-rd03-lifecycle-recovery/class-receipt.json",
       "manifest_combined_sha256": "595b2d1fd0a2315657935d44c87d984dd33043eff1f33b6b0e209c689299a35a",
       "class_closed": true
-    }
-  ],
-  "selected_classes_open": [
+    },
     {
       "lane_id": "RD-02",
       "class_id": "RD-02-C05",
       "issue": 1015,
+      "source_pr": 1098,
+      "merge_commit": "61a33f5459e64f1978d9c55c1b7ea7f925358cd8",
       "constitutional_exact_label": "complete portfolio investment, follow-on, exit, write-off, default, return, and repayment ledger",
-      "state": "open",
-      "class_closed": false
-    },
+      "receipt_class_label": "complete portfolio investment, follow-on, exit, write-off, default, return, and repayment ledger",
+      "labels_exact_match": true,
+      "label_reconciliation": "none",
+      "terminal_state": "bounded_source_unavailable",
+      "closure_reference_path": "data/project/ssc-residual-wave03/closures/RD-02-C05.json",
+      "class_receipt_path": "data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/class-receipt.json",
+      "manifest_combined_sha256": "068330d24a8bc378964cee2d88c3ebe1c5b48b36154f58636e72d78d40e71e82",
+      "class_closed": true
+    }
+  ],
+  "selected_classes_open": [
     {
       "lane_id": "RD-04",
       "class_id": "RD-04-C02",
@@ -184,10 +195,10 @@
     "canonical_residual_classes": 42,
     "classes_closed_before_wave": 6,
     "wave_03_selected_class_attempts": 6,
-    "wave_03_terminal_class_receipts": 2,
-    "classes_closed_this_wave": 2,
-    "closed_residual_classes": 8,
-    "open_residual_classes": 34,
+    "wave_03_terminal_class_receipts": 3,
+    "classes_closed_this_wave": 3,
+    "closed_residual_classes": 9,
+    "open_residual_classes": 33,
     "label_reconciliations": 2,
     "wave_03_label_reconciliations": 1,
     "outside_human_dependencies": 0,
@@ -204,9 +215,9 @@
     "adoption_effects": 0
   },
   "current_result": {
-    "terminal_state": "two_of_six_wave03_selected_classes_terminal_eight_of_forty_two_residual_classes_closed",
-    "classes_closed": 8,
-    "classes_open": 34,
+    "terminal_state": "three_of_six_wave03_selected_classes_terminal_nine_of_forty_two_residual_classes_closed",
+    "classes_closed": 9,
+    "classes_open": 33,
     "closed_class_ids": [
       "RD-04-C01",
       "RD-05-C03",
@@ -215,11 +226,11 @@
       "RD-03-C04",
       "RD-02-C04",
       "RD-01-C06",
-      "RD-03-C05"
+      "RD-03-C05",
+      "RD-02-C05"
     ],
-    "wave_03_selected_attempts_terminal": 2,
+    "wave_03_selected_attempts_terminal": 3,
     "open_selected_class_ids": [
-      "RD-02-C05",
       "RD-04-C02",
       "RD-05-C02",
       "RD-06-C04"
@@ -244,7 +255,7 @@
     "outstanding_balance_is_default": false,
     "scheduled_payment_is_observed_payment": false,
     "class_closure_is_selector_accuracy_or_technical_superiority": false,
-    "eight_closures_are_complete_compact": false,
+    "nine_closures_are_complete_compact": false,
     "functional_convergence_is_coordination_or_common_purpose": false,
     "graph_effect": "none",
     "publication_effect": "none",

@@ -15,6 +15,9 @@ import {
   RD03_CLOSURE_PATH,
   RD03_RECEIPT_PATH,
   RD03_MANIFEST_PATH,
+  RD02_CLOSURE_PATH,
+  RD02_RECEIPT_PATH,
+  RD02_MANIFEST_PATH,
   CLOSED_IDS,
   OPEN_SELECTED_IDS,
   deriveCurrent
@@ -46,6 +49,11 @@ assert.notEqual(
   ledger.promoted_class_receipts[7].constitutional_exact_label,
   ledger.promoted_class_receipts[7].receipt_class_label
 );
+assert.equal(ledger.promoted_class_receipts[8].labels_exact_match, true);
+assert.equal(
+  ledger.promoted_class_receipts[8].constitutional_exact_label,
+  ledger.promoted_class_receipts[8].receipt_class_label
+);
 
 const refusals = [];
 const ledgerMutation = (name, mutate) => refusals.push({
@@ -71,7 +79,7 @@ for (const [key, replacement] of Object.entries({
   hypothesis_id: 'SSC-H02',
   issue: 9999,
   as_of: '2026-08-05',
-  authority: 'three_wave03_terminal_class_receipts_promoted'
+  authority: 'four_wave03_terminal_class_receipts_promoted'
 })) ledgerMutation(`top-level ${key} mutation`, (v) => { v[key] = replacement; });
 
 for (const key of Object.keys(ledger.source_snapshots)) {
@@ -93,8 +101,14 @@ for (const key of ['constitutional_exact_label', 'receipt_class_label', 'labels_
     row[key] = typeof row[key] === 'boolean' ? !row[key] : `${row[key]}-mutated`;
   });
 }
-ledgerMutation('promoted receipt reorder', (v) => { [v.promoted_class_receipts[6], v.promoted_class_receipts[7]] = [v.promoted_class_receipts[7], v.promoted_class_receipts[6]]; });
-ledgerMutation('promoted receipt duplicate', (v) => { v.promoted_class_receipts[7] = clone(v.promoted_class_receipts[6]); });
+for (const key of ['constitutional_exact_label', 'receipt_class_label', 'labels_exact_match', 'label_reconciliation']) {
+  ledgerMutation(`RD-02 promotion ${key} mutation`, (v) => {
+    const row = v.promoted_class_receipts[8];
+    row[key] = typeof row[key] === 'boolean' ? !row[key] : `${row[key]}-mutated`;
+  });
+}
+ledgerMutation('promoted receipt reorder', (v) => { [v.promoted_class_receipts[7], v.promoted_class_receipts[8]] = [v.promoted_class_receipts[8], v.promoted_class_receipts[7]]; });
+ledgerMutation('promoted receipt duplicate', (v) => { v.promoted_class_receipts[8] = clone(v.promoted_class_receipts[7]); });
 ledgerMutation('promoted receipt removal', (v) => { v.promoted_class_receipts.pop(); });
 
 for (let i = 0; i < ledger.selected_classes_open.length; i += 1) {
@@ -106,7 +120,7 @@ for (let i = 0; i < ledger.selected_classes_open.length; i += 1) {
   }
 }
 ledgerMutation('open selected reorder', (v) => { v.selected_classes_open.reverse(); });
-ledgerMutation('closed class reintroduced as open', (v) => { v.selected_classes_open[0].class_id = 'RD-03-C05'; });
+ledgerMutation('closed class reintroduced as open', (v) => { v.selected_classes_open[0].class_id = 'RD-02-C05'; });
 
 for (const key of Object.keys(ledger.counts)) {
   ledgerMutation(`count ${key} mutation`, (v) => { v.counts[key] += 1; });
@@ -121,7 +135,7 @@ for (const key of ['terminal_state', 'classes_closed', 'classes_open', 'wave_03_
 ledgerMutation('closed ID removal', (v) => { v.current_result.closed_class_ids.pop(); });
 ledgerMutation('closed ID reorder', (v) => { v.current_result.closed_class_ids.reverse(); });
 ledgerMutation('open ID removal', (v) => { v.current_result.open_selected_class_ids.pop(); });
-ledgerMutation('open ID includes promoted RD-03', (v) => { v.current_result.open_selected_class_ids[0] = 'RD-03-C05'; });
+ledgerMutation('open ID includes promoted RD-02', (v) => { v.current_result.open_selected_class_ids[0] = 'RD-02-C05'; });
 
 for (const key of Object.keys(ledger.boundaries)) {
   ledgerMutation(`boundary ${key} mutation`, (v) => {
@@ -132,16 +146,16 @@ for (const key of Object.keys(ledger.boundaries)) {
 schemaMutation('schema dialect mutation', (v) => { v.$schema = 'https://json-schema.org/draft/2019-09/schema'; });
 schemaMutation('schema ID mutation', (v) => { v.$id += '.mutated'; });
 schemaMutation('schema top-level openness', (v) => { v.additionalProperties = true; });
-schemaMutation('schema authority mutation', (v) => { v.properties.authority.const = 'one_wave03_terminal_class_receipt_promoted_without_cross_lane_empirical_authority'; });
-schemaMutation('schema promoted minimum mutation', (v) => { v.properties.promoted_class_receipts.minItems = 7; });
-schemaMutation('schema promoted maximum mutation', (v) => { v.properties.promoted_class_receipts.maxItems = 9; });
-schemaMutation('schema open minimum mutation', (v) => { v.properties.selected_classes_open.minItems = 5; });
-schemaMutation('schema open maximum mutation', (v) => { v.properties.selected_classes_open.maxItems = 5; });
+schemaMutation('schema authority mutation', (v) => { v.properties.authority.const = 'two_wave03_terminal_class_receipts_promoted_without_cross_lane_empirical_authority'; });
+schemaMutation('schema promoted minimum mutation', (v) => { v.properties.promoted_class_receipts.minItems = 8; });
+schemaMutation('schema promoted maximum mutation', (v) => { v.properties.promoted_class_receipts.maxItems = 10; });
+schemaMutation('schema open minimum mutation', (v) => { v.properties.selected_classes_open.minItems = 2; });
+schemaMutation('schema open maximum mutation', (v) => { v.properties.selected_classes_open.maxItems = 4; });
 for (const key of ['canonical_residual_classes', 'closed_residual_classes', 'open_residual_classes', 'wave_03_terminal_class_receipts', 'wave_03_label_reconciliations']) {
   schemaMutation(`schema count ${key} mutation`, (v) => { v.properties.counts.properties[key].const += 1; });
 }
 schemaMutation('schema closed IDs mutation', (v) => { v.properties.current_result.properties.closed_class_ids.const.pop(); });
-schemaMutation('schema open IDs mutation', (v) => { v.properties.current_result.properties.open_selected_class_ids.const.push('RD-03-C05'); });
+schemaMutation('schema open IDs mutation', (v) => { v.properties.current_result.properties.open_selected_class_ids.const.push('RD-02-C05'); });
 for (const key of Object.keys(ledger.boundaries).filter((key) => typeof ledger.boundaries[key] === 'boolean')) {
   schemaMutation(`schema boundary ${key} mutation`, (v) => { v.properties.boundaries.properties[key].const = true; });
 }
@@ -154,13 +168,16 @@ const sourcePaths = [
   RD01_MANIFEST_PATH,
   RD03_CLOSURE_PATH,
   RD03_RECEIPT_PATH,
-  RD03_MANIFEST_PATH
+  RD03_MANIFEST_PATH,
+  RD02_CLOSURE_PATH,
+  RD02_RECEIPT_PATH,
+  RD02_MANIFEST_PATH
 ];
 function sourceMutation(name, rel, mutate) {
   refusals.push({
     name,
     run() {
-      const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ssc-rd03-promotion-'));
+      const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ssc-rd02-promotion-'));
       try {
         for (const source of sourcePaths) write(temp, source, read(ROOT, source));
         const value = read(temp, rel);
@@ -178,6 +195,7 @@ sourceMutation('Wave-02 closed arithmetic mutation', WAVE02_PATH, (v) => { v.cou
 sourceMutation('Wave-02 promoted receipt mutation', WAVE02_PATH, (v) => { v.promoted_class_receipts[0].class_closed = false; });
 sourceMutation('constitution selected order mutation', CONSTITUTION_PATH, (v) => { v.lane_attempts.reverse(); });
 sourceMutation('constitution RD-03 label mutation', CONSTITUTION_PATH, (v) => { v.lane_attempts.find((r) => r.class_id === 'RD-03-C05').exact_label += ' changed'; });
+sourceMutation('constitution RD-02 label mutation', CONSTITUTION_PATH, (v) => { v.lane_attempts.find((r) => r.class_id === 'RD-02-C05').exact_label += ' changed'; });
 sourceMutation('RD-01 closure state mutation', RD01_CLOSURE_PATH, (v) => { v.class_closed = false; });
 sourceMutation('RD-01 manifest mutation', RD01_MANIFEST_PATH, (v) => { v.combined_sha256 = '0'.repeat(64); });
 sourceMutation('RD-03 closure state mutation', RD03_CLOSURE_PATH, (v) => { v.terminal_state = 'evidence_complete'; });
@@ -187,6 +205,15 @@ sourceMutation('RD-03 receipt candidate admission mutation', RD03_RECEIPT_PATH, 
 sourceMutation('RD-03 receipt event-absence mutation', RD03_RECEIPT_PATH, (v) => { v.unresolved_limit.missing_records_are_not_event_absence = false; });
 sourceMutation('RD-03 receipt external review mutation', RD03_RECEIPT_PATH, (v) => { v.authority.external_reviews = 1; });
 sourceMutation('RD-03 manifest mutation', RD03_MANIFEST_PATH, (v) => { v.combined_sha256 = 'f'.repeat(64); });
+sourceMutation('RD-02 closure state mutation', RD02_CLOSURE_PATH, (v) => { v.class_closed = false; });
+sourceMutation('RD-02 closure atlas arithmetic mutation', RD02_CLOSURE_PATH, (v) => { v.residual_atlas_effect_if_promoted.closed_after = 10; });
+sourceMutation('RD-02 closure lifecycle event mutation', RD02_CLOSURE_PATH, (v) => { v.source_custody.lifecycle_events_observed = 1; });
+sourceMutation('RD-02 receipt terminal field denominator mutation', RD02_RECEIPT_PATH, (v) => { v.counts.terminal_fields = 179; });
+sourceMutation('RD-02 receipt admitted source mutation', RD02_RECEIPT_PATH, (v) => { v.counts.admitted_leaf_sources = 3; });
+sourceMutation('RD-02 receipt lifecycle event mutation', RD02_RECEIPT_PATH, (v) => { v.counts.lifecycle_events_observed = 1; });
+sourceMutation('RD-02 receipt event-absence mutation', RD02_RECEIPT_PATH, (v) => { v.boundaries.not_publicly_recovered_is_event_nonoccurrence = true; });
+sourceMutation('RD-02 receipt external review mutation', RD02_RECEIPT_PATH, (v) => { v.authority.external_reviews = 1; });
+sourceMutation('RD-02 manifest mutation', RD02_MANIFEST_PATH, (v) => { v.combined_sha256 = 'e'.repeat(64); });
 
 for (const test of refusals) test.run();
-console.log(`Wave-03 current-ledger adversarial suite: ${refusals.length} mutations refused; 34 open / 8 closed preserved`);
+console.log(`Wave-03 current-ledger adversarial suite: ${refusals.length} mutations refused; 33 open / 9 closed preserved`);

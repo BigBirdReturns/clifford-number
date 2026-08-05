@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://clifford-number.local/schemas/status-sovereignty-residual-denominator-wave-03-current.schema.json",
-  "title": "Status-for-sovereignty residual-denominator Wave 03 current ledger",
+  "title": "Status-for-sovereignty residual-denominator Wave 03 current ledger \u2014 three promotions",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -35,7 +35,7 @@
       "const": "2026-08-04"
     },
     "authority": {
-      "const": "two_wave03_terminal_class_receipts_promoted_without_cross_lane_empirical_authority"
+      "const": "three_wave03_terminal_class_receipts_promoted_without_cross_lane_empirical_authority"
     },
     "source_snapshots": {
       "type": "object",
@@ -49,7 +49,10 @@
         "rd01_merge_commit",
         "rd03_closure_reference_path",
         "rd03_class_receipt_path",
-        "rd03_merge_commit"
+        "rd03_merge_commit",
+        "rd02_closure_reference_path",
+        "rd02_class_receipt_path",
+        "rd02_merge_commit"
       ],
       "properties": {
         "wave_02_current_ledger_path": {
@@ -78,13 +81,22 @@
         },
         "rd03_merge_commit": {
           "const": "eadf234983ae61eb25286c9472435c052a241854"
+        },
+        "rd02_closure_reference_path": {
+          "const": "data/project/ssc-residual-wave03/closures/RD-02-C05.json"
+        },
+        "rd02_class_receipt_path": {
+          "const": "data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/class-receipt.json"
+        },
+        "rd02_merge_commit": {
+          "const": "61a33f5459e64f1978d9c55c1b7ea7f925358cd8"
         }
       }
     },
     "promoted_class_receipts": {
       "type": "array",
-      "minItems": 8,
-      "maxItems": 8,
+      "minItems": 9,
+      "maxItems": 9,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -168,8 +180,8 @@
     },
     "selected_classes_open": {
       "type": "array",
-      "minItems": 4,
-      "maxItems": 4,
+      "minItems": 3,
+      "maxItems": 3,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -244,16 +256,16 @@
           "const": 6
         },
         "wave_03_terminal_class_receipts": {
-          "const": 2
+          "const": 3
         },
         "classes_closed_this_wave": {
-          "const": 2
+          "const": 3
         },
         "closed_residual_classes": {
-          "const": 8
+          "const": 9
         },
         "open_residual_classes": {
-          "const": 34
+          "const": 33
         },
         "label_reconciliations": {
           "const": 2
@@ -320,13 +332,13 @@
       ],
       "properties": {
         "terminal_state": {
-          "const": "two_of_six_wave03_selected_classes_terminal_eight_of_forty_two_residual_classes_closed"
+          "const": "three_of_six_wave03_selected_classes_terminal_nine_of_forty_two_residual_classes_closed"
         },
         "classes_closed": {
-          "const": 8
+          "const": 9
         },
         "classes_open": {
-          "const": 34
+          "const": 33
         },
         "closed_class_ids": {
           "const": [
@@ -337,15 +349,15 @@
             "RD-03-C04",
             "RD-02-C04",
             "RD-01-C06",
-            "RD-03-C05"
+            "RD-03-C05",
+            "RD-02-C05"
           ]
         },
         "wave_03_selected_attempts_terminal": {
-          "const": 2
+          "const": 3
         },
         "open_selected_class_ids": {
           "const": [
-            "RD-02-C05",
             "RD-04-C02",
             "RD-05-C02",
             "RD-06-C04"
@@ -391,7 +403,7 @@
         "outstanding_balance_is_default",
         "scheduled_payment_is_observed_payment",
         "class_closure_is_selector_accuracy_or_technical_superiority",
-        "eight_closures_are_complete_compact",
+        "nine_closures_are_complete_compact",
         "functional_convergence_is_coordination_or_common_purpose",
         "graph_effect",
         "publication_effect",
@@ -428,9 +440,6 @@
         "class_closure_is_selector_accuracy_or_technical_superiority": {
           "const": false
         },
-        "eight_closures_are_complete_compact": {
-          "const": false
-        },
         "functional_convergence_is_coordination_or_common_purpose": {
           "const": false
         },
@@ -442,6 +451,9 @@
         },
         "adoption_effect": {
           "const": "none"
+        },
+        "nine_closures_are_complete_compact": {
+          "const": false
         }
       }
     }
