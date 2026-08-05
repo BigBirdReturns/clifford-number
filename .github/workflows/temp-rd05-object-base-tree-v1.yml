@@ -1,0 +1,31 @@
+name: TEMP report RD-05 object publication base tree
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-rd05-object-base-tree-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    if: >-
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd-wave03-rd05-candidate-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Report exact head and tree
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf 'head=%s\n' "$(git rev-parse HEAD)"
+          printf 'tree=%s\n' "$(git rev-parse 'HEAD^{tree}')"
