@@ -1,0 +1,58 @@
+name: TEMP materialize School.House launch-era archived content custody
+
+on:
+  push:
+    branches:
+      - agent/schoolhouse-launch-era-archive-content-materializer-v1
+    paths:
+      - '.github/workflows/temp-schoolhouse-launch-era-archive-content-materializer.yml'
+      - '.schoolhouse-launch-era-archive-content-materializer/EXECUTE'
+      - '.schoolhouse-launch-era-archive-content-materializer/chunks/*.b64'
+      - '.schoolhouse-launch-era-archive-content-materializer/runner.sh.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: temp-schoolhouse-launch-era-archive-content-materializer-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Reconstruct, validate, and execute bounded materializer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          EXECUTE='.schoolhouse-launch-era-archive-content-materializer/EXECUTE'
+          BUNDLE='.schoolhouse-launch-era-archive-content-materializer/runner.sh.gz.b64'
+          RUNNER='/tmp/materialize-schoolhouse-launch-era-archive-content.sh'
+          test -s "$EXECUTE"
+          test -s "$BUNDLE"
+          grep -Fx 'materialize=schoolhouse-launch-era-archive-content-custody-v1' "$EXECUTE"
+          grep -Fx 'replay_artifact_digest=sha256:3fcc4191cf2e6aa3f84eadc5b5265c4e9af13a58a7391b2407a194d6d147a6c9' "$EXECUTE"
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '68e48fa3ae8f20fd1e56145bf6648f69a602dec3333dcaf8fd462f5e66ddcf9c'
+          base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = 'bea3a21ec1c80e46e265f07cea64fa05e1b1c7755c01d4f9f1e0f948e1da2d89'
+          bash -n "$RUNNER"
+          bash "$RUNNER"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-launch-era-archive-content-materialization-receipt
+          path: /tmp/schoolhouse-launch-era-archive-content-materialization-receipt
+          if-no-files-found: error
+          retention-days: 90
