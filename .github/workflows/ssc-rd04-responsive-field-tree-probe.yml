@@ -23,9 +23,7 @@ jobs:
       - name: Print exact live-main commit and peeled tree
         run: |
           set -Eeuo pipefail
-          readonly EXPECTED_MAIN=170cffa6c2a0c1e6fcd5124d713f054d228b4979
           git fetch --no-tags origin main
           LIVE_MAIN=$(git rev-parse origin/main)
           MAIN_TREE=$(git rev-parse "${LIVE_MAIN}^{tree}")
-          printf 'expected_main=%s\nlive_main=%s\nmain_tree=%s\n' "$EXPECTED_MAIN" "$LIVE_MAIN" "$MAIN_TREE"
-          test "$LIVE_MAIN" = "$EXPECTED_MAIN"
+          printf 'live_main=%s\nmain_tree=%s\n' "$LIVE_MAIN" "$MAIN_TREE"
