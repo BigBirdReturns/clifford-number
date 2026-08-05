@@ -553,8 +553,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const secondLevelForms = readJsonl(path.join(dir, 'schoolhouse-charity-nc-second-level-surface-forms.jsonl'));
     const secondLevelRoutes = [...secondLevelRoots, ...secondLevelFollowed];
 
-    check(manifest.counts.source_inventory_rows === 290, 'second-level source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 22, 'second-level coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 336, 'second-level source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 23, 'second-level coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'second-level explicit-gap count drift');
     check(manifest.counts.schoolhouse_charity_nc_second_level_root_route_rows === secondLevelRoots.length && secondLevelRoots.length === 8, 'second-level root-route denominator drift');
     check(manifest.counts.schoolhouse_charity_nc_second_level_followed_route_rows === secondLevelFollowed.length && secondLevelFollowed.length === 80, 'second-level followed-route denominator drift');
@@ -623,8 +623,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const finalResidualForms = readJsonl(path.join(dir, 'schoolhouse-charity-nc-final-static-residual-surface-forms.jsonl'));
     const finalResidualFiles = readJsonl(path.join(dir, 'schoolhouse-charity-nc-final-static-residual-file-samples.jsonl'));
 
-    check(manifest.counts.source_inventory_rows === 290, 'final residual source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 22, 'final residual coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 336, 'final residual source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 23, 'final residual coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'final residual explicit-gap count drift');
     check(manifest.counts.schoolhouse_charity_nc_final_static_residual_input_rows === finalResidualInputs.length && finalResidualInputs.length === 51, 'final residual input denominator drift');
     check(manifest.counts.schoolhouse_charity_nc_final_static_residual_terminal_route_rows === finalResidualRoutes.length && finalResidualRoutes.length === 51, 'final residual route denominator drift');
@@ -683,8 +683,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const completePdfPolicy = readJson(path.join(dir, 'schoolhouse-charity-nc-complete-pdf-route-policy.json'));
     const completePdfSummary = readJson(path.join(dir, 'schoolhouse-charity-nc-complete-pdf-field-summary.json'));
 
-    check(manifest.counts.source_inventory_rows === 290, 'complete-PDF source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 22, 'complete-PDF coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 336, 'complete-PDF source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 23, 'complete-PDF coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'complete-PDF explicit-gap count drift');
     check(manifest.counts.schoolhouse_charity_nc_complete_pdf_input_rows === completePdfInputs.length && completePdfInputs.length === 15, 'complete-PDF input denominator drift');
     check(manifest.counts.schoolhouse_charity_nc_complete_pdf_terminal_route_rows === completePdfFull.length && completePdfFull.length === 15, 'complete-PDF terminal denominator drift');
@@ -727,6 +727,76 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     check(completePdfFrontier?.complete_file_hash_rows === 15 && completePdfFrontier?.text_extraction_success_rows === 15 && completePdfFrontier?.total_pdf_pages === 377 && completePdfFrontier?.subject_term_total_hits === 0 && completePdfFrontier?.field_term_total_hits === 586 && completePdfFrontier?.admitted_identities === 0, 'School.House complete-PDF frontier projection drift');
     check(coverage.denominators.some(row => row.surface === 'School.House North Carolina complete official PDF hash and fixed-term content custody' && row.enumerated_total === 15 && row.complete_file_hash_rows === 15 && row.total_pdf_pages === 377 && row.subject_term_total_hits === 0 && row.field_term_total_hits === 586 && row.search_submissions === 0), 'complete-PDF coverage denominator missing');
   }
+
+  {
+    const firstPartyCustody = readJson(path.join(dir, 'schoolhouse-first-party-legal-surface-custody.json'));
+    const firstPartyRoutes = readJsonl(path.join(dir, 'schoolhouse-first-party-legal-surface-route-results.jsonl'));
+    const firstPartyLinks = readJsonl(path.join(dir, 'schoolhouse-first-party-legal-surface-discovered-links.jsonl'));
+    const firstPartyEvidence = readJsonl(path.join(dir, 'schoolhouse-first-party-legal-surface-evidence.jsonl'));
+    const firstPartyCandidates = readJsonl(path.join(dir, 'schoolhouse-first-party-legal-surface-candidate-ledger.jsonl'));
+    const firstPartyExternal = readJsonl(path.join(dir, 'schoolhouse-first-party-legal-surface-external-link-inventory.jsonl'));
+    const firstPartyHtml = firstPartyEvidence.filter(row => row.surface_evidence_type === 'html_surface');
+    const firstPartyForms = firstPartyEvidence.filter(row => row.surface_evidence_type === 'form_metadata');
+
+    check(manifest.counts.source_inventory_rows === 336, 'first-party source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 23, 'first-party coverage-denominator count drift');
+    check(manifest.counts.explicit_gap_rows === 16, 'first-party explicit-gap count drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_root_route_rows === firstPartyRoutes.filter(row => row.route_class === 'fixed_root').length && manifest.counts.schoolhouse_first_party_legal_surface_root_route_rows === 5, 'first-party root-route denominator drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_followed_route_rows === firstPartyRoutes.filter(row => row.route_class === 'query_free_same_host_follow').length && manifest.counts.schoolhouse_first_party_legal_surface_followed_route_rows === 41, 'first-party followed-route denominator drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_terminal_route_rows === firstPartyRoutes.length && firstPartyRoutes.length === 46, 'first-party terminal-route denominator drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_html_route_rows === firstPartyRoutes.filter(row => row.state === 'accessible_html').length && manifest.counts.schoolhouse_first_party_legal_surface_html_route_rows === 39, 'first-party HTML-route denominator drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_xml_route_rows === firstPartyRoutes.filter(row => row.state === 'accessible_xml').length && manifest.counts.schoolhouse_first_party_legal_surface_xml_route_rows === 6, 'first-party XML-route denominator drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_text_route_rows === firstPartyRoutes.filter(row => row.state === 'accessible_text').length && manifest.counts.schoolhouse_first_party_legal_surface_text_route_rows === 1, 'first-party text-route denominator drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_discovered_link_rows === firstPartyLinks.length && firstPartyLinks.length === 555, 'first-party discovered-link denominator drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_unique_discovered_links === new Set(firstPartyLinks.map(row => row.href)).size && manifest.counts.schoolhouse_first_party_legal_surface_unique_discovered_links === 78, 'first-party unique-link denominator drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_same_host_link_rows === firstPartyLinks.filter(row => row.same_schoolhouse_host).length && manifest.counts.schoolhouse_first_party_legal_surface_same_host_link_rows === 444, 'first-party same-host link denominator drift');
+    const firstPartyEligibleUrls = new Set(firstPartyLinks.filter(row => row.eligible_follow).map(row => row.href_without_query));
+    const firstPartyRouteUrls = new Set(firstPartyRoutes.map(row => row.requested_url));
+    const firstPartyUnfollowedEligible = [...firstPartyEligibleUrls].filter(url => !firstPartyRouteUrls.has(url));
+    check(manifest.counts.schoolhouse_first_party_legal_surface_eligible_same_host_unique_links === firstPartyEligibleUrls.size && firstPartyEligibleUrls.size === 43, 'first-party eligible same-host denominator drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_unfollowed_eligible_links === firstPartyUnfollowedEligible.length && firstPartyUnfollowedEligible.length === 0, 'first-party same-host closure drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_html_surface_rows === firstPartyHtml.length && firstPartyHtml.length === 39, 'first-party HTML-surface denominator drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_structured_data_rows === 0, 'first-party structured-data denominator drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_form_rows === firstPartyForms.length && firstPartyForms.length === 8, 'first-party form denominator drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_candidate_rows === firstPartyCandidates.length && firstPartyCandidates.length === 78, 'first-party candidate denominator drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_distinct_candidate_values === new Set(firstPartyCandidates.map(row => row.candidate_value)).size && manifest.counts.schoolhouse_first_party_legal_surface_distinct_candidate_values === 5, 'first-party distinct candidate-value drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_tax_status_claim_rows === firstPartyCandidates.filter(row => row.adjudication_state === 'first_party_501c3_or_nonprofit_claim_not_registry_grade').length && manifest.counts.schoolhouse_first_party_legal_surface_tax_status_claim_rows === 39, 'first-party tax-status claim denominator drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_footer_brand_rows === firstPartyCandidates.filter(row => row.adjudication_state === 'footer_brand_string_not_legal_entity_name').length && manifest.counts.schoolhouse_first_party_legal_surface_footer_brand_rows === 38, 'first-party footer-brand denominator drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_context_collision_rows === firstPartyCandidates.filter(row => row.adjudication_state === 'context_pattern_collision_not_schoolhouse_legal_status').length && manifest.counts.schoolhouse_first_party_legal_surface_context_collision_rows === 1, 'first-party context-collision denominator drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_exact_legal_name_candidate_rows === 0, 'first-party exact legal-name candidate count drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_legal_term_hits === firstPartyHtml.reduce((sum, row) => sum + row.legal_term_total_hits, 0) && manifest.counts.schoolhouse_first_party_legal_surface_legal_term_hits === 123, 'first-party legal-term count drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_subject_term_hits === firstPartyHtml.reduce((sum, row) => sum + row.subject_term_total_hits, 0) && manifest.counts.schoolhouse_first_party_legal_surface_subject_term_hits === 77, 'first-party subject-term count drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_external_link_rows === firstPartyExternal.length && firstPartyExternal.length === 111, 'first-party external-link denominator drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_unique_external_hosts === new Set(firstPartyExternal.map(row => row.host)).size && manifest.counts.schoolhouse_first_party_legal_surface_unique_external_hosts === 31, 'first-party external-host denominator drift');
+    check(manifest.counts.schoolhouse_first_party_legal_surface_search_submissions === 0 && manifest.counts.schoolhouse_first_party_legal_surface_source_rows_acquired === 0 && manifest.counts.schoolhouse_first_party_legal_surface_admitted_identity_rows === 0, 'first-party authority count drift');
+
+    check(unique(firstPartyRoutes.map(row => row.route_id)) && unique(firstPartyRoutes.map(row => row.receipt_id)), 'first-party route IDs and receipts must be unique');
+    check(firstPartyRoutes.every(row => knownReceiptIds.has(row.receipt_id) && row.status === 200 && row.request_method === 'GET' && row.request_attempts === 1), 'first-party route receipt/request drift');
+    check(firstPartyRoutes.every(row => row.query_submitted === false && row.form_submitted === false && row.application_submitted === false && row.account_action_submitted === false && row.payment_action_submitted === false && row.upload_submitted === false && row.contact_request_submitted === false), 'first-party submission boundary drift');
+    check(firstPartyRoutes.every(row => row.source_rows_acquired === 0 && row.raw_source_retained === false && row.visible_text_retained === false && row.hidden_form_values_retained === false && row.street_address_rows_retained === 0 && row.contact_detail_rows_retained === 0 && row.private_support_rows === 0), 'first-party route privacy drift');
+    check(firstPartyRoutes.every(row => row.identity_admitted === false && row.negative_existence_claim_created === false && row.outside_human_dependency === false && row.graph_effect === 'none' && row.promotes_to === 'candidate_only'), 'first-party route authority drift');
+    check(firstPartyLinks.every(row => knownReceiptIds.has(row.source_receipt_id) && row.href === row.href_without_query && row.query_value_retained === false && row.query_submission_required === false && row.identity_admitted === false && row.graph_effect === 'none'), 'first-party discovered-link boundary drift');
+    check(firstPartyHtml.every(row => knownReceiptIds.has(row.receipt_id) && row.raw_html_retained === false && row.visible_text_retained === false && row.footer_text_retained === false && row.street_address_rows_retained === 0 && row.contact_detail_rows_retained === 0 && row.identity_admitted === false && row.graph_effect === 'none'), 'first-party HTML privacy/authority drift');
+    check(firstPartyForms.every(row => knownReceiptIds.has(row.receipt_id) && row.hidden_values_retained === false && row.control_values_retained === false && row.query_submitted === false && row.form_submitted === false && row.identity_admitted === false && row.graph_effect === 'none'), 'first-party form privacy/authority drift');
+    check(firstPartyCandidates.every(row => knownReceiptIds.has(row.receipt_id) && row.identifier_grade === false && row.registry_grade === false && row.legal_name_effect === 'none' && row.admitted_legal_name === null && row.admitted_ein === null && row.public_schoolhouse_identity_admitted === false && row.graph_effect === 'none'), 'first-party candidate authority drift');
+    check(firstPartyExternal.every(row => knownReceiptIds.has(row.source_receipt_id) && row.fetched === false && row.query_value_retained === false && row.query_submitted === false && row.identity_admitted === false && row.adjudication_state === 'external_public_lead_not_fetched_or_identity_joined' && row.graph_effect === 'none'), 'first-party external-link authority drift');
+    check(firstPartyExternal.filter(row => row.route_class === 'public_social_platform').length === 42 && firstPartyExternal.filter(row => row.route_class === 'external_public_link_not_fetched').length === 69, 'first-party external route-class drift');
+
+    check(firstPartyCustody.acquisition.workflow_run_id === 30990750394 && firstPartyCustody.acquisition.artifact_id === 8923990465 && firstPartyCustody.acquisition.artifact_digest === 'sha256:096bad980f5323fd04c1d75fcf3f2e7c954d13fdbb0ae47f8f06c8a160fbae8e' && firstPartyCustody.acquisition.acquisition_head === '71b13676c36c44d5e59d543c240f923304b5a4fb', 'first-party acquisition custody drift');
+    check(firstPartyCustody.bounds.fixed_root_routes === 5 && firstPartyCustody.bounds.maximum_total_routes === 120 && firstPartyCustody.bounds.maximum_depth === 2 && firstPartyCustody.bounds.query_string_routes_followed === 0 && firstPartyCustody.bounds.external_links_fetched === 0, 'first-party bound custody drift');
+    check(firstPartyCustody.counts.terminal_route_rows === 46 && firstPartyCustody.counts.eligible_query_free_same_host_unique_links === 43 && firstPartyCustody.counts.unfollowed_eligible_query_free_same_host_links === 0 && firstPartyCustody.counts.first_party_501c3_or_nonprofit_claim_rows === 39 && firstPartyCustody.counts.footer_brand_string_rows === 38 && firstPartyCustody.counts.explicit_schoolhouse_legal_name_candidate_rows === 0 && firstPartyCustody.counts.admitted_identities === 0, 'first-party custody denominator drift');
+    check(firstPartyCustody.terminal_frontier.fixed_root_denominator_terminal === true && firstPartyCustody.terminal_frontier.discovered_query_free_same_host_route_denominator_terminal === true && firstPartyCustody.terminal_frontier.route_cap_exhausted === false && firstPartyCustody.terminal_frontier.outside_human_dependency === false, 'first-party terminal-frontier drift');
+    check(firstPartyCustody.privacy.raw_source_retained === false && firstPartyCustody.privacy.visible_text_retained === false && firstPartyCustody.privacy.hidden_form_values_retained === false && firstPartyCustody.privacy.street_address_rows_retained === 0 && firstPartyCustody.privacy.contact_detail_rows_retained === 0 && firstPartyCustody.privacy.private_support_rows === 0, 'first-party custody privacy drift');
+    check(firstPartyCustody.public_schoolhouse_identity_admitted === false && firstPartyCustody.admitted_legal_name === null && firstPartyCustody.admitted_ein === null && firstPartyCustody.negative_existence_claim_created === false && firstPartyCustody.outside_human_dependency === false && firstPartyCustody.publication_effect === 'none' && firstPartyCustody.adoption_effect === 'none' && firstPartyCustody.graph_effect === 'none' && firstPartyCustody.promotes_to === 'candidate_only', 'first-party custody authority drift');
+
+    const firstPartyProjection = schoolhouse.state_registry_identity_census?.first_party_legal_surface_census;
+    check(firstPartyProjection?.terminal_routes === 46 && firstPartyProjection?.eligible_query_free_same_host_unique_links === 43 && firstPartyProjection?.unfollowed_eligible_query_free_same_host_links === 0 && firstPartyProjection?.first_party_501c3_or_nonprofit_claim_rows === 39 && firstPartyProjection?.exact_legal_name_candidate_rows === 0, 'School.House first-party projection drift');
+    check(firstPartyProjection?.identity_state === 'unresolved_after_terminal_first_party_surface_census_no_registry_identity_admitted' && firstPartyProjection?.admitted_legal_name === null && firstPartyProjection?.admitted_ein === null && firstPartyProjection?.public_schoolhouse_identity_admitted === false, 'School.House first-party identity authority drift');
+    const firstPartyFrontier = frontier.tasks.find(task => task.task_id === 'bvvc-frontier-schoolhouse-legal-governance')?.prior_first_party_legal_surface_census;
+    check(firstPartyFrontier?.terminal_routes === 46 && firstPartyFrontier?.eligible_query_free_same_host_unique_links === 43 && firstPartyFrontier?.unfollowed_eligible_query_free_same_host_links === 0 && firstPartyFrontier?.first_party_tax_status_claim_rows === 39 && firstPartyFrontier?.exact_legal_name_candidate_rows === 0 && firstPartyFrontier?.admitted_identities === 0, 'School.House first-party frontier projection drift');
+    check(coverage.denominators.some(row => row.surface === 'School.House query-free first-party legal and governance surface census' && row.enumerated_total === 46 && row.eligible_query_free_same_host_unique_links === 43 && row.unfollowed_eligible_query_free_same_host_links === 0 && row.first_party_tax_status_claim_rows === 39 && row.exact_legal_name_candidate_rows === 0 && row.search_submissions === 0), 'first-party coverage denominator missing');
+  }
+
   return errors;
 }
 
