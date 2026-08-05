@@ -1,4 +1,4 @@
-name: TEMP materialize Wave-03 five-lane intake protocols
+name: TEMP materialize Wave-03 remaining intake protocols v2
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: ssc-rd-wave03-five-lane-intake-materializer-${{ github.event.pull_request.number || github.ref }}
+  group: ssc-rd-wave03-remaining-intake-materializer-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -21,27 +21,9 @@ jobs:
       github.event.pull_request.head.ref == 'agent/ssc-rd-wave03-five-lane-intake-materializer-trigger-v1'
     strategy:
       fail-fast: false
-      max-parallel: 5
+      max-parallel: 3
       matrix:
         include:
-          - lane: RD-02
-            target_branch: agent/ssc-rd-wave03-rd02-portfolio-lifecycle
-            expected_head: 431f94963c369f982d262e96ed378806862539aa
-            slug: status-sovereignty-rd-wave03-rd02-portfolio-lifecycle
-            expected_total_paths: 7
-            expected_nonworkflow_paths: 6
-            builder: tools/build-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.mjs
-            validator: tools/validate-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.mjs
-            test: test/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-intake.test.js
-          - lane: RD-03
-            target_branch: agent/ssc-rd-wave03-rd03-lifecycle-recovery
-            expected_head: 06345049d48b0e5b0a2703751d820bb380b9ff88
-            slug: status-sovereignty-rd-wave03-rd03-lifecycle-recovery
-            expected_total_paths: 7
-            expected_nonworkflow_paths: 6
-            builder: tools/build-status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.mjs
-            validator: tools/validate-status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.mjs
-            test: test/status-sovereignty-rd-wave03-rd03-lifecycle-recovery-intake.test.js
           - lane: RD-04
             target_branch: agent/ssc-rd-wave03-rd04-state-implementation
             expected_head: 2e007a337897b4e67f618c20cd698b86a2c240c0
@@ -96,11 +78,14 @@ jobs:
           BASE64_SHA256: 120e98824f5f4617fc912ebf2129a314185dcd6dd65e43463a790eb936585809
           PRODUCT_SHA256: dacdfd9c3fb75dd1011908109868c169782569f3413dd1cb8b9d22f7f9157990
           PATH_LIST_SHA256: 8c64907fbd431557b91257f606c9224c06321b3eb33370f342397f897b5418e4
-        run: bash .transport/ssc-rd-wave03-five-lane-intake-v1/materialize.sh
-      - name: Upload lane materialization receipt
+        run: bash .transport/ssc-rd-wave03-five-lane-intake-v1/materialize-v2.sh
+      - name: Upload exact lane receipt and decoded package
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd-wave03-${{ matrix.lane }}-intake-materializer-v1
-          path: ${{ runner.temp }}/receipts/${{ matrix.lane }}-intake-materializer.json
+          name: ssc-rd-wave03-${{ matrix.lane }}-intake-materializer-v2
+          path: |
+            ${{ runner.temp }}/receipts/${{ matrix.lane }}-intake-materializer.json
+            ${{ runner.temp }}/product
           if-no-files-found: error
+          retention-days: 90
