@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Execute the strict runner with repaired import and name-history semantics."""
+"""Execute the strict runner with repaired import and detail semantics."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ source = source.replace(
     "SPEC.loader.exec_module(MODULE)\n",
     1,
 )
-name_history_patch = r'''
+detail_semantics_patch = r'''
 
 def strict_merge_candidate_detail(candidate: dict[str, Any], detail: dict[str, Any]) -> dict[str, Any]:
     merged = dict(candidate)
@@ -27,8 +27,10 @@ def strict_merge_candidate_detail(candidate: dict[str, Any], detail: dict[str, A
     matched_normalized = MODULE.normalize_name(matched_name)
     current_name = MODULE.normalize_space(detail.get("legal_name")) or None
     current_normalized = MODULE.normalize_name(current_name)
+    query_fei = MODULE.normalize_ein(candidate.get("fei_ein"))
+    detail_fei = MODULE.normalize_ein(detail.get("fei_ein"))
     for key, value in detail.items():
-        if key in {"legal_name", "normalized_name"}:
+        if key in {"legal_name", "normalized_name", "fei_ein"}:
             continue
         if value is not None and merged.get(key) is None:
             merged[key] = value
@@ -41,17 +43,29 @@ def strict_merge_candidate_detail(candidate: dict[str, Any], detail: dict[str, A
         if current_normalized == matched_normalized
         else "historical_or_alias_name_current_name_differs"
     )
+    merged["query_fei_ein"] = query_fei
+    merged["detail_fei_ein"] = detail_fei
+    if query_fei and detail_fei == query_fei:
+        merged["fei_consistency_state"] = "detail_confirms_query_fei"
+    elif query_fei and detail_fei is None:
+        merged["fei_consistency_state"] = "detail_reports_no_fei"
+    elif query_fei and detail_fei != query_fei:
+        merged["fei_consistency_state"] = "detail_conflicts_with_query_fei"
+    elif detail_fei:
+        merged["fei_consistency_state"] = "detail_fei_without_query_fei"
+    else:
+        merged["fei_consistency_state"] = "no_fei_on_query_or_detail"
     return merged
 
 
 MODULE.merge_candidate_detail = strict_merge_candidate_detail
 '''
 marker = "MODULE.extract_sunbiz_list_candidates = extract_sunbiz_list_candidates\n"
-source = source.replace(marker, name_history_patch + "\n" + marker, 1)
+source = source.replace(marker, detail_semantics_patch + "\n" + marker, 1)
 if "sys.modules[SPEC.name] = MODULE" not in source:
     raise RuntimeError("strict runner bootstrap seam not found")
 if "MODULE.merge_candidate_detail = strict_merge_candidate_detail" not in source:
-    raise RuntimeError("strict name-history seam not found")
+    raise RuntimeError("strict detail-semantics seam not found")
 namespace = {
     "__name__": "__main__",
     "__file__": str(TARGET),
