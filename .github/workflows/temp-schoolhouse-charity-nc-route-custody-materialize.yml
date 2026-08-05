@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/temp-schoolhouse-charity-nc-route-custody-materialize.yml'
       - '.schoolhouse-charity-nc-route-custody/EXECUTE'
+      - '.schoolhouse-charity-nc-route-custody/builder.mjs.gz.b64'
       - '.schoolhouse-charity-nc-route-custody/builder-01.b64'
       - '.schoolhouse-charity-nc-route-custody/builder-02.b64'
       - '.schoolhouse-charity-nc-route-custody/builder-03.b64'
@@ -59,8 +60,11 @@ jobs:
           REPO="$GITHUB_REPOSITORY"
           TARGET='agent/schoolhouse-charity-nc-route-custody-product-v1'
           MAIN_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+          SOURCE_BUNDLE="$GITHUB_WORKSPACE/.schoolhouse-charity-nc-route-custody/builder.mjs.gz.b64"
           SOURCE_BUILDER=/tmp/build-schoolhouse-charity-nc-route-custody.mjs
-          cat "$GITHUB_WORKSPACE"/.schoolhouse-charity-nc-route-custody/builder-*.b64 | base64 -d > "$SOURCE_BUILDER"
+          test -f "$SOURCE_BUNDLE"
+          test "$(sha256sum "$SOURCE_BUNDLE" | awk '{print $1}')" = '80007c852b501ba866e40c1831ebf28351472c6dde2968c745d7c3bff35347a5'
+          base64 -d "$SOURCE_BUNDLE" | gzip -dc > "$SOURCE_BUILDER"
           test "$(sha256sum "$SOURCE_BUILDER" | awk '{print $1}')" = 'a6c0f2e874f767972a9d99942dc2ee2a5704651519a4097b6196cb190dbc207e'
           node --check "$SOURCE_BUILDER"
 
