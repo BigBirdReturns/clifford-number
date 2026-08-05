@@ -1,0 +1,194 @@
+name: TEMP acquire School.House Florida corporate identity census
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.schoolhouse-fl-corporate-identity-census/**'
+      - '.github/workflows/temp-schoolhouse-fl-corporate-identity-census.yml'
+
+concurrency:
+  group: schoolhouse-fl-corporate-identity-census-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Reconstruct and execute complete ten-partition corporate census
+        env:
+          OUTPUT_DIR: /tmp/schoolhouse-fl-corporate-identity-census
+        run: |
+          set -Eeuo pipefail
+          EXECUTE='.schoolhouse-fl-corporate-identity-census/EXECUTE'
+          BUNDLE='.schoolhouse-fl-corporate-identity-census/acquire.py.gz.b64'
+          GZIP='/tmp/acquire-schoolhouse-fl-corporate-identity.py.gz'
+          SCRIPT='/tmp/acquire-schoolhouse-fl-corporate-identity.py'
+          PARENT='efcf6bc094facb72dec6b966a7e8e3b2acdf4d06'
+
+          test -s "$EXECUTE"
+          test -s "$BUNDLE"
+          grep -Fx 'acquire=schoolhouse-fl-corporate-identity-census-v1' "$EXECUTE"
+          grep -Fx "canonical_parent=$PARENT" "$EXECUTE"
+          grep -Fx 'canonical_parent_source_receipt_blob=948b3fc47c07a4a96ace00eabf9cd26e26ae1de1' "$EXECUTE"
+          grep -Fx 'canonical_parent_schoolhouse_blob=aa1fd795a4e01000b9bb5880043430e60b7a1de5' "$EXECUTE"
+          grep -Fx 'source_bytes=1819049954' "$EXECUTE"
+          grep -Fx 'central_directory_sha256=5524144b32429b336a2799a164f4fa5278e7825023fff638d65e8f8bdc577330' "$EXECUTE"
+          grep -Fx 'remote_zip_members=10' "$EXECUTE"
+          grep -Fx 'partitions_to_scan=10' "$EXECUTE"
+          grep -Fx 'record_length=1440' "$EXECUTE"
+          grep -Fx 'person_match_rule=exact_public_label_token_multiset_no_expansion' "$EXECUTE"
+          grep -Fx 'person_target_rows=4' "$EXECUTE"
+          grep -Fx 'person_target_01=Joe Musselman' "$EXECUTE"
+          grep -Fx 'person_target_02=Alex Martin' "$EXECUTE"
+          grep -Fx 'person_target_03=Leyla Gladish' "$EXECUTE"
+          grep -Fx 'person_target_04=Nicole Nsam' "$EXECUTE"
+          grep -Fx 'query_submissions=0' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+          grep -Fx 'identity_admitted=false' "$EXECUTE"
+
+          git cat-file -e "$PARENT^{commit}"
+          test "$(git rev-parse "$PARENT:data/intake/bvvc-defense-capital/schoolhouse-fl-corporate-owner-resolution-source-receipt.json")" = '948b3fc47c07a4a96ace00eabf9cd26e26ae1de1'
+          test "$(git rev-parse "$PARENT:data/intake/bvvc-defense-capital/schoolhouse.json")" = 'aa1fd795a4e01000b9bb5880043430e60b7a1de5'
+          git show "$PARENT:data/intake/bvvc-defense-capital/schoolhouse.json" | grep -Fq '"Joe Musselman"'
+          git show "$PARENT:data/intake/bvvc-defense-capital/schoolhouse.json" | grep -Fq '"Alex Martin"'
+          git show "$PARENT:data/intake/bvvc-defense-capital/schoolhouse.json" | grep -Fq '"Leyla Gladish"'
+          git show "$PARENT:data/intake/bvvc-defense-capital/schoolhouse.json" | grep -Fq '"Nicole Nsam"'
+
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '22f4f48193d8b32c6f86383cae42936646090a42b67b22c989e69260830ab3f7'
+          base64 -d "$BUNDLE" > "$GZIP"
+          test "$(sha256sum "$GZIP" | awk '{print $1}')" = 'a297b422c3c44334e6273b0854206ab9cf9d0af9132a51ef08cc86104d1d09eb'
+          gzip -dc "$GZIP" > "$SCRIPT"
+          test "$(sha256sum "$SCRIPT" | awk '{print $1}')" = 'b890127a7afa086e5528998cce01bc344185fb928f8003567653bc729aa3b9e8'
+          python -m py_compile "$SCRIPT"
+          curl --version
+
+          rm -rf "$OUTPUT_DIR"
+          python "$SCRIPT" | tee /tmp/schoolhouse-fl-corporate-identity-census-output.json
+
+          for path in \
+            adjudication.json \
+            artifact-manifest.json \
+            candidate-records.jsonl \
+            member-receipts.jsonl \
+            range-request-receipts.jsonl \
+            remote-zip-index.json \
+            source-receipt.json \
+            summary.json \
+            target-matrix.json \
+            SHA256SUMS; do
+            test -f "$OUTPUT_DIR/$path"
+          done
+          test -s "$OUTPUT_DIR/summary.json"
+          test -s "$OUTPUT_DIR/source-receipt.json"
+          test -s "$OUTPUT_DIR/member-receipts.jsonl"
+          test -s "$OUTPUT_DIR/range-request-receipts.jsonl"
+          test -s "$OUTPUT_DIR/artifact-manifest.json"
+          test -s "$OUTPUT_DIR/SHA256SUMS"
+          (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
+
+          python - "$OUTPUT_DIR" <<'PYVERIFY'
+          from pathlib import Path
+          import json
+          import sys
+
+          root = Path(sys.argv[1])
+          load = lambda name: json.loads((root / name).read_text())
+          rows = lambda name: [json.loads(line) for line in (root / name).read_text().splitlines() if line.strip()]
+          summary = load('summary.json')
+          source = load('source-receipt.json')
+          index = load('remote-zip-index.json')
+          target = load('target-matrix.json')
+          adjudication = load('adjudication.json')
+          manifest = load('artifact-manifest.json')
+          members = rows('member-receipts.jsonl')
+          ranges = rows('range-request-receipts.jsonl')
+          candidates = rows('candidate-records.jsonl')
+
+          assert summary['schema_version'] == 'schoolhouse-fl-corporate-identity-census@1'
+          assert summary['remote_zip_members'] == summary['partitions_scanned'] == 10
+          assert summary['source_rows_scanned'] == sum(row['rows_scanned'] for row in members)
+          assert summary['source_rows_scanned'] > 10_000_000
+          assert summary['range_requests'] == len(ranges) == 31
+          assert summary['candidate_rows'] == len(candidates)
+          assert summary['unique_candidate_documents'] == len({row['document_number'] for row in candidates})
+          assert summary['identity_admitted_rows'] == 0
+          assert summary['negative_existence_claims_created'] == 0
+          assert summary['query_submissions'] == 0
+          assert summary['raw_source_retained'] is False
+          assert summary['raw_compressed_members_retained'] is False
+          assert summary['raw_uncompressed_members_retained'] is False
+          assert summary['street_address_rows_retained'] == 0
+          assert summary['mailing_address_rows_retained'] == 0
+          assert summary['postal_code_rows_retained'] == 0
+          assert summary['contact_detail_rows_retained'] == 0
+          assert summary['private_support_rows'] == 0
+          assert summary['outside_human_dependency'] is False
+          assert summary['publication_effect'] == summary['adoption_effect'] == summary['graph_effect'] == 'none'
+          assert summary['terminal_state'] == 'terminal_complete_ten_partition_florida_corporate_name_and_source_listed_person_candidate_census'
+
+          assert source['expected_source_bytes'] == 1819049954
+          assert source['central_directory_sha256'] == '5524144b32429b336a2799a164f4fa5278e7825023fff638d65e8f8bdc577330'
+          assert source['head_receipt']['status'] == 200
+          assert source['head_receipt']['content_length'] == 1819049954
+          assert source['identity_admitted'] is False
+          assert index['all_partitions_selected'] is True
+          assert len(index['members']) == 10
+          assert [row['partition_digit'] for row in members] == list('0123456789')
+          assert all(row['uncompressed_size'] > 1_800_000_000 for row in members)
+          assert all(row['raw_compressed_member_retained'] is False for row in members)
+          assert all(row['raw_uncompressed_member_retained'] is False for row in members)
+
+          assert target['person_match_rule'] == 'exact public-label token multiset, order-insensitive; no nickname or legal-name expansion'
+          assert [row['public_label'] for row in target['person_targets']] == ['Joe Musselman', 'Alex Martin', 'Leyla Gladish', 'Nicole Nsam']
+          assert adjudication['public_schoolhouse_identity_admitted'] is False
+          assert adjudication['negative_existence_claim_created'] is False
+          assert manifest['counts']['candidate_rows'] == len(candidates)
+          assert manifest['counts']['source_rows_scanned'] == summary['source_rows_scanned']
+
+          forbidden_keys = {
+              'principal_address', 'mailing_address', 'registered_agent_address',
+              'officer_address', 'street_address', 'postal_code', 'email', 'phone'
+          }
+          for row in candidates:
+              assert row['public_schoolhouse_identity_admitted'] is False
+              assert row['negative_existence_claim_created'] is False
+              assert row['street_address_retained'] is False
+              assert row['mailing_address_retained'] is False
+              assert row['postal_code_retained'] is False
+              assert row['contact_detail_retained'] is False
+              assert row['private_support_rows'] == 0
+              assert row['outside_human_dependency'] is False
+              assert row['publication_effect'] == row['adoption_effect'] == row['graph_effect'] == 'none'
+              assert not (forbidden_keys & set(row))
+              assert row['schoolhouse_phrase_match'] or row['person_matches']
+              for officer in row['officers']:
+                  assert officer['street_address_retained'] is False
+                  assert officer['contact_detail_retained'] is False
+          print(json.dumps({
+              'source_rows_scanned': summary['source_rows_scanned'],
+              'candidate_rows': summary['candidate_rows'],
+              'exact_public_brand_base_rows': summary['corporate_name_exact_public_brand_base_rows'],
+              'person_match_rows': summary['source_listed_person_match_rows'],
+              'name_and_person_overlap_rows': summary['name_and_person_overlap_rows'],
+          }, sort_keys=True))
+          PYVERIFY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-fl-corporate-identity-census
+          path: /tmp/schoolhouse-fl-corporate-identity-census
+          if-no-files-found: error
+          retention-days: 90
