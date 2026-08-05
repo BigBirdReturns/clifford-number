@@ -1,0 +1,186 @@
+name: TEMP create dangling PC-49 product commit
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc49-dangling-product-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  create:
+    if: github.head_ref == 'agent/pc49-source-carrier'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact carrier head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+
+      - name: Reconstruct exact hosted v4 product
+        run: |
+          set -Eeuo pipefail
+          test "$(sha256sum .pc49-carrier-v4/manifest.json | awk '{print $1}')" = "7460a59b0cfa20eab2c8ef846e65f189f7a652db83558618c5c6c58e3cbdb0b1"
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, hashlib, io, json, shutil, tarfile
+
+          carrier = Path('.pc49-carrier-v4')
+          manifest = json.loads((carrier / 'manifest.json').read_text())
+          paths = manifest.get('permanent_paths', [])
+          expected_parts = [f'product.part{i:02d}' for i in range(8)]
+          if manifest.get('schema_version') != 'pc49-v4-carrier-manifest@1':
+              raise SystemExit('unexpected carrier schema')
+          if len(paths) != 14 or len(set(paths)) != 14 or paths != sorted(paths):
+              raise SystemExit('permanent path denominator mismatch')
+          if [part.get('path') for part in manifest.get('parts', [])] != expected_parts:
+              raise SystemExit('carrier part denominator mismatch')
+          chunks = []
+          for part in manifest['parts']:
+              raw = (carrier / part['path']).read_bytes()
+              if len(raw) != part['bytes'] or hashlib.sha256(raw).hexdigest() != part['sha256']:
+                  raise SystemExit(f"carrier part mismatch: {part['path']}")
+              chunks.append(b''.join(raw.split()))
+          encoded = b''.join(chunks)
+          if len(encoded) != manifest['base64_bytes'] or hashlib.sha256(encoded).hexdigest() != manifest['base64_sha256']:
+              raise SystemExit('aggregate base64 mismatch')
+          archive = base64.b64decode(encoded, validate=True)
+          if len(archive) != manifest['archive_bytes'] or hashlib.sha256(archive).hexdigest() != manifest['archive_sha256']:
+              raise SystemExit('archive mismatch')
+          root = Path('/tmp/pc49-v4-product')
+          shutil.rmtree(root, ignore_errors=True)
+          root.mkdir(parents=True)
+          with tarfile.open(fileobj=io.BytesIO(archive), mode='r:gz') as package:
+              members = [member for member in package.getmembers() if member.isfile()]
+              if [member.name for member in members] != paths:
+                  raise SystemExit('archive path mismatch')
+              for member in members:
+                  if member.name.startswith('/') or '..' in Path(member.name).parts:
+                      raise SystemExit(f'unsafe path: {member.name}')
+                  data = package.extractfile(member).read()
+                  if hashlib.sha256(data).hexdigest() != manifest['permanent_file_sha256'][member.name]:
+                      raise SystemExit(f'permanent file mismatch: {member.name}')
+                  target = root / member.name
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(data)
+          Path('/tmp/pc49-v4-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
+          PY
+
+      - name: Checkout exact live main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+          clean: true
+
+      - name: Create remote blobs, tree, and one-parent commit without moving a ref
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64
+          import hashlib
+          import json
+          import os
+          import subprocess
+          import urllib.error
+          import urllib.request
+
+          repo = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GH_TOKEN']
+          parent = subprocess.check_output(['git', 'rev-parse', 'HEAD^{commit}'], text=True).strip()
+          base_tree = subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip()
+          root = Path('/tmp/pc49-v4-product')
+          manifest = json.loads(Path('/tmp/pc49-v4-manifest.json').read_text())
+          paths = manifest['permanent_paths']
+
+          for name in paths:
+              exists = subprocess.run(['git', 'cat-file', '-e', f'{parent}:{name}'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+              if exists:
+                  raise SystemExit(f'permanent path already exists on live main: {name}')
+
+          def api(method, endpoint, payload=None):
+              url = f'https://api.github.com/repos/{repo}{endpoint}'
+              data = None if payload is None else json.dumps(payload, separators=(',', ':')).encode()
+              request = urllib.request.Request(url, data=data, method=method)
+              request.add_header('Accept', 'application/vnd.github+json')
+              request.add_header('Authorization', f'Bearer {token}')
+              request.add_header('X-GitHub-Api-Version', '2022-11-28')
+              request.add_header('User-Agent', 'pc49-dangling-product-materializer')
+              try:
+                  with urllib.request.urlopen(request, timeout=120) as response:
+                      return json.loads(response.read())
+              except urllib.error.HTTPError as exc:
+                  body = exc.read().decode(errors='replace')
+                  raise SystemExit(f'GitHub API {method} {endpoint} failed: HTTP {exc.code}: {body}')
+
+          entries = []
+          blob_receipts = {}
+          for name in paths:
+              data = (root / name).read_bytes()
+              digest = hashlib.sha256(data).hexdigest()
+              if digest != manifest['permanent_file_sha256'][name]:
+                  raise SystemExit(f'pre-upload hash mismatch: {name}')
+              blob = api('POST', '/git/blobs', {
+                  'content': base64.b64encode(data).decode(),
+                  'encoding': 'base64',
+              })
+              sha = blob['sha']
+              entries.append({'path': name, 'mode': '100644', 'type': 'blob', 'sha': sha})
+              blob_receipts[name] = {'blob_sha': sha, 'sha256': digest, 'bytes': len(data)}
+
+          tree = api('POST', '/git/trees', {'base_tree': base_tree, 'tree': entries})
+          message = (
+              'Add PC-49 runtime artifact and deterministic replay custody\n\n'
+              'Recover six intact frozen custody surfaces and install a newly qualified eight-file '
+              'implementation and adversarial test layer. Compose floor v47 over the exact v46 base '
+              'with 49 new promotion requirements, preserve every independent successor frontier, '
+              'require no outside-human action, and create no graph, publication, adoption, authority, '
+              'effect, prevalence, coordination, common-purpose, or intent conclusion.'
+          )
+          commit = api('POST', '/git/commits', {
+              'message': message,
+              'tree': tree['sha'],
+              'parents': [parent],
+          })
+          verified = api('GET', f"/git/commits/{commit['sha']}")
+          if verified['tree']['sha'] != tree['sha']:
+              raise SystemExit('remote commit tree mismatch')
+          if [row['sha'] for row in verified['parents']] != [parent]:
+              raise SystemExit('remote commit parent mismatch')
+
+          receipt = {
+              'carrier_head': '${{ github.event.pull_request.head.sha }}',
+              'parent_commit': parent,
+              'parent_tree': base_tree,
+              'product_commit': commit['sha'],
+              'product_tree': tree['sha'],
+              'permanent_paths': paths,
+              'permanent_files': len(paths),
+              'transport_paths': 0,
+              'archive_sha256': manifest['archive_sha256'],
+              'blob_receipts': blob_receipts,
+              'ref_updated': False,
+              'outside_human_dependency': False,
+              'graph_effect': 'none',
+          }
+          Path('/tmp/pc49-dangling-product-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps({key: receipt[key] for key in ['parent_commit', 'parent_tree', 'product_commit', 'product_tree', 'permanent_files', 'ref_updated']}, indent=2))
+          PY
+
+      - name: Upload dangling product receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc49-dangling-product-commit
+          path: /tmp/pc49-dangling-product-receipt.json
+          if-no-files-found: error
+          retention-days: 90
