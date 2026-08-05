@@ -1,0 +1,247 @@
+name: TEMP replay School.House archived legal-surface provider failures
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-archive-minimum-legal-surface-replay.yml'
+      - '.schoolhouse-archive-minimum-legal-surface-replay/EXECUTE'
+      - '.schoolhouse-archive-minimum-legal-surface-replay/retry-input.json.gz.b64'
+      - '.schoolhouse-archive-minimum-legal-surface-replay/replay.py.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: temp-schoolhouse-archive-minimum-legal-surface-replay-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact replay head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate exact two-route replay denominator and runner
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          BASE_PRODUCT='ee88d215bf85f6d3033fb07d6f236bcb71a54546'
+          INPUT_BUNDLE='.schoolhouse-archive-minimum-legal-surface-replay/retry-input.json.gz.b64'
+          INPUT='/tmp/schoolhouse-archive-minimum-legal-surface-retry-input.json'
+          BUNDLE='.schoolhouse-archive-minimum-legal-surface-replay/replay.py.gz.b64'
+          EXECUTE='.schoolhouse-archive-minimum-legal-surface-replay/EXECUTE'
+          WORKFLOW='.github/workflows/temp-schoolhouse-archive-minimum-legal-surface-replay.yml'
+          RUNNER='/tmp/replay-schoolhouse-archive-minimum-legal-surface.py'
+          EXPECTED_INPUT_SHA='cbd1dcfb811a7a4e7f1d0d440ea9ccc1b76500ff56523b3a03359a314a1c2bec'
+          EXPECTED_RUNNER_SHA='aeac379280c8394201e52b6f01ab4faf87310535cac6eeedd4984381194d293c'
+
+          git fetch --no-tags origin main
+          MAIN_SHA=$(git rev-parse origin/main)
+          MERGE_BASE=$(git merge-base HEAD origin/main)
+          printf 'main_sha=%s\nmerge_base=%s\n' "$MAIN_SHA" "$MERGE_BASE"
+          test "$MERGE_BASE" = "$BASE_PRODUCT"
+          git merge-base --is-ancestor "$BASE_PRODUCT" origin/main
+
+          mapfile -t CHANGED < <(git diff --name-only "$BASE_PRODUCT"..HEAD | sort)
+          EXPECTED=(
+            '.github/workflows/temp-schoolhouse-archive-minimum-legal-surface-replay.yml'
+            '.schoolhouse-archive-minimum-legal-surface-replay/EXECUTE'
+            '.schoolhouse-archive-minimum-legal-surface-replay/replay.py.gz.b64'
+            '.schoolhouse-archive-minimum-legal-surface-replay/retry-input.json.gz.b64'
+          )
+          test "${#CHANGED[@]}" -eq "${#EXPECTED[@]}"
+          for i in "${!EXPECTED[@]}"; do
+            test "${CHANGED[$i]}" = "${EXPECTED[$i]}"
+          done
+          git diff --exit-code -- "$INPUT_BUNDLE" "$BUNDLE" "$EXECUTE" "$WORKFLOW"
+
+          test "$(sha256sum "$INPUT_BUNDLE" | awk '{print $1}')" = '0e5a98b2efe003b020f7feeb38bdf608c9ec51c0b9707e23c23daa304df2086e'
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '808597323ed116df28215d725184d40de79fb197d77c63abc119154be58a9448'
+          grep -Fx "retry_input_sha256=$EXPECTED_INPUT_SHA" "$EXECUTE"
+          grep -Fx "runner_sha256=$EXPECTED_RUNNER_SHA" "$EXECUTE"
+          grep -Fx 'retry_input_rows=2' "$EXECUTE"
+          grep -Fx 'baseline_workflow_run_id=31030908630' "$EXECUTE"
+          grep -Fx 'baseline_artifact_id=8940650245' "$EXECUTE"
+          grep -Fx 'baseline_artifact_digest=sha256:dc499ff1899811f84be3873df2787835dd70f95a73a64d7652ede4d51f48f7da' "$EXECUTE"
+          grep -Fx 'maximum_parallel_workers=1' "$EXECUTE"
+          grep -Fx 'maximum_total_requests=2' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+
+          base64 -d "$INPUT_BUNDLE" | gzip -dc > "$INPUT"
+          test "$(sha256sum "$INPUT" | awk '{print $1}')" = "$EXPECTED_INPUT_SHA"
+          jq -e '
+            .schema_version == "schoolhouse-archive-minimum-legal-surface-retry-input@1" and
+            .baseline.workflow_run_id == 31030908630 and
+            .baseline.artifact_id == 8940650245 and
+            .baseline.artifact_digest == "sha256:dc499ff1899811f84be3873df2787835dd70f95a73a64d7652ede4d51f48f7da" and
+            .baseline.acquisition_head == "558a980ae0b0cf4380105acfd45ee2a5cce3dde6" and
+            .baseline.archived_content_route_results_sha256 == "e951990ff347b4ad08f6edfeb52189244b7d58d8a852251a1cb2bbe4f13c83b6" and
+            .baseline.selected_locators_sha256 == "38ea9b016f9b9b302efaa97bc456abde3bdb22a80943ebae7b3f0ec94b66d632" and
+            .baseline.provider_error_routes == 2 and
+            (.routes | length) == 2 and
+            ([.routes[].locator_id] | unique | length) == 2 and
+            ([.routes[].baseline_state] | unique) == ["terminal_archive_provider_error_not_absence_evidence"] and
+            ([.routes[].baseline_error_class] | unique) == ["URLError"] and
+            ([.routes[].baseline_request_attempts] | unique) == [1] and
+            ([.routes[].baseline_replay_locator_dereferenced] | unique) == [true] and
+            .bounds.additional_attempts_per_route == 1 and
+            .bounds.maximum_parallel_workers == 1 and
+            .bounds.maximum_total_requests? == null and
+            .bounds.raw_source_retained == false and
+            .bounds.outside_human_dependency == false
+          ' "$INPUT"
+
+          base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = "$EXPECTED_RUNNER_SHA"
+          python -m py_compile "$RUNNER"
+
+      - name: Execute one serialized bounded replay per failed locator
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          INPUT='/tmp/schoolhouse-archive-minimum-legal-surface-retry-input.json'
+          OUT='/tmp/schoolhouse-archive-minimum-legal-surface-replay'
+          rm -rf "$OUT"
+          python /tmp/replay-schoolhouse-archive-minimum-legal-surface.py --input "$INPUT" --output "$OUT"
+
+          for file in \
+            retry-input.json \
+            replay-route-results.jsonl \
+            archived-content-legal-signals.jsonl \
+            archived-content-discovered-legal-links.jsonl \
+            route-policy.json \
+            summary.json \
+            artifact-manifest.json \
+            SHA256SUMS; do
+            test -f "$OUT/$file"
+          done
+
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          cat "$OUT/summary.json"
+
+          jq -e '
+            .declared_retry_routes == 2 and
+            .terminal_replay_rows == 2 and
+            .additional_attempts_per_route == 1 and
+            .request_attempts == 2 and
+            .maximum_parallel_workers == 1 and
+            .inter_request_delay_seconds == 3 and
+            .replay_locators_dereferenced == 2 and
+            .archived_body_fetches >= 0 and
+            .archived_body_fetches <= 2 and
+            .archived_html_body_custody_rows >= 0 and
+            .archived_html_body_custody_rows <= .archived_body_fetches and
+            (.archived_html_body_custody_rows + .provider_error_routes + .http_error_routes + .other_terminal_routes) == 2 and
+            .forms_submitted == 0 and
+            .interactive_search_submissions == 0 and
+            .organization_name_submissions == 0 and
+            .identifier_submissions == 0 and
+            .raw_source_retained == false and
+            .visible_text_retained == false and
+            .street_address_rows_retained == 0 and
+            .contact_detail_rows_retained == 0 and
+            .private_support_rows == 0 and
+            .identities_admitted == 0 and
+            .negative_existence_claims_created == 0 and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/summary.json"
+
+          test "$(grep -cve '^$' "$OUT/replay-route-results.jsonl")" -eq 2
+          jq -s -e '
+            length == 2 and
+            ([.[].locator_id] | unique | length) == 2 and
+            all(
+              .schema_version == "schoolhouse-archived-content-replay-route-result@1" and
+              .acquisition_phase == "bounded_transport_replay" and
+              .attempt_number_for_locator == 2 and
+              .baseline_workflow_run_id == 31030908630 and
+              .baseline_artifact_id == 8940650245 and
+              .baseline_state == "terminal_archive_provider_error_not_absence_evidence" and
+              .baseline_request_attempts == 1 and
+              .request_method == "GET" and
+              .request_attempts == 1 and
+              .replay_locator_dereferenced == true and
+              .raw_body_retained == false and
+              .visible_text_retained == false and
+              .jsonld_raw_retained == false and
+              .form_values_retained == false and
+              .forms_submitted == 0 and
+              .interactive_search_submissions == 0 and
+              .organization_name_submissions == 0 and
+              .identifier_submissions == 0 and
+              .street_address_rows_retained == 0 and
+              .contact_detail_rows_retained == 0 and
+              .private_support_rows == 0 and
+              .identity_admitted == false and
+              .negative_existence_claim_created == false and
+              .outside_human_dependency == false and
+              .publication_effect == "none" and
+              .adoption_effect == "none" and
+              .graph_effect == "none" and
+              .promotes_to == "candidate_only"
+            )
+          ' "$OUT/replay-route-results.jsonl"
+
+          jq -e '
+            .baseline.workflow_run_id == 31030908630 and
+            .baseline.artifact_id == 8940650245 and
+            .source_denominator.source_minimum_surface_routes == 5 and
+            .source_denominator.replayed_provider_error_routes == 2 and
+            .source_denominator.successful_baseline_routes_not_repeated == 3 and
+            .request_bounds.maximum_parallel_workers == 1 and
+            .request_bounds.maximum_total_requests == 2 and
+            .request_bounds.requests_per_locator == 1 and
+            .request_bounds.retries_per_locator == 0 and
+            .request_bounds.external_links_fetched == 0 and
+            .retention.raw_archive_bodies_retained == false and
+            .interpretation.provider_or_http_error_after_replay_is_not_absence == true and
+            .interpretation.no_identity_may_be_admitted_by_this_acquisition == true and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/route-policy.json"
+
+          jq -e '
+            .schema_version == "schoolhouse-archive-minimum-legal-surface-replay-artifact@1" and
+            .baseline_workflow_run_id == 31030908630 and
+            .baseline_artifact_id == 8940650245 and
+            .retry_input_sha256 == "cbd1dcfb811a7a4e7f1d0d440ea9ccc1b76500ff56523b3a03359a314a1c2bec" and
+            .raw_source_retained == false and
+            .archived_visible_text_retained == false and
+            .street_address_rows_retained == 0 and
+            .contact_detail_rows_retained == 0 and
+            .private_support_rows == 0 and
+            .identity_admitted == false and
+            .negative_existence_claim_created == false and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none" and
+            .promotes_to == "candidate_only"
+          ' "$OUT/artifact-manifest.json"
+
+      - name: Upload terminal replay artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: schoolhouse-archive-minimum-legal-surface-replay
+          path: /tmp/schoolhouse-archive-minimum-legal-surface-replay
+          if-no-files-found: error
+          retention-days: 90
