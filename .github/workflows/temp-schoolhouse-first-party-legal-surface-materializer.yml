@@ -55,7 +55,7 @@ jobs:
 
           BUNDLE_SHA=$(sha256sum "$SOURCE_BUNDLE" | awk '{print $1}')
           echo "MATERIALIZER_BUNDLE_SHA=$BUNDLE_SHA"
-          test "$BUNDLE_SHA" = '38d70b08d260f218dd2c922641373d6c7be68c8aef72916d4f5e617bbbd7f60a'
+          test "$BUNDLE_SHA" = 'd7c8984f1e92381becf21b0fd2e71b9e26af3b4bf2906ed8223e4a4364348034'
           base64 -d "$SOURCE_BUNDLE" | gzip -dc > "$SOURCE_BUILDER"
           BUILDER_SHA=$(sha256sum "$SOURCE_BUILDER" | awk '{print $1}')
           echo "MATERIALIZER_SOURCE_SHA=$BUILDER_SHA"
