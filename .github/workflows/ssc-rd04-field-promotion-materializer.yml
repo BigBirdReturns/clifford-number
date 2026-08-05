@@ -1,0 +1,39 @@
+name: SSC RD-04 field-promotion tree probe
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd04-field-promotion-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Recover exact main, target, and carrier tree identities
+        run: |
+          set -Eeuo pipefail
+          TARGET_BRANCH=agent/ssc-rd-wave03-rd04-field-promotion-v1
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main +refs/heads/$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH
+          mkdir -p /tmp/ssc-rd04-field-promotion-tree-probe
+          {
+            printf 'head=%s\n' "$(git rev-parse HEAD)"
+            printf 'head_tree=%s\n' "$(git rev-parse 'HEAD^{tree}')"
+            printf 'main=%s\n' "$(git rev-parse origin/main)"
+            printf 'main_tree=%s\n' "$(git rev-parse 'origin/main^{tree}')"
+            printf 'target=%s\n' "$(git rev-parse origin/$TARGET_BRANCH)"
+            printf 'target_tree=%s\n' "$(git rev-parse "origin/$TARGET_BRANCH^{tree}")"
+          } | tee /tmp/ssc-rd04-field-promotion-tree-probe/trees.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-field-promotion-tree-probe
+          path: /tmp/ssc-rd04-field-promotion-tree-probe
+          if-no-files-found: error
+          retention-days: 90
