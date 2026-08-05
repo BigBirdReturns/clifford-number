@@ -13,8 +13,8 @@
   "conclusion_generated": false,
   "counts": {
     "acquisition_frontier_tasks": 7,
-    "coverage_denominator_rows": 11,
-    "explicit_gap_rows": 11,
+    "coverage_denominator_rows": 12,
+    "explicit_gap_rows": 12,
     "institutional_self_claim_rows": 10,
     "leadership_current_rows": 27,
     "leadership_historical_only_rows": 4,
@@ -28,9 +28,10 @@
     "schoolhouse_demo_day_sponsor_partner_rows": 9,
     "schoolhouse_faculty_rows": 18,
     "schoolhouse_visible_employee_rows": 4,
-    "source_inventory_rows": 79,
+    "source_inventory_rows": 86,
     "transaction_and_investment_observation_rows": 17,
-    "vehicle_and_related_entity_rows": 7
+    "vehicle_and_related_entity_rows": 7,
+    "portfolio_delta_candidate_rows": 9
   },
   "coverage": {
     "historical_rosters": "partial_search_index_snapshot",
@@ -53,7 +54,8 @@
     "schoolhouse_faculty": "surface_complete_as_rendered",
     "sec_vehicle_plane": "partial_exact_name_and_result_linked_pass",
     "source_archival": "locator_inventory_complete_for_this_package_bytes_and_hashes_pending",
-    "transactions": "17_of_30_current_labels_have_transaction_or_explicit_investment_observations"
+    "transactions": "17_of_30_current_labels_have_transaction_or_explicit_investment_observations",
+    "portfolio_delta_candidates": "9_public_claim_candidates_not_reconciled_to_frozen_current_page"
   },
   "custody": {
     "next_waterline": "source_archival_identity_resolution_and_human_evidence_review",
@@ -76,8 +78,8 @@
       "sha256": "7193c755065f9dea3c4343c0faee7fd30c56ea0651c44d4d785f43e6edafba78"
     },
     "coverage-matrix.json": {
-      "bytes": 4062,
-      "sha256": "a461114d033742ac78e3e13c8d346d87bc6baa8144e8e68c511128cf7bfec017"
+      "bytes": 4448,
+      "sha256": "ce6e26b51baba0b9ebbc7a8d10d4fb44b112b7eaf770775585ead76701d57da0"
     },
     "institutional-claims.jsonl": {
       "bytes": 5940,
@@ -142,6 +144,14 @@
     "source-inventory-05.jsonl": {
       "bytes": 1545,
       "sha256": "8e7918506aea219fdfdb1335d8e23069183d633937abee5d00773b830de00084"
+    },
+    "source-inventory-06.jsonl": {
+      "bytes": 3712,
+      "sha256": "df7836106c83d58556f63e2b60a2164b3a150b1dcbebbbdc2cefebab662b2583"
+    },
+    "portfolio-delta-candidates.jsonl": {
+      "bytes": 7326,
+      "sha256": "3556a2576e1b9e88cbefc5f1d02498eb7dbece57d57774c49d06ad65d274b28f"
     }
   },
   "graph_effect": "none",
@@ -173,21 +183,21 @@
   },
   "source_inventory": {
     "evidence_class_counts": {
-      "counterparty_primary_public": 9,
-      "counterparty_primary_public_platform_post": 3,
+      "counterparty_primary_public": 11,
+      "counterparty_primary_public_platform_post": 4,
       "counterparty_syndicated": 1,
       "official": 5,
       "primary_public": 51,
-      "primary_public_platform_post": 3,
+      "primary_public_platform_post": 6,
       "primary_public_platform_profile": 1,
-      "primary_public_search_index": 6
+      "primary_public_search_index": 7
     },
     "receipt_uniqueness": "required",
     "sec_filing_caveat": "The SEC has not necessarily reviewed Form D information and has not determined it accurate and complete.",
     "source_state_counts": {
-      "live_locator": 66,
-      "search_index_only": 12,
-      "search_index_snapshot": 1
+      "live_locator": 68,
+      "search_index_only": 16,
+      "search_index_snapshot": 2
     }
   },
   "storage_contract": {
@@ -206,7 +216,8 @@
       "source-inventory-02.jsonl",
       "source-inventory-03.jsonl",
       "source-inventory-04.jsonl",
-      "source-inventory-05.jsonl"
+      "source-inventory-05.jsonl",
+      "source-inventory-06.jsonl"
     ],
     "split_reason": "bounded human-reviewable shards; concatenation order is manifest-bound"
   }

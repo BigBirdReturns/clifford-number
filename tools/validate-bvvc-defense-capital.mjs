@@ -56,6 +56,7 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   const rejected = readJsonl(path.join(dir, 'rejected-joins.jsonl'));
   const coverage = readJson(path.join(dir, 'coverage-matrix.json'));
   const frontier = readJson(path.join(dir, 'acquisition-frontier.json'));
+  const portfolioDelta = readJsonl(path.join(dir, 'portfolio-delta-candidates.jsonl'));
 
   check(manifest.schema_version === 'bvvc-defense-capital-manifest@2', 'manifest schema must be v2');
   check(manifest.graph_effect === 'none' && manifest.promotes_to === 'candidate_only', 'manifest must remain graph-inert candidate custody');
@@ -79,7 +80,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     rejected_join_rows: rejected.length,
     coverage_denominator_rows: coverage.denominators.length,
     explicit_gap_rows: coverage.explicit_nulls_and_gaps.length,
-    acquisition_frontier_tasks: frontier.tasks.length
+    acquisition_frontier_tasks: frontier.tasks.length,
+    portfolio_delta_candidate_rows: portfolioDelta.length
   };
   for (const [key, actual] of Object.entries(countChecks)) {
     check(manifest.counts[key] === actual, `manifest count drift for ${key}: expected ${manifest.counts[key]}, got ${actual}`);
@@ -95,12 +97,14 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   check(transactions.length === 17, 'transaction plane must contain 17 typed observations');
   check(rejected.length === 16, 'rejected-join ledger must contain 16 rows');
   check(frontier.tasks.length === 7, 'acquisition frontier must contain 7 tasks');
+  check(portfolioDelta.length === 9, 'portfolio delta must contain 9 public-claim candidates');
 
   check(unique(leadership.map(row => row.actor_id)), 'leadership actor IDs must be unique');
   check(unique(portfolio.map(row => row.organization_id)), 'portfolio organization IDs must be unique');
   check(unique(sourceInventory.map(row => row.receipt_id)), 'receipt IDs must be unique');
   check(unique(transactions.map(row => row.transaction_id)), 'transaction IDs must be unique');
   check(unique(rejected.map(row => row.rejection_id)), 'rejection IDs must be unique');
+  check(unique(portfolioDelta.map(row => row.candidate_id)), 'portfolio-delta candidate IDs must be unique');
 
   for (const row of leadership) {
     check(row.surface_population === 27, `${row.actor_id} must carry the 27-row denominator`);
@@ -119,6 +123,14 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   }
   check(schoolhouse.faculty_surface.hop_eligible === false, 'School.House faculty surface must not be hop-eligible');
   check(schoolhouse.demo_day_2024.hop_eligible === false, 'School.House Demo Day surface must not be hop-eligible');
+  for (const row of portfolioDelta) {
+    check(row.current_portfolio_snapshot_membership === false, `${row.candidate_id} must remain absent from the frozen current snapshot`);
+    check(row.current_portfolio_membership_not_admitted === true, `${row.candidate_id} must not be admitted as a current-page member`);
+    check(row.graph_effect === 'none' && row.promotes_to === 'candidate_only', `${row.candidate_id} must remain graph-inert`);
+  }
+  const appliedAtomicsDelta = portfolioDelta.find(row => row.candidate_id === 'delta-applied-atomics-space-mobility');
+  check(appliedAtomicsDelta?.identity_state === 'predicate_specific_identity_unresolved', 'Applied Atomics space-mobility identity must remain unresolved');
+  check(/must_not_merge/i.test(Object.keys(appliedAtomicsDelta || {}).join(' ')), 'Applied Atomics row must carry a non-merge boundary');
 
   for (const row of vehicles) {
     check(row.portfolio_transaction_join_state === 'not_established', `${row.row_id} must not infer a portfolio transaction join`);
@@ -160,7 +172,7 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   const knownReceiptIds = new Set(sourceInventory.map(row => row.receipt_id));
   const referencedReceiptIds = collectReceiptIds([
     leadership, leadershipHistory, portfolio, schoolhouse, vehicles,
-    transactions, claims, coverage
+    transactions, claims, coverage, portfolioDelta
   ]);
   for (const receiptId of referencedReceiptIds) {
     check(knownReceiptIds.has(receiptId), `referenced receipt is missing from source inventory: ${receiptId}`);
