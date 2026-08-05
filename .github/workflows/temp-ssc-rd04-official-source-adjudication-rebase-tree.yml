@@ -1,0 +1,95 @@
+name: TEMP record RD-04 official source-adjudication rebase tree
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-ssc-rd04-official-source-adjudication-rebase-tree.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-rd04-official-source-adjudication-rebase-tree-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Record exact current-main tree and fourteen product blobs
+        run: |
+          set -Eeuxo pipefail
+          readonly PRODUCT_BASE=632d55fd7a38e84f849c9de19e6fe302b6dc36e3
+          readonly TARGET_BRANCH=agent/ssc-rd-wave03-rd04-official-source-adjudication-v1
+          readonly TARGET_LEASE=1c2fcc1fb116b0ceb6664c96f72a18e2f97ff456
+          readonly PRODUCT_PATHS=.ssc-rd04-official-source-adjudication-materializer/product-paths.txt
+          readonly RECEIPT=/tmp/ssc-rd04-official-source-adjudication-rebase-tree
+          readonly WORK=/tmp/ssc-rd04-official-source-adjudication-rebase-worktree
+
+          rm -rf "$RECEIPT" "$WORK"
+          mkdir -p "$RECEIPT"
+          test "$(sha256sum "$PRODUCT_PATHS" | awk '{print $1}')" = 2a7e77415ade43a98cd833096e33490d602d04dfbb238cab5520cebcc25a169e
+          test "$(wc -l < "$PRODUCT_PATHS" | tr -d ' ')" = 14
+
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          LIVE_MAIN=$(git rev-parse origin/main)
+          LIVE_TARGET=$(git rev-parse "origin/$TARGET_BRANCH")
+          test "$LIVE_TARGET" = "$TARGET_LEASE"
+          git merge-base --is-ancestor "$PRODUCT_BASE" "$LIVE_MAIN"
+          test "$(git rev-list --count "$PRODUCT_BASE..$LIVE_TARGET")" = 3
+
+          git diff --name-only "$PRODUCT_BASE..$LIVE_TARGET" | sort > "$RECEIPT/product-actual-paths.txt"
+          cmp "$PRODUCT_PATHS" "$RECEIPT/product-actual-paths.txt"
+          test "$(git diff --name-status "$PRODUCT_BASE..$LIVE_TARGET" | awk '$1 != "A" {n++} END {print n+0}')" = 0
+
+          git diff --name-only "$PRODUCT_BASE..$LIVE_MAIN" | sort > "$RECEIPT/main-increment-paths.txt"
+          comm -12 "$PRODUCT_PATHS" "$RECEIPT/main-increment-paths.txt" > "$RECEIPT/overlap.txt"
+          test ! -s "$RECEIPT/overlap.txt"
+
+          git worktree add --detach "$WORK" "$LIVE_MAIN"
+          while IFS= read -r path; do
+            mkdir -p "$WORK/$(dirname "$path")"
+            git show "$LIVE_TARGET:$path" > "$WORK/$path"
+            git -C "$WORK" add -- "$path"
+          done < "$PRODUCT_PATHS"
+
+          git -C "$WORK" diff --cached --name-only | sort > "$RECEIPT/staged-paths.txt"
+          cmp "$PRODUCT_PATHS" "$RECEIPT/staged-paths.txt"
+          test "$(git -C "$WORK" diff --cached --name-status "$LIVE_MAIN" | awk '$1 != "A" {n++} END {print n+0}')" = 0
+
+          MAIN_TREE=$(git rev-parse "$LIVE_MAIN^{tree}")
+          FINAL_TREE=$(git -C "$WORK" write-tree)
+          TARGET_TREE=$(git rev-parse "$LIVE_TARGET^{tree}")
+
+          python - "$LIVE_TARGET" "$PRODUCT_PATHS" "$RECEIPT/tree-elements.json" <<'PY'
+          import json, pathlib, subprocess, sys
+          target, paths_file, output = sys.argv[1:]
+          rows = []
+          for path in pathlib.Path(paths_file).read_text(encoding='utf-8').splitlines():
+              raw = subprocess.check_output(['git', 'ls-tree', target, '--', path], text=True).strip()
+              mode, kind, rest = raw.split(None, 2)
+              sha, actual_path = rest.split('\t', 1)
+              assert actual_path == path
+              rows.append({'path': path, 'mode': mode, 'type': kind, 'sha': sha})
+          pathlib.Path(output).write_text(json.dumps(rows, indent=2) + '\n', encoding='utf-8')
+          PY
+
+          printf 'product_base=%s\nlive_main=%s\nmain_tree=%s\nlive_target=%s\ntarget_tree=%s\nfinal_tree=%s\npermanent_paths=14\ncommits_before_rebind=3\nmain_overlap_paths=0\n' \
+            "$PRODUCT_BASE" "$LIVE_MAIN" "$MAIN_TREE" "$LIVE_TARGET" "$TARGET_TREE" "$FINAL_TREE" > "$RECEIPT/final.txt"
+          cp "$PRODUCT_PATHS" "$RECEIPT/product-paths.txt"
+          sha256sum "$RECEIPT"/* > "$RECEIPT/sha256sums.txt"
+          cat "$RECEIPT/final.txt"
+
+      - name: Preserve exact rebase-tree receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-official-source-adjudication-rebase-tree-v1
+          path: /tmp/ssc-rd04-official-source-adjudication-rebase-tree
+          if-no-files-found: error
+          retention-days: 30
