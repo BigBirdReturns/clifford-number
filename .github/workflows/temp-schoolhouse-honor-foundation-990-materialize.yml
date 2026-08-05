@@ -6,7 +6,8 @@ on:
     types: [opened, synchronize, reopened]
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: read
 
 concurrency:
   group: schoolhouse-honor-foundation-990-materializer-v1
@@ -16,72 +17,220 @@ jobs:
   materialize:
     if: github.head_ref == 'agent/schoolhouse-honor-foundation-990-materializer-v1'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 180
     steps:
-      - name: Check out exact diagnostic carrier head
+      - name: Check out exact rebase carrier head
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
-      - name: Export base, current-main, and qualified-product inputs
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Rebase, qualify, and publish the clean product
         shell: bash
         run: |
           set -Eeuo pipefail
-          BASE='1f04c0abbf89f1529dfd428389392b3425499bc3'
-          PRODUCT='06c23806d88b370f0f3122e68b768b626735aef2'
-          OUT='/tmp/schoolhouse-honor-foundation-990-rebase-inputs'
-          git fetch --prune --no-tags origin main
-          MAIN=$(git rev-parse origin/main)
-          rm -rf "$OUT"
-          mkdir -p "$OUT/base" "$OUT/main" "$OUT/product"
 
-          COMMON=(
+          CARRIER_BRANCH='agent/schoolhouse-honor-foundation-990-materializer-v1'
+          PRODUCT_BRANCH='agent/schoolhouse-honor-foundation-990-custody-product-v1'
+          EXPECTED_MAIN='efcf6bc094facb72dec6b966a7e8e3b2acdf4d06'
+          OLD_PRODUCT='06c23806d88b370f0f3122e68b768b626735aef2'
+          BUNDLE='.schoolhouse-honor-foundation-990-materializer/rebase.py.gz.b64'
+          EXPECTED_BUNDLE_SHA='76502327ce3d2c444ee0ebe2022967dd7aa29fc4a4c317523c9c0cd6aaccc89e'
+          EXPECTED_RUNNER_SHA='ce5fe76b996f80b207ae9d2e022c6f261c4f7814c32fe7d6799684f815fbf60f'
+          RUNNER='/tmp/rebase-schoolhouse-honor-foundation-990.py'
+          WORKTREE='/tmp/schoolhouse-honor-foundation-990-current-product'
+          OLD_DIR='/tmp/schoolhouse-honor-foundation-990-old-product'
+          PRESERVE='/tmp/schoolhouse-honor-foundation-990-preserve'
+          RECEIPT_DIR='/tmp/schoolhouse-honor-foundation-990-materialization-receipt'
+          REBASE_RECEIPT='/tmp/schoolhouse-honor-foundation-990-rebase.json'
+          QUALIFIED_SUMS='/tmp/schoolhouse-honor-foundation-990-qualified-sha256sums'
+
+          EXPECTED=(
             'data/intake/bvvc-defense-capital/README.md'
             'data/intake/bvvc-defense-capital/acquisition-frontier.json'
             'data/intake/bvvc-defense-capital/coverage-matrix.json'
             'data/intake/bvvc-defense-capital/manifest.json'
-            'data/intake/bvvc-defense-capital/schoolhouse.json'
-            'tools/validate-bvvc-defense-capital.mjs'
-          )
-          PRODUCT_ONLY=(
             'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-attempt-results.jsonl'
             'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-custody.json'
             'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-filing-results.jsonl'
             'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-index-resolutions.jsonl'
             'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-structural-signals.jsonl'
             'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-term-hits.jsonl'
+            'data/intake/bvvc-defense-capital/schoolhouse.json'
+            'data/intake/bvvc-defense-capital/source-inventory-18.jsonl'
+            'tools/validate-bvvc-defense-capital.mjs'
+            'tools/validate-schoolhouse-honor-foundation-990-custody.mjs'
+          )
+          OLD_FILES=(
+            'data/intake/bvvc-defense-capital/acquisition-frontier.json'
+            'data/intake/bvvc-defense-capital/coverage-matrix.json'
+            'data/intake/bvvc-defense-capital/manifest.json'
+            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-attempt-results.jsonl'
+            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-custody.json'
+            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-filing-results.jsonl'
+            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-index-resolutions.jsonl'
+            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-structural-signals.jsonl'
+            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-term-hits.jsonl'
+            'data/intake/bvvc-defense-capital/schoolhouse.json'
             'data/intake/bvvc-defense-capital/source-inventory-17.jsonl'
             'tools/validate-schoolhouse-honor-foundation-990-custody.mjs'
           )
 
-          export_one() {
-            local ref="$1"
-            local root="$2"
-            local path="$3"
-            mkdir -p "$root/$(dirname "$path")"
-            git show "$ref:$path" > "$root/$path"
-          }
+          test "${GITHUB_HEAD_REF}" = "$CARRIER_BRANCH"
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = "$EXPECTED_BUNDLE_SHA"
+          base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = "$EXPECTED_RUNNER_SHA"
+          python -m py_compile "$RUNNER"
 
-          for path in "${COMMON[@]}"; do
-            export_one "$BASE" "$OUT/base" "$path"
-            export_one "$MAIN" "$OUT/main" "$path"
-            export_one "$PRODUCT" "$OUT/product" "$path"
+          git fetch --prune --no-tags origin main
+          git fetch --no-tags origin "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          MAIN_SHA=$(git rev-parse origin/main)
+          PRODUCT_SHA=$(git rev-parse "refs/remotes/origin/$PRODUCT_BRANCH")
+          test "$MAIN_SHA" = "$EXPECTED_MAIN"
+          test "$PRODUCT_SHA" = "$OLD_PRODUCT"
+          MAIN_TREE=$(git rev-parse "$MAIN_SHA^{tree}")
+          printf 'main=%s\nmain_tree=%s\nold_product=%s\n' "$MAIN_SHA" "$MAIN_TREE" "$PRODUCT_SHA"
+
+          rm -rf "$WORKTREE" "$OLD_DIR" "$PRESERVE" "$RECEIPT_DIR" "$REBASE_RECEIPT" "$QUALIFIED_SUMS"
+          git worktree add --detach "$WORKTREE" "$MAIN_SHA"
+          trap 'git worktree remove --force "$WORKTREE" >/dev/null 2>&1 || true' EXIT
+          mkdir -p "$OLD_DIR"
+          for path in "${OLD_FILES[@]}"; do
+            mkdir -p "$OLD_DIR/$(dirname "$path")"
+            git show "$OLD_PRODUCT:$path" > "$OLD_DIR/$path"
           done
-          export_one "$MAIN" "$OUT/main" 'data/intake/bvvc-defense-capital/source-inventory-17.jsonl'
-          for path in "${PRODUCT_ONLY[@]}"; do
-            export_one "$PRODUCT" "$OUT/product" "$path"
+
+          python "$RUNNER" \
+            --root "$WORKTREE" \
+            --old-product-dir "$OLD_DIR" \
+            --parent-commit "$MAIN_SHA" \
+            --parent-tree "$MAIN_TREE" \
+            --receipt "$REBASE_RECEIPT"
+
+          cd "$WORKTREE"
+          node --check tools/validate-schoolhouse-honor-foundation-990-custody.mjs
+          node --check tools/validate-bvvc-defense-capital.mjs
+          node tools/validate-schoolhouse-honor-foundation-990-custody.mjs
+          node tools/validate-bvvc-defense-capital.mjs
+          node test/person-routers.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          sha256sum "${EXPECTED[@]}" > "$QUALIFIED_SUMS"
+          npm run release:check
+          sha256sum -c "$QUALIFIED_SUMS"
+
+          mkdir -p "$PRESERVE"
+          for path in "${EXPECTED[@]}"; do
+            mkdir -p "$PRESERVE/$(dirname "$path")"
+            cp "$path" "$PRESERVE/$path"
           done
+          git reset --hard "$MAIN_SHA"
+          git clean -fdx
+          for path in "${EXPECTED[@]}"; do
+            mkdir -p "$(dirname "$path")"
+            cp "$PRESERVE/$path" "$path"
+          done
+          sha256sum -c "$QUALIFIED_SUMS"
 
-          git diff --binary "$BASE".."$PRODUCT" -- data/intake/bvvc-defense-capital tools/validate-bvvc-defense-capital.mjs tools/validate-schoolhouse-honor-foundation-990-custody.mjs > "$OUT/product.patch"
-          git diff --binary "$BASE".."$MAIN" -- data/intake/bvvc-defense-capital tools/validate-bvvc-defense-capital.mjs > "$OUT/main-since-base.patch"
-          printf '{"base":"%s","main":"%s","product":"%s","outside_human_dependency":false}\n' "$BASE" "$MAIN" "$PRODUCT" > "$OUT/refs.json"
-          find "$OUT" -type f -print0 | sort -z | xargs -0 sha256sum > "$OUT/SHA256SUMS"
+          node tools/validate-schoolhouse-honor-foundation-990-custody.mjs
+          node tools/validate-bvvc-defense-capital.mjs
+          node test/person-routers.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
 
-      - name: Upload exact rebase inputs
+          mapfile -t CHANGED < <(git status --porcelain=v1 | sed -E 's/^.. //' | sort)
+          test "${#CHANGED[@]}" -eq "${#EXPECTED[@]}"
+          for i in "${!EXPECTED[@]}"; do
+            test "${CHANGED[$i]}" = "${EXPECTED[$i]}"
+          done
+          test "$(jq -s '[.[] | select(.locator_url | startswith("https://projects.propublica.org/")) | select(.evidence_class == "primary_public" and .source_type == "primary_public_form_990_object_route_attempt")] | length' data/intake/bvvc-defense-capital/source-inventory-18.jsonl)" -eq 3
+          jq -e '
+            .counts.source_inventory_rows == 447 and
+            .counts.coverage_denominator_rows == 28 and
+            .counts.explicit_gap_rows == 16 and
+            .source_inventory.evidence_class_counts.official == 222 and
+            .source_inventory.evidence_class_counts.primary_public == 54 and
+            .source_inventory.evidence_class_counts.primary_public_state_charity_registry_route_custody == 6 and
+            .counts.schoolhouse_honor_foundation_990_declared_filing_rows == 3 and
+            .counts.schoolhouse_honor_foundation_990_successful_xml_screen_rows == 2 and
+            .counts.schoolhouse_honor_foundation_990_source_unavailable_after_replay_rows == 1 and
+            .counts.schoolhouse_honor_foundation_990_fixed_term_hit_rows == 0 and
+            .counts.schoolhouse_honor_foundation_990_admitted_identity_rows == 0 and
+            .counts.schoolhouse_honor_foundation_990_admitted_relationship_rows == 0 and
+            .counts.private_support_rows == 0 and
+            .counts.public_graph_rows_created == 0 and
+            .storage_contract.source_inventory_parts[-2:] == ["source-inventory-17.jsonl", "source-inventory-18.jsonl"] and
+            .graph_effect == "none" and
+            .promotes_to == "candidate_only"
+          ' data/intake/bvvc-defense-capital/manifest.json
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "${EXPECTED[@]}"
+          git diff --cached --exit-code --quiet && { echo 'rebase produced no staged product' >&2; exit 1; }
+          git commit -m 'Preserve School.House related-charity Form 990 candidate custody' \
+            -m 'Rebase three exact IRS-index resolutions, two privacy-minimized official XML screens, one exact member unavailable after one replay, and corrected primary-public bridge provenance onto the Florida charity successor. Preserve zero fixed term hits, zero identity or relationship admissions, no outside-human dependency, and no publication, adoption, or graph effect.'
+
+          NEW_PRODUCT_SHA=$(git rev-parse HEAD)
+          NEW_PRODUCT_TREE=$(git rev-parse 'HEAD^{tree}')
+          test "$(git rev-list --count "$MAIN_SHA"..HEAD)" -eq 1
+          test "$(git rev-list --count HEAD.."$MAIN_SHA")" -eq 0
+          test "$(git diff --name-only "$MAIN_SHA"..HEAD | sort | wc -l)" -eq 14
+          git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$OLD_PRODUCT" origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+
+          mkdir -p "$RECEIPT_DIR"
+          cp "$REBASE_RECEIPT" "$RECEIPT_DIR/rebase.json"
+          cp "$QUALIFIED_SUMS" "$RECEIPT_DIR/qualified-sha256sums.txt"
+          git diff --name-only "$MAIN_SHA"..HEAD | sort > "$RECEIPT_DIR/changed-paths.txt"
+          python - <<PY > "$RECEIPT_DIR/product.json"
+          import json
+          print(json.dumps({
+              'schema_version': 'schoolhouse-honor-foundation-990-product@3',
+              'carrier_branch': '$CARRIER_BRANCH',
+              'carrier_head': '${{ github.event.pull_request.head.sha }}',
+              'canonical_parent_commit': '$MAIN_SHA',
+              'canonical_parent_tree': '$MAIN_TREE',
+              'superseded_product_commit': '$OLD_PRODUCT',
+              'product_branch': '$PRODUCT_BRANCH',
+              'product_commit': '$NEW_PRODUCT_SHA',
+              'product_tree': '$NEW_PRODUCT_TREE',
+              'permanent_changed_paths': 14,
+              'source_inventory_rows_before': 431,
+              'source_inventory_rows_after': 447,
+              'coverage_denominator_rows_before': 27,
+              'coverage_denominator_rows_after': 28,
+              'official_receipts_after': 222,
+              'primary_public_receipts_after': 54,
+              'state_charity_receipts_after': 6,
+              'propublica_rows_reclassified': 3,
+              'declared_filings': 3,
+              'successful_xml_screens': 2,
+              'source_unavailable_after_replay': 1,
+              'fixed_term_hits': 0,
+              'identities_admitted': 0,
+              'relationships_admitted': 0,
+              'private_support_rows': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }, indent=2, sort_keys=True))
+          PY
+
+      - name: Upload materialization receipt
         uses: actions/upload-artifact@v4
         with:
-          name: schoolhouse-honor-foundation-990-rebase-inputs
-          path: /tmp/schoolhouse-honor-foundation-990-rebase-inputs
+          name: schoolhouse-honor-foundation-990-materialization-receipt-v3
+          path: /tmp/schoolhouse-honor-foundation-990-materialization-receipt
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 90
