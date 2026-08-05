@@ -553,8 +553,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const secondLevelForms = readJsonl(path.join(dir, 'schoolhouse-charity-nc-second-level-surface-forms.jsonl'));
     const secondLevelRoutes = [...secondLevelRoots, ...secondLevelFollowed];
 
-    check(manifest.counts.source_inventory_rows === 224, 'second-level source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 20, 'second-level coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 275, 'second-level source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 21, 'second-level coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'second-level explicit-gap count drift');
     check(manifest.counts.schoolhouse_charity_nc_second_level_root_route_rows === secondLevelRoots.length && secondLevelRoots.length === 8, 'second-level root-route denominator drift');
     check(manifest.counts.schoolhouse_charity_nc_second_level_followed_route_rows === secondLevelFollowed.length && secondLevelFollowed.length === 80, 'second-level followed-route denominator drift');
@@ -612,6 +612,66 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const secondLevelFrontier = frontier.tasks.find(task => task.task_id === 'bvvc-frontier-schoolhouse-legal-governance')?.prior_charity_nc_second_level_route_discovery;
     check(secondLevelFrontier?.terminal_route_rows === 88 && secondLevelFrontier?.residual_relevant_links === 51 && secondLevelFrontier?.residual_file_links === 16 && secondLevelFrontier?.admitted_identities === 0, 'School.House second-level frontier projection drift');
     check(coverage.denominators.some(row => row.surface === 'School.House Florida-charity and North Carolina second-level static-route discovery' && row.enumerated_total === 88 && row.residual_relevant_links === 51 && row.residual_file_links === 16 && row.search_submissions === 0), 'second-level coverage denominator missing');
+  }
+
+
+  {
+    const finalResidualCustody = readJson(path.join(dir, 'schoolhouse-charity-nc-final-static-residual-custody.json'));
+    const finalResidualInputs = readJsonl(path.join(dir, 'schoolhouse-charity-nc-final-static-residual-input-links.jsonl'));
+    const finalResidualRoutes = readJsonl(path.join(dir, 'schoolhouse-charity-nc-final-static-residual-route-results.jsonl'));
+    const finalResidualHtml = readJsonl(path.join(dir, 'schoolhouse-charity-nc-final-static-residual-html-surfaces.jsonl'));
+    const finalResidualForms = readJsonl(path.join(dir, 'schoolhouse-charity-nc-final-static-residual-surface-forms.jsonl'));
+    const finalResidualFiles = readJsonl(path.join(dir, 'schoolhouse-charity-nc-final-static-residual-file-samples.jsonl'));
+
+    check(manifest.counts.source_inventory_rows === 275, 'final residual source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 21, 'final residual coverage-denominator count drift');
+    check(manifest.counts.explicit_gap_rows === 16, 'final residual explicit-gap count drift');
+    check(manifest.counts.schoolhouse_charity_nc_final_static_residual_input_rows === finalResidualInputs.length && finalResidualInputs.length === 51, 'final residual input denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_final_static_residual_terminal_route_rows === finalResidualRoutes.length && finalResidualRoutes.length === 51, 'final residual route denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_final_static_residual_file_target_rows === finalResidualInputs.filter(row => row.file_target === true).length && manifest.counts.schoolhouse_charity_nc_final_static_residual_file_target_rows === 16, 'final residual input file-target denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_final_static_residual_terminal_file_target_rows === finalResidualRoutes.filter(row => row.input_file_target === true).length && manifest.counts.schoolhouse_charity_nc_final_static_residual_terminal_file_target_rows === 16, 'final residual terminal file-target denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_final_static_residual_html_success_routes === finalResidualRoutes.filter(row => row.terminal_state === 'http_success_html').length && manifest.counts.schoolhouse_charity_nc_final_static_residual_html_success_routes === 34, 'final residual HTML-success denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_final_static_residual_bounded_file_sample_routes === finalResidualRoutes.filter(row => row.terminal_state === 'http_success_file_sample').length && manifest.counts.schoolhouse_charity_nc_final_static_residual_bounded_file_sample_routes === 15, 'final residual file-sample-route denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_final_static_residual_http_error_routes === finalResidualRoutes.filter(row => row.terminal_state === 'http_error').length && manifest.counts.schoolhouse_charity_nc_final_static_residual_http_error_routes === 2, 'final residual HTTP-error denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_final_static_residual_html_surface_rows === finalResidualHtml.length && finalResidualHtml.length === 35, 'final residual HTML-surface denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_final_static_residual_form_rows === finalResidualForms.length && finalResidualForms.length === 0, 'final residual form denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_final_static_residual_file_sample_rows === finalResidualFiles.length && finalResidualFiles.length === 15, 'final residual file-sample denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_final_static_residual_search_submissions === 0 && manifest.counts.schoolhouse_charity_nc_final_static_residual_source_rows_acquired === 0 && manifest.counts.schoolhouse_charity_nc_final_static_residual_admitted_identity_rows === 0, 'final residual authority-count drift');
+
+    check(unique(finalResidualInputs.map(row => row.route_id)) && unique(finalResidualInputs.map(row => row.url)), 'final residual input IDs and URLs must be unique');
+    check(finalResidualInputs.every(row => knownReceiptIds.has(row.receipt_id) && row.source_receipt_ids.every(id => knownReceiptIds.has(id))), 'final residual input receipt custody drift');
+    check(finalResidualInputs.every(row => row.official_host === true && row.relevant === true && row.query_submission_required === false && row.graph_effect === 'none' && row.promotes_to === 'candidate_only'), 'final residual input authority drift');
+    check(unique(finalResidualRoutes.map(row => row.route_id)) && unique(finalResidualRoutes.map(row => row.receipt_id)), 'final residual route IDs and receipts must be unique');
+    const finalResidualInputById = new Map(finalResidualInputs.map(row => [row.route_id, row]));
+    check(finalResidualRoutes.every(row => finalResidualInputById.has(row.route_id) && finalResidualInputById.get(row.route_id).url === row.url && knownReceiptIds.has(row.receipt_id)), 'final residual route input/receipt drift');
+    check(finalResidualRoutes.every(row => row.all_attempts_terminal === true && row.request_attempts === 1 && row.request_method === 'GET' && row.final_host_allowed === true), 'final residual route request-bound drift');
+    check(finalResidualRoutes.every(row => row.source_rows_acquired === 0 && row.raw_source_retained === false && row.complete_remote_file_retained === false), 'final residual route source/privacy drift');
+    check(finalResidualRoutes.every(row => row.identity_admitted === false && row.negative_existence_claim_created === false && row.graph_effect === 'none' && row.promotes_to === 'candidate_only'), 'final residual route authority drift');
+    check(finalResidualRoutes.filter(row => row.status === 200).length === 34 && finalResidualRoutes.filter(row => row.status === 206).length === 15 && finalResidualRoutes.filter(row => row.status === 404).length === 1 && finalResidualRoutes.filter(row => row.status === 500).length === 1, 'final residual HTTP-status denominator drift');
+    check(finalResidualRoutes.some(row => row.status === 404 && row.input_file_target === true && row.terminal_state === 'http_error'), 'final residual PDF 404 custody missing');
+    check(finalResidualRoutes.some(row => row.status === 500 && row.input_file_target === false && row.terminal_state === 'http_error'), 'final residual manual-page 500 custody missing');
+
+    check(unique(finalResidualHtml.map(row => row.route_id)), 'final residual HTML route IDs must be unique');
+    check(finalResidualHtml.every(row => finalResidualInputById.has(row.route_id) && knownReceiptIds.has(row.receipt_id) && row.raw_html_retained === false && row.visible_text_retained === false && row.source_rows_acquired === 0 && row.identity_admitted === false && row.graph_effect === 'none'), 'final residual HTML custody drift');
+    check(finalResidualForms.length === 0, 'final residual form rows must remain zero');
+    check(unique(finalResidualFiles.map(row => row.route_id)), 'final residual file route IDs must be unique');
+    check(finalResidualFiles.every(row => finalResidualInputById.get(row.route_id)?.file_target === true && knownReceiptIds.has(row.receipt_id) && row.status === 206 && row.range_requested === true && row.complete_remote_file_retained === false && row.full_file_sha256_claimed === false && row.source_rows_acquired === 0 && row.identity_admitted === false && row.graph_effect === 'none'), 'final residual file-sample custody drift');
+
+    check(finalResidualCustody.acquisition.workflow_run_id === 30986284127 && finalResidualCustody.acquisition.artifact_id === 8922193975 && finalResidualCustody.acquisition.artifact_digest === 'sha256:aae714c531d7e4335c843ab9ce4bd7626c51c6f2d7be7588b6c8c02c7eb6142d' && finalResidualCustody.acquisition.acquisition_head === '4aba5edcd8f7680510aa464952c2fcf2f9efee38', 'final residual acquisition custody drift');
+    check(finalResidualCustody.frozen_input.predecessor_sha256 === 'a25d2a537eda86f202ea438a53d6fd9369695a151163e2b67af304787fb25a52' && finalResidualCustody.frozen_input.residual_unique_links === 101 && finalResidualCustody.frozen_input.relevant_residual_routes === 51 && finalResidualCustody.frozen_input.file_targets === 16, 'final residual frozen input drift');
+    check(finalResidualCustody.bounds.maximum_attempts_per_route === 1 && finalResidualCustody.bounds.maximum_parallel_workers === 8 && JSON.stringify(finalResidualCustody.bounds.request_methods) === JSON.stringify(['GET']) && finalResidualCustody.bounds.result_spawned_requests === 0, 'final residual bound custody drift');
+    check(finalResidualCustody.counts.terminal_route_rows === 51 && finalResidualCustody.counts.terminal_file_target_rows === 16 && finalResidualCustody.counts.html_success_routes === 34 && finalResidualCustody.counts.bounded_file_sample_routes === 15 && finalResidualCustody.counts.http_error_routes === 2 && finalResidualCustody.counts.html_surface_rows === 35 && finalResidualCustody.counts.form_rows === 0 && finalResidualCustody.counts.file_sample_rows === 15, 'final residual custody denominator drift');
+    check(finalResidualCustody.terminal_frontier.static_residual_route_denominator_terminal === true && finalResidualCustody.terminal_frontier.relevant_residual_routes_terminal === 51 && finalResidualCustody.terminal_frontier.file_targets_terminal === 16 && finalResidualCustody.terminal_frontier.outside_human_dependency === false, 'final residual terminal-frontier drift');
+    check(finalResidualCustody.north_carolina.automated_or_scripted_interactive_searches_not_permitted === true && finalResidualCustody.north_carolina.interactive_search_submissions === 0, 'final residual North Carolina policy drift');
+    check(finalResidualCustody.privacy.raw_source_retained === false && finalResidualCustody.privacy.complete_remote_files_retained === false && finalResidualCustody.privacy.hidden_form_values_retained === false && finalResidualCustody.privacy.street_address_rows_retained === 0 && finalResidualCustody.privacy.contact_detail_rows_retained === 0 && finalResidualCustody.privacy.private_support_rows === 0, 'final residual custody privacy drift');
+    check(finalResidualCustody.public_schoolhouse_identity_admitted === false && finalResidualCustody.negative_existence_claim_created === false && finalResidualCustody.outside_human_dependency === false && finalResidualCustody.publication_effect === 'none' && finalResidualCustody.adoption_effect === 'none' && finalResidualCustody.graph_effect === 'none' && finalResidualCustody.promotes_to === 'candidate_only', 'final residual custody authority drift');
+
+    const finalResidualProjection = schoolhouse.state_registry_identity_census?.charity_north_carolina_final_static_residual_custody;
+    check(finalResidualProjection?.terminal_routes === 51 && finalResidualProjection?.terminal_file_targets === 16 && finalResidualProjection?.bounded_file_sample_routes === 15 && finalResidualProjection?.http_error_routes === 2 && finalResidualProjection?.html_surface_rows === 35 && finalResidualProjection?.form_rows === 0, 'School.House final residual projection drift');
+    check(finalResidualProjection?.identity_state === 'unresolved_after_terminal_final_static_residual_no_public_identity_admitted' && finalResidualProjection?.admitted_legal_name === null && finalResidualProjection?.admitted_ein === null, 'School.House final residual identity authority drift');
+    const finalResidualFrontier = frontier.tasks.find(task => task.task_id === 'bvvc-frontier-schoolhouse-legal-governance')?.prior_charity_nc_final_static_residual_custody;
+    check(finalResidualFrontier?.terminal_routes === 51 && finalResidualFrontier?.terminal_file_targets === 16 && finalResidualFrontier?.bounded_file_sample_routes === 15 && finalResidualFrontier?.http_error_routes === 2 && finalResidualFrontier?.admitted_identities === 0 && finalResidualFrontier?.static_residual_route_denominator_terminal === true, 'School.House final residual frontier projection drift');
+    check(coverage.denominators.some(row => row.surface === 'School.House North Carolina final static residual route custody' && row.enumerated_total === 51 && row.terminal_file_target_total === 16 && row.bounded_file_sample_routes === 15 && row.http_error_routes === 2 && row.search_submissions === 0), 'final residual coverage denominator missing');
   }
 
   return errors;
