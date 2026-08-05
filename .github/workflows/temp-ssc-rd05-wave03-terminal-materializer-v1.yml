@@ -1,0 +1,215 @@
+name: TEMP materialize RD-05 Wave-03 terminal custody v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-rd05-wave03-terminal-materializer-v1.yml'
+      - '.transport/ssc-rd05-wave03-terminal-v1/**'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd05-wave03-terminal-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    env:
+      CARRIER_ROOT: .transport/ssc-rd05-wave03-terminal-v1/shards
+      INPUT_BRANCH: agent/ssc-rd-wave03-rd05-member-participation
+      INPUT_HEAD: bc9800dcd3a3768288a5dfeaf0f7144969994ffa
+      PRODUCT_BRANCH: agent/ssc-rd05-wave03-terminal-product-v1
+      PRODUCT_LEASE: 170cffa6c2a0c1e6fcd5124d713f054d228b4979
+      BASE64_BYTES: '115852'
+      BASE64_SHA256: e129633c3851d3a47ce01760bc8e1250d71f00ea13b50b186425e075c6ef71a8
+      ARCHIVE_BYTES: '86888'
+      ARCHIVE_SHA256: 8419b052b96741a9a0277057289301d51b62166c62f0a3855288e24122c2fa32
+    steps:
+      - name: Check out exact pull-request head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Reconstruct, qualify, and publish transport-safe product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export GIT_AUTHOR_NAME='github-actions[bot]'
+          export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+
+          WORK="$RUNNER_TEMP/ssc-rd05-wave03-terminal-v1"
+          PACKAGE="$WORK/package"
+          RECEIPT="$WORK/receipt"
+          rm -rf "$WORK"
+          mkdir -p "$PACKAGE" "$RECEIPT"
+          exec > >(tee "$RECEIPT/execution.log") 2>&1
+          STAGE=init
+          finish() {
+            rc=$?
+            printf 'status=%s\nstage=%s\nexit_code=%s\nutc=%s\n' \
+              "$([[ $rc -eq 0 ]] && echo complete || echo failed_closed)" \
+              "$STAGE" "$rc" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$RECEIPT/checkpoint.txt"
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          STAGE=verify-carrier
+          cat > "$RECEIPT/shards.sha256" <<'SHARDS'
+          eb58b7a69e70ebc09bfc0a48a1e36398d03665555486e517eab88961ddf02997  000.b64
+          a398398c032455c46017b93c323228f1853675230d1f0cba0377bc845c4242a1  001.b64
+          8c06e0e59e2cdf240aabb6c108874732c791b10ff79afe5cff4298a80ea6a66e  002.b64
+          779e97547dedb757c45cad058e4fecf3409cc96674d658ae9c5fca33411334cb  003.b64
+          bec4df42421ca90805e4cb75bb4566568306a03e0cc978f654fbd25424d73484  004.b64
+          b0663afffc3f4e987aac2c590ee738dc16d016a4c6ae8c164bfc94e5dfe3f92b  005.b64
+          SHARDS
+          sed -i 's/^          //' "$RECEIPT/shards.sha256"
+          test "$(find "$CARRIER_ROOT" -maxdepth 1 -type f -name '*.b64' | wc -l | tr -d ' ')" = 6
+          (cd "$CARRIER_ROOT" && sha256sum -c "$RECEIPT/shards.sha256")
+          cat "$CARRIER_ROOT"/*.b64 > "$WORK/product.b64"
+          test "$(stat -c '%s' "$WORK/product.b64")" = "$BASE64_BYTES"
+          test "$(sha256sum "$WORK/product.b64" | awk '{print $1}')" = "$BASE64_SHA256"
+          base64 -d "$WORK/product.b64" > "$WORK/product.tar.xz"
+          test "$(stat -c '%s' "$WORK/product.tar.xz")" = "$ARCHIVE_BYTES"
+          test "$(sha256sum "$WORK/product.tar.xz" | awk '{print $1}')" = "$ARCHIVE_SHA256"
+          tar -xJf "$WORK/product.tar.xz" -C "$PACKAGE"
+
+          cat > "$RECEIPT/input-paths.txt" <<'INPUTS'
+          data/intake/status-sovereignty-rd-wave03-rd05-member-participation/field-matrix-contract.json
+          data/intake/status-sovereignty-rd-wave03-rd05-member-participation/intake-product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd05-member-participation/source-census-protocol.json
+          data/project/ssc-residual-wave03/seeds/RD-05-C02.json
+          docs/milestones/ssc-rd-wave03-rd05-member-participation-intake.md
+          schemas/status-sovereignty-rd-wave03-rd05-member-participation-intake.schema.json
+          test/status-sovereignty-rd-wave03-rd05-member-participation-intake.test.js
+          tools/acquisition/status-sovereignty-rd-wave03-rd05/run-source-census.py
+          tools/build-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs
+          INPUTS
+          sed -i 's/^          //' "$RECEIPT/input-paths.txt"
+          test "$(wc -l < "$RECEIPT/input-paths.txt" | tr -d ' ')" = 10
+
+          cat > "$RECEIPT/package-paths.txt" <<'PACKAGE_PATHS'
+          data/intake/status-sovereignty-rd-wave03-rd05-member-participation/source-census-execution-receipt.json
+          data/intake/status-sovereignty-rd-wave03-rd05-member-participation/candidate-adjudication/index.json
+          data/intake/status-sovereignty-rd-wave03-rd05-member-participation/candidate-adjudication/part-00.jsonl
+          data/intake/status-sovereignty-rd-wave03-rd05-member-participation/candidate-adjudication/part-01.jsonl
+          data/intake/status-sovereignty-rd-wave03-rd05-member-participation/candidate-adjudication/part-02.jsonl
+          data/intake/status-sovereignty-rd-wave03-rd05-member-participation/candidate-adjudication/part-03.jsonl
+          data/intake/status-sovereignty-rd-wave03-rd05-member-participation/candidate-adjudication/part-04.jsonl
+          data/intake/status-sovereignty-rd-wave03-rd05-member-participation/official-body-observation-protocol.json
+          data/intake/status-sovereignty-rd-wave03-rd05-member-participation/official-body-observations.jsonl
+          data/intake/status-sovereignty-rd-wave03-rd05-member-participation/candidate-and-official-observation-manifest.json
+          data/project/ssc-residual-wave03/closures/RD-05-C02.json
+          data/research/status-sovereignty-rd-wave03-rd05-member-participation/class-receipt.json
+          data/research/status-sovereignty-rd-wave03-rd05-member-participation/manifest.json
+          data/research/status-sovereignty-rd-wave03-rd05-member-participation/summary.json
+          data/research/status-sovereignty-rd-wave03-rd05-member-participation/terminal-field-matrix.json
+          docs/milestones/ssc-rd-wave03-rd05-member-participation.md
+          schemas/status-sovereignty-rd-wave03-rd05-member-participation.schema.json
+          test/status-sovereignty-rd-wave03-rd05-member-participation.test.js
+          tools/build-status-sovereignty-rd-wave03-rd05-member-participation.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd05-member-participation.mjs
+          PACKAGE_PATHS
+          sed -i 's/^          //' "$RECEIPT/package-paths.txt"
+          test "$(wc -l < "$RECEIPT/package-paths.txt" | tr -d ' ')" = 20
+          find "$PACKAGE" -type f -printf '%P\n' | sort > "$RECEIPT/archive-paths.txt"
+          sort "$RECEIPT/package-paths.txt" > "$RECEIPT/package-paths-sorted.txt"
+          cmp "$RECEIPT/package-paths-sorted.txt" "$RECEIPT/archive-paths.txt"
+          test "$(find "$PACKAGE" -type l | wc -l | tr -d ' ')" = 0
+
+          STAGE=bind-leases
+          git fetch --no-tags origin main "$INPUT_BRANCH" "$PRODUCT_BRANCH"
+          MAIN_HEAD=$(git rev-parse origin/main)
+          test "$(git rev-parse "origin/$INPUT_BRANCH")" = "$INPUT_HEAD"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PRODUCT_LEASE"
+          printf 'main_head=%s\ninput_branch=%s\ninput_head=%s\nproduct_branch=%s\nproduct_lease=%s\n' \
+            "$MAIN_HEAD" "$INPUT_BRANCH" "$INPUT_HEAD" "$PRODUCT_BRANCH" "$PRODUCT_LEASE" > "$RECEIPT/leases.txt"
+
+          STAGE=compose
+          git checkout --detach "$MAIN_HEAD"
+          while IFS= read -r rel; do test ! -e "$rel"; done < "$RECEIPT/input-paths.txt"
+          while IFS= read -r rel; do test ! -e "$rel"; done < "$RECEIPT/package-paths.txt"
+          xargs -d '\n' git checkout "$INPUT_HEAD" -- < "$RECEIPT/input-paths.txt"
+          cp -a "$PACKAGE"/. .
+          xargs -d '\n' git add -- < "$RECEIPT/package-paths.txt"
+          cat "$RECEIPT/input-paths.txt" "$RECEIPT/package-paths.txt" > "$RECEIPT/permanent-nonworkflow-paths.txt"
+          git diff --cached --name-status > "$RECEIPT/name-status.txt"
+          test "$(wc -l < "$RECEIPT/name-status.txt" | tr -d ' ')" = 30
+          test "$(awk '$1 != "A" {n++} END {print n+0}' "$RECEIPT/name-status.txt")" = 0
+          ! grep -F '.github/workflows/' "$RECEIPT/name-status.txt"
+
+          run_focused() {
+            node --check tools/build-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs
+            node --check tools/validate-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs
+            node --check test/status-sovereignty-rd-wave03-rd05-member-participation-intake.test.js
+            python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd05/run-source-census.py
+            node tools/build-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs --check
+            node tools/validate-status-sovereignty-rd-wave03-rd05-member-participation-intake.mjs
+            node test/status-sovereignty-rd-wave03-rd05-member-participation-intake.test.js
+            OUT="$RUNNER_TEMP/rd05-wave03-intake-dry-run"
+            rm -rf "$OUT"
+            python tools/acquisition/status-sovereignty-rd-wave03-rd05/run-source-census.py --dry-run --output "$OUT"
+            node --check tools/build-status-sovereignty-rd-wave03-rd05-member-participation.mjs
+            node --check tools/validate-status-sovereignty-rd-wave03-rd05-member-participation.mjs
+            node --check test/status-sovereignty-rd-wave03-rd05-member-participation.test.js
+            node tools/build-status-sovereignty-rd-wave03-rd05-member-participation.mjs --check
+            node tools/validate-status-sovereignty-rd-wave03-rd05-member-participation.mjs
+            node test/status-sovereignty-rd-wave03-rd05-member-participation.test.js
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          }
+
+          STAGE=focused-gates
+          run_focused
+          git diff --check "$MAIN_HEAD"
+
+          STAGE=full-release-gate
+          npm run release:check
+
+          STAGE=clean-replay
+          git restore --worktree -- .
+          git clean -fdx
+          run_focused
+          git diff --check "$MAIN_HEAD"
+          git diff --exit-code
+          git diff --cached --name-status > "$RECEIPT/replay-name-status.txt"
+          cmp "$RECEIPT/name-status.txt" "$RECEIPT/replay-name-status.txt"
+
+          STAGE=commit
+          git commit -m 'Close RD-05 member-participation custody as bounded source unavailable'
+          PRODUCT_HEAD=$(git rev-parse HEAD)
+          PRODUCT_TREE=$(git rev-parse 'HEAD^{tree}')
+
+          STAGE=publish
+          git fetch --no-tags origin "$INPUT_BRANCH" "$PRODUCT_BRANCH"
+          test "$(git rev-parse "origin/$INPUT_BRANCH")" = "$INPUT_HEAD"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PRODUCT_LEASE"
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH" \
+            --force-with-lease="refs/heads/$PRODUCT_BRANCH:$PRODUCT_LEASE"
+          test "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$PRODUCT_HEAD"
+          printf 'status=complete\nmain_head=%s\ninput_head=%s\ntransport_safe_head=%s\ntransport_safe_tree=%s\npermanent_nonworkflow_paths=30\nworkflow_paths_omitted=2\nterminal_fields=170\nobserved_fields=71\nnot_publicly_recovered_fields=99\nterminal_members=17\nclass_closed=true\nterminal_state=bounded_source_unavailable\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' \
+            "$MAIN_HEAD" "$INPUT_HEAD" "$PRODUCT_HEAD" "$PRODUCT_TREE" > "$RECEIPT/final.txt"
+          STAGE=complete
+
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-wave03-terminal-materializer-v1
+          path: ${{ runner.temp }}/ssc-rd05-wave03-terminal-v1/receipt
+          if-no-files-found: error
+          retention-days: 90
