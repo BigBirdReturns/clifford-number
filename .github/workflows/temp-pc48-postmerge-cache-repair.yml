@@ -20,7 +20,7 @@ jobs:
       - name: Checkout exact checksum-bound repair carrier
         uses: actions/checkout@v4
         with:
-          ref: 405564805d05151af965c5cdda7235232dd9bef8
+          ref: 5659135d85bee22cd77fcfff5c5ff1dc70a3f975
           fetch-depth: 0
 
       - name: Preserve exact repair programs
@@ -48,7 +48,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pc48-recursive-cache-safety-repair-v3
+          name: pc48-recursive-cache-safety-repair-v4
           path: |
             /tmp/pc48-cache-v3-receipt.txt
             /tmp/pc48-cache-v3-diagnostic.txt
