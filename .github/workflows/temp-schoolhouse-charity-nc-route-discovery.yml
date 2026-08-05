@@ -7,7 +7,7 @@ on:
       - '.schoolhouse-charity-nc-route-discovery/EXECUTE'
       - 'tools/acquisition/schoolhouse-charity-nc-route-discovery/discover.py'
       - 'tools/acquisition/schoolhouse-charity-nc-route-discovery/repair_parallel.py'
-      - 'tools/acquisition/schoolhouse-charity-nc-route-discovery/repair_parallel_v2.py'
+      - 'tools/acquisition/schoolhouse-charity-nc-route-discovery/repair_parallel_v3.py'
   workflow_dispatch:
 
 concurrency:
@@ -32,8 +32,8 @@ jobs:
         run: |
           python -m py_compile \
             tools/acquisition/schoolhouse-charity-nc-route-discovery/repair_parallel.py \
-            tools/acquisition/schoolhouse-charity-nc-route-discovery/repair_parallel_v2.py
-          python tools/acquisition/schoolhouse-charity-nc-route-discovery/repair_parallel_v2.py \
+            tools/acquisition/schoolhouse-charity-nc-route-discovery/repair_parallel_v3.py
+          python tools/acquisition/schoolhouse-charity-nc-route-discovery/repair_parallel_v3.py \
             tools/acquisition/schoolhouse-charity-nc-route-discovery/discover.py
 
       - name: Compile bounded route-discovery runner
