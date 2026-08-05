@@ -1,0 +1,144 @@
+name: TEMP exact PC-49 post-merge proof
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pc49-postmerge-proof-170c
+  cancel-in-progress: true
+
+jobs:
+  prove:
+    if: github.head_ref == 'agent/pc49-postmerge-proof-170c'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Checkout exact canonical merge
+        uses: actions/checkout@v4
+        with:
+          ref: 170cffa6c2a0c1e6fcd5124d713f054d228b4979
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify exact merge topology, path set, tree, and blobs
+        run: |
+          set -Eeuo pipefail
+          merge=170cffa6c2a0c1e6fcd5124d713f054d228b4979
+          base=88e9ff60e581ec386ad4673bc709ec0350ebe163
+          product=43a39c474cedeaf25d94c8e241b10c02c411b9c2
+          product_tree=a991c88abe08aeb11687a22de1cb584431dfb99b
+
+          test "$(git rev-parse HEAD^{commit})" = "$merge"
+          test "$(git rev-parse HEAD^{tree})" = "$product_tree"
+          test "$(git show -s --format=%P HEAD)" = "$base $product"
+
+          cat > /tmp/pc49-expected-paths <<'EOF'
+          .github/workflows/preference-custody-v47.yml
+          .github/workflows/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.yml
+          data/research/preference-custody/control-manifest-v47.json
+          data/research/preference-custody/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.fixture.json
+          docs/preference-custody-laboratory-floor-v47.md
+          docs/preference-custody-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.md
+          test/preference-custody-manifest-v47.test.js
+          test/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.test.js
+          tools/compile-preference-custody-manifest-v47.mjs
+          tools/compile-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+          tools/lib/preference-custody-manifest-v47.mjs
+          tools/lib/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+          tools/validate-preference-custody-manifest-v47.mjs
+          tools/validate-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+          EOF
+          sed -i 's/^          //' /tmp/pc49-expected-paths
+          sort -o /tmp/pc49-expected-paths /tmp/pc49-expected-paths
+          git diff --name-only "$base" "$merge" | sort > /tmp/pc49-actual-paths
+          diff -u /tmp/pc49-expected-paths /tmp/pc49-actual-paths
+          test "$(wc -l < /tmp/pc49-actual-paths)" -eq 14
+          test -z "$(git diff --name-only --diff-filter=CDMRTUXB "$base" "$merge")"
+          ! grep -Eq '(^|/)(temp|carrier|materializer|controller|diagnostic|trigger|marker|pulse|package|receipt)' /tmp/pc49-actual-paths
+
+          while IFS=' ' read -r expected path; do
+            actual="$(git rev-parse "HEAD:$path")"
+            test "$actual" = "$expected" || {
+              printf 'blob mismatch: %s expected=%s actual=%s\n' "$path" "$expected" "$actual" >&2
+              exit 1
+            }
+          done <<'EOF'
+          24c8c4e484ba63667db9a6867ae2e04532f664b6 .github/workflows/preference-custody-v47.yml
+          ba0a716aeab3c13d45bfe4e0c79e540d78b2f51d .github/workflows/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.yml
+          bbc6a1d0ab9398832f9f10ca5aa6dd0f8998f308 data/research/preference-custody/control-manifest-v47.json
+          850c1c5c15f6d31437e75ebcd61adf37e401776e data/research/preference-custody/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.fixture.json
+          ce9a6c59478e23d7fac156c84b650e26fb98b7b0 docs/preference-custody-laboratory-floor-v47.md
+          4a0e5b735a09fa450340a6f2dc76aa42b7c02b50 docs/preference-custody-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.md
+          e1140c2b9b50c4052dd8dbdbe76dd21dd444ab7d test/preference-custody-manifest-v47.test.js
+          97a967ba6f5a9b3e8c7a4c9aaf43d964441f7b09 test/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.test.js
+          9c4bc44d758e293b24c2d571193a3a11485910e1 tools/compile-preference-custody-manifest-v47.mjs
+          3560d1c2ad5b9f9e88ca5d95ea96b8e0440bd24a tools/compile-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+          63c1e1f3956a42a432a923363d362e37b1510882 tools/lib/preference-custody-manifest-v47.mjs
+          7785d26efc1a6efdd0534a0866699b2656b5b89c tools/lib/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+          de9fbaca7c16e78c9fc09d35c8e5ee5b55a27712 tools/validate-preference-custody-manifest-v47.mjs
+          1726f64f0b40766911c661b0b026f7a5e7d7c359 tools/validate-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+          EOF
+          sed -i 's/^          //' /tmp/pc49-expected-paths 2>/dev/null || true
+
+          {
+            printf 'merge_commit=%s\n' "$merge"
+            printf 'merge_tree=%s\n' "$product_tree"
+            printf 'base_parent=%s\n' "$base"
+            printf 'product_parent=%s\n' "$product"
+            printf 'permanent_paths=14\n'
+            printf 'transport_paths=0\n'
+            printf 'blob_identity=verified\n'
+          } | tee /tmp/pc49-postmerge-receipt.txt
+
+      - name: Re-run focused PC-49 and floor-v47 gates
+        run: |
+          set -Eeuo pipefail
+          node tools/compile-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+          node tools/validate-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs
+          node test/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.test.js
+          node tools/compile-preference-custody-manifest-v47.mjs
+          node tools/validate-preference-custody-manifest-v47.mjs
+          node test/preference-custody-manifest-v47.test.js
+
+      - name: Reconstruct every Preference Custody floor
+        run: |
+          set -Eeuo pipefail
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+
+      - name: Re-run no-magic-human and complete release gate
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+          {
+            printf 'focused_pc49=pass\n'
+            printf 'floor_v47=pass\n'
+            printf 'historical_floors=pass\n'
+            printf 'no_magic_human=pass\n'
+            printf 'release_gate=pass\n'
+            printf 'outside_human_dependency=false\n'
+            printf 'graph_effect=none\n'
+          } | tee -a /tmp/pc49-postmerge-receipt.txt
+
+      - name: Upload exact post-merge proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc49-exact-postmerge-proof-170c
+          path: |
+            /tmp/pc49-postmerge-receipt.txt
+            /tmp/pc49-expected-paths
+            /tmp/pc49-actual-paths
+          if-no-files-found: error
+          retention-days: 90
