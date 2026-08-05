@@ -1,0 +1,192 @@
+name: TEMP census School.House first-party legal surfaces
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-first-party-legal-surface-census.yml'
+      - '.schoolhouse-first-party-legal-surface-census/EXECUTE'
+      - 'tools/acquisition/schoolhouse-first-party-legal-surface-census/census.py'
+  workflow_dispatch:
+
+concurrency:
+  group: temp-schoolhouse-first-party-legal-surface-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify and prepare exact no-query runner
+        run: |
+          set -Eeuo pipefail
+          RUNNER='tools/acquisition/schoolhouse-first-party-legal-surface-census/census.py'
+          test "$(git hash-object "$RUNNER")" = '64fb11ceebea32ab2f60b800486c0849d709f9ea'
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tools/acquisition/schoolhouse-first-party-legal-surface-census/census.py')
+          text = path.read_text(encoding='utf-8')
+          old = '"href": normalized["absolute_url"],'
+          new = '"href": normalized["url_without_query"],'
+          assert text.count(old) == 1, f'unexpected no-query patch count: {text.count(old)}'
+          path.write_text(text.replace(old, new), encoding='utf-8', newline='\n')
+          PY
+          python -m py_compile "$RUNNER"
+      - name: Execute bounded no-submission first-party census
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/schoolhouse-first-party-legal-surface-census
+          mkdir -p /tmp/schoolhouse-first-party-legal-surface-census
+          python tools/acquisition/schoolhouse-first-party-legal-surface-census/census.py \
+            --out /tmp/schoolhouse-first-party-legal-surface-census
+      - name: Require terminal privacy-minimized artifact
+        run: |
+          set -Eeuo pipefail
+          D=/tmp/schoolhouse-first-party-legal-surface-census
+          for f in root-route-results.jsonl followed-route-results.jsonl discovered-links.jsonl html-surfaces.jsonl structured-data.jsonl legal-governance-candidates.jsonl external-link-inventory.jsonl form-metadata.jsonl summary.json route-policy.json artifact-manifest.json SHA256SUMS; do
+            test -f "$D/$f"
+          done
+          jq -e '
+            .declared_root_routes == 5 and
+            .terminal_root_routes == 5 and
+            .terminal_route_rows >= 5 and .terminal_route_rows <= 120 and
+            .all_routes_terminal == true and
+            .maximum_total_routes == 120 and
+            .maximum_depth == 2 and
+            .deepest_followed_depth >= 0 and .deepest_followed_depth <= 2 and
+            .search_submissions == 0 and
+            .form_submissions == 0 and
+            .application_submissions == 0 and
+            .account_actions == 0 and
+            .payment_actions == 0 and
+            .upload_actions == 0 and
+            .contact_requests == 0 and
+            .source_rows_acquired == 0 and
+            .raw_source_retained == false and
+            .visible_text_retained == false and
+            .hidden_form_values_retained == false and
+            .street_address_rows_retained == 0 and
+            .contact_detail_rows_retained == 0 and
+            .private_support_rows == 0 and
+            .identity_admitted == false and
+            .negative_existence_claim_created == false and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$D/summary.json"
+          jq -e '
+            .maximum_total_routes == 120 and
+            .maximum_depth == 2 and
+            .query_string_routes_followed == 0 and
+            .external_links_fetched == 0 and
+            .search_submissions == 0 and
+            .source_rows_acquired == 0 and
+            .raw_source_retained == false and
+            .visible_text_retained == false and
+            .hidden_form_values_retained == false and
+            .street_address_rows_retained == 0 and
+            .contact_detail_rows_retained == 0 and
+            .private_support_rows == 0 and
+            .identity_admitted == false and
+            .negative_existence_claim_created == false and
+            .outside_human_dependency == false and
+            .graph_effect == "none"
+          ' "$D/route-policy.json"
+          jq -s -e '
+            length == 5 and
+            all(.[];
+              .depth == 0 and
+              .request_method == "GET" and
+              .request_attempts == 1 and
+              .query_submitted == false and
+              .form_submitted == false and
+              .source_rows_acquired == 0 and
+              .raw_source_retained == false and
+              .visible_text_retained == false and
+              .hidden_form_values_retained == false and
+              .street_address_rows_retained == 0 and
+              .contact_detail_rows_retained == 0 and
+              .identity_admitted == false and
+              .outside_human_dependency == false and
+              .graph_effect == "none")
+          ' "$D/root-route-results.jsonl"
+          jq -s -e '
+            all(.[];
+              .depth >= 1 and .depth <= 2 and
+              .request_method == "GET" and
+              .request_attempts == 1 and
+              .query_submitted == false and
+              .form_submitted == false and
+              .source_rows_acquired == 0 and
+              .raw_source_retained == false and
+              .visible_text_retained == false and
+              .hidden_form_values_retained == false and
+              .street_address_rows_retained == 0 and
+              .contact_detail_rows_retained == 0 and
+              .identity_admitted == false and
+              .outside_human_dependency == false and
+              .graph_effect == "none")
+          ' "$D/followed-route-results.jsonl"
+          jq -s -e '
+            all(.[];
+              .href == .href_without_query and
+              .query_value_retained == false and
+              .query_submission_required == false and
+              .identity_admitted == false and
+              .outside_human_dependency == false and
+              .graph_effect == "none")
+          ' "$D/discovered-links.jsonl"
+          jq -s -e '
+            all(.[];
+              .address_retained == false and
+              .email_retained == false and
+              .telephone_retained == false and
+              .person_names_retained == false and
+              .identity_admitted == false and
+              .outside_human_dependency == false and
+              .graph_effect == "none")
+          ' "$D/structured-data.jsonl"
+          jq -s -e '
+            all(.[];
+              .identifier_grade == false and
+              .registry_grade == false and
+              .legal_entity_join_state == "candidate_only_unadjudicated" and
+              .identity_admitted == false and
+              .negative_existence_claim_created == false and
+              .outside_human_dependency == false and
+              .graph_effect == "none")
+          ' "$D/legal-governance-candidates.jsonl"
+          jq -s -e '
+            all(.[];
+              .fetched == false and
+              .query_value_retained == false and
+              .query_submitted == false and
+              .identity_admitted == false and
+              .outside_human_dependency == false and
+              .graph_effect == "none")
+          ' "$D/external-link-inventory.jsonl"
+          jq -s -e '
+            all(.[];
+              .hidden_values_retained == false and
+              .control_values_retained == false and
+              .query_submitted == false and
+              .form_submitted == false and
+              .identity_admitted == false and
+              .outside_human_dependency == false and
+              .graph_effect == "none")
+          ' "$D/form-metadata.jsonl"
+          (cd "$D" && sha256sum -c SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-first-party-legal-surface-census
+          path: /tmp/schoolhouse-first-party-legal-surface-census
+          if-no-files-found: error
+          retention-days: 90
