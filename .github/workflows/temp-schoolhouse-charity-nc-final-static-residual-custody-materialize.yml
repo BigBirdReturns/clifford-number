@@ -58,12 +58,61 @@ jobs:
           REPO="$GITHUB_REPOSITORY"
           TARGET='agent/schoolhouse-charity-nc-final-static-residual-custody-product-v1'
           MAIN_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
-          SOURCE_BUNDLE="$GITHUB_WORKSPACE/.schoolhouse-charity-nc-final-static-residual-custody/builder.mjs.gz.b64"
+          POINTER="$GITHUB_WORKSPACE/.schoolhouse-charity-nc-final-static-residual-custody/builder.mjs.gz.b64"
+          HISTORICAL_BUNDLE=/tmp/build-schoolhouse-charity-nc-final-static-residual-custody.mjs.gz.b64
           SOURCE_BUILDER=/tmp/build-schoolhouse-charity-nc-final-static-residual-custody.mjs
-          echo "bundle_sha256=$(sha256sum "$SOURCE_BUNDLE" | awk '{print $1}')"
-          base64 -d "$SOURCE_BUNDLE" | gzip -dc > "$SOURCE_BUILDER"
-          echo "builder_sha256=$(sha256sum "$SOURCE_BUILDER" | awk '{print $1}')"
-          test "$(sha256sum "$SOURCE_BUILDER" | awk '{print $1}')" = '76de3145ae1c764086ef3dce8bf29973d3ffc7b89efbf467754a89ab4bf0a986'
+
+          pointer_value() {
+            local key="$1"
+            sed -n "s/^${key}=//p" "$POINTER"
+          }
+
+          BUNDLE_BLOB=$(pointer_value historical_bundle_blob_sha)
+          BUNDLE_SHA=$(pointer_value historical_bundle_sha256)
+          ORIGINAL_BUILDER_SHA=$(pointer_value historical_builder_sha256)
+          PATCHED_BUILDER_SHA=$(pointer_value patched_builder_sha256)
+          test "$(wc -l < "$POINTER" | tr -d ' ')" = '7'
+          test "$BUNDLE_BLOB" = '61ce293d2230cb2849868547122fafb9ec169c01'
+          test "$BUNDLE_SHA" = '739873003d7dca5da09a294e93bb69163843ae1ee6ba403f8524c1e17c765e5d'
+          test "$ORIGINAL_BUILDER_SHA" = '8c0ef467045293502a8ccad4d9ab13757e1305e22df77964a3b7426bafecf4ec'
+          test "$PATCHED_BUILDER_SHA" = '76de3145ae1c764086ef3dce8bf29973d3ffc7b89efbf467754a89ab4bf0a986'
+
+          git cat-file -e "$BUNDLE_BLOB"
+          git cat-file blob "$BUNDLE_BLOB" > "$HISTORICAL_BUNDLE"
+          test "$(sha256sum "$HISTORICAL_BUNDLE" | awk '{print $1}')" = "$BUNDLE_SHA"
+          base64 -d "$HISTORICAL_BUNDLE" | gzip -dc > "$SOURCE_BUILDER"
+          test "$(sha256sum "$SOURCE_BUILDER" | awk '{print $1}')" = "$ORIGINAL_BUILDER_SHA"
+
+          python3 - "$SOURCE_BUILDER" <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          source = path.read_text(encoding='utf-8')
+          anchor = "writeJson(MANIFEST_PATH, manifest);\n\nconst validationBlock = String.raw`"
+          replacement = """writeJson(MANIFEST_PATH, manifest);
+
+          validator = replaceExactOnce(
+            validator,
+            \"    check(manifest.counts.source_inventory_rows === 224, 'second-level source-inventory denominator drift');\",
+            \"    check(manifest.counts.source_inventory_rows === 275, 'second-level source-inventory denominator drift');\",
+            'second-level validator source-inventory successor denominator'
+          );
+          validator = replaceExactOnce(
+            validator,
+            \"    check(manifest.counts.coverage_denominator_rows === 20, 'second-level coverage-denominator count drift');\",
+            \"    check(manifest.counts.coverage_denominator_rows === 21, 'second-level coverage-denominator count drift');\",
+            'second-level validator coverage successor denominator'
+          );
+
+          const validationBlock = String.raw`"""
+          if source.count(anchor) != 1:
+              raise SystemExit(f'exact builder patch anchor count drift: {source.count(anchor)}')
+          patched = source.replace(anchor, replacement)
+          path.write_text(patched, encoding='utf-8')
+          PY
+
+          test "$(sha256sum "$SOURCE_BUILDER" | awk '{print $1}')" = "$PATCHED_BUILDER_SHA"
           node --check "$SOURCE_BUILDER"
 
           rm -rf /tmp/schoolhouse-charity-nc-final-static-residual-custody-product
@@ -112,7 +161,11 @@ jobs:
             --arg base_main "$MAIN_SHA" \
             --arg product_sha "$PRODUCT_SHA" \
             --arg target "$TARGET" \
-            '{schema_version:"schoolhouse-charity-nc-final-static-residual-custody-materialization-receipt@1",base_main:$base_main,product_sha:$product_sha,target_branch:$target,changed_paths:14,source_inventory_rows:275,input_routes:51,terminal_routes:51,file_targets:16,terminal_file_targets:16,html_success_routes:34,bounded_file_sample_routes:15,http_error_routes:2,html_surface_rows:35,form_rows:0,file_sample_rows:15,search_submissions:0,source_rows_acquired:0,admitted_identities:0,private_support_rows:0,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+            --arg historical_bundle_blob_sha "$BUNDLE_BLOB" \
+            --arg historical_bundle_sha256 "$BUNDLE_SHA" \
+            --arg historical_builder_sha256 "$ORIGINAL_BUILDER_SHA" \
+            --arg patched_builder_sha256 "$PATCHED_BUILDER_SHA" \
+            '{schema_version:"schoolhouse-charity-nc-final-static-residual-custody-materialization-receipt@1",base_main:$base_main,product_sha:$product_sha,target_branch:$target,historical_bundle_blob_sha:$historical_bundle_blob_sha,historical_bundle_sha256:$historical_bundle_sha256,historical_builder_sha256:$historical_builder_sha256,patched_builder_sha256:$patched_builder_sha256,changed_paths:14,source_inventory_rows:275,input_routes:51,terminal_routes:51,file_targets:16,terminal_file_targets:16,html_success_routes:34,bounded_file_sample_routes:15,http_error_routes:2,html_surface_rows:35,form_rows:0,file_sample_rows:15,search_submissions:0,source_rows_acquired:0,admitted_identities:0,private_support_rows:0,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
             > /tmp/schoolhouse-charity-nc-final-static-residual-custody-receipt/status.json
           sha256sum /tmp/schoolhouse-charity-nc-final-static-residual-custody-receipt/status.json \
             > /tmp/schoolhouse-charity-nc-final-static-residual-custody-receipt/SHA256SUMS
