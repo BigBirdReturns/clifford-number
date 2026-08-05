@@ -1,0 +1,118 @@
+name: TEMP materialize School.House complete PDF custody
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-charity-nc-complete-pdf-materializer.yml'
+      - '.schoolhouse-charity-nc-complete-pdf-materializer/EXECUTE'
+      - '.schoolhouse-charity-nc-complete-pdf-materializer/builder.mjs.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: temp-schoolhouse-charity-nc-complete-pdf-materializer-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Download terminal complete-PDF custody artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/schoolhouse-charity-nc-complete-pdf-custody
+          mkdir -p /tmp/schoolhouse-charity-nc-complete-pdf-custody
+          gh run download 30988735386 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name schoolhouse-charity-nc-complete-pdf-custody \
+            --dir /tmp/schoolhouse-charity-nc-complete-pdf-custody
+          for f in input-pdf-routes.jsonl full-file-custody.jsonl content-field-classification.jsonl summary.json route-policy.json artifact-manifest.json SHA256SUMS; do
+            test -f "/tmp/schoolhouse-charity-nc-complete-pdf-custody/$f"
+          done
+      - name: Build, qualify, and publish clean current-main product
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          TARGET='agent/schoolhouse-charity-nc-complete-pdf-custody-product-v1'
+          MAIN_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+          SOURCE_BUNDLE="$GITHUB_WORKSPACE/.schoolhouse-charity-nc-complete-pdf-materializer/builder.mjs.gz.b64"
+          SOURCE_BUILDER=/tmp/build-schoolhouse-charity-nc-complete-pdf-custody.mjs
+
+          test "$(sha256sum "$SOURCE_BUNDLE" | awk '{print $1}')" = 'ec4f8c3ae51a72ed3f727d5bd23b688252c983ea7d032e609faef427c190e40e'
+          base64 -d "$SOURCE_BUNDLE" | gzip -dc > "$SOURCE_BUILDER"
+          test "$(sha256sum "$SOURCE_BUILDER" | awk '{print $1}')" = '5bce246d64712ecfbd5d7c4f8bd4ebf9b77e5c041f8013a4812393b483876b6a'
+          node --check "$SOURCE_BUILDER"
+
+          rm -rf /tmp/schoolhouse-charity-nc-complete-pdf-product
+          git fetch --no-tags origin "$MAIN_SHA"
+          git worktree add --detach /tmp/schoolhouse-charity-nc-complete-pdf-product "$MAIN_SHA"
+          cd /tmp/schoolhouse-charity-nc-complete-pdf-product
+          mkdir -p tools
+          cp "$SOURCE_BUILDER" tools/build-schoolhouse-charity-nc-complete-pdf-custody.mjs
+
+          node tools/build-schoolhouse-charity-nc-complete-pdf-custody.mjs \
+            /tmp/schoolhouse-charity-nc-complete-pdf-custody
+          node tools/validate-bvvc-defense-capital.mjs
+          node test/person-routers.test.js
+          npm run release:check
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            data/intake/bvvc-defense-capital/README.md \
+            data/intake/bvvc-defense-capital/acquisition-frontier.json \
+            data/intake/bvvc-defense-capital/coverage-matrix.json \
+            data/intake/bvvc-defense-capital/manifest.json \
+            data/intake/bvvc-defense-capital/schoolhouse.json \
+            data/intake/bvvc-defense-capital/source-inventory-12.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-charity-nc-complete-pdf-custody.json \
+            data/intake/bvvc-defense-capital/schoolhouse-charity-nc-complete-pdf-input-routes.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-charity-nc-complete-pdf-full-file-custody.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-charity-nc-complete-pdf-content-field-classification.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-charity-nc-complete-pdf-route-policy.json \
+            data/intake/bvvc-defense-capital/schoolhouse-charity-nc-complete-pdf-field-summary.json \
+            tools/build-schoolhouse-charity-nc-complete-pdf-custody.mjs \
+            tools/validate-bvvc-defense-capital.mjs
+
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = '14'
+          test -z "$(git diff --cached --name-only | grep '^\.github/workflows/' || true)"
+          git commit -m 'Preserve School.House complete PDF custody'
+          PRODUCT_SHA=$(git rev-parse HEAD)
+
+          START=$(git ls-remote origin "refs/heads/$TARGET" | awk '{print $1}')
+          if [[ -n "$START" ]]; then
+            git push origin "HEAD:refs/heads/$TARGET" --force-with-lease="refs/heads/$TARGET:$START"
+          else
+            git push origin "HEAD:refs/heads/$TARGET"
+          fi
+
+          mkdir -p /tmp/schoolhouse-charity-nc-complete-pdf-materialization-receipt
+          jq -n \
+            --arg base_main "$MAIN_SHA" \
+            --arg product_sha "$PRODUCT_SHA" \
+            --arg target "$TARGET" \
+            '{schema_version:"schoolhouse-charity-nc-complete-pdf-materialization-receipt@1",base_main:$base_main,product_sha:$product_sha,target_branch:$target,changed_paths:14,source_inventory_rows:290,coverage_denominator_rows:22,input_pdf_routes:15,complete_file_hash_rows:15,text_extraction_success_rows:15,total_pdf_pages:377,total_extracted_text_chars_screened:332175,subject_term_total_hits:0,field_term_total_hits:586,search_submissions:0,source_rows_acquired:0,admitted_identities:0,private_support_rows:0,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+            > /tmp/schoolhouse-charity-nc-complete-pdf-materialization-receipt/status.json
+          sha256sum /tmp/schoolhouse-charity-nc-complete-pdf-materialization-receipt/status.json \
+            > /tmp/schoolhouse-charity-nc-complete-pdf-materialization-receipt/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-charity-nc-complete-pdf-materialization-receipt
+          path: /tmp/schoolhouse-charity-nc-complete-pdf-materialization-receipt
+          if-no-files-found: error
+          retention-days: 90
