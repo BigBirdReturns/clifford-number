@@ -1,4 +1,4 @@
-name: TEMP diagnose qualified PC-49 carrier v3
+name: TEMP materialize qualified PC-49 product v3
 
 on:
   pull_request:
@@ -8,73 +8,88 @@ on:
       - synchronize
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  diagnose:
+  materialize:
     if: github.head_ref == 'agent/pc49-source-carrier'
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     steps:
       - name: Checkout checksum-bound carrier
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Record every carrier identity without enforcing
-        continue-on-error: true
+      - name: Reconstruct exact qualified carrier inputs
         run: |
-          set +e
-          exec > /tmp/pc49-carrier-preflight.txt 2>&1
-          echo 'raw_shards:'
-          sha256sum \
-            .pc49-carrier-v3/product.part00 \
-            .pc49-carrier-v3/product.part01 \
-            .pc49-carrier-v3/product.part02 \
-            .pc49-carrier-v3/product.part03 \
-            .pc49-carrier-v3/run.part00
-          echo "raw_shards_status=$?"
+          set -euo pipefail
+          test "$(sha256sum .pc49-carrier-v3/product.part00 | awk '{print $1}')" = "2081e693aa312a31e7ee07e99346411e96480d6f2ca62b95bca3dba510c0b2db"
+          test "$(sha256sum .pc49-carrier-v3/product.part01 | awk '{print $1}')" = "0a95ebf2a27afd8ad27465ba13c4fe64d4dca9a1e810f256053596fd4c0eb654"
+          test "$(sha256sum .pc49-carrier-v3/product.part02 | awk '{print $1}')" = "4c1db53eb1e61cf67e75c434b7420676aa1d248462179c63387b077a3ee901e4"
+          test "$(sha256sum .pc49-carrier-v3/product.part03 | awk '{print $1}')" = "ed59e6b7670e718e675aae9157a701cffc58f8f6541dc2cfeebeefcf8c02d323"
+          test "$(sha256sum .pc49-carrier-v3/run.part00 | awk '{print $1}')" = "692397591d98aeab0a12e40bb8780e70ec610c229fd690fd212dea449d16306a"
 
-          cat \
-            .pc49-carrier-v3/product.part00 \
-            .pc49-carrier-v3/product.part01 \
-            .pc49-carrier-v3/product.part02 \
-            .pc49-carrier-v3/product.part03 \
-            > /tmp/pc49-product-no-terminal-newline.b64
-          echo "product_cat_status=$?"
-          cp /tmp/pc49-product-no-terminal-newline.b64 /tmp/pc49-product-with-terminal-newline.b64
-          printf '\n' >> /tmp/pc49-product-with-terminal-newline.b64
-          echo 'product_reconstructions:'
-          sha256sum /tmp/pc49-product-no-terminal-newline.b64 /tmp/pc49-product-with-terminal-newline.b64
-          base64 -d /tmp/pc49-product-no-terminal-newline.b64 > /tmp/pc49-product-no-terminal-newline.tar.gz 2>/tmp/product-decode-a.err
-          echo "product_decode_without_terminal_newline=$?"
-          base64 -d /tmp/pc49-product-with-terminal-newline.b64 > /tmp/pc49-product-with-terminal-newline.tar.gz 2>/tmp/product-decode-b.err
-          echo "product_decode_with_terminal_newline=$?"
-          sha256sum /tmp/pc49-product-no-terminal-newline.tar.gz /tmp/pc49-product-with-terminal-newline.tar.gz
+          matches=0
+          selected_mask=''
+          for mask in $(seq 0 15); do
+            candidate="/tmp/pc49-product-mask-${mask}.b64"
+            : > "$candidate"
+            for index in 0 1 2 3; do
+              cat ".pc49-carrier-v3/product.part0${index}" >> "$candidate"
+              if (( mask & (1 << index) )); then
+                printf '\n' >> "$candidate"
+              fi
+            done
+            digest="$(sha256sum "$candidate" | awk '{print $1}')"
+            printf 'mask=%s digest=%s\n' "$mask" "$digest"
+            if [ "$digest" = "f1e3578abdbf404728e886f308c24281c4655e9ea59d04845d8823e51a08f579" ]; then
+              cp "$candidate" /tmp/pc49-product.tar.gz.b64
+              selected_mask="$mask"
+              matches=$((matches + 1))
+            fi
+          done
+          test "$matches" -eq 1
+          printf 'selected_product_newline_mask=%s\n' "$selected_mask"
+          base64 -d /tmp/pc49-product.tar.gz.b64 > /tmp/pc49-product.tar.gz
+          test "$(sha256sum /tmp/pc49-product.tar.gz | awk '{print $1}')" = "914e5e46f29fd07612e8c9089bec59a4d37bc34d9d1f4159638a2b417cc94774"
 
-          cat .pc49-carrier-v3/run.part00 > /tmp/pc49-run-no-terminal-newline.b64
-          echo "run_cat_status=$?"
-          cp /tmp/pc49-run-no-terminal-newline.b64 /tmp/pc49-run-with-terminal-newline.b64
-          printf '\n' >> /tmp/pc49-run-with-terminal-newline.b64
-          echo 'run_reconstructions:'
-          sha256sum /tmp/pc49-run-no-terminal-newline.b64 /tmp/pc49-run-with-terminal-newline.b64
-          base64 -d /tmp/pc49-run-no-terminal-newline.b64 > /tmp/pc49-run-no-terminal-newline.sh 2>/tmp/run-decode-a.err
-          echo "run_decode_without_terminal_newline=$?"
-          base64 -d /tmp/pc49-run-with-terminal-newline.b64 > /tmp/pc49-run-with-terminal-newline.sh 2>/tmp/run-decode-b.err
-          echo "run_decode_with_terminal_newline=$?"
-          sha256sum /tmp/pc49-run-no-terminal-newline.sh /tmp/pc49-run-with-terminal-newline.sh
-          grep -c 'PARENT=7f960c30b6c58c70e3a996d4239e363e50d848ef' /tmp/pc49-run-no-terminal-newline.sh
-          echo "old_parent_grep_without_terminal_newline=$?"
-          grep -c 'PARENT=7f960c30b6c58c70e3a996d4239e363e50d848ef' /tmp/pc49-run-with-terminal-newline.sh
-          echo "old_parent_grep_with_terminal_newline=$?"
-          exit 0
-      - name: Upload carrier preflight receipt
+          cat .pc49-carrier-v3/run.part00 > /tmp/pc49-run.sh.b64
+          base64 -d /tmp/pc49-run.sh.b64 > /tmp/pc49-run.sh
+          test "$(sha256sum /tmp/pc49-run.sh | awk '{print $1}')" = "5cb101569f6630052cf154e1cf2704dbc0b4f094f677dfb8071096f2cd25e879"
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('/tmp/pc49-run.sh')
+          text = path.read_text()
+          old = 'PARENT=7f960c30b6c58c70e3a996d4239e363e50d848ef'
+          new = 'PARENT=320287946785fba28b3f84850e90b16e849f7dbc'
+          if text.count(old) != 1:
+              raise SystemExit(f'unexpected parent anchor count: {text.count(old)}')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          test "$(sha256sum /tmp/pc49-run.sh | awk '{print $1}')" = "95fa0f259363c31c25ee35564e12ca93de85163402b3afdbced70b4b6fa7bd3a"
+          chmod +x /tmp/pc49-run.sh
+          sha256sum /tmp/pc49-product.tar.gz.b64 /tmp/pc49-product.tar.gz /tmp/pc49-run.sh.b64 /tmp/pc49-run.sh
+      - name: Checkout exact current-main parent
+        uses: actions/checkout@v4
+        with:
+          ref: 320287946785fba28b3f84850e90b16e849f7dbc
+          fetch-depth: 0
+          clean: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct, qualify, and publish exact PC-49 product
+        run: bash /tmp/pc49-run.sh
+      - name: Upload PC-49 materialization custody
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pc49-carrier-preflight-v3b
+          name: pc49-materialization-custody-v3-current-main
           path: |
-            /tmp/pc49-carrier-preflight.txt
-            /tmp/product-decode-a.err
-            /tmp/product-decode-b.err
-            /tmp/run-decode-a.err
-            /tmp/run-decode-b.err
+            /tmp/pc49-product-receipt.txt
+            /tmp/pc49-materialization-diagnostic.txt
+            /tmp/pc49-standalone.log
+            /tmp/pc49-floor.log
+            /tmp/pc49-release.log
+            /tmp/pc49-push.log
           if-no-files-found: warn
