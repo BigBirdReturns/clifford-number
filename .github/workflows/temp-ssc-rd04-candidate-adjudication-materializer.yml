@@ -37,10 +37,20 @@ jobs:
         run: |
           set -Eeuo pipefail
           CONTROLLER=/tmp/ssc-rd04-candidate-adjudication-materializer.sh
+          GENERATOR_HEAD=.ssc-rd04-candidate-adjudication-materializer/generator/part-00
           cat .ssc-rd04-candidate-adjudication-materializer/controller/part-* > "$CONTROLLER"
           test "$(wc -c < "$CONTROLLER" | tr -d ' ')" = 9019
           test "$(sha256sum "$CONTROLLER" | awk '{print $1}')" = 9b41991b4b0f5f4e41de0b5530aed589835bfd5f3320e9f103d2957c2e00b888
           bash -n "$CONTROLLER"
+
+          # The connector preserved one trailing seam-space beyond the exact 6,000-byte shard.
+          # Bind the observed carrier byte, remove only that byte in the ephemeral checkout,
+          # and prove the recovered shard equals the locally qualified generator prefix.
+          test "$(wc -c < "$GENERATOR_HEAD" | tr -d ' ')" = 6001
+          test "$(sha256sum "$GENERATOR_HEAD" | awk '{print $1}')" = d0f745481a230dc4901b7798bbe04c62a8dc236a1c77fd10fe7ba256d210eaec
+          truncate -s 6000 "$GENERATOR_HEAD"
+          test "$(sha256sum "$GENERATOR_HEAD" | awk '{print $1}')" = d590490698daf173df8fe2f913657144e2085a99ef722e74daeb8179f679963a
+
           bash -x "$CONTROLLER"
 
       - name: Preserve exact materialization receipt
