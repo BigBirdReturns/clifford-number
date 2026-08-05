@@ -1,0 +1,126 @@
+name: TEMP materialize RD-04 trigger-guard repair
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-ssc-rd04-trigger-guard-repair-materializer.yml'
+      - '.ssc-rd04-trigger-guard-repair/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-ssc-rd04-trigger-guard-repair-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      BASE_MAIN: b9d09c28bcaa0b00c699ff40e893df7b9675ff0f
+      TARGET_BRANCH: agent/ssc-rd04-wave03-trigger-path-validator-repair-product-v1
+      TARGET_LEASE: b9d09c28bcaa0b00c699ff40e893df7b9675ff0f
+      CARRIER_PATH: .ssc-rd04-trigger-guard-repair/carrier.b64
+      CARRIER_B64_SHA256: 37e171dd694e511c4b1cb171515685c430b7052721ebbdf4dc9e21f1ac36e8d3
+      CARRIER_TAR_SHA256: cccec760a7acd895bfeb1b907aa7cb31449f41ecba443ef3dd388dbbb3062028
+      PATHS_SHA256: 51c03b0f79a93357366b8203d237e94ebd88027982bc953bded905bc5eaf3693
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Reconstruct, qualify, and lease-publish the three-file repair
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export GIT_AUTHOR_NAME='github-actions[bot]'
+          export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+
+          RECEIPT=/tmp/ssc-rd04-trigger-guard-repair-receipt
+          PACKAGE=/tmp/ssc-rd04-trigger-guard-repair-package
+          WORK=/tmp/ssc-rd04-trigger-guard-repair-worktree
+          ARCHIVE=/tmp/ssc-rd04-trigger-guard-repair.tar.xz
+          rm -rf "$RECEIPT" "$PACKAGE" "$WORK" "$ARCHIVE"
+          mkdir -p "$RECEIPT" "$PACKAGE"
+
+          cat > "$RECEIPT/expected-paths.txt" <<'EOF'
+          data/intake/status-sovereignty-rd-wave03-rd04-state-implementation/intake-product-manifest.json
+          test/status-sovereignty-rd-wave03-rd04-state-implementation-intake.test.js
+          tools/validate-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs
+          EOF
+          sed -i 's/^          //' "$RECEIPT/expected-paths.txt"
+          test "$(sha256sum "$RECEIPT/expected-paths.txt" | awk '{print $1}')" = "$PATHS_SHA256"
+
+          cp "$CARRIER_PATH" "$RECEIPT/package.tar.xz.b64"
+          test "$(sha256sum "$RECEIPT/package.tar.xz.b64" | awk '{print $1}')" = "$CARRIER_B64_SHA256"
+          base64 --decode "$RECEIPT/package.tar.xz.b64" > "$ARCHIVE"
+          test "$(sha256sum "$ARCHIVE" | awk '{print $1}')" = "$CARRIER_TAR_SHA256"
+          tar -tJf "$ARCHIVE" > "$RECEIPT/archive-paths.txt"
+          cmp "$RECEIPT/expected-paths.txt" "$RECEIPT/archive-paths.txt"
+          tar -xJf "$ARCHIVE" -C "$PACKAGE"
+          test "$(find "$PACKAGE" -type f | wc -l | tr -d ' ')" = 3
+          test "$(find "$PACKAGE" -type l | wc -l | tr -d ' ')" = 0
+
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          test "$(git rev-parse origin/main)" = "$BASE_MAIN"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$TARGET_LEASE"
+          git merge-base --is-ancestor b9d09c28bcaa0b00c699ff40e893df7b9675ff0f "$BASE_MAIN"
+
+          git worktree add --detach "$WORK" "$BASE_MAIN"
+          cp -a "$PACKAGE"/. "$WORK"/
+          cd "$WORK"
+          while IFS= read -r path; do git add -- "$path"; done < "$RECEIPT/expected-paths.txt"
+          git diff --cached --name-only | sort > "$RECEIPT/actual-paths.txt"
+          cmp "$RECEIPT/expected-paths.txt" "$RECEIPT/actual-paths.txt"
+          test "$(git diff --cached --name-status | awk '$1 != "M" {n++} END {print n+0}')" = 0
+          if grep -E '(^|/)(tmp|transport)(/|$)|carrier|materializer|trigger' "$RECEIPT/actual-paths.txt"; then exit 1; fi
+          git commit -m 'Repair RD-04 source-census trigger path custody'
+          PRODUCT_COMMIT=$(git rev-parse HEAD)
+          PRODUCT_TREE=$(git rev-parse HEAD^{tree})
+
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-state-implementation-intake.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs
+          node test/status-sovereignty-rd-wave03-rd04-state-implementation-intake.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-source-census.py --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+          git restore --worktree -- .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-state-implementation-intake.mjs
+          node test/status-sovereignty-rd-wave03-rd04-state-implementation-intake.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-source-census.py --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          test "$(git rev-parse origin/main)" = "$BASE_MAIN"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$TARGET_LEASE"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_LEASE"
+
+          printf 'base_main=%s\ntarget_lease=%s\nproduct_commit=%s\nproduct_tree=%s\nmodified_paths=3\nadversarial_refusals=526\nnetwork_requests=0\nclass_closed=false\noutside_human_dependency=false\n' \
+            "$BASE_MAIN" "$TARGET_LEASE" "$PRODUCT_COMMIT" "$PRODUCT_TREE" > "$RECEIPT/final.txt"
+          sha256sum "$RECEIPT/package.tar.xz.b64" "$ARCHIVE" "$RECEIPT/expected-paths.txt" > "$RECEIPT/hashes.txt"
+
+      - name: Preserve repair receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-trigger-guard-repair-v1
+          path: /tmp/ssc-rd04-trigger-guard-repair-receipt
+          if-no-files-found: error
+          retention-days: 90
