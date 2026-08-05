@@ -1,0 +1,156 @@
+name: TEMP create exact PC-50 Git blobs
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc50-create-blobs-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  create-blobs:
+    if: github.head_ref == 'agent/pc50-product-carrier'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact checksum-bound carrier
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+
+      - name: Reconstruct exact archive and create remote Git blobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          test "$(sha256sum .pc50-carrier/manifest.json | awk '{print $1}')" = "2469e44bbf07d9b113e08e338f12cd64b7e71e3169c3fc367a4732cdb55e8b8a"
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64
+          import hashlib
+          import io
+          import json
+          import os
+          import tarfile
+          import urllib.error
+          import urllib.request
+
+          carrier = Path('.pc50-carrier')
+          manifest = json.loads((carrier / 'manifest.json').read_text())
+          if manifest.get('schema_version') != 'pc50-product-carrier@1':
+              raise SystemExit('unexpected carrier schema')
+          if manifest.get('qualified_parent_commit') != 'd87172a41e88c1709b37a114b50df733545126c8':
+              raise SystemExit('qualified parent drift')
+          if manifest.get('qualified_parent_tree') != '3b545a7dfe5a66a9689c2b7df44943654330629b':
+              raise SystemExit('qualified parent tree drift')
+          files = manifest.get('files', [])
+          if len(files) != 14 or len({row['path'] for row in files}) != 14:
+              raise SystemExit('permanent path denominator mismatch')
+          chunks = []
+          for index, part in enumerate(manifest.get('parts', [])):
+              expected_name = f'product.part{index:02d}'
+              if part.get('path') != expected_name:
+                  raise SystemExit(f'part order mismatch: {part}')
+              raw = (carrier / expected_name).read_bytes()
+              if len(raw) != part['chars'] or hashlib.sha256(raw).hexdigest() != part['sha256']:
+                  raise SystemExit(f'carrier part mismatch: {expected_name}')
+              chunks.append(raw)
+          encoded = b''.join(chunks)
+          if len(encoded) != manifest['base64_chars'] or hashlib.sha256(encoded).hexdigest() != manifest['base64_sha256']:
+              raise SystemExit('aggregate base64 mismatch')
+          archive = base64.b64decode(encoded, validate=True)
+          if len(archive) != manifest['archive_bytes'] or hashlib.sha256(archive).hexdigest() != manifest['archive_sha256']:
+              raise SystemExit('archive mismatch')
+          Path('/tmp/pc50-product.tar.gz').write_bytes(archive)
+
+          with tarfile.open(fileobj=io.BytesIO(archive), mode='r:gz') as package:
+              members = [member for member in package.getmembers() if member.isfile()]
+              expected_paths = [row['path'] for row in files]
+              if [member.name for member in members] != expected_paths:
+                  raise SystemExit('archive path mismatch')
+              extracted = {}
+              for member, expected in zip(members, files, strict=True):
+                  if member.name.startswith('/') or '..' in Path(member.name).parts:
+                      raise SystemExit(f'unsafe archive path: {member.name}')
+                  data = package.extractfile(member).read()
+                  digest = hashlib.sha256(data).hexdigest()
+                  blob_sha = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+                  if len(data) != expected['bytes'] or digest != expected['sha256'] or blob_sha != expected['git_blob_sha1']:
+                      raise SystemExit(f'permanent file mismatch: {member.name}')
+                  extracted[member.name] = data
+
+          repo = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GH_TOKEN']
+          def api(method, endpoint, payload=None):
+              url = f'https://api.github.com/repos/{repo}{endpoint}'
+              body = None if payload is None else json.dumps(payload, separators=(',', ':')).encode()
+              request = urllib.request.Request(url, data=body, method=method)
+              request.add_header('Accept', 'application/vnd.github+json')
+              request.add_header('Authorization', f'Bearer {token}')
+              request.add_header('X-GitHub-Api-Version', '2022-11-28')
+              request.add_header('User-Agent', 'pc50-blob-materializer')
+              try:
+                  with urllib.request.urlopen(request, timeout=120) as response:
+                      return json.loads(response.read())
+              except urllib.error.HTTPError as exc:
+                  raise SystemExit(f'GitHub API {method} {endpoint} failed: HTTP {exc.code}: {exc.read().decode(errors="replace")}')
+
+          receipts = []
+          for expected in files:
+              data = extracted[expected['path']]
+              remote = api('POST', '/git/blobs', {
+                  'content': base64.b64encode(data).decode(),
+                  'encoding': 'base64',
+              })
+              if remote.get('sha') != expected['git_blob_sha1']:
+                  raise SystemExit(f'remote blob mismatch: {expected["path"]}')
+              receipts.append({
+                  'path': expected['path'],
+                  'bytes': expected['bytes'],
+                  'sha256': expected['sha256'],
+                  'git_blob_sha1': remote['sha'],
+              })
+
+          receipt = {
+              'schema_version': 'pc50-remote-blob-receipt@1',
+              'carrier_head': os.environ['GITHUB_SHA'],
+              'qualified_parent_commit': manifest['qualified_parent_commit'],
+              'qualified_parent_tree': manifest['qualified_parent_tree'],
+              'qualified_local_product_commit': manifest['qualified_local_product_commit'],
+              'qualified_local_product_tree': manifest['qualified_local_product_tree'],
+              'archive_bytes': manifest['archive_bytes'],
+              'archive_sha256': manifest['archive_sha256'],
+              'permanent_files': len(receipts),
+              'transport_paths': 0,
+              'remote_blobs': receipts,
+              'ref_updated': False,
+              'outside_human_dependency': False,
+              'graph_effect': 'none',
+          }
+          Path('/tmp/pc50-remote-blob-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps({
+              'parent': receipt['qualified_parent_commit'],
+              'parent_tree': receipt['qualified_parent_tree'],
+              'local_product_tree': receipt['qualified_local_product_tree'],
+              'permanent_files': receipt['permanent_files'],
+              'archive_sha256': receipt['archive_sha256'],
+              'ref_updated': receipt['ref_updated'],
+          }, indent=2))
+          PY
+
+      - name: Upload exact PC-50 blob custody
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc50-remote-blob-custody
+          path: |
+            /tmp/pc50-product.tar.gz
+            /tmp/pc50-remote-blob-receipt.json
+            .pc50-carrier/manifest.json
+          if-no-files-found: error
+          retention-days: 90
