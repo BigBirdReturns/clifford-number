@@ -1,0 +1,118 @@
+name: TEMP discover School.House charity and NC final static residual
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-charity-nc-final-residual-discovery.yml'
+      - '.schoolhouse-charity-nc-final-residual/EXECUTE'
+      - 'tools/acquisition/schoolhouse-charity-nc-final-residual/discover.py.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: temp-schoolhouse-charity-nc-final-residual-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify frozen input and reconstruct exact runner
+        run: |
+          set -Eeuo pipefail
+          INPUT='data/intake/bvvc-defense-capital/schoolhouse-charity-nc-second-level-discovered-links.jsonl'
+          BUNDLE='tools/acquisition/schoolhouse-charity-nc-final-residual/discover.py.gz.b64'
+          RUNNER=/tmp/schoolhouse-charity-nc-final-residual-discover.py
+          test -f "$INPUT"
+          test "$(wc -l < "$INPUT" | tr -d ' ')" = '524'
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'd4608da8460114230d755a6a38ec100ae7d97b28e4e70dbb9fb3bc39b29c8785'
+          base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = 'dec9391120646106ca618e0cf6ead71372e0b46ce23e66083d8af0e05f99b914'
+          python -m py_compile "$RUNNER"
+
+      - name: Execute bounded GET-only final static residual pass
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/schoolhouse-charity-nc-final-residual
+          mkdir -p /tmp/schoolhouse-charity-nc-final-residual
+          python /tmp/schoolhouse-charity-nc-final-residual-discover.py --out /tmp/schoolhouse-charity-nc-final-residual
+
+      - name: Require exact terminal custody and authority ceiling
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/schoolhouse-charity-nc-final-residual
+          test -f "$OUT/summary.json"
+          test -f "$OUT/route-policy.json"
+          test -f "$OUT/artifact-manifest.json"
+          test -f "$OUT/input-residual-links.jsonl"
+          test -f "$OUT/route-results.jsonl"
+          test -f "$OUT/html-surfaces.jsonl"
+          test -f "$OUT/surface-forms.jsonl"
+          test -f "$OUT/file-samples.jsonl"
+          test -f "$OUT/SHA256SUMS"
+          jq -e '
+            .residual_unique_links == 101 and
+            .declared_residual_routes == 51 and
+            .input_file_links == 16 and
+            .terminal_route_rows == 51 and
+            .request_attempts == 51 and
+            .all_route_receipts_terminal == true and
+            .file_target_terminal_rows == 16 and
+            .maximum_attempts_per_route == 1 and
+            .request_methods == ["GET"] and
+            .result_spawned_requests == 0 and
+            .interactive_search_submissions == 0 and
+            .organization_name_submissions == 0 and
+            .license_number_submissions == 0 and
+            .payment_submissions == 0 and
+            .upload_submissions == 0 and
+            .account_submissions == 0 and
+            .contact_submissions == 0 and
+            .source_rows_acquired == 0 and
+            .raw_source_retained == false and
+            .complete_remote_files_retained == false and
+            .hidden_form_values_retained == false and
+            .street_address_rows_retained == 0 and
+            .contact_detail_rows_retained == 0 and
+            .private_support_rows == 0 and
+            .identity_admitted == false and
+            .negative_existence_claim_created == false and
+            .static_residual_route_denominator_terminal == true and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/summary.json"
+          jq -e '
+            .north_carolina.automated_or_scripted_interactive_searches_not_permitted == true and
+            .north_carolina.interactive_search_submissions == 0 and
+            .florida.check_a_charity_query_submissions == 0 and
+            .florida.automation_permission_inferred == false and
+            .submissions.interactive_search == 0 and
+            .submissions.organization_name == 0 and
+            .submissions.license_number == 0 and
+            .identity_admitted == false and
+            .negative_existence_claim_created == false and
+            .outside_human_dependency == false and
+            .graph_effect == "none"
+          ' "$OUT/route-policy.json"
+          test "$(wc -l < "$OUT/input-residual-links.jsonl" | tr -d ' ')" = '51'
+          test "$(wc -l < "$OUT/route-results.jsonl" | tr -d ' ')" = '51'
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-charity-nc-final-static-residual
+          path: /tmp/schoolhouse-charity-nc-final-residual
+          if-no-files-found: error
+          retention-days: 90
