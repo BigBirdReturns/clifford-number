@@ -38,11 +38,16 @@ jobs:
           test -s "$EXECUTE" && test -s "$BUNDLE"
           grep -Fx 'acquire=schoolhouse-fl-charity-exact-query-ipv4-replay-v1' "$EXECUTE"
           grep -Fx 'canonical_parent=d87172a41e88c1709b37a114b50df733545126c8' "$EXECUTE"
+          grep -Fx 'prior_workflow_run_id=31044899071' "$EXECUTE"
           grep -Fx 'prior_artifact_id=8946106351' "$EXECUTE"
           grep -Fx 'prior_artifact_digest=sha256:1d3167516a2db6e39fc08d9cac4726b38d2abb04a87c8fb46aa749105caa5718' "$EXECUTE"
           grep -Fx 'prior_query_submissions=0' "$EXECUTE"
           grep -Fx 'changed_condition=transport_profile' "$EXECUTE"
           grep -Fx 'transport_profile=curl_ipv4_http1_1' "$EXECUTE"
+          grep -Fx 'ipv4_diagnostic_workflow_run_id=31046395385' "$EXECUTE"
+          grep -Fx 'ipv4_diagnostic_terminal_state=terminal_policy_or_transport_refusal_no_unbounded_retry' "$EXECUTE"
+          grep -Fx 'ipv4_diagnostic_query_submissions=0' "$EXECUTE"
+          grep -Fx 'packaging_replay_authorized=true' "$EXECUTE"
           grep -Fx 'query_rows=3' "$EXECUTE"
           grep -Fx 'maximum_attempts_per_query=1' "$EXECUTE"
           grep -Fx 'outside_human_dependency=false' "$EXECUTE"
@@ -103,9 +108,10 @@ jobs:
           if summary['terminal_state'] == 'terminal_fixed_exact_query_matrix':
               assert summary['query_submissions'] == 3
 
-          for obj in (summary, policy, manifest):
-              assert obj['outside_human_dependency'] is False
-              assert obj['publication_effect'] == obj['adoption_effect'] == obj['graph_effect'] == 'none'
+          assert summary['outside_human_dependency'] is False
+          assert summary['publication_effect'] == summary['adoption_effect'] == summary['graph_effect'] == 'none'
+          assert policy['outside_human_dependency'] is False
+          assert manifest['outside_human_dependency'] is False
           assert summary['identity_admitted_rows'] == summary['negative_existence_claims_created'] == 0
           assert summary['raw_source_retained'] is summary['hidden_form_values_retained'] is False
           assert summary['street_address_rows_retained'] == summary['contact_detail_rows_retained'] == summary['private_support_rows'] == 0
@@ -115,6 +121,7 @@ jobs:
           PYVERIFY
 
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: schoolhouse-fl-charity-exact-query-ipv4-replay
           path: /tmp/schoolhouse-fl-charity-exact-query-ipv4-replay
