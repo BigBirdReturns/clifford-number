@@ -1,0 +1,48 @@
+name: Status sovereignty RD Wave 03 RD-04 responsive-link source adjudication
+
+on:
+  push:
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication/**'
+      - 'docs/milestones/ssc-rd-wave03-rd04-responsive-link-source-adjudication.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication.schema.json'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication.test.js'
+  pull_request:
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication/**'
+      - 'docs/milestones/ssc-rd-wave03-rd04-responsive-link-source-adjudication.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication.schema.json'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication.test.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check syntax
+        run: |
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication.test.js
+      - name: Verify deterministic product
+        run: node tools/build-status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication.mjs --check
+      - name: Validate source and authority boundaries
+        run: node tools/validate-status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication.mjs
+      - name: Refuse adversarial mutations
+        run: node test/status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication.test.js
+      - name: Preserve no-magic-human boundary
+        run: node tools/validate-no-magic-human-gate.mjs
