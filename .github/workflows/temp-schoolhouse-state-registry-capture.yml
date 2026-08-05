@@ -35,7 +35,7 @@ jobs:
         id: acquisition
         continue-on-error: true
         env:
-          STATE_REGISTRY_USER_AGENT: CliffordNumber-SchoolHouse-State-Registry/2.0 219768509+BigBirdReturns@users.noreply.github.com
+          STATE_REGISTRY_USER_AGENT: CliffordNumber-SchoolHouse-State-Registry/2.1 219768509+BigBirdReturns@users.noreply.github.com
         run: |
           set +e
           OUT=/tmp/schoolhouse-state-registry-candidates
@@ -44,7 +44,7 @@ jobs:
             --output "$OUT" \
             --retries 3 \
             --sleep-seconds 0.75 \
-            --max-detail-pages 30
+            --max-detail-pages 60
           status=$?
           mkdir -p "$OUT"
           printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
@@ -54,13 +54,13 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: schoolhouse-state-registry-candidates-attempt03-strict
+          name: schoolhouse-state-registry-candidates-attempt05-strict-detail
           path: /tmp/schoolhouse-state-registry-candidates
           if-no-files-found: error
           retention-days: 90
           compression-level: 9
 
-      - name: Require terminal bounded route and semantic custody
+      - name: Require terminal route, semantic, and detail custody
         if: always()
         run: |
           test -f /tmp/schoolhouse-state-registry-candidates/RUNNER_EXIT_CODE
@@ -125,6 +125,25 @@ jobs:
               elif candidate['query_type'] in {'entity_name', 'fictitious_name', 'organization_name'}:
                   candidate_tokens = set(canonical(candidate['legal_name']).split())
                   assert all(token in candidate_tokens for token in tokens(candidate['query']))
+
+          exact_fei = [row for row in candidates if row['query_type'] == 'fei_ein' and row['query'] == '392669585']
+          assert len(exact_fei) == 3
+          nonprofit = [row for row in exact_fei if row['document_number'] == 'N25000006947']
+          assert len(nonprofit) == 1
+          assert nonprofit[0]['detail_state'] == 'captured_and_parsed'
+          assert nonprofit[0]['detail_fei_ein'] == '392669585'
+          assert nonprofit[0]['fei_consistency_state'] == 'detail_confirms_query_fei'
+          assert canonical(nonprofit[0]['current_legal_name']) == 'THE MAGNOLIA SCHOOLHOUSE INC'
+          assert nonprofit[0]['date_filed'] == '06/11/2025'
+          assert nonprofit[0]['principal_city'] == 'VERO BEACH'
+          assert nonprofit[0]['principal_state'] == 'FL'
+
+          llc_rows = [row for row in exact_fei if row['document_number'] == 'L25000047895']
+          assert len(llc_rows) == 2
+          assert all(row['detail_state'] == 'captured_and_parsed' for row in llc_rows)
+          assert all(row['detail_fei_ein'] is None for row in llc_rows)
+          assert all(row['fei_consistency_state'] == 'detail_reports_no_fei' for row in llc_rows)
+          assert all(canonical(row['current_legal_name']) == 'THE MAGNOLIA SCHOOLHOUSE LLC' for row in llc_rows)
 
           assert receipt['all_routes_terminal'] is True
           assert receipt['registry_identity_admitted'] is False
