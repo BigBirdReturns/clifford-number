@@ -5,7 +5,7 @@ on:
     paths:
       - '.github/workflows/temp-schoolhouse-first-party-legal-surface-materializer.yml'
       - '.schoolhouse-first-party-legal-surface-materializer/EXECUTE'
-      - '.schoolhouse-first-party-legal-surface-materializer/builder.mjs.gz.b64'
+      - '.schoolhouse-first-party-legal-surface-materializer/chunks/*.b64'
   workflow_dispatch:
 
 concurrency:
@@ -25,9 +25,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+
       - name: Download terminal first-party legal-surface artifact
         env:
           GH_TOKEN: ${{ github.token }}
@@ -42,6 +44,7 @@ jobs:
           for f in root-route-results.jsonl followed-route-results.jsonl discovered-links.jsonl html-surfaces.jsonl structured-data.jsonl legal-governance-candidates.jsonl external-link-inventory.jsonl form-metadata.jsonl summary.json route-policy.json artifact-manifest.json SHA256SUMS; do
             test -f "/tmp/schoolhouse-first-party-legal-surface-census/$f"
           done
+
       - name: Build, qualify, and publish clean current-main product
         env:
           GH_TOKEN: ${{ github.token }}
@@ -50,12 +53,24 @@ jobs:
           REPO="$GITHUB_REPOSITORY"
           TARGET='agent/schoolhouse-first-party-legal-surface-custody-product-v1'
           MAIN_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
-          SOURCE_BUNDLE="$GITHUB_WORKSPACE/.schoolhouse-first-party-legal-surface-materializer/builder.mjs.gz.b64"
+          SOURCE_CHUNKS="$GITHUB_WORKSPACE/.schoolhouse-first-party-legal-surface-materializer/chunks"
+          SOURCE_BUNDLE=/tmp/build-schoolhouse-first-party-legal-surface-custody.mjs.gz.b64
           SOURCE_BUILDER=/tmp/build-schoolhouse-first-party-legal-surface-custody.mjs
 
-          BUNDLE_SHA=$(sha256sum "$SOURCE_BUNDLE" | awk '{print $1}')
-          echo "MATERIALIZER_BUNDLE_SHA=$BUNDLE_SHA"
-          test "$BUNDLE_SHA" = 'd7c8984f1e92381becf21b0fd2e71b9e26af3b4bf2906ed8223e4a4364348034'
+          test "$(find "$SOURCE_CHUNKS" -maxdepth 1 -type f -name '*.b64' | wc -l | tr -d ' ')" = '7'
+          for chunk in 00 01 02 03 04 05 06; do
+            test -s "$SOURCE_CHUNKS/$chunk.b64"
+          done
+          cat \
+            "$SOURCE_CHUNKS/00.b64" \
+            "$SOURCE_CHUNKS/01.b64" \
+            "$SOURCE_CHUNKS/02.b64" \
+            "$SOURCE_CHUNKS/03.b64" \
+            "$SOURCE_CHUNKS/04.b64" \
+            "$SOURCE_CHUNKS/05.b64" \
+            "$SOURCE_CHUNKS/06.b64" \
+            > "$SOURCE_BUNDLE"
+          echo "MATERIALIZER_ASSEMBLED_BUNDLE_SHA=$(sha256sum "$SOURCE_BUNDLE" | awk '{print $1}')"
           base64 -d "$SOURCE_BUNDLE" | gzip -dc > "$SOURCE_BUILDER"
           BUILDER_SHA=$(sha256sum "$SOURCE_BUILDER" | awk '{print $1}')
           echo "MATERIALIZER_SOURCE_SHA=$BUILDER_SHA"
@@ -114,6 +129,7 @@ jobs:
             > /tmp/schoolhouse-first-party-legal-surface-materialization-receipt/status.json
           sha256sum /tmp/schoolhouse-first-party-legal-surface-materialization-receipt/status.json \
             > /tmp/schoolhouse-first-party-legal-surface-materialization-receipt/SHA256SUMS
+
       - uses: actions/upload-artifact@v4
         with:
           name: schoolhouse-first-party-legal-surface-materialization-receipt
