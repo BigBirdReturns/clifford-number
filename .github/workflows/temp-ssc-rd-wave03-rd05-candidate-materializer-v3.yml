@@ -1,0 +1,259 @@
+name: TEMP materialize RD-05 Wave-03 candidate adjudication v3
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-rd-wave03-rd05-candidate-materializer-v3.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd-wave03-rd05-candidate-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CARRIER_ROOT: .transport/ssc-rd-wave03-rd05-candidate-v1/shards
+      INPUT_BRANCH: agent/ssc-rd-wave03-rd05-member-participation
+      INPUT_HEAD: bc9800dcd3a3768288a5dfeaf0f7144969994ffa
+      PRODUCT_BRANCH: agent/ssc-rd-wave03-rd05-candidate-adjudication-product-v1
+      PRODUCT_LEASE: bc9800dcd3a3768288a5dfeaf0f7144969994ffa
+      PERMANENT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd05-candidate-adjudication.yml
+      BASE64_BYTES: '173112'
+      BASE64_SHA256: 9670f55522cf4f58ad5adb800fba361b58cf22760f647aae485135e5184533b6
+      ARCHIVE_BYTES: '129832'
+      ARCHIVE_SHA256: 41f17e3df0ddf520920f589bf0cfff26245ee41a3dbc95063dff971042773939
+    steps:
+      - name: Check out exact pull-request head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Recover, qualify, and publish transport-safe product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export GIT_AUTHOR_NAME='github-actions[bot]'
+          export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+
+          WORK="$RUNNER_TEMP/ssc-rd-wave03-rd05-candidate-v3"
+          PACKAGE="$WORK/package"
+          REPAIRED="$WORK/repaired-shards"
+          RECEIPT="$WORK/receipt"
+          rm -rf "$WORK"
+          mkdir -p "$PACKAGE" "$REPAIRED" "$RECEIPT"
+          exec > >(tee "$RECEIPT/execution.log") 2>&1
+          STAGE=init
+          finish() {
+            rc=$?
+            printf 'status=%s\nstage=%s\nexit_code=%s\nutc=%s\n' \
+              "$([[ $rc -eq 0 ]] && echo complete || echo failed_closed)" \
+              "$STAGE" "$rc" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$RECEIPT/checkpoint.txt"
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          STAGE=recover-carrier
+          python - "$CARRIER_ROOT" "$REPAIRED" "$RECEIPT/shard-recovery.json" <<'PY'
+          import hashlib
+          import json
+          import pathlib
+          import sys
+
+          source = pathlib.Path(sys.argv[1])
+          target = pathlib.Path(sys.argv[2])
+          receipt = pathlib.Path(sys.argv[3])
+          expected = {
+              '000.b64': (20000, '6854a976b98cffcdfde8072f744980802ac0b07041457554e980bc737a8d03c4'),
+              '001.b64': (20000, 'b1967fa847cb8414bdb0e03d3498690260efd67bc6595c69e7849590b306fd50'),
+              '002.b64': (20000, '599fee31a6cf3a354e3e59295b70a269ba3cc446e9e702c131ee04c7f4e9d7d0'),
+              '003.b64': (20000, 'fb598d4434396cd157ee06e2b8ee225b2f25ac41b7c20db1c2e7ea553c013bad'),
+              '004.b64': (20000, '0c4809da8b71cc5cf80eed0a0734b5f0c1a526059bd3b4046a9f5bbc4c34664a'),
+              '005.b64': (20000, '26410f1c628ceaa07daebac04088e46d154d01f13ae6c5da2d1764f2860530cc'),
+              '006.b64': (20000, '904a3496f9f36155ab84579afcaa91e9e11a3b40a49e6f305ea073ad3f91ee00'),
+              '007.b64': (20000, 'a993ecc7dd9b5bf8a50ff14f59d42ef07dfe6ac800ec0a842b447effd1104ea7'),
+              '008.b64': (13112, '850e70192a9366747ff6eff09e2092a9b01043405ec8a59d0b23348d0127f6d4'),
+          }
+          names = sorted(path.name for path in source.glob('*.b64'))
+          if names != sorted(expected):
+              raise SystemExit(f'shard denominator or order changed: {names!r}')
+
+          rows = []
+          target.mkdir(parents=True, exist_ok=True)
+          for name, (wanted_size, wanted_sha) in expected.items():
+              raw = (source / name).read_bytes()
+              raw_sha = hashlib.sha256(raw).hexdigest()
+              repaired = None
+              deletion_start = None
+              deletion_bytes = 0
+              method = 'exact'
+
+              if len(raw) == wanted_size and raw_sha == wanted_sha:
+                  repaired = raw
+              elif len(raw) > wanted_size:
+                  excess = len(raw) - wanted_size
+                  matches = []
+                  for start in range(0, len(raw) - excess + 1):
+                      candidate = raw[:start] + raw[start + excess:]
+                      if hashlib.sha256(candidate).hexdigest() == wanted_sha:
+                          matches.append((start, candidate))
+                  if len(matches) != 1:
+                      raise SystemExit(
+                          f'{name}: expected one sealed contiguous-insertion repair, found {len(matches)}'
+                      )
+                  deletion_start, repaired = matches[0]
+                  deletion_bytes = excess
+                  method = 'remove_one_contiguous_inserted_block'
+              else:
+                  raise SystemExit(f'{name}: undersized shard cannot be repaired without invention')
+
+              if len(repaired) != wanted_size:
+                  raise SystemExit(f'{name}: recovered size mismatch')
+              repaired_sha = hashlib.sha256(repaired).hexdigest()
+              if repaired_sha != wanted_sha:
+                  raise SystemExit(f'{name}: recovered digest mismatch')
+              (target / name).write_bytes(repaired)
+              rows.append({
+                  'path': name,
+                  'stored_bytes': len(raw),
+                  'stored_sha256': raw_sha,
+                  'recovered_bytes': len(repaired),
+                  'recovered_sha256': repaired_sha,
+                  'method': method,
+                  'deleted_block_start': deletion_start,
+                  'deleted_block_bytes': deletion_bytes,
+              })
+
+          aggregate = b''.join((target / name).read_bytes() for name in sorted(expected))
+          receipt.write_text(json.dumps({
+              'schema_version': 'ssc-rd-wave03-rd05-candidate-shard-recovery@1',
+              'authority': 'original local split sizes and SHA-256 values',
+              'repair_rule': 'accept exact bytes, or uniquely remove one contiguous inserted block to recover the sealed shard digest',
+              'shards': rows,
+              'aggregate_bytes': len(aggregate),
+              'aggregate_sha256': hashlib.sha256(aggregate).hexdigest(),
+          }, indent=2) + '\n')
+          PY
+
+          cat "$REPAIRED"/*.b64 > "$WORK/product.b64"
+          test "$(stat -c '%s' "$WORK/product.b64")" = "$BASE64_BYTES"
+          test "$(sha256sum "$WORK/product.b64" | awk '{print $1}')" = "$BASE64_SHA256"
+          base64 -d "$WORK/product.b64" > "$WORK/product.tar.xz"
+          test "$(stat -c '%s' "$WORK/product.tar.xz")" = "$ARCHIVE_BYTES"
+          test "$(sha256sum "$WORK/product.tar.xz" | awk '{print $1}')" = "$ARCHIVE_SHA256"
+          tar -xJf "$WORK/product.tar.xz" -C "$PACKAGE"
+
+          cat > "$RECEIPT/expected-paths.txt" <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd05-candidate-adjudication.yml
+          data/intake/status-sovereignty-rd-wave03-rd05-candidate-adjudication/candidates/index.json
+          data/intake/status-sovereignty-rd-wave03-rd05-candidate-adjudication/candidates/part-00.jsonl
+          data/intake/status-sovereignty-rd-wave03-rd05-candidate-adjudication/candidates/part-01.jsonl
+          data/intake/status-sovereignty-rd-wave03-rd05-candidate-adjudication/candidates/part-02.jsonl
+          data/intake/status-sovereignty-rd-wave03-rd05-candidate-adjudication/candidates/part-03.jsonl
+          data/intake/status-sovereignty-rd-wave03-rd05-candidate-adjudication/candidates/part-04.jsonl
+          data/intake/status-sovereignty-rd-wave03-rd05-candidate-adjudication/candidates/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd05-candidate-adjudication/official-body-observation-protocol.json
+          data/intake/status-sovereignty-rd-wave03-rd05-candidate-adjudication/source-census-execution-receipt.json
+          docs/milestones/ssc-rd-wave03-rd05-candidate-adjudication.md
+          schemas/status-sovereignty-rd-wave03-rd05-candidate-adjudication.schema.json
+          test/status-sovereignty-rd-wave03-rd05-candidate-adjudication.test.js
+          tools/acquisition/status-sovereignty-rd-wave03-rd05/observe-official-bodies.py
+          tools/build-status-sovereignty-rd-wave03-rd05-candidate-adjudication.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd05-candidate-adjudication.mjs
+          EOF
+          sed -i 's/^          //' "$RECEIPT/expected-paths.txt"
+          test "$(wc -l < "$RECEIPT/expected-paths.txt" | tr -d ' ')" = 16
+          find "$PACKAGE" -type f -printf '%P\n' | sort > "$RECEIPT/archive-paths.txt"
+          sort "$RECEIPT/expected-paths.txt" > "$RECEIPT/expected-paths-sorted.txt"
+          cmp "$RECEIPT/expected-paths-sorted.txt" "$RECEIPT/archive-paths.txt"
+          test "$(find "$PACKAGE" -type l | wc -l | tr -d ' ')" = 0
+
+          STAGE=bind-leases
+          git fetch --no-tags origin "$INPUT_BRANCH" "$PRODUCT_BRANCH"
+          test "$(git rev-parse "origin/$INPUT_BRANCH")" = "$INPUT_HEAD"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PRODUCT_LEASE"
+          printf 'input_branch=%s\ninput_head=%s\nproduct_branch=%s\nproduct_lease=%s\n' \
+            "$INPUT_BRANCH" "$INPUT_HEAD" "$PRODUCT_BRANCH" "$PRODUCT_LEASE" > "$RECEIPT/leases.txt"
+
+          STAGE=compose
+          git checkout --detach "$INPUT_HEAD"
+          while IFS= read -r rel; do test ! -e "$rel"; done < "$RECEIPT/expected-paths.txt"
+          cp -a "$PACKAGE"/. .
+          xargs -d '\n' git add -- < "$RECEIPT/expected-paths.txt"
+          git diff --cached --name-status > "$RECEIPT/full-name-status.txt"
+          test "$(wc -l < "$RECEIPT/full-name-status.txt" | tr -d ' ')" = 16
+          test "$(awk '$1 != "A" {n++} END {print n+0}' "$RECEIPT/full-name-status.txt")" = 0
+
+          run_focused() {
+            node --check tools/build-status-sovereignty-rd-wave03-rd05-candidate-adjudication.mjs
+            node --check tools/validate-status-sovereignty-rd-wave03-rd05-candidate-adjudication.mjs
+            node --check test/status-sovereignty-rd-wave03-rd05-candidate-adjudication.test.js
+            python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd05/observe-official-bodies.py
+            node tools/build-status-sovereignty-rd-wave03-rd05-candidate-adjudication.mjs --check
+            node tools/validate-status-sovereignty-rd-wave03-rd05-candidate-adjudication.mjs
+            node test/status-sovereignty-rd-wave03-rd05-candidate-adjudication.test.js
+            python tools/acquisition/status-sovereignty-rd-wave03-rd05/observe-official-bodies.py \
+              --protocol data/intake/status-sovereignty-rd-wave03-rd05-candidate-adjudication/official-body-observation-protocol.json \
+              --validate-only
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          }
+
+          STAGE=focused-gates
+          run_focused
+          git diff --check "$INPUT_HEAD"
+
+          STAGE=full-release-gate
+          npm run release:check
+
+          STAGE=clean-replay
+          git restore --worktree -- .
+          git clean -fdx
+          run_focused
+          git diff --exit-code
+
+          STAGE=strip-workflow-transport
+          git restore --staged -- "$PERMANENT_WORKFLOW"
+          rm -f "$PERMANENT_WORKFLOW"
+          git diff --cached --name-status > "$RECEIPT/name-status.txt"
+          test "$(wc -l < "$RECEIPT/name-status.txt" | tr -d ' ')" = 15
+          test "$(awk '$1 != "A" {n++} END {print n+0}' "$RECEIPT/name-status.txt")" = 0
+          ! grep -F -- "$PERMANENT_WORKFLOW" "$RECEIPT/name-status.txt"
+
+          STAGE=commit
+          git commit -m 'Adjudicate RD-05 candidates and freeze official-body observation protocol'
+          PRODUCT_HEAD=$(git rev-parse HEAD)
+          PRODUCT_TREE=$(git rev-parse HEAD^{tree})
+
+          STAGE=publish
+          git fetch --no-tags origin "$INPUT_BRANCH" "$PRODUCT_BRANCH"
+          test "$(git rev-parse "origin/$INPUT_BRANCH")" = "$INPUT_HEAD"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PRODUCT_LEASE"
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH" \
+            --force-with-lease="refs/heads/$PRODUCT_BRANCH:$PRODUCT_LEASE"
+          test "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$PRODUCT_HEAD"
+          printf 'status=complete\ninput_head=%s\ntransport_safe_head=%s\ntransport_safe_tree=%s\npermanent_paths=15\nworkflow_path_omitted=%s\ncandidate_rows=1351\nselected_candidate_followups=0\nofficial_body_observations=25\nclass_closed=false\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' \
+            "$INPUT_HEAD" "$PRODUCT_HEAD" "$PRODUCT_TREE" "$PERMANENT_WORKFLOW" > "$RECEIPT/final.txt"
+          STAGE=complete
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd-wave03-rd05-candidate-materializer-v3
+          path: ${{ runner.temp }}/ssc-rd-wave03-rd05-candidate-v3/receipt
+          if-no-files-found: error
+          retention-days: 90
