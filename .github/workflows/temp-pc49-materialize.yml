@@ -1,59 +1,30 @@
-name: TEMP materialize qualified PC-49 product v3
+name: TEMP probe PC-49 exact-parent tree
 
 on:
   pull_request:
     branches:
       - main
     types:
-      - opened
-      - reopened
       - synchronize
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  materialize:
+  probe:
     if: github.head_ref == 'agent/pc49-source-carrier'
     runs-on: ubuntu-latest
-    timeout-minutes: 180
     steps:
-      - name: Checkout checksum-bound carrier
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Preserve exact qualified carrier inputs
-        run: |
-          set -euo pipefail
-          cat .pc49-carrier-v3/product.part* > /tmp/pc49-product.tar.gz.b64
-          cat .pc49-carrier-v3/run.part* > /tmp/pc49-run.sh.b64
-          test "$(sha256sum /tmp/pc49-product.tar.gz.b64 | awk '{print $1}')" = "f1e3578abdbf404728e886f308c24281c4655e9ea59d04845d8823e51a08f579"
-          test "$(sha256sum /tmp/pc49-run.sh.b64 | awk '{print $1}')" = "a7b6426ea0cd3bca13d63b7184a0b144e429c297295aa86acfb710437f5edb74"
-          base64 -d /tmp/pc49-run.sh.b64 > /tmp/pc49-run.sh
-          test "$(sha256sum /tmp/pc49-run.sh | awk '{print $1}')" = "5cb101569f6630052cf154e1cf2704dbc0b4f094f677dfb8071096f2cd25e879"
-          chmod +x /tmp/pc49-run.sh
-          sha256sum /tmp/pc49-product.tar.gz.b64 /tmp/pc49-run.sh.b64 /tmp/pc49-run.sh
       - name: Checkout exact current-main parent
         uses: actions/checkout@v4
         with:
           ref: 7f960c30b6c58c70e3a996d4239e363e50d848ef
           fetch-depth: 0
           clean: true
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - name: Reconstruct, qualify, and publish exact PC-49 product
-        run: bash /tmp/pc49-run.sh
-      - name: Upload PC-49 materialization custody
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pc49-materialization-custody-v3
-          path: |
-            /tmp/pc49-product-receipt.txt
-            /tmp/pc49-materialization-diagnostic.txt
-            /tmp/pc49-standalone.log
-            /tmp/pc49-floor.log
-            /tmp/pc49-release.log
-            /tmp/pc49-push.log
-          if-no-files-found: warn
+      - name: Emit exact parent custody
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "7f960c30b6c58c70e3a996d4239e363e50d848ef"
+          printf 'parent_commit=%s\n' "$(git rev-parse HEAD)"
+          printf 'parent_tree=%s\n' "$(git rev-parse 'HEAD^{tree}')"
+          printf 'parent_count=%s\n' "$(git rev-list --count HEAD)"
