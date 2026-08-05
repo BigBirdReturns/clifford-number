@@ -50,10 +50,11 @@ jobs:
           test -s "$EXECUTE"
           test -s "$BUNDLE"
           grep -Fx 'materialize=schoolhouse-launch-era-archive-content-custody-v1' "$EXECUTE"
+          grep -Fx 'known_safe_main=ee88d215bf85f6d3033fb07d6f236bcb71a54546' "$EXECUTE"
           grep -Fx 'replay_artifact_digest=sha256:3fcc4191cf2e6aa3f84eadc5b5265c4e9af13a58a7391b2407a194d6d147a6c9' "$EXECUTE"
-          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '68e48fa3ae8f20fd1e56145bf6648f69a602dec3333dcaf8fd462f5e66ddcf9c'
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '9312a8ba7c802614a5789df2a454d1623c9b9a36f259a42ab385567458a31922'
           base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
-          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = 'bea3a21ec1c80e46e265f07cea64fa05e1b1c7755c01d4f9f1e0f948e1da2d89'
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = '535c0bcb0c287b817dc186d29621672e84b179dbd6eca612f60cf1a4007a3d58'
           bash -n "$RUNNER"
           bash "$RUNNER"
 
