@@ -1,0 +1,47 @@
+name: TEMP retire all PC-49 transport refs
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pc49-final-retirement
+  cancel-in-progress: false
+
+jobs:
+  retire:
+    if: github.head_ref == 'agent/pc49-postmerge-proof-170c'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Verify canonical merge and completed proof custody
+        run: |
+          set -Eeuo pipefail
+          repo="$GITHUB_REPOSITORY"
+          test "$(gh api "repos/$repo/commits/main" --jq .sha)" = "170cffa6c2a0c1e6fcd5124d713f054d228b4979"
+          test "$(gh api "repos/$repo/actions/runs/31041915222" --jq .conclusion)" = "success"
+          test "$(gh api "repos/$repo/actions/artifacts/8945053299" --jq .expired)" = "false"
+          test "$(gh api "repos/$repo/actions/artifacts/8945053299" --jq .digest)" = "sha256:ced6fefb495bb4e51cad10fb0be2878d9ef7582d5b3233a7abfa622c4e984f3c"
+
+      - name: Close never-merge PRs and delete temporary branches
+        run: |
+          set -Eeuo pipefail
+          repo="$GITHUB_REPOSITORY"
+          gh pr close 1127 --repo "$repo" --comment 'Closed after PC-49 product merge and exact post-merge proof; carrier authority remained none and this branch is being retired.'
+          gh pr close 1192 --repo "$repo" --comment 'Exact post-merge proof passed and artifact 8945053299 was preserved; this never-merge proof lane is being retired.'
+
+          for branch in \
+            agent/pc49-materializer \
+            agent/pc49-source-carrier-v3-stage \
+            agent/pc49-source-carrier \
+            agent/pc49-postmerge-proof-170c; do
+            gh api --method DELETE "repos/$repo/git/refs/heads/$branch"
+            printf 'deleted=%s\n' "$branch"
+          done
