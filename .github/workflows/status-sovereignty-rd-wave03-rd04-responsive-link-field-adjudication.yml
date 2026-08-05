@@ -1,0 +1,72 @@
+name: Status sovereignty RD Wave 03 RD-04 responsive-link field adjudication
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication/**'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication/offline-field-review-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication/index.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication/source-decisions.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication/capture-route-results.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-official-source-adjudication/partial-field-matrix.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-official-source-adjudication/source-adjudication-index.json'
+      - 'docs/milestones/ssc-rd-wave03-rd04-responsive-link-field-adjudication.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.schema.json'
+      - 'test/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.test.js'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication/**'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication/offline-field-review-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication/index.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication/source-decisions.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-responsive-link-source-adjudication/capture-route-results.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-official-source-adjudication/partial-field-matrix.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-official-source-adjudication/source-adjudication-index.json'
+      - 'docs/milestones/ssc-rd-wave03-rd04-responsive-link-field-adjudication.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.schema.json'
+      - 'test/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.test.js'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate exact field-adjudication product
+        run: |
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove clean replay and zero matrix drift
+        run: |
+          git restore --staged --worktree .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"

@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clifford-number.invalid/schemas/status-sovereignty-rd-wave03-rd04-responsive-link-field-adjudication.schema.json",
+  "title": "Status sovereignty RD Wave 03 RD-04 responsive-link field adjudication",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "wave_id",
+    "lane_id",
+    "class_id",
+    "issue",
+    "as_of",
+    "predecessor_source_adjudication_merge",
+    "method",
+    "counts",
+    "review_sources",
+    "decisions",
+    "authority",
+    "next_bounded_operation"
+  ],
+  "properties": {
+    "schema_version": {"const": "ssc-rd04-wave03-responsive-link-authored-field-decisions@1"},
+    "wave_id": {"const": "SSC-RD-W03"},
+    "lane_id": {"const": "RD-04"},
+    "class_id": {"const": "RD-04-C02"},
+    "issue": {"const": 1017},
+    "as_of": {"const": "2026-08-05"},
+    "predecessor_source_adjudication_merge": {"const": "890bfd5d2a100c3fc934f7c68bfe348a3625d7da"},
+    "method": {
+      "type": "object",
+      "required": ["source_denominator", "candidate_pair_denominator", "dispositions", "evidence_complete_rule", "partial_rule", "ambiguity_rule", "no_support_rule", "promotion_rule"],
+      "properties": {
+        "dispositions": {
+          "const": [
+            "evidence_complete_bounded_finding",
+            "partial_support_hold_open",
+            "temporal_or_scope_ambiguity_hold_open",
+            "no_relevant_support_hold_open"
+          ]
+        }
+      },
+      "additionalProperties": {"type": ["string", "array"]}
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["review_sources", "states_represented", "candidate_source_field_pairs", "evidence_complete_bounded_finding", "partial_support_hold_open", "temporal_or_scope_ambiguity_hold_open", "no_relevant_support_hold_open", "matrix_updates", "field_terminalizations", "result_spawned_requests"],
+      "properties": {
+        "review_sources": {"const": 36},
+        "states_represented": {"const": 24},
+        "candidate_source_field_pairs": {"const": 127},
+        "evidence_complete_bounded_finding": {"const": 38},
+        "partial_support_hold_open": {"const": 18},
+        "temporal_or_scope_ambiguity_hold_open": {"const": 19},
+        "no_relevant_support_hold_open": {"const": 52},
+        "matrix_updates": {"const": 0},
+        "field_terminalizations": {"const": 0},
+        "result_spawned_requests": {"const": 0}
+      }
+    },
+    "review_sources": {
+      "type": "array",
+      "minItems": 36,
+      "maxItems": 36,
+      "items": {"$ref": "#/$defs/reviewSource"}
+    },
+    "decisions": {
+      "type": "array",
+      "minItems": 127,
+      "maxItems": 127,
+      "items": {"$ref": "#/$defs/decision"}
+    },
+    "authority": {"$ref": "#/$defs/authority"},
+    "next_bounded_operation": {"type": "string", "minLength": 40}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "effectNone": {"const": "none"},
+    "fieldId": {
+      "enum": [
+        "operative_state_implementation_authority_and_version",
+        "implementation_effective_date_or_typed_gap",
+        "abawd_or_work_requirement_waiver_state_and_governing_period",
+        "discretionary_exemption_authority_and_reported_state_practice",
+        "fitness_for_work_or_eligibility_screening_rule",
+        "verification_evidence_and_staff_discretion_surface"
+      ]
+    },
+    "disposition": {
+      "enum": [
+        "evidence_complete_bounded_finding",
+        "partial_support_hold_open",
+        "temporal_or_scope_ambiguity_hold_open",
+        "no_relevant_support_hold_open"
+      ]
+    },
+    "reviewSource": {
+      "type": "object",
+      "required": ["review_ordinal", "route_id", "unit_id", "postal_code", "state_name", "source_class", "selection_category", "document_identity", "document_title", "final_url", "content_type", "body_path_in_capture_artifact", "body_bytes", "body_sha256", "review_text_path_not_retained", "review_text_sha256", "review_text_bytes", "review_text_lines", "extraction_method", "candidate_fields", "complete_extracted_text_review", "raw_review_body_retained_in_product", "empirical_requests", "result_spawned_requests", "outside_human_dependency", "publication_effect", "adoption_effect", "graph_effect"],
+      "properties": {
+        "review_ordinal": {"type": "integer", "minimum": 1, "maximum": 36},
+        "route_id": {"type": "string", "pattern": "^RD04-W03-LINK-[0-9]{3}$"},
+        "unit_id": {"type": "string", "pattern": "^US-STATE-[A-Z]{2}$"},
+        "postal_code": {"type": "string", "pattern": "^[A-Z]{2}$"},
+        "body_bytes": {"type": "integer", "minimum": 1},
+        "body_sha256": {"$ref": "#/$defs/sha256"},
+        "review_text_sha256": {"$ref": "#/$defs/sha256"},
+        "review_text_bytes": {"type": "integer", "minimum": 1},
+        "review_text_lines": {"type": "integer", "minimum": 1},
+        "candidate_fields": {"type": "array", "minItems": 2, "maxItems": 6, "uniqueItems": true, "items": {"$ref": "#/$defs/fieldId"}},
+        "complete_extracted_text_review": {"const": true},
+        "raw_review_body_retained_in_product": {"const": false},
+        "empirical_requests": {"const": 0},
+        "result_spawned_requests": {"const": 0},
+        "outside_human_dependency": {"const": false},
+        "publication_effect": {"$ref": "#/$defs/effectNone"},
+        "adoption_effect": {"$ref": "#/$defs/effectNone"},
+        "graph_effect": {"$ref": "#/$defs/effectNone"}
+      },
+      "additionalProperties": true
+    },
+    "sourceLocator": {
+      "type": "object",
+      "required": ["capture_artifact_id", "capture_artifact_zip_sha256", "body_path_in_capture_artifact", "body_sha256", "final_url", "review_text_path_not_retained", "review_text_sha256", "review_text_bytes", "review_text_lines", "extraction_method", "locator_kind", "line_start", "line_end"],
+      "properties": {
+        "capture_artifact_id": {"const": 8936867721},
+        "capture_artifact_zip_sha256": {"const": "bf34e7286bd151245d59e8ad131065fc5352f51d1f840e1adabe62f92484ad15"},
+        "body_sha256": {"$ref": "#/$defs/sha256"},
+        "review_text_sha256": {"$ref": "#/$defs/sha256"},
+        "locator_kind": {"enum": ["bounded_text_span", "complete_extracted_text_review"]},
+        "line_start": {"type": "integer", "minimum": 1},
+        "line_end": {"type": "integer", "minimum": 1},
+        "page_start": {"type": ["integer", "null"], "minimum": 1},
+        "page_end": {"type": ["integer", "null"], "minimum": 1}
+      },
+      "additionalProperties": true
+    },
+    "decision": {
+      "type": "object",
+      "required": ["decision_ordinal", "decision_id", "review_ordinal", "route_id", "unit_id", "postal_code", "state_name", "source_class", "document_identity", "document_title", "final_url", "field_ordinal_within_source", "field_id", "disposition", "evidence_basis", "bounded_finding", "supporting_text_fragment", "counterevidence_or_limitation", "source_locator", "complete_source_reviewed", "source_scope_only", "promotion_candidate", "promotion_authority", "matrix_effect", "field_terminalization_effect", "class_closure_effect", "result_spawned_requests", "outside_human_dependency", "reviewed_disposition_change", "publication_effect", "adoption_effect", "graph_effect", "national_prevalence_effect", "discrimination_effect", "coordination_effect", "common_purpose_effect", "complete_compact_effect"],
+      "properties": {
+        "decision_ordinal": {"type": "integer", "minimum": 1, "maximum": 127},
+        "decision_id": {"type": "string", "pattern": "^RD04-W03-FIELD-[0-9]{3}$"},
+        "field_id": {"$ref": "#/$defs/fieldId"},
+        "disposition": {"$ref": "#/$defs/disposition"},
+        "evidence_basis": {"type": "string", "minLength": 24},
+        "bounded_finding": {"type": ["string", "null"]},
+        "supporting_text_fragment": {"type": ["string", "null"]},
+        "counterevidence_or_limitation": {"type": "string", "minLength": 24},
+        "source_locator": {"$ref": "#/$defs/sourceLocator"},
+        "complete_source_reviewed": {"const": true},
+        "source_scope_only": {"const": true},
+        "promotion_candidate": {"type": "boolean"},
+        "promotion_authority": {"const": false},
+        "matrix_effect": {"$ref": "#/$defs/effectNone"},
+        "field_terminalization_effect": {"$ref": "#/$defs/effectNone"},
+        "class_closure_effect": {"$ref": "#/$defs/effectNone"},
+        "result_spawned_requests": {"const": 0},
+        "outside_human_dependency": {"const": false},
+        "reviewed_disposition_change": {"const": false},
+        "publication_effect": {"$ref": "#/$defs/effectNone"},
+        "adoption_effect": {"$ref": "#/$defs/effectNone"},
+        "graph_effect": {"$ref": "#/$defs/effectNone"},
+        "national_prevalence_effect": {"$ref": "#/$defs/effectNone"},
+        "discrimination_effect": {"$ref": "#/$defs/effectNone"},
+        "coordination_effect": {"$ref": "#/$defs/effectNone"},
+        "common_purpose_effect": {"$ref": "#/$defs/effectNone"},
+        "complete_compact_effect": {"$ref": "#/$defs/effectNone"}
+      },
+      "additionalProperties": true
+    },
+    "authority": {
+      "type": "object",
+      "required": ["matrix_update_authority", "field_terminalization_authority", "class_closure_authority", "outside_human_dependency", "reviewed_disposition_changes", "publication_effect", "adoption_effect", "graph_effect", "national_prevalence_effect", "discrimination_effect", "coordination_effect", "common_purpose_effect", "complete_compact_effect"],
+      "properties": {
+        "matrix_update_authority": {"const": false},
+        "field_terminalization_authority": {"const": false},
+        "class_closure_authority": {"const": false},
+        "outside_human_dependency": {"const": false},
+        "reviewed_disposition_changes": {"const": 0},
+        "publication_effect": {"$ref": "#/$defs/effectNone"},
+        "adoption_effect": {"$ref": "#/$defs/effectNone"},
+        "graph_effect": {"$ref": "#/$defs/effectNone"},
+        "national_prevalence_effect": {"$ref": "#/$defs/effectNone"},
+        "discrimination_effect": {"$ref": "#/$defs/effectNone"},
+        "coordination_effect": {"$ref": "#/$defs/effectNone"},
+        "common_purpose_effect": {"$ref": "#/$defs/effectNone"},
+        "complete_compact_effect": {"$ref": "#/$defs/effectNone"}
+      },
+      "additionalProperties": false
+    }
+  }
+}
