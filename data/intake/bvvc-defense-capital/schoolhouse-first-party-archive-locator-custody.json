@@ -1,0 +1,120 @@
+{
+  "schema_version": "schoolhouse-first-party-archive-locator-custody@1",
+  "as_of": "2026-08-05",
+  "acquisitions": {
+    "baseline": {
+      "workflow_run_id": 30995963355,
+      "artifact_id": 8926199862,
+      "artifact_digest": "sha256:1db8ed490991492167b6b9c2a2fbaaaca83ae8f09d036457dbd151202c0cc103",
+      "acquisition_head": "a4e2c6f426c2d6c60771fca74ac4eaf03ae5d7eb",
+      "artifact_manifest_sha256": "9c6a0726f004172fcbc440ed8df6ce83275d61d9b1628f074786b90841de1c5c",
+      "route_results_sha256": "713f5e8f973c277706131112b0c8bc68eba69ab8fd8e5470c58e2a53bc966e0e",
+      "snapshot_locators_sha256": "10d03c93d0a45b41e8a77937b08a1acb1ebdf7c0fe5b377aa8b55be9c4036b0c",
+      "source_routes": 46,
+      "request_attempts": 46
+    },
+    "bounded_transport_replay": {
+      "workflow_run_id": 31019907916,
+      "artifact_id": 8936473911,
+      "artifact_digest": "sha256:c20278d37fe505aa6d465e6f02da0e8dde69f7086fe05c064dcced980009dbab",
+      "acquisition_head": "c60a4f0f06928211969b744d96f2e4b801d5868a",
+      "artifact_manifest_sha256": "e494f2d687368f90852323f51aa700f7e69d126a4a9350e401727f16efe75381",
+      "route_results_sha256": "b2300c7ad4aeb61bfba115107e8f5d34f2296fbdf14fd7ae7a4fdf601f07120e",
+      "snapshot_locators_sha256": "80cb7be3380e6a202e730e8590568207291e23a4bae6f5f1d23b5465706e2b99",
+      "replayed_transport_error_routes": 26,
+      "request_attempts": 26,
+      "maximum_parallel_workers": 1,
+      "inter_query_delay_seconds": 3
+    }
+  },
+  "bounds": {
+    "archive_api_host": "web.archive.org",
+    "archive_api_path": "/cdx/search/cdx",
+    "from_year": "2019",
+    "to_year": "2026",
+    "exact_url_match": true,
+    "maximum_results_per_route": 1000,
+    "maximum_response_bytes_per_route": 5242880,
+    "baseline_maximum_parallel_workers": 4,
+    "replay_maximum_parallel_workers": 1,
+    "replay_inter_query_delay_seconds": 3,
+    "request_methods": [
+      "GET"
+    ],
+    "archived_page_bodies_fetched": 0,
+    "replay_locators_dereferenced": 0
+  },
+  "counts": {
+    "source_route_rows": 46,
+    "baseline_attempt_rows": 46,
+    "replay_attempt_rows": 26,
+    "total_attempt_rows": 72,
+    "effective_route_rows": 46,
+    "routes_with_snapshot_locators": 21,
+    "bounded_zero_snapshot_locator_routes": 3,
+    "residual_provider_error_routes": 22,
+    "archive_snapshot_locator_rows": 66,
+    "unique_archive_digests": 64,
+    "earliest_snapshot_timestamp": "20191015182651",
+    "latest_snapshot_timestamp": "20260103090407",
+    "result_caps_exhausted": 0,
+    "archived_bodies_fetched": 0,
+    "replay_locators_dereferenced": 0,
+    "interactive_search_submissions": 0,
+    "organization_name_submissions": 0,
+    "identifier_submissions": 0,
+    "source_rows_acquired": 0,
+    "street_address_rows_retained": 0,
+    "contact_detail_rows_retained": 0,
+    "private_support_rows": 0,
+    "identities_admitted": 0,
+    "negative_existence_claims_created": 0
+  },
+  "interpretation": {
+    "archive_locator_metadata_is_not_archived_content_custody": true,
+    "timestamp_digest_status_mime_length_or_replay_locator_is_not_registry_identity": true,
+    "bounded_zero_rows_is_not_absence": true,
+    "provider_error_after_bounded_replay_is_not_absence": true,
+    "replay_locator_must_not_be_dereferenced_without_separate_authorization": true
+  },
+  "terminal_frontier": {
+    "declared_two_attempt_archive_metadata_protocol_terminal": true,
+    "baseline_transport_errors_replayed_exactly_once": true,
+    "live_first_party_surface_denominator_must_not_be_repeated": true,
+    "archive_locator_metadata_denominator_must_not_be_repeated": true,
+    "archived_content_custody_open": true,
+    "registry_grade_legal_identity_open": true,
+    "remaining_registry_grade_fields": [
+      "exact legal name",
+      "EIN",
+      "exemption record",
+      "formation documents",
+      "officers",
+      "board",
+      "governance",
+      "funding",
+      "fiscal sponsor",
+      "related parties",
+      "differently named corporation",
+      "state-only registration"
+    ],
+    "outside_human_dependency": false
+  },
+  "privacy": {
+    "raw_source_retained": false,
+    "archived_page_bodies_retained": false,
+    "archived_visible_text_retained": false,
+    "street_address_rows_retained": 0,
+    "contact_detail_rows_retained": 0,
+    "private_support_rows": 0
+  },
+  "public_schoolhouse_identity_admitted": false,
+  "admitted_legal_name": null,
+  "admitted_ein": null,
+  "negative_existence_claim_created": false,
+  "outside_human_dependency": false,
+  "publication_effect": "none",
+  "adoption_effect": "none",
+  "graph_effect": "none",
+  "promotes_to": "candidate_only"
+}
