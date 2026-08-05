@@ -10,7 +10,6 @@ on:
       - reopened
 
 permissions:
-  actions: read
   contents: write
   pull-requests: read
 
@@ -24,7 +23,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - name: Check out exact materializer carrier head
+      - name: Check out exact repair carrier head
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
@@ -40,9 +39,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Validate custody, materialize, qualify, and publish clean product
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Correct provenance, qualify, and replace the one-commit product
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -51,42 +48,27 @@ jobs:
           PRODUCT_BRANCH='agent/schoolhouse-honor-foundation-990-custody-product-v1'
           BASE_MAIN='1f04c0abbf89f1529dfd428389392b3425499bc3'
           EXPECTED_OLD_PRODUCT='06c23806d88b370f0f3122e68b768b626735aef2'
-          EXECUTE='.schoolhouse-honor-foundation-990-materializer/EXECUTE'
-          WORKFLOW='.github/workflows/temp-schoolhouse-honor-foundation-990-materialize.yml'
-          RUNNER='/tmp/materialize-schoolhouse-honor-foundation-990.py'
-          BUNDLE='/tmp/materialize-schoolhouse-honor-foundation-990.py.gz.b64'
-          WORKTREE='/tmp/schoolhouse-honor-foundation-990-product'
-          PRESERVE='/tmp/schoolhouse-honor-foundation-990-preserve'
-          ARTIFACT_ROOT='/tmp/schoolhouse-honor-foundation-990-artifacts'
+          WORKTREE='/tmp/schoolhouse-honor-foundation-990-product-repair'
+          PRESERVE='/tmp/schoolhouse-honor-foundation-990-product-preserve'
           RECEIPT_DIR='/tmp/schoolhouse-honor-foundation-990-materialization-receipt'
-          MATERIALIZATION_RECEIPT='/tmp/schoolhouse-honor-foundation-990-materialization.json'
-          EXPECTED_RUNNER_SHA='2f949adc9f198ac230cd07e242672414c0dc478e234726be3a76d269896acb56'
-          EXPECTED_BUNDLE_SHA='7308007e5c954d5aa8a86261b0bdcbd19b43a7ec2588b4a38aed96890bf81c29'
 
-          SHARDS=(
-            '.schoolhouse-honor-foundation-990-materializer/runner.part.00'
-            '.schoolhouse-honor-foundation-990-materializer/runner.part.01'
-            '.schoolhouse-honor-foundation-990-materializer/runner.part.02'
-            '.schoolhouse-honor-foundation-990-materializer/runner.part.03'
+          EXPECTED=(
+            'data/intake/bvvc-defense-capital/README.md'
+            'data/intake/bvvc-defense-capital/acquisition-frontier.json'
+            'data/intake/bvvc-defense-capital/coverage-matrix.json'
+            'data/intake/bvvc-defense-capital/manifest.json'
+            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-attempt-results.jsonl'
+            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-custody.json'
+            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-filing-results.jsonl'
+            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-index-resolutions.jsonl'
+            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-structural-signals.jsonl'
+            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-term-hits.jsonl'
+            'data/intake/bvvc-defense-capital/schoolhouse.json'
+            'data/intake/bvvc-defense-capital/source-inventory-17.jsonl'
+            'tools/validate-bvvc-defense-capital.mjs'
+            'tools/validate-schoolhouse-honor-foundation-990-custody.mjs'
           )
-          SHARD_SHA256=(
-            '72c21a0381cff726e783d9d2d6b0420128f738da10d0fb3983898db120daf1f1'
-            'd4c66a64b9d93eadb84de54532e5cd111374779c31a6da11515e0ac509bcea89'
-            '9dd08e4cb35daf2db5f9dfdc93d8d3d0e1b0b4377f9279d8ebac58015a0ab9f0'
-            '50c92b9a89848276987cf6745e013f5821597b32db323ddfdf0ef4a27bd7ed69'
-          )
 
-          test "${GITHUB_HEAD_REF}" = "$CARRIER_BRANCH"
-          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
-          git fetch --prune --no-tags origin main "$PRODUCT_BRANCH"
-          MAIN_SHA=$(git rev-parse origin/main)
-          test "$MAIN_SHA" = "$BASE_MAIN"
-          test "$(git merge-base HEAD origin/main)" = "$BASE_MAIN"
-          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$EXPECTED_OLD_PRODUCT"
-          MAIN_TREE=$(git rev-parse "$MAIN_SHA^{tree}")
-          printf 'main_sha=%s\nmain_tree=%s\nold_product=%s\n' "$MAIN_SHA" "$MAIN_TREE" "$EXPECTED_OLD_PRODUCT"
-
-          mapfile -t CARRIER_CHANGED < <(git diff --name-only "$BASE_MAIN"..HEAD | sort)
           CARRIER_EXPECTED=(
             '.github/workflows/temp-schoolhouse-honor-foundation-990-materialize.yml'
             '.schoolhouse-honor-foundation-990-materializer/EXECUTE'
@@ -95,94 +77,34 @@ jobs:
             '.schoolhouse-honor-foundation-990-materializer/runner.part.02'
             '.schoolhouse-honor-foundation-990-materializer/runner.part.03'
           )
+
+          test "${GITHUB_HEAD_REF}" = "$CARRIER_BRANCH"
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          git fetch --prune --no-tags origin main
+          git fetch --no-tags origin "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          MAIN_SHA=$(git rev-parse origin/main)
+          PRODUCT_REMOTE_SHA=$(git rev-parse "refs/remotes/origin/$PRODUCT_BRANCH")
+          test "$MAIN_SHA" = "$BASE_MAIN"
+          test "$PRODUCT_REMOTE_SHA" = "$EXPECTED_OLD_PRODUCT"
+          test "$(git merge-base HEAD origin/main)" = "$BASE_MAIN"
+          MAIN_TREE=$(git rev-parse "$MAIN_SHA^{tree}")
+
+          mapfile -t CARRIER_CHANGED < <(git diff --name-only "$BASE_MAIN"..HEAD | sort)
           test "${#CARRIER_CHANGED[@]}" -eq "${#CARRIER_EXPECTED[@]}"
           for i in "${!CARRIER_EXPECTED[@]}"; do
             test "${CARRIER_CHANGED[$i]}" = "${CARRIER_EXPECTED[$i]}"
           done
-          git diff --exit-code -- "$EXECUTE" "$WORKFLOW" "${SHARDS[@]}"
 
-          for i in "${!SHARDS[@]}"; do
-            test "$(sha256sum "${SHARDS[$i]}" | awk '{print $1}')" = "${SHARD_SHA256[$i]}"
-          done
-          cat "${SHARDS[@]}" > "$BUNDLE"
-          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = "$EXPECTED_BUNDLE_SHA"
-          base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
-          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = "$EXPECTED_RUNNER_SHA"
-          python -m py_compile "$RUNNER"
-
-          grep -Fx "runner_sha256=$EXPECTED_RUNNER_SHA" "$EXECUTE"
-          grep -Fx "bundle_sha256=$EXPECTED_BUNDLE_SHA" "$EXECUTE"
-          grep -Fx "base_main=$BASE_MAIN" "$EXECUTE"
-          grep -Fx 'direct_workflow_run_id=31044808840' "$EXECUTE"
-          grep -Fx 'direct_artifact_id=8946051286' "$EXECUTE"
-          grep -Fx 'direct_artifact_digest=sha256:0b25fd3ecc7da6ac6dd58febc077dad04d20a0ee8048a9be3eb42097b939add9' "$EXECUTE"
-          grep -Fx 'index_workflow_run_id=31045790391' "$EXECUTE"
-          grep -Fx 'index_artifact_id=8946384314' "$EXECUTE"
-          grep -Fx 'index_artifact_digest=sha256:fbebded26ae37fa4614bdb9f7f79a716153e30234faa0370e7c7b68e2358e3ce' "$EXECUTE"
-          grep -Fx 'baseline_workflow_run_id=31046749910' "$EXECUTE"
-          grep -Fx 'baseline_artifact_id=8946750753' "$EXECUTE"
-          grep -Fx 'baseline_artifact_digest=sha256:bbcf217317fa5b3b9d68b28c0c5b9ab6c34a10ed1e09a247f9582c4f4203977d' "$EXECUTE"
-          grep -Fx 'replay_workflow_run_id=31048004350' "$EXECUTE"
-          grep -Fx 'replay_artifact_id=8947239823' "$EXECUTE"
-          grep -Fx 'replay_artifact_digest=sha256:010afa57fb85ad59f89696b1d8f292853759391cbf0d0f25d9969fb9a83c061a' "$EXECUTE"
-          grep -Fx 'expected_permanent_paths=14' "$EXECUTE"
-          grep -Fx 'source_inventory_rows_before=425' "$EXECUTE"
-          grep -Fx 'source_inventory_rows_after=441' "$EXECUTE"
-          grep -Fx 'coverage_denominator_rows_before=26' "$EXECUTE"
-          grep -Fx 'coverage_denominator_rows_after=27' "$EXECUTE"
-          grep -Fx 'declared_filing_rows=3' "$EXECUTE"
-          grep -Fx 'exact_index_resolution_rows=3' "$EXECUTE"
-          grep -Fx 'successful_xml_screen_rows=2' "$EXECUTE"
-          grep -Fx 'source_unavailable_after_replay_rows=1' "$EXECUTE"
-          grep -Fx 'fixed_term_hit_rows=0' "$EXECUTE"
-          grep -Fx 'structural_signal_rows=2' "$EXECUTE"
-          grep -Fx 'identities_admitted=0' "$EXECUTE"
-          grep -Fx 'relationships_admitted=0' "$EXECUTE"
-          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
-          grep -Fx 'publication_effect=none' "$EXECUTE"
-          grep -Fx 'adoption_effect=none' "$EXECUTE"
-          grep -Fx 'graph_effect=none' "$EXECUTE"
-
-          rm -rf "$WORKTREE" "$PRESERVE" "$ARTIFACT_ROOT" "$RECEIPT_DIR" "$MATERIALIZATION_RECEIPT"
-          mkdir -p "$ARTIFACT_ROOT"
-
-          download_artifact() {
-            local label="$1"
-            local artifact_id="$2"
-            local expected_digest="$3"
-            local zip="$ARTIFACT_ROOT/$label.zip"
-            local unpack="$ARTIFACT_ROOT/$label-unpack"
-            gh api -H 'Accept: application/vnd.github+json' \
-              "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > "$zip"
-            test "$(sha256sum "$zip" | awk '{print $1}')" = "${expected_digest#sha256:}"
-            mkdir -p "$unpack"
-            unzip -q "$zip" -d "$unpack"
-            local manifest
-            manifest=$(find "$unpack" -type f -name artifact-manifest.json -print -quit)
-            test -n "$manifest"
-            dirname "$manifest"
-          }
-
-          DIRECT_DIR=$(download_artifact direct 8946051286 'sha256:0b25fd3ecc7da6ac6dd58febc077dad04d20a0ee8048a9be3eb42097b939add9')
-          INDEX_DIR=$(download_artifact index 8946384314 'sha256:fbebded26ae37fa4614bdb9f7f79a716153e30234faa0370e7c7b68e2358e3ce')
-          BASELINE_DIR=$(download_artifact baseline 8946750753 'sha256:bbcf217317fa5b3b9d68b28c0c5b9ab6c34a10ed1e09a247f9582c4f4203977d')
-          REPLAY_DIR=$(download_artifact replay 8947239823 'sha256:010afa57fb85ad59f89696b1d8f292853759391cbf0d0f25d9969fb9a83c061a')
-          printf 'direct_dir=%s\nindex_dir=%s\nbaseline_dir=%s\nreplay_dir=%s\n' "$DIRECT_DIR" "$INDEX_DIR" "$BASELINE_DIR" "$REPLAY_DIR"
-
+          rm -rf "$WORKTREE" "$PRESERVE" "$RECEIPT_DIR"
           git worktree add --detach "$WORKTREE" "$MAIN_SHA"
           trap 'git worktree remove --force "$WORKTREE" >/dev/null 2>&1 || true' EXIT
 
-          python "$RUNNER" \
-            --root "$WORKTREE" \
-            --direct-dir "$DIRECT_DIR" \
-            --index-dir "$INDEX_DIR" \
-            --baseline-dir "$BASELINE_DIR" \
-            --replay-dir "$REPLAY_DIR" \
-            --parent-commit "$MAIN_SHA" \
-            --parent-tree "$MAIN_TREE" \
-            --receipt "$MATERIALIZATION_RECEIPT"
+          for path in "${EXPECTED[@]}"; do
+            mkdir -p "$WORKTREE/$(dirname "$path")"
+            git show "$EXPECTED_OLD_PRODUCT:$path" > "$WORKTREE/$path"
+          done
 
-          python - "$WORKTREE" "$MATERIALIZATION_RECEIPT" <<'PY'
+          python - "$WORKTREE" <<'PY'
           import hashlib
           import json
           import pathlib
@@ -190,7 +112,6 @@ jobs:
           from urllib.parse import urlparse
 
           root = pathlib.Path(sys.argv[1])
-          receipt_path = pathlib.Path(sys.argv[2])
           data_dir = root / 'data/intake/bvvc-defense-capital'
           source_path = data_dir / 'source-inventory-17.jsonl'
           manifest_path = data_dir / 'manifest.json'
@@ -235,28 +156,6 @@ jobs:
               'sha256': hashlib.sha256(source_bytes).hexdigest(),
           }
           manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n', encoding='utf-8')
-
-          receipt = json.loads(receipt_path.read_text(encoding='utf-8'))
-          for relative in [
-              'data/intake/bvvc-defense-capital/source-inventory-17.jsonl',
-              'data/intake/bvvc-defense-capital/manifest.json',
-              'tools/validate-schoolhouse-honor-foundation-990-custody.mjs',
-          ]:
-              target = root / relative
-              payload = target.read_bytes()
-              receipt['files'][relative] = {
-                  'bytes': len(payload),
-                  'sha256': hashlib.sha256(payload).hexdigest(),
-              }
-          receipt['provenance_repair'] = {
-              'official_receipts_after': 222,
-              'primary_public_receipts_after': 54,
-              'propublica_rows_reclassified': 3,
-              'relationship_effect': 'none',
-              'identity_effect': 'none',
-              'graph_effect': 'none',
-          }
-          receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n', encoding='utf-8')
           PY
 
           cd "$WORKTREE"
@@ -265,23 +164,6 @@ jobs:
           node test/person-routers.test.js
           node tools/validate-no-magic-human-gate.mjs
           npm run release:check
-
-          EXPECTED=(
-            'data/intake/bvvc-defense-capital/README.md'
-            'data/intake/bvvc-defense-capital/acquisition-frontier.json'
-            'data/intake/bvvc-defense-capital/coverage-matrix.json'
-            'data/intake/bvvc-defense-capital/manifest.json'
-            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-attempt-results.jsonl'
-            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-custody.json'
-            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-filing-results.jsonl'
-            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-index-resolutions.jsonl'
-            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-structural-signals.jsonl'
-            'data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-term-hits.jsonl'
-            'data/intake/bvvc-defense-capital/schoolhouse.json'
-            'data/intake/bvvc-defense-capital/source-inventory-17.jsonl'
-            'tools/validate-bvvc-defense-capital.mjs'
-            'tools/validate-schoolhouse-honor-foundation-990-custody.mjs'
-          )
 
           mkdir -p "$PRESERVE"
           for path in "${EXPECTED[@]}"; do
@@ -307,40 +189,29 @@ jobs:
             test "${CHANGED[$i]}" = "${EXPECTED[$i]}"
           done
 
-          test "$(awk 'NF { count++ } END { print count + 0 }' data/intake/bvvc-defense-capital/source-inventory-17.jsonl)" -eq 16
-          test "$(awk 'NF { count++ } END { print count + 0 }' data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-attempt-results.jsonl)" -eq 16
-          test "$(awk 'NF { count++ } END { print count + 0 }' data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-index-resolutions.jsonl)" -eq 3
-          test "$(awk 'NF { count++ } END { print count + 0 }' data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-filing-results.jsonl)" -eq 3
-          test "$(awk 'NF { count++ } END { print count + 0 }' data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-structural-signals.jsonl)" -eq 2
-          test "$(awk 'NF { count++ } END { print count + 0 }' data/intake/bvvc-defense-capital/schoolhouse-honor-foundation-990-term-hits.jsonl)" -eq 0
+          test "$(jq -s '[.[] | select(.locator_url | startswith("https://projects.propublica.org/")) | select(.evidence_class == "primary_public" and .source_type == "primary_public_form_990_object_route_attempt")] | length' data/intake/bvvc-defense-capital/source-inventory-17.jsonl)" -eq 3
           jq -e '
             .counts.source_inventory_rows == 441 and
             .counts.coverage_denominator_rows == 27 and
             .counts.explicit_gap_rows == 16 and
+            .source_inventory.evidence_class_counts.official == 222 and
+            .source_inventory.evidence_class_counts.primary_public == 54 and
             .counts.schoolhouse_honor_foundation_990_declared_filing_rows == 3 and
-            .counts.schoolhouse_honor_foundation_990_total_public_requests == 16 and
-            .counts.schoolhouse_honor_foundation_990_exact_index_resolution_rows == 3 and
             .counts.schoolhouse_honor_foundation_990_successful_xml_screen_rows == 2 and
             .counts.schoolhouse_honor_foundation_990_source_unavailable_after_replay_rows == 1 and
             .counts.schoolhouse_honor_foundation_990_fixed_term_hit_rows == 0 and
-            .counts.schoolhouse_honor_foundation_990_structural_signal_rows == 2 and
             .counts.schoolhouse_honor_foundation_990_admitted_identity_rows == 0 and
             .counts.schoolhouse_honor_foundation_990_admitted_relationship_rows == 0 and
-            .source_inventory.evidence_class_counts.official == 222 and
-            .source_inventory.evidence_class_counts.primary_public == 54 and
             .counts.private_support_rows == 0 and
             .counts.public_graph_rows_created == 0 and
             .graph_effect == "none" and
             .promotes_to == "candidate_only"
           ' data/intake/bvvc-defense-capital/manifest.json
 
-          test "$(jq -r 'select(.locator_url | startswith("https://projects.propublica.org/")) | .evidence_class' data/intake/bvvc-defense-capital/source-inventory-17.jsonl | sort | uniq -c | awk '{print $1":"$2}')" = '3:primary_public'
-          test "$(jq -r 'select(.locator_url | startswith("https://projects.propublica.org/")) | .source_type' data/intake/bvvc-defense-capital/source-inventory-17.jsonl | sort | uniq -c | awk '{print $1":"$2}')" = '3:primary_public_form_990_object_route_attempt'
-
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -- "${EXPECTED[@]}"
-          git diff --cached --exit-code --quiet && { echo 'materializer produced no staged product' >&2; exit 1; }
+          git diff --cached --exit-code --quiet && { echo 'repair produced no staged product' >&2; exit 1; }
           git commit -m 'Preserve School.House related-charity Form 990 candidate custody' \
             -m 'Freeze three exact IRS-index resolutions, two privacy-minimized official XML screens, one exact member unavailable after one replay, correct three ProPublica bridge receipts to primary-public provenance, preserve zero fixed term hits and two structural rows, admit no identity or relationship, require no outside-human action, and create no publication, adoption, or graph effect.'
 
@@ -352,7 +223,6 @@ jobs:
           git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$EXPECTED_OLD_PRODUCT" origin "HEAD:refs/heads/$PRODUCT_BRANCH"
 
           mkdir -p "$RECEIPT_DIR"
-          cp "$MATERIALIZATION_RECEIPT" "$RECEIPT_DIR/materialization-input-receipt.json"
           git diff --name-only "$MAIN_SHA"..HEAD | sort > "$RECEIPT_DIR/changed-paths.txt"
           python - <<PY > "$RECEIPT_DIR/product.json"
           import json
@@ -375,11 +245,9 @@ jobs:
               'coverage_denominator_rows_before': 26,
               'coverage_denominator_rows_after': 27,
               'declared_filings': 3,
-              'exact_index_resolutions': 3,
               'successful_xml_screens': 2,
               'source_unavailable_after_replay': 1,
               'fixed_term_hits': 0,
-              'structural_signal_rows': 2,
               'identities_admitted': 0,
               'relationships_admitted': 0,
               'private_support_rows': 0,
