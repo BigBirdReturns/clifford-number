@@ -18,13 +18,21 @@ jobs:
       - name: Checkout exact current-main parent
         uses: actions/checkout@v4
         with:
-          ref: 7f960c30b6c58c70e3a996d4239e363e50d848ef
+          ref: 320287946785fba28b3f84850e90b16e849f7dbc
           fetch-depth: 0
           clean: true
       - name: Emit exact parent custody
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "7f960c30b6c58c70e3a996d4239e363e50d848ef"
-          printf 'parent_commit=%s\n' "$(git rev-parse HEAD)"
-          printf 'parent_tree=%s\n' "$(git rev-parse 'HEAD^{tree}')"
-          printf 'parent_count=%s\n' "$(git rev-list --count HEAD)"
+          test "$(git rev-parse HEAD)" = "320287946785fba28b3f84850e90b16e849f7dbc"
+          {
+            printf 'parent_commit=%s\n' "$(git rev-parse HEAD)"
+            printf 'parent_tree=%s\n' "$(git rev-parse 'HEAD^{tree}')"
+            printf 'parent_count=%s\n' "$(git rev-list --count HEAD)"
+          } | tee /tmp/pc49-parent-tree.txt
+      - name: Upload exact parent-tree custody
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc49-parent-tree-3202879467
+          path: /tmp/pc49-parent-tree.txt
+          if-no-files-found: error
