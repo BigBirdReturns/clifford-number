@@ -1,4 +1,4 @@
-name: TEMP export exact main history for PC-49 qualification
+name: TEMP export exact PC-49 carrier history
 
 on:
   pull_request:
@@ -14,35 +14,68 @@ jobs:
   export:
     if: github.head_ref == 'agent/pc49-source-carrier'
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 60
     steps:
-      - name: Checkout complete live-main history
+      - name: Checkout exact carrier head with complete history
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-          fetch-tags: true
-          clean: true
-      - name: Export verified main-history bundle
+      - name: Export verified carrier-only delta
         run: |
           set -euo pipefail
-          commit="$(git rev-parse HEAD)"
-          tree="$(git rev-parse 'HEAD^{tree}')"
-          git branch -f pc49-history-export "$commit"
-          git bundle create /tmp/clifford-main-history.bundle refs/heads/pc49-history-export
-          git bundle verify /tmp/clifford-main-history.bundle 2>&1 | tee /tmp/clifford-main-history.verify.txt
-          printf 'main_commit=%s\nmain_tree=%s\ncommit_count=%s\n' "$commit" "$tree" "$(git rev-list --count "$commit")" | tee /tmp/pc49-main-history-receipt.txt
-          sha256sum /tmp/clifford-main-history.bundle | tee /tmp/clifford-main-history.bundle.sha256
-          wc -c /tmp/clifford-main-history.bundle | tee /tmp/clifford-main-history.bundle.bytes
-      - name: Upload exact main history
+          git fetch --force origin main:refs/remotes/origin/main
+          head_sha="$(git rev-parse HEAD^{commit})"
+          head_tree="$(git rev-parse HEAD^{tree})"
+          main_sha="$(git rev-parse refs/remotes/origin/main^{commit})"
+          merge_base="$(git merge-base HEAD refs/remotes/origin/main)"
+          git branch -f pc49-carrier-export "$head_sha"
+          git bundle create /tmp/pc49-carrier-delta.bundle \
+            refs/heads/pc49-carrier-export \
+            ^refs/remotes/origin/main
+          git bundle verify /tmp/pc49-carrier-delta.bundle \
+            > /tmp/pc49-carrier-delta.verify.txt 2>&1
+          sha256sum /tmp/pc49-carrier-delta.bundle \
+            > /tmp/pc49-carrier-delta.bundle.sha256
+          wc -c /tmp/pc49-carrier-delta.bundle \
+            > /tmp/pc49-carrier-delta.bundle.bytes
+          git log --reverse --format='%H %T %P %s' \
+            refs/remotes/origin/main..HEAD \
+            > /tmp/pc49-carrier-commit-ledger.txt
+          git rev-list --objects HEAD ^refs/remotes/origin/main \
+            > /tmp/pc49-carrier-object-ledger.txt
+          git log --reverse --format='commit=%H tree=%T parents=%P subject=%s' \
+            --raw --full-index -- .pc49-carrier-v3 \
+            > /tmp/pc49-carrier-shard-history.txt
+          tar -czf /tmp/pc49-current-carrier-files.tar.gz \
+            .pc49-carrier-v3 \
+            .github/workflows/temp-pc49-materialize.yml
+          sha256sum /tmp/pc49-current-carrier-files.tar.gz \
+            > /tmp/pc49-current-carrier-files.tar.gz.sha256
+          {
+            printf 'carrier_head=%s\n' "$head_sha"
+            printf 'carrier_tree=%s\n' "$head_tree"
+            printf 'live_main=%s\n' "$main_sha"
+            printf 'merge_base=%s\n' "$merge_base"
+            printf 'carrier_only_commits=%s\n' "$(git rev-list --count refs/remotes/origin/main..HEAD)"
+            printf 'carrier_only_objects=%s\n' "$(wc -l < /tmp/pc49-carrier-object-ledger.txt)"
+          } > /tmp/pc49-carrier-export-receipt.txt
+          cat /tmp/pc49-carrier-export-receipt.txt
+          cat /tmp/pc49-carrier-delta.bundle.sha256
+          cat /tmp/pc49-current-carrier-files.tar.gz.sha256
+      - name: Upload exact carrier history and files
         uses: actions/upload-artifact@v4
         with:
-          name: pc49-main-history-bundle
+          name: pc49-carrier-history-export
           path: |
-            /tmp/clifford-main-history.bundle
-            /tmp/clifford-main-history.bundle.sha256
-            /tmp/clifford-main-history.bundle.bytes
-            /tmp/clifford-main-history.verify.txt
-            /tmp/pc49-main-history-receipt.txt
+            /tmp/pc49-carrier-delta.bundle
+            /tmp/pc49-carrier-delta.bundle.sha256
+            /tmp/pc49-carrier-delta.bundle.bytes
+            /tmp/pc49-carrier-delta.verify.txt
+            /tmp/pc49-carrier-commit-ledger.txt
+            /tmp/pc49-carrier-object-ledger.txt
+            /tmp/pc49-carrier-shard-history.txt
+            /tmp/pc49-current-carrier-files.tar.gz
+            /tmp/pc49-current-carrier-files.tar.gz.sha256
+            /tmp/pc49-carrier-export-receipt.txt
           if-no-files-found: error
-          include-hidden-files: true
