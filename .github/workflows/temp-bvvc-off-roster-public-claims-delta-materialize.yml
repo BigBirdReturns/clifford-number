@@ -1,0 +1,87 @@
+name: TEMP materialize BVVC off-roster public-claims delta
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-bvvc-off-roster-public-claims-delta-materialize.yml'
+      - '.bvvc-off-roster-public-claims-delta/EXECUTE'
+      - 'tools/build-bvvc-off-roster-public-claims-delta.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build, qualify, and publish clean current-main product
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          TARGET='agent/bvvc-off-roster-public-claims-delta-product-v1'
+          MAIN_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+          SOURCE_BUILDER="$GITHUB_WORKSPACE/tools/build-bvvc-off-roster-public-claims-delta.mjs"
+          test -f "$SOURCE_BUILDER"
+
+          rm -rf /tmp/bvvc-off-roster-delta-product
+          git fetch --no-tags origin "$MAIN_SHA"
+          git worktree add --detach /tmp/bvvc-off-roster-delta-product "$MAIN_SHA"
+          cd /tmp/bvvc-off-roster-delta-product
+          mkdir -p tools
+          cp "$SOURCE_BUILDER" tools/build-bvvc-off-roster-public-claims-delta.mjs
+
+          node tools/build-bvvc-off-roster-public-claims-delta.mjs
+          node tools/validate-bvvc-defense-capital.mjs
+          node test/person-routers.test.js
+          npm run release:check
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            data/intake/bvvc-defense-capital/README.md \
+            data/intake/bvvc-defense-capital/coverage-matrix.json \
+            data/intake/bvvc-defense-capital/manifest.json \
+            data/intake/bvvc-defense-capital/portfolio-delta-candidates.jsonl \
+            data/intake/bvvc-defense-capital/portfolio-delta-candidates-receipt.json \
+            data/intake/bvvc-defense-capital/source-inventory-06.jsonl \
+            tools/build-bvvc-off-roster-public-claims-delta.mjs \
+            tools/validate-bvvc-defense-capital.mjs
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = '8'
+          git commit -m 'Add BVVC off-roster public-claims delta'
+          PRODUCT_SHA=$(git rev-parse HEAD)
+
+          START=$(git ls-remote origin "refs/heads/$TARGET" | awk '{print $1}')
+          if [[ -n "$START" ]]; then
+            git push origin "HEAD:refs/heads/$TARGET" --force-with-lease="refs/heads/$TARGET:$START"
+          else
+            git push origin "HEAD:refs/heads/$TARGET"
+          fi
+
+          mkdir -p /tmp/bvvc-off-roster-delta-receipt
+          jq -n \
+            --arg base_main "$MAIN_SHA" \
+            --arg product_sha "$PRODUCT_SHA" \
+            --arg target "$TARGET" \
+            '{schema_version:"bvvc-off-roster-public-claims-delta-materialization-receipt@1",base_main:$base_main,product_sha:$product_sha,target_branch:$target,changed_paths:8,source_inventory_rows:86,frozen_current_portfolio_rows:30,off_roster_candidate_rows:9,current_portfolio_memberships_created:0,private_support_rows:0,outside_human_dependency:false,ownership_findings:0,governance_right_findings:0,transaction_to_vehicle_joins:0,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+            > /tmp/bvvc-off-roster-delta-receipt/status.json
+          sha256sum /tmp/bvvc-off-roster-delta-receipt/status.json > /tmp/bvvc-off-roster-delta-receipt/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bvvc-off-roster-public-claims-delta-materialization-receipt
+          path: /tmp/bvvc-off-roster-delta-receipt
+          if-no-files-found: error
+          retention-days: 90
