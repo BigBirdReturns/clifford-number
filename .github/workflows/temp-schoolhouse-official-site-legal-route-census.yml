@@ -1,0 +1,107 @@
+name: TEMP acquire School.House official-site legal route census
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-official-site-legal-route-census.yml'
+      - '.schoolhouse-official-site-legal-route-census/EXECUTE'
+      - '.schoolhouse-official-site-legal-route-census/capture.py.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: temp-schoolhouse-official-site-legal-route-census-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate exact current-main and checksum-bound runner
+        run: |
+          set -Eeuo pipefail
+          BASE_MAIN='b2c6da02d62d00a3fe27e383b5d9314a5aeac593'
+          BUNDLE='.schoolhouse-official-site-legal-route-census/capture.py.gz.b64'
+          EXECUTE='.schoolhouse-official-site-legal-route-census/EXECUTE'
+          RUNNER='/tmp/capture-schoolhouse-official-site-legal-route-census.py'
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE_MAIN"
+          test "$(git merge-base HEAD origin/main)" = "$BASE_MAIN"
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'd5a551a2cd53027c0540e2ad0103f59982cf4139943cefd2e3f4de0ca041e034'
+          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = '720d21e225e97d52b5b3916fe8a802c26ea575c875f943b87205a8bd7f2368f9'
+          base64 -d "$BUNDLE" | gzip -dc > "$RUNNER"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = '7242accf3ec045ccfa5de5913101a8105fe58ebd2643ab660fda48ef33a8305a'
+          python -m py_compile "$RUNNER"
+
+      - name: Execute bounded no-submission census
+        run: |
+          set -Eeuo pipefail
+          OUT='/tmp/schoolhouse-official-site-legal-route-census'
+          rm -rf "$OUT"
+          python /tmp/capture-schoolhouse-official-site-legal-route-census.py --output "$OUT"
+
+          test -f "$OUT/summary.json"
+          test -f "$OUT/route-policy.json"
+          test -f "$OUT/artifact-manifest.json"
+          test -f "$OUT/route-results.jsonl"
+          test -f "$OUT/html-surfaces.jsonl"
+          test -f "$OUT/discovered-links.jsonl"
+          test -f "$OUT/form-mechanics.jsonl"
+          test -f "$OUT/cms-page-index.jsonl"
+          test -f "$OUT/legal-claim-observations.jsonl"
+
+          jq -e '
+            .declared_routes == 20 and
+            .terminal_route_rows == 20 and
+            .query_submissions == 0 and
+            .form_submissions == 0 and
+            .organization_name_submissions == 0 and
+            .license_number_submissions == 0 and
+            .payment_submissions == 0 and
+            .upload_submissions == 0 and
+            .account_submissions == 0 and
+            .contact_submissions == 0 and
+            .source_rows_acquired == 0 and
+            .street_address_rows_retained == 0 and
+            .contact_detail_rows_retained == 0 and
+            .private_support_rows == 0 and
+            .identities_admitted == 0 and
+            .negative_existence_claims_created == 0 and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/summary.json"
+          test "$(grep -cve '^$' "$OUT/route-results.jsonl")" = '20'
+          jq -e '
+            .declared_routes == 20 and
+            .terminal_route_rows == 20 and
+            .query_submissions == 0 and
+            .form_submissions == 0 and
+            .source_rows_acquired == 0 and
+            .identities_admitted == 0 and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/artifact-manifest.json"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-official-site-legal-route-census
+          path: /tmp/schoolhouse-official-site-legal-route-census
+          if-no-files-found: error
+          retention-days: 90
