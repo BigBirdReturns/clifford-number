@@ -7,6 +7,7 @@ on:
       - '.schoolhouse-fl-fictitious-capture/EXECUTE'
       - 'tools/acquisition/schoolhouse-fl-fictitious/acquire.py'
       - 'tools/acquisition/schoolhouse-fl-fictitious/repair_framing.py'
+      - 'tools/acquisition/schoolhouse-fl-fictitious/repair_dates.py'
   workflow_dispatch:
 
 permissions:
@@ -23,10 +24,14 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Apply embedded-linebreak reassembly repair
+      - name: Apply source-format repairs
         run: |
-          python -m py_compile tools/acquisition/schoolhouse-fl-fictitious/repair_framing.py
+          python -m py_compile \
+            tools/acquisition/schoolhouse-fl-fictitious/repair_framing.py \
+            tools/acquisition/schoolhouse-fl-fictitious/repair_dates.py
           python tools/acquisition/schoolhouse-fl-fictitious/repair_framing.py \
+            tools/acquisition/schoolhouse-fl-fictitious/acquire.py
+          python tools/acquisition/schoolhouse-fl-fictitious/repair_dates.py \
             tools/acquisition/schoolhouse-fl-fictitious/acquire.py
 
       - name: Compile acquisition runner
@@ -77,21 +82,31 @@ jobs:
           candidates = [json.loads(line) for line in (root / 'fictitious-name-candidates.jsonl').read_text().splitlines() if line]
 
           assert summary['source_bytes'] == 74_947_584
-          assert len(summary['source_sha256']) == 64
-          assert summary['archive_members'] == len(members) and len(members) > 0
-          assert summary['source_rows_scanned'] == sum(row['row_count'] for row in members)
-          assert summary['candidate_rows'] == len(candidates)
+          assert summary['source_sha256'] == '38576d314638f16d074d963eb6fba784de095ca2146c04016638a43fe48da113'
+          assert summary['archive_members'] == len(members) == 1
+          assert summary['source_rows_scanned'] == sum(row['row_count'] for row in members) == 761_040
+          assert summary['candidate_rows'] == len(candidates) == 29
+          assert summary['exact_public_name_candidates'] == 0
+          assert summary['tampa_bay_city_candidates'] == 2
+          assert summary['filed_2023_or_later_candidates'] == sum(row['filed_2023_or_later'] for row in candidates)
+          assert summary['filed_2023_or_later_candidates'] > 0
+          assert summary['unique_owner_charter_numbers'] == 15
+          assert summary['unique_owner_feis'] == 15
           assert summary['all_members_scanned'] is True
           assert all(row['record_framing'] == 'fixed_width_with_embedded_linebreak_reassembly' for row in members)
           assert all(row['short_record_count'] == 0 for row in members)
           assert all(row['row_count'] == row['direct_record_count'] + row['reassembled_record_count'] for row in members)
           assert all(row['physical_line_count'] == row['direct_record_count'] + row['fragment_line_count'] for row in members)
-          assert all(row['reassembled_record_count'] == len(row['reassembly_groups']) for row in members)
+          assert all(row['reassembled_record_count'] == len(row['reassembly_groups']) == 40 for row in members)
+          assert all(row['reassembly_mode_counts']['join_fragments_with_lf'] == 40 for row in members)
           assert receipt['route_probe']['workflow_run_id'] == 30973871220
           assert receipt['route_probe']['artifact_id'] == 8917541589
           assert receipt['route_probe']['state'] == 'accessible'
           assert receipt['bytes'] == 74_947_584
           assert receipt['raw_source_retained'] is False
+          assert tests['exact_public_name_candidate_count'] == 0
+          assert tests['tampa_bay_city_candidate_count'] == 2
+          assert tests['filed_2023_or_later_candidate_count'] == summary['filed_2023_or_later_candidates']
           assert tests['identity_admitted'] is False
           assert tests['graph_effect'] == 'none'
           assert summary['street_address_rows_retained'] == 0
@@ -102,8 +117,9 @@ jobs:
           assert summary['outside_human_dependency'] is False
           assert summary['graph_effect'] == 'none'
           assert all(row['street_address_retained'] is False for row in candidates)
+          assert all(row['postal_code_retained'] is False for row in candidates)
           assert all(row['contact_details_retained'] is False for row in candidates)
           assert all(row['identity_admitted'] is False for row in candidates)
-          assert not Path('/tmp/schoolhouse-fl-fictitious-capture/florida-fictitious-quarterly.zip').exists()
+          assert not Path('/tmp/florida-fictitious-quarterly.zip').exists()
           print(json.dumps(summary, sort_keys=True))
           PY
