@@ -1,0 +1,60 @@
+name: TEMP export School.House Florida corporate identity inputs
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-schoolhouse-fl-corporate-identity-census-export.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Export exact canonical custody package
+        run: |
+          set -Eeuo pipefail
+          PARENT='efcf6bc094facb72dec6b966a7e8e3b2acdf4d06'
+          OUT='/tmp/schoolhouse-fl-corporate-identity-census-export'
+          git fetch --no-tags --depth=1 origin "$PARENT"
+          test "$(git rev-parse "$PARENT^{commit}")" = "$PARENT"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+
+          git archive "$PARENT" \
+            data/intake/bvvc-defense-capital \
+            tools/validate-bvvc-defense-capital.mjs \
+            tools/build-schoolhouse-fl-charity-exact-query-custody.mjs \
+            tools/build-schoolhouse-archive-minimum-legal-surface-reconciliation-custody.mjs \
+            test/person-routers.test.js \
+            package.json \
+          | tar -x -C "$OUT"
+
+          {
+            printf 'canonical_parent=%s\n' "$PARENT"
+            printf 'canonical_parent_tree=%s\n' "$(git rev-parse "$PARENT^{tree}")"
+            printf 'export_workflow_head=%s\n' "$GITHUB_SHA"
+          } > "$OUT/EXPORT-METADATA"
+
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | sort -z \
+              | xargs -0 sha256sum \
+              > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-fl-corporate-identity-census-export
+          path: /tmp/schoolhouse-fl-corporate-identity-census-export
+          if-no-files-found: error
+          retention-days: 90
