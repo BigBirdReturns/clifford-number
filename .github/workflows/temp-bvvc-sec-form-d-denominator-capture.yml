@@ -1,0 +1,80 @@
+name: TEMP capture complete BVVC SEC Form D denominator
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-bvvc-sec-form-d-denominator-capture.yml'
+      - '.bvvc-sec-form-d-denominator-capture/EXECUTE'
+      - 'tools/acquisition/bvvc-sec-form-d/run.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile acquisition runner
+        run: python -m py_compile tools/acquisition/bvvc-sec-form-d/run.py
+
+      - name: Execute complete 2019Q1 through 2026Q2 denominator scan
+        id: acquisition
+        continue-on-error: true
+        env:
+          SEC_USER_AGENT: CliffordNumber-BVVC-FormD/1.0 (public-interest research; contact https://github.com/BigBirdReturns/clifford-number)
+        run: |
+          set +e
+          OUT=/tmp/bvvc-sec-form-d-denominator-2019q1-2026q2
+          rm -rf "$OUT"
+          python tools/acquisition/bvvc-sec-form-d/run.py \
+            --output "$OUT" \
+            --start 2019Q1 \
+            --end 2026Q2 \
+            --sleep-seconds 0.35 \
+            --retries 6
+          status=$?
+          mkdir -p "$OUT"
+          printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
+          exit "$status"
+
+      - name: Upload exact acquisition artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bvvc-sec-form-d-denominator-2019q1-2026q2
+          path: /tmp/bvvc-sec-form-d-denominator-2019q1-2026q2
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal acquisition
+        if: always()
+        run: |
+          test -f /tmp/bvvc-sec-form-d-denominator-2019q1-2026q2/RUNNER_EXIT_CODE
+          test "$(cat /tmp/bvvc-sec-form-d-denominator-2019q1-2026q2/RUNNER_EXIT_CODE)" = '0'
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path('/tmp/bvvc-sec-form-d-denominator-2019q1-2026q2')
+          summary = json.loads((root / 'summary.json').read_text())
+          receipt = json.loads((root / 'acquisition-receipt.json').read_text())
+          assert summary['quarters_expected'] == 30
+          assert summary['quarters_acquired'] == 30
+          assert summary['quarters_failed'] == 0
+          assert summary['private_support_rows'] == 0
+          assert summary['portfolio_transaction_joins_created'] == 0
+          assert summary['public_graph_rows_created'] == 0
+          assert summary['outside_human_dependency'] is False
+          assert summary['graph_effect'] == 'none'
+          assert receipt['terminal'] is True
+          assert receipt['failure_reasons'] == []
+          print(json.dumps(summary, sort_keys=True))
+          PY
