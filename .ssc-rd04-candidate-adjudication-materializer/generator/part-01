@@ -1,0 +1,80 @@
+ 'lane_id': 'RD-04',
+      'class_id': 'RD-04-C02',
+      'issue': 1017,
+      'source_execution_receipt_path': 'source-census-execution-receipt.json',
+      'reason': 'all_exact_fns_routes_redirected_to_the_single_unapproved_final_host_www_fna_usda_gov',
+      'denominator': {
+        'source_routes': 54,
+        'replay_routes': 54,
+        'final_host': 'www.fna.usda.gov',
+        'original_http_successes': 54,
+        'original_protocol_admissions': 0,
+      },
+      'execution_contract': {
+        'maximum_attempts_per_route': 1,
+        'maximum_parallel_workers': 6,
+        'result_spawned_requests': 0,
+        'automatic_source_admission': False,
+        'automatic_field_classification': False,
+        'automatic_class_closure': False,
+      },
+      'routes': replay_routes,
+      'boundaries': {
+        'fna_usda_gov_is_automatically_admitted_as_fns_usda_gov': False,
+        'http_200_is_source_admission': False,
+        'directory_page_is_state_implementation': False,
+        'federal_rule_is_state_implementation': False,
+        'outside_human_dependency': False,
+        'publication_effect': 'none',
+        'adoption_effect': 'none',
+        'graph_effect': 'none',
+      },
+    }
+    write_json(data / 'official-redirect-replay-protocol.json', replay)
+
+    receipt = {
+      'schema_version': 'ssc-rd04-wave03-source-census-execution-receipt@1',
+      'wave_id': 'SSC-RD-W03',
+      'lane_id': 'RD-04',
+      'class_id': 'RD-04-C02',
+      'issue': 1017,
+      'canonical_intake_merge': 'b9d09c28bcaa0b00c699ff40e893df7b9675ff0f',
+      'canonical_trigger_guard_repair_merge': '7f960c30b6c58c70e3a996d4239e363e50d848ef',
+      'trigger_pr': 1136,
+      'workflow_run': 30977759590,
+      'artifact_id': 8918943097,
+      'artifact_bytes': 2311000,
+      'artifact_zip_sha256': '1852f324ec72c6f84642a5185579318cf7428ca28ee55f83caac1979b8b5ff63',
+      'candidate_index_sha256': expected['candidate-index.json'],
+      'route_results_sha256': expected['route-results.json'],
+      'summary_sha256': expected['summary.json'],
+      'execution_receipt_sha256': expected['execution-receipt.json'],
+      'artifact_manifest_sha256': expected['manifest.json'],
+      'counts': {
+        'state_rows': 50,
+        'required_cells': 450,
+        'fixed_routes': 204,
+        'terminal_routes': 204,
+        'disallowed_final_host_routes': 54,
+        'rss_candidate_routes': 150,
+        'candidate_rows': 1500,
+        'unique_candidate_urls': 500,
+        'admitted_sources': 0,
+        'field_classifications': 0,
+        'result_spawned_requests': 0,
+      },
+      'authority': {
+        'outside_human_dependency': False,
+        'external_contacts': 0,
+        'external_reviews': 0,
+        'class_closed': False,
+        'publication_effect': 'none',
+        'adoption_effect': 'none',
+        'graph_effect': 'none',
+      },
+    }
+    write_json(data / 'source-census-execution-receipt.json', receipt)
+    return 0
+
+if __name__ == '__main__':
+    raise SystemExit(main())
