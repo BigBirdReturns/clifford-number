@@ -12,8 +12,8 @@ const formattedMatches = source.match(/4,394,541/g) || [];
 if (numericMatches.length !== 6) {
   throw new Error(`expected 6 numeric scanned-row fixtures, found ${numericMatches.length}`);
 }
-if (formattedMatches.length !== 2) {
-  throw new Error(`expected 2 formatted scanned-row fixtures, found ${formattedMatches.length}`);
+if (formattedMatches.length !== 1) {
+  throw new Error(`expected 1 formatted scanned-row fixture, found ${formattedMatches.length}`);
 }
 source = source.replaceAll('4394541', '7020930').replaceAll('4,394,541', '7,020,930');
 if (source.includes('4394541') || source.includes('4,394,541')) {
