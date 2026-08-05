@@ -21,7 +21,7 @@ jobs:
       - name: Export exact canonical custody package
         run: |
           set -Eeuo pipefail
-          PARENT='efcf6bc094facb72dec6b966a7e8e3b2acdf4d06'
+          PARENT='118af97aae3e1472331ba1e77e03a4bcc7a9e74e'
           OUT='/tmp/schoolhouse-fl-corporate-identity-census-export'
           git fetch --no-tags --depth=1 origin "$PARENT"
           test "$(git rev-parse "$PARENT^{commit}")" = "$PARENT"
@@ -31,6 +31,7 @@ jobs:
           git archive "$PARENT" \
             data/intake/bvvc-defense-capital \
             tools/validate-bvvc-defense-capital.mjs \
+            tools/validate-schoolhouse-honor-foundation-990-custody.mjs \
             tools/build-schoolhouse-fl-charity-exact-query-custody.mjs \
             tools/build-schoolhouse-archive-minimum-legal-surface-reconciliation-custody.mjs \
             test/person-routers.test.js \
