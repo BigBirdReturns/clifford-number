@@ -21,7 +21,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-      - name: Recover and verify frozen PC-49 archive and materializer
+      - name: Recover and verify frozen PC-49 files
         run: |
           set -euo pipefail
           test "$(sha256sum .pc49-carrier-v3/product.part00 | awk '{print $1}')" = "2081ea8d85452d2b813a8a0d4ce636dd26c27b686b8583ec479a7b30ca77f07f"
@@ -33,8 +33,29 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import base64
+          import gzip
           import hashlib
+          import io
+          import shutil
           import tarfile
+          import zlib
+
+          expected = {
+              '.github/workflows/preference-custody-v47.yml': 'cfa2c1246fae6e63a1a7b1134c66076f5f3e2f62b2aa43b3726b06f858178e2d',
+              '.github/workflows/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.yml': 'ce03c3a87942eafb8e61fb272fdb8eb3d00fc92e40d744f419cb20f1cdcd60df',
+              'data/research/preference-custody/control-manifest-v47.json': 'b3deedbbf9c2dab16ae536335080f0c44c5a5ff24e5f851ed2b2d569de503b3a',
+              'data/research/preference-custody/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.fixture.json': '6b0d5c50e966f184648d4fa6dfd240491bd725358aea19c6c5a63e0b761e61f1',
+              'docs/preference-custody-laboratory-floor-v47.md': 'de7b4a7627381769b514a888e2b7429ae2d221a0d25c558d17a5e41614da35f1',
+              'docs/preference-custody-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.md': '3a2ed2e9b66b9f5a69a3eea7aca5efd1254bb6d2578a80d8510864afe6abae37',
+              'test/preference-custody-manifest-v47.test.js': '61fa8ad415bd74a066344a601731f7ec059eaf6cf3250a1a6f981ccd6c8de95d',
+              'test/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.test.js': 'de627a46f83c8de48391bc0e2c38a63103899aa63bf8fc8e4407d4ed82a02eca',
+              'tools/compile-preference-custody-manifest-v47.mjs': 'd67bad5b816ef6a21ae37b5bcd7b07dce1471703925d49278415cb9cf357cc65',
+              'tools/compile-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs': '77523d12c3e9b90db78accca7c724f4dce919b597e6bc3715143b62e383dd43d',
+              'tools/lib/preference-custody-manifest-v47.mjs': '3502c070cc3b9bd59183af734ee7e60a7654d9b4ed9e7dd20c633c10b8362026',
+              'tools/lib/preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs': 'cba021f0dde587a7709a6d5d037424e590a298bc8c74091bdd05e4c3b0c7f892',
+              'tools/validate-preference-custody-manifest-v47.mjs': '58c148e2c68a129fae49d95202f08220053746dbb529a18e1e5fdac3f16385d8',
+              'tools/validate-preference-linkage-runtime-artifact-dependency-numerical-determinism-replay-assurance.mjs': 'ad64c6cd5691c5b55cea65828cf836acd6f3974d9b583a95c57d2287aa13b9b',
+          }
 
           whitespace = set(b' \t\r\n')
           raw = b''.join(
@@ -45,42 +66,91 @@ jobs:
           if len(normalized) != 41142:
               raise SystemExit(f'unexpected normalized carrier length: {len(normalized)}')
           if normalized.count(b'=') != 1:
-              raise SystemExit(f'unexpected internal padding count: {normalized.count(b"=")}')
+              raise SystemExit('unexpected internal padding count')
           padding_offset = normalized.index(b'=')
           if padding_offset != 38986:
               raise SystemExit(f'unexpected internal padding offset: {padding_offset}')
 
-          prefix = normalized[:padding_offset]
-          suffix = normalized[padding_offset + 1:]
-          for offset, recovered in ((366, b'/'), (3764, b'm'), (37584, b'f')):
-              prefix = prefix[:offset] + recovered + prefix[offset:]
-          recovered_base64 = prefix + suffix
-          if len(recovered_base64) != 41144 or len(recovered_base64) % 4 != 0:
-              raise SystemExit('recovered carrier has invalid canonical length')
+          prefix_base64 = normalized[:padding_offset]
+          prefix_gzip = base64.b64decode(
+              prefix_base64 + b'=' * ((-len(prefix_base64)) % 4),
+              validate=True,
+          )
+          expected_header = bytes.fromhex('1f8b0800000000000003')
+          if prefix_gzip[:10] != expected_header:
+              raise SystemExit('unexpected recovered gzip header')
 
-          archive = base64.b64decode(recovered_base64, validate=True)
-          archive_sha256 = hashlib.sha256(archive).hexdigest()
-          expected_archive_sha256 = '914e5e46f29fd07612e8c9089bec59a4d37bc34d9d1f4159638a2b417cc94774'
-          if archive_sha256 != expected_archive_sha256:
-              raise SystemExit(f'archive mismatch: {archive_sha256}')
+          inflater = zlib.decompressobj(-15)
+          tar_bytes = inflater.decompress(prefix_gzip[10:]) + inflater.flush()
+          if not inflater.eof:
+              raise SystemExit('recovered deflate member did not terminate')
+          if len(tar_bytes) != 196915:
+              raise SystemExit(f'unexpected recovered tar length: {len(tar_bytes)}')
+
+          root = Path('/tmp/pc49-recovered-product')
+          shutil.rmtree(root, ignore_errors=True)
+          root.mkdir(parents=True)
+          files = {}
+          with tarfile.open(fileobj=io.BytesIO(tar_bytes), mode='r:') as source:
+              members = [member for member in source.getmembers() if member.isfile()]
+              names = {member.name for member in members}
+              if names != set(expected):
+                  missing = sorted(set(expected) - names)
+                  extra = sorted(names - set(expected))
+                  raise SystemExit(f'product path mismatch missing={missing} extra={extra}')
+              for member in members:
+                  if member.name.startswith('/') or '..' in Path(member.name).parts:
+                      raise SystemExit(f'unsafe recovered path: {member.name}')
+                  data = source.extractfile(member).read()
+                  digest = hashlib.sha256(data).hexdigest()
+                  if digest != expected[member.name]:
+                      raise SystemExit(f'file digest mismatch for {member.name}: {digest}')
+                  files[member.name] = data
+                  output = root / member.name
+                  output.parent.mkdir(parents=True, exist_ok=True)
+                  output.write_bytes(data)
+
           archive_path = Path('/tmp/pc49-product.tar.gz')
-          archive_path.write_bytes(archive)
-          with tarfile.open(archive_path, mode='r:gz') as package:
-              members = [member for member in package.getmembers() if member.isfile()]
-              if len(members) != 14:
-                  raise SystemExit(f'unexpected permanent file count: {len(members)}')
-              if any(member.name.startswith('/') or '..' in Path(member.name).parts for member in members):
-                  raise SystemExit('unsafe product archive member')
+          with archive_path.open('wb') as raw_output:
+              with gzip.GzipFile(
+                  filename='',
+                  mode='wb',
+                  fileobj=raw_output,
+                  compresslevel=9,
+                  mtime=0,
+              ) as gzip_output:
+                  with tarfile.open(
+                      fileobj=gzip_output,
+                      mode='w',
+                      format=tarfile.PAX_FORMAT,
+                  ) as package:
+                      for name in sorted(files):
+                          data = files[name]
+                          info = tarfile.TarInfo(name)
+                          info.size = len(data)
+                          info.mode = 0o644
+                          info.uid = 0
+                          info.gid = 0
+                          info.uname = ''
+                          info.gname = ''
+                          info.mtime = 0
+                          info.pax_headers = {}
+                          package.addfile(info, io.BytesIO(data))
 
+          archive = archive_path.read_bytes()
+          archive_sha256 = hashlib.sha256(archive).hexdigest()
+          Path('/tmp/pc49-product.tar.gz.b64').write_bytes(base64.b64encode(archive) + b'\n')
+          Path('/tmp/pc49-rebuilt-archive.sha256').write_text(archive_sha256 + '\n')
           Path('/tmp/pc49-recovered-carrier-receipt.txt').write_text(
               '\n'.join((
                   f'normalized_carrier_bytes={len(normalized)}',
-                  'recovered_insertions=366:/,3764:m,37584:f',
-                  f'removed_internal_padding_offset={padding_offset}',
-                  f'recovered_base64_bytes={len(recovered_base64)}',
-                  f'archive_bytes={len(archive)}',
-                  f'archive_sha256={archive_sha256}',
-                  f'permanent_files={len(members)}',
+                  f'internal_padding_offset={padding_offset}',
+                  f'prefix_decoded_bytes={len(prefix_gzip)}',
+                  f'recovered_tar_bytes={len(tar_bytes)}',
+                  f'permanent_files={len(files)}',
+                  f'rebuilt_archive_bytes={len(archive)}',
+                  f'rebuilt_archive_sha256={archive_sha256}',
+                  'all_frozen_file_digests=verified',
                   '',
               ))
           )
@@ -106,19 +176,30 @@ jobs:
           parent_tree="$(git rev-parse HEAD^{tree})"
           python3 - "$parent" <<'PY'
           from pathlib import Path
+          import hashlib
           import sys
 
           path = Path('/tmp/pc49-run.sh')
           text = path.read_text()
-          old = 'PARENT=7f960c30b6c58c70e3a996d4239e363e50d848ef'
-          new = f'PARENT={sys.argv[1]}'
-          if text.count(old) != 1:
-              raise SystemExit(f'unexpected parent anchor count: {text.count(old)}')
-          path.write_text(text.replace(old, new, 1))
+          old_parent = 'PARENT=7f960c30b6c58c70e3a996d4239e363e50d848ef'
+          new_parent = f'PARENT={sys.argv[1]}'
+          old_archive = 'ARCHIVE_SHA256=914e5e46f29fd07612e8c9089bec59a4d37bc34d9d1f4159638a2b417cc94774'
+          archive_sha256 = Path('/tmp/pc49-rebuilt-archive.sha256').read_text().strip()
+          new_archive = f'ARCHIVE_SHA256={archive_sha256}'
+          if text.count(old_parent) != 1:
+              raise SystemExit(f'unexpected parent anchor count: {text.count(old_parent)}')
+          if text.count(old_archive) != 1:
+              raise SystemExit(f'unexpected archive anchor count: {text.count(old_archive)}')
+          path.write_text(
+              text.replace(old_parent, new_parent, 1)
+                  .replace(old_archive, new_archive, 1)
+          )
+          print('rebound_materializer_sha256=' + hashlib.sha256(path.read_bytes()).hexdigest())
           PY
           {
             printf 'live_parent=%s\n' "$parent"
             printf 'live_parent_tree=%s\n' "$parent_tree"
+            printf 'rebuilt_archive_sha256=%s\n' "$(cat /tmp/pc49-rebuilt-archive.sha256)"
             printf 'rebound_materializer_sha256=%s\n' "$(sha256sum /tmp/pc49-run.sh | awk '{print $1}')"
           } > /tmp/pc49-live-parent-receipt.txt
           cat /tmp/pc49-live-parent-receipt.txt
