@@ -200,7 +200,19 @@ const baseBuildMutations = [
   ['status', x => x.status = 'bad'],
   ['graph', x => x.graph_effect = 'edge'],
   ['schema', x => x.schema_version = 'bad'],
-  ['manifest', x => x.manifest_id = 'bad']
+  ['manifest', x => x.manifest_id = 'bad'],
+  ['undefined extra key after cache warmup', x => x.controller = undefined],
+  ['function extra key after cache warmup', x => x.controller = () => 'external'],
+  ['non-enumerable extra key after cache warmup', x => Object.defineProperty(x, 'controller', { value: undefined, enumerable: false, configurable: true })],
+  ['symbol extra key after cache warmup', x => x[Symbol('controller')] = undefined],
+  ['nested undefined extra key after cache warmup', x => x.controls[0].controller = undefined],
+  ['nested function extra key after cache warmup', x => x.controls[0].controller = () => 'external'],
+  ['nested non-enumerable extra key after cache warmup', x => Object.defineProperty(x.controls[0], 'controller', { value: undefined, enumerable: false, configurable: true })],
+  ['nested symbol extra key after cache warmup', x => x.controls[0][Symbol('controller')] = undefined],
+  ['nested accessor after cache warmup', x => Object.defineProperty(x.controls[0], 'controller', { get: () => undefined, enumerable: true, configurable: true })],
+  ['nested custom prototype after cache warmup', x => Object.setPrototypeOf(x.controls[0], { controller: undefined })],
+  ['nested cycle after cache warmup', x => x.controls[0].cycle = x.controls[0]],
+  ['nested sparse array after cache warmup', x => delete x.controls[0].required_refusal_rules[0]]
 ];
 for (const [name, mutate] of baseBuildMutations) add(`base build ${name}`, 'baseBuild', mutate);
 
@@ -210,6 +222,170 @@ assert.throws(
   () => compilePreferenceCustodyManifestV46(manifest, unqualifiedBase, targetBuild, targetFixture, baseSources),
   /v46 v45 build invalid/,
   'unqualified v45 base escaped compilation'
+);
+
+const undefinedExtraBaseAfterCacheWarmup = clone(baseBuild);
+undefinedExtraBaseAfterCacheWarmup.controller = undefined;
+assert.throws(
+  () => compilePreferenceCustodyManifestV46(manifest, undefinedExtraBaseAfterCacheWarmup, targetBuild, targetFixture, baseSources),
+  /v46 v45 base build key ledger mismatch/,
+  'undefined-valued v45 base extra key reused cached validation'
+);
+
+const functionExtraBaseAfterCacheWarmup = clone(baseBuild);
+functionExtraBaseAfterCacheWarmup.controller = () => 'external';
+assert.throws(
+  () => compilePreferenceCustodyManifestV46(manifest, functionExtraBaseAfterCacheWarmup, targetBuild, targetFixture, baseSources),
+  /v46 v45 base build key ledger mismatch/,
+  'function-valued v45 base extra key reused cached validation'
+);
+
+const topLevelNonEnumerableBaseAfterCacheWarmup = clone(baseBuild);
+Object.defineProperty(topLevelNonEnumerableBaseAfterCacheWarmup, 'controller', { value: undefined, enumerable: false, configurable: true });
+assert.throws(
+  () => compilePreferenceCustodyManifestV46(manifest, topLevelNonEnumerableBaseAfterCacheWarmup, targetBuild, targetFixture, baseSources),
+  /v46 v45 base build key ledger mismatch/,
+  'non-enumerable v45 base extra key reused cached validation'
+);
+
+const topLevelSymbolBaseAfterCacheWarmup = clone(baseBuild);
+topLevelSymbolBaseAfterCacheWarmup[Symbol('controller')] = undefined;
+assert.throws(
+  () => compilePreferenceCustodyManifestV46(manifest, topLevelSymbolBaseAfterCacheWarmup, targetBuild, targetFixture, baseSources),
+  /v46 v45 base build key ledger mismatch/,
+  'symbol v45 base extra key reused cached validation'
+);
+
+const nestedUndefinedExtraBaseAfterCacheWarmup = clone(baseBuild);
+nestedUndefinedExtraBaseAfterCacheWarmup.controls[0].controller = undefined;
+assert.throws(
+  () => compilePreferenceCustodyManifestV46(manifest, nestedUndefinedExtraBaseAfterCacheWarmup, targetBuild, targetFixture, baseSources),
+  /unsupported JSON value type undefined/,
+  'nested undefined-valued v45 base extra key reused cached validation'
+);
+
+const nestedFunctionExtraBaseAfterCacheWarmup = clone(baseBuild);
+nestedFunctionExtraBaseAfterCacheWarmup.controls[0].controller = () => 'external';
+assert.throws(
+  () => compilePreferenceCustodyManifestV46(manifest, nestedFunctionExtraBaseAfterCacheWarmup, targetBuild, targetFixture, baseSources),
+  /unsupported JSON value type function/,
+  'nested function-valued v45 base extra key reused cached validation'
+);
+
+const nestedNonEnumerableBaseAfterCacheWarmup = clone(baseBuild);
+Object.defineProperty(nestedNonEnumerableBaseAfterCacheWarmup.controls[0], 'controller', { value: undefined, enumerable: false, configurable: true });
+assert.throws(
+  () => compilePreferenceCustodyManifestV46(manifest, nestedNonEnumerableBaseAfterCacheWarmup, targetBuild, targetFixture, baseSources),
+  /must be an enumerable data property/,
+  'nested non-enumerable v45 base key reused cached validation'
+);
+
+const nestedSymbolBaseAfterCacheWarmup = clone(baseBuild);
+nestedSymbolBaseAfterCacheWarmup.controls[0][Symbol('controller')] = undefined;
+assert.throws(
+  () => compilePreferenceCustodyManifestV46(manifest, nestedSymbolBaseAfterCacheWarmup, targetBuild, targetFixture, baseSources),
+  /must not contain symbol keys/,
+  'nested symbol v45 base key reused cached validation'
+);
+
+const nestedAccessorBaseAfterCacheWarmup = clone(baseBuild);
+Object.defineProperty(nestedAccessorBaseAfterCacheWarmup.controls[0], 'controller', { get: () => undefined, enumerable: true, configurable: true });
+assert.throws(
+  () => compilePreferenceCustodyManifestV46(manifest, nestedAccessorBaseAfterCacheWarmup, targetBuild, targetFixture, baseSources),
+  /must be an enumerable data property/,
+  'nested accessor v45 base key reused cached validation'
+);
+
+const nestedPrototypeBaseAfterCacheWarmup = clone(baseBuild);
+Object.setPrototypeOf(nestedPrototypeBaseAfterCacheWarmup.controls[0], { controller: undefined });
+assert.throws(
+  () => compilePreferenceCustodyManifestV46(manifest, nestedPrototypeBaseAfterCacheWarmup, targetBuild, targetFixture, baseSources),
+  /must use the canonical object prototype/,
+  'nested custom prototype v45 base reused cached validation'
+);
+
+const cyclicBaseAfterCacheWarmup = clone(baseBuild);
+cyclicBaseAfterCacheWarmup.controls[0].cycle = cyclicBaseAfterCacheWarmup.controls[0];
+assert.throws(
+  () => compilePreferenceCustodyManifestV46(manifest, cyclicBaseAfterCacheWarmup, targetBuild, targetFixture, baseSources),
+  /repeated or cyclic object/,
+  'cyclic v45 base reached canonical cache hashing'
+);
+
+const sparseBaseAfterCacheWarmup = clone(baseBuild);
+delete sparseBaseAfterCacheWarmup.controls[0].required_refusal_rules[0];
+assert.throws(
+  () => compilePreferenceCustodyManifestV46(manifest, sparseBaseAfterCacheWarmup, targetBuild, targetFixture, baseSources),
+  /array key ledger mismatch|must not be sparse/,
+  'sparse v45 base array reused cached validation'
+);
+
+const nestedUndefinedExtraSourceAfterCacheWarmup = clone(baseSources);
+nestedUndefinedExtraSourceAfterCacheWarmup.baseBuild.controls[0].controller = undefined;
+assert.throws(
+  () => compilePreferenceCustodyManifestV46(manifest, baseBuild, targetBuild, targetFixture, nestedUndefinedExtraSourceAfterCacheWarmup),
+  /unsupported JSON value type undefined/,
+  'nested undefined-valued v45 source extra key reused cached validation'
+);
+
+const nestedFunctionExtraSourceAfterCacheWarmup = clone(baseSources);
+nestedFunctionExtraSourceAfterCacheWarmup.baseBuild.controls[0].controller = () => 'external';
+assert.throws(
+  () => compilePreferenceCustodyManifestV46(manifest, baseBuild, targetBuild, targetFixture, nestedFunctionExtraSourceAfterCacheWarmup),
+  /unsupported JSON value type function/,
+  'nested function-valued v45 source extra key reused cached validation'
+);
+
+const nestedNonEnumerableSourceAfterCacheWarmup = clone(baseSources);
+Object.defineProperty(nestedNonEnumerableSourceAfterCacheWarmup.baseBuild.controls[0], 'controller', { value: undefined, enumerable: false, configurable: true });
+assert.throws(
+  () => compilePreferenceCustodyManifestV46(manifest, baseBuild, targetBuild, targetFixture, nestedNonEnumerableSourceAfterCacheWarmup),
+  /must be an enumerable data property/,
+  'nested non-enumerable v45 source key reused cached validation'
+);
+
+const nestedSymbolSourceAfterCacheWarmup = clone(baseSources);
+nestedSymbolSourceAfterCacheWarmup.baseBuild.controls[0][Symbol('controller')] = undefined;
+assert.throws(
+  () => compilePreferenceCustodyManifestV46(manifest, baseBuild, targetBuild, targetFixture, nestedSymbolSourceAfterCacheWarmup),
+  /must not contain symbol keys/,
+  'nested symbol v45 source key reused cached validation'
+);
+
+const nestedAccessorSourceAfterCacheWarmup = clone(baseSources);
+Object.defineProperty(nestedAccessorSourceAfterCacheWarmup.baseBuild.controls[0], 'controller', { get: () => undefined, enumerable: true, configurable: true });
+assert.throws(
+  () => compilePreferenceCustodyManifestV46(manifest, baseBuild, targetBuild, targetFixture, nestedAccessorSourceAfterCacheWarmup),
+  /must be an enumerable data property/,
+  'nested accessor v45 source key reused cached validation'
+);
+
+const cyclicSourceAfterCacheWarmup = clone(baseSources);
+cyclicSourceAfterCacheWarmup.baseBuild.controls[0].cycle = cyclicSourceAfterCacheWarmup.baseBuild.controls[0];
+assert.throws(
+  () => compilePreferenceCustodyManifestV46(manifest, baseBuild, targetBuild, targetFixture, cyclicSourceAfterCacheWarmup),
+  /repeated or cyclic object/,
+  'cyclic v45 source reached canonical cache hashing'
+);
+
+const crossRootAliasBaseSourcesAfterCacheWarmup = clone(baseSources);
+crossRootAliasBaseSourcesAfterCacheWarmup.manifest.frontier_transition = baseBuild.frontier_transition;
+assert.throws(
+  () => compilePreferenceCustodyManifestV46(manifest, baseBuild, targetBuild, targetFixture, crossRootAliasBaseSourcesAfterCacheWarmup),
+  /repeated or cyclic object/,
+  'cross-root v45 base/source alias reused cached validation'
+);
+const crossRootAliasBuildErrors = validatePreferenceCustodyManifestV46Build(
+  build,
+  manifest,
+  baseBuild,
+  targetBuild,
+  targetFixture,
+  crossRootAliasBaseSourcesAfterCacheWarmup
+);
+assert.ok(
+  crossRootAliasBuildErrors.some(error => error.includes('repeated or cyclic object')),
+  'cross-root v45 base/source alias escaped build validation'
 );
 
 const deepExtraKeyBaseSources = clone(baseSources);
@@ -247,6 +423,13 @@ assert.throws(
 const baseSourceMutations = [
   ['extra source field', x => x.controller = 'external'],
   ['deep extra source field', x => x.baseSources.baseSources.controller = 'external'],
+  ['nested source undefined extra key after cache warmup', x => x.baseBuild.controls[0].controller = undefined],
+  ['nested source function extra key after cache warmup', x => x.baseBuild.controls[0].controller = () => 'external'],
+  ['nested source non-enumerable extra key after cache warmup', x => Object.defineProperty(x.baseBuild.controls[0], 'controller', { value: undefined, enumerable: false, configurable: true })],
+  ['nested source symbol extra key after cache warmup', x => x.baseBuild.controls[0][Symbol('controller')] = undefined],
+  ['nested source accessor after cache warmup', x => Object.defineProperty(x.baseBuild.controls[0], 'controller', { get: () => undefined, enumerable: true, configurable: true })],
+  ['nested source cycle after cache warmup', x => x.baseBuild.controls[0].cycle = x.baseBuild.controls[0]],
+  ['cross-root source/build alias after cache warmup', x => x.manifest.frontier_transition = baseBuild.frontier_transition],
   ['deep extra manifest field', x => x.baseSources.baseSources.manifest.controller = 'external'],
   ['deep extra manifest nested field', x => x.baseSources.baseSources.manifest.extension_control.controller = 'external'],
   ['deep manifest schema', x => x.baseSources.baseSources.manifest.schema_version = 'bad'],
@@ -295,4 +478,4 @@ postdatedBaseSources.targetFixture.captured_at = '2026-08-05';
 const postdatedBaseErrors = validatePreferenceCustodyManifestV46Build(build, manifest, baseBuild, targetBuild, targetFixture, postdatedBaseSources);
 assert.ok(postdatedBaseErrors.some(error => error.includes('v46 source snapshot postdates floor: baseSources.targetFixture.captured_at')));
 
-console.log(`Preference custody floor v46 adversarial tests: PASS (${cases.length} mutations plus an unqualified-v45-base compile refusal, chronology-bound fresh-manifest, fresh-PC-48, stale-build, and transitive-source succession checks)`);
+console.log(`Preference custody floor v46 adversarial tests: PASS (${cases.length} mutations plus unqualified-v45-base and recursive cache-safety compile refusals, chronology-bound fresh-manifest, fresh-PC-48, stale-build, and transitive-source succession checks)`);
