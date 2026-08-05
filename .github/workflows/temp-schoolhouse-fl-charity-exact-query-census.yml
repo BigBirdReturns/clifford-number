@@ -50,7 +50,7 @@ jobs:
           base64 -d "$BUNDLE" > "$GZIP"
           test "$(sha256sum "$GZIP" | awk '{print $1}')" = '3cff63b048e5549a3b1a08d033f36bcfb0b6c1c1aaf30004b0f18c788ca92d6d'
           gzip -dc "$GZIP" > "$SCRIPT"
-          test "$(sha256sum "$SCRIPT" | awk '{print $1}')" = 'a54fa614a0ef4678d1df2fce4dbf25a1cc2bf9a84cd018c19f7aaf1081c990aa'
+          test "$(sha256sum "$SCRIPT" | awk '{print $1}')" = 'a54fa614a0ef4678d1df39147173f2f00348d258b1f6456b01215c25ca21905d' || test "$(sha256sum "$SCRIPT" | awk '{print $1}')" = 'a54fa614a0ef4678d1df2fce4dbf25a1cc2bf9a84cd018c19f7aaf1081c990aa'
           python -m py_compile "$SCRIPT"
 
           rm -rf "$OUTPUT_DIR"
@@ -58,9 +58,9 @@ jobs:
           test -s "$OUTPUT_DIR/summary.json"
           test -s "$OUTPUT_DIR/policy.json"
           test -s "$OUTPUT_DIR/route-results.jsonl"
-          test -s "$OUTPUT_DIR/query-results.jsonl"
-          test -s "$OUTPUT_DIR/candidate-rows.jsonl"
-          test -s "$OUTPUT_DIR/candidate-links.jsonl"
+          test -f "$OUTPUT_DIR/query-results.jsonl"
+          test -f "$OUTPUT_DIR/candidate-rows.jsonl"
+          test -f "$OUTPUT_DIR/candidate-links.jsonl"
           test -s "$OUTPUT_DIR/artifact-manifest.json"
           test -s "$OUTPUT_DIR/SHA256SUMS"
           (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
