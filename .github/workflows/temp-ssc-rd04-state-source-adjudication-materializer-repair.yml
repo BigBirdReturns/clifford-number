@@ -1,0 +1,153 @@
+name: TEMP repair RD-04 state-source adjudication materialization
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-ssc-rd04-state-source-adjudication-materializer-repair.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-rd04-state-source-adjudication-repair-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Reconstruct, qualify, and lease-publish the thirteen-file product
+        run: |
+          set -Eeuxo pipefail
+          export GIT_AUTHOR_NAME='github-actions[bot]'
+          export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+
+          readonly MAIN_LEASE=a4a9ced8a702ab5f6ba57b15073683246295035d
+          readonly TARGET_BRANCH=agent/ssc-rd-wave03-rd04-state-source-adjudication-v1
+          readonly TARGET_LEASE=08dcb3843b6295bf3339f70f4654c6ce3b7d3c42
+          readonly STANDING=.github/workflows/status-sovereignty-rd-wave03-rd04-state-source-adjudication.yml
+          readonly CARRIER=.ssc-rd04-state-source-adjudication-materializer
+          readonly B64=/tmp/rd04-state-source.tar.xz.b64
+          readonly ARCHIVE=/tmp/rd04-state-source.tar.xz
+          readonly PACKAGE=/tmp/rd04-state-source-package
+          readonly WORK=/tmp/rd04-state-source-worktree
+          readonly RECEIPT=/tmp/rd04-state-source-repair-receipt
+          readonly PATHS=/tmp/rd04-state-source-paths.txt
+
+          rm -rf "$B64" "$ARCHIVE" "$PACKAGE" "$WORK" "$RECEIPT" "$PATHS"
+          mkdir -p "$PACKAGE" "$RECEIPT"
+
+          python - "$CARRIER/archive" <<'PY'
+          import hashlib, pathlib, sys
+          root = pathlib.Path(sys.argv[1])
+          expected = [
+            ('part-00',6000,'8c0e2e5507770e587b27da28dbb15dd536067e59f47a590834eddc884a27855d'),
+            ('part-01',6000,'165a9cabcdee2068a27132ec00936e92038fdb8700a383fccd3f4c605b14a987'),
+            ('part-02',6000,'c09c48568acbf16aecb426857a75387e3e9aa595caac91f5c87d24e6dcc5f862'),
+            ('part-03',6000,'38a2a39f6d216ba2cdd7eb239a7901bf96500ca3f42f1dce73489eb4e39fc6e3'),
+            ('part-04',6000,'2dc9dd97d76f5c8461194e916a98b2c34315aba09cc2b16a6574e2757ad331c5'),
+            ('part-05',6000,'95035066dc0a2cc9a3776797f00aa71049d51b3bf6350281984367ca32536e31'),
+            ('part-06',6000,'f87db0fcdcf15f79dbddb43ea427cf8c040df55389d0b359288ef69dc2e2be4e'),
+            ('part-07',6000,'42b693d9cb8979599b8c79198006a8962e01280dff6e0c14f403fb968707a3ff'),
+            ('part-08',6000,'f72f32598b26c21963df6f6e96122177786b4250afb9b87179c886523caa91ca'),
+            ('part-09',6000,'c2f98c769c47e0026c1428a47205151faebe6217d212f8870d8cccfdc0b163d3'),
+            ('part-10',4112,'d26466a043036ac917033d41850aaa88cd53c094802adfd676aa7c578b34e174'),
+          ]
+          for name, size, digest in expected:
+              data=(root/name).read_bytes()
+              assert len(data)==size, (name,len(data),size)
+              assert hashlib.sha256(data).hexdigest()==digest, name
+          PY
+
+          cat "$CARRIER"/archive/part-* > "$B64"
+          test "$(wc -c < "$B64" | tr -d ' ')" = 64112
+          test "$(sha256sum "$B64" | awk '{print $1}')" = af9afaf43be0f5b1fbab2217919cee21cd39538fc6bb873617b03e0135021ddd
+          base64 --decode "$B64" > "$ARCHIVE"
+          test "$(wc -c < "$ARCHIVE" | tr -d ' ')" = 48084
+          test "$(sha256sum "$ARCHIVE" | awk '{print $1}')" = b064f0666bf71778215684f7adda118f8546d44bc8b79f46d36e4562dfd78907
+
+          tar -tJf "$ARCHIVE" | sort > "$PATHS"
+          test "$(wc -l < "$PATHS" | tr -d ' ')" = 13
+          test "$(sha256sum "$PATHS" | awk '{print $1}')" = 62fd13c58b2358582643afc5d8d2abefb1a45c97552cab88c9a89f852756d33a
+          tar -xJf "$ARCHIVE" -C "$PACKAGE"
+          test "$(find "$PACKAGE" -type f | wc -l | tr -d ' ')" = 13
+          test "$(find "$PACKAGE" -type l | wc -l | tr -d ' ')" = 0
+
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          LIVE_MAIN=$(git rev-parse origin/main)
+          LIVE_TARGET=$(git rev-parse "origin/$TARGET_BRANCH")
+          test "$LIVE_MAIN" = "$MAIN_LEASE"
+          test "$LIVE_TARGET" = "$TARGET_LEASE"
+          test "$(git rev-parse "$LIVE_TARGET^")" = "$LIVE_MAIN"
+          test "$(git rev-list --count "$LIVE_MAIN..$LIVE_TARGET")" = 1
+          test "$(git diff --name-only "$LIVE_MAIN..$LIVE_TARGET")" = "$STANDING"
+          test "$(git diff --name-status "$LIVE_MAIN..$LIVE_TARGET" | awk '$1 != "A" {n++} END {print n+0}')" = 0
+
+          git worktree add --detach "$WORK" "$LIVE_TARGET"
+          cp -a "$PACKAGE"/. "$WORK"/
+          cd "$WORK"
+          while IFS= read -r path; do git add -- "$path"; done < "$PATHS"
+          git diff --cached --name-only | sort > "$RECEIPT/staged-paths.txt"
+          cmp "$PATHS" "$RECEIPT/staged-paths.txt"
+          test "$(git diff --cached --name-status | awk '$1 != "A" {n++} END {print n+0}')" = 0
+          if grep -E '(^|/)(tmp|transport|carrier|materializer|trigger)(/|$)' "$RECEIPT/staged-paths.txt"; then exit 1; fi
+          git commit -m 'Adjudicate RD-04 state-source outcomes and freeze responsive-link protocol'
+          FINAL_COMMIT=$(git rev-parse HEAD)
+          FINAL_TREE=$(git rev-parse 'HEAD^{tree}')
+          test "$(git rev-parse HEAD^)" = "$LIVE_TARGET"
+
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-state-source-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-state-source-adjudication.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd04/run-responsive-link-protocol.py
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-responsive-link-protocol.py --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+
+          git restore --worktree -- .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-state-source-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-state-source-adjudication.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-responsive-link-protocol.py --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          git fetch --no-tags origin main "$TARGET_BRANCH"
+          test "$(git rev-parse origin/main)" = "$LIVE_MAIN"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$LIVE_TARGET"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$LIVE_TARGET"
+
+          printf 'live_main=%s\nstanding_workflow_commit=%s\nfinal_commit=%s\nfinal_tree=%s\npermanent_nonworkflow_paths=13\nroute_adjudications=54\nlanding_page_context_admissions=38\nresponsive_link_candidates=329\nselected_followups=79\nterminal_cells=100/450\nclass_closed=false\noutside_human_dependency=false\n' \
+            "$LIVE_MAIN" "$LIVE_TARGET" "$FINAL_COMMIT" "$FINAL_TREE" > "$RECEIPT/final.txt"
+          cp "$PATHS" "$RECEIPT/product-paths.txt"
+          sha256sum "$B64" "$ARCHIVE" "$RECEIPT"/* > "$RECEIPT/sha256sums.txt"
+          cat "$RECEIPT/final.txt"
+
+      - name: Preserve exact repair receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-state-source-adjudication-materializer-repair-v1
+          path: /tmp/rd04-state-source-repair-receipt
+          if-no-files-found: error
+          retention-days: 30
