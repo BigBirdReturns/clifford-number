@@ -1,4 +1,4 @@
-name: TEMP execute RD-04 State Options Report 17e acquisition
+name: TEMP adjudicate retained RD-04 State Options Report 17e artifact
 
 on:
   pull_request:
@@ -7,14 +7,15 @@ on:
       - '.github/workflows/temp-ssc-rd04-state-options-report-acquisition-v1.yml'
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
-  group: temp-ssc-rd04-state-options-report-acquisition-v1-${{ github.event.pull_request.number }}
+  group: temp-ssc-rd04-state-options-report-artifact-v2-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  acquire:
+  adjudicate:
     if: >-
       github.event.pull_request.base.ref == 'main' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
@@ -26,7 +27,15 @@ jobs:
       MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-field-promotion/promoted-partial-field-matrix.json
       SOURCE_URL: https://digitalgovernmenthub.org/wp-content/uploads/2025/09/snap-stateOptionsReport-17edition-1.pdf
       AUTHORITY_LANDING_URL: https://www.fns.usda.gov/snap/waivers/state-options-report
-      ARTIFACT_NAME: ssc-rd04-state-options-report-17e-acquisition-v1
+      SOURCE_RUN_ID: '31055131985'
+      SOURCE_ARTIFACT_ID: '8949949465'
+      SOURCE_ARTIFACT_ZIP_BYTES: '5556968'
+      SOURCE_ARTIFACT_ZIP_SHA256: 857286d7fe2d89151e83588ccd13938bf3907cc2c880c47dc2eb73a7160a3eaf
+      SOURCE_PDF_BYTES: '5747694'
+      SOURCE_PDF_SHA256: b5970b4f3847f6c4c0cbcf15755728f3671ffdb7ae78babe40aec6ec0ca59b75
+      SOURCE_HEADERS_SHA256: 48c1cd65ef0a0cfbbc67d34c2676160b355abb6bf7aa6ca3ffa1b965bb35d655
+      SOURCE_PAGE_TEXT_SHA256: 273781b0cb150e8415b06be257fce77485847ecdaec1724a87cf5aba9245a2b2
+      OUTPUT_ARTIFACT_NAME: ssc-rd04-state-options-report-17e-artifact-adjudication-v2
     steps:
       - name: Check out exact trigger head
         uses: actions/checkout@v4
@@ -47,14 +56,49 @@ jobs:
           test "$(git hash-object "$MATRIX_PATH")" = c66c366bcc885e5153cb4ece940c469d08c90936
           node tools/validate-no-magic-human-gate.mjs
           npm run validate:release
-      - name: Acquire and terminally parse the exact report page
+      - name: Recover exact retained source artifact
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          WORK="$RUNNER_TEMP/ssc-rd04-state-options-report-17e-artifact-v2"
+          SOURCE="$WORK/source"
+          OUTPUT="$WORK/output"
+          rm -rf "$WORK"
+          mkdir -p "$SOURCE" "$OUTPUT/raw" "$OUTPUT/extracted"
+          curl --fail --location --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${SOURCE_ARTIFACT_ID}/zip" \
+            -o "$WORK/source-artifact.zip"
+          test "$(stat -c '%s' "$WORK/source-artifact.zip")" = "$SOURCE_ARTIFACT_ZIP_BYTES"
+          test "$(sha256sum "$WORK/source-artifact.zip" | awk '{print $1}')" = "$SOURCE_ARTIFACT_ZIP_SHA256"
+          unzip -q "$WORK/source-artifact.zip" -d "$SOURCE"
+          find "$SOURCE" -type f -printf '%P\n' | sort > "$WORK/source-paths.txt"
+          cat > "$WORK/expected-source-paths.txt" <<'EOF'
+          extracted/page-12.txt
+          protocol.json
+          raw/response-headers.json
+          raw/snap-state-options-report-17edition.pdf
+          EOF
+          sed -i 's/^          //' "$WORK/expected-source-paths.txt"
+          cmp "$WORK/expected-source-paths.txt" "$WORK/source-paths.txt"
+          test "$(stat -c '%s' "$SOURCE/raw/snap-state-options-report-17edition.pdf")" = "$SOURCE_PDF_BYTES"
+          test "$(sha256sum "$SOURCE/raw/snap-state-options-report-17edition.pdf" | awk '{print $1}')" = "$SOURCE_PDF_SHA256"
+          test "$(sha256sum "$SOURCE/raw/response-headers.json" | awk '{print $1}')" = "$SOURCE_HEADERS_SHA256"
+          test "$(sha256sum "$SOURCE/extracted/page-12.txt" | awk '{print $1}')" = "$SOURCE_PAGE_TEXT_SHA256"
+          cp -a "$SOURCE/raw"/. "$OUTPUT/raw/"
+          cp -a "$SOURCE/extracted/page-12.txt" "$OUTPUT/extracted/page-12.txt"
+      - name: Terminally adjudicate the retained page
         shell: bash
         run: |
           set -Eeuo pipefail
-          OUT="$RUNNER_TEMP/ssc-rd04-state-options-report-17e-acquisition-v1"
-          rm -rf "$OUT"
-          mkdir -p "$OUT/raw" "$OUT/extracted"
-          python - "$OUT" <<'PY'
+          WORK="$RUNNER_TEMP/ssc-rd04-state-options-report-17e-artifact-v2"
+          SOURCE="$WORK/source"
+          OUT="$WORK/output"
+          python - "$SOURCE" "$OUT" <<'PY'
           from __future__ import annotations
 
           import hashlib
@@ -63,36 +107,41 @@ jobs:
           import pathlib
           import re
           import sys
-          import urllib.request
-          from datetime import datetime, timezone
 
           from pypdf import PdfReader
 
-          out = pathlib.Path(sys.argv[1])
-          source_url = os.environ['SOURCE_URL']
-          authority_url = os.environ['AUTHORITY_LANDING_URL']
+          source = pathlib.Path(sys.argv[1])
+          out = pathlib.Path(sys.argv[2])
           matrix_path = pathlib.Path(os.environ['MATRIX_PATH'])
+          pdf_path = source / 'raw' / 'snap-state-options-report-17edition.pdf'
+          headers_path = source / 'raw' / 'response-headers.json'
+          retained_text_path = source / 'extracted' / 'page-12.txt'
 
           protocol = {
-              'schema_version': 'ssc-rd04-state-options-report-17e-acquisition-protocol@1',
+              'schema_version': 'ssc-rd04-state-options-report-17e-artifact-adjudication-protocol@2',
               'wave_id': 'SSC-RD-W03',
               'lane_id': 'RD-04',
               'class_id': 'RD-04-C02',
               'issue': 1017,
               'canonical_base': os.environ['CANONICAL_BASE'],
-              'source': {
-                  'authority_landing_url': authority_url,
-                  'byte_source_url': source_url,
-                  'publisher': 'U.S. Department of Agriculture, Food and Nutrition Service',
-                  'title': 'Supplemental Nutrition Assistance Program State Options Report, 17th Edition',
-                  'publication_month': '2025-08',
-                  'report_as_of': '2024-10-01',
-                  'expected_pages': 149,
-                  'extraction_page_index_zero_based': 12,
-                  'extraction_printed_page': 12,
-                  'maximum_requests': 1,
+              'matrix_path': os.environ['MATRIX_PATH'],
+              'matrix_blob_sha': 'c66c366bcc885e5153cb4ece940c469d08c90936',
+              'source_custody': {
+                  'source_request_attempts': 1,
+                  'source_workflow_run': int(os.environ['SOURCE_RUN_ID']),
+                  'source_artifact_id': int(os.environ['SOURCE_ARTIFACT_ID']),
+                  'source_artifact_zip_sha256': os.environ['SOURCE_ARTIFACT_ZIP_SHA256'],
+                  'source_url': os.environ['SOURCE_URL'],
+                  'authority_landing_url': os.environ['AUTHORITY_LANDING_URL'],
+                  'pdf_bytes': int(os.environ['SOURCE_PDF_BYTES']),
+                  'pdf_sha256': os.environ['SOURCE_PDF_SHA256'],
+                  'pdf_pages': 149,
+                  'pdf_page_index_zero_based': 12,
+                  'printed_page': 11,
+                  'page_text_sha256': os.environ['SOURCE_PAGE_TEXT_SHA256'],
+                  'artifact_retrieval_requests': 1,
+                  'additional_empirical_source_requests': 0,
                   'result_spawned_requests': 0,
-                  'maximum_response_bytes': 10_000_000,
               },
               'field_id': 'discretionary_exemption_authority_and_reported_state_practice',
               'reference_period': 'FFY 2024',
@@ -118,52 +167,39 @@ jobs:
           }
           (out / 'protocol.json').write_text(json.dumps(protocol, indent=2) + '\n')
 
-          req = urllib.request.Request(
-              source_url,
-              headers={
-                  'User-Agent': 'clifford-number-rd04-bounded-source-custody/1.0',
-                  'Accept': 'application/pdf,*/*;q=0.1',
-              },
-              method='GET',
-          )
-          with urllib.request.urlopen(req, timeout=120) as response:
-              body = response.read(protocol['source']['maximum_response_bytes'] + 1)
-              if len(body) > protocol['source']['maximum_response_bytes']:
-                  raise SystemExit('response exceeded maximum byte ceiling')
-              effective_url = response.geturl()
-              headers = {key.lower(): value for key, value in response.headers.items()}
-              status = getattr(response, 'status', 200)
-
-          if status != 200:
-              raise SystemExit(f'unexpected HTTP status: {status}')
-          if not body.startswith(b'%PDF-'):
-              raise SystemExit('source body is not a PDF')
-
-          pdf_path = out / 'raw' / 'snap-state-options-report-17edition.pdf'
-          pdf_path.write_bytes(body)
-          body_sha = hashlib.sha256(body).hexdigest()
-          headers_bytes = (json.dumps(headers, sort_keys=True, indent=2) + '\n').encode()
-          (out / 'raw' / 'response-headers.json').write_bytes(headers_bytes)
+          body = pdf_path.read_bytes()
+          headers_bytes = headers_path.read_bytes()
+          retained_text = retained_text_path.read_text()
+          if len(body) != protocol['source_custody']['pdf_bytes']:
+              raise SystemExit('retained PDF byte count changed')
+          if hashlib.sha256(body).hexdigest() != protocol['source_custody']['pdf_sha256']:
+              raise SystemExit('retained PDF digest changed')
+          if hashlib.sha256(headers_bytes).hexdigest() != os.environ['SOURCE_HEADERS_SHA256']:
+              raise SystemExit('retained response headers changed')
+          if hashlib.sha256(retained_text.encode()).hexdigest() != protocol['source_custody']['page_text_sha256']:
+              raise SystemExit('retained page text changed')
 
           reader = PdfReader(str(pdf_path))
           if len(reader.pages) != 149:
               raise SystemExit(f'page denominator changed: {len(reader.pages)}')
-          page_index = 12
-          page_text = reader.pages[page_index].extract_text() or ''
-          normalized_page = re.sub(r'\s+', ' ', page_text).strip()
-          (out / 'extracted' / 'page-12.txt').write_text(page_text)
+          page_text = reader.pages[12].extract_text() or ''
+          if page_text != retained_text:
+              raise SystemExit('deterministic page extraction changed')
+          normalized = re.sub(r'\s+', ' ', page_text).strip()
+          compact = re.sub(r'\s+', '', normalized).lower()
 
-          required_phrases = [
+          for phrase in [
               'ABAWD Discretionary Exemptions',
               'Section 6(o)(6)',
               '273.24(g)',
               'FFY 2024',
               'Use of discretionary',
-              'No use of',
-          ]
-          for phrase in required_phrases:
-              if phrase not in normalized_page:
-                  raise SystemExit(f'missing page-12 phrase: {phrase}')
+              'Data reference period',
+          ]:
+              if phrase not in normalized:
+                  raise SystemExit(f'missing retained-page phrase: {phrase}')
+          if 'nouseofdiscretionaryexemptions(16)' not in compact:
+              raise SystemExit('no-use heading changed after whitespace normalization')
 
           use_states = [
               'Alaska', 'Arizona', 'Arkansas', 'Colorado', 'Connecticut', 'Florida', 'Georgia', 'Idaho',
@@ -179,26 +215,29 @@ jobs:
           ]
           excluded = {'District of Columbia', 'Guam', 'Virgin Islands'}
           no_use_states = [name for name in no_use_agencies if name not in excluded]
-
           if len(use_states) != 37 or len(no_use_agencies) != 16 or len(no_use_states) != 13:
-              raise SystemExit('frozen source counts changed')
-          for name in use_states + no_use_agencies:
-              if name not in normalized_page:
-                  raise SystemExit(f'expected jurisdiction absent from page 12: {name}')
+              raise SystemExit('frozen jurisdiction denominator changed')
 
-          use_heading = normalized_page.index('Use of discretionary')
-          no_use_heading = normalized_page.index('No use of')
-          reference_heading = normalized_page.index('Data reference period')
-          if not (use_heading < no_use_heading < reference_heading):
-              raise SystemExit('page section order changed')
-          use_section = normalized_page[use_heading:no_use_heading]
-          no_use_section = normalized_page[no_use_heading:reference_heading]
-          for name in use_states:
-              if name not in use_section:
-                  raise SystemExit(f'use-state appears outside use section: {name}')
-          for name in no_use_agencies:
-              if name not in no_use_section:
-                  raise SystemExit(f'no-use jurisdiction appears outside no-use section: {name}')
+          use_heading = normalized.index('Use of discretionary')
+          use_start = normalized.index('Alaska', use_heading)
+          wyoming_end = normalized.index('Wyoming', use_start) + len('Wyoming')
+          no_use_start = normalized.index('Alabama', wyoming_end)
+          reference_start = normalized.index('Data reference period', no_use_start)
+          if not (use_heading < use_start < wyoming_end < no_use_start < reference_start):
+              raise SystemExit('retained page section order changed')
+          use_section = normalized[use_start:no_use_start]
+          no_use_section = normalized[no_use_start:reference_start]
+
+          def require_order(section: str, names: list[str], label: str) -> None:
+              cursor = 0
+              for name in names:
+                  position = section.find(name, cursor)
+                  if position < 0:
+                      raise SystemExit(f'{label} jurisdiction missing or reordered: {name}')
+                  cursor = position + len(name)
+
+          require_order(use_section, use_states, 'use')
+          require_order(no_use_section, no_use_agencies, 'no-use')
 
           postal = {
               'Alabama':'AL','Alaska':'AK','Arizona':'AZ','Arkansas':'AR','California':'CA','Colorado':'CO',
@@ -225,7 +264,7 @@ jobs:
               reported_use = name in use_states
               if reported_use == (name in no_use_states):
                   raise SystemExit(f'state category is not exclusive: {name}')
-              row = {
+              rows.append({
                   'unit_ordinal': matrix_row['unit_ordinal'],
                   'unit_id': matrix_row['unit_id'],
                   'postal_code': matrix_row['postal_code'],
@@ -245,17 +284,15 @@ jobs:
                           'source_category': 'Use of discretionary exemptions' if reported_use else 'No use of discretionary exemptions',
                       },
                       'source_page_index_zero_based': 12,
-                      'source_printed_page': 12,
+                      'source_printed_page': 11,
                       'report_edition': '17th',
                       'report_publication_month': '2025-08',
                   },
-                  'evidence_source_ids': ['RD04-SOURCE-FNS-STATE-OPTIONS-17E-P12'],
+                  'evidence_source_ids': ['RD04-SOURCE-FNS-STATE-OPTIONS-17E-P11'],
                   'typed_gap': None,
                   'authority_effect': 'bounded_ffy2024_reported_state_practice_only',
-              }
-              rows.append(row)
+              })
               seen.add(name)
-
           if len(rows) != 50 or seen != set(postal):
               raise SystemExit('fifty-state denominator changed')
           if sum(row['value']['reported_state_practice']['used_discretionary_exemptions'] for row in rows) != 37:
@@ -264,13 +301,18 @@ jobs:
           rows_path = out / 'extracted' / 'state-discretionary-exemptions.jsonl'
           rows_path.write_text(''.join(json.dumps(row, sort_keys=True) + '\n' for row in rows))
           summary = {
-              'schema_version': 'ssc-rd04-state-options-report-17e-acquisition-summary@1',
-              'source_requests': 1,
-              'http_status': status,
+              'schema_version': 'ssc-rd04-state-options-report-17e-artifact-adjudication-summary@2',
+              'source_request_attempts': 1,
+              'additional_empirical_source_requests': 0,
+              'artifact_retrieval_requests': 1,
+              'source_workflow_run': int(os.environ['SOURCE_RUN_ID']),
+              'source_artifact_id': int(os.environ['SOURCE_ARTIFACT_ID']),
+              'source_artifact_zip_sha256': os.environ['SOURCE_ARTIFACT_ZIP_SHA256'],
               'pdf_bytes': len(body),
-              'pdf_sha256': body_sha,
+              'pdf_sha256': hashlib.sha256(body).hexdigest(),
               'pdf_pages': len(reader.pages),
               'extraction_page_index_zero_based': 12,
+              'printed_page': 11,
               'state_rows': 50,
               'reported_use_rows': 37,
               'reported_no_use_rows': 13,
@@ -285,24 +327,26 @@ jobs:
               'graph_effect': 'none',
           }
           (out / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
-          receipt = {
-              'schema_version': 'ssc-rd04-state-options-report-17e-source-receipt@1',
-              'requested_url': source_url,
-              'effective_url': effective_url,
-              'authority_landing_url': authority_url,
-              'http_status': status,
+          source_receipt = {
+              'schema_version': 'ssc-rd04-state-options-report-17e-source-receipt@2',
+              'requested_url': os.environ['SOURCE_URL'],
+              'authority_landing_url': os.environ['AUTHORITY_LANDING_URL'],
+              'effective_url_persisted_by_initial_attempt': None,
+              'redirect_chain_persisted_by_initial_attempt': False,
+              'http_status': 200,
               'response_headers_sha256': hashlib.sha256(headers_bytes).hexdigest(),
               'body_bytes': len(body),
-              'body_sha256': body_sha,
-              'content_type': headers.get('content-type'),
+              'body_sha256': hashlib.sha256(body).hexdigest(),
+              'content_type': json.loads(headers_bytes).get('content-type'),
               'pdf_pages': len(reader.pages),
-              'captured_at_utc': datetime.now(timezone.utc).isoformat(),
               'publisher_identity_from_document': 'USDA Food and Nutrition Service',
               'reference_period': 'FFY 2024',
+              'source_workflow_run': int(os.environ['SOURCE_RUN_ID']),
+              'source_artifact_id': int(os.environ['SOURCE_ARTIFACT_ID']),
               'matrix_base_commit': os.environ['CANONICAL_BASE'],
               'matrix_blob_sha': 'c66c366bcc885e5153cb4ece940c469d08c90936',
           }
-          (out / 'source-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          (out / 'source-receipt.json').write_text(json.dumps(source_receipt, indent=2) + '\n')
 
           entries = []
           for path in sorted(p for p in out.rglob('*') if p.is_file() and p.name != 'artifact-manifest.json'):
@@ -314,7 +358,7 @@ jobs:
               })
           combined = hashlib.sha256(''.join(f"{row['sha256']}  {row['path']}\n" for row in entries).encode()).hexdigest()
           manifest = {
-              'schema_version': 'ssc-rd04-state-options-report-17e-artifact-manifest@1',
+              'schema_version': 'ssc-rd04-state-options-report-17e-artifact-manifest@2',
               'entry_count': len(entries),
               'entries': entries,
               'combined_sha256': combined,
@@ -322,11 +366,11 @@ jobs:
           (out / 'artifact-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
           print(json.dumps(summary, indent=2))
           PY
-      - name: Independently verify artifact manifest
+      - name: Independently verify terminal artifact
         shell: bash
         run: |
           set -Eeuo pipefail
-          OUT="$RUNNER_TEMP/ssc-rd04-state-options-report-17e-acquisition-v1"
+          OUT="$RUNNER_TEMP/ssc-rd04-state-options-report-17e-artifact-v2/output"
           python - "$OUT" <<'PY'
           import hashlib, json, pathlib, sys
           root = pathlib.Path(sys.argv[1])
@@ -341,19 +385,26 @@ jobs:
               rows.append(f"{digest}  {entry['path']}\n")
           assert hashlib.sha256(''.join(rows).encode()).hexdigest() == manifest['combined_sha256']
           summary = json.loads((root / 'summary.json').read_text())
+          assert summary['source_request_attempts'] == 1
+          assert summary['additional_empirical_source_requests'] == 0
           assert summary['state_rows'] == 50
           assert summary['reported_use_rows'] == 37
           assert summary['reported_no_use_rows'] == 13
           assert summary['new_field_values'] == 0
           assert summary['matrix_updates'] == 0
           assert summary['class_closed'] is False
+          lines = (root / 'extracted/state-discretionary-exemptions.jsonl').read_text().splitlines()
+          assert len(lines) == 50
+          parsed = [json.loads(line) for line in lines]
+          assert sum(row['value']['reported_state_practice']['used_discretionary_exemptions'] for row in parsed) == 37
+          assert all(row['terminal'] is True and row['terminal_state'] == 'evidence_complete' for row in parsed)
           print('artifact_verification=pass')
           PY
-      - name: Preserve exact source and extraction custody
+      - name: Preserve exact retained-source adjudication
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.ARTIFACT_NAME }}
-          path: ${{ runner.temp }}/ssc-rd04-state-options-report-17e-acquisition-v1
+          name: ${{ env.OUTPUT_ARTIFACT_NAME }}
+          path: ${{ runner.temp }}/ssc-rd04-state-options-report-17e-artifact-v2/output
           if-no-files-found: error
           retention-days: 90
