@@ -493,6 +493,56 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
   check(schoolhouse.state_registry_identity_census.florida_magnolia_corporate_resolution.shared_ein_reporting_entities === 2, 'School.House Magnolia shared-EIN projection drift');
   check(schoolhouse.state_registry_identity_census.florida_magnolia_corporate_resolution.public_schoolhouse_identity_state === 'unresolved_no_florida_corporate_identity_admitted', 'School.House Magnolia identity projection drift');
 
+
+  {
+    const routeCustody = readJson(path.join(dir, 'schoolhouse-charity-nc-route-custody.json'));
+    const rootRoutes = readJsonl(path.join(dir, 'schoolhouse-charity-nc-root-route-results.jsonl'));
+    const followedRoutes = readJsonl(path.join(dir, 'schoolhouse-charity-nc-followed-route-results.jsonl'));
+    const discoveredLinks = readJsonl(path.join(dir, 'schoolhouse-charity-nc-discovered-links.jsonl'));
+    const routeHtmlSurfaces = readJsonl(path.join(dir, 'schoolhouse-charity-nc-html-surfaces.jsonl'));
+    const routeForms = readJsonl(path.join(dir, 'schoolhouse-charity-nc-surface-forms.jsonl'));
+    const allRouteRows = [...rootRoutes, ...followedRoutes];
+
+    check(manifest.counts.schoolhouse_charity_nc_root_route_rows === rootRoutes.length && rootRoutes.length === 8, 'charity/NC root-route denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_followed_route_rows === followedRoutes.length && followedRoutes.length === 24, 'charity/NC followed-route denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_terminal_route_rows === allRouteRows.length && allRouteRows.length === 32, 'charity/NC terminal-route denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_discovered_link_rows === discoveredLinks.length && discoveredLinks.length === 65, 'charity/NC discovered-link denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_unique_discovered_links === new Set(discoveredLinks.map(row => row.href)).size && manifest.counts.schoolhouse_charity_nc_unique_discovered_links === 55, 'charity/NC unique-link denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_html_surface_rows === routeHtmlSurfaces.length && routeHtmlSurfaces.length === 12, 'charity/NC HTML-surface denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_form_rows === routeForms.length && routeForms.length === 8, 'charity/NC form denominator drift');
+    check(manifest.counts.schoolhouse_charity_nc_search_submissions === 0 && allRouteRows.filter(row => row.query_submitted).length === 0, 'charity/NC search-submission boundary drift');
+    check(manifest.counts.schoolhouse_charity_nc_source_rows_acquired === 0 && allRouteRows.reduce((sum, row) => sum + row.source_rows_acquired, 0) === 0, 'charity/NC source-row boundary drift');
+    check(manifest.counts.schoolhouse_charity_nc_admitted_identity_rows === 0, 'charity/NC route pass must admit no identity');
+    check(unique(allRouteRows.map(row => row.route_id)), 'charity/NC route IDs must be unique');
+    check(unique(allRouteRows.map(row => row.receipt_id)), 'charity/NC receipt IDs must be unique');
+    check(allRouteRows.every(row => row.query_submitted === false && row.source_rows_acquired === 0 && row.raw_source_retained === false && row.hidden_form_values_retained === false && row.identity_admitted === false && row.outside_human_dependency === false && row.graph_effect === 'none' && row.promotes_to === 'candidate_only'), 'charity/NC route authority drift');
+    check(allRouteRows.every(row => row.street_address_rows_retained === 0 && row.contact_detail_rows_retained === 0 && row.private_support_rows === 0), 'charity/NC route privacy drift');
+    check(allRouteRows.filter(row => row.state === 'accessible_file_sample').length === 11, 'charity/NC file-sample state count drift');
+    check(allRouteRows.filter(row => row.state === 'accessible_html').length === 12, 'charity/NC HTML state count drift');
+    check(allRouteRows.filter(row => row.state === 'accessible_non_html').length === 3, 'charity/NC non-HTML state count drift');
+    check(allRouteRows.filter(row => row.state === 'provider_blocked').length === 1, 'charity/NC provider-blocked state count drift');
+    check(allRouteRows.filter(row => row.state === 'timeout').length === 5, 'charity/NC timeout state count drift');
+    check(discoveredLinks.every(row => row.official_host === true && row.relevant === true && row.query_submission_required === false && knownReceiptIds.has(row.source_receipt_id) && row.graph_effect === 'none'), 'charity/NC discovered-link boundary drift');
+    check(routeHtmlSurfaces.every(row => row.raw_body_retained === false && row.query_submitted === false && knownReceiptIds.has(row.receipt_id) && row.graph_effect === 'none'), 'charity/NC HTML-surface boundary drift');
+    check(routeForms.every(row => row.hidden_values_retained === false && row.query_submitted === false && knownReceiptIds.has(row.receipt_id) && row.graph_effect === 'none'), 'charity/NC form boundary drift');
+    check(routeForms.every(row => (row.controls || []).every(control => !Object.hasOwn(control, 'value'))), 'charity/NC form retained a raw control value');
+
+    check(routeCustody.acquisition.workflow_run_id === 30980115912 && routeCustody.acquisition.artifact_id === 8919817084 && routeCustody.acquisition.artifact_digest === 'sha256:87bb2327fea644c185e2b2bb8bdf542a95e12d14da524ac20157f190c0512068', 'charity/NC artifact custody drift');
+    check(routeCustody.counts.terminal_route_rows === 32 && routeCustody.counts.discovered_link_rows === 65 && routeCustody.counts.unique_discovered_links === 55 && routeCustody.counts.html_surface_rows === 12 && routeCustody.counts.form_rows === 8, 'charity/NC custody denominator drift');
+    check(routeCustody.counts.search_submissions === 0 && routeCustody.counts.source_rows_acquired === 0 && routeCustody.counts.identities_admitted === 0, 'charity/NC custody authority drift');
+    check(routeCustody.florida.check_a_charity_state === 'timeout' && routeCustody.florida.search_submissions === 0 && routeCustody.florida.automation_permission_inferred === false, 'Florida charity route custody drift');
+    check(routeCustody.north_carolina.automated_or_scripted_searches_not_permitted === true && routeCustody.north_carolina.bulk_data_subscription_direction_captured === true && routeCustody.north_carolina.search_submissions === 0, 'North Carolina route-policy custody drift');
+    check(routeCustody.privacy.raw_source_retained === false && routeCustody.privacy.hidden_form_values_retained === false && routeCustody.privacy.street_address_rows_retained === 0 && routeCustody.privacy.contact_detail_rows_retained === 0 && routeCustody.privacy.private_support_rows === 0, 'charity/NC custody privacy drift');
+    check(routeCustody.public_schoolhouse_identity_admitted === false && routeCustody.negative_existence_claim_created === false && routeCustody.outside_human_dependency === false && routeCustody.graph_effect === 'none' && routeCustody.promotes_to === 'candidate_only', 'charity/NC custody authority ceiling drift');
+
+    const routeProjection = schoolhouse.state_registry_identity_census?.charity_north_carolina_route_discovery;
+    check(routeProjection?.terminal_route_rows === 32 && routeProjection?.discovered_link_rows === 65 && routeProjection?.form_rows === 8, 'School.House route projection drift');
+    check(routeProjection?.identity_state === 'unresolved_after_lawful_route_discovery_no_public_identity_admitted' && routeProjection?.admitted_legal_name === null && routeProjection?.admitted_ein === null, 'School.House route projection admitted an identity');
+    const routeFrontier = frontier.tasks.find(task => task.task_id === 'bvvc-frontier-schoolhouse-legal-governance')?.prior_charity_nc_route_discovery;
+    check(routeFrontier?.terminal_route_rows === 32 && routeFrontier?.search_submissions === 0 && routeFrontier?.admitted_identities === 0, 'School.House route frontier projection drift');
+    check(coverage.denominators.some(row => row.surface === 'School.House Florida-charity and North Carolina lawful-route discovery' && row.enumerated_total === 32 && row.search_submissions === 0), 'charity/NC coverage denominator missing');
+  }
+
   return errors;
 }
 
