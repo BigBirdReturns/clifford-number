@@ -1,0 +1,203 @@
+name: TEMP materialize SSC RD-02 Wave-03 terminal closure v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-ssc-rd02-wave03-terminal-materializer-v1.yml'
+      - '.ssc-rd02-wave03-terminal-materializer/TRIGGER'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave03-rd02-portfolio-lifecycle-terminal-v1
+      TARGET_LEASE: 663df14c1603f582ac49573269570172e8706057
+      RECEIPT_DIR: /tmp/ssc-rd02-wave03-terminal-materialization-v1
+      SHARD_ROOT: data/project/transport/ssc-rd02-wave03-terminal-v1/product
+      PACKAGE_B64_SHA256: 268d4fb57611c4f271db4a2150cc51bb507294395c8db0e90ba3e0c35f6ee4bb
+      PACKAGE_XZ_SHA256: aa074037793da2c38a42328170173571bf929a3a9db6bc7605056508d2af50e8
+      PATH_LIST_SHA256: 18ed895e4c065c6c39ec0496f03a4a1e1ced8c15cc137cb11f5247064a95f0f8
+      FILE_MANIFEST_SHA256: 49ad9bb93b5dadf86808c91c1750b454782f26edd12f2913fd70da66adf92076
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct, qualify, and publish exact terminal product
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$RECEIPT_DIR" /tmp/rd02-terminal-package /tmp/rd02-terminal-worktree
+          mkdir -p "$RECEIPT_DIR" /tmp/rd02-terminal-package
+          exec > >(tee "$RECEIPT_DIR/execution.log") 2>&1
+          STAGE=init
+          finish() {
+            rc=$?
+            {
+              echo "status=$([[ $rc -eq 0 ]] && echo complete || echo failed_closed)"
+              echo "stage=$STAGE"
+              echo "exit_code=$rc"
+              echo "utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            } > "$RECEIPT_DIR/checkpoint.txt"
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          STAGE=verify-shards
+          python - <<'PY'
+          from hashlib import sha256
+          from pathlib import Path
+
+          root = Path('data/project/transport/ssc-rd02-wave03-terminal-v1/product')
+          expected = {
+              '000.b64': (4000, 'e4ac0ffb00ad7e08927893a6753dedd983acd332bc183c309ed68cae083b90b2'),
+              '001.b64': (4000, 'e26efa42e24bbff132eb10b30c2749d1f938d3b5de6e42cc73e58088c67298ed'),
+              '002.b64': (4000, 'ae3ace28a9b8114eb47f94efc4cb5751c613891500258942a28b3d93ea47c305'),
+              '003.b64': (4000, '87f6787df9cabde43d15affa9bde7414f62954c520575c202bb27c71a72d3682'),
+              '004.b64': (4000, '9ca94cc8432660f3a4e9c4c18e22ebfc50cce70af1134fd7a2bc41c840d69717'),
+              '005.b64': (4000, 'f6e63e3c84b3936db298ab311d732c2c8235f163f9d6ad8dc044e5ab565ac3f3'),
+              '006.b64': (4000, '62b141b70fa49298c50154a71506a008cf421567132b4913787cacf6d482945e'),
+              '007.b64': (4000, 'a86b8d37712ec0ee48dda5fe4cf342da9100630bc24b664f487bfe6bb54821e4'),
+              '008.b64': (64, '4baaa49c6c72786dc8e2c1fdb4491df36b02cfd18ddd293fa49d6df5a424ed7d'),
+          }
+          actual = sorted(path.name for path in root.glob('*.b64'))
+          if actual != sorted(expected):
+              raise SystemExit(f'shard denominator mismatch: {actual}')
+          chunks = []
+          for name in sorted(expected):
+              data = b''.join((root / name).read_bytes().split())
+              size, digest = expected[name]
+              actual_digest = sha256(data).hexdigest()
+              print(f'{name}: bytes={len(data)} sha256={actual_digest}')
+              if len(data) != size or actual_digest != digest:
+                  raise SystemExit(f'shard mismatch: {name}')
+              chunks.append(data)
+          combined = b''.join(chunks)
+          if len(combined) != 32064:
+              raise SystemExit(f'combined base64 bytes drift: {len(combined)}')
+          Path('/tmp/rd02-terminal-package/product.b64').write_bytes(combined)
+          PY
+          test "$(sha256sum /tmp/rd02-terminal-package/product.b64 | awk '{print $1}')" = "$PACKAGE_B64_SHA256"
+          base64 -d /tmp/rd02-terminal-package/product.b64 > /tmp/rd02-terminal-package/product.tar.xz
+          test "$(stat -c '%s' /tmp/rd02-terminal-package/product.tar.xz)" -eq 24048
+          test "$(sha256sum /tmp/rd02-terminal-package/product.tar.xz | awk '{print $1}')" = "$PACKAGE_XZ_SHA256"
+
+          STAGE=verify-package
+          mkdir -p /tmp/rd02-terminal-package/root
+          tar -xJf /tmp/rd02-terminal-package/product.tar.xz -C /tmp/rd02-terminal-package/root
+          cat > "$RECEIPT_DIR/expected-paths.txt" <<'PATHS'
+          .github/workflows/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle-terminal.yml
+          data/project/ssc-residual-wave03/closures/RD-02-C05.json
+          data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/class-receipt.json
+          data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/manifest.json
+          data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/summary.json
+          data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/terminal-field-matrix.json
+          docs/milestones/ssc-rd-wave03-rd02-portfolio-lifecycle-terminal.md
+          schemas/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.schema.json
+          test/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.test.js
+          tools/build-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs
+          PATHS
+          test "$(sha256sum "$RECEIPT_DIR/expected-paths.txt" | awk '{print $1}')" = "$PATH_LIST_SHA256"
+          find /tmp/rd02-terminal-package/root -type f -printf '%P\n' | sort > "$RECEIPT_DIR/actual-paths.txt"
+          cmp "$RECEIPT_DIR/expected-paths.txt" "$RECEIPT_DIR/actual-paths.txt"
+          while IFS= read -r path; do
+            printf '%s\t%s\t%s\n' "$path" \
+              "$(stat -c '%s' "/tmp/rd02-terminal-package/root/$path")" \
+              "$(sha256sum "/tmp/rd02-terminal-package/root/$path" | awk '{print $1}')"
+          done < "$RECEIPT_DIR/expected-paths.txt" > "$RECEIPT_DIR/file-manifest.tsv"
+          test "$(sha256sum "$RECEIPT_DIR/file-manifest.tsv" | awk '{print $1}')" = "$FILE_MANIFEST_SHA256"
+
+          STAGE=bind-live-leases
+          git fetch origin main "$TARGET_BRANCH"
+          LIVE_MAIN=$(git rev-parse origin/main)
+          TARGET_NOW=$(git rev-parse "origin/$TARGET_BRANCH")
+          test "$TARGET_NOW" = "$TARGET_LEASE"
+          printf 'live_main=%s\ntarget_lease=%s\n' "$LIVE_MAIN" "$TARGET_NOW" > "$RECEIPT_DIR/leases.txt"
+          git checkout --detach "$LIVE_MAIN"
+          while IFS= read -r path; do test ! -e "$path"; done < "$RECEIPT_DIR/expected-paths.txt"
+          cp -a /tmp/rd02-terminal-package/root/. .
+          git ls-files --others --exclude-standard | sort > "$RECEIPT_DIR/candidate-paths.txt"
+          cmp "$RECEIPT_DIR/expected-paths.txt" "$RECEIPT_DIR/candidate-paths.txt"
+
+          run_focused() {
+            node --check tools/build-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs
+            node --check tools/validate-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs
+            node --check test/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.test.js
+            node tools/build-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs --check
+            node tools/validate-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs
+            node test/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.test.js
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          }
+
+          STAGE=qualify-full-product
+          run_focused
+          npm run release:check
+
+          STAGE=clean-replay
+          git restore --worktree -- .
+          git clean -fd
+          cp -a /tmp/rd02-terminal-package/root/. .
+          run_focused
+          git ls-files --others --exclude-standard | sort > "$RECEIPT_DIR/replay-paths.txt"
+          cmp "$RECEIPT_DIR/expected-paths.txt" "$RECEIPT_DIR/replay-paths.txt"
+          git diff --check
+
+          STAGE=commit-product
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          xargs -d '\n' git add -- < "$RECEIPT_DIR/expected-paths.txt"
+          git commit -m 'Close RD-02 Wave-03 portfolio-lifecycle matrix'
+          PRODUCT_HEAD=$(git rev-parse HEAD)
+          PRODUCT_TREE=$(git rev-parse HEAD^{tree})
+          git diff --name-status "$LIVE_MAIN" HEAD > "$RECEIPT_DIR/product-name-status.txt"
+          test "$(wc -l < "$RECEIPT_DIR/product-name-status.txt" | tr -d ' ')" -eq 11
+          test "$(awk '$1 != "A" {n++} END {print n+0}' "$RECEIPT_DIR/product-name-status.txt")" -eq 0
+          cut -f2- "$RECEIPT_DIR/product-name-status.txt" | sort > "$RECEIPT_DIR/product-paths.txt"
+          cmp "$RECEIPT_DIR/expected-paths.txt" "$RECEIPT_DIR/product-paths.txt"
+
+          STAGE=publish-under-leases
+          git fetch origin main "$TARGET_BRANCH"
+          test "$(git rev-parse origin/main)" = "$LIVE_MAIN"
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$TARGET_LEASE"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH" \
+            --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_LEASE"
+          test "$(git ls-remote origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$PRODUCT_HEAD"
+          {
+            echo 'status=complete'
+            echo "live_main=$LIVE_MAIN"
+            echo "product_head=$PRODUCT_HEAD"
+            echo "product_tree=$PRODUCT_TREE"
+            echo "target_branch=$TARGET_BRANCH"
+            echo 'permanent_paths=11'
+            echo 'terminal_cells=180'
+            echo 'terminal_rows=18'
+            echo 'terminal_state=bounded_source_unavailable'
+            echo 'admitted_sources=2'
+            echo 'lifecycle_events=0'
+            echo 'adversarial_refusals=1818'
+            echo "package_xz_sha256=$PACKAGE_XZ_SHA256"
+            echo "file_manifest_sha256=$FILE_MANIFEST_SHA256"
+          } > "$RECEIPT_DIR/final.txt"
+          STAGE=complete
+
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-wave03-terminal-materialization-v1
+          path: /tmp/ssc-rd02-wave03-terminal-materialization-v1
+          retention-days: 90
+          if-no-files-found: warn
