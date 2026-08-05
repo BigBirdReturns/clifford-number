@@ -13,8 +13,8 @@
   "conclusion_generated": false,
   "counts": {
     "acquisition_frontier_tasks": 7,
-    "coverage_denominator_rows": 13,
-    "explicit_gap_rows": 13,
+    "coverage_denominator_rows": 14,
+    "explicit_gap_rows": 14,
     "institutional_self_claim_rows": 10,
     "leadership_current_rows": 27,
     "leadership_historical_only_rows": 4,
@@ -28,12 +28,16 @@
     "schoolhouse_demo_day_sponsor_partner_rows": 9,
     "schoolhouse_faculty_rows": 18,
     "schoolhouse_visible_employee_rows": 4,
-    "source_inventory_rows": 86,
+    "source_inventory_rows": 95,
     "transaction_and_investment_observation_rows": 17,
     "vehicle_and_related_entity_rows": 7,
     "portfolio_delta_candidate_rows": 9,
     "sec_form_d_acquisition_attempts": 3,
-    "sec_form_d_route_result_rows": 95
+    "sec_form_d_route_result_rows": 95,
+    "schoolhouse_irs_source_route_rows": 6,
+    "schoolhouse_irs_candidate_rows": 641,
+    "schoolhouse_irs_unique_candidate_eins": 438,
+    "schoolhouse_irs_admitted_identity_rows": 0
   },
   "coverage": {
     "historical_rosters": "partial_search_index_snapshot",
@@ -58,7 +62,8 @@
     "source_archival": "locator_inventory_complete_for_this_package_bytes_and_hashes_pending",
     "transactions": "17_of_30_current_labels_have_transaction_or_explicit_investment_observations",
     "portfolio_delta_candidates": "9_public_claim_candidates_not_reconciled_to_frozen_current_page",
-    "sec_vehicle_denominator_routes": "95_of_95_declared_official_routes_source_unavailable_after_search_http_403"
+    "sec_vehicle_denominator_routes": "95_of_95_declared_official_routes_source_unavailable_after_search_http_403",
+    "schoolhouse_irs_legal_identity": "6_of_6_routes_complete_641_candidates_438_unique_eins_zero_admitted_identity"
   },
   "custody": {
     "next_waterline": "source_archival_identity_resolution_and_human_evidence_review",
@@ -77,12 +82,12 @@
   },
   "files": {
     "acquisition-frontier.json": {
-      "bytes": 6328,
-      "sha256": "06e39c1e2fe602edbeea07f69f394b866dfc9f2bf788175d750974f3d55c2e4b"
+      "bytes": 6947,
+      "sha256": "8e6d7049ad76f8a2ba46cb6c1034070a2879c194efaf079820e36a6a7bed1efb"
     },
     "coverage-matrix.json": {
-      "bytes": 4939,
-      "sha256": "5fac360f8d7a843b9dd8c7a2f82651d3da1b3c31feb265602cd074a604051e7c"
+      "bytes": 5473,
+      "sha256": "e795f53d30af49cda00837a47ecb7b2d1bc26ab799077e0989053be16b87c36b"
     },
     "institutional-claims.jsonl": {
       "bytes": 5940,
@@ -117,8 +122,8 @@
       "sha256": "909415fc6286f83026a5c7b63792f21a2a03063cc03142ac7749ad022862a246"
     },
     "schoolhouse.json": {
-      "bytes": 8876,
-      "sha256": "3375f7b17ed389488dc716ceb3b154f3130e4d6bc5bf20a6db91a70894b36001"
+      "bytes": 10552,
+      "sha256": "b976f067c682e31b0b578b2838ff98fd47460719e4d86c34c44ad10c70ae7fc6"
     },
     "source-inventory-01.jsonl": {
       "bytes": 6070,
@@ -163,6 +168,34 @@
     "sec-form-d-route-custody.json": {
       "bytes": 3010,
       "sha256": "0219939f1d3c8e87ad0ce0f0d1bffa7bf59c6a96c94e86863a96016ba26ee9a8"
+    },
+    "source-inventory-07.jsonl": {
+      "bytes": 4018,
+      "sha256": "73db90c9d28959d7c802229ba920742b48295f94b3e265e0945acd0285ad34e4"
+    },
+    "schoolhouse-irs-source-routes.jsonl": {
+      "bytes": 4807,
+      "sha256": "058281ffe4a1888ed91aa6f58012b48bcd9a881e1fc057e078fed2a7435238ec"
+    },
+    "schoolhouse-irs-identity-adjudication.json": {
+      "bytes": 5333,
+      "sha256": "bab30b4bc05f438ed83f70bcccd44522f9f586f6da65568db7914f3f88a6274a"
+    },
+    "schoolhouse-irs-candidates-eo-bmf.jsonl": {
+      "bytes": 27988,
+      "sha256": "e764fdaf844470d111b61d7465878b39f693cce5142c632c7747544cbaa9ac66"
+    },
+    "schoolhouse-irs-candidates-publication-78.jsonl": {
+      "bytes": 208857,
+      "sha256": "477bc99e3e8496b80498c2d540b05bc8b5a521f88dceebc4aa576a2e82b982ed"
+    },
+    "schoolhouse-irs-candidates-form-990n.jsonl": {
+      "bytes": 297760,
+      "sha256": "d323479393eea51036cc042f2b734000c8cb1db4ea256993be3f9d13b1d6e196"
+    },
+    "schoolhouse-irs-candidates-auto-revocation.jsonl": {
+      "bytes": 142956,
+      "sha256": "25f946f80172079f5d7a20f2f510dfaeda3ac1fb5f79dc4ec1810649deec921f"
     }
   },
   "graph_effect": "none",
@@ -197,7 +230,7 @@
       "counterparty_primary_public": 11,
       "counterparty_primary_public_platform_post": 4,
       "counterparty_syndicated": 1,
-      "official": 5,
+      "official": 14,
       "primary_public": 51,
       "primary_public_platform_post": 6,
       "primary_public_platform_profile": 1,
@@ -206,7 +239,7 @@
     "receipt_uniqueness": "required",
     "sec_filing_caveat": "The SEC has not necessarily reviewed Form D information and has not determined it accurate and complete.",
     "source_state_counts": {
-      "live_locator": 68,
+      "live_locator": 77,
       "search_index_only": 16,
       "search_index_snapshot": 2
     }
@@ -228,8 +261,15 @@
       "source-inventory-03.jsonl",
       "source-inventory-04.jsonl",
       "source-inventory-05.jsonl",
-      "source-inventory-06.jsonl"
+      "source-inventory-06.jsonl",
+      "source-inventory-07.jsonl"
     ],
-    "split_reason": "bounded human-reviewable shards; concatenation order is manifest-bound"
+    "split_reason": "bounded human-reviewable shards; concatenation order is manifest-bound",
+    "schoolhouse_irs_candidate_parts": [
+      "schoolhouse-irs-candidates-eo-bmf.jsonl",
+      "schoolhouse-irs-candidates-publication-78.jsonl",
+      "schoolhouse-irs-candidates-form-990n.jsonl",
+      "schoolhouse-irs-candidates-auto-revocation.jsonl"
+    ]
   }
 }

@@ -7,7 +7,7 @@ It sits inside the existing `us-defense-natsec100` selection lane. Primary custo
 ## Current frozen surfaces
 
 ```text
-public-source receipts                         86
+public-source receipts                         95
 current BVVC leadership labels                 27 / 27
 historical-only leadership labels               4
 current Portfolio Universe labels              30 / 30
@@ -22,6 +22,10 @@ transaction or investment observations         17
 off-roster public-claim candidates                 9
 SEC Form D route dispositions                      95
 SEC Form D source rows acquired                     0
+IRS legal-identity source routes                    6 / 6
+IRS legal-name candidate rows                     641
+IRS unique candidate EINs                         438
+IRS identities admitted                             0
 institutional self-claim rows                  10
 explicit rejected joins                        16
 bounded continuation tasks                      7
@@ -38,7 +42,7 @@ The current leadership and Portfolio Universe pages are complete as rendered on 
 - `leadership-current-01.jsonl` and `leadership-current-02.jsonl` freeze all twenty-seven current leadership labels and the role language supported by each official profile.
 - `leadership-history.jsonl` preserves four names visible in a prior search-indexed leadership snapshot without inventing departure dates.
 - `portfolio-current-01.jsonl` through `portfolio-current-03.jsonl` freeze all thirty current Portfolio Universe labels, descriptions, profile state, named founder or CEO where the acquired BVVC detail page supplies one, and every unresolved legal and control field.
-- `schoolhouse.json` preserves source-specific identity and timeline claims, eighteen current faculty labels, one dated twenty-company Demo Day surface, panelists, sponsors, organizers, founder mappings, two counterpart confirmations, and the public company-profile snapshot.
+- `schoolhouse.json` preserves source-specific identity and timeline claims, eighteen current faculty labels, one dated twenty-company Demo Day surface, panelists, sponsors, organizers, founder mappings, two counterpart confirmations, the public company-profile snapshot, and the terminal IRS candidate-census state.
 - `vehicles-offerings.jsonl` separates Fund I, its GP and management company, SPV I, SPV IX, its manager, and SPV X, while carrying the SEC Form D accuracy caveat and refusing transaction-to-vehicle joins.
 - `transactions.jsonl` separates eleven dated counterparty or syndicated financing announcements from six undated firm-self-represented investment observations.
 - `portfolio-delta-candidates.jsonl` preserves nine public backing or transaction claims that are absent from the frozen current Portfolio Universe page without admitting them as current-page members.
@@ -47,6 +51,7 @@ The current leadership and Portfolio Universe pages are complete as rendered on 
 - `coverage-matrix.json` freezes complete, partial, open, and explicit-null surfaces.
 - `sec-form-d-route-results.jsonl` preserves all ninety-five official-route dispositions across three bounded acquisition attempts.
 - `sec-form-d-route-custody.json` binds those route results to their workflow runs and retained artifacts without converting provider failure into an absence claim.
+- `schoolhouse-irs-source-routes.jsonl`, the four `schoolhouse-irs-candidates-*.jsonl` shards, and `schoolhouse-irs-identity-adjudication.json` preserve the complete sanitized six-route IRS name-candidate census and the no-admission decision.
 - `acquisition-frontier.json` defines seven machine-actionable continuation tasks with no outside-human dependency.
 - `lake.json` remains the first bounded seed snapshot. The modular files above are the expanded v2 public-source plane.
 
@@ -67,6 +72,8 @@ No direct message, screenshot, owner-supplied LinkedIn export, contact detail, o
 ## Continuation
 
 The off-roster delta now proves that the frozen current Portfolio Universe page is not a complete ledger of all public firm and counterparty backing claims. It preserves the discrepancy as an acquisition state rather than silently expanding current membership.
+
+The IRS legal-identity pass scanned 4,428,541 public rows across six complete routes, retained 641 sanitized phrase candidates representing 438 EINs, and admitted no School.House identity. No candidate aligned with the public brand, claimed 2023 founding, and Tampa Bay or Fayetteville location claims strongly enough for an identifier-grade join; the next lawful boundary is the bounded Florida and North Carolina corporate and charity registries.
 
 The checked-in frontier now directs the next bounded pass toward the complete BVVC vehicle denominator, transaction-specific evidence for all thirty current portfolio labels, exact legal entities, government award and acceptance surfaces, dated leadership history, School.House legal and governance records, complete annual cohorts and outcomes, and receipt-byte archival. Every task preserves nulls, failed routes, unresolved identities, and forbidden inferences.
 
