@@ -17,10 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
-      - name: Checkout exact merged main
+      - name: Checkout exact current main
         uses: actions/checkout@v4
         with:
-          ref: d7f668a4522be902c50ad8bdce8100fc58341116
+          ref: 61a33f5459e64f1978d9c55c1b7ea7f925358cd8
           fetch-depth: 0
           clean: true
 
@@ -30,9 +30,9 @@ jobs:
 
       - name: Patch, qualify, and publish exact repair candidate
         env:
-          MERGED_MAIN: d7f668a4522be902c50ad8bdce8100fc58341116
+          CURRENT_MAIN: 61a33f5459e64f1978d9c55c1b7ea7f925358cd8
           TARGET_BRANCH: agent/pc48-postmerge-cache-repair
-          TARGET_LEASE: d7f668a4522be902c50ad8bdce8100fc58341116
+          TARGET_LEASE: 61a33f5459e64f1978d9c55c1b7ea7f925358cd8
           BASE_LIB_SHA256: 56fb1e1eef6c93dbab6f9c4a8ce94702e5a53036613ca022d0aa7d128a33d0b0
           BASE_TEST_SHA256: 668e8fbbba6ecac376d3e66ca2685609da2080224b8cd2af287a4dfe1e3b17ba
         run: |
@@ -40,7 +40,7 @@ jobs:
           phase=initialize
           trap 'status=$?; printf "status=%s\nphase=%s\ncommand=%s\n" "$status" "$phase" "$BASH_COMMAND" > /tmp/pc48-cache-repair-diagnostic.txt; exit "$status"' ERR
           cd "$GITHUB_WORKSPACE"
-          test "$(git rev-parse HEAD)" = "$MERGED_MAIN"
+          test "$(git rev-parse HEAD)" = "$CURRENT_MAIN"
           test -z "$(git status --porcelain)"
           test "$(sha256sum tools/lib/preference-custody-manifest-v46.mjs | awk '{print $1}')" = "$BASE_LIB_SHA256"
           test "$(sha256sum test/preference-custody-manifest-v46.test.js | awk '{print $1}')" = "$BASE_TEST_SHA256"
@@ -162,7 +162,7 @@ jobs:
           npm run release:check
 
           phase=normalize_generated_volatility
-          git restore --source="$MERGED_MAIN" --staged --worktree -- build 2>/dev/null || true
+          git restore --source="$CURRENT_MAIN" --staged --worktree -- build 2>/dev/null || true
           git clean -fd -- build
           git diff --name-only | sort > /tmp/pc48-cache-repair-postgate-paths.txt
           diff -u /tmp/pc48-cache-repair-expected-paths.txt /tmp/pc48-cache-repair-postgate-paths.txt
@@ -174,10 +174,10 @@ jobs:
           git commit -m 'Reject unhashable v45 base keys before cache hits'
           repaired_commit="$(git rev-parse HEAD)"
           repaired_tree="$(git rev-parse HEAD^{tree})"
-          test "$(git rev-parse HEAD^)" = "$MERGED_MAIN"
-          test "$(git rev-list --count "$MERGED_MAIN"..HEAD)" -eq 1
-          test "$(git diff --name-only "$MERGED_MAIN"..HEAD | wc -l)" -eq 2
-          test "$(git diff --name-status "$MERGED_MAIN"..HEAD | awk '$1 != "M" {count++} END {print count+0}')" -eq 0
+          test "$(git rev-parse HEAD^)" = "$CURRENT_MAIN"
+          test "$(git rev-list --count "$CURRENT_MAIN"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CURRENT_MAIN"..HEAD | wc -l)" -eq 2
+          test "$(git diff --name-status "$CURRENT_MAIN"..HEAD | awk '$1 != "M" {count++} END {print count+0}')" -eq 0
           test -z "$(git status --porcelain)"
 
           phase=publish_candidate
@@ -186,7 +186,7 @@ jobs:
 
           phase=complete
           cat > /tmp/pc48-cache-repair-receipt.txt <<EOF
-          merged_main=$MERGED_MAIN
+          current_main=$CURRENT_MAIN
           repaired_commit=$repaired_commit
           repaired_tree=$repaired_tree
           changed_paths=2
