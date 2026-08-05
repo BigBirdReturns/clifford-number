@@ -1,0 +1,123 @@
+name: TEMP materialize School.House charity and NC second-level custody
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-charity-nc-second-level-custody-materialize.yml'
+      - '.schoolhouse-charity-nc-second-level-custody/EXECUTE'
+      - '.schoolhouse-charity-nc-second-level-custody/builder.mjs.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: temp-schoolhouse-charity-nc-second-level-custody-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download terminal second-level route-discovery artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          rm -rf /tmp/schoolhouse-charity-nc-second-level
+          mkdir -p /tmp/schoolhouse-charity-nc-second-level
+          gh run download 30982778498 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name schoolhouse-charity-nc-second-level-route-discovery \
+            --dir /tmp/schoolhouse-charity-nc-second-level
+          test -f /tmp/schoolhouse-charity-nc-second-level/summary.json
+          test -f /tmp/schoolhouse-charity-nc-second-level/route-policy.json
+          test -f /tmp/schoolhouse-charity-nc-second-level/artifact-manifest.json
+          test -f /tmp/schoolhouse-charity-nc-second-level/root-route-receipts.jsonl
+          test -f /tmp/schoolhouse-charity-nc-second-level/followed-route-receipts.jsonl
+          test -f /tmp/schoolhouse-charity-nc-second-level/discovered-links.jsonl
+          test -f /tmp/schoolhouse-charity-nc-second-level/html-surfaces.jsonl
+          test -f /tmp/schoolhouse-charity-nc-second-level/surface-forms.jsonl
+
+      - name: Build, qualify, and publish clean current-main product
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          TARGET='agent/schoolhouse-charity-nc-second-level-custody-product-v1'
+          MAIN_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+          SOURCE_BUNDLE="$GITHUB_WORKSPACE/.schoolhouse-charity-nc-second-level-custody/builder.mjs.gz.b64"
+          SOURCE_BUILDER=/tmp/build-schoolhouse-charity-nc-second-level-route-custody.mjs
+          test "$(sha256sum "$SOURCE_BUNDLE" | awk '{print $1}')" = '026e422d726e2257200e39efbe2f7621c899adbaeb797c598113f3d5e46587f3'
+          base64 -d "$SOURCE_BUNDLE" | gzip -dc > "$SOURCE_BUILDER"
+          test "$(sha256sum "$SOURCE_BUILDER" | awk '{print $1}')" = '2f6e2e2bcd0a5aa33787a90174533b24d2624154c8fe5103727ca271938c6ef7'
+          node --check "$SOURCE_BUILDER"
+
+          rm -rf /tmp/schoolhouse-charity-nc-second-level-custody-product
+          git fetch --no-tags origin "$MAIN_SHA"
+          git worktree add --detach /tmp/schoolhouse-charity-nc-second-level-custody-product "$MAIN_SHA"
+          cd /tmp/schoolhouse-charity-nc-second-level-custody-product
+          mkdir -p tools
+          cp "$SOURCE_BUILDER" tools/build-schoolhouse-charity-nc-second-level-route-custody.mjs
+
+          node tools/build-schoolhouse-charity-nc-second-level-route-custody.mjs \
+            /tmp/schoolhouse-charity-nc-second-level
+          node tools/validate-bvvc-defense-capital.mjs
+          node test/person-routers.test.js
+          npm run release:check
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            data/intake/bvvc-defense-capital/README.md \
+            data/intake/bvvc-defense-capital/acquisition-frontier.json \
+            data/intake/bvvc-defense-capital/coverage-matrix.json \
+            data/intake/bvvc-defense-capital/manifest.json \
+            data/intake/bvvc-defense-capital/schoolhouse.json \
+            data/intake/bvvc-defense-capital/source-inventory-10.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-charity-nc-second-level-route-custody.json \
+            data/intake/bvvc-defense-capital/schoolhouse-charity-nc-second-level-root-route-results.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-charity-nc-second-level-followed-route-results.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-charity-nc-second-level-discovered-links.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-charity-nc-second-level-html-surfaces.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-charity-nc-second-level-surface-forms.jsonl \
+            tools/build-schoolhouse-charity-nc-second-level-route-custody.mjs \
+            tools/validate-bvvc-defense-capital.mjs
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = '14'
+          git commit -m 'Preserve School.House charity and NC second-level route custody'
+          PRODUCT_SHA=$(git rev-parse HEAD)
+
+          START=$(git ls-remote origin "refs/heads/$TARGET" | awk '{print $1}')
+          if [[ -n "$START" ]]; then
+            git push origin "HEAD:refs/heads/$TARGET" --force-with-lease="refs/heads/$TARGET:$START"
+          else
+            git push origin "HEAD:refs/heads/$TARGET"
+          fi
+
+          mkdir -p /tmp/schoolhouse-charity-nc-second-level-custody-receipt
+          jq -n \
+            --arg base_main "$MAIN_SHA" \
+            --arg product_sha "$PRODUCT_SHA" \
+            --arg target "$TARGET" \
+            '{schema_version:"schoolhouse-charity-nc-second-level-custody-materialization-receipt@1",base_main:$base_main,product_sha:$product_sha,target_branch:$target,changed_paths:14,source_inventory_rows:224,root_routes:8,followed_routes:80,terminal_route_rows:88,discovered_link_rows:524,unique_discovered_links:185,bounded_file_sample_routes:68,html_surface_rows:19,form_rows:3,residual_unique_links:101,residual_relevant_links:51,residual_file_links:16,search_submissions:0,source_rows_acquired:0,admitted_identities:0,private_support_rows:0,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+            > /tmp/schoolhouse-charity-nc-second-level-custody-receipt/status.json
+          sha256sum /tmp/schoolhouse-charity-nc-second-level-custody-receipt/status.json \
+            > /tmp/schoolhouse-charity-nc-second-level-custody-receipt/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-charity-nc-second-level-custody-materialization-receipt
+          path: /tmp/schoolhouse-charity-nc-second-level-custody-receipt
+          if-no-files-found: error
+          retention-days: 90
