@@ -1,0 +1,67 @@
+name: TEMP preflight School.House Florida charity custody materializer
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Emit exact bundle and artifact gates
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          BUNDLE='.schoolhouse-fl-charity-exact-query-custody-materializer/builder.mjs.gz.b64'
+          OUT='/tmp/schoolhouse-fl-charity-custody-preflight'
+          mkdir -p "$OUT"
+
+          BUNDLE_SHA="$(sha256sum "$BUNDLE" | awk '{print $1}')"
+          BUNDLE_BLOB="$(git hash-object "$BUNDLE")"
+          printf 'bundle_sha256=%s\n' "$BUNDLE_SHA" | tee "$OUT/preflight.txt"
+          printf 'bundle_git_blob=%s\n' "$BUNDLE_BLOB" | tee -a "$OUT/preflight.txt"
+          test "$BUNDLE_SHA" = '4ca71ec761ff6a085e49c3881150cdf02fa033903d041ff7239f612cde74ea14'
+          test "$BUNDLE_BLOB" = '9fa3b5e6c62496840534052f41a0af87cb209c5f'
+
+          base64 -d "$BUNDLE" > /tmp/builder.mjs.gz
+          GZIP_SHA="$(sha256sum /tmp/builder.mjs.gz | awk '{print $1}')"
+          printf 'gzip_sha256=%s\n' "$GZIP_SHA" | tee -a "$OUT/preflight.txt"
+          test "$GZIP_SHA" = '313efb0262982d55aade986dc4da6b97f9b27e9350c3e2426e322d5def144f3c'
+
+          gzip -dc /tmp/builder.mjs.gz > /tmp/builder.mjs
+          BUILDER_SHA="$(sha256sum /tmp/builder.mjs | awk '{print $1}')"
+          SAFE_COUNT="$(grep -o '1f04c0abbf89f1529dfd428389392b3425499bc3' /tmp/builder.mjs | wc -l | tr -d ' ')"
+          TREE_COUNT="$(grep -o '33e540e995455dfd28ebe1cd6a7f09c29844d461' /tmp/builder.mjs | wc -l | tr -d ' ')"
+          printf 'builder_sha256=%s\nparent_commit_occurrences=%s\nparent_tree_occurrences=%s\n' "$BUILDER_SHA" "$SAFE_COUNT" "$TREE_COUNT" | tee -a "$OUT/preflight.txt"
+          test "$BUILDER_SHA" = '21870d1a65d3b6d29c3a4fce8da374714ff88348bef217ad75241612cf821945'
+          test "$SAFE_COUNT" = '1'
+          test "$TREE_COUNT" = '1'
+          node --check /tmp/builder.mjs
+
+          URLIB_DIGEST="$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/8946106351" --jq '.digest // ""')"
+          IPV4_DIGEST="$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/8946758352" --jq '.digest // ""')"
+          printf 'urllib_artifact_digest=%s\nipv4_artifact_digest=%s\n' "$URLIB_DIGEST" "$IPV4_DIGEST" | tee -a "$OUT/preflight.txt"
+          test "$URLIB_DIGEST" = 'sha256:1d3167516a2db6e39fc08d9cac4726b38d2abb04a87c8fb46aa749105caa5718'
+          test "$IPV4_DIGEST" = 'sha256:ae68a594d911d0ead2ed673e91392aef326c261b0b6b38a6f68bcaf16db80902'
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: schoolhouse-fl-charity-custody-preflight
+          path: /tmp/schoolhouse-fl-charity-custody-preflight
+          if-no-files-found: error
+          retention-days: 30
