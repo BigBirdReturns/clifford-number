@@ -1,0 +1,160 @@
+name: TEMP capture School.House Florida corporate resolution
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-fl-corporate-resolution.yml'
+      - '.schoolhouse-fl-corporate-resolution/EXECUTE'
+      - 'tools/acquisition/schoolhouse-fl-corporate-resolution/run.py'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile exact corporate-resolution runner
+        run: python -m py_compile tools/acquisition/schoolhouse-fl-corporate-resolution/run.py
+
+      - name: Download strict exact-FEI candidate artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          rm -rf /tmp/schoolhouse-state-registry-exact-fei
+          mkdir -p /tmp/schoolhouse-state-registry-exact-fei
+          gh run download 30975237852 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name schoolhouse-state-registry-candidates-attempt03-strict \
+            --dir /tmp/schoolhouse-state-registry-exact-fei
+          test -f /tmp/schoolhouse-state-registry-exact-fei/registry-candidates.jsonl
+          test -f /tmp/schoolhouse-state-registry-exact-fei/summary.json
+
+      - name: Execute exact seventeen-document corporate resolution
+        id: acquisition
+        continue-on-error: true
+        env:
+          SUNBIZ_USER_AGENT: CliffordNumber-SchoolHouse-FL-Corporate-Resolution/1.0 219768509+BigBirdReturns@users.noreply.github.com
+        run: |
+          set +e
+          OUT=/tmp/schoolhouse-fl-corporate-resolution
+          rm -rf "$OUT"
+          python tools/acquisition/schoolhouse-fl-corporate-resolution/run.py \
+            --output "$OUT" \
+            --lake-dir data/intake/bvvc-defense-capital \
+            --exact-fei-artifact /tmp/schoolhouse-state-registry-exact-fei \
+            --retries 4 \
+            --sleep-seconds 0.65
+          status=$?
+          mkdir -p "$OUT"
+          printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
+          exit "$status"
+
+      - name: Upload exact acquisition artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-fl-corporate-resolution
+          path: /tmp/schoolhouse-fl-corporate-resolution
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require exact denominator, privacy, and identity boundaries
+        if: always()
+        run: |
+          test -f /tmp/schoolhouse-fl-corporate-resolution/RUNNER_EXIT_CODE
+          test "$(cat /tmp/schoolhouse-fl-corporate-resolution/RUNNER_EXIT_CODE)" = '0'
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/schoolhouse-fl-corporate-resolution')
+          summary = json.loads((root / 'summary.json').read_text())
+          receipt = json.loads((root / 'acquisition-receipt.json').read_text())
+          adjudication = json.loads((root / 'cross-registry-adjudication.json').read_text())
+          denominator = json.loads((root / 'input-denominator.json').read_text())
+          routes = [json.loads(line) for line in (root / 'source-routes.jsonl').read_text().splitlines() if line]
+          records = [json.loads(line) for line in (root / 'corporate-records.jsonl').read_text().splitlines() if line]
+
+          assert denominator['declared_document_numbers'] == 17
+          assert denominator['unique_owner_charter_numbers'] == 15
+          assert denominator['magnolia_exact_fei_document_numbers'] == ['L25000047895', 'N25000006947']
+          assert len(denominator['document_rows']) == 17
+
+          assert summary['declared_document_numbers'] == 17
+          assert summary['fictitious_owner_charter_numbers'] == 15
+          assert summary['route_count'] == 17
+          assert summary['terminal_route_count'] == 17
+          assert summary['all_routes_terminal'] is True
+          assert summary['resolved_owner_charter_numbers'] >= 12
+          assert summary['magnolia_nonprofit_identifier_grade_resolution'] is True
+          assert summary['magnolia_llc_detail_rejects_exact_fei'] is True
+          assert summary['public_schoolhouse_identity_admitted'] is False
+          assert summary['negative_existence_claim_created'] is False
+          assert summary['street_address_rows_retained'] == 0
+          assert summary['contact_detail_rows_retained'] == 0
+          assert summary['registered_agent_name_rows_retained'] == 0
+          assert summary['officer_name_rows_retained'] == 0
+          assert summary['document_image_rows_retained'] == 0
+          assert summary['private_support_rows'] == 0
+          assert summary['outside_human_dependency'] is False
+          assert summary['graph_effect'] == 'none'
+
+          assert len(routes) == 17
+          assert all(route['state'] in {
+              'resolved_exact_document',
+              'document_not_found',
+              'detail_unparsed',
+              'document_mismatch',
+              'source_unavailable_after_search',
+          } for route in routes)
+          assert all(route['street_address_retained'] is False for route in routes)
+          assert all(route['contact_details_retained'] is False for route in routes)
+          assert all(route['registered_agent_name_retained'] is False for route in routes)
+          assert all(route['officer_names_retained'] is False for route in routes)
+          assert all(route['graph_effect'] == 'none' for route in routes)
+
+          by_document = {row['document_number']: row for row in records}
+          assert by_document['N25000006947']['fei_ein'] == '392669585'
+          assert by_document['N25000006947']['irs_ein_alignment'] == 'exact'
+          assert by_document['N25000006947']['irs_candidate_resolution_state'] == 'identifier_grade_irs_candidate_identity_resolved'
+          assert by_document['N25000006947']['principal_city'] == 'VERO BEACH'
+          assert by_document['N25000006947']['principal_state'] == 'FL'
+          assert by_document['L25000047895']['fei_ein'] is None
+          assert by_document['L25000047895']['irs_ein_alignment'] == 'detail_reports_no_fei'
+          assert by_document['L25000047895']['irs_candidate_resolution_state'] == 'exact_fei_search_result_not_confirmed_by_detail'
+          assert all(row['public_schoolhouse_brand_join_state'] == 'not_established' for row in records)
+          assert all(row['street_address_retained'] is False for row in records)
+          assert all(row['contact_details_retained'] is False for row in records)
+          assert all(row['registered_agent_name_retained'] is False for row in records)
+          assert all(row['officer_names_retained'] is False for row in records)
+          assert all(row['document_images_retained'] is False for row in records)
+          assert all(row['graph_effect'] == 'none' for row in records)
+
+          assert receipt['all_routes_terminal'] is True
+          assert receipt['resolved_owner_charter_numbers'] >= 12
+          assert receipt['magnolia_nonprofit_identifier_grade_resolution'] is True
+          assert receipt['magnolia_llc_detail_rejects_exact_fei'] is True
+          assert receipt['public_schoolhouse_identity_admitted'] is False
+          assert receipt['outside_human_dependency'] is False
+          assert receipt['graph_effect'] == 'none'
+
+          assert adjudication['irs_candidate_resolution']['nonprofit_identifier_grade_resolution'] is True
+          assert adjudication['irs_candidate_resolution']['llc_detail_rejects_exact_fei'] is True
+          assert adjudication['irs_candidate_resolution']['public_schoolhouse_brand_join_state'] == 'not_established'
+          assert adjudication['public_schoolhouse_identity_decision']['state'] == 'unresolved_no_florida_corporate_identity_admitted'
+          assert adjudication['public_schoolhouse_identity_decision']['negative_existence_claim_created'] is False
+          assert adjudication['outside_human_dependency'] is False
+          assert adjudication['graph_effect'] == 'none'
+          print(json.dumps(summary, sort_keys=True))
+          PY
