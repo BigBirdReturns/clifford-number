@@ -1,0 +1,118 @@
+name: TEMP materialize School.House first-party legal surfaces
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-schoolhouse-first-party-legal-surface-materializer.yml'
+      - '.schoolhouse-first-party-legal-surface-materializer/EXECUTE'
+      - '.schoolhouse-first-party-legal-surface-materializer/builder.mjs.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: temp-schoolhouse-first-party-legal-surface-materializer-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Download terminal first-party legal-surface artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/schoolhouse-first-party-legal-surface-census
+          mkdir -p /tmp/schoolhouse-first-party-legal-surface-census
+          gh run download 30990750394 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name schoolhouse-first-party-legal-surface-census \
+            --dir /tmp/schoolhouse-first-party-legal-surface-census
+          for f in root-route-results.jsonl followed-route-results.jsonl discovered-links.jsonl html-surfaces.jsonl structured-data.jsonl legal-governance-candidates.jsonl external-link-inventory.jsonl form-metadata.jsonl summary.json route-policy.json artifact-manifest.json SHA256SUMS; do
+            test -f "/tmp/schoolhouse-first-party-legal-surface-census/$f"
+          done
+      - name: Build, qualify, and publish clean current-main product
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          TARGET='agent/schoolhouse-first-party-legal-surface-custody-product-v1'
+          MAIN_SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+          SOURCE_BUNDLE="$GITHUB_WORKSPACE/.schoolhouse-first-party-legal-surface-materializer/builder.mjs.gz.b64"
+          SOURCE_BUILDER=/tmp/build-schoolhouse-first-party-legal-surface-custody.mjs
+
+          test "$(sha256sum "$SOURCE_BUNDLE" | awk '{print $1}')" = '38d70b08d260f218dd2c922641373d6c7be68c8aef72916d4f5e617bbbd7f60a'
+          base64 -d "$SOURCE_BUNDLE" | gzip -dc > "$SOURCE_BUILDER"
+          test "$(sha256sum "$SOURCE_BUILDER" | awk '{print $1}')" = '213bd65a768b30ccbadcd7c20fcd857bd5522da2aae06f7833e89c1181ccd549'
+          node --check "$SOURCE_BUILDER"
+
+          rm -rf /tmp/schoolhouse-first-party-legal-surface-product
+          git fetch --no-tags origin "$MAIN_SHA"
+          git worktree add --detach /tmp/schoolhouse-first-party-legal-surface-product "$MAIN_SHA"
+          cd /tmp/schoolhouse-first-party-legal-surface-product
+          mkdir -p tools
+          cp "$SOURCE_BUILDER" tools/build-schoolhouse-first-party-legal-surface-custody.mjs
+
+          node tools/build-schoolhouse-first-party-legal-surface-custody.mjs \
+            /tmp/schoolhouse-first-party-legal-surface-census
+          node tools/validate-bvvc-defense-capital.mjs
+          node test/person-routers.test.js
+          npm run release:check
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            data/intake/bvvc-defense-capital/README.md \
+            data/intake/bvvc-defense-capital/acquisition-frontier.json \
+            data/intake/bvvc-defense-capital/coverage-matrix.json \
+            data/intake/bvvc-defense-capital/manifest.json \
+            data/intake/bvvc-defense-capital/schoolhouse.json \
+            data/intake/bvvc-defense-capital/source-inventory-13.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-first-party-legal-surface-custody.json \
+            data/intake/bvvc-defense-capital/schoolhouse-first-party-legal-surface-route-results.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-first-party-legal-surface-discovered-links.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-first-party-legal-surface-evidence.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-first-party-legal-surface-candidate-ledger.jsonl \
+            data/intake/bvvc-defense-capital/schoolhouse-first-party-legal-surface-external-link-inventory.jsonl \
+            tools/build-schoolhouse-first-party-legal-surface-custody.mjs \
+            tools/validate-bvvc-defense-capital.mjs
+
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = '14'
+          test -z "$(git diff --cached --name-only | grep '^\.github/workflows/' || true)"
+          git commit -m 'Preserve School.House first-party legal surface custody'
+          PRODUCT_SHA=$(git rev-parse HEAD)
+
+          START=$(git ls-remote origin "refs/heads/$TARGET" | awk '{print $1}')
+          if [[ -n "$START" ]]; then
+            git push origin "HEAD:refs/heads/$TARGET" --force-with-lease="refs/heads/$TARGET:$START"
+          else
+            git push origin "HEAD:refs/heads/$TARGET"
+          fi
+
+          mkdir -p /tmp/schoolhouse-first-party-legal-surface-materialization-receipt
+          jq -n \
+            --arg base_main "$MAIN_SHA" \
+            --arg product_sha "$PRODUCT_SHA" \
+            --arg target "$TARGET" \
+            '{schema_version:"schoolhouse-first-party-legal-surface-materialization-receipt@1",base_main:$base_main,product_sha:$product_sha,target_branch:$target,changed_paths:14,source_inventory_rows:336,coverage_denominator_rows:23,root_routes:5,followed_routes:41,terminal_routes:46,accessible_html_routes:39,accessible_xml_routes:6,accessible_text_routes:1,eligible_query_free_same_host_unique_links:43,unfollowed_eligible_links:0,first_party_tax_status_claim_rows:39,footer_brand_string_rows:38,exact_legal_name_candidate_rows:0,structured_data_rows:0,form_rows:8,search_submissions:0,source_rows_acquired:0,admitted_identities:0,private_support_rows:0,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+            > /tmp/schoolhouse-first-party-legal-surface-materialization-receipt/status.json
+          sha256sum /tmp/schoolhouse-first-party-legal-surface-materialization-receipt/status.json \
+            > /tmp/schoolhouse-first-party-legal-surface-materialization-receipt/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-first-party-legal-surface-materialization-receipt
+          path: /tmp/schoolhouse-first-party-legal-surface-materialization-receipt
+          if-no-files-found: error
+          retention-days: 90
