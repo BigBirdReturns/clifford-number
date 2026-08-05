@@ -1,0 +1,163 @@
+name: TEMP materialize RD-02 Wave 03 terminal portfolio lifecycle v2
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-rd02-wave03-terminal-materializer-v2.yml'
+      - '.ssc-rd02-wave03-terminal-materializer-v2/**'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-ssc-rd02-wave03-terminal-materializer-v2
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd02-wave03-terminal-materializer-v2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave03-rd02-portfolio-lifecycle-terminal-v2
+      EXPECTED_TARGET_HEAD: b5b46a55fd1eab3a376abb1914a0f8a6aa6ea3c7
+      EXPECTED_PARENT_TREE: fe9cd15a1762c36cd2e69e837d0e95658c994671
+      EXPECTED_FULL_TREE: 4e7cecceebd3a2b7a645fd225e007025e66829dc
+      PATHS_SHA256: cc2286ae5f56746b3ec7be7cdeb673067eb51765b8238a9182fc6c1e26924b0d
+      FILES_SHA256: 9d993d4fa70a0f9de54af7ea542caeb48cebe16d96b42fb45ede022edffefc72
+      XZ_BYTES: '20328'
+      XZ_SHA256: b9633f1f284c5e68b21d62fd7e215f64b3de26727a2a792e0f808099e70cacaf
+      B64_BYTES: '27104'
+      B64_SHA256: 73f5de6a8d605edfe3590aeee41631e22e2ee1ca3a60a23281bef002e73ad876
+      PRODUCT_MANIFEST_SHA256: 068330d24a8bc378964cee2d88c3ebe1c5b48b36154f58636e72d78d40e71e82
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct and verify exact eleven-path package
+        run: |
+          set -Eeuo pipefail
+          carrier='.ssc-rd02-wave03-terminal-materializer-v2'
+          node tools/validate-no-magic-human-gate.mjs
+          cat "$carrier"/payload-*.b64 > "$RUNNER_TEMP/package.b64"
+          test "$(wc -c < "$RUNNER_TEMP/package.b64" | tr -d ' ')" = "$B64_BYTES"
+          test "$(sha256sum "$RUNNER_TEMP/package.b64" | cut -d' ' -f1)" = "$B64_SHA256"
+          base64 -d "$RUNNER_TEMP/package.b64" > "$RUNNER_TEMP/package.tar.xz"
+          test "$(wc -c < "$RUNNER_TEMP/package.tar.xz" | tr -d ' ')" = "$XZ_BYTES"
+          test "$(sha256sum "$RUNNER_TEMP/package.tar.xz" | cut -d' ' -f1)" = "$XZ_SHA256"
+          test "$(sha256sum "$carrier/paths.txt" | cut -d' ' -f1)" = "$PATHS_SHA256"
+          test "$(sha256sum "$carrier/files.txt" | cut -d' ' -f1)" = "$FILES_SHA256"
+          mkdir -p "$RUNNER_TEMP/package"
+          tar -xJf "$RUNNER_TEMP/package.tar.xz" -C "$RUNNER_TEMP/package"
+          (cd "$RUNNER_TEMP/package" && find . -type f -printf '%P\n' | sort) > "$RUNNER_TEMP/actual-package-paths.txt"
+          diff -u "$carrier/paths.txt" "$RUNNER_TEMP/actual-package-paths.txt"
+          while read -r expected_sha expected_bytes rel; do
+            test -f "$RUNNER_TEMP/package/$rel"
+            test "$(wc -c < "$RUNNER_TEMP/package/$rel" | tr -d ' ')" = "$expected_bytes"
+            test "$(sha256sum "$RUNNER_TEMP/package/$rel" | cut -d' ' -f1)" = "$expected_sha"
+          done < "$carrier/files.txt"
+
+      - name: Qualify full product and publish ten missing permanent paths
+        run: |
+          set -Eeuo pipefail
+          carrier="$GITHUB_WORKSPACE/.ssc-rd02-wave03-terminal-materializer-v2"
+          remote_head="$(git ls-remote origin "refs/heads/$TARGET_BRANCH" | cut -f1)"
+          test "$remote_head" = "$EXPECTED_TARGET_HEAD"
+          target="$RUNNER_TEMP/target"
+          git worktree add --detach "$target" "$EXPECTED_TARGET_HEAD"
+          test "$(git -C "$target" rev-parse HEAD^{tree})" = "$EXPECTED_PARENT_TREE"
+          git -C "$target" config user.name 'github-actions[bot]'
+          git -C "$target" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          while read -r rel; do
+            mkdir -p "$target/$(dirname "$rel")"
+            cp "$RUNNER_TEMP/package/$rel" "$target/$rel"
+          done < "$carrier/paths.txt"
+
+          cd "$target"
+          node --check tools/build-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs
+          node --check test/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs
+          node test/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.test.js | tee "$RUNNER_TEMP/adversarial.log"
+          node tools/validate-no-magic-human-gate.mjs
+          test "$(jq -r .source_pr data/project/ssc-residual-wave03/closures/RD-02-C05.json)" = '1098'
+          test "$(jq -r .combined_sha256 data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/manifest.json)" = "$PRODUCT_MANIFEST_SHA256"
+
+          grep -v '^\.github/workflows/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.yml$' "$carrier/paths.txt" > "$RUNNER_TEMP/new-paths.txt"
+          git add --pathspec-from-file="$carrier/paths.txt"
+          git diff --cached --name-only | sort > "$RUNNER_TEMP/actual-new-paths.txt"
+          diff -u "$RUNNER_TEMP/new-paths.txt" "$RUNNER_TEMP/actual-new-paths.txt"
+          test "$(wc -l < "$RUNNER_TEMP/actual-new-paths.txt" | tr -d ' ')" = '10'
+          test "$(git diff --cached --name-status | awk '$1 != "A" {n++} END {print n+0}')" = '0'
+          git commit -m 'Materialize RD-02 Wave-03 terminal portfolio lifecycle product'
+          product_commit="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse HEAD^{tree})"
+          test "$product_tree" = "$EXPECTED_FULL_TREE"
+
+          npm run release:check
+          git reset --hard HEAD
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs
+          node test/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test "$(git ls-remote origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET_HEAD"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET_HEAD" origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          receipt="$RUNNER_TEMP/receipt"
+          mkdir -p "$receipt"
+          cp "$carrier/paths.txt" "$receipt/full-paths.txt"
+          cp "$RUNNER_TEMP/new-paths.txt" "$receipt/published-paths.txt"
+          cp "$RUNNER_TEMP/adversarial.log" "$receipt/adversarial.log"
+          python - "$receipt/receipt.json" "$product_commit" "$product_tree" <<'PY'
+          import json, os, sys
+          out, commit, tree = sys.argv[1:]
+          value = {
+            'schema_version': 'ssc-rd02-wave03-terminal-materialization-receipt@1',
+            'target_branch': os.environ['TARGET_BRANCH'],
+            'expected_target_head': os.environ['EXPECTED_TARGET_HEAD'],
+            'published_commit': commit,
+            'published_tree': tree,
+            'full_product_paths': 11,
+            'published_missing_paths': 10,
+            'source_pr': 1098,
+            'terminal_fields': 180,
+            'observed_fields': 53,
+            'identity_withheld_fields': 1,
+            'source_restricted_fields': 7,
+            'not_publicly_recovered_fields': 119,
+            'admitted_leaf_sources': 2,
+            'admitted_bounded_observations': 11,
+            'lifecycle_events_observed': 0,
+            'adversarial_mutations_refused': 147,
+            'terminal_state': 'bounded_source_unavailable',
+            'class_closed': True,
+            'product_manifest_sha256': os.environ['PRODUCT_MANIFEST_SHA256'],
+            'package_xz_sha256': os.environ['XZ_SHA256'],
+            'outside_human_dependency': False,
+            'external_contacts': 0,
+            'external_reviews': 0,
+            'publication_effect': 'none',
+            'adoption_effect': 'none',
+            'graph_effect': 'none'
+          }
+          open(out, 'w').write(json.dumps(value, indent=2) + '\n')
+          PY
+          (cd "$receipt" && sha256sum * > SHA256SUMS)
+          echo "RECEIPT_DIR=$receipt" >> "$GITHUB_ENV"
+
+      - name: Preserve exact terminal materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd02-wave03-terminal-materialization-v2
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
