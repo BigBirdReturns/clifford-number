@@ -1,0 +1,159 @@
+name: SSC RD-04 state-source v2 native-blob recovery probe
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd04-state-source-v2-recovery-probe'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Recover and fingerprint candidate native blobs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/rd04-v2-recovery
+          mkdir -p /tmp/rd04-v2-recovery/blobs /tmp/rd04-v2-recovery/groups
+          python - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import lzma
+          import os
+          import pathlib
+          import tarfile
+          import urllib.request
+
+          root = pathlib.Path('/tmp/rd04-v2-recovery')
+          repo = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GITHUB_TOKEN']
+
+          actual = [
+              'e090a29166d02fc4c13287d1bb43f8169f3b5394',
+              'd91346c1c0365b62ea4a538ba0436c15e1c01786',
+              '8ef333167c96c4294b13fcf69ae6c45b8b4b187f',
+              'e6071f6cac164252d3707a155fd206517bd035bc',
+              'bd451ffdebee92b18e9d2ea2c7b2aa8d14b02285',
+              '26f2cbdbc4dee40684bedf06677d4f9a6dad974f',
+              'f0e11ffc5aa9b64c6b15928f470167ac0060d48e',
+              'bba9048683ec060e3ee152c71a7121876882e1b4',
+              '3f2a2898fac29c96689b7a70ff6a5c9e571ed561',
+              'f310f31d12a79166840df8515ef97eca85c664a3',
+          ]
+          claimed = [
+              'e090a29166d02fc4c13287d1bb43f8169f3b5394',
+              'd91346c1c0365b62ea4a538ba0436c15e1c01786',
+              '8ef333167c96c4294b13fcf69ae6c45b8b4b187f',
+              'e607ba947bacaf7794abc0e7999f2de864a8b397',
+              '390266adb552cd3bf71d859a8b06b90a7f3a57cd',
+              '50cd9a3d67fb89c90eb8df741e1602baad34ee15',
+              '152ebf8a046c1d55e890f1c9ed53402ef5dcda13',
+              '8cf474febfbc4d1e2eca70d05a75b3ac71dd95de',
+              '3f2ac674b4a3583969258378c53eccae1607f600',
+              'f3104b7ab504ba4efd82427d63e40e235afe0911',
+          ]
+          extras = [
+              'f76dd238ade08917e6712764a16a22005a50573d',
+              '95b5fd494c751f06937eaf45816b15ab7738add9',
+              '212c4ba239ecdbd15c70c05b9336c32175dc8c5c',
+              '24ae15ce9741d53115a9fc71c2b761790ca47995',
+              '92593a557997216a4f0c20322bd52d93fbe435b5',
+              'f7492ec8a205e55e61c6a00f4eadd2b2fd9ed1d0',
+          ]
+          candidates = list(dict.fromkeys(actual + claimed + extras))
+          records = []
+          bodies = {}
+          for sha in candidates:
+              url = f'https://api.github.com/repos/{repo}/git/blobs/{sha}'
+              req = urllib.request.Request(
+                  url,
+                  headers={
+                      'Authorization': f'Bearer {token}',
+                      'Accept': 'application/vnd.github+json',
+                      'X-GitHub-Api-Version': '2022-11-28',
+                      'User-Agent': 'rd04-v2-recovery-probe',
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as response:
+                      payload = json.load(response)
+                  data = base64.b64decode(payload['content'].replace('\n', ''))
+                  git_sha = hashlib.sha1(f'blob {len(data)}\0'.encode() + data).hexdigest()
+                  record = {
+                      'sha': sha,
+                      'found': True,
+                      'api_sha': payload.get('sha'),
+                      'encoding': payload.get('encoding'),
+                      'bytes': len(data),
+                      'sha256': hashlib.sha256(data).hexdigest(),
+                      'computed_git_sha': git_sha,
+                      'git_identity_matches': git_sha == sha,
+                  }
+                  bodies[sha] = data
+                  (root / 'blobs' / sha).write_bytes(data)
+              except Exception as exc:
+                  record = {'sha': sha, 'found': False, 'error': repr(exc)}
+              records.append(record)
+
+          expected_size = 55036
+          expected_sha256 = 'cbc3cc181afaf7843f4be96f7d873cf9e79b95bf1f2116acc7da064c236897b0'
+          groups = {'actual_visible_sequence': actual, 'claimed_final_sequence': claimed}
+          group_records = []
+          winner = None
+          for name, shas in groups.items():
+              missing = [sha for sha in shas if sha not in bodies]
+              entry = {'name': name, 'shas': shas, 'missing': missing}
+              if not missing:
+                  data = b''.join(bodies[sha] for sha in shas)
+                  out = root / 'groups' / f'{name}.tar.xz'
+                  out.write_bytes(data)
+                  entry.update({
+                      'bytes': len(data),
+                      'sha256': hashlib.sha256(data).hexdigest(),
+                      'xz_magic': data.startswith(b'\xfd7zXZ\x00'),
+                  })
+                  try:
+                      with tarfile.open(out, mode='r:xz') as tf:
+                          names = sorted(member.name.lstrip('./') for member in tf.getmembers() if member.isfile())
+                      entry['tar_valid'] = True
+                      entry['file_count'] = len(names)
+                      entry['paths'] = names
+                  except Exception as exc:
+                      entry['tar_valid'] = False
+                      entry['tar_error'] = repr(exc)
+                  if len(data) == expected_size and entry['sha256'] == expected_sha256 and entry.get('tar_valid'):
+                      winner = name
+                      (root / 'rd04-state-source-product-v2.tar.xz').write_bytes(data)
+              group_records.append(entry)
+
+          report = {
+              'expected_archive_bytes': expected_size,
+              'expected_archive_sha256': expected_sha256,
+              'candidate_blob_count': len(candidates),
+              'found_blob_count': sum(1 for row in records if row['found']),
+              'winner': winner,
+              'blobs': records,
+              'groups': group_records,
+          }
+          (root / 'recovery-report.json').write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(report, indent=2, sort_keys=True))
+          if winner is None:
+              raise SystemExit('no candidate sequence reproduced the sealed v2 archive')
+          PY
+      - name: Preserve recovery receipt and sealed archive
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-state-source-v2-recovery-probe
+          path: /tmp/rd04-v2-recovery
+          if-no-files-found: error
+          retention-days: 30
