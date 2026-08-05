@@ -1,0 +1,170 @@
+name: TEMP materialize SSC Wave 03 current ledger at nine closures
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-ssc-wave03-nine-closure-ledger-materializer-v1.yml'
+      - '.ssc-wave03-nine-closure-ledger-materializer-v1/**'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-ssc-wave03-nine-closure-ledger-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-wave03-nine-closure-ledger-materializer-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TARGET_BRANCH: agent/ssc-residual-denominator-wave03-current-nine-closures
+      EXPECTED_TARGET_HEAD: f4f1c94dbdbcaf9d9c4bacedb04c36eabd57f6df
+      EXPECTED_WORKFLOW_SHA256: 5852e44feaaa6dc8bc0aad2be7d56c23274b1dedf62936f6d0684cdcfdb1faf2
+      PATHS_SHA256: 4105851a102740bfd890675bfa0833edf80280e43cef70e8f8c2e83dda12a898
+      FILES_SHA256: bf692fd2573071b425baaa3b034c786d6869c0ee6f44e4581afc71b5e813b3dd
+      XZ_BYTES: '13352'
+      XZ_SHA256: d3b413d349de3f76fd5d6b14995481612a06ce8627919ead053bf5179c575c3b
+      B64_BYTES: '17804'
+      B64_SHA256: c1f3cb1cdd1bc0c7f584448a8dd8f57db8a26afaddfe38c7c605492ef6d84ef3
+      RD02_MERGE: 61a33f5459e64f1978d9c55c1b7ea7f925358cd8
+      EXPECTED_ADVERSARIAL_REFUSALS: '241'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct and verify exact six-path package
+        run: |
+          set -Eeuo pipefail
+          carrier='.ssc-wave03-nine-closure-ledger-materializer-v1'
+          node tools/validate-no-magic-human-gate.mjs
+          cat "$carrier"/payload-*.b64 > "$RUNNER_TEMP/package.b64"
+          test "$(wc -c < "$RUNNER_TEMP/package.b64" | tr -d ' ')" = "$B64_BYTES"
+          test "$(sha256sum "$RUNNER_TEMP/package.b64" | cut -d' ' -f1)" = "$B64_SHA256"
+          base64 -d "$RUNNER_TEMP/package.b64" > "$RUNNER_TEMP/package.tar.xz"
+          test "$(wc -c < "$RUNNER_TEMP/package.tar.xz" | tr -d ' ')" = "$XZ_BYTES"
+          test "$(sha256sum "$RUNNER_TEMP/package.tar.xz" | cut -d' ' -f1)" = "$XZ_SHA256"
+          test "$(sha256sum "$carrier/paths.txt" | cut -d' ' -f1)" = "$PATHS_SHA256"
+          test "$(sha256sum "$carrier/files.txt" | cut -d' ' -f1)" = "$FILES_SHA256"
+          mkdir -p "$RUNNER_TEMP/package"
+          tar -xJf "$RUNNER_TEMP/package.tar.xz" -C "$RUNNER_TEMP/package"
+          (cd "$RUNNER_TEMP/package" && find . -type f -printf '%P\n' | sort) > "$RUNNER_TEMP/actual-package-paths.txt"
+          diff -u "$carrier/paths.txt" "$RUNNER_TEMP/actual-package-paths.txt"
+          while read -r expected_sha expected_bytes rel; do
+            test -f "$RUNNER_TEMP/package/$rel"
+            test "$(wc -c < "$RUNNER_TEMP/package/$rel" | tr -d ' ')" = "$expected_bytes"
+            test "$(sha256sum "$RUNNER_TEMP/package/$rel" | cut -d' ' -f1)" = "$expected_sha"
+          done < "$carrier/files.txt"
+
+      - name: Qualify and publish exact six-path cumulative promotion
+        run: |
+          set -Eeuo pipefail
+          carrier="$GITHUB_WORKSPACE/.ssc-wave03-nine-closure-ledger-materializer-v1"
+          remote_head="$(git ls-remote origin "refs/heads/$TARGET_BRANCH" | cut -f1)"
+          test "$remote_head" = "$EXPECTED_TARGET_HEAD"
+
+          target="$RUNNER_TEMP/target"
+          git worktree add --detach "$target" "$EXPECTED_TARGET_HEAD"
+          git -C "$target" config user.name 'github-actions[bot]'
+          git -C "$target" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          test "$(sha256sum "$target/.github/workflows/status-sovereignty-residual-denominator-wave-03-current.yml" | cut -d' ' -f1)" = "$EXPECTED_WORKFLOW_SHA256"
+          git -C "$target" merge-base --is-ancestor "$RD02_MERGE" HEAD
+          for rel in \
+            data/project/ssc-residual-wave03/closures/RD-02-C05.json \
+            data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/class-receipt.json \
+            data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/manifest.json; do
+            git -C "$target" cat-file -e "$RD02_MERGE:$rel"
+          done
+
+          while read -r rel; do
+            mkdir -p "$target/$(dirname "$rel")"
+            cp "$RUNNER_TEMP/package/$rel" "$target/$rel"
+          done < "$carrier/paths.txt"
+
+          cd "$target"
+          node --check tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs
+          node --check tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+          node --check test/status-sovereignty-residual-denominator-wave-03-current.test.js
+          node tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-03-current.test.js | tee "$RUNNER_TEMP/adversarial.log"
+          grep -F "${EXPECTED_ADVERSARIAL_REFUSALS} mutations refused" "$RUNNER_TEMP/adversarial.log"
+          node tools/validate-no-magic-human-gate.mjs
+
+          git add --pathspec-from-file="$carrier/paths.txt"
+          git diff --cached --name-only | sort > "$RUNNER_TEMP/actual-paths.txt"
+          diff -u "$carrier/paths.txt" "$RUNNER_TEMP/actual-paths.txt"
+          test "$(wc -l < "$RUNNER_TEMP/actual-paths.txt" | tr -d ' ')" = '6'
+          test "$(git diff --cached --name-status | awk '$1 != "M" {n++} END {print n+0}')" = '0'
+          git commit -m 'Promote RD-02-C05 into the Wave-03 cumulative ledger'
+          product_commit="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse HEAD^{tree})"
+
+          npm run release:check
+          git reset --hard HEAD
+          git clean -fdx
+          node tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs --check
+          node tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+          node test/status-sovereignty-residual-denominator-wave-03-current.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test "$(git ls-remote origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_TARGET_HEAD"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET_HEAD" origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          receipt="$RUNNER_TEMP/receipt"
+          mkdir -p "$receipt"
+          cp "$carrier/paths.txt" "$receipt/paths.txt"
+          cp "$carrier/files.txt" "$receipt/files.txt"
+          cp "$RUNNER_TEMP/adversarial.log" "$receipt/adversarial.log"
+          cp data/research/status-sovereignty-residual-denominator-wave-03-current.json "$receipt/current-ledger.json"
+          python - "$receipt/receipt.json" "$product_commit" "$product_tree" <<'PY'
+          import json, os, sys
+          out, commit, tree = sys.argv[1:]
+          value = {
+            'schema_version': 'ssc-wave03-nine-closure-ledger-materialization-receipt@1',
+            'target_branch': os.environ['TARGET_BRANCH'],
+            'expected_target_head': os.environ['EXPECTED_TARGET_HEAD'],
+            'published_commit': commit,
+            'published_tree': tree,
+            'modified_paths': 6,
+            'standing_workflow_preinstalled': True,
+            'canonical_residual_classes': 42,
+            'closed_residual_classes': 9,
+            'open_residual_classes': 33,
+            'wave03_terminal_receipts': 3,
+            'open_selected_classes': 3,
+            'promoted_class_id': 'RD-02-C05',
+            'promoted_source_pr': 1098,
+            'promoted_merge': os.environ['RD02_MERGE'],
+            'promoted_manifest': '068330d24a8bc378964cee2d88c3ebe1c5b48b36154f58636e72d78d40e71e82',
+            'adversarial_mutations_refused': int(os.environ['EXPECTED_ADVERSARIAL_REFUSALS']),
+            'wave_complete': False,
+            'residual_denominator_complete': False,
+            'complete_compact': False,
+            'outside_human_dependency': False,
+            'external_contacts': 0,
+            'external_reviews': 0,
+            'publication_effect': 'none',
+            'adoption_effect': 'none',
+            'graph_effect': 'none',
+            'package_xz_sha256': os.environ['XZ_SHA256']
+          }
+          open(out, 'w').write(json.dumps(value, indent=2) + '\n')
+          PY
+          (cd "$receipt" && sha256sum * > SHA256SUMS)
+          echo "RECEIPT_DIR=$receipt" >> "$GITHUB_ENV"
+
+      - name: Preserve exact nine-closure materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave03-nine-closure-ledger-materialization-v1
+          path: ${{ env.RECEIPT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
