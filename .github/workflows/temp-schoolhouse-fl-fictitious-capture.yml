@@ -6,6 +6,7 @@ on:
       - '.github/workflows/temp-schoolhouse-fl-fictitious-capture.yml'
       - '.schoolhouse-fl-fictitious-capture/EXECUTE'
       - 'tools/acquisition/schoolhouse-fl-fictitious/acquire.py'
+      - 'tools/acquisition/schoolhouse-fl-fictitious/repair_framing.py'
   workflow_dispatch:
 
 permissions:
@@ -21,6 +22,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
+      - name: Apply mixed-separator framing repair
+        run: |
+          python -m py_compile tools/acquisition/schoolhouse-fl-fictitious/repair_framing.py
+          python tools/acquisition/schoolhouse-fl-fictitious/repair_framing.py \
+            tools/acquisition/schoolhouse-fl-fictitious/acquire.py
 
       - name: Compile acquisition runner
         run: python -m py_compile tools/acquisition/schoolhouse-fl-fictitious/acquire.py
@@ -75,6 +82,7 @@ jobs:
           assert summary['source_rows_scanned'] == sum(row['row_count'] for row in members)
           assert summary['candidate_rows'] == len(candidates)
           assert summary['all_members_scanned'] is True
+          assert all(row['record_framing'] == 'fixed_width_flexible_separator' for row in members)
           assert receipt['route_probe']['workflow_run_id'] == 30973871220
           assert receipt['route_probe']['artifact_id'] == 8917541589
           assert receipt['route_probe']['state'] == 'accessible'
