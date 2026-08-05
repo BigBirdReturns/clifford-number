@@ -1,0 +1,37 @@
+name: TEMP export live-main tree for PC-49
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: github.head_ref == 'agent/pc49-source-carrier'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact live main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Record commit and tree
+        run: |
+          set -Eeuo pipefail
+          {
+            printf 'main_commit=%s\n' "$(git rev-parse HEAD^{commit})"
+            printf 'main_tree=%s\n' "$(git rev-parse HEAD^{tree})"
+          } | tee /tmp/pc49-live-main-tree.txt
+
+      - name: Upload live-main tree receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc49-live-main-tree
+          path: /tmp/pc49-live-main-tree.txt
+          if-no-files-found: error
+          retention-days: 90
