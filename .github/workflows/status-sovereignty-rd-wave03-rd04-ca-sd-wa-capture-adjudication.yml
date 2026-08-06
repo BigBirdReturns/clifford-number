@@ -1,0 +1,79 @@
+name: Status sovereignty RD Wave 03 RD-04 CA-SD-WA capture adjudication
+
+on:
+  push:
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication/**'
+      - 'docs/milestones/ssc-rd-wave03-rd04-ca-sd-wa-capture-adjudication.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.schema.json'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.py'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.py'
+      - 'test/status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.test.py'
+  pull_request:
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication/**'
+      - 'docs/milestones/ssc-rd-wave03-rd04-ca-sd-wa-capture-adjudication.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.schema.json'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.py'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.py'
+      - 'test/status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.test.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input jsonschema==4.25.1
+      - name: Validate exact capture, visual, route, field, and matrix custody
+        run: |
+          set -Eeuo pipefail
+          python -m py_compile tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.py
+          python -m py_compile tools/validate-status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.py
+          python -m py_compile test/status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.test.py
+          python tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.py --check
+          python tools/validate-status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.py
+          python test/status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.test.py
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Replay exact deterministic product
+        run: |
+          set -Eeuo pipefail
+          git restore --worktree -- .
+          git clean -fdx
+          python tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.py --write
+          python tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.py --check
+          python tools/validate-status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.py
+          python test/status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.test.py
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-wave03-ca-sd-wa-capture-adjudication
+          path: |
+            data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication
+            schemas/status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.schema.json
+            docs/milestones/ssc-rd-wave03-rd04-ca-sd-wa-capture-adjudication.md
+          if-no-files-found: error
+          retention-days: 90
