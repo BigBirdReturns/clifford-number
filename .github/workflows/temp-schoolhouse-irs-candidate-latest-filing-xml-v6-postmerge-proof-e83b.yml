@@ -1,0 +1,189 @@
+name: TEMP prove canonical School.House latest-filing XML v6 custody
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-irs-candidate-latest-filing-xml-v6-postmerge-proof-e83b.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-irs-candidate-latest-filing-xml-v6-postmerge-proof-e83b-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prove:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-irs-candidate-latest-filing-xml-v6-postmerge-proof-e83b')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Prove exact merge, product surface, gates, and clean replay
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          MAIN_EXPECTED='e83b28ab2e9a8fdca4d9c97a9c76644ab1bffa95'
+          PARENT='a49b18304a69e9637cd854d38e80b67d4165cc6c'
+          PARENT_TREE='fdc4acfb8b3381872c157d0bf9a8bd6947631bd3'
+          PRODUCT='0cb1976f93ff52dd403e870627bf610834581e2e'
+          PRODUCT_TREE='4e784301ace586c68eef103463bad31bf92c1952'
+          WORKFLOW='.github/workflows/temp-schoolhouse-irs-candidate-latest-filing-xml-v6-postmerge-proof-e83b.yml'
+          RECEIPT="$RUNNER_TEMP/schoolhouse-irs-candidate-latest-filing-xml-v6-postmerge-proof-e83b"
+          rm -rf "$RECEIPT"
+          mkdir -p "$RECEIPT"
+          trap 'rc=$?; printf "exit_code=%s\nfailed_line=%s\n" "$rc" "$LINENO" >> "$RECEIPT/preflight.txt"; exit "$rc"' ERR
+
+          git fetch --no-tags origin main
+          MAIN="$(git rev-parse origin/main)"
+          MERGE_TREE="$(git rev-parse "$MAIN_EXPECTED^{tree}")"
+          PRODUCT_TREE_OBSERVED="$(git rev-parse "$PRODUCT^{tree}")"
+          PROOF_MERGE_BASE="$(git merge-base HEAD origin/main)"
+          {
+            printf 'proof_head=%s\n' "$(git rev-parse HEAD)"
+            printf 'canonical_main=%s\n' "$MAIN"
+            printf 'expected_main=%s\n' "$MAIN_EXPECTED"
+            printf 'merge_parent_1=%s\n' "$(git rev-parse "$MAIN_EXPECTED^1")"
+            printf 'merge_parent_2=%s\n' "$(git rev-parse "$MAIN_EXPECTED^2")"
+            printf 'product_parent=%s\n' "$(git rev-parse "$PRODUCT^")"
+            printf 'parent_tree=%s\n' "$(git rev-parse "$PARENT^{tree}")"
+            printf 'product_tree=%s\n' "$PRODUCT_TREE_OBSERVED"
+            printf 'merge_tree=%s\n' "$MERGE_TREE"
+            printf 'proof_merge_base=%s\n' "$PROOF_MERGE_BASE"
+          } | tee "$RECEIPT/preflight.txt"
+
+          test "$MAIN" = "$MAIN_EXPECTED"
+          test "$(git rev-parse "$MAIN_EXPECTED^1")" = "$PARENT"
+          test "$(git rev-parse "$MAIN_EXPECTED^2")" = "$PRODUCT"
+          test "$(git rev-parse "$PRODUCT^")" = "$PARENT"
+          test "$(git rev-parse "$PARENT^{tree}")" = "$PARENT_TREE"
+          test "$PRODUCT_TREE_OBSERVED" = "$PRODUCT_TREE"
+          test "$MERGE_TREE" = "$PRODUCT_TREE"
+          test "$PROOF_MERGE_BASE" = "$MAIN_EXPECTED"
+          git merge-base --is-ancestor "$PRODUCT" "$MAIN_EXPECTED"
+
+          mapfile -t PROOF_DELTA < <(git diff --name-only origin/main HEAD)
+          test "${#PROOF_DELTA[@]}" -eq 1
+          test "${PROOF_DELTA[0]}" = "$WORKFLOW"
+
+          git diff --name-status "$PARENT" "$PRODUCT" > "$RECEIPT/product-name-status.txt"
+          python - "$RECEIPT/product-name-status.txt" <<'PY'
+          from pathlib import Path
+          import sys
+
+          expected = {
+              'data/intake/schoolhouse-irs-candidate-latest-filing-xml-v6/acquisition-SHA256SUMS',
+              'data/intake/schoolhouse-irs-candidate-latest-filing-xml-v6/adjudication.json',
+              'data/intake/schoolhouse-irs-candidate-latest-filing-xml-v6/artifact-manifest.json',
+              'data/intake/schoolhouse-irs-candidate-latest-filing-xml-v6/range-receipts.jsonl',
+              'data/intake/schoolhouse-irs-candidate-latest-filing-xml-v6/route-policy.json',
+              'data/intake/schoolhouse-irs-candidate-latest-filing-xml-v6/selection.jsonl',
+              'data/intake/schoolhouse-irs-candidate-latest-filing-xml-v6/source-custody.json',
+              'data/intake/schoolhouse-irs-candidate-latest-filing-xml-v6/source-receipt.json',
+              'data/intake/schoolhouse-irs-candidate-latest-filing-xml-v6/summary.json',
+              'data/intake/schoolhouse-irs-candidate-latest-filing-xml-v6/xml-results.jsonl',
+              'docs/milestones/schoolhouse-irs-candidate-latest-filing-xml-v6.md',
+              'tools/build-schoolhouse-irs-candidate-latest-filing-xml-v6-custody.mjs',
+              'tools/test-schoolhouse-irs-candidate-latest-filing-xml-v6-custody.mjs',
+              'tools/validate-schoolhouse-irs-candidate-latest-filing-xml-v6-custody.mjs',
+          }
+          observed = set()
+          rows = Path(sys.argv[1]).read_text().splitlines()
+          if len(rows) != 14:
+              raise SystemExit(f'product path denominator drift: {len(rows)}')
+          for row in rows:
+              status, path = row.split('\t', 1)
+              if status != 'A':
+                  raise SystemExit(f'non-addition product path: {row}')
+              observed.add(path)
+          if observed != expected:
+              raise SystemExit(f'product path-set drift: {sorted(observed ^ expected)}')
+          if any(path.startswith('.github/') for path in observed):
+              raise SystemExit('workflow path escaped into permanent product')
+          print('canonical_product_surface=14_addition_only_workflow_free')
+          PY
+
+          {
+            node tools/validate-schoolhouse-irs-candidate-latest-filing-xml-v6-custody.mjs
+            node tools/test-schoolhouse-irs-candidate-latest-filing-xml-v6-custody.mjs
+            node tools/build-schoolhouse-irs-candidate-latest-filing-xml-v6-custody.mjs --check
+            node tools/validate-schoolhouse-irs-candidate-filing-index-custody.mjs
+            node tools/test-schoolhouse-irs-candidate-filing-index-custody.mjs
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          } 2>&1 | tee "$RECEIPT/focused-gates.log"
+
+          npm run release:check 2>&1 | tee "$RECEIPT/release-check.log"
+
+          git restore --staged --worktree .
+          git clean -fdx
+          node tools/build-schoolhouse-irs-candidate-latest-filing-xml-v6-custody.mjs --write
+          node tools/build-schoolhouse-irs-candidate-latest-filing-xml-v6-custody.mjs --check
+          node tools/validate-schoolhouse-irs-candidate-latest-filing-xml-v6-custody.mjs
+          node tools/test-schoolhouse-irs-candidate-latest-filing-xml-v6-custody.mjs
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          python - "$RECEIPT/proof.json" <<'PY'
+          from pathlib import Path
+          import json, sys
+
+          proof = {
+              'schema_version': 'schoolhouse-irs-candidate-latest-filing-xml-v6-postmerge-proof@1',
+              'canonical_main': 'e83b28ab2e9a8fdca4d9c97a9c76644ab1bffa95',
+              'canonical_parent': 'a49b18304a69e9637cd854d38e80b67d4165cc6c',
+              'canonical_parent_tree': 'fdc4acfb8b3381872c157d0bf9a8bd6947631bd3',
+              'product_commit': '0cb1976f93ff52dd403e870627bf610834581e2e',
+              'product_tree': '4e784301ace586c68eef103463bad31bf92c1952',
+              'merge_commit': 'e83b28ab2e9a8fdca4d9c97a9c76644ab1bffa95',
+              'merge_tree': '4e784301ace586c68eef103463bad31bf92c1952',
+              'product_paths': 14,
+              'workflow_paths_in_product': 0,
+              'selected_latest_xml_routes': 92,
+              'successful_xml_screens': 54,
+              'selected_missing_locator_rows': 38,
+              'observed_organization_name_values_retained': 0,
+              'identities_admitted': 0,
+              'relationships_admitted': 0,
+              'negative_existence_claims': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'public_schoolhouse_legal_identity': 'unresolved',
+              'focused_validation': 'pass',
+              'complete_release_gate': 'pass',
+              'clean_replay': 'pass',
+              'status': 'complete',
+          }
+          Path(sys.argv[1]).write_text(json.dumps(proof, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(proof, indent=2, sort_keys=True))
+          PY
+          sha256sum "$RECEIPT"/* > "$RECEIPT/SHA256SUMS"
+
+      - name: Preserve exact post-merge proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-candidate-latest-filing-xml-v6-postmerge-proof-e83b
+          path: ${{ runner.temp }}/schoolhouse-irs-candidate-latest-filing-xml-v6-postmerge-proof-e83b
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
