@@ -58,7 +58,7 @@ jobs:
               raise SystemExit('repair shard denominator mismatch')
           chunks = []
           for index, part in enumerate(parts):
-              expected_path = f'part{index:02d}'
+              expected_path = f'wpart{index:02d}'
               if part.get('path') != expected_path:
                   raise SystemExit(f'repair shard order mismatch: {part}')
               raw = b''.join((carrier / expected_path).read_bytes().split())
