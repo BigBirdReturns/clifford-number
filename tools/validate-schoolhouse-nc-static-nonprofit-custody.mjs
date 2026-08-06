@@ -25,13 +25,13 @@ export function validateSchoolhouseNcStaticNonprofitCustody(dir = DEFAULT_DIR) {
   const custody = readJson(path.join(dir, 'schoolhouse-nc-static-nonprofit-census-custody.json'));
   const sourceRows = readJsonl(path.join(dir, 'source-inventory-20.jsonl'));
 
-  check(manifest.counts.source_inventory_rows === 480, 'source inventory denominator');
-  check(manifest.counts.coverage_denominator_rows === 30, 'coverage denominator');
+  check(manifest.counts.source_inventory_rows === 482, 'source inventory denominator');
+  check(manifest.counts.coverage_denominator_rows === 31, 'coverage denominator');
   check(manifest.counts.explicit_gap_rows === 16, 'gap denominator');
-  check(manifest.storage_contract.source_inventory_parts.at(-2) === 'source-inventory-19.jsonl' && manifest.storage_contract.source_inventory_parts.at(-1) === 'source-inventory-20.jsonl', 'source inventory tail');
-  check(manifest.source_inventory.evidence_class_counts.official === 255, 'official evidence count');
+  check(manifest.storage_contract.source_inventory_parts.at(-3) === 'source-inventory-19.jsonl' && manifest.storage_contract.source_inventory_parts.at(-2) === 'source-inventory-20.jsonl' && manifest.storage_contract.source_inventory_parts.at(-1) === 'source-inventory-21.jsonl', 'source inventory tail');
+  check(manifest.source_inventory.evidence_class_counts.official === 257, 'official evidence count');
   check(manifest.source_inventory.source_state_counts.captured_nc_static_nonprofit_html_surface === 2, 'NC source state count');
-  check(coverage.denominators.length === 30, 'coverage row length');
+  check(coverage.denominators.length === 31, 'coverage row length');
   check(coverage.denominators.some(row => row.surface === 'School.House North Carolina static nonprofit report custody' && row.enumerated_total === 2 && row.body_bytes_screened === 1040288 && row.table_data_rows_screened === 0 && row.candidate_total === 0 && row.admitted_identities === 0), 'coverage projection');
 
   check(source.schema_version === 'schoolhouse-nc-static-nonprofit-source-receipt@1' && source.routes.length === 2, 'source receipt');
