@@ -1,0 +1,26 @@
+name: TEMP supersede stale RD-04 CA-SD-WA finalizer
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd04-ca-sd-wa-capture-adjudication-v2-finalizer
+  cancel-in-progress: true
+
+jobs:
+  supersede:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Record manual exact-Git-data handoff
+        run: |
+          set -Eeuo pipefail
+          echo 'stale_finalizer=superseded'
+          echo 'terminalization_authority=exact_git_data_handoff_after_hosted_qualification'
+          echo 'stale_181_to_190_arithmetic=refused'
+          echo 'correct_composition=181_to_187_with_6_new_terminal_cells_and_3_terminal_evidence_updates'
+          echo 'outside_human_dependency=false'

@@ -1,0 +1,103 @@
+name: TEMP materialize composed RD-04 CA-SD-WA capture adjudication
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: ssc-rd04-ca-sd-wa-composed-materializer
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    env:
+      STAGING_BRANCH: agent/ssc-rd04-ca-sd-wa-composed-staging-v1
+      PERMANENT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.yml
+      DATA_PREFIX: data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication/
+      PRODUCT_SCHEMA: schemas/status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.schema.json
+      PRODUCT_BUILDER: tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.mjs
+      PRODUCT_VALIDATOR: tools/validate-status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.mjs
+      PRODUCT_TEST: test/status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.test.js
+      PRODUCT_MILESTONE: docs/milestones/ssc-rd-wave03-rd04-ca-sd-wa-capture-adjudication.md
+      ARCHIVE_BYTES: '51712'
+      ARCHIVE_SHA256: 00689bd2193a870e31a740ce32e82c9ee5e429021565c583c2633dc17c912ddc
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+      - name: Reconstruct and execute exact materializer runner
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          import urllib.request
+          from pathlib import Path
+
+          chunks = [
+              {'sha': '4936d2a3ccf3064c3f4708a7e899e81e02e77e63', 'bytes': 7000, 'sha256': 'a8891064863fdf7f4da5a3dcb49390e939f50c492a02d9b9d1952c27c917b1b6'},
+              {'sha': 'c5754085feb0a959cd66e95a9fba198aeedba216', 'bytes': 7000, 'sha256': '2d1a68ed100912af2a87c8184e457ea0cfa31ade035f411a7138a5a94643a5f1'},
+              {'sha': 'cacb1a03c6a883b61b3165c4f8cc779549cbb50d', 'bytes': 504, 'sha256': '22e52932c5accb7e7a6bf967548dd7de04637ca5b0009dca1d6c724158a542ff'},
+          ]
+          repo = os.environ['GH_REPOSITORY']
+          token = os.environ['GH_TOKEN']
+          parts = []
+          for index, chunk in enumerate(chunks):
+              req = urllib.request.Request(
+                  f"https://api.github.com/repos/{repo}/git/blobs/{chunk['sha']}",
+                  headers={
+                      'Authorization': f'Bearer {token}',
+                      'Accept': 'application/vnd.github+json',
+                      'X-GitHub-Api-Version': '2022-11-28',
+                      'User-Agent': 'ssc-rd04-composed-runner-loader',
+                  },
+              )
+              with urllib.request.urlopen(req, timeout=120) as response:
+                  payload = json.load(response)
+              if payload.get('encoding') != 'base64':
+                  raise SystemExit(f'runner chunk {index} unexpected encoding')
+              raw = base64.b64decode(''.join(payload['content'].split()), validate=True)
+              identity = hashlib.sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest()
+              if identity != chunk['sha'] or len(raw) != chunk['bytes'] or payload.get('size') != chunk['bytes']:
+                  raise SystemExit(f'runner chunk {index} identity or size mismatch')
+              if hashlib.sha256(raw).hexdigest() != chunk['sha256']:
+                  raise SystemExit(f'runner chunk {index} SHA-256 mismatch')
+              parts.append(raw)
+          runner = b''.join(parts)
+          if len(runner) != 14504:
+              raise SystemExit(f'runner byte denominator mismatch: {len(runner)}')
+          if hashlib.sha256(runner).hexdigest() != '2fb2dbc164f47bc23107e0b7f05dcb4c558b0ded268cf9abc77dd2b8cfbf2c38':
+              raise SystemExit('runner SHA-256 mismatch')
+          path = Path('/tmp/rd04-composed-materializer-runner.sh')
+          path.write_bytes(runner)
+          path.chmod(0o755)
+          print(f'runner_reconstruction=pass bytes={len(runner)} chunks={len(chunks)}')
+          PY
+          bash /tmp/rd04-composed-materializer-runner.sh
+      - name: Preserve exact composed staging receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-ca-sd-wa-composed-staging
+          path: /tmp/rd04-ca-sd-wa-composed-materializer
+          if-no-files-found: error
+          retention-days: 90
