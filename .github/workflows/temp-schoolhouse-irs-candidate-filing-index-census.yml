@@ -1,0 +1,747 @@
+name: TEMP census School.House IRS candidate filing indexes
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-irs-candidate-filing-index-census.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: schoolhouse-irs-candidate-filing-index-census-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-irs-candidate-filing-index-census-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out exact acquisition head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify exact one-path carrier and sealed candidate denominator
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          WORKFLOW='.github/workflows/temp-schoolhouse-irs-candidate-filing-index-census.yml'
+          BASE="$(git rev-parse HEAD^)"
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$BASE" origin/main
+          test "$(git merge-base HEAD origin/main)" = "$BASE"
+          mapfile -t CHANGED < <(git diff --name-only "$BASE"..HEAD | sort)
+          test "${#CHANGED[@]}" -eq 1
+          test "${CHANGED[0]}" = "$WORKFLOW"
+          git diff --exit-code -- "$WORKFLOW"
+
+          declare -A BLOBS=(
+            ['data/intake/bvvc-defense-capital/schoolhouse-irs-candidates-eo-bmf.jsonl']='9601a38868a47c8188b960dfd2841725da1e332c'
+            ['data/intake/bvvc-defense-capital/schoolhouse-irs-candidates-publication-78.jsonl']='c27ea6549351bda5b47b43358d97b0a501d5b769'
+            ['data/intake/bvvc-defense-capital/schoolhouse-irs-candidates-form-990n.jsonl']='ad608c5bb5e9b466909707f09663366e68b8f208'
+            ['data/intake/bvvc-defense-capital/schoolhouse-irs-candidates-auto-revocation.jsonl']='0edf90bd039284cc081d4ee6b62b53af885ff54f'
+          )
+          for path in "${!BLOBS[@]}"; do
+            test "$(git rev-parse "$BASE:$path")" = "${BLOBS[$path]}"
+            test "$(git rev-parse "origin/main:$path")" = "${BLOBS[$path]}"
+          done
+
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          root = Path('data/intake/bvvc-defense-capital')
+          names = [
+              'schoolhouse-irs-candidates-eo-bmf.jsonl',
+              'schoolhouse-irs-candidates-publication-78.jsonl',
+              'schoolhouse-irs-candidates-form-990n.jsonl',
+              'schoolhouse-irs-candidates-auto-revocation.jsonl',
+          ]
+          rows = []
+          for name in names:
+              for line in (root / name).read_text().splitlines():
+                  if line.strip():
+                      row = json.loads(line)
+                      assert row['identity_state'] == 'registry_candidate_not_admitted'
+                      assert row['street_address_retained'] is False
+                      assert row['contact_details_retained'] is False
+                      assert row['graph_effect'] == 'none'
+                      assert row['promotes_to'] == 'candidate_only'
+                      rows.append(row)
+          eins = {str(row['ein']).zfill(9) for row in rows}
+          assert len(rows) == 641, len(rows)
+          assert len(eins) == 438, len(eins)
+          print(f'candidate_rows={len(rows)} unique_candidate_eins={len(eins)}')
+          PY
+
+      - name: Execute exact eight-index candidate intersection
+        id: acquisition
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          OUT="$RUNNER_TEMP/schoolhouse-irs-candidate-filing-index-census"
+          RUNNER="$RUNNER_TEMP/schoolhouse-irs-candidate-filing-index-census.py"
+          rm -rf "$OUT"
+          cat > "$RUNNER" <<'PY'
+          from __future__ import annotations
+
+          import argparse
+          import csv
+          import hashlib
+          import json
+          import os
+          import re
+          import shutil
+          import tempfile
+          import urllib.error
+          import urllib.request
+          from collections import defaultdict
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from typing import Any
+
+          SCHEMA = 'schoolhouse-irs-candidate-filing-index-census@1'
+          INDEX_YEARS = tuple(range(2019, 2027))
+          INDEX_URL = 'https://apps.irs.gov/pub/epostcard/990/xml/{year}/index_{year}.csv'
+          CANDIDATE_FILES = (
+              'schoolhouse-irs-candidates-eo-bmf.jsonl',
+              'schoolhouse-irs-candidates-publication-78.jsonl',
+              'schoolhouse-irs-candidates-form-990n.jsonl',
+              'schoolhouse-irs-candidates-auto-revocation.jsonl',
+          )
+          MAX_RESPONSE_BYTES = 1_500_000_000
+          CHUNK = 1024 * 1024
+          USER_AGENT = 'clifford-number-public-record-custody/1.0'
+          SAFE_FIELDS = {
+              'returnid': 'return_id',
+              'filingtype': 'filing_type',
+              'ein': 'ein',
+              'taxperiod': 'tax_period',
+              'subdate': 'submission_date',
+              'submissiondate': 'submission_date',
+              'taxpayername': 'taxpayer_name',
+              'returntype': 'return_type',
+              'dln': 'dln',
+              'objectid': 'object_id',
+              'url': 'official_archive_locator',
+              'archiveurl': 'official_archive_locator',
+              'batch': 'official_batch_name',
+              'batchname': 'official_batch_name',
+              'zipname': 'official_batch_name',
+          }
+          FORBIDDEN_KEYS = {
+              'address', 'street', 'mailing_address', 'postal_code', 'zip_code',
+              'email', 'phone', 'contact', 'preparer', 'raw_row', 'raw_index',
+              'raw_text', 'full_text', 'xml', 'private_support',
+          }
+
+          def utc_now() -> str:
+              return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
+
+          def canonical_json(value: Any) -> str:
+              return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+
+          def write_json(path: Path, value: Any) -> None:
+              path.write_text(json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + '\n')
+
+          def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+              with path.open('w', encoding='utf-8', newline='\n') as handle:
+                  for row in rows:
+                      handle.write(canonical_json(row) + '\n')
+
+          def sha256_file(path: Path) -> str:
+              digest = hashlib.sha256()
+              with path.open('rb') as handle:
+                  for chunk in iter(lambda: handle.read(CHUNK), b''):
+                      digest.update(chunk)
+              return digest.hexdigest()
+
+          def normalize_header(value: str | None) -> str:
+              return re.sub(r'[^a-z0-9]+', '', (value or '').strip().lower())
+
+          def digits(value: Any) -> str:
+              return re.sub(r'\D+', '', str(value or ''))
+
+          def normalize_ein(value: Any) -> str:
+              raw = digits(value)
+              return raw.zfill(9) if raw else ''
+
+          def clean_text(value: Any, limit: int = 300) -> str | None:
+              text = re.sub(r'\s+', ' ', str(value or '')).strip()
+              return text[:limit] if text else None
+
+          def load_candidates(repo_root: Path) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]]]:
+              base = repo_root / 'data/intake/bvvc-defense-capital'
+              rows: list[dict[str, Any]] = []
+              by_ein: dict[str, dict[str, Any]] = {}
+              for name in CANDIDATE_FILES:
+                  path = base / name
+                  for line in path.read_text(encoding='utf-8').splitlines():
+                      if not line.strip():
+                          continue
+                      row = json.loads(line)
+                      assert row['identity_state'] == 'registry_candidate_not_admitted'
+                      assert row['street_address_retained'] is False
+                      assert row['contact_details_retained'] is False
+                      assert row['graph_effect'] == 'none'
+                      assert row['promotes_to'] == 'candidate_only'
+                      ein = normalize_ein(row.get('ein'))
+                      assert len(ein) == 9
+                      rows.append(row)
+                      item = by_ein.setdefault(ein, {
+                          'ein': ein,
+                          'candidate_row_ids': [],
+                          'candidate_legal_names': set(),
+                          'candidate_states': set(),
+                          'candidate_datasets': set(),
+                      })
+                      item['candidate_row_ids'].append(row['candidate_row_id'])
+                      if row.get('legal_name_as_recorded'):
+                          item['candidate_legal_names'].add(row['legal_name_as_recorded'])
+                      if row.get('state'):
+                          item['candidate_states'].add(row['state'])
+                      if row.get('dataset'):
+                          item['candidate_datasets'].add(row['dataset'])
+              assert len(rows) == 641, len(rows)
+              assert len(by_ein) == 438, len(by_ein)
+              for item in by_ein.values():
+                  for key in ('candidate_row_ids', 'candidate_legal_names', 'candidate_states', 'candidate_datasets'):
+                      item[key] = sorted(item[key])
+              return rows, by_ein
+
+          def download_index(year: int, temp_path: Path) -> dict[str, Any]:
+              url = INDEX_URL.format(year=year)
+              started = utc_now()
+              receipt: dict[str, Any] = {
+                  'index_year': year,
+                  'source_url': url,
+                  'request_method': 'GET',
+                  'request_attempted': True,
+                  'started_at': started,
+                  'state': None,
+                  'http_status': None,
+                  'final_url': None,
+                  'content_type': None,
+                  'response_bytes': 0,
+                  'response_sha256': None,
+                  'index_rows_scanned': 0,
+                  'exact_candidate_filing_rows': 0,
+                  'raw_index_retained': False,
+                  'full_index_rows_retained': False,
+                  'street_address_rows_retained': 0,
+                  'contact_detail_rows_retained': 0,
+                  'preparer_rows_retained': 0,
+                  'private_support_rows': 0,
+                  'identity_admitted': False,
+                  'relationship_admitted': False,
+                  'negative_existence_claim_created': False,
+                  'outside_human_dependency': False,
+                  'publication_effect': 'none',
+                  'adoption_effect': 'none',
+                  'graph_effect': 'none',
+                  'promotes_to': 'candidate_only',
+              }
+              digest = hashlib.sha256()
+              try:
+                  request = urllib.request.Request(url, headers={
+                      'User-Agent': USER_AGENT,
+                      'Accept': 'text/csv,application/csv,text/plain;q=0.9,*/*;q=0.1',
+                  })
+                  with urllib.request.urlopen(request, timeout=180) as response, temp_path.open('wb') as out:
+                      receipt['http_status'] = int(response.getcode() or 0)
+                      receipt['final_url'] = response.geturl()
+                      receipt['content_type'] = response.headers.get_content_type()
+                      total = 0
+                      while True:
+                          chunk = response.read(CHUNK)
+                          if not chunk:
+                              break
+                          total += len(chunk)
+                          if total > MAX_RESPONSE_BYTES:
+                              raise RuntimeError('response_size_limit_exceeded')
+                          digest.update(chunk)
+                          out.write(chunk)
+                      receipt['response_bytes'] = total
+                      receipt['response_sha256'] = digest.hexdigest()
+                      receipt['state'] = 'downloaded_official_index'
+              except urllib.error.HTTPError as exc:
+                  receipt['http_status'] = int(exc.code)
+                  receipt['final_url'] = exc.geturl()
+                  receipt['state'] = 'official_index_http_error'
+                  receipt['error_class'] = type(exc).__name__
+              except urllib.error.URLError as exc:
+                  receipt['state'] = 'official_index_transport_error'
+                  receipt['error_class'] = type(exc.reason).__name__ if getattr(exc, 'reason', None) else type(exc).__name__
+              except Exception as exc:
+                  receipt['state'] = 'official_index_processing_error'
+                  receipt['error_class'] = type(exc).__name__
+                  receipt['error_code'] = clean_text(str(exc), 120)
+              receipt['completed_at'] = utc_now()
+              return receipt
+
+          def parse_index(path: Path, year: int, candidate_eins: set[str]) -> tuple[int, list[dict[str, Any]], list[str]]:
+              matches: list[dict[str, Any]] = []
+              warnings: list[str] = []
+              row_count = 0
+              with path.open('r', encoding='utf-8-sig', errors='replace', newline='') as handle:
+                  reader = csv.DictReader(handle)
+                  if not reader.fieldnames:
+                      raise RuntimeError('index_header_missing')
+                  header_map = {normalize_header(name): name for name in reader.fieldnames}
+                  ein_header = header_map.get('ein')
+                  object_header = header_map.get('objectid')
+                  if not ein_header:
+                      raise RuntimeError('index_ein_column_missing')
+                  if not object_header:
+                      warnings.append('index_object_id_column_missing')
+                  for source_ordinal, row in enumerate(reader, start=1):
+                      row_count += 1
+                      ein = normalize_ein(row.get(ein_header))
+                      if ein not in candidate_eins:
+                          continue
+                      retained: dict[str, Any] = {
+                          'filing_match_id': None,
+                          'index_year': year,
+                          'source_row_ordinal': source_ordinal,
+                          'ein': ein,
+                          'index_source_url': INDEX_URL.format(year=year),
+                          'index_row_is_archive_routing_evidence_only': True,
+                          'xml_fetched': False,
+                          'batch_zip_fetched': False,
+                          'successor_fetch_executed': False,
+                          'identity_admitted': False,
+                          'relationship_admitted': False,
+                          'negative_existence_claim_created': False,
+                          'outside_human_dependency': False,
+                          'publication_effect': 'none',
+                          'adoption_effect': 'none',
+                          'graph_effect': 'none',
+                          'promotes_to': 'candidate_only',
+                      }
+                      for normalized, output_key in SAFE_FIELDS.items():
+                          source_key = header_map.get(normalized)
+                          if not source_key:
+                              continue
+                          value = clean_text(row.get(source_key))
+                          if value is None:
+                              continue
+                          if output_key == 'ein':
+                              value = normalize_ein(value)
+                          elif output_key == 'object_id':
+                              value = digits(value)
+                          elif output_key == 'official_archive_locator':
+                              if not value.startswith('https://apps.irs.gov/'):
+                                  value = None
+                          if value is not None:
+                              retained[output_key] = value
+                      object_id = retained.get('object_id') or f'row-{source_ordinal}'
+                      retained['filing_match_id'] = f'irs-index-{year}:{ein}:{object_id}'
+                      matches.append(retained)
+              return row_count, matches, warnings
+
+          def assert_privacy(value: Any) -> None:
+              if isinstance(value, dict):
+                  lowered = {str(key).lower() for key in value}
+                  assert not (lowered & FORBIDDEN_KEYS), lowered & FORBIDDEN_KEYS
+                  for child in value.values():
+                      assert_privacy(child)
+              elif isinstance(value, list):
+                  for child in value:
+                      assert_privacy(child)
+
+          def main() -> int:
+              parser = argparse.ArgumentParser()
+              parser.add_argument('--repo-root', required=True)
+              parser.add_argument('--output', required=True)
+              args = parser.parse_args()
+              repo_root = Path(args.repo_root).resolve()
+              output = Path(args.output).resolve()
+              shutil.rmtree(output, ignore_errors=True)
+              output.mkdir(parents=True)
+
+              candidate_rows, candidate_by_ein = load_candidates(repo_root)
+              candidate_eins = set(candidate_by_ein)
+              candidate_file_receipts = []
+              for name in CANDIDATE_FILES:
+                  path = repo_root / 'data/intake/bvvc-defense-capital' / name
+                  candidate_file_receipts.append({
+                      'path': f'data/intake/bvvc-defense-capital/{name}',
+                      'bytes': path.stat().st_size,
+                      'sha256': sha256_file(path),
+                  })
+              denominator = {
+                  'schema_version': SCHEMA,
+                  'state': 'sealed_exact_schoolhouse_irs_candidate_ein_denominator',
+                  'candidate_files': candidate_file_receipts,
+                  'candidate_rows': len(candidate_rows),
+                  'unique_candidate_eins': len(candidate_eins),
+                  'candidate_ein_sha256': hashlib.sha256(('\n'.join(sorted(candidate_eins)) + '\n').encode()).hexdigest(),
+                  'street_address_rows_retained': 0,
+                  'contact_detail_rows_retained': 0,
+                  'private_support_rows': 0,
+                  'outside_human_dependency': False,
+                  'publication_effect': 'none',
+                  'adoption_effect': 'none',
+                  'graph_effect': 'none',
+              }
+              write_json(output / 'candidate-denominator.json', denominator)
+
+              attempts: list[dict[str, Any]] = []
+              matches: list[dict[str, Any]] = []
+              with tempfile.TemporaryDirectory(prefix='schoolhouse-irs-index-') as temp_dir:
+                  for year in INDEX_YEARS:
+                      temp_path = Path(temp_dir) / f'index_{year}.csv'
+                      receipt = download_index(year, temp_path)
+                      if receipt['state'] == 'downloaded_official_index':
+                          try:
+                              rows_scanned, year_matches, warnings = parse_index(temp_path, year, candidate_eins)
+                              receipt['index_rows_scanned'] = rows_scanned
+                              receipt['exact_candidate_filing_rows'] = len(year_matches)
+                              receipt['parse_warnings'] = warnings
+                              receipt['state'] = 'terminal_official_index_screened'
+                              matches.extend(year_matches)
+                          except Exception as exc:
+                              receipt['state'] = 'official_index_parse_error'
+                              receipt['error_class'] = type(exc).__name__
+                              receipt['error_code'] = clean_text(str(exc), 120)
+                          finally:
+                              temp_path.unlink(missing_ok=True)
+                      attempts.append(receipt)
+
+              dedup: dict[tuple[Any, ...], dict[str, Any]] = {}
+              for row in matches:
+                  key = (row['index_year'], row['ein'], row.get('object_id'), row.get('return_id'), row['source_row_ordinal'])
+                  dedup[key] = row
+              matches = sorted(dedup.values(), key=lambda row: (
+                  row['ein'], row['index_year'], row.get('object_id') or '', row['source_row_ordinal']))
+
+              matches_by_ein: dict[str, list[dict[str, Any]]] = defaultdict(list)
+              for row in matches:
+                  matches_by_ein[row['ein']].append(row)
+              unavailable_years = sorted(row['index_year'] for row in attempts if row['state'] != 'terminal_official_index_screened')
+              complete_denominator = not unavailable_years
+              candidate_summaries: list[dict[str, Any]] = []
+              for ein in sorted(candidate_eins):
+                  candidate = candidate_by_ein[ein]
+                  filings = matches_by_ein.get(ein, [])
+                  filing_years = sorted({row['index_year'] for row in filings})
+                  object_ids = sorted({row.get('object_id') for row in filings if row.get('object_id')})
+                  if filings:
+                      state = 'official_filing_index_rows_observed_candidate_not_identity_joined'
+                  elif complete_denominator:
+                      state = 'no_filing_index_row_on_complete_declared_2019_2026_indexes_not_absence_evidence'
+                  else:
+                      state = 'no_row_on_available_indexes_with_declared_index_source_unavailable_not_absence_evidence'
+                  candidate_summaries.append({
+                      **candidate,
+                      'filing_index_state': state,
+                      'filing_index_rows': len(filings),
+                      'filing_index_years': filing_years,
+                      'object_ids': object_ids,
+                      'unavailable_index_years': unavailable_years,
+                      'legal_identity_admitted': False,
+                      'fiscal_sponsor_relationship_admitted': False,
+                      'related_party_relationship_admitted': False,
+                      'funding_relationship_admitted': False,
+                      'governance_relationship_admitted': False,
+                      'negative_existence_claim_created': False,
+                      'outside_human_dependency': False,
+                      'publication_effect': 'none',
+                      'adoption_effect': 'none',
+                      'graph_effect': 'none',
+                      'promotes_to': 'candidate_only',
+                  })
+
+              write_jsonl(output / 'index-attempts.jsonl', attempts)
+              write_jsonl(output / 'filing-index-matches.jsonl', matches)
+              write_jsonl(output / 'candidate-ein-summary.jsonl', candidate_summaries)
+
+              summary = {
+                  'schema_version': SCHEMA,
+                  'state': 'terminal_exact_438_candidate_ein_official_filing_index_intersection',
+                  'completed_at': utc_now(),
+                  'declared_index_years': list(INDEX_YEARS),
+                  'official_index_requests': len(attempts),
+                  'terminal_index_rows': len(attempts),
+                  'available_index_years': sorted(row['index_year'] for row in attempts if row['state'] == 'terminal_official_index_screened'),
+                  'unavailable_index_years': unavailable_years,
+                  'complete_declared_index_denominator': complete_denominator,
+                  'candidate_rows': len(candidate_rows),
+                  'unique_candidate_eins': len(candidate_eins),
+                  'official_index_rows_scanned': sum(int(row.get('index_rows_scanned') or 0) for row in attempts),
+                  'exact_candidate_filing_rows': len(matches),
+                  'unique_candidate_eins_with_filing_rows': len(matches_by_ein),
+                  'unique_candidate_eins_without_rows_on_available_indexes': len(candidate_eins) - len(matches_by_ein),
+                  'terminal_no_match_candidate_eins_on_complete_denominator': (len(candidate_eins) - len(matches_by_ein)) if complete_denominator else 0,
+                  'source_unavailable_candidate_eins': (len(candidate_eins) - len(matches_by_ein)) if unavailable_years else 0,
+                  'unique_object_ids': len({row.get('object_id') for row in matches if row.get('object_id')}),
+                  'xml_fetches': 0,
+                  'batch_zip_fetches': 0,
+                  'successor_fetches': 0,
+                  'query_submissions': 0,
+                  'forms_submitted': 0,
+                  'cookie_replays': 0,
+                  'subscription_purchases': 0,
+                  'raw_index_retained': False,
+                  'full_index_rows_retained': False,
+                  'street_address_rows_retained': 0,
+                  'contact_detail_rows_retained': 0,
+                  'preparer_rows_retained': 0,
+                  'private_support_rows': 0,
+                  'identities_admitted': 0,
+                  'relationships_admitted': 0,
+                  'negative_existence_claims_created': 0,
+                  'outside_human_dependency': False,
+                  'publication_effect': 'none',
+                  'adoption_effect': 'none',
+                  'graph_effect': 'none',
+                  'promotes_to': 'candidate_only',
+              }
+              policy = {
+                  'schema_version': SCHEMA,
+                  'selection_contract': {
+                      'candidate_files': list(CANDIDATE_FILES),
+                      'candidate_rows': 641,
+                      'unique_candidate_eins': 438,
+                      'official_index_years': list(INDEX_YEARS),
+                      'exact_ein_intersection_only': True,
+                      'no_result_spawned_routes': True,
+                      'no_xml_or_batch_fetch': True,
+                  },
+                  'request_bounds': {
+                      'request_methods': ['GET'],
+                      'maximum_total_requests': 8,
+                      'maximum_parallel_workers': 1,
+                      'maximum_response_bytes_per_index': MAX_RESPONSE_BYTES,
+                      'interactive_search_submissions': 0,
+                      'forms_submitted': 0,
+                      'cookie_replays': 0,
+                      'subscription_purchases': 0,
+                  },
+                  'retention': {
+                      'raw_index_retained': False,
+                      'full_index_rows_retained': False,
+                      'exact_candidate_filing_rows_retained': True,
+                      'street_address_rows_retained': 0,
+                      'contact_detail_rows_retained': 0,
+                      'preparer_rows_retained': 0,
+                      'private_support_rows': 0,
+                  },
+                  'interpretation': {
+                      'index_row_is_archive_routing_evidence_only': True,
+                      'filing_row_does_not_identify_public_schoolhouse': True,
+                      'zero_rows_are_not_identity_or_record_absence_evidence': True,
+                      'provider_or_parse_errors_are_not_absence_evidence': True,
+                      'no_identity_or_relationship_may_be_admitted_by_this_acquisition': True,
+                  },
+                  'outside_human_dependency': False,
+                  'publication_effect': 'none',
+                  'adoption_effect': 'none',
+                  'graph_effect': 'none',
+              }
+              adjudication = {
+                  'schema_version': SCHEMA,
+                  'state': 'candidate_filing_routes_only_public_schoolhouse_identity_unresolved',
+                  'candidate_eins': 438,
+                  'candidate_eins_with_filing_rows': len(matches_by_ein),
+                  'filing_index_rows': len(matches),
+                  'public_schoolhouse_legal_identity_admitted': False,
+                  'fiscal_sponsor_relationship_admitted': False,
+                  'related_party_relationship_admitted': False,
+                  'funding_relationship_admitted': False,
+                  'governance_relationship_admitted': False,
+                  'negative_existence_claim_created': False,
+                  'outside_human_dependency': False,
+                  'publication_effect': 'none',
+                  'adoption_effect': 'none',
+                  'graph_effect': 'none',
+                  'promotes_to': 'candidate_only',
+                  'boundary': 'Exact official filing-index rows establish filing-route custody for pre-existing IRS phrase candidates only. They do not connect any filer to the public School.House brand, BVVC, a fiscal sponsor, funding, governance, ownership, control, or related-party relationship. Zero rows and unavailable indexes are not absence evidence.',
+              }
+              write_json(output / 'summary.json', summary)
+              write_json(output / 'route-policy.json', policy)
+              write_json(output / 'adjudication.json', adjudication)
+
+              for path in output.iterdir():
+                  if path.is_file():
+                      if path.suffix in {'.json', '.jsonl'}:
+                          if path.suffix == '.json':
+                              assert_privacy(json.loads(path.read_text()))
+                          else:
+                              for line in path.read_text().splitlines():
+                                  if line.strip():
+                                      assert_privacy(json.loads(line))
+              artifact_files = sorted(path for path in output.iterdir() if path.is_file())
+              manifest = {
+                  'schema_version': SCHEMA,
+                  'state': 'terminal_checksum_bound_artifact',
+                  'counts': {
+                      'candidate_rows': 641,
+                      'unique_candidate_eins': 438,
+                      'index_attempts': len(attempts),
+                      'candidate_ein_summaries': len(candidate_summaries),
+                      'filing_index_matches': len(matches),
+                  },
+                  'files': [
+                      {'path': path.name, 'bytes': path.stat().st_size, 'sha256': sha256_file(path)}
+                      for path in artifact_files
+                  ],
+                  'raw_source_retained': False,
+                  'outside_human_dependency': False,
+                  'publication_effect': 'none',
+                  'adoption_effect': 'none',
+                  'graph_effect': 'none',
+              }
+              write_json(output / 'artifact-manifest.json', manifest)
+              checksum_paths = sorted(path for path in output.iterdir() if path.is_file() and path.name != 'SHA256SUMS')
+              with (output / 'SHA256SUMS').open('w', encoding='utf-8', newline='\n') as handle:
+                  for path in checksum_paths:
+                      handle.write(f'{sha256_file(path)}  {path.name}\n')
+              print(json.dumps(summary, indent=2, sort_keys=True))
+              return 0
+
+          if __name__ == '__main__':
+              raise SystemExit(main())
+          PY
+
+          python -m py_compile "$RUNNER"
+          python "$RUNNER" --repo-root "$GITHUB_WORKSPACE" --output "$OUT" \
+            2>&1 | tee "$RUNNER_TEMP/schoolhouse-irs-candidate-filing-index-census.log"
+          status=${PIPESTATUS[0]}
+          mkdir -p "$OUT"
+          printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
+          cp "$RUNNER_TEMP/schoolhouse-irs-candidate-filing-index-census.log" "$OUT/RUNNER-OUTPUT.log"
+          exit "$status"
+
+      - name: Upload terminal filing-index artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-candidate-filing-index-census
+          path: ${{ runner.temp }}/schoolhouse-irs-candidate-filing-index-census
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require exact terminal custody and privacy boundary
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP/schoolhouse-irs-candidate-filing-index-census"
+          test "$(cat "$ROOT/RUNNER_EXIT_CODE")" = '0'
+          for file in \
+            candidate-denominator.json \
+            index-attempts.jsonl \
+            filing-index-matches.jsonl \
+            candidate-ein-summary.jsonl \
+            summary.json \
+            route-policy.json \
+            adjudication.json \
+            artifact-manifest.json \
+            SHA256SUMS; do
+            test -f "$ROOT/$file"
+          done
+          (cd "$ROOT" && sha256sum -c SHA256SUMS)
+
+          python - "$ROOT" <<'PY'
+          from pathlib import Path
+          import json, sys
+          root = Path(sys.argv[1])
+          load = lambda name: json.loads((root / name).read_text())
+          rows = lambda name: [json.loads(line) for line in (root / name).read_text().splitlines() if line.strip()]
+          summary = load('summary.json')
+          denominator = load('candidate-denominator.json')
+          policy = load('route-policy.json')
+          adjudication = load('adjudication.json')
+          manifest = load('artifact-manifest.json')
+          attempts = rows('index-attempts.jsonl')
+          matches = rows('filing-index-matches.jsonl')
+          candidates = rows('candidate-ein-summary.jsonl')
+
+          assert summary['schema_version'] == 'schoolhouse-irs-candidate-filing-index-census@1'
+          assert summary['declared_index_years'] == list(range(2019, 2027))
+          assert summary['official_index_requests'] == summary['terminal_index_rows'] == len(attempts) == 8
+          assert summary['candidate_rows'] == denominator['candidate_rows'] == 641
+          assert summary['unique_candidate_eins'] == denominator['unique_candidate_eins'] == len(candidates) == 438
+          assert summary['exact_candidate_filing_rows'] == len(matches)
+          assert summary['unique_candidate_eins_with_filing_rows'] == len({row['ein'] for row in matches})
+          assert summary['xml_fetches'] == summary['batch_zip_fetches'] == summary['successor_fetches'] == 0
+          assert summary['query_submissions'] == summary['forms_submitted'] == 0
+          assert summary['cookie_replays'] == summary['subscription_purchases'] == 0
+          assert summary['raw_index_retained'] is False and summary['full_index_rows_retained'] is False
+          for key in ['street_address_rows_retained','contact_detail_rows_retained','preparer_rows_retained','private_support_rows','identities_admitted','relationships_admitted','negative_existence_claims_created']:
+              assert summary[key] == 0
+          assert summary['outside_human_dependency'] is False
+          assert summary['publication_effect'] == summary['adoption_effect'] == summary['graph_effect'] == 'none'
+
+          assert policy['selection_contract']['exact_ein_intersection_only'] is True
+          assert policy['selection_contract']['no_xml_or_batch_fetch'] is True
+          assert policy['request_bounds']['maximum_total_requests'] == 8
+          assert policy['interpretation']['zero_rows_are_not_identity_or_record_absence_evidence'] is True
+          assert adjudication['public_schoolhouse_legal_identity_admitted'] is False
+          assert adjudication['fiscal_sponsor_relationship_admitted'] is False
+          assert adjudication['related_party_relationship_admitted'] is False
+          assert manifest['counts']['candidate_rows'] == 641
+          assert manifest['counts']['unique_candidate_eins'] == 438
+          assert manifest['counts']['index_attempts'] == 8
+          assert manifest['counts']['candidate_ein_summaries'] == 438
+          assert manifest['counts']['filing_index_matches'] == len(matches)
+
+          assert [row['index_year'] for row in attempts] == list(range(2019, 2027))
+          assert len({row['ein'] for row in candidates}) == 438
+          for row in attempts:
+              assert row['request_method'] == 'GET'
+              assert row['raw_index_retained'] is False
+              assert row['identity_admitted'] is False and row['relationship_admitted'] is False
+              assert row['outside_human_dependency'] is False
+          for row in matches:
+              assert row['ein'] in {candidate['ein'] for candidate in candidates}
+              assert row['xml_fetched'] is False and row['batch_zip_fetched'] is False
+              assert row['successor_fetch_executed'] is False
+              assert row['identity_admitted'] is False and row['relationship_admitted'] is False
+          for row in candidates:
+              assert row['legal_identity_admitted'] is False
+              assert row['fiscal_sponsor_relationship_admitted'] is False
+              assert row['related_party_relationship_admitted'] is False
+              assert row['negative_existence_claim_created'] is False
+              assert row['outside_human_dependency'] is False
+
+          forbidden = {'address','street','mailing_address','postal_code','zip_code','email','phone','contact','preparer','raw_row','raw_index','raw_text','full_text','xml'}
+          for path in root.glob('*.json*'):
+              if path.name == 'SHA256SUMS':
+                  continue
+              objects = [json.loads(line) for line in path.read_text().splitlines() if line.strip()] if path.suffix == '.jsonl' else [json.loads(path.read_text())]
+              stack = list(objects)
+              while stack:
+                  value = stack.pop()
+                  if isinstance(value, dict):
+                      assert not (forbidden & {str(k).lower() for k in value})
+                      stack.extend(value.values())
+                  elif isinstance(value, list):
+                      stack.extend(value)
+          assert not any(path.suffix.lower() in {'.csv','.zip','.xml'} for path in root.rglob('*') if path.is_file())
+          print(json.dumps({
+              'index_years': 8,
+              'available_index_years': len(summary['available_index_years']),
+              'rows_scanned': summary['official_index_rows_scanned'],
+              'candidate_eins': 438,
+              'matched_candidate_eins': summary['unique_candidate_eins_with_filing_rows'],
+              'filing_rows': len(matches),
+          }, sort_keys=True))
+          PY
