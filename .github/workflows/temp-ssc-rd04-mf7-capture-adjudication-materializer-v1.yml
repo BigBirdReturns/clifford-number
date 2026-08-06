@@ -1,0 +1,300 @@
+name: TEMP materialize RD-04 seven-state capture adjudication
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ssc-rd04-mf7-capture-adjudication-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      ARCHIVE_BLOB_SHA: f9ffb2019978734d2b0dfa9db52801af8b81b16a
+      ARCHIVE_BYTES: '53324'
+      ARCHIVE_SHA256: 15992bfb5dd08b14834e7ce516ee6e2a304285538bc93c543e94d778e0c80a40
+      TARGET_BRANCH: agent/ssc-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication-v1
+      EXPECTED_MAIN_ANCESTOR: e3cf2a53d5209557183a340752df83d38ab83994
+      DATA_DIR: data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication
+      BUILDER: tools/build-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.mjs
+      VALIDATOR: tools/validate-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.mjs
+      TEST: test/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.test.js
+      SCHEMA: schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.schema.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+      - name: Reconstruct, qualify, and lease-publish exact adjudication product
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -Eeuo pipefail
+          RECEIPT=/tmp/rd04-mf7-capture-adjudication-materialization
+          PACKAGE=/tmp/rd04-mf7-capture-adjudication-package
+          WORKTREE=/tmp/rd04-mf7-capture-adjudication-worktree
+          rm -rf "$RECEIPT" "$PACKAGE" "$WORKTREE"
+          mkdir -p "$RECEIPT" "$PACKAGE"
+
+          git fetch --no-tags origin main
+          MAIN_START=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$EXPECTED_MAIN_ANCESTOR" "$MAIN_START"
+          printf '%s\n' "$MAIN_START" > "$RECEIPT/main-start.txt"
+
+          TARGET_START=''
+          if git ls-remote --exit-code --heads origin "$TARGET_BRANCH" > /tmp/rd04-target-start.txt 2>/dev/null; then
+            TARGET_START=$(awk '{print $1}' /tmp/rd04-target-start.txt)
+          fi
+          printf '%s\n' "$TARGET_START" > "$RECEIPT/target-start.txt"
+
+          python - <<'PY'
+          import base64, hashlib, io, json, os, tarfile, urllib.request
+          from pathlib import Path, PurePosixPath
+
+          sha=os.environ['ARCHIVE_BLOB_SHA']
+          repo=os.environ['GH_REPOSITORY']
+          token=os.environ['GH_TOKEN']
+          receipt=Path('/tmp/rd04-mf7-capture-adjudication-materialization')
+          package=Path('/tmp/rd04-mf7-capture-adjudication-package')
+          expected_paths=[
+            '.github/workflows/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.yml',
+            'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication/authored-adjudication-decisions.json',
+            'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication/capture-custody.json',
+            'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication/capture-manifest.json',
+            'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication/capture-route-results.json',
+            'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication/index.json',
+            'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication/pdf-visual-review-receipt.json',
+            'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication/product-manifest.json',
+            'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication/promoted-partial-field-matrix.json',
+            'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication/remaining-open-field-census.json',
+            'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication/route-adjudications.jsonl',
+            'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication/summary.json',
+            'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication/terminal-target-cell-ledger.json',
+            'docs/milestones/ssc-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.md',
+            'schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.schema.json',
+            'test/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.test.js',
+            'tools/build-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.mjs',
+            'tools/validate-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.mjs',
+          ]
+          executable={
+            'test/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.test.js',
+            'tools/build-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.mjs',
+            'tools/validate-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.mjs',
+          }
+
+          request=urllib.request.Request(
+            f'https://api.github.com/repos/{repo}/git/blobs/{sha}',
+            headers={
+              'Authorization':f'Bearer {token}',
+              'Accept':'application/vnd.github+json',
+              'X-GitHub-Api-Version':'2022-11-28',
+              'User-Agent':'ssc-rd04-mf7-capture-adjudication-materializer',
+            },
+          )
+          with urllib.request.urlopen(request,timeout=120) as response:
+            payload=json.load(response)
+          if payload.get('encoding')!='base64':
+            raise SystemExit(f'unexpected blob encoding: {payload.get("encoding")}')
+          raw=base64.b64decode(''.join(payload['content'].split()),validate=True)
+          identity=hashlib.sha1(f'blob {len(raw)}\0'.encode()+raw).hexdigest()
+          if identity!=sha or payload.get('size')!=len(raw):
+            raise SystemExit('Git object identity or size mismatch')
+          if len(raw)!=int(os.environ['ARCHIVE_BYTES']) or hashlib.sha256(raw).hexdigest()!=os.environ['ARCHIVE_SHA256']:
+            raise SystemExit('archive byte or SHA-256 mismatch')
+          archive=receipt/'product.tar.xz'
+          archive.write_bytes(raw)
+
+          observed={}
+          with tarfile.open(fileobj=io.BytesIO(raw),mode='r:xz') as tf:
+            for member in tf.getmembers():
+              p=PurePosixPath(member.name)
+              if p.is_absolute() or '..' in p.parts or member.issym() or member.islnk():
+                raise SystemExit(f'unsafe archive member: {member.name}')
+              if member.isfile():
+                rel=member.name[2:] if member.name.startswith('./') else member.name
+                observed[rel]=member.mode & 0o777
+            if set(observed)!=set(expected_paths):
+              raise SystemExit(f'archive path drift: {sorted(observed)}')
+            for rel,mode in observed.items():
+              expected_mode=0o755 if rel in executable else 0o644
+              if mode!=expected_mode:
+                raise SystemExit(f'archive mode drift: {rel} {oct(mode)}')
+            tf.extractall(package,filter='data')
+
+          manifest=[]
+          for rel in expected_paths:
+            p=package/rel
+            b=p.read_bytes()
+            manifest.append({'path':rel,'mode':oct(observed[rel]),'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest()})
+          manifest.sort(key=lambda row:row['path'])
+          combined=hashlib.sha256('\n'.join(f"{r['path']}\0{r['mode']}\0{r['bytes']}\0{r['sha256']}" for r in manifest).encode()).hexdigest()
+          (receipt/'archive-receipt.json').write_text(json.dumps({
+            'archive_blob_sha':sha,'archive_bytes':len(raw),'archive_sha256':hashlib.sha256(raw).hexdigest(),
+            'file_count':len(manifest),'manifest_combined_sha256':combined,'files':manifest,
+          },indent=2)+'\n')
+          (receipt/'permanent-paths.txt').write_text('\n'.join(row['path'] for row in manifest)+'\n')
+          PY
+
+          qualify_once() {
+            local BASE_SHA=$1
+            rm -rf "$WORKTREE"
+            git worktree add --detach "$WORKTREE" "$BASE_SHA"
+            cp -a "$PACKAGE"/. "$WORKTREE"/
+            cd "$WORKTREE"
+
+            mapfile -t STATUS < <(git status --porcelain=v1 --untracked-files=all)
+            test "${#STATUS[@]}" -eq 18
+            for row in "${STATUS[@]}"; do test "${row:0:2}" = '??'; done
+            mapfile -t PATHS < <(printf '%s\n' "${STATUS[@]}" | sed 's/^?? //' | sort)
+            diff -u "$RECEIPT/permanent-paths.txt" <(printf '%s\n' "${PATHS[@]}")
+            ! grep -E '(^|/)(\.transport|carrier|materializer|trigger|archive|chunk|shard)(/|$)' "$RECEIPT/permanent-paths.txt"
+
+            git add -- "${PATHS[@]}"
+            git -c user.name='BigBirdReturns' -c user.email='219768509+BigBirdReturns@users.noreply.github.com' commit -m 'Adjudicate RD-04 seven-state minimum frontier'
+            PRODUCT_HEAD=$(git rev-parse HEAD)
+            PRODUCT_TREE=$(git rev-parse 'HEAD^{tree}')
+            test "$(git rev-list --count "$BASE_SHA..$PRODUCT_HEAD")" -eq 1
+            test "$(git diff --name-only "$BASE_SHA" "$PRODUCT_HEAD" | wc -l)" -eq 18
+            test -z "$(git diff --name-only --diff-filter=MD "$BASE_SHA" "$PRODUCT_HEAD")"
+
+            node --check "$BUILDER"
+            node --check "$VALIDATOR"
+            node --check "$TEST"
+            node "$BUILDER" --check
+            node "$VALIDATOR"
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          import jsonschema
+          data=Path('data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication')
+          schema=json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.schema.json').read_text())
+          paths=sorted(data.glob('*.json'))
+          if len(paths)!=11:
+            raise SystemExit(f'JSON object denominator drift: {len(paths)}')
+          validator=jsonschema.Draft202012Validator(schema)
+          for path in paths:
+            validator.validate(json.loads(path.read_text()))
+          print('closed_schema_validation=pass objects=11')
+          PY
+            node "$TEST" | tee "$RECEIPT/adversarial.txt"
+            grep -qx 'adversarial_mutations_refused=663' "$RECEIPT/adversarial.txt"
+            node tools/validate-no-magic-human-gate.mjs
+            npm run release:check
+
+            git restore --staged --worktree .
+            git clean -fdx
+            node "$BUILDER" --write
+            node "$BUILDER" --check
+            node "$VALIDATOR"
+            node "$TEST"
+            node tools/validate-no-magic-human-gate.mjs
+            git diff --check
+            git diff --exit-code
+            test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+            printf '%s\n' "$BASE_SHA" > "$RECEIPT/qualified-base.txt"
+            printf '%s\n' "$PRODUCT_HEAD" > "$RECEIPT/product-head.txt"
+            printf '%s\n' "$PRODUCT_TREE" > "$RECEIPT/product-tree.txt"
+            cd "$GITHUB_WORKSPACE"
+            git worktree remove --force "$WORKTREE"
+          }
+
+          qualify_once "$MAIN_START"
+          git fetch --no-tags origin main
+          MAIN_NOW=$(git rev-parse origin/main)
+          if test "$MAIN_NOW" != "$MAIN_START"; then
+            mapfile -t PRODUCT_PATHS < "$RECEIPT/permanent-paths.txt"
+            mapfile -t MAIN_DELTA < <(git diff --name-only "$MAIN_START" "$MAIN_NOW")
+            python - "$RECEIPT/permanent-paths.txt" < <(printf '%s\n' "${MAIN_DELTA[@]}") <<'PY'
+          import sys
+          from pathlib import Path
+          product=set(Path(sys.argv[1]).read_text().splitlines())
+          delta=set(line.strip() for line in sys.stdin if line.strip())
+          overlap=sorted(product & delta)
+          if overlap:
+            raise SystemExit(f'live-main overlap: {overlap}')
+          print(f'live_main_rebind_disjoint_paths={len(delta)}')
+          PY
+            qualify_once "$MAIN_NOW"
+          fi
+
+          FINAL_BASE=$(cat "$RECEIPT/qualified-base.txt")
+          FINAL_HEAD=$(cat "$RECEIPT/product-head.txt")
+          FINAL_TREE=$(cat "$RECEIPT/product-tree.txt")
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$FINAL_BASE"
+
+          CURRENT_TARGET=''
+          if git ls-remote --exit-code --heads origin "$TARGET_BRANCH" > /tmp/rd04-target-now.txt 2>/dev/null; then
+            CURRENT_TARGET=$(awk '{print $1}' /tmp/rd04-target-now.txt)
+          fi
+          test "$CURRENT_TARGET" = "$TARGET_START"
+          if test -n "$TARGET_START"; then
+            git push --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_START" origin "$FINAL_HEAD:refs/heads/$TARGET_BRANCH"
+          else
+            git push origin "$FINAL_HEAD:refs/heads/$TARGET_BRANCH"
+          fi
+          test "$(git ls-remote origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$FINAL_HEAD"
+
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          r=Path('/tmp/rd04-mf7-capture-adjudication-materialization')
+          receipt={
+            'schema_version':'ssc-rd04-mf7-capture-adjudication-materialization@1',
+            'canonical_base':(r/'qualified-base.txt').read_text().strip(),
+            'product_head':(r/'product-head.txt').read_text().strip(),
+            'product_tree':(r/'product-tree.txt').read_text().strip(),
+            'target_branch':os.environ['TARGET_BRANCH'],
+            'permanent_paths':(r/'permanent-paths.txt').read_text().splitlines(),
+            'archive':json.loads((r/'archive-receipt.json').read_text()),
+            'fixed_routes':30,'terminal_route_adjudications':30,'source_admissions':22,
+            'target_cells':21,'observed_field_decisions':14,'not_publicly_recovered_field_decisions':7,
+            'terminal_cells_before':190,'terminal_cells_after':211,
+            'still_open_substantive_cells_after':192,
+            'target_rows_ready_for_separate_row_state_adjudication':7,
+            'terminal_units_after':3,'class_closed':False,'cumulative_ledger_effect':'none',
+            'outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none',
+            'adversarial_mutations_refused':663,'status':'published_for_hosted_exact_head_qualification',
+          }
+          (r/'publication-receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          PY
+
+          OWNER=${GH_REPOSITORY%%/*}
+          EXISTING=$(gh api "repos/$GH_REPOSITORY/pulls?state=open&head=$OWNER:$TARGET_BRANCH" --jq '.[0].number // empty')
+          if test -z "$EXISTING"; then
+            BODY=$(cat <<EOF
+          Tracks RD-04 Issue #1017 under Wave-03 Issue #1013.
+
+          Publishes the exact eighteen-path seven-state capture-adjudication product. It terminally adjudicates all thirty route receipts, admits twenty-two exact captured sources, terminalizes twenty-one predecessor-open substantive cells as fourteen observed and seven not publicly recovered, and advances the detailed matrix from 190/450 to 211/450 terminal while leaving 192 substantive fields open.
+
+          The seven derivative row-state cells remain open for a separate deterministic transaction. RD-04-C02 remains open. No cumulative-ledger, outside-human, publication, adoption, graph, prevalence, discrimination, racial-order, coordination, common-purpose, or complete-compact effect is created.
+          EOF
+          )
+            gh api --method POST "repos/$GH_REPOSITORY/pulls" -f title='SSC RD Wave 03: adjudicate seven-state minimum frontier' -f head="$TARGET_BRANCH" -f base=main -F draft=true -f body="$BODY" --jq '.number' > "$RECEIPT/permanent-pr.txt"
+          else
+            printf '%s\n' "$EXISTING" > "$RECEIPT/permanent-pr.txt"
+          fi
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mf7-capture-adjudication-materialization
+          path: /tmp/rd04-mf7-capture-adjudication-materialization
+          if-no-files-found: error
+          retention-days: 90
