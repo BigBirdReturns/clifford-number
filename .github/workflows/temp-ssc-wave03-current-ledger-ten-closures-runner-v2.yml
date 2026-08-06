@@ -1,0 +1,90 @@
+name: TEMP run registered Wave-03 ten-closure materializer
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-wave03-current-ledger-ten-closures-runner-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: ssc-wave03-current-ledger-ten-closures-runner-v2
+  cancel-in-progress: false
+
+env:
+  CANONICAL_PARENT: b6d69b5502e4429e3769591b5ebd88555aad62be
+  PRODUCT_BRANCH: agent/ssc-wave03-current-ledger-ten-closures-product-v1
+  PRODUCT_LEASE: b6d69b5502e4429e3769591b5ebd88555aad62be
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-wave03-current-ledger-ten-closures-materializer-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Extract and execute the exact embedded materializer
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE='.github/workflows/temp-ssc-wave03-current-ledger-ten-closures-materializer-v1.yml'
+          PROGRAM="$RUNNER_TEMP/ssc-wave03-ten-closures-materializer.sh"
+          python - "$SOURCE" "$PROGRAM" <<'PY'
+          from pathlib import Path
+          import sys
+
+          source = Path(sys.argv[1]).read_text().splitlines()
+          target = Path(sys.argv[2])
+          marker = '      - name: Derive, qualify, and publish exact cumulative product'
+          try:
+              start = source.index(marker)
+          except ValueError:
+              raise SystemExit('materializer step marker missing')
+          run_index = None
+          for index in range(start + 1, len(source)):
+              if source[index] == '        run: |':
+                  run_index = index
+                  break
+          if run_index is None:
+              raise SystemExit('materializer run block missing')
+          body = []
+          for line in source[run_index + 1:]:
+              if line.startswith('      - name:'):
+                  break
+              if line and not line.startswith('          '):
+                  raise SystemExit(f'unexpected materializer indentation: {line!r}')
+              body.append(line[10:] if line else '')
+          if not body or body[0] != 'set -Eeuo pipefail':
+              raise SystemExit('materializer body boundary changed')
+          target.write_text('\n'.join(body) + '\n')
+          print(f'extracted {len(body)} exact materializer lines')
+          PY
+          bash -n "$PROGRAM"
+          bash "$PROGRAM"
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave03-current-ledger-ten-closures-runner-v2
+          path: ${{ runner.temp }}/ssc-wave03-ten-closures/receipt
+          if-no-files-found: error
+          retention-days: 90
