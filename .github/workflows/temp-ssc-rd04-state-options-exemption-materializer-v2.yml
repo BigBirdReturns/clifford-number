@@ -1,204 +1,241 @@
-name: TEMP materialize normalized RD-04 State Options exemption promotion v2
+name: TEMP recover exact RD-04 State Options carrier from Git history
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
       - '.github/workflows/temp-ssc-rd04-state-options-exemption-materializer-v2.yml'
-      - '.transport/ssc-rd04-state-options-exemption-v2/shards/**'
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: temp-ssc-rd04-state-options-exemption-materializer-v2-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  group: temp-ssc-rd04-state-options-exemption-recovery-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: false
 
 jobs:
-  materialize:
+  recover:
     if: >-
-      github.event.pull_request.base.ref == 'main' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.head.ref == 'agent/ssc-rd04-state-options-exemption-materializer-v2'
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.base.ref == 'main' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd04-state-options-exemption-materializer-v2')
     runs-on: ubuntu-24.04
-    timeout-minutes: 240
-    env:
-      CARRIER_ROOT: .transport/ssc-rd04-state-options-exemption-v2/shards
-      PRODUCT_BRANCH: agent/ssc-rd04-state-options-exemption-promotion-v1
-      PRODUCT_LEASE: cf62a80b8628525b1eefc0ffcfae14696cbec700
-      CANONICAL_BASE: cf62a80b8628525b1eefc0ffcfae14696cbec700
-      PERMANENT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.yml
-      BASE64_BYTES: '36208'
-      BASE64_SHA256: 9b4a213e8c9e2ced70004d018e921d1c84e5b6a37aee682c59ef28c5a86897af
-      ARCHIVE_BYTES: '27156'
-      ARCHIVE_SHA256: a9e658679a0f89ffca0be00f3c9674b5312e2bbc0b4528f586f0c5dc3c955c01
-      PATHS_SHA256: 8717e0baadd372702e28bf63d165e4737625c3a92f46945e6ba2ebd929450192
+    timeout-minutes: 90
     steps:
-      - name: Check out exact pull-request head
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
-          persist-credentials: true
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-      - name: Install pinned JSON Schema validator
-        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
-      - name: Reconstruct, qualify, and publish normalized product
+          fetch-tags: true
+          persist-credentials: false
+      - name: Scan every reachable path value and Git blob
         shell: bash
         run: |
           set -Eeuo pipefail
-          export GIT_AUTHOR_NAME='github-actions[bot]'
-          export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
-          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
-          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+          OUT="$RUNNER_TEMP/ssc-rd04-state-options-exemption-recovery-v1"
+          rm -rf "$OUT"
+          mkdir -p "$OUT/recovered-shards" "$OUT/package"
+          git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*'
 
-          WORK="$RUNNER_TEMP/ssc-rd04-state-options-exemption-materializer-v2"
-          PACKAGE="$WORK/package"
-          RECEIPT="$WORK/receipt"
-          rm -rf "$WORK"
-          mkdir -p "$PACKAGE" "$RECEIPT"
-          exec > >(tee "$RECEIPT/execution.log") 2>&1
-          STAGE=init
-          finish() {
-            rc=$?
-            printf 'status=%s\nstage=%s\nexit_code=%s\nutc=%s\n' \
-              "$([[ $rc -eq 0 ]] && echo complete || echo failed_closed)" \
-              "$STAGE" "$rc" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$RECEIPT/checkpoint.txt"
-            exit "$rc"
-          }
-          trap finish EXIT
+          python - "$OUT" <<'PY'
+          from __future__ import annotations
 
-          STAGE=verify-carrier
-          cat > "$RECEIPT/shards.sha256" <<'EOF'
-          f35f055a4c8b7a7eac924082464f07a136aaf429e3e397467cc4e07e0e837070  000.b64
-          10129330df19d0caca261dee198646fcaaa1900a3c6bcd017a23bf115bcfc8e2  001.b64
-          3e0a18447253cfa0e910f7fd24925aa680f74f297f747b42133bead09cf5037d  002.b64
-          EOF
-          sed -i 's/^          //' "$RECEIPT/shards.sha256"
-          test "$(find "$CARRIER_ROOT" -maxdepth 1 -type f -name '*.b64' | wc -l | tr -d ' ')" = 3
-          (cd "$CARRIER_ROOT" && sha256sum -c "$RECEIPT/shards.sha256")
-          cat "$CARRIER_ROOT"/000.b64 "$CARRIER_ROOT"/001.b64 "$CARRIER_ROOT"/002.b64 > "$WORK/product.b64"
-          test "$(stat -c '%s' "$WORK/product.b64")" = "$BASE64_BYTES"
-          test "$(sha256sum "$WORK/product.b64" | awk '{print $1}')" = "$BASE64_SHA256"
-          base64 -d "$WORK/product.b64" > "$WORK/product.tar.xz"
-          test "$(stat -c '%s' "$WORK/product.tar.xz")" = "$ARCHIVE_BYTES"
-          test "$(sha256sum "$WORK/product.tar.xz" | awk '{print $1}')" = "$ARCHIVE_SHA256"
-          tar -xJf "$WORK/product.tar.xz" -C "$PACKAGE"
-
-          cat > "$RECEIPT/expected-paths.txt" <<'EOF'
-          .github/workflows/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.yml
-          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/product-manifest.json
-          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/promoted-partial-field-matrix.json
-          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/promotion-summary.json
-          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/remaining-open-field-census.json
-          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/source-custody.json
-          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/source-page-11.txt
-          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/state-field-register.jsonl
-          docs/milestones/ssc-rd-wave03-rd04-state-options-exemption-promotion.md
-          schemas/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.schema.json
-          test/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.test.js
-          tools/build-status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.mjs
-          tools/validate-status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.mjs
-          EOF
-          sed -i 's/^          //' "$RECEIPT/expected-paths.txt"
-          test "$(wc -l < "$RECEIPT/expected-paths.txt" | tr -d ' ')" = 13
-          test "$(sha256sum "$RECEIPT/expected-paths.txt" | awk '{print $1}')" = "$PATHS_SHA256"
-          find "$PACKAGE" -type f -printf '%P\n' | sort > "$RECEIPT/archive-paths.txt"
-          sort "$RECEIPT/expected-paths.txt" > "$RECEIPT/expected-paths-sorted.txt"
-          cmp "$RECEIPT/expected-paths-sorted.txt" "$RECEIPT/archive-paths.txt"
-          test "$(find "$PACKAGE" -type l | wc -l | tr -d ' ')" = 0
-
-          STAGE=bind-leases
-          git fetch --no-tags origin main "$PRODUCT_BRANCH"
-          test "$(git rev-parse origin/main)" = "$CANONICAL_BASE"
-          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PRODUCT_LEASE"
-          printf 'canonical_base=%s\nproduct_branch=%s\nproduct_lease=%s\n' \
-            "$CANONICAL_BASE" "$PRODUCT_BRANCH" "$PRODUCT_LEASE" > "$RECEIPT/leases.txt"
-
-          STAGE=compose
-          git checkout --detach "$CANONICAL_BASE"
-          while IFS= read -r rel; do test ! -e "$rel"; done < "$RECEIPT/expected-paths.txt"
-          cp -a "$PACKAGE"/. .
-          xargs -d '\n' git add -- < "$RECEIPT/expected-paths.txt"
-          git diff --cached --name-status > "$RECEIPT/full-name-status.txt"
-          test "$(wc -l < "$RECEIPT/full-name-status.txt" | tr -d ' ')" = 13
-          test "$(awk '$1 != "A" {n++} END {print n+0}' "$RECEIPT/full-name-status.txt")" = 0
-
-          run_focused() {
-            node --check tools/build-status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.mjs
-            node --check tools/validate-status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.mjs
-            node --check test/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.test.js
-            node tools/build-status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.mjs --check
-            node tools/validate-status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.mjs
-            python - <<'PY'
+          import base64
+          import hashlib
+          import io
           import json
-          from pathlib import Path
-          import jsonschema
+          import pathlib
+          import re
+          import subprocess
+          import sys
+          import tarfile
 
-          root = Path('.')
-          schema = json.loads((root / 'schemas/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.schema.json').read_text())
-          data = root / 'data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion'
-          for name in [
-              'source-custody.json',
-              'promoted-partial-field-matrix.json',
-              'remaining-open-field-census.json',
-              'promotion-summary.json',
-              'product-manifest.json',
-          ]:
-              jsonschema.Draft202012Validator(schema).validate(json.loads((data / name).read_text()))
-          print('closed_schema_validation=pass')
-          PY
-            node test/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.test.js
-            node tools/validate-no-magic-human-gate.mjs
+          out = pathlib.Path(sys.argv[1])
+          shard_dir = out / 'recovered-shards'
+          package_dir = out / 'package'
+          root = '.transport/ssc-rd04-state-options-exemption-v2/shards'
+          expected = {
+              '000.b64': 'f35f055a4c8b7a7eac924082464f07a136aaf429e3e397467cc4e07e0e837070',
+              '001.b64': '10129330df19d0caca261dee198646fcaaa1900a3c6bcd017a23bf115bcfc8e2',
+              '002.b64': '3e0a18447253cfa0e910f7fd24925aa680f74f297f747b42133bead09cf5037d',
+          }
+          expected_paths = [
+              '.github/workflows/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.yml',
+              'data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/product-manifest.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/promoted-partial-field-matrix.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/promotion-summary.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/remaining-open-field-census.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/source-custody.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/source-page-11.txt',
+              'data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/state-field-register.jsonl',
+              'docs/milestones/ssc-rd-wave03-rd04-state-options-exemption-promotion.md',
+              'schemas/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.schema.json',
+              'test/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.test.js',
+              'tools/build-status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.mjs',
+              'tools/validate-status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.mjs',
+          ]
+
+          def run(*args: str, check: bool = True) -> bytes:
+              proc = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+              if check and proc.returncode:
+                  raise RuntimeError(f'{args!r}: {proc.stderr.decode(errors="replace")}')
+              return proc.stdout
+
+          def normalized(data: bytes) -> bytes:
+              return data.rstrip(b'\r\n')
+
+          def digest(data: bytes) -> str:
+              return hashlib.sha256(normalized(data)).hexdigest()
+
+          current_sizes = {}
+          for name in expected:
+              data = pathlib.Path(root, name).read_bytes()
+              current_sizes[name] = {
+                  'stored_bytes': len(data),
+                  'normalized_bytes': len(normalized(data)),
+                  'stored_sha256': hashlib.sha256(data).hexdigest(),
+                  'normalized_sha256': digest(data),
+              }
+
+          matches = {name: [] for name in expected}
+          seen = set()
+
+          # First scan every historical value at the declared shard paths.
+          for name in expected:
+              rel = f'{root}/{name}'
+              commits = run('git', 'log', '--all', '--format=%H', '--', rel).decode().splitlines()
+              for commit in commits:
+                  spec = f'{commit}:{rel}'
+                  exists = subprocess.run(['git', 'cat-file', '-e', spec], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                  if exists.returncode:
+                      continue
+                  blob = run('git', 'rev-parse', spec).decode().strip()
+                  data = run('git', 'cat-file', 'blob', blob)
+                  seen.add(blob)
+                  got = digest(data)
+                  for expected_name, expected_sha in expected.items():
+                      if got == expected_sha:
+                          matches[expected_name].append({
+                              'source': 'path_history',
+                              'commit': commit,
+                              'path': rel,
+                              'blob': blob,
+                              'stored_bytes': len(data),
+                              'terminal_framing_bytes': len(data) - len(normalized(data)),
+                          })
+
+          # Then scan all reachable blobs near the three current carrier sizes.
+          allowed_sizes = {
+              row['normalized_bytes'] + delta
+              for row in current_sizes.values()
+              for delta in range(-4, 5)
+              if row['normalized_bytes'] + delta > 0
+          }
+          rows = run(
+              'git', 'cat-file', '--batch-all-objects',
+              '--batch-check=%(objectname) %(objecttype) %(objectsize)'
+          ).decode().splitlines()
+          scanned_candidates = 0
+          for row in rows:
+              fields = row.split()
+              if len(fields) != 3 or fields[1] != 'blob':
+                  continue
+              blob, _, size_text = fields
+              size = int(size_text)
+              if blob in seen or size not in allowed_sizes:
+                  continue
+              data = run('git', 'cat-file', 'blob', blob)
+              clean = normalized(data)
+              if re.fullmatch(rb'[A-Za-z0-9+/=]+', clean) is None:
+                  continue
+              scanned_candidates += 1
+              got = hashlib.sha256(clean).hexdigest()
+              for expected_name, expected_sha in expected.items():
+                  if got == expected_sha:
+                      matches[expected_name].append({
+                          'source': 'all_reachable_objects',
+                          'blob': blob,
+                          'stored_bytes': len(data),
+                          'terminal_framing_bytes': len(data) - len(clean),
+                      })
+
+          recovered = {}
+          selected = {}
+          for name in sorted(expected):
+              unique = {str(row['blob']): row for row in matches[name]}
+              ordered = sorted(unique.values(), key=lambda row: (str(row['source']), str(row['blob'])))
+              matches[name] = ordered
+              if ordered:
+                  source = ordered[0]
+                  clean = normalized(run('git', 'cat-file', 'blob', str(source['blob'])))
+                  if hashlib.sha256(clean).hexdigest() != expected[name]:
+                      raise RuntimeError(f'{name}: selected source drift')
+                  (shard_dir / name).write_bytes(clean)
+                  recovered[name] = clean
+                  selected[name] = source
+
+          receipt = {
+              'schema_version': 'ssc-rd04-state-options-exemption-object-recovery@1',
+              'expected_shards': 3,
+              'recovered_shards': len(recovered),
+              'missing_shards': sorted(set(expected) - set(recovered)),
+              'current_shards': current_sizes,
+              'matches': matches,
+              'selected_sources': selected,
+              'candidate_blobs_scanned': scanned_candidates,
+              'repository_mutations': 0,
+              'outside_human_dependency': False,
           }
 
-          STAGE=focused-gates
-          run_focused
-          git diff --check "$CANONICAL_BASE"
+          if len(recovered) == 3:
+              aggregate = b''.join(recovered[name] for name in sorted(recovered))
+              receipt['aggregate_bytes'] = len(aggregate)
+              receipt['aggregate_sha256'] = hashlib.sha256(aggregate).hexdigest()
+              (out / 'product.b64').write_bytes(aggregate)
+              if len(aggregate) != 36208 or receipt['aggregate_sha256'] != '9b4a213e8c9e2ced70004d018e921d1c84e5b6a37aee682c59ef28c5a86897af':
+                  receipt['status'] = 'all_shards_found_but_aggregate_mismatch'
+              else:
+                  archive = base64.b64decode(aggregate, validate=True)
+                  receipt['archive_bytes'] = len(archive)
+                  receipt['archive_sha256'] = hashlib.sha256(archive).hexdigest()
+                  (out / 'product.tar.xz').write_bytes(archive)
+                  if len(archive) != 27156 or receipt['archive_sha256'] != 'a9e658679a0f89ffca0be00f3c9674b5312e2bbc0b4528f586f0c5dc3c955c01':
+                      receipt['status'] = 'aggregate_valid_but_archive_mismatch'
+                  else:
+                      with tarfile.open(fileobj=io.BytesIO(archive), mode='r:xz') as tf:
+                          members = tf.getmembers()
+                          paths = sorted(member.name.lstrip('./') for member in members if member.isfile())
+                          receipt['archive_paths'] = paths
+                          if paths != sorted(expected_paths):
+                              receipt['status'] = 'archive_path_denominator_mismatch'
+                          elif any(member.issym() or member.islnk() for member in members):
+                              receipt['status'] = 'archive_link_member_refused'
+                          else:
+                              tf.extractall(package_dir, filter='data')
+                              receipt['status'] = 'complete_exact_package_recovered'
+          else:
+              receipt['status'] = 'incomplete_exact_blob_recovery'
 
-          STAGE=full-release-gate
-          npm run release:check
-
-          STAGE=clean-replay
-          git restore --worktree -- .
-          git clean -fdx
-          run_focused
-          git diff --check "$CANONICAL_BASE"
-          git diff --exit-code
-
-          STAGE=strip-workflow-transport
-          git restore --staged -- "$PERMANENT_WORKFLOW"
-          rm -f "$PERMANENT_WORKFLOW"
-          git diff --cached --name-status > "$RECEIPT/name-status.txt"
-          test "$(wc -l < "$RECEIPT/name-status.txt" | tr -d ' ')" = 12
-          test "$(awk '$1 != "A" {n++} END {print n+0}' "$RECEIPT/name-status.txt")" = 0
-          ! grep -F -- "$PERMANENT_WORKFLOW" "$RECEIPT/name-status.txt"
-
-          STAGE=commit
-          git commit -m 'Promote FFY 2024 RD-04 discretionary-exemption state practice'
-          PRODUCT_HEAD=$(git rev-parse HEAD)
-          PRODUCT_TREE=$(git rev-parse HEAD^{tree})
-
-          STAGE=publish
-          git fetch --no-tags origin main "$PRODUCT_BRANCH"
-          test "$(git rev-parse origin/main)" = "$CANONICAL_BASE"
-          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PRODUCT_LEASE"
-          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH" \
-            --force-with-lease="refs/heads/$PRODUCT_BRANCH:$PRODUCT_LEASE"
-          test "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$PRODUCT_HEAD"
-          printf 'status=complete\ncanonical_base=%s\ntransport_safe_head=%s\ntransport_safe_tree=%s\npermanent_paths=12\nworkflow_path_omitted=%s\nnormalized_page_text_sha256=6fd56a3be1216edb632d5488a622944ce2cf5ff4f57d3b198bd3f85888fd0d56\nraw_page_text_sha256=273781b0cb150e8415b06be257fce77485847ecdaec1724a87cf5aba9245a2b2\nterminal_cells_before=131\nterminal_cells_after=181\nstill_open_substantive_cells=219\nclass_closed=false\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' \
-            "$CANONICAL_BASE" "$PRODUCT_HEAD" "$PRODUCT_TREE" "$PERMANENT_WORKFLOW" > "$RECEIPT/final.txt"
-          STAGE=complete
-      - name: Preserve exact normalized materialization receipt
+          (out / 'recovery.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          checksum_rows = []
+          for path in sorted(out.rglob('*')):
+              if path.is_file() and path.name != 'SHA256SUMS':
+                  checksum_rows.append(f'{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(out)}')
+          (out / 'SHA256SUMS').write_text('\n'.join(checksum_rows) + '\n')
+          print(json.dumps({
+              'status': receipt['status'],
+              'recovered_shards': len(recovered),
+              'missing_shards': receipt['missing_shards'],
+              'candidate_blobs_scanned': scanned_candidates,
+          }, sort_keys=True))
+          PY
+      - name: Upload checksum-bound recovery receipt
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd04-state-options-exemption-materializer-v2
-          path: ${{ runner.temp }}/ssc-rd04-state-options-exemption-materializer-v2/receipt
+          name: ssc-rd04-state-options-exemption-object-recovery-v1
+          path: ${{ runner.temp }}/ssc-rd04-state-options-exemption-recovery-v1
           if-no-files-found: error
           retention-days: 90
