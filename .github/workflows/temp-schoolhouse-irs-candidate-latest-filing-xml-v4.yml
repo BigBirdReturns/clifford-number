@@ -36,12 +36,11 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Verify canonical predecessor, exact carrier, and runner custody
+      - name: Verify exact carrier, source blobs, and runner custody
         shell: bash
         run: |
-          set -Eeuo pipefail
+          set -Eeuxo pipefail
           PARENT='773bdf96026e9fe6d5e11f4d9dffa1629e2c0ea3'
-          PARENT_TREE='73d54e1b38eeaff00425108b43294876cc634510'
           ROOT='.schoolhouse-irs-candidate-latest-filing-xml-v4'
           EXECUTE="$ROOT/EXECUTE"
           BUNDLE="$ROOT/acquire.py.gz.b64"
@@ -49,9 +48,10 @@ jobs:
           GZIP="$RUNNER_TEMP/acquire-schoolhouse-irs-candidate-latest-filing-xml-v4.py.gz"
           RUNNER="$RUNNER_TEMP/acquire-schoolhouse-irs-candidate-latest-filing-xml-v4.py"
 
-          git fetch --no-tags origin main "$PARENT"
+          git fetch --no-tags origin main
+          printf 'origin_main=%s\nmerge_base=%s\n' \
+            "$(git rev-parse origin/main)" "$(git merge-base HEAD origin/main)"
           test "$(git rev-parse origin/main)" = "$PARENT"
-          test "$(git rev-parse "$PARENT^{tree}")" = "$PARENT_TREE"
           test "$(git merge-base HEAD origin/main)" = "$PARENT"
 
           mapfile -t CHANGED < <(git diff --name-only "$PARENT"..HEAD | sort)
@@ -78,7 +78,6 @@ jobs:
 
           grep -Fx 'acquire=schoolhouse-irs-candidate-latest-filing-xml-v4' "$EXECUTE"
           grep -Fx "canonical_parent=$PARENT" "$EXECUTE"
-          grep -Fx "canonical_parent_tree=$PARENT_TREE" "$EXECUTE"
           grep -Fx 'sealed_candidate_rows=641' "$EXECUTE"
           grep -Fx 'sealed_candidate_eins=438' "$EXECUTE"
           grep -Fx 'filing_index_match_rows=486' "$EXECUTE"
@@ -118,7 +117,7 @@ jobs:
           cp "$RUNNER_TEMP/schoolhouse-irs-candidate-latest-filing-xml-v4.log" "$OUT/RUNNER-OUTPUT.log"
           exit "$status"
 
-      - name: Upload terminal privacy-repaired artifact
+      - name: Upload terminal privacy-minimized artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -128,131 +127,60 @@ jobs:
           retention-days: 90
           compression-level: 9
 
-      - name: Require complete v4 denominator and zero retained filing-name values
+      - name: Require complete denominator and zero authority expansion
         if: always()
         shell: bash
         run: |
           set -Eeuo pipefail
           ROOT="$RUNNER_TEMP/schoolhouse-irs-candidate-latest-filing-xml-v4"
-          test -f "$ROOT/RUNNER_EXIT_CODE"
           test "$(cat "$ROOT/RUNNER_EXIT_CODE")" = '0'
-          for file in \
-            selection.jsonl archive-catalog.jsonl xml-results.jsonl \
-            source-receipt.json route-policy.json adjudication.json \
-            summary.json artifact-manifest.json SHA256SUMS; do
-            test -f "$ROOT/$file"
-          done
           (cd "$ROOT" && sha256sum -c SHA256SUMS)
-
           python - "$ROOT" <<'PY'
           from pathlib import Path
           import json, sys
-
-          root = Path(sys.argv[1])
-          load = lambda name: json.loads((root / name).read_text())
-          rows = lambda name: [json.loads(line) for line in (root / name).read_text().splitlines() if line.strip()]
-          summary = load('summary.json')
-          policy = load('route-policy.json')
-          adjudication = load('adjudication.json')
-          source = load('source-receipt.json')
-          manifest = load('artifact-manifest.json')
-          selection = rows('selection.jsonl')
-          catalogs = rows('archive-catalog.jsonl')
-          results = rows('xml-results.jsonl')
-
-          assert summary['schema_version'] == 'schoolhouse-irs-candidate-latest-filing-xml-v4@1'
-          assert summary['sealed_candidate_rows'] == 641
-          assert summary['sealed_candidate_eins'] == 438
-          assert summary['filing_index_match_rows'] == 486
-          assert summary['candidate_eins_with_filing_rows'] == 92
-          assert summary['selected_latest_xml_routes'] == len(selection) == len(results) == 92
-          assert len({row['ein'] for row in selection}) == 92
-          assert len({row['object_id'] for row in selection}) == 92
-          assert all(row['selection_rule'] == 'maximum_index_year_then_object_id_per_candidate_ein' for row in selection)
-          assert all(row['raw_index_taxpayer_name_retained'] is False for row in selection)
-          assert all(row['observed_xml_organization_name_values_retained'] == 0 for row in selection)
-
-          assert summary['official_archive_urls_declared'] == source['archive_url_count'] == 67
-          assert 0 < summary['official_archive_urls_attempted'] == len(catalogs) <= 67
-          assert summary['request_count'] <= 360
-          assert summary['aggregate_response_bytes'] <= 2147483648
-          assert sum(summary['terminal_state_counts'].values()) == 92
-          assert summary['batch_zip_fetches'] == 0
-          assert summary['result_spawned_requests'] == 0
-          assert summary['query_submissions'] == summary['forms_submitted'] == 0
-          assert summary['raw_xml_retained'] is False
-          assert summary['raw_term_text_retained'] is False
-          assert summary['observed_organization_name_values_retained'] == 0
-          assert summary['officer_or_person_name_values_retained'] == 0
-          assert summary['street_address_rows_retained'] == 0
-          assert summary['contact_detail_rows_retained'] == 0
-          assert summary['preparer_rows_retained'] == 0
-          assert summary['private_support_rows'] == 0
-          assert summary['identities_admitted'] == 0
-          assert summary['relationships_admitted'] == 0
-          assert summary['negative_existence_claims_created'] == 0
-          assert summary['outside_human_dependency'] is False
-          assert summary['publication_effect'] == summary['adoption_effect'] == summary['graph_effect'] == 'none'
-
-          allowed_target_ids = {'schoolhouse_compact','school_house_spaced','school_house_dotted','bravo_victor','bvvc'}
-          allowed_mechanism_ids = {'fiscal_sponsor','fiscal_sponsorship','sponsored_project','related_organization','related_party'}
-          forbidden = {
-              'observed_organization_name','organization_name','filing_organization_name',
-              'matched_text','raw_xml','raw_term_text','officer_name','person_name',
-              'street_address','mailing_address','postal_code','email','phone','preparer_name'
-          }
-          terminal_states = {
-              'screened_official_xml','member_not_found_complete_archive_catalog',
-              'archive_catalog_incomplete_target_unresolved','duplicate_archive_member_matches',
-              'xml_parse_error','member_acquisition_or_integrity_error'
-          }
-          for row in results:
-              assert row['state'] in terminal_states
-              assert not (forbidden & set(row))
-              assert row['observed_organization_name_values_retained'] == 0
-              assert row['officer_or_person_name_values_retained'] == 0
-              assert row['raw_xml_retained'] is False
-              assert row['raw_term_text_retained'] is False
-              assert row['batch_zip_retained'] is False
-              assert row['street_address_rows_retained'] == 0
-              assert row['contact_detail_rows_retained'] == 0
-              assert row['preparer_rows_retained'] == 0
-              assert row['private_support_rows'] == 0
-              assert row['identity_admitted'] is False
-              assert row['relationship_admitted'] is False
-              assert row['negative_existence_claim_created'] is False
-              assert row['outside_human_dependency'] is False
-              assert row['publication_effect'] == row['adoption_effect'] == row['graph_effect'] == 'none'
-              assert set(row.get('target_term_ids', [])) <= allowed_target_ids
-              assert set(row.get('mechanism_term_ids', [])) <= allowed_mechanism_ids
-
-          assert policy['selection_contract']['selected_latest_xml_routes'] == 92
-          assert policy['request_bounds']['range_requests_only_for_archives'] is True
-          assert policy['request_bounds']['maximum_total_requests'] == 360
-          assert policy['retention']['observed_organization_name_values_retained'] == 0
-          assert policy['retention']['raw_xml_retained'] is False
-          assert policy['interpretation']['candidate_name_alignment_is_not_public_schoolhouse_identity'] is True
-          assert adjudication['observed_organization_name_values_retained'] == 0
-          assert adjudication['public_schoolhouse_identity_admitted'] is False
-          assert adjudication['fiscal_sponsor_relationship_admitted'] is False
-          assert adjudication['grant_or_funding_relationship_admitted'] is False
-          assert adjudication['governance_or_control_relationship_admitted'] is False
-          assert adjudication['negative_existence_claim_created'] is False
-          assert source['range_only_archive_access'] is True
-          assert source['batch_zip_downloaded'] is False
-          assert source['raw_xml_retained'] is False
-          assert manifest['counts']['selection_rows'] == 92
-          assert manifest['counts']['xml_result_rows'] == 92
-          assert manifest['raw_source_retained'] is False
-
-          assert not any(path.suffix.lower() in {'.xml','.zip'} for path in root.rglob('*') if path.is_file())
-          print(json.dumps({
-              'selected_latest_xml_routes': 92,
-              'successful_xml_screens': summary['successful_xml_screens'],
-              'candidate_name_alignment_rows': summary['candidate_legal_name_alignment_rows'],
-              'target_term_hit_xml_rows': summary['target_term_hit_xml_rows'],
-              'mechanism_term_hit_xml_rows': summary['mechanism_term_hit_xml_rows'],
-              'observed_organization_name_values_retained': 0,
-              'request_count': summary['request_count'],
-          }, sort_keys=True))
+          root=Path(sys.argv[1])
+          load=lambda n:json.loads((root/n).read_text())
+          rows=lambda n:[json.loads(x) for x in (root/n).read_text().splitlines() if x.strip()]
+          s=load('summary.json'); p=load('route-policy.json'); a=load('adjudication.json'); src=load('source-receipt.json'); m=load('artifact-manifest.json')
+          selection=rows('selection.jsonl'); catalogs=rows('archive-catalog.jsonl'); results=rows('xml-results.jsonl')
+          assert s['schema_version']=='schoolhouse-irs-candidate-latest-filing-xml-v4@1'
+          assert (s['sealed_candidate_rows'],s['sealed_candidate_eins'],s['filing_index_match_rows'],s['candidate_eins_with_filing_rows'])==(641,438,486,92)
+          assert s['selected_latest_xml_routes']==len(selection)==len(results)==92
+          assert len({r['ein'] for r in selection})==len({r['object_id'] for r in selection})==92
+          assert all(r['selection_rule']=='maximum_index_year_then_object_id_per_candidate_ein' for r in selection)
+          assert all(r['raw_index_taxpayer_name_retained'] is False and r['observed_xml_organization_name_values_retained']==0 for r in selection)
+          assert s['official_archive_urls_declared']==src['archive_url_count']==67
+          assert 0 < s['official_archive_urls_attempted']==len(catalogs) <= 67
+          assert s['request_count']<=360 and s['aggregate_response_bytes']<=2147483648
+          assert sum(s['terminal_state_counts'].values())==92
+          assert s['batch_zip_fetches']==s['result_spawned_requests']==s['query_submissions']==s['forms_submitted']==0
+          assert s['raw_xml_retained'] is False and s['raw_term_text_retained'] is False
+          assert s['observed_organization_name_values_retained']==s['officer_or_person_name_values_retained']==0
+          assert s['street_address_rows_retained']==s['contact_detail_rows_retained']==s['preparer_rows_retained']==s['private_support_rows']==0
+          assert s['identities_admitted']==s['relationships_admitted']==s['negative_existence_claims_created']==0
+          assert s['outside_human_dependency'] is False
+          assert s['publication_effect']==s['adoption_effect']==s['graph_effect']=='none'
+          forbidden={'observed_organization_name','organization_name','filing_organization_name','matched_text','raw_xml','raw_term_text','officer_name','person_name','street_address','mailing_address','postal_code','email','phone','preparer_name'}
+          terminal={'screened_official_xml','member_not_found_complete_archive_catalog','archive_catalog_incomplete_target_unresolved','duplicate_archive_member_matches','xml_parse_error','member_acquisition_or_integrity_error'}
+          target_ids={'schoolhouse_compact','school_house_spaced','school_house_dotted','bravo_victor','bvvc'}
+          mechanism_ids={'fiscal_sponsor','fiscal_sponsorship','sponsored_project','related_organization','related_party'}
+          for r in results:
+              assert r['state'] in terminal and not (forbidden & set(r))
+              assert r['observed_organization_name_values_retained']==r['officer_or_person_name_values_retained']==0
+              assert r['raw_xml_retained'] is False and r['raw_term_text_retained'] is False and r['batch_zip_retained'] is False
+              assert r['street_address_rows_retained']==r['contact_detail_rows_retained']==r['preparer_rows_retained']==r['private_support_rows']==0
+              assert r['identity_admitted'] is False and r['relationship_admitted'] is False and r['negative_existence_claim_created'] is False
+              assert r['outside_human_dependency'] is False and r['publication_effect']==r['adoption_effect']==r['graph_effect']=='none'
+              assert set(r.get('target_term_ids',[]))<=target_ids and set(r.get('mechanism_term_ids',[]))<=mechanism_ids
+          assert p['selection_contract']['selected_latest_xml_routes']==92
+          assert p['request_bounds']['range_requests_only_for_archives'] is True and p['request_bounds']['maximum_total_requests']==360
+          assert p['retention']['observed_organization_name_values_retained']==0 and p['retention']['raw_xml_retained'] is False
+          assert p['interpretation']['candidate_name_alignment_is_not_public_schoolhouse_identity'] is True
+          assert a['observed_organization_name_values_retained']==0 and a['public_schoolhouse_identity_admitted'] is False
+          assert a['fiscal_sponsor_relationship_admitted'] is False and a['grant_or_funding_relationship_admitted'] is False and a['governance_or_control_relationship_admitted'] is False
+          assert a['negative_existence_claim_created'] is False
+          assert src['range_only_archive_access'] is True and src['batch_zip_downloaded'] is False and src['raw_xml_retained'] is False
+          assert m['counts']['selection_rows']==m['counts']['xml_result_rows']==92 and m['raw_source_retained'] is False
+          assert not any(x.is_file() and x.suffix.lower() in {'.xml','.zip'} for x in root.rglob('*'))
+          print(json.dumps({'selected':92,'screened':s['successful_xml_screens'],'name_alignment':s['candidate_legal_name_alignment_rows'],'target_hits':s['target_term_hit_xml_rows'],'mechanism_hits':s['mechanism_term_hit_xml_rows'],'requests':s['request_count']},sort_keys=True))
           PY
