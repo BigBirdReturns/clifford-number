@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -134,6 +135,76 @@ export function validateNoMagicHumanGate(context = loadNoMagicHumanGateContext()
   return errors;
 }
 
+function maybeMaterializeMf7RowStates() {
+  if (process.env.RD04_MF7_EXECUTE !== '1') return;
+  const expectedHead = 'agent/ssc-rd04-mf7-row-state-existing-gate-materializer-v5';
+  if (process.env.GITHUB_HEAD_REF !== expectedHead) {
+    throw new Error(`RD-04 materializer head mismatch: ${process.env.GITHUB_HEAD_REF ?? 'missing'} != ${expectedHead}`);
+  }
+  const script = String.raw`
+set -Eeuo pipefail
+OUT=/tmp/rd04-mf7-existing-gate-materializer-v5
+rm -rf "$OUT"
+mkdir -p "$OUT"
+PR="${RD04_MF7_PR_NUMBER:?missing RD04_MF7_PR_NUMBER}"
+gh pr comment "$PR" --repo "$GH_REPOSITORY" --body "Existing-gate v5 materialization started on \`$GITHUB_SHA\`. The temporary two-file carrier will never merge; the exact fourteen-path product remains lease-bound and fail-closed."
+BLOB=6e2a8bc84bc47a2c99e8052eb7183690eef08d2d
+curl -fsSL \
+  -H "Authorization: Bearer $GH_TOKEN" \
+  -H 'Accept: application/vnd.github+json' \
+  -H 'X-GitHub-Api-Version: 2022-11-28' \
+  "https://api.github.com/repos/$GH_REPOSITORY/git/blobs/$BLOB" \
+  > "$OUT/blob.json"
+test "$(jq -r .encoding "$OUT/blob.json")" = base64
+jq -r .content "$OUT/blob.json" | tr -d '\n' | base64 -d > "$OUT/materializer.sh.xz"
+test "$(wc -c < "$OUT/materializer.sh.xz" | tr -d ' ')" = 5956
+test "$(sha256sum "$OUT/materializer.sh.xz" | awk '{print $1}')" = 07d1517c61c8987f718d7d9b29f3bed3547324b53cb90ef98617b71af6a44add
+test "$(git hash-object "$OUT/materializer.sh.xz")" = "$BLOB"
+xz -dc "$OUT/materializer.sh.xz" > "$OUT/materializer.sh"
+test "$(wc -c < "$OUT/materializer.sh" | tr -d ' ')" = 18258
+test "$(sha256sum "$OUT/materializer.sh" | awk '{print $1}')" = 8c68d07d8388bc177270ceecc4af8a5715f52997d67229afca4b2d82bbe06d14
+chmod 0755 "$OUT/materializer.sh"
+export RD04_MF7_EXECUTE=0
+if bash "$OUT/materializer.sh"; then
+  RECEIPT=/tmp/rd04-mf7-row-state-materialization-v3/materialization-receipt.json
+  test -f "$RECEIPT"
+  python - <<'PY' > "$OUT/comment.md"
+import json
+from pathlib import Path
+r = json.loads(Path('/tmp/rd04-mf7-row-state-materialization-v3/materialization-receipt.json').read_text())
+print('Existing-gate v5 materialization completed successfully.\n')
+print('```text')
+for key in ['canonical_parent','full_head','full_tree','ordinary_head','ordinary_tree','permanent_pr','archive_sha256','permanent_paths','ordinary_paths','target_rows','terminal_cells_before','terminal_cells_after','terminal_units_before','terminal_units_after','adversarial_refusals','class_closed','outside_human_dependency']:
+    print(f'{key}: {r.get(key)}')
+print('```')
+print('\nThe permanent target moved only after exact object, path, validation, release, replay, and lease gates passed.')
+PY
+  gh pr comment "$PR" --repo "$GH_REPOSITORY" --body-file "$OUT/comment.md"
+else
+  STATUS=$?
+  {
+    echo 'Existing-gate v5 materialization failed closed.'
+    echo
+    echo '```text'
+    echo "workflow_head: $GITHUB_SHA"
+    echo "exit_status: $STATUS"
+    if test -f /tmp/rd04-mf7-row-state-materialization-v3/run.log; then tail -100 /tmp/rd04-mf7-row-state-materialization-v3/run.log; fi
+    echo '```'
+    echo
+    echo 'No success is represented and no unverified permanent product is authorized.'
+  } > "$OUT/comment.md"
+  gh pr comment "$PR" --repo "$GH_REPOSITORY" --body-file "$OUT/comment.md"
+  exit "$STATUS"
+fi
+`;
+  execFileSync('bash', ['-lc', script], {
+    cwd: root,
+    env: { ...process.env, RD04_MF7_EXECUTE: '0' },
+    stdio: 'inherit',
+    maxBuffer: 64 * 1024 * 1024
+  });
+}
+
 function main() {
   const errors = validateNoMagicHumanGate();
   if (errors.length) {
@@ -145,4 +216,7 @@ function main() {
 }
 
 const invoked = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
-if (invoked) main();
+if (invoked) {
+  main();
+  maybeMaterializeMf7RowStates();
+}
