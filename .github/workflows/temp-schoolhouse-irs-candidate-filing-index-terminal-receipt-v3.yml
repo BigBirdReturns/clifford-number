@@ -1,0 +1,97 @@
+name: TEMP publish School.House IRS filing-index terminal receipt v3
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-irs-candidate-filing-index-terminal-receipt-v3.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: schoolhouse-irs-candidate-filing-index-terminal-receipt-v3-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: read
+
+jobs:
+  publish:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-irs-candidate-filing-index-terminal-receipt-v2')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Reconstruct and execute repaired exact terminal proof
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE='.github/workflows/temp-schoolhouse-irs-candidate-filing-index-terminal-receipt-v2.yml'
+          SCRIPT="$RUNNER_TEMP/publish-schoolhouse-irs-filing-index-terminal-receipt-v3.sh"
+          python - "$SOURCE" "$SCRIPT" <<'PY'
+          from pathlib import Path
+          import sys
+
+          source = Path(sys.argv[1]).read_text()
+          step = '      - name: Verify exact product, replay post-merge gates, and publish receipt\n'
+          start = source.index(step)
+          run = source.index('        run: |\n', start) + len('        run: |\n')
+          end = source.index('\n      - name: Upload terminal receipt artifact', run)
+          lines = source[run:end].splitlines()
+          script = '\n'.join(
+              line[10:] if line.startswith('          ') else line
+              for line in lines
+          ) + '\n'
+
+          old_scope = 'local workflow_id="$1" sha="$2" output="$TMP/runs-$workflow_id.json"'
+          new_scope = '''local workflow_id="$1"
+            local sha="$2"
+            local output="$TMP/runs-$workflow_id.json"'''
+          if script.count(old_scope) != 1:
+              raise SystemExit('unexpected helper scope denominator')
+          script = script.replace(old_scope, new_scope, 1)
+
+          old_parent = 'test "$(git rev-parse HEAD^)" = "$CARRIER_PARENT"'
+          new_parent = 'git merge-base --is-ancestor "$CARRIER_PARENT" HEAD'
+          if script.count(old_parent) != 1:
+              raise SystemExit('unexpected carrier-parent denominator')
+          script = script.replace(old_parent, new_parent, 1)
+
+          old_paths = 'test "$(git diff --name-only "$CARRIER_PARENT"..HEAD)" = "$WORKFLOW"'
+          new_paths = '''mapfile -t CARRIER_PATHS < <(git diff --name-only "$CARRIER_PARENT"..HEAD | sort)
+          EXPECTED_CARRIER=(
+            '.github/workflows/temp-schoolhouse-irs-candidate-filing-index-terminal-receipt-v2.yml'
+            '.github/workflows/temp-schoolhouse-irs-candidate-filing-index-terminal-receipt-v3.yml'
+          )
+          test "${#CARRIER_PATHS[@]}" -eq 2
+          for i in "${!EXPECTED_CARRIER[@]}"; do
+            test "${CARRIER_PATHS[$i]}" = "${EXPECTED_CARRIER[$i]}"
+          done'''
+          if script.count(old_paths) != 1:
+              raise SystemExit('unexpected carrier-path denominator')
+          script = script.replace(old_paths, new_paths, 1)
+
+          Path(sys.argv[2]).write_text(script)
+          PY
+          bash -n "$SCRIPT"
+          bash "$SCRIPT"
+
+      - name: Upload terminal receipt artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-candidate-filing-index-terminal-receipt-v3
+          path: ${{ runner.temp }}/schoolhouse-irs-candidate-filing-index-terminal-receipt
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
