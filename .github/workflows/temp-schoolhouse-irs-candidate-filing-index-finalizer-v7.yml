@@ -1,0 +1,192 @@
+name: TEMP finalize School.House IRS candidate filing-index custody v7
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-irs-candidate-filing-index-finalizer-v7.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: schoolhouse-irs-candidate-filing-index-finalizer-v7-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  finalize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-irs-candidate-filing-index-census-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Check out exact finalizer carrier
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Execute indentation-correct exact-head finalization
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || 0 }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE='.github/workflows/temp-schoolhouse-irs-candidate-filing-index-finalizer-v2.yml'
+          SCRIPT="$RUNNER_TEMP/finalize-schoolhouse-irs-candidate-filing-index-v7.sh"
+          python - "$SOURCE" "$SCRIPT" <<'PY'
+          from pathlib import Path
+          import os
+          import sys
+          import textwrap
+
+          source = Path(sys.argv[1]).read_text()
+          step = '      - name: Wait, qualify, merge, replay, and retire\n'
+          start = source.index(step)
+          run = source.index('        run: |\n', start) + len('        run: |\n')
+          end = source.index('\n      - name: Upload exact repaired finalization receipt', run)
+          lines = source[run:end].splitlines()
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines) + '\n'
+
+          pr_expr = '$' + '{{ github.event.pull_request.number || 0 }}'
+          script = script.replace(pr_expr, os.environ['PR_NUMBER'])
+
+          function_open = 'qualify_checkout() {\n  node --check tools/validate-schoolhouse-irs-candidate-filing-index-custody.mjs'
+          function_repaired = 'qualify_checkout() {\n  local QUALIFIED_TREE\n  QUALIFIED_TREE="$(git write-tree)"\n  node --check tools/validate-schoolhouse-irs-candidate-filing-index-custody.mjs'
+          if function_open not in script:
+              raise SystemExit('qualification function seam missing')
+          script = script.replace(function_open, function_repaired, 1)
+
+          hard_reset = 'git reset --hard HEAD\n  git clean -fdx'
+          tree_restore = 'git read-tree --reset -u "$QUALIFIED_TREE"\n  git clean -fdx'
+          if hard_reset not in script:
+              raise SystemExit('qualification restoration seam missing')
+          script = script.replace(hard_reset, tree_restore, 1)
+
+          helper_start = script.index('successful_run_for_sha() {')
+          helper_end = script.index('\n\nRELEASE_WID=', helper_start)
+          helpers = textwrap.dedent(r'''\
+          successful_run_for_sha() {
+            local wid="$1" sha="$2"
+            gh api "repos/$REPO/actions/workflows/$wid/runs?per_page=100" > "$RUNNER_TEMP/runs-$wid.json"
+            jq -r --arg sha "$sha" '[.workflow_runs[] | select(.head_sha==$sha and .conclusion=="success")] | sort_by(.created_at) | last | .id // empty' "$RUNNER_TEMP/runs-$wid.json"
+          }
+          latest_run_for_sha() {
+            local wid="$1" sha="$2"
+            gh api "repos/$REPO/actions/workflows/$wid/runs?per_page=100" > "$RUNNER_TEMP/runs-$wid.json"
+            jq -r --arg sha "$sha" '[.workflow_runs[] | select(.head_sha==$sha)] | sort_by(.created_at) | last | .id // empty' "$RUNNER_TEMP/runs-$wid.json"
+          }
+          latest_run_for_sha_since() {
+            local wid="$1" sha="$2" since="$3"
+            gh api "repos/$REPO/actions/workflows/$wid/runs?per_page=100" > "$RUNNER_TEMP/runs-$wid.json"
+            jq -r --arg sha "$sha" --arg since "$since" '[.workflow_runs[] | select(.head_sha==$sha and .created_at >= $since)] | sort_by(.created_at) | last | .id // empty' "$RUNNER_TEMP/runs-$wid.json"
+          }
+          ensure_exact_ref() {
+            local requested_ref="$1" sha="$2" label="$3"
+            local current proof
+            current="$(gh api "repos/$REPO/git/ref/heads/$requested_ref" --jq '.object.sha' 2>/dev/null || true)"
+            if [[ "$current" = "$sha" ]]; then
+              printf '%s\n' "$requested_ref"
+              return
+            fi
+            proof="agent/schoolhouse-irs-candidate-filing-index-proof-${label}-${sha:0:12}"
+            current="$(gh api "repos/$REPO/git/ref/heads/$proof" --jq '.object.sha' 2>/dev/null || true)"
+            if [[ -z "$current" ]]; then
+              gh api -X POST "repos/$REPO/git/refs" -f ref="refs/heads/$proof" -f sha="$sha" >/dev/null
+            elif [[ "$current" != "$sha" ]]; then
+              gh api -X PATCH "repos/$REPO/git/refs/heads/$proof" -f sha="$sha" -F force=true >/dev/null
+            fi
+            printf '%s\n' "$proof" >> "$RECEIPT/temp-refs"
+            printf '%s\n' "$proof"
+          }
+          wait_exact_success() {
+            local wid="$1" requested_ref="$2" sha="$3" label="$4"
+            local run status conclusion started retried exact_ref
+            run="$(successful_run_for_sha "$wid" "$sha" || true)"
+            if [[ -z "$run" ]]; then
+              run="$(latest_run_for_sha "$wid" "$sha" || true)"
+              if [[ -z "$run" ]]; then
+                exact_ref="$(ensure_exact_ref "$requested_ref" "$sha" "$label")"
+                started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                gh workflow run "$wid" --repo "$REPO" --ref "$exact_ref"
+                for _ in $(seq 1 180); do
+                  run="$(latest_run_for_sha_since "$wid" "$sha" "$started" || true)"
+                  [[ -n "$run" ]] && break
+                  sleep 2
+                done
+                [[ -n "$run" ]]
+              fi
+              retried=0
+              for _ in $(seq 1 720); do
+                status="$(gh api "repos/$REPO/actions/runs/$run" --jq '.status')"
+                conclusion="$(gh api "repos/$REPO/actions/runs/$run" --jq '.conclusion // ""')"
+                if [[ "$status" = 'completed' ]]; then
+                  if [[ "$conclusion" = 'success' ]]; then break; fi
+                  if [[ "$retried" = '0' ]]; then
+                    if gh api -X POST "repos/$REPO/actions/runs/$run/rerun-failed-jobs" >/dev/null 2>&1; then
+                      retried=1
+                    else
+                      exact_ref="$(ensure_exact_ref "$requested_ref" "$sha" "$label-retry")"
+                      started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                      gh workflow run "$wid" --repo "$REPO" --ref "$exact_ref"
+                      for _ in $(seq 1 180); do
+                        run="$(latest_run_for_sha_since "$wid" "$sha" "$started" || true)"
+                        [[ -n "$run" ]] && break
+                        sleep 2
+                      done
+                      [[ -n "$run" ]]
+                      retried=1
+                    fi
+                  else
+                    exit 97
+                  fi
+                fi
+                sleep 5
+              done
+              test "$(gh api "repos/$REPO/actions/runs/$run" --jq '.conclusion')" = 'success'
+            fi
+            printf '%s=%s\n' "$label" "$run" >> "$RECEIPT/hosted-runs"
+          }
+          ''').strip()
+          script = script[:helper_start] + helpers + script[helper_end:]
+
+          receipt_marker = 'jq -n ' + '\\' + '\n'
+          cleanup = textwrap.dedent('''\
+          if [[ -f "$RECEIPT/temp-refs" ]]; then
+            sort -u "$RECEIPT/temp-refs" | while read -r ref; do
+              [[ -n "$ref" ]] && gh api -X DELETE "repos/$REPO/git/refs/heads/$ref" >/dev/null || true
+            done
+          fi
+
+          ''')
+          if receipt_marker not in script:
+              raise SystemExit('receipt seam missing')
+          script = script.replace(receipt_marker, cleanup + receipt_marker, 1)
+          if '$' + '{{' in script:
+              raise SystemExit('unresolved GitHub expression remains in extracted script')
+          Path(sys.argv[2]).write_text(script)
+          PY
+          bash -n "$SCRIPT"
+          bash "$SCRIPT"
+
+      - name: Upload exact v7 finalization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-candidate-filing-index-finalization-receipt-v7
+          path: ${{ runner.temp }}/schoolhouse-irs-candidate-filing-index-finalization-receipt-v2
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
