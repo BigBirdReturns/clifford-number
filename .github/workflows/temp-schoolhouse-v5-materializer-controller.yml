@@ -1,0 +1,243 @@
+name: TEMP School.House latest-filing XML v5 controller
+
+on:
+  pull_request:
+    branches:
+      - agent/schoolhouse-v5-materializer-controller-base-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.schoolhouse-irs-candidate-latest-filing-xml-v5-materializer/TRIGGER'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: schoolhouse-v5-controller-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-v5-materializer-controller-trigger-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct, qualify, and publish exact permanent product
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          MAIN='a49b18304a69e9637cd854d38e80b67d4165cc6c'
+          MAIN_TREE='fdc4acfb8b3381872c157d0bf9a8bd6947631bd3'
+          BASE_BRANCH='agent/schoolhouse-v5-materializer-controller-base-v1'
+          TRIGGER_BRANCH='agent/schoolhouse-v5-materializer-controller-trigger-v1'
+          TARGET='agent/schoolhouse-irs-candidate-latest-filing-xml-v5-custody-product-v1'
+          ROOT='.schoolhouse-irs-candidate-latest-filing-xml-v5-materializer'
+          EXECUTE="$ROOT/EXECUTE"
+          BUNDLE="$ROOT/product.tar.xz.b64"
+          TRIGGER="$ROOT/TRIGGER"
+          WORKFLOW='.github/workflows/temp-schoolhouse-v5-materializer-controller.yml'
+          PACKAGE="$RUNNER_TEMP/schoolhouse-latest-filing-xml-v5-product.tar.xz"
+          PACKAGE_ROOT="$RUNNER_TEMP/schoolhouse-latest-filing-xml-v5-package"
+          WORK="$RUNNER_TEMP/schoolhouse-latest-filing-xml-v5-worktree"
+          ARTIFACT_ZIP="$RUNNER_TEMP/schoolhouse-latest-filing-xml-v5-artifact.zip"
+          ARTIFACT_ROOT="$RUNNER_TEMP/schoolhouse-latest-filing-xml-v5-artifact"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-latest-filing-xml-v5-controller-receipt"
+          mkdir -p "$RECEIPT"
+          printf 'controller_started=true\n' > "$RECEIPT/preflight.txt"
+
+          cat > "$RUNNER_TEMP/permanent-paths" <<'EOF'
+          data/intake/schoolhouse-irs-candidate-latest-filing-xml-v5/acquisition-SHA256SUMS
+          data/intake/schoolhouse-irs-candidate-latest-filing-xml-v5/adjudication.json
+          data/intake/schoolhouse-irs-candidate-latest-filing-xml-v5/artifact-manifest.json
+          data/intake/schoolhouse-irs-candidate-latest-filing-xml-v5/range-receipts.jsonl
+          data/intake/schoolhouse-irs-candidate-latest-filing-xml-v5/route-policy.json
+          data/intake/schoolhouse-irs-candidate-latest-filing-xml-v5/selection.jsonl
+          data/intake/schoolhouse-irs-candidate-latest-filing-xml-v5/source-custody.json
+          data/intake/schoolhouse-irs-candidate-latest-filing-xml-v5/source-receipt.json
+          data/intake/schoolhouse-irs-candidate-latest-filing-xml-v5/summary.json
+          data/intake/schoolhouse-irs-candidate-latest-filing-xml-v5/xml-results.jsonl
+          docs/milestones/schoolhouse-irs-candidate-latest-filing-xml-v5.md
+          tools/build-schoolhouse-irs-candidate-latest-filing-xml-v5-custody.mjs
+          tools/test-schoolhouse-irs-candidate-latest-filing-xml-v5-custody.mjs
+          tools/validate-schoolhouse-irs-candidate-latest-filing-xml-v5-custody.mjs
+          EOF
+          sed -i 's/^          //' "$RUNNER_TEMP/permanent-paths"
+
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$BASE_BRANCH:refs/remotes/origin/$BASE_BRANCH" \
+            "+refs/heads/$TRIGGER_BRANCH:refs/remotes/origin/$TRIGGER_BRANCH"
+
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          CONTROLLER_BASE="$(git rev-parse "origin/$BASE_BRANCH")"
+          TRIGGER_HEAD="$(git rev-parse HEAD)"
+          LIVE_TREE="$(git rev-parse "$LIVE_MAIN^{tree}")"
+          TARGET_REMOTE_SHA="$(git ls-remote --heads origin "refs/heads/$TARGET" | awk '{print $1}')"
+
+          {
+            printf 'live_main=%s\n' "$LIVE_MAIN"
+            printf 'expected_main=%s\n' "$MAIN"
+            printf 'live_main_tree=%s\n' "$LIVE_TREE"
+            printf 'expected_main_tree=%s\n' "$MAIN_TREE"
+            printf 'controller_base=%s\n' "$CONTROLLER_BASE"
+            printf 'trigger_head=%s\n' "$TRIGGER_HEAD"
+            printf 'target_remote_sha=%s\n' "$TARGET_REMOTE_SHA"
+          } | tee -a "$RECEIPT/preflight.txt"
+
+          test "$LIVE_MAIN" = "$MAIN"
+          test "$LIVE_TREE" = "$MAIN_TREE"
+          test "$(git show -s --format=%P "$CONTROLLER_BASE")" = "$MAIN"
+          test "$(git show -s --format=%P "$TRIGGER_HEAD")" = "$CONTROLLER_BASE"
+          test "$TARGET_REMOTE_SHA" = "$MAIN"
+          test "$(cat "$TRIGGER")" = "execute=$CONTROLLER_BASE"
+
+          mapfile -t BASE_CHANGED < <(git diff --name-only "$MAIN".."$CONTROLLER_BASE" | sort)
+          EXPECTED_BASE=(
+            '.github/workflows/temp-schoolhouse-v5-materializer-controller.yml'
+            '.schoolhouse-irs-candidate-latest-filing-xml-v5-materializer/EXECUTE'
+            '.schoolhouse-irs-candidate-latest-filing-xml-v5-materializer/product.tar.xz.b64'
+          )
+          test "${#BASE_CHANGED[@]}" -eq 3
+          for i in "${!EXPECTED_BASE[@]}"; do test "${BASE_CHANGED[$i]}" = "${EXPECTED_BASE[$i]}"; done
+
+          mapfile -t TRIGGER_CHANGED < <(git diff --name-only "$CONTROLLER_BASE".."$TRIGGER_HEAD" | sort)
+          test "${#TRIGGER_CHANGED[@]}" -eq 1
+          test "${TRIGGER_CHANGED[0]}" = '.schoolhouse-irs-candidate-latest-filing-xml-v5-materializer/TRIGGER'
+          git diff --exit-code "$CONTROLLER_BASE".."$TRIGGER_HEAD" -- "$WORKFLOW" "$EXECUTE" "$BUNDLE"
+
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '8d708c542e632eb528cf89a79f6b1482e2495ec49d1bbd33c08c352b80963c4e'
+          test "$(stat -c%s "$BUNDLE")" = '34492'
+          base64 -d "$BUNDLE" > "$PACKAGE"
+          test "$(sha256sum "$PACKAGE" | awk '{print $1}')" = 'f2010b8ad9c7de91800470accaf8d9e59cc348be07edae170ac9bfd5289ca765'
+          test "$(stat -c%s "$PACKAGE")" = '25532'
+          test "$(sha256sum "$RUNNER_TEMP/permanent-paths" | awk '{print $1}')" = '4389b1e7be77f3fdf585c994d9242a42830ae4f59e596b57fb1d49cd59baffd2'
+          tar -tJf "$PACKAGE" | sort > "$RUNNER_TEMP/package-paths"
+          diff -u "$RUNNER_TEMP/permanent-paths" "$RUNNER_TEMP/package-paths"
+          rm -rf "$PACKAGE_ROOT"
+          mkdir -p "$PACKAGE_ROOT"
+          tar -xJf "$PACKAGE" -C "$PACKAGE_ROOT"
+
+          REPO="$GITHUB_REPOSITORY"
+          for spec in \
+            '8971196288 sha256:2ab96de4007eea40668e17b184cf169670ab2b0e06eacca31603a72f446f6031' \
+            '8970691385 sha256:42fed8f0dbafe0f504b4234040e2d4e56920888aa846ac58debcf61fe8794333' \
+            '8971736644 sha256:58e76cf0a0c43a25881749e4c059b5a9f29798abae8097b504bc186e2141a7e3'; do
+            set -- $spec
+            test "$(gh api "repos/$REPO/actions/artifacts/$1" --jq .digest)" = "$2"
+          done
+
+          gh api "repos/$REPO/actions/artifacts/8971196288/zip" > "$ARTIFACT_ZIP"
+          test "$(sha256sum "$ARTIFACT_ZIP" | awk '{print $1}')" = '2ab96de4007eea40668e17b184cf169670ab2b0e06eacca31603a72f446f6031'
+          rm -rf "$ARTIFACT_ROOT"
+          mkdir -p "$ARTIFACT_ROOT"
+          unzip -q "$ARTIFACT_ZIP" -d "$ARTIFACT_ROOT"
+          SUMMARY_FILE="$(find "$ARTIFACT_ROOT" -type f -name summary.json -print -quit)"
+          test -n "$SUMMARY_FILE"
+          ACQ="$(dirname "$SUMMARY_FILE")"
+          (cd "$ACQ" && sha256sum -c SHA256SUMS)
+          DATA="$PACKAGE_ROOT/data/intake/schoolhouse-irs-candidate-latest-filing-xml-v5"
+          cmp "$ACQ/SHA256SUMS" "$DATA/acquisition-SHA256SUMS"
+          for name in adjudication.json artifact-manifest.json range-receipts.jsonl route-policy.json selection.jsonl source-receipt.json summary.json xml-results.jsonl; do
+            cmp "$ACQ/$name" "$DATA/$name"
+          done
+          jq -e '
+            .acquisition_workflow_run_id == 31109883159 and
+            .acquisition_artifact_id == 8971196288 and
+            .acquisition_artifact_digest == "sha256:2ab96de4007eea40668e17b184cf169670ab2b0e06eacca31603a72f446f6031" and
+            .canonical_parent_commit == "a49b18304a69e9637cd854d38e80b67d4165cc6c" and
+            .canonical_parent_tree == "fdc4acfb8b3381872c157d0bf9a8bd6947631bd3" and
+            .selected_latest_xml_routes == 92 and
+            .successful_xml_screens == 54 and
+            .selected_missing_locator_rows == 38 and
+            .identities_admitted == 0 and
+            .relationships_admitted == 0 and
+            .outside_human_dependency == false and
+            .graph_effect == "none"
+          ' "$DATA/source-custody.json"
+
+          rm -rf "$WORK"
+          git worktree add --detach "$WORK" "$MAIN"
+          tar -xJf "$PACKAGE" -C "$WORK"
+          cd "$WORK"
+          export TERM=xterm
+          {
+            node tools/validate-schoolhouse-irs-candidate-latest-filing-xml-v5-custody.mjs
+            node tools/test-schoolhouse-irs-candidate-latest-filing-xml-v5-custody.mjs
+            node tools/build-schoolhouse-irs-candidate-latest-filing-xml-v5-custody.mjs --check
+            node tools/validate-schoolhouse-irs-candidate-filing-index-custody.mjs
+            node tools/test-schoolhouse-irs-candidate-filing-index-custody.mjs
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          } 2>&1 | tee "$RECEIPT/focused-gates.log"
+          npm run release:check 2>&1 | tee "$RECEIPT/release-check.log"
+
+          git reset --hard "$MAIN"
+          git clean -fdx
+          tar -xJf "$PACKAGE" -C "$WORK"
+          git switch -C "$TARGET" "$MAIN"
+          git add --pathspec-from-file="$RUNNER_TEMP/permanent-paths"
+          mapfile -t STAGED < <(git diff --cached --name-only | sort)
+          mapfile -t EXPECTED_PATHS < "$RUNNER_TEMP/permanent-paths"
+          test "${#STAGED[@]}" -eq 14
+          for i in "${!EXPECTED_PATHS[@]}"; do test "${STAGED[$i]}" = "${EXPECTED_PATHS[$i]}"; done
+          test -z "$(git diff --cached --name-only | grep '^\.github/' || true)"
+          test -z "$(git status --porcelain | grep '^??' || true)"
+
+          git config user.name 'OpenAI Agent'
+          git config user.email 'agent@openai.invalid'
+          git commit -m 'Preserve School.House latest-filing XML v5 custody'
+          PRODUCT="$(git rev-parse HEAD)"
+          TREE="$(git rev-parse HEAD^{tree})"
+          test "$(git show -s --format=%P HEAD)" = "$MAIN"
+          test "$(git diff --name-only "$MAIN"..HEAD | wc -l | tr -d ' ')" = '14'
+          test -z "$(git diff --name-only "$MAIN"..HEAD | grep '^\.github/' || true)"
+          test "$(git rev-parse origin/main)" = "$MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET" | awk '{print $1}')" = "$MAIN"
+          git push --force-with-lease="refs/heads/$TARGET:$MAIN" origin "HEAD:refs/heads/$TARGET"
+
+          {
+            printf 'canonical_parent=%s\n' "$MAIN"
+            printf 'canonical_parent_tree=%s\n' "$MAIN_TREE"
+            printf 'controller_base=%s\n' "$CONTROLLER_BASE"
+            printf 'trigger_head=%s\n' "$TRIGGER_HEAD"
+            printf 'product_commit=%s\n' "$PRODUCT"
+            printf 'product_tree=%s\n' "$TREE"
+            printf 'permanent_paths=14\n'
+            printf 'package_sha256=f2010b8ad9c7de91800470accaf8d9e59cc348be07edae170ac9bfd5289ca765\n'
+            printf 'acquisition_artifact=8971196288\n'
+            printf 'acquisition_digest=sha256:2ab96de4007eea40668e17b184cf169670ab2b0e06eacca31603a72f446f6031\n'
+            printf 'outside_human_dependency=false\n'
+            printf 'publication_effect=none\n'
+            printf 'adoption_effect=none\n'
+            printf 'graph_effect=none\n'
+          } > "$RECEIPT/receipt.txt"
+          cp "$RUNNER_TEMP/permanent-paths" "$RECEIPT/permanent-paths.txt"
+          sha256sum "$RECEIPT"/* > "$RECEIPT/SHA256SUMS"
+          cat "$RECEIPT/receipt.txt"
+
+      - name: Preserve exact controller receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-candidate-latest-filing-xml-v5-controller-receipt
+          path: ${{ runner.temp }}/schoolhouse-latest-filing-xml-v5-controller-receipt
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
