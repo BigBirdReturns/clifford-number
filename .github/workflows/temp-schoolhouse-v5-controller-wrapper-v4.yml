@@ -1,0 +1,102 @@
+name: TEMP repair and run School.House v5 controller
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: schoolhouse-v5-controller-wrapper-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.base.ref == 'agent/schoolhouse-v5-controller-wrapper-base-v4' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-v5-controller-wrapper-trigger-v4')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Recover, repair, and execute the exact v3 controller
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          MAIN='a49b18304a69e9637cd854d38e80b67d4165cc6c'
+          V3_BASE='c42404fac694bc2353f93ea7a3ad3ec774836664'
+          V3_TRIGGER='eeb2835a676d9dea6e0157dfc3908883513e0131'
+          V3_WORKFLOW='.github/workflows/temp-schoolhouse-v5-materializer-controller.yml'
+          V3_WORKFLOW_BLOB='caaef69ed019d6fa82feab29c350d81acbfbfd71'
+          V3_EXECUTE_BLOB='1e2938ae837151e4c030c12ad5588af59ec83834'
+          V3_BUNDLE_BLOB='96e4ac5610b79bdd82f9e6d83301ab62d50812e7'
+          V3_EXECUTE='.schoolhouse-irs-candidate-latest-filing-xml-v5-materializer/EXECUTE'
+          V3_BUNDLE='.schoolhouse-irs-candidate-latest-filing-xml-v5-materializer/product.tar.xz.b64'
+          SCRIPT="$RUNNER_TEMP/schoolhouse-v5-controller-v3-repaired.sh"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-latest-filing-xml-v5-controller-receipt"
+          mkdir -p "$RECEIPT"
+
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/agent/schoolhouse-v5-materializer-controller-base-v3:refs/remotes/origin/schoolhouse-v5-base-v3" \
+            "+refs/heads/agent/schoolhouse-v5-materializer-controller-trigger-v3:refs/remotes/origin/schoolhouse-v5-trigger-v3"
+
+          test "$(git rev-parse origin/main)" = "$MAIN"
+          test "$(git rev-parse origin/schoolhouse-v5-base-v3)" = "$V3_BASE"
+          test "$(git rev-parse origin/schoolhouse-v5-trigger-v3)" = "$V3_TRIGGER"
+          test "$(git rev-parse "$V3_TRIGGER:$V3_WORKFLOW")" = "$V3_WORKFLOW_BLOB"
+          test "$(git rev-parse "$V3_TRIGGER:$V3_EXECUTE")" = "$V3_EXECUTE_BLOB"
+          test "$(git rev-parse "$V3_TRIGGER:$V3_BUNDLE")" = "$V3_BUNDLE_BLOB"
+
+          git show "$V3_TRIGGER:$V3_WORKFLOW" > "$RUNNER_TEMP/v3-controller.yml"
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          tmp = Path(os.environ['RUNNER_TEMP'])
+          src = (tmp / 'v3-controller.yml').read_text().splitlines()
+          start = next(i for i, line in enumerate(src) if line == '        run: |') + 1
+          end = next(i for i in range(start, len(src)) if src[i].startswith('      - name: Preserve exact controller receipt'))
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in src[start:end]) + '\n'
+          old = 'git diff --exit-code "$CONTROLLER_BASE".."$TRIGGER_HEAD" -- "$WORKFLOW" "$EXECUTE" "$BUNDLE"'
+          replacement = '''for path in "$WORKFLOW" "$EXECUTE" "$BUNDLE"; do
+            LABEL="blob_${path//[^A-Za-z0-9]/_}"
+            BASE_BLOB="$(git rev-parse "$CONTROLLER_BASE:$path")"
+            TRIGGER_BLOB="$(git rev-parse "$TRIGGER_HEAD:$path")"
+            assert_eq "$LABEL" "$TRIGGER_BLOB" "$BASE_BLOB"
+          done'''
+          if script.count(old) != 1:
+              raise SystemExit(f'controller repair target count drift: {script.count(old)}')
+          script = script.replace(old, replacement)
+          (tmp / 'schoolhouse-v5-controller-v3-repaired.sh').write_text(script)
+          PY
+
+          sha256sum "$RUNNER_TEMP/v3-controller.yml" "$SCRIPT" | tee "$RECEIPT/wrapper-SHA256SUMS"
+          bash -n "$SCRIPT"
+          git checkout --detach "$V3_TRIGGER"
+          bash "$SCRIPT"
+
+      - name: Preserve exact repaired-controller receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-candidate-latest-filing-xml-v5-controller-v4-receipt
+          path: ${{ runner.temp }}/schoolhouse-latest-filing-xml-v5-controller-receipt
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
