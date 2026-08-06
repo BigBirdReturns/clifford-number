@@ -83,6 +83,25 @@ jobs:
             npm run release:check
           } 2>&1 | tee /tmp/pc51-consolidated-publication/qualification.log
 
+      - name: Restore generated outputs outside product authority
+        working-directory: product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git restore --source=HEAD --worktree --staged -- build dist 2>/dev/null || true
+          git clean -fdx -- build dist
+          git diff --check
+          git diff --name-only | sort > /tmp/pc51-consolidated-publication/prepublication-paths.txt
+          cat > /tmp/pc51-consolidated-publication/expected-repair-paths.txt <<'EOF'
+          test/preference-custody-manifest-v49.test.js
+          test/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.test.js
+          tools/lib/preference-custody-manifest-v49.mjs
+          tools/lib/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs
+          EOF
+          diff -u \
+            /tmp/pc51-consolidated-publication/expected-repair-paths.txt \
+            /tmp/pc51-consolidated-publication/prepublication-paths.txt
+
       - name: Publish exact one-parent fourteen-path head
         env:
           GH_TOKEN: ${{ github.token }}
