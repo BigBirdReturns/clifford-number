@@ -55,7 +55,7 @@ jobs:
           replacement='''mapfile -t CHANGED < <(git diff --name-only "$BASE"..HEAD | sort)
           test "${#CHANGED[@]}" -ge 1
           for path in "${CHANGED[@]}"; do
-            [[ "$path" == .github/workflows/temp-schoolhouse-irs-candidate-filing-index-* ]]
+            [[ "$path" == .github/workflows/temp-schoolhouse-irs-candidate-filing-index-* || "$path" == .schoolhouse-irs-candidate-filing-index-census/capture.py.gz.b64 ]]
           done'''
           script,count=pattern.subn(replacement,script,count=1)
           if count != 1: raise SystemExit(f'carrier replacements={count}')
