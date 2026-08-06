@@ -1,4 +1,4 @@
-name: TEMP export exact RD-04 State Options rebuild custody
+name: TEMP recover sealed RD-04 State Options v1 authored package
 
 on:
   pull_request:
@@ -8,21 +8,24 @@ on:
   workflow_dispatch:
 
 permissions:
-  actions: read
   contents: read
 
 concurrency:
-  group: temp-ssc-rd04-state-options-export-${{ github.event.pull_request.number || github.run_id }}
+  group: temp-ssc-rd04-state-options-v1-package-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: false
 
 env:
-  CANONICAL_MAIN: 327648726320507532751f219a52d03f9c17fac5
-  SOURCE_ADJUDICATION_HEAD: f8a8d2ead8de1c9e6e9b06f5ae4d1389ccb30b51
-  SOURCE_ARTIFACT_ID: '8950104341'
-  SOURCE_ARTIFACT_SHA256: 72db2a9c3b481f59383275f2821cdb4978dd4f257cf0236f309e94214c7f45d1
+  SEALED_COMMIT: dcf5dbed25a2b0b4e617d23d3584df2ce1d1666b
+  SEALED_WORKFLOW_BLOB: 252c05a486329be56c034812f9009f478b15623a
+  CARRIER_ROOT: .transport/ssc-rd04-state-options-exemption-v1/shards
+  BASE64_BYTES: '35180'
+  BASE64_SHA256: 4059f1dcd17b225da24562e2cdeb5f93f7e44fe6aad964647574a44005ef0ace
+  ARCHIVE_BYTES: '26384'
+  ARCHIVE_SHA256: 97886246a6d8742b2da4a25797324b107368d0a3ececa2a215a0ca0862d74595
+  PATHS_SHA256: 8717e0baadd372702e28bf63d165e4737625c3a92f46945e6ba2ebd929450192
 
 jobs:
-  export:
+  recover:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.pull_request.base.ref == 'main' &&
@@ -33,79 +36,66 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ env.CANONICAL_MAIN }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
-      - name: Export exact current matrix, implementation, and source artifact
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Recover and verify exact sealed authored package
         shell: bash
         run: |
           set -Eeuo pipefail
-          OUT="$RUNNER_TEMP/ssc-rd04-state-options-rebuild-export-v1"
+          OUT="$RUNNER_TEMP/ssc-rd04-state-options-v1-package-recovery"
+          SHARDS="$OUT/shards"
+          PACKAGE="$OUT/package"
+          RECEIPT="$OUT/receipt"
           rm -rf "$OUT"
-          mkdir -p "$OUT/current-main" "$OUT/source-adjudication" "$OUT/receipts"
+          mkdir -p "$SHARDS" "$PACKAGE" "$RECEIPT"
 
-          test "$(git rev-parse HEAD)" = "$CANONICAL_MAIN"
-          git fetch --no-tags origin main
-          printf 'canonical_main=%s\nobserved_origin_main=%s\nsource_adjudication_head=%s\n' \
-            "$CANONICAL_MAIN" "$(git rev-parse origin/main)" "$SOURCE_ADJUDICATION_HEAD" \
-            > "$OUT/receipts/heads.txt"
+          git cat-file -e "$SEALED_COMMIT^{commit}"
+          test "$(git rev-parse "$SEALED_COMMIT:.github/workflows/temp-ssc-rd04-state-options-exemption-materializer-v1.yml")" = "$SEALED_WORKFLOW_BLOB"
 
-          cat > "$OUT/receipts/current-main-paths.txt" <<'EOF'
-          .github/workflows/status-sovereignty-rd-wave03-rd04-field-promotion.yml
-          data/intake/status-sovereignty-rd-wave03-rd04-field-promotion/cell-promotion-ledger.json
-          data/intake/status-sovereignty-rd-wave03-rd04-field-promotion/index.json
-          data/intake/status-sovereignty-rd-wave03-rd04-field-promotion/product-manifest.json
-          data/intake/status-sovereignty-rd-wave03-rd04-field-promotion/promoted-partial-field-matrix.json
-          data/intake/status-sovereignty-rd-wave03-rd04-field-promotion/promotion-decisions.json
-          data/intake/status-sovereignty-rd-wave03-rd04-field-promotion/promotion-input-custody.json
-          data/intake/status-sovereignty-rd-wave03-rd04-field-promotion/promotion-summary.json
-          data/intake/status-sovereignty-rd-wave03-rd04-field-promotion/remaining-open-field-census.json
-          data/research/status-sovereignty-residual-denominator-wave-03-current.json
-          docs/milestones/ssc-rd-wave03-rd04-field-promotion.md
-          schemas/status-sovereignty-rd-wave03-rd04-field-promotion.schema.json
-          test/status-sovereignty-rd-wave03-rd04-field-promotion.test.js
-          tools/build-status-sovereignty-rd-wave03-rd04-field-promotion.mjs
-          tools/validate-status-sovereignty-rd-wave03-rd04-field-promotion.mjs
+          git show "$SEALED_COMMIT:$CARRIER_ROOT/000.b64" > "$SHARDS/000.b64"
+          git show "$SEALED_COMMIT:$CARRIER_ROOT/001.b64" > "$SHARDS/001.b64"
+          test "$(sha256sum "$SHARDS/000.b64" | awk '{print $1}')" = e0ff1c1d9c6e0fa32da7551fbaa4998d893e8aa094c2eb67fc57b28387109917
+          test "$(sha256sum "$SHARDS/001.b64" | awk '{print $1}')" = 534bf0c4ef4cda4332e8198a2267f743a26bd4a0381398e6637202156eec3382
+          cat "$SHARDS/000.b64" "$SHARDS/001.b64" > "$OUT/product.b64"
+          test "$(stat -c '%s' "$OUT/product.b64")" = "$BASE64_BYTES"
+          test "$(sha256sum "$OUT/product.b64" | awk '{print $1}')" = "$BASE64_SHA256"
+          base64 -d "$OUT/product.b64" > "$OUT/product.tar.xz"
+          test "$(stat -c '%s' "$OUT/product.tar.xz")" = "$ARCHIVE_BYTES"
+          test "$(sha256sum "$OUT/product.tar.xz" | awk '{print $1}')" = "$ARCHIVE_SHA256"
+          tar -xJf "$OUT/product.tar.xz" -C "$PACKAGE"
+
+          cat > "$RECEIPT/expected-paths.txt" <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/promoted-partial-field-matrix.json
+          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/promotion-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/remaining-open-field-census.json
+          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/source-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/source-page-11.txt
+          data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/state-field-register.jsonl
+          docs/milestones/ssc-rd-wave03-rd04-state-options-exemption-promotion.md
+          schemas/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.schema.json
+          test/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.mjs
           EOF
-          sed -i 's/^          //' "$OUT/receipts/current-main-paths.txt"
-          while IFS= read -r rel; do
-            test -f "$rel"
-            mkdir -p "$OUT/current-main/$(dirname "$rel")"
-            cp -a "$rel" "$OUT/current-main/$rel"
-          done < "$OUT/receipts/current-main-paths.txt"
+          sed -i 's/^          //' "$RECEIPT/expected-paths.txt"
+          test "$(sha256sum "$RECEIPT/expected-paths.txt" | awk '{print $1}')" = "$PATHS_SHA256"
+          find "$PACKAGE" -type f -printf '%P\n' | sort > "$RECEIPT/archive-paths.txt"
+          sort "$RECEIPT/expected-paths.txt" > "$RECEIPT/expected-paths-sorted.txt"
+          cmp "$RECEIPT/expected-paths-sorted.txt" "$RECEIPT/archive-paths.txt"
+          test "$(find "$PACKAGE" -type l | wc -l | tr -d ' ')" = 0
 
-          git cat-file -e "$SOURCE_ADJUDICATION_HEAD^{commit}"
-          git show "$SOURCE_ADJUDICATION_HEAD:.github/workflows/temp-ssc-rd04-state-options-report-acquisition-v1.yml" \
-            > "$OUT/source-adjudication/workflow.yml"
-          git show "$SOURCE_ADJUDICATION_HEAD^{commit}" --no-patch --format='%H%n%T%n%P%n%s' \
-            > "$OUT/source-adjudication/commit.txt"
-
-          curl --fail --location --silent --show-error \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H 'Accept: application/vnd.github+json' \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${SOURCE_ARTIFACT_ID}/zip" \
-            -o "$OUT/source-adjudication/artifact.zip"
-          test "$(sha256sum "$OUT/source-adjudication/artifact.zip" | awk '{print $1}')" = "$SOURCE_ARTIFACT_SHA256"
-          mkdir -p "$OUT/source-adjudication/artifact"
-          unzip -q "$OUT/source-adjudication/artifact.zip" -d "$OUT/source-adjudication/artifact"
-
-          find "$OUT" -type f -printf '%P\n' | sort > "$OUT/receipts/export-paths.txt"
-          find "$OUT" -type f ! -path "$OUT/receipts/SHA256SUMS" -print0 \
-            | sort -z \
-            | xargs -0 sha256sum \
-            | sed "s#  $OUT/#  #" \
-            > "$OUT/receipts/SHA256SUMS"
-          node tools/validate-no-magic-human-gate.mjs
-          printf 'status=complete\noutside_human_dependency=false\nrepository_mutations=0\n' \
-            > "$OUT/receipts/final.txt"
-      - name: Upload exact rebuild export
+          find "$OUT" -type f ! -path "$RECEIPT/SHA256SUMS" -print0 \
+            | sort -z | xargs -0 sha256sum | sed "s#  $OUT/#  #" > "$RECEIPT/SHA256SUMS"
+          printf 'status=complete_exact_v1_package_recovered\nsealed_commit=%s\narchive_files=13\noutside_human_dependency=false\nrepository_mutations=0\n' \
+            "$SEALED_COMMIT" > "$RECEIPT/final.txt"
+      - name: Upload exact sealed package
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd04-state-options-rebuild-export-v1
-          path: ${{ runner.temp }}/ssc-rd04-state-options-rebuild-export-v1
+          name: ssc-rd04-state-options-v1-authored-package
+          path: ${{ runner.temp }}/ssc-rd04-state-options-v1-package-recovery
           if-no-files-found: error
           retention-days: 90
