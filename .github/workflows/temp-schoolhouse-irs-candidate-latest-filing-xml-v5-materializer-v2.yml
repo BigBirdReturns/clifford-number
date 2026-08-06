@@ -1,4 +1,4 @@
-# replay-generation: 3
+# replay-generation: 4
 name: TEMP materialize School.House latest-filing XML v5 custody v2
 
 on:
@@ -24,7 +24,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.pull_request.head.repo.full_name == github.repository &&
-       github.event.pull_request.head.ref == 'agent/schoolhouse-irs-candidate-latest-filing-xml-v5-materializer-v1')
+       github.event.pull_request.head.ref == 'agent/schoolhouse-irs-candidate-latest-filing-xml-v5-materializer-v2')
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     steps:
@@ -57,7 +57,7 @@ jobs:
           ARTIFACT_ROOT="$RUNNER_TEMP/schoolhouse-latest-filing-xml-v5-artifact"
           RECEIPT="$RUNNER_TEMP/schoolhouse-latest-filing-xml-v5-materialization-receipt"
           mkdir -p "$RECEIPT"
-          printf 'materializer_started=true\nworkflow_generation=3\n' > "$RECEIPT/preflight.txt"
+          printf 'materializer_started=true\nworkflow_generation=4\n' > "$RECEIPT/preflight.txt"
 
           cat > "$RUNNER_TEMP/permanent-paths" <<'EOF'
           data/intake/schoolhouse-irs-candidate-latest-filing-xml-v5/acquisition-SHA256SUMS
