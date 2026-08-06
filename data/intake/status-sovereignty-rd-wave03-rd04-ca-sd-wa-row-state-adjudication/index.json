@@ -1,0 +1,63 @@
+{
+  "schema_version": "ssc-rd04-wave03-ca-sd-wa-row-state-index@1",
+  "wave_id": "SSC-RD-W03",
+  "lane_id": "RD-04",
+  "class_id": "RD-04-C02",
+  "issue": 1017,
+  "input_paths": {
+    "authored_row_state_decisions": "data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication/authored-row-state-decisions.json",
+    "predecessor_custody": "data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication/predecessor-custody.json",
+    "predecessor_matrix": "data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication/promoted-partial-field-matrix.json"
+  },
+  "derived_paths": {
+    "row_state_ledger": "data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication/row-state-ledger.json",
+    "promoted_partial_field_matrix": "data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication/promoted-partial-field-matrix.json",
+    "remaining_open_field_census": "data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication/remaining-open-field-census.json",
+    "summary": "data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication/summary.json",
+    "product_manifest": "data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication/product-manifest.json"
+  },
+  "predecessor": {
+    "source_pr": 1252,
+    "product_commit": "888c75054dd8d082150e1883c44d2239597065f5",
+    "product_tree": "1664393f0f054e6749096893f315bbafdf08dff5",
+    "merge_commit": "fc4864a32b9469313c18095e86192716a4fa1b6e",
+    "matrix_sha256": "c31824ea077386bec92083de33c58dd39c08196abce928cfa6a388682a23f4cd"
+  },
+  "counts": {
+    "target_rows": 3,
+    "newly_terminalized_row_state_cells": 3,
+    "substantive_field_changes": 0,
+    "terminal_cells_before": 187,
+    "terminal_cells_after": 190,
+    "still_open_cells_after": 260,
+    "terminal_substantive_cells_after": 87,
+    "still_open_substantive_cells_after": 213,
+    "row_terminal_state_cells_terminal_after": 3,
+    "row_terminal_state_cells_open_after": 47,
+    "terminal_units_after": 3,
+    "open_units_after": 47,
+    "class_closed": false
+  },
+  "current_result": {
+    "row_state_adjudication_complete": true,
+    "three_target_rows_terminal": true,
+    "field_matrix_terminal": false,
+    "class_state": "still_open",
+    "class_closed": false,
+    "cumulative_ledger_effect": "none",
+    "outside_human_dependency": false,
+    "external_contacts": 0,
+    "external_reviews": 0,
+    "reviewed_disposition_changes": 0,
+    "publication_effect": "none",
+    "adoption_effect": "none",
+    "graph_effect": "none",
+    "prevalence_effect": "none",
+    "discrimination_effect": "none",
+    "coordination_effect": "none",
+    "common_purpose_effect": "none",
+    "racial_order_effect": "none",
+    "complete_compact_effect": "none"
+  },
+  "next_bounded_operation": "continue exact-source acquisition and terminal adjudication for the 213 still-open substantive state fields and separately terminalize additional rows only after all eight evidence fields are terminal"
+}
