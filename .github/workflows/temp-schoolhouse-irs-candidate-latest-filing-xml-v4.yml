@@ -25,8 +25,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     steps:
-      - name: Check out exact v4 acquisition carrier
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
@@ -36,7 +35,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Verify exact carrier, source blobs, and runner custody
+      - name: Prove exact carrier and runner before any request
         shell: bash
         run: |
           set -Eeuxo pipefail
@@ -49,8 +48,6 @@ jobs:
           RUNNER="$RUNNER_TEMP/acquire-schoolhouse-irs-candidate-latest-filing-xml-v4.py"
 
           git fetch --no-tags origin main
-          printf 'origin_main=%s\nmerge_base=%s\n' \
-            "$(git rev-parse origin/main)" "$(git merge-base HEAD origin/main)"
           test "$(git rev-parse origin/main)" = "$PARENT"
           test "$(git merge-base HEAD origin/main)" = "$PARENT"
 
@@ -68,7 +65,7 @@ jobs:
           test "$(git rev-parse "$PARENT:data/intake/schoolhouse-irs-candidate-filing-index-census/summary.json")" = '699842a7518cbddc51e25305e8a65a8417860ee7'
           test "$(git rev-parse "$PARENT:data/intake/schoolhouse-irs-candidate-filing-index-census/route-policy.json")" = '99a7376ff408b6856f479d779716061f14d52e05'
 
-          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'bc25cd5b71f254c8e0cbafa28056acc17fe2546aded0ce8cb748ab3f4cc65b3b'
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '571ef7ee3f95761d7574b38228e077592d841ccaf54e90e4e6d9cd31058e3113'
           base64 -d "$BUNDLE" > "$GZIP"
           test "$(sha256sum "$GZIP" | awk '{print $1}')" = '2fb7fb2a962db2806937d05ed76b193f2aa762b64c43bd0b74575072a0dcfe49'
           gzip -dc "$GZIP" > "$RUNNER"
@@ -76,31 +73,37 @@ jobs:
           python -m py_compile "$RUNNER"
           python "$RUNNER" --self-test
 
-          grep -Fx 'acquire=schoolhouse-irs-candidate-latest-filing-xml-v4' "$EXECUTE"
-          grep -Fx "canonical_parent=$PARENT" "$EXECUTE"
-          grep -Fx 'sealed_candidate_rows=641' "$EXECUTE"
-          grep -Fx 'sealed_candidate_eins=438' "$EXECUTE"
-          grep -Fx 'filing_index_match_rows=486' "$EXECUTE"
-          grep -Fx 'candidate_eins_with_filing_rows=92' "$EXECUTE"
-          grep -Fx 'selected_latest_xml_routes=92' "$EXECUTE"
-          grep -Fx 'official_archive_urls=67' "$EXECUTE"
-          grep -Fx 'maximum_total_requests=360' "$EXECUTE"
-          grep -Fx 'range_only_archive_access=true' "$EXECUTE"
-          grep -Fx 'batch_zip_fetches=0' "$EXECUTE"
-          grep -Fx 'result_spawned_requests=0' "$EXECUTE"
-          grep -Fx 'raw_xml_retained=false' "$EXECUTE"
-          grep -Fx 'raw_term_text_retained=false' "$EXECUTE"
-          grep -Fx 'observed_organization_name_values_retained=0' "$EXECUTE"
-          grep -Fx 'officer_or_person_name_values_retained=0' "$EXECUTE"
-          grep -Fx 'identity_admitted=false' "$EXECUTE"
-          grep -Fx 'relationship_admitted=false' "$EXECUTE"
-          grep -Fx 'negative_existence_claim_created=false' "$EXECUTE"
-          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
-          grep -Fx 'publication_effect=none' "$EXECUTE"
-          grep -Fx 'adoption_effect=none' "$EXECUTE"
-          grep -Fx 'graph_effect=none' "$EXECUTE"
+          for line in \
+            'acquire=schoolhouse-irs-candidate-latest-filing-xml-v4' \
+            "canonical_parent=$PARENT" \
+            'runner_source_sha256=cd3271073327c0b679e8e322cdb8ab4452107fd0b3507b8ddf7f896ca2da4c86' \
+            'runner_gzip_sha256=2fb7fb2a962db2806937d05ed76b193f2aa762b64c43bd0b74575072a0dcfe49' \
+            'runner_bundle_sha256=571ef7ee3f95761d7574b38228e077592d841ccaf54e90e4e6d9cd31058e3113' \
+            'sealed_candidate_rows=641' \
+            'sealed_candidate_eins=438' \
+            'filing_index_match_rows=486' \
+            'candidate_eins_with_filing_rows=92' \
+            'selected_latest_xml_routes=92' \
+            'official_archive_urls=67' \
+            'maximum_total_requests=360' \
+            'range_only_archive_access=true' \
+            'batch_zip_fetches=0' \
+            'result_spawned_requests=0' \
+            'raw_xml_retained=false' \
+            'raw_term_text_retained=false' \
+            'observed_organization_name_values_retained=0' \
+            'officer_or_person_name_values_retained=0' \
+            'identity_admitted=false' \
+            'relationship_admitted=false' \
+            'negative_existence_claim_created=false' \
+            'outside_human_dependency=false' \
+            'publication_effect=none' \
+            'adoption_effect=none' \
+            'graph_effect=none'; do
+            grep -Fx "$line" "$EXECUTE"
+          done
 
-      - name: Execute exact range-only latest-filing XML v4 screen
+      - name: Execute exact range-only latest-filing XML screen
         id: acquisition
         continue-on-error: true
         shell: bash
@@ -108,13 +111,13 @@ jobs:
           set +e
           OUT="$RUNNER_TEMP/schoolhouse-irs-candidate-latest-filing-xml-v4"
           RUNNER="$RUNNER_TEMP/acquire-schoolhouse-irs-candidate-latest-filing-xml-v4.py"
+          LOG="$RUNNER_TEMP/schoolhouse-irs-candidate-latest-filing-xml-v4.log"
           rm -rf "$OUT"
-          python "$RUNNER" --repo-root "$GITHUB_WORKSPACE" --output "$OUT" \
-            2>&1 | tee "$RUNNER_TEMP/schoolhouse-irs-candidate-latest-filing-xml-v4.log"
+          python "$RUNNER" --repo-root "$GITHUB_WORKSPACE" --output "$OUT" 2>&1 | tee "$LOG"
           status=${PIPESTATUS[0]}
           mkdir -p "$OUT"
           printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
-          cp "$RUNNER_TEMP/schoolhouse-irs-candidate-latest-filing-xml-v4.log" "$OUT/RUNNER-OUTPUT.log"
+          cp "$LOG" "$OUT/RUNNER-OUTPUT.log"
           exit "$status"
 
       - name: Upload terminal privacy-minimized artifact
@@ -138,11 +141,14 @@ jobs:
           python - "$ROOT" <<'PY'
           from pathlib import Path
           import json, sys
+
           root=Path(sys.argv[1])
           load=lambda n:json.loads((root/n).read_text())
           rows=lambda n:[json.loads(x) for x in (root/n).read_text().splitlines() if x.strip()]
-          s=load('summary.json'); p=load('route-policy.json'); a=load('adjudication.json'); src=load('source-receipt.json'); m=load('artifact-manifest.json')
+          s=load('summary.json'); p=load('route-policy.json'); a=load('adjudication.json')
+          src=load('source-receipt.json'); m=load('artifact-manifest.json')
           selection=rows('selection.jsonl'); catalogs=rows('archive-catalog.jsonl'); results=rows('xml-results.jsonl')
+
           assert s['schema_version']=='schoolhouse-irs-candidate-latest-filing-xml-v4@1'
           assert (s['sealed_candidate_rows'],s['sealed_candidate_eins'],s['filing_index_match_rows'],s['candidate_eins_with_filing_rows'])==(641,438,486,92)
           assert s['selected_latest_xml_routes']==len(selection)==len(results)==92
@@ -160,6 +166,7 @@ jobs:
           assert s['identities_admitted']==s['relationships_admitted']==s['negative_existence_claims_created']==0
           assert s['outside_human_dependency'] is False
           assert s['publication_effect']==s['adoption_effect']==s['graph_effect']=='none'
+
           forbidden={'observed_organization_name','organization_name','filing_organization_name','matched_text','raw_xml','raw_term_text','officer_name','person_name','street_address','mailing_address','postal_code','email','phone','preparer_name'}
           terminal={'screened_official_xml','member_not_found_complete_archive_catalog','archive_catalog_incomplete_target_unresolved','duplicate_archive_member_matches','xml_parse_error','member_acquisition_or_integrity_error'}
           target_ids={'schoolhouse_compact','school_house_spaced','school_house_dotted','bravo_victor','bvvc'}
@@ -171,16 +178,28 @@ jobs:
               assert r['street_address_rows_retained']==r['contact_detail_rows_retained']==r['preparer_rows_retained']==r['private_support_rows']==0
               assert r['identity_admitted'] is False and r['relationship_admitted'] is False and r['negative_existence_claim_created'] is False
               assert r['outside_human_dependency'] is False and r['publication_effect']==r['adoption_effect']==r['graph_effect']=='none'
-              assert set(r.get('target_term_ids',[]))<=target_ids and set(r.get('mechanism_term_ids',[]))<=mechanism_ids
+              assert set(r.get('target_term_ids',[]))<=target_ids
+              assert set(r.get('mechanism_term_ids',[]))<=mechanism_ids
+
           assert p['selection_contract']['selected_latest_xml_routes']==92
           assert p['request_bounds']['range_requests_only_for_archives'] is True and p['request_bounds']['maximum_total_requests']==360
           assert p['retention']['observed_organization_name_values_retained']==0 and p['retention']['raw_xml_retained'] is False
           assert p['interpretation']['candidate_name_alignment_is_not_public_schoolhouse_identity'] is True
           assert a['observed_organization_name_values_retained']==0 and a['public_schoolhouse_identity_admitted'] is False
-          assert a['fiscal_sponsor_relationship_admitted'] is False and a['grant_or_funding_relationship_admitted'] is False and a['governance_or_control_relationship_admitted'] is False
+          assert a['fiscal_sponsor_relationship_admitted'] is False
+          assert a['grant_or_funding_relationship_admitted'] is False
+          assert a['governance_or_control_relationship_admitted'] is False
           assert a['negative_existence_claim_created'] is False
           assert src['range_only_archive_access'] is True and src['batch_zip_downloaded'] is False and src['raw_xml_retained'] is False
           assert m['counts']['selection_rows']==m['counts']['xml_result_rows']==92 and m['raw_source_retained'] is False
           assert not any(x.is_file() and x.suffix.lower() in {'.xml','.zip'} for x in root.rglob('*'))
-          print(json.dumps({'selected':92,'screened':s['successful_xml_screens'],'name_alignment':s['candidate_legal_name_alignment_rows'],'target_hits':s['target_term_hit_xml_rows'],'mechanism_hits':s['mechanism_term_hit_xml_rows'],'requests':s['request_count']},sort_keys=True))
+
+          print(json.dumps({
+            'selected':92,
+            'screened':s['successful_xml_screens'],
+            'name_alignment':s['candidate_legal_name_alignment_rows'],
+            'target_hits':s['target_term_hit_xml_rows'],
+            'mechanism_hits':s['mechanism_term_hit_xml_rows'],
+            'requests':s['request_count'],
+          },sort_keys=True))
           PY
