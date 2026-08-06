@@ -1,0 +1,66 @@
+name: TEMP export School.House NC report drift product inputs
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-schoolhouse-nc-business-reports-data-census-export.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Export exact canonical BVVC and School.House custody package
+        run: |
+          set -Eeuo pipefail
+          PARENT='327648726320507532751f219a52d03f9c17fac5'
+          OUT='/tmp/schoolhouse-nc-business-reports-data-census-export'
+          git fetch --no-tags --depth=1 origin "$PARENT"
+          test "$(git rev-parse "$PARENT^{commit}")" = "$PARENT"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+
+          git archive "$PARENT" \
+            data/intake/bvvc-defense-capital \
+            tools/build-schoolhouse-nc-static-nonprofit-custody.mjs \
+            tools/validate-schoolhouse-nc-static-nonprofit-custody.mjs \
+            tools/validate-bvvc-defense-capital.mjs \
+            tools/validate-schoolhouse-honor-foundation-990-custody.mjs \
+            tools/validate-no-magic-human-gate.mjs \
+            test/person-routers.test.js \
+            package.json \
+          | tar -x -C "$OUT"
+
+          {
+            printf 'canonical_parent=%s\n' "$PARENT"
+            printf 'canonical_parent_tree=%s\n' "$(git rev-parse "$PARENT^{tree}")"
+            printf 'export_workflow_head=%s\n' "$GITHUB_SHA"
+            printf 'source_artifact_id=%s\n' '8954062856'
+            printf 'source_artifact_digest=%s\n' 'sha256:48a83eb5d75ceb29fb73a6f5bfd3b315fdbd07ffd11463c473954145307dd472'
+          } > "$OUT/EXPORT-METADATA"
+
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | sort -z \
+              | xargs -0 sha256sum \
+              > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-nc-business-reports-data-census-export
+          path: /tmp/schoolhouse-nc-business-reports-data-census-export
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
