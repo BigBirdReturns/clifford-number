@@ -1,0 +1,330 @@
+name: TEMP certify sealed School.House NC report drift artifact v2
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-schoolhouse-nc-business-reports-data-census-certify-v2.yml'
+
+concurrency:
+  group: schoolhouse-nc-report-drift-certify-v2-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  certify:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/schoolhouse-nc-business-reports-data-census-certify-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify sealed artifact and issue zero-request certification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PARENT='327648726320507532751f219a52d03f9c17fac5'
+          ARTIFACT='/tmp/nc-report-drift-artifact'
+          RECEIPT='/tmp/nc-report-drift-certification'
+          EXECUTE='.schoolhouse-nc-business-reports-data-census-certify/EXECUTE'
+          LIVE_DIGEST='sha256:e7feb5a1a406a718a83aafaabd71fbb62c32dbfd0c43e0e66e3429eb9f20b10a'
+
+          git fetch --no-tags origin "$PARENT"
+          git merge-base --is-ancestor "$PARENT" HEAD
+          git diff --name-only --no-renames "$PARENT..HEAD" | sort -u > /tmp/changed
+          cat > /tmp/expected <<'PATHS'
+          .github/workflows/temp-schoolhouse-nc-business-reports-data-census-certify-v2.yml
+          .github/workflows/temp-schoolhouse-nc-business-reports-data-census-certify.yml
+          .schoolhouse-nc-business-reports-data-census-certify/EXECUTE
+          PATHS
+          sed -i 's/^          //' /tmp/expected
+          sort -u -o /tmp/expected /tmp/expected
+          diff -u /tmp/expected /tmp/changed
+
+          python - "$EXECUTE" "$LIVE_DIGEST" <<'PY'
+          from pathlib import Path
+          import sys
+
+          rows = [line for line in Path(sys.argv[1]).read_text().splitlines() if line.strip()]
+          assert len(rows) == 48, len(rows)
+          values = {}
+          for line in rows:
+              key, value = line.split('=', 1)
+              assert key not in values, key
+              values[key] = value
+
+          expected = {
+              'certify': 'schoolhouse-nc-business-reports-data-census-artifact-v1',
+              'canonical_parent': '327648726320507532751f219a52d03f9c17fac5',
+              'source_pr': '1236',
+              'source_branch': 'agent/schoolhouse-nc-business-reports-data-census-v2',
+              'source_head': '5447b15b58f9679d6eddcb75da9dcb03a0f86526',
+              'source_workflow_run_id': '31066659672',
+              'source_artifact_id': '8954062856',
+              'source_artifact_digest': sys.argv[2],
+              'artifact_digest_source': 'github_actions_artifact_api',
+              'stale_download_response_digest_superseded': 'sha256:48a83eb5d75ceb29fb73a6f5bfd3b315fdbd07ffd11463c473954145307dd472',
+              'internal_hash_files_verified': '10',
+              'certification_receipt_files': '4',
+              'source_content_sha256': '7740bc619e71d17b378df4348a51f79b954b0f77202eb93cea786b7406f648bb',
+              'source_content_bytes': '121309',
+              'predecessor_source_content_sha256': '21b5334028fae1c314ca0f63b21b1d57b85e95462c8749ecb79c1bd6108cc7ee',
+              'predecessor_source_content_bytes': '120956',
+              'observed_link_rows': '246',
+              'observed_form_rows': '0',
+              'eligible_successor_unique_routes': '0',
+              'predecessor_candidate_routes_present': '0',
+              'predecessor_candidate_routes_missing': '2',
+              'current_candidate_routes_added': '0',
+              'source_requests': '1',
+              'certification_source_requests': '0',
+              'successor_fetches': '0',
+              'query_submissions': '0',
+              'forms_submitted': '0',
+              'cookie_replays': '0',
+              'subscription_purchases': '0',
+              'identities_admitted': '0',
+              'relationships_admitted': '0',
+              'negative_existence_claims_created': '0',
+              'raw_source_retained': 'false',
+              'full_visible_text_retained': 'false',
+              'outside_human_dependency': 'false',
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          for key, value in expected.items():
+              assert values.get(key) == value, (key, values.get(key), value)
+          PY
+
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/8954062856" --jq '.digest // ""')" = "$LIVE_DIGEST"
+          rm -rf "$ARTIFACT" "$RECEIPT"
+          mkdir -p "$ARTIFACT" "$RECEIPT"
+          gh run download 31066659672 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name schoolhouse-nc-business-reports-data-census \
+            --dir "$ARTIFACT"
+
+          test "$(sha256sum "$ARTIFACT/artifact-manifest.json" | awk '{print $1}')" = '07b742a29c3c19bb714ce8dbaa5c7edd953097d7455d3af98cb5af9f9d8f5f18'
+          test "$(sha256sum "$ARTIFACT/SHA256SUMS" | awk '{print $1}')" = '160da92ced90835914231d12afe58a13923738b8c33ced497843f1b585c996ad'
+          test "$(sha256sum "$ARTIFACT/RUNNER_EXIT_CODE" | awk '{print $1}')" = '9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa'
+          test "$(sha256sum "$ARTIFACT/source-receipt.json" | awk '{print $1}')" = 'c9f9cf7d489d7426c9f1db850336583b4564cf9a8df339b1feea650115841519'
+          test "$(sha256sum "$ARTIFACT/source-drift-comparison.json" | awk '{print $1}')" = '977e4ba414e2a7e31b228edff03261ee73221ec6415e60510a388c2fbd6a71b2'
+          test "$(sha256sum "$ARTIFACT/link-observations.jsonl" | awk '{print $1}')" = 'e924d60ccec8ac948d5eb8ab4cba2735a1cefe2579d26a964c6b370611ba458b'
+          test "$(sha256sum "$ARTIFACT/successor-routes.jsonl" | awk '{print $1}')" = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+          test "$(sha256sum "$ARTIFACT/form-mechanics.jsonl" | awk '{print $1}')" = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+          test "$(sha256sum "$ARTIFACT/route-policy.json" | awk '{print $1}')" = '48a3d9e815082b683aa483168a6380421b7d28073436f257b106d7be1115d429'
+          test "$(sha256sum "$ARTIFACT/summary.json" | awk '{print $1}')" = 'e8be60aa62e90d2585e42faf52f6cad414158be59e36881d1bad21c2195e19cd'
+          test "$(cat "$ARTIFACT/RUNNER_EXIT_CODE")" = '0'
+          (cd "$ARTIFACT" && sha256sum -c SHA256SUMS)
+
+          python - "$ARTIFACT" "$RECEIPT" "$LIVE_DIGEST" <<'PY'
+          from pathlib import Path
+          import json
+          import sys
+
+          root = Path(sys.argv[1])
+          out = Path(sys.argv[2])
+          live_digest = sys.argv[3]
+          load = lambda name: json.loads((root / name).read_text())
+          rows = lambda name: [json.loads(line) for line in (root / name).read_text().splitlines() if line.strip()]
+
+          summary = load('summary.json')
+          source = load('source-receipt.json')
+          drift = load('source-drift-comparison.json')
+          policy = load('route-policy.json')
+          manifest = load('artifact-manifest.json')
+          links = rows('link-observations.jsonl')
+          successors = rows('successor-routes.jsonl')
+          forms = rows('form-mechanics.jsonl')
+
+          assert summary['schema_version'] == 'schoolhouse-nc-business-reports-data-census@2'
+          assert summary['state'] == 'terminal_current_nonprofit_report_link_denominator_after_predecessor_source_drift'
+          assert summary['source_content_sha256'] == '7740bc619e71d17b378df4348a51f79b954b0f77202eb93cea786b7406f648bb'
+          assert summary['source_content_bytes'] == 121309
+          assert summary['source_changed_from_predecessor'] is True
+          assert summary['page_identity_preserved'] is True
+          assert summary['page_title_token_observed'] is True
+          assert summary['source_requests'] == 1
+          assert summary['observed_link_rows'] == len(links) == 246
+          assert summary['observed_form_rows'] == len(forms) == 0
+          assert summary['eligible_successor_unique_routes'] == len(successors) == 0
+          assert summary['static_data_unique_routes'] == 0
+          assert summary['static_document_unique_routes'] == 0
+          assert summary['report_or_listing_unique_routes'] == 0
+          assert summary['query_bearing_eligible_unique_routes'] == 0
+          assert summary['predecessor_candidate_routes_present'] == 0
+          assert summary['predecessor_candidate_routes_missing'] == 2
+          assert summary['current_candidate_routes_added'] == 0
+          for key in [
+              'successor_fetches_executed', 'query_submissions', 'forms_submitted',
+              'cookie_replays', 'subscription_purchases', 'identities_admitted',
+              'relationships_admitted', 'negative_existence_claims_created',
+              'street_address_rows_retained', 'contact_detail_rows_retained',
+              'officer_rows_retained', 'private_support_rows',
+          ]:
+              assert summary[key] == 0, (key, summary[key])
+          assert summary['raw_source_retained'] is False
+          assert summary['full_visible_text_retained'] is False
+          assert summary['outside_human_dependency'] is False
+          assert summary['publication_effect'] == summary['adoption_effect'] == summary['graph_effect'] == 'none'
+
+          assert source['state'] == 'terminal_current_source_captured_after_predecessor_drift'
+          assert source['request_method'] == 'GET'
+          assert source['http_status'] == 200
+          assert source['content_sha256'] == summary['source_content_sha256']
+          assert source['content_bytes'] == 121309
+          assert source['observed_link_rows'] == 246
+          assert source['observed_form_rows'] == 0
+          assert source['predecessor_content_sha256'] == '21b5334028fae1c314ca0f63b21b1d57b85e95462c8749ecb79c1bd6108cc7ee'
+          assert source['predecessor_content_bytes'] == 120956
+          assert source['predecessor_link_rows'] == 245
+          assert source['predecessor_form_rows'] == 0
+          assert source['page_identity_preserved'] is True
+          assert source['page_title_token_observed'] is True
+          assert source['raw_source_retained'] is False
+          assert source['full_visible_text_retained'] is False
+          assert source['query_submitted'] is False
+          assert source['forms_submitted'] == 0
+          assert source['identity_admitted'] is False
+          assert source['relationship_admitted'] is False
+          assert source['negative_existence_claim_created'] is False
+
+          deltas = drift['deltas']
+          assert drift['source_changed_from_predecessor'] is True
+          assert drift['page_identity_preserved'] is True
+          assert deltas['content_byte_delta'] == 353
+          assert deltas['content_sha256_changed'] is True
+          assert deltas['link_row_delta'] == 1
+          assert deltas['form_row_delta'] == 0
+          assert deltas['current_candidate_routes_added'] == []
+          assert deltas['current_candidate_routes_added_count'] == 0
+          assert deltas['predecessor_candidate_routes_present'] == []
+          assert deltas['predecessor_candidate_routes_present_count'] == 0
+          assert deltas['predecessor_candidate_routes_missing'] == [
+              'https://www.sosnc.gov/online_services/business_registration/Non_Profit_Reports',
+              'https://www.sosnc.gov/online_services/data_subscriptions/business_registration_data_subscriptions',
+          ]
+          assert deltas['predecessor_candidate_routes_missing_count'] == 2
+          assert drift['interpretation']['byte_drift_is_not_identity_evidence'] is True
+          assert drift['interpretation']['link_route_drift_is_candidate_routing_evidence_only'] is True
+          assert drift['interpretation']['missing_predecessor_route_is_not_absence_evidence'] is True
+          assert drift['interpretation']['successor_route_requires_separate_fixed_execution'] is True
+
+          assert policy['request_bounds']['maximum_total_requests'] == 1
+          assert policy['request_bounds']['successor_fetches'] == 0
+          assert policy['request_bounds']['interactive_search_submissions'] == 0
+          assert policy['request_bounds']['forms_submitted'] == 0
+          assert policy['selection_contract']['current_complete_anchor_observation_denominator_required'] is True
+          assert policy['selection_contract']['no_successor_fetches'] is True
+          assert policy['interpretation']['source_byte_drift_is_not_identity_or_absence_evidence'] is True
+          assert policy['interpretation']['query_bearing_route_requires_separate_fixed_route_execution'] is True
+
+          assert manifest['counts']['source_requests'] == 1
+          assert manifest['counts']['successor_fetches'] == 0
+          assert manifest['counts']['observed_link_rows'] == 246
+          assert manifest['counts']['observed_form_rows'] == 0
+          assert manifest['counts']['eligible_successor_unique_routes'] == 0
+          assert manifest['page_identity_preserved'] is True
+          assert manifest['raw_source_retained'] is False
+
+          assert [row['observation_ordinal'] for row in links] == list(range(1, 247))
+          forbidden = {
+              'raw_html', 'raw_text', 'full_visible_text', 'street_address',
+              'mailing_address', 'postal_code', 'email', 'phone',
+              'cookie_value', 'hidden_value',
+          }
+          for row in links:
+              assert not forbidden.intersection(row)
+              assert row['source_content_sha256'] == summary['source_content_sha256']
+              assert row['source_link_denominator'] == 246
+              for key in [
+                  'fetch_executed', 'query_submitted', 'form_submitted',
+                  'cookie_replayed', 'subscription_purchased', 'identity_admitted',
+                  'relationship_admitted', 'negative_existence_claim_created',
+                  'raw_source_retained', 'full_visible_text_retained',
+                  'outside_human_dependency',
+              ]:
+                  assert row[key] is False, (key, row[key])
+              for key in [
+                  'street_address_rows_retained', 'contact_detail_rows_retained',
+                  'officer_rows_retained', 'private_support_rows',
+              ]:
+                  assert row[key] == 0, (key, row[key])
+              assert row['publication_effect'] == row['adoption_effect'] == row['graph_effect'] == 'none'
+
+          assert successors == []
+          assert forms == []
+          assert not any(
+              path.suffix.lower() in {'.html', '.htm', '.csv', '.xlsx', '.zip'}
+              for path in root.rglob('*') if path.is_file()
+          )
+
+          receipt = {
+              'schema_version': 'schoolhouse-nc-business-reports-data-census-artifact-certification@1',
+              'certified_at': '2026-08-06',
+              'canonical_parent': '327648726320507532751f219a52d03f9c17fac5',
+              'source_pr': 1236,
+              'source_workflow_run_id': 31066659672,
+              'source_artifact_id': 8954062856,
+              'source_artifact_digest': live_digest,
+              'runner_exit_code': 0,
+              'source_requests_in_acquisition': 1,
+              'source_requests_in_certification': 0,
+              'source_content_sha256': summary['source_content_sha256'],
+              'source_content_bytes': summary['source_content_bytes'],
+              'predecessor_content_sha256': source['predecessor_content_sha256'],
+              'predecessor_content_bytes': source['predecessor_content_bytes'],
+              'observed_link_rows': 246,
+              'observed_form_rows': 0,
+              'eligible_successor_unique_routes': 0,
+              'predecessor_candidate_routes_present': 0,
+              'predecessor_candidate_routes_missing': 2,
+              'current_candidate_routes_added': 0,
+              'identity_admitted': False,
+              'relationship_admitted': False,
+              'negative_existence_claim_created': False,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'state': 'certified_terminal_current_nc_nonprofit_report_link_denominator_after_source_drift_zero_eligible_successor_routes',
+          }
+          out.mkdir(parents=True, exist_ok=True)
+          (out / 'certification.json').write_text(json.dumps(receipt, sort_keys=True, indent=2) + '\n')
+          (out / 'source-artifact-SHA256SUMS').write_bytes((root / 'SHA256SUMS').read_bytes())
+          (out / 'source-artifact-manifest.json').write_bytes((root / 'artifact-manifest.json').read_bytes())
+          print(json.dumps(receipt, sort_keys=True))
+          PY
+
+          node tools/validate-no-magic-human-gate.mjs
+          (
+            cd "$RECEIPT"
+            sha256sum certification.json source-artifact-SHA256SUMS source-artifact-manifest.json > SHA256SUMS
+            sha256sum -c SHA256SUMS
+            test "$(find . -maxdepth 1 -type f | wc -l | tr -d ' ')" = '4'
+          )
+
+      - name: Upload certification receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-nc-business-reports-data-census-certification
+          path: /tmp/nc-report-drift-certification
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
