@@ -1,0 +1,250 @@
+name: TEMP qualify and materialize PC-50 validator-order repair
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc50-validator-order-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  qualify-and-create-blobs:
+    if: github.head_ref == 'agent/pc50-validator-order-carrier'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      CARRIER_HEAD: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Checkout exact repair carrier
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+
+      - name: Reconstruct and verify exact two-file repair archive
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, hashlib, io, json, shutil, tarfile
+
+          carrier = Path('.pc50-validator-order')
+          manifest_bytes = (carrier / 'manifest.json').read_bytes()
+          manifest = json.loads(manifest_bytes)
+          expected_header = {
+              'schema_version': 'pc50-validator-order-carrier@1',
+              'prior_product_commit': '00417466378b83685c116088540d958003d8f6cd',
+              'prior_product_tree': 'b7364363ed3e35d7647ba0c3802c1741f9df0d31',
+              'qualified_parent_commit': 'd87172a41e88c1709b37a114b50df733545126c8',
+              'archive_bytes': 4021,
+              'archive_sha256': '837b4b47a8687473f5552f1a43d6fc0a088cd13f4a981e8fdc4394f2382eab9f',
+              'base64_chars': 5364,
+              'base64_sha256': '9b203019646c135487797253702d0183fc1d4da8c968dd844776ef03f260f1d6',
+              'changed_permanent_files': 2,
+              'outside_human_dependency': False,
+              'graph_effect': 'none',
+          }
+          for key, expected in expected_header.items():
+              if manifest.get(key) != expected:
+                  raise SystemExit(f'manifest header mismatch: {key}')
+
+          parts = manifest.get('parts')
+          if not isinstance(parts, list) or len(parts) != 2:
+              raise SystemExit('repair shard denominator mismatch')
+          chunks = []
+          for index, part in enumerate(parts):
+              expected_path = f'wpart{index:02d}'
+              if part.get('path') != expected_path:
+                  raise SystemExit(f'repair shard order mismatch: {part}')
+              raw = b''.join((carrier / expected_path).read_bytes().split())
+              if len(raw) != part.get('chars'):
+                  raise SystemExit(f'repair shard length mismatch: {expected_path}')
+              if hashlib.sha256(raw).hexdigest() != part.get('sha256'):
+                  raise SystemExit(f'repair shard SHA-256 mismatch: {expected_path}')
+              chunks.append(raw)
+
+          encoded = b''.join(chunks)
+          if len(encoded) != manifest['base64_chars'] or hashlib.sha256(encoded).hexdigest() != manifest['base64_sha256']:
+              raise SystemExit('aggregate base64 mismatch')
+          archive = base64.b64decode(encoded, validate=True)
+          if len(archive) != manifest['archive_bytes'] or hashlib.sha256(archive).hexdigest() != manifest['archive_sha256']:
+              raise SystemExit('repair archive mismatch')
+
+          files = manifest.get('files')
+          if not isinstance(files, list) or len(files) != 2:
+              raise SystemExit('repair file denominator mismatch')
+          root = Path('/tmp/pc50-validator-order-root')
+          shutil.rmtree(root, ignore_errors=True)
+          root.mkdir(parents=True)
+          with tarfile.open(fileobj=io.BytesIO(archive), mode='r:gz') as package:
+              members = [member for member in package.getmembers() if member.isfile()]
+              if [member.name for member in members] != [row['path'] for row in files]:
+                  raise SystemExit('repair archive path ledger mismatch')
+              for member, expected in zip(members, files, strict=True):
+                  if member.name.startswith('/') or '..' in Path(member.name).parts:
+                      raise SystemExit(f'unsafe repair path: {member.name}')
+                  source = package.extractfile(member)
+                  if source is None:
+                      raise SystemExit(f'missing repair member: {member.name}')
+                  data = source.read()
+                  digest = hashlib.sha256(data).hexdigest()
+                  blob = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+                  if len(data) != expected['bytes'] or digest != expected['sha256'] or blob != expected['git_blob_sha1']:
+                      raise SystemExit(f'exact repaired file mismatch: {member.name}')
+                  destination = root / member.name
+                  destination.parent.mkdir(parents=True, exist_ok=True)
+                  destination.write_bytes(data)
+
+          Path('/tmp/pc50-validator-order.tar.gz').write_bytes(archive)
+          Path('/tmp/pc50-validator-order-manifest.json').write_bytes(manifest_bytes)
+          print(json.dumps({
+              'archive_bytes': len(archive),
+              'archive_sha256': hashlib.sha256(archive).hexdigest(),
+              'repair_files': len(files),
+          }, indent=2))
+          PY
+
+      - name: Checkout exact prior PC-50 product head
+        uses: actions/checkout@v4
+        with:
+          ref: 00417466378b83685c116088540d958003d8f6cd
+          fetch-depth: 1
+          clean: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install and verify exact validator-order repair
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^{commit})" = "00417466378b83685c116088540d958003d8f6cd"
+          test "$(git rev-parse HEAD^{tree})" = "b7364363ed3e35d7647ba0c3802c1741f9df0d31"
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, shutil, subprocess
+
+          manifest = json.loads(Path('/tmp/pc50-validator-order-manifest.json').read_text())
+          root = Path('/tmp/pc50-validator-order-root')
+          for row in manifest['files']:
+              source = root / row['path']
+              target = Path(row['path'])
+              target.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copyfile(source, target)
+          expected = sorted(row['path'] for row in manifest['files'])
+          actual = sorted(subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines())
+          if actual != expected:
+              raise SystemExit(f'repair path mismatch: {actual}')
+          PY
+          git diff --check
+          node --check tools/validate-preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs
+          node --check test/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.test.js
+
+      - name: Prove direct clean-checkout regression
+        run: |
+          set -Eeuo pipefail
+          rm -f build/research/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.json
+          node test/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.test.js 2>&1 | tee /tmp/pc50-validator-order-direct.log
+
+      - name: Qualify repaired standalone PC-50
+        run: |
+          set -Eeuo pipefail
+          {
+            node tools/compile-preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs
+            node tools/validate-preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs
+            node test/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.test.js
+          } 2>&1 | tee /tmp/pc50-validator-order-standalone.log
+
+      - name: Qualify repaired floor v48 and complete ancestry
+        run: |
+          set -Eeuo pipefail
+          {
+            node tools/compile-preference-custody-manifest-v48.mjs
+            node tools/validate-preference-custody-manifest-v48.mjs
+            node test/preference-custody-manifest-v48.test.js
+          } 2>&1 | tee /tmp/pc50-validator-order-floor-v48.log
+
+      - name: Enforce no-magic-human gate
+        run: |
+          set -Eeuo pipefail
+          {
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          } 2>&1 | tee /tmp/pc50-validator-order-no-magic-human.log
+
+      - name: Create exact repaired Git blobs without moving a ref
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, json, os, urllib.error, urllib.request
+
+          manifest = json.loads(Path('/tmp/pc50-validator-order-manifest.json').read_text())
+          repo = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GH_TOKEN']
+
+          def create_blob(data):
+              url = f'https://api.github.com/repos/{repo}/git/blobs'
+              body = json.dumps({'content': base64.b64encode(data).decode(), 'encoding': 'base64'}, separators=(',', ':')).encode()
+              request = urllib.request.Request(url, data=body, method='POST')
+              request.add_header('Accept', 'application/vnd.github+json')
+              request.add_header('Authorization', f'Bearer {token}')
+              request.add_header('X-GitHub-Api-Version', '2022-11-28')
+              request.add_header('User-Agent', 'pc50-validator-order-blob-materializer')
+              try:
+                  with urllib.request.urlopen(request, timeout=120) as response:
+                      return json.loads(response.read())
+              except urllib.error.HTTPError as exc:
+                  raise SystemExit(f'GitHub blob API failed HTTP {exc.code}: {exc.read().decode(errors="replace")}')
+
+          remote = []
+          for row in manifest['files']:
+              data = Path(row['path']).read_bytes()
+              response = create_blob(data)
+              if response.get('sha') != row['git_blob_sha1']:
+                  raise SystemExit(f'remote blob mismatch: {row["path"]}')
+              remote.append({
+                  'path': row['path'],
+                  'bytes': row['bytes'],
+                  'sha256': row['sha256'],
+                  'git_blob_sha1': response['sha'],
+              })
+          receipt = {
+              'schema_version': 'pc50-validator-order-remote-blob-receipt@1',
+              'carrier_head': os.environ['CARRIER_HEAD'],
+              'prior_product_commit': manifest['prior_product_commit'],
+              'prior_product_tree': manifest['prior_product_tree'],
+              'qualified_parent_commit': manifest['qualified_parent_commit'],
+              'archive_sha256': manifest['archive_sha256'],
+              'changed_permanent_files': len(remote),
+              'remote_blobs': remote,
+              'ref_updated': False,
+              'outside_human_dependency': False,
+              'graph_effect': 'none',
+          }
+          Path('/tmp/pc50-validator-order-remote-blob-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps({'changed_permanent_files': len(remote), 'ref_updated': False}, indent=2))
+          PY
+
+      - name: Upload exact PC-50 validator-order repair custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc50-validator-order-repair-custody
+          path: |
+            /tmp/pc50-validator-order.tar.gz
+            /tmp/pc50-validator-order-manifest.json
+            /tmp/pc50-validator-order-remote-blob-receipt.json
+            /tmp/pc50-validator-order-direct.log
+            /tmp/pc50-validator-order-standalone.log
+            /tmp/pc50-validator-order-floor-v48.log
+            /tmp/pc50-validator-order-no-magic-human.log
+          if-no-files-found: warn
+          retention-days: 90
