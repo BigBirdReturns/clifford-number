@@ -1,0 +1,283 @@
+name: TEMP materialize RD-04 seven-state minimum-frontier protocol
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ssc-rd04-mf7-minimum-frontier-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      TARGET_BRANCH: agent/ssc-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol-v1
+      TRANSPORT_DIR: .transport/ssc-rd04-mf7-minimum-frontier-v1/shards
+      EXPECTED_MAIN_ANCESTOR: 9d9f9522fbc2909611033370044e9748a29b3cf7
+      EXPECTED_BASE64_BYTES: '25424'
+      EXPECTED_BASE64_SHA256: 494b1f3acfcf8807022c9cf338af0c26c673bb5c7d65608c143f7224550e959b
+      EXPECTED_ARCHIVE_BYTES: '19068'
+      EXPECTED_ARCHIVE_SHA256: 30ec2e406fed2a36ee462631422e405a56317e72dc697c985836834a2f65db06
+      BUILDER: tools/build-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.mjs
+      VALIDATOR: tools/validate-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.mjs
+      TEST: test/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.test.js
+      RUNNER: tools/acquisition/status-sovereignty-rd-wave03-rd04/run-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.py
+      SCHEMA: schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.schema.json
+      DATA_DIR: data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+      - name: Reconstruct, qualify, and lease-publish the exact fourteen-path protocol
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -Eeuo pipefail
+          RECEIPT=/tmp/rd04-mf7-minimum-frontier-materialization
+          PACKAGE=/tmp/rd04-mf7-minimum-frontier-package
+          WORKTREE=/tmp/rd04-mf7-minimum-frontier-worktree
+          rm -rf "$RECEIPT" "$PACKAGE" "$WORKTREE"
+          mkdir -p "$RECEIPT" "$PACKAGE"
+
+          git fetch --no-tags origin main
+          MAIN_START=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$EXPECTED_MAIN_ANCESTOR" "$MAIN_START"
+          printf '%s\n' "$MAIN_START" > "$RECEIPT/main-start.txt"
+
+          TARGET_START=''
+          if git ls-remote --exit-code --heads origin "$TARGET_BRANCH" >/tmp/rd04-target-ref.txt 2>/dev/null; then
+            TARGET_START=$(awk '{print $1}' /tmp/rd04-target-ref.txt)
+          fi
+          printf '%s\n' "$TARGET_START" > "$RECEIPT/target-start.txt"
+
+          for pair in \
+            '000.b64 0ea5aa65c0e2f5efb46813a22da917faf6082a27dc6e69185f99a05fde7007f5' \
+            '001.b64 17588f6a98d1440427bce114ed355ec2df08299abb4e606ce1cfa20d545e0804' \
+            '002.b64 8cccc93d75034baeeb7e1c8f8a2f3fcaa831eea4994b3270b8fa3ac781a6919e' \
+            '003.b64 e4d62ba506c3a8e37727fbaa4e102f6c6eb9e1d620e0d60498f306f181c8670c'
+          do
+            set -- $pair
+            test -f "$TRANSPORT_DIR/$1"
+            test "$(sha256sum "$TRANSPORT_DIR/$1" | awk '{print $1}')" = "$2"
+          done
+
+          cat "$TRANSPORT_DIR"/000.b64 "$TRANSPORT_DIR"/001.b64 "$TRANSPORT_DIR"/002.b64 "$TRANSPORT_DIR"/003.b64 > "$RECEIPT/product.tar.xz.b64"
+          test "$(wc -c < "$RECEIPT/product.tar.xz.b64")" -eq "$EXPECTED_BASE64_BYTES"
+          test "$(sha256sum "$RECEIPT/product.tar.xz.b64" | awk '{print $1}')" = "$EXPECTED_BASE64_SHA256"
+          base64 -d "$RECEIPT/product.tar.xz.b64" > "$RECEIPT/product.tar.xz"
+          test "$(wc -c < "$RECEIPT/product.tar.xz")" -eq "$EXPECTED_ARCHIVE_BYTES"
+          test "$(sha256sum "$RECEIPT/product.tar.xz" | awk '{print $1}')" = "$EXPECTED_ARCHIVE_SHA256"
+
+          python - <<'PY'
+          import hashlib, json, os, tarfile
+          from pathlib import Path, PurePosixPath
+          archive=Path('/tmp/rd04-mf7-minimum-frontier-materialization/product.tar.xz')
+          package=Path('/tmp/rd04-mf7-minimum-frontier-package')
+          receipt=Path('/tmp/rd04-mf7-minimum-frontier-materialization')
+          expected={
+            '.github/workflows/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.yml':0o644,
+            'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol/authored-protocol.json':0o644,
+            'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol/execution-receipt-template.json':0o644,
+            'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol/index.json':0o644,
+            'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol/product-manifest.json':0o644,
+            'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol/route-ledger.json':0o644,
+            'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol/source-interpretation-constraints.json':0o644,
+            'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol/target-cell-ledger.json':0o644,
+            'docs/milestones/ssc-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.md':0o644,
+            'schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.schema.json':0o644,
+            'test/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.test.js':0o755,
+            'tools/acquisition/status-sovereignty-rd-wave03-rd04/run-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.py':0o755,
+            'tools/build-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.mjs':0o755,
+            'tools/validate-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.mjs':0o755,
+          }
+          with tarfile.open(archive,'r:xz') as tf:
+            members=tf.getmembers()
+            files=[m for m in members if m.isfile()]
+            observed={}
+            for m in members:
+              p=PurePosixPath(m.name)
+              if p.is_absolute() or '..' in p.parts or m.issym() or m.islnk():
+                raise SystemExit(f'unsafe archive member: {m.name}')
+              if m.isfile(): observed[m.name]=m.mode & 0o777
+            if observed != expected:
+              raise SystemExit(f'archive path/mode drift: {observed}')
+            tf.extractall(package,filter='data')
+          manifest=[]
+          for rel in sorted(expected):
+            p=package/rel
+            b=p.read_bytes()
+            manifest.append({'path':rel,'mode':oct(expected[rel]),'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest()})
+          combined=hashlib.sha256('\n'.join(f"{r['path']}\0{r['mode']}\0{r['bytes']}\0{r['sha256']}" for r in manifest).encode()).hexdigest()
+          (receipt/'archive-receipt.json').write_text(json.dumps({'archive_bytes':archive.stat().st_size,'archive_sha256':hashlib.sha256(archive.read_bytes()).hexdigest(),'file_count':14,'manifest_combined_sha256':combined,'files':manifest},indent=2)+'\n')
+          (receipt/'permanent-paths.txt').write_text('\n'.join(sorted(expected))+'\n')
+          PY
+
+          qualify_once() {
+            local BASE_SHA=$1
+            rm -rf "$WORKTREE"
+            git worktree add --detach "$WORKTREE" "$BASE_SHA"
+            cp -a "$PACKAGE"/. "$WORKTREE"/
+            cd "$WORKTREE"
+
+            mapfile -t STATUS < <(git status --porcelain=v1 --untracked-files=all)
+            test "${#STATUS[@]}" -eq 14
+            for row in "${STATUS[@]}"; do test "${row:0:2}" = '??'; done
+            mapfile -t PATHS < <(printf '%s\n' "${STATUS[@]}" | sed 's/^?? //' | sort)
+            diff -u "$RECEIPT/permanent-paths.txt" <(printf '%s\n' "${PATHS[@]}")
+            ! grep -E '(^|/)(\.transport|carrier|materializer|trigger|archive|chunk|shard)(/|$)' "$RECEIPT/permanent-paths.txt"
+
+            git add -- "${PATHS[@]}"
+            git -c user.name='BigBirdReturns' -c user.email='219768509+BigBirdReturns@users.noreply.github.com' commit -m 'Freeze RD-04 seven-state minimum-frontier protocol'
+            PRODUCT_HEAD=$(git rev-parse HEAD)
+            PRODUCT_TREE=$(git rev-parse 'HEAD^{tree}')
+            test "$(git rev-list --count "$BASE_SHA..$PRODUCT_HEAD")" -eq 1
+            test "$(git diff --name-only "$BASE_SHA" "$PRODUCT_HEAD" | wc -l)" -eq 14
+            test -z "$(git diff --name-only --diff-filter=MD "$BASE_SHA" "$PRODUCT_HEAD")"
+
+            node --check "$BUILDER"
+            node --check "$VALIDATOR"
+            node --check "$TEST"
+            python -m py_compile "$RUNNER"
+            node "$BUILDER" --check
+            node "$VALIDATOR"
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          import jsonschema
+          schema=json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.schema.json').read_text())
+          files=sorted(Path('data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol').glob('*.json'))
+          if len(files)!=7: raise SystemExit(f'JSON object denominator drift: {len(files)}')
+          validator=jsonschema.Draft202012Validator(schema)
+          for path in files: validator.validate(json.loads(path.read_text()))
+          print('closed_schema_validation=pass objects=7')
+          PY
+            node "$TEST" | tee "$RECEIPT/adversarial.txt"
+            grep -qx 'adversarial_mutations_refused=697' "$RECEIPT/adversarial.txt"
+            python "$RUNNER" --validate-only
+            node tools/validate-no-magic-human-gate.mjs
+            npm run release:check
+
+            git restore --staged --worktree .
+            git clean -fdx
+            node "$BUILDER" --write
+            node "$BUILDER" --check
+            node "$VALIDATOR"
+            node "$TEST"
+            python "$RUNNER" --validate-only
+            node tools/validate-no-magic-human-gate.mjs
+            git diff --check
+            git diff --exit-code
+            test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+            printf '%s\n' "$BASE_SHA" > "$RECEIPT/qualified-base.txt"
+            printf '%s\n' "$PRODUCT_HEAD" > "$RECEIPT/product-head.txt"
+            printf '%s\n' "$PRODUCT_TREE" > "$RECEIPT/product-tree.txt"
+            cd "$GITHUB_WORKSPACE"
+            git worktree remove --force "$WORKTREE"
+          }
+
+          qualify_once "$MAIN_START"
+          git fetch --no-tags origin main
+          MAIN_NOW=$(git rev-parse origin/main)
+          if test "$MAIN_NOW" != "$MAIN_START"; then
+            mapfile -t PRODUCT_PATHS < "$RECEIPT/permanent-paths.txt"
+            mapfile -t MAIN_DELTA < <(git diff --name-only "$MAIN_START" "$MAIN_NOW")
+            python - "$RECEIPT/permanent-paths.txt" < <(printf '%s\n' "${MAIN_DELTA[@]}") <<'PY'
+          import sys
+          from pathlib import Path
+          product=set(Path(sys.argv[1]).read_text().splitlines())
+          delta=set(line.strip() for line in sys.stdin if line.strip())
+          overlap=sorted(product & delta)
+          if overlap: raise SystemExit(f'live-main overlap: {overlap}')
+          print(f'live_main_rebind_disjoint_paths={len(delta)}')
+          PY
+            qualify_once "$MAIN_NOW"
+          fi
+
+          FINAL_BASE=$(cat "$RECEIPT/qualified-base.txt")
+          FINAL_HEAD=$(cat "$RECEIPT/product-head.txt")
+          FINAL_TREE=$(cat "$RECEIPT/product-tree.txt")
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$FINAL_BASE"
+
+          CURRENT_TARGET=''
+          if git ls-remote --exit-code --heads origin "$TARGET_BRANCH" >/tmp/rd04-target-now.txt 2>/dev/null; then
+            CURRENT_TARGET=$(awk '{print $1}' /tmp/rd04-target-now.txt)
+          fi
+          test "$CURRENT_TARGET" = "$TARGET_START"
+          if test -n "$TARGET_START"; then
+            git push --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_START" origin "$FINAL_HEAD:refs/heads/$TARGET_BRANCH"
+          else
+            git push origin "$FINAL_HEAD:refs/heads/$TARGET_BRANCH"
+          fi
+          test "$(git ls-remote origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$FINAL_HEAD"
+
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          r=Path('/tmp/rd04-mf7-minimum-frontier-materialization')
+          receipt={
+            'schema_version':'ssc-rd04-mf7-minimum-frontier-materialization@1',
+            'canonical_base':(r/'qualified-base.txt').read_text().strip(),
+            'product_head':(r/'product-head.txt').read_text().strip(),
+            'product_tree':(r/'product-tree.txt').read_text().strip(),
+            'target_branch':os.environ['TARGET_BRANCH'],
+            'permanent_paths':(r/'permanent-paths.txt').read_text().splitlines(),
+            'archive':json.loads((r/'archive-receipt.json').read_text()),
+            'fixed_routes':30,
+            'target_states':['AR','GA','MD','NC','PA','RI','WV'],
+            'target_cells':21,
+            'adversarial_mutations_refused':697,
+            'predecessor_terminal_cells':190,
+            'predecessor_still_open_substantive_cells':213,
+            'class_closed':False,
+            'cumulative_ledger_effect':'none',
+            'outside_human_dependency':False,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+            'status':'published_for_hosted_exact_head_qualification',
+          }
+          (r/'publication-receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          PY
+
+          OWNER=${GH_REPOSITORY%%/*}
+          EXISTING=$(gh api "repos/$GH_REPOSITORY/pulls?state=open&head=$OWNER:$TARGET_BRANCH" --jq '.[0].number // empty')
+          if test -z "$EXISTING"; then
+            BODY=$(cat <<EOF
+          Tracks RD-04 Issue #1017 under Wave-03 Issue #1013.
+
+          Freezes the exact minimum substantive frontier after canonical row-state merge 9d9f9522fbc2909611033370044e9748a29b3cf7: Arkansas, Georgia, Maryland, North Carolina, Pennsylvania, Rhode Island, and West Virginia; three still-open substantive cells per row; twenty-one cells total; seven derivative row-state cells explicitly excluded.
+
+          The product contains exactly fourteen permanent paths, thirty fixed official routes, two federal interpretive baselines, twenty-eight state-specific routes, four routes per state, at least two state-specific routes per cell, one attempt per route, zero result-spawned requests, and no automatic source admission, field classification, row terminalization, class closure, cumulative-ledger, outside-human, publication, adoption, or graph effect.
+
+          Local and hosted materializer qualification includes exact predecessor Git-blob custody, closed seven-object schema validation, 697 adversarial refusals, no-magic-human, the complete repository release gate, and clean deterministic replay.
+          EOF
+          )
+            gh api --method POST "repos/$GH_REPOSITORY/pulls" -f title='SSC RD Wave 03: freeze seven-state minimum-frontier protocol' -f head="$TARGET_BRANCH" -f base=main -F draft=true -f body="$BODY" --jq '.number' > "$RECEIPT/permanent-pr.txt"
+          else
+            printf '%s\n' "$EXISTING" > "$RECEIPT/permanent-pr.txt"
+          fi
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mf7-minimum-frontier-materialization
+          path: /tmp/rd04-mf7-minimum-frontier-materialization
+          if-no-files-found: error
+          retention-days: 90
