@@ -1,15 +1,16 @@
 name: TEMP inspect exact RD-04 MF7 row-state materializer blob
 
 on:
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - 'agent/ssc-rd04-mf7-row-state-materializer-blob-inspection'
 
 permissions:
   contents: read
 
 jobs:
   inspect:
+    if: github.event_name == 'push' && github.ref_name == 'agent/ssc-rd04-mf7-row-state-materializer-blob-inspection'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
