@@ -17,7 +17,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Reconstruct exact archive from immutable binary Git blobs
+      - name: Recover immutable prefix and classify quarantined blob
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPOSITORY: ${{ github.repository }}
@@ -27,19 +27,20 @@ jobs:
           import base64, hashlib, json, os, tarfile, urllib.request
           from pathlib import Path
 
-          blob_shas = [
+          trusted_shas = [
               '8f7273bb97c73eeb090e58b3f068f48398836f9e',
               '14d2efca366b5cab4b00605637972dc64540bcc9',
               '8dd17653f493594ca357232559d52097c09e3b34',
           ]
+          quarantined_sha = '6720974322287b3b438776bb44ea9e65b4ce8b3f'
+          expected_bytes = 59820
+          expected_sha256 = '27279ff201f60d5c208f75332444324cdb70a59be2f668d0f82f53acc8eb220c'
           out = Path('/tmp/rd04-carrier-probe')
           out.mkdir(parents=True, exist_ok=True)
           token = os.environ['GH_TOKEN']
           repo = os.environ['GH_REPOSITORY']
 
-          parts = []
-          part_receipts = []
-          for ordinal, sha in enumerate(blob_shas):
+          def fetch_blob(sha):
               req = urllib.request.Request(
                   f'https://api.github.com/repos/{repo}/git/blobs/{sha}',
                   headers={
@@ -51,52 +52,90 @@ jobs:
               )
               with urllib.request.urlopen(req, timeout=60) as response:
                   payload = json.load(response)
-              if payload.get('encoding') != 'base64':
-                  raise SystemExit(f'blob {sha} unexpected encoding {payload.get("encoding")}')
               raw = base64.b64decode(''.join(payload['content'].split()), validate=True)
-              if hashlib.sha1(f'blob {len(raw)}\0'.encode() + raw).hexdigest() != sha:
-                  raise SystemExit(f'blob identity mismatch for {sha}')
-              if payload.get('size') != len(raw):
-                  raise SystemExit(f'blob size mismatch for {sha}: api={payload.get("size")} local={len(raw)}')
-              (out / f'part-{ordinal:02d}.bin').write_bytes(raw)
-              parts.append(raw)
+              actual_git_sha = hashlib.sha1(f'blob {len(raw)}\0'.encode() + raw).hexdigest()
+              if actual_git_sha != sha or payload.get('size') != len(raw):
+                  raise SystemExit(f'blob identity/size mismatch for {sha}')
+              return raw
+
+          trusted = []
+          part_receipts = []
+          for ordinal, sha in enumerate(trusted_shas):
+              raw = fetch_blob(sha)
+              (out / f'trusted-part-{ordinal:02d}.bin').write_bytes(raw)
+              trusted.append(raw)
               part_receipts.append({
                   'ordinal': ordinal,
                   'sha': sha,
                   'bytes': len(raw),
                   'sha256': hashlib.sha256(raw).hexdigest(),
               })
+          prefix = b''.join(trusted)
+          quarantined = fetch_blob(quarantined_sha)
+          (out / 'quarantined.bin').write_bytes(quarantined)
 
-          decoded = b''.join(parts)
-          archive = out / 'product.tar.xz'
-          archive.write_bytes(decoded)
-          digest = hashlib.sha256(decoded).hexdigest()
-          expected_bytes = 59820
-          expected_sha256 = '27279ff201f60d5c208f75332444324cdb70a59be2f668d0f82f53acc8eb220c'
-          names = []
-          archive_error = None
-          try:
-              with tarfile.open(archive, mode='r:xz') as tf:
-                  names = sorted(m.name for m in tf.getmembers() if m.isfile())
-          except Exception as exc:
-              archive_error = f'{type(exc).__name__}: {exc}'
+          def longest_overlap(left, right):
+              max_len = min(len(left), len(right))
+              for size in range(max_len, -1, -1):
+                  if left[-size:] == right[:size] if size else True:
+                      return size
+              return 0
+
+          def inspect(label, raw):
+              path = out / f'{label}.bin'
+              path.write_bytes(raw)
+              names = []
+              archive_error = None
+              try:
+                  with tarfile.open(path, mode='r:xz') as tf:
+                      names = sorted(m.name for m in tf.getmembers() if m.isfile())
+              except Exception as exc:
+                  archive_error = f'{type(exc).__name__}: {exc}'
+              return {
+                  'label': label,
+                  'bytes': len(raw),
+                  'sha256': hashlib.sha256(raw).hexdigest(),
+                  'git_sha': hashlib.sha1(f'blob {len(raw)}\0'.encode() + raw).hexdigest(),
+                  'xz_magic': raw.startswith(b'\xfd7zXZ\x00'),
+                  'matches_expected': len(raw) == expected_bytes and hashlib.sha256(raw).hexdigest() == expected_sha256,
+                  'archive_file_count': len(names),
+                  'archive_files': names,
+                  'archive_error': archive_error,
+              }
+
+          overlap_prefix_to_quarantine = longest_overlap(prefix, quarantined)
+          overlap_quarantine_to_prefix = longest_overlap(quarantined, prefix)
+          candidates = [
+              inspect('trusted-prefix', prefix),
+              inspect('quarantined-only', quarantined),
+              inspect('prefix-plus-quarantined', prefix + quarantined),
+              inspect('quarantined-plus-prefix', quarantined + prefix),
+              inspect('prefix-overlap-quarantined', prefix + quarantined[overlap_prefix_to_quarantine:]),
+              inspect('quarantined-overlap-prefix', quarantined + prefix[overlap_quarantine_to_prefix:]),
+          ]
 
           receipt = {
-              'source': 'immutable_binary_git_blobs',
-              'parts': part_receipts,
-              'decoded_bytes': len(decoded),
-              'decoded_sha256': digest,
+              'trusted_parts': part_receipts,
+              'trusted_prefix_bytes': len(prefix),
+              'trusted_prefix_sha256': hashlib.sha256(prefix).hexdigest(),
+              'quarantined_blob': {
+                  'sha': quarantined_sha,
+                  'bytes': len(quarantined),
+                  'sha256': hashlib.sha256(quarantined).hexdigest(),
+                  'prefix_hex': quarantined[:64].hex(),
+                  'suffix_hex': quarantined[-64:].hex(),
+              },
+              'overlap_prefix_to_quarantine': overlap_prefix_to_quarantine,
+              'overlap_quarantine_to_prefix': overlap_quarantine_to_prefix,
               'expected_bytes': expected_bytes,
               'expected_sha256': expected_sha256,
-              'matches_expected': len(decoded) == expected_bytes and digest == expected_sha256,
-              'archive_file_count': len(names),
-              'archive_files': names,
-              'archive_error': archive_error,
+              'candidates': candidates,
+              'any_match': any(c['matches_expected'] for c in candidates),
           }
           (out / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
           print(json.dumps(receipt, indent=2))
           PY
-      - name: Preserve probe receipt and reconstructed bytes
+      - name: Preserve probe receipt and reconstructed candidates
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -104,19 +143,14 @@ jobs:
           path: /tmp/rd04-carrier-probe
           if-no-files-found: error
           retention-days: 90
-      - name: Refuse incomplete or drifted carrier
+      - name: Refuse unproved archive reconstruction
         run: |
           set -Eeuo pipefail
           python - <<'PY'
           import json
           from pathlib import Path
           r = json.loads(Path('/tmp/rd04-carrier-probe/receipt.json').read_text())
-          if not r['matches_expected']:
-              raise SystemExit(
-                  f"carrier mismatch: bytes={r['decoded_bytes']} sha256={r['decoded_sha256']} "
-                  f"expected_bytes={r['expected_bytes']} expected_sha256={r['expected_sha256']}"
-              )
-          if r['archive_error'] is not None or r['archive_file_count'] != 17:
-              raise SystemExit(f"archive shape mismatch: {r}")
+          if not r['any_match']:
+              raise SystemExit('no quarantined-blob composition matches the exact archive receipt')
           print('carrier_exact=true')
           PY
