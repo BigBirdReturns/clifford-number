@@ -1,0 +1,284 @@
+name: TEMP materialize School.House NC static nonprofit custody
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-nc-static-nonprofit-materializer.yml'
+      - '.schoolhouse-nc-static-nonprofit-materializer/EXECUTE'
+      - '.schoolhouse-nc-static-nonprofit-materializer/builder.mjs.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: schoolhouse-nc-static-nonprofit-materializer-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-nc-static-nonprofit-materializer-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out exact materializer carrier
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct, reproduce, gate, and publish exact product
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          CARRIER='agent/schoolhouse-nc-static-nonprofit-materializer-v1'
+          TARGET='agent/schoolhouse-nc-static-nonprofit-product-v1'
+          SAFE_MAIN='b6d69b5502e4429e3769591b5ebd88555aad62be'
+          SAFE_TREE='f3d6a9f856dd22833f11847ae4b18bdbd4151890'
+          EXECUTE='.schoolhouse-nc-static-nonprofit-materializer/EXECUTE'
+          BUNDLE='.schoolhouse-nc-static-nonprofit-materializer/builder.mjs.gz.b64'
+          WORKFLOW='.github/workflows/temp-schoolhouse-nc-static-nonprofit-materializer.yml'
+          GZIP='/tmp/build-schoolhouse-nc-static-nonprofit-custody.mjs.gz'
+          UNPATCHED='/tmp/build-schoolhouse-nc-static-nonprofit-custody.unpatched.mjs'
+          BUILDER='/tmp/build-schoolhouse-nc-static-nonprofit-custody.mjs'
+          ARTIFACT='/tmp/schoolhouse-nc-static-nonprofit-census'
+          PRODUCT='/tmp/schoolhouse-nc-static-nonprofit-product'
+          REPRO='/tmp/schoolhouse-nc-static-nonprofit-reproduction'
+          RECEIPT='/tmp/schoolhouse-nc-static-nonprofit-materialization-receipt'
+
+          cat > /tmp/expected-product-paths <<'PATHS'
+          data/intake/bvvc-defense-capital/README.md
+          data/intake/bvvc-defense-capital/acquisition-frontier.json
+          data/intake/bvvc-defense-capital/coverage-matrix.json
+          data/intake/bvvc-defense-capital/manifest.json
+          data/intake/bvvc-defense-capital/schoolhouse-nc-static-nonprofit-census-adjudication.json
+          data/intake/bvvc-defense-capital/schoolhouse-nc-static-nonprofit-census-block-hit-receipts.jsonl
+          data/intake/bvvc-defense-capital/schoolhouse-nc-static-nonprofit-census-candidate-rows.jsonl
+          data/intake/bvvc-defense-capital/schoolhouse-nc-static-nonprofit-census-custody.json
+          data/intake/bvvc-defense-capital/schoolhouse-nc-static-nonprofit-census-route-results.jsonl
+          data/intake/bvvc-defense-capital/schoolhouse-nc-static-nonprofit-census-source-receipt.json
+          data/intake/bvvc-defense-capital/schoolhouse-nc-static-nonprofit-census-target-matrix.json
+          data/intake/bvvc-defense-capital/schoolhouse.json
+          data/intake/bvvc-defense-capital/source-inventory-20.jsonl
+          tools/build-schoolhouse-nc-static-nonprofit-custody.mjs
+          tools/validate-bvvc-defense-capital.mjs
+          tools/validate-schoolhouse-honor-foundation-990-custody.mjs
+          tools/validate-schoolhouse-nc-static-nonprofit-custody.mjs
+          PATHS
+          sed -i 's/^          //' /tmp/expected-product-paths
+          sort -u -o /tmp/expected-product-paths /tmp/expected-product-paths
+          test "$(wc -l < /tmp/expected-product-paths | tr -d ' ')" = '17'
+
+          test "$GITHUB_HEAD_REF" = "$CARRIER"
+          git fetch --no-tags origin main "$SAFE_MAIN"
+          test "$(git rev-parse "$SAFE_MAIN^{tree}")" = "$SAFE_TREE"
+          test "$(git merge-base HEAD "$SAFE_MAIN")" = "$SAFE_MAIN"
+          mapfile -t CARRIER_PATHS < <(git diff --name-only "$SAFE_MAIN"..HEAD | sort)
+          EXPECTED_CARRIER=("$WORKFLOW" "$EXECUTE" "$BUNDLE")
+          IFS=$'\n' EXPECTED_CARRIER_SORTED=($(printf '%s\n' "${EXPECTED_CARRIER[@]}" | sort)); unset IFS
+          test "${#CARRIER_PATHS[@]}" -eq 3
+          for i in "${!EXPECTED_CARRIER_SORTED[@]}"; do
+            test "${CARRIER_PATHS[$i]}" = "${EXPECTED_CARRIER_SORTED[$i]}"
+          done
+          git diff --exit-code -- "$WORKFLOW" "$EXECUTE" "$BUNDLE"
+
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '3805083d2c8aefa84c70a7cac3185b304f57fb7d8beb6a6fc3eaa9ddb3118fa4'
+          base64 -d "$BUNDLE" > "$GZIP"
+          test "$(sha256sum "$GZIP" | awk '{print $1}')" = 'bace4134b2026760907a298453745260eda7088fb07caa96b5e77cea9e249c5b'
+          gzip -dc "$GZIP" > "$UNPATCHED"
+          test "$(sha256sum "$UNPATCHED" | awk '{print $1}')" = 'bdcb6f7fcbca1d300d33ae948ba722c6ed2f1f607d8d7daaf376c02c26a51eb6'
+          test "$(grep -o "$SAFE_MAIN" "$UNPATCHED" | wc -l | tr -d ' ')" = '1'
+          test "$(grep -o "$SAFE_TREE" "$UNPATCHED" | wc -l | tr -d ' ')" = '1'
+          node --check "$UNPATCHED"
+
+          grep -Fx 'materialize=schoolhouse-nc-static-nonprofit-custody-v1' "$EXECUTE"
+          grep -Fx "known_safe_main=$SAFE_MAIN" "$EXECUTE"
+          grep -Fx "known_safe_tree=$SAFE_TREE" "$EXECUTE"
+          grep -Fx 'acquisition_workflow_run_id=31065319021' "$EXECUTE"
+          grep -Fx 'acquisition_artifact_id=8953623153' "$EXECUTE"
+          grep -Fx 'acquisition_artifact_digest=sha256:f1462cc30b2f34d56ab59d0711d88e4ef4017a8eded51406b511c6cbc84210cc' "$EXECUTE"
+          grep -Fx 'expected_permanent_paths=17' "$EXECUTE"
+          grep -Fx 'source_inventory_rows=480' "$EXECUTE"
+          grep -Fx 'coverage_denominator_rows=30' "$EXECUTE"
+          grep -Fx 'explicit_gap_rows=16' "$EXECUTE"
+          grep -Fx 'declared_static_routes=2' "$EXECUTE"
+          grep -Fx 'body_bytes_screened=1040288' "$EXECUTE"
+          grep -Fx 'table_data_rows_screened=0' "$EXECUTE"
+          grep -Fx 'candidate_rows=0' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+          grep -Fx 'publication_effect=none' "$EXECUTE"
+          grep -Fx 'adoption_effect=none' "$EXECUTE"
+          grep -Fx 'graph_effect=none' "$EXECUTE"
+
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/8953623153" --jq '.digest // ""')" = \
+            'sha256:f1462cc30b2f34d56ab59d0711d88e4ef4017a8eded51406b511c6cbc84210cc'
+          rm -rf "$ARTIFACT" "$RECEIPT"
+          mkdir -p "$ARTIFACT" "$RECEIPT"
+          gh run download 31065319021 --repo "$GITHUB_REPOSITORY" \
+            --name schoolhouse-nc-static-nonprofit-census --dir "$ARTIFACT"
+          test "$(cat "$ARTIFACT/RUNNER_EXIT_CODE")" = '0'
+          test "$(sha256sum "$ARTIFACT/SHA256SUMS" | awk '{print $1}')" = 'ac3b78b63ea7510e4423717c5028d554fc276ff55539971ca23c568253b88ea2'
+          test "$(sha256sum "$ARTIFACT/artifact-manifest.json" | awk '{print $1}')" = 'da6989de3e94cb46fd156030933d76f06158b844c525374cd429d8b2089a2830'
+          test "$(sha256sum "$ARTIFACT/summary.json" | awk '{print $1}')" = 'c58723d931298599a9af5656b77a6b3c4e44ef63e6862837504545a04a73c1d9'
+          test "$(sha256sum "$ARTIFACT/source-receipt.json" | awk '{print $1}')" = '4f9d5939368aee355a19a64ac6ae4caa2fb6c2bbdc945fc026efcd0a027a81f6'
+          test "$(sha256sum "$ARTIFACT/route-results.jsonl" | awk '{print $1}')" = '209d978caa18067ddd0e2be1b8521524cd6b3e14f4f34c8b0479ac8f72de6458'
+          test "$(sha256sum "$ARTIFACT/target-matrix.json" | awk '{print $1}')" = 'ca8f1e138e8acc3af5a4f155513499b03110c0528cf42424be505fb7b405a8d4'
+          test "$(sha256sum "$ARTIFACT/adjudication.json" | awk '{print $1}')" = '7dea3787842b8b1ed8650fd4d352a6e1bf01de1762fc00eb986d9086e5638e3e'
+          (cd "$ARTIFACT" && sha256sum -c SHA256SUMS)
+
+          PASS=0
+          while :; do
+            PASS=$((PASS + 1))
+            test "$PASS" -le 3
+            git fetch --prune --no-tags origin main
+            LIVE_MAIN="$(git rev-parse origin/main^{commit})"
+            LIVE_TREE="$(git rev-parse "$LIVE_MAIN^{tree}")"
+            git merge-base --is-ancestor "$SAFE_MAIN" "$LIVE_MAIN"
+            git diff --name-only --no-renames "$SAFE_MAIN..$LIVE_MAIN" | sort -u > /tmp/live-main-advance-paths
+            comm -12 /tmp/expected-product-paths /tmp/live-main-advance-paths > /tmp/live-main-overlap-paths
+            test ! -s /tmp/live-main-overlap-paths
+
+            cp "$UNPATCHED" "$BUILDER"
+            python - "$BUILDER" "$SAFE_MAIN" "$LIVE_MAIN" "$SAFE_TREE" "$LIVE_TREE" <<'PY'
+          from pathlib import Path
+          import sys
+          file = Path(sys.argv[1])
+          old_commit, new_commit, old_tree, new_tree = sys.argv[2:]
+          text = file.read_text()
+          assert text.count(old_commit) == 1
+          assert text.count(old_tree) == 1
+          if old_commit != new_commit:
+              assert new_commit not in text
+              text = text.replace(old_commit, new_commit)
+          if old_tree != new_tree:
+              assert new_tree not in text
+              text = text.replace(old_tree, new_tree)
+          file.write_text(text)
+          PY
+            PATCHED_BUILDER_SHA="$(sha256sum "$BUILDER" | awk '{print $1}')"
+            node --check "$BUILDER"
+
+            git worktree remove --force "$PRODUCT" 2>/dev/null || true
+            git worktree remove --force "$REPRO" 2>/dev/null || true
+            rm -rf "$PRODUCT" "$REPRO"
+            git worktree add --detach "$PRODUCT" "$LIVE_MAIN"
+            git worktree add --detach "$REPRO" "$LIVE_MAIN"
+            install -m 0644 "$BUILDER" "$PRODUCT/tools/build-schoolhouse-nc-static-nonprofit-custody.mjs"
+            install -m 0644 "$BUILDER" "$REPRO/tools/build-schoolhouse-nc-static-nonprofit-custody.mjs"
+            (cd "$PRODUCT" && node tools/build-schoolhouse-nc-static-nonprofit-custody.mjs "$ARTIFACT" > /tmp/product-build.json)
+            (cd "$REPRO" && node tools/build-schoolhouse-nc-static-nonprofit-custody.mjs "$ARTIFACT" > /tmp/repro-build.json)
+            cmp /tmp/product-build.json /tmp/repro-build.json
+            while IFS= read -r path; do cmp "$PRODUCT/$path" "$REPRO/$path"; done < /tmp/expected-product-paths
+
+            tar -C "$PRODUCT" -cf /tmp/nc-static-product-files.tar -T /tmp/expected-product-paths
+            (
+              cd "$PRODUCT"
+              node --check tools/build-schoolhouse-nc-static-nonprofit-custody.mjs
+              node --check tools/validate-schoolhouse-nc-static-nonprofit-custody.mjs
+              node --check tools/validate-bvvc-defense-capital.mjs
+              node --check tools/validate-schoolhouse-honor-foundation-990-custody.mjs
+              node tools/validate-schoolhouse-nc-static-nonprofit-custody.mjs
+              node tools/validate-bvvc-defense-capital.mjs
+              node tools/validate-schoolhouse-honor-foundation-990-custody.mjs
+              node test/person-routers.test.js
+              node tools/validate-no-magic-human-gate.mjs
+              npm run release:check
+            )
+
+            (
+              cd "$PRODUCT"
+              git restore --worktree -- .
+              git clean -fdx
+              tar -xf /tmp/nc-static-product-files.tar
+              node tools/validate-schoolhouse-nc-static-nonprofit-custody.mjs
+              node tools/validate-bvvc-defense-capital.mjs
+              node tools/validate-schoolhouse-honor-foundation-990-custody.mjs
+              git diff --check
+            )
+            while IFS= read -r path; do cmp "$PRODUCT/$path" "$REPRO/$path"; done < /tmp/expected-product-paths
+
+            git fetch --prune --no-tags origin main
+            if test "$(git rev-parse origin/main^{commit})" = "$LIVE_MAIN"; then break; fi
+          done
+
+          (
+            cd "$PRODUCT"
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add --pathspec-from-file=/tmp/expected-product-paths
+            git diff --cached --name-only | sort > /tmp/staged-product-paths
+            diff -u /tmp/expected-product-paths /tmp/staged-product-paths
+            test -z "$(git status --porcelain=v1 --untracked-files=all | awk '$1 == "??" {print}')"
+            git commit -m 'Preserve School.House North Carolina static nonprofit report custody'
+            PRODUCT_COMMIT="$(git rev-parse HEAD)"
+            PRODUCT_TREE="$(git rev-parse 'HEAD^{tree}')"
+            test "$(git rev-parse 'HEAD^')" = "$LIVE_MAIN"
+            git diff --name-only "$LIVE_MAIN..HEAD" | sort > /tmp/committed-product-paths
+            diff -u /tmp/expected-product-paths /tmp/committed-product-paths
+            if git ls-remote --exit-code --heads origin "refs/heads/$TARGET" >/dev/null 2>&1; then
+              echo "target product branch already exists" >&2
+              exit 1
+            fi
+            git push origin "HEAD:refs/heads/$TARGET"
+
+            cp /tmp/committed-product-paths "$RECEIPT/changed-paths.txt"
+            find . -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/all-worktree-sha256sums.txt
+            while IFS= read -r path; do grep "  \./$path$" /tmp/all-worktree-sha256sums.txt; done < /tmp/expected-product-paths > "$RECEIPT/qualified-sha256sums.txt"
+            cat > "$RECEIPT/product.json" <<JSON
+          {
+            "schema_version": "schoolhouse-nc-static-nonprofit-materialization@1",
+            "canonical_parent_commit": "$LIVE_MAIN",
+            "canonical_parent_tree": "$LIVE_TREE",
+            "product_commit": "$PRODUCT_COMMIT",
+            "product_tree": "$PRODUCT_TREE",
+            "permanent_changed_paths": 17,
+            "source_inventory_rows_before": 478,
+            "source_inventory_rows_after": 480,
+            "coverage_denominator_rows_before": 29,
+            "coverage_denominator_rows_after": 30,
+            "explicit_gap_rows": 16,
+            "declared_static_routes": 2,
+            "terminal_routes": 2,
+            "body_bytes_screened": 1040288,
+            "table_data_rows_screened": 0,
+            "source_rows_acquired": 0,
+            "candidate_rows": 0,
+            "identity_admitted_rows": 0,
+            "relationship_admitted_rows": 0,
+            "negative_existence_claims_created": 0,
+            "acquisition_workflow_run_id": 31065319021,
+            "acquisition_artifact_id": 8953623153,
+            "acquisition_artifact_digest": "sha256:f1462cc30b2f34d56ab59d0711d88e4ef4017a8eded51406b511c6cbc84210cc",
+            "patched_builder_sha256": "$PATCHED_BUILDER_SHA",
+            "outside_human_dependency": false,
+            "publication_effect": "none",
+            "adoption_effect": "none",
+            "graph_effect": "none"
+          }
+          JSON
+            sha256sum "$RECEIPT"/* > "$RECEIPT/SHA256SUMS"
+          )
+
+      - name: Upload exact materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-nc-static-nonprofit-materialization-receipt
+          path: /tmp/schoolhouse-nc-static-nonprofit-materialization-receipt
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
