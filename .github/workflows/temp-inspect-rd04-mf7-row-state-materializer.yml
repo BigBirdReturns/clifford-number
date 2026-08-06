@@ -1,0 +1,38 @@
+name: TEMP inspect exact RD-04 MF7 row-state materializer blob
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify and decompress exact materializer blob
+        run: |
+          set -Eeuo pipefail
+          SRC=.tmp/rd04-mf7-row-state-materializer.sh.xz
+          OUT=/tmp/rd04-mf7-materializer-inspection
+          mkdir -p "$OUT"
+          test "$(wc -c < "$SRC")" = 5956
+          test "$(sha256sum "$SRC" | awk '{print $1}')" = 07d1517c61c8987f718d7d9b29f3bed3547324b53cb90ef98617b71af6a44add
+          xz -dc "$SRC" > "$OUT/materializer.sh"
+          test "$(wc -c < "$OUT/materializer.sh")" = 18258
+          test "$(sha256sum "$OUT/materializer.sh" | awk '{print $1}')" = 8c68d07d8388bc177270ceecc4af8a5715f52997d67229afca4b2d82bbe06d14
+          cp "$SRC" "$OUT/materializer.sh.xz"
+          grep -Eo "[0-9a-f]{40}" "$OUT/materializer.sh" | sort -u > "$OUT/git-object-identities.txt"
+          grep -nE "66a09c69ca14a685aa1b56ff1c27ee971b7fdd09|a36854c499b2904c6b563d61cfbe836c9cc5ef5b|BLOB|blob" "$OUT/materializer.sh" > "$OUT/blob-context.txt" || true
+          sha256sum "$OUT"/* > "$OUT/checksums.txt"
+      - name: Preserve exact inspection custody
+        uses: actions/upload-artifact@v4
+        with:
+          name: rd04-mf7-row-state-materializer-blob-inspection
+          path: /tmp/rd04-mf7-materializer-inspection
+          if-no-files-found: error
+          retention-days: 90
