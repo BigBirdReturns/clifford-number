@@ -1,0 +1,327 @@
+name: TEMP materialize RD-04 seven-state row-state adjudication
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: temp-ssc-rd04-mf7-row-state-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.head_ref == 'agent/ssc-rd04-mf7-row-state-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    env:
+      SHARD_DIR: .transport/ssc-rd04-mf7-row-state-v1
+      SHARD_COUNT: 11
+      BASE64_BYTES: 52912
+      BASE64_SHA256: 84227ae3bb357521cfb70417f006319d0f7a7a396a4a4d52333aedc1b8e61c4b
+      ARCHIVE_BYTES: 39684
+      ARCHIVE_SHA256: f862778abab6d9c3d360516196448c0a8908cdd8739d96f8920c7e68540fc1a2
+      TARGET_BRANCH: agent/ssc-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-row-state-adjudication-v1
+      EXPECTED_MAIN_ANCESTOR: a49b18304a69e9637cd854d38e80b67d4165cc6c
+      DATA_DIR: data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-row-state-adjudication
+      BUILDER: tools/build-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-row-state-adjudication.mjs
+      VALIDATOR: tools/validate-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-row-state-adjudication.mjs
+      TEST: test/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-row-state-adjudication.test.js
+      SCHEMA: schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-row-state-adjudication.schema.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+      - name: Reconstruct, qualify, and lease-publish row-state product
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -Eeuo pipefail
+          RECEIPT=/tmp/rd04-mf7-row-state-materialization-v1
+          PACKAGE=/tmp/rd04-mf7-row-state-package-v1
+          WORKTREE=/tmp/rd04-mf7-row-state-worktree-v1
+          rm -rf "$RECEIPT" "$PACKAGE" "$WORKTREE"
+          mkdir -p "$RECEIPT" "$PACKAGE"
+
+          git fetch --no-tags origin main
+          MAIN_START=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$EXPECTED_MAIN_ANCESTOR" "$MAIN_START"
+          printf '%s\n' "$MAIN_START" > "$RECEIPT/main-start.txt"
+
+          TARGET_START=''
+          if git ls-remote --exit-code --heads origin "$TARGET_BRANCH" > /tmp/rd04-mf7-row-state-target-start.txt 2>/dev/null; then
+            TARGET_START=$(awk '{print $1}' /tmp/rd04-mf7-row-state-target-start.txt)
+          fi
+          printf '%s\n' "$TARGET_START" > "$RECEIPT/target-start.txt"
+
+          mapfile -t SHARDS < <(find "$SHARD_DIR" -maxdepth 1 -type f -name 'part-*.b64' | sort)
+          test "${#SHARDS[@]}" -eq "$SHARD_COUNT"
+          cat "${SHARDS[@]}" > "$RECEIPT/product.b64"
+          test "$(wc -c < "$RECEIPT/product.b64")" -eq "$BASE64_BYTES"
+          test "$(sha256sum "$RECEIPT/product.b64" | awk '{print $1}')" = "$BASE64_SHA256"
+          base64 --decode "$RECEIPT/product.b64" > "$RECEIPT/product.tar.xz"
+          test "$(wc -c < "$RECEIPT/product.tar.xz")" -eq "$ARCHIVE_BYTES"
+          test "$(sha256sum "$RECEIPT/product.tar.xz" | awk '{print $1}')" = "$ARCHIVE_SHA256"
+
+          python - <<'PY'
+          import hashlib, io, json, os, tarfile
+          from pathlib import Path, PurePosixPath
+
+          receipt = Path('/tmp/rd04-mf7-row-state-materialization-v1')
+          package = Path('/tmp/rd04-mf7-row-state-package-v1')
+          raw = (receipt / 'product.tar.xz').read_bytes()
+          slug = 'status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-row-state-adjudication'
+          data = f'data/intake/{slug}'
+          expected = [
+              f'.github/workflows/{slug}.yml',
+              f'{data}/authored-row-state-decisions.json',
+              f'{data}/predecessor-custody.json',
+              f'{data}/row-state-ledger.json',
+              f'{data}/promoted-partial-field-matrix.json',
+              f'{data}/remaining-open-field-census.json',
+              f'{data}/summary.json',
+              f'{data}/index.json',
+              f'{data}/product-manifest.json',
+              'docs/milestones/ssc-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-row-state-adjudication.md',
+              f'schemas/{slug}.schema.json',
+              f'test/{slug}.test.js',
+              f'tools/build-{slug}.mjs',
+              f'tools/validate-{slug}.mjs',
+          ]
+          executable = {
+              f'test/{slug}.test.js',
+              f'tools/build-{slug}.mjs',
+              f'tools/validate-{slug}.mjs',
+          }
+          observed = {}
+          with tarfile.open(fileobj=io.BytesIO(raw), mode='r:xz') as archive:
+              for member in archive.getmembers():
+                  path = PurePosixPath(member.name)
+                  if path.is_absolute() or '..' in path.parts or member.issym() or member.islnk():
+                      raise SystemExit(f'unsafe archive member: {member.name}')
+                  if member.isfile():
+                      observed[member.name] = member.mode & 0o777
+              if set(observed) != set(expected):
+                  raise SystemExit(f'archive path-set drift: {sorted(set(observed) ^ set(expected))}')
+              for rel, mode in observed.items():
+                  expected_mode = 0o755 if rel in executable else 0o644
+                  if mode != expected_mode:
+                      raise SystemExit(f'archive mode drift: {rel} {oct(mode)}')
+              archive.extractall(package, filter='data')
+
+          files = []
+          for rel in sorted(expected):
+              body = (package / rel).read_bytes()
+              files.append({
+                  'path': rel,
+                  'mode': format(observed[rel], '04o'),
+                  'bytes': len(body),
+                  'sha256': hashlib.sha256(body).hexdigest(),
+              })
+          manifest = {
+              'archive_bytes': len(raw),
+              'archive_sha256': hashlib.sha256(raw).hexdigest(),
+              'base64_bytes': int(os.environ['BASE64_BYTES']),
+              'base64_sha256': os.environ['BASE64_SHA256'],
+              'file_count': len(files),
+              'files': files,
+          }
+          (receipt / 'archive-receipt.json').write_text(json.dumps(manifest, indent=2) + '\n')
+          (receipt / 'permanent-paths.txt').write_text('\n'.join(sorted(expected)) + '\n')
+          print('archive_reconstruction=pass paths=14')
+          PY
+
+          qualify_once() {
+            local BASE_SHA=$1
+            rm -rf "$WORKTREE"
+            git worktree add --detach "$WORKTREE" "$BASE_SHA"
+            cp -a "$PACKAGE"/. "$WORKTREE"/
+            cd "$WORKTREE"
+
+            mapfile -t STATUS < <(git status --porcelain=v1 --untracked-files=all)
+            test "${#STATUS[@]}" -eq 14
+            for row in "${STATUS[@]}"; do test "${row:0:2}" = '??'; done
+            mapfile -t PATHS < <(printf '%s\n' "${STATUS[@]}" | sed 's/^?? //' | sort)
+            diff -u "$RECEIPT/permanent-paths.txt" <(printf '%s\n' "${PATHS[@]}")
+            ! grep -E '(^|/)(\.transport|carrier|materializer|trigger|archive|chunk|shard)(/|$)' "$RECEIPT/permanent-paths.txt"
+
+            git add -- "${PATHS[@]}"
+            git -c user.name='BigBirdReturns' -c user.email='219768509+BigBirdReturns@users.noreply.github.com' commit -m 'Terminalize RD-04 seven-state minimum-frontier rows'
+            PRODUCT_HEAD=$(git rev-parse HEAD)
+            PRODUCT_TREE=$(git rev-parse 'HEAD^{tree}')
+            test "$(git rev-list --count "$BASE_SHA..$PRODUCT_HEAD")" -eq 1
+            test "$(git diff --name-only "$BASE_SHA" "$PRODUCT_HEAD" | wc -l)" -eq 14
+            test -z "$(git diff --name-only --diff-filter=MD "$BASE_SHA" "$PRODUCT_HEAD")"
+
+            node --check "$BUILDER"
+            node --check "$VALIDATOR"
+            node --check "$TEST"
+            node "$BUILDER" --check
+            node "$VALIDATOR"
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          import jsonschema
+          data = Path('data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-row-state-adjudication')
+          schema = json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-row-state-adjudication.schema.json').read_text())
+          paths = sorted(data.glob('*.json'))
+          if len(paths) != 8:
+              raise SystemExit(f'JSON object denominator drift: {len(paths)}')
+          validator = jsonschema.Draft202012Validator(schema)
+          for path in paths:
+              validator.validate(json.loads(path.read_text()))
+          print('closed_schema_validation=pass objects=8')
+          PY
+            node "$TEST" | tee "$RECEIPT/adversarial.txt"
+            grep -qx 'adversarial_mutations_refused=670' "$RECEIPT/adversarial.txt"
+            node tools/validate-no-magic-human-gate.mjs
+            npm run release:check
+
+            git restore --staged --worktree .
+            git clean -fdx
+            node "$BUILDER" --write
+            node "$BUILDER" --check
+            node "$VALIDATOR"
+            node "$TEST" | grep -qx 'adversarial_mutations_refused=670'
+            node tools/validate-no-magic-human-gate.mjs
+            git diff --check
+            git diff --exit-code
+            test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+            printf '%s\n' "$BASE_SHA" > "$RECEIPT/qualified-base.txt"
+            printf '%s\n' "$PRODUCT_HEAD" > "$RECEIPT/product-head.txt"
+            printf '%s\n' "$PRODUCT_TREE" > "$RECEIPT/product-tree.txt"
+            cd "$GITHUB_WORKSPACE"
+            git worktree remove --force "$WORKTREE"
+          }
+
+          qualify_once "$MAIN_START"
+          git fetch --no-tags origin main
+          MAIN_NOW=$(git rev-parse origin/main)
+          if test "$MAIN_NOW" != "$MAIN_START"; then
+            git diff --name-only "$MAIN_START" "$MAIN_NOW" > "$RECEIPT/main-delta.txt"
+            python - "$RECEIPT/permanent-paths.txt" "$RECEIPT/main-delta.txt" <<'PY'
+          import sys
+          from pathlib import Path
+          product = set(Path(sys.argv[1]).read_text().splitlines())
+          delta = set(Path(sys.argv[2]).read_text().splitlines())
+          overlap = sorted(product & delta)
+          if overlap:
+              raise SystemExit(f'live-main overlap: {overlap}')
+          print(f'live_main_rebind_disjoint_paths={len(delta)}')
+          PY
+            qualify_once "$MAIN_NOW"
+          fi
+
+          FINAL_BASE=$(cat "$RECEIPT/qualified-base.txt")
+          FINAL_HEAD=$(cat "$RECEIPT/product-head.txt")
+          FINAL_TREE=$(cat "$RECEIPT/product-tree.txt")
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$FINAL_BASE"
+
+          CURRENT_TARGET=''
+          if git ls-remote --exit-code --heads origin "$TARGET_BRANCH" > /tmp/rd04-mf7-row-state-target-now.txt 2>/dev/null; then
+            CURRENT_TARGET=$(awk '{print $1}' /tmp/rd04-mf7-row-state-target-now.txt)
+          fi
+          test "$CURRENT_TARGET" = "$TARGET_START"
+          if test -n "$TARGET_START"; then
+            git push --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_START" origin "$FINAL_HEAD:refs/heads/$TARGET_BRANCH"
+          else
+            git push origin "$FINAL_HEAD:refs/heads/$TARGET_BRANCH"
+          fi
+          test "$(git ls-remote origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$FINAL_HEAD"
+
+          OWNER=${GH_REPOSITORY%%/*}
+          EXISTING=$(gh api "repos/$GH_REPOSITORY/pulls?state=open&head=$OWNER:$TARGET_BRANCH" --jq '.[0].number // empty')
+          BODY=$(cat <<EOF_BODY
+          Tracks RD-04 Issue #1017 under Wave-03 Issue #1013.
+
+          Publishes the exact one-parent, fourteen-path derivative that terminalizes only the row-state cells for Arkansas, Georgia, Maryland, North Carolina, Pennsylvania, Rhode Island, and West Virginia.
+
+          \`\`\`text
+          product commit                         $FINAL_HEAD
+          product tree                           $FINAL_TREE
+          canonical parent                       $FINAL_BASE
+          permanent paths                                14
+          target rows                                      7
+          newly terminal row-state cells                   7
+          substantive field changes                        0
+          terminal cells                           211 → 218
+          still-open cells                         239 → 232
+          terminal substantive cells                     108
+          still-open substantive cells                   192
+          terminal units                              3 → 10
+          open units                                 47 → 40
+          adversarial mutations refused                  670
+          \`\`\`
+
+          All eight evidence-bearing cells in each target row remain byte-for-byte equal to the canonical predecessor. RD-04-C02 remains open. No cumulative-ledger, outside-human, publication, adoption, graph, national-prevalence, discrimination, racial-order, coordination, common-purpose, or complete-compact effect is created.
+          EOF_BODY
+          )
+          TITLE='SSC RD Wave 03: terminalize seven minimum-frontier rows'
+          if test -n "$EXISTING"; then
+            gh api --method PATCH "repos/$GH_REPOSITORY/pulls/$EXISTING" -f title="$TITLE" -f body="$BODY" >/tmp/rd04-mf7-row-state-pr.json
+          else
+            gh api --method POST "repos/$GH_REPOSITORY/pulls" -f title="$TITLE" -f head="$TARGET_BRANCH" -f base=main -f body="$BODY" -F draft=true >/tmp/rd04-mf7-row-state-pr.json
+          fi
+          PR_NUMBER=$(python -c 'import json;print(json.load(open("/tmp/rd04-mf7-row-state-pr.json"))["number"])')
+          printf '%s\n' "$PR_NUMBER" > "$RECEIPT/permanent-pr.txt"
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          receipt = Path('/tmp/rd04-mf7-row-state-materialization-v1')
+          obj = {
+              'schema_version': 'ssc-rd04-mf7-row-state-materialization@1',
+              'canonical_parent': (receipt / 'qualified-base.txt').read_text().strip(),
+              'product_commit': (receipt / 'product-head.txt').read_text().strip(),
+              'product_tree': (receipt / 'product-tree.txt').read_text().strip(),
+              'permanent_pr': int((receipt / 'permanent-pr.txt').read_text()),
+              'permanent_paths': 14,
+              'target_rows': 7,
+              'newly_terminalized_row_state_cells': 7,
+              'substantive_field_changes': 0,
+              'terminal_cells_before': 211,
+              'terminal_cells_after': 218,
+              'still_open_cells_after': 232,
+              'terminal_substantive_cells_after': 108,
+              'still_open_substantive_cells_after': 192,
+              'terminal_units_after': 10,
+              'open_units_after': 40,
+              'adversarial_refusals': 670,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'focused_validation': 'pass',
+              'closed_schema_objects': 8,
+              'no_magic_human': 'pass',
+              'complete_release_gate': 'pass',
+              'clean_replay': 'pass',
+              'status': 'complete',
+          }
+          (receipt / 'materialization.json').write_text(json.dumps(obj, indent=2) + '\n')
+          print(json.dumps(obj, indent=2))
+          PY
+      - name: Preserve exact row-state materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mf7-row-state-materialization-v1
+          path: /tmp/rd04-mf7-row-state-materialization-v1
+          if-no-files-found: error
+          retention-days: 90

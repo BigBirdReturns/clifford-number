@@ -1,0 +1,16 @@
+name: TEMP probe RD-04 row-state carrier registration
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: github.head_ref == 'agent/ssc-rd04-mf7-row-state-materializer-v1'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Confirm workflow registration
+        run: printf 'carrier_workflow_registration=pass\n'
