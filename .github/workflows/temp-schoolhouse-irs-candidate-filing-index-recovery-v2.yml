@@ -1,0 +1,150 @@
+name: TEMP recover School.House IRS filing-index custody product v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-irs-candidate-filing-index-recovery-v2.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: schoolhouse-irs-candidate-filing-index-recovery-v2-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+jobs:
+  recover:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-irs-candidate-filing-index-census-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Replay exact eight-index acquisition on the current workflow-only carrier
+        id: acquisition
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          SOURCE='.github/workflows/temp-schoolhouse-irs-candidate-filing-index-materializer.yml'
+          SCRIPT="$RUNNER_TEMP/replay-schoolhouse-irs-filing-index-acquisition-recovery-v2.sh"
+          python - "$SOURCE" "$SCRIPT" <<'PY'
+          from pathlib import Path
+          import re,sys
+          source=Path(sys.argv[1]).read_text(); step='      - name: Reconstruct and execute exact filing-index acquisition\n'; start=source.index(step); run=source.index('        run: |\n',start)+len('        run: |\n'); end=source.index('\n      - name: Upload exact acquisition artifact',run); lines=source[run:end].splitlines(); script='\n'.join(line[10:] if line.startswith('          ') else line for line in lines)+'\n'
+          pattern=re.compile(r'''mapfile -t CHANGED < <\(git diff --name-only "\$BASE"\.\.HEAD \| sort\)\n(?:.*\n){0,12}?\s*test "\$\{CHANGED\[1\]\}" = "\$MATERIALIZER"''')
+          replacement='''mapfile -t CHANGED < <(git diff --name-only "$BASE"..HEAD | sort)
+          test "${#CHANGED[@]}" -ge 1
+          for path in "${CHANGED[@]}"; do
+            [[ "$path" == .github/workflows/temp-schoolhouse-irs-candidate-filing-index-* ]]
+          done'''
+          script,count=pattern.subn(replacement,script,count=1)
+          if count != 1: raise SystemExit(f'carrier replacements={count}')
+          Path(sys.argv[2]).write_text(script)
+          PY
+          bash -n "$SCRIPT"
+          bash "$SCRIPT"
+
+      - name: Upload recovered filing-index artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-candidate-filing-index-census-recovery-v2
+          path: ${{ runner.temp }}/schoolhouse-irs-candidate-filing-index-census
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Validate artifact and bind current recovery run
+        if: steps.acquisition.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          ARTIFACT="$RUNNER_TEMP/schoolhouse-irs-candidate-filing-index-census"
+          test "$(cat "$ARTIFACT/RUNNER_EXIT_CODE")" = '0'
+          (cd "$ARTIFACT" && sha256sum -c SHA256SUMS)
+          python - "$ARTIFACT" <<'PY'
+          from pathlib import Path
+          import json,sys
+          root=Path(sys.argv[1]); load=lambda n:json.loads((root/n).read_text()); rows=lambda n:[json.loads(x) for x in (root/n).read_text().splitlines() if x.strip()]
+          s=load('summary.json'); d=load('candidate-denominator.json'); p=load('route-policy.json'); a=load('adjudication.json'); m=load('artifact-manifest.json'); attempts=rows('index-attempts.jsonl'); matches=rows('filing-index-matches.jsonl'); candidates=rows('candidate-ein-summary.jsonl')
+          assert s['candidate_rows']==d['candidate_rows']==641
+          assert s['unique_candidate_eins']==d['unique_candidate_eins']==len(candidates)==438
+          assert s['official_index_requests']==s['terminal_index_rows']==len(attempts)==8
+          assert s['exact_candidate_filing_rows']==len(matches)
+          assert s['unique_candidate_eins_with_filing_rows']==len({row['ein'] for row in matches})
+          assert s['xml_fetches']==s['batch_zip_fetches']==s['successor_fetches']==0
+          assert s['identities_admitted']==s['relationships_admitted']==0
+          assert s['outside_human_dependency'] is False
+          assert p['selection_contract']['exact_ein_intersection_only'] is True
+          assert a['public_schoolhouse_legal_identity_admitted'] is False
+          assert m['counts']['candidate_rows']==641 and m['counts']['unique_candidate_eins']==438 and m['counts']['index_attempts']==8 and m['counts']['candidate_ein_summaries']==438 and m['counts']['filing_index_matches']==len(matches)
+          PY
+
+          ARTIFACT_JSON=''
+          for _ in $(seq 1 180); do
+            gh api "repos/$REPO/actions/runs/$GITHUB_RUN_ID/artifacts" > "$RUNNER_TEMP/recovery-artifacts.json"
+            ARTIFACT_JSON="$(jq -c '[.artifacts[] | select(.name=="schoolhouse-irs-candidate-filing-index-census-recovery-v2")] | last // empty' "$RUNNER_TEMP/recovery-artifacts.json")"
+            [[ -n "$ARTIFACT_JSON" ]] && break
+            sleep 2
+          done
+          test -n "$ARTIFACT_JSON"
+          ARTIFACT_ID="$(jq -r '.id' <<<"$ARTIFACT_JSON")"
+          ARTIFACT_DIGEST="$(jq -r '.digest' <<<"$ARTIFACT_JSON")"
+          {
+            printf 'acquisition_run=%s\n' "$GITHUB_RUN_ID"
+            printf 'acquisition_head=%s\n' "$(git rev-parse HEAD)"
+            printf 'artifact_id=%s\n' "$ARTIFACT_ID"
+            printf 'artifact_digest=%s\n' "$ARTIFACT_DIGEST"
+          } > "$RUNNER_TEMP/acquisition-bindings"
+
+      - name: Replay repaired product publisher
+        if: steps.acquisition.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || 0 }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE='.github/workflows/temp-schoolhouse-irs-candidate-filing-index-materializer-v2.yml'
+          SCRIPT="$RUNNER_TEMP/replay-schoolhouse-irs-filing-index-product-recovery-v2.sh"
+          python - "$SOURCE" "$SCRIPT" <<'PY'
+          from pathlib import Path
+          import sys
+          source=Path(sys.argv[1]).read_text(); step='      - name: Replay, qualify, and publish the exact workflow-free product\n'; start=source.index(step); run=source.index('        run: |\n',start)+len('        run: |\n'); end=source.index('\n      - name: Upload exact repaired materialization receipt',run); lines=source[run:end].splitlines(); Path(sys.argv[2]).write_text('\n'.join(line[10:] if line.startswith('          ') else line for line in lines)+'\n')
+          PY
+          bash -n "$SCRIPT"
+          bash "$SCRIPT"
+
+      - name: Upload recovered product receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-candidate-filing-index-product-recovery-receipt-v2
+          path: ${{ runner.temp }}/schoolhouse-irs-candidate-filing-index-materialization-receipt
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
