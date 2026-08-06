@@ -15,13 +15,18 @@ import {
   RD02_CLOSURE_PATH,
   RD02_RECEIPT_PATH,
   RD02_MANIFEST_PATH,
+  RD05_CLOSURE_PATH,
+  RD05_RECEIPT_PATH,
+  RD05_MANIFEST_PATH,
   WAVE02_PROMOTION_MERGE,
   RD01_MERGE,
   RD03_MERGE,
   RD02_MERGE,
+  RD05_MERGE,
   RD01_MANIFEST,
   RD03_MANIFEST,
   RD02_MANIFEST,
+  RD05_MANIFEST,
   RD03_LABEL_RECONCILIATION,
   INHERITED_CLOSED_IDS,
   CLOSED_IDS,
@@ -41,13 +46,13 @@ export function validateSchemaContract(schema) {
   ok(schema?.$id === 'https://clifford-number.local/schemas/status-sovereignty-residual-denominator-wave-03-current.schema.json', 'schema ID changed');
   ok(schema?.type === 'object' && schema?.additionalProperties === false, 'schema top-level closure changed');
   ok(schema?.properties?.schema_version?.const === 'status-sovereignty-residual-denominator-wave-03-current@1', 'schema version contract changed');
-  ok(schema?.properties?.authority?.const === 'three_wave03_terminal_class_receipts_promoted_without_cross_lane_empirical_authority', 'schema authority contract changed');
-  ok(schema?.properties?.promoted_class_receipts?.minItems === 9 && schema?.properties?.promoted_class_receipts?.maxItems === 9, 'schema promoted-receipt denominator changed');
-  ok(schema?.properties?.selected_classes_open?.minItems === 3 && schema?.properties?.selected_classes_open?.maxItems === 3, 'schema open-selected denominator changed');
+  ok(schema?.properties?.authority?.const === 'four_wave03_terminal_class_receipts_promoted_without_cross_lane_empirical_authority', 'schema authority contract changed');
+  ok(schema?.properties?.promoted_class_receipts?.minItems === 10 && schema?.properties?.promoted_class_receipts?.maxItems === 10, 'schema promoted-receipt denominator changed');
+  ok(schema?.properties?.selected_classes_open?.minItems === 2 && schema?.properties?.selected_classes_open?.maxItems === 2, 'schema open-selected denominator changed');
   ok(schema?.properties?.counts?.properties?.canonical_residual_classes?.const === 42, 'schema canonical denominator changed');
-  ok(schema?.properties?.counts?.properties?.closed_residual_classes?.const === 9, 'schema closed count changed');
-  ok(schema?.properties?.counts?.properties?.open_residual_classes?.const === 33, 'schema open count changed');
-  ok(schema?.properties?.counts?.properties?.wave_03_terminal_class_receipts?.const === 3, 'schema Wave-03 receipt count changed');
+  ok(schema?.properties?.counts?.properties?.closed_residual_classes?.const === 10, 'schema closed count changed');
+  ok(schema?.properties?.counts?.properties?.open_residual_classes?.const === 32, 'schema open count changed');
+  ok(schema?.properties?.counts?.properties?.wave_03_terminal_class_receipts?.const === 4, 'schema Wave-03 receipt count changed');
   ok(schema?.properties?.counts?.properties?.wave_03_label_reconciliations?.const === 1, 'schema Wave-03 label reconciliation count changed');
   same(schema?.properties?.current_result?.properties?.closed_class_ids?.const, [...CLOSED_IDS], 'schema closed IDs changed');
   same(schema?.properties?.current_result?.properties?.open_selected_class_ids?.const, [...OPEN_SELECTED_IDS], 'schema open selected IDs changed');
@@ -64,7 +69,7 @@ export function validateSchemaContract(schema) {
     'outstanding_balance_is_default',
     'scheduled_payment_is_observed_payment',
     'class_closure_is_selector_accuracy_or_technical_superiority',
-    'nine_closures_are_complete_compact',
+    'ten_closures_are_complete_compact',
     'functional_convergence_is_coordination_or_common_purpose'
   ]) {
     ok(schema?.properties?.boundaries?.properties?.[key]?.const === false, `schema boundary ${key} changed`);
@@ -78,10 +83,10 @@ export function validateValue(value, root = ROOT) {
 
   ok(value?.schema_version === 'status-sovereignty-residual-denominator-wave-03-current@1', 'current-ledger schema changed');
   ok(value?.wave_id === 'SSC-RD-W03' && value?.issue === 1013, 'current-ledger identity changed');
-  ok(value?.authority === 'three_wave03_terminal_class_receipts_promoted_without_cross_lane_empirical_authority', 'current-ledger authority changed');
-  ok(value?.promoted_class_receipts?.length === 9, 'nine promoted receipts required');
+  ok(value?.authority === 'four_wave03_terminal_class_receipts_promoted_without_cross_lane_empirical_authority', 'current-ledger authority changed');
+  ok(value?.promoted_class_receipts?.length === 10, 'ten promoted receipts required');
   same(value.promoted_class_receipts.map((row) => row.class_id), [...CLOSED_IDS], 'promoted receipt order changed');
-  ok(new Set(value.promoted_class_receipts.map((row) => row.class_id)).size === 9, 'promoted class IDs must be unique');
+  ok(new Set(value.promoted_class_receipts.map((row) => row.class_id)).size === 10, 'promoted class IDs must be unique');
   ok(value.promoted_class_receipts.every((row) => row.class_closed === true), 'promoted receipt reopened');
 
   const rd01 = value.promoted_class_receipts[6];
@@ -107,16 +112,25 @@ export function validateValue(value, root = ROOT) {
   ok(rd02.terminal_state === 'bounded_source_unavailable', 'RD-02 promotion state changed');
   ok(rd02.labels_exact_match === true && rd02.label_reconciliation === 'none', 'RD-02 promotion label custody changed');
 
+
+
+  const rd05 = value.promoted_class_receipts[9];
+  ok(rd05.lane_id === 'RD-05' && rd05.class_id === 'RD-05-C02', 'RD-05 promotion identity changed');
+  ok(rd05.issue === 1018 && rd05.source_pr === 1227 && rd05.merge_commit === RD05_MERGE, 'RD-05 promotion custody changed');
+  ok(rd05.manifest_combined_sha256 === RD05_MANIFEST, 'RD-05 promotion manifest changed');
+  ok(rd05.terminal_state === 'bounded_source_unavailable', 'RD-05 promotion state changed');
+  ok(rd05.labels_exact_match === true && rd05.label_reconciliation === 'none', 'RD-05 promotion label custody changed');
+
   same(value.selected_classes_open.map((row) => row.class_id), [...OPEN_SELECTED_IDS], 'open selected class order changed');
   ok(value.selected_classes_open.every((row) => row.state === 'open' && row.class_closed === false), 'open selected row state changed');
-  ok(new Set(value.selected_classes_open.map((row) => row.class_id)).size === 3, 'open selected class IDs must be unique');
+  ok(new Set(value.selected_classes_open.map((row) => row.class_id)).size === 2, 'open selected class IDs must be unique');
   ok(!value.selected_classes_open.some((row) => value.current_result.closed_class_ids.includes(row.class_id)), 'class appears in both closed and open sets');
 
   ok(value.counts.canonical_residual_classes === 42, 'canonical denominator changed');
   ok(value.counts.classes_closed_before_wave === 6, 'Wave-03 starting closed count changed');
   ok(value.counts.wave_03_selected_class_attempts === 6, 'Wave-03 selected attempt denominator changed');
-  ok(value.counts.wave_03_terminal_class_receipts === 3 && value.counts.classes_closed_this_wave === 3, 'Wave-03 terminal receipt accounting changed');
-  ok(value.counts.closed_residual_classes === 9 && value.counts.open_residual_classes === 33, 'residual arithmetic changed');
+  ok(value.counts.wave_03_terminal_class_receipts === 4 && value.counts.classes_closed_this_wave === 4, 'Wave-03 terminal receipt accounting changed');
+  ok(value.counts.closed_residual_classes === 10 && value.counts.open_residual_classes === 32, 'residual arithmetic changed');
   ok(value.counts.closed_residual_classes + value.counts.open_residual_classes === value.counts.canonical_residual_classes, 'residual arithmetic does not sum to 42');
   ok(value.counts.label_reconciliations === 2 && value.counts.wave_03_label_reconciliations === 1, 'label reconciliation accounting changed');
 
@@ -139,8 +153,8 @@ export function validateValue(value, root = ROOT) {
 
   same(value.current_result.closed_class_ids, [...CLOSED_IDS], 'current-result closed IDs changed');
   same(value.current_result.open_selected_class_ids, [...OPEN_SELECTED_IDS], 'current-result open selected IDs changed');
-  ok(value.current_result.classes_closed === 9 && value.current_result.classes_open === 33, 'current-result arithmetic changed');
-  ok(value.current_result.wave_03_selected_attempts_terminal === 3, 'current-result Wave-03 terminal count changed');
+  ok(value.current_result.classes_closed === 10 && value.current_result.classes_open === 32, 'current-result arithmetic changed');
+  ok(value.current_result.wave_03_selected_attempts_terminal === 4, 'current-result Wave-03 terminal count changed');
   ok(value.current_result.all_six_selected_classes_closed === false, 'all six Wave-03 attempts were incorrectly marked closed');
   ok(value.current_result.wave_complete === false && value.current_result.residual_denominator_complete === false, 'completion boundary changed');
   ok(value.current_result.outside_human_dependency === false && value.current_result.project_blocking === false, 'human-dependency or blocking boundary changed');
@@ -161,7 +175,7 @@ export function validateValue(value, root = ROOT) {
     'outstanding_balance_is_default',
     'scheduled_payment_is_observed_payment',
     'class_closure_is_selector_accuracy_or_technical_superiority',
-    'nine_closures_are_complete_compact',
+    'ten_closures_are_complete_compact',
     'functional_convergence_is_coordination_or_common_purpose'
   ]) {
     ok(value.boundaries[key] === false, `boundary ${key} changed`);
@@ -179,7 +193,7 @@ export function validateRepository(root = ROOT) {
   validateSchemaContract(schema);
   validateValue(current, root);
 
-  for (const merge of [WAVE02_PROMOTION_MERGE, RD01_MERGE, RD03_MERGE, RD02_MERGE]) {
+  for (const merge of [WAVE02_PROMOTION_MERGE, RD01_MERGE, RD03_MERGE, RD02_MERGE, RD05_MERGE]) {
     execFileSync('git', ['merge-base', '--is-ancestor', merge, 'HEAD'], { cwd: root, stdio: 'ignore' });
     ok(git(root, ['show', '-s', '--format=%H', merge]) === merge, `${merge}: merge object changed`);
   }
@@ -192,12 +206,15 @@ export function validateRepository(root = ROOT) {
   for (const rel of [RD02_CLOSURE_PATH, RD02_RECEIPT_PATH, RD02_MANIFEST_PATH]) {
     execFileSync('git', ['cat-file', '-e', `${RD02_MERGE}:${rel}`], { cwd: root, stdio: 'ignore' });
   }
+  for (const rel of [RD05_CLOSURE_PATH, RD05_RECEIPT_PATH, RD05_MANIFEST_PATH]) {
+    execFileSync('git', ['cat-file', '-e', `${RD05_MERGE}:${rel}`], { cwd: root, stdio: 'ignore' });
+  }
   return true;
 }
 
 function run() {
   validateRepository(ROOT);
-  console.log('Wave-03 current ledger validated: 33 open / 9 closed; RD-01-C06, RD-03-C05, and RD-02-C05 exact merge custody preserved');
+  console.log('Wave-03 current ledger validated: 32 open / 10 closed; RD-05-C02 exact merge custody preserved');
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) run();

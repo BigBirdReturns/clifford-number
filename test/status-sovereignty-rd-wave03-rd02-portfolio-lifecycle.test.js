@@ -5,7 +5,12 @@ import path from 'node:path';
 import {
   ROOT,
   PRODUCT_ROOT,
+  CURRENT_LEDGER_PATH,
+  CLOSURE_PATH,
+  PROMOTION_MERGE,
+  PROMOTION_MANIFEST_SHA256,
   REQUIRED_FIELDS,
+  classifyCurrentLedgerCustody,
   deriveProduct
 } from '../tools/build-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs';
 import {
@@ -21,6 +26,11 @@ const schema = read(SCHEMA_PATH);
 assert.deepEqual(terminal, deriveProduct(ROOT).terminal);
 assert.equal(validateTerminalValue(terminal), true);
 assert.equal(validateSchemaContract(schema), true);
+const currentLedger = read(CURRENT_LEDGER_PATH);
+assert.equal(
+  classifyCurrentLedgerCustody(currentLedger, PROMOTION_MANIFEST_SHA256),
+  'forward_post_promotion'
+);
 
 const mutations = [
   ['schema version', (v) => { v.schema_version = 'ssc-rd-wave03-rd02-portfolio-lifecycle-terminal-matrix@2'; }],
@@ -115,6 +125,52 @@ for (const [label, mutate] of mutations) {
   assert.throws(() => validateTerminalValue(candidate), undefined, label);
   refused += 1;
 }
+
+
+const rd02Promotion = (value) => value.promoted_class_receipts.find((row) => row.class_id === 'RD-02-C05');
+const ledgerMutations = [
+  ['canonical residual denominator', (v) => { v.counts.canonical_residual_classes = 41; }],
+  ['closed-before-wave denominator', (v) => { v.counts.classes_closed_before_wave = 5; }],
+  ['selected-attempt denominator', (v) => { v.counts.wave_03_selected_class_attempts = 5; }],
+  ['terminal-receipt denominator', (v) => { v.counts.wave_03_terminal_class_receipts = 3; }],
+  ['classes-closed-this-wave denominator', (v) => { v.counts.classes_closed_this_wave = 3; }],
+  ['closed arithmetic', (v) => { v.counts.closed_residual_classes = 9; }],
+  ['open arithmetic', (v) => { v.counts.open_residual_classes = 31; }],
+  ['result closed arithmetic', (v) => { v.current_result.classes_closed = 9; }],
+  ['result open arithmetic', (v) => { v.current_result.classes_open = 31; }],
+  ['result terminal-attempt arithmetic', (v) => { v.current_result.wave_03_selected_attempts_terminal = 3; }],
+  ['promoted receipt removed', (v) => { v.promoted_class_receipts.splice(v.promoted_class_receipts.findIndex((row) => row.class_id === 'RD-02-C05'), 1); }],
+  ['promoted receipt duplicated', (v) => { v.promoted_class_receipts[0] = structuredClone(rd02Promotion(v)); }],
+  ['closed class ID removed', (v) => { v.current_result.closed_class_ids = v.current_result.closed_class_ids.filter((id) => id !== 'RD-02-C05'); }],
+  ['open selected RD-02 invented', (v) => { v.current_result.open_selected_class_ids.push('RD-02-C05'); }],
+  ['selected-open row removed', (v) => { v.selected_classes_open.pop(); }],
+  ['RD-02 promotion source PR', (v) => { rd02Promotion(v).source_pr = 1099; }],
+  ['RD-02 promotion merge', (v) => { rd02Promotion(v).merge_commit = '0'.repeat(40); }],
+  ['RD-02 promotion constitutional label', (v) => { rd02Promotion(v).constitutional_exact_label += ' changed'; }],
+  ['RD-02 promotion receipt label', (v) => { rd02Promotion(v).receipt_class_label += ' changed'; }],
+  ['RD-02 promotion label equality', (v) => { rd02Promotion(v).labels_exact_match = false; }],
+  ['RD-02 promotion label reconciliation', (v) => { rd02Promotion(v).label_reconciliation = 'changed'; }],
+  ['RD-02 promotion terminal state', (v) => { rd02Promotion(v).terminal_state = 'evidence_complete'; }],
+  ['RD-02 promotion closure path', (v) => { rd02Promotion(v).closure_reference_path = 'changed.json'; }],
+  ['RD-02 promotion receipt path', (v) => { rd02Promotion(v).class_receipt_path = 'changed.json'; }],
+  ['RD-02 promotion manifest', (v) => { rd02Promotion(v).manifest_combined_sha256 = '0'.repeat(64); }],
+  ['RD-02 promotion reopened', (v) => { rd02Promotion(v).class_closed = false; }],
+  ['RD-02 source snapshot closure path', (v) => { v.source_snapshots.rd02_closure_reference_path = 'changed.json'; }],
+  ['RD-02 source snapshot receipt path', (v) => { v.source_snapshots.rd02_class_receipt_path = 'changed.json'; }],
+  ['RD-02 source snapshot merge', (v) => { v.source_snapshots.rd02_merge_commit = '0'.repeat(40); }]
+];
+for (const [label, mutate] of ledgerMutations) {
+  const candidate = clone(currentLedger);
+  mutate(candidate);
+  assert.throws(
+    () => classifyCurrentLedgerCustody(candidate, PROMOTION_MANIFEST_SHA256),
+    undefined,
+    label
+  );
+  refused += 1;
+}
+assert.equal(rd02Promotion(currentLedger).merge_commit, PROMOTION_MERGE);
+assert.equal(rd02Promotion(currentLedger).closure_reference_path, CLOSURE_PATH);
 
 const schemaMutations = [
   ['schema root reopening', (s) => { s.additionalProperties = true; }],

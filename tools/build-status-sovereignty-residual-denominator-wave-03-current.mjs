@@ -17,18 +17,24 @@ export const RD03_MANIFEST_PATH = 'data/research/status-sovereignty-rd-wave03-rd
 export const RD02_CLOSURE_PATH = 'data/project/ssc-residual-wave03/closures/RD-02-C05.json';
 export const RD02_RECEIPT_PATH = 'data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/class-receipt.json';
 export const RD02_MANIFEST_PATH = 'data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/manifest.json';
+export const RD05_CLOSURE_PATH = 'data/project/ssc-residual-wave03/closures/RD-05-C02.json';
+export const RD05_RECEIPT_PATH = 'data/research/status-sovereignty-rd-wave03-rd05-member-participation/class-receipt.json';
+export const RD05_MANIFEST_PATH = 'data/research/status-sovereignty-rd-wave03-rd05-member-participation/manifest.json';
 
 export const WAVE02_PROMOTION_MERGE = '2af6bb7819a37e51c7198fb48da894445a29e494';
 export const RD01_MERGE = 'c27e7d3cde2c94c1cde5d66dcce8eb06b514ff8a';
 export const RD03_MERGE = 'eadf234983ae61eb25286c9472435c052a241854';
 export const RD02_MERGE = '61a33f5459e64f1978d9c55c1b7ea7f925358cd8';
+export const RD05_MERGE = 'b6d69b5502e4429e3769591b5ebd88555aad62be';
 export const RD01_MANIFEST = '9b59871cf7ce40e68d0a2a89b41148a6c92b7201702d91a7724d1310ddbcc461';
 export const RD03_MANIFEST = '595b2d1fd0a2315657935d44c87d984dd33043eff1f33b6b0e209c689299a35a';
 export const RD02_MANIFEST = '068330d24a8bc378964cee2d88c3ebe1c5b48b36154f58636e72d78d40e71e82';
+export const RD05_MANIFEST = 'beceefc3d1c2d1e6a8879a8ec7fc4e56bb0d387de8f91cddafd4695096d756f6';
 export const RD01_LABEL = 'methodology correction, appeal, and re-evaluation records';
 export const RD03_LABEL = 'commitment, closing, draw, disbursement, amendment, waiver, default, cure, repayment, and recovery chronology';
 export const RD03_RECEIPT_LABEL = 'commitment through repayment and public recovery chronology';
 export const RD02_LABEL = 'complete portfolio investment, follow-on, exit, write-off, default, return, and repayment ledger';
+export const RD05_LABEL = 'member-specific votes, dissents, subcommittee assignments, agenda control, information access, and recommendation authorship';
 export const RD03_LABEL_RECONCILIATION = 'receipt_label_summarizes_the_constitutional_scope_as_commitment_through_repayment_and_public_recovery_chronology; class identity remains bound by RD-03-C05, issue 1016, and the exact closure label';
 
 export const INHERITED_CLOSED_IDS = Object.freeze([
@@ -53,12 +59,12 @@ export const CLOSED_IDS = Object.freeze([
   ...INHERITED_CLOSED_IDS,
   'RD-01-C06',
   'RD-03-C05',
-  'RD-02-C05'
+  'RD-02-C05',
+  'RD-05-C02'
 ]);
 
 export const OPEN_SELECTED_IDS = Object.freeze([
   'RD-04-C02',
-  'RD-05-C02',
   'RD-06-C04'
 ]);
 
@@ -380,6 +386,120 @@ function validateRD02(closure, receipt, manifest, attempt) {
   ok(manifest?.combined_sha256 === RD02_MANIFEST, 'RD-02 manifest object changed');
 }
 
+
+function validateRD05(closure, receipt, manifest, attempt) {
+  ok(closure?.schema_version === 'ssc-residual-denominator-wave03-class-closure-reference@1', 'RD-05 closure schema changed');
+  ok(closure?.wave_issue === 1013 && closure?.child_issue === 1018 && closure?.source_pr === 1227, 'RD-05 closure custody changed');
+  ok(closure?.lane_id === 'RD-05' && closure?.class_id === 'RD-05-C02', 'RD-05 closure identity changed');
+  ok(closure?.exact_label === RD05_LABEL, 'RD-05 closure label changed');
+  ok(closure?.terminal_state === 'bounded_source_unavailable' && closure?.class_closed === true, 'RD-05 closure state changed');
+  ok(closure?.product?.manifest_combined_sha256 === RD05_MANIFEST, 'RD-05 closure manifest changed');
+  ok(closure?.product?.class_receipt_path === RD05_RECEIPT_PATH, 'RD-05 closure receipt path changed');
+  same(closure?.source_custody, {
+    source_census_receipt_path: 'data/intake/status-sovereignty-rd-wave03-rd05-member-participation/source-census-execution-receipt.json',
+    source_census_artifact_id: 8923361634,
+    source_census_artifact_zip_sha256: '0829f39c45dc5308c031dcde3efb6514a1f65ec5787ed19c9490bf49e6c1289b',
+    candidate_and_observation_manifest_path: 'data/intake/status-sovereignty-rd-wave03-rd05-member-participation/candidate-and-official-observation-manifest.json',
+    candidate_and_observation_manifest_combined_sha256: '0232a5906451bb8eaa2eab68376c2f0df07470f1f49e3821205f8b06855b5514',
+    fixed_routes: 161,
+    candidate_rows: 1351,
+    official_body_observations: 25
+  }, 'RD-05 source custody changed');
+  same(closure?.residual_atlas_effect_if_promoted, {
+    canonical_classes: 42,
+    open_before: 33,
+    closed_before: 9,
+    open_after: 32,
+    closed_after: 10,
+    wave03_selected_attempts_terminal_after_promotion: 4,
+    wave_complete: false
+  }, 'RD-05 residual-atlas effect changed');
+  validateEffects(closure.authority, 'RD-05 closure authority');
+  for (const key of [
+    'denominator_widened',
+    'reviewed_disposition_changed',
+    'participation_finding',
+    'vote_finding',
+    'dissent_or_unanimity_finding',
+    'information_asymmetry_finding',
+    'recommendation_authorship_finding',
+    'coordination_finding',
+    'common_purpose_finding'
+  ]) ok(closure?.authority?.[key] === false, `RD-05 closure authority.${key} changed`);
+
+  ok(receipt?.schema_version === 'ssc-rd05-wave03-class-receipt@1', 'RD-05 receipt schema changed');
+  ok(receipt?.wave_id === 'SSC-RD-W03' && receipt?.lane_id === 'RD-05' && receipt?.class_id === 'RD-05-C02', 'RD-05 receipt identity changed');
+  ok(receipt?.issue === 1018 && receipt?.source_pr === 1227, 'RD-05 receipt custody changed');
+  ok(receipt?.class_label === RD05_LABEL, 'RD-05 receipt label changed');
+  ok(receipt?.terminal_state === 'bounded_source_unavailable' && receipt?.class_closed === true, 'RD-05 receipt state changed');
+  same(receipt?.counts, {
+    member_rows: 17,
+    required_fields_per_member: 10,
+    required_fields: 170,
+    terminal_fields: 170,
+    observed_fields: 71,
+    not_publicly_recovered_fields: 99,
+    closed_members: 17,
+    fixed_routes: 161,
+    route_attempts: 161,
+    http_success_routes: 161,
+    exact_official_routes: 25,
+    official_body_observations: 25,
+    candidate_census_routes: 136,
+    candidate_rows: 1351,
+    terminal_candidate_dispositions: 1351,
+    selected_candidate_followups: 0,
+    admitted_candidate_sources: 0,
+    observed_identity_fields: 17,
+    observed_subcommittee_fields: 15,
+    observed_chair_authority_fields: 5,
+    observed_source_custody_fields: 17,
+    observed_terminal_state_fields: 17,
+    observed_attendance_fields: 0,
+    observed_vote_fields: 0,
+    observed_dissent_fields: 0,
+    observed_information_access_fields: 0,
+    observed_authorship_fields: 0,
+    external_contacts: 0,
+    external_reviews: 0
+  }, 'RD-05 class-receipt counts changed');
+  same(receipt?.source_custody, {
+    intake_head: 'bc9800dcd3a3768288a5dfeaf0f7144969994ffa',
+    source_census_workflow_run: 30989139364,
+    source_census_artifact_id: 8923361634,
+    source_census_artifact_zip_sha256: '0829f39c45dc5308c031dcde3efb6514a1f65ec5787ed19c9490bf49e6c1289b',
+    source_census_capture_manifest_sha256: 'c227aa2ed90f9247de6cd8eee4920b74ef0a4c8be8b14d1184b79bc52f876cf1',
+    candidate_and_observation_manifest_path: 'data/intake/status-sovereignty-rd-wave03-rd05-member-participation/candidate-and-official-observation-manifest.json',
+    candidate_and_observation_manifest_combined_sha256: '0232a5906451bb8eaa2eab68376c2f0df07470f1f49e3821205f8b06855b5514'
+  }, 'RD-05 receipt source custody changed');
+  same(receipt?.unresolved_limit, {
+    not_publicly_recovered_fields: 99,
+    selected_candidate_followups: 0,
+    candidate_page_requests: 0,
+    missing_records_are_not_event_absence: true,
+    no_recorded_dissent_is_not_unanimity: true,
+    subcommittee_assignment_is_not_authorship: true,
+    automatic_additional_search_pass_authorized: false
+  }, 'RD-05 unresolved limit changed');
+  validateEffects(receipt.authority, 'RD-05 receipt authority');
+  for (const key of [
+    'denominator_widened',
+    'reviewed_disposition_changed',
+    'participation_finding',
+    'vote_finding',
+    'dissent_or_unanimity_finding',
+    'information_asymmetry_finding',
+    'recommendation_authorship_finding',
+    'coordination_finding',
+    'common_purpose_finding'
+  ]) ok(receipt?.authority?.[key] === false, `RD-05 receipt authority.${key} changed`);
+
+  ok(attempt?.lane_id === 'RD-05' && attempt?.issue === 1018, 'RD-05 constitution binding changed');
+  ok(attempt?.exact_label === RD05_LABEL, 'RD-05 constitutional label changed');
+  ok(receipt.class_label === attempt.exact_label, 'RD-05 exact label custody changed');
+  ok(manifest?.combined_sha256 === RD05_MANIFEST, 'RD-05 manifest object changed');
+}
+
 function promotionFromWave02(row) {
   return { ...row };
 }
@@ -396,6 +516,9 @@ export function deriveCurrent(root = ROOT) {
   const rd02Closure = read(root, RD02_CLOSURE_PATH);
   const rd02Receipt = read(root, RD02_RECEIPT_PATH);
   const rd02Manifest = read(root, RD02_MANIFEST_PATH);
+  const rd05Closure = read(root, RD05_CLOSURE_PATH);
+  const rd05Receipt = read(root, RD05_RECEIPT_PATH);
+  const rd05Manifest = read(root, RD05_MANIFEST_PATH);
 
   validateWave02(wave02);
   validateConstitution(constitution);
@@ -403,6 +526,7 @@ export function deriveCurrent(root = ROOT) {
   validateRD01(rd01Closure, rd01Receipt, rd01Manifest, byClass.get('RD-01-C06'));
   validateRD03(rd03Closure, rd03Receipt, rd03Manifest, byClass.get('RD-03-C05'));
   validateRD02(rd02Closure, rd02Receipt, rd02Manifest, byClass.get('RD-02-C05'));
+  validateRD05(rd05Closure, rd05Receipt, rd05Manifest, byClass.get('RD-05-C02'));
 
   const rd01Promotion = {
     lane_id: 'RD-01',
@@ -456,6 +580,24 @@ export function deriveCurrent(root = ROOT) {
     class_closed: true
   };
 
+
+  const rd05Promotion = {
+    lane_id: 'RD-05',
+    class_id: 'RD-05-C02',
+    issue: 1018,
+    source_pr: 1227,
+    merge_commit: RD05_MERGE,
+    constitutional_exact_label: RD05_LABEL,
+    receipt_class_label: RD05_LABEL,
+    labels_exact_match: true,
+    label_reconciliation: 'none',
+    terminal_state: 'bounded_source_unavailable',
+    closure_reference_path: RD05_CLOSURE_PATH,
+    class_receipt_path: RD05_RECEIPT_PATH,
+    manifest_combined_sha256: RD05_MANIFEST,
+    class_closed: true
+  };
+
   const selectedClassesOpen = OPEN_SELECTED_IDS.map((classId) => {
     const attempt = byClass.get(classId);
     ok(attempt, `${classId}: constitution attempt missing`);
@@ -474,8 +616,8 @@ export function deriveCurrent(root = ROOT) {
     wave_id: 'SSC-RD-W03',
     hypothesis_id: 'SSC-H01',
     issue: 1013,
-    as_of: '2026-08-04',
-    authority: 'three_wave03_terminal_class_receipts_promoted_without_cross_lane_empirical_authority',
+    as_of: '2026-08-05',
+    authority: 'four_wave03_terminal_class_receipts_promoted_without_cross_lane_empirical_authority',
     source_snapshots: {
       wave_02_current_ledger_path: WAVE02_PATH,
       wave_02_cumulative_promotion_merge: WAVE02_PROMOTION_MERGE,
@@ -488,23 +630,27 @@ export function deriveCurrent(root = ROOT) {
       rd03_merge_commit: RD03_MERGE,
       rd02_closure_reference_path: RD02_CLOSURE_PATH,
       rd02_class_receipt_path: RD02_RECEIPT_PATH,
-      rd02_merge_commit: RD02_MERGE
+      rd02_merge_commit: RD02_MERGE,
+      rd05_closure_reference_path: RD05_CLOSURE_PATH,
+      rd05_class_receipt_path: RD05_RECEIPT_PATH,
+      rd05_merge_commit: RD05_MERGE
     },
     promoted_class_receipts: [
       ...wave02.promoted_class_receipts.map(promotionFromWave02),
       rd01Promotion,
       rd03Promotion,
-      rd02Promotion
+      rd02Promotion,
+      rd05Promotion
     ],
     selected_classes_open: selectedClassesOpen,
     counts: {
       canonical_residual_classes: 42,
       classes_closed_before_wave: 6,
       wave_03_selected_class_attempts: 6,
-      wave_03_terminal_class_receipts: 3,
-      classes_closed_this_wave: 3,
-      closed_residual_classes: 9,
-      open_residual_classes: 33,
+      wave_03_terminal_class_receipts: 4,
+      classes_closed_this_wave: 4,
+      closed_residual_classes: 10,
+      open_residual_classes: 32,
       label_reconciliations: 2,
       wave_03_label_reconciliations: 1,
       outside_human_dependencies: 0,
@@ -521,11 +667,11 @@ export function deriveCurrent(root = ROOT) {
       adoption_effects: 0
     },
     current_result: {
-      terminal_state: 'three_of_six_wave03_selected_classes_terminal_nine_of_forty_two_residual_classes_closed',
-      classes_closed: 9,
-      classes_open: 33,
+      terminal_state: 'four_of_six_wave03_selected_classes_terminal_ten_of_forty_two_residual_classes_closed',
+      classes_closed: 10,
+      classes_open: 32,
       closed_class_ids: [...CLOSED_IDS],
-      wave_03_selected_attempts_terminal: 3,
+      wave_03_selected_attempts_terminal: 4,
       open_selected_class_ids: [...OPEN_SELECTED_IDS],
       all_six_selected_classes_closed: false,
       wave_complete: false,
@@ -547,7 +693,7 @@ export function deriveCurrent(root = ROOT) {
       outstanding_balance_is_default: false,
       scheduled_payment_is_observed_payment: false,
       class_closure_is_selector_accuracy_or_technical_superiority: false,
-      nine_closures_are_complete_compact: false,
+      ten_closures_are_complete_compact: false,
       functional_convergence_is_coordination_or_common_purpose: false,
       graph_effect: 'none',
       publication_effect: 'none',
@@ -561,13 +707,13 @@ function run() {
   const derived = deriveCurrent(ROOT);
   if (mode === '--write') {
     write(ROOT, CURRENT_PATH, derived);
-    console.log('Wave-03 current ledger written: 33 open / 9 closed; RD-01-C06, RD-03-C05, and RD-02-C05 promoted');
+    console.log('Wave-03 current ledger written: 32 open / 10 closed; RD-05-C02 promoted after the prior nine closures');
     return;
   }
   if (mode !== '--check') throw new Error(`unsupported mode: ${mode}`);
   const committed = read(ROOT, CURRENT_PATH);
   same(committed, derived, 'committed Wave-03 current ledger differs from deterministic derivation');
-  console.log('Wave-03 current ledger: 33 open / 9 closed; RD-01-C06, RD-03-C05, and RD-02-C05 promoted');
+  console.log('Wave-03 current ledger: 32 open / 10 closed; RD-05-C02 promoted after the prior nine closures');
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) run();

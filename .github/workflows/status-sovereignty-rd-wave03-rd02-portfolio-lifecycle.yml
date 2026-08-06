@@ -51,7 +51,7 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Validate exact 180-cell terminal product and 147 adversarial refusals
+      - name: Validate exact terminal product and forward cumulative-ledger custody
         run: |
           set -Eeuo pipefail
           node --check tools/build-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs
