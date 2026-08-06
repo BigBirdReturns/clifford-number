@@ -1,0 +1,175 @@
+name: TEMP prove canonical RD-04 seven-state minimum-frontier protocol
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-rd04-mf7-protocol-postmerge-proof
+  cancel-in-progress: false
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+      - name: Prove exact canonical product and rerun every gate
+        run: |
+          set -Eeuo pipefail
+          RECEIPT=/tmp/rd04-mf7-protocol-postmerge-proof
+          rm -rf "$RECEIPT"
+          mkdir -p "$RECEIPT"
+
+          git fetch --no-tags origin main
+          MAIN=$(git rev-parse origin/main)
+          test "$MAIN" = e3cf2a53d5209557183a340752df83d38ab83994
+          test "$(git rev-parse 4155cdb9f35802e76e754151fbf6f8c6f9145ef0^)" = 9d9f9522fbc2909611033370044e9748a29b3cf7
+          test "$(git rev-parse '4155cdb9f35802e76e754151fbf6f8c6f9145ef0^{tree}')" = c4303c0c1e4acdecfb71b2ad6afb0aa075e83137
+          git merge-base --is-ancestor 4155cdb9f35802e76e754151fbf6f8c6f9145ef0 "$MAIN"
+
+          mapfile -t PROOF_DELTA < <(git diff --name-only origin/main HEAD)
+          test "${#PROOF_DELTA[@]}" -eq 1
+          test "${PROOF_DELTA[0]}" = '.github/workflows/temp-rd04-mf7-protocol-postmerge-proof.yml'
+
+          git diff --name-status 9d9f9522fbc2909611033370044e9748a29b3cf7 4155cdb9f35802e76e754151fbf6f8c6f9145ef0 > "$RECEIPT/product-name-status.txt"
+          python - <<'PY'
+          from pathlib import Path
+          expected = {
+              '.github/workflows/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.yml',
+              'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol/authored-protocol.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol/execution-receipt-template.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol/index.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol/product-manifest.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol/route-ledger.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol/source-interpretation-constraints.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol/target-cell-ledger.json',
+              'docs/milestones/ssc-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.md',
+              'schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.schema.json',
+              'test/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.test.js',
+              'tools/acquisition/status-sovereignty-rd-wave03-rd04/run-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.py',
+              'tools/build-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.mjs',
+              'tools/validate-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.mjs',
+          }
+          rows = Path('/tmp/rd04-mf7-protocol-postmerge-proof/product-name-status.txt').read_text().splitlines()
+          observed = set()
+          for row in rows:
+              status, path = row.split('\t', 1)
+              if status != 'A':
+                  raise SystemExit(f'non-addition product path: {row}')
+              observed.add(path)
+          if observed != expected:
+              raise SystemExit(f'product path-set drift: {sorted(observed)}')
+          print('canonical_product_surface=14_addition_only')
+          PY
+
+          BUILDER=tools/build-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.mjs
+          VALIDATOR=tools/validate-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.mjs
+          TEST=test/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.test.js
+          RUNNER=tools/acquisition/status-sovereignty-rd-wave03-rd04/run-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.py
+          SCHEMA=schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.schema.json
+          DATA=data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol
+
+          node --check "$BUILDER"
+          node --check "$VALIDATOR"
+          node --check "$TEST"
+          python -m py_compile "$RUNNER"
+          node "$BUILDER" --check
+          node "$VALIDATOR"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import jsonschema
+          data=Path('data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol')
+          schema=json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.schema.json').read_text())
+          paths=sorted(data.glob('*.json'))
+          if len(paths)!=7:
+              raise SystemExit(f'JSON object denominator drift: {len(paths)}')
+          validator=jsonschema.Draft202012Validator(schema)
+          for path in paths:
+              validator.validate(json.loads(path.read_text()))
+          authored=json.loads((data/'authored-protocol.json').read_text())
+          assert authored['selection_rule']['selected_state_rows'] == 7
+          assert authored['selection_rule']['selected_substantive_cells'] == 21
+          assert authored['selection_rule']['excluded_derivative_row_state_cells'] == 7
+          assert len(authored['route_census']['fixed_routes']) == 30
+          assert authored['predecessor_custody']['terminal_cells'] == 190
+          assert authored['predecessor_custody']['still_open_substantive_cells'] == 213
+          assert authored['predecessor_custody']['class_closed'] is False
+          assert authored['authority_boundary']['outside_human_dependency'] is False
+          assert authored['authority_boundary']['publication_effect'] == 'none'
+          assert authored['authority_boundary']['adoption_effect'] == 'none'
+          assert authored['authority_boundary']['graph_effect'] == 'none'
+          print('canonical_protocol=routes_30_states_7_cells_21')
+          PY
+          node "$TEST" | tee "$RECEIPT/adversarial.txt"
+          grep -qx 'adversarial_mutations_refused=697' "$RECEIPT/adversarial.txt"
+          python "$RUNNER" --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+
+          git restore --staged --worktree .
+          git clean -fdx
+          node "$BUILDER" --write
+          node "$BUILDER" --check
+          node "$VALIDATOR"
+          node "$TEST"
+          python "$RUNNER" --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          receipt = {
+              'schema_version': 'ssc-rd04-mf7-protocol-postmerge-proof@1',
+              'canonical_main': 'e3cf2a53d5209557183a340752df83d38ab83994',
+              'product_commit': '4155cdb9f35802e76e754151fbf6f8c6f9145ef0',
+              'product_tree': 'c4303c0c1e4acdecfb71b2ad6afb0aa075e83137',
+              'product_paths': 14,
+              'fixed_routes': 30,
+              'target_states': ['AR','GA','MD','NC','PA','RI','WV'],
+              'target_cells': 21,
+              'excluded_derivative_row_state_cells': 7,
+              'predecessor_terminal_cells': 190,
+              'predecessor_still_open_substantive_cells': 213,
+              'adversarial_refusals': 697,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'focused_validation': 'pass',
+              'closed_schema_objects': 7,
+              'no_magic_human': 'pass',
+              'complete_release_gate': 'pass',
+              'clean_replay': 'pass',
+              'status': 'complete',
+          }
+          Path('/tmp/rd04-mf7-protocol-postmerge-proof/proof.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          print(json.dumps(receipt,indent=2))
+          PY
+      - name: Preserve canonical proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mf7-protocol-postmerge-proof
+          path: /tmp/rd04-mf7-protocol-postmerge-proof
+          if-no-files-found: error
+          retention-days: 90
