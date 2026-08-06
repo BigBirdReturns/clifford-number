@@ -1,4 +1,4 @@
-name: TEMP execute repaired RD-04 seven-state row-state binary materializer v6
+name: TEMP execute fully repaired RD-04 seven-state row-state materializer v7
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: temp-ssc-rd04-mf7-row-state-repaired-push-v6
+  group: temp-ssc-rd04-mf7-row-state-repaired-push-v7
   cancel-in-progress: true
 
 jobs:
@@ -23,11 +23,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Require exact carrier head and surface
+      - name: Require exact clean three-path carrier
         run: |
           set -Eeuo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test -f '.trigger/ssc-rd04-mf7-row-state-binary-materializer-v4b/EXECUTE'
+          test "$(git rev-list --count origin/main..HEAD)" -ge 1
           test "$(git diff --name-only origin/main...HEAD | sort | tr '\n' ' ')" = '.github/workflows/temp-ssc-rd04-mf7-row-state-binary-materializer-pr-v4b.yml .github/workflows/temp-ssc-rd04-mf7-row-state-binary-materializer-v4b.yml .trigger/ssc-rd04-mf7-row-state-binary-materializer-v4b/EXECUTE '
       - uses: actions/setup-node@v4
         with:
@@ -38,7 +39,7 @@ jobs:
       - name: Install pinned JSON Schema validator
         run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
       - id: locate
-        name: Locate fresh never-merge carrier PR
+        name: Locate never-merge carrier PR
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPOSITORY: ${{ github.repository }}
@@ -48,24 +49,21 @@ jobs:
           PR=$(gh api "repos/$GH_REPOSITORY/pulls?state=open&head=$OWNER:${GITHUB_REF_NAME}" --jq '.[0].number // empty')
           test -n "$PR"
           echo "pr=$PR" >> "$GITHUB_OUTPUT"
-          gh pr comment "$PR" --repo "$GH_REPOSITORY" --body "Repaired push-v6 materialization started on exact carrier head \`${GITHUB_SHA}\`. The runner is verifying the immutable source, exactly two Git-header NUL repairs, exactly one permanent-path newline repair, and then the archive, schema, adversarial, release, replay, and lease gates."
+          gh pr comment "$PR" --repo "$GH_REPOSITORY" --body "Fully repaired push-v7 materialization started on exact clean carrier head \`${GITHUB_SHA}\`. The immutable runner fixes two Git-header NUL escapes and all six path/JSON newline escapes, then executes the complete archive, schema, adversarial, release, replay, and lease transaction."
       - id: materialize
-        name: Recover, repair, and execute immutable materializer
+        name: Recover and execute fully repaired immutable materializer
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPOSITORY: ${{ github.repository }}
-          MATERIALIZER_BLOB: 6e2a8bc84bc47a2c99e8052eb7183690eef08d2d
-          MATERIALIZER_XZ_BYTES: '5956'
-          MATERIALIZER_XZ_SHA256: 07d1517c61c8987f718d7d9b29f3bed3547324b53cb90ef98617b71af6a44add
-          MATERIALIZER_SOURCE_BYTES: '18258'
-          MATERIALIZER_SOURCE_SHA256: 8c68d07d8388bc177270ceecc4af8a5715f52997d67229afca4b2d82bbe06d14
-          NUL_REPAIRED_SOURCE_BYTES: '18256'
-          NUL_REPAIRED_SOURCE_SHA256: 60d7acbbd7b43d8505ffc45eb9e99c8281236c32716c2781f5846e1ed4472145
-          FINAL_REPAIRED_SOURCE_BYTES: '18255'
+          MATERIALIZER_BLOB: 9e2f4c068bce26fded994e9ce44ec36313c059d3
+          MATERIALIZER_XZ_BYTES: '5968'
+          MATERIALIZER_XZ_SHA256: 6875885605c4fe7e9f97ff2ec6f889e2d3e8bb5d42a22b286b81b942b4adfbcd
+          MATERIALIZER_SOURCE_BYTES: '18250'
+          MATERIALIZER_SOURCE_SHA256: bd81b35aeabe92c5624e803a7543c88683b03285ea30bb443a5d544a47a286a1
         run: |
           set -Eeuo pipefail
-          OUT=/tmp/rd04-mf7-repaired-push-v6
+          OUT=/tmp/rd04-mf7-repaired-push-v7
           RESULT=/tmp/rd04-mf7-row-state-materialization-v3
           rm -rf "$OUT" "$RESULT"
           mkdir -p "$OUT"
@@ -80,70 +78,10 @@ jobs:
           test "$(wc -c < "$OUT/materializer.sh.xz" | tr -d ' ')" = "$MATERIALIZER_XZ_BYTES"
           test "$(sha256sum "$OUT/materializer.sh.xz" | awk '{print $1}')" = "$MATERIALIZER_XZ_SHA256"
           test "$(git hash-object "$OUT/materializer.sh.xz")" = "$MATERIALIZER_BLOB"
-          xz -dc "$OUT/materializer.sh.xz" > "$OUT/materializer.original.sh"
-          test "$(wc -c < "$OUT/materializer.original.sh" | tr -d ' ')" = "$MATERIALIZER_SOURCE_BYTES"
-          test "$(sha256sum "$OUT/materializer.original.sh" | awk '{print $1}')" = "$MATERIALIZER_SOURCE_SHA256"
-          python - <<'PY'
-          import hashlib
-          import json
-          import os
-          from pathlib import Path
-
-          out = Path('/tmp/rd04-mf7-repaired-push-v6')
-          source_path = out / 'materializer.original.sh'
-          target_path = out / 'materializer.sh'
-          text = source_path.read_text()
-
-          nul_needle = r'\\0'
-          nul_replacement = r'\0'
-          nul_count = text.count(nul_needle)
-          if nul_count != 2:
-              raise SystemExit(f'Git-object header escape denominator drift: {nul_count}')
-          nul_repaired = text.replace(nul_needle, nul_replacement)
-          nul_body = nul_repaired.encode()
-          if len(nul_body) != int(os.environ['NUL_REPAIRED_SOURCE_BYTES']):
-              raise SystemExit(f'NUL-repaired source byte drift: {len(nul_body)}')
-          nul_digest = hashlib.sha256(nul_body).hexdigest()
-          if nul_digest != os.environ['NUL_REPAIRED_SOURCE_SHA256']:
-              raise SystemExit(f'NUL-repaired source digest drift: {nul_digest}')
-
-          lines = nul_repaired.splitlines(keepends=True)
-          candidates = [
-              (index, line)
-              for index, line in enumerate(lines)
-              if 'permanent-paths.txt' in line and "printf '%s" in line
-          ]
-          if len(candidates) != 1:
-              detail = [repr(line) for _, line in candidates]
-              raise SystemExit(f'permanent-path writer denominator drift: {len(candidates)} {detail}')
-          index, line = candidates[0]
-          bad_fragment = r"printf '%s\\n'"
-          good_fragment = r"printf '%s\n'"
-          if line.count(bad_fragment) != 1:
-              raise SystemExit(f'permanent-path writer escape drift: {line!r}')
-          lines[index] = line.replace(bad_fragment, good_fragment, 1)
-          final_text = ''.join(lines)
-          final_body = final_text.encode()
-          if len(final_body) != int(os.environ['FINAL_REPAIRED_SOURCE_BYTES']):
-              raise SystemExit(f'final repaired source byte drift: {len(final_body)}')
-          final_digest = hashlib.sha256(final_body).hexdigest()
-
-          target_path.write_bytes(final_body)
-          target_path.chmod(0o755)
-          custody = {
-              'original_blob': os.environ['MATERIALIZER_BLOB'],
-              'original_source_bytes': len(text.encode()),
-              'original_source_sha256': hashlib.sha256(text.encode()).hexdigest(),
-              'nul_header_repairs': nul_count,
-              'nul_repaired_source_bytes': len(nul_body),
-              'nul_repaired_source_sha256': nul_digest,
-              'permanent_path_newline_repairs': 1,
-              'final_source_bytes': len(final_body),
-              'final_source_sha256': final_digest,
-          }
-          (out / 'materializer-repair-custody.json').write_text(json.dumps(custody, indent=2) + '\n')
-          print(json.dumps(custody, indent=2))
-          PY
+          xz -dc "$OUT/materializer.sh.xz" > "$OUT/materializer.sh"
+          test "$(wc -c < "$OUT/materializer.sh" | tr -d ' ')" = "$MATERIALIZER_SOURCE_BYTES"
+          test "$(sha256sum "$OUT/materializer.sh" | awk '{print $1}')" = "$MATERIALIZER_SOURCE_SHA256"
+          chmod 0755 "$OUT/materializer.sh"
           bash "$OUT/materializer.sh"
           if ! test -f "$RESULT/materialization-receipt.json"; then
             RECEIPT=$(find "$RESULT" -maxdepth 1 -type f -name '*receipt*.json' -print -quit)
@@ -159,19 +97,15 @@ jobs:
           OUTCOME: ${{ steps.materialize.outcome }}
         run: |
           set -Eeuo pipefail
-          BODY=/tmp/rd04-mf7-repaired-push-v6-comment.md
+          BODY=/tmp/rd04-mf7-repaired-push-v7-comment.md
           RECEIPT=/tmp/rd04-mf7-row-state-materialization-v3/materialization-receipt.json
-          CUSTODY=/tmp/rd04-mf7-repaired-push-v6/materializer-repair-custody.json
           if test "$OUTCOME" = success && test -f "$RECEIPT"; then
             python - <<'PY' > "$BODY"
           import json
           from pathlib import Path
           r = json.loads(Path('/tmp/rd04-mf7-row-state-materialization-v3/materialization-receipt.json').read_text())
-          c = json.loads(Path('/tmp/rd04-mf7-repaired-push-v6/materializer-repair-custody.json').read_text())
-          print('Repaired push-v6 materialization completed successfully.\n')
+          print('Fully repaired push-v7 materialization completed successfully.\n')
           print('```text')
-          for key in ['final_source_bytes', 'final_source_sha256']:
-              print(f'{key}: {c.get(key)}')
           for key in ['canonical_parent','full_head','full_tree','ordinary_head','ordinary_tree','permanent_pr','archive_sha256','permanent_paths','ordinary_paths','target_rows','terminal_cells_before','terminal_cells_after','terminal_units_before','terminal_units_after','adversarial_refusals','class_closed','outside_human_dependency']:
               print(f'{key}: {r.get(key)}')
           print('```')
@@ -179,14 +113,13 @@ jobs:
           PY
           else
             {
-              echo 'Repaired push-v6 materialization failed closed.'
+              echo 'Fully repaired push-v7 materialization failed closed.'
               echo
               echo '```text'
               echo "carrier_head: ${GITHUB_SHA}"
               echo "materializer_outcome: ${OUTCOME}"
-              if test -f "$CUSTODY"; then cat "$CUSTODY"; fi
               if test -f /tmp/rd04-mf7-row-state-materialization-v3/run.log; then
-                tail -160 /tmp/rd04-mf7-row-state-materialization-v3/run.log
+                tail -180 /tmp/rd04-mf7-row-state-materialization-v3/run.log
               fi
               echo '```'
               echo
@@ -200,9 +133,9 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd04-mf7-row-state-repaired-push-v6
+          name: ssc-rd04-mf7-row-state-repaired-push-v7
           path: |
-            /tmp/rd04-mf7-repaired-push-v6
+            /tmp/rd04-mf7-repaired-push-v7
             /tmp/rd04-mf7-row-state-materialization-v3
           if-no-files-found: warn
           retention-days: 90
