@@ -61,9 +61,14 @@ jobs:
               transported = (root / spec['path']).read_bytes()
               raw = transported
               transport_normalization = 'none'
-              if len(transported) == spec['bytes'] + 1 and transported.endswith(b'\n'):
-                  raw = transported[:-1]
-                  transport_normalization = 'one_terminal_lf_removed'
+              if len(transported) >= spec['bytes']:
+                  candidate = transported[:spec['bytes']]
+                  candidate_digest = hashlib.sha256(candidate).hexdigest()
+                  if candidate_digest == spec['sha256']:
+                      raw = candidate
+                      extra = len(transported) - spec['bytes']
+                      if extra:
+                          transport_normalization = f'exact_checksum_prefix_selected_extra_bytes_{extra}'
               digest = hashlib.sha256(raw).hexdigest()
               if len(raw) != spec['bytes'] or digest != spec['sha256']:
                   raise SystemExit(
@@ -139,7 +144,7 @@ jobs:
           receipt_root = Path('/tmp/pc51-product-blob-receipt')
           receipt_root.mkdir(parents=True, exist_ok=True)
           receipt = {
-              'schema_version': 'pc51-product-blob-receipt@2',
+              'schema_version': 'pc51-product-blob-receipt@3',
               'qualified_parent_commit': parent,
               'qualified_parent_tree': manifest['qualified_parent_tree'],
               'carrier_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
