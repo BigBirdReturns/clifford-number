@@ -1,0 +1,27 @@
+name: TEMP identify PC-51 product source export run
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  identify:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Publish diagnostic run identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          gh api --method POST \
+            -H 'Accept: application/vnd.github+json' \
+            "/repos/${GH_REPOSITORY}/issues/1268/comments" \
+            -f body="PC-51 diagnostic export head: \`${HEAD_SHA}\`; notifier workflow run: \`${RUN_ID}\`. This is execution-only custody and not product authority."
