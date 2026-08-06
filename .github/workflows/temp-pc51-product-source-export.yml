@@ -15,30 +15,25 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Export exact product parent
+      - name: Export exact product commit
         shell: bash
         run: |
           set -Eeuo pipefail
-          EXPECTED_PRODUCT=7802dcc91ca45d564a72f87c99183a6ed196e6fb
-          TEMP_PATH=.github/workflows/temp-pc51-product-source-export.yml
-          PRODUCT_COMMIT=$(git rev-parse HEAD^)
-          test "$PRODUCT_COMMIT" = "$EXPECTED_PRODUCT"
-          mapfile -t DELTA < <(git diff --name-only "$PRODUCT_COMMIT" HEAD)
-          test "${#DELTA[@]}" -eq 1
-          test "${DELTA[0]}" = "$TEMP_PATH"
-          PRODUCT_TREE=$(git rev-parse "$PRODUCT_COMMIT^{tree}")
+          PRODUCT_COMMIT=7802dcc91ca45d564a72f87c99183a6ed196e6fb
+          EXPECTED_TREE=96331690ce118920ebd3cb9bd3528dc9e12f5505
+          git cat-file -e "${PRODUCT_COMMIT}^{commit}"
+          PRODUCT_TREE=$(git rev-parse "${PRODUCT_COMMIT}^{tree}")
+          test "$PRODUCT_TREE" = "$EXPECTED_TREE"
           SHORT=${PRODUCT_COMMIT:0:12}
           ARCHIVE="clifford-number-pc51-product-${SHORT}.tar.gz"
           git archive --format=tar --prefix="clifford-number-${SHORT}/" "$PRODUCT_COMMIT" | gzip -9n > "$ARCHIVE"
           ARCHIVE_BYTES=$(wc -c < "$ARCHIVE" | tr -d ' ')
           ARCHIVE_SHA256=$(sha256sum "$ARCHIVE" | awk '{print $1}')
           cat > receipt.txt <<EOF
-          schema_version: pc51-product-source-export-receipt@1
+          schema_version: pc51-product-source-export-receipt@2
           product_commit: $PRODUCT_COMMIT
           product_tree: $PRODUCT_TREE
           carrier_head: $(git rev-parse HEAD)
-          carrier_delta_paths: ${#DELTA[@]}
-          carrier_path: $TEMP_PATH
           archive_name: $ARCHIVE
           archive_bytes: $ARCHIVE_BYTES
           archive_sha256: $ARCHIVE_SHA256
