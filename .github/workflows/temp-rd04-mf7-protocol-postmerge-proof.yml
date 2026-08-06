@@ -58,12 +58,15 @@ jobs:
               'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol/source-interpretation-constraints.json',
               'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol/target-cell-ledger.json',
               'docs/milestones/ssc-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.md',
-              'schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.schema.json',
+              'schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-ri-wv-minimum-frontier-protocol.schema.json',
               'test/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.test.js',
               'tools/acquisition/status-sovereignty-rd-wave03-rd04/run-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.py',
               'tools/build-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.mjs',
               'tools/validate-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.mjs',
           }
+          # Correct one transcribed schema path before comparison.
+          expected.remove('schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-ri-wv-minimum-frontier-protocol.schema.json')
+          expected.add('schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.schema.json')
           rows = Path('/tmp/rd04-mf7-protocol-postmerge-proof/product-name-status.txt').read_text().splitlines()
           observed = set()
           for row in rows:
@@ -80,7 +83,6 @@ jobs:
           VALIDATOR=tools/validate-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.mjs
           TEST=test/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.test.js
           RUNNER=tools/acquisition/status-sovereignty-rd-wave03-rd04/run-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.py
-          SCHEMA=schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.schema.json
           DATA=data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol
 
           node --check "$BUILDER"
@@ -102,17 +104,24 @@ jobs:
           for path in paths:
               validator.validate(json.loads(path.read_text()))
           authored=json.loads((data/'authored-protocol.json').read_text())
+          route_ledger=json.loads((data/'route-ledger.json').read_text())
+          index=json.loads((data/'index.json').read_text())
           assert authored['selection_rule']['selected_state_rows'] == 7
           assert authored['selection_rule']['selected_substantive_cells'] == 21
           assert authored['selection_rule']['excluded_derivative_row_state_cells'] == 7
-          assert len(authored['route_census']['fixed_routes']) == 30
+          assert len(authored['routes']) == 30
+          assert len(route_ledger['routes']) == 30
+          assert route_ledger['counts']['fixed_routes'] == 30
+          assert route_ledger['counts']['federal_interpretive_routes'] == 2
+          assert route_ledger['counts']['state_specific_routes'] == 28
+          assert index['counts']['fixed_routes'] == 30
           assert authored['predecessor_custody']['terminal_cells'] == 190
           assert authored['predecessor_custody']['still_open_substantive_cells'] == 213
           assert authored['predecessor_custody']['class_closed'] is False
-          assert authored['authority_boundary']['outside_human_dependency'] is False
-          assert authored['authority_boundary']['publication_effect'] == 'none'
-          assert authored['authority_boundary']['adoption_effect'] == 'none'
-          assert authored['authority_boundary']['graph_effect'] == 'none'
+          assert authored['authority']['outside_human_dependency'] is False
+          assert authored['authority']['publication_effect'] == 'none'
+          assert authored['authority']['adoption_effect'] == 'none'
+          assert authored['authority']['graph_effect'] == 'none'
           print('canonical_protocol=routes_30_states_7_cells_21')
           PY
           node "$TEST" | tee "$RECEIPT/adversarial.txt"
