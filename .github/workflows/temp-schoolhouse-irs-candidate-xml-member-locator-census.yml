@@ -77,19 +77,18 @@ jobs:
           import sys
           path = Path(sys.argv[1])
           source = path.read_text()
-          old = """    if disk_no != 0 or cd_disk != 0 or entries_disk != entries_total:
+          old = """        if zip64_disk != 0 or total_disks != 1:
               raise RuntimeError('multi-disk ZIP64 archive outside contract')
           """
-          new = """    if disk_no != 0 or cd_disk != 0 or entries_disk != entries_total:
+          new = """        if zip64_disk != 0 or total_disks != 1:
               raise RuntimeError(
-                  'ZIP64 topology outside contract '
-                  f'disk_no={disk_no} cd_disk={cd_disk} '
-                  f'entries_disk={entries_disk} entries_total={entries_total} '
-                  f'central_size={cd_size} central_offset={cd_offset}'
+                  'ZIP64 locator topology outside contract '
+                  f'zip64_disk={zip64_disk} total_disks={total_disks} '
+                  f'zip64_offset={zip64_offset}'
               )
           """
           if source.count(old) != 1:
-              raise SystemExit(f'ZIP64 diagnostic patch cardinality={source.count(old)}')
+              raise SystemExit(f'ZIP64 locator diagnostic patch cardinality={source.count(old)}')
           path.write_text(source.replace(old, new, 1))
           PY
           python -m py_compile "$RUNNER"
