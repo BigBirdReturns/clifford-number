@@ -1,4 +1,4 @@
-name: TEMP qualify and create exact PC-51 product blobs
+name: TEMP qualify exact PC-51 canonical-array-key repair
 
 on:
   pull_request:
@@ -9,22 +9,137 @@ permissions:
   contents: write
 
 concurrency:
-  group: pc51-product-blob-carrier-${{ github.event.pull_request.head.sha || github.sha }}
+  group: pc51-array-key-repair-v2-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: false
 
 jobs:
-  qualify-and-create-blobs:
+  qualify-array-key-repair:
     runs-on: ubuntu-24.04
     timeout-minutes: 240
+    env:
+      PRODUCT_COMMIT: 7802dcc91ca45d564a72f87c99183a6ed196e6fb
+      PRODUCT_TREE: 96331690ce118920ebd3cb9bd3528dc9e12f5505
+      QUALIFIED_PARENT: 5b841fcfe6d30929e0adfbb36548224d8d1959e8
+      CARRIER_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: 7802dcc91ca45d564a72f87c99183a6ed196e6fb
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Reconstruct, verify, qualify, and create immutable Git blobs
+      - name: Apply exact four-file repair
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$PRODUCT_COMMIT"
+          test "$(git rev-parse HEAD^{tree})" = "$PRODUCT_TREE"
+          test "$(git rev-parse HEAD^)" = "$QUALIFIED_PARENT"
+          python - <<'PY'
+          import hashlib
+          import subprocess
+          from pathlib import Path
+
+          source_blobs = {
+              'tools/lib/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs': '154333f86e81ffbac985c4defee3d82d1163c0a0',
+              'tools/lib/preference-custody-manifest-v49.mjs': '5361a77d715ac49cf4804a5c8546b3dfc225e81a',
+              'test/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.test.js': '460d48945f308481187d5128ab8e12f185fb2d03',
+              'test/preference-custody-manifest-v49.test.js': '8b7b0ef5287cdbe3b4fd3f81962d17af59fe74d4',
+          }
+          for path, expected in source_blobs.items():
+              observed = subprocess.check_output(['git', 'hash-object', path], text=True).strip()
+              if observed != expected:
+                  raise SystemExit(f'source blob mismatch {path}: {observed} != {expected}')
+
+          def replace_once(path, old, new):
+              file = Path(path)
+              text = file.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'expected one repair anchor in {path}, observed {count}')
+              file.write_text(text.replace(old, new, 1))
+
+          standalone_old = r'''  const isArray = Array.isArray(value);
+  if (isArray) {
+    if (proto !== Array.prototype) errors.push(`${label} array prototype must be canonical`);
+    let length; try { length = value.length; } catch (error) { errors.push(`${label} array length cannot be read: ${error.message}`); return; }
+    for (let index = 0; index < length; index += 1) if (!Object.prototype.hasOwnProperty.call(value, index)) errors.push(`${label} contains a sparse array hole at ${index}`);
+  } else if (proto !== Object.prototype) errors.push(`${label} object prototype must be canonical`);
+  for (const key of keys) {
+    if (isArray && key === 'length') continue;
+    if (typeof key !== 'string') { errors.push(`${label} contains a symbol key`); continue; }
+'''
+          standalone_new = r'''  const isArray = Array.isArray(value);
+  let arrayLength = null;
+  if (isArray) {
+    if (proto !== Array.prototype) errors.push(`${label} array prototype must be canonical`);
+    try { arrayLength = value.length; } catch (error) { errors.push(`${label} array length cannot be read: ${error.message}`); return; }
+    for (let index = 0; index < arrayLength; index += 1) if (!Object.prototype.hasOwnProperty.call(value, index)) errors.push(`${label} contains a sparse array hole at ${index}`);
+  } else if (proto !== Object.prototype) errors.push(`${label} object prototype must be canonical`);
+  for (const key of keys) {
+    if (isArray && key === 'length') continue;
+    if (isArray && (typeof key !== 'string' || !/^(0|[1-9]\d*)$/.test(key) || Number(key) >= arrayLength)) {
+      errors.push(`${label} contains an undeclared array property ${String(key)}`);
+      continue;
+    }
+    if (typeof key !== 'string') { errors.push(`${label} contains a symbol key`); continue; }
+'''
+          replace_once(
+              'tools/lib/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs',
+              standalone_old,
+              standalone_new,
+          )
+
+          floor_old = r'''  const isArray=Array.isArray(value); if (isArray) { if (proto!==Array.prototype) errors.push(`${label} array prototype must be canonical`); let length; try { length=value.length; } catch(error) { errors.push(`${label} array length cannot be read: ${error.message}`); return; } for(let i=0;i<length;i+=1) if(!Object.prototype.hasOwnProperty.call(value,i)) errors.push(`${label} contains a sparse array hole at ${i}`); } else if(proto!==Object.prototype) errors.push(`${label} object prototype must be canonical`);
+  for(const key of keys) { if(isArray && key==='length') continue; if(typeof key!=='string') { errors.push(`${label} contains a symbol key`); continue; } let descriptor; try { descriptor=Object.getOwnPropertyDescriptor(value,key); } catch(error) { errors.push(`${label} descriptor ${key} cannot be read: ${error.message}`); continue; } if(!descriptor || !descriptor.enumerable || !('value' in descriptor)) { errors.push(`${label} property ${key} must be an enumerable data property`); continue; } validateCanonicalJsonTree(descriptor.value,`${label}.${key}`,errors,seen); }
+'''
+          floor_new = r'''  const isArray=Array.isArray(value); let arrayLength=null; if (isArray) { if (proto!==Array.prototype) errors.push(`${label} array prototype must be canonical`); try { arrayLength=value.length; } catch(error) { errors.push(`${label} array length cannot be read: ${error.message}`); return; } for(let i=0;i<arrayLength;i+=1) if(!Object.prototype.hasOwnProperty.call(value,i)) errors.push(`${label} contains a sparse array hole at ${i}`); } else if(proto!==Object.prototype) errors.push(`${label} object prototype must be canonical`);
+  for(const key of keys) { if(isArray && key==='length') continue; if(isArray && (typeof key!=='string' || !/^(0|[1-9]\d*)$/.test(key) || Number(key)>=arrayLength)) { errors.push(`${label} contains an undeclared array property ${String(key)}`); continue; } if(typeof key!=='string') { errors.push(`${label} contains a symbol key`); continue; } let descriptor; try { descriptor=Object.getOwnPropertyDescriptor(value,key); } catch(error) { errors.push(`${label} descriptor ${key} cannot be read: ${error.message}`); continue; } if(!descriptor || !descriptor.enumerable || !('value' in descriptor)) { errors.push(`${label} property ${key} must be an enumerable data property`); continue; } validateCanonicalJsonTree(descriptor.value,`${label}.${key}`,errors,seen); }
+'''
+          replace_once('tools/lib/preference-custody-manifest-v49.mjs', floor_old, floor_new)
+
+          standalone_console = "console.log(`validated PC-51 standalone fixture with ${fixtureMutationCount} fixture mutations and ${buildMutationCount} build tamper checks`);\n"
+          standalone_regressions = """const namedFixtureArray=clone(fixture); namedFixtureArray.worlds.unapproved=true; fixtureRefused(namedFixtureArray,'named fixture array property');
+const namedRulesArray=clone(fixture); namedRulesArray.required_refusal_rules.unapproved=true; fixtureRefused(namedRulesArray,'named refusal-rule array property');
+const namedBuildArray=clone(build); namedBuildArray.worlds.unapproved=true; buildRefused(namedBuildArray,'named build array property');
+""" + standalone_console
+          replace_once(
+              'test/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.test.js',
+              standalone_console,
+              standalone_regressions,
+          )
+
+          floor_console = "console.log(`validated Preference Custody floor v49 with ${manifestMutationCount} manifest mutations and ${buildMutationCount} build tamper checks`);\n"
+          floor_regressions = """const namedManifestArray=clone(manifest); namedManifestArray.real_case_requirements_added.unapproved=true; manifestRefused(namedManifestArray,'named manifest array property');
+const namedSourceArray=clone(baseSources); namedSourceArray.targetBuild.controls.unapproved=true; assert.ok(validatePreferenceCustodyManifestV49Build(build,manifest,baseBuild,targetBuild,targetFixture,namedSourceArray).length>0,'named source-bundle array property must be refused');
+const namedFloorBuildArray=clone(build); namedFloorBuildArray.controls.unapproved=true; buildRefused(namedFloorBuildArray,'named floor-build array property');
+""" + floor_console
+          replace_once('test/preference-custody-manifest-v49.test.js', floor_console, floor_regressions)
+
+          changed = subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines()
+          if set(changed) != set(source_blobs):
+              raise SystemExit(f'repair path mismatch: {changed}')
+          for path in sorted(changed):
+              raw = Path(path).read_bytes()
+              print(f'{path}\tbytes={len(raw)}\tsha256={hashlib.sha256(raw).hexdigest()}')
+          PY
+          git diff --check
+      - name: Qualify repaired product bytes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf build/research
+          node tools/compile-preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs
+          node tools/validate-preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs
+          node test/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.test.js
+          node tools/compile-preference-custody-manifest-v49.mjs
+          node tools/validate-preference-custody-manifest-v49.mjs
+          node test/preference-custody-manifest-v49.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+      - name: Create exact repaired Git blobs and receipt
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPOSITORY: ${{ github.repository }}
@@ -32,97 +147,27 @@ jobs:
         run: |
           set -Eeuo pipefail
           python - <<'PY'
-          import base64, hashlib, io, json, os, subprocess, tarfile, urllib.request
+          import base64
+          import hashlib
+          import json
+          import os
+          import urllib.request
           from pathlib import Path
 
-          root = Path.cwd()
-          carrier_root = root / '.pc51-carrier'
-          manifest = json.loads((carrier_root / 'manifest.json').read_text())
-          if manifest.get('schema_version') != 'pc51-product-carrier-manifest@1':
-              raise SystemExit('carrier manifest schema mismatch')
-          parent = manifest['qualified_parent_commit']
-          expected_carrier_paths = {
-              '.github/workflows/temp-pc51-product-blob-carrier.yml',
-              '.pc51-carrier/manifest.json',
-              *[entry['path'] for entry in manifest['shards']],
+          source_blobs = {
+              'tools/lib/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs': '154333f86e81ffbac985c4defee3d82d1163c0a0',
+              'tools/lib/preference-custody-manifest-v49.mjs': '5361a77d715ac49cf4804a5c8546b3dfc225e81a',
+              'test/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.test.js': '460d48945f308481187d5128ab8e12f185fb2d03',
+              'test/preference-custody-manifest-v49.test.js': '8b7b0ef5287cdbe3b4fd3f81962d17af59fe74d4',
           }
-          merge_base = subprocess.check_output(['git', 'merge-base', 'HEAD', parent], text=True).strip()
-          if merge_base != parent:
-              raise SystemExit(f'carrier is not rooted at qualified parent: {merge_base} != {parent}')
-          actual_carrier_paths = set(subprocess.check_output(
-              ['git', 'diff', '--name-only', parent, 'HEAD'], text=True
-          ).splitlines())
-          if actual_carrier_paths != expected_carrier_paths:
-              raise SystemExit(f'carrier path mismatch: {sorted(actual_carrier_paths)}')
-
-          shard_bytes = []
-          shard_receipts = []
-          for spec in sorted(manifest['shards'], key=lambda item: item['ordinal']):
-              transported = (root / spec['path']).read_bytes()
-              raw = transported
-              transport_normalization = 'none'
-              if len(transported) >= spec['bytes']:
-                  candidate = transported[:spec['bytes']]
-                  candidate_digest = hashlib.sha256(candidate).hexdigest()
-                  if candidate_digest == spec['sha256']:
-                      raw = candidate
-                      extra = len(transported) - spec['bytes']
-                      if extra:
-                          transport_normalization = f'exact_checksum_prefix_selected_extra_bytes_{extra}'
-              digest = hashlib.sha256(raw).hexdigest()
-              if len(raw) != spec['bytes'] or digest != spec['sha256']:
-                  raise SystemExit(
-                      f"shard custody mismatch: {spec['path']} "
-                      f"transport_bytes={len(transported)} normalized_bytes={len(raw)} "
-                      f"normalized_sha256={digest}"
-                  )
-              shard_bytes.append(raw)
-              shard_receipts.append({
-                  **spec,
-                  'transport_bytes': len(transported),
-                  'transport_sha256': hashlib.sha256(transported).hexdigest(),
-                  'transport_normalization': transport_normalization,
-                  'observed_sha256': digest,
-              })
-          b64 = b''.join(shard_bytes)
-          if len(b64) != manifest['base64_bytes'] or hashlib.sha256(b64).hexdigest() != manifest['base64_sha256']:
-              raise SystemExit('aggregate base64 custody mismatch')
-          try:
-              archive = base64.b64decode(b64, validate=True)
-          except Exception as error:
-              raise SystemExit(f'base64 decoding failed: {error}')
-          if len(archive) != manifest['archive_bytes'] or hashlib.sha256(archive).hexdigest() != manifest['archive_sha256']:
-              raise SystemExit('archive custody mismatch')
-
-          product_root = Path('/tmp/pc51-product')
-          product_root.mkdir(parents=True, exist_ok=True)
-          expected_files = {entry['path']: entry for entry in manifest['product_files']}
-          with tarfile.open(fileobj=io.BytesIO(archive), mode='r:xz') as tf:
-              file_members = [member for member in tf.getmembers() if member.isfile()]
-              observed_names = {member.name for member in file_members}
-              if observed_names != set(expected_files):
-                  raise SystemExit(f'archive path mismatch: {sorted(observed_names)}')
-              for member in file_members:
-                  if member.name.startswith('/') or '..' in Path(member.name).parts:
-                      raise SystemExit(f'unsafe archive member: {member.name}')
-                  tf.extract(member, path=product_root)
-
           token = os.environ['GH_TOKEN']
           repo = os.environ['GH_REPOSITORY']
-          blob_receipts = []
-          for path, spec in expected_files.items():
-              raw = (product_root / path).read_bytes()
-              digest = hashlib.sha256(raw).hexdigest()
+          files = []
+          for path, source_blob in source_blobs.items():
+              raw = Path(path).read_bytes()
+              sha256 = hashlib.sha256(raw).hexdigest()
               git_blob = hashlib.sha1(f'blob {len(raw)}\0'.encode() + raw).hexdigest()
-              if len(raw) != spec['bytes'] or digest != spec['sha256'] or git_blob != spec['git_blob_sha1']:
-                  raise SystemExit(f'product file custody mismatch: {path}')
-              destination = root / path
-              destination.parent.mkdir(parents=True, exist_ok=True)
-              destination.write_bytes(raw)
-              payload = json.dumps({
-                  'content': base64.b64encode(raw).decode(),
-                  'encoding': 'base64',
-              }).encode()
+              payload = json.dumps({'content': base64.b64encode(raw).decode(), 'encoding': 'base64'}).encode()
               request = urllib.request.Request(
                   f'https://api.github.com/repos/{repo}/git/blobs',
                   data=payload,
@@ -132,61 +177,45 @@ jobs:
                       'Accept': 'application/vnd.github+json',
                       'X-GitHub-Api-Version': '2022-11-28',
                       'Content-Type': 'application/json',
-                      'User-Agent': 'pc51-product-blob-carrier',
+                      'User-Agent': 'pc51-array-key-repair-v2',
                   },
               )
               with urllib.request.urlopen(request, timeout=120) as response:
                   result = json.load(response)
               if result.get('sha') != git_blob:
                   raise SystemExit(f'remote blob mismatch for {path}: {result.get("sha")} != {git_blob}')
-              blob_receipts.append({**spec, 'remote_git_blob_sha1': result['sha']})
-
-          receipt_root = Path('/tmp/pc51-product-blob-receipt')
+              files.append({
+                  'path': path,
+                  'source_git_blob_sha1': source_blob,
+                  'bytes': len(raw),
+                  'sha256': sha256,
+                  'git_blob_sha1': git_blob,
+                  'remote_git_blob_sha1': result['sha'],
+              })
+          receipt_root = Path('/tmp/pc51-array-key-repair')
           receipt_root.mkdir(parents=True, exist_ok=True)
           receipt = {
-              'schema_version': 'pc51-product-blob-receipt@3',
-              'qualified_parent_commit': parent,
-              'qualified_parent_tree': manifest['qualified_parent_tree'],
-              'carrier_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
-              'carrier_paths': sorted(actual_carrier_paths),
-              'archive_bytes': len(archive),
-              'archive_sha256': hashlib.sha256(archive).hexdigest(),
-              'base64_bytes': len(b64),
-              'base64_sha256': hashlib.sha256(b64).hexdigest(),
-              'shards': shard_receipts,
-              'product_path_count': len(blob_receipts),
-              'product_files': blob_receipts,
+              'schema_version': 'pc51-array-key-repair-receipt@2',
+              'qualified_parent_commit': os.environ['QUALIFIED_PARENT'],
+              'prior_product_commit': os.environ['PRODUCT_COMMIT'],
+              'prior_product_tree': os.environ['PRODUCT_TREE'],
+              'carrier_head': os.environ['CARRIER_HEAD'],
+              'changed_permanent_files': len(files),
+              'files': files,
+              'focused_pc51': 'pass',
+              'floor_v49': 'pass',
+              'no_magic_human': 'pass',
+              'release_check': 'pass',
               'ref_updates': 0,
               'outside_human_dependency': False,
               'graph_effect': 'none',
           }
           (receipt_root / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
-          (receipt_root / 'product-file-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
-          print(json.dumps({
-              'qualified_parent_commit': parent,
-              'product_path_count': len(blob_receipts),
-              'archive_sha256': receipt['archive_sha256'],
-              'remote_blobs_created': len(blob_receipts),
-              'ref_updates': 0,
-          }, indent=2))
+          print(json.dumps(receipt, indent=2))
           PY
-
-          node tools/compile-preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs
-          node tools/validate-preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs
-          node test/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.test.js
-          node tools/compile-preference-custody-manifest-v49.mjs
-          node tools/validate-preference-custody-manifest-v49.mjs
-          node test/preference-custody-manifest-v49.test.js
-          node tools/validate-no-magic-human-gate.mjs
-          node test/no-magic-human-gate.test.js
-          printf '%s\n' \
-            'focused_pc51: pass' \
-            'floor_v49: pass' \
-            'no_magic_human: pass' \
-            >> /tmp/pc51-product-blob-receipt/gates.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: pc51-product-blob-receipt
-          path: /tmp/pc51-product-blob-receipt
+          name: pc51-array-key-repair
+          path: /tmp/pc51-array-key-repair
           if-no-files-found: error
           retention-days: 90
