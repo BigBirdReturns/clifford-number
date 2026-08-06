@@ -1,0 +1,212 @@
+name: TEMP census exact NC nonprofit report link denominator
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-nc-business-reports-data-census.yml'
+      - '.schoolhouse-nc-business-reports-data-census/EXECUTE'
+      - '.schoolhouse-nc-business-reports-data-census/capture.py.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: schoolhouse-nc-business-reports-data-census-v2-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  acquire:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-nc-business-reports-data-census-v2')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify exact carrier, predecessor custody, and runner
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PARENT='b6d69b5502e4429e3769591b5ebd88555aad62be'
+          EXECUTE='.schoolhouse-nc-business-reports-data-census/EXECUTE'
+          BUNDLE='.schoolhouse-nc-business-reports-data-census/capture.py.gz.b64'
+          WORKFLOW='.github/workflows/temp-schoolhouse-nc-business-reports-data-census.yml'
+          GZIP='/tmp/nc-report-link-census.py.gz'
+          RUNNER='/tmp/nc-report-link-census.py'
+          PREDECESSOR='/tmp/nc-reports-surface-predecessor'
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$PARENT"
+          test "$(git merge-base HEAD origin/main)" = "$PARENT"
+          mapfile -t changed < <(git diff --name-only "$PARENT"..HEAD | sort)
+          expected=(
+            '.github/workflows/temp-schoolhouse-nc-business-reports-data-census.yml'
+            '.schoolhouse-nc-business-reports-data-census/EXECUTE'
+            '.schoolhouse-nc-business-reports-data-census/capture.py.gz.b64'
+          )
+          test "${#changed[@]}" -eq 3
+          for i in "${!expected[@]}"; do test "${changed[$i]}" = "${expected[$i]}"; done
+          git diff --exit-code -- "$WORKFLOW" "$EXECUTE" "$BUNDLE"
+
+          python - "$EXECUTE" <<'PY'
+          from pathlib import Path
+          import sys
+          values = {}
+          for line in Path(sys.argv[1]).read_text().splitlines():
+              if line.strip():
+                  key, value = line.split('=', 1)
+                  assert key not in values
+                  values[key] = value
+          expected = {
+              'acquire': 'schoolhouse-nc-business-reports-data-census-v1',
+              'canonical_parent': 'b6d69b5502e4429e3769591b5ebd88555aad62be',
+              'rebound_from_parent': 'cf62a80b8628525b1eefc0ffcfae14696cbec700',
+              'rebound_from_carrier_head': '43aed60e512dcafe1c0066ca1d1eee87ffd77e34',
+              'intervening_paths': '32',
+              'intervening_overlap_paths': '0',
+              'predecessor_pr': '1230',
+              'predecessor_head': '8d27c04a834f6def49b41d1c1a962be589a5e9b3',
+              'predecessor_workflow_run_id': '31065117096',
+              'predecessor_artifact_id': '8953553174',
+              'predecessor_artifact_digest': 'sha256:6423180c48e0ba91b94a44edd59921412b16a6ec204bb4e044bc3ac66c8562f3',
+              'source_content_sha256': '21b5334028fae1c314ca0f63b21b1d57b85e95462c8749ecb79c1bd6108cc7ee',
+              'source_content_bytes': '120956',
+              'source_link_rows': '245',
+              'source_form_rows': '0',
+              'runner_source_sha256': 'f6daf0214b9800d3055cd75186d4b4e3cdc36199abec48cfa3fb7bdf51bd248a',
+              'runner_gzip_sha256': '14913d69f6b3c823061e70ab20e2de2530a86d8a1a054de2b419501b30e3ef0a',
+              'runner_bundle_sha256': 'e4435192fef858f23e34cbbac876f521ba8b029e5bf7e2e753444aebd236fd43',
+              'maximum_total_requests': '1',
+              'successor_fetches': '0',
+              'query_submissions': '0',
+              'forms_submitted': '0',
+              'cookie_replays': '0',
+              'subscription_purchases': '0',
+              'identity_admitted': 'false',
+              'relationship_admitted': 'false',
+              'negative_existence_claim_created': 'false',
+              'outside_human_dependency': 'false',
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          for key, value in expected.items(): assert values.get(key) == value, (key, values.get(key))
+          PY
+
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'e4435192fef858f23e34cbbac876f521ba8b029e5bf7e2e753444aebd236fd43'
+          base64 -d "$BUNDLE" > "$GZIP"
+          test "$(sha256sum "$GZIP" | awk '{print $1}')" = '14913d69f6b3c823061e70ab20e2de2530a86d8a1a054de2b419501b30e3ef0a'
+          gzip -dc "$GZIP" > "$RUNNER"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = 'f6daf0214b9800d3055cd75186d4b4e3cdc36199abec48cfa3fb7bdf51bd248a'
+          python -m py_compile "$RUNNER"
+
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/8953553174" --jq '.digest // ""')" = \
+            'sha256:6423180c48e0ba91b94a44edd59921412b16a6ec204bb4e044bc3ac66c8562f3'
+          rm -rf "$PREDECESSOR" && mkdir -p "$PREDECESSOR"
+          gh run download 31065117096 --repo "$GITHUB_REPOSITORY" \
+            --name schoolhouse-nc-business-reports-surface-census --dir "$PREDECESSOR"
+          test "$(sha256sum "$PREDECESSOR/artifact-manifest.json" | awk '{print $1}')" = 'fb079ab18f938f4738b3e5b8b0ef02931468200f70e4dc4c368a4972cb9e61b3'
+          test "$(sha256sum "$PREDECESSOR/report-candidates.jsonl" | awk '{print $1}')" = 'e382ad5d5e7e956048f4bfe7a635aaaa818816231317c18671fe74e04cfdd315'
+          test "$(sha256sum "$PREDECESSOR/route-attempts.jsonl" | awk '{print $1}')" = 'ac7e43a415072e7fcf2ea5db1d7f53022febec0eab7e1597ac39105e878a2f52'
+          test "$(sha256sum "$PREDECESSOR/route-policy.json" | awk '{print $1}')" = 'e739c0534318a11f32124ae3b3f7b286babde1c2357f1240451ba7d80df5b54a'
+          test "$(sha256sum "$PREDECESSOR/summary.json" | awk '{print $1}')" = '0bc744bd44e2809c71396ada0e9ce103a76dfe7e48e43df2ae21e655ee181e0b'
+          (cd "$PREDECESSOR" && sha256sum -c SHA256SUMS)
+          python "$RUNNER" --predecessor "$PREDECESSOR" --validate-only
+
+      - name: Execute exact one-request link census
+        id: acquisition
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          OUT='/tmp/schoolhouse-nc-business-reports-data-census'
+          rm -rf "$OUT"
+          python /tmp/nc-report-link-census.py \
+            --predecessor /tmp/nc-reports-surface-predecessor \
+            --output "$OUT" 2>&1 | tee /tmp/nc-report-link-census.log
+          status=${PIPESTATUS[0]}
+          mkdir -p "$OUT"
+          printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
+          cp /tmp/nc-report-link-census.log "$OUT/RUNNER-OUTPUT.log"
+          exit "$status"
+
+      - name: Upload terminal artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-nc-business-reports-data-census
+          path: /tmp/schoolhouse-nc-business-reports-data-census
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require exact 245-link terminal custody
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT='/tmp/schoolhouse-nc-business-reports-data-census'
+          test "$(cat "$ROOT/RUNNER_EXIT_CODE")" = '0'
+          (cd "$ROOT" && sha256sum -c SHA256SUMS)
+          python - "$ROOT" <<'PY'
+          from pathlib import Path
+          import json, sys
+          root = Path(sys.argv[1])
+          load = lambda n: json.loads((root / n).read_text())
+          rows = lambda n: [json.loads(x) for x in (root / n).read_text().splitlines() if x.strip()]
+          s, r, p, m = map(load, ['summary.json','source-receipt.json','route-policy.json','artifact-manifest.json'])
+          observations = rows('link-observations.jsonl')
+          candidates = rows('successor-routes.jsonl')
+          assert s['schema_version'] == 'schoolhouse-nc-business-reports-data-census@1'
+          assert s['state'] == 'terminal_exact_nonprofit_report_link_denominator'
+          assert s['predecessor_pr'] == 1230 and s['predecessor_workflow_run_id'] == 31065117096
+          assert s['predecessor_artifact_id'] == 8953553174
+          assert s['source_requests'] == 1 and s['successor_fetches_executed'] == 0
+          assert s['source_content_bytes'] == 120956
+          assert s['source_content_sha256'] == '21b5334028fae1c314ca0f63b21b1d57b85e95462c8749ecb79c1bd6108cc7ee'
+          assert s['observed_link_rows'] == len(observations) == 245
+          assert s['observed_form_rows'] == 0
+          assert s['eligible_successor_unique_routes'] == len(candidates) and 0 < len(candidates) <= 245
+          assert s['static_data_unique_routes'] + s['static_document_unique_routes'] + s['report_or_listing_unique_routes'] == len(candidates)
+          for key in ['query_submissions','forms_submitted','cookie_replays','subscription_purchases','street_address_rows_retained','contact_detail_rows_retained','officer_rows_retained','private_support_rows','identities_admitted','relationships_admitted','negative_existence_claims_created']:
+              assert s[key] == 0
+          assert s['raw_source_retained'] is False and s['full_visible_text_retained'] is False
+          assert s['outside_human_dependency'] is False
+          assert s['publication_effect'] == s['adoption_effect'] == s['graph_effect'] == 'none'
+          assert r['state'] == 'terminal_exact_source_reproduced' and r['http_status'] == 200
+          assert r['content_sha256'] == s['source_content_sha256'] and r['observed_link_rows'] == 245
+          assert p['selection_contract']['no_successor_fetches'] is True
+          assert p['request_bounds']['maximum_total_requests'] == 1
+          assert p['interpretation']['query_bearing_route_requires_separate_fixed_route_execution'] is True
+          assert [x['observation_ordinal'] for x in observations] == list(range(1, 246))
+          for x in observations:
+              assert x['fetch_executed'] is False and x['query_submitted'] is False
+              assert x['identity_admitted'] is False and x['relationship_admitted'] is False
+              assert x['outside_human_dependency'] is False
+              assert x['publication_effect'] == x['adoption_effect'] == x['graph_effect'] == 'none'
+          seen = set()
+          for x in candidates:
+              assert x['candidate_url'] not in seen; seen.add(x['candidate_url'])
+              assert x['route_class'] in {'static_data_file','static_document','report_or_listing_route'}
+              assert x['fetch_executed'] is False and x['query_submitted'] is False
+              assert x['identity_admitted'] is False and x['relationship_admitted'] is False
+              assert x['outside_human_dependency'] is False
+          assert m['counts']['observed_link_rows'] == 245
+          assert m['counts']['eligible_successor_unique_routes'] == len(candidates)
+          print(json.dumps(s, indent=2, sort_keys=True))
+          PY
