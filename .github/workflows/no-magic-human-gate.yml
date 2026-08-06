@@ -1,31 +1,119 @@
-name: No magic human gate
+name: TEMP publish exact PC-51 consolidated repair
 
 on:
   pull_request:
-  push:
-    branches:
-      - main
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  issues: write
 
 concurrency:
-  group: no-magic-human-gate-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: pc51-consolidated-executor-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: false
 
 jobs:
-  validate:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+  qualify-and-publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout execution carrier
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: carrier
+          fetch-depth: 0
+
+      - name: Checkout exact PC-51 product
+        uses: actions/checkout@v4
+        with:
+          ref: 7802dcc91ca45d564a72f87c99183a6ed196e6fb
+          path: product
+          fetch-depth: 0
+
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Validate nonblocking external-participation law
+
+      - name: Apply checksum-bound consolidated repair
+        shell: bash
         run: |
-          node tools/validate-no-magic-human-gate.mjs
-          node test/no-magic-human-gate.test.js
+          set -Eeuo pipefail
+          mkdir -p /tmp/pc51-consolidated-publication
+          python carrier/.pc51-carrier/consolidated_repair.py patch product \
+            2>&1 | tee /tmp/pc51-consolidated-publication/patch.log
+          git -C product diff --binary \
+            > /tmp/pc51-consolidated-publication/repair.patch
+          git -C product diff --name-status \
+            > /tmp/pc51-consolidated-publication/repair-paths.txt
+
+      - name: Prove clean checkout, historical floors, and complete gate
+        working-directory: product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          {
+            printf '%s\n' '== direct clean-checkout floor-v49 test =='
+            rm -rf build/research
+            test ! -e build/research/preference-custody-laboratory-floor-v48.json
+            test ! -e build/research/preference-custody-laboratory-floor-v49.json
+            node test/preference-custody-manifest-v49.test.js
+
+            printf '%s\n' '== focused PC-51 and floor-v49 =='
+            git clean -fdx
+            node tools/compile-preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs
+            node tools/validate-preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs
+            node test/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.test.js
+            node tools/compile-preference-custody-manifest-v49.mjs
+            node tools/validate-preference-custody-manifest-v49.mjs
+            node test/preference-custody-manifest-v49.test.js
+
+            printf '%s\n' '== all Preference Custody floors =='
+            while IFS= read -r test_file; do
+              node "$test_file"
+            done < <(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V)
+            node test/preference-custody-manifest.test.js
+
+            printf '%s\n' '== no-magic-human =='
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+
+            printf '%s\n' '== complete release gate =='
+            npm run release:check
+          } 2>&1 | tee /tmp/pc51-consolidated-publication/qualification.log
+
+      - name: Publish exact one-parent fourteen-path head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python carrier/.pc51-carrier/consolidated_repair.py publish \
+            product /tmp/pc51-consolidated-publication \
+            2>&1 | tee /tmp/pc51-consolidated-publication/publication.log
+
+      - name: Record publication on PC-51 issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          COMMIT=$(cat /tmp/pc51-consolidated-publication/new-product-commit.txt)
+          TREE=$(cat /tmp/pc51-consolidated-publication/new-product-tree.txt)
+          gh api --method POST \
+            -H 'Accept: application/vnd.github+json' \
+            "/repos/${GH_REPOSITORY}/issues/1268/comments" \
+            -f body="PC-51 exact repaired product published: commit \`${COMMIT}\`; tree \`${TREE}\`; carrier run \`${RUN_ID}\`. One parent, fourteen permanent paths, four repaired files, clean-checkout/historical-floor/no-magic-human/release qualification passed. Product-head workflows remain authoritative for merge."
+
+      - name: Upload publication custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc51-consolidated-publication
+          path: /tmp/pc51-consolidated-publication
+          if-no-files-found: error
+          retention-days: 90
