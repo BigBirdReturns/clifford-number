@@ -1,0 +1,280 @@
+name: TEMP materialize School.House Florida corporate identity census v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: schoolhouse-fl-corporate-identity-census-materializer-v2
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.head_ref == 'agent/schoolhouse-fl-corporate-identity-census-materializer-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out exact carrier head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate custody, materialize, qualify, and publish clean product
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          CARRIER_BRANCH='agent/schoolhouse-fl-corporate-identity-census-materializer-v2'
+          PRODUCT_BRANCH='agent/schoolhouse-fl-corporate-identity-census-product-v1'
+          BASE_ANCESTOR='118af97aae3e1472331ba1e77e03a4bcc7a9e74e'
+          EXECUTE='.schoolhouse-fl-corporate-identity-census-materializer-v2/EXECUTE'
+          BUNDLE='.schoolhouse-fl-corporate-identity-census-materializer-v2/build.py.gz.b64'
+          WORKFLOW='.github/workflows/temp-schoolhouse-fl-corporate-identity-census-materialize-v2.yml'
+          BUILD_GZIP='/tmp/build-schoolhouse-fl-corporate-identity-census.py.gz'
+          BUILDER='/tmp/build-schoolhouse-fl-corporate-identity-census.py'
+          ARTIFACT_ZIP='/tmp/schoolhouse-fl-corporate-identity-census.zip'
+          ARTIFACT_ROOT='/tmp/schoolhouse-fl-corporate-identity-census-artifact'
+          WORKTREE='/tmp/schoolhouse-fl-corporate-identity-census-product'
+          PRESERVE='/tmp/schoolhouse-fl-corporate-identity-census-preserve'
+          RECEIPT='/tmp/schoolhouse-fl-corporate-identity-census-materialization.json'
+          RECEIPT_DIR='/tmp/schoolhouse-fl-corporate-identity-census-materialization-receipt'
+          QUALIFIED_SUMS='/tmp/schoolhouse-fl-corporate-identity-census-qualified-sha256sums'
+          EXPECTED_BUNDLE_SHA='4fc646d83bd53606e7014fc825e8b7238162807de3ed6d0b324bbb8e0d339250'
+          EXPECTED_GZIP_SHA='954a9355c3c27bdb01c36c4fea0b146937b8ee9340c7fca6f3babebef951d06b'
+          EXPECTED_SCRIPT_SHA='3ee2e8a011718bfe2878f1fe6789bef9d9aa28d036e39f19fc74fd3e3ba3b388'
+          ACQUISITION_ARTIFACT_ID='8950526654'
+          ACQUISITION_ARTIFACT_SHA='98925c7a750f23cf8ed10fb1123ed0d79d78dcca79d4c67a2b0e26ed86146746'
+
+          EXPECTED=(
+            'data/intake/bvvc-defense-capital/README.md'
+            'data/intake/bvvc-defense-capital/acquisition-frontier.json'
+            'data/intake/bvvc-defense-capital/coverage-matrix.json'
+            'data/intake/bvvc-defense-capital/manifest.json'
+            'data/intake/bvvc-defense-capital/schoolhouse-fl-corporate-identity-census-candidate-records.jsonl'
+            'data/intake/bvvc-defense-capital/schoolhouse-fl-corporate-identity-census-custody.json'
+            'data/intake/bvvc-defense-capital/schoolhouse-fl-corporate-identity-census-member-receipts.jsonl'
+            'data/intake/bvvc-defense-capital/schoolhouse-fl-corporate-identity-census-priority-candidates.jsonl'
+            'data/intake/bvvc-defense-capital/schoolhouse-fl-corporate-identity-census-range-request-receipts.jsonl'
+            'data/intake/bvvc-defense-capital/schoolhouse-fl-corporate-identity-census-remote-zip-index.json'
+            'data/intake/bvvc-defense-capital/schoolhouse-fl-corporate-identity-census-source-receipt.json'
+            'data/intake/bvvc-defense-capital/schoolhouse-fl-corporate-identity-census-target-matrix.json'
+            'data/intake/bvvc-defense-capital/schoolhouse.json'
+            'data/intake/bvvc-defense-capital/source-inventory-19.jsonl'
+            'tools/validate-bvvc-defense-capital.mjs'
+            'tools/validate-schoolhouse-fl-corporate-identity-census-custody.mjs'
+            'tools/validate-schoolhouse-honor-foundation-990-custody.mjs'
+          )
+          INPUT_PATHS=(
+            'data/intake/bvvc-defense-capital/README.md'
+            'data/intake/bvvc-defense-capital/acquisition-frontier.json'
+            'data/intake/bvvc-defense-capital/coverage-matrix.json'
+            'data/intake/bvvc-defense-capital/manifest.json'
+            'data/intake/bvvc-defense-capital/schoolhouse.json'
+            'tools/validate-bvvc-defense-capital.mjs'
+            'tools/validate-schoolhouse-honor-foundation-990-custody.mjs'
+          )
+          INPUT_SHA256=(
+            '34aabd3d64ad1128855e3a47a6b4bf4e3e3d2fa97b050b529b35f9b168a4a4f9'
+            'bf9f73bff43720ba22fcadc9518e561cf8bd5e2f7f96987580d912a0d9b93ee1'
+            'f501f875b4fae00676f5bb918443c928b4733810772e94edd686c0b879ddfa96'
+            'd62e6ffe8df9403d7a934387a6bd19a163f93281719e6fa18830f873f0ca4c1a'
+            '895fa78f539559b5a49547cbc11cce6905bb143986b48f8df4f05517e219451e'
+            '02a40ed93c96fb221b83916b2f1698e7d299c8b3f2cb3df8f4eebc35f11d3f87'
+            '0b9e7b2a0a76ffc24a00974f6e1f8e6b358669bea3f88bcecf43102198f83b2b'
+          )
+          CARRIER_EXPECTED=(
+            '.github/workflows/temp-schoolhouse-fl-corporate-identity-census-materialize-v2.yml'
+            '.schoolhouse-fl-corporate-identity-census-materializer-v2/EXECUTE'
+            '.schoolhouse-fl-corporate-identity-census-materializer-v2/build.py.gz.b64'
+          )
+
+          test "${GITHUB_HEAD_REF}" = "$CARRIER_BRANCH"
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          git fetch --prune --no-tags origin main
+          MAIN_SHA=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$BASE_ANCESTOR" "$MAIN_SHA"
+          test "$(git merge-base HEAD "$MAIN_SHA")" = "$(git merge-base HEAD origin/main)"
+          MAIN_TREE=$(git rev-parse "$MAIN_SHA^{tree}")
+          printf 'live_main=%s\nlive_tree=%s\n' "$MAIN_SHA" "$MAIN_TREE"
+
+          mapfile -t CARRIER_CHANGED < <(git diff --name-only "$(git merge-base HEAD origin/main)"..HEAD | sort)
+          test "${#CARRIER_CHANGED[@]}" -eq "${#CARRIER_EXPECTED[@]}"
+          for i in "${!CARRIER_EXPECTED[@]}"; do
+            test "${CARRIER_CHANGED[$i]}" = "${CARRIER_EXPECTED[$i]}"
+          done
+          git diff --exit-code -- "$EXECUTE" "$BUNDLE" "$WORKFLOW"
+
+          grep -Fx "materializer=schoolhouse-fl-corporate-identity-census-materializer-v2" "$EXECUTE"
+          grep -Fx "base_ancestor=$BASE_ANCESTOR" "$EXECUTE"
+          grep -Fx "product_branch=$PRODUCT_BRANCH" "$EXECUTE"
+          grep -Fx "builder_bundle_sha256=$EXPECTED_BUNDLE_SHA" "$EXECUTE"
+          grep -Fx "builder_gzip_sha256=$EXPECTED_GZIP_SHA" "$EXECUTE"
+          grep -Fx "builder_script_sha256=$EXPECTED_SCRIPT_SHA" "$EXECUTE"
+          grep -Fx 'acquisition_workflow_run_id=31056239350' "$EXECUTE"
+          grep -Fx 'acquisition_artifact_id=8950526654' "$EXECUTE"
+          grep -Fx 'acquisition_artifact_digest=sha256:98925c7a750f23cf8ed10fb1123ed0d79d78dcca79d4c67a2b0e26ed86146746' "$EXECUTE"
+          grep -Fx 'source_rows_scanned=12808196' "$EXECUTE"
+          grep -Fx 'candidate_rows=300' "$EXECUTE"
+          grep -Fx 'strict_exact_public_brand_base_rows=3' "$EXECUTE"
+          grep -Fx 'priority_candidate_rows=12' "$EXECUTE"
+          grep -Fx 'expected_permanent_paths=17' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+          grep -Fx 'graph_effect=none' "$EXECUTE"
+
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = "$EXPECTED_BUNDLE_SHA"
+          base64 -d "$BUNDLE" > "$BUILD_GZIP"
+          test "$(sha256sum "$BUILD_GZIP" | awk '{print $1}')" = "$EXPECTED_GZIP_SHA"
+          gzip -dc "$BUILD_GZIP" > "$BUILDER"
+          test "$(sha256sum "$BUILDER" | awk '{print $1}')" = "$EXPECTED_SCRIPT_SHA"
+          python -m py_compile "$BUILDER"
+
+          if git ls-remote --exit-code --heads origin "$PRODUCT_BRANCH" >/dev/null 2>&1; then
+            echo "refusing existing product branch: $PRODUCT_BRANCH" >&2
+            exit 1
+          fi
+
+          rm -rf "$ARTIFACT_ROOT" "$WORKTREE" "$PRESERVE" "$RECEIPT_DIR" "$RECEIPT" "$QUALIFIED_SUMS" "$ARTIFACT_ZIP"
+          gh api -H 'Accept: application/vnd.github+json' "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ACQUISITION_ARTIFACT_ID}/zip" > "$ARTIFACT_ZIP"
+          test "$(sha256sum "$ARTIFACT_ZIP" | awk '{print $1}')" = "$ACQUISITION_ARTIFACT_SHA"
+          mkdir -p "$ARTIFACT_ROOT"
+          unzip -q "$ARTIFACT_ZIP" -d "$ARTIFACT_ROOT"
+          ARTIFACT_DIR=$(find "$ARTIFACT_ROOT" -type f -name artifact-manifest.json -print -quit | xargs dirname)
+          test -n "$ARTIFACT_DIR"
+          (cd "$ARTIFACT_DIR" && sha256sum -c SHA256SUMS)
+
+          git worktree add --detach "$WORKTREE" "$MAIN_SHA"
+          trap 'git worktree remove --force "$WORKTREE" >/dev/null 2>&1 || true' EXIT
+          for i in "${!INPUT_PATHS[@]}"; do
+            test "$(sha256sum "$WORKTREE/${INPUT_PATHS[$i]}" | awk '{print $1}')" = "${INPUT_SHA256[$i]}"
+          done
+
+          python "$BUILDER" \
+            --root "$WORKTREE" \
+            --artifact-dir "$ARTIFACT_DIR" \
+            --parent-commit "$MAIN_SHA" \
+            --parent-tree "$MAIN_TREE" \
+            --receipt "$RECEIPT"
+
+          cd "$WORKTREE"
+          node --check tools/validate-schoolhouse-fl-corporate-identity-census-custody.mjs
+          node --check tools/validate-schoolhouse-honor-foundation-990-custody.mjs
+          node --check tools/validate-bvvc-defense-capital.mjs
+          node tools/validate-schoolhouse-fl-corporate-identity-census-custody.mjs
+          node tools/validate-schoolhouse-honor-foundation-990-custody.mjs
+          node tools/validate-bvvc-defense-capital.mjs
+          node test/person-routers.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          sha256sum "${EXPECTED[@]}" > "$QUALIFIED_SUMS"
+          npm run release:check
+          sha256sum -c "$QUALIFIED_SUMS"
+
+          mkdir -p "$PRESERVE"
+          for path in "${EXPECTED[@]}"; do
+            mkdir -p "$PRESERVE/$(dirname "$path")"
+            cp "$path" "$PRESERVE/$path"
+          done
+          git reset --hard "$MAIN_SHA"
+          git clean -fdx
+          for path in "${EXPECTED[@]}"; do
+            mkdir -p "$(dirname "$path")"
+            cp "$PRESERVE/$path" "$path"
+          done
+          sha256sum -c "$QUALIFIED_SUMS"
+
+          node tools/validate-schoolhouse-fl-corporate-identity-census-custody.mjs
+          node tools/validate-schoolhouse-honor-foundation-990-custody.mjs
+          node tools/validate-bvvc-defense-capital.mjs
+          node test/person-routers.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+
+          printf '%s\n' "${EXPECTED[@]}" | sort > /tmp/flcorp-expected-paths.txt
+          git status --porcelain=v1 | sed -E 's/^.. //' | sort > /tmp/flcorp-changed-paths.txt
+          diff -u /tmp/flcorp-expected-paths.txt /tmp/flcorp-changed-paths.txt
+          test "$(wc -l < /tmp/flcorp-changed-paths.txt)" -eq 17
+
+          jq -e '
+            .counts.source_inventory_rows == 448 and
+            .counts.coverage_denominator_rows == 29 and
+            .counts.explicit_gap_rows == 16 and
+            .counts.schoolhouse_fl_corporate_identity_census_source_rows == 12808196 and
+            .counts.schoolhouse_fl_corporate_identity_census_candidate_rows == 300 and
+            .counts.schoolhouse_fl_corporate_identity_census_strict_exact_public_brand_base_rows == 3 and
+            .counts.schoolhouse_fl_corporate_identity_census_priority_candidate_rows == 12 and
+            .counts.schoolhouse_fl_corporate_identity_census_admitted_identity_rows == 0 and
+            .counts.private_support_rows == 0 and
+            .counts.public_graph_rows_created == 0 and
+            .graph_effect == "none" and
+            .promotes_to == "candidate_only"
+          ' data/intake/bvvc-defense-capital/manifest.json
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "${EXPECTED[@]}"
+          git diff --cached --exit-code --quiet && { echo 'materializer produced no staged product' >&2; exit 1; }
+          git commit -m 'Preserve complete School.House Florida corporate identity census custody' \
+            -m 'Freeze the authenticated ten-partition, 12,808,196-row Florida corporate census, 300 privacy-minimized candidates, three strict exact-brand historical rejections, twelve fixed priority candidates, zero identity or relationship admissions, no outside-human dependency, and no publication, adoption, or graph effect.'
+
+          PRODUCT_SHA=$(git rev-parse HEAD)
+          PRODUCT_TREE=$(git rev-parse 'HEAD^{tree}')
+          test "$(git rev-list --count "$MAIN_SHA"..HEAD)" -eq 1
+          test "$(git rev-list --count HEAD.."$MAIN_SHA")" -eq 0
+          test "$(git diff --name-only "$MAIN_SHA"..HEAD | sort | wc -l)" -eq 17
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+
+          mkdir -p "$RECEIPT_DIR"
+          cp "$RECEIPT" "$RECEIPT_DIR/materialization.json"
+          cp "$QUALIFIED_SUMS" "$RECEIPT_DIR/qualified-sha256sums.txt"
+          cp /tmp/flcorp-changed-paths.txt "$RECEIPT_DIR/changed-paths.txt"
+          python - <<PY > "$RECEIPT_DIR/product.json"
+          import json
+          print(json.dumps({
+              'schema_version': 'schoolhouse-fl-corporate-identity-census-product@1',
+              'carrier_branch': '$CARRIER_BRANCH',
+              'carrier_head': '${{ github.event.pull_request.head.sha }}',
+              'canonical_parent_commit': '$MAIN_SHA',
+              'canonical_parent_tree': '$MAIN_TREE',
+              'product_branch': '$PRODUCT_BRANCH',
+              'product_commit': '$PRODUCT_SHA',
+              'product_tree': '$PRODUCT_TREE',
+              'permanent_changed_paths': 17,
+              'source_rows_scanned': 12808196,
+              'candidate_rows': 300,
+              'strict_exact_public_brand_base_rows': 3,
+              'priority_candidate_rows': 12,
+              'identities_admitted': 0,
+              'relationships_admitted': 0,
+              'private_support_rows': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }, indent=2, sort_keys=True))
+          PY
+
+      - name: Upload materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-fl-corporate-identity-census-materialization-receipt-v2
+          path: /tmp/schoolhouse-fl-corporate-identity-census-materialization-receipt
+          if-no-files-found: error
+          retention-days: 90
