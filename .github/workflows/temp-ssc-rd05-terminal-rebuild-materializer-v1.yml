@@ -1,0 +1,105 @@
+name: TEMP materialize rebuilt RD-05-C02 terminal product
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-rd05-terminal-rebuild-materializer-v1.yml'
+      - '.transport/ssc-rd05-terminal-rebuild-v1/**'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: ssc-rd05-terminal-rebuild-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd05-wave03-terminal-rebuild-materializer-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Verify and execute the checksum-bound materializer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CARRIER='.transport/ssc-rd05-terminal-rebuild-v1/materialize.sh.xz'
+          CARRIER_MANIFEST='.transport/ssc-rd05-terminal-rebuild-v1/manifest.json'
+          MANIFEST_COPY="$RUNNER_TEMP/ssc-rd05-terminal-rebuild-manifest.json"
+          PROGRAM="$RUNNER_TEMP/ssc-rd05-terminal-rebuild-materialize.sh"
+          PATCHED_PROGRAM="$RUNNER_TEMP/ssc-rd05-terminal-rebuild-materialize-patched.sh"
+
+          test "$(stat -c '%s' "$CARRIER")" = '3944'
+          test "$(sha256sum "$CARRIER" | awk '{print $1}')" = 'd5d4c21b9c593f36a1f8b4e08e39cb396b20bf6228edef3d5e697195bc4cbcb4'
+          test -f "$CARRIER_MANIFEST"
+          cp "$CARRIER_MANIFEST" "$MANIFEST_COPY"
+
+          xz -dc "$CARRIER" > "$PROGRAM"
+          test "$(stat -c '%s' "$PROGRAM")" = '13260'
+          test "$(sha256sum "$PROGRAM" | awk '{print $1}')" = '917b6faad0e8789c37ee30373440c753aeab16c5d2f32c7b8c0816c77e6778b0'
+          bash -n "$PROGRAM"
+
+          python - "$PROGRAM" "$PATCHED_PROGRAM" "$MANIFEST_COPY" <<'PY'
+          from pathlib import Path
+          import shlex
+          import sys
+
+          source = Path(sys.argv[1])
+          target = Path(sys.argv[2])
+          manifest = str(Path(sys.argv[3]).resolve())
+          text = source.read_text()
+
+          replacements = [
+              (
+                  'python - "$MANIFEST" . <<\'PY\'',
+                  f"python - {shlex.quote(manifest)} . <<'PY'",
+              ),
+              (
+                  'cp "$MANIFEST" "$RECEIPT/materializer-manifest.json"',
+                  f"cp {shlex.quote(manifest)} \"$RECEIPT/materializer-manifest.json\"",
+              ),
+          ]
+          for needle, replacement in replacements:
+              count = text.count(needle)
+              if count != 1:
+                  raise SystemExit(
+                      f'expected one exact post-clean manifest seam for {needle!r}; observed {count}'
+                  )
+              text = text.replace(needle, replacement)
+
+          target.write_text(text)
+          print('patched exactly two post-clean manifest reads')
+          PY
+
+          bash -n "$PATCHED_PROGRAM"
+          bash "$PATCHED_PROGRAM"
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd05-terminal-rebuild-materializer-v1
+          path: ${{ runner.temp }}/ssc-rd05-terminal-rebuild-v1/receipt
+          if-no-files-found: error
+          retention-days: 90
