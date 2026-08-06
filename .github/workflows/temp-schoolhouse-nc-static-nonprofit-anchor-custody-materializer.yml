@@ -1,0 +1,307 @@
+name: TEMP materialize School.House NC anchor custody
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-nc-static-nonprofit-anchor-custody-materializer.yml'
+      - '.schoolhouse-nc-static-nonprofit-anchor-custody-materializer/EXECUTE'
+      - '.schoolhouse-nc-static-nonprofit-anchor-custody-materializer/build.mjs'
+  workflow_dispatch:
+
+concurrency:
+  group: schoolhouse-nc-static-nonprofit-anchor-custody-materializer-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-nc-static-nonprofit-anchor-custody-materializer-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      GH_TOKEN: ${{ github.token }}
+      FLOOR_PARENT: a564aeb99bed19c1f0b0d216c08f08f6b422bc0e
+      PRODUCT_BRANCH: agent/schoolhouse-nc-static-nonprofit-anchor-custody-product-v1
+      ARTIFACT_RUN: '31071324356'
+      ARTIFACT_ID: '8955740770'
+      ARTIFACT_NAME: schoolhouse-nc-static-nonprofit-anchor-census
+      ARTIFACT_DIGEST: sha256:7df4b608694beb278c0accd8708b202de7de03ffff80411f83a2b5ae034d40cd
+      BUILDER_BLOB: 2069b91fe76d986fe69e4217c85e8328560151dc
+    steps:
+      - name: Check out exact materializer carrier
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Bind latest disjoint main, exact carrier, builder, and artifact
+        id: bind
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          EXECUTE='.schoolhouse-nc-static-nonprofit-anchor-custody-materializer/EXECUTE'
+          BUILDER='.schoolhouse-nc-static-nonprofit-anchor-custody-materializer/build.mjs'
+          WORKFLOW='.github/workflows/temp-schoolhouse-nc-static-nonprofit-anchor-custody-materializer.yml'
+          PATCHED="$RUNNER_TEMP/build-schoolhouse-nc-static-nonprofit-anchor-custody.mjs"
+          ARTIFACT="$RUNNER_TEMP/schoolhouse-nc-static-nonprofit-anchor-census"
+          PATHS="$RUNNER_TEMP/permanent-paths.txt"
+
+          cat > "$PATHS" <<'PATHS'
+          data/intake/bvvc-defense-capital/README.md
+          data/intake/bvvc-defense-capital/acquisition-frontier.json
+          data/intake/bvvc-defense-capital/coverage-matrix.json
+          data/intake/bvvc-defense-capital/manifest.json
+          data/intake/bvvc-defense-capital/schoolhouse-nc-static-nonprofit-anchor-census-adjudication.json
+          data/intake/bvvc-defense-capital/schoolhouse-nc-static-nonprofit-anchor-census-custody.json
+          data/intake/bvvc-defense-capital/schoolhouse-nc-static-nonprofit-anchor-census-fixed-term-observations.jsonl
+          data/intake/bvvc-defense-capital/schoolhouse-nc-static-nonprofit-anchor-census-form-observations.jsonl
+          data/intake/bvvc-defense-capital/schoolhouse-nc-static-nonprofit-anchor-census-link-observations.jsonl
+          data/intake/bvvc-defense-capital/schoolhouse-nc-static-nonprofit-anchor-census-page-receipts.jsonl
+          data/intake/bvvc-defense-capital/schoolhouse-nc-static-nonprofit-anchor-census-route-policy.json
+          data/intake/bvvc-defense-capital/schoolhouse-nc-static-nonprofit-anchor-census-script-route-observations.jsonl
+          data/intake/bvvc-defense-capital/schoolhouse-nc-static-nonprofit-anchor-census-successor-routes.jsonl
+          data/intake/bvvc-defense-capital/schoolhouse.json
+          data/intake/bvvc-defense-capital/source-inventory-21.jsonl
+          tools/build-schoolhouse-nc-static-nonprofit-anchor-custody.mjs
+          tools/validate-bvvc-defense-capital.mjs
+          tools/validate-schoolhouse-honor-foundation-990-custody.mjs
+          tools/validate-schoolhouse-nc-static-nonprofit-anchor-custody.mjs
+          tools/validate-schoolhouse-nc-static-nonprofit-custody.mjs
+          PATHS
+          sed -i 's/^          //' "$PATHS"
+          test "$(wc -l < "$PATHS")" -eq 20
+          LC_ALL=C sort -c "$PATHS"
+
+          git fetch --no-tags origin main
+          PARENT=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$FLOOR_PARENT" "$PARENT"
+          test "$(git merge-base HEAD "$PARENT")" = "$FLOOR_PARENT"
+
+          mapfile -t CARRIER_CHANGED < <(git diff --name-only "$FLOOR_PARENT"..HEAD | sort)
+          EXPECTED_CARRIER=(
+            '.github/workflows/temp-schoolhouse-nc-static-nonprofit-anchor-custody-materializer.yml'
+            '.schoolhouse-nc-static-nonprofit-anchor-custody-materializer/EXECUTE'
+            '.schoolhouse-nc-static-nonprofit-anchor-custody-materializer/build.mjs'
+          )
+          test "${#CARRIER_CHANGED[@]}" -eq 3
+          for i in "${!EXPECTED_CARRIER[@]}"; do test "${CARRIER_CHANGED[$i]}" = "${EXPECTED_CARRIER[$i]}"; done
+          test "$(git rev-parse "HEAD:$BUILDER")" = "$BUILDER_BLOB"
+          git diff --exit-code -- "$EXECUTE" "$BUILDER" "$WORKFLOW"
+
+          grep -Fx 'materialize=schoolhouse-nc-static-nonprofit-anchor-custody-v1' "$EXECUTE"
+          grep -Fx "canonical_parent_floor=$FLOOR_PARENT" "$EXECUTE"
+          grep -Fx 'parent_rebind_policy=latest_current_main_descendant_with_zero_permanent_path_overlap' "$EXECUTE"
+          grep -Fx 'acquisition_workflow_run_id=31071324356' "$EXECUTE"
+          grep -Fx 'acquisition_artifact_id=8955740770' "$EXECUTE"
+          grep -Fx "acquisition_artifact_digest=$ARTIFACT_DIGEST" "$EXECUTE"
+          grep -Fx "builder_blob=$BUILDER_BLOB" "$EXECUTE"
+          grep -Fx "product_branch=$PRODUCT_BRANCH" "$EXECUTE"
+          grep -Fx 'permanent_paths=20' "$EXECUTE"
+          grep -Fx 'current_anchor_rows=1552' "$EXECUTE"
+          grep -Fx 'identity_admitted=false' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+
+          overlap=0
+          while IFS= read -r changed; do
+            if grep -Fxq "$changed" "$PATHS"; then
+              printf 'ERROR: current-main overlap: %s\n' "$changed" >&2
+              overlap=1
+            fi
+          done < <(git diff --name-only "$FLOOR_PARENT".."$PARENT")
+          test "$overlap" -eq 0
+
+          cp "$BUILDER" "$PATCHED"
+          python - "$PATCHED" "$PARENT" <<'PY'
+          from pathlib import Path
+          import sys
+          path = Path(sys.argv[1])
+          parent = sys.argv[2]
+          text = path.read_text()
+          old = "const CANONICAL_PARENT_COMMIT = 'a564aeb99bed19c1f0b0d216c08f08f6b422bc0e';"
+          new = f"const CANONICAL_PARENT_COMMIT = '{parent}';"
+          if text.count(old) != 1:
+              raise SystemExit('builder parent fixture drift')
+          path.write_text(text.replace(old, new))
+          PY
+          node --check "$PATCHED"
+          PATCHED_SHA=$(sha256sum "$PATCHED" | awk '{print $1}')
+
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/$ARTIFACT_ID" --jq '.digest // ""')" = "$ARTIFACT_DIGEST"
+          rm -rf "$ARTIFACT"
+          mkdir -p "$ARTIFACT"
+          gh run download "$ARTIFACT_RUN" --repo "$GITHUB_REPOSITORY" --name "$ARTIFACT_NAME" --dir "$ARTIFACT"
+          test "$(sha256sum "$ARTIFACT/SHA256SUMS" | awk '{print $1}')" = '539db4e32e9bd247eb1d9d6ae26e5e888c765f77aaa12ce1f6322c62062f4bb6'
+          (cd "$ARTIFACT" && sha256sum -c SHA256SUMS)
+
+          printf 'parent=%s\n' "$PARENT" >> "$GITHUB_OUTPUT"
+          printf 'patched_builder_sha=%s\n' "$PATCHED_SHA" >> "$GITHUB_OUTPUT"
+          printf 'artifact_dir=%s\n' "$ARTIFACT" >> "$GITHUB_OUTPUT"
+          printf 'paths_file=%s\n' "$PATHS" >> "$GITHUB_OUTPUT"
+          printf 'patched_builder=%s\n' "$PATCHED" >> "$GITHUB_OUTPUT"
+          printf 'observed_parent=%s\npatched_builder_sha256=%s\n' "$PARENT" "$PATCHED_SHA"
+
+      - name: Build twice, compare exact permanent bytes, and qualify complete repository
+        shell: bash
+        env:
+          PARENT: ${{ steps.bind.outputs.parent }}
+          PATCHED_BUILDER: ${{ steps.bind.outputs.patched_builder }}
+          ARTIFACT_DIR: ${{ steps.bind.outputs.artifact_dir }}
+          PATHS_FILE: ${{ steps.bind.outputs.paths_file }}
+        run: |
+          set -Eeuo pipefail
+          FIRST="$RUNNER_TEMP/nc-anchor-product-first"
+          SECOND="$RUNNER_TEMP/nc-anchor-product-second"
+          PRODUCT="$RUNNER_TEMP/nc-anchor-product-final"
+          rm -rf "$FIRST" "$SECOND" "$PRODUCT"
+          mkdir -p "$FIRST" "$SECOND" "$PRODUCT"
+
+          git checkout --detach "$PARENT"
+          node "$PATCHED_BUILDER" "$ARTIFACT_DIR" | tee "$RUNNER_TEMP/nc-anchor-build-first.json"
+          while IFS= read -r file; do
+            test -e "$file"
+            mkdir -p "$FIRST/$(dirname "$file")"
+            cp -a "$file" "$FIRST/$file"
+          done < "$PATHS_FILE"
+          (cd "$FIRST" && while IFS= read -r file; do sha256sum "$file"; done < "$PATHS_FILE") > "$RUNNER_TEMP/nc-anchor-first.sha256"
+
+          git reset --hard "$PARENT"
+          git clean -fdx
+          node "$PATCHED_BUILDER" "$ARTIFACT_DIR" | tee "$RUNNER_TEMP/nc-anchor-build-second.json"
+          while IFS= read -r file; do
+            test -e "$file"
+            mkdir -p "$SECOND/$(dirname "$file")"
+            cp -a "$file" "$SECOND/$file"
+          done < "$PATHS_FILE"
+          (cd "$SECOND" && while IFS= read -r file; do sha256sum "$file"; done < "$PATHS_FILE") > "$RUNNER_TEMP/nc-anchor-second.sha256"
+          diff -u "$RUNNER_TEMP/nc-anchor-first.sha256" "$RUNNER_TEMP/nc-anchor-second.sha256"
+          diff -ru "$FIRST" "$SECOND"
+
+          node tools/validate-schoolhouse-nc-static-nonprofit-anchor-custody.mjs
+          node tools/validate-schoolhouse-nc-static-nonprofit-custody.mjs
+          node tools/validate-schoolhouse-honor-foundation-990-custody.mjs
+          node tools/validate-bvvc-defense-capital.mjs
+          node test/person-router.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+          while IFS= read -r file; do
+            mkdir -p "$PRODUCT/$(dirname "$file")"
+            cp -a "$SECOND/$file" "$PRODUCT/$file"
+          done < "$PATHS_FILE"
+
+          git reset --hard "$PARENT"
+          git clean -fdx
+          while IFS= read -r file; do
+            mkdir -p "$(dirname "$file")"
+            cp -a "$PRODUCT/$file" "$file"
+          done < "$PATHS_FILE"
+          node tools/validate-schoolhouse-nc-static-nonprofit-anchor-custody.mjs
+          node tools/validate-schoolhouse-nc-static-nonprofit-custody.mjs
+          node tools/validate-schoolhouse-honor-foundation-990-custody.mjs
+          node tools/validate-bvvc-defense-capital.mjs
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+
+      - name: Publish exact one-commit twenty-path product
+        id: publish
+        shell: bash
+        env:
+          PARENT: ${{ steps.bind.outputs.parent }}
+          PATHS_FILE: ${{ steps.bind.outputs.paths_file }}
+          PATCHED_BUILDER_SHA: ${{ steps.bind.outputs.patched_builder_sha }}
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$PARENT"
+          git switch -c "$PRODUCT_BRANCH"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          mapfile -t PATHS < "$PATHS_FILE"
+          git add -- "${PATHS[@]}"
+          mapfile -t STAGED < <(git diff --cached --name-only | sort)
+          test "${#STAGED[@]}" -eq 20
+          for i in "${!PATHS[@]}"; do test "${STAGED[$i]}" = "${PATHS[$i]}"; done
+          test -z "$(git status --porcelain=v1 --untracked-files=all | grep -vE '^([AMDRC?]{2}) (data/intake/bvvc-defense-capital/|tools/)' || true)"
+          git diff --cached --check
+          git commit -m 'Preserve School.House North Carolina static anchor custody'
+          PRODUCT_COMMIT=$(git rev-parse HEAD)
+          PRODUCT_TREE=$(git rev-parse 'HEAD^{tree}')
+          test "$(git rev-parse HEAD^)" = "$PARENT"
+          test "$(git rev-list --count "$PARENT"..HEAD)" -eq 1
+          mapfile -t COMMITTED < <(git diff-tree --no-commit-id --name-only -r HEAD | sort)
+          test "${#COMMITTED[@]}" -eq 20
+          for i in "${!PATHS[@]}"; do test "${COMMITTED[$i]}" = "${PATHS[$i]}"; done
+          test -z "$(printf '%s\n' "${COMMITTED[@]}" | grep -E '(^\.github/|^\.schoolhouse-|materializer|carrier)' || true)"
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          printf 'product_commit=%s\n' "$PRODUCT_COMMIT" >> "$GITHUB_OUTPUT"
+          printf 'product_tree=%s\n' "$PRODUCT_TREE" >> "$GITHUB_OUTPUT"
+          printf 'parent=%s\n' "$PARENT" >> "$GITHUB_OUTPUT"
+          printf 'product_commit=%s\nproduct_tree=%s\nparent=%s\n' "$PRODUCT_COMMIT" "$PRODUCT_TREE" "$PARENT"
+
+      - name: Preserve materialization receipt
+        shell: bash
+        env:
+          PARENT: ${{ steps.publish.outputs.parent }}
+          PRODUCT_COMMIT: ${{ steps.publish.outputs.product_commit }}
+          PRODUCT_TREE: ${{ steps.publish.outputs.product_tree }}
+          PATHS_FILE: ${{ steps.bind.outputs.paths_file }}
+          PATCHED_BUILDER_SHA: ${{ steps.bind.outputs.patched_builder_sha }}
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/schoolhouse-nc-static-nonprofit-anchor-custody-materialization"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          cp "$PATHS_FILE" "$OUT/permanent-paths.txt"
+          cat > "$OUT/receipt.json" <<JSON
+          {
+            "schema_version": "schoolhouse-nc-static-nonprofit-anchor-custody-materialization@1",
+            "canonical_parent": "$PARENT",
+            "product_commit": "$PRODUCT_COMMIT",
+            "product_tree": "$PRODUCT_TREE",
+            "product_branch": "$PRODUCT_BRANCH",
+            "permanent_paths": 20,
+            "acquisition_workflow_run_id": 31071324356,
+            "acquisition_artifact_id": 8955740770,
+            "acquisition_artifact_digest": "$ARTIFACT_DIGEST",
+            "patched_builder_sha256": "$PATCHED_BUILDER_SHA",
+            "source_inventory_rows": 482,
+            "coverage_denominator_rows": 31,
+            "explicit_gap_rows": 16,
+            "current_anchor_rows": 1552,
+            "prior_anchor_rows": 1552,
+            "body_changed_routes": 2,
+            "anchor_count_changed_routes": 0,
+            "identity_admitted_rows": 0,
+            "outside_human_dependency": false,
+            "publication_effect": "none",
+            "adoption_effect": "none",
+            "graph_effect": "none"
+          }
+          JSON
+          git show "$PRODUCT_COMMIT:data/intake/bvvc-defense-capital/schoolhouse-nc-static-nonprofit-anchor-census-custody.json" > "$OUT/custody.json"
+          git show "$PRODUCT_COMMIT:data/intake/bvvc-defense-capital/schoolhouse-nc-static-nonprofit-anchor-census-adjudication.json" > "$OUT/adjudication.json"
+          (cd "$OUT" && sha256sum receipt.json custody.json adjudication.json permanent-paths.txt > SHA256SUMS)
+
+      - name: Upload materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-nc-static-nonprofit-anchor-custody-materialization
+          path: ${{ runner.temp }}/schoolhouse-nc-static-nonprofit-anchor-custody-materialization
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
