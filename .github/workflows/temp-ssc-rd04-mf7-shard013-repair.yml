@@ -24,27 +24,39 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - name: Correct exact shard byte and retire this workflow
+      - name: Correct exact shard byte and push only that repair
         run: |
           set -Eeuo pipefail
           FILE=.transport/ssc-rd04-mf7-capture-adjudication-v2/part-013.b64
-          python - <<'PY'
+          ACTION=$(python - <<'PY'
           import hashlib
           from pathlib import Path
 
           path = Path('.transport/ssc-rd04-mf7-capture-adjudication-v2/part-013.b64')
           data = bytearray(path.read_bytes())
+          wrong = '424cda79191c9bf6809add2dae4f3c0a6aa76e35405f64c037be0d53c0d6df22'
+          correct = '8317e829785761158f785b0269af8bfe3b3b85fe908fea7dcba13eb5a949798b'
           assert len(data) == 5000
-          assert hashlib.sha256(data).hexdigest() == '424cda79191c9bf6809add2dae4f3c0a6aa76e35405f64c037be0d53c0d6df22'
-          assert data[2465:2466] == b'3'
-          data[2465:2466] = b'8'
-          assert hashlib.sha256(data).hexdigest() == '8317e829785761158f785b0269af8bfe3b3b85fe908fea7dcba13eb5a949798b'
-          path.write_bytes(data)
-          print('transport_shard_013_exact_byte_repair=pass offset=2465 old=3 new=8')
+          digest = hashlib.sha256(data).hexdigest()
+          if digest == correct:
+              print('already_correct')
+          else:
+              assert digest == wrong
+              assert data[2465:2466] == b'3'
+              data[2465:2466] = b'8'
+              assert hashlib.sha256(data).hexdigest() == correct
+              path.write_bytes(data)
+              print('repaired')
           PY
-          git rm .github/workflows/temp-ssc-rd04-mf7-shard013-repair.yml
+          )
+          printf 'shard_action=%s\n' "$ACTION"
+          if test "$ACTION" = already_correct; then
+            test -z "$(git status --porcelain=v1 --untracked-files=all)"
+            exit 0
+          fi
           git diff --check
-          test "$(git diff --name-only | wc -l)" -eq 2
+          test "$(git diff --name-only | wc -l)" -eq 1
+          test "$(git diff --name-only)" = "$FILE"
           git config user.name 'BigBirdReturns'
           git config user.email '219768509+BigBirdReturns@users.noreply.github.com'
           git add "$FILE"
