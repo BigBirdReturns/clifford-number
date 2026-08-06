@@ -1,0 +1,38 @@
+name: Preference linkage executable artifact build dependency environment runtime identity assurance
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.fixture.json'
+      - 'tools/lib/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs'
+      - 'tools/compile-preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs'
+      - 'tools/validate-preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs'
+      - 'test/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.test.js'
+      - 'docs/preference-custody-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.md'
+      - '.github/workflows/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pc50:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Compile, validate, and test PC-50
+        run: |
+          node tools/compile-preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs
+          node tools/validate-preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs
+          node test/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.test.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance
+          path: |
+            build/research/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.json
+            build/research/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.md
+          if-no-files-found: error
