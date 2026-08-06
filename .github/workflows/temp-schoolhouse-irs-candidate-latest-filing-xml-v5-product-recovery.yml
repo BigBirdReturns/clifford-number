@@ -1,0 +1,102 @@
+name: TEMP recover School.House latest-filing XML v5 product
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-irs-candidate-latest-filing-xml-v5-product-recovery.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: schoolhouse-irs-candidate-latest-filing-xml-v5-product-recovery-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  recover:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-irs-candidate-latest-filing-xml-v5-product-recovery-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct and replay exact permanent product publisher
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE='.github/workflows/temp-schoolhouse-irs-candidate-latest-filing-xml-v5-materializer.yml'
+          RECOVERY='.github/workflows/temp-schoolhouse-irs-candidate-latest-filing-xml-v5-product-recovery.yml'
+          SCRIPT="$RUNNER_TEMP/replay-schoolhouse-latest-filing-xml-v5-product.sh"
+          python - "$SOURCE" "$RECOVERY" "$SCRIPT" <<'PY'
+          from pathlib import Path
+          import sys
+
+          source_path, recovery_path, output_path = map(Path, sys.argv[1:])
+          source = source_path.read_text()
+          step = '      - name: Reconstruct, qualify, and publish exact permanent product\n'
+          start = source.index(step)
+          run = source.index('        run: |\n', start) + len('        run: |\n')
+          end = source.index('\n      - name: Preserve exact materialization receipt', run)
+          lines = source[run:end].splitlines()
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines) + '\n'
+
+          script = script.replace('set -Eeuo pipefail', 'set -Eeuxo pipefail', 1)
+          workflow_line = "WORKFLOW='.github/workflows/temp-schoolhouse-irs-candidate-latest-filing-xml-v5-materializer.yml'"
+          replacement = workflow_line + "\nRECOVERY_WORKFLOW='" + recovery_path.as_posix() + "'"
+          if workflow_line not in script:
+              raise SystemExit('workflow-variable seam missing')
+          script = script.replace(workflow_line, replacement, 1)
+
+          old = '''mapfile -t CHANGED < <(git diff --name-only "$BASE"..HEAD | sort)
+          EXPECTED=(
+            '.github/workflows/temp-schoolhouse-irs-candidate-latest-filing-xml-v5-materializer.yml'
+            '.schoolhouse-irs-candidate-latest-filing-xml-v5-materializer/EXECUTE'
+            '.schoolhouse-irs-candidate-latest-filing-xml-v5-materializer/product.tar.xz.b64'
+          )
+          test "${#CHANGED[@]}" -eq 3
+          for i in "${!EXPECTED[@]}"; do test "${CHANGED[$i]}" = "${EXPECTED[$i]}"; done
+          git diff --exit-code -- "$WORKFLOW" "$EXECUTE" "$BUNDLE"'''
+          new = '''mapfile -t CHANGED < <(git diff --name-only "$BASE"..HEAD | sort)
+          EXPECTED=(
+            '.github/workflows/temp-schoolhouse-irs-candidate-latest-filing-xml-v5-materializer.yml'
+            '.github/workflows/temp-schoolhouse-irs-candidate-latest-filing-xml-v5-product-recovery.yml'
+            '.schoolhouse-irs-candidate-latest-filing-xml-v5-materializer/EXECUTE'
+            '.schoolhouse-irs-candidate-latest-filing-xml-v5-materializer/product.tar.xz.b64'
+          )
+          test "${#CHANGED[@]}" -eq 4
+          for i in "${!EXPECTED[@]}"; do test "${CHANGED[$i]}" = "${EXPECTED[$i]}"; done
+          git diff --exit-code -- "$WORKFLOW" "$RECOVERY_WORKFLOW" "$EXECUTE" "$BUNDLE"'''
+          if old not in script:
+              raise SystemExit('carrier-denominator seam missing')
+          script = script.replace(old, new, 1)
+          Path(output_path).write_text(script)
+          PY
+          bash -n "$SCRIPT"
+          bash "$SCRIPT"
+
+      - name: Preserve recovered materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-candidate-latest-filing-xml-v5-product-recovery-receipt-v1
+          path: ${{ runner.temp }}/schoolhouse-latest-filing-xml-v5-materialization-receipt
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
