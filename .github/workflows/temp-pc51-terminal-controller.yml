@@ -1,0 +1,70 @@
+name: TEMP terminalize exact PC-51 transaction
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: read
+
+concurrency:
+  group: pc51-terminal-transaction-v1
+  cancel-in-progress: false
+
+jobs:
+  terminalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Qualify, admit, and prove exact PC-51 product
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          chmod +x .pc51/terminal-controller.sh
+          .pc51/terminal-controller.sh prepare
+      - name: Upload exact PC-51 canonical-merge proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc51-exact-postmerge-proof
+          path: |
+            /tmp/pc51-terminal/pc51-exact-postmerge-proof.tar.gz
+            /tmp/pc51-terminal/pc51-exact-postmerge-proof.tar.gz.sha256
+            /tmp/pc51-terminal/postmerge-receipt.json
+            /tmp/pc51-terminal/exact-head-matrix.json
+            /tmp/pc51-terminal/blob-identities.tsv
+          if-no-files-found: error
+          retention-days: 90
+      - name: Retire all PC-51 transaction refs and PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: .pc51/terminal-controller.sh retire
+      - name: Upload PC-51 terminal retirement receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc51-terminal-ref-retirement
+          path: |
+            /tmp/pc51-terminal/pc51-terminal-ref-retirement.tar.gz
+            /tmp/pc51-terminal/pc51-terminal-ref-retirement.tar.gz.sha256
+            /tmp/pc51-terminal/ref-retirement-receipt.json
+            /tmp/pc51-terminal/pc51-refs-before.txt
+            /tmp/pc51-terminal/pc51-refs-after.txt
+            /tmp/pc51-terminal/open-pc51-prs.txt
+            /tmp/pc51-terminal/open-pc51-prs-after.txt
+          if-no-files-found: error
+          retention-days: 90
+      - name: Write terminal issue receipt and close PC-51
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: .pc51/terminal-controller.sh finalize
