@@ -65,11 +65,11 @@ jobs:
           test "${#CHANGED[@]}" -eq 3
           for i in 0 1 2; do test "${CHANGED[$i]}" = "${EXPECTED[$i]}"; done
 
-          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'cd25fd381c48ae815dcc0800dee200434bec87858fca74a1edde60253b3d9548'
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '0d047677ad6e73f6fdb7c1243bce15a4f7e7d9f606719d85d63609a4babd5267'
           base64 -d "$BUNDLE" > "$GZIP"
-          test "$(sha256sum "$GZIP" | awk '{print $1}')" = '3b1acdc708166e82847a415928cee1e3bda78fb80bcb2dc67c0487d633b58f49'
+          test "$(sha256sum "$GZIP" | awk '{print $1}')" = '62ed7288d6ff899eb55f66acea859e1797744307db105479b40591cc440f15f7'
           gzip -dc "$GZIP" > "$RUNNER"
-          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = 'c525c534ba4094e5e3996db10b473f58e09c19578559b895a3974822c012a367'
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = '96f237ab0679fb96db7eea43a63f46a6e011d247bec9810d6cfa438e69b46a18'
           python -m py_compile "$RUNNER"
 
           grep -Fx 'acquire=schoolhouse-irs-candidate-xml-member-locator-census-v1' "$EXECUTE"
@@ -79,7 +79,7 @@ jobs:
           grep -Fx 'sealed_candidate_eins=92' "$EXECUTE"
           grep -Fx 'declared_archive_routes=67' "$EXECUTE"
           grep -Fx 'processing_years=2019,2020,2021,2022,2023,2024,2025,2026' "$EXECUTE"
-          grep -Fx 'maximum_total_requests=402' "$EXECUTE"
+          grep -Fx 'maximum_total_requests=536' "$EXECUTE"
           grep -Fx 'maximum_parallel_workers=4' "$EXECUTE"
           grep -Fx 'maximum_aggregate_bytes=1073741824' "$EXECUTE"
           grep -Fx 'full_archive_fetches=0' "$EXECUTE"
@@ -89,9 +89,9 @@ jobs:
           grep -Fx 'relationship_admitted=false' "$EXECUTE"
           grep -Fx 'outside_human_dependency=false' "$EXECUTE"
           grep -Fx 'graph_effect=none' "$EXECUTE"
-          grep -Fx 'runner_source_sha256=c525c534ba4094e5e3996db10b473f58e09c19578559b895a3974822c012a367' "$EXECUTE"
-          grep -Fx 'runner_gzip_sha256=3b1acdc708166e82847a415928cee1e3bda78fb80bcb2dc67c0487d633b58f49' "$EXECUTE"
-          grep -Fx 'runner_bundle_sha256=cd25fd381c48ae815dcc0800dee200434bec87858fca74a1edde60253b3d9548' "$EXECUTE"
+          grep -Fx 'runner_source_sha256=96f237ab0679fb96db7eea43a63f46a6e011d247bec9810d6cfa438e69b46a18' "$EXECUTE"
+          grep -Fx 'runner_gzip_sha256=62ed7288d6ff899eb55f66acea859e1797744307db105479b40591cc440f15f7' "$EXECUTE"
+          grep -Fx 'runner_bundle_sha256=0d047677ad6e73f6fdb7c1243bce15a4f7e7d9f606719d85d63609a4babd5267' "$EXECUTE"
           git diff --exit-code -- "$WORKFLOW" "$EXECUTE" "$BUNDLE"
 
       - name: Execute bounded 67-archive central-directory census
@@ -144,7 +144,7 @@ jobs:
           assert s['exact_member_locator_rows']==len(locators)
           assert s['accessible_archive_central_directories']+s['provider_or_schema_error_archives']==67
           assert s['objects_with_exact_one_locator']+s['objects_with_duplicate_locators']+s['objects_without_locator']==486
-          assert s['range_requests']<=s['maximum_total_requests']==402
+          assert s['range_requests']<=s['maximum_total_requests']==536
           assert s['range_bytes_retrieved']<=s['maximum_aggregate_bytes']==1073741824
           assert s['member_payload_fetches']==s['full_archive_fetches']==s['xml_parses']==0
           assert s['query_submissions']==s['forms_submitted']==0
