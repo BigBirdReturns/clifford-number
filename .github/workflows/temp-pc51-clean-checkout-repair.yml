@@ -1,0 +1,215 @@
+name: TEMP repair PC-51 clean-checkout historical-floor ordering
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: pc51-clean-checkout-repair-v1
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      PRODUCT_COMMIT: 7802dcc91ca45d564a72f87c99183a6ed196e6fb
+      PRODUCT_PARENT: 5b841fcfe6d30929e0adfbb36548224d8d1959e8
+      PRODUCT_BRANCH: agent/pc51-materializer
+      PRODUCT_PATH_COUNT: '14'
+      REPAIRED_TEST_PATH: test/preference-custody-manifest-v49.test.js
+      REPAIRED_TEST_BYTES: '24002'
+      REPAIRED_TEST_SHA256: f197498c5070071e3f241a34c3a90b4742b53dff3c23a26ee40fa81bec383014
+      REPAIRED_TEST_GIT_BLOB: ccfad0438fe80e89a189d77a30325383c45acebf
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct exact one-file repair
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git cat-file -e "${PRODUCT_COMMIT}^{commit}"
+          test "$(git rev-parse HEAD^)" = "$PRODUCT_COMMIT"
+          git reset --hard "$PRODUCT_COMMIT"
+          git clean -fdx
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('test/preference-custody-manifest-v49.test.js')
+          text = p.read_text()
+          old_import = """import {
+            compilePreferenceCustodyManifestV49,
+            loadPreferenceCustodySourceBundleV48,
+            validatePreferenceCustodyManifestV49,
+            validatePreferenceCustodyManifestV49Build
+          } from '../tools/lib/preference-custody-manifest-v49.mjs';
+          """
+          new_import = """import {
+            compilePreferenceCustodyManifestV49,
+            loadPreferenceCustodySourceBundleV48,
+            validatePreferenceCustodyManifestV49,
+            validatePreferenceCustodyManifestV49Build
+          } from '../tools/lib/preference-custody-manifest-v49.mjs';
+          import {
+            compilePreferenceCustodyManifestV48
+          } from '../tools/lib/preference-custody-manifest-v48.mjs';
+          import {
+            compilePreferenceLinkageSourceReviewReproducibleBuildArtifactProvenanceExecutionAttestationAssurance
+          } from '../tools/lib/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs';
+          """
+          old_setup = """const manifest = readJson(resolve(root, 'data/research/preference-custody/control-manifest-v49.json'));
+          const baseBuild = readJson(resolve(root, 'build/research/preference-custody-laboratory-floor-v48.json'));
+          const targetFixture = readJson(resolve(root, `data/research/preference-custody/${slug}.fixture.json`));
+          const targetBuild = readJson(resolve(root, `build/research/${slug}.json`));
+          const baseSources = loadPreferenceCustodySourceBundleV48(root);
+          const build = compilePreferenceCustodyManifestV49(manifest, baseBuild, targetBuild, targetFixture, baseSources);
+          """
+          new_setup = """const manifest = readJson(resolve(root, 'data/research/preference-custody/control-manifest-v49.json'));
+          const targetFixture = readJson(resolve(root, `data/research/preference-custody/${slug}.fixture.json`));
+          const targetBuild =
+            compilePreferenceLinkageSourceReviewReproducibleBuildArtifactProvenanceExecutionAttestationAssurance(
+              targetFixture
+            );
+          const baseSources = loadPreferenceCustodySourceBundleV48(root);
+          const baseV47Build = readJson(
+            resolve(root, 'build/research/preference-custody-laboratory-floor-v47.json')
+          );
+          const baseBuild = compilePreferenceCustodyManifestV48(
+            baseSources.manifest,
+            baseV47Build,
+            baseSources.targetBuild,
+            baseSources.targetFixture,
+            baseSources.v47Sources
+          );
+          const build = compilePreferenceCustodyManifestV49(
+            manifest,
+            baseBuild,
+            targetBuild,
+            targetFixture,
+            baseSources
+          );
+          """
+          if text.count(old_import) != 1:
+              raise SystemExit('expected exact v49 import block once')
+          if text.count(old_setup) != 1:
+              raise SystemExit('expected exact v49 setup block once')
+          text = text.replace(old_import, new_import, 1).replace(old_setup, new_setup, 1)
+          p.write_text(text)
+          PY
+          test "$(wc -c < "$REPAIRED_TEST_PATH" | tr -d ' ')" = "$REPAIRED_TEST_BYTES"
+          test "$(sha256sum "$REPAIRED_TEST_PATH" | awk '{print $1}')" = "$REPAIRED_TEST_SHA256"
+          test "$(git hash-object "$REPAIRED_TEST_PATH")" = "$REPAIRED_TEST_GIT_BLOB"
+          mapfile -t CHANGED < <(git diff --name-only "$PRODUCT_COMMIT")
+          test "${#CHANGED[@]}" -eq 1
+          test "${CHANGED[0]}" = "$REPAIRED_TEST_PATH"
+      - name: Create clean one-parent repaired product commit
+        id: repaired
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git add "$REPAIRED_TEST_PATH"
+          TREE=$(git write-tree)
+          NEW_COMMIT=$(printf '%s\n' 'Repair PC-51 clean-checkout historical-floor ordering' | git commit-tree "$TREE" -p "$PRODUCT_PARENT")
+          test "$(git rev-list --count "$PRODUCT_PARENT..$NEW_COMMIT")" -eq 1
+          mapfile -t PRODUCT_PATHS < <(git diff --name-only "$PRODUCT_PARENT" "$NEW_COMMIT")
+          test "${#PRODUCT_PATHS[@]}" -eq "$PRODUCT_PATH_COUNT"
+          if printf '%s\n' "${PRODUCT_PATHS[@]}" | grep -Eq '(^|/)(temp|carrier|shard|controller|marker|pulse|receipt|diagnostic)([-_.]|/)|^\.pc51/'; then
+            printf '%s\n' "${PRODUCT_PATHS[@]}"
+            exit 1
+          fi
+          printf 'tree=%s\ncommit=%s\n' "$TREE" "$NEW_COMMIT" | tee /tmp/repaired.env
+          echo "tree=$TREE" >> "$GITHUB_OUTPUT"
+          echo "commit=$NEW_COMMIT" >> "$GITHUB_OUTPUT"
+          git checkout --detach "$NEW_COMMIT"
+          git clean -fdx
+      - name: Prove direct clean-checkout v49 test
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test ! -e build/research/preference-custody-laboratory-floor-v48.json
+          test ! -e build/research/preference-custody-laboratory-floor-v49.json
+          test ! -e build/research/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.json
+          node test/preference-custody-manifest-v49.test.js
+          test ! -e build/research/preference-custody-laboratory-floor-v48.json
+          test ! -e build/research/preference-custody-laboratory-floor-v49.json
+          test ! -e build/research/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.json
+      - name: Reproduce formerly failing floor-v20 matrix
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git clean -fdx
+          node tools/compile-preference-choice-opportunity-and-access-assurance.mjs
+          node tools/validate-preference-choice-opportunity-and-access-assurance.mjs
+          node test/preference-choice-opportunity-and-access-assurance.test.js
+          node tools/compile-preference-custody-manifest-v20.mjs
+          node tools/validate-preference-custody-manifest-v20.mjs
+          node test/preference-custody-manifest-v20.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do node "$test_file"; done
+      - name: Reproduce formerly failing floor-v29 matrix
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git clean -fdx
+          node tools/compile-preference-service-denominator-queue-denial-and-completion-assurance.mjs
+          node tools/validate-preference-service-denominator-queue-denial-and-completion-assurance.mjs
+          node test/preference-service-denominator-queue-denial-and-completion-assurance.test.js
+          node tools/compile-preference-custody-manifest-v29.mjs
+          node tools/validate-preference-custody-manifest-v29.mjs
+          node test/preference-custody-manifest-v29.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do node "$test_file"; done
+      - name: Reproduce formerly failing floor-v48 matrix
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git clean -fdx
+          node tools/compile-preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs
+          node tools/validate-preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs
+          node test/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.test.js
+          node tools/compile-preference-custody-manifest-v48.mjs
+          node tools/validate-preference-custody-manifest-v48.mjs
+          node test/preference-custody-manifest-v48.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do node "$test_file"; done
+      - name: Reproduce floor-v49 and repository gates
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git clean -fdx
+          node tools/compile-preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs
+          node tools/validate-preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs
+          node test/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.test.js
+          node tools/compile-preference-custody-manifest-v49.mjs
+          node tools/validate-preference-custody-manifest-v49.mjs
+          node test/preference-custody-manifest-v49.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do node "$test_file"; done
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+      - name: Publish repaired one-parent head with lease
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          NEW_COMMIT='${{ steps.repaired.outputs.commit }}'
+          REMOTE_HEAD=$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')
+          test "$REMOTE_HEAD" = "$PRODUCT_COMMIT"
+          git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$PRODUCT_COMMIT" origin "$NEW_COMMIT:refs/heads/$PRODUCT_BRANCH"
+          ACTUAL=$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')
+          test "$ACTUAL" = "$NEW_COMMIT"
+          {
+            cat /tmp/repaired.env
+            printf 'parent=%s\nprior_product=%s\nbranch=%s\npath_count=%s\nrepaired_test_sha256=%s\nrepaired_test_git_blob=%s\noutside_human_dependency=false\ngraph_effect=none\n' \
+              "$PRODUCT_PARENT" "$PRODUCT_COMMIT" "$PRODUCT_BRANCH" "$PRODUCT_PATH_COUNT" \
+              "$REPAIRED_TEST_SHA256" "$REPAIRED_TEST_GIT_BLOB"
+          } > /tmp/pc51-clean-checkout-repair-receipt.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc51-clean-checkout-repair
+          path: /tmp/pc51-clean-checkout-repair-receipt.txt
+          if-no-files-found: error
+          retention-days: 90
