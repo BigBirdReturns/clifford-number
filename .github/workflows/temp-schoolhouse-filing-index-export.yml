@@ -1,0 +1,79 @@
+name: TEMP export School.House filing-index inputs
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-filing-index-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-filing-index-export-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out exact export carrier
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Export exact current School.House custody and build inputs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PARENT='2fd346c1519b082a11c960df5a310398bb406550'
+          WORKFLOW='.github/workflows/temp-schoolhouse-filing-index-export.yml'
+          OUT="$RUNNER_TEMP/schoolhouse-filing-index-export"
+
+          git fetch --no-tags origin main "$PARENT"
+          test "$(git rev-parse origin/main)" = "$PARENT"
+          test "$(git merge-base HEAD origin/main)" = "$PARENT"
+          mapfile -t changed < <(git diff --name-only "$PARENT"..HEAD | sort)
+          test "${#changed[@]}" -eq 1
+          test "${changed[0]}" = "$WORKFLOW"
+          git diff --exit-code -- "$WORKFLOW"
+
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          git archive "$PARENT" \
+            data/intake/bvvc-defense-capital \
+            tools \
+            test/person-routers.test.js \
+            package.json \
+          | tar -x -C "$OUT"
+
+          {
+            printf 'canonical_parent=%s\n' "$PARENT"
+            printf 'canonical_parent_tree=%s\n' "$(git rev-parse "$PARENT^{tree}")"
+            printf 'export_carrier_head=%s\n' "$(git rev-parse HEAD)"
+            printf 'export_carrier_tree=%s\n' "$(git rev-parse 'HEAD^{tree}')"
+          } > "$OUT/EXPORT-METADATA"
+
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | sort -z \
+              | xargs -0 sha256sum \
+              > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - name: Upload exact export artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-filing-index-export
+          path: ${{ runner.temp }}/schoolhouse-filing-index-export
+          if-no-files-found: error
+          retention-days: 90
+          include-hidden-files: true
+          compression-level: 9
