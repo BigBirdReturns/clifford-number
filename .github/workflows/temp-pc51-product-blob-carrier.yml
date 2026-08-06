@@ -29,31 +29,79 @@ jobs:
         with:
           node-version: '24'
       - name: Apply exact four-file repair
-        run: python carrier/.pc51-carrier/array-key-repair.py patch product
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/pc51-array-key-repair
+          python carrier/.pc51-carrier/array-key-repair.py patch product \
+            2>&1 | tee /tmp/pc51-array-key-repair/patch.log
+          git -C product diff --binary > /tmp/pc51-array-key-repair/repair.patch
+          git -C product diff --name-status > /tmp/pc51-array-key-repair/repair-paths.txt
+          git -C product status --short > /tmp/pc51-array-key-repair/repair-status.txt
+          sha256sum \
+            product/tools/lib/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs \
+            product/tools/lib/preference-custody-manifest-v49.mjs \
+            product/test/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.test.js \
+            product/test/preference-custody-manifest-v49.test.js \
+            > /tmp/pc51-array-key-repair/repaired-files.sha256
       - name: Qualify repaired product bytes
+        id: qualify
+        continue-on-error: true
         working-directory: product
         shell: bash
         run: |
           set -Eeuo pipefail
-          rm -rf build/research
-          node tools/compile-preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs
-          node tools/validate-preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs
-          node test/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.test.js
-          node tools/compile-preference-custody-manifest-v49.mjs
-          node tools/validate-preference-custody-manifest-v49.mjs
-          node test/preference-custody-manifest-v49.test.js
-          node tools/validate-no-magic-human-gate.mjs
-          node test/no-magic-human-gate.test.js
-          npm run release:check
+          {
+            printf '%s\n' '== clean generated outputs =='
+            rm -rf build/research
+            printf '%s\n' '== compile standalone PC-51 =='
+            node tools/compile-preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs
+            printf '%s\n' '== validate standalone PC-51 =='
+            node tools/validate-preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs
+            printf '%s\n' '== test standalone PC-51 =='
+            node test/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.test.js
+            printf '%s\n' '== compile floor v49 =='
+            node tools/compile-preference-custody-manifest-v49.mjs
+            printf '%s\n' '== validate floor v49 =='
+            node tools/validate-preference-custody-manifest-v49.mjs
+            printf '%s\n' '== test floor v49 =='
+            node test/preference-custody-manifest-v49.test.js
+            printf '%s\n' '== validate no-magic-human =='
+            node tools/validate-no-magic-human-gate.mjs
+            printf '%s\n' '== test no-magic-human =='
+            node test/no-magic-human-gate.test.js
+            printf '%s\n' '== complete release check =='
+            npm run release:check
+          } 2>&1 | tee /tmp/pc51-array-key-repair/qualification.log
+      - name: Record failed qualification
+        if: steps.qualify.outcome != 'success'
+        run: |
+          printf '%s\n' \
+            'qualification_outcome: failure' \
+            'repaired_blobs_created: 0' \
+            'ref_updates: 0' \
+            > /tmp/pc51-array-key-repair/outcome.txt
       - name: Create repaired Git blobs and receipt
+        if: steps.qualify.outcome == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPOSITORY: ${{ github.repository }}
           CARRIER_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: python carrier/.pc51-carrier/array-key-repair.py publish product /tmp/pc51-array-key-repair
-      - uses: actions/upload-artifact@v4
+        run: |
+          python carrier/.pc51-carrier/array-key-repair.py publish \
+            product /tmp/pc51-array-key-repair
+          printf '%s\n' \
+            'qualification_outcome: success' \
+            'repaired_blobs_created: 4' \
+            'ref_updates: 0' \
+            > /tmp/pc51-array-key-repair/outcome.txt
+      - name: Upload repair qualification custody
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: pc51-array-key-repair
+          name: pc51-array-key-repair-debug
           path: /tmp/pc51-array-key-repair
           if-no-files-found: error
           retention-days: 90
+      - name: Fail closed after custody upload
+        if: steps.qualify.outcome != 'success'
+        run: exit 1
