@@ -61,7 +61,7 @@ jobs:
               expected_path = f'part{index:02d}'
               if part.get('path') != expected_path:
                   raise SystemExit(f'repair shard order mismatch: {part}')
-              raw = (carrier / expected_path).read_bytes()
+              raw = b''.join((carrier / expected_path).read_bytes().split())
               if len(raw) != part.get('chars'):
                   raise SystemExit(f'repair shard length mismatch: {expected_path}')
               if hashlib.sha256(raw).hexdigest() != part.get('sha256'):
