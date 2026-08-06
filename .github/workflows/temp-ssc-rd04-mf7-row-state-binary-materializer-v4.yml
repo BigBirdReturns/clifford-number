@@ -1,0 +1,112 @@
+name: TEMP materialize RD-04 seven-state row-state adjudication binary v4
+
+on:
+  push:
+    branches:
+      - 'agent/ssc-rd04-mf7-row-state-binary-materializer-v4'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: temp-ssc-rd04-mf7-row-state-binary-materializer-v4
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event_name == 'push' && github.ref_name == 'agent/ssc-rd04-mf7-row-state-binary-materializer-v4'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+      - name: Recover immutable materializer and execute
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          MATERIALIZER_BLOB: 6e2a8bc84bc47a2c99e8052eb7183690eef08d2d
+          MATERIALIZER_XZ_BYTES: '5956'
+          MATERIALIZER_XZ_SHA256: 07d1517c61c8987f718d7d9b29f3bed3547324b53cb90ef98617b71af6a44add
+          MATERIALIZER_SH_BYTES: '18258'
+          MATERIALIZER_SH_SHA256: 8c68d07d8388bc177270ceecc4af8a5715f52997d67229afca4b2d82bbe06d14
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/rd04-mf7-materializer-v4
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          python - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import lzma
+          import os
+          import urllib.request
+          from pathlib import Path
+
+          out = Path('/tmp/rd04-mf7-materializer-v4')
+          token = os.environ['GH_TOKEN']
+          repo = os.environ['GH_REPOSITORY']
+          blob_sha = os.environ['MATERIALIZER_BLOB']
+          req = urllib.request.Request(
+              f'https://api.github.com/repos/{repo}/git/blobs/{blob_sha}',
+              headers={
+                  'Authorization': f'Bearer {token}',
+                  'Accept': 'application/vnd.github+json',
+                  'X-GitHub-Api-Version': '2022-11-28',
+                  'User-Agent': 'ssc-rd04-mf7-row-state-materializer-v4',
+              },
+          )
+          with urllib.request.urlopen(req, timeout=60) as response:
+              payload = json.load(response)
+          if payload.get('encoding') != 'base64':
+              raise SystemExit(f'unexpected materializer blob encoding: {payload.get("encoding")}')
+          packed = base64.b64decode(''.join(payload['content'].split()), validate=True)
+          git_sha = hashlib.sha1(f'blob {len(packed)}\0'.encode() + packed).hexdigest()
+          if git_sha != blob_sha:
+              raise SystemExit(f'materializer blob identity mismatch: {git_sha} != {blob_sha}')
+          if len(packed) != int(os.environ['MATERIALIZER_XZ_BYTES']):
+              raise SystemExit(f'materializer packed byte drift: {len(packed)}')
+          packed_sha = hashlib.sha256(packed).hexdigest()
+          if packed_sha != os.environ['MATERIALIZER_XZ_SHA256']:
+              raise SystemExit(f'materializer packed digest drift: {packed_sha}')
+          source = lzma.decompress(packed)
+          if len(source) != int(os.environ['MATERIALIZER_SH_BYTES']):
+              raise SystemExit(f'materializer source byte drift: {len(source)}')
+          source_sha = hashlib.sha256(source).hexdigest()
+          if source_sha != os.environ['MATERIALIZER_SH_SHA256']:
+              raise SystemExit(f'materializer source digest drift: {source_sha}')
+          (out / 'materializer.sh.xz').write_bytes(packed)
+          script = out / 'materializer.sh'
+          script.write_bytes(source)
+          script.chmod(0o755)
+          receipt = {
+              'blob_sha': blob_sha,
+              'packed_bytes': len(packed),
+              'packed_sha256': packed_sha,
+              'source_bytes': len(source),
+              'source_sha256': source_sha,
+          }
+          (out / 'materializer-custody.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+          bash "$OUT/materializer.sh"
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mf7-row-state-binary-materialization-v4
+          path: |
+            /tmp/rd04-mf7-materializer-v4
+            /tmp/rd04-mf7-row-state-materialization-v3
+          if-no-files-found: error
+          retention-days: 90
