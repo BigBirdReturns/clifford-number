@@ -1,0 +1,129 @@
+name: TEMP restore frozen PC-50 fixture
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: write
+concurrency:
+  group: pc50-frozen-fixture-repair-v1
+  cancel-in-progress: false
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    env:
+      EXPECTED_PARENT: a49b18304a69e9637cd854d38e80b67d4165cc6c
+      CANONICAL_PRODUCT: f7a9ebe30330ae9149a96051d6ebb1b1f63ec193
+      TARGET_BRANCH: agent/pc50-frozen-fixture-repair
+      FIXTURE_PATH: data/research/preference-custody/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.fixture.json
+      WORKFLOW_PATH: .github/workflows/temp-pc50-frozen-fixture-repair.yml
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify drift, restore one exact path, qualify, and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          carrier=$(git rev-parse HEAD)
+          parent=$(git rev-parse HEAD^)
+          test "$parent" = "$EXPECTED_PARENT"
+          test "$(git diff --name-only "$parent" HEAD | wc -l)" -eq 1
+          test "$(git diff --name-only "$parent" HEAD)" = "$WORKFLOW_PATH"
+          git cat-file -e "$CANONICAL_PRODUCT^{commit}"
+
+          paths=(
+            .github/workflows/preference-custody-v48.yml
+            .github/workflows/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.yml
+            data/research/preference-custody/control-manifest-v48.json
+            data/research/preference-custody/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.fixture.json
+            docs/preference-custody-laboratory-floor-v48.md
+            docs/preference-custody-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.md
+            test/preference-custody-manifest-v48.test.js
+            test/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.test.js
+            tools/compile-preference-custody-manifest-v48.mjs
+            tools/compile-preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs
+            tools/lib/preference-custody-manifest-v48.mjs
+            tools/lib/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs
+            tools/validate-preference-custody-manifest-v48.mjs
+            tools/validate-preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs
+          )
+          mkdir -p /tmp/pc50-fixture-repair
+          : > /tmp/pc50-fixture-repair/inherited-path-ledger.tsv
+          mismatches=()
+          for path in "${paths[@]}"; do
+            live_blob=$(git rev-parse "$parent:$path")
+            canonical_blob=$(git rev-parse "$CANONICAL_PRODUCT:$path")
+            printf '%s\t%s\t%s\n' "$path" "$live_blob" "$canonical_blob" >> /tmp/pc50-fixture-repair/inherited-path-ledger.tsv
+            [[ "$live_blob" = "$canonical_blob" ]] || mismatches+=("$path")
+          done
+          test "${#mismatches[@]}" -eq 1
+          test "${mismatches[0]}" = "$FIXTURE_PATH"
+
+          git worktree add /tmp/pc50-fixture-repair/work "$parent"
+          cd /tmp/pc50-fixture-repair/work
+          before_blob=$(git rev-parse "HEAD:$FIXTURE_PATH")
+          canonical_blob=$(git rev-parse "$CANONICAL_PRODUCT:$FIXTURE_PATH")
+          git show "$CANONICAL_PRODUCT:$FIXTURE_PATH" > "$FIXTURE_PATH"
+          after_blob=$(git hash-object "$FIXTURE_PATH")
+          test "$after_blob" = "$canonical_blob"
+          test "$before_blob" != "$after_blob"
+
+          node tools/compile-preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs
+          node tools/validate-preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs
+          node test/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.test.js
+          node tools/compile-preference-custody-manifest-v48.mjs
+          node tools/validate-preference-custody-manifest-v48.mjs
+          node test/preference-custody-manifest-v48.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do node "$test_file"; done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+          git status --short | grep -v '^?? build/' || true
+          git add "$FIXTURE_PATH"
+          test "$(git diff --cached --name-only | wc -l)" -eq 1
+          test "$(git diff --cached --name-only)" = "$FIXTURE_PATH"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Restore frozen PC-50 executable-artifact fixture'
+          product=$(git rev-parse HEAD)
+          tree=$(git rev-parse HEAD^{tree})
+          test "$(git rev-list --count "$parent..$product")" -eq 1
+          git push origin "$product:refs/heads/$TARGET_BRANCH"
+
+          node --input-type=module <<'JS' > /tmp/pc50-fixture-repair/receipt.json
+          import fs from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const sh = (...args) => execFileSync(args[0], args.slice(1), { encoding: 'utf8' }).trim();
+          const fixture = JSON.parse(fs.readFileSync(process.env.FIXTURE_PATH, 'utf8'));
+          const mod = await import(`${process.cwd()}/tools/lib/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs`);
+          const receipt = {
+            schema_version: 'pc50-frozen-fixture-repair-receipt@1',
+            parent: process.env.EXPECTED_PARENT,
+            canonical_product: process.env.CANONICAL_PRODUCT,
+            product_commit: sh('git','rev-parse','HEAD'),
+            product_tree: sh('git','rev-parse','HEAD^{tree}'),
+            changed_paths: sh('git','diff','--name-only','HEAD^','HEAD').split('\n').filter(Boolean),
+            fixture_git_blob: sh('git','rev-parse',`HEAD:${process.env.FIXTURE_PATH}`),
+            fixture_snapshot_sha256: mod.preferenceLinkageExecutableArtifactBuildDependencyEnvironmentRuntimeIdentityFixtureSnapshot(fixture),
+            fixture_errors: mod.validatePreferenceLinkageExecutableArtifactBuildDependencyEnvironmentRuntimeIdentityFixture(fixture),
+            focused_pc50: 'pass', floor_v48: 'pass', historical_floors: 'pass', no_magic_human: 'pass', release_gate: 'pass',
+            outside_human_dependency: false, graph_effect: 'none'
+          };
+          console.log(JSON.stringify(receipt, null, 2));
+          JS
+          cat /tmp/pc50-fixture-repair/receipt.json
+      - name: Upload exact repair receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc50-frozen-fixture-repair
+          path: /tmp/pc50-fixture-repair
+          if-no-files-found: error
+          retention-days: 90
