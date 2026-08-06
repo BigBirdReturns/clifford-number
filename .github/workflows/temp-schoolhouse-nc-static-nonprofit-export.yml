@@ -1,0 +1,77 @@
+name: TEMP export School.House NC static nonprofit product inputs
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-nc-static-nonprofit-export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-nc-static-nonprofit-export-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Export exact current-main custody package
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PARENT='b6d69b5502e4429e3769591b5ebd88555aad62be'
+          OUT='/tmp/schoolhouse-nc-static-nonprofit-export'
+
+          git fetch --no-tags origin main "$PARENT"
+          test "$(git rev-parse origin/main)" = "$PARENT"
+          test "$(git merge-base HEAD origin/main)" = "$PARENT"
+          test "$(git diff --name-only "$PARENT"..HEAD | sort)" = '.github/workflows/temp-schoolhouse-nc-static-nonprofit-export.yml'
+
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          git archive "$PARENT" \
+            data/intake/bvvc-defense-capital \
+            tools/validate-bvvc-defense-capital.mjs \
+            tools/validate-schoolhouse-honor-foundation-990-custody.mjs \
+            tools/build-schoolhouse-fl-corporate-identity-census-custody.mjs \
+            tools/build-schoolhouse-fl-charity-exact-query-custody.mjs \
+            tools/build-schoolhouse-archive-minimum-legal-surface-reconciliation-custody.mjs \
+            test/person-routers.test.js \
+            package.json \
+          | tar -x -C "$OUT"
+
+          {
+            printf 'canonical_parent=%s\n' "$PARENT"
+            printf 'canonical_parent_tree=%s\n' "$(git rev-parse "$PARENT^{tree}")"
+            printf 'export_carrier_head=%s\n' "$(git rev-parse HEAD)"
+            printf 'export_carrier_tree=%s\n' "$(git rev-parse 'HEAD^{tree}')"
+          } > "$OUT/EXPORT-METADATA"
+
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | sort -z \
+              | xargs -0 sha256sum \
+              > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-nc-static-nonprofit-export
+          path: /tmp/schoolhouse-nc-static-nonprofit-export
+          if-no-files-found: error
+          retention-days: 90
+          include-hidden-files: true
+          compression-level: 9
