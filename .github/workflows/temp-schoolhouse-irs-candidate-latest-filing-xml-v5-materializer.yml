@@ -15,8 +15,8 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: schoolhouse-irs-candidate-latest-filing-xml-v5-materializer-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: false
+  group: schoolhouse-irs-candidate-latest-filing-xml-v5-materializer-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
 
 jobs:
   materialize:
@@ -56,6 +56,7 @@ jobs:
           ARTIFACT_ROOT="$RUNNER_TEMP/schoolhouse-latest-filing-xml-v5-artifact"
           RECEIPT="$RUNNER_TEMP/schoolhouse-latest-filing-xml-v5-materialization-receipt"
           mkdir -p "$RECEIPT"
+          printf 'materializer_started=true\n' > "$RECEIPT/preflight.txt"
 
           cat > "$RUNNER_TEMP/permanent-paths" <<'EOF'
           data/intake/schoolhouse-irs-candidate-latest-filing-xml-v5/acquisition-SHA256SUMS
@@ -76,10 +77,22 @@ jobs:
           sed -i 's/^          //' "$RUNNER_TEMP/permanent-paths"
 
           git fetch --no-tags origin main
-          test "$(git rev-parse origin/main)" = "$BASE"
-          test "$(git rev-parse "$BASE^{tree}")" = "$BASE_TREE"
-          test "$(git merge-base HEAD origin/main)" = "$BASE"
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          LIVE_TREE="$(git rev-parse "$BASE^{tree}")"
+          MERGE_BASE="$(git merge-base HEAD origin/main)"
           TARGET_REMOTE_SHA="$(git ls-remote --heads origin "refs/heads/$TARGET" | awk '{print $1}')"
+          {
+            printf 'materializer_head=%s\n' "$(git rev-parse HEAD)"
+            printf 'live_main=%s\n' "$LIVE_MAIN"
+            printf 'expected_main=%s\n' "$BASE"
+            printf 'live_main_tree=%s\n' "$LIVE_TREE"
+            printf 'expected_main_tree=%s\n' "$BASE_TREE"
+            printf 'merge_base=%s\n' "$MERGE_BASE"
+            printf 'target_remote_sha=%s\n' "$TARGET_REMOTE_SHA"
+          } | tee -a "$RECEIPT/preflight.txt"
+          test "$LIVE_MAIN" = "$BASE"
+          test "$LIVE_TREE" = "$BASE_TREE"
+          test "$MERGE_BASE" = "$BASE"
           test "$TARGET_REMOTE_SHA" = "$BASE"
 
           mapfile -t CHANGED < <(git diff --name-only "$BASE"..HEAD | sort)
@@ -88,16 +101,25 @@ jobs:
             '.schoolhouse-irs-candidate-latest-filing-xml-v5-materializer/EXECUTE'
             '.schoolhouse-irs-candidate-latest-filing-xml-v5-materializer/product.tar.xz.b64'
           )
+          printf 'carrier_paths=%s\n' "${#CHANGED[@]}" | tee -a "$RECEIPT/preflight.txt"
+          printf '%s\n' "${CHANGED[@]}" > "$RECEIPT/carrier-paths.txt"
           test "${#CHANGED[@]}" -eq 3
           for i in "${!EXPECTED[@]}"; do test "${CHANGED[$i]}" = "${EXPECTED[$i]}"; done
           git diff --exit-code -- "$WORKFLOW" "$EXECUTE" "$BUNDLE"
 
-          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '8d708c542e632eb528cf89a79f6b1482e2495ec49d1bbd33c08c352b80963c4e'
-          test "$(stat -c%s "$BUNDLE")" = '34492'
+          BUNDLE_SHA="$(sha256sum "$BUNDLE" | awk '{print $1}')"
+          BUNDLE_BYTES="$(stat -c%s "$BUNDLE")"
+          printf 'bundle_sha256=%s\nbundle_bytes=%s\n' "$BUNDLE_SHA" "$BUNDLE_BYTES" | tee -a "$RECEIPT/preflight.txt"
+          test "$BUNDLE_SHA" = '8d708c542e632eb528cf89a79f6b1482e2495ec49d1bbd33c08c352b80963c4e'
+          test "$BUNDLE_BYTES" = '34492'
           base64 -d "$BUNDLE" > "$PACKAGE"
-          test "$(sha256sum "$PACKAGE" | awk '{print $1}')" = 'f2010b8ad9c7de91800470accaf8d9e59cc348be07edae170ac9bfd5289ca765'
-          test "$(stat -c%s "$PACKAGE")" = '25532'
-          test "$(sha256sum "$RUNNER_TEMP/permanent-paths" | awk '{print $1}')" = '4389b1e7be77f3fdf585c994d9242a42830ae4f59e596b57fb1d49cd59baffd2'
+          PACKAGE_SHA="$(sha256sum "$PACKAGE" | awk '{print $1}')"
+          PACKAGE_BYTES="$(stat -c%s "$PACKAGE")"
+          PATHS_SHA="$(sha256sum "$RUNNER_TEMP/permanent-paths" | awk '{print $1}')"
+          printf 'package_sha256=%s\npackage_bytes=%s\npath_list_sha256=%s\n' "$PACKAGE_SHA" "$PACKAGE_BYTES" "$PATHS_SHA" | tee -a "$RECEIPT/preflight.txt"
+          test "$PACKAGE_SHA" = 'f2010b8ad9c7de91800470accaf8d9e59cc348be07edae170ac9bfd5289ca765'
+          test "$PACKAGE_BYTES" = '25532'
+          test "$PATHS_SHA" = '4389b1e7be77f3fdf585c994d9242a42830ae4f59e596b57fb1d49cd59baffd2'
           tar -tJf "$PACKAGE" | sort > "$RUNNER_TEMP/package-paths"
           diff -u "$RUNNER_TEMP/permanent-paths" "$RUNNER_TEMP/package-paths"
           rm -rf "$PACKAGE_ROOT"
