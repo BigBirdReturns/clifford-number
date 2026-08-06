@@ -1,0 +1,214 @@
+name: TEMP materialize RD-04 CA-SD-WA row-state adjudication v3
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd04-ca-sd-wa-row-state-materializer-v3
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      MAIN_LEASE: 2fd346c1519b082a11c960df5a310398bb406550
+      TARGET_BRANCH: agent/ssc-rd-wave03-rd04-ca-sd-wa-row-state-adjudication-v1
+      ARCHIVE_BYTES: '31280'
+      ARCHIVE_SHA256: 8c74e65581709375d333ab009655ee5147bf85a78810fc5269892849e92555e2
+      BASE64_BYTES: '41708'
+      FILE_SET_SHA256: 8722e88d047c2cdac6fc9ee8bf47db8c2cd0f341f138c944fb6e9275312cb9f7
+      WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.yml
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+      - name: Reconstruct, qualify, and lease-publish exact ordinary product
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/rd04-row-state-product /tmp/rd04-row-state-full /tmp/rd04-row-state-publish /tmp/rd04-row-state-receipt
+          mkdir -p /tmp/rd04-row-state-product /tmp/rd04-row-state-receipt
+          python - <<'PY'
+          import base64, hashlib, json, os, re, tarfile, urllib.request
+          from pathlib import Path, PurePosixPath
+
+          specs = [
+            ('4944a59b475849d1f2d15ebc0efbaa11737f0aba',4096,'4701354822e53e2ff8626c1e59e5ce9831556a5e93ac04f126270351fdc0b34c'),
+            ('35de286f1df870840afa499f75c71f9a73d9ff99',4096,'f92af0ddde8c02e75d3b3f5c3abfc4866cad37ffa9c794200f6f82fc9794150c'),
+            ('7332cf96342c09429a5e6e141f630bd34f7e01bd',4096,'4393636dce7df7bdd78454645628738ea6894c1b25e5a773bd5ebd41bbfac2d6'),
+            ('3b0cf53b0ea471067565634f84e378a075247b88',4096,'dca455fe96d4f8fe9100a9c9f73f2cac1a55109def0fe8c28a39d192146795dd'),
+            ('c82b1671286f266ceeb333d01b44d8105f9c5e40',4096,'2b8c92ece91888f5cf0fded27a4da161ef7073c4d4cea18fba36ee3392f38aa8'),
+            ('27b5786d6afece074a08d2e9b168613066a098f7',8192,'5f65e356ad7edd76ed65542ca1bfa3f444d533a7b527c57cbbfe47fd895d119a'),
+            ('7a1c5eab206eef0c1c91a0aa93e6dacad6b26f83',8192,'da5f3ddb2586cd577c572b31384362c18ae4ada8a8f1282677cac9d92d6037ca'),
+            ('dcff23aef3789f0352f2d215bdc607db5e52dcb6',4844,'5493c4322122098ce0e92260fac56ab8eb2a8fd841b5223586c795e0bb9cbd40'),
+          ]
+          token, repo = os.environ['GH_TOKEN'], os.environ['GH_REPOSITORY']
+          text_parts, segment_receipts = [], []
+          for ordinal, (sha, size, expected_digest) in enumerate(specs):
+              req = urllib.request.Request(
+                  f'https://api.github.com/repos/{repo}/git/blobs/{sha}',
+                  headers={'Authorization':f'Bearer {token}','Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','User-Agent':'ssc-rd04-row-state-v3'},
+              )
+              with urllib.request.urlopen(req, timeout=60) as response:
+                  payload = json.load(response)
+              raw = base64.b64decode(''.join(payload['content'].split()), validate=True)
+              git_sha = hashlib.sha1(f'blob {len(raw)}\0'.encode()+raw).hexdigest()
+              digest = hashlib.sha256(raw).hexdigest()
+              if payload.get('encoding') != 'base64' or git_sha != sha or len(raw) != size or digest != expected_digest:
+                  raise SystemExit(f'segment custody mismatch ordinal={ordinal}')
+              text = raw.decode('ascii')
+              if not re.fullmatch(r'[A-Za-z0-9+/=]+', text):
+                  raise SystemExit(f'segment {ordinal} contains non-base64 text')
+              text_parts.append(text)
+              segment_receipts.append({'ordinal':ordinal,'sha':sha,'bytes':size,'sha256':digest})
+          joined = ''.join(text_parts)
+          if len(joined) != int(os.environ['BASE64_BYTES']):
+              raise SystemExit(f'base64 denominator drift: {len(joined)}')
+          archive = base64.b64decode(joined, validate=True)
+          digest = hashlib.sha256(archive).hexdigest()
+          if len(archive) != int(os.environ['ARCHIVE_BYTES']) or digest != os.environ['ARCHIVE_SHA256']:
+              raise SystemExit(f'archive custody mismatch bytes={len(archive)} sha256={digest}')
+          archive_path = Path('/tmp/rd04-row-state-product/product.tar.xz')
+          archive_path.write_bytes(archive)
+          with tarfile.open(archive_path, 'r:xz') as tf:
+              members = tf.getmembers()
+              names = sorted(m.name for m in members if m.isfile())
+              if len(names) != 14 or os.environ['WORKFLOW_PATH'] not in names:
+                  raise SystemExit(f'archive path denominator drift: {names}')
+              for member in members:
+                  p = PurePosixPath(member.name)
+                  if p.is_absolute() or '..' in p.parts or member.issym() or member.islnk() or member.isdev():
+                      raise SystemExit(f'unsafe archive member: {member.name}')
+              tf.extractall('/tmp/rd04-row-state-product/tree', filter='data')
+          Path('/tmp/rd04-row-state-product/paths.json').write_text(json.dumps(names, indent=2)+'\n')
+          Path('/tmp/rd04-row-state-receipt/receipt.json').write_text(json.dumps({
+              'schema_version':'ssc-rd04-wave03-ca-sd-wa-row-state-materialization-receipt@1',
+              'main_lease':os.environ['MAIN_LEASE'],'target_branch':os.environ['TARGET_BRANCH'],
+              'segments':segment_receipts,'base64_bytes':len(joined),'archive_bytes':len(archive),
+              'archive_sha256':digest,'permanent_paths':len(names),'status':'archive_reconstructed'
+          }, indent=2)+'\n')
+          PY
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$MAIN_LEASE"
+          ! git ls-remote --exit-code --heads origin "refs/heads/$TARGET_BRANCH" >/dev/null 2>&1
+
+          git worktree add --detach /tmp/rd04-row-state-full "$MAIN_LEASE"
+          tar -C /tmp/rd04-row-state-product/tree -cf - . | tar -C /tmp/rd04-row-state-full -xf -
+          cd /tmp/rd04-row-state-full
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          paths = json.loads(Path('/tmp/rd04-row-state-product/paths.json').read_text())
+          for path in paths:
+              if subprocess.run(['git','cat-file','-e',f"HEAD:{path}"],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode == 0:
+                  raise SystemExit(f'product path already exists on main: {path}')
+          subprocess.check_call(['git','add','--',*paths])
+          rows = subprocess.check_output(['git','diff','--cached','--name-status'],text=True).splitlines()
+          observed=[]
+          for row in rows:
+              status,path=row.split('\t',1)
+              if status!='A': raise SystemExit(f'non-addition path: {row}')
+              observed.append(path)
+          if sorted(observed)!=sorted(paths): raise SystemExit(f'full path-set mismatch: {observed}')
+          PY
+          git commit -m 'Qualify RD-04 CA-SD-WA row-state adjudication'
+          FULL_HEAD="$(git rev-parse HEAD)"
+          FULL_TREE="$(git rev-parse 'HEAD^{tree}')"
+
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.mjs
+          python - <<'PY'
+          import json, jsonschema
+          from pathlib import Path
+          schema=json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.schema.json').read_text())
+          paths=sorted(Path('data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication').glob('*.json'))
+          if len(paths)!=8: raise SystemExit(f'JSON object denominator drift: {len(paths)}')
+          validator=jsonschema.Draft202012Validator(schema)
+          for path in paths: validator.validate(json.loads(path.read_text()))
+          print('closed_schema_validation=pass objects=8')
+          PY
+          node test/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+          git restore --staged --worktree .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          git worktree add --detach /tmp/rd04-row-state-publish "$MAIN_LEASE"
+          cd /tmp/rd04-row-state-publish
+          python - <<'PY'
+          import json, shutil, subprocess
+          from pathlib import Path
+          paths=json.loads(Path('/tmp/rd04-row-state-product/paths.json').read_text())
+          ordinary=[p for p in paths if not p.startswith('.github/workflows/')]
+          for rel in ordinary:
+              src=Path('/tmp/rd04-row-state-product/tree')/rel; dst=Path('/tmp/rd04-row-state-publish')/rel
+              dst.parent.mkdir(parents=True,exist_ok=True); shutil.copyfile(src,dst)
+          subprocess.check_call(['git','add','--',*ordinary])
+          rows=subprocess.check_output(['git','diff','--cached','--name-status'],text=True).splitlines()
+          observed=[]
+          for row in rows:
+              status,path=row.split('\t',1)
+              if status!='A': raise SystemExit(f'non-addition ordinary path: {row}')
+              observed.append(path)
+          if sorted(observed)!=sorted(ordinary): raise SystemExit(f'ordinary path-set mismatch: {observed}')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Stage RD-04 CA-SD-WA row-state adjudication ordinary paths'
+          PUBLISHED_HEAD="$(git rev-parse HEAD)"
+          PUBLISHED_TREE="$(git rev-parse 'HEAD^{tree}')"
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$MAIN_LEASE"
+          ! git ls-remote --exit-code --heads origin "refs/heads/$TARGET_BRANCH" >/dev/null 2>&1
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$PUBLISHED_HEAD"
+
+          python - "$FULL_HEAD" "$FULL_TREE" "$PUBLISHED_HEAD" "$PUBLISHED_TREE" <<'PY'
+          import json,sys
+          from pathlib import Path
+          path=Path('/tmp/rd04-row-state-receipt/receipt.json'); receipt=json.loads(path.read_text())
+          receipt.update({'full_qualified_head':sys.argv[1],'full_qualified_tree':sys.argv[2],
+            'published_ordinary_head':sys.argv[3],'published_ordinary_tree':sys.argv[4],
+            'focused_validation':'pass','closed_schema_objects':8,'adversarial_mutations_refused':646,
+            'no_magic_human':'pass','complete_release_gate':'pass','clean_replay':'pass',
+            'status':'ordinary_product_published'})
+          path.write_text(json.dumps(receipt,indent=2)+'\n'); print(json.dumps(receipt,indent=2))
+          PY
+      - name: Preserve exact materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-ca-sd-wa-row-state-materializer-receipt
+          path: /tmp/rd04-row-state-receipt
+          if-no-files-found: error
+          retention-days: 90
