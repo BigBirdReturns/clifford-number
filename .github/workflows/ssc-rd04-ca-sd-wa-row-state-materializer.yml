@@ -1,0 +1,94 @@
+name: TEMP materialize RD-04 CA-SD-WA row-state adjudication
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd04-ca-sd-wa-row-state-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      MAIN_LEASE: dc0910f8ba00580a4305e5163c29aff6f0c05bf5
+      TARGET_BRANCH: agent/ssc-rd-wave03-rd04-ca-sd-wa-row-state-adjudication-v1
+      ARCHIVE_BYTES: '31280'
+      ARCHIVE_SHA256: 8c74e65581709375d333ab009655ee5147bf85a78810fc5269892849e92555e2
+      BASE64_BYTES: '41708'
+      FILE_SET_SHA256: 8722e88d047c2cdac6fc9ee8bf47db8c2cd0f341f138c944fb6e9275312cb9f7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+      - name: Reconstruct and execute exact immutable materializer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import base64, hashlib, json, os, urllib.request
+          from pathlib import Path
+
+          specs = [
+              {'sha': 'edf83410384871ce4d72dc3fcf1909a3b6547bfc', 'bytes': 8000, 'sha256': '05139a0e848131fb9451cba290667e0ed9399b01a00e580f0fd86dd08446572c'},
+              {'sha': '669b4ffa821aab1cd0e0f00e6b5e8c15d2ea75f0', 'bytes': 8000, 'sha256': '72579664dd821c9ae77b60c9deda77cbe1c57f08579312d4cb5d0fbd2ab1ac1e'},
+              {'sha': 'c53b7c5ad203fcdf1c561965aba5e8b35609e6bd', 'bytes': 6136, 'sha256': '501b435a97994317371bdc28b2b844e8062e0361163bcf34d591f97edf6bedd8'},
+          ]
+          token = os.environ['GH_TOKEN']
+          repo = os.environ['GH_REPOSITORY']
+          chunks = []
+          receipts = []
+          for ordinal, spec in enumerate(specs):
+              req = urllib.request.Request(
+                  f"https://api.github.com/repos/{repo}/git/blobs/{spec['sha']}",
+                  headers={
+                      'Authorization': f'Bearer {token}',
+                      'Accept': 'application/vnd.github+json',
+                      'X-GitHub-Api-Version': '2022-11-28',
+                      'User-Agent': 'ssc-rd04-row-state-bootstrap',
+                  },
+              )
+              with urllib.request.urlopen(req, timeout=60) as response:
+                  payload = json.load(response)
+              if payload.get('encoding') != 'base64':
+                  raise SystemExit(f"script chunk {ordinal} unexpected encoding")
+              raw = base64.b64decode(''.join(payload['content'].split()), validate=True)
+              git_sha = hashlib.sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest()
+              digest = hashlib.sha256(raw).hexdigest()
+              if git_sha != spec['sha'] or len(raw) != spec['bytes'] or digest != spec['sha256']:
+                  raise SystemExit(f"script chunk custody mismatch ordinal={ordinal}")
+              chunks.append(raw)
+              receipts.append({'ordinal': ordinal, **spec})
+          script = b''.join(chunks)
+          digest = hashlib.sha256(script).hexdigest()
+          if len(script) != 22136 or digest != '0c681fba5c1b35185c48a0252cf5e1e29c57e02ee2a94fa06168c95074b806b2':
+              raise SystemExit(f"materializer script mismatch bytes={len(script)} sha256={digest}")
+          path = Path('/tmp/ssc-rd04-row-state-materializer.sh')
+          path.write_bytes(script)
+          path.chmod(0o700)
+          print(json.dumps({'script_bytes': len(script), 'script_sha256': digest, 'chunks': receipts}, indent=2))
+          PY
+          /tmp/ssc-rd04-row-state-materializer.sh
+      - name: Preserve exact materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-ca-sd-wa-row-state-materializer-receipt
+          path: /tmp/rd04-row-state-materializer/receipt
+          if-no-files-found: error
+          retention-days: 90
