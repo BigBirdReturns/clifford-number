@@ -1,0 +1,352 @@
+name: TEMP finalize School.House IRS candidate filing-index custody
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-irs-candidate-filing-index-finalizer.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: schoolhouse-irs-candidate-filing-index-finalizer-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  finalize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-irs-candidate-filing-index-census-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Check out exact finalizer carrier
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Finalize exact permanent product
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          CARRIER='agent/schoolhouse-irs-candidate-filing-index-census-v1'
+          MATERIALIZER_REPLAY='agent/schoolhouse-irs-candidate-filing-index-materializer-replay-v1'
+          PRODUCT='agent/schoolhouse-irs-candidate-filing-index-custody-product-v1'
+          PRODUCT_TITLE='Preserve School.House IRS candidate filing-index custody'
+          EXPORT_PR=1256
+          RECEIPT="$RUNNER_TEMP/schoolhouse-irs-candidate-filing-index-finalization-receipt"
+          mkdir -p "$RECEIPT"
+
+          gh auth status
+          git fetch --prune --no-tags origin main "$CARRIER" || true
+          CARRIER_SHA="$(git rev-parse HEAD)"
+          CARRIER_PR="${{ github.event.pull_request.number || 0 }}"
+          if [[ "$CARRIER_PR" = '0' ]]; then
+            CARRIER_PR="$(gh pr list --repo "$REPO" --head "$CARRIER" --state open --json number --jq '.[0].number // 0')"
+          fi
+
+          materializer_workflow_id="$(gh workflow list --repo "$REPO" --all --json id,name --jq '.[] | select(.name=="TEMP materialize School.House IRS candidate filing-index custody") | .id' | head -1)"
+          [[ -n "$materializer_workflow_id" ]]
+
+          ensure_product_branch() {
+            git fetch --prune --no-tags origin "$PRODUCT" 2>/dev/null && return 0
+
+            # Recover the exact two-workflow carrier revision from this branch's first parent chain.
+            MATERIALIZER_COMMIT=''
+            while read -r commit; do
+              mapfile -t paths < <(git diff-tree --no-commit-id --name-only -r "$commit" | sort)
+              if git cat-file -e "$commit:.github/workflows/temp-schoolhouse-irs-candidate-filing-index-census.yml" 2>/dev/null && \
+                 git cat-file -e "$commit:.github/workflows/temp-schoolhouse-irs-candidate-filing-index-materializer.yml" 2>/dev/null && \
+                 ! git cat-file -e "$commit:.github/workflows/temp-schoolhouse-irs-candidate-filing-index-finalizer.yml" 2>/dev/null; then
+                MATERIALIZER_COMMIT="$commit"
+                break
+              fi
+            done < <(git rev-list HEAD)
+            [[ -n "$MATERIALIZER_COMMIT" ]]
+
+            current_ref="$(gh api "repos/$REPO/git/ref/heads/$MATERIALIZER_REPLAY" --jq '.object.sha' 2>/dev/null || true)"
+            if [[ -z "$current_ref" ]]; then
+              gh api -X POST "repos/$REPO/git/refs" \
+                -f ref="refs/heads/$MATERIALIZER_REPLAY" \
+                -f sha="$MATERIALIZER_COMMIT" >/dev/null
+            elif [[ "$current_ref" != "$MATERIALIZER_COMMIT" ]]; then
+              gh api -X PATCH "repos/$REPO/git/refs/heads/$MATERIALIZER_REPLAY" \
+                -f sha="$MATERIALIZER_COMMIT" -F force=true >/dev/null
+            fi
+
+            dispatch_started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            gh workflow run "$materializer_workflow_id" --repo "$REPO" --ref "$MATERIALIZER_REPLAY"
+            materializer_run=''
+            for _ in $(seq 1 180); do
+              materializer_run="$(gh api "repos/$REPO/actions/workflows/$materializer_workflow_id/runs?branch=$MATERIALIZER_REPLAY&event=workflow_dispatch&per_page=20" \
+                --jq --arg sha "$MATERIALIZER_COMMIT" --arg since "$dispatch_started" \
+                '[.workflow_runs[] | select(.head_sha==$sha and .created_at >= $since)] | sort_by(.created_at) | last | .id // empty' || true)"
+              [[ -n "$materializer_run" ]] && break
+              sleep 2
+            done
+            [[ -n "$materializer_run" ]]
+            for _ in $(seq 1 360); do
+              status="$(gh api "repos/$REPO/actions/runs/$materializer_run" --jq '.status')"
+              conclusion="$(gh api "repos/$REPO/actions/runs/$materializer_run" --jq '.conclusion // ""')"
+              [[ "$status" = 'completed' ]] && { [[ "$conclusion" = 'success' ]] || exit 71; break; }
+              sleep 5
+            done
+            git fetch --prune --no-tags origin "$PRODUCT"
+            printf '%s\n' "$materializer_run" > "$RECEIPT/materializer-recovery-run"
+          }
+
+          ensure_product_branch
+          git fetch --prune --no-tags origin main "$PRODUCT"
+          PRODUCT_SHA="$(git rev-parse "origin/$PRODUCT")"
+          PRODUCT_TREE="$(git rev-parse "$PRODUCT_SHA^{tree}")"
+          PRODUCT_PARENT="$(git rev-parse "$PRODUCT_SHA^")"
+          PRODUCT_PARENT_TREE="$(git rev-parse "$PRODUCT_PARENT^{tree}")"
+          test "$(git rev-list --count "$PRODUCT_PARENT".."$PRODUCT_SHA")" = '1'
+          test "$(git rev-list --parents -n 1 "$PRODUCT_SHA" | wc -w | tr -d ' ')" = '2'
+          mapfile -t PRODUCT_PATHS < <(git diff --name-only "$PRODUCT_PARENT".."$PRODUCT_SHA" | sort)
+          test "${#PRODUCT_PATHS[@]}" -eq 14
+          test -z "$(printf '%s\n' "${PRODUCT_PATHS[@]}" | grep '^\.github/workflows/' || true)"
+          test -z "$(printf '%s\n' "${PRODUCT_PATHS[@]}" | grep '^\.schoolhouse-' || true)"
+
+          git checkout --detach "$PRODUCT_SHA"
+          node --check tools/validate-schoolhouse-irs-candidate-filing-index-custody.mjs
+          node --check tools/build-schoolhouse-irs-candidate-filing-index-custody.mjs
+          node --check tools/test-schoolhouse-irs-candidate-filing-index-custody.mjs
+          node tools/build-schoolhouse-irs-candidate-filing-index-custody.mjs --check
+          node tools/test-schoolhouse-irs-candidate-filing-index-custody.mjs
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          # Qualify the exact product in a synthetic merge with current main.
+          git checkout --detach origin/main
+          LIVE_MAIN="$(git rev-parse HEAD)"
+          LIVE_MAIN_TREE="$(git rev-parse 'HEAD^{tree}')"
+          mapfile -t INTERVENING < <(git diff --name-only "$PRODUCT_PARENT".."$LIVE_MAIN" | sort)
+          overlap="$(comm -12 <(printf '%s\n' "${PRODUCT_PATHS[@]}" | sort) <(printf '%s\n' "${INTERVENING[@]}" | sort) | wc -l | tr -d ' ')"
+          test "$overlap" = '0'
+          git merge --no-commit --no-ff "$PRODUCT_SHA"
+          node tools/validate-schoolhouse-irs-candidate-filing-index-custody.mjs
+          node tools/test-schoolhouse-irs-candidate-filing-index-custody.mjs
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+          git merge --abort
+          test "$(git rev-parse HEAD)" = "$LIVE_MAIN"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          SUMMARY='data/intake/schoolhouse-irs-candidate-filing-index-census/summary.json'
+          CUSTODY='data/intake/schoolhouse-irs-candidate-filing-index-census/source-custody.json'
+          git show "$PRODUCT_SHA:$SUMMARY" > "$RECEIPT/summary.json"
+          git show "$PRODUCT_SHA:$CUSTODY" > "$RECEIPT/source-custody.json"
+          ROWS="$(jq -r '.official_index_rows_scanned' "$RECEIPT/summary.json")"
+          MATCHES="$(jq -r '.exact_candidate_filing_rows' "$RECEIPT/summary.json")"
+          MATCHED_EINS="$(jq -r '.unique_candidate_eins_with_filing_rows' "$RECEIPT/summary.json")"
+          AVAILABLE="$(jq -r '.available_index_years | length' "$RECEIPT/summary.json")"
+          UNAVAILABLE="$(jq -r '.unavailable_index_years | length' "$RECEIPT/summary.json")"
+          ACQ_RUN="$(jq -r '.acquisition_workflow_run_id' "$RECEIPT/source-custody.json")"
+          ACQ_ARTIFACT="$(jq -r '.acquisition_artifact_id' "$RECEIPT/source-custody.json")"
+          ACQ_DIGEST="$(jq -r '.acquisition_artifact_digest' "$RECEIPT/source-custody.json")"
+
+          cat > "$RECEIPT/product-pr-body.md" <<EOF
+          ## Product
+
+          Adds one clean, workflow-free, fourteen-path permanent custody product for the exact official Form 990 filing-index intersection of the sealed School.House IRS phrase-candidate denominator.
+
+          \`\`\`text
+          canonical product parent:          $PRODUCT_PARENT
+          product commit:                    $PRODUCT_SHA
+          product tree:                      $PRODUCT_TREE
+          permanent changed paths:           14
+          workflow/carrier paths:             0
+          candidate rows:                   641
+          unique candidate EINs:            438
+          official index years:       2019–2026
+          available/unavailable years: $AVAILABLE / $UNAVAILABLE
+          official index rows screened:      $ROWS
+          exact filing-index rows:           $MATCHES
+          candidate EINs with filing rows:   $MATCHED_EINS
+          acquisition/materializer run:      $ACQ_RUN
+          acquisition artifact:              $ACQ_ARTIFACT
+          artifact digest:                   $ACQ_DIGEST
+          \`\`\`
+
+          Exact filing-index rows are filing-route custody for pre-existing phrase candidates only. They do not identify the public School.House legal entity or establish exemption, fiscal sponsorship, grants, funding, governance, ownership, control, related-party status, or any Clifford hop. Zero rows and unavailable indexes are typed source custody rather than absence evidence.
+
+          No XML, batch ZIP, successor URL, query, form, cookie, account, payment, subscription, raw annual index, nonmatching row, street address, contact detail, preparer value, private support, identity, relationship, negative-existence claim, outside-human dependency, publication, adoption, or graph authority is retained.
+
+          The exact product head passed its standalone builder and validator, adversarial mutation refusal, no-magic-human gate, complete repository release gate, and a synthetic current-main merge replay before hosted qualification.
+          EOF
+          sed -i 's/^          //' "$RECEIPT/product-pr-body.md"
+
+          PRODUCT_PR="$(gh pr list --repo "$REPO" --head "$PRODUCT" --state open --json number --jq '.[0].number // 0')"
+          if [[ "$PRODUCT_PR" = '0' ]]; then
+            PRODUCT_PR="$(gh pr create --repo "$REPO" --head "$PRODUCT" --base main --title "$PRODUCT_TITLE" --body-file "$RECEIPT/product-pr-body.md" --json number --jq '.number' 2>/dev/null || true)"
+            if [[ -z "$PRODUCT_PR" ]]; then
+              PRODUCT_PR="$(gh pr list --repo "$REPO" --head "$PRODUCT" --state open --json number --jq '.[0].number // 0')"
+            fi
+          else
+            gh pr edit "$PRODUCT_PR" --repo "$REPO" --title "$PRODUCT_TITLE" --body-file "$RECEIPT/product-pr-body.md"
+          fi
+          test "$PRODUCT_PR" != '0'
+
+          workflow_id_by_name() {
+            gh workflow list --repo "$REPO" --all --json id,name --jq --arg n "$1" '.[] | select(.name==$n) | .id' | head -1
+          }
+          run_for_sha() {
+            local wid="$1" sha="$2"
+            gh api "repos/$REPO/actions/workflows/$wid/runs?per_page=100" \
+              --jq --arg sha "$sha" '[.workflow_runs[] | select(.head_sha==$sha and .conclusion=="success")] | sort_by(.created_at) | last | .id // empty'
+          }
+          wait_exact_success() {
+            local wid="$1" ref="$2" sha="$3" label="$4"
+            local run
+            run="$(run_for_sha "$wid" "$sha" || true)"
+            if [[ -z "$run" ]]; then
+              gh workflow run "$wid" --repo "$REPO" --ref "$ref"
+              for _ in $(seq 1 180); do
+                run="$(gh api "repos/$REPO/actions/workflows/$wid/runs?branch=$ref&per_page=100" \
+                  --jq --arg sha "$sha" '[.workflow_runs[] | select(.head_sha==$sha)] | sort_by(.created_at) | last | .id // empty' || true)"
+                [[ -n "$run" ]] && break
+                sleep 2
+              done
+              [[ -n "$run" ]]
+              retried=0
+              for _ in $(seq 1 720); do
+                status="$(gh api "repos/$REPO/actions/runs/$run" --jq '.status')"
+                conclusion="$(gh api "repos/$REPO/actions/runs/$run" --jq '.conclusion // ""')"
+                if [[ "$status" = 'completed' ]]; then
+                  if [[ "$conclusion" = 'success' ]]; then break; fi
+                  if [[ "$retried" = '0' ]]; then
+                    gh api -X POST "repos/$REPO/actions/runs/$run/rerun-failed-jobs" >/dev/null || true
+                    retried=1
+                  else
+                    exit 72
+                  fi
+                fi
+                sleep 5
+              done
+            fi
+            printf '%s=%s\n' "$label" "$run" >> "$RECEIPT/hosted-runs"
+          }
+
+          RELEASE_WID="$(workflow_id_by_name 'Release checks')"
+          HUMAN_WID="$(workflow_id_by_name 'No magic human gate')"
+          [[ -n "$RELEASE_WID" && -n "$HUMAN_WID" ]]
+          wait_exact_success "$RELEASE_WID" "$PRODUCT" "$PRODUCT_SHA" product_release_run
+          wait_exact_success "$HUMAN_WID" "$PRODUCT" "$PRODUCT_SHA" product_no_magic_human_run
+
+          pr_head="$(gh pr view "$PRODUCT_PR" --repo "$REPO" --json headRefOid --jq '.headRefOid')"
+          test "$pr_head" = "$PRODUCT_SHA"
+          merge_json="$(gh api -X PUT "repos/$REPO/pulls/$PRODUCT_PR/merge" \
+            -f sha="$PRODUCT_SHA" \
+            -f merge_method='merge' \
+            -f commit_title="$PRODUCT_TITLE (#$PRODUCT_PR)" \
+            -f commit_message='Merge the exact one-parent, fourteen-path IRS candidate filing-index custody product after standalone and synthetic-current-main validation, adversarial refusal, no-magic-human, the complete release gate, and successful hosted exact-head qualification. Preserve filing-route custody only, zero identity or relationship admissions, no outside-human dependency, and no publication, adoption, or graph effect.')"
+          test "$(jq -r '.merged' <<<"$merge_json")" = 'true'
+          MERGE_SHA="$(jq -r '.sha' <<<"$merge_json")"
+          test "$MERGE_SHA" != 'null'
+
+          git fetch --prune --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$MERGE_SHA"
+          git merge-base --is-ancestor "$PRODUCT_SHA" "$MERGE_SHA"
+          git checkout --detach "$MERGE_SHA"
+          node tools/validate-schoolhouse-irs-candidate-filing-index-custody.mjs
+          node tools/test-schoolhouse-irs-candidate-filing-index-custody.mjs
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          wait_exact_success "$RELEASE_WID" main "$MERGE_SHA" postmerge_release_run
+          wait_exact_success "$HUMAN_WID" main "$MERGE_SHA" postmerge_no_magic_human_run
+
+          if [[ "$CARRIER_PR" != '0' ]]; then
+            cat > "$RECEIPT/carrier-body.md" <<EOF
+          Execution-only IRS filing-index acquisition/materialization/finalization carrier. **Never merge.**
+
+          The exact 641-row / 438-EIN denominator was intersected with the eight official 2019–2026 Form 990 indexes, rebuilt as one workflow-free fourteen-path product, qualified on its exact head and in current-main composition, and merged through PR #$PRODUCT_PR.
+
+          \`\`\`text
+          acquisition/materializer run:      $ACQ_RUN
+          acquisition artifact:              $ACQ_ARTIFACT
+          artifact digest:                   $ACQ_DIGEST
+          official index rows screened:      $ROWS
+          exact filing-index rows:           $MATCHES
+          candidate EINs with filing rows:   $MATCHED_EINS
+          product commit:                    $PRODUCT_SHA
+          product tree:                      $PRODUCT_TREE
+          merge commit:                      $MERGE_SHA
+          \`\`\`
+
+          This carrier creates no permanent source, identity, relationship, absence, publication, adoption, or graph authority and is closed unmerged.
+          EOF
+            sed -i 's/^          //' "$RECEIPT/carrier-body.md"
+            gh pr edit "$CARRIER_PR" --repo "$REPO" --body-file "$RECEIPT/carrier-body.md"
+            gh pr close "$CARRIER_PR" --repo "$REPO"
+          fi
+
+          if gh pr view "$EXPORT_PR" --repo "$REPO" --json state --jq '.state' >/dev/null 2>&1; then
+            cat > "$RECEIPT/export-body.md" <<EOF
+          Execution-only canonical export. **Never merge.**
+
+          The checksum-bound export from run 31084621282 and artifact 8960875878 supplied construction input for the exact IRS candidate filing-index lane. The resulting workflow-free fourteen-path product merged through PR #$PRODUCT_PR as $MERGE_SHA.
+
+          The export created no evidentiary, identity, relationship, publication, adoption, or graph authority and is closed unmerged.
+          EOF
+            sed -i 's/^          //' "$RECEIPT/export-body.md"
+            gh pr edit "$EXPORT_PR" --repo "$REPO" --body-file "$RECEIPT/export-body.md" || true
+            gh pr close "$EXPORT_PR" --repo "$REPO" || true
+          fi
+
+          if gh api "repos/$REPO/git/ref/heads/$MATERIALIZER_REPLAY" >/dev/null 2>&1; then
+            gh api -X DELETE "repos/$REPO/git/refs/heads/$MATERIALIZER_REPLAY" >/dev/null || true
+          fi
+
+          jq -n \
+            --arg state 'merged_and_carriers_retired' \
+            --arg carrier_head "$CARRIER_SHA" \
+            --argjson carrier_pr "$CARRIER_PR" \
+            --argjson product_pr "$PRODUCT_PR" \
+            --arg product_parent "$PRODUCT_PARENT" \
+            --arg product_parent_tree "$PRODUCT_PARENT_TREE" \
+            --arg product_commit "$PRODUCT_SHA" \
+            --arg product_tree "$PRODUCT_TREE" \
+            --arg merge_commit "$MERGE_SHA" \
+            --arg live_main_before "$LIVE_MAIN" \
+            --arg live_main_tree_before "$LIVE_MAIN_TREE" \
+            --argjson official_index_rows_screened "$ROWS" \
+            --argjson filing_index_match_rows "$MATCHES" \
+            --argjson candidate_eins_with_filing_rows "$MATCHED_EINS" \
+            --argjson available_index_years "$AVAILABLE" \
+            --argjson unavailable_index_years "$UNAVAILABLE" \
+            --argjson acquisition_run "$ACQ_RUN" \
+            --argjson acquisition_artifact "$ACQ_ARTIFACT" \
+            --arg acquisition_artifact_digest "$ACQ_DIGEST" \
+            --argjson permanent_changed_paths 14 \
+            '{state:$state,carrier_pr:$carrier_pr,carrier_head:$carrier_head,product_pr:$product_pr,product_parent:$product_parent,product_parent_tree:$product_parent_tree,product_commit:$product_commit,product_tree:$product_tree,merge_commit:$merge_commit,live_main_before:$live_main_before,live_main_tree_before:$live_main_tree_before,permanent_changed_paths:$permanent_changed_paths,candidate_rows:641,unique_candidate_eins:438,declared_index_years:[2019,2020,2021,2022,2023,2024,2025,2026],available_index_years:$available_index_years,unavailable_index_years:$unavailable_index_years,official_index_rows_screened:$official_index_rows_screened,filing_index_match_rows:$filing_index_match_rows,candidate_eins_with_filing_rows:$candidate_eins_with_filing_rows,acquisition_run:$acquisition_run,acquisition_artifact:$acquisition_artifact,acquisition_artifact_digest:$acquisition_artifact_digest,xml_fetches:0,batch_zip_fetches:0,successor_fetches:0,identities_admitted:0,relationships_admitted:0,negative_existence_claims:0,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+            > "$RECEIPT/finalization-receipt.json"
+          sha256sum "$RECEIPT"/* > "$RECEIPT/SHA256SUMS"
+          cat "$RECEIPT/finalization-receipt.json"
+
+      - name: Upload exact finalization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-candidate-filing-index-finalization-receipt
+          path: ${{ runner.temp }}/schoolhouse-irs-candidate-filing-index-finalization-receipt
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
