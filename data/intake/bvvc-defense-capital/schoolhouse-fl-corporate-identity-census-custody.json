@@ -1,0 +1,128 @@
+{
+  "schema_version": "schoolhouse-fl-corporate-identity-census-custody@1",
+  "as_of": "2026-08-05",
+  "canonical_parent": {
+    "commit": "e46d4aa98955e890a1bd2820dc43c52bc256490e",
+    "tree": "f6110927bb6a0241169f1e915db732e41fcb52cf"
+  },
+  "acquisitions": {
+    "unauthenticated_preflight": {
+      "workflow_run_id": 31055609795,
+      "state": "provider_http_403_before_source_scan",
+      "source_scan_started": false,
+      "source_rows_scanned": 0,
+      "identity_effect": "none"
+    },
+    "authenticated_complete_census": {
+      "workflow_run_id": 31056239350,
+      "workflow_head": "fab302a769eff491f0caa363a3a565ec828e32e6",
+      "artifact_id": 8950526654,
+      "artifact_digest": "sha256:98925c7a750f23cf8ed10fb1123ed0d79d78dcca79d4c67a2b0e26ed86146746",
+      "artifact_manifest_sha256": "51b7f22eb650d5f00c1de1aa1bd39cf7308bdecdf5994e339d4e277e466db388",
+      "artifact_sha256sums_sha256": "856cb0f0461c37fbab6b07cd5c68988c1b6dd14a13a642400c338c1bb0169f34",
+      "transport_profile": "public_basic_auth_https_head_plus_ipv4_http1_1_ranges",
+      "public_credentials_used": true,
+      "public_credential_password_retained": false
+    }
+  },
+  "counts": {
+    "source_bytes": 1819049954,
+    "remote_zip_members": 10,
+    "partitions_scanned": 10,
+    "range_requests": 31,
+    "source_rows_scanned": 12808196,
+    "candidate_rows": 300,
+    "unique_candidate_documents": 300,
+    "corporate_name_schoolhouse_phrase_rows": 278,
+    "corporate_name_exact_public_brand_base_rows": 4,
+    "corporate_name_schoolhouse_1776_rows": 0,
+    "source_listed_person_match_rows": 22,
+    "name_and_person_overlap_rows": 0,
+    "active_candidate_rows": 130,
+    "nonprofit_candidate_rows": 43,
+    "filed_2023_or_later_candidate_rows": 74,
+    "principal_city_exact_tampa_candidate_rows": 9,
+    "fei_present_candidate_rows": 234,
+    "query_submissions": 0,
+    "identity_admitted_rows": 0,
+    "negative_existence_claims_created": 0
+  },
+  "source_contract": {
+    "source_url": "https://sftp.floridados.gov/Public/doc/quarterly/cor/cordata.zip",
+    "source_last_modified": "Fri, 10 Jul 2026 17:41:15 GMT",
+    "central_directory_range": [
+      1819049112,
+      1819049931
+    ],
+    "central_directory_sha256": "5524144b32429b336a2799a164f4fa5278e7825023fff638d65e8f8bdc577330",
+    "record_length": 1440,
+    "all_ten_partitions_selected": true,
+    "fixed_public_brand_variants": [
+      "School.House",
+      "School House",
+      "Schoolhouse",
+      "SchoolHouse 1776"
+    ],
+    "person_match_rule": "exact public-label token multiset, order-insensitive; no nickname or legal-name expansion",
+    "source_listed_person_targets": [
+      "Joe Musselman",
+      "Alex Martin",
+      "Leyla Gladish",
+      "Nicole Nsam"
+    ]
+  },
+  "adjudication": {
+    "identity_state": "unresolved_after_complete_florida_corporate_name_and_source_listed_person_census_no_cross_signal_identity_admitted",
+    "exact_public_brand_base_candidates": 4,
+    "all_exact_public_brand_base_candidates_inactive": true,
+    "source_listed_person_match_rows": 22,
+    "all_source_listed_person_matches_are_alex_martin": true,
+    "name_and_person_overlap_rows": 0,
+    "nonprofit_tampa_rows": 0,
+    "public_schoolhouse_identity_admitted": false,
+    "negative_existence_claim_created": false
+  },
+  "files": {
+    "source_receipt": "schoolhouse-fl-corporate-identity-census-source-receipt.json",
+    "remote_zip_index": "schoolhouse-fl-corporate-identity-census-remote-zip-index.json",
+    "range_request_receipts": "schoolhouse-fl-corporate-identity-census-range-request-receipts.jsonl",
+    "member_receipts": "schoolhouse-fl-corporate-identity-census-member-receipts.jsonl",
+    "target_matrix": "schoolhouse-fl-corporate-identity-census-target-matrix.json",
+    "candidate_records": "schoolhouse-fl-corporate-identity-census-candidate-records.jsonl",
+    "adjudication": "schoolhouse-fl-corporate-identity-census-adjudication.json",
+    "source_inventory": "source-inventory-19.jsonl"
+  },
+  "interpretation": {
+    "complete_snapshot_is_not_entity_nonexistence": true,
+    "corporate_name_match_is_candidate_only": true,
+    "exact_person_label_match_is_not_identity_or_governance": true,
+    "active_status_is_not_current_public_brand_alignment": true,
+    "FEI_is_registry_field_not_public_schoolhouse_join": true,
+    "city_level_location_is_not_identifier_grade_identity": true,
+    "no_cross_signal_join_is_not_absence_evidence": true
+  },
+  "privacy": {
+    "raw_source_retained": false,
+    "raw_compressed_members_retained": false,
+    "raw_uncompressed_members_retained": false,
+    "street_address_rows_retained": 0,
+    "mailing_address_rows_retained": 0,
+    "postal_code_rows_retained": 0,
+    "contact_detail_rows_retained": 0,
+    "private_support_rows": 0,
+    "public_credential_password_retained": false
+  },
+  "admitted_document_number": null,
+  "admitted_legal_name": null,
+  "admitted_ein": null,
+  "public_schoolhouse_identity_admitted": false,
+  "governance_relationship_admitted": false,
+  "ownership_relationship_admitted": false,
+  "fiscal_sponsor_relationship_admitted": false,
+  "negative_existence_claim_created": false,
+  "outside_human_dependency": false,
+  "publication_effect": "none",
+  "adoption_effect": "none",
+  "graph_effect": "none",
+  "promotes_to": "candidate_only"
+}
