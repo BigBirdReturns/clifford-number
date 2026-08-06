@@ -1,0 +1,151 @@
+name: TEMP repair School.House IRS candidate filing-index materialization
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-irs-candidate-filing-index-materializer-v2.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: schoolhouse-irs-candidate-filing-index-materializer-v2-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-irs-candidate-filing-index-census-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - name: Check out exact integrated carrier
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Replay the exact acquisition with the current carrier denominator
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE='.github/workflows/temp-schoolhouse-irs-candidate-filing-index-materializer.yml'
+          SCRIPT="$RUNNER_TEMP/replay-schoolhouse-irs-filing-index-acquisition.sh"
+          python - "$SOURCE" "$SCRIPT" <<'PY'
+          from pathlib import Path
+          import re, sys
+          source = Path(sys.argv[1]).read_text()
+          step = '      - name: Reconstruct and execute exact filing-index acquisition\n'
+          start = source.index(step)
+          run = source.index('        run: |\n', start) + len('        run: |\n')
+          end = source.index('\n      - name: Upload exact acquisition artifact', run)
+          lines = source[run:end].splitlines()
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines) + '\n'
+          old = '''mapfile -t CHANGED < <(git diff --name-only "$BASE"..HEAD | sort)
+          test "${#CHANGED[@]}" -eq 2
+          test "${CHANGED[0]}" = "$ACQUIRE"
+          test "${CHANGED[1]}" = "$MATERIALIZER"
+
+          declare -A BLOBS=('''
+          new = '''mapfile -t CHANGED < <(git diff --name-only "$BASE"..HEAD | sort)
+          EXPECTED=(
+            '.github/workflows/temp-schoolhouse-irs-candidate-filing-index-census.yml'
+            '.github/workflows/temp-schoolhouse-irs-candidate-filing-index-finalizer.yml'
+            '.github/workflows/temp-schoolhouse-irs-candidate-filing-index-materializer-v2.yml'
+            '.github/workflows/temp-schoolhouse-irs-candidate-filing-index-materializer.yml'
+          )
+          test "${#CHANGED[@]}" -eq "${#EXPECTED[@]}"
+          for i in "${!EXPECTED[@]}"; do test "${CHANGED[$i]}" = "${EXPECTED[$i]}"; done
+
+          declare -A BLOBS=('''
+          if old not in script:
+              raise SystemExit('carrier denominator patch seam missing')
+          script = script.replace(old, new, 1)
+          Path(sys.argv[2]).write_text(script)
+          PY
+          bash -n "$SCRIPT"
+          bash "$SCRIPT"
+
+      - name: Upload exact acquisition artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-candidate-filing-index-census-materializer
+          path: ${{ runner.temp }}/schoolhouse-irs-candidate-filing-index-census
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Replay, qualify, and publish the exact workflow-free product
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || 0 }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE='.github/workflows/temp-schoolhouse-irs-candidate-filing-index-materializer.yml'
+          SCRIPT="$RUNNER_TEMP/replay-schoolhouse-irs-filing-index-product.sh"
+          python - "$SOURCE" "$SCRIPT" <<'PY'
+          from pathlib import Path
+          import os, sys
+          source = Path(sys.argv[1]).read_text()
+          step = '      - name: Build, qualify, and publish workflow-free product\n'
+          start = source.index(step)
+          run = source.index('        run: |\n', start) + len('        run: |\n')
+          end = source.index('\n      - name: Upload exact materialization receipt', run)
+          lines = source[run:end].splitlines()
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines) + '\n'
+          pr_expr = '$' + '{{ github.event.pull_request.number || 0 }}'
+          head_expr = '$' + '{{ github.event.pull_request.head.sha || github.sha }}'
+          script = script.replace(pr_expr, os.environ['PR_NUMBER'])
+          script = script.replace(head_expr, os.environ['PR_HEAD_SHA'])
+          checkout = 'git checkout -B "$TARGET" origin/main\n'
+          replacement = checkout + "git config user.name 'github-actions[bot]'\ngit config user.email '41898282+github-actions[bot]@users.noreply.github.com'\n"
+          if checkout not in script:
+              raise SystemExit('git checkout patch seam missing')
+          script = script.replace(checkout, replacement, 1)
+          gate = '''npm run release:check
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          git push --force origin "HEAD:refs/heads/$TARGET"'''
+          repaired = '''npm run release:check
+          git reset --hard HEAD
+          git clean -fdx
+          node tools/validate-schoolhouse-irs-candidate-filing-index-custody.mjs
+          node tools/test-schoolhouse-irs-candidate-filing-index-custody.mjs
+          node tools/validate-no-magic-human-gate.mjs
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          git push --force origin "HEAD:refs/heads/$TARGET"'''
+          if gate not in script:
+              raise SystemExit('release-cleanliness patch seam missing')
+          script = script.replace(gate, repaired, 1)
+          Path(sys.argv[2]).write_text(script)
+          PY
+          bash -n "$SCRIPT"
+          bash "$SCRIPT"
+
+      - name: Upload exact repaired materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-candidate-filing-index-materialization-receipt-v2
+          path: ${{ runner.temp }}/schoolhouse-irs-candidate-filing-index-materialization-receipt
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
