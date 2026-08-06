@@ -58,12 +58,27 @@ jobs:
           shard_bytes = []
           shard_receipts = []
           for spec in sorted(manifest['shards'], key=lambda item: item['ordinal']):
-              raw = (root / spec['path']).read_bytes()
+              transported = (root / spec['path']).read_bytes()
+              raw = transported
+              transport_normalization = 'none'
+              if len(transported) == spec['bytes'] + 1 and transported.endswith(b'\n'):
+                  raw = transported[:-1]
+                  transport_normalization = 'one_terminal_lf_removed'
               digest = hashlib.sha256(raw).hexdigest()
               if len(raw) != spec['bytes'] or digest != spec['sha256']:
-                  raise SystemExit(f"shard custody mismatch: {spec['path']}")
+                  raise SystemExit(
+                      f"shard custody mismatch: {spec['path']} "
+                      f"transport_bytes={len(transported)} normalized_bytes={len(raw)} "
+                      f"normalized_sha256={digest}"
+                  )
               shard_bytes.append(raw)
-              shard_receipts.append({**spec, 'observed_sha256': digest})
+              shard_receipts.append({
+                  **spec,
+                  'transport_bytes': len(transported),
+                  'transport_sha256': hashlib.sha256(transported).hexdigest(),
+                  'transport_normalization': transport_normalization,
+                  'observed_sha256': digest,
+              })
           b64 = b''.join(shard_bytes)
           if len(b64) != manifest['base64_bytes'] or hashlib.sha256(b64).hexdigest() != manifest['base64_sha256']:
               raise SystemExit('aggregate base64 custody mismatch')
@@ -124,7 +139,7 @@ jobs:
           receipt_root = Path('/tmp/pc51-product-blob-receipt')
           receipt_root.mkdir(parents=True, exist_ok=True)
           receipt = {
-              'schema_version': 'pc51-product-blob-receipt@1',
+              'schema_version': 'pc51-product-blob-receipt@2',
               'qualified_parent_commit': parent,
               'qualified_parent_tree': manifest['qualified_parent_tree'],
               'carrier_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
