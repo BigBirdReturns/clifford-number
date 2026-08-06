@@ -1,0 +1,79 @@
+{
+  "adoption_effect": "none",
+  "graph_effect": "none",
+  "interpretation": {
+    "anchor_label_or_query_route_is_candidate_routing_evidence_only": true,
+    "entity_detail_route_requires_separate_exact_execution": true,
+    "no_identity_or_relationship_may_be_admitted_by_this_census": true,
+    "provider_errors_are_not_absence_evidence": true,
+    "query_bearing_report_route_requires_separate_exact_execution": true,
+    "source_change_is_not_record_change": true,
+    "zero_fixed_term_links_are_not_absence_evidence": true
+  },
+  "outside_human_dependency": false,
+  "publication_effect": "none",
+  "request_bounds": {
+    "cookie_replays": 0,
+    "forms_submitted": 0,
+    "interactive_search_submissions": 0,
+    "maximum_aggregate_bytes": 4000000,
+    "maximum_parallel_workers": 1,
+    "maximum_response_bytes": 2000000,
+    "maximum_total_requests": 2,
+    "request_methods": [
+      "GET"
+    ],
+    "subscription_purchases": 0,
+    "successor_fetches": 0
+  },
+  "retention": {
+    "contact_detail_rows_retained": 0,
+    "full_script_text_retained": false,
+    "full_visible_text_retained": false,
+    "hidden_form_values_retained": false,
+    "mailing_address_rows_retained": 0,
+    "officer_rows_retained": 0,
+    "postal_code_rows_retained": 0,
+    "private_support_rows": 0,
+    "raw_source_retained": false,
+    "street_address_rows_retained": 0
+  },
+  "schema_version": "schoolhouse-nc-static-nonprofit-anchor-census@1",
+  "selection_contract": {
+    "complete_anchor_observation_denominator_required": true,
+    "complete_form_metadata_denominator_required": true,
+    "fixed_source_routes": [
+      {
+        "route_id": "nc-nonprofits-by-county",
+        "url": "https://www.sosnc.gov/online_services/business_registration/Non_Profit_Reports"
+      },
+      {
+        "route_id": "nc-unincorporated-nonprofits",
+        "url": "https://www.sosnc.gov/online_services/business_registration/Un_Incorporated_Non_Profits"
+      }
+    ],
+    "no_result_spawned_third_level_fetches": true,
+    "no_successor_fetches": true,
+    "permanent_predecessor_merge": "327648726320507532751f219a52d03f9c17fac5",
+    "public_query_values_may_be_retained_only_in_normalized_same_host_candidate_url": true,
+    "sensitive_query_keys_refused": [
+      "__requestverificationtoken",
+      "antiforgery",
+      "auth",
+      "authorization",
+      "captcha",
+      "code",
+      "passwd",
+      "password",
+      "recaptcha",
+      "redirect",
+      "redirect_uri",
+      "return_url",
+      "returnurl",
+      "session",
+      "sessionid",
+      "sid",
+      "token"
+    ]
+  }
+}
