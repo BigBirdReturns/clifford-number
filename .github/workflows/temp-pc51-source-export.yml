@@ -1,0 +1,63 @@
+name: TEMP export exact PC-51 current-main source
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pc51-source-export-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  export-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Export exact source parent
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE_COMMIT=$(git rev-parse HEAD^)
+          SOURCE_TREE=$(git rev-parse "${SOURCE_COMMIT}^{tree}")
+          HEAD_COMMIT=$(git rev-parse HEAD)
+          mapfile -t DELTA < <(git diff --name-status "$SOURCE_COMMIT" HEAD)
+          test "${#DELTA[@]}" -eq 1
+          test "${DELTA[0]}" = $'A\t.github/workflows/temp-pc51-source-export.yml'
+          SHORT=${SOURCE_COMMIT:0:12}
+          OUT="clifford-number-pc51-source-${SHORT}.tar.gz"
+          git archive --format=tar --prefix="clifford-number-${SHORT}/" "$SOURCE_COMMIT" | gzip -9n > "$OUT"
+          BYTES=$(wc -c < "$OUT" | tr -d ' ')
+          SHA256=$(sha256sum "$OUT" | awk '{print $1}')
+          PARENTS=$(git show -s --format='%P' "$SOURCE_COMMIT" | awk '{print NF}')
+          mkdir -p receipt
+          printf '%s\n' \
+            'schema_version: pc51-source-export-receipt@1' \
+            "source_commit: $SOURCE_COMMIT" \
+            "source_tree: $SOURCE_TREE" \
+            "source_parent_count: $PARENTS" \
+            "carrier_head: $HEAD_COMMIT" \
+            'carrier_delta_paths: 1' \
+            'carrier_path: .github/workflows/temp-pc51-source-export.yml' \
+            "archive_name: $OUT" \
+            "archive_bytes: $BYTES" \
+            "archive_sha256: $SHA256" \
+            'outside_human_dependency: false' \
+            'graph_effect: none' \
+            > receipt/receipt.txt
+          sha256sum "$OUT" > receipt/archive.sha256
+          cp "$OUT" receipt/
+          cat receipt/receipt.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc51-exact-current-main-source
+          path: receipt
+          if-no-files-found: error
+          retention-days: 30
