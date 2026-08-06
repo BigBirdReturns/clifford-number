@@ -48,6 +48,9 @@ jobs:
           set -Eeuo pipefail
           SOURCE='.github/workflows/temp-ssc-wave03-current-ledger-ten-closures-materializer-v1.yml'
           PROGRAM="$RUNNER_TEMP/ssc-wave03-ten-closures-materializer.sh"
+          RECEIPT="$RUNNER_TEMP/ssc-wave03-ten-closures/receipt"
+          mkdir -p "$RECEIPT"
+          test "$(git hash-object "$SOURCE")" = '0326102045b3d6c3b51fe2b03ea38085a5995887'
           python - "$SOURCE" "$PROGRAM" <<'PY'
           from pathlib import Path
           import sys
@@ -55,28 +58,25 @@ jobs:
           source = Path(sys.argv[1]).read_text().splitlines()
           target = Path(sys.argv[2])
           marker = '      - name: Derive, qualify, and publish exact cumulative product'
+          next_marker = '      - name: Preserve exact materialization receipt'
           try:
               start = source.index(marker)
-          except ValueError:
-              raise SystemExit('materializer step marker missing')
+              end = source.index(next_marker, start + 1)
+          except ValueError as error:
+              raise SystemExit(f'materializer step boundary missing: {error}')
           run_index = None
-          for index in range(start + 1, len(source)):
+          for index in range(start + 1, end):
               if source[index] == '        run: |':
                   run_index = index
                   break
           if run_index is None:
               raise SystemExit('materializer run block missing')
-          body = []
-          for line in source[run_index + 1:]:
-              if line.startswith('      - name:'):
-                  break
-              if line and not line.startswith('          '):
-                  raise SystemExit(f'unexpected materializer indentation: {line!r}')
-              body.append(line[10:] if line else '')
+          raw_body = source[run_index + 1:end]
+          body = [line[10:] if line.startswith('          ') else line for line in raw_body]
           if not body or body[0] != 'set -Eeuo pipefail':
               raise SystemExit('materializer body boundary changed')
           target.write_text('\n'.join(body) + '\n')
-          print(f'extracted {len(body)} exact materializer lines')
+          print(f'extracted {len(body)} exact materializer lines between exact step markers')
           PY
           bash -n "$PROGRAM"
           bash "$PROGRAM"
