@@ -1,0 +1,90 @@
+name: TEMP finalize School.House IRS candidate filing-index custody v4
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-irs-candidate-filing-index-finalizer-v4.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: schoolhouse-irs-candidate-filing-index-finalizer-v4-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  finalize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-irs-candidate-filing-index-census-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Check out exact finalizer carrier
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Execute fully rebound exact-tree finalization
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || 0 }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE='.github/workflows/temp-schoolhouse-irs-candidate-filing-index-finalizer-v2.yml'
+          SCRIPT="$RUNNER_TEMP/finalize-schoolhouse-irs-candidate-filing-index-v4.sh"
+          python - "$SOURCE" "$SCRIPT" <<'PY'
+          from pathlib import Path
+          import os, sys
+          source = Path(sys.argv[1]).read_text()
+          step = '      - name: Wait, qualify, merge, replay, and retire\n'
+          start = source.index(step)
+          run = source.index('        run: |\n', start) + len('        run: |\n')
+          end = source.index('\n      - name: Upload exact repaired finalization receipt', run)
+          lines = source[run:end].splitlines()
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines) + '\n'
+          pr_expr = '$' + '{{ github.event.pull_request.number || 0 }}'
+          script = script.replace(pr_expr, os.environ['PR_NUMBER'])
+          function_open = '''qualify_checkout() {
+            node --check tools/validate-schoolhouse-irs-candidate-filing-index-custody.mjs'''
+          function_repaired = '''qualify_checkout() {
+            local QUALIFIED_TREE
+            QUALIFIED_TREE="$(git write-tree)"
+            node --check tools/validate-schoolhouse-irs-candidate-filing-index-custody.mjs'''
+          if function_open not in script:
+              raise SystemExit('qualification function seam missing')
+          script = script.replace(function_open, function_repaired, 1)
+          hard_reset = 'git reset --hard HEAD\n            git clean -fdx'
+          tree_restore = 'git read-tree --reset -u "$QUALIFIED_TREE"\n            git clean -fdx'
+          if hard_reset not in script:
+              raise SystemExit('qualification restoration seam missing')
+          script = script.replace(hard_reset, tree_restore, 1)
+          if '$' + '{{' in script:
+              raise SystemExit('unresolved GitHub expression remains in extracted script')
+          Path(sys.argv[2]).write_text(script)
+          PY
+          bash -n "$SCRIPT"
+          bash "$SCRIPT"
+
+      - name: Upload exact v4 finalization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-candidate-filing-index-finalization-receipt-v4
+          path: ${{ runner.temp }}/schoolhouse-irs-candidate-filing-index-finalization-receipt-v2
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
