@@ -1,0 +1,93 @@
+name: TEMP clean RD-04 CA-SD-WA transport branches
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Verify canonical merge and retire transport refs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          CLEANUP_PR: ${{ github.event.pull_request.number }}
+          CLEANUP_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/rd04-ca-sd-wa-postmerge-cleanup
+          mkdir -p "$OUT"
+          python - <<'PY'
+          import json, os, urllib.request
+          repo=os.environ['GH_REPOSITORY']
+          token=os.environ['GH_TOKEN']
+          req=urllib.request.Request(
+              f'https://api.github.com/repos/{repo}/contents/data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication/index.json?ref=main',
+              headers={'Authorization':f'Bearer {token}','Accept':'application/vnd.github+json','User-Agent':'rd04-cleanup'},
+          )
+          with urllib.request.urlopen(req,timeout=60) as r:
+              payload=json.load(r)
+          import base64
+          index=json.loads(base64.b64decode(''.join(payload['content'].split())))
+          text=json.dumps(index,sort_keys=True)
+          if '140' not in text or '260' not in text or 'still_open' not in text:
+              raise SystemExit('canonical RD-04 v2 product not established on main')
+          PY
+
+          branches=(
+            agent/ssc-rd04-ca-sd-wa-capture-adjudication-materializer-v1
+            agent/ssc-rd-wave03-rd04-ca-sd-wa-capture-adjudication-v1
+            agent/ssc-rd04-ca-sd-wa-capture-adjudication-v2-materializer
+            agent/ssc-rd04-ca-sd-wa-capture-adjudication-v2-materializer-alt
+            agent/ssc-rd04-ca-sd-wa-capture-adjudication-v2-materializer-alt2
+            agent/ssc-rd04-ca-sd-wa-capture-adjudication-v2-materializer-final
+            agent/ssc-rd04-ca-sd-wa-capture-adjudication-v2-materializer-final2
+            agent/ssc-rd04-ca-sd-wa-capture-adjudication-v2-materializer-final3
+            agent/ssc-rd04-ca-sd-wa-capture-adjudication-v2-materializer-final4
+            agent/ssc-rd04-ca-sd-wa-capture-adjudication-v2-materializer-final5
+            agent/ssc-rd04-ca-sd-wa-capture-adjudication-v2-materializer-final6
+            agent/ssc-rd04-ca-sd-wa-capture-adjudication-v2-materializer-final7
+            agent/ssc-rd04-ca-sd-wa-capture-adjudication-v2-materializer-final8
+            agent/ssc-rd04-ca-sd-wa-capture-adjudication-v2-materializer-final9
+            agent/ssc-rd04-ca-sd-wa-capture-adjudication-v2-materializer-final10
+            agent/ssc-rd04-ca-sd-wa-capture-adjudication-v2-materializer-final11
+            agent/ssc-rd04-ca-sd-wa-capture-adjudication-v2-materializer-final12
+          )
+          : > "$OUT/deleted-branches.txt"
+          : > "$OUT/absent-branches.txt"
+          for branch in "${branches[@]}"; do
+            encoded=$(python -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1],safe=""))' "$branch")
+            if gh api "repos/$GH_REPOSITORY/git/ref/heads/$encoded" >/dev/null 2>&1; then
+              gh api --method DELETE "repos/$GH_REPOSITORY/git/refs/heads/$encoded"
+              printf '%s\n' "$branch" >> "$OUT/deleted-branches.txt"
+            else
+              printf '%s\n' "$branch" >> "$OUT/absent-branches.txt"
+            fi
+          done
+
+          gh api --method PATCH "repos/$GH_REPOSITORY/pulls/$CLEANUP_PR" -f state=closed >/dev/null
+          printf '%s\n' "$CLEANUP_PR" > "$OUT/cleanup-pr.txt"
+          printf '%s\n' "$CLEANUP_BRANCH" > "$OUT/cleanup-branch.txt"
+      - name: Preserve cleanup receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-ca-sd-wa-postmerge-cleanup
+          path: /tmp/rd04-ca-sd-wa-postmerge-cleanup
+          if-no-files-found: error
+          retention-days: 90
+      - name: Delete cleanup branch
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          CLEANUP_BRANCH: ${{ github.head_ref }}
+        run: |
+          encoded=$(python -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1],safe=""))' "$CLEANUP_BRANCH")
+          gh api --method DELETE "repos/$GH_REPOSITORY/git/refs/heads/$encoded" || true
