@@ -554,8 +554,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const secondLevelForms = readJsonl(path.join(dir, 'schoolhouse-charity-nc-second-level-surface-forms.jsonl'));
     const secondLevelRoutes = [...secondLevelRoots, ...secondLevelFollowed];
 
-    check(manifest.counts.source_inventory_rows === 447, 'second-level source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 28, 'second-level coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 478, 'second-level source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 29, 'second-level coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'second-level explicit-gap count drift');
     check(manifest.counts.schoolhouse_charity_nc_second_level_root_route_rows === secondLevelRoots.length && secondLevelRoots.length === 8, 'second-level root-route denominator drift');
     check(manifest.counts.schoolhouse_charity_nc_second_level_followed_route_rows === secondLevelFollowed.length && secondLevelFollowed.length === 80, 'second-level followed-route denominator drift');
@@ -624,8 +624,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const finalResidualForms = readJsonl(path.join(dir, 'schoolhouse-charity-nc-final-static-residual-surface-forms.jsonl'));
     const finalResidualFiles = readJsonl(path.join(dir, 'schoolhouse-charity-nc-final-static-residual-file-samples.jsonl'));
 
-    check(manifest.counts.source_inventory_rows === 447, 'final residual source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 28, 'final residual coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 478, 'final residual source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 29, 'final residual coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'final residual explicit-gap count drift');
     check(manifest.counts.schoolhouse_charity_nc_final_static_residual_input_rows === finalResidualInputs.length && finalResidualInputs.length === 51, 'final residual input denominator drift');
     check(manifest.counts.schoolhouse_charity_nc_final_static_residual_terminal_route_rows === finalResidualRoutes.length && finalResidualRoutes.length === 51, 'final residual route denominator drift');
@@ -684,8 +684,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const completePdfPolicy = readJson(path.join(dir, 'schoolhouse-charity-nc-complete-pdf-route-policy.json'));
     const completePdfSummary = readJson(path.join(dir, 'schoolhouse-charity-nc-complete-pdf-field-summary.json'));
 
-    check(manifest.counts.source_inventory_rows === 447, 'complete-PDF source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 28, 'complete-PDF coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 478, 'complete-PDF source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 29, 'complete-PDF coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'complete-PDF explicit-gap count drift');
     check(manifest.counts.schoolhouse_charity_nc_complete_pdf_input_rows === completePdfInputs.length && completePdfInputs.length === 15, 'complete-PDF input denominator drift');
     check(manifest.counts.schoolhouse_charity_nc_complete_pdf_terminal_route_rows === completePdfFull.length && completePdfFull.length === 15, 'complete-PDF terminal denominator drift');
@@ -739,8 +739,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const firstPartyHtml = firstPartyEvidence.filter(row => row.surface_evidence_type === 'html_surface');
     const firstPartyForms = firstPartyEvidence.filter(row => row.surface_evidence_type === 'form_metadata');
 
-    check(manifest.counts.source_inventory_rows === 447, 'first-party source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 28, 'first-party coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 478, 'first-party source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 29, 'first-party coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'first-party explicit-gap count drift');
     check(manifest.counts.schoolhouse_first_party_legal_surface_root_route_rows === firstPartyRoutes.filter(row => row.route_class === 'fixed_root').length && manifest.counts.schoolhouse_first_party_legal_surface_root_route_rows === 5, 'first-party root-route denominator drift');
     check(manifest.counts.schoolhouse_first_party_legal_surface_followed_route_rows === firstPartyRoutes.filter(row => row.route_class === 'query_free_same_host_follow').length && manifest.counts.schoolhouse_first_party_legal_surface_followed_route_rows === 41, 'first-party followed-route denominator drift');
@@ -829,8 +829,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const archiveBoundedZeroRoutes = archiveRoutes.filter(row => row.effective_state_class === 'bounded_zero_archive_locator_metadata');
     const archiveResidualProviderErrors = archiveRoutes.filter(row => row.effective_state_class === 'archive_locator_provider_error');
 
-    check(manifest.counts.source_inventory_rows === 447, 'archive source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 28, 'archive coverage-denominator count drift');
+    check(manifest.counts.source_inventory_rows === 478, 'archive source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 29, 'archive coverage-denominator count drift');
     check(manifest.counts.explicit_gap_rows === 16, 'archive explicit-gap count drift');
     check(manifest.counts.schoolhouse_first_party_archive_locator_source_route_rows === archiveRoutes.length && archiveRoutes.length === 46, 'archive source-route denominator drift');
     check(manifest.counts.schoolhouse_first_party_archive_locator_baseline_attempt_rows === archiveBaselineAttempts.length && archiveBaselineAttempts.length === 46, 'archive baseline-attempt denominator drift');
@@ -911,8 +911,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const residualErrors = launchRoutes.filter(row => row.effective_state_class === 'archive_content_provider_error_not_absence');
     const taxSelfClaims = launchCandidates.filter(row => row.adjudication_state === 'early_first_party_tax_status_self_description_not_registry_identity');
 
-    check(manifest.counts.source_inventory_rows === 447, 'launch-era source denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 28, 'launch-era coverage denominator drift');
+    check(manifest.counts.source_inventory_rows === 478, 'launch-era source denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 29, 'launch-era coverage denominator drift');
     check(manifest.counts.explicit_gap_rows === 16, 'launch-era gap denominator drift');
     check(launchAttempts.length === 10 && baselineAttempts.length === 7 && replayAttempts.length === 3, 'launch-era attempt denominator drift');
     check(launchRoutes.length === 7 && successfulRoutes.length === 6 && residualErrors.length === 1, 'launch-era route denominator drift');
@@ -967,8 +967,8 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const novelRoutes = reconciliationRoutes.filter(row => row.novel_unique_snapshot);
     const uniqueUnion = new Set([...priorLaunchRoutes, ...reconciliationRoutes].map(row => row.timestamp + '\u0000' + row.original_url));
 
-    check(manifest.counts.source_inventory_rows === 447, 'archive reconciliation source denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 28, 'archive reconciliation coverage denominator drift');
+    check(manifest.counts.source_inventory_rows === 478, 'archive reconciliation source denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 29, 'archive reconciliation coverage denominator drift');
     check(manifest.counts.explicit_gap_rows === 16, 'archive reconciliation gap denominator drift');
     check(reconciliationAttempts.length === 7 && baselineAttempts.length === 5 && replayAttempts.length === 2, 'archive reconciliation attempt denominator drift');
     check(reconciliationRoutes.length === 5 && reconciliationRoutes.every(row => row.status === 200 && row.effective_state_class === 'captured_archived_html_surface_privacy_minimized'), 'archive reconciliation route denominator drift');
@@ -1018,9 +1018,9 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const guidanceAttempts = flCharityAttempts.filter(row => row.state_class === 'captured_official_charity_guidance_surface');
     const transportErrors = flCharityAttempts.filter(row => row.state_class === 'registry_query_transport_error_not_absence');
 
-    check(manifest.counts.source_inventory_rows === 447, 'Florida charity source-inventory denominator drift');
-    check(manifest.counts.coverage_denominator_rows === 28, 'Florida charity coverage-denominator drift');
-    check(manifest.storage_contract.source_inventory_parts.at(-2) === 'source-inventory-17.jsonl' && manifest.storage_contract.source_inventory_parts.at(-1) === 'source-inventory-18.jsonl', 'Florida charity and Form 990 source-inventory tail drift');
+    check(manifest.counts.source_inventory_rows === 478, 'Florida charity source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 29, 'Florida charity coverage-denominator drift');
+    check(manifest.storage_contract.source_inventory_parts.at(-3) === 'source-inventory-17.jsonl' && manifest.storage_contract.source_inventory_parts.at(-2) === 'source-inventory-18.jsonl' && manifest.storage_contract.source_inventory_parts.at(-1) === 'source-inventory-19.jsonl', 'Florida charity and Form 990 source-inventory tail drift');
     check(manifest.source_inventory.evidence_class_counts.primary_public_state_charity_registry_route_custody === 6, 'Florida charity evidence-class count drift');
     check(manifest.source_inventory.source_state_counts.captured_official_charity_guidance_surface === 2 && manifest.source_inventory.source_state_counts.registry_query_transport_error_not_absence === 4, 'Florida charity source-state count drift');
 
@@ -1059,6 +1059,64 @@ export function validateBVVCDefenseCapital(dir = DEFAULT_DIR) {
     const frontierProjection = frontier.tasks.find(task => task.task_id === 'bvvc-frontier-schoolhouse-legal-governance')?.prior_fl_charity_exact_query_custody;
     check(frontierProjection?.transport_profiles === 2 && frontierProjection?.execution_rows === 3 && frontierProjection?.total_route_attempt_rows === 9 && frontierProjection?.query_submissions === 0 && frontierProjection?.admitted_identities === 0, 'Florida charity frontier projection drift');
     check(coverage.denominators.some(row => row.surface === 'School.House Florida Check-A-Charity exact-query transport custody' && row.enumerated_total === 3 && row.transport_profiles === 2 && row.total_route_attempt_rows === 9 && row.query_submissions === 0 && row.candidate_rows === 0 && row.admitted_identities === 0), 'Florida charity coverage denominator missing');
+  }
+
+
+  if (fs.existsSync(path.join(dir, 'schoolhouse-fl-corporate-identity-census-custody.json'))) {
+    const corporateCustody = readJson(path.join(dir, 'schoolhouse-fl-corporate-identity-census-custody.json'));
+    const corporateSource = readJson(path.join(dir, 'schoolhouse-fl-corporate-identity-census-source-receipt.json'));
+    const corporateIndex = readJson(path.join(dir, 'schoolhouse-fl-corporate-identity-census-remote-zip-index.json'));
+    const corporateRanges = readJsonl(path.join(dir, 'schoolhouse-fl-corporate-identity-census-range-request-receipts.jsonl'));
+    const corporateMembers = readJsonl(path.join(dir, 'schoolhouse-fl-corporate-identity-census-member-receipts.jsonl'));
+    const corporateTargets = readJson(path.join(dir, 'schoolhouse-fl-corporate-identity-census-target-matrix.json'));
+    const corporateCandidates = readJsonl(path.join(dir, 'schoolhouse-fl-corporate-identity-census-candidate-records.jsonl'));
+    const corporateAdjudication = readJson(path.join(dir, 'schoolhouse-fl-corporate-identity-census-adjudication.json'));
+    const corporateSourceRows = readJsonl(path.join(dir, 'source-inventory-19.jsonl'));
+    const corporateReceiptIds = new Set(sourceInventory.map(row => row.receipt_id));
+
+    const exactBrand = corporateCandidates.filter(row => row.exact_public_brand_base_match);
+    const personCandidates = corporateCandidates.filter(row => row.person_matches.length > 0);
+    const namePersonOverlap = corporateCandidates.filter(row => row.schoolhouse_phrase_match && row.person_matches.length > 0);
+    const nonprofitTampa = corporateCandidates.filter(row => row.candidate_signals.nonprofit_filing_type && row.candidate_signals.principal_city_exact_tampa);
+
+    check(manifest.counts.source_inventory_rows === 478 && sourceInventory.length === 478, 'complete Florida corporate source-inventory denominator drift');
+    check(manifest.counts.coverage_denominator_rows === 29 && coverage.denominators.length === 29, 'complete Florida corporate coverage denominator drift');
+    check(manifest.counts.explicit_gap_rows === 16 && coverage.explicit_nulls_and_gaps.length === 16, 'complete Florida corporate explicit-gap denominator drift');
+    check(manifest.storage_contract.source_inventory_parts.at(-1) === 'source-inventory-19.jsonl', 'complete Florida corporate source-inventory tail drift');
+    check(manifest.source_inventory.evidence_class_counts.official === 253, 'complete Florida corporate official evidence count drift');
+    check(manifest.source_inventory.source_state_counts.captured_corporate_bulk_central_directory === 1 && manifest.source_inventory.source_state_counts.captured_corporate_bulk_member_header === 20 && manifest.source_inventory.source_state_counts.captured_corporate_bulk_member_scanned === 10, 'complete Florida corporate source-state count drift');
+
+    check(corporateSource.expected_source_bytes === 1819049954 && corporateSource.central_directory_sha256 === '5524144b32429b336a2799a164f4fa5278e7825023fff638d65e8f8bdc577330', 'complete Florida corporate source contract drift');
+    check(corporateSource.head_receipt.status === 200 && corporateSource.head_receipt.content_length === 1819049954 && corporateSource.public_credentials_used === true && corporateSource.public_credential_password_retained === false && corporateSource.public_credentials_embedded_or_retained === false, 'complete Florida corporate authenticated transport drift');
+    check(corporateIndex.all_partitions_selected === true && corporateIndex.members.length === 10 && corporateIndex.members.map(row => row.partition_digit).join('') === '0123456789', 'complete Florida corporate ZIP denominator drift');
+    check(corporateRanges.length === 31 && unique(corporateRanges.map(row => row.request_id)) && corporateRanges.every(row => row.state === 'captured'), 'complete Florida corporate range denominator drift');
+    check(corporateMembers.length === 10 && corporateMembers.reduce((sum, row) => sum + row.rows_scanned, 0) === 12808196 && corporateMembers.reduce((sum, row) => sum + row.candidate_rows, 0) === 300, 'complete Florida corporate member denominator drift');
+    check(corporateMembers.every(row => row.raw_compressed_member_retained === false && row.raw_uncompressed_member_retained === false && row.identity_admitted === false && row.outside_human_dependency === false && row.graph_effect === 'none'), 'complete Florida corporate member authority drift');
+
+    check(corporateTargets.person_match_rule === 'exact public-label token multiset, order-insensitive; no nickname or legal-name expansion' && corporateTargets.person_targets.map(row => row.public_label).join('|') === 'Joe Musselman|Alex Martin|Leyla Gladish|Nicole Nsam', 'complete Florida corporate target matrix drift');
+    check(corporateCandidates.length === 300 && unique(corporateCandidates.map(row => row.document_number)), 'complete Florida corporate candidate denominator drift');
+    check(corporateCandidates.filter(row => row.schoolhouse_phrase_match).length === 278 && exactBrand.length === 4 && corporateCandidates.filter(row => row.schoolhouse_1776_match).length === 0, 'complete Florida corporate name-match denominator drift');
+    check(personCandidates.length === 22 && personCandidates.every(row => row.person_matches.every(match => match.public_label === 'Alex Martin')), 'complete Florida corporate person-match denominator drift');
+    check(namePersonOverlap.length === 0 && nonprofitTampa.length === 0 && exactBrand.every(row => row.status === 'I' && row.candidate_signals.active_status === false && row.candidate_signals.filed_2023_or_later === false && row.candidate_signals.principal_city_exact_tampa === false), 'complete Florida corporate cross-signal refusal drift');
+    check(corporateCandidates.filter(row => row.candidate_signals.active_status).length === 130 && corporateCandidates.filter(row => row.candidate_signals.nonprofit_filing_type).length === 43 && corporateCandidates.filter(row => row.candidate_signals.filed_2023_or_later).length === 74 && corporateCandidates.filter(row => row.candidate_signals.principal_city_exact_tampa).length === 9 && corporateCandidates.filter(row => row.candidate_signals.fei_present).length === 234, 'complete Florida corporate candidate signal denominator drift');
+    check(corporateCandidates.every(row => row.public_schoolhouse_identity_admitted === false && row.negative_existence_claim_created === false && row.street_address_retained === false && row.mailing_address_retained === false && row.postal_code_retained === false && row.contact_detail_retained === false && row.private_support_rows === 0 && row.outside_human_dependency === false && row.publication_effect === 'none' && row.adoption_effect === 'none' && row.graph_effect === 'none' && row.promotes_to === 'candidate_only'), 'complete Florida corporate candidate authority/privacy drift');
+
+    check(corporateSourceRows.length === 31 && unique(corporateSourceRows.map(row => row.receipt_id)) && corporateSourceRows.every(row => corporateReceiptIds.has(row.receipt_id)), 'complete Florida corporate source receipt linkage drift');
+    check(corporateSourceRows.filter(row => row.source_state === 'captured_corporate_bulk_central_directory').length === 1 && corporateSourceRows.filter(row => row.source_state === 'captured_corporate_bulk_member_header').length === 20 && corporateSourceRows.filter(row => row.source_state === 'captured_corporate_bulk_member_scanned').length === 10, 'complete Florida corporate source-state rows drift');
+    check(corporateSourceRows.filter(row => row.source_state === 'captured_corporate_bulk_member_scanned').reduce((sum, row) => sum + row.source_rows_scanned, 0) === 12808196 && corporateSourceRows.filter(row => row.source_state === 'captured_corporate_bulk_member_scanned').reduce((sum, row) => sum + row.candidate_rows, 0) === 300, 'complete Florida corporate source-row accounting drift');
+    check(corporateSourceRows.every(row => row.evidence_class === 'official' && row.public_credentials_used === true && row.public_credential_password_retained === false && row.query_submitted === false && row.raw_source_retained === false && row.raw_compressed_member_retained === false && row.raw_uncompressed_member_retained === false && row.street_address_rows_retained === 0 && row.mailing_address_rows_retained === 0 && row.postal_code_rows_retained === 0 && row.contact_detail_rows_retained === 0 && row.private_support_rows === 0 && row.identity_admitted === false && row.negative_existence_claim_created === false && row.outside_human_dependency === false && row.graph_effect === 'none'), 'complete Florida corporate source inventory authority drift');
+
+    check(corporateAdjudication.identity_state === 'unresolved_after_complete_florida_corporate_name_and_source_listed_person_census_no_cross_signal_identity_admitted' && corporateAdjudication.public_schoolhouse_identity_admitted === false && corporateAdjudication.governance_relationship_admitted === false && corporateAdjudication.ownership_relationship_admitted === false && corporateAdjudication.fiscal_sponsor_relationship_admitted === false && corporateAdjudication.negative_existence_claim_created === false, 'complete Florida corporate adjudication authority drift');
+    check(corporateCustody.canonical_parent.commit === 'e46d4aa98955e890a1bd2820dc43c52bc256490e' && corporateCustody.canonical_parent.tree === 'f6110927bb6a0241169f1e915db732e41fcb52cf', 'complete Florida corporate parent custody drift');
+    check(corporateCustody.acquisitions.authenticated_complete_census.workflow_run_id === 31056239350 && corporateCustody.acquisitions.authenticated_complete_census.artifact_id === 8950526654 && corporateCustody.acquisitions.authenticated_complete_census.artifact_digest === 'sha256:98925c7a750f23cf8ed10fb1123ed0d79d78dcca79d4c67a2b0e26ed86146746', 'complete Florida corporate acquisition custody drift');
+    check(corporateCustody.counts.source_rows_scanned === 12808196 && corporateCustody.counts.candidate_rows === 300 && corporateCustody.counts.corporate_name_exact_public_brand_base_rows === 4 && corporateCustody.counts.source_listed_person_match_rows === 22 && corporateCustody.counts.name_and_person_overlap_rows === 0 && corporateCustody.counts.identity_admitted_rows === 0, 'complete Florida corporate custody denominator drift');
+    check(corporateCustody.privacy.raw_source_retained === false && corporateCustody.privacy.raw_compressed_members_retained === false && corporateCustody.privacy.raw_uncompressed_members_retained === false && corporateCustody.privacy.street_address_rows_retained === 0 && corporateCustody.privacy.mailing_address_rows_retained === 0 && corporateCustody.privacy.postal_code_rows_retained === 0 && corporateCustody.privacy.contact_detail_rows_retained === 0 && corporateCustody.privacy.private_support_rows === 0 && corporateCustody.privacy.public_credential_password_retained === false, 'complete Florida corporate custody privacy drift');
+
+    const schoolProjection = schoolhouse.state_registry_identity_census?.florida_corporate_identity_census;
+    check(schoolProjection?.source_rows_scanned === 12808196 && schoolProjection?.candidate_rows === 300 && schoolProjection?.corporate_name_exact_public_brand_base_rows === 4 && schoolProjection?.source_listed_person_match_rows === 22 && schoolProjection?.name_and_person_overlap_rows === 0 && schoolProjection?.public_schoolhouse_identity_admitted === false, 'complete Florida corporate School.House projection drift');
+    const frontierProjection = frontier.tasks.find(task => task.task_id === 'bvvc-frontier-schoolhouse-legal-governance')?.prior_fl_corporate_identity_census;
+    check(frontierProjection?.source_rows_scanned === 12808196 && frontierProjection?.candidate_rows === 300 && frontierProjection?.source_listed_person_match_rows === 22 && frontierProjection?.name_and_person_overlap_rows === 0 && frontierProjection?.admitted_identities === 0, 'complete Florida corporate frontier projection drift');
+    check(coverage.denominators.some(row => row.surface === 'School.House complete Florida corporate legal-name and source-listed-person candidate census' && row.enumerated_total === 10 && row.source_rows_scanned === 12808196 && row.candidate_rows === 300 && row.corporate_name_exact_public_brand_base_rows === 4 && row.source_listed_person_match_rows === 22 && row.name_and_person_overlap_rows === 0 && row.admitted_identities === 0), 'complete Florida corporate coverage row missing');
   }
 
   for (const error of validateSchoolhouseHonorFoundation990Custody(dir)) errors.push(`School.House related-charity Form 990: ${error}`);
