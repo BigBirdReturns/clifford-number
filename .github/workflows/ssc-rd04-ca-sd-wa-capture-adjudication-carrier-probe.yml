@@ -17,81 +17,82 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Reconstruct and inspect exact carrier bytes without publication
+      - name: Reconstruct exact archive from immutable binary Git blobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
         run: |
           set -Eeuo pipefail
           python - <<'PY'
-          import base64, hashlib, json, string, tarfile
+          import base64, hashlib, json, os, tarfile, urllib.request
           from pathlib import Path
 
-          carrier = Path('.rd04-ca-sd-wa-capture-adjudication-carrier')
-          parts = [carrier / 'part-00.b64', carrier / 'part-01.b64']
+          blob_shas = [
+              '8f7273bb97c73eeb090e58b3f068f48398836f9e',
+              '14d2efca366b5cab4b00605637972dc64540bcc9',
+              '8dd17653f493594ca357232559d52097c09e3b34',
+          ]
           out = Path('/tmp/rd04-carrier-probe')
           out.mkdir(parents=True, exist_ok=True)
+          token = os.environ['GH_TOKEN']
+          repo = os.environ['GH_REPOSITORY']
 
-          raw_parts = [p.read_text(encoding='ascii') for p in parts]
-          text_parts = [''.join(text.split()) for text in raw_parts]
-          allowed = set(string.ascii_letters + string.digits + '+/=')
-          invalid = []
-          offset = 0
-          for part_index, text in enumerate(text_parts):
-              for position, char in enumerate(text):
-                  if char not in allowed:
-                      invalid.append({
-                          'part_index': part_index,
-                          'position_in_part': position,
-                          'joined_position': offset + position,
-                          'character': char,
-                          'codepoint': ord(char),
-                      })
-                      if len(invalid) >= 100:
-                          break
-              offset += len(text)
+          parts = []
+          part_receipts = []
+          for ordinal, sha in enumerate(blob_shas):
+              req = urllib.request.Request(
+                  f'https://api.github.com/repos/{repo}/git/blobs/{sha}',
+                  headers={
+                      'Authorization': f'Bearer {token}',
+                      'Accept': 'application/vnd.github+json',
+                      'X-GitHub-Api-Version': '2022-11-28',
+                      'User-Agent': 'ssc-rd04-carrier-probe',
+                  },
+              )
+              with urllib.request.urlopen(req, timeout=60) as response:
+                  payload = json.load(response)
+              if payload.get('encoding') != 'base64':
+                  raise SystemExit(f'blob {sha} unexpected encoding {payload.get("encoding")}')
+              raw = base64.b64decode(''.join(payload['content'].split()), validate=True)
+              if hashlib.sha1(f'blob {len(raw)}\0'.encode() + raw).hexdigest() != sha:
+                  raise SystemExit(f'blob identity mismatch for {sha}')
+              if payload.get('size') != len(raw):
+                  raise SystemExit(f'blob size mismatch for {sha}: api={payload.get("size")} local={len(raw)}')
+              (out / f'part-{ordinal:02d}.bin').write_bytes(raw)
+              parts.append(raw)
+              part_receipts.append({
+                  'ordinal': ordinal,
+                  'sha': sha,
+                  'bytes': len(raw),
+                  'sha256': hashlib.sha256(raw).hexdigest(),
+              })
 
-          joined = ''.join(text_parts)
+          decoded = b''.join(parts)
+          archive = out / 'product.tar.xz'
+          archive.write_bytes(decoded)
+          digest = hashlib.sha256(decoded).hexdigest()
+          expected_bytes = 59820
+          expected_sha256 = '27279ff201f60d5c208f75332444324cdb70a59be2f668d0f82f53acc8eb220c'
+          names = []
+          archive_error = None
+          try:
+              with tarfile.open(archive, mode='r:xz') as tf:
+                  names = sorted(m.name for m in tf.getmembers() if m.isfile())
+          except Exception as exc:
+              archive_error = f'{type(exc).__name__}: {exc}'
+
           receipt = {
-              'part_files': [str(p) for p in parts],
-              'part_raw_bytes': [len(t.encode('ascii')) for t in raw_parts],
-              'part_base64_bytes_after_whitespace_normalization': [len(t.encode('ascii')) for t in text_parts],
-              'part_prefixes': [t[:80] for t in text_parts],
-              'part_suffixes': [t[-80:] for t in text_parts],
-              'joined_base64_bytes': len(joined.encode('ascii')),
-              'invalid_character_count_sampled': len(invalid),
-              'invalid_characters': invalid,
-              'decode_error': None,
-              'decoded_bytes': None,
-              'decoded_sha256': None,
-              'expected_bytes': 59820,
-              'expected_sha256': '27279ff201f60d5c208f75332444324cdb70a59be2f668d0f82f53acc8eb220c',
-              'matches_expected': False,
-              'archive_file_count': 0,
-              'archive_files': [],
-              'archive_error': None,
+              'source': 'immutable_binary_git_blobs',
+              'parts': part_receipts,
+              'decoded_bytes': len(decoded),
+              'decoded_sha256': digest,
+              'expected_bytes': expected_bytes,
+              'expected_sha256': expected_sha256,
+              'matches_expected': len(decoded) == expected_bytes and digest == expected_sha256,
+              'archive_file_count': len(names),
+              'archive_files': names,
+              'archive_error': archive_error,
           }
-
-          if not invalid:
-              try:
-                  decoded = base64.b64decode(joined, validate=True)
-                  archive = out / 'product.tar.xz'
-                  archive.write_bytes(decoded)
-                  receipt['decoded_bytes'] = len(decoded)
-                  receipt['decoded_sha256'] = hashlib.sha256(decoded).hexdigest()
-                  receipt['matches_expected'] = (
-                      receipt['decoded_bytes'] == receipt['expected_bytes']
-                      and receipt['decoded_sha256'] == receipt['expected_sha256']
-                  )
-                  try:
-                      with tarfile.open(archive, mode='r:xz') as tf:
-                          names = sorted(m.name for m in tf.getmembers() if m.isfile())
-                      receipt['archive_file_count'] = len(names)
-                      receipt['archive_files'] = names
-                  except Exception as exc:
-                      receipt['archive_error'] = f'{type(exc).__name__}: {exc}'
-              except Exception as exc:
-                  receipt['decode_error'] = f'{type(exc).__name__}: {exc}'
-          else:
-              receipt['decode_error'] = 'invalid_non_base64_characters_after_whitespace_normalization'
-
           (out / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
           print(json.dumps(receipt, indent=2))
           PY
@@ -110,8 +111,6 @@ jobs:
           import json
           from pathlib import Path
           r = json.loads(Path('/tmp/rd04-carrier-probe/receipt.json').read_text())
-          if r['decode_error'] is not None:
-              raise SystemExit(f"carrier decode refused: {r['decode_error']} invalid={r['invalid_characters'][:10]}")
           if not r['matches_expected']:
               raise SystemExit(
                   f"carrier mismatch: bytes={r['decoded_bytes']} sha256={r['decoded_sha256']} "
