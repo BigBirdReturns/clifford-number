@@ -1,0 +1,67 @@
+name: TEMP PC-51 inherited v48 consistency probe
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact PC-50 product
+        uses: actions/checkout@v4
+        with:
+          ref: f7a9ebe30330ae9149a96051d6ebb1b1f63ec193
+          path: product
+          fetch-depth: 1
+      - name: Checkout exact PC-51 source parent
+        uses: actions/checkout@v4
+        with:
+          ref: 5b841fcfe6d30929e0adfbb36548224d8d1959e8
+          path: current
+          fetch-depth: 1
+      - name: Compare inherited v48 source bytes and validation
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/pc51-v48-probe
+          paths=(
+            data/research/preference-custody/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.fixture.json
+            tools/lib/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.mjs
+            data/research/preference-custody/control-manifest-v48.json
+            tools/lib/preference-custody-manifest-v48.mjs
+            test/preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance.test.js
+            test/preference-custody-manifest-v48.test.js
+          )
+          : > /tmp/pc51-v48-probe/file-ledger.tsv
+          for path in "${paths[@]}"; do
+            product_blob=$(git -C product rev-parse "HEAD:$path")
+            current_blob=$(git -C current rev-parse "HEAD:$path")
+            product_sha=$(sha256sum "product/$path" | awk '{print $1}')
+            current_sha=$(sha256sum "current/$path" | awk '{print $1}')
+            printf '%s\t%s\t%s\t%s\t%s\n' "$path" "$product_blob" "$current_blob" "$product_sha" "$current_sha" >> /tmp/pc51-v48-probe/file-ledger.tsv
+            if [[ "$product_blob" != "$current_blob" ]]; then
+              diff -u "product/$path" "current/$path" > "/tmp/pc51-v48-probe/$(echo "$path" | tr '/' '_').diff" || true
+            fi
+          done
+          node --input-type=module <<'JS' > /tmp/pc51-v48-probe/snapshot-validation.json
+          import fs from 'node:fs';
+          import { pathToFileURL } from 'node:url';
+          const slug='preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance';
+          const rows=[];
+          for (const root of ['product','current']) {
+            const mod=await import(pathToFileURL(`${process.cwd()}/${root}/tools/lib/${slug}.mjs`).href+`?root=${root}`);
+            const fixture=JSON.parse(fs.readFileSync(`${root}/data/research/preference-custody/${slug}.fixture.json`,'utf8'));
+            rows.push({root,fixture_snapshot:mod.preferenceLinkageExecutableArtifactBuildDependencyEnvironmentRuntimeIdentityFixtureSnapshot(fixture),errors:mod.validatePreferenceLinkageExecutableArtifactBuildDependencyEnvironmentRuntimeIdentityFixture(fixture)});
+          }
+          console.log(JSON.stringify(rows,null,2));
+          JS
+          cat /tmp/pc51-v48-probe/file-ledger.tsv
+          cat /tmp/pc51-v48-probe/snapshot-validation.json
+      - name: Upload inherited consistency receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc51-v48-inherited-consistency-probe
+          path: /tmp/pc51-v48-probe
+          if-no-files-found: error
+          retention-days: 30
