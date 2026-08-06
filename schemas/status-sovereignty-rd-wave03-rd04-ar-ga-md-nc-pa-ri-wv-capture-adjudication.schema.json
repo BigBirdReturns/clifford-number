@@ -1,0 +1,2100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clifford-number.example/schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.schema.json",
+  "title": "RD-04 seven-state minimum-frontier capture-adjudication product objects",
+  "description": "Closed top-level and custody-object schema for all eleven JSON objects; the executable validator closes route, field, matrix-row, and evidence relationships.",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "prepared_at",
+        "route_disposition_order",
+        "permitted_field_terminal_states",
+        "counts",
+        "route_decisions",
+        "field_decisions",
+        "authority"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-mf7-authored-adjudication-decisions@1"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "prepared_at": {
+          "type": "string"
+        },
+        "route_disposition_order": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "permitted_field_terminal_states": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "counts": {
+          "type": "object",
+          "required": [
+            "route_decisions",
+            "terminal_route_decisions",
+            "source_admissions",
+            "field_decisions",
+            "observed_field_decisions",
+            "not_publicly_recovered_field_decisions",
+            "field_terminalizations",
+            "row_terminalizations",
+            "class_closures",
+            "result_spawned_requests"
+          ],
+          "properties": {
+            "route_decisions": {
+              "type": "integer"
+            },
+            "terminal_route_decisions": {
+              "type": "integer"
+            },
+            "source_admissions": {
+              "type": "integer"
+            },
+            "field_decisions": {
+              "type": "integer"
+            },
+            "observed_field_decisions": {
+              "type": "integer"
+            },
+            "not_publicly_recovered_field_decisions": {
+              "type": "integer"
+            },
+            "field_terminalizations": {
+              "type": "integer"
+            },
+            "row_terminalizations": {
+              "type": "integer"
+            },
+            "class_closures": {
+              "type": "integer"
+            },
+            "result_spawned_requests": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "route_decisions": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "field_decisions": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "authority": {
+          "type": "object",
+          "required": [
+            "outside_human_dependency",
+            "external_contacts",
+            "external_reviews",
+            "reviewed_disposition_changes",
+            "publication_effect",
+            "adoption_effect",
+            "graph_effect",
+            "national_prevalence_effect",
+            "discrimination_effect",
+            "coordination_effect",
+            "common_purpose_effect",
+            "racial_order_effect",
+            "complete_compact_effect"
+          ],
+          "properties": {
+            "outside_human_dependency": {
+              "type": "boolean"
+            },
+            "external_contacts": {
+              "type": "integer"
+            },
+            "external_reviews": {
+              "type": "integer"
+            },
+            "reviewed_disposition_changes": {
+              "type": "integer"
+            },
+            "publication_effect": {
+              "type": "string"
+            },
+            "adoption_effect": {
+              "type": "string"
+            },
+            "graph_effect": {
+              "type": "string"
+            },
+            "national_prevalence_effect": {
+              "type": "string"
+            },
+            "discrimination_effect": {
+              "type": "string"
+            },
+            "coordination_effect": {
+              "type": "string"
+            },
+            "common_purpose_effect": {
+              "type": "string"
+            },
+            "racial_order_effect": {
+              "type": "string"
+            },
+            "complete_compact_effect": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "title": "authored-adjudication-decisions.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "protocol_pr",
+        "protocol_merge",
+        "protocol_product_commit",
+        "protocol_product_tree",
+        "trigger_pr",
+        "trigger_head",
+        "trigger_merged",
+        "workflow_run",
+        "artifact_id",
+        "artifact_name",
+        "artifact_zip_bytes",
+        "artifact_zip_sha256",
+        "artifact_manifest_entries",
+        "artifact_manifest_combined_sha256",
+        "execution_receipt_sha256",
+        "route_results_sha256",
+        "artifact_manifest_sha256",
+        "capture_started_at",
+        "capture_completed_at",
+        "counts",
+        "authority"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-mf7-capture-custody@1"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "protocol_pr": {
+          "type": "integer"
+        },
+        "protocol_merge": {
+          "type": "string"
+        },
+        "protocol_product_commit": {
+          "type": "string"
+        },
+        "protocol_product_tree": {
+          "type": "string"
+        },
+        "trigger_pr": {
+          "type": "integer"
+        },
+        "trigger_head": {
+          "type": "string"
+        },
+        "trigger_merged": {
+          "type": "boolean"
+        },
+        "workflow_run": {
+          "type": "integer"
+        },
+        "artifact_id": {
+          "type": "integer"
+        },
+        "artifact_name": {
+          "type": "string"
+        },
+        "artifact_zip_bytes": {
+          "type": "integer"
+        },
+        "artifact_zip_sha256": {
+          "type": "string"
+        },
+        "artifact_manifest_entries": {
+          "type": "integer"
+        },
+        "artifact_manifest_combined_sha256": {
+          "type": "string"
+        },
+        "execution_receipt_sha256": {
+          "type": "string"
+        },
+        "route_results_sha256": {
+          "type": "string"
+        },
+        "artifact_manifest_sha256": {
+          "type": "string"
+        },
+        "capture_started_at": {
+          "type": "string"
+        },
+        "capture_completed_at": {
+          "type": "string"
+        },
+        "counts": {
+          "type": "object",
+          "required": [
+            "fixed_routes",
+            "terminal_routes",
+            "http_success_pending_adjudication",
+            "http_non_success",
+            "capture_transport_failure",
+            "adjudicated_disallowed_final_host",
+            "adjudicated_transport_failure",
+            "pdf_bodies",
+            "html_success_bodies",
+            "result_spawned_requests",
+            "source_admissions_at_capture",
+            "field_classifications_at_capture",
+            "row_terminalizations_at_capture",
+            "class_closures_at_capture"
+          ],
+          "properties": {
+            "fixed_routes": {
+              "type": "integer"
+            },
+            "terminal_routes": {
+              "type": "integer"
+            },
+            "http_success_pending_adjudication": {
+              "type": "integer"
+            },
+            "http_non_success": {
+              "type": "integer"
+            },
+            "capture_transport_failure": {
+              "type": "integer"
+            },
+            "adjudicated_disallowed_final_host": {
+              "type": "integer"
+            },
+            "adjudicated_transport_failure": {
+              "type": "integer"
+            },
+            "pdf_bodies": {
+              "type": "integer"
+            },
+            "html_success_bodies": {
+              "type": "integer"
+            },
+            "result_spawned_requests": {
+              "type": "integer"
+            },
+            "source_admissions_at_capture": {
+              "type": "integer"
+            },
+            "field_classifications_at_capture": {
+              "type": "integer"
+            },
+            "row_terminalizations_at_capture": {
+              "type": "integer"
+            },
+            "class_closures_at_capture": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "authority": {
+          "type": "object",
+          "required": [
+            "outside_human_dependency",
+            "external_contacts",
+            "external_reviews",
+            "reviewed_disposition_changes",
+            "publication_effect",
+            "adoption_effect",
+            "graph_effect",
+            "national_prevalence_effect",
+            "discrimination_effect",
+            "coordination_effect",
+            "common_purpose_effect",
+            "racial_order_effect",
+            "complete_compact_effect"
+          ],
+          "properties": {
+            "outside_human_dependency": {
+              "type": "boolean"
+            },
+            "external_contacts": {
+              "type": "integer"
+            },
+            "external_reviews": {
+              "type": "integer"
+            },
+            "reviewed_disposition_changes": {
+              "type": "integer"
+            },
+            "publication_effect": {
+              "type": "string"
+            },
+            "adoption_effect": {
+              "type": "string"
+            },
+            "graph_effect": {
+              "type": "string"
+            },
+            "national_prevalence_effect": {
+              "type": "string"
+            },
+            "discrimination_effect": {
+              "type": "string"
+            },
+            "coordination_effect": {
+              "type": "string"
+            },
+            "common_purpose_effect": {
+              "type": "string"
+            },
+            "racial_order_effect": {
+              "type": "string"
+            },
+            "complete_compact_effect": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "title": "capture-custody.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "combined_sha256",
+        "entries",
+        "schema_version"
+      ],
+      "properties": {
+        "combined_sha256": {
+          "type": "string"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "schema_version": {
+          "const": "ssc-rd04-wave03-mf7-minimum-frontier-capture-manifest@1"
+        }
+      },
+      "additionalProperties": false,
+      "title": "capture-manifest.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "protocol_id",
+        "routes",
+        "schema_version"
+      ],
+      "properties": {
+        "protocol_id": {
+          "type": "string"
+        },
+        "routes": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "schema_version": {
+          "const": "ssc-rd04-wave03-mf7-minimum-frontier-route-results@1"
+        }
+      },
+      "additionalProperties": false,
+      "title": "capture-route-results.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "input_paths",
+        "derived_paths",
+        "predecessor",
+        "capture",
+        "counts",
+        "current_result",
+        "next_bounded_operation"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-mf7-capture-adjudication-index@1"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "input_paths": {
+          "type": "object",
+          "required": [
+            "capture_route_results",
+            "capture_manifest",
+            "capture_custody",
+            "pdf_visual_review_receipt",
+            "authored_adjudication_decisions",
+            "canonical_predecessor_matrix"
+          ],
+          "properties": {
+            "capture_route_results": {
+              "type": "string"
+            },
+            "capture_manifest": {
+              "type": "string"
+            },
+            "capture_custody": {
+              "type": "string"
+            },
+            "pdf_visual_review_receipt": {
+              "type": "string"
+            },
+            "authored_adjudication_decisions": {
+              "type": "string"
+            },
+            "canonical_predecessor_matrix": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "derived_paths": {
+          "type": "object",
+          "required": [
+            "route_adjudications",
+            "terminal_target_cell_ledger",
+            "promoted_partial_field_matrix",
+            "remaining_open_field_census",
+            "summary",
+            "product_manifest"
+          ],
+          "properties": {
+            "route_adjudications": {
+              "type": "string"
+            },
+            "terminal_target_cell_ledger": {
+              "type": "string"
+            },
+            "promoted_partial_field_matrix": {
+              "type": "string"
+            },
+            "remaining_open_field_census": {
+              "type": "string"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "product_manifest": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "predecessor": {
+          "type": "object",
+          "required": [
+            "product_commit",
+            "product_tree",
+            "merge_commit",
+            "matrix_path",
+            "matrix_sha256",
+            "terminal_cells",
+            "still_open_cells",
+            "terminal_substantive_cells",
+            "still_open_substantive_cells",
+            "terminal_units"
+          ],
+          "properties": {
+            "product_commit": {
+              "type": "string"
+            },
+            "product_tree": {
+              "type": "string"
+            },
+            "merge_commit": {
+              "type": "string"
+            },
+            "matrix_path": {
+              "type": "string"
+            },
+            "matrix_sha256": {
+              "type": "string"
+            },
+            "terminal_cells": {
+              "type": "integer"
+            },
+            "still_open_cells": {
+              "type": "integer"
+            },
+            "terminal_substantive_cells": {
+              "type": "integer"
+            },
+            "still_open_substantive_cells": {
+              "type": "integer"
+            },
+            "terminal_units": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "capture": {
+          "type": "object",
+          "required": [
+            "protocol_pr",
+            "protocol_merge",
+            "trigger_pr",
+            "workflow_run",
+            "artifact_id",
+            "artifact_zip_sha256"
+          ],
+          "properties": {
+            "protocol_pr": {
+              "type": "integer"
+            },
+            "protocol_merge": {
+              "type": "string"
+            },
+            "trigger_pr": {
+              "type": "integer"
+            },
+            "workflow_run": {
+              "type": "integer"
+            },
+            "artifact_id": {
+              "type": "integer"
+            },
+            "artifact_zip_sha256": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "counts": {
+          "type": "object",
+          "required": [
+            "fixed_routes",
+            "terminal_route_adjudications",
+            "source_admissions",
+            "target_cells",
+            "observed_target_cells",
+            "not_publicly_recovered_target_cells",
+            "terminal_cells_before",
+            "terminal_cells_after",
+            "still_open_cells_after",
+            "terminal_substantive_cells_after",
+            "still_open_substantive_cells_after",
+            "target_rows_ready_for_separate_row_state_adjudication",
+            "terminal_units_after",
+            "class_closed",
+            "result_spawned_requests"
+          ],
+          "properties": {
+            "fixed_routes": {
+              "type": "integer"
+            },
+            "terminal_route_adjudications": {
+              "type": "integer"
+            },
+            "source_admissions": {
+              "type": "integer"
+            },
+            "target_cells": {
+              "type": "integer"
+            },
+            "observed_target_cells": {
+              "type": "integer"
+            },
+            "not_publicly_recovered_target_cells": {
+              "type": "integer"
+            },
+            "terminal_cells_before": {
+              "type": "integer"
+            },
+            "terminal_cells_after": {
+              "type": "integer"
+            },
+            "still_open_cells_after": {
+              "type": "integer"
+            },
+            "terminal_substantive_cells_after": {
+              "type": "integer"
+            },
+            "still_open_substantive_cells_after": {
+              "type": "integer"
+            },
+            "target_rows_ready_for_separate_row_state_adjudication": {
+              "type": "integer"
+            },
+            "terminal_units_after": {
+              "type": "integer"
+            },
+            "class_closed": {
+              "type": "boolean"
+            },
+            "result_spawned_requests": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "current_result": {
+          "type": "object",
+          "required": [
+            "capture_adjudication_complete",
+            "thirty_route_decisions_terminal",
+            "twenty_one_target_decisions_composed",
+            "seven_target_rows_ready_for_separate_row_state_adjudication",
+            "field_matrix_terminal",
+            "class_state",
+            "class_closed",
+            "outside_human_dependency",
+            "reviewed_disposition_effect",
+            "publication_effect",
+            "adoption_effect",
+            "graph_effect",
+            "national_prevalence_effect",
+            "discrimination_effect",
+            "coordination_effect",
+            "common_purpose_effect",
+            "racial_order_effect",
+            "complete_compact_effect"
+          ],
+          "properties": {
+            "capture_adjudication_complete": {
+              "type": "boolean"
+            },
+            "thirty_route_decisions_terminal": {
+              "type": "boolean"
+            },
+            "twenty_one_target_decisions_composed": {
+              "type": "boolean"
+            },
+            "seven_target_rows_ready_for_separate_row_state_adjudication": {
+              "type": "boolean"
+            },
+            "field_matrix_terminal": {
+              "type": "boolean"
+            },
+            "class_state": {
+              "type": "string"
+            },
+            "class_closed": {
+              "type": "boolean"
+            },
+            "outside_human_dependency": {
+              "type": "boolean"
+            },
+            "reviewed_disposition_effect": {
+              "type": "string"
+            },
+            "publication_effect": {
+              "type": "string"
+            },
+            "adoption_effect": {
+              "type": "string"
+            },
+            "graph_effect": {
+              "type": "string"
+            },
+            "national_prevalence_effect": {
+              "type": "string"
+            },
+            "discrimination_effect": {
+              "type": "string"
+            },
+            "coordination_effect": {
+              "type": "string"
+            },
+            "common_purpose_effect": {
+              "type": "string"
+            },
+            "racial_order_effect": {
+              "type": "string"
+            },
+            "complete_compact_effect": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "next_bounded_operation": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "title": "index.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "reviewed_at",
+        "pdf_routes",
+        "pdf_routes_visually_inspected",
+        "rows",
+        "authority"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-mf7-pdf-visual-review-receipt@1"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "reviewed_at": {
+          "type": "string"
+        },
+        "pdf_routes": {
+          "type": "integer"
+        },
+        "pdf_routes_visually_inspected": {
+          "type": "integer"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "authority": {
+          "type": "object",
+          "required": [
+            "outside_human_dependency",
+            "external_reviews",
+            "publication_effect",
+            "adoption_effect",
+            "graph_effect"
+          ],
+          "properties": {
+            "outside_human_dependency": {
+              "type": "boolean"
+            },
+            "external_reviews": {
+              "type": "integer"
+            },
+            "publication_effect": {
+              "type": "string"
+            },
+            "adoption_effect": {
+              "type": "string"
+            },
+            "graph_effect": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "title": "pdf-visual-review-receipt.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "permanent_data_files",
+        "manifest_entries",
+        "combined_mode",
+        "entries",
+        "file_set_combined_sha256",
+        "terminal_cells_before",
+        "target_cells",
+        "newly_terminalized_cells",
+        "terminal_cells_after",
+        "still_open_cells_after",
+        "terminal_substantive_cells_after",
+        "still_open_substantive_cells_after",
+        "target_rows_ready_for_separate_row_state_adjudication",
+        "terminal_units_after",
+        "class_closed",
+        "cumulative_ledger_effect",
+        "outside_human_dependency",
+        "reviewed_disposition_effect",
+        "publication_effect",
+        "adoption_effect",
+        "graph_effect",
+        "national_prevalence_effect",
+        "discrimination_effect",
+        "coordination_effect",
+        "common_purpose_effect",
+        "racial_order_effect",
+        "complete_compact_effect"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-mf7-capture-adjudication-product-manifest@1"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "permanent_data_files": {
+          "type": "integer"
+        },
+        "manifest_entries": {
+          "type": "integer"
+        },
+        "combined_mode": {
+          "type": "string"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "file_set_combined_sha256": {
+          "type": "string"
+        },
+        "terminal_cells_before": {
+          "type": "integer"
+        },
+        "target_cells": {
+          "type": "integer"
+        },
+        "newly_terminalized_cells": {
+          "type": "integer"
+        },
+        "terminal_cells_after": {
+          "type": "integer"
+        },
+        "still_open_cells_after": {
+          "type": "integer"
+        },
+        "terminal_substantive_cells_after": {
+          "type": "integer"
+        },
+        "still_open_substantive_cells_after": {
+          "type": "integer"
+        },
+        "target_rows_ready_for_separate_row_state_adjudication": {
+          "type": "integer"
+        },
+        "terminal_units_after": {
+          "type": "integer"
+        },
+        "class_closed": {
+          "type": "boolean"
+        },
+        "cumulative_ledger_effect": {
+          "type": "string"
+        },
+        "outside_human_dependency": {
+          "type": "boolean"
+        },
+        "reviewed_disposition_effect": {
+          "type": "string"
+        },
+        "publication_effect": {
+          "type": "string"
+        },
+        "adoption_effect": {
+          "type": "string"
+        },
+        "graph_effect": {
+          "type": "string"
+        },
+        "national_prevalence_effect": {
+          "type": "string"
+        },
+        "discrimination_effect": {
+          "type": "string"
+        },
+        "coordination_effect": {
+          "type": "string"
+        },
+        "common_purpose_effect": {
+          "type": "string"
+        },
+        "racial_order_effect": {
+          "type": "string"
+        },
+        "complete_compact_effect": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "title": "product-manifest.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "field_order",
+        "counts",
+        "rows",
+        "current_result",
+        "source_product",
+        "composition_product",
+        "row_state_product",
+        "minimum_frontier_capture_adjudication_product"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-mf7-capture-adjudication-promoted-partial-field-matrix@1"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "field_order": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "counts": {
+          "type": "object",
+          "required": [
+            "units",
+            "required_fields_per_unit",
+            "materialized_cells",
+            "inherited_terminal_cells",
+            "target_substantive_cells",
+            "newly_terminalized_cells",
+            "evidence_complete_cells",
+            "observed_cells",
+            "not_publicly_recovered_cells",
+            "still_open_cells",
+            "terminal_cells",
+            "source_rows_promoted",
+            "reported_use_rows",
+            "reported_no_use_rows",
+            "terminal_substantive_cells",
+            "still_open_substantive_cells",
+            "row_terminal_state_cells_terminal",
+            "row_terminal_state_cells_open",
+            "terminal_units",
+            "class_closed"
+          ],
+          "properties": {
+            "units": {
+              "type": "integer"
+            },
+            "required_fields_per_unit": {
+              "type": "integer"
+            },
+            "materialized_cells": {
+              "type": "integer"
+            },
+            "inherited_terminal_cells": {
+              "type": "integer"
+            },
+            "target_substantive_cells": {
+              "type": "integer"
+            },
+            "newly_terminalized_cells": {
+              "type": "integer"
+            },
+            "evidence_complete_cells": {
+              "type": "integer"
+            },
+            "observed_cells": {
+              "type": "integer"
+            },
+            "not_publicly_recovered_cells": {
+              "type": "integer"
+            },
+            "still_open_cells": {
+              "type": "integer"
+            },
+            "terminal_cells": {
+              "type": "integer"
+            },
+            "source_rows_promoted": {
+              "type": "integer"
+            },
+            "reported_use_rows": {
+              "type": "integer"
+            },
+            "reported_no_use_rows": {
+              "type": "integer"
+            },
+            "terminal_substantive_cells": {
+              "type": "integer"
+            },
+            "still_open_substantive_cells": {
+              "type": "integer"
+            },
+            "row_terminal_state_cells_terminal": {
+              "type": "integer"
+            },
+            "row_terminal_state_cells_open": {
+              "type": "integer"
+            },
+            "terminal_units": {
+              "type": "integer"
+            },
+            "class_closed": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "current_result": {
+          "type": "object",
+          "required": [
+            "canonical_state_identity_terminal",
+            "source_identities_and_exact_custody_terminal",
+            "discretionary_exemption_field_terminal",
+            "minimum_frontier_target_cells_adjudicated",
+            "terminal_cells",
+            "still_open_cells",
+            "terminal_substantive_cells",
+            "still_open_substantive_cells",
+            "row_terminal_state_cells_terminal",
+            "row_terminal_state_cells_open",
+            "terminal_units",
+            "terminal_unit_ids",
+            "target_rows_ready_for_separate_row_state_adjudication",
+            "field_matrix_terminal",
+            "class_state",
+            "class_closed",
+            "outside_human_dependency",
+            "reviewed_disposition_effect",
+            "publication_effect",
+            "adoption_effect",
+            "graph_effect",
+            "national_prevalence_effect",
+            "discrimination_effect",
+            "coordination_effect",
+            "common_purpose_effect",
+            "racial_order_effect",
+            "complete_compact_effect"
+          ],
+          "properties": {
+            "canonical_state_identity_terminal": {
+              "type": "string"
+            },
+            "source_identities_and_exact_custody_terminal": {
+              "type": "string"
+            },
+            "discretionary_exemption_field_terminal": {
+              "type": "string"
+            },
+            "minimum_frontier_target_cells_adjudicated": {
+              "type": "string"
+            },
+            "terminal_cells": {
+              "type": "string"
+            },
+            "still_open_cells": {
+              "type": "string"
+            },
+            "terminal_substantive_cells": {
+              "type": "integer"
+            },
+            "still_open_substantive_cells": {
+              "type": "integer"
+            },
+            "row_terminal_state_cells_terminal": {
+              "type": "integer"
+            },
+            "row_terminal_state_cells_open": {
+              "type": "integer"
+            },
+            "terminal_units": {
+              "type": "integer"
+            },
+            "terminal_unit_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "target_rows_ready_for_separate_row_state_adjudication": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "field_matrix_terminal": {
+              "type": "boolean"
+            },
+            "class_state": {
+              "type": "string"
+            },
+            "class_closed": {
+              "type": "boolean"
+            },
+            "outside_human_dependency": {
+              "type": "boolean"
+            },
+            "reviewed_disposition_effect": {
+              "type": "string"
+            },
+            "publication_effect": {
+              "type": "string"
+            },
+            "adoption_effect": {
+              "type": "string"
+            },
+            "graph_effect": {
+              "type": "string"
+            },
+            "national_prevalence_effect": {
+              "type": "string"
+            },
+            "discrimination_effect": {
+              "type": "string"
+            },
+            "coordination_effect": {
+              "type": "string"
+            },
+            "common_purpose_effect": {
+              "type": "string"
+            },
+            "racial_order_effect": {
+              "type": "string"
+            },
+            "complete_compact_effect": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "source_product": {
+          "type": "object",
+          "required": [
+            "source_custody_path",
+            "source_page_text_path",
+            "state_field_register_path",
+            "source_id",
+            "reference_period"
+          ],
+          "properties": {
+            "source_custody_path": {
+              "type": "string"
+            },
+            "source_page_text_path": {
+              "type": "string"
+            },
+            "state_field_register_path": {
+              "type": "string"
+            },
+            "source_id": {
+              "type": "string"
+            },
+            "reference_period": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "composition_product": {
+          "type": "object",
+          "required": [
+            "predecessor_matrix_path",
+            "predecessor_matrix_sha256",
+            "predecessor_product_commit",
+            "predecessor_merge_commit",
+            "capture_custody_path",
+            "authored_decisions_path",
+            "capture_reference_period",
+            "composition_rule"
+          ],
+          "properties": {
+            "predecessor_matrix_path": {
+              "type": "string"
+            },
+            "predecessor_matrix_sha256": {
+              "type": "string"
+            },
+            "predecessor_product_commit": {
+              "type": "string"
+            },
+            "predecessor_merge_commit": {
+              "type": "string"
+            },
+            "capture_custody_path": {
+              "type": "string"
+            },
+            "authored_decisions_path": {
+              "type": "string"
+            },
+            "capture_reference_period": {
+              "type": "string"
+            },
+            "composition_rule": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "row_state_product": {
+          "type": "object",
+          "required": [
+            "predecessor_matrix_path",
+            "predecessor_matrix_sha256",
+            "predecessor_product_commit",
+            "predecessor_product_tree",
+            "predecessor_merge_commit",
+            "authored_decisions_path",
+            "row_state_ledger_path",
+            "composition_rule"
+          ],
+          "properties": {
+            "predecessor_matrix_path": {
+              "type": "string"
+            },
+            "predecessor_matrix_sha256": {
+              "type": "string"
+            },
+            "predecessor_product_commit": {
+              "type": "string"
+            },
+            "predecessor_product_tree": {
+              "type": "string"
+            },
+            "predecessor_merge_commit": {
+              "type": "string"
+            },
+            "authored_decisions_path": {
+              "type": "string"
+            },
+            "row_state_ledger_path": {
+              "type": "string"
+            },
+            "composition_rule": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "minimum_frontier_capture_adjudication_product": {
+          "type": "object",
+          "required": [
+            "predecessor_matrix_path",
+            "predecessor_matrix_sha256",
+            "predecessor_product_commit",
+            "predecessor_product_tree",
+            "predecessor_merge_commit",
+            "protocol_merge_commit",
+            "protocol_product_commit",
+            "capture_workflow_run",
+            "capture_artifact_id",
+            "capture_custody_path",
+            "authored_decisions_path",
+            "composition_rule"
+          ],
+          "properties": {
+            "predecessor_matrix_path": {
+              "type": "string"
+            },
+            "predecessor_matrix_sha256": {
+              "type": "string"
+            },
+            "predecessor_product_commit": {
+              "type": "string"
+            },
+            "predecessor_product_tree": {
+              "type": "string"
+            },
+            "predecessor_merge_commit": {
+              "type": "string"
+            },
+            "protocol_merge_commit": {
+              "type": "string"
+            },
+            "protocol_product_commit": {
+              "type": "string"
+            },
+            "capture_workflow_run": {
+              "type": "integer"
+            },
+            "capture_artifact_id": {
+              "type": "integer"
+            },
+            "capture_custody_path": {
+              "type": "string"
+            },
+            "authored_decisions_path": {
+              "type": "string"
+            },
+            "composition_rule": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "title": "promoted-partial-field-matrix.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "matrix_path",
+        "predecessor_matrix_path",
+        "counts",
+        "field_counts",
+        "terminal_rows",
+        "target_rows_ready_for_separate_row_state_adjudication",
+        "open_cells",
+        "authority_boundary"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-mf7-capture-adjudication-remaining-open-field-census@1"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "matrix_path": {
+          "type": "string"
+        },
+        "predecessor_matrix_path": {
+          "type": "string"
+        },
+        "counts": {
+          "type": "object",
+          "required": [
+            "units",
+            "required_cells",
+            "terminal_cells",
+            "still_open_cells",
+            "substantive_cells",
+            "terminal_substantive_cells",
+            "still_open_substantive_cells",
+            "row_terminal_state_cells_terminal",
+            "row_terminal_state_cells_open",
+            "terminal_units",
+            "open_units",
+            "target_rows_ready_for_separate_row_state_adjudication",
+            "class_closed"
+          ],
+          "properties": {
+            "units": {
+              "type": "integer"
+            },
+            "required_cells": {
+              "type": "integer"
+            },
+            "terminal_cells": {
+              "type": "integer"
+            },
+            "still_open_cells": {
+              "type": "integer"
+            },
+            "substantive_cells": {
+              "type": "integer"
+            },
+            "terminal_substantive_cells": {
+              "type": "integer"
+            },
+            "still_open_substantive_cells": {
+              "type": "integer"
+            },
+            "row_terminal_state_cells_terminal": {
+              "type": "integer"
+            },
+            "row_terminal_state_cells_open": {
+              "type": "integer"
+            },
+            "terminal_units": {
+              "type": "integer"
+            },
+            "open_units": {
+              "type": "integer"
+            },
+            "target_rows_ready_for_separate_row_state_adjudication": {
+              "type": "integer"
+            },
+            "class_closed": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "field_counts": {
+          "type": "object",
+          "required": [
+            "canonical_state_identity",
+            "operative_state_implementation_authority_and_version",
+            "implementation_effective_date_or_typed_gap",
+            "abawd_or_work_requirement_waiver_state_and_governing_period",
+            "discretionary_exemption_authority_and_reported_state_practice",
+            "fitness_for_work_or_eligibility_screening_rule",
+            "verification_evidence_and_staff_discretion_surface",
+            "source_identities_and_exact_custody",
+            "field_and_row_terminal_state"
+          ],
+          "properties": {
+            "canonical_state_identity": {
+              "type": "object"
+            },
+            "operative_state_implementation_authority_and_version": {
+              "type": "object"
+            },
+            "implementation_effective_date_or_typed_gap": {
+              "type": "object"
+            },
+            "abawd_or_work_requirement_waiver_state_and_governing_period": {
+              "type": "object"
+            },
+            "discretionary_exemption_authority_and_reported_state_practice": {
+              "type": "object"
+            },
+            "fitness_for_work_or_eligibility_screening_rule": {
+              "type": "object"
+            },
+            "verification_evidence_and_staff_discretion_surface": {
+              "type": "object"
+            },
+            "source_identities_and_exact_custody": {
+              "type": "object"
+            },
+            "field_and_row_terminal_state": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        "terminal_rows": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "target_rows_ready_for_separate_row_state_adjudication": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "open_cells": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "authority_boundary": {
+          "type": "object",
+          "required": [
+            "outside_human_dependency",
+            "reviewed_disposition_effect",
+            "publication_effect",
+            "adoption_effect",
+            "graph_effect",
+            "national_prevalence_effect",
+            "discrimination_effect",
+            "coordination_effect",
+            "common_purpose_effect",
+            "racial_order_effect",
+            "complete_compact_effect"
+          ],
+          "properties": {
+            "outside_human_dependency": {
+              "type": "boolean"
+            },
+            "reviewed_disposition_effect": {
+              "type": "string"
+            },
+            "publication_effect": {
+              "type": "string"
+            },
+            "adoption_effect": {
+              "type": "string"
+            },
+            "graph_effect": {
+              "type": "string"
+            },
+            "national_prevalence_effect": {
+              "type": "string"
+            },
+            "discrimination_effect": {
+              "type": "string"
+            },
+            "coordination_effect": {
+              "type": "string"
+            },
+            "common_purpose_effect": {
+              "type": "string"
+            },
+            "racial_order_effect": {
+              "type": "string"
+            },
+            "complete_compact_effect": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "title": "remaining-open-field-census.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "protocol_pr",
+        "protocol_merge",
+        "capture_pr",
+        "capture_workflow_run",
+        "capture_artifact_id",
+        "capture_artifact_zip_sha256",
+        "fixed_routes",
+        "terminal_route_adjudications",
+        "route_dispositions",
+        "source_admissions",
+        "target_cells",
+        "observed_field_decisions",
+        "not_publicly_recovered_field_decisions",
+        "canonical_predecessor",
+        "composition",
+        "target_state_results",
+        "class_state",
+        "class_closed",
+        "cumulative_ledger_effect",
+        "result_spawned_requests",
+        "outside_human_dependency",
+        "reviewed_disposition_effect",
+        "publication_effect",
+        "adoption_effect",
+        "graph_effect",
+        "national_prevalence_effect",
+        "discrimination_effect",
+        "coordination_effect",
+        "common_purpose_effect",
+        "racial_order_effect",
+        "complete_compact_effect"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-mf7-capture-adjudication-summary@1"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "protocol_pr": {
+          "type": "integer"
+        },
+        "protocol_merge": {
+          "type": "string"
+        },
+        "capture_pr": {
+          "type": "integer"
+        },
+        "capture_workflow_run": {
+          "type": "integer"
+        },
+        "capture_artifact_id": {
+          "type": "integer"
+        },
+        "capture_artifact_zip_sha256": {
+          "type": "string"
+        },
+        "fixed_routes": {
+          "type": "integer"
+        },
+        "terminal_route_adjudications": {
+          "type": "integer"
+        },
+        "route_dispositions": {
+          "type": "object",
+          "required": [
+            "terminal_disallowed_final_host",
+            "terminal_source_admitted",
+            "terminal_content_insufficient",
+            "terminal_transport_failure",
+            "terminal_http_non_success"
+          ],
+          "properties": {
+            "terminal_disallowed_final_host": {
+              "type": "integer"
+            },
+            "terminal_source_admitted": {
+              "type": "integer"
+            },
+            "terminal_content_insufficient": {
+              "type": "integer"
+            },
+            "terminal_transport_failure": {
+              "type": "integer"
+            },
+            "terminal_http_non_success": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "source_admissions": {
+          "type": "integer"
+        },
+        "target_cells": {
+          "type": "integer"
+        },
+        "observed_field_decisions": {
+          "type": "integer"
+        },
+        "not_publicly_recovered_field_decisions": {
+          "type": "integer"
+        },
+        "canonical_predecessor": {
+          "type": "object",
+          "required": [
+            "product_commit",
+            "product_tree",
+            "merge_commit",
+            "matrix_path",
+            "matrix_sha256",
+            "terminal_cells",
+            "still_open_cells",
+            "terminal_substantive_cells",
+            "still_open_substantive_cells",
+            "terminal_units"
+          ],
+          "properties": {
+            "product_commit": {
+              "type": "string"
+            },
+            "product_tree": {
+              "type": "string"
+            },
+            "merge_commit": {
+              "type": "string"
+            },
+            "matrix_path": {
+              "type": "string"
+            },
+            "matrix_sha256": {
+              "type": "string"
+            },
+            "terminal_cells": {
+              "type": "integer"
+            },
+            "still_open_cells": {
+              "type": "integer"
+            },
+            "terminal_substantive_cells": {
+              "type": "integer"
+            },
+            "still_open_substantive_cells": {
+              "type": "integer"
+            },
+            "terminal_units": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "composition": {
+          "type": "object",
+          "required": [
+            "predecessor_terminal_cells",
+            "newly_terminalized_cells",
+            "terminal_cells_after",
+            "still_open_cells_after",
+            "terminal_substantive_cells_after",
+            "still_open_substantive_cells_after",
+            "target_rows_ready_for_separate_row_state_adjudication",
+            "row_state_cells_terminalized",
+            "terminal_units_after"
+          ],
+          "properties": {
+            "predecessor_terminal_cells": {
+              "type": "integer"
+            },
+            "newly_terminalized_cells": {
+              "type": "integer"
+            },
+            "terminal_cells_after": {
+              "type": "integer"
+            },
+            "still_open_cells_after": {
+              "type": "integer"
+            },
+            "terminal_substantive_cells_after": {
+              "type": "integer"
+            },
+            "still_open_substantive_cells_after": {
+              "type": "integer"
+            },
+            "target_rows_ready_for_separate_row_state_adjudication": {
+              "type": "integer"
+            },
+            "row_state_cells_terminalized": {
+              "type": "integer"
+            },
+            "terminal_units_after": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "target_state_results": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "class_state": {
+          "type": "string"
+        },
+        "class_closed": {
+          "type": "boolean"
+        },
+        "cumulative_ledger_effect": {
+          "type": "string"
+        },
+        "result_spawned_requests": {
+          "type": "integer"
+        },
+        "outside_human_dependency": {
+          "type": "boolean"
+        },
+        "reviewed_disposition_effect": {
+          "type": "string"
+        },
+        "publication_effect": {
+          "type": "string"
+        },
+        "adoption_effect": {
+          "type": "string"
+        },
+        "graph_effect": {
+          "type": "string"
+        },
+        "national_prevalence_effect": {
+          "type": "string"
+        },
+        "discrimination_effect": {
+          "type": "string"
+        },
+        "coordination_effect": {
+          "type": "string"
+        },
+        "common_purpose_effect": {
+          "type": "string"
+        },
+        "racial_order_effect": {
+          "type": "string"
+        },
+        "complete_compact_effect": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "title": "summary.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "predecessor",
+        "counts",
+        "cells",
+        "authority"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-mf7-terminal-target-cell-ledger@1"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "predecessor": {
+          "type": "object",
+          "required": [
+            "matrix_path",
+            "matrix_sha256",
+            "product_commit",
+            "product_tree",
+            "merge_commit",
+            "terminal_cells",
+            "terminal_substantive_cells"
+          ],
+          "properties": {
+            "matrix_path": {
+              "type": "string"
+            },
+            "matrix_sha256": {
+              "type": "string"
+            },
+            "product_commit": {
+              "type": "string"
+            },
+            "product_tree": {
+              "type": "string"
+            },
+            "merge_commit": {
+              "type": "string"
+            },
+            "terminal_cells": {
+              "type": "integer"
+            },
+            "terminal_substantive_cells": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "counts": {
+          "type": "object",
+          "required": [
+            "target_cells",
+            "newly_terminalized_cells",
+            "observed_decisions",
+            "not_publicly_recovered_decisions",
+            "row_terminalizations",
+            "class_closures"
+          ],
+          "properties": {
+            "target_cells": {
+              "type": "integer"
+            },
+            "newly_terminalized_cells": {
+              "type": "integer"
+            },
+            "observed_decisions": {
+              "type": "integer"
+            },
+            "not_publicly_recovered_decisions": {
+              "type": "integer"
+            },
+            "row_terminalizations": {
+              "type": "integer"
+            },
+            "class_closures": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "cells": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "authority": {
+          "type": "object",
+          "required": [
+            "outside_human_dependency",
+            "publication_effect",
+            "adoption_effect",
+            "graph_effect",
+            "national_prevalence_effect",
+            "discrimination_effect",
+            "coordination_effect",
+            "common_purpose_effect",
+            "racial_order_effect",
+            "complete_compact_effect"
+          ],
+          "properties": {
+            "outside_human_dependency": {
+              "type": "boolean"
+            },
+            "publication_effect": {
+              "type": "string"
+            },
+            "adoption_effect": {
+              "type": "string"
+            },
+            "graph_effect": {
+              "type": "string"
+            },
+            "national_prevalence_effect": {
+              "type": "string"
+            },
+            "discrimination_effect": {
+              "type": "string"
+            },
+            "coordination_effect": {
+              "type": "string"
+            },
+            "common_purpose_effect": {
+              "type": "string"
+            },
+            "racial_order_effect": {
+              "type": "string"
+            },
+            "complete_compact_effect": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "title": "terminal-target-cell-ledger.json"
+    }
+  ]
+}

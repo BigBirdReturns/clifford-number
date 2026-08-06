@@ -1,0 +1,104 @@
+name: Status sovereignty RD Wave 03 RD-04 seven-state capture adjudication
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication/**'
+      - 'docs/milestones/ssc-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.schema.json'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.test.js'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication/**'
+      - 'docs/milestones/ssc-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.schema.json'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.test.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd04-wave03-mf7-capture-adjudication-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Report exact head and tree
+        run: |
+          printf 'head=%s\n' "$(git rev-parse HEAD)"
+          printf 'tree=%s\n' "$(git rev-parse 'HEAD^{tree}')"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+      - name: Validate capture custody, route adjudications, 21 terminal cells, and authority ceiling
+        run: |
+          set -Eeuo pipefail
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.mjs
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import jsonschema
+          data=Path('data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication')
+          schema=json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.schema.json').read_text())
+          files=sorted(data.glob('*.json'))
+          if len(files)!=11:
+              raise SystemExit(f'JSON object denominator drift: {len(files)}')
+          validator=jsonschema.Draft202012Validator(schema)
+          for path in files:
+              validator.validate(json.loads(path.read_text()))
+          print('closed_schema_validation=pass objects=11')
+          PY
+          node test/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove clean deterministic replay
+        run: |
+          set -Eeuo pipefail
+          git restore --staged --worktree .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+      - name: Preserve exact seven-state capture adjudication
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-wave03-mf7-capture-adjudication
+          path: |
+            data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication
+            schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.schema.json
+            docs/milestones/ssc-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.md
+          if-no-files-found: error
+          retention-days: 90
