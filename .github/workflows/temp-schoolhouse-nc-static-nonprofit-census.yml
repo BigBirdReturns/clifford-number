@@ -1,0 +1,221 @@
+name: TEMP acquire School.House NC static nonprofit census
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.schoolhouse-nc-static-nonprofit-census/**'
+      - '.github/workflows/temp-schoolhouse-nc-static-nonprofit-census.yml'
+
+concurrency:
+  group: schoolhouse-nc-static-nonprofit-census-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Reconstruct checksum-bound GET-only census
+        env:
+          OUTPUT_DIR: /tmp/schoolhouse-nc-static-nonprofit-census
+        run: |
+          set -Eeuo pipefail
+          EXECUTE='.schoolhouse-nc-static-nonprofit-census/EXECUTE'
+          BUNDLE='.schoolhouse-nc-static-nonprofit-census/acquire.py.gz.b64'
+          GZIP='/tmp/acquire-schoolhouse-nc-static-nonprofits.py.gz'
+          SCRIPT='/tmp/acquire-schoolhouse-nc-static-nonprofits.py'
+          PARENT='cf62a80b8628525b1eefc0ffcfae14696cbec700'
+
+          test -s "$EXECUTE" && test -s "$BUNDLE"
+          grep -Fx 'acquire=schoolhouse-nc-static-nonprofit-census-v1' "$EXECUTE"
+          grep -Fx "canonical_parent=$PARENT" "$EXECUTE"
+          grep -Fx 'canonical_parent_route_custody_blob=600715dacaf61aa4e24b96832fa7a28b6f9596cd' "$EXECUTE"
+          grep -Fx 'canonical_parent_root_results_blob=d9f3d937245ed8f9d1375873643fb8cb4b1cc2aa' "$EXECUTE"
+          grep -Fx 'canonical_parent_schoolhouse_blob=65f79a61da594fed24aa14761b0dcc1173475698' "$EXECUTE"
+          grep -Fx 'route_count=2' "$EXECUTE"
+          grep -Fx 'request_method=GET' "$EXECUTE"
+          grep -Fx 'interactive_search_submissions=0' "$EXECUTE"
+          grep -Fx 'form_submissions=0' "$EXECUTE"
+          grep -Fx 'raw_html_retained=false' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+          grep -Fx 'identity_admitted=false' "$EXECUTE"
+          grep -Fx 'graph_effect=none' "$EXECUTE"
+
+          git cat-file -e "$PARENT^{commit}"
+          test "$(git rev-parse "$PARENT:data/intake/bvvc-defense-capital/schoolhouse-charity-nc-second-level-route-custody.json")" = '600715dacaf61aa4e24b96832fa7a28b6f9596cd'
+          test "$(git rev-parse "$PARENT:data/intake/bvvc-defense-capital/schoolhouse-charity-nc-second-level-root-route-results.jsonl")" = 'd9f3d937245ed8f9d1375873643fb8cb4b1cc2aa'
+          test "$(git rev-parse "$PARENT:data/intake/bvvc-defense-capital/schoolhouse.json")" = '65f79a61da594fed24aa14761b0dcc1173475698'
+
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '12df4be30cf46c9de680114f4ea6f25a840676c8b6bf90f10114b496a04fc937'
+          base64 -d "$BUNDLE" > "$GZIP"
+          test "$(sha256sum "$GZIP" | awk '{print $1}')" = 'aadc59ad47d9ae7615b06e4385fed6ae8242af143ab4980e7c13dab4841d8efb'
+          gzip -dc "$GZIP" > "$SCRIPT"
+          test "$(sha256sum "$SCRIPT" | awk '{print $1}')" = '0e28ed96ae51f2126701ec464fb01e514205377c4fb11f9fc0596c8d72bb103e'
+          python -m py_compile "$SCRIPT"
+          curl --version
+
+      - name: Execute two exact static official routes
+        id: acquisition
+        continue-on-error: true
+        env:
+          OUTPUT_DIR: /tmp/schoolhouse-nc-static-nonprofit-census
+        run: |
+          set +e
+          rm -rf "$OUTPUT_DIR"
+          python /tmp/acquire-schoolhouse-nc-static-nonprofits.py \
+            2>&1 | tee /tmp/schoolhouse-nc-static-nonprofit-census.log
+          status=${PIPESTATUS[0]}
+          mkdir -p "$OUTPUT_DIR"
+          printf '%s\n' "$status" > "$OUTPUT_DIR/RUNNER_EXIT_CODE"
+          cp /tmp/schoolhouse-nc-static-nonprofit-census.log "$OUTPUT_DIR/RUNNER-OUTPUT.log"
+          exit "$status"
+
+      - name: Upload terminal privacy-minimized artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-nc-static-nonprofit-census
+          path: /tmp/schoolhouse-nc-static-nonprofit-census
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require complete two-route custody and privacy boundary
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          ROOT=/tmp/schoolhouse-nc-static-nonprofit-census
+          test -f "$ROOT/RUNNER_EXIT_CODE"
+          test "$(cat "$ROOT/RUNNER_EXIT_CODE")" = '0'
+          for path in \
+            adjudication.json \
+            artifact-manifest.json \
+            block-hit-receipts.jsonl \
+            candidate-rows.jsonl \
+            route-results.jsonl \
+            source-receipt.json \
+            summary.json \
+            target-matrix.json \
+            SHA256SUMS; do
+            test -f "$ROOT/$path"
+          done
+          test -s "$ROOT/adjudication.json"
+          test -s "$ROOT/artifact-manifest.json"
+          test -s "$ROOT/route-results.jsonl"
+          test -s "$ROOT/source-receipt.json"
+          test -s "$ROOT/summary.json"
+          test -s "$ROOT/target-matrix.json"
+          test -s "$ROOT/SHA256SUMS"
+          (cd "$ROOT" && sha256sum -c SHA256SUMS)
+
+          python - "$ROOT" <<'PYVERIFY'
+          from pathlib import Path
+          import json
+          import sys
+
+          root = Path(sys.argv[1])
+          load = lambda name: json.loads((root / name).read_text())
+          rows = lambda name: [json.loads(line) for line in (root / name).read_text().splitlines() if line.strip()]
+          summary = load('summary.json')
+          target = load('target-matrix.json')
+          adjudication = load('adjudication.json')
+          source = load('source-receipt.json')
+          manifest = load('artifact-manifest.json')
+          routes = rows('route-results.jsonl')
+          candidates = rows('candidate-rows.jsonl')
+          blocks = rows('block-hit-receipts.jsonl')
+
+          assert summary['schema_version'] == 'schoolhouse-nc-static-nonprofit-census@1'
+          assert summary['declared_static_routes'] == summary['terminal_routes'] == len(routes) == 2
+          assert summary['accessible_static_html_routes'] + summary['transport_or_http_error_routes'] == 2
+          assert summary['query_submissions'] == summary['form_submissions'] == 0
+          assert summary['source_rows_acquired'] == summary['table_data_rows_screened']
+          assert summary['candidate_rows'] == len(candidates)
+          assert summary['candidate_block_hits'] == len(blocks)
+          assert summary['identity_admitted_rows'] == summary['negative_existence_claims_created'] == 0
+          assert summary['raw_source_retained'] is False
+          assert summary['raw_visible_text_retained'] is False
+          assert summary['raw_script_text_retained'] is False
+          assert summary['street_address_rows_retained'] == 0
+          assert summary['mailing_address_rows_retained'] == 0
+          assert summary['postal_code_rows_retained'] == 0
+          assert summary['contact_detail_rows_retained'] == 0
+          assert summary['hidden_form_values_retained'] == 0
+          assert summary['private_support_rows'] == 0
+          assert summary['outside_human_dependency'] is False
+          assert summary['publication_effect'] == summary['adoption_effect'] == summary['graph_effect'] == 'none'
+
+          assert len({row['route_id'] for row in routes}) == 2
+          assert {row['route_id'] for row in routes} == {'nc-nonprofits-by-county', 'nc-unincorporated-nonprofits'}
+          for row in routes:
+              assert row['method'] == 'GET'
+              assert row['query_submitted'] is False and row['form_submitted'] is False
+              assert row['raw_source_retained'] is False
+              assert row['hidden_form_values_retained'] is False
+              assert row['street_address_rows_retained'] == 0
+              assert row['mailing_address_rows_retained'] == 0
+              assert row['postal_code_rows_retained'] == 0
+              assert row['contact_detail_rows_retained'] == 0
+              assert row['private_support_rows'] == 0
+              assert row['identity_admitted'] is False
+              assert row['negative_existence_claim_created'] is False
+              assert row['outside_human_dependency'] is False
+              assert row['publication_effect'] == row['adoption_effect'] == row['graph_effect'] == 'none'
+              assert row['state'] in {'accessible_static_html', 'transport_or_http_error', 'unexpected_http_status', 'unexpected_content_type', 'body_size_limit_exceeded'}
+              if row['state'] == 'accessible_static_html':
+                  assert row['http_status'] == 200
+                  assert row['body_bytes'] > 0 and row['body_sha256']
+                  assert row['visible_text_sha256']
+
+          assert target['interactive_search_prohibited'] is True
+          assert target['query_submissions'] == 0
+          assert source['query_submissions'] == source['form_submissions'] == 0
+          assert source['raw_source_retained'] is False
+          assert source['identity_admitted'] is False
+          assert adjudication['public_schoolhouse_identity_admitted'] is False
+          assert adjudication['negative_existence_claim_created'] is False
+          assert manifest['counts']['routes'] == 2
+          assert manifest['counts']['candidate_rows'] == len(candidates)
+          assert manifest['counts']['block_hit_receipts'] == len(blocks)
+          assert manifest['raw_source_retained'] is False
+
+          forbidden = {'street_address', 'mailing_address', 'postal_code', 'email', 'phone', 'cookie_value', 'raw_html', 'raw_row', 'raw_text'}
+          assert len({row['candidate_id'] for row in candidates}) == len(candidates)
+          for row in candidates:
+              assert not (forbidden & set(row))
+              assert row['public_schoolhouse_identity_admitted'] is False
+              assert row['negative_existence_claim_created'] is False
+              assert row['street_address_retained'] is False
+              assert row['mailing_address_retained'] is False
+              assert row['postal_code_retained'] is False
+              assert row['contact_detail_retained'] is False
+              assert row['hidden_form_value_retained'] is False
+              assert row['private_support_rows'] == 0
+              assert row['outside_human_dependency'] is False
+              assert row['publication_effect'] == row['adoption_effect'] == row['graph_effect'] == 'none'
+              assert row['schoolhouse_term_hits'] or row['person_target_hits']
+              assert all(len(value) <= 300 for value in row['matching_fragments'])
+
+          assert not any(path.suffix.lower() in {'.html', '.htm', '.zip', '.csv'} for path in root.rglob('*') if path.is_file())
+          print(json.dumps({
+              'routes': len(routes),
+              'accessible_routes': summary['accessible_static_html_routes'],
+              'table_data_rows_screened': summary['table_data_rows_screened'],
+              'candidate_rows': len(candidates),
+              'exact_public_brand_candidate_rows': summary['exact_public_brand_candidate_rows'],
+              'cumberland_candidate_rows': summary['cumberland_candidate_rows'],
+              'fayetteville_candidate_rows': summary['fayetteville_candidate_rows'],
+          }, sort_keys=True))
+          PYVERIFY
