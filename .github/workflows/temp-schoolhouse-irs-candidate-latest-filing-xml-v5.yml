@@ -1,0 +1,300 @@
+name: TEMP acquire School.House IRS candidate latest filing XML v5
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-irs-candidate-latest-filing-xml-v5.yml'
+      - '.schoolhouse-irs-candidate-latest-filing-xml-v5/**'
+  workflow_dispatch:
+
+concurrency:
+  group: schoolhouse-irs-candidate-latest-filing-xml-v5-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  acquire:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-irs-candidate-latest-filing-xml-v5')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out exact v5 carrier
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify predecessor, locator artifact, carrier, and runner custody
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PARENT='773bdf96026e9fe6d5e11f4d9dffa1629e2c0ea3'
+          PARENT_TREE='73d54e1b38eeaff00425108b43294876cc634510'
+          ROOT='.schoolhouse-irs-candidate-latest-filing-xml-v5'
+          EXECUTE="$ROOT/EXECUTE"
+          BUNDLE="$ROOT/acquire.py.gz.b64"
+          WORKFLOW='.github/workflows/temp-schoolhouse-irs-candidate-latest-filing-xml-v5.yml'
+          GZIP="$RUNNER_TEMP/acquire-schoolhouse-irs-candidate-latest-filing-xml-v5.py.gz"
+          RUNNER="$RUNNER_TEMP/acquire-schoolhouse-irs-candidate-latest-filing-xml-v5.py"
+          LOCATOR="$RUNNER_TEMP/schoolhouse-irs-candidate-xml-member-locator-census"
+
+          git fetch --no-tags origin main "$PARENT"
+          git merge-base --is-ancestor "$PARENT" origin/main
+          test "$(git rev-parse "$PARENT^{tree}")" = "$PARENT_TREE"
+          test "$(git merge-base HEAD origin/main)" = "$PARENT"
+          test "$(git rev-parse "origin/main:data/intake/schoolhouse-irs-candidate-filing-index-census/filing-index-matches.jsonl")" = '6fdf8f0510c80b4a0e7d438dd03fc18fee0dd8e9'
+          test "$(git rev-parse "origin/main:data/intake/schoolhouse-irs-candidate-filing-index-census/summary.json")" = '699842a7518cbddc51e25305e8a65a8417860ee7'
+
+          mapfile -t CHANGED < <(git diff --name-only "$PARENT"..HEAD | sort)
+          EXPECTED=(
+            '.github/workflows/temp-schoolhouse-irs-candidate-latest-filing-xml-v5.yml'
+            '.schoolhouse-irs-candidate-latest-filing-xml-v5/EXECUTE'
+            '.schoolhouse-irs-candidate-latest-filing-xml-v5/acquire.py.gz.b64'
+          )
+          test "${#CHANGED[@]}" -eq 3
+          for i in 0 1 2; do test "${CHANGED[$i]}" = "${EXPECTED[$i]}"; done
+          git diff --exit-code -- "$WORKFLOW" "$EXECUTE" "$BUNDLE"
+
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '25018d94b12437be12bf2b496dcc35486460068d439912ea0aed904cb4de3595'
+          base64 -d "$BUNDLE" > "$GZIP"
+          test "$(sha256sum "$GZIP" | awk '{print $1}')" = 'e960e0ed5fd95949bbfbce48f6dd467d072fcacc9dd94ffb25d2eeba72f5b1c2'
+          gzip -dc "$GZIP" > "$RUNNER"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = 'ceda59b3bd3a467dd893e0cc81be3393d4d1e934cce2b63f6d26717daac49a53'
+          python -m py_compile "$RUNNER"
+          python "$RUNNER" --self-test
+
+          grep -Fx 'acquire=schoolhouse-irs-candidate-latest-filing-xml-v5' "$EXECUTE"
+          grep -Fx "canonical_parent=$PARENT" "$EXECUTE"
+          grep -Fx "canonical_parent_tree=$PARENT_TREE" "$EXECUTE"
+          grep -Fx 'locator_workflow_run_id=31108653166' "$EXECUTE"
+          grep -Fx 'locator_head=431aa5ba7ecd660ae7e9984bcf63acde1cd4729c' "$EXECUTE"
+          grep -Fx 'locator_artifact_id=8970691385' "$EXECUTE"
+          grep -Fx 'locator_artifact_digest=sha256:42fed8f0dbafe0f504b4234040e2d4e56920888aa846ac58debcf61fe8794333' "$EXECUTE"
+          grep -Fx 'selected_latest_xml_routes=92' "$EXECUTE"
+          grep -Fx 'selected_exact_locator_rows=54' "$EXECUTE"
+          grep -Fx 'selected_missing_locator_rows=38' "$EXECUTE"
+          grep -Fx 'maximum_total_requests=216' "$EXECUTE"
+          grep -Fx 'exact_sealed_member_locators_only=true' "$EXECUTE"
+          grep -Fx 'full_archive_fallback_forbidden=true' "$EXECUTE"
+          grep -Fx 'observed_organization_name_values_retained=0' "$EXECUTE"
+          grep -Fx 'officer_or_person_name_values_retained=0' "$EXECUTE"
+          grep -Fx 'identity_admitted=false' "$EXECUTE"
+          grep -Fx 'relationship_admitted=false' "$EXECUTE"
+          grep -Fx 'negative_existence_claim_created=false' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+          grep -Fx 'publication_effect=none' "$EXECUTE"
+          grep -Fx 'adoption_effect=none' "$EXECUTE"
+          grep -Fx 'graph_effect=none' "$EXECUTE"
+
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/8970691385" --jq '.digest // ""')" = \
+            'sha256:42fed8f0dbafe0f504b4234040e2d4e56920888aa846ac58debcf61fe8794333'
+          rm -rf "$LOCATOR"
+          mkdir -p "$LOCATOR"
+          gh run download 31108653166 --repo "$GITHUB_REPOSITORY" \
+            --name schoolhouse-irs-candidate-xml-member-locator-census --dir "$LOCATOR"
+          test "$(cat "$LOCATOR/RUNNER_EXIT_CODE")" = '0'
+          test "$(sha256sum "$LOCATOR/SHA256SUMS" | awk '{print $1}')" = '9086046264d1f01b85df82ce9fc7f96156b5f6e4e9148a43e045362ec6599b10'
+          test "$(sha256sum "$LOCATOR/summary.json" | awk '{print $1}')" = '3b4bdb84dd6de1bab87634ccc3c04873f854d59cd36c2f59fbb472959b2c16a0'
+          test "$(sha256sum "$LOCATOR/artifact-manifest.json" | awk '{print $1}')" = 'e96bd627e838c673d95adab85450add832557fc242e55d02f2a1e0b453131cbf'
+          test "$(sha256sum "$LOCATOR/object-resolutions.jsonl" | awk '{print $1}')" = 'b32a7313c570555f3e11449e28c019e9e1f87daad5bc39a191df3e28cc4617ac'
+          test "$(sha256sum "$LOCATOR/member-locators.jsonl" | awk '{print $1}')" = '9d8ea6638813dfe20464226b405a42ea94fd449cc96a3d307ea701cc8580ce80'
+          (cd "$LOCATOR" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .state == "terminal_bounded_67_archive_central_directory_member_locator_census" and
+            .sealed_filing_index_rows == 486 and
+            .sealed_candidate_eins == 92 and
+            .terminal_archive_routes == 67 and
+            .object_rows == 486 and
+            .exact_member_locator_rows == 234 and
+            .objects_with_exact_one_locator == 234 and
+            .objects_without_locator == 252 and
+            .objects_with_duplicate_locators == 0 and
+            .member_payload_fetches == 0 and
+            .full_archive_fetches == 0 and
+            .xml_parses == 0 and
+            .identities_admitted == 0 and
+            .relationships_admitted == 0 and
+            .outside_human_dependency == false and
+            .graph_effect == "none"
+          ' "$LOCATOR/summary.json"
+
+      - name: Execute exact sealed-locator XML screen
+        id: acquisition
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          OUT="$RUNNER_TEMP/schoolhouse-irs-candidate-latest-filing-xml-v5"
+          LOCATOR="$RUNNER_TEMP/schoolhouse-irs-candidate-xml-member-locator-census"
+          RUNNER="$RUNNER_TEMP/acquire-schoolhouse-irs-candidate-latest-filing-xml-v5.py"
+          LOG="$RUNNER_TEMP/schoolhouse-irs-candidate-latest-filing-xml-v5.log"
+          rm -rf "$OUT"
+          python "$RUNNER" \
+            --repo-root "$GITHUB_WORKSPACE" \
+            --locator-root "$LOCATOR" \
+            --output "$OUT" \
+            2>&1 | tee "$LOG"
+          status=${PIPESTATUS[0]}
+          mkdir -p "$OUT"
+          printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
+          cp "$LOG" "$OUT/RUNNER-OUTPUT.log"
+          exit "$status"
+
+      - name: Upload terminal privacy-repaired v5 artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-candidate-latest-filing-xml-v5
+          path: ${{ runner.temp }}/schoolhouse-irs-candidate-latest-filing-xml-v5
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require complete 92-row terminal denominator and zero retained names
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP/schoolhouse-irs-candidate-latest-filing-xml-v5"
+          test -f "$ROOT/RUNNER_EXIT_CODE"
+          test "$(cat "$ROOT/RUNNER_EXIT_CODE")" = '0'
+          for file in \
+            selection.jsonl xml-results.jsonl range-receipts.jsonl \
+            source-receipt.json route-policy.json adjudication.json \
+            summary.json artifact-manifest.json SHA256SUMS; do
+            test -f "$ROOT/$file"
+          done
+          (cd "$ROOT" && sha256sum -c SHA256SUMS)
+
+          python - "$ROOT" <<'PY'
+          from pathlib import Path
+          import json, sys
+
+          root=Path(sys.argv[1])
+          load=lambda n: json.loads((root/n).read_text())
+          rows=lambda n: [json.loads(x) for x in (root/n).read_text().splitlines() if x.strip()]
+          summary=load('summary.json'); policy=load('route-policy.json'); adjudication=load('adjudication.json')
+          source=load('source-receipt.json'); manifest=load('artifact-manifest.json')
+          selection=rows('selection.jsonl'); results=rows('xml-results.jsonl'); receipts=rows('range-receipts.jsonl')
+
+          assert summary['schema_version']=='schoolhouse-irs-candidate-latest-filing-xml-v5@1'
+          assert summary['state']=='terminal_privacy_repaired_latest_filing_xml_v5'
+          assert summary['sealed_candidate_rows']==641 and summary['sealed_candidate_eins']==438
+          assert summary['filing_index_match_rows']==486 and summary['candidate_eins_with_filing_rows']==92
+          assert summary['selected_latest_xml_routes']==len(selection)==len(results)==92
+          assert summary['selected_latest_xml_routes_with_exact_locator']==54
+          assert summary['selected_latest_xml_routes_without_locator']==38
+          assert len({x['ein'] for x in selection})==92 and len({x['object_id'] for x in selection})==92
+          assert sum(x['locator_state']=='exact_one_locator' for x in selection)==54
+          assert sum(x['locator_state']=='missing_locator' for x in selection)==38
+          assert all(x['selection_rule']=='maximum_index_year_then_object_id_per_candidate_ein' for x in selection)
+          assert all(x['raw_index_taxpayer_name_retained'] is False for x in selection)
+          assert all(x['observed_xml_organization_name_values_retained']==0 for x in selection)
+          assert not any('_candidate_index_name' in x or 'taxpayer_name' in x for x in selection)
+
+          assert sum(summary['terminal_state_counts'].values())==92
+          assert summary['successful_xml_screens']<=54
+          assert summary['request_count']==len(receipts)<=216
+          assert summary['range_response_bytes']==sum(int(x.get('response_bytes',0)) for x in receipts)
+          assert summary['range_response_bytes']<=16777216
+          assert summary['batch_zip_fetches']==summary['result_spawned_requests']==0
+          assert summary['query_submissions']==summary['forms_submitted']==0
+          assert summary['raw_archive_retained'] is False and summary['raw_central_directory_retained'] is False
+          assert summary['raw_xml_retained'] is False and summary['raw_term_text_retained'] is False
+          assert summary['observed_organization_name_values_retained']==0
+          assert summary['officer_or_person_name_values_retained']==0
+          assert summary['street_address_rows_retained']==summary['contact_detail_rows_retained']==0
+          assert summary['preparer_rows_retained']==summary['private_support_rows']==0
+          assert summary['identities_admitted']==summary['relationships_admitted']==0
+          assert summary['negative_existence_claims_created']==0
+          assert summary['outside_human_dependency'] is False
+          assert summary['publication_effect']==summary['adoption_effect']==summary['graph_effect']=='none'
+
+          allowed_states={
+            'screened_official_xml','member_not_located_in_sealed_locator_denominator',
+            'duplicate_member_locator_in_sealed_denominator','local_header_or_range_error',
+            'member_acquisition_or_integrity_error','xml_parse_error'
+          }
+          allowed_target={'schoolhouse_compact','school_house_spaced','school_house_dotted','bravo_victor','bvvc'}
+          allowed_mechanism={'fiscal_sponsor','fiscal_sponsorship','sponsored_project','related_organization','related_party'}
+          forbidden={
+            'observed_organization_name','organization_name','filing_organization_name',
+            'taxpayer_name','matched_text','raw_xml','raw_term_text','officer_name','person_name',
+            'street_address','mailing_address','postal_code','email','phone','preparer_name'
+          }
+          for row in results:
+            assert row['state'] in allowed_states
+            assert not (forbidden & set(row))
+            assert row['observed_organization_name_values_retained']==0
+            assert row['officer_or_person_name_values_retained']==0
+            assert row['raw_xml_retained'] is False and row['raw_term_text_retained'] is False
+            assert row['raw_archive_retained'] is False and row['raw_central_directory_retained'] is False
+            assert row['street_address_rows_retained']==row['contact_detail_rows_retained']==0
+            assert row['preparer_rows_retained']==row['private_support_rows']==0
+            assert row['identity_admitted'] is False and row['relationship_admitted'] is False
+            assert row['negative_existence_claim_created'] is False
+            assert row['outside_human_dependency'] is False
+            assert row['publication_effect']==row['adoption_effect']==row['graph_effect']=='none'
+            assert set(row.get('target_term_ids',[]))<=allowed_target
+            assert set(row.get('mechanism_term_ids',[]))<=allowed_mechanism
+
+          for row in receipts:
+            assert row['request_method']=='GET_RANGE'
+            assert row['raw_source_retained'] is False
+            assert row['outside_human_dependency'] is False
+            assert row['publication_effect']==row['adoption_effect']==row['graph_effect']=='none'
+            assert 'archive_url' not in row and 'final_url' not in row
+
+          assert policy['selection_contract']['selected_latest_xml_routes']==92
+          assert policy['selection_contract']['selected_exact_locator_rows']==54
+          assert policy['request_bounds']['exact_sealed_member_locators_only'] is True
+          assert policy['request_bounds']['full_archive_fallback_forbidden'] is True
+          assert policy['retention']['observed_organization_name_values_retained']==0
+          assert policy['retention']['first_header_name_used_only_for_alignment_boolean'] is True
+          assert policy['interpretation']['candidate_name_alignment_is_not_public_schoolhouse_identity'] is True
+          assert policy['interpretation']['missing_locator_is_not_filing_or_entity_absence_evidence'] is True
+          assert adjudication['observed_organization_name_values_retained']==0
+          assert adjudication['public_schoolhouse_identity_admitted'] is False
+          assert adjudication['fiscal_sponsor_relationship_admitted'] is False
+          assert adjudication['grant_or_funding_relationship_admitted'] is False
+          assert adjudication['governance_or_control_relationship_admitted'] is False
+          assert adjudication['related_party_relationship_admitted'] is False
+          assert adjudication['negative_existence_claim_created'] is False
+          assert source['locator_workflow_run_id']==31108653166
+          assert source['locator_artifact_id']==8970691385
+          assert source['locator_artifact_digest']=='sha256:42fed8f0dbafe0f504b4234040e2d4e56920888aa846ac58debcf61fe8794333'
+          assert source['selected_exact_locator_rows']==54 and source['selected_missing_locator_rows']==38
+          assert source['range_only_member_access'] is True and source['batch_zip_downloaded'] is False
+          assert source['raw_xml_retained'] is False and source['observed_organization_name_values_retained']==0
+          assert manifest['counts']['selection_rows']==92 and manifest['counts']['xml_result_rows']==92
+          assert manifest['counts']['range_receipt_rows']==len(receipts)
+          assert manifest['raw_source_retained'] is False
+          assert manifest['observed_organization_name_values_retained']==0
+          assert not any(p.is_file() and p.suffix.lower() in {'.xml','.zip','.csv'} for p in root.rglob('*'))
+          print(json.dumps({
+            'selected_latest_xml_routes':92,
+            'exact_locator_rows':54,
+            'missing_locator_rows':38,
+            'successful_xml_screens':summary['successful_xml_screens'],
+            'candidate_name_alignment_rows':summary['candidate_legal_name_alignment_rows'],
+            'target_term_hit_xml_rows':summary['target_term_hit_xml_rows'],
+            'mechanism_term_hit_xml_rows':summary['mechanism_term_hit_xml_rows'],
+            'observed_organization_name_values_retained':0,
+            'request_count':summary['request_count'],
+          },sort_keys=True))
+          PY
