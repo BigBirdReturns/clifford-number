@@ -1,0 +1,73 @@
+name: TEMP export complete School.House NC report drift product inputs
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-schoolhouse-nc-business-reports-data-census-export-v2.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/schoolhouse-nc-business-reports-data-census-export-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Export exact canonical custody package including hidden receipts
+        run: |
+          set -Eeuo pipefail
+          PARENT='327648726320507532751f219a52d03f9c17fac5'
+          OUT='/tmp/schoolhouse-nc-business-reports-data-census-export'
+          git fetch --no-tags --depth=1 origin "$PARENT"
+          test "$(git rev-parse "$PARENT^{commit}")" = "$PARENT"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+
+          git archive "$PARENT" \
+            data/intake/bvvc-defense-capital \
+            tools/build-schoolhouse-nc-static-nonprofit-custody.mjs \
+            tools/validate-schoolhouse-nc-static-nonprofit-custody.mjs \
+            tools/validate-bvvc-defense-capital.mjs \
+            tools/validate-schoolhouse-honor-foundation-990-custody.mjs \
+            tools/validate-no-magic-human-gate.mjs \
+            test/person-routers.test.js \
+            package.json \
+          | tar -x -C "$OUT"
+
+          {
+            printf 'canonical_parent=%s\n' "$PARENT"
+            printf 'canonical_parent_tree=%s\n' "$(git rev-parse "$PARENT^{tree}")"
+            printf 'export_workflow_head=%s\n' "$GITHUB_SHA"
+            printf 'source_artifact_id=%s\n' '8954062856'
+            printf 'source_artifact_digest=%s\n' 'sha256:e7feb5a1a406a718a83aafaabd71fbb62c32dbfd0c43e0e66e3429eb9f20b10a'
+            printf 'certification_artifact_id=%s\n' '8954663809'
+            printf 'certification_artifact_digest=%s\n' 'sha256:62d83624e9f41085f2af67af9cd0a8ccc72d67000c855aaccb672ef9631c5c42'
+          } > "$OUT/EXPORT-METADATA"
+
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | sort -z \
+              | xargs -0 sha256sum \
+              > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-nc-business-reports-data-census-export-complete
+          path: /tmp/schoolhouse-nc-business-reports-data-census-export
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+          include-hidden-files: true
