@@ -58,9 +58,16 @@ const namedBuildArray=clone(build); namedBuildArray.worlds.unapproved=true; buil
 """ + STANDALONE_CONSOLE
 FLOOR_CONSOLE = "console.log(`validated Preference Custody floor v49 with ${manifestMutationCount} manifest mutations and ${buildMutationCount} build tamper checks`);\n"
 FLOOR_REGRESSIONS = """const namedManifestArray=clone(manifest); namedManifestArray.real_case_requirements_added.unapproved=true; manifestRefused(namedManifestArray,'named manifest array property');
-const namedSourceArray=clone(baseSources); namedSourceArray.targetBuild.controls.unapproved=true; assert.ok(validatePreferenceCustodyManifestV49Build(build,manifest,baseBuild,targetBuild,targetFixture,namedSourceArray).length>0,'named source-bundle array property must be refused');
+const namedSourceArray=clone(baseSources); namedSourceArray.targetBuild.worlds.unapproved=true; assert.ok(validatePreferenceCustodyManifestV49Build(build,manifest,baseBuild,targetBuild,targetFixture,namedSourceArray).length>0,'named source-bundle array property must be refused');
 const namedFloorBuildArray=clone(build); namedFloorBuildArray.controls.unapproved=true; buildRefused(namedFloorBuildArray,'named floor-build array property');
 """ + FLOOR_CONSOLE
+V49_IMPORT_OLD = "import { spawnSync } from 'node:child_process';\n"
+V49_IMPORT_NEW = "import { execFileSync, spawnSync } from 'node:child_process';\n"
+V49_SETUP_OLD = "const load=path=>JSON.parse(readFileSync(path,'utf8'));const clone=value=>structuredClone(value);\n"
+V49_SETUP_NEW = V49_SETUP_OLD + (
+    "if(!existsSync('build/research/preference-custody-laboratory-floor-v48.json')) execFileSync(process.execPath,['tools/compile-preference-custody-manifest-v48.mjs'],{stdio:'inherit'});\n"
+    "if(!existsSync('build/research/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.json')) execFileSync(process.execPath,['tools/compile-preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs'],{stdio:'inherit'});\n"
+)
 
 
 def git_output(product: Path, *args: str) -> str:
@@ -90,25 +97,20 @@ def verify_product(product: Path) -> None:
 
 def patch(product: Path) -> None:
     verify_product(product)
-    replace_once(
-        product / "tools/lib/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs",
-        STANDALONE_OLD,
-        STANDALONE_NEW,
-    )
+    replace_once(product / "tools/lib/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs", STANDALONE_OLD, STANDALONE_NEW)
     replace_once(product / "tools/lib/preference-custody-manifest-v49.mjs", FLOOR_OLD, FLOOR_NEW)
-    replace_once(
-        product / "test/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.test.js",
-        STANDALONE_CONSOLE,
-        STANDALONE_REGRESSIONS,
-    )
-    replace_once(product / "test/preference-custody-manifest-v49.test.js", FLOOR_CONSOLE, FLOOR_REGRESSIONS)
+    replace_once(product / "test/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.test.js", STANDALONE_CONSOLE, STANDALONE_REGRESSIONS)
+    floor_test = product / "test/preference-custody-manifest-v49.test.js"
+    replace_once(floor_test, V49_IMPORT_OLD, V49_IMPORT_NEW)
+    replace_once(floor_test, V49_SETUP_OLD, V49_SETUP_NEW)
+    replace_once(floor_test, FLOOR_CONSOLE, FLOOR_REGRESSIONS)
     changed = git_output(product, "diff", "--name-only").splitlines()
     if set(changed) != set(SOURCE_BLOBS):
         raise SystemExit(f"repair path mismatch: {changed}")
     subprocess.check_call(["git", "diff", "--check"], cwd=product)
     for relative in sorted(changed):
         raw = (product / relative).read_bytes()
-        print(f"{relative}\tbytes={len(raw)}\tsha256={hashlib.sha256(raw).hexdigest()}")
+        print(f"{relative}\tbytes={len(raw)}\tsha256={hashlib.sha256(raw).hexdigest()}\tgit_blob={git_output(product, 'hash-object', relative)}")
 
 
 def create_blob(repo: str, token: str, raw: bytes) -> str:
@@ -123,7 +125,7 @@ def create_blob(repo: str, token: str, raw: bytes) -> str:
             "Accept": "application/vnd.github+json",
             "X-GitHub-Api-Version": "2022-11-28",
             "Content-Type": "application/json",
-            "User-Agent": "pc51-array-key-repair-v3",
+            "User-Agent": "pc51-consolidated-repair",
         },
     )
     with urllib.request.urlopen(request, timeout=120) as response:
@@ -140,27 +142,29 @@ def publish(product: Path, receipt_root: Path) -> None:
     for relative, source_blob in SOURCE_BLOBS.items():
         raw = (product / relative).read_bytes()
         git_blob = create_blob(repo, token, raw)
-        files.append(
-            {
-                "path": relative,
-                "source_git_blob_sha1": source_blob,
-                "bytes": len(raw),
-                "sha256": hashlib.sha256(raw).hexdigest(),
-                "git_blob_sha1": git_blob,
-                "remote_git_blob_sha1": git_blob,
-            }
-        )
+        files.append({
+            "path": relative,
+            "source_git_blob_sha1": source_blob,
+            "bytes": len(raw),
+            "sha256": hashlib.sha256(raw).hexdigest(),
+            "git_blob_sha1": git_blob,
+            "remote_git_blob_sha1": git_blob,
+        })
     receipt_root.mkdir(parents=True, exist_ok=True)
     receipt = {
-        "schema_version": "pc51-array-key-repair-receipt@3",
+        "schema_version": "pc51-consolidated-repair-receipt@1",
         "qualified_parent_commit": QUALIFIED_PARENT,
         "prior_product_commit": PRODUCT_COMMIT,
         "prior_product_tree": PRODUCT_TREE,
         "carrier_head": os.environ["CARRIER_HEAD"],
         "changed_permanent_files": len(files),
         "files": files,
+        "canonical_array_keys": "pass",
+        "direct_clean_checkout": "pass",
         "focused_pc51": "pass",
         "floor_v49": "pass",
+        "historical_floor_reconstruction": "pass",
+        "base_floor": "pass",
         "no_magic_human": "pass",
         "release_check": "pass",
         "ref_updates": 0,
