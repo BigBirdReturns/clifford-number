@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   inspect:
@@ -15,6 +16,12 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Report exact inspection run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/${GITHUB_REPOSITORY}/issues/1302/comments \
+            -f body="RD-04 materializer blob inspection run started: ${GITHUB_RUN_ID} on ${GITHUB_SHA}."
       - name: Verify and decompress exact materializer blob
         run: |
           set -Eeuo pipefail
@@ -37,3 +44,10 @@ jobs:
           path: /tmp/rd04-mf7-materializer-inspection
           if-no-files-found: error
           retention-days: 90
+      - name: Report completion
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/${GITHUB_REPOSITORY}/issues/1302/comments \
+            -f body="RD-04 materializer blob inspection run completed with job status ${{ job.status }}: ${GITHUB_RUN_ID}."
