@@ -1,0 +1,156 @@
+name: TEMP prove canonical RD-04 CA-SD-WA row-state merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-rd04-ca-sd-wa-row-state-postmerge-proof
+  cancel-in-progress: false
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+      - name: Prove exact canonical product and rerun every gate
+        run: |
+          set -Eeuo pipefail
+          RECEIPT=/tmp/rd04-row-state-postmerge-proof
+          rm -rf "$RECEIPT"
+          mkdir -p "$RECEIPT"
+
+          git fetch --no-tags origin main
+          MAIN="$(git rev-parse origin/main)"
+          test "$MAIN" = 9d9f9522fbc2909611033370044e9748a29b3cf7
+          test "$(git rev-parse ec8a45f4acd2c8f1c1b6a40837fb46373f7670a4^)" = 2fd346c1519b082a11c960df5a310398bb406550
+          test "$(git rev-parse 'ec8a45f4acd2c8f1c1b6a40837fb46373f7670a4^{tree}')" = 104a107946636f86a3a56dec8f243063a80329b9
+          git merge-base --is-ancestor ec8a45f4acd2c8f1c1b6a40837fb46373f7670a4 "$MAIN"
+
+          mapfile -t PROOF_DELTA < <(git diff --name-only origin/main HEAD)
+          test "${#PROOF_DELTA[@]}" -eq 1
+          test "${PROOF_DELTA[0]}" = '.github/workflows/temp-rd04-ca-sd-wa-row-state-postmerge-proof.yml'
+
+          git diff --name-status 2fd346c1519b082a11c960df5a310398bb406550 ec8a45f4acd2c8f1c1b6a40837fb46373f7670a4 > "$RECEIPT/product-name-status.txt"
+          python - <<'PY'
+          from pathlib import Path
+          expected = {
+              '.github/workflows/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.yml',
+              'data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication/authored-row-state-decisions.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication/index.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication/predecessor-custody.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication/product-manifest.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication/promoted-partial-field-matrix.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication/remaining-open-field-census.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication/row-state-ledger.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication/summary.json',
+              'docs/milestones/ssc-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.md',
+              'schemas/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.schema.json',
+              'test/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.test.js',
+              'tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.mjs',
+              'tools/validate-status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.mjs',
+          }
+          rows = Path('/tmp/rd04-row-state-postmerge-proof/product-name-status.txt').read_text().splitlines()
+          observed = set()
+          for row in rows:
+              status, path = row.split('\t', 1)
+              if status != 'A':
+                  raise SystemExit(f'non-addition product path: {row}')
+              observed.add(path)
+          if observed != expected:
+              raise SystemExit(f'product path-set drift: {sorted(observed)}')
+          print('canonical_product_surface=14_addition_only')
+          PY
+
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.mjs
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import jsonschema
+          schema = json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.schema.json').read_text())
+          paths = sorted(Path('data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication').glob('*.json'))
+          if len(paths) != 8:
+              raise SystemExit(f'JSON object denominator drift: {len(paths)}')
+          validator = jsonschema.Draft202012Validator(schema)
+          for path in paths:
+              validator.validate(json.loads(path.read_text()))
+          summary = json.loads(Path('data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication/summary.json').read_text())
+          assert summary['transition']['terminal_cells_before'] == 187
+          assert summary['transition']['terminal_cells_after'] == 190
+          assert summary['transition']['still_open_substantive_cells_after'] == 213
+          assert summary['transition']['terminal_units_after'] == 3
+          assert summary['transition']['open_units_after'] == 47
+          assert summary['class_closed'] is False
+          assert summary['cumulative_ledger_effect'] == 'none'
+          assert summary['authority_boundary']['outside_human_dependency'] is False
+          print('canonical_summary=187_to_190_terminal_rows_3_open_rows_47')
+          PY
+          node test/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+
+          git restore --staged --worktree .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          receipt = {
+              'schema_version': 'ssc-rd04-ca-sd-wa-row-state-postmerge-proof@1',
+              'canonical_main': '9d9f9522fbc2909611033370044e9748a29b3cf7',
+              'product_commit': 'ec8a45f4acd2c8f1c1b6a40837fb46373f7670a4',
+              'product_tree': '104a107946636f86a3a56dec8f243063a80329b9',
+              'product_paths': 14,
+              'terminal_cells_before': 187,
+              'terminal_cells_after': 190,
+              'still_open_substantive_cells': 213,
+              'terminal_rows': ['CA', 'SD', 'WA'],
+              'open_rows': 47,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'focused_validation': 'pass',
+              'closed_schema_objects': 8,
+              'adversarial_refusals_in_product': 646,
+              'no_magic_human': 'pass',
+              'complete_release_gate': 'pass',
+              'clean_replay': 'pass',
+              'status': 'complete',
+          }
+          Path('/tmp/rd04-row-state-postmerge-proof/proof.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+      - name: Preserve canonical proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-ca-sd-wa-row-state-postmerge-proof
+          path: /tmp/rd04-row-state-postmerge-proof
+          if-no-files-found: error
+          retention-days: 90
