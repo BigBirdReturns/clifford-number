@@ -1,0 +1,89 @@
+name: TEMP probe RD-04 CA-SD-WA capture-adjudication carrier
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd04-ca-sd-wa-capture-adjudication-carrier-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct and inspect exact carrier bytes without publication
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import base64, hashlib, json, lzma, tarfile
+          from pathlib import Path
+
+          root = Path('.')
+          carrier = root / '.rd04-ca-sd-wa-capture-adjudication-carrier'
+          parts = [carrier / 'part-00.b64', carrier / 'part-01.b64']
+          out = Path('/tmp/rd04-carrier-probe')
+          out.mkdir(parents=True, exist_ok=True)
+
+          text_parts = [p.read_text(encoding='ascii').strip() for p in parts]
+          joined = ''.join(text_parts)
+          decoded = base64.b64decode(joined, validate=True)
+          archive = out / 'product.tar.xz'
+          archive.write_bytes(decoded)
+
+          digest = hashlib.sha256(decoded).hexdigest()
+          expected_bytes = 59820
+          expected_sha256 = '27279ff201f60d5c208f75332444324cdb70a59be2f668d0f82f53acc8eb220c'
+          names = []
+          archive_error = None
+          try:
+              with tarfile.open(archive, mode='r:xz') as tf:
+                  names = sorted(m.name for m in tf.getmembers() if m.isfile())
+          except Exception as exc:
+              archive_error = f'{type(exc).__name__}: {exc}'
+
+          receipt = {
+              'part_files': [str(p) for p in parts],
+              'part_text_bytes': [len(t.encode('ascii')) for t in text_parts],
+              'joined_base64_bytes': len(joined.encode('ascii')),
+              'decoded_bytes': len(decoded),
+              'decoded_sha256': digest,
+              'expected_bytes': expected_bytes,
+              'expected_sha256': expected_sha256,
+              'matches_expected': len(decoded) == expected_bytes and digest == expected_sha256,
+              'archive_file_count': len(names),
+              'archive_files': names,
+              'archive_error': archive_error,
+          }
+          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+      - name: Preserve probe receipt and reconstructed bytes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-ca-sd-wa-capture-adjudication-carrier-probe
+          path: /tmp/rd04-carrier-probe
+          if-no-files-found: error
+          retention-days: 90
+      - name: Refuse incomplete or drifted carrier
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r = json.loads(Path('/tmp/rd04-carrier-probe/receipt.json').read_text())
+          if not r['matches_expected']:
+              raise SystemExit(
+                  f"carrier mismatch: bytes={r['decoded_bytes']} sha256={r['decoded_sha256']} "
+                  f"expected_bytes={r['expected_bytes']} expected_sha256={r['expected_sha256']}"
+              )
+          if r['archive_error'] is not None or r['archive_file_count'] != 17:
+              raise SystemExit(f"archive shape mismatch: {r}")
+          print('carrier_exact=true')
+          PY
