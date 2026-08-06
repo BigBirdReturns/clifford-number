@@ -1,0 +1,38 @@
+name: TEMP RD-04 MF7 adjudication input export
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-ssc-rd04-mf7-adjudication-input-export.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require exact one-file transport delta
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin main
+          mapfile -t DELTA < <(git diff --name-only origin/main HEAD)
+          test "${#DELTA[@]}" -eq 1
+          test "${DELTA[0]}" = '.github/workflows/temp-ssc-rd04-mf7-adjudication-input-export.yml'
+          test "$(git rev-parse origin/main)" = 'e3cf2a53d5209557183a340752df83d38ab83994'
+      - name: Preserve exact canonical predecessor inputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mf7-adjudication-canonical-inputs
+          path: |
+            data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication/promoted-partial-field-matrix.json
+            data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication/summary.json
+            data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication/index.json
+            data/intake/status-sovereignty-rd-wave03-rd04-ca-sd-wa-row-state-adjudication/remaining-open-field-census.json
+          if-no-files-found: error
+          retention-days: 14
