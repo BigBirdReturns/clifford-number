@@ -1,0 +1,3376 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clifford-number.example/schemas/status-sovereignty-rd-wave03-rd04-ca-sd-wa-capture-adjudication.schema.json",
+  "title": "RD-04 CA/SD/WA capture-adjudication composed product objects",
+  "description": "Closed structural schema for every JSON object in the deterministic 181-to-187 terminal-cell composition product.",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "route_disposition_order",
+        "permitted_field_terminal_states",
+        "counts",
+        "route_decisions",
+        "field_decisions",
+        "authority"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-ca-sd-wa-authored-adjudication-decisions@1"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "route_disposition_order": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "permitted_field_terminal_states": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "counts": {
+          "type": "object",
+          "required": [
+            "route_decisions",
+            "terminal_route_decisions",
+            "source_admissions",
+            "field_decisions",
+            "observed_field_decisions",
+            "not_publicly_recovered_field_decisions",
+            "field_terminalizations",
+            "row_terminalizations",
+            "class_closures",
+            "result_spawned_requests"
+          ],
+          "properties": {
+            "route_decisions": {
+              "type": "integer"
+            },
+            "terminal_route_decisions": {
+              "type": "integer"
+            },
+            "source_admissions": {
+              "type": "integer"
+            },
+            "field_decisions": {
+              "type": "integer"
+            },
+            "observed_field_decisions": {
+              "type": "integer"
+            },
+            "not_publicly_recovered_field_decisions": {
+              "type": "integer"
+            },
+            "field_terminalizations": {
+              "type": "integer"
+            },
+            "row_terminalizations": {
+              "type": "integer"
+            },
+            "class_closures": {
+              "type": "integer"
+            },
+            "result_spawned_requests": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "route_decisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "route_decision_ordinal",
+              "route_id",
+              "state_scope",
+              "route_category",
+              "final_url",
+              "final_host",
+              "http_status",
+              "content_type",
+              "body_bytes",
+              "body_sha256",
+              "headers_sha256",
+              "capture_state_before",
+              "adjudication_state",
+              "route_disposition",
+              "source_admitted",
+              "admitted_target_cells",
+              "bounded_observations",
+              "evidence_locators",
+              "limitations",
+              "field_classification_effect",
+              "row_terminalization_effect",
+              "class_closure_effect",
+              "reviewed_disposition_effect",
+              "publication_effect",
+              "adoption_effect",
+              "graph_effect",
+              "national_prevalence_effect",
+              "discrimination_effect",
+              "coordination_effect",
+              "common_purpose_effect",
+              "racial_order_effect",
+              "complete_compact_effect",
+              "outside_human_dependency",
+              "result_spawned_requests"
+            ],
+            "properties": {
+              "route_decision_ordinal": {
+                "type": "integer"
+              },
+              "route_id": {
+                "type": "string"
+              },
+              "state_scope": {
+                "type": "string"
+              },
+              "route_category": {
+                "type": "string"
+              },
+              "final_url": {
+                "type": "string"
+              },
+              "final_host": {
+                "type": "string"
+              },
+              "http_status": {
+                "type": "integer"
+              },
+              "content_type": {
+                "type": "string"
+              },
+              "body_bytes": {
+                "type": "integer"
+              },
+              "body_sha256": {
+                "type": "string"
+              },
+              "headers_sha256": {
+                "type": "string"
+              },
+              "capture_state_before": {
+                "type": "string"
+              },
+              "adjudication_state": {
+                "type": "string"
+              },
+              "route_disposition": {
+                "type": "string"
+              },
+              "source_admitted": {
+                "type": "boolean"
+              },
+              "admitted_target_cells": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "bounded_observations": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "evidence_locators": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "field_classification_effect": {
+                "type": "string"
+              },
+              "row_terminalization_effect": {
+                "type": "string"
+              },
+              "class_closure_effect": {
+                "type": "string"
+              },
+              "reviewed_disposition_effect": {
+                "type": "string"
+              },
+              "publication_effect": {
+                "type": "string"
+              },
+              "adoption_effect": {
+                "type": "string"
+              },
+              "graph_effect": {
+                "type": "string"
+              },
+              "national_prevalence_effect": {
+                "type": "string"
+              },
+              "discrimination_effect": {
+                "type": "string"
+              },
+              "coordination_effect": {
+                "type": "string"
+              },
+              "common_purpose_effect": {
+                "type": "string"
+              },
+              "racial_order_effect": {
+                "type": "string"
+              },
+              "complete_compact_effect": {
+                "type": "string"
+              },
+              "outside_human_dependency": {
+                "type": "boolean"
+              },
+              "result_spawned_requests": {
+                "type": "integer"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "field_decisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "field_decision_ordinal",
+              "target_cell_id",
+              "unit_id",
+              "postal_code",
+              "state_name",
+              "field_id",
+              "state_before",
+              "terminal_state",
+              "state_after",
+              "terminal_after",
+              "finding_code",
+              "finding_summary",
+              "evidence_route_ids",
+              "evidence_locators",
+              "observed_components",
+              "typed_gap",
+              "limitations",
+              "reviewed_disposition_effect",
+              "publication_effect",
+              "adoption_effect",
+              "graph_effect",
+              "national_prevalence_effect",
+              "discrimination_effect",
+              "coordination_effect",
+              "common_purpose_effect",
+              "racial_order_effect",
+              "complete_compact_effect",
+              "outside_human_dependency"
+            ],
+            "properties": {
+              "field_decision_ordinal": {
+                "type": "integer"
+              },
+              "target_cell_id": {
+                "type": "string"
+              },
+              "unit_id": {
+                "type": "string"
+              },
+              "postal_code": {
+                "type": "string"
+              },
+              "state_name": {
+                "type": "string"
+              },
+              "field_id": {
+                "type": "string"
+              },
+              "state_before": {
+                "type": "string"
+              },
+              "terminal_state": {
+                "type": "string"
+              },
+              "state_after": {
+                "type": "string"
+              },
+              "terminal_after": {
+                "type": "boolean"
+              },
+              "finding_code": {
+                "type": "string"
+              },
+              "finding_summary": {
+                "type": "string"
+              },
+              "evidence_route_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "evidence_locators": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "observed_components": {
+                "type": "object",
+                "required": [],
+                "properties": {
+                  "primary_instrument": {
+                    "type": "string"
+                  },
+                  "primary_issue_date": {
+                    "type": "string"
+                  },
+                  "effective_date": {
+                    "type": "string"
+                  },
+                  "supplemental_instrument": {
+                    "type": "string"
+                  },
+                  "supplemental_issue_date": {
+                    "type": "string"
+                  },
+                  "authority_and_allocation_framework": {
+                    "type": "boolean"
+                  },
+                  "county_application_and_notice_framework": {
+                    "type": "boolean"
+                  },
+                  "quarterly_tracking_requirement": {
+                    "type": "boolean"
+                  },
+                  "fy2026_anticipated_discretionary_exemptions": {
+                    "type": "integer"
+                  },
+                  "anticipated_count_is_actual_use": {
+                    "type": "boolean"
+                  },
+                  "public_stat47_data_state": {
+                    "type": "string"
+                  },
+                  "self_attestation_unless_questionable": {
+                    "type": "boolean"
+                  },
+                  "documentary_evidence": {
+                    "type": "boolean"
+                  },
+                  "collateral_contacts": {
+                    "type": "boolean"
+                  },
+                  "case_record_and_internal_data": {
+                    "type": "boolean"
+                  },
+                  "administrative_data_file": {
+                    "type": "boolean"
+                  },
+                  "worker_or_county_judgment_with_documentation": {
+                    "type": "boolean"
+                  },
+                  "current_manual_version_marker": {
+                    "type": "string"
+                  },
+                  "approved_et_plan_period": {
+                    "type": "string"
+                  },
+                  "exact_complete_manual_effective_date": {
+                    "type": "null"
+                  },
+                  "expired_predecessor_implementation_date": {
+                    "type": "string"
+                  },
+                  "expired_predecessor_expiration_date": {
+                    "type": "string"
+                  },
+                  "fy2026_plan_anticipated_abawds_in_waived_areas": {
+                    "type": "integer"
+                  },
+                  "official_index_as_of": {
+                    "type": "string"
+                  },
+                  "official_index_lists_fy2026_response": {
+                    "type": "boolean"
+                  },
+                  "current_manual_explicit_discretionary_use_record_recovered": {
+                    "type": "boolean"
+                  },
+                  "permanent_adoption": {
+                    "type": "string"
+                  },
+                  "wac_sections": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "superseded_emergency_rule": {
+                    "type": "string"
+                  },
+                  "current_manual_revision": {
+                    "type": "string"
+                  },
+                  "current_no_waived_areas_snapshot_date": {
+                    "type": "string"
+                  },
+                  "complete_current_end_date": {
+                    "type": "null"
+                  },
+                  "state_policy_authority_observed": {
+                    "type": "boolean"
+                  },
+                  "intended_use_categories_observed": {
+                    "type": "boolean"
+                  },
+                  "actual_reported_use": {
+                    "type": "null"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "typed_gap": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "reviewed_disposition_effect": {
+                "type": "string"
+              },
+              "publication_effect": {
+                "type": "string"
+              },
+              "adoption_effect": {
+                "type": "string"
+              },
+              "graph_effect": {
+                "type": "string"
+              },
+              "national_prevalence_effect": {
+                "type": "string"
+              },
+              "discrimination_effect": {
+                "type": "string"
+              },
+              "coordination_effect": {
+                "type": "string"
+              },
+              "common_purpose_effect": {
+                "type": "string"
+              },
+              "racial_order_effect": {
+                "type": "string"
+              },
+              "complete_compact_effect": {
+                "type": "string"
+              },
+              "outside_human_dependency": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "authority": {
+          "type": "object",
+          "required": [
+            "outside_human_dependency",
+            "external_contacts",
+            "external_reviews",
+            "reviewed_disposition_changes",
+            "publication_effect",
+            "adoption_effect",
+            "graph_effect",
+            "national_prevalence_effect",
+            "discrimination_effect",
+            "coordination_effect",
+            "common_purpose_effect",
+            "racial_order_effect",
+            "complete_compact_effect"
+          ],
+          "properties": {
+            "outside_human_dependency": {
+              "type": "boolean"
+            },
+            "external_contacts": {
+              "type": "integer"
+            },
+            "external_reviews": {
+              "type": "integer"
+            },
+            "reviewed_disposition_changes": {
+              "type": "integer"
+            },
+            "publication_effect": {
+              "type": "string"
+            },
+            "adoption_effect": {
+              "type": "string"
+            },
+            "graph_effect": {
+              "type": "string"
+            },
+            "national_prevalence_effect": {
+              "type": "string"
+            },
+            "discrimination_effect": {
+              "type": "string"
+            },
+            "coordination_effect": {
+              "type": "string"
+            },
+            "common_purpose_effect": {
+              "type": "string"
+            },
+            "racial_order_effect": {
+              "type": "string"
+            },
+            "complete_compact_effect": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "title": "authored-adjudication-decisions.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "protocol_pr",
+        "protocol_merge",
+        "protocol_product_commit",
+        "protocol_product_tree",
+        "trigger_pr",
+        "trigger_head",
+        "trigger_merged",
+        "workflow_run",
+        "artifact_id",
+        "artifact_name",
+        "artifact_zip_bytes",
+        "artifact_zip_sha256",
+        "artifact_manifest_entries",
+        "artifact_manifest_combined_sha256",
+        "execution_receipt_sha256",
+        "route_results_sha256",
+        "artifact_manifest_sha256",
+        "counts",
+        "authority"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-ca-sd-wa-capture-custody@1"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "protocol_pr": {
+          "type": "integer"
+        },
+        "protocol_merge": {
+          "type": "string"
+        },
+        "protocol_product_commit": {
+          "type": "string"
+        },
+        "protocol_product_tree": {
+          "type": "string"
+        },
+        "trigger_pr": {
+          "type": "integer"
+        },
+        "trigger_head": {
+          "type": "string"
+        },
+        "trigger_merged": {
+          "type": "boolean"
+        },
+        "workflow_run": {
+          "type": "integer"
+        },
+        "artifact_id": {
+          "type": "integer"
+        },
+        "artifact_name": {
+          "type": "string"
+        },
+        "artifact_zip_bytes": {
+          "type": "integer"
+        },
+        "artifact_zip_sha256": {
+          "type": "string"
+        },
+        "artifact_manifest_entries": {
+          "type": "integer"
+        },
+        "artifact_manifest_combined_sha256": {
+          "type": "string"
+        },
+        "execution_receipt_sha256": {
+          "type": "string"
+        },
+        "route_results_sha256": {
+          "type": "string"
+        },
+        "artifact_manifest_sha256": {
+          "type": "string"
+        },
+        "counts": {
+          "type": "object",
+          "required": [
+            "fixed_routes",
+            "terminal_routes",
+            "http_success_pending_adjudication",
+            "http_non_success",
+            "disallowed_final_host",
+            "transport_failure",
+            "pdf_bodies",
+            "html_bodies",
+            "result_spawned_requests",
+            "source_admissions_at_capture",
+            "field_classifications_at_capture",
+            "row_terminalizations_at_capture",
+            "class_closures_at_capture"
+          ],
+          "properties": {
+            "fixed_routes": {
+              "type": "integer"
+            },
+            "terminal_routes": {
+              "type": "integer"
+            },
+            "http_success_pending_adjudication": {
+              "type": "integer"
+            },
+            "http_non_success": {
+              "type": "integer"
+            },
+            "disallowed_final_host": {
+              "type": "integer"
+            },
+            "transport_failure": {
+              "type": "integer"
+            },
+            "pdf_bodies": {
+              "type": "integer"
+            },
+            "html_bodies": {
+              "type": "integer"
+            },
+            "result_spawned_requests": {
+              "type": "integer"
+            },
+            "source_admissions_at_capture": {
+              "type": "integer"
+            },
+            "field_classifications_at_capture": {
+              "type": "integer"
+            },
+            "row_terminalizations_at_capture": {
+              "type": "integer"
+            },
+            "class_closures_at_capture": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "authority": {
+          "type": "object",
+          "required": [
+            "outside_human_dependency",
+            "external_contacts",
+            "external_reviews",
+            "reviewed_disposition_changes",
+            "publication_effect",
+            "adoption_effect",
+            "graph_effect",
+            "national_prevalence_effect",
+            "discrimination_effect",
+            "coordination_effect",
+            "common_purpose_effect",
+            "racial_order_effect",
+            "complete_compact_effect"
+          ],
+          "properties": {
+            "outside_human_dependency": {
+              "type": "boolean"
+            },
+            "external_contacts": {
+              "type": "integer"
+            },
+            "external_reviews": {
+              "type": "integer"
+            },
+            "reviewed_disposition_changes": {
+              "type": "integer"
+            },
+            "publication_effect": {
+              "type": "string"
+            },
+            "adoption_effect": {
+              "type": "string"
+            },
+            "graph_effect": {
+              "type": "string"
+            },
+            "national_prevalence_effect": {
+              "type": "string"
+            },
+            "discrimination_effect": {
+              "type": "string"
+            },
+            "coordination_effect": {
+              "type": "string"
+            },
+            "common_purpose_effect": {
+              "type": "string"
+            },
+            "racial_order_effect": {
+              "type": "string"
+            },
+            "complete_compact_effect": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "title": "capture-custody.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "combined_sha256",
+        "entries",
+        "schema_version"
+      ],
+      "properties": {
+        "combined_sha256": {
+          "type": "string"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "bytes",
+              "path",
+              "sha256"
+            ],
+            "properties": {
+              "bytes": {
+                "type": "integer"
+              },
+              "path": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "schema_version": {
+          "const": "ssc-rd04-wave03-ca-sd-wa-successor-capture-manifest@1"
+        }
+      },
+      "additionalProperties": false,
+      "title": "capture-manifest.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "protocol_id",
+        "routes",
+        "schema_version"
+      ],
+      "properties": {
+        "protocol_id": {
+          "type": "string"
+        },
+        "routes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "body_bytes",
+              "body_sha256",
+              "class_closure_effect",
+              "completed_at",
+              "error",
+              "field_classification_effect",
+              "final_host",
+              "final_url",
+              "headers_sha256",
+              "http_status",
+              "outside_human_dependency",
+              "request_attempts",
+              "result_spawned_requests",
+              "route_category",
+              "route_id",
+              "route_ordinal",
+              "row_terminalization_effect",
+              "source_admitted",
+              "started_at",
+              "state",
+              "state_scope",
+              "target_cell_keys"
+            ],
+            "properties": {
+              "body_bytes": {
+                "type": "integer"
+              },
+              "body_sha256": {
+                "type": "string"
+              },
+              "class_closure_effect": {
+                "type": "string"
+              },
+              "completed_at": {
+                "type": "string"
+              },
+              "error": {
+                "type": "null"
+              },
+              "field_classification_effect": {
+                "type": "string"
+              },
+              "final_host": {
+                "type": "string"
+              },
+              "final_url": {
+                "type": "string"
+              },
+              "headers_sha256": {
+                "type": "string"
+              },
+              "http_status": {
+                "type": "integer"
+              },
+              "outside_human_dependency": {
+                "type": "boolean"
+              },
+              "request_attempts": {
+                "type": "integer"
+              },
+              "result_spawned_requests": {
+                "type": "integer"
+              },
+              "route_category": {
+                "type": "string"
+              },
+              "route_id": {
+                "type": "string"
+              },
+              "route_ordinal": {
+                "type": "integer"
+              },
+              "row_terminalization_effect": {
+                "type": "string"
+              },
+              "source_admitted": {
+                "type": "boolean"
+              },
+              "started_at": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "state_scope": {
+                "type": "string"
+              },
+              "target_cell_keys": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "schema_version": {
+          "const": "ssc-rd04-wave03-ca-sd-wa-successor-route-results@1"
+        }
+      },
+      "additionalProperties": false,
+      "title": "capture-route-results.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "input_paths",
+        "derived_paths",
+        "predecessor",
+        "counts",
+        "current_result",
+        "next_bounded_operation"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-ca-sd-wa-capture-adjudication-index@2"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "input_paths": {
+          "type": "object",
+          "required": [
+            "capture_route_results",
+            "capture_manifest",
+            "capture_custody",
+            "pdf_visual_review_receipt",
+            "authored_adjudication_decisions",
+            "canonical_predecessor_matrix"
+          ],
+          "properties": {
+            "capture_route_results": {
+              "type": "string"
+            },
+            "capture_manifest": {
+              "type": "string"
+            },
+            "capture_custody": {
+              "type": "string"
+            },
+            "pdf_visual_review_receipt": {
+              "type": "string"
+            },
+            "authored_adjudication_decisions": {
+              "type": "string"
+            },
+            "canonical_predecessor_matrix": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "derived_paths": {
+          "type": "object",
+          "required": [
+            "route_adjudications",
+            "terminal_target_cell_ledger",
+            "promoted_partial_field_matrix",
+            "remaining_open_field_census",
+            "summary",
+            "product_manifest"
+          ],
+          "properties": {
+            "route_adjudications": {
+              "type": "string"
+            },
+            "terminal_target_cell_ledger": {
+              "type": "string"
+            },
+            "promoted_partial_field_matrix": {
+              "type": "string"
+            },
+            "remaining_open_field_census": {
+              "type": "string"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "product_manifest": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "predecessor": {
+          "type": "object",
+          "required": [
+            "authored_pre_state_options_field_promotion_merge",
+            "canonical_state_options_product_commit",
+            "canonical_state_options_merge_commit",
+            "canonical_state_options_matrix_sha256",
+            "successor_protocol_merge",
+            "capture_workflow_run",
+            "capture_artifact_id"
+          ],
+          "properties": {
+            "authored_pre_state_options_field_promotion_merge": {
+              "type": "string"
+            },
+            "canonical_state_options_product_commit": {
+              "type": "string"
+            },
+            "canonical_state_options_merge_commit": {
+              "type": "string"
+            },
+            "canonical_state_options_matrix_sha256": {
+              "type": "string"
+            },
+            "successor_protocol_merge": {
+              "type": "string"
+            },
+            "capture_workflow_run": {
+              "type": "integer"
+            },
+            "capture_artifact_id": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "counts": {
+          "type": "object",
+          "required": [
+            "fixed_routes",
+            "terminal_route_adjudications",
+            "source_admissions",
+            "target_cells",
+            "newly_terminalized_cells",
+            "terminal_evidence_updates",
+            "observed_target_cells",
+            "not_publicly_recovered_target_cells",
+            "terminal_cells_before",
+            "terminal_cells_after",
+            "still_open_cells_after",
+            "still_open_substantive_cells_after",
+            "target_rows_ready_for_separate_row_state_adjudication",
+            "terminal_units_after",
+            "class_closed",
+            "result_spawned_requests"
+          ],
+          "properties": {
+            "fixed_routes": {
+              "type": "integer"
+            },
+            "terminal_route_adjudications": {
+              "type": "integer"
+            },
+            "source_admissions": {
+              "type": "integer"
+            },
+            "target_cells": {
+              "type": "integer"
+            },
+            "newly_terminalized_cells": {
+              "type": "integer"
+            },
+            "terminal_evidence_updates": {
+              "type": "integer"
+            },
+            "observed_target_cells": {
+              "type": "integer"
+            },
+            "not_publicly_recovered_target_cells": {
+              "type": "integer"
+            },
+            "terminal_cells_before": {
+              "type": "integer"
+            },
+            "terminal_cells_after": {
+              "type": "integer"
+            },
+            "still_open_cells_after": {
+              "type": "integer"
+            },
+            "still_open_substantive_cells_after": {
+              "type": "integer"
+            },
+            "target_rows_ready_for_separate_row_state_adjudication": {
+              "type": "integer"
+            },
+            "terminal_units_after": {
+              "type": "integer"
+            },
+            "class_closed": {
+              "type": "boolean"
+            },
+            "result_spawned_requests": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "current_result": {
+          "type": "object",
+          "required": [
+            "capture_adjudication_complete",
+            "nine_target_decisions_composed",
+            "six_predecessor_open_cells_terminalized",
+            "three_terminal_historical_cells_updated_without_double_counting",
+            "target_rows_ready_for_separate_row_state_adjudication",
+            "field_matrix_terminal",
+            "class_state",
+            "class_closed",
+            "outside_human_dependency",
+            "reviewed_disposition_effect",
+            "publication_effect",
+            "adoption_effect",
+            "graph_effect",
+            "national_prevalence_effect",
+            "discrimination_effect",
+            "coordination_effect",
+            "common_purpose_effect",
+            "racial_order_effect",
+            "complete_compact_effect"
+          ],
+          "properties": {
+            "capture_adjudication_complete": {
+              "type": "boolean"
+            },
+            "nine_target_decisions_composed": {
+              "type": "boolean"
+            },
+            "six_predecessor_open_cells_terminalized": {
+              "type": "boolean"
+            },
+            "three_terminal_historical_cells_updated_without_double_counting": {
+              "type": "boolean"
+            },
+            "target_rows_ready_for_separate_row_state_adjudication": {
+              "type": "boolean"
+            },
+            "field_matrix_terminal": {
+              "type": "boolean"
+            },
+            "class_state": {
+              "type": "string"
+            },
+            "class_closed": {
+              "type": "boolean"
+            },
+            "outside_human_dependency": {
+              "type": "boolean"
+            },
+            "reviewed_disposition_effect": {
+              "type": "string"
+            },
+            "publication_effect": {
+              "type": "string"
+            },
+            "adoption_effect": {
+              "type": "string"
+            },
+            "graph_effect": {
+              "type": "string"
+            },
+            "national_prevalence_effect": {
+              "type": "string"
+            },
+            "discrimination_effect": {
+              "type": "string"
+            },
+            "coordination_effect": {
+              "type": "string"
+            },
+            "common_purpose_effect": {
+              "type": "string"
+            },
+            "racial_order_effect": {
+              "type": "string"
+            },
+            "complete_compact_effect": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "next_bounded_operation": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "title": "index.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "issue",
+        "pdf_routes",
+        "pdf_routes_visually_inspected",
+        "render_tool",
+        "render_dpi",
+        "inspection_mode",
+        "rows",
+        "authority"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-ca-sd-wa-pdf-visual-review-receipt@1"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "pdf_routes": {
+          "type": "integer"
+        },
+        "pdf_routes_visually_inspected": {
+          "type": "integer"
+        },
+        "render_tool": {
+          "type": "string"
+        },
+        "render_dpi": {
+          "type": "integer"
+        },
+        "inspection_mode": {
+          "type": "string"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "route_id",
+              "body_sha256",
+              "content_type",
+              "render_dpi",
+              "pages_rendered_and_visually_inspected",
+              "render_receipts",
+              "ocr_used",
+              "visual_inspection_complete"
+            ],
+            "properties": {
+              "route_id": {
+                "type": "string"
+              },
+              "body_sha256": {
+                "type": "string"
+              },
+              "content_type": {
+                "type": "string"
+              },
+              "render_dpi": {
+                "type": "integer"
+              },
+              "pages_rendered_and_visually_inspected": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "render_receipts": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "page",
+                    "render_file",
+                    "render_bytes",
+                    "render_sha256"
+                  ],
+                  "properties": {
+                    "page": {
+                      "type": "integer"
+                    },
+                    "render_file": {
+                      "type": "string"
+                    },
+                    "render_bytes": {
+                      "type": "integer"
+                    },
+                    "render_sha256": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "ocr_used": {
+                "type": "boolean"
+              },
+              "visual_inspection_complete": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "authority": {
+          "type": "object",
+          "required": [
+            "field_classifications_from_render_alone",
+            "row_terminalizations_from_render_alone",
+            "class_closures_from_render_alone",
+            "outside_human_dependency"
+          ],
+          "properties": {
+            "field_classifications_from_render_alone": {
+              "type": "integer"
+            },
+            "row_terminalizations_from_render_alone": {
+              "type": "integer"
+            },
+            "class_closures_from_render_alone": {
+              "type": "integer"
+            },
+            "outside_human_dependency": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "title": "pdf-visual-review-receipt.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "permanent_data_files",
+        "manifest_entries",
+        "combined_mode",
+        "entries",
+        "file_set_combined_sha256",
+        "terminal_cells_before",
+        "target_cells",
+        "newly_terminalized_cells",
+        "terminal_evidence_updates",
+        "terminal_cells_after",
+        "still_open_cells_after",
+        "still_open_substantive_cells_after",
+        "target_rows_ready_for_separate_row_state_adjudication",
+        "terminal_units_after",
+        "class_closed",
+        "outside_human_dependency",
+        "reviewed_disposition_effect",
+        "publication_effect",
+        "adoption_effect",
+        "graph_effect",
+        "national_prevalence_effect",
+        "discrimination_effect",
+        "coordination_effect",
+        "common_purpose_effect",
+        "racial_order_effect",
+        "complete_compact_effect"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-ca-sd-wa-capture-adjudication-product-manifest@2"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "permanent_data_files": {
+          "type": "integer"
+        },
+        "manifest_entries": {
+          "type": "integer"
+        },
+        "combined_mode": {
+          "type": "string"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "bytes",
+              "sha256"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "bytes": {
+                "type": "integer"
+              },
+              "sha256": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "file_set_combined_sha256": {
+          "type": "string"
+        },
+        "terminal_cells_before": {
+          "type": "integer"
+        },
+        "target_cells": {
+          "type": "integer"
+        },
+        "newly_terminalized_cells": {
+          "type": "integer"
+        },
+        "terminal_evidence_updates": {
+          "type": "integer"
+        },
+        "terminal_cells_after": {
+          "type": "integer"
+        },
+        "still_open_cells_after": {
+          "type": "integer"
+        },
+        "still_open_substantive_cells_after": {
+          "type": "integer"
+        },
+        "target_rows_ready_for_separate_row_state_adjudication": {
+          "type": "integer"
+        },
+        "terminal_units_after": {
+          "type": "integer"
+        },
+        "class_closed": {
+          "type": "boolean"
+        },
+        "outside_human_dependency": {
+          "type": "boolean"
+        },
+        "reviewed_disposition_effect": {
+          "type": "string"
+        },
+        "publication_effect": {
+          "type": "string"
+        },
+        "adoption_effect": {
+          "type": "string"
+        },
+        "graph_effect": {
+          "type": "string"
+        },
+        "national_prevalence_effect": {
+          "type": "string"
+        },
+        "discrimination_effect": {
+          "type": "string"
+        },
+        "coordination_effect": {
+          "type": "string"
+        },
+        "common_purpose_effect": {
+          "type": "string"
+        },
+        "racial_order_effect": {
+          "type": "string"
+        },
+        "complete_compact_effect": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "title": "product-manifest.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "field_order",
+        "counts",
+        "rows",
+        "current_result",
+        "source_product",
+        "composition_product"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-ca-sd-wa-capture-adjudication-promoted-partial-field-matrix@2"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "field_order": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "counts": {
+          "type": "object",
+          "required": [
+            "units",
+            "required_fields_per_unit",
+            "materialized_cells",
+            "inherited_terminal_cells",
+            "target_cells",
+            "newly_terminalized_cells",
+            "terminal_evidence_updates",
+            "observed_field_decisions",
+            "not_publicly_recovered_field_decisions",
+            "evidence_complete_cells",
+            "observed_cells",
+            "not_publicly_recovered_cells",
+            "still_open_cells",
+            "terminal_cells",
+            "source_rows_promoted",
+            "reported_use_rows",
+            "reported_no_use_rows",
+            "target_rows_ready_for_row_state_adjudication",
+            "terminal_units",
+            "class_closed"
+          ],
+          "properties": {
+            "units": {
+              "type": "integer"
+            },
+            "required_fields_per_unit": {
+              "type": "integer"
+            },
+            "materialized_cells": {
+              "type": "integer"
+            },
+            "inherited_terminal_cells": {
+              "type": "integer"
+            },
+            "target_cells": {
+              "type": "integer"
+            },
+            "newly_terminalized_cells": {
+              "type": "integer"
+            },
+            "terminal_evidence_updates": {
+              "type": "integer"
+            },
+            "observed_field_decisions": {
+              "type": "integer"
+            },
+            "not_publicly_recovered_field_decisions": {
+              "type": "integer"
+            },
+            "evidence_complete_cells": {
+              "type": "integer"
+            },
+            "observed_cells": {
+              "type": "integer"
+            },
+            "not_publicly_recovered_cells": {
+              "type": "integer"
+            },
+            "still_open_cells": {
+              "type": "integer"
+            },
+            "terminal_cells": {
+              "type": "integer"
+            },
+            "source_rows_promoted": {
+              "type": "integer"
+            },
+            "reported_use_rows": {
+              "type": "integer"
+            },
+            "reported_no_use_rows": {
+              "type": "integer"
+            },
+            "target_rows_ready_for_row_state_adjudication": {
+              "type": "integer"
+            },
+            "terminal_units": {
+              "type": "integer"
+            },
+            "class_closed": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "unit_ordinal",
+              "unit_id",
+              "postal_code",
+              "state_name",
+              "row_state",
+              "terminal_fields",
+              "open_fields",
+              "cells"
+            ],
+            "properties": {
+              "unit_ordinal": {
+                "type": "integer"
+              },
+              "unit_id": {
+                "type": "string"
+              },
+              "postal_code": {
+                "type": "string"
+              },
+              "state_name": {
+                "type": "string"
+              },
+              "row_state": {
+                "type": "string"
+              },
+              "terminal_fields": {
+                "type": "integer"
+              },
+              "open_fields": {
+                "type": "integer"
+              },
+              "cells": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "field_ordinal",
+                    "field_id",
+                    "state",
+                    "terminal",
+                    "value",
+                    "evidence_source_ids",
+                    "typed_gap",
+                    "authority_effect"
+                  ],
+                  "properties": {
+                    "field_ordinal": {
+                      "type": "integer"
+                    },
+                    "field_id": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string"
+                    },
+                    "terminal": {
+                      "type": "boolean"
+                    },
+                    "value": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [],
+                          "properties": {
+                            "unit_id": {
+                              "type": "string"
+                            },
+                            "postal_code": {
+                              "type": "string"
+                            },
+                            "state_name": {
+                              "type": "string"
+                            },
+                            "federal_authority": {
+                              "type": "object",
+                              "required": [
+                                "authority_scope",
+                                "regulatory_citation",
+                                "statutory_citation"
+                              ],
+                              "properties": {
+                                "authority_scope": {
+                                  "type": "string"
+                                },
+                                "regulatory_citation": {
+                                  "type": "string"
+                                },
+                                "statutory_citation": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "report_edition": {
+                              "type": "string"
+                            },
+                            "report_publication_month": {
+                              "type": "string"
+                            },
+                            "reported_state_practice": {
+                              "type": "object",
+                              "required": [
+                                "reference_period",
+                                "source_category",
+                                "used_discretionary_exemptions"
+                              ],
+                              "properties": {
+                                "reference_period": {
+                                  "type": "string"
+                                },
+                                "source_category": {
+                                  "type": "string"
+                                },
+                                "used_discretionary_exemptions": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "source_page_index_zero_based": {
+                              "type": "integer"
+                            },
+                            "source_printed_page": {
+                              "type": "integer"
+                            },
+                            "directory_url": {
+                              "type": "string"
+                            },
+                            "state_snap_website": {
+                              "type": "string"
+                            },
+                            "replay_route_id": {
+                              "type": "string"
+                            },
+                            "body_sha256": {
+                              "type": "string"
+                            },
+                            "headers_sha256": {
+                              "type": "string"
+                            },
+                            "page_updated": {
+                              "type": "string"
+                            },
+                            "terminal_classification": {
+                              "type": "string"
+                            },
+                            "finding_scope": {
+                              "type": "string"
+                            },
+                            "findings": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "candidate_decision_id",
+                                  "route_id",
+                                  "finding_code",
+                                  "finding_summary",
+                                  "source_body_sha256",
+                                  "evidence_locators"
+                                ],
+                                "properties": {
+                                  "candidate_decision_id": {
+                                    "type": "string"
+                                  },
+                                  "route_id": {
+                                    "type": "string"
+                                  },
+                                  "finding_code": {
+                                    "type": "string"
+                                  },
+                                  "finding_summary": {
+                                    "type": "string"
+                                  },
+                                  "source_body_sha256": {
+                                    "type": "string"
+                                  },
+                                  "evidence_locators": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            },
+                            "prohibited_inferences": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "finding_code": {
+                              "type": "string"
+                            },
+                            "finding_summary": {
+                              "type": "string"
+                            },
+                            "observed_components": {
+                              "type": "object",
+                              "required": [],
+                              "properties": {
+                                "primary_instrument": {
+                                  "type": "string"
+                                },
+                                "primary_issue_date": {
+                                  "type": "string"
+                                },
+                                "effective_date": {
+                                  "type": "string"
+                                },
+                                "supplemental_instrument": {
+                                  "type": "string"
+                                },
+                                "supplemental_issue_date": {
+                                  "type": "string"
+                                },
+                                "self_attestation_unless_questionable": {
+                                  "type": "boolean"
+                                },
+                                "documentary_evidence": {
+                                  "type": "boolean"
+                                },
+                                "collateral_contacts": {
+                                  "type": "boolean"
+                                },
+                                "case_record_and_internal_data": {
+                                  "type": "boolean"
+                                },
+                                "administrative_data_file": {
+                                  "type": "boolean"
+                                },
+                                "worker_or_county_judgment_with_documentation": {
+                                  "type": "boolean"
+                                },
+                                "current_manual_version_marker": {
+                                  "type": "string"
+                                },
+                                "approved_et_plan_period": {
+                                  "type": "string"
+                                },
+                                "exact_complete_manual_effective_date": {
+                                  "type": "null"
+                                },
+                                "expired_predecessor_implementation_date": {
+                                  "type": "string"
+                                },
+                                "expired_predecessor_expiration_date": {
+                                  "type": "string"
+                                },
+                                "fy2026_plan_anticipated_abawds_in_waived_areas": {
+                                  "type": "integer"
+                                },
+                                "official_index_as_of": {
+                                  "type": "string"
+                                },
+                                "official_index_lists_fy2026_response": {
+                                  "type": "boolean"
+                                },
+                                "permanent_adoption": {
+                                  "type": "string"
+                                },
+                                "wac_sections": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "superseded_emergency_rule": {
+                                  "type": "string"
+                                },
+                                "current_manual_revision": {
+                                  "type": "string"
+                                },
+                                "current_no_waived_areas_snapshot_date": {
+                                  "type": "string"
+                                },
+                                "complete_current_end_date": {
+                                  "type": "null"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "evidence_sources": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "route_id",
+                                  "final_url",
+                                  "content_type",
+                                  "body_bytes",
+                                  "body_sha256",
+                                  "headers_sha256",
+                                  "route_disposition"
+                                ],
+                                "properties": {
+                                  "route_id": {
+                                    "type": "string"
+                                  },
+                                  "final_url": {
+                                    "type": "string"
+                                  },
+                                  "content_type": {
+                                    "type": "string"
+                                  },
+                                  "body_bytes": {
+                                    "type": "integer"
+                                  },
+                                  "body_sha256": {
+                                    "type": "string"
+                                  },
+                                  "headers_sha256": {
+                                    "type": "string"
+                                  },
+                                  "route_disposition": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            },
+                            "evidence_locators": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "limitations": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "historical_reported_practice": {
+                              "type": "object",
+                              "required": [
+                                "federal_authority",
+                                "report_edition",
+                                "report_publication_month",
+                                "reported_state_practice",
+                                "source_page_index_zero_based",
+                                "source_printed_page"
+                              ],
+                              "properties": {
+                                "federal_authority": {
+                                  "type": "object",
+                                  "required": [
+                                    "authority_scope",
+                                    "regulatory_citation",
+                                    "statutory_citation"
+                                  ],
+                                  "properties": {
+                                    "authority_scope": {
+                                      "type": "string"
+                                    },
+                                    "regulatory_citation": {
+                                      "type": "string"
+                                    },
+                                    "statutory_citation": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "additionalProperties": false
+                                },
+                                "report_edition": {
+                                  "type": "string"
+                                },
+                                "report_publication_month": {
+                                  "type": "string"
+                                },
+                                "reported_state_practice": {
+                                  "type": "object",
+                                  "required": [
+                                    "reference_period",
+                                    "source_category",
+                                    "used_discretionary_exemptions"
+                                  ],
+                                  "properties": {
+                                    "reference_period": {
+                                      "type": "string"
+                                    },
+                                    "source_category": {
+                                      "type": "string"
+                                    },
+                                    "used_discretionary_exemptions": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "additionalProperties": false
+                                },
+                                "source_page_index_zero_based": {
+                                  "type": "integer"
+                                },
+                                "source_printed_page": {
+                                  "type": "integer"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "current_fixed_protocol_finding": {
+                              "type": "object",
+                              "required": [
+                                "terminal_classification",
+                                "finding_scope",
+                                "finding_code",
+                                "finding_summary",
+                                "observed_components",
+                                "evidence_sources",
+                                "evidence_locators",
+                                "limitations",
+                                "prohibited_inferences"
+                              ],
+                              "properties": {
+                                "terminal_classification": {
+                                  "type": "string"
+                                },
+                                "finding_scope": {
+                                  "type": "string"
+                                },
+                                "finding_code": {
+                                  "type": "string"
+                                },
+                                "finding_summary": {
+                                  "type": "string"
+                                },
+                                "observed_components": {
+                                  "type": "object",
+                                  "required": [
+                                    "fy2026_anticipated_discretionary_exemptions",
+                                    "anticipated_count_is_actual_use"
+                                  ],
+                                  "properties": {
+                                    "authority_and_allocation_framework": {
+                                      "type": "boolean"
+                                    },
+                                    "county_application_and_notice_framework": {
+                                      "type": "boolean"
+                                    },
+                                    "quarterly_tracking_requirement": {
+                                      "type": "boolean"
+                                    },
+                                    "fy2026_anticipated_discretionary_exemptions": {
+                                      "type": "integer"
+                                    },
+                                    "anticipated_count_is_actual_use": {
+                                      "type": "boolean"
+                                    },
+                                    "public_stat47_data_state": {
+                                      "type": "string"
+                                    },
+                                    "current_manual_explicit_discretionary_use_record_recovered": {
+                                      "type": "boolean"
+                                    },
+                                    "state_policy_authority_observed": {
+                                      "type": "boolean"
+                                    },
+                                    "intended_use_categories_observed": {
+                                      "type": "boolean"
+                                    },
+                                    "actual_reported_use": {
+                                      "type": "null"
+                                    }
+                                  },
+                                  "additionalProperties": false
+                                },
+                                "evidence_sources": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "route_id",
+                                      "final_url",
+                                      "content_type",
+                                      "body_bytes",
+                                      "body_sha256",
+                                      "headers_sha256",
+                                      "route_disposition"
+                                    ],
+                                    "properties": {
+                                      "route_id": {
+                                        "type": "string"
+                                      },
+                                      "final_url": {
+                                        "type": "string"
+                                      },
+                                      "content_type": {
+                                        "type": "string"
+                                      },
+                                      "body_bytes": {
+                                        "type": "integer"
+                                      },
+                                      "body_sha256": {
+                                        "type": "string"
+                                      },
+                                      "headers_sha256": {
+                                        "type": "string"
+                                      },
+                                      "route_disposition": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "evidence_locators": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "limitations": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "prohibited_inferences": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "chronology": {
+                              "type": "object",
+                              "required": [
+                                "historical_reference_period",
+                                "historical_report_publication_month",
+                                "current_capture_started_at",
+                                "current_capture_completed_at",
+                                "composition_rule"
+                              ],
+                              "properties": {
+                                "historical_reference_period": {
+                                  "type": "string"
+                                },
+                                "historical_report_publication_month": {
+                                  "type": "string"
+                                },
+                                "current_capture_started_at": {
+                                  "type": "string"
+                                },
+                                "current_capture_completed_at": {
+                                  "type": "string"
+                                },
+                                "composition_rule": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "evidence_source_ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "typed_gap": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "authority_effect": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "current_result": {
+          "type": "object",
+          "required": [
+            "canonical_state_identity_terminal",
+            "source_identities_and_exact_custody_terminal",
+            "historical_discretionary_exemption_field_terminal",
+            "historical_ffy2024_reported_use_rows",
+            "historical_ffy2024_reported_no_use_rows",
+            "current_actual_discretionary_exemption_use_not_publicly_recovered_rows",
+            "target_cells_adjudicated",
+            "newly_terminalized_cells",
+            "terminal_evidence_updates",
+            "terminal_cells",
+            "still_open_cells",
+            "terminal_substantive_cells",
+            "still_open_substantive_cells",
+            "row_terminal_state_cells_open",
+            "target_rows_ready_for_separate_row_state_adjudication",
+            "terminal_units",
+            "field_matrix_terminal",
+            "class_state",
+            "class_closed",
+            "outside_human_dependency",
+            "reviewed_disposition_effect",
+            "publication_effect",
+            "adoption_effect",
+            "graph_effect",
+            "prevalence_effect",
+            "discrimination_effect",
+            "coordination_effect",
+            "common_purpose_effect",
+            "racial_order_effect",
+            "complete_compact_effect"
+          ],
+          "properties": {
+            "canonical_state_identity_terminal": {
+              "type": "string"
+            },
+            "source_identities_and_exact_custody_terminal": {
+              "type": "string"
+            },
+            "historical_discretionary_exemption_field_terminal": {
+              "type": "string"
+            },
+            "historical_ffy2024_reported_use_rows": {
+              "type": "integer"
+            },
+            "historical_ffy2024_reported_no_use_rows": {
+              "type": "integer"
+            },
+            "current_actual_discretionary_exemption_use_not_publicly_recovered_rows": {
+              "type": "integer"
+            },
+            "target_cells_adjudicated": {
+              "type": "string"
+            },
+            "newly_terminalized_cells": {
+              "type": "integer"
+            },
+            "terminal_evidence_updates": {
+              "type": "integer"
+            },
+            "terminal_cells": {
+              "type": "string"
+            },
+            "still_open_cells": {
+              "type": "string"
+            },
+            "terminal_substantive_cells": {
+              "type": "integer"
+            },
+            "still_open_substantive_cells": {
+              "type": "integer"
+            },
+            "row_terminal_state_cells_open": {
+              "type": "integer"
+            },
+            "target_rows_ready_for_separate_row_state_adjudication": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "terminal_units": {
+              "type": "integer"
+            },
+            "field_matrix_terminal": {
+              "type": "boolean"
+            },
+            "class_state": {
+              "type": "string"
+            },
+            "class_closed": {
+              "type": "boolean"
+            },
+            "outside_human_dependency": {
+              "type": "boolean"
+            },
+            "reviewed_disposition_effect": {
+              "type": "string"
+            },
+            "publication_effect": {
+              "type": "string"
+            },
+            "adoption_effect": {
+              "type": "string"
+            },
+            "graph_effect": {
+              "type": "string"
+            },
+            "prevalence_effect": {
+              "type": "string"
+            },
+            "discrimination_effect": {
+              "type": "string"
+            },
+            "coordination_effect": {
+              "type": "string"
+            },
+            "common_purpose_effect": {
+              "type": "string"
+            },
+            "racial_order_effect": {
+              "type": "string"
+            },
+            "complete_compact_effect": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "source_product": {
+          "type": "object",
+          "required": [
+            "source_custody_path",
+            "source_page_text_path",
+            "state_field_register_path",
+            "source_id",
+            "reference_period"
+          ],
+          "properties": {
+            "source_custody_path": {
+              "type": "string"
+            },
+            "source_page_text_path": {
+              "type": "string"
+            },
+            "state_field_register_path": {
+              "type": "string"
+            },
+            "source_id": {
+              "type": "string"
+            },
+            "reference_period": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "composition_product": {
+          "type": "object",
+          "required": [
+            "predecessor_matrix_path",
+            "predecessor_matrix_sha256",
+            "predecessor_product_commit",
+            "predecessor_merge_commit",
+            "capture_custody_path",
+            "authored_decisions_path",
+            "capture_reference_period",
+            "composition_rule"
+          ],
+          "properties": {
+            "predecessor_matrix_path": {
+              "type": "string"
+            },
+            "predecessor_matrix_sha256": {
+              "type": "string"
+            },
+            "predecessor_product_commit": {
+              "type": "string"
+            },
+            "predecessor_merge_commit": {
+              "type": "string"
+            },
+            "capture_custody_path": {
+              "type": "string"
+            },
+            "authored_decisions_path": {
+              "type": "string"
+            },
+            "capture_reference_period": {
+              "type": "string"
+            },
+            "composition_rule": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "title": "promoted-partial-field-matrix.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "matrix_path",
+        "predecessor_matrix_path",
+        "counts",
+        "field_counts",
+        "target_rows_ready_for_separate_row_state_adjudication",
+        "open_cells",
+        "authority"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-ca-sd-wa-capture-adjudication-remaining-open-field-census@2"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "matrix_path": {
+          "type": "string"
+        },
+        "predecessor_matrix_path": {
+          "type": "string"
+        },
+        "counts": {
+          "type": "object",
+          "required": [
+            "units",
+            "required_cells",
+            "terminal_cells",
+            "still_open_cells",
+            "substantive_cells",
+            "terminal_substantive_cells",
+            "still_open_substantive_cells",
+            "row_terminal_state_cells_open",
+            "target_rows_ready_for_separate_row_state_adjudication",
+            "terminal_units",
+            "class_closed"
+          ],
+          "properties": {
+            "units": {
+              "type": "integer"
+            },
+            "required_cells": {
+              "type": "integer"
+            },
+            "terminal_cells": {
+              "type": "integer"
+            },
+            "still_open_cells": {
+              "type": "integer"
+            },
+            "substantive_cells": {
+              "type": "integer"
+            },
+            "terminal_substantive_cells": {
+              "type": "integer"
+            },
+            "still_open_substantive_cells": {
+              "type": "integer"
+            },
+            "row_terminal_state_cells_open": {
+              "type": "integer"
+            },
+            "target_rows_ready_for_separate_row_state_adjudication": {
+              "type": "integer"
+            },
+            "terminal_units": {
+              "type": "integer"
+            },
+            "class_closed": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "field_counts": {
+          "type": "object",
+          "required": [
+            "canonical_state_identity",
+            "operative_state_implementation_authority_and_version",
+            "implementation_effective_date_or_typed_gap",
+            "abawd_or_work_requirement_waiver_state_and_governing_period",
+            "discretionary_exemption_authority_and_reported_state_practice",
+            "fitness_for_work_or_eligibility_screening_rule",
+            "verification_evidence_and_staff_discretion_surface",
+            "source_identities_and_exact_custody",
+            "field_and_row_terminal_state"
+          ],
+          "properties": {
+            "canonical_state_identity": {
+              "type": "object",
+              "required": [
+                "terminal",
+                "open"
+              ],
+              "properties": {
+                "terminal": {
+                  "type": "integer"
+                },
+                "open": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            },
+            "operative_state_implementation_authority_and_version": {
+              "type": "object",
+              "required": [
+                "terminal",
+                "open"
+              ],
+              "properties": {
+                "terminal": {
+                  "type": "integer"
+                },
+                "open": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            },
+            "implementation_effective_date_or_typed_gap": {
+              "type": "object",
+              "required": [
+                "terminal",
+                "open"
+              ],
+              "properties": {
+                "terminal": {
+                  "type": "integer"
+                },
+                "open": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            },
+            "abawd_or_work_requirement_waiver_state_and_governing_period": {
+              "type": "object",
+              "required": [
+                "terminal",
+                "open"
+              ],
+              "properties": {
+                "terminal": {
+                  "type": "integer"
+                },
+                "open": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            },
+            "discretionary_exemption_authority_and_reported_state_practice": {
+              "type": "object",
+              "required": [
+                "terminal",
+                "open"
+              ],
+              "properties": {
+                "terminal": {
+                  "type": "integer"
+                },
+                "open": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            },
+            "fitness_for_work_or_eligibility_screening_rule": {
+              "type": "object",
+              "required": [
+                "terminal",
+                "open"
+              ],
+              "properties": {
+                "terminal": {
+                  "type": "integer"
+                },
+                "open": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            },
+            "verification_evidence_and_staff_discretion_surface": {
+              "type": "object",
+              "required": [
+                "terminal",
+                "open"
+              ],
+              "properties": {
+                "terminal": {
+                  "type": "integer"
+                },
+                "open": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            },
+            "source_identities_and_exact_custody": {
+              "type": "object",
+              "required": [
+                "terminal",
+                "open"
+              ],
+              "properties": {
+                "terminal": {
+                  "type": "integer"
+                },
+                "open": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            },
+            "field_and_row_terminal_state": {
+              "type": "object",
+              "required": [
+                "terminal",
+                "open"
+              ],
+              "properties": {
+                "terminal": {
+                  "type": "integer"
+                },
+                "open": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "target_rows_ready_for_separate_row_state_adjudication": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "unit_id",
+              "postal_code",
+              "state_name",
+              "terminal_fields",
+              "open_fields",
+              "remaining_open_field_id"
+            ],
+            "properties": {
+              "unit_id": {
+                "type": "string"
+              },
+              "postal_code": {
+                "type": "string"
+              },
+              "state_name": {
+                "type": "string"
+              },
+              "terminal_fields": {
+                "type": "integer"
+              },
+              "open_fields": {
+                "type": "integer"
+              },
+              "remaining_open_field_id": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "open_cells": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "unit_ordinal",
+              "unit_id",
+              "postal_code",
+              "state_name",
+              "field_ordinal",
+              "field_id",
+              "typed_gap",
+              "authority_effect"
+            ],
+            "properties": {
+              "unit_ordinal": {
+                "type": "integer"
+              },
+              "unit_id": {
+                "type": "string"
+              },
+              "postal_code": {
+                "type": "string"
+              },
+              "state_name": {
+                "type": "string"
+              },
+              "field_ordinal": {
+                "type": "integer"
+              },
+              "field_id": {
+                "type": "string"
+              },
+              "typed_gap": {
+                "type": "string"
+              },
+              "authority_effect": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "authority": {
+          "type": "object",
+          "required": [
+            "outside_human_dependency",
+            "reviewed_disposition_effect",
+            "publication_effect",
+            "adoption_effect",
+            "graph_effect",
+            "prevalence_effect",
+            "discrimination_effect",
+            "coordination_effect",
+            "common_purpose_effect",
+            "racial_order_effect",
+            "complete_compact_effect"
+          ],
+          "properties": {
+            "outside_human_dependency": {
+              "type": "boolean"
+            },
+            "reviewed_disposition_effect": {
+              "type": "string"
+            },
+            "publication_effect": {
+              "type": "string"
+            },
+            "adoption_effect": {
+              "type": "string"
+            },
+            "graph_effect": {
+              "type": "string"
+            },
+            "prevalence_effect": {
+              "type": "string"
+            },
+            "discrimination_effect": {
+              "type": "string"
+            },
+            "coordination_effect": {
+              "type": "string"
+            },
+            "common_purpose_effect": {
+              "type": "string"
+            },
+            "racial_order_effect": {
+              "type": "string"
+            },
+            "complete_compact_effect": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "title": "remaining-open-field-census.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "protocol_pr",
+        "capture_pr",
+        "capture_workflow_run",
+        "capture_artifact_id",
+        "capture_artifact_zip_sha256",
+        "fixed_routes",
+        "terminal_route_adjudications",
+        "source_admissions",
+        "target_cells",
+        "observed_field_decisions",
+        "not_publicly_recovered_field_decisions",
+        "canonical_predecessor",
+        "composition",
+        "terminal_units_after",
+        "class_state",
+        "class_closed",
+        "result_spawned_requests",
+        "outside_human_dependency",
+        "reviewed_disposition_effect",
+        "publication_effect",
+        "adoption_effect",
+        "graph_effect",
+        "national_prevalence_effect",
+        "discrimination_effect",
+        "coordination_effect",
+        "common_purpose_effect",
+        "racial_order_effect",
+        "complete_compact_effect"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-ca-sd-wa-capture-adjudication-summary@2"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "protocol_pr": {
+          "type": "integer"
+        },
+        "capture_pr": {
+          "type": "integer"
+        },
+        "capture_workflow_run": {
+          "type": "integer"
+        },
+        "capture_artifact_id": {
+          "type": "integer"
+        },
+        "capture_artifact_zip_sha256": {
+          "type": "string"
+        },
+        "fixed_routes": {
+          "type": "integer"
+        },
+        "terminal_route_adjudications": {
+          "type": "integer"
+        },
+        "source_admissions": {
+          "type": "integer"
+        },
+        "target_cells": {
+          "type": "integer"
+        },
+        "observed_field_decisions": {
+          "type": "integer"
+        },
+        "not_publicly_recovered_field_decisions": {
+          "type": "integer"
+        },
+        "canonical_predecessor": {
+          "type": "object",
+          "required": [
+            "product_commit",
+            "merge_commit",
+            "matrix_path",
+            "matrix_sha256",
+            "terminal_cells",
+            "still_open_cells",
+            "still_open_substantive_cells"
+          ],
+          "properties": {
+            "product_commit": {
+              "type": "string"
+            },
+            "merge_commit": {
+              "type": "string"
+            },
+            "matrix_path": {
+              "type": "string"
+            },
+            "matrix_sha256": {
+              "type": "string"
+            },
+            "terminal_cells": {
+              "type": "integer"
+            },
+            "still_open_cells": {
+              "type": "integer"
+            },
+            "still_open_substantive_cells": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "composition": {
+          "type": "object",
+          "required": [
+            "stale_authored_predecessor_terminal_cells",
+            "stale_authored_terminal_cells_after",
+            "stale_authored_field_terminalizations",
+            "canonical_predecessor_terminal_cells",
+            "newly_terminalized_cells",
+            "terminal_evidence_updates",
+            "canonical_terminal_cells_after",
+            "canonical_still_open_cells_after",
+            "canonical_still_open_substantive_cells_after",
+            "target_rows_ready_for_separate_row_state_adjudication",
+            "double_counted_terminal_cells_refused"
+          ],
+          "properties": {
+            "stale_authored_predecessor_terminal_cells": {
+              "type": "integer"
+            },
+            "stale_authored_terminal_cells_after": {
+              "type": "integer"
+            },
+            "stale_authored_field_terminalizations": {
+              "type": "integer"
+            },
+            "canonical_predecessor_terminal_cells": {
+              "type": "integer"
+            },
+            "newly_terminalized_cells": {
+              "type": "integer"
+            },
+            "terminal_evidence_updates": {
+              "type": "integer"
+            },
+            "canonical_terminal_cells_after": {
+              "type": "integer"
+            },
+            "canonical_still_open_cells_after": {
+              "type": "integer"
+            },
+            "canonical_still_open_substantive_cells_after": {
+              "type": "integer"
+            },
+            "target_rows_ready_for_separate_row_state_adjudication": {
+              "type": "integer"
+            },
+            "double_counted_terminal_cells_refused": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "terminal_units_after": {
+          "type": "integer"
+        },
+        "class_state": {
+          "type": "string"
+        },
+        "class_closed": {
+          "type": "boolean"
+        },
+        "result_spawned_requests": {
+          "type": "integer"
+        },
+        "outside_human_dependency": {
+          "type": "boolean"
+        },
+        "reviewed_disposition_effect": {
+          "type": "string"
+        },
+        "publication_effect": {
+          "type": "string"
+        },
+        "adoption_effect": {
+          "type": "string"
+        },
+        "graph_effect": {
+          "type": "string"
+        },
+        "national_prevalence_effect": {
+          "type": "string"
+        },
+        "discrimination_effect": {
+          "type": "string"
+        },
+        "coordination_effect": {
+          "type": "string"
+        },
+        "common_purpose_effect": {
+          "type": "string"
+        },
+        "racial_order_effect": {
+          "type": "string"
+        },
+        "complete_compact_effect": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "title": "summary.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "predecessor",
+        "counts",
+        "cells",
+        "authority"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-ca-sd-wa-terminal-target-cell-ledger@2"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "predecessor": {
+          "type": "object",
+          "required": [
+            "matrix_path",
+            "matrix_sha256",
+            "product_commit",
+            "merge_commit",
+            "terminal_cells"
+          ],
+          "properties": {
+            "matrix_path": {
+              "type": "string"
+            },
+            "matrix_sha256": {
+              "type": "string"
+            },
+            "product_commit": {
+              "type": "string"
+            },
+            "merge_commit": {
+              "type": "string"
+            },
+            "terminal_cells": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "counts": {
+          "type": "object",
+          "required": [
+            "target_cells",
+            "newly_terminalized_cells",
+            "terminal_evidence_updates",
+            "observed_decisions",
+            "not_publicly_recovered_decisions",
+            "row_terminalizations",
+            "class_closures"
+          ],
+          "properties": {
+            "target_cells": {
+              "type": "integer"
+            },
+            "newly_terminalized_cells": {
+              "type": "integer"
+            },
+            "terminal_evidence_updates": {
+              "type": "integer"
+            },
+            "observed_decisions": {
+              "type": "integer"
+            },
+            "not_publicly_recovered_decisions": {
+              "type": "integer"
+            },
+            "row_terminalizations": {
+              "type": "integer"
+            },
+            "class_closures": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "cells": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "field_decision_ordinal",
+              "target_cell_id",
+              "target_cell_key",
+              "unit_id",
+              "postal_code",
+              "state_name",
+              "field_id",
+              "authored_state_before",
+              "composed_predecessor_state",
+              "composed_predecessor_terminal",
+              "composed_predecessor_typed_gap",
+              "composed_predecessor_value_sha256",
+              "composition_action",
+              "state_after",
+              "terminal_after",
+              "finding_code",
+              "finding_summary",
+              "evidence_route_ids",
+              "evidence_locators",
+              "typed_gap",
+              "final_value_sha256",
+              "authority_effect",
+              "outside_human_dependency"
+            ],
+            "properties": {
+              "field_decision_ordinal": {
+                "type": "integer"
+              },
+              "target_cell_id": {
+                "type": "string"
+              },
+              "target_cell_key": {
+                "type": "string"
+              },
+              "unit_id": {
+                "type": "string"
+              },
+              "postal_code": {
+                "type": "string"
+              },
+              "state_name": {
+                "type": "string"
+              },
+              "field_id": {
+                "type": "string"
+              },
+              "authored_state_before": {
+                "type": "string"
+              },
+              "composed_predecessor_state": {
+                "type": "string"
+              },
+              "composed_predecessor_terminal": {
+                "type": "boolean"
+              },
+              "composed_predecessor_typed_gap": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "composed_predecessor_value_sha256": {
+                "type": "string"
+              },
+              "composition_action": {
+                "type": "string"
+              },
+              "state_after": {
+                "type": "string"
+              },
+              "terminal_after": {
+                "type": "boolean"
+              },
+              "finding_code": {
+                "type": "string"
+              },
+              "finding_summary": {
+                "type": "string"
+              },
+              "evidence_route_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "evidence_locators": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "typed_gap": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "final_value_sha256": {
+                "type": "string"
+              },
+              "authority_effect": {
+                "type": "string"
+              },
+              "outside_human_dependency": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "authority": {
+          "type": "object",
+          "required": [
+            "outside_human_dependency",
+            "external_contacts",
+            "external_reviews",
+            "reviewed_disposition_effect",
+            "publication_effect",
+            "adoption_effect",
+            "graph_effect",
+            "national_prevalence_effect",
+            "discrimination_effect",
+            "coordination_effect",
+            "common_purpose_effect",
+            "racial_order_effect",
+            "complete_compact_effect"
+          ],
+          "properties": {
+            "outside_human_dependency": {
+              "type": "boolean"
+            },
+            "external_contacts": {
+              "type": "integer"
+            },
+            "external_reviews": {
+              "type": "integer"
+            },
+            "reviewed_disposition_effect": {
+              "type": "string"
+            },
+            "publication_effect": {
+              "type": "string"
+            },
+            "adoption_effect": {
+              "type": "string"
+            },
+            "graph_effect": {
+              "type": "string"
+            },
+            "national_prevalence_effect": {
+              "type": "string"
+            },
+            "discrimination_effect": {
+              "type": "string"
+            },
+            "coordination_effect": {
+              "type": "string"
+            },
+            "common_purpose_effect": {
+              "type": "string"
+            },
+            "racial_order_effect": {
+              "type": "string"
+            },
+            "complete_compact_effect": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "title": "terminal-target-cell-ledger.json"
+    }
+  ]
+}
