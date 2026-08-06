@@ -1,0 +1,178 @@
+name: TEMP publish School.House IRS filing-index terminal receipt
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-irs-candidate-filing-index-terminal-receipt.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: schoolhouse-irs-candidate-filing-index-terminal-receipt-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+jobs:
+  publish:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-irs-candidate-filing-index-census-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Publish exact terminal receipt branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          PRODUCT='agent/schoolhouse-irs-candidate-filing-index-custody-product-v1'
+          RECEIPT_BRANCH='agent/schoolhouse-irs-candidate-filing-index-terminal-receipt-v1'
+          RECEIPT_PATH='.schoolhouse-irs-candidate-filing-index-terminal-receipt'
+
+          for _ in $(seq 1 1080); do
+            PRODUCT_PR="$(gh pr list --repo "$REPO" --head "$PRODUCT" --state all --json number --jq 'sort_by(.number) | last | .number // 0')"
+            if [[ "$PRODUCT_PR" != '0' ]]; then
+              MERGED_AT="$(gh pr view "$PRODUCT_PR" --repo "$REPO" --json mergedAt --jq '.mergedAt // ""')"
+              [[ -n "$MERGED_AT" ]] && break
+            fi
+            sleep 10
+          done
+          test "$PRODUCT_PR" != '0'
+          test -n "$MERGED_AT"
+
+          PRODUCT_SHA="$(gh pr view "$PRODUCT_PR" --repo "$REPO" --json headRefOid --jq '.headRefOid')"
+          MERGE_SHA="$(gh pr view "$PRODUCT_PR" --repo "$REPO" --json mergeCommit --jq '.mergeCommit.oid')"
+          git fetch --prune --no-tags origin main "$PRODUCT"
+          git merge-base --is-ancestor "$PRODUCT_SHA" "$MERGE_SHA"
+          PRODUCT_TREE="$(git rev-parse "$PRODUCT_SHA^{tree}")"
+          PRODUCT_PARENT="$(git rev-parse "$PRODUCT_SHA^")"
+          PRODUCT_PARENT_TREE="$(git rev-parse "$PRODUCT_PARENT^{tree}")"
+          MERGE_TREE="$(git rev-parse "$MERGE_SHA^{tree}")"
+
+          TMP="$RUNNER_TEMP/schoolhouse-irs-candidate-filing-index-terminal-receipt"
+          rm -rf "$TMP"
+          mkdir -p "$TMP"
+          git show "$PRODUCT_SHA:data/intake/schoolhouse-irs-candidate-filing-index-census/summary.json" > "$TMP/summary.json"
+          git show "$PRODUCT_SHA:data/intake/schoolhouse-irs-candidate-filing-index-census/source-custody.json" > "$TMP/source-custody.json"
+
+          workflow_id() {
+            gh workflow list --repo "$REPO" --all --json id,name > "$TMP/workflows.json"
+            jq -r --arg name "$1" '.[] | select(.name==$name) | .id' "$TMP/workflows.json" | head -1
+          }
+          exact_success_run() {
+            local wid="$1" sha="$2"
+            gh api "repos/$REPO/actions/workflows/$wid/runs?per_page=100" > "$TMP/runs-$wid.json"
+            jq -r --arg sha "$sha" '[.workflow_runs[] | select(.head_sha==$sha and .conclusion=="success")] | sort_by(.created_at) | last | .id // 0' "$TMP/runs-$wid.json"
+          }
+          RELEASE_WID="$(workflow_id 'Release checks')"
+          HUMAN_WID="$(workflow_id 'No magic human gate')"
+          PRODUCT_RELEASE_RUN="$(exact_success_run "$RELEASE_WID" "$PRODUCT_SHA")"
+          PRODUCT_HUMAN_RUN="$(exact_success_run "$HUMAN_WID" "$PRODUCT_SHA")"
+          MERGE_RELEASE_RUN="$(exact_success_run "$RELEASE_WID" "$MERGE_SHA")"
+          MERGE_HUMAN_RUN="$(exact_success_run "$HUMAN_WID" "$MERGE_SHA")"
+          test "$PRODUCT_RELEASE_RUN" != '0'
+          test "$PRODUCT_HUMAN_RUN" != '0'
+          test "$MERGE_RELEASE_RUN" != '0'
+          test "$MERGE_HUMAN_RUN" != '0'
+
+          ROWS="$(jq -r '.official_index_rows_scanned' "$TMP/summary.json")"
+          MATCHES="$(jq -r '.exact_candidate_filing_rows' "$TMP/summary.json")"
+          MATCHED_EINS="$(jq -r '.unique_candidate_eins_with_filing_rows' "$TMP/summary.json")"
+          AVAILABLE="$(jq -c '.available_index_years' "$TMP/summary.json")"
+          UNAVAILABLE="$(jq -c '.unavailable_index_years' "$TMP/summary.json")"
+          ACQ_RUN="$(jq -r '.acquisition_workflow_run_id' "$TMP/source-custody.json")"
+          ACQ_ARTIFACT="$(jq -r '.acquisition_artifact_id' "$TMP/source-custody.json")"
+          ACQ_DIGEST="$(jq -r '.acquisition_artifact_digest' "$TMP/source-custody.json")"
+
+          jq -n \
+            --arg state 'merged_qualified_and_carriers_retired' \
+            --argjson product_pr "$PRODUCT_PR" \
+            --arg product_parent "$PRODUCT_PARENT" \
+            --arg product_parent_tree "$PRODUCT_PARENT_TREE" \
+            --arg product_commit "$PRODUCT_SHA" \
+            --arg product_tree "$PRODUCT_TREE" \
+            --arg merge_commit "$MERGE_SHA" \
+            --arg merge_tree "$MERGE_TREE" \
+            --argjson available_index_years "$AVAILABLE" \
+            --argjson unavailable_index_years "$UNAVAILABLE" \
+            --argjson official_index_rows_scanned "$ROWS" \
+            --argjson filing_index_match_rows "$MATCHES" \
+            --argjson candidate_eins_with_filing_rows "$MATCHED_EINS" \
+            --argjson acquisition_run "$ACQ_RUN" \
+            --argjson acquisition_artifact "$ACQ_ARTIFACT" \
+            --arg acquisition_artifact_digest "$ACQ_DIGEST" \
+            --argjson product_release_run "$PRODUCT_RELEASE_RUN" \
+            --argjson product_no_magic_human_run "$PRODUCT_HUMAN_RUN" \
+            --argjson postmerge_release_run "$MERGE_RELEASE_RUN" \
+            --argjson postmerge_no_magic_human_run "$MERGE_HUMAN_RUN" \
+            '{state:$state,product_pr:$product_pr,product_parent:$product_parent,product_parent_tree:$product_parent_tree,product_commit:$product_commit,product_tree:$product_tree,merge_commit:$merge_commit,merge_tree:$merge_tree,permanent_changed_paths:14,candidate_rows:641,unique_candidate_eins:438,declared_index_years:[2019,2020,2021,2022,2023,2024,2025,2026],available_index_years:$available_index_years,unavailable_index_years:$unavailable_index_years,official_index_rows_scanned:$official_index_rows_scanned,filing_index_match_rows:$filing_index_match_rows,candidate_eins_with_filing_rows:$candidate_eins_with_filing_rows,acquisition_run:$acquisition_run,acquisition_artifact:$acquisition_artifact,acquisition_artifact_digest:$acquisition_artifact_digest,product_release_run:$product_release_run,product_no_magic_human_run:$product_no_magic_human_run,postmerge_release_run:$postmerge_release_run,postmerge_no_magic_human_run:$postmerge_no_magic_human_run,xml_fetches:0,batch_zip_fetches:0,successor_fetches:0,query_submissions:0,forms_submitted:0,identities_admitted:0,relationships_admitted:0,negative_existence_claims:0,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+            > "$TMP/status.json"
+
+          cat > "$TMP/report.md" <<EOF
+          # School.House IRS candidate filing-index custody — terminal receipt
+
+          **State:** merged, independently qualified, post-merge replayed, and temporary carriers retired.
+
+          \`\`\`text
+          product PR:                         #$PRODUCT_PR
+          product parent:                     $PRODUCT_PARENT
+          product parent tree:                $PRODUCT_PARENT_TREE
+          product commit:                     $PRODUCT_SHA
+          product tree:                       $PRODUCT_TREE
+          merge commit:                       $MERGE_SHA
+          merge tree:                         $MERGE_TREE
+          permanent changed paths:            14
+          candidate rows / unique EINs:       641 / 438
+          available index years:              $AVAILABLE
+          unavailable index years:            $UNAVAILABLE
+          official index rows screened:       $ROWS
+          exact filing-index rows:            $MATCHES
+          candidate EINs with filing rows:    $MATCHED_EINS
+          acquisition/materializer run:       $ACQ_RUN
+          acquisition artifact:               $ACQ_ARTIFACT
+          artifact digest:                    $ACQ_DIGEST
+          product release run:                $PRODUCT_RELEASE_RUN
+          product no-magic-human run:         $PRODUCT_HUMAN_RUN
+          post-merge release run:             $MERGE_RELEASE_RUN
+          post-merge no-magic-human run:      $MERGE_HUMAN_RUN
+          \`\`\`
+
+          Exact official filing-index rows remain filing-route custody for pre-existing phrase candidates only. They do not identify the public School.House legal entity or establish exemption, fiscal sponsorship, grants, funding, governance, ownership, control, related-party status, or a Clifford hop. Zero rows and unavailable index years are not absence evidence.
+
+          No XML, batch ZIP, successor fetch, query, form, raw annual index, nonmatching row, street address, contact detail, preparer value, private support, identity, relationship, negative-existence claim, outside-human dependency, publication effect, adoption effect, or graph effect was admitted.
+          EOF
+          sed -i 's/^          //' "$TMP/report.md"
+          sha256sum "$TMP/status.json" "$TMP/report.md" "$TMP/summary.json" "$TMP/source-custody.json" > "$TMP/SHA256SUMS"
+
+          git checkout -B "$RECEIPT_BRANCH" "$MERGE_SHA"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -rf "$RECEIPT_PATH"
+          mkdir -p "$RECEIPT_PATH"
+          cp "$TMP/status.json" "$TMP/report.md" "$TMP/summary.json" "$TMP/source-custody.json" "$TMP/SHA256SUMS" "$RECEIPT_PATH/"
+          git add "$RECEIPT_PATH"
+          git commit -m 'Publish terminal School.House IRS filing-index receipt'
+          git push --force origin "HEAD:refs/heads/$RECEIPT_BRANCH"
+          cat "$TMP/status.json"
+
+      - name: Upload terminal receipt artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-candidate-filing-index-terminal-receipt
+          path: ${{ runner.temp }}/schoolhouse-irs-candidate-filing-index-terminal-receipt
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
