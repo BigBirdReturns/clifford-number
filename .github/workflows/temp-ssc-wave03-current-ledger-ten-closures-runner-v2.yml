@@ -1,4 +1,4 @@
-name: TEMP run registered Wave-03 ten-closure materializer
+name: TEMP repair forward-compatible Wave-03 ten-closure product
 
 on:
   pull_request:
@@ -18,8 +18,9 @@ concurrency:
 
 env:
   CANONICAL_PARENT: b6d69b5502e4429e3769591b5ebd88555aad62be
+  CUMULATIVE_PRODUCT: 54e99a1a60fb3e0e40c827d9cb4fb316f3431362
   PRODUCT_BRANCH: agent/ssc-wave03-current-ledger-ten-closures-product-v1
-  PRODUCT_LEASE: b6d69b5502e4429e3769591b5ebd88555aad62be
+  PRODUCT_LEASE: 54e99a1a60fb3e0e40c827d9cb4fb316f3431362
 
 jobs:
   materialize:
@@ -42,49 +43,385 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - name: Extract and execute the exact embedded materializer
+
+      - name: Recompose, repair, qualify, and publish one exact product commit
         shell: bash
         run: |
           set -Eeuo pipefail
-          SOURCE='.github/workflows/temp-ssc-wave03-current-ledger-ten-closures-materializer-v1.yml'
-          PROGRAM="$RUNNER_TEMP/ssc-wave03-ten-closures-materializer.sh"
-          RECEIPT="$RUNNER_TEMP/ssc-wave03-ten-closures/receipt"
-          mkdir -p "$RECEIPT"
-          test "$(git hash-object "$SOURCE")" = '0326102045b3d6c3b51fe2b03ea38085a5995887'
-          python - "$SOURCE" "$PROGRAM" <<'PY'
-          from pathlib import Path
-          import sys
+          export GIT_AUTHOR_NAME='github-actions[bot]'
+          export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
 
-          source = Path(sys.argv[1]).read_text().splitlines()
-          target = Path(sys.argv[2])
-          marker = '      - name: Derive, qualify, and publish exact cumulative product'
-          next_marker = '      - name: Preserve exact materialization receipt'
-          try:
-              start = source.index(marker)
-              end = source.index(next_marker, start + 1)
-          except ValueError as error:
-              raise SystemExit(f'materializer step boundary missing: {error}')
-          run_index = None
-          for index in range(start + 1, end):
-              if source[index] == '        run: |':
-                  run_index = index
-                  break
-          if run_index is None:
-              raise SystemExit('materializer run block missing')
-          raw_body = source[run_index + 1:end]
-          body = [line[10:] if line.startswith('          ') else line for line in raw_body]
-          if not body or body[0] != 'set -Eeuo pipefail':
-              raise SystemExit('materializer body boundary changed')
-          target.write_text('\n'.join(body) + '\n')
-          print(f'extracted {len(body)} exact materializer lines between exact step markers')
+          WORK="$RUNNER_TEMP/ssc-wave03-ten-closures-forward-compat"
+          RECEIPT="$WORK/receipt"
+          PATCHER="$WORK/repair.py"
+          EXPECTED="$WORK/expected-paths.txt"
+          rm -rf "$WORK"
+          mkdir -p "$RECEIPT"
+          exec > >(tee "$RECEIPT/execution.log") 2>&1
+          STAGE=init
+          PRODUCT_HEAD=''
+          PRODUCT_TREE=''
+          finish() {
+            rc=$?
+            printf 'status=%s\nstage=%s\nexit_code=%s\nproduct_head=%s\nproduct_tree=%s\nutc=%s\n' \
+              "$([[ $rc -eq 0 ]] && echo complete || echo failed_closed)" \
+              "$STAGE" "$rc" "$PRODUCT_HEAD" "$PRODUCT_TREE" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              > "$RECEIPT/checkpoint.txt"
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          STAGE=bind-inputs
+          git fetch --no-tags origin main "$PRODUCT_BRANCH"
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PRODUCT_LEASE"
+          test "$(git rev-parse "$CUMULATIVE_PRODUCT^{commit}")" = "$CUMULATIVE_PRODUCT"
+          git checkout --detach "$CANONICAL_PARENT"
+          test "$(git rev-parse HEAD)" = "$CANONICAL_PARENT"
+
+          cat > "$EXPECTED" <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.yml
+          .github/workflows/status-sovereignty-residual-denominator-wave-03-current.yml
+          data/research/status-sovereignty-residual-denominator-wave-03-current.json
+          docs/milestones/ssc-residual-denominator-wave-03-current.md
+          schemas/status-sovereignty-residual-denominator-wave-03-current.schema.json
+          test/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.test.js
+          test/status-sovereignty-residual-denominator-wave-03-current.test.js
+          tools/build-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs
+          tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs
+          tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+          EOF
+          sed -i 's/^          //' "$EXPECTED"
+          test "$(wc -l < "$EXPECTED" | tr -d ' ')" = 11
+
+          cat > "$PATCHER" <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str, label: str) -> None:
+              target = Path(path)
+              text = target.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one occurrence, observed {count}')
+              target.write_text(text.replace(old, new))
+
+          builder = 'tools/build-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs'
+          validator = 'tools/validate-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs'
+          test = 'test/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.test.js'
+          workflow = '.github/workflows/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.yml'
+
+          replace_once(
+              builder,
+              "export const CANONICAL_SOURCE_MERGE = '41a1e46f8981001aeaf027662ed2f16ad9468d99';\nexport const CURRENT_LEDGER_PATH = 'data/research/status-sovereignty-residual-denominator-wave-03-current.json';",
+              "export const CANONICAL_SOURCE_MERGE = '41a1e46f8981001aeaf027662ed2f16ad9468d99';\n"
+              "export const PROMOTION_MERGE = '61a33f5459e64f1978d9c55c1b7ea7f925358cd8';\n"
+              "export const PROMOTION_MANIFEST_SHA256 = '068330d24a8bc378964cee2d88c3ebe1c5b48b36154f58636e72d78d40e71e82';\n"
+              "export const CURRENT_LEDGER_PATH = 'data/research/status-sovereignty-residual-denominator-wave-03-current.json';",
+              'builder promotion constants',
+          )
+
+          helper = r'''
+          export function classifyCurrentLedgerCustody(current, manifestCombined = PROMOTION_MANIFEST_SHA256) {
+            const counts = current?.counts ?? {};
+            const result = current?.current_result ?? {};
+            const prePromotion =
+              counts.closed_residual_classes === 8 &&
+              counts.open_residual_classes === 34 &&
+              result.open_selected_class_ids?.includes(CLASS_ID) &&
+              !result.closed_class_ids?.includes(CLASS_ID);
+            if (prePromotion) return 'pre_promotion';
+
+            const promoted = Array.isArray(current?.promoted_class_receipts) ? current.promoted_class_receipts : [];
+            const selectedOpen = Array.isArray(current?.selected_classes_open) ? current.selected_classes_open : [];
+            const promotedIds = promoted.map((row) => row.class_id);
+            const closedIds = Array.isArray(result.closed_class_ids) ? result.closed_class_ids : [];
+            const selectedOpenIds = selectedOpen.map((row) => row.class_id);
+            const openSelectedIds = Array.isArray(result.open_selected_class_ids) ? result.open_selected_class_ids : [];
+            const terminalReceipts = counts.wave_03_terminal_class_receipts;
+            const postRow = promoted.find((row) => row.class_id === CLASS_ID);
+            const sourceSnapshots = current?.source_snapshots ?? {};
+
+            const arithmetic =
+              current?.schema_version === 'status-sovereignty-residual-denominator-wave-03-current@1' &&
+              current?.wave_id === WAVE_ID &&
+              current?.issue === 1013 &&
+              counts.canonical_residual_classes === 42 &&
+              counts.classes_closed_before_wave === 6 &&
+              counts.wave_03_selected_class_attempts === 6 &&
+              Number.isInteger(terminalReceipts) &&
+              terminalReceipts >= 3 &&
+              terminalReceipts <= 6 &&
+              counts.classes_closed_this_wave === terminalReceipts &&
+              counts.closed_residual_classes === 6 + terminalReceipts &&
+              counts.open_residual_classes === 42 - counts.closed_residual_classes &&
+              promoted.length === counts.closed_residual_classes &&
+              new Set(promotedIds).size === promotedIds.length &&
+              JSON.stringify(closedIds) === JSON.stringify(promotedIds) &&
+              result.classes_closed === counts.closed_residual_classes &&
+              result.classes_open === counts.open_residual_classes &&
+              result.wave_03_selected_attempts_terminal === terminalReceipts &&
+              selectedOpen.length === 6 - terminalReceipts &&
+              JSON.stringify(openSelectedIds) === JSON.stringify(selectedOpenIds) &&
+              !openSelectedIds.includes(CLASS_ID) &&
+              closedIds.includes(CLASS_ID);
+
+            const exactRow =
+              postRow?.lane_id === LANE_ID &&
+              postRow?.issue === ISSUE &&
+              postRow?.source_pr === SOURCE_PR &&
+              postRow?.merge_commit === PROMOTION_MERGE &&
+              postRow?.constitutional_exact_label === CLASS_LABEL &&
+              postRow?.receipt_class_label === CLASS_LABEL &&
+              postRow?.labels_exact_match === true &&
+              postRow?.label_reconciliation === 'none' &&
+              postRow?.terminal_state === TERMINAL_STATE &&
+              postRow?.closure_reference_path === CLOSURE_PATH &&
+              postRow?.class_receipt_path === `${PRODUCT_ROOT}/class-receipt.json` &&
+              postRow?.manifest_combined_sha256 === manifestCombined &&
+              postRow?.class_closed === true;
+
+            const exactSourceSnapshot =
+              sourceSnapshots.rd02_closure_reference_path === CLOSURE_PATH &&
+              sourceSnapshots.rd02_class_receipt_path === `${PRODUCT_ROOT}/class-receipt.json` &&
+              sourceSnapshots.rd02_merge_commit === PROMOTION_MERGE;
+
+            ok(arithmetic && exactRow && exactSourceSnapshot,
+              'current cumulative ledger does not preserve monotonic RD-02 promotion custody');
+            return 'forward_post_promotion';
+          }
+
+          '''
+          replace_once(
+              builder,
+              "const same = (actual, expected, message) => ok(JSON.stringify(actual) === JSON.stringify(expected), message);\n\nconst pipelinePaths",
+              "const same = (actual, expected, message) => ok(JSON.stringify(actual) === JSON.stringify(expected), message);\n\n"
+              + helper +
+              "const pipelinePaths",
+              'builder custody classifier',
+          )
+          replace_once(
+              builder,
+              "  const prePromotion = current.counts.closed_residual_classes === 8 && current.counts.open_residual_classes === 34 && current.current_result.open_selected_class_ids.includes(CLASS_ID) && !current.current_result.closed_class_ids.includes(CLASS_ID);\n"
+              "  const postPromotion = current.counts.closed_residual_classes === 9 && current.counts.open_residual_classes === 33 && !current.current_result.open_selected_class_ids.includes(CLASS_ID) && current.current_result.closed_class_ids.includes(CLASS_ID);\n"
+              "  ok(prePromotion || postPromotion, 'current cumulative ledger is neither exact RD-02 pre-promotion nor post-promotion custody');",
+              "  classifyCurrentLedgerCustody(current);",
+              'builder cumulative custody check',
+          )
+
+          replace_once(
+              validator,
+              "  CANONICAL_SOURCE_MERGE,\n  CURRENT_LEDGER_PATH,",
+              "  CANONICAL_SOURCE_MERGE,\n  PROMOTION_MANIFEST_SHA256,\n  CURRENT_LEDGER_PATH,",
+              'validator manifest constant import',
+          )
+          replace_once(
+              validator,
+              "  INPUT_SHA256,\n  deriveProduct,",
+              "  INPUT_SHA256,\n  classifyCurrentLedgerCustody,\n  deriveProduct,",
+              'validator classifier import',
+          )
+          replace_once(
+              validator,
+              "function validateLedgerCustody(current, manifestCombined) {\n"
+              "  const pre = current.counts.closed_residual_classes === 8 && current.counts.open_residual_classes === 34 && current.current_result.open_selected_class_ids.includes(CLASS_ID) && !current.current_result.closed_class_ids.includes(CLASS_ID);\n"
+              "  const postRow = current.promoted_class_receipts?.find((row) => row.class_id === CLASS_ID);\n"
+              "  const post = current.counts.closed_residual_classes === 9 && current.counts.open_residual_classes === 33 && !current.current_result.open_selected_class_ids.includes(CLASS_ID) && current.current_result.closed_class_ids.includes(CLASS_ID) && postRow?.source_pr === SOURCE_PR && postRow?.manifest_combined_sha256 === manifestCombined && postRow?.terminal_state === TERMINAL_STATE && postRow?.class_closed === true;\n"
+              "  ok(pre || post, 'cumulative ledger is neither exact RD-02 pre-promotion nor post-promotion custody');\n"
+              "  return pre ? 'pre_promotion' : 'post_promotion';\n"
+              "}",
+              "function validateLedgerCustody(current, manifestCombined) {\n"
+              "  ok(manifestCombined === PROMOTION_MANIFEST_SHA256, 'RD-02 promotion manifest custody changed');\n"
+              "  return classifyCurrentLedgerCustody(current, manifestCombined);\n"
+              "}",
+              'validator cumulative custody classifier',
+          )
+
+          replace_once(
+              test,
+              "  ROOT,\n  PRODUCT_ROOT,\n  REQUIRED_FIELDS,\n  deriveProduct",
+              "  ROOT,\n  PRODUCT_ROOT,\n  CURRENT_LEDGER_PATH,\n  CLOSURE_PATH,\n  PROMOTION_MERGE,\n  PROMOTION_MANIFEST_SHA256,\n  REQUIRED_FIELDS,\n  classifyCurrentLedgerCustody,\n  deriveProduct",
+              'test classifier imports',
+          )
+          replace_once(
+              test,
+              "assert.equal(validateSchemaContract(schema), true);\n\nconst mutations = [",
+              "assert.equal(validateSchemaContract(schema), true);\n"
+              "const currentLedger = read(CURRENT_LEDGER_PATH);\n"
+              "assert.equal(\n"
+              "  classifyCurrentLedgerCustody(currentLedger, PROMOTION_MANIFEST_SHA256),\n"
+              "  'forward_post_promotion'\n"
+              ");\n\n"
+              "const mutations = [",
+              'test forward custody baseline',
+          )
+
+          ledger_tests = r'''
+
+          const rd02Promotion = (value) => value.promoted_class_receipts.find((row) => row.class_id === 'RD-02-C05');
+          const ledgerMutations = [
+            ['canonical residual denominator', (v) => { v.counts.canonical_residual_classes = 41; }],
+            ['closed-before-wave denominator', (v) => { v.counts.classes_closed_before_wave = 5; }],
+            ['selected-attempt denominator', (v) => { v.counts.wave_03_selected_class_attempts = 5; }],
+            ['terminal-receipt denominator', (v) => { v.counts.wave_03_terminal_class_receipts = 3; }],
+            ['classes-closed-this-wave denominator', (v) => { v.counts.classes_closed_this_wave = 3; }],
+            ['closed arithmetic', (v) => { v.counts.closed_residual_classes = 9; }],
+            ['open arithmetic', (v) => { v.counts.open_residual_classes = 31; }],
+            ['result closed arithmetic', (v) => { v.current_result.classes_closed = 9; }],
+            ['result open arithmetic', (v) => { v.current_result.classes_open = 31; }],
+            ['result terminal-attempt arithmetic', (v) => { v.current_result.wave_03_selected_attempts_terminal = 3; }],
+            ['promoted receipt removed', (v) => { v.promoted_class_receipts.splice(v.promoted_class_receipts.findIndex((row) => row.class_id === 'RD-02-C05'), 1); }],
+            ['promoted receipt duplicated', (v) => { v.promoted_class_receipts[0] = structuredClone(rd02Promotion(v)); }],
+            ['closed class ID removed', (v) => { v.current_result.closed_class_ids = v.current_result.closed_class_ids.filter((id) => id !== 'RD-02-C05'); }],
+            ['open selected RD-02 invented', (v) => { v.current_result.open_selected_class_ids.push('RD-02-C05'); }],
+            ['selected-open row removed', (v) => { v.selected_classes_open.pop(); }],
+            ['RD-02 promotion source PR', (v) => { rd02Promotion(v).source_pr = 1099; }],
+            ['RD-02 promotion merge', (v) => { rd02Promotion(v).merge_commit = '0'.repeat(40); }],
+            ['RD-02 promotion constitutional label', (v) => { rd02Promotion(v).constitutional_exact_label += ' changed'; }],
+            ['RD-02 promotion receipt label', (v) => { rd02Promotion(v).receipt_class_label += ' changed'; }],
+            ['RD-02 promotion label equality', (v) => { rd02Promotion(v).labels_exact_match = false; }],
+            ['RD-02 promotion label reconciliation', (v) => { rd02Promotion(v).label_reconciliation = 'changed'; }],
+            ['RD-02 promotion terminal state', (v) => { rd02Promotion(v).terminal_state = 'evidence_complete'; }],
+            ['RD-02 promotion closure path', (v) => { rd02Promotion(v).closure_reference_path = 'changed.json'; }],
+            ['RD-02 promotion receipt path', (v) => { rd02Promotion(v).class_receipt_path = 'changed.json'; }],
+            ['RD-02 promotion manifest', (v) => { rd02Promotion(v).manifest_combined_sha256 = '0'.repeat(64); }],
+            ['RD-02 promotion reopened', (v) => { rd02Promotion(v).class_closed = false; }],
+            ['RD-02 source snapshot closure path', (v) => { v.source_snapshots.rd02_closure_reference_path = 'changed.json'; }],
+            ['RD-02 source snapshot receipt path', (v) => { v.source_snapshots.rd02_class_receipt_path = 'changed.json'; }],
+            ['RD-02 source snapshot merge', (v) => { v.source_snapshots.rd02_merge_commit = '0'.repeat(40); }]
+          ];
+          for (const [label, mutate] of ledgerMutations) {
+            const candidate = clone(currentLedger);
+            mutate(candidate);
+            assert.throws(
+              () => classifyCurrentLedgerCustody(candidate, PROMOTION_MANIFEST_SHA256),
+              undefined,
+              label
+            );
+            refused += 1;
+          }
+          assert.equal(rd02Promotion(currentLedger).merge_commit, PROMOTION_MERGE);
+          assert.equal(rd02Promotion(currentLedger).closure_reference_path, CLOSURE_PATH);
+
+          '''
+          replace_once(
+              test,
+              "for (const [label, mutate] of mutations) {\n"
+              "  const candidate = clone(terminal);\n"
+              "  mutate(candidate);\n"
+              "  assert.throws(() => validateTerminalValue(candidate), undefined, label);\n"
+              "  refused += 1;\n"
+              "}\n\n"
+              "const schemaMutations = [",
+              "for (const [label, mutate] of mutations) {\n"
+              "  const candidate = clone(terminal);\n"
+              "  mutate(candidate);\n"
+              "  assert.throws(() => validateTerminalValue(candidate), undefined, label);\n"
+              "  refused += 1;\n"
+              "}\n" + ledger_tests + "const schemaMutations = [",
+              'test forward custody mutations',
+          )
+
+          replace_once(
+              workflow,
+              'Validate exact 180-cell terminal product and 147 adversarial refusals',
+              'Validate exact terminal product and forward cumulative-ledger custody',
+              'workflow compatibility step label',
+          )
           PY
-          bash -n "$PROGRAM"
-          bash "$PROGRAM"
+
+          recompose() {
+            git checkout "$CUMULATIVE_PRODUCT" -- \
+              .github/workflows/status-sovereignty-residual-denominator-wave-03-current.yml \
+              data/research/status-sovereignty-residual-denominator-wave-03-current.json \
+              docs/milestones/ssc-residual-denominator-wave-03-current.md \
+              schemas/status-sovereignty-residual-denominator-wave-03-current.schema.json \
+              test/status-sovereignty-residual-denominator-wave-03-current.test.js \
+              tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs \
+              tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+            python "$PATCHER"
+          }
+
+          focused() {
+            node --check tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs
+            node --check tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+            node --check test/status-sovereignty-residual-denominator-wave-03-current.test.js
+            node tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs --check
+            node tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+            node test/status-sovereignty-residual-denominator-wave-03-current.test.js
+            node --check tools/build-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs
+            node --check tools/validate-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs
+            node --check test/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.test.js
+            node tools/build-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs --check
+            node tools/validate-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs
+            node test/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.test.js
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          }
+
+          STAGE=recompose-and-repair
+          recompose
+          git diff --name-only | sort > "$RECEIPT/name-only.txt"
+          cmp "$EXPECTED" "$RECEIPT/name-only.txt"
+          git diff --check
+
+          STAGE=focused-gates
+          focused
+
+          STAGE=full-release-gate
+          npm run release:check
+
+          STAGE=clean-replay
+          sha256sum $(cat "$EXPECTED") > "$RECEIPT/first-sha256.txt"
+          git restore --staged --worktree .
+          git clean -fdx
+          recompose
+          sha256sum $(cat "$EXPECTED") > "$RECEIPT/replay-sha256.txt"
+          cmp "$RECEIPT/first-sha256.txt" "$RECEIPT/replay-sha256.txt"
+          git diff --name-only | sort > "$RECEIPT/replay-name-only.txt"
+          cmp "$EXPECTED" "$RECEIPT/replay-name-only.txt"
+          git diff --check
+          focused
+
+          STAGE=commit
+          xargs -d '\n' git add -- < "$EXPECTED"
+          git diff --cached --name-status > "$RECEIPT/committed-name-status.txt"
+          test "$(wc -l < "$RECEIPT/committed-name-status.txt" | tr -d ' ')" = 11
+          test "$(awk '$1 != "M" {n++} END {print n+0}' "$RECEIPT/committed-name-status.txt")" = 0
+          git commit -m 'Promote RD-05-C02 with monotonic RD-02 ledger custody'
+          PRODUCT_HEAD=$(git rev-parse HEAD)
+          PRODUCT_TREE=$(git rev-parse 'HEAD^{tree}')
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"
+          printf 'product_head=%s\nproduct_tree=%s\nparent=%s\npermanent_paths=11\nopen_classes=32\nclosed_classes=10\n' \
+            "$PRODUCT_HEAD" "$PRODUCT_TREE" "$CANONICAL_PARENT" > "$RECEIPT/product.txt"
+
+          STAGE=publish
+          git fetch --no-tags origin main "$PRODUCT_BRANCH"
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PRODUCT_LEASE"
+          set +e
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH" \
+            --force-with-lease="refs/heads/$PRODUCT_BRANCH:$PRODUCT_LEASE" \
+            2>&1 | tee "$RECEIPT/push.log"
+          push_rc=${PIPESTATUS[0]}
+          set -e
+          if [[ $push_rc -eq 0 ]]; then
+            test "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$PRODUCT_HEAD"
+            printf 'status=published\nproduct_head=%s\nproduct_tree=%s\n' "$PRODUCT_HEAD" "$PRODUCT_TREE" > "$RECEIPT/final.txt"
+            STAGE=complete
+            exit 0
+          fi
+          printf 'status=commit_created_push_refused\nproduct_head=%s\nproduct_tree=%s\npush_exit=%s\n' \
+            "$PRODUCT_HEAD" "$PRODUCT_TREE" "$push_rc" > "$RECEIPT/final.txt"
+          exit "$push_rc"
+
       - name: Preserve exact materialization receipt
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-wave03-current-ledger-ten-closures-runner-v2
-          path: ${{ runner.temp }}/ssc-wave03-ten-closures/receipt
+          name: ssc-wave03-current-ledger-ten-closures-forward-compat-v3
+          path: ${{ runner.temp }}/ssc-wave03-ten-closures-forward-compat/receipt
           if-no-files-found: error
           retention-days: 90
