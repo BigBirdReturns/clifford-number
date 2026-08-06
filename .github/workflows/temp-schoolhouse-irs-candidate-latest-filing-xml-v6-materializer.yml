@@ -1,0 +1,228 @@
+name: TEMP materialize School.House latest-filing XML v6 custody
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-irs-candidate-latest-filing-xml-v6-materializer.yml'
+      - '.schoolhouse-irs-candidate-latest-filing-xml-v6-materializer/**'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: schoolhouse-irs-candidate-latest-filing-xml-v6-materializer-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-irs-candidate-latest-filing-xml-v6-materializer-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Rebuild, qualify, and publish exact v6 custody product
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='a49b18304a69e9637cd854d38e80b67d4165cc6c'
+          BASE_TREE='fdc4acfb8b3381872c157d0bf9a8bd6947631bd3'
+          CARRIER='agent/schoolhouse-irs-candidate-latest-filing-xml-v6-materializer-v1'
+          TARGET='agent/schoolhouse-irs-candidate-latest-filing-xml-v6-custody-product-v1'
+          ROOT='.schoolhouse-irs-candidate-latest-filing-xml-v6-materializer'
+          EXECUTE="$ROOT/EXECUTE"
+          BUNDLE="$ROOT/materialize.py.gz.b64"
+          GZIP="$RUNNER_TEMP/schoolhouse-latest-filing-xml-v6-materialize.py.gz"
+          RUNNER="$RUNNER_TEMP/schoolhouse-latest-filing-xml-v6-materialize.py"
+          WORKFLOW='.github/workflows/temp-schoolhouse-irs-candidate-latest-filing-xml-v6-materializer.yml'
+          WORK="$RUNNER_TEMP/schoolhouse-latest-filing-xml-v6-worktree"
+          ARTIFACT_ZIP="$RUNNER_TEMP/schoolhouse-latest-filing-xml-v5.zip"
+          ARTIFACT_ROOT="$RUNNER_TEMP/schoolhouse-latest-filing-xml-v5-artifact"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-latest-filing-xml-v6-materialization-receipt"
+          mkdir -p "$RECEIPT"
+          printf 'materializer_started=true\n' > "$RECEIPT/preflight.txt"
+          trap 'rc=$?; printf "exit_code=%s\nfailed_line=%s\n" "$rc" "$LINENO" >> "$RECEIPT/preflight.txt"; exit "$rc"' ERR
+
+          git fetch --no-tags origin main
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          LIVE_TREE="$(git rev-parse 'origin/main^{tree}')"
+          MERGE_BASE="$(git merge-base HEAD origin/main)"
+          TARGET_REMOTE_SHA="$(git ls-remote --heads origin "refs/heads/$TARGET" | awk '{print $1}')"
+          CARRIER_COMMITS="$(git rev-list --count "$BASE"..HEAD)"
+          {
+            printf 'carrier_head=%s\n' "$(git rev-parse HEAD)"
+            printf 'carrier_commits=%s\n' "$CARRIER_COMMITS"
+            printf 'live_main=%s\n' "$LIVE_MAIN"
+            printf 'expected_main=%s\n' "$BASE"
+            printf 'live_main_tree=%s\n' "$LIVE_TREE"
+            printf 'expected_main_tree=%s\n' "$BASE_TREE"
+            printf 'merge_base=%s\n' "$MERGE_BASE"
+            printf 'target_remote_sha=%s\n' "$TARGET_REMOTE_SHA"
+          } | tee -a "$RECEIPT/preflight.txt"
+          test "$LIVE_MAIN" = "$BASE"
+          test "$LIVE_TREE" = "$BASE_TREE"
+          test "$MERGE_BASE" = "$BASE"
+          test "$TARGET_REMOTE_SHA" = "$BASE"
+          test "$CARRIER_COMMITS" -ge 1
+
+          mapfile -t CHANGED < <(git diff --name-only "$BASE"..HEAD | sort)
+          EXPECTED=(
+            '.github/workflows/temp-schoolhouse-irs-candidate-latest-filing-xml-v6-materializer.yml'
+            '.schoolhouse-irs-candidate-latest-filing-xml-v6-materializer/EXECUTE'
+            '.schoolhouse-irs-candidate-latest-filing-xml-v6-materializer/materialize.py.gz.b64'
+          )
+          printf 'carrier_paths=%s\n' "${#CHANGED[@]}" | tee -a "$RECEIPT/preflight.txt"
+          printf '%s\n' "${CHANGED[@]}" > "$RECEIPT/carrier-paths.txt"
+          test "${#CHANGED[@]}" -eq 3
+          for i in "${!EXPECTED[@]}"; do test "${CHANGED[$i]}" = "${EXPECTED[$i]}"; done
+          git diff --exit-code -- "$WORKFLOW" "$EXECUTE" "$BUNDLE"
+
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '6c5dccdeffcaa5db7b6670e17edf6941adc6df80e54685be39561a54439a77f6'
+          test "$(stat -c%s "$BUNDLE")" = '15587'
+          base64 -d "$BUNDLE" > "$GZIP"
+          test "$(sha256sum "$GZIP" | awk '{print $1}')" = '0bbca8ad3a2376677ff4b564f5d3be26787f4eb4d5fb10d52223cceadec7accf'
+          test "$(stat -c%s "$GZIP")" = '11537'
+          gzip -dc "$GZIP" > "$RUNNER"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = '3e4d7735436edfa1e0cee7220ff390aef6d8913aece755f30ad464a2c17b99b7'
+          test "$(stat -c%s "$RUNNER")" = '46986'
+          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = '62335167353a6822ddcba637b1103783234f629755fb32cbd827250d4deacd27'
+          test "$(stat -c%s "$EXECUTE")" = '1993'
+          python -m py_compile "$RUNNER"
+          python "$RUNNER" --self-test
+          grep -Fx "canonical_parent=$BASE" "$EXECUTE"
+          grep -Fx "canonical_parent_tree=$BASE_TREE" "$EXECUTE"
+          grep -Fx "carrier_branch=$CARRIER" "$EXECUTE"
+          grep -Fx "product_branch=$TARGET" "$EXECUTE"
+          grep -Fx "product_branch_lease=$BASE" "$EXECUTE"
+          grep -Fx 'permanent_paths=14' "$EXECUTE"
+          grep -Fx 'observed_organization_name_values_retained=0' "$EXECUTE"
+          grep -Fx 'identities_admitted=0' "$EXECUTE"
+          grep -Fx 'relationships_admitted=0' "$EXECUTE"
+          grep -Fx 'negative_existence_claims=0' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+          grep -Fx 'publication_effect=none' "$EXECUTE"
+          grep -Fx 'adoption_effect=none' "$EXECUTE"
+          grep -Fx 'graph_effect=none' "$EXECUTE"
+
+          REPO="$GITHUB_REPOSITORY"
+          test "$(gh api "repos/$REPO/actions/artifacts/8971196288" --jq '.digest // ""')" = \
+            'sha256:2ab96de4007eea40668e17b184cf169670ab2b0e06eacca31603a72f446f6031'
+          gh api "repos/$REPO/actions/artifacts/8971196288/zip" > "$ARTIFACT_ZIP"
+          test "$(sha256sum "$ARTIFACT_ZIP" | awk '{print $1}')" = \
+            '2ab96de4007eea40668e17b184cf169670ab2b0e06eacca31603a72f446f6031'
+          rm -rf "$ARTIFACT_ROOT"
+          mkdir -p "$ARTIFACT_ROOT"
+          unzip -q "$ARTIFACT_ZIP" -d "$ARTIFACT_ROOT"
+          SUMMARY_FILE="$(find "$ARTIFACT_ROOT" -type f -name summary.json -print -quit)"
+          test -n "$SUMMARY_FILE"
+          ACQ="$(dirname "$SUMMARY_FILE")"
+          test "$(cat "$ACQ/RUNNER_EXIT_CODE")" = '0'
+          (cd "$ACQ" && sha256sum -c SHA256SUMS)
+
+          rm -rf "$WORK"
+          git worktree add --detach "$WORK" "$BASE"
+          python "$RUNNER" \
+            --repo-root "$WORK" \
+            --artifact-root "$ACQ" \
+            --receipt "$RECEIPT/materialization.json" \
+            | tee "$RECEIPT/materializer-output.json"
+          jq -r '.product_path_list[]' "$RECEIPT/materialization.json" > "$RECEIPT/product-paths.txt"
+          test "$(wc -l < "$RECEIPT/product-paths.txt" | tr -d ' ')" = '14'
+
+          export TERM=xterm
+          {
+            cd "$WORK"
+            node tools/validate-schoolhouse-irs-candidate-latest-filing-xml-v6-custody.mjs
+            node tools/test-schoolhouse-irs-candidate-latest-filing-xml-v6-custody.mjs
+            node tools/build-schoolhouse-irs-candidate-latest-filing-xml-v6-custody.mjs --check
+            node tools/validate-schoolhouse-irs-candidate-filing-index-custody.mjs
+            node tools/test-schoolhouse-irs-candidate-filing-index-custody.mjs
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          } 2>&1 | tee "$RECEIPT/focused-gates.log"
+          (cd "$WORK" && npm run release:check) 2>&1 | tee "$RECEIPT/release-check.log"
+
+          git -C "$WORK" reset --hard "$BASE"
+          git -C "$WORK" clean -fdx
+          python "$RUNNER" \
+            --repo-root "$WORK" \
+            --artifact-root "$ACQ" \
+            --receipt "$RECEIPT/replay.json" \
+            > "$RECEIPT/replay-output.json"
+          jq -S '.product_files' "$RECEIPT/materialization.json" > "$RECEIPT/product-files-first.json"
+          jq -S '.product_files' "$RECEIPT/replay.json" > "$RECEIPT/product-files-replay.json"
+          cmp "$RECEIPT/product-files-first.json" "$RECEIPT/product-files-replay.json"
+
+          git -C "$WORK" switch -C "$TARGET" "$BASE"
+          git -C "$WORK" add --pathspec-from-file="$RECEIPT/product-paths.txt"
+          git -C "$WORK" diff --cached --name-only | sort > "$RECEIPT/staged-paths.txt"
+          sort "$RECEIPT/product-paths.txt" > "$RECEIPT/expected-paths.txt"
+          cmp "$RECEIPT/expected-paths.txt" "$RECEIPT/staged-paths.txt"
+          test "$(wc -l < "$RECEIPT/staged-paths.txt" | tr -d ' ')" = '14'
+          test -z "$(grep '^\.github/' "$RECEIPT/staged-paths.txt" || true)"
+          test -z "$(git -C "$WORK" status --porcelain | grep '^??' || true)"
+          git -C "$WORK" diff --check --cached
+
+          git -C "$WORK" config user.name 'OpenAI Agent'
+          git -C "$WORK" config user.email 'agent@openai.invalid'
+          git -C "$WORK" commit -m 'Preserve School.House latest-filing XML v6 custody'
+          PRODUCT="$(git -C "$WORK" rev-parse HEAD)"
+          TREE="$(git -C "$WORK" rev-parse 'HEAD^{tree}')"
+          test "$(git -C "$WORK" show -s --format=%P HEAD)" = "$BASE"
+          test "$(git -C "$WORK" diff --name-only "$BASE"..HEAD | wc -l | tr -d ' ')" = '14'
+          test -z "$(git -C "$WORK" diff --name-only "$BASE"..HEAD | grep '^\.github/' || true)"
+          (cd "$WORK" && node tools/validate-schoolhouse-irs-candidate-latest-filing-xml-v6-custody.mjs)
+          git -C "$WORK" push --force-with-lease="refs/heads/$TARGET:$BASE" origin "HEAD:refs/heads/$TARGET"
+
+          {
+            printf 'canonical_parent=%s\n' "$BASE"
+            printf 'canonical_parent_tree=%s\n' "$BASE_TREE"
+            printf 'product_commit=%s\n' "$PRODUCT"
+            printf 'product_tree=%s\n' "$TREE"
+            printf 'permanent_paths=14\n'
+            printf 'acquisition_artifact=8971196288\n'
+            printf 'acquisition_digest=sha256:2ab96de4007eea40668e17b184cf169670ab2b0e06eacca31603a72f446f6031\n'
+            printf 'selected_latest_xml_routes=92\n'
+            printf 'successful_xml_screens=54\n'
+            printf 'selected_missing_locator_rows=38\n'
+            printf 'observed_organization_name_values_retained=0\n'
+            printf 'identities_admitted=0\n'
+            printf 'relationships_admitted=0\n'
+            printf 'negative_existence_claims=0\n'
+            printf 'outside_human_dependency=false\n'
+            printf 'publication_effect=none\n'
+            printf 'adoption_effect=none\n'
+            printf 'graph_effect=none\n'
+          } | tee "$RECEIPT/receipt.txt"
+          sha256sum "$RECEIPT"/* > "$RECEIPT/SHA256SUMS"
+
+      - name: Preserve exact v6 materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-candidate-latest-filing-xml-v6-materialization-receipt
+          path: ${{ runner.temp }}/schoolhouse-latest-filing-xml-v6-materialization-receipt
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
