@@ -146,7 +146,8 @@ set -Eeuo pipefail
 OUT=/tmp/rd04-mf7-existing-gate-materializer-v5
 rm -rf "$OUT"
 mkdir -p "$OUT"
-PR="${RD04_MF7_PR_NUMBER:?missing RD04_MF7_PR_NUMBER}"
+PR="$RD04_MF7_PR_NUMBER"
+test -n "$PR"
 gh pr comment "$PR" --repo "$GH_REPOSITORY" --body "Existing-gate v5 materialization started on \`$GITHUB_SHA\`. The temporary two-file carrier will never merge; the exact fourteen-path product remains lease-bound and fail-closed."
 BLOB=6e2a8bc84bc47a2c99e8052eb7183690eef08d2d
 curl -fsSL \
