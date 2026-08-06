@@ -1,0 +1,250 @@
+name: TEMP publish School.House IRS filing-index terminal receipt v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-irs-candidate-filing-index-terminal-receipt-v2.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: schoolhouse-irs-candidate-filing-index-terminal-receipt-v2-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: read
+
+jobs:
+  publish:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-irs-candidate-filing-index-terminal-receipt-v2')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Verify exact product, replay post-merge gates, and publish receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          CARRIER='agent/schoolhouse-irs-candidate-filing-index-terminal-receipt-v2'
+          CARRIER_PARENT='773bdf96026e9fe6d5e11f4d9dffa1629e2c0ea3'
+          WORKFLOW='.github/workflows/temp-schoolhouse-irs-candidate-filing-index-terminal-receipt-v2.yml'
+          PRODUCT_PR='1270'
+          PRODUCT_BRANCH='agent/schoolhouse-irs-candidate-filing-index-custody-product-v1'
+          PRODUCT_PARENT='5b841fcfe6d30929e0adfbb36548224d8d1959e8'
+          PRODUCT_PARENT_TREE='5c924b753d85ac6261cdae2a8ff543bfefea2da3'
+          PRODUCT_SHA='7ba5bcbe31b4f2217c5b327fddddb1d3e6b6d942'
+          PRODUCT_TREE='73d54e1b38eeaff00425108b43294876cc634510'
+          MERGE_SHA='773bdf96026e9fe6d5e11f4d9dffa1629e2c0ea3'
+          RELEASE_WID='311907056'
+          HUMAN_WID='325324508'
+          PRODUCT_RELEASE_RUN='31106697031'
+          PRODUCT_HUMAN_RUN='31106696710'
+          ACQUISITION_RUN='31106486380'
+          ACQUISITION_ARTIFACT='8969776589'
+          ACQUISITION_DIGEST='sha256:23126d3d33637669f27eaec31ce7428df49eb3a386f957467bd1cf02704eb925'
+          MATERIALIZATION_ARTIFACT='8969792342'
+          MATERIALIZATION_DIGEST='sha256:9080b53543d8ff173569334257c4b46dec1aa1df500f72a1281eb01eb3d991ed'
+          RECEIPT_BRANCH='agent/schoolhouse-irs-candidate-filing-index-terminal-receipt-v1'
+          RECEIPT_PATH='.schoolhouse-irs-candidate-filing-index-terminal-receipt'
+          PROOF_REF='agent/schoolhouse-irs-candidate-filing-index-postmerge-proof-773bdf'
+          TMP="$RUNNER_TEMP/schoolhouse-irs-candidate-filing-index-terminal-receipt"
+
+          test "$GITHUB_HEAD_REF" = "$CARRIER"
+          git fetch --prune --no-tags origin main "$PRODUCT_BRANCH" "$PRODUCT_SHA" "$MERGE_SHA"
+          test "$(git rev-parse HEAD^)" = "$CARRIER_PARENT"
+          test "$(git diff --name-only "$CARRIER_PARENT"..HEAD)" = "$WORKFLOW"
+          git diff --exit-code -- "$WORKFLOW"
+
+          test "$(git rev-parse "$PRODUCT_SHA^")" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "$PRODUCT_PARENT^{tree}")" = "$PRODUCT_PARENT_TREE"
+          test "$(git rev-parse "$PRODUCT_SHA^{tree}")" = "$PRODUCT_TREE"
+          test "$(git rev-list --count "$PRODUCT_PARENT..$PRODUCT_SHA")" = '1'
+          git merge-base --is-ancestor "$PRODUCT_SHA" "$MERGE_SHA"
+          MERGE_TREE="$(git rev-parse "$MERGE_SHA^{tree}")"
+          test "$MERGE_TREE" = "$PRODUCT_TREE"
+          git merge-base --is-ancestor "$MERGE_SHA" origin/main
+
+          cat > "$RUNNER_TEMP/expected-product-paths" <<'PATHS'
+          data/intake/schoolhouse-irs-candidate-filing-index-census/acquisition-SHA256SUMS
+          data/intake/schoolhouse-irs-candidate-filing-index-census/adjudication.json
+          data/intake/schoolhouse-irs-candidate-filing-index-census/artifact-manifest.json
+          data/intake/schoolhouse-irs-candidate-filing-index-census/candidate-denominator.json
+          data/intake/schoolhouse-irs-candidate-filing-index-census/candidate-ein-summary.jsonl
+          data/intake/schoolhouse-irs-candidate-filing-index-census/filing-index-matches.jsonl
+          data/intake/schoolhouse-irs-candidate-filing-index-census/index-attempts.jsonl
+          data/intake/schoolhouse-irs-candidate-filing-index-census/route-policy.json
+          data/intake/schoolhouse-irs-candidate-filing-index-census/source-custody.json
+          data/intake/schoolhouse-irs-candidate-filing-index-census/summary.json
+          docs/milestones/schoolhouse-irs-candidate-filing-index-census.md
+          tools/build-schoolhouse-irs-candidate-filing-index-custody.mjs
+          tools/test-schoolhouse-irs-candidate-filing-index-custody.mjs
+          tools/validate-schoolhouse-irs-candidate-filing-index-custody.mjs
+          PATHS
+          sed -i 's/^          //' "$RUNNER_TEMP/expected-product-paths"
+          git diff --name-only "$PRODUCT_PARENT..$PRODUCT_SHA" | sort > "$RUNNER_TEMP/actual-product-paths"
+          diff -u "$RUNNER_TEMP/expected-product-paths" "$RUNNER_TEMP/actual-product-paths"
+          test "$(wc -l < "$RUNNER_TEMP/actual-product-paths" | tr -d ' ')" = '14'
+          ! grep -Eq '(^|/)\.github/|(^|/)\.schoolhouse-' "$RUNNER_TEMP/actual-product-paths"
+
+          test "$(gh pr view "$PRODUCT_PR" --repo "$REPO" --json headRefOid --jq '.headRefOid')" = "$PRODUCT_SHA"
+          test "$(gh pr view "$PRODUCT_PR" --repo "$REPO" --json mergeCommit --jq '.mergeCommit.oid')" = "$MERGE_SHA"
+          test -n "$(gh pr view "$PRODUCT_PR" --repo "$REPO" --json mergedAt --jq '.mergedAt // ""')"
+
+          verify_success_run() {
+            local run_id="$1" expected_sha="$2"
+            test "$(gh api "repos/$REPO/actions/runs/$run_id" --jq '.head_sha')" = "$expected_sha"
+            test "$(gh api "repos/$REPO/actions/runs/$run_id" --jq '.conclusion')" = 'success'
+          }
+          verify_success_run "$PRODUCT_RELEASE_RUN" "$PRODUCT_SHA"
+          verify_success_run "$PRODUCT_HUMAN_RUN" "$PRODUCT_SHA"
+
+          exact_success_run() {
+            local workflow_id="$1" sha="$2" output="$TMP/runs-$workflow_id.json"
+            gh api "repos/$REPO/actions/workflows/$workflow_id/runs?per_page=100" > "$output"
+            jq -r --arg sha "$sha" '[.workflow_runs[] | select(.head_sha==$sha and .conclusion=="success")] | sort_by(.created_at) | last | .id // 0' "$output"
+          }
+
+          rm -rf "$TMP"
+          mkdir -p "$TMP"
+          MERGE_RELEASE_RUN="$(exact_success_run "$RELEASE_WID" "$MERGE_SHA")"
+          MERGE_HUMAN_RUN="$(exact_success_run "$HUMAN_WID" "$MERGE_SHA")"
+          CREATED_PROOF_REF=false
+          if [[ "$MERGE_RELEASE_RUN" == '0' || "$MERGE_HUMAN_RUN" == '0' ]]; then
+            git push --force origin "$MERGE_SHA:refs/heads/$PROOF_REF"
+            CREATED_PROOF_REF=true
+            if [[ "$MERGE_RELEASE_RUN" == '0' ]]; then
+              gh api -X POST "repos/$REPO/actions/workflows/$RELEASE_WID/dispatches" -f ref="$PROOF_REF"
+            fi
+            if [[ "$MERGE_HUMAN_RUN" == '0' ]]; then
+              gh api -X POST "repos/$REPO/actions/workflows/$HUMAN_WID/dispatches" -f ref="$PROOF_REF"
+            fi
+          fi
+
+          for _ in $(seq 1 240); do
+            MERGE_RELEASE_RUN="$(exact_success_run "$RELEASE_WID" "$MERGE_SHA")"
+            MERGE_HUMAN_RUN="$(exact_success_run "$HUMAN_WID" "$MERGE_SHA")"
+            [[ "$MERGE_RELEASE_RUN" != '0' && "$MERGE_HUMAN_RUN" != '0' ]] && break
+            sleep 5
+          done
+          test "$MERGE_RELEASE_RUN" != '0'
+          test "$MERGE_HUMAN_RUN" != '0'
+          verify_success_run "$MERGE_RELEASE_RUN" "$MERGE_SHA"
+          verify_success_run "$MERGE_HUMAN_RUN" "$MERGE_SHA"
+          if [[ "$CREATED_PROOF_REF" == true ]]; then
+            git push origin --delete "$PROOF_REF"
+          fi
+
+          git show "$PRODUCT_SHA:data/intake/schoolhouse-irs-candidate-filing-index-census/summary.json" > "$TMP/summary.json"
+          git show "$PRODUCT_SHA:data/intake/schoolhouse-irs-candidate-filing-index-census/source-custody.json" > "$TMP/source-custody.json"
+          ROWS="$(jq -r '.official_index_rows_scanned' "$TMP/summary.json")"
+          MATCHES="$(jq -r '.exact_candidate_filing_rows' "$TMP/summary.json")"
+          MATCHED_EINS="$(jq -r '.unique_candidate_eins_with_filing_rows' "$TMP/summary.json")"
+          AVAILABLE="$(jq -c '.available_index_years' "$TMP/summary.json")"
+          UNAVAILABLE="$(jq -c '.unavailable_index_years' "$TMP/summary.json")"
+          ACQ_RUN="$(jq -r '.acquisition_workflow_run_id' "$TMP/source-custody.json")"
+          ACQ_ARTIFACT="$(jq -r '.acquisition_artifact_id' "$TMP/source-custody.json")"
+          ACQ_DIGEST="$(jq -r '.acquisition_artifact_digest' "$TMP/source-custody.json")"
+
+          test "$ROWS" = '4598572'
+          test "$MATCHES" = '486'
+          test "$MATCHED_EINS" = '92'
+          test "$ACQ_RUN" = "$ACQUISITION_RUN"
+          test "$ACQ_ARTIFACT" = "$ACQUISITION_ARTIFACT"
+          test "$ACQ_DIGEST" = "$ACQUISITION_DIGEST"
+
+          jq -n \
+            --arg state 'merged_qualified_and_terminal_receipt_published' \
+            --argjson product_pr "$PRODUCT_PR" \
+            --arg product_parent "$PRODUCT_PARENT" \
+            --arg product_parent_tree "$PRODUCT_PARENT_TREE" \
+            --arg product_commit "$PRODUCT_SHA" \
+            --arg product_tree "$PRODUCT_TREE" \
+            --arg merge_commit "$MERGE_SHA" \
+            --arg merge_tree "$MERGE_TREE" \
+            --argjson available_index_years "$AVAILABLE" \
+            --argjson unavailable_index_years "$UNAVAILABLE" \
+            --argjson official_index_rows_scanned "$ROWS" \
+            --argjson filing_index_match_rows "$MATCHES" \
+            --argjson candidate_eins_with_filing_rows "$MATCHED_EINS" \
+            --argjson acquisition_run "$ACQ_RUN" \
+            --argjson acquisition_artifact "$ACQ_ARTIFACT" \
+            --arg acquisition_artifact_digest "$ACQ_DIGEST" \
+            --argjson materialization_artifact "$MATERIALIZATION_ARTIFACT" \
+            --arg materialization_artifact_digest "$MATERIALIZATION_DIGEST" \
+            --argjson product_release_run "$PRODUCT_RELEASE_RUN" \
+            --argjson product_no_magic_human_run "$PRODUCT_HUMAN_RUN" \
+            --argjson postmerge_release_run "$MERGE_RELEASE_RUN" \
+            --argjson postmerge_no_magic_human_run "$MERGE_HUMAN_RUN" \
+            '{state:$state,product_pr:$product_pr,product_parent:$product_parent,product_parent_tree:$product_parent_tree,product_commit:$product_commit,product_tree:$product_tree,merge_commit:$merge_commit,merge_tree:$merge_tree,permanent_changed_paths:14,candidate_rows:641,unique_candidate_eins:438,declared_index_years:[2019,2020,2021,2022,2023,2024,2025,2026],available_index_years:$available_index_years,unavailable_index_years:$unavailable_index_years,official_index_rows_scanned:$official_index_rows_scanned,filing_index_match_rows:$filing_index_match_rows,candidate_eins_with_filing_rows:$candidate_eins_with_filing_rows,acquisition_run:$acquisition_run,acquisition_artifact:$acquisition_artifact,acquisition_artifact_digest:$acquisition_artifact_digest,materialization_artifact:$materialization_artifact,materialization_artifact_digest:$materialization_artifact_digest,product_release_run:$product_release_run,product_no_magic_human_run:$product_no_magic_human_run,postmerge_release_run:$postmerge_release_run,postmerge_no_magic_human_run:$postmerge_no_magic_human_run,xml_fetches:0,batch_zip_fetches:0,successor_fetches:0,query_submissions:0,forms_submitted:0,identities_admitted:0,relationships_admitted:0,negative_existence_claims:0,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+            > "$TMP/status.json"
+
+          cat > "$TMP/report.md" <<EOF
+          # School.House IRS candidate filing-index custody — terminal receipt
+
+          **State:** merged, exact-head qualified, post-merge replayed, and terminally receipted.
+
+          \`\`\`text
+          product PR:                         #$PRODUCT_PR
+          product parent:                     $PRODUCT_PARENT
+          product parent tree:                $PRODUCT_PARENT_TREE
+          product commit:                     $PRODUCT_SHA
+          product tree:                       $PRODUCT_TREE
+          merge commit:                       $MERGE_SHA
+          merge tree:                         $MERGE_TREE
+          permanent changed paths:            14
+          candidate rows / unique EINs:       641 / 438
+          available index years:              $AVAILABLE
+          unavailable index years:            $UNAVAILABLE
+          official index rows screened:       $ROWS
+          exact filing-index rows:            $MATCHES
+          candidate EINs with filing rows:    $MATCHED_EINS
+          acquisition run:                    $ACQ_RUN
+          acquisition artifact:               $ACQ_ARTIFACT
+          acquisition artifact digest:        $ACQ_DIGEST
+          materialization receipt artifact:   $MATERIALIZATION_ARTIFACT
+          materialization receipt digest:     $MATERIALIZATION_DIGEST
+          product Release run:                $PRODUCT_RELEASE_RUN
+          product no-magic-human run:         $PRODUCT_HUMAN_RUN
+          post-merge Release run:             $MERGE_RELEASE_RUN
+          post-merge no-magic-human run:      $MERGE_HUMAN_RUN
+          \`\`\`
+
+          Exact official filing-index rows remain filing-route custody for pre-existing phrase candidates only. They do not identify the public School.House legal entity or establish exemption, fiscal sponsorship, grants, funding, governance, ownership, control, related-party status, or a Clifford hop. Zero rows and unavailable index years are not absence evidence.
+
+          No XML, batch ZIP, successor fetch, query, form, raw annual index, nonmatching row, street address, contact detail, preparer value, private support, identity, relationship, negative-existence claim, outside-human dependency, publication effect, adoption effect, or graph effect was admitted.
+          EOF
+          sed -i 's/^          //' "$TMP/report.md"
+          sha256sum "$TMP/status.json" "$TMP/report.md" "$TMP/summary.json" "$TMP/source-custody.json" > "$TMP/SHA256SUMS"
+
+          git checkout -B "$RECEIPT_BRANCH" "$MERGE_SHA"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -rf "$RECEIPT_PATH"
+          mkdir -p "$RECEIPT_PATH"
+          cp "$TMP/status.json" "$TMP/report.md" "$TMP/summary.json" "$TMP/source-custody.json" "$TMP/SHA256SUMS" "$RECEIPT_PATH/"
+          git add "$RECEIPT_PATH"
+          git commit -m 'Publish terminal School.House IRS filing-index receipt'
+          git push --force origin "HEAD:refs/heads/$RECEIPT_BRANCH"
+          cat "$TMP/status.json"
+
+      - name: Upload terminal receipt artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-candidate-filing-index-terminal-receipt-v2
+          path: ${{ runner.temp }}/schoolhouse-irs-candidate-filing-index-terminal-receipt
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
