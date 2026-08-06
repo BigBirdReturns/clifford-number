@@ -21,16 +21,16 @@ jobs:
         run: |
           set -Eeuo pipefail
           python - <<'PY'
-          import base64, hashlib, json, lzma, tarfile
+          import base64, hashlib, json, tarfile
           from pathlib import Path
 
-          root = Path('.')
-          carrier = root / '.rd04-ca-sd-wa-capture-adjudication-carrier'
+          carrier = Path('.rd04-ca-sd-wa-capture-adjudication-carrier')
           parts = [carrier / 'part-00.b64', carrier / 'part-01.b64']
           out = Path('/tmp/rd04-carrier-probe')
           out.mkdir(parents=True, exist_ok=True)
 
-          text_parts = [p.read_text(encoding='ascii').strip() for p in parts]
+          raw_parts = [p.read_text(encoding='ascii') for p in parts]
+          text_parts = [''.join(text.split()) for text in raw_parts]
           joined = ''.join(text_parts)
           decoded = base64.b64decode(joined, validate=True)
           archive = out / 'product.tar.xz'
@@ -49,7 +49,8 @@ jobs:
 
           receipt = {
               'part_files': [str(p) for p in parts],
-              'part_text_bytes': [len(t.encode('ascii')) for t in text_parts],
+              'part_raw_bytes': [len(t.encode('ascii')) for t in raw_parts],
+              'part_base64_bytes_after_whitespace_normalization': [len(t.encode('ascii')) for t in text_parts],
               'joined_base64_bytes': len(joined.encode('ascii')),
               'decoded_bytes': len(decoded),
               'decoded_sha256': digest,
