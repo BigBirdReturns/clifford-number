@@ -14,12 +14,14 @@ import {
   CLASS_LABEL,
   TERMINAL_STATE,
   CANONICAL_SOURCE_MERGE,
+  PROMOTION_MANIFEST_SHA256,
   CURRENT_LEDGER_PATH,
   MATRIX_PATH,
   PRODUCT_ROOT,
   CLOSURE_PATH,
   REQUIRED_FIELDS,
   INPUT_SHA256,
+  classifyCurrentLedgerCustody,
   deriveProduct,
   checkProduct
 } from './build-status-sovereignty-rd-wave03-rd02-portfolio-lifecycle.mjs';
@@ -204,11 +206,8 @@ function validateManifest(root, manifest) {
 }
 
 function validateLedgerCustody(current, manifestCombined) {
-  const pre = current.counts.closed_residual_classes === 8 && current.counts.open_residual_classes === 34 && current.current_result.open_selected_class_ids.includes(CLASS_ID) && !current.current_result.closed_class_ids.includes(CLASS_ID);
-  const postRow = current.promoted_class_receipts?.find((row) => row.class_id === CLASS_ID);
-  const post = current.counts.closed_residual_classes === 9 && current.counts.open_residual_classes === 33 && !current.current_result.open_selected_class_ids.includes(CLASS_ID) && current.current_result.closed_class_ids.includes(CLASS_ID) && postRow?.source_pr === SOURCE_PR && postRow?.manifest_combined_sha256 === manifestCombined && postRow?.terminal_state === TERMINAL_STATE && postRow?.class_closed === true;
-  ok(pre || post, 'cumulative ledger is neither exact RD-02 pre-promotion nor post-promotion custody');
-  return pre ? 'pre_promotion' : 'post_promotion';
+  ok(manifestCombined === PROMOTION_MANIFEST_SHA256, 'RD-02 promotion manifest custody changed');
+  return classifyCurrentLedgerCustody(current, manifestCombined);
 }
 
 function validateGit(root) {

@@ -13,6 +13,8 @@ export const SOURCE_PR = 1098;
 export const CLASS_LABEL = 'complete portfolio investment, follow-on, exit, write-off, default, return, and repayment ledger';
 export const TERMINAL_STATE = 'bounded_source_unavailable';
 export const CANONICAL_SOURCE_MERGE = '41a1e46f8981001aeaf027662ed2f16ad9468d99';
+export const PROMOTION_MERGE = '61a33f5459e64f1978d9c55c1b7ea7f925358cd8';
+export const PROMOTION_MANIFEST_SHA256 = '068330d24a8bc378964cee2d88c3ebe1c5b48b36154f58636e72d78d40e71e82';
 export const CURRENT_LEDGER_PATH = 'data/research/status-sovereignty-residual-denominator-wave-03-current.json';
 export const CONSTITUTION_PATH = 'data/research/status-sovereignty-residual-denominator-wave-03-constitution.json';
 export const SEED_PATH = 'data/project/ssc-residual-wave03/seeds/RD-02-C05.json';
@@ -70,6 +72,76 @@ const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex'
 const encode = (value) => Buffer.from(`${JSON.stringify(value, null, 2)}\n`, 'utf8');
 const ok = (condition, message) => { if (!condition) throw new Error(message); };
 const same = (actual, expected, message) => ok(JSON.stringify(actual) === JSON.stringify(expected), message);
+
+
+export function classifyCurrentLedgerCustody(current, manifestCombined = PROMOTION_MANIFEST_SHA256) {
+  const counts = current?.counts ?? {};
+  const result = current?.current_result ?? {};
+  const prePromotion =
+    counts.closed_residual_classes === 8 &&
+    counts.open_residual_classes === 34 &&
+    result.open_selected_class_ids?.includes(CLASS_ID) &&
+    !result.closed_class_ids?.includes(CLASS_ID);
+  if (prePromotion) return 'pre_promotion';
+
+  const promoted = Array.isArray(current?.promoted_class_receipts) ? current.promoted_class_receipts : [];
+  const selectedOpen = Array.isArray(current?.selected_classes_open) ? current.selected_classes_open : [];
+  const promotedIds = promoted.map((row) => row.class_id);
+  const closedIds = Array.isArray(result.closed_class_ids) ? result.closed_class_ids : [];
+  const selectedOpenIds = selectedOpen.map((row) => row.class_id);
+  const openSelectedIds = Array.isArray(result.open_selected_class_ids) ? result.open_selected_class_ids : [];
+  const terminalReceipts = counts.wave_03_terminal_class_receipts;
+  const postRow = promoted.find((row) => row.class_id === CLASS_ID);
+  const sourceSnapshots = current?.source_snapshots ?? {};
+
+  const arithmetic =
+    current?.schema_version === 'status-sovereignty-residual-denominator-wave-03-current@1' &&
+    current?.wave_id === WAVE_ID &&
+    current?.issue === 1013 &&
+    counts.canonical_residual_classes === 42 &&
+    counts.classes_closed_before_wave === 6 &&
+    counts.wave_03_selected_class_attempts === 6 &&
+    Number.isInteger(terminalReceipts) &&
+    terminalReceipts >= 3 &&
+    terminalReceipts <= 6 &&
+    counts.classes_closed_this_wave === terminalReceipts &&
+    counts.closed_residual_classes === 6 + terminalReceipts &&
+    counts.open_residual_classes === 42 - counts.closed_residual_classes &&
+    promoted.length === counts.closed_residual_classes &&
+    new Set(promotedIds).size === promotedIds.length &&
+    JSON.stringify(closedIds) === JSON.stringify(promotedIds) &&
+    result.classes_closed === counts.closed_residual_classes &&
+    result.classes_open === counts.open_residual_classes &&
+    result.wave_03_selected_attempts_terminal === terminalReceipts &&
+    selectedOpen.length === 6 - terminalReceipts &&
+    JSON.stringify(openSelectedIds) === JSON.stringify(selectedOpenIds) &&
+    !openSelectedIds.includes(CLASS_ID) &&
+    closedIds.includes(CLASS_ID);
+
+  const exactRow =
+    postRow?.lane_id === LANE_ID &&
+    postRow?.issue === ISSUE &&
+    postRow?.source_pr === SOURCE_PR &&
+    postRow?.merge_commit === PROMOTION_MERGE &&
+    postRow?.constitutional_exact_label === CLASS_LABEL &&
+    postRow?.receipt_class_label === CLASS_LABEL &&
+    postRow?.labels_exact_match === true &&
+    postRow?.label_reconciliation === 'none' &&
+    postRow?.terminal_state === TERMINAL_STATE &&
+    postRow?.closure_reference_path === CLOSURE_PATH &&
+    postRow?.class_receipt_path === `${PRODUCT_ROOT}/class-receipt.json` &&
+    postRow?.manifest_combined_sha256 === manifestCombined &&
+    postRow?.class_closed === true;
+
+  const exactSourceSnapshot =
+    sourceSnapshots.rd02_closure_reference_path === CLOSURE_PATH &&
+    sourceSnapshots.rd02_class_receipt_path === `${PRODUCT_ROOT}/class-receipt.json` &&
+    sourceSnapshots.rd02_merge_commit === PROMOTION_MERGE;
+
+  ok(arithmetic && exactRow && exactSourceSnapshot,
+    'current cumulative ledger does not preserve monotonic RD-02 promotion custody');
+  return 'forward_post_promotion';
+}
 
 const pipelinePaths = Object.keys(INPUT_SHA256).filter((rel) => rel.includes('rd-wave03-rd02-portfolio-lifecycle'));
 const lifecycleFields = REQUIRED_FIELDS.slice(1, 8);
@@ -221,9 +293,7 @@ export function deriveProduct(root = ROOT) {
   ok(seed.closure_target === CLASS_LABEL && seed.class_closed === false, 'seed custody changed');
   const lane = constitution.lane_attempts.find((row) => row.class_id === CLASS_ID);
   ok(lane?.issue === ISSUE && lane?.exact_label === CLASS_LABEL, 'constitution lane changed');
-  const prePromotion = current.counts.closed_residual_classes === 8 && current.counts.open_residual_classes === 34 && current.current_result.open_selected_class_ids.includes(CLASS_ID) && !current.current_result.closed_class_ids.includes(CLASS_ID);
-  const postPromotion = current.counts.closed_residual_classes === 9 && current.counts.open_residual_classes === 33 && !current.current_result.open_selected_class_ids.includes(CLASS_ID) && current.current_result.closed_class_ids.includes(CLASS_ID);
-  ok(prePromotion || postPromotion, 'current cumulative ledger is neither exact RD-02 pre-promotion nor post-promotion custody');
+  classifyCurrentLedgerCustody(current);
   ok(parentClosure.class_id === 'RD-02-C04' && parentClosure.class_closed === true && parentMatrix.rows.length === 18, 'parent row custody changed');
   ok(source2024.source_disposition.admitted_source === true && source2024.source_disposition.lifecycle_events_for_rd02_c05_observed === 0, '2024 source disposition changed');
   ok(source2021.source_disposition.admitted_source === true && source2021.source_disposition.lifecycle_events_for_rd02_c05_observed === 0, '2021 source disposition changed');

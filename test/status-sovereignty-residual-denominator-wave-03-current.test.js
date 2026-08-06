@@ -18,6 +18,9 @@ import {
   RD02_CLOSURE_PATH,
   RD02_RECEIPT_PATH,
   RD02_MANIFEST_PATH,
+  RD05_CLOSURE_PATH,
+  RD05_RECEIPT_PATH,
+  RD05_MANIFEST_PATH,
   CLOSED_IDS,
   OPEN_SELECTED_IDS,
   deriveCurrent
@@ -54,6 +57,11 @@ assert.equal(
   ledger.promoted_class_receipts[8].constitutional_exact_label,
   ledger.promoted_class_receipts[8].receipt_class_label
 );
+assert.equal(ledger.promoted_class_receipts[9].labels_exact_match, true);
+assert.equal(
+  ledger.promoted_class_receipts[9].constitutional_exact_label,
+  ledger.promoted_class_receipts[9].receipt_class_label
+);
 
 const refusals = [];
 const ledgerMutation = (name, mutate) => refusals.push({
@@ -78,7 +86,7 @@ for (const [key, replacement] of Object.entries({
   wave_id: 'SSC-RD-W04',
   hypothesis_id: 'SSC-H02',
   issue: 9999,
-  as_of: '2026-08-05',
+  as_of: '2026-08-06',
   authority: 'four_wave03_terminal_class_receipts_promoted'
 })) ledgerMutation(`top-level ${key} mutation`, (v) => { v[key] = replacement; });
 
@@ -104,6 +112,12 @@ for (const key of ['constitutional_exact_label', 'receipt_class_label', 'labels_
 for (const key of ['constitutional_exact_label', 'receipt_class_label', 'labels_exact_match', 'label_reconciliation']) {
   ledgerMutation(`RD-02 promotion ${key} mutation`, (v) => {
     const row = v.promoted_class_receipts[8];
+    row[key] = typeof row[key] === 'boolean' ? !row[key] : `${row[key]}-mutated`;
+  });
+}
+for (const key of ['constitutional_exact_label', 'receipt_class_label', 'labels_exact_match', 'label_reconciliation']) {
+  ledgerMutation(`RD-05 promotion ${key} mutation`, (v) => {
+    const row = v.promoted_class_receipts[9];
     row[key] = typeof row[key] === 'boolean' ? !row[key] : `${row[key]}-mutated`;
   });
 }
@@ -147,10 +161,10 @@ schemaMutation('schema dialect mutation', (v) => { v.$schema = 'https://json-sch
 schemaMutation('schema ID mutation', (v) => { v.$id += '.mutated'; });
 schemaMutation('schema top-level openness', (v) => { v.additionalProperties = true; });
 schemaMutation('schema authority mutation', (v) => { v.properties.authority.const = 'two_wave03_terminal_class_receipts_promoted_without_cross_lane_empirical_authority'; });
-schemaMutation('schema promoted minimum mutation', (v) => { v.properties.promoted_class_receipts.minItems = 8; });
-schemaMutation('schema promoted maximum mutation', (v) => { v.properties.promoted_class_receipts.maxItems = 10; });
-schemaMutation('schema open minimum mutation', (v) => { v.properties.selected_classes_open.minItems = 2; });
-schemaMutation('schema open maximum mutation', (v) => { v.properties.selected_classes_open.maxItems = 4; });
+schemaMutation('schema promoted minimum mutation', (v) => { v.properties.promoted_class_receipts.minItems = 9; });
+schemaMutation('schema promoted maximum mutation', (v) => { v.properties.promoted_class_receipts.maxItems = 11; });
+schemaMutation('schema open minimum mutation', (v) => { v.properties.selected_classes_open.minItems = 1; });
+schemaMutation('schema open maximum mutation', (v) => { v.properties.selected_classes_open.maxItems = 3; });
 for (const key of ['canonical_residual_classes', 'closed_residual_classes', 'open_residual_classes', 'wave_03_terminal_class_receipts', 'wave_03_label_reconciliations']) {
   schemaMutation(`schema count ${key} mutation`, (v) => { v.properties.counts.properties[key].const += 1; });
 }
@@ -171,7 +185,10 @@ const sourcePaths = [
   RD03_MANIFEST_PATH,
   RD02_CLOSURE_PATH,
   RD02_RECEIPT_PATH,
-  RD02_MANIFEST_PATH
+  RD02_MANIFEST_PATH,
+  RD05_CLOSURE_PATH,
+  RD05_RECEIPT_PATH,
+  RD05_MANIFEST_PATH
 ];
 function sourceMutation(name, rel, mutate) {
   refusals.push({
@@ -214,6 +231,15 @@ sourceMutation('RD-02 receipt lifecycle event mutation', RD02_RECEIPT_PATH, (v) 
 sourceMutation('RD-02 receipt event-absence mutation', RD02_RECEIPT_PATH, (v) => { v.boundaries.not_publicly_recovered_is_event_nonoccurrence = true; });
 sourceMutation('RD-02 receipt external review mutation', RD02_RECEIPT_PATH, (v) => { v.authority.external_reviews = 1; });
 sourceMutation('RD-02 manifest mutation', RD02_MANIFEST_PATH, (v) => { v.combined_sha256 = 'e'.repeat(64); });
+sourceMutation('constitution RD-05 label mutation', CONSTITUTION_PATH, (v) => { v.lane_attempts.find((r) => r.class_id === 'RD-05-C02').exact_label += ' changed'; });
+sourceMutation('RD-05 closure state mutation', RD05_CLOSURE_PATH, (v) => { v.class_closed = false; });
+sourceMutation('RD-05 closure atlas arithmetic mutation', RD05_CLOSURE_PATH, (v) => { v.residual_atlas_effect_if_promoted.closed_after = 11; });
+sourceMutation('RD-05 closure participation finding mutation', RD05_CLOSURE_PATH, (v) => { v.authority.participation_finding = true; });
+sourceMutation('RD-05 receipt terminal field mutation', RD05_RECEIPT_PATH, (v) => { v.counts.terminal_fields = 169; });
+sourceMutation('RD-05 receipt candidate followup mutation', RD05_RECEIPT_PATH, (v) => { v.counts.selected_candidate_followups = 1; });
+sourceMutation('RD-05 receipt unanimity mutation', RD05_RECEIPT_PATH, (v) => { v.unresolved_limit.no_recorded_dissent_is_not_unanimity = false; });
+sourceMutation('RD-05 receipt authorship finding mutation', RD05_RECEIPT_PATH, (v) => { v.authority.recommendation_authorship_finding = true; });
+sourceMutation('RD-05 manifest mutation', RD05_MANIFEST_PATH, (v) => { v.combined_sha256 = 'd'.repeat(64); });
 
 for (const test of refusals) test.run();
-console.log(`Wave-03 current-ledger adversarial suite: ${refusals.length} mutations refused; 33 open / 9 closed preserved`);
+console.log(`Wave-03 current-ledger adversarial suite: ${refusals.length} mutations refused; 32 open / 10 closed preserved`);
