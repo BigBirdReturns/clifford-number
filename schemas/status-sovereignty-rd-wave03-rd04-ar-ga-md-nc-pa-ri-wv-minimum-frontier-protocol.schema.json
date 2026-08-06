@@ -1,0 +1,436 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://undercast.example/schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-minimum-frontier-protocol.schema.json",
+  "title": "SSC RD-04 seven-state minimum-frontier protocol family",
+  "description": "Closed top-level schemas for the exact thirty-route, twenty-one-cell minimum-frontier acquisition protocol and deterministic derived custody objects.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "prepared_at",
+        "publication_state",
+        "predecessor_custody",
+        "selection_rule",
+        "target_state_order",
+        "target_cells",
+        "route_execution_contract",
+        "routes",
+        "interpretation_constraints",
+        "authority",
+        "next_operation"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-mf7-minimum-frontier-protocol-authored@1"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "prepared_at": {
+          "type": "string"
+        },
+        "publication_state": {
+          "type": "string"
+        },
+        "predecessor_custody": {
+          "type": "object"
+        },
+        "selection_rule": {
+          "type": "object"
+        },
+        "target_state_order": {
+          "type": "array"
+        },
+        "target_cells": {
+          "type": "array"
+        },
+        "route_execution_contract": {
+          "type": "object"
+        },
+        "routes": {
+          "type": "array"
+        },
+        "interpretation_constraints": {
+          "type": "array"
+        },
+        "authority": {
+          "type": "object"
+        },
+        "next_operation": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "counts",
+        "execution_contract",
+        "routes",
+        "current_result"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-mf7-minimum-frontier-route-ledger@1"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "counts": {
+          "type": "object"
+        },
+        "execution_contract": {
+          "type": "object"
+        },
+        "routes": {
+          "type": "array"
+        },
+        "current_result": {
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "predecessor_custody",
+        "selection_rule",
+        "counts",
+        "state_order",
+        "target_cells",
+        "current_result"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-mf7-minimum-frontier-target-cell-ledger@1"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "predecessor_custody": {
+          "type": "object"
+        },
+        "selection_rule": {
+          "type": "object"
+        },
+        "counts": {
+          "type": "object"
+        },
+        "state_order": {
+          "type": "array"
+        },
+        "target_cells": {
+          "type": "array"
+        },
+        "current_result": {
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "constraint_count",
+        "constraints",
+        "authority"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-mf7-minimum-frontier-constraints@1"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "constraint_count": {
+          "type": "integer"
+        },
+        "constraints": {
+          "type": "array"
+        },
+        "authority": {
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "expected",
+        "execution",
+        "authority"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-mf7-minimum-frontier-execution-receipt-template@1"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "expected": {
+          "type": "object"
+        },
+        "execution": {
+          "type": "object"
+        },
+        "authority": {
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "authored_protocol_path",
+        "route_ledger_path",
+        "target_cell_ledger_path",
+        "constraints_path",
+        "execution_receipt_template_path",
+        "product_manifest_path",
+        "predecessor_summary_path",
+        "predecessor_summary_blob_sha",
+        "predecessor_index_path",
+        "predecessor_index_blob_sha",
+        "predecessor_remaining_open_field_census_path",
+        "predecessor_remaining_open_field_census_blob_sha",
+        "counts",
+        "current_result",
+        "next_operation"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-mf7-minimum-frontier-index@1"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "authored_protocol_path": {
+          "type": "string"
+        },
+        "route_ledger_path": {
+          "type": "string"
+        },
+        "target_cell_ledger_path": {
+          "type": "string"
+        },
+        "constraints_path": {
+          "type": "string"
+        },
+        "execution_receipt_template_path": {
+          "type": "string"
+        },
+        "product_manifest_path": {
+          "type": "string"
+        },
+        "predecessor_summary_path": {
+          "type": "string"
+        },
+        "predecessor_summary_blob_sha": {
+          "type": "string"
+        },
+        "predecessor_index_path": {
+          "type": "string"
+        },
+        "predecessor_index_blob_sha": {
+          "type": "string"
+        },
+        "predecessor_remaining_open_field_census_path": {
+          "type": "string"
+        },
+        "predecessor_remaining_open_field_census_blob_sha": {
+          "type": "string"
+        },
+        "counts": {
+          "type": "object"
+        },
+        "current_result": {
+          "type": "object"
+        },
+        "next_operation": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "protocol_id",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "permanent_data_files",
+        "manifest_entries",
+        "entries",
+        "file_set_combined_sha256",
+        "result_spawned_requests",
+        "field_matrix_changed",
+        "row_state_changed",
+        "class_closed",
+        "outside_human_dependency"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-mf7-minimum-frontier-product-manifest@1"
+        },
+        "protocol_id": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "permanent_data_files": {
+          "type": "integer"
+        },
+        "manifest_entries": {
+          "type": "integer"
+        },
+        "entries": {
+          "type": "array"
+        },
+        "file_set_combined_sha256": {
+          "type": "string"
+        },
+        "result_spawned_requests": {
+          "type": "integer"
+        },
+        "field_matrix_changed": {
+          "type": "boolean"
+        },
+        "row_state_changed": {
+          "type": "boolean"
+        },
+        "class_closed": {
+          "type": "boolean"
+        },
+        "outside_human_dependency": {
+          "type": "boolean"
+        }
+      }
+    }
+  ]
+}
