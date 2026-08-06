@@ -1,0 +1,117 @@
+name: TEMP run HEAD-wide Wave-03 ten-closure qualification
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-wave03-current-ledger-ten-closures-index-repair-v4.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: ssc-wave03-current-ledger-ten-closures-index-repair-v4
+  cancel-in-progress: false
+
+env:
+  CANONICAL_PARENT: b6d69b5502e4429e3769591b5ebd88555aad62be
+  CUMULATIVE_PRODUCT: 54e99a1a60fb3e0e40c827d9cb4fb316f3431362
+  PRODUCT_BRANCH: agent/ssc-wave03-current-ledger-ten-closures-product-v1
+  PRODUCT_LEASE: 54e99a1a60fb3e0e40c827d9cb4fb316f3431362
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-wave03-current-ledger-ten-closures-materializer-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Extract, narrow-patch, and execute the exact repair program
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE='.github/workflows/temp-ssc-wave03-current-ledger-ten-closures-runner-v2.yml'
+          PROGRAM="$RUNNER_TEMP/ssc-wave03-ten-closures-forward-compat.sh"
+          PATCHED="$RUNNER_TEMP/ssc-wave03-ten-closures-forward-compat-head-wide.sh"
+          RECEIPT="$RUNNER_TEMP/ssc-wave03-ten-closures-forward-compat/receipt"
+          mkdir -p "$RECEIPT"
+          test "$(git hash-object "$SOURCE")" = '550006e6f86312b3833e895103fb6f28c0d9b124'
+          python - "$SOURCE" "$PROGRAM" "$PATCHED" <<'PY'
+          from pathlib import Path
+          import sys
+
+          source = Path(sys.argv[1]).read_text().splitlines()
+          program = Path(sys.argv[2])
+          patched = Path(sys.argv[3])
+          marker = '      - name: Recompose, repair, qualify, and publish one exact product commit'
+          next_marker = '      - name: Preserve exact materialization receipt'
+          try:
+              start = source.index(marker)
+              end = source.index(next_marker, start + 1)
+          except ValueError as error:
+              raise SystemExit(f'repair-program step boundary missing: {error}')
+          run_index = None
+          for index in range(start + 1, end):
+              if source[index] == '        run: |':
+                  run_index = index
+                  break
+          if run_index is None:
+              raise SystemExit('repair-program run block missing')
+          raw_body = source[run_index + 1:end]
+          body = [line[10:] if line.startswith('          ') else line for line in raw_body]
+          text = '\n'.join(body) + '\n'
+          if not text.startswith('set -Eeuo pipefail\n'):
+              raise SystemExit('repair-program body boundary changed')
+          program.write_text(text)
+
+          replacements = [
+              (
+                  'git diff --name-only | sort > "$RECEIPT/name-only.txt"',
+                  'git diff HEAD --name-only | sort > "$RECEIPT/name-only.txt"',
+                  1,
+              ),
+              (
+                  'git diff --name-only | sort > "$RECEIPT/replay-name-only.txt"',
+                  'git diff HEAD --name-only | sort > "$RECEIPT/replay-name-only.txt"',
+                  1,
+              ),
+              ('git diff --check', 'git diff HEAD --check', 2),
+          ]
+          for needle, replacement, expected in replacements:
+              count = text.count(needle)
+              if count != expected:
+                  raise SystemExit(
+                      f'expected {expected} exact occurrences for {needle!r}, observed {count}'
+                  )
+              text = text.replace(needle, replacement)
+          patched.write_text(text)
+          print('patched exactly two HEAD-wide path censuses and two HEAD-wide whitespace checks')
+          PY
+          bash -n "$PROGRAM"
+          bash -n "$PATCHED"
+          bash "$PATCHED"
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave03-current-ledger-ten-closures-index-repair-v4
+          path: ${{ runner.temp }}/ssc-wave03-ten-closures-forward-compat/receipt
+          if-no-files-found: error
+          retention-days: 90
