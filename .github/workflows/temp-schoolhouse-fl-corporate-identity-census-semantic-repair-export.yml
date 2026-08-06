@@ -1,0 +1,64 @@
+name: TEMP export School.House Florida corporate semantic-repair inputs
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: github.head_ref == 'agent/schoolhouse-fl-corporate-identity-census-semantic-repair-export-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Export exact merged product and validation estate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PARENT='cf62a80b8628525b1eefc0ffcfae14696cbec700'
+          OUT='/tmp/schoolhouse-fl-corporate-identity-census-semantic-repair-export'
+          git fetch --prune --no-tags origin main
+          git merge-base --is-ancestor "$PARENT" origin/main
+          test "$(git merge-base HEAD origin/main)" = "$PARENT"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+
+          git archive "$PARENT" \
+            data/intake/bvvc-defense-capital \
+            tools/build-schoolhouse-fl-corporate-identity-census-custody.mjs \
+            tools/validate-bvvc-defense-capital.mjs \
+            tools/validate-schoolhouse-honor-foundation-990-custody.mjs \
+            tools/validate-no-magic-human-gate.mjs \
+            test/person-routers.test.js \
+            tools/validate-person-routers.mjs \
+            package.json \
+          | tar -x -C "$OUT"
+
+          {
+            printf 'canonical_parent=%s\n' "$PARENT"
+            printf 'canonical_parent_tree=%s\n' "$(git rev-parse "$PARENT^{tree}")"
+            printf 'export_head=%s\n' "$GITHUB_SHA"
+            printf 'outside_human_dependency=false\n'
+          } > "$OUT/EXPORT-METADATA"
+
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-fl-corporate-identity-census-semantic-repair-export
+          path: /tmp/schoolhouse-fl-corporate-identity-census-semantic-repair-export
+          if-no-files-found: error
+          retention-days: 30
+          include-hidden-files: true
