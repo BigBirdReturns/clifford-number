@@ -1,0 +1,32 @@
+name: TEMP observe PC-51 clean-checkout repair
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  observe:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Publish exact repair carrier identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          OBSERVER_HEAD: ${{ github.event.pull_request.head.sha }}
+          REPAIR_CARRIER_HEAD: ${{ github.event.pull_request.head.sha }}^
+          RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PARENT=$(git rev-parse HEAD^)
+          gh api --method POST \
+            -H 'Accept: application/vnd.github+json' \
+            "/repos/${GH_REPOSITORY}/issues/1268/comments" \
+            -f body="PC-51 clean-checkout repair observer: repair carrier head \`${PARENT}\`; observer head \`${OBSERVER_HEAD}\`; observer run \`${RUN_ID}\`. Read-only execution custody; not product authority."
