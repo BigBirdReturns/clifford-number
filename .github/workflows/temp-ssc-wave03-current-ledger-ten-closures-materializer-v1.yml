@@ -1,0 +1,641 @@
+name: TEMP materialize Wave-03 ten-closure cumulative ledger
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-wave03-current-ledger-ten-closures-materializer-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: ssc-wave03-current-ledger-ten-closures-materializer-v1
+  cancel-in-progress: false
+
+env:
+  CANONICAL_PARENT: b6d69b5502e4429e3769591b5ebd88555aad62be
+  PRODUCT_BRANCH: agent/ssc-wave03-current-ledger-ten-closures-product-v1
+  PRODUCT_LEASE: b6d69b5502e4429e3769591b5ebd88555aad62be
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-wave03-current-ledger-ten-closures-materializer-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Derive, qualify, and publish exact cumulative product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export GIT_AUTHOR_NAME='github-actions[bot]'
+          export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+
+          WORK="$RUNNER_TEMP/ssc-wave03-ten-closures"
+          RECEIPT="$WORK/receipt"
+          PATCHER="$WORK/promote.py"
+          EXPECTED="$WORK/expected-paths.txt"
+          rm -rf "$WORK"
+          mkdir -p "$RECEIPT"
+          exec > >(tee "$RECEIPT/execution.log") 2>&1
+          STAGE=init
+          PRODUCT_HEAD=''
+          PRODUCT_TREE=''
+          finish() {
+            rc=$?
+            printf 'status=%s\nstage=%s\nexit_code=%s\nproduct_head=%s\nproduct_tree=%s\nutc=%s\n' \
+              "$([[ $rc -eq 0 ]] && echo complete || echo failed_closed)" \
+              "$STAGE" "$rc" "$PRODUCT_HEAD" "$PRODUCT_TREE" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              > "$RECEIPT/checkpoint.txt"
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          STAGE=bind-parent-and-lease
+          git fetch --no-tags origin main "$PRODUCT_BRANCH"
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PRODUCT_LEASE"
+          git checkout --detach "$CANONICAL_PARENT"
+          test "$(git rev-parse HEAD)" = "$CANONICAL_PARENT"
+
+          cat > "$EXPECTED" <<'EOF'
+          .github/workflows/status-sovereignty-residual-denominator-wave-03-current.yml
+          data/research/status-sovereignty-residual-denominator-wave-03-current.json
+          docs/milestones/ssc-residual-denominator-wave-03-current.md
+          schemas/status-sovereignty-residual-denominator-wave-03-current.schema.json
+          test/status-sovereignty-residual-denominator-wave-03-current.test.js
+          tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs
+          tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+          EOF
+          sed -i 's/^          //' "$EXPECTED"
+          test "$(wc -l < "$EXPECTED" | tr -d ' ')" = 7
+
+          cat > "$PATCHER" <<'PY'
+          from __future__ import annotations
+
+          import json
+          from pathlib import Path
+
+          ROOT = Path.cwd()
+
+          def path(rel: str) -> Path:
+              return ROOT / rel
+
+          def replace_once(rel: str, old: str, new: str, label: str) -> None:
+              target = path(rel)
+              text = target.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one occurrence, observed {count}')
+              target.write_text(text.replace(old, new))
+
+          def replace_count(rel: str, old: str, new: str, expected: int, label: str) -> None:
+              target = path(rel)
+              text = target.read_text()
+              count = text.count(old)
+              if count != expected:
+                  raise SystemExit(f'{label}: expected {expected} occurrences, observed {count}')
+              target.write_text(text.replace(old, new))
+
+          builder = 'tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs'
+          validator = 'tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs'
+          test = 'test/status-sovereignty-residual-denominator-wave-03-current.test.js'
+          schema_path = 'schemas/status-sovereignty-residual-denominator-wave-03-current.schema.json'
+          workflow = '.github/workflows/status-sovereignty-residual-denominator-wave-03-current.yml'
+          milestone = 'docs/milestones/ssc-residual-denominator-wave-03-current.md'
+
+          # Builder: add exact RD-05 custody and move only cumulative arithmetic.
+          replace_once(
+              builder,
+              "export const RD02_MANIFEST_PATH = 'data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/manifest.json';\n",
+              "export const RD02_MANIFEST_PATH = 'data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/manifest.json';\n"
+              "export const RD05_CLOSURE_PATH = 'data/project/ssc-residual-wave03/closures/RD-05-C02.json';\n"
+              "export const RD05_RECEIPT_PATH = 'data/research/status-sovereignty-rd-wave03-rd05-member-participation/class-receipt.json';\n"
+              "export const RD05_MANIFEST_PATH = 'data/research/status-sovereignty-rd-wave03-rd05-member-participation/manifest.json';\n",
+              'builder RD-05 paths',
+          )
+          replace_once(
+              builder,
+              "export const RD02_MERGE = '61a33f5459e64f1978d9c55c1b7ea7f925358cd8';\n",
+              "export const RD02_MERGE = '61a33f5459e64f1978d9c55c1b7ea7f925358cd8';\n"
+              "export const RD05_MERGE = 'b6d69b5502e4429e3769591b5ebd88555aad62be';\n",
+              'builder RD-05 merge',
+          )
+          replace_once(
+              builder,
+              "export const RD02_MANIFEST = '068330d24a8bc378964cee2d88c3ebe1c5b48b36154f58636e72d78d40e71e82';\n",
+              "export const RD02_MANIFEST = '068330d24a8bc378964cee2d88c3ebe1c5b48b36154f58636e72d78d40e71e82';\n"
+              "export const RD05_MANIFEST = 'beceefc3d1c2d1e6a8879a8ec7fc4e56bb0d387de8f91cddafd4695096d756f6';\n",
+              'builder RD-05 manifest',
+          )
+          replace_once(
+              builder,
+              "export const RD02_LABEL = 'complete portfolio investment, follow-on, exit, write-off, default, return, and repayment ledger';\n",
+              "export const RD02_LABEL = 'complete portfolio investment, follow-on, exit, write-off, default, return, and repayment ledger';\n"
+              "export const RD05_LABEL = 'member-specific votes, dissents, subcommittee assignments, agenda control, information access, and recommendation authorship';\n",
+              'builder RD-05 label',
+          )
+          replace_once(
+              builder,
+              "export const CLOSED_IDS = Object.freeze([\n  ...INHERITED_CLOSED_IDS,\n  'RD-01-C06',\n  'RD-03-C05',\n  'RD-02-C05'\n]);",
+              "export const CLOSED_IDS = Object.freeze([\n  ...INHERITED_CLOSED_IDS,\n  'RD-01-C06',\n  'RD-03-C05',\n  'RD-02-C05',\n  'RD-05-C02'\n]);",
+              'builder closed IDs',
+          )
+          replace_once(
+              builder,
+              "export const OPEN_SELECTED_IDS = Object.freeze([\n  'RD-04-C02',\n  'RD-05-C02',\n  'RD-06-C04'\n]);",
+              "export const OPEN_SELECTED_IDS = Object.freeze([\n  'RD-04-C02',\n  'RD-06-C04'\n]);",
+              'builder open IDs',
+          )
+
+          validate_rd05 = r'''
+          function validateRD05(closure, receipt, manifest, attempt) {
+            ok(closure?.schema_version === 'ssc-residual-denominator-wave03-class-closure-reference@1', 'RD-05 closure schema changed');
+            ok(closure?.wave_issue === 1013 && closure?.child_issue === 1018 && closure?.source_pr === 1227, 'RD-05 closure custody changed');
+            ok(closure?.lane_id === 'RD-05' && closure?.class_id === 'RD-05-C02', 'RD-05 closure identity changed');
+            ok(closure?.exact_label === RD05_LABEL, 'RD-05 closure label changed');
+            ok(closure?.terminal_state === 'bounded_source_unavailable' && closure?.class_closed === true, 'RD-05 closure state changed');
+            ok(closure?.product?.manifest_combined_sha256 === RD05_MANIFEST, 'RD-05 closure manifest changed');
+            ok(closure?.product?.class_receipt_path === RD05_RECEIPT_PATH, 'RD-05 closure receipt path changed');
+            same(closure?.source_custody, {
+              source_census_receipt_path: 'data/intake/status-sovereignty-rd-wave03-rd05-member-participation/source-census-execution-receipt.json',
+              source_census_artifact_id: 8923361634,
+              source_census_artifact_zip_sha256: '0829f39c45dc5308c031dcde3efb6514a1f65ec5787ed19c9490bf49e6c1289b',
+              candidate_and_observation_manifest_path: 'data/intake/status-sovereignty-rd-wave03-rd05-member-participation/candidate-and-official-observation-manifest.json',
+              candidate_and_observation_manifest_combined_sha256: '0232a5906451bb8eaa2eab68376c2f0df07470f1f49e3821205f8b06855b5514',
+              fixed_routes: 161,
+              candidate_rows: 1351,
+              official_body_observations: 25
+            }, 'RD-05 source custody changed');
+            same(closure?.residual_atlas_effect_if_promoted, {
+              canonical_classes: 42,
+              open_before: 33,
+              closed_before: 9,
+              open_after: 32,
+              closed_after: 10,
+              wave03_selected_attempts_terminal_after_promotion: 4,
+              wave_complete: false
+            }, 'RD-05 residual-atlas effect changed');
+            validateEffects(closure.authority, 'RD-05 closure authority');
+            for (const key of [
+              'denominator_widened',
+              'reviewed_disposition_changed',
+              'participation_finding',
+              'vote_finding',
+              'dissent_or_unanimity_finding',
+              'information_asymmetry_finding',
+              'recommendation_authorship_finding',
+              'coordination_finding',
+              'common_purpose_finding'
+            ]) ok(closure?.authority?.[key] === false, `RD-05 closure authority.${key} changed`);
+
+            ok(receipt?.schema_version === 'ssc-rd05-wave03-class-receipt@1', 'RD-05 receipt schema changed');
+            ok(receipt?.wave_id === 'SSC-RD-W03' && receipt?.lane_id === 'RD-05' && receipt?.class_id === 'RD-05-C02', 'RD-05 receipt identity changed');
+            ok(receipt?.issue === 1018 && receipt?.source_pr === 1227, 'RD-05 receipt custody changed');
+            ok(receipt?.class_label === RD05_LABEL, 'RD-05 receipt label changed');
+            ok(receipt?.terminal_state === 'bounded_source_unavailable' && receipt?.class_closed === true, 'RD-05 receipt state changed');
+            same(receipt?.counts, {
+              member_rows: 17,
+              required_fields_per_member: 10,
+              required_fields: 170,
+              terminal_fields: 170,
+              observed_fields: 71,
+              not_publicly_recovered_fields: 99,
+              closed_members: 17,
+              fixed_routes: 161,
+              route_attempts: 161,
+              http_success_routes: 161,
+              exact_official_routes: 25,
+              official_body_observations: 25,
+              candidate_census_routes: 136,
+              candidate_rows: 1351,
+              terminal_candidate_dispositions: 1351,
+              selected_candidate_followups: 0,
+              admitted_candidate_sources: 0,
+              observed_identity_fields: 17,
+              observed_subcommittee_fields: 15,
+              observed_chair_authority_fields: 5,
+              observed_source_custody_fields: 17,
+              observed_terminal_state_fields: 17,
+              observed_attendance_fields: 0,
+              observed_vote_fields: 0,
+              observed_dissent_fields: 0,
+              observed_information_access_fields: 0,
+              observed_authorship_fields: 0,
+              external_contacts: 0,
+              external_reviews: 0
+            }, 'RD-05 class-receipt counts changed');
+            same(receipt?.source_custody, {
+              intake_head: 'bc9800dcd3a3768288a5dfeaf0f7144969994ffa',
+              source_census_workflow_run: 30989139364,
+              source_census_artifact_id: 8923361634,
+              source_census_artifact_zip_sha256: '0829f39c45dc5308c031dcde3efb6514a1f65ec5787ed19c9490bf49e6c1289b',
+              source_census_capture_manifest_sha256: 'c227aa2ed90f9247de6cd8eee4920b74ef0a4c8be8b14d1184b79bc52f876cf1',
+              candidate_and_observation_manifest_path: 'data/intake/status-sovereignty-rd-wave03-rd05-member-participation/candidate-and-official-observation-manifest.json',
+              candidate_and_observation_manifest_combined_sha256: '0232a5906451bb8eaa2eab68376c2f0df07470f1f49e3821205f8b06855b5514'
+            }, 'RD-05 receipt source custody changed');
+            same(receipt?.unresolved_limit, {
+              not_publicly_recovered_fields: 99,
+              selected_candidate_followups: 0,
+              candidate_page_requests: 0,
+              missing_records_are_not_event_absence: true,
+              no_recorded_dissent_is_not_unanimity: true,
+              subcommittee_assignment_is_not_authorship: true,
+              automatic_additional_search_pass_authorized: false
+            }, 'RD-05 unresolved limit changed');
+            validateEffects(receipt.authority, 'RD-05 receipt authority');
+            for (const key of [
+              'denominator_widened',
+              'reviewed_disposition_changed',
+              'participation_finding',
+              'vote_finding',
+              'dissent_or_unanimity_finding',
+              'information_asymmetry_finding',
+              'recommendation_authorship_finding',
+              'coordination_finding',
+              'common_purpose_finding'
+            ]) ok(receipt?.authority?.[key] === false, `RD-05 receipt authority.${key} changed`);
+
+            ok(attempt?.lane_id === 'RD-05' && attempt?.issue === 1018, 'RD-05 constitution binding changed');
+            ok(attempt?.exact_label === RD05_LABEL, 'RD-05 constitutional label changed');
+            ok(receipt.class_label === attempt.exact_label, 'RD-05 exact label custody changed');
+            ok(manifest?.combined_sha256 === RD05_MANIFEST, 'RD-05 manifest object changed');
+          }
+
+          '''
+          replace_once(builder, 'function promotionFromWave02(row) {', validate_rd05 + 'function promotionFromWave02(row) {', 'builder RD-05 validator')
+          replace_once(
+              builder,
+              "  const rd02Manifest = read(root, RD02_MANIFEST_PATH);\n",
+              "  const rd02Manifest = read(root, RD02_MANIFEST_PATH);\n"
+              "  const rd05Closure = read(root, RD05_CLOSURE_PATH);\n"
+              "  const rd05Receipt = read(root, RD05_RECEIPT_PATH);\n"
+              "  const rd05Manifest = read(root, RD05_MANIFEST_PATH);\n",
+              'builder RD-05 reads',
+          )
+          replace_once(
+              builder,
+              "  validateRD02(rd02Closure, rd02Receipt, rd02Manifest, byClass.get('RD-02-C05'));\n",
+              "  validateRD02(rd02Closure, rd02Receipt, rd02Manifest, byClass.get('RD-02-C05'));\n"
+              "  validateRD05(rd05Closure, rd05Receipt, rd05Manifest, byClass.get('RD-05-C02'));\n",
+              'builder RD-05 validation call',
+          )
+          rd05_promotion = r'''
+            const rd05Promotion = {
+              lane_id: 'RD-05',
+              class_id: 'RD-05-C02',
+              issue: 1018,
+              source_pr: 1227,
+              merge_commit: RD05_MERGE,
+              constitutional_exact_label: RD05_LABEL,
+              receipt_class_label: RD05_LABEL,
+              labels_exact_match: true,
+              label_reconciliation: 'none',
+              terminal_state: 'bounded_source_unavailable',
+              closure_reference_path: RD05_CLOSURE_PATH,
+              class_receipt_path: RD05_RECEIPT_PATH,
+              manifest_combined_sha256: RD05_MANIFEST,
+              class_closed: true
+            };
+
+          '''
+          replace_once(builder, '  const selectedClassesOpen = OPEN_SELECTED_IDS.map((classId) => {', rd05_promotion + '  const selectedClassesOpen = OPEN_SELECTED_IDS.map((classId) => {', 'builder RD-05 promotion')
+          replace_once(
+              builder,
+              "      rd02_class_receipt_path: RD02_RECEIPT_PATH,\n      rd02_merge_commit: RD02_MERGE\n",
+              "      rd02_class_receipt_path: RD02_RECEIPT_PATH,\n      rd02_merge_commit: RD02_MERGE,\n"
+              "      rd05_closure_reference_path: RD05_CLOSURE_PATH,\n"
+              "      rd05_class_receipt_path: RD05_RECEIPT_PATH,\n"
+              "      rd05_merge_commit: RD05_MERGE\n",
+              'builder source snapshots',
+          )
+          replace_once(
+              builder,
+              "      rd03Promotion,\n      rd02Promotion\n",
+              "      rd03Promotion,\n      rd02Promotion,\n      rd05Promotion\n",
+              'builder promoted receipts',
+          )
+          replace_once(builder, "    as_of: '2026-08-04',", "    as_of: '2026-08-05',", 'builder as-of')
+          replace_once(builder, "    authority: 'three_wave03_terminal_class_receipts_promoted_without_cross_lane_empirical_authority',", "    authority: 'four_wave03_terminal_class_receipts_promoted_without_cross_lane_empirical_authority',", 'builder authority')
+          replace_once(builder, '      wave_03_terminal_class_receipts: 3,', '      wave_03_terminal_class_receipts: 4,', 'builder terminal receipts')
+          replace_once(builder, '      classes_closed_this_wave: 3,', '      classes_closed_this_wave: 4,', 'builder closed this wave')
+          replace_once(builder, '      closed_residual_classes: 9,', '      closed_residual_classes: 10,', 'builder closed count')
+          replace_once(builder, '      open_residual_classes: 33,', '      open_residual_classes: 32,', 'builder open count')
+          replace_once(builder, "      terminal_state: 'three_of_six_wave03_selected_classes_terminal_nine_of_forty_two_residual_classes_closed',", "      terminal_state: 'four_of_six_wave03_selected_classes_terminal_ten_of_forty_two_residual_classes_closed',", 'builder terminal state')
+          replace_once(builder, '      classes_closed: 9,', '      classes_closed: 10,', 'builder result closed')
+          replace_once(builder, '      classes_open: 33,', '      classes_open: 32,', 'builder result open')
+          replace_once(builder, '      wave_03_selected_attempts_terminal: 3,', '      wave_03_selected_attempts_terminal: 4,', 'builder result terminal attempts')
+          replace_once(builder, '      nine_closures_are_complete_compact: false,', '      ten_closures_are_complete_compact: false,', 'builder complete-compact boundary')
+          replace_once(builder, "    console.log('Wave-03 current ledger written: 33 open / 9 closed; RD-01-C06, RD-03-C05, and RD-02-C05 promoted');", "    console.log('Wave-03 current ledger written: 32 open / 10 closed; RD-05-C02 promoted after the prior nine closures');", 'builder write log')
+          replace_once(builder, "  console.log('Wave-03 current ledger: 33 open / 9 closed; RD-01-C06, RD-03-C05, and RD-02-C05 promoted');", "  console.log('Wave-03 current ledger: 32 open / 10 closed; RD-05-C02 promoted after the prior nine closures');", 'builder check log')
+
+          # Validator: extend exact custody and arithmetic.
+          replace_once(validator, '  RD02_MANIFEST_PATH,\n', '  RD02_MANIFEST_PATH,\n  RD05_CLOSURE_PATH,\n  RD05_RECEIPT_PATH,\n  RD05_MANIFEST_PATH,\n', 'validator RD-05 paths import')
+          replace_once(validator, '  RD02_MERGE,\n', '  RD02_MERGE,\n  RD05_MERGE,\n', 'validator RD-05 merge import')
+          replace_once(validator, '  RD02_MANIFEST,\n', '  RD02_MANIFEST,\n  RD05_MANIFEST,\n', 'validator RD-05 manifest import')
+          replace_count(validator, 'three_wave03_terminal_class_receipts_promoted_without_cross_lane_empirical_authority', 'four_wave03_terminal_class_receipts_promoted_without_cross_lane_empirical_authority', 2, 'validator authority')
+          replace_once(validator, 'minItems === 9 && schema?.properties?.promoted_class_receipts?.maxItems === 9', 'minItems === 10 && schema?.properties?.promoted_class_receipts?.maxItems === 10', 'validator promoted schema denominator')
+          replace_once(validator, 'minItems === 3 && schema?.properties?.selected_classes_open?.maxItems === 3', 'minItems === 2 && schema?.properties?.selected_classes_open?.maxItems === 2', 'validator open schema denominator')
+          replace_once(validator, 'closed_residual_classes?.const === 9', 'closed_residual_classes?.const === 10', 'validator schema closed count')
+          replace_once(validator, 'open_residual_classes?.const === 33', 'open_residual_classes?.const === 32', 'validator schema open count')
+          replace_once(validator, 'wave_03_terminal_class_receipts?.const === 3', 'wave_03_terminal_class_receipts?.const === 4', 'validator schema terminal count')
+          replace_count(validator, 'nine_closures_are_complete_compact', 'ten_closures_are_complete_compact', 2, 'validator complete-compact boundary')
+          replace_once(validator, "ok(value?.promoted_class_receipts?.length === 9, 'nine promoted receipts required');", "ok(value?.promoted_class_receipts?.length === 10, 'ten promoted receipts required');", 'validator promoted value denominator')
+          replace_once(validator, "size === 9, 'promoted class IDs must be unique'", "size === 10, 'promoted class IDs must be unique'", 'validator promoted unique count')
+          rd05_validator = r'''
+
+            const rd05 = value.promoted_class_receipts[9];
+            ok(rd05.lane_id === 'RD-05' && rd05.class_id === 'RD-05-C02', 'RD-05 promotion identity changed');
+            ok(rd05.issue === 1018 && rd05.source_pr === 1227 && rd05.merge_commit === RD05_MERGE, 'RD-05 promotion custody changed');
+            ok(rd05.manifest_combined_sha256 === RD05_MANIFEST, 'RD-05 promotion manifest changed');
+            ok(rd05.terminal_state === 'bounded_source_unavailable', 'RD-05 promotion state changed');
+            ok(rd05.labels_exact_match === true && rd05.label_reconciliation === 'none', 'RD-05 promotion label custody changed');
+          '''
+          replace_once(validator, '  same(value.selected_classes_open.map((row) => row.class_id), [...OPEN_SELECTED_IDS],', rd05_validator + '\n  same(value.selected_classes_open.map((row) => row.class_id), [...OPEN_SELECTED_IDS],', 'validator RD-05 promoted row')
+          replace_once(validator, "size === 3, 'open selected class IDs must be unique'", "size === 2, 'open selected class IDs must be unique'", 'validator open unique count')
+          replace_once(validator, "value.counts.wave_03_terminal_class_receipts === 3 && value.counts.classes_closed_this_wave === 3", "value.counts.wave_03_terminal_class_receipts === 4 && value.counts.classes_closed_this_wave === 4", 'validator terminal accounting')
+          replace_once(validator, "value.counts.closed_residual_classes === 9 && value.counts.open_residual_classes === 33", "value.counts.closed_residual_classes === 10 && value.counts.open_residual_classes === 32", 'validator residual arithmetic')
+          replace_once(validator, "value.current_result.classes_closed === 9 && value.current_result.classes_open === 33", "value.current_result.classes_closed === 10 && value.current_result.classes_open === 32", 'validator result arithmetic')
+          replace_once(validator, 'value.current_result.wave_03_selected_attempts_terminal === 3', 'value.current_result.wave_03_selected_attempts_terminal === 4', 'validator result terminal attempts')
+          replace_once(validator, 'for (const merge of [WAVE02_PROMOTION_MERGE, RD01_MERGE, RD03_MERGE, RD02_MERGE])', 'for (const merge of [WAVE02_PROMOTION_MERGE, RD01_MERGE, RD03_MERGE, RD02_MERGE, RD05_MERGE])', 'validator merge ancestry')
+          replace_once(
+              validator,
+              "  for (const rel of [RD02_CLOSURE_PATH, RD02_RECEIPT_PATH, RD02_MANIFEST_PATH]) {\n    execFileSync('git', ['cat-file', '-e', `${RD02_MERGE}:${rel}`], { cwd: root, stdio: 'ignore' });\n  }\n",
+              "  for (const rel of [RD02_CLOSURE_PATH, RD02_RECEIPT_PATH, RD02_MANIFEST_PATH]) {\n    execFileSync('git', ['cat-file', '-e', `${RD02_MERGE}:${rel}`], { cwd: root, stdio: 'ignore' });\n  }\n"
+              "  for (const rel of [RD05_CLOSURE_PATH, RD05_RECEIPT_PATH, RD05_MANIFEST_PATH]) {\n    execFileSync('git', ['cat-file', '-e', `${RD05_MERGE}:${rel}`], { cwd: root, stdio: 'ignore' });\n  }\n",
+              'validator RD-05 object custody',
+          )
+          replace_once(validator, "  console.log('Wave-03 current ledger validated: 33 open / 9 closed; RD-01-C06, RD-03-C05, and RD-02-C05 exact merge custody preserved');", "  console.log('Wave-03 current ledger validated: 32 open / 10 closed; RD-05-C02 exact merge custody preserved');", 'validator log')
+
+          # Adversarial test: add RD-05 source custody and update exact denominators.
+          replace_once(test, '  RD02_MANIFEST_PATH,\n', '  RD02_MANIFEST_PATH,\n  RD05_CLOSURE_PATH,\n  RD05_RECEIPT_PATH,\n  RD05_MANIFEST_PATH,\n', 'test RD-05 imports')
+          replace_once(
+              test,
+              "assert.equal(\n  ledger.promoted_class_receipts[8].constitutional_exact_label,\n  ledger.promoted_class_receipts[8].receipt_class_label\n);\n",
+              "assert.equal(\n  ledger.promoted_class_receipts[8].constitutional_exact_label,\n  ledger.promoted_class_receipts[8].receipt_class_label\n);\n"
+              "assert.equal(ledger.promoted_class_receipts[9].labels_exact_match, true);\n"
+              "assert.equal(\n  ledger.promoted_class_receipts[9].constitutional_exact_label,\n  ledger.promoted_class_receipts[9].receipt_class_label\n);\n",
+              'test RD-05 baseline assertions',
+          )
+          replace_once(test, "  as_of: '2026-08-05',", "  as_of: '2026-08-06',", 'test as-of mutation')
+          replace_once(
+              test,
+              "for (const key of ['constitutional_exact_label', 'receipt_class_label', 'labels_exact_match', 'label_reconciliation']) {\n  ledgerMutation(`RD-02 promotion ${key} mutation`, (v) => {\n    const row = v.promoted_class_receipts[8];\n    row[key] = typeof row[key] === 'boolean' ? !row[key] : `${row[key]}-mutated`;\n  });\n}\n",
+              "for (const key of ['constitutional_exact_label', 'receipt_class_label', 'labels_exact_match', 'label_reconciliation']) {\n  ledgerMutation(`RD-02 promotion ${key} mutation`, (v) => {\n    const row = v.promoted_class_receipts[8];\n    row[key] = typeof row[key] === 'boolean' ? !row[key] : `${row[key]}-mutated`;\n  });\n}\n"
+              "for (const key of ['constitutional_exact_label', 'receipt_class_label', 'labels_exact_match', 'label_reconciliation']) {\n  ledgerMutation(`RD-05 promotion ${key} mutation`, (v) => {\n    const row = v.promoted_class_receipts[9];\n    row[key] = typeof row[key] === 'boolean' ? !row[key] : `${row[key]}-mutated`;\n  });\n}\n",
+              'test RD-05 label mutations',
+          )
+          replace_once(test, "v.properties.promoted_class_receipts.minItems = 8;", "v.properties.promoted_class_receipts.minItems = 9;", 'test promoted min mutation')
+          replace_once(test, "v.properties.promoted_class_receipts.maxItems = 10;", "v.properties.promoted_class_receipts.maxItems = 11;", 'test promoted max mutation')
+          replace_once(test, "v.properties.selected_classes_open.minItems = 2;", "v.properties.selected_classes_open.minItems = 1;", 'test open min mutation')
+          replace_once(test, "v.properties.selected_classes_open.maxItems = 4;", "v.properties.selected_classes_open.maxItems = 3;", 'test open max mutation')
+          replace_once(test, '  RD02_MANIFEST_PATH\n];', '  RD02_MANIFEST_PATH,\n  RD05_CLOSURE_PATH,\n  RD05_RECEIPT_PATH,\n  RD05_MANIFEST_PATH\n];', 'test RD-05 source paths')
+          replace_once(
+              test,
+              "sourceMutation('RD-02 manifest mutation', RD02_MANIFEST_PATH, (v) => { v.combined_sha256 = 'e'.repeat(64); });\n",
+              "sourceMutation('RD-02 manifest mutation', RD02_MANIFEST_PATH, (v) => { v.combined_sha256 = 'e'.repeat(64); });\n"
+              "sourceMutation('constitution RD-05 label mutation', CONSTITUTION_PATH, (v) => { v.lane_attempts.find((r) => r.class_id === 'RD-05-C02').exact_label += ' changed'; });\n"
+              "sourceMutation('RD-05 closure state mutation', RD05_CLOSURE_PATH, (v) => { v.class_closed = false; });\n"
+              "sourceMutation('RD-05 closure atlas arithmetic mutation', RD05_CLOSURE_PATH, (v) => { v.residual_atlas_effect_if_promoted.closed_after = 11; });\n"
+              "sourceMutation('RD-05 closure participation finding mutation', RD05_CLOSURE_PATH, (v) => { v.authority.participation_finding = true; });\n"
+              "sourceMutation('RD-05 receipt terminal field mutation', RD05_RECEIPT_PATH, (v) => { v.counts.terminal_fields = 169; });\n"
+              "sourceMutation('RD-05 receipt candidate followup mutation', RD05_RECEIPT_PATH, (v) => { v.counts.selected_candidate_followups = 1; });\n"
+              "sourceMutation('RD-05 receipt unanimity mutation', RD05_RECEIPT_PATH, (v) => { v.unresolved_limit.no_recorded_dissent_is_not_unanimity = false; });\n"
+              "sourceMutation('RD-05 receipt authorship finding mutation', RD05_RECEIPT_PATH, (v) => { v.authority.recommendation_authorship_finding = true; });\n"
+              "sourceMutation('RD-05 manifest mutation', RD05_MANIFEST_PATH, (v) => { v.combined_sha256 = 'd'.repeat(64); });\n",
+              'test RD-05 source mutations',
+          )
+          replace_once(test, '33 open / 9 closed preserved', '32 open / 10 closed preserved', 'test log')
+
+          # Schema: mutate the closed contract structurally.
+          schema = json.loads(path(schema_path).read_text())
+          schema['title'] = 'Status-for-sovereignty residual-denominator Wave 03 current ledger — four promotions'
+          p = schema['properties']
+          p['as_of']['const'] = '2026-08-05'
+          p['authority']['const'] = 'four_wave03_terminal_class_receipts_promoted_without_cross_lane_empirical_authority'
+          snapshots = p['source_snapshots']
+          snapshots['required'].extend([
+              'rd05_closure_reference_path',
+              'rd05_class_receipt_path',
+              'rd05_merge_commit',
+          ])
+          snapshots['properties']['rd05_closure_reference_path'] = {'const': 'data/project/ssc-residual-wave03/closures/RD-05-C02.json'}
+          snapshots['properties']['rd05_class_receipt_path'] = {'const': 'data/research/status-sovereignty-rd-wave03-rd05-member-participation/class-receipt.json'}
+          snapshots['properties']['rd05_merge_commit'] = {'const': 'b6d69b5502e4429e3769591b5ebd88555aad62be'}
+          p['promoted_class_receipts']['minItems'] = 10
+          p['promoted_class_receipts']['maxItems'] = 10
+          p['selected_classes_open']['minItems'] = 2
+          p['selected_classes_open']['maxItems'] = 2
+          counts = p['counts']['properties']
+          counts['wave_03_terminal_class_receipts']['const'] = 4
+          counts['classes_closed_this_wave']['const'] = 4
+          counts['closed_residual_classes']['const'] = 10
+          counts['open_residual_classes']['const'] = 32
+          current = p['current_result']['properties']
+          current['terminal_state']['const'] = 'four_of_six_wave03_selected_classes_terminal_ten_of_forty_two_residual_classes_closed'
+          current['classes_closed']['const'] = 10
+          current['classes_open']['const'] = 32
+          current['closed_class_ids']['const'].append('RD-05-C02')
+          current['wave_03_selected_attempts_terminal']['const'] = 4
+          current['open_selected_class_ids']['const'] = ['RD-04-C02', 'RD-06-C04']
+          boundaries = p['boundaries']
+          index = boundaries['required'].index('nine_closures_are_complete_compact')
+          boundaries['required'][index] = 'ten_closures_are_complete_compact'
+          boundaries['properties']['ten_closures_are_complete_compact'] = boundaries['properties'].pop('nine_closures_are_complete_compact')
+          path(schema_path).write_text(json.dumps(schema, indent=2) + '\n')
+
+          # Permanent workflow: bind the new source receipt and exact denominator.
+          trigger = (
+              "      - 'data/research/status-sovereignty-rd-wave03-rd02-portfolio-lifecycle/manifest.json'\n"
+          )
+          trigger_new = trigger + (
+              "      - 'data/project/ssc-residual-wave03/closures/RD-05-C02.json'\n"
+              "      - 'data/research/status-sovereignty-rd-wave03-rd05-member-participation/class-receipt.json'\n"
+              "      - 'data/research/status-sovereignty-rd-wave03-rd05-member-participation/manifest.json'\n"
+          )
+          replace_count(workflow, trigger, trigger_new, 2, 'workflow RD-05 trigger paths')
+          replace_once(workflow, 'Validate exact nine-closure cumulative ledger', 'Validate exact ten-closure cumulative ledger', 'workflow step name')
+
+          # Human-readable exact custody surface.
+          path(milestone).write_text('''# Residual-denominator Wave 03 current ledger — RD-05 promotion
+
+The cumulative Wave-03 ledger now promotes four terminal class receipts without acquiring empirical authority from one lane for another.
+
+## Exact arithmetic
+
+```text
+canonical residual classes:          42
+closed before Wave 03:                 6
+Wave-03 selected attempts:             6
+Wave-03 terminal receipts promoted:    4
+closed residual classes:              10
+open residual classes:                32
+selected attempts still open:          2
+```
+
+The promoted Wave-03 receipts are:
+
+```text
+RD-01-C06  methodology correction, appeal, and re-evaluation records
+RD-03-C05  commitment, closing, draw, disbursement, amendment, waiver,
+           default, cure, repayment, and recovery chronology
+RD-02-C05  complete portfolio investment, follow-on, exit, write-off,
+           default, return, and repayment ledger
+RD-05-C02  member-specific votes, dissents, subcommittee assignments,
+           agenda control, information access, and recommendation authorship
+```
+
+The exact `RD-05-C02` closure merged through PR #1227 as
+`b6d69b5502e4429e3769591b5ebd88555aad62be`. Its terminal family is
+`bounded_source_unavailable`: all 170 required member-field cells are typed as
+71 observed fields and 99 fields not publicly recovered after the fixed
+161-route protocol. All 1,351 candidate rows are terminally disposed, twenty-five
+exact official-body observations are retained, and zero candidate page followups
+were selected.
+
+Observed identity, subcommittee, chair-authority, source-custody, and terminal
+state fields do not establish attendance, votes, dissents, equal information
+access, recommendation authorship, coordination, or common purpose. Missing
+public records remain source unavailability, not event absence or unanimity.
+
+## Label custody
+
+The Wave-03 constitution, closure reference, and class receipt retain the exact
+same class label. No Wave-03 label reconciliation is added by this promotion.
+Total label reconciliations remain two: one inherited from Wave 02 and one from
+the explicit RD-03 constitutional-label versus receipt-label distinction.
+
+## Open selected classes
+
+```text
+RD-04-C02  complete state implementation, waiver,
+           discretionary-exemption, and screening universe
+RD-06-C04  evaluation scores, debriefings, exception records,
+           and source-selection decision files
+```
+
+## Authority boundary
+
+```text
+outside-human dependencies:       0
+external contacts / reviews:      0 / 0
+reviewed disposition changes:     0
+complete-compact findings:        0
+racial-order findings:            0
+prevalence findings:              0
+coordination findings:            0
+common-purpose findings:          0
+graph / publication / adoption:   none / none / none
+wave complete:                    false
+residual denominator complete:    false
+```
+
+Ten closed classes do not establish a complete compact. This promotion changes
+only cumulative custody and arithmetic.
+''')
+          PY
+
+          chmod 0755 "$PATCHER"
+
+          derive() {
+            python "$PATCHER"
+            node tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs --write
+          }
+
+          focused() {
+            node --check tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs
+            node --check tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+            node --check test/status-sovereignty-residual-denominator-wave-03-current.test.js
+            node tools/build-status-sovereignty-residual-denominator-wave-03-current.mjs --check
+            node tools/validate-status-sovereignty-residual-denominator-wave-03-current.mjs
+            node test/status-sovereignty-residual-denominator-wave-03-current.test.js
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          }
+
+          STAGE=derive
+          derive
+          find . -type f -not -path './.git/*' -printf '%P\n' | sort > "$RECEIPT/worktree-paths.txt"
+          git diff --name-only | sort > "$RECEIPT/name-only.txt"
+          cmp "$EXPECTED" "$RECEIPT/name-only.txt"
+          git diff --check
+
+          STAGE=focused-gates
+          focused
+
+          STAGE=full-release-gate
+          npm run release:check
+
+          STAGE=clean-replay
+          sha256sum $(cat "$EXPECTED") > "$RECEIPT/first-sha256.txt"
+          git restore --staged --worktree .
+          git clean -fdx
+          derive
+          sha256sum $(cat "$EXPECTED") > "$RECEIPT/replay-sha256.txt"
+          cmp "$RECEIPT/first-sha256.txt" "$RECEIPT/replay-sha256.txt"
+          git diff --name-only | sort > "$RECEIPT/replay-name-only.txt"
+          cmp "$EXPECTED" "$RECEIPT/replay-name-only.txt"
+          git diff --check
+          focused
+
+          STAGE=commit
+          xargs -d '\n' git add -- < "$EXPECTED"
+          git diff --cached --name-status > "$RECEIPT/committed-name-status.txt"
+          test "$(wc -l < "$RECEIPT/committed-name-status.txt" | tr -d ' ')" = 7
+          test "$(awk '$1 != "M" {n++} END {print n+0}' "$RECEIPT/committed-name-status.txt")" = 0
+          git commit -m 'Promote RD-05-C02 into the Wave-03 cumulative ledger'
+          PRODUCT_HEAD=$(git rev-parse HEAD)
+          PRODUCT_TREE=$(git rev-parse 'HEAD^{tree}')
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"
+          printf 'product_head=%s\nproduct_tree=%s\nparent=%s\npermanent_paths=7\nopen_classes=32\nclosed_classes=10\n' \
+            "$PRODUCT_HEAD" "$PRODUCT_TREE" "$CANONICAL_PARENT" > "$RECEIPT/product.txt"
+
+          STAGE=publish
+          git fetch --no-tags origin main "$PRODUCT_BRANCH"
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PRODUCT_LEASE"
+          set +e
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH" \
+            --force-with-lease="refs/heads/$PRODUCT_BRANCH:$PRODUCT_LEASE" \
+            2>&1 | tee "$RECEIPT/push.log"
+          push_rc=${PIPESTATUS[0]}
+          set -e
+          if [[ $push_rc -eq 0 ]]; then
+            test "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$PRODUCT_HEAD"
+            printf 'status=published\nproduct_head=%s\nproduct_tree=%s\n' "$PRODUCT_HEAD" "$PRODUCT_TREE" > "$RECEIPT/final.txt"
+            STAGE=complete
+            exit 0
+          fi
+          printf 'status=commit_created_push_refused\nproduct_head=%s\nproduct_tree=%s\npush_exit=%s\n' \
+            "$PRODUCT_HEAD" "$PRODUCT_TREE" "$push_rc" > "$RECEIPT/final.txt"
+          exit "$push_rc"
+
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-wave03-current-ledger-ten-closures-materializer-v1
+          path: ${{ runner.temp }}/ssc-wave03-ten-closures/receipt
+          if-no-files-found: error
+          retention-days: 90
