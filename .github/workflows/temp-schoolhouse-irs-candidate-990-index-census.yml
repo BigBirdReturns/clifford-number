@@ -1,0 +1,192 @@
+name: TEMP census School.House IRS-candidate Form 990 annual indexes
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-irs-candidate-990-index-census.yml'
+      - '.schoolhouse-irs-candidate-990-index-census/EXECUTE'
+      - '.schoolhouse-irs-candidate-990-index-census/capture.py.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: schoolhouse-irs-candidate-990-index-census-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-irs-candidate-990-index-census-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate exact carrier and runner custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PARENT='9d9f9522fbc2909611033370044e9748a29b3cf7'
+          ROOT='.schoolhouse-irs-candidate-990-index-census'
+          EXECUTE="$ROOT/EXECUTE"
+          BUNDLE="$ROOT/capture.py.gz.b64"
+          WORKFLOW='.github/workflows/temp-schoolhouse-irs-candidate-990-index-census.yml'
+          GZIP='/tmp/schoolhouse-irs-candidate-990-index-census.py.gz'
+          RUNNER='/tmp/schoolhouse-irs-candidate-990-index-census.py'
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$PARENT"
+          test "$(git merge-base HEAD origin/main)" = "$PARENT"
+
+          mapfile -t CHANGED < <(git diff --name-only "$PARENT"..HEAD | sort)
+          EXPECTED=(
+            '.github/workflows/temp-schoolhouse-irs-candidate-990-index-census.yml'
+            '.schoolhouse-irs-candidate-990-index-census/EXECUTE'
+            '.schoolhouse-irs-candidate-990-index-census/capture.py.gz.b64'
+          )
+          test "${#CHANGED[@]}" -eq 3
+          for i in 0 1 2; do test "${CHANGED[$i]}" = "${EXPECTED[$i]}"; done
+
+          test "$(git rev-parse "$PARENT:data/intake/bvvc-defense-capital/schoolhouse-irs-identity-adjudication.json")" = '937f8124aac75d8a04767ad910f82ef22ad03f79'
+          test "$(git rev-parse "$PARENT:data/intake/bvvc-defense-capital/schoolhouse-irs-candidates-eo-bmf.jsonl")" = '9601a38868a47c8188b960dfd2841725da1e332c'
+          test "$(git rev-parse "$PARENT:data/intake/bvvc-defense-capital/schoolhouse-irs-candidates-publication-78.jsonl")" = 'c27ea6549351bda5b47b43358d97b0a501d5b769'
+          test "$(git rev-parse "$PARENT:data/intake/bvvc-defense-capital/schoolhouse-irs-candidates-form-990n.jsonl")" = 'ad608c5bb5e9b466909707f09663366e68b8f208'
+          test "$(git rev-parse "$PARENT:data/intake/bvvc-defense-capital/schoolhouse-irs-candidates-auto-revocation.jsonl")" = '0edf90bd039284cc081d4ee6b62b53af885ff54f'
+
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '68f9128c3944b4e9aab4657b538054a3539ffaf95403b4164faba969e1553e5c'
+          base64 -d "$BUNDLE" > "$GZIP"
+          test "$(sha256sum "$GZIP" | awk '{print $1}')" = 'a70ca6e9f377891229f6636cf33d884924d16ccd641ed6ecd2e5965277a96f50'
+          gzip -dc "$GZIP" > "$RUNNER"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = 'bb62d91fa573423423cda7ddd5ff5065a2dcb27044bcd7e6b953bb317d81687f'
+          python -m py_compile "$RUNNER"
+
+          grep -Fx 'acquire=schoolhouse-irs-candidate-990-index-census-v1' "$EXECUTE"
+          grep -Fx "canonical_parent=$PARENT" "$EXECUTE"
+          grep -Fx 'candidate_rows=641' "$EXECUTE"
+          grep -Fx 'unique_candidate_eins=438' "$EXECUTE"
+          grep -Fx 'declared_processing_years=2024,2025,2026' "$EXECUTE"
+          grep -Fx 'official_index_routes=3' "$EXECUTE"
+          grep -Fx 'maximum_total_requests=3' "$EXECUTE"
+          grep -Fx 'query_submissions=0' "$EXECUTE"
+          grep -Fx 'form_submissions=0' "$EXECUTE"
+          grep -Fx 'raw_index_retained=false' "$EXECUTE"
+          grep -Fx 'identity_admitted=false' "$EXECUTE"
+          grep -Fx 'relationship_admitted=false' "$EXECUTE"
+          grep -Fx 'negative_existence_claim_created=false' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+          grep -Fx 'graph_effect=none' "$EXECUTE"
+          grep -Fx 'runner_source_sha256=bb62d91fa573423423cda7ddd5ff5065a2dcb27044bcd7e6b953bb317d81687f' "$EXECUTE"
+          grep -Fx 'runner_gzip_sha256=a70ca6e9f377891229f6636cf33d884924d16ccd641ed6ecd2e5965277a96f50' "$EXECUTE"
+          grep -Fx 'runner_bundle_sha256=68f9128c3944b4e9aab4657b538054a3539ffaf95403b4164faba969e1553e5c' "$EXECUTE"
+          git diff --exit-code -- "$WORKFLOW" "$EXECUTE" "$BUNDLE"
+
+      - name: Execute exact three-index candidate census
+        id: acquisition
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          OUT='/tmp/schoolhouse-irs-candidate-990-index-census'
+          rm -rf "$OUT"
+          python /tmp/schoolhouse-irs-candidate-990-index-census.py \
+            --repo-root "$GITHUB_WORKSPACE" --output "$OUT" \
+            2>&1 | tee /tmp/schoolhouse-irs-candidate-990-index-census.log
+          status=${PIPESTATUS[0]}
+          mkdir -p "$OUT"
+          printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
+          cp /tmp/schoolhouse-irs-candidate-990-index-census.log "$OUT/RUNNER-OUTPUT.log"
+          exit "$status"
+
+      - name: Upload terminal privacy-minimized artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-candidate-990-index-census
+          path: /tmp/schoolhouse-irs-candidate-990-index-census
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal denominator and authority boundary
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT='/tmp/schoolhouse-irs-candidate-990-index-census'
+          test "$(cat "$ROOT/RUNNER_EXIT_CODE")" = '0'
+          (cd "$ROOT" && sha256sum -c SHA256SUMS)
+
+          python - "$ROOT" <<'PY'
+          from pathlib import Path
+          import json, sys
+          root = Path(sys.argv[1])
+          load = lambda name: json.loads((root / name).read_text())
+          rows = lambda name: [json.loads(x) for x in (root / name).read_text().splitlines() if x.strip()]
+          s = load('summary.json')
+          p = load('route-policy.json')
+          a = load('adjudication.json')
+          m = load('artifact-manifest.json')
+          routes = rows('index-route-receipts.jsonl')
+          locators = rows('filing-locators.jsonl')
+          targets = rows('target-ein-results.jsonl')
+
+          assert s['candidate_rows'] == sum(x['candidate_row_count'] for x in targets) == 641
+          assert s['unique_candidate_eins'] == len(targets) == len({x['ein'] for x in targets}) == 438
+          assert s['official_index_requests'] == s['terminal_index_routes'] == len(routes) == 3
+          assert s['accessible_index_routes'] + s['provider_or_parse_error_routes'] == 3
+          assert s['filing_locator_rows'] == len(locators)
+          assert s['target_eins_with_locator_rows'] + s['target_eins_without_locator_rows'] == 438
+          assert s['query_submissions'] == s['form_submissions'] == 0
+          assert s['raw_index_rows_retained'] == s['raw_index_bytes_retained'] == 0
+          assert s['identities_admitted'] == s['relationships_admitted'] == 0
+          assert s['negative_existence_claims_created'] == 0
+          assert s['street_address_rows_retained'] == s['mailing_address_rows_retained'] == 0
+          assert s['postal_code_rows_retained'] == s['contact_detail_rows_retained'] == 0
+          assert s['preparer_rows_retained'] == s['private_support_rows'] == 0
+          assert s['outside_human_dependency'] is False
+          assert s['publication_effect'] == s['adoption_effect'] == s['graph_effect'] == 'none'
+
+          target_eins = {x['ein'] for x in targets}
+          assert [x['processing_year'] for x in routes] == [2024, 2025, 2026]
+          assert all(x['request_method'] == 'GET' and x['raw_index_retained'] is False for x in routes)
+          assert all(x['ein'] in target_eins and x['identity_admitted'] is False for x in locators)
+          assert all(x['public_schoolhouse_identity_admitted'] is False for x in targets)
+          assert all(x['outside_human_dependency'] is False for x in [*routes, *locators, *targets])
+          assert all(x['publication_effect'] == x['adoption_effect'] == x['graph_effect'] == 'none' for x in [*routes, *locators, *targets])
+
+          assert p['selection_contract']['candidate_rows'] == 641
+          assert p['selection_contract']['unique_candidate_eins'] == 438
+          assert p['request_bounds']['maximum_total_requests'] == 3
+          assert p['interpretation']['zero_locator_rows_are_not_absence_evidence'] is True
+          assert p['interpretation']['no_identity_or_relationship_may_be_admitted_by_this_acquisition'] is True
+          assert a['public_schoolhouse_identity_admitted'] is False
+          assert a['negative_existence_claim_created'] is False
+          assert m['counts']['candidate_rows'] == 641
+          assert m['counts']['unique_candidate_eins'] == 438
+          assert m['counts']['route_receipts'] == 3
+          assert m['counts']['filing_locator_rows'] == len(locators)
+          assert m['counts']['target_ein_rows'] == 438
+          assert not any(x.is_file() and x.suffix.lower() in {'.csv', '.xml', '.zip'} for x in root.rglob('*'))
+
+          print(json.dumps({
+              'source_rows_scanned': s['official_index_rows_scanned'],
+              'filing_locator_rows': len(locators),
+              'target_eins_with_locators': s['target_eins_with_locator_rows'],
+              'target_eins_without_locators': s['target_eins_without_locator_rows'],
+              'provider_or_parse_error_routes': s['provider_or_parse_error_routes'],
+          }, sort_keys=True))
+          PY
