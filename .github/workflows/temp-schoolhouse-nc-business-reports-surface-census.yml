@@ -1,0 +1,237 @@
+name: TEMP census School.House North Carolina business reports surface
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-nc-business-reports-surface-census.yml'
+      - '.schoolhouse-nc-business-reports-surface-census/EXECUTE'
+      - '.schoolhouse-nc-business-reports-surface-census/capture.py.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: schoolhouse-nc-business-reports-surface-census-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-nc-business-reports-surface-census-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out exact acquisition head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate parent, path denominator, and runner custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          PARENT='cf62a80b8628525b1eefc0ffcfae14696cbec700'
+          EXECUTE='.schoolhouse-nc-business-reports-surface-census/EXECUTE'
+          BUNDLE='.schoolhouse-nc-business-reports-surface-census/capture.py.gz.b64'
+          WORKFLOW='.github/workflows/temp-schoolhouse-nc-business-reports-surface-census.yml'
+          GZIP='/tmp/schoolhouse-nc-business-reports-surface-census.py.gz'
+          RUNNER='/tmp/schoolhouse-nc-business-reports-surface-census.py'
+          EXPECTED_BUNDLE_SHA='d1ce94868815508cc6d90b75d00bbf5a0bdca50dfcc62ac01f1577e10bf1311f'
+          EXPECTED_GZIP_SHA='cc0e84d6938adcd0d1d419cfd47ac4529c1c394656d7f429dbc6d1732a57f3ff'
+          EXPECTED_RUNNER_SHA='1e7b8971534d3e48c9c14d27625842018f1d6693789364f7e4c514d14cd07cc2'
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$PARENT"
+          test "$(git merge-base HEAD origin/main)" = "$PARENT"
+
+          mapfile -t CHANGED < <(git diff --name-only "$PARENT"..HEAD | sort)
+          EXPECTED=(
+            '.github/workflows/temp-schoolhouse-nc-business-reports-surface-census.yml'
+            '.schoolhouse-nc-business-reports-surface-census/EXECUTE'
+            '.schoolhouse-nc-business-reports-surface-census/capture.py.gz.b64'
+          )
+          test "${#CHANGED[@]}" -eq "${#EXPECTED[@]}"
+          for i in "${!EXPECTED[@]}"; do
+            test "${CHANGED[$i]}" = "${EXPECTED[$i]}"
+          done
+
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = "$EXPECTED_BUNDLE_SHA"
+          base64 -d "$BUNDLE" > "$GZIP"
+          test "$(sha256sum "$GZIP" | awk '{print $1}')" = "$EXPECTED_GZIP_SHA"
+          gzip -dc "$GZIP" > "$RUNNER"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = "$EXPECTED_RUNNER_SHA"
+          python -m py_compile "$RUNNER"
+
+          grep -Fx 'acquire=schoolhouse-nc-business-reports-surface-census-v1' "$EXECUTE"
+          grep -Fx "canonical_parent=$PARENT" "$EXECUTE"
+          grep -Fx "runner_source_sha256=$EXPECTED_RUNNER_SHA" "$EXECUTE"
+          grep -Fx "runner_gzip_sha256=$EXPECTED_GZIP_SHA" "$EXECUTE"
+          grep -Fx "runner_bundle_sha256=$EXPECTED_BUNDLE_SHA" "$EXECUTE"
+          grep -Fx 'fixed_root_rows=2' "$EXECUTE"
+          grep -Fx 'maximum_total_requests=24' "$EXECUTE"
+          grep -Fx 'maximum_descendant_fetches=12' "$EXECUTE"
+          grep -Fx 'maximum_parallel_workers=1' "$EXECUTE"
+          grep -Fx 'maximum_response_bytes=25165824' "$EXECUTE"
+          grep -Fx 'maximum_aggregate_bytes=100663296' "$EXECUTE"
+          grep -Fx 'query_submissions=0' "$EXECUTE"
+          grep -Fx 'forms_submitted=0' "$EXECUTE"
+          grep -Fx 'cookie_replays=0' "$EXECUTE"
+          grep -Fx 'subscription_purchases=0' "$EXECUTE"
+          grep -Fx 'identity_admitted=false' "$EXECUTE"
+          grep -Fx 'relationship_admitted=false' "$EXECUTE"
+          grep -Fx 'negative_existence_claim_created=false' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+          grep -Fx 'publication_effect=none' "$EXECUTE"
+          grep -Fx 'adoption_effect=none' "$EXECUTE"
+          grep -Fx 'graph_effect=none' "$EXECUTE"
+          git diff --exit-code -- "$WORKFLOW" "$EXECUTE" "$BUNDLE"
+
+      - name: Execute bounded query-free official surface census
+        id: acquisition
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          OUT='/tmp/schoolhouse-nc-business-reports-surface-census'
+          rm -rf "$OUT"
+          python /tmp/schoolhouse-nc-business-reports-surface-census.py --output "$OUT" \
+            2>&1 | tee /tmp/schoolhouse-nc-business-reports-surface-census.log
+          status=${PIPESTATUS[0]}
+          mkdir -p "$OUT"
+          printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
+          cp /tmp/schoolhouse-nc-business-reports-surface-census.log "$OUT/RUNNER-OUTPUT.log"
+          exit "$status"
+
+      - name: Upload exact terminal artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-nc-business-reports-surface-census
+          path: /tmp/schoolhouse-nc-business-reports-surface-census
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal bounded custody
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT='/tmp/schoolhouse-nc-business-reports-surface-census'
+          test -f "$ROOT/RUNNER_EXIT_CODE"
+          test "$(cat "$ROOT/RUNNER_EXIT_CODE")" = '0'
+          for file in \
+            route-attempts.jsonl \
+            report-candidates.jsonl \
+            route-policy.json \
+            summary.json \
+            artifact-manifest.json \
+            SHA256SUMS; do
+            test -f "$ROOT/$file"
+          done
+          (cd "$ROOT" && sha256sum -c SHA256SUMS)
+
+          python - "$ROOT" <<'PY'
+          from pathlib import Path
+          import json
+          import sys
+
+          root = Path(sys.argv[1])
+          load = lambda name: json.loads((root / name).read_text())
+          rows = lambda name: [json.loads(line) for line in (root / name).read_text().splitlines() if line.strip()]
+          summary = load('summary.json')
+          policy = load('route-policy.json')
+          attempts = rows('route-attempts.jsonl')
+          candidates = rows('report-candidates.jsonl')
+
+          assert summary['schema_version'] == 'schoolhouse-nc-business-reports-surface-census@1'
+          assert summary['state'] == 'terminal_bounded_query_free_surface_census'
+          assert summary['fixed_root_rows'] == 2
+          assert summary['request_attempt_rows'] == len(attempts)
+          assert summary['request_attempt_rows'] >= 2
+          assert summary['request_attempt_rows'] <= 14
+          assert summary['selected_descendant_routes'] <= 12
+          assert summary['observed_unique_candidate_routes'] == len(candidates)
+          assert summary['aggregate_response_bytes'] <= 100663296
+          assert summary['query_submissions'] == 0
+          assert summary['forms_submitted'] == 0
+          assert summary['cookie_replays'] == 0
+          assert summary['subscription_purchases'] == 0
+          assert summary['raw_source_retained'] is False
+          assert summary['full_visible_text_retained'] is False
+          assert summary['street_address_rows_retained'] == 0
+          assert summary['contact_detail_rows_retained'] == 0
+          assert summary['officer_rows_retained'] == 0
+          assert summary['private_support_rows'] == 0
+          assert summary['identities_admitted'] == 0
+          assert summary['relationships_admitted'] == 0
+          assert summary['negative_existence_claims_created'] == 0
+          assert summary['outside_human_dependency'] is False
+          assert summary['publication_effect'] == summary['adoption_effect'] == summary['graph_effect'] == 'none'
+          assert summary['promotes_to'] == 'candidate_only'
+
+          assert policy['selection_contract']['only_query_free_https_routes'] is True
+          assert policy['selection_contract']['only_first_level_report_or_static_file_candidates'] is True
+          assert policy['selection_contract']['no_result_spawned_third_level_fetches'] is True
+          assert policy['request_bounds']['maximum_total_requests'] == 24
+          assert policy['request_bounds']['maximum_descendant_fetches'] == 12
+          assert policy['request_bounds']['maximum_parallel_workers'] == 1
+          assert policy['request_bounds']['interactive_search_submissions'] == 0
+          assert policy['request_bounds']['forms_submitted'] == 0
+          assert policy['request_bounds']['cookie_replays'] == 0
+          assert policy['request_bounds']['subscription_purchases'] == 0
+          assert policy['retention']['raw_source_retained'] is False
+          assert policy['retention']['full_visible_text_retained'] is False
+          assert policy['interpretation']['zero_links_are_not_absence_evidence'] is True
+          assert policy['interpretation']['provider_errors_are_not_absence_evidence'] is True
+          assert policy['interpretation']['no_identity_or_relationship_may_be_admitted_by_this_acquisition'] is True
+          assert policy['outside_human_dependency'] is False
+          assert policy['publication_effect'] == policy['adoption_effect'] == policy['graph_effect'] == 'none'
+
+          for row in attempts:
+              assert row['request_method'] == 'GET'
+              assert row['raw_source_retained'] is False
+              assert row['full_visible_text_retained'] is False
+              assert row['street_address_rows_retained'] == 0
+              assert row['contact_detail_rows_retained'] == 0
+              assert row['officer_rows_retained'] == 0
+              assert row['private_support_rows'] == 0
+              assert row['identity_admitted'] is False
+              assert row['relationship_admitted'] is False
+              assert row['negative_existence_claim_created'] is False
+              assert row['outside_human_dependency'] is False
+              assert row['publication_effect'] == row['adoption_effect'] == row['graph_effect'] == 'none'
+              assert row['promotes_to'] == 'candidate_only'
+
+          for row in candidates:
+              assert '?' not in row['candidate_url']
+              assert row['candidate_url'].startswith(('https://www.sosnc.gov/', 'https://sosnc.gov/'))
+              assert row['route_class'] in {'static_data_file', 'static_document', 'report_or_listing_page'}
+              assert row['raw_source_retained'] is False
+              assert row['full_visible_text_retained'] is False
+              assert row['street_address_rows_retained'] == 0
+              assert row['contact_detail_rows_retained'] == 0
+              assert row['officer_rows_retained'] == 0
+              assert row['private_support_rows'] == 0
+              assert row['identity_admitted'] is False
+              assert row['relationship_admitted'] is False
+              assert row['negative_existence_claim_created'] is False
+              assert row['outside_human_dependency'] is False
+              assert row['publication_effect'] == row['adoption_effect'] == row['graph_effect'] == 'none'
+              assert row['promotes_to'] == 'candidate_only'
+
+          print(json.dumps(summary, indent=2, sort_keys=True))
+          PY
