@@ -50,6 +50,7 @@ jobs:
           git diff --name-status 773bdf96026e9fe6d5e11f4d9dffa1629e2c0ea3 187ffb0e45c8b3fbcf03929c3b898e917b62fc27 > "$RECEIPT/product-name-status.txt"
           python - <<'PY'
           from pathlib import Path
+
           expected = {
               '.github/workflows/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.yml',
               'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication/authored-adjudication-decisions.json',
@@ -85,8 +86,8 @@ jobs:
           BUILDER=tools/build-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.mjs
           VALIDATOR=tools/validate-status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.mjs
           TEST=test/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.test.js
-          SCHEMA=schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.schema.json
           DATA=data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication
+          SCHEMA=schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.schema.json
 
           node --check "$BUILDER"
           node --check "$VALIDATOR"
@@ -97,25 +98,40 @@ jobs:
           import json
           from pathlib import Path
           import jsonschema
-          data=Path('data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication')
-          schema=json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.schema.json').read_text())
-          paths=sorted(data.glob('*.json'))
-          if len(paths)!=11:
+
+          data = Path('data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication')
+          schema = json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-capture-adjudication.schema.json').read_text())
+          paths = sorted(data.glob('*.json'))
+          if len(paths) != 11:
               raise SystemExit(f'JSON object denominator drift: {len(paths)}')
-          validator=jsonschema.Draft202012Validator(schema)
+          validator = jsonschema.Draft202012Validator(schema)
           for path in paths:
               validator.validate(json.loads(path.read_text()))
-          summary=json.loads((data/'summary.json').read_text())
-          assert summary['counts']['fixed_routes'] == 30
-          assert summary['counts']['source_admissions'] == 22
-          assert summary['counts']['target_cells'] == 21
-          assert summary['counts']['observed_field_decisions'] == 14
-          assert summary['counts']['not_publicly_recovered_field_decisions'] == 7
-          assert summary['composition']['terminal_cells_before'] == 190
+
+          summary = json.loads((data / 'summary.json').read_text())
+          assert summary['fixed_routes'] == 30
+          assert summary['terminal_route_adjudications'] == 30
+          assert summary['source_admissions'] == 22
+          assert summary['target_cells'] == 21
+          assert summary['observed_field_decisions'] == 14
+          assert summary['not_publicly_recovered_field_decisions'] == 7
+          assert summary['composition']['predecessor_terminal_cells'] == 190
+          assert summary['composition']['newly_terminalized_cells'] == 21
           assert summary['composition']['terminal_cells_after'] == 211
+          assert summary['composition']['still_open_cells_after'] == 239
+          assert summary['composition']['terminal_substantive_cells_after'] == 108
           assert summary['composition']['still_open_substantive_cells_after'] == 192
+          assert summary['composition']['target_rows_ready_for_separate_row_state_adjudication'] == 7
+          assert summary['composition']['row_state_cells_terminalized'] == 0
+          assert summary['composition']['terminal_units_after'] == 3
+          assert summary['class_state'] == 'still_open'
           assert summary['class_closed'] is False
+          assert summary['cumulative_ledger_effect'] == 'none'
           assert summary['outside_human_dependency'] is False
+          assert summary['publication_effect'] == 'none'
+          assert summary['adoption_effect'] == 'none'
+          assert summary['graph_effect'] == 'none'
+          print('closed_schema_validation=pass objects=11')
           print('canonical_adjudication=routes_30_sources_22_cells_21_terminal_211')
           PY
           node "$TEST" | tee "$RECEIPT/adversarial.txt"
@@ -137,6 +153,7 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
+
           receipt = {
               'schema_version': 'ssc-rd04-mf7-capture-adjudication-postmerge-proof@1',
               'canonical_main': 'a49b18304a69e9637cd854d38e80b67d4165cc6c',
@@ -168,8 +185,8 @@ jobs:
               'clean_replay': 'pass',
               'status': 'complete',
           }
-          Path('/tmp/ssc-rd04-mf7-capture-adjudication-postmerge-proof/proof.json').write_text(json.dumps(receipt,indent=2)+'\n')
-          print(json.dumps(receipt,indent=2))
+          Path('/tmp/ssc-rd04-mf7-capture-adjudication-postmerge-proof/proof.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
           PY
       - name: Preserve canonical post-merge proof
         if: always()
