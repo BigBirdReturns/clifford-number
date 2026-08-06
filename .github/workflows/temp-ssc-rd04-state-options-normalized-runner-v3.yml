@@ -1,0 +1,175 @@
+name: TEMP run normalized RD-04 State Options materializer
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-rd04-state-options-normalized-runner-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: temp-ssc-rd04-state-options-normalized-v3-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: false
+
+env:
+  CANONICAL_BASE: 327648726320507532751f219a52d03f9c17fac5
+  PRODUCT_BRANCH: agent/ssc-rd04-state-options-exemption-promotion-v1
+  PRODUCT_LEASE: cf62a80b8628525b1eefc0ffcfae14696cbec700
+  SEALED_COMMIT: dcf5dbed25a2b0b4e617d23d3584df2ce1d1666b
+  SEALED_WORKFLOW_BLOB: 252c05a486329be56c034812f9009f478b15623a
+  CARRIER_ROOT: .transport/ssc-rd04-state-options-exemption-v1/shards
+  BASE64_BYTES: '35180'
+  BASE64_SHA256: 4059f1dcd17b225da24562e2cdeb5f93f7e44fe6aad964647574a44005ef0ace
+  ARCHIVE_BYTES: '26384'
+  ARCHIVE_SHA256: 97886246a6d8742b2da4a25797324b107368d0a3ececa2a215a0ca0862d74595
+  PATHS_SHA256: 8717e0baadd372702e28bf63d165e4737625c3a92f46945e6ba2ebd929450192
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.base.ref == 'main' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd04-state-options-exemption-materializer-v2')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+      - name: Extract, normalize, and execute the exact materializer
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE='.github/workflows/temp-ssc-rd04-state-options-exemption-materializer-v2.yml'
+          PROGRAM="$RUNNER_TEMP/ssc-rd04-state-options-materializer.sh"
+          PATCHED="$RUNNER_TEMP/ssc-rd04-state-options-normalized-materializer.sh"
+          RECEIPT="$RUNNER_TEMP/ssc-rd04-state-options-current-main-v1/receipt"
+          mkdir -p "$RECEIPT"
+          test "$(git hash-object "$SOURCE")" = '34fedbd46e3961a4d29479238035c9a8f8657e75'
+
+          python - "$SOURCE" "$PROGRAM" "$PATCHED" <<'PY'
+          from pathlib import Path
+          import sys
+
+          source = Path(sys.argv[1]).read_text().splitlines()
+          program = Path(sys.argv[2])
+          patched = Path(sys.argv[3])
+          marker = '      - name: Reconstruct, qualify, and publish exact permanent product'
+          next_marker = '      - name: Preserve exact materialization receipt'
+          try:
+              start = source.index(marker)
+              end = source.index(next_marker, start + 1)
+          except ValueError as error:
+              raise SystemExit(f'materializer step boundary missing: {error}')
+          run_index = None
+          for index in range(start + 1, end):
+              if source[index] == '        run: |':
+                  run_index = index
+                  break
+          if run_index is None:
+              raise SystemExit('materializer run block missing')
+          raw_body = source[run_index + 1:end]
+          body = [line[10:] if line.startswith('          ') else line for line in raw_body]
+          text = '\n'.join(body) + '\n'
+          if not text.startswith('set -Eeuo pipefail\n'):
+              raise SystemExit('materializer body boundary changed')
+          program.write_text(text)
+
+          normalizer = r'''
+          normalize_product() {
+            python - <<'PY_NORMALIZE'
+          from pathlib import Path
+          import hashlib
+          import json
+
+          page = Path('data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/source-page-11.txt')
+          custody = Path('data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/source-custody.json')
+          builder = Path('tools/build-status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.mjs')
+
+          original = page.read_bytes()
+          if len(original) != 1887 or hashlib.sha256(original).hexdigest() != '273781b0cb150e8415b06be257fce77485847ecdaec1724a87cf5aba9245a2b2':
+              raise SystemExit('retained source-page input changed before normalization')
+          decoded = original.decode('utf-8')
+          normalized = '\n'.join(line.rstrip(' \t') for line in decoded.splitlines()) + '\n'
+          normalized_bytes = normalized.encode('utf-8')
+          if len(normalized_bytes) != 1804 or hashlib.sha256(normalized_bytes).hexdigest() != '6fd56a3be1216edb632d5488a622944ce2cf5ff4f57d3b198bd3f85888fd0d56':
+              raise SystemExit('source-page normalization identity changed')
+          page.write_bytes(normalized_bytes)
+
+          value = json.loads(custody.read_text())
+          extraction = value.get('extraction', {})
+          if extraction.get('page_text_bytes') != 1887 or extraction.get('page_text_sha256') != '273781b0cb150e8415b06be257fce77485847ecdaec1724a87cf5aba9245a2b2':
+              raise SystemExit('source-custody page identity changed before normalization')
+          extraction['page_text_bytes'] = 1804
+          extraction['page_text_sha256'] = '6fd56a3be1216edb632d5488a622944ce2cf5ff4f57d3b198bd3f85888fd0d56'
+          custody.write_text(json.dumps(value, indent=2) + '\n')
+          custody_bytes = custody.read_bytes()
+          if len(custody_bytes) != 3677 or hashlib.sha256(custody_bytes).hexdigest() != '209469f5ae47ed47e4d25a243376718386fe52c10cbb51895a4d61d9a4fd29ec':
+              raise SystemExit('normalized source-custody identity changed')
+
+          text = builder.read_text()
+          replacements = [
+              (
+                  "export const SOURCE_CUSTODY_SHA256 = '76b931c4a5b08b65f1b7621c68d1d5b0031acc835b4fdec836842b81b8736833';",
+                  "export const SOURCE_CUSTODY_SHA256 = '209469f5ae47ed47e4d25a243376718386fe52c10cbb51895a4d61d9a4fd29ec';",
+              ),
+              (
+                  "export const SOURCE_PAGE_SHA256 = '273781b0cb150e8415b06be257fce77485847ecdaec1724a87cf5aba9245a2b2';",
+                  "export const SOURCE_PAGE_SHA256 = '6fd56a3be1216edb632d5488a622944ce2cf5ff4f57d3b198bd3f85888fd0d56';",
+              ),
+          ]
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'builder normalization seam changed: {old!r} count={count}')
+              text = text.replace(old, new)
+          builder.write_text(text)
+          if hashlib.sha256(builder.read_bytes()).hexdigest() != '1146170ef9a2e7b199f3992f13a6c51c6c497469a7256d1e338eab6e54cb2064':
+              raise SystemExit('normalized builder identity changed')
+          print('normalized only retained line-end whitespace and rebound exact custody')
+          PY_NORMALIZE
+            node tools/build-status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.mjs --write
+            test "$(sha256sum data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/product-manifest.json | awk '{print $1}')" = '5401f6f319cf3ea8cb093566c3edb289e25941ac3931b8d107f9b0b810c23ef6'
+            test "$(jq -r '.combined_sha256' data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/product-manifest.json)" = '3bbaf16dc13bf1da731d4cc2ff3a96f2ae7c3bfb67742b3177014e0aa0057ef3'
+          }
+
+          '''
+          seam = 'focused() {\n'
+          if text.count(seam) != 1:
+              raise SystemExit(f'focused-function seam changed: {text.count(seam)}')
+          text = text.replace(seam, normalizer + seam)
+          copy_seam = 'cp -a "$PACKAGE"/. .\n'
+          if text.count(copy_seam) != 2:
+              raise SystemExit(f'package-copy seam changed: {text.count(copy_seam)}')
+          text = text.replace(copy_seam, copy_seam + 'normalize_product\n')
+          patched.write_text(text)
+          print('patched exactly one normalizer and two deterministic package-copy calls')
+          PY
+
+          bash -n "$PROGRAM"
+          bash -n "$PATCHED"
+          bash "$PATCHED"
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-state-options-normalized-materializer-v3
+          path: ${{ runner.temp }}/ssc-rd04-state-options-current-main-v1/receipt
+          if-no-files-found: error
+          retention-days: 90
