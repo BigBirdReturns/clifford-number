@@ -8,7 +8,7 @@ on:
       - '.github/workflows/temp-schoolhouse-nc-business-reports-data-census-certify.yml'
 
 concurrency:
-  group: schoolhouse-nc-business-reports-data-census-certify-${{ github.event.pull_request.number }}
+  group: schoolhouse-nc-report-drift-certify-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 permissions:
@@ -24,266 +24,173 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Verify exact certification carrier and sealed artifact
+      - name: Verify sealed artifact and issue zero-request certification
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
           set -Eeuo pipefail
           PARENT='327648726320507532751f219a52d03f9c17fac5'
           EXECUTE='.schoolhouse-nc-business-reports-data-census-certify/EXECUTE'
-          ARTIFACT='/tmp/schoolhouse-nc-business-reports-data-census'
-          RECEIPT='/tmp/schoolhouse-nc-business-reports-data-census-certification'
+          ARTIFACT='/tmp/nc-report-drift-artifact'
+          RECEIPT='/tmp/nc-report-drift-certification'
+          LIVE_DIGEST='sha256:e7feb5a1a406a718a83aafaabd71fbb62c32dbfd0c43e0e66e3429eb9f20b10a'
 
           git cat-file -e "$PARENT^{commit}"
           git merge-base --is-ancestor "$PARENT" HEAD
-          git diff --name-only --no-renames "$PARENT..HEAD" | sort -u > /tmp/changed-paths
-          cat > /tmp/expected-paths <<'PATHS'
-          .github/workflows/temp-schoolhouse-nc-business-reports-data-census-certify.yml
-          .schoolhouse-nc-business-reports-data-census-certify/EXECUTE
-          PATHS
-          sed -i 's/^          //' /tmp/expected-paths
-          sort -u -o /tmp/expected-paths /tmp/expected-paths
-          diff -u /tmp/expected-paths /tmp/changed-paths
+          git diff --name-only --no-renames "$PARENT..HEAD" | sort -u > /tmp/changed
+          printf '%s\n' \
+            '.github/workflows/temp-schoolhouse-nc-business-reports-data-census-certify.yml' \
+            '.schoolhouse-nc-business-reports-data-census-certify/EXECUTE' \
+            | sort -u > /tmp/expected
+          diff -u /tmp/expected /tmp/changed
 
-          test -s "$EXECUTE"
-          grep -Fx 'certify=schoolhouse-nc-business-reports-data-census-artifact-v1' "$EXECUTE"
-          grep -Fx "canonical_parent=$PARENT" "$EXECUTE"
-          grep -Fx 'source_pr=1236' "$EXECUTE"
-          grep -Fx 'source_head=5447b15b58f9679d6eddcb75da9dcb03a0f86526' "$EXECUTE"
-          grep -Fx 'source_workflow_run_id=31066659672' "$EXECUTE"
-          grep -Fx 'source_artifact_id=8954062856' "$EXECUTE"
-          grep -Fx 'source_artifact_digest=sha256:48a83eb5d75ceb29fb73a6f5bfd3b315fdbd07ffd11463c473954145307dd472' "$EXECUTE"
-          grep -Fx 'source_content_sha256=7740bc619e71d17b378df4348a51f79b954b0f77202eb93cea786b7406f648bb' "$EXECUTE"
-          grep -Fx 'source_content_bytes=121309' "$EXECUTE"
-          grep -Fx 'observed_link_rows=246' "$EXECUTE"
-          grep -Fx 'observed_form_rows=0' "$EXECUTE"
-          grep -Fx 'eligible_successor_unique_routes=0' "$EXECUTE"
-          grep -Fx 'predecessor_candidate_routes_present=0' "$EXECUTE"
-          grep -Fx 'predecessor_candidate_routes_missing=2' "$EXECUTE"
-          grep -Fx 'current_candidate_routes_added=0' "$EXECUTE"
-          grep -Fx 'certification_source_requests=0' "$EXECUTE"
-          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
-          grep -Fx 'publication_effect=none' "$EXECUTE"
-          grep -Fx 'adoption_effect=none' "$EXECUTE"
-          grep -Fx 'graph_effect=none' "$EXECUTE"
+          python - "$EXECUTE" "$LIVE_DIGEST" <<'PY'
+          from pathlib import Path
+          import sys
+          values = dict(line.split('=', 1) for line in Path(sys.argv[1]).read_text().splitlines() if line.strip())
+          expected = {
+            'certify': 'schoolhouse-nc-business-reports-data-census-artifact-v1',
+            'canonical_parent': '327648726320507532751f219a52d03f9c17fac5',
+            'source_pr': '1236',
+            'source_head': '5447b15b58f9679d6eddcb75da9dcb03a0f86526',
+            'source_workflow_run_id': '31066659672',
+            'source_artifact_id': '8954062856',
+            'source_artifact_digest': sys.argv[2],
+            'source_content_sha256': '7740bc619e71d17b378df4348a51f79b954b0f77202eb93cea786b7406f648bb',
+            'source_content_bytes': '121309',
+            'observed_link_rows': '246',
+            'observed_form_rows': '0',
+            'eligible_successor_unique_routes': '0',
+            'predecessor_candidate_routes_present': '0',
+            'predecessor_candidate_routes_missing': '2',
+            'current_candidate_routes_added': '0',
+            'certification_source_requests': '0',
+            'successor_fetches': '0',
+            'query_submissions': '0',
+            'forms_submitted': '0',
+            'identities_admitted': '0',
+            'relationships_admitted': '0',
+            'negative_existence_claims_created': '0',
+            'raw_source_retained': 'false',
+            'full_visible_text_retained': 'false',
+            'outside_human_dependency': 'false',
+            'publication_effect': 'none',
+            'adoption_effect': 'none',
+            'graph_effect': 'none',
+          }
+          for key, value in expected.items():
+              assert values.get(key) == value, (key, values.get(key), value)
+          assert len(values) == 48, len(values)
+          PY
 
-          test "$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/8954062856" --jq '.digest // ""')" = \
-            'sha256:48a83eb5d75ceb29fb73a6f5bfd3b315fdbd07ffd11463c473954145307dd472'
-
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/8954062856" --jq '.digest // ""')" = "$LIVE_DIGEST"
           rm -rf "$ARTIFACT" "$RECEIPT"
           mkdir -p "$ARTIFACT" "$RECEIPT"
-          gh run download 31066659672 \
-            --repo "$GITHUB_REPOSITORY" \
-            --name schoolhouse-nc-business-reports-data-census \
-            --dir "$ARTIFACT"
+          gh run download 31066659672 --repo "$GITHUB_REPOSITORY" \
+            --name schoolhouse-nc-business-reports-data-census --dir "$ARTIFACT"
 
-          test "$(sha256sum "$ARTIFACT/artifact-manifest.json" | awk '{print $1}')" = '07b742a29c3c19bb714ce8dbaa5c7edd953097d7455d3af98cb5af9f9d8f5f18'
-          test "$(sha256sum "$ARTIFACT/SHA256SUMS" | awk '{print $1}')" = '160da92ced90835914231d12afe58a13923738b8c33ced497843f1b585c996ad'
-          test "$(sha256sum "$ARTIFACT/RUNNER_EXIT_CODE" | awk '{print $1}')" = '9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa'
-          test "$(sha256sum "$ARTIFACT/source-receipt.json" | awk '{print $1}')" = 'c9f9cf7d489d7426c9f1db850336583b4564cf9a8df339b1feea650115841519'
-          test "$(sha256sum "$ARTIFACT/source-drift-comparison.json" | awk '{print $1}')" = '977e4ba414e2a7e31b228edff03261ee73221ec6415e60510a388c2fbd6a71b2'
-          test "$(sha256sum "$ARTIFACT/link-observations.jsonl" | awk '{print $1}')" = 'e924d60ccec8ac948d5eb8ab4cba2735a1cefe2579d26a964c6b370611ba458b'
-          test "$(sha256sum "$ARTIFACT/successor-routes.jsonl" | awk '{print $1}')" = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
-          test "$(sha256sum "$ARTIFACT/form-mechanics.jsonl" | awk '{print $1}')" = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
-          test "$(sha256sum "$ARTIFACT/route-policy.json" | awk '{print $1}')" = '48a3d9e815082b683aa483168a6380421b7d28073436f257b106d7be1115d429'
-          test "$(sha256sum "$ARTIFACT/summary.json" | awk '{print $1}')" = 'e8be60aa62e90d2585e42faf52f6cad414158be59e36881d1bad21c2195e19cd'
+          declare -A EXPECTED_HASHES=(
+            [artifact-manifest.json]='07b742a29c3c19bb714ce8dbaa5c7edd953097d7455d3af98cb5af9f9d8f5f18'
+            [SHA256SUMS]='160da92ced90835914231d12afe58a13923738b8c33ced497843f1b585c996ad'
+            [RUNNER_EXIT_CODE]='9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa'
+            [source-receipt.json]='c9f9cf7d489d7426c9f1db850336583b4564cf9a8df339b1feea650115841519'
+            [source-drift-comparison.json]='977e4ba414e2a7e31b228edff03261ee73221ec6415e60510a388c2fbd6a71b2'
+            [link-observations.jsonl]='e924d60ccec8ac948d5eb8ab4cba2735a1cefe2579d26a964c6b370611ba458b'
+            [successor-routes.jsonl]='e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+            [form-mechanics.jsonl]='e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+            [route-policy.json]='48a3d9e815082b683aa483168a6380421b7d28073436f257b106d7be1115d429'
+            [summary.json]='e8be60aa62e90d2585e42faf52f6cad414158be59e36881d1bad21c2195e19cd'
+          )
+          for file in "${!EXPECTED_HASHES[@]}"; do
+            test "$(sha256sum "$ARTIFACT/$file" | awk '{print $1}')" = "${EXPECTED_HASHES[$file]}"
+          done
           test "$(cat "$ARTIFACT/RUNNER_EXIT_CODE")" = '0'
           (cd "$ARTIFACT" && sha256sum -c SHA256SUMS)
 
-          python - "$ARTIFACT" "$RECEIPT" <<'PY'
+          python - "$ARTIFACT" "$RECEIPT" "$LIVE_DIGEST" <<'PY'
           from pathlib import Path
-          import hashlib
-          import json
-          import sys
+          import json, sys
+          root, out, live_digest = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3]
+          load = lambda n: json.loads((root / n).read_text())
+          rows = lambda n: [json.loads(x) for x in (root / n).read_text().splitlines() if x.strip()]
+          s, r, d, p, m = map(load, ['summary.json','source-receipt.json','source-drift-comparison.json','route-policy.json','artifact-manifest.json'])
+          links, successors, forms = rows('link-observations.jsonl'), rows('successor-routes.jsonl'), rows('form-mechanics.jsonl')
 
-          artifact = Path(sys.argv[1])
-          receipt_dir = Path(sys.argv[2])
-          load = lambda name: json.loads((artifact / name).read_text())
-          rows = lambda name: [json.loads(line) for line in (artifact / name).read_text().splitlines() if line.strip()]
+          assert s['schema_version'] == 'schoolhouse-nc-business-reports-data-census@2'
+          assert s['state'] == 'terminal_current_nonprofit_report_link_denominator_after_predecessor_source_drift'
+          assert (s['source_content_sha256'], s['source_content_bytes']) == ('7740bc619e71d17b378df4348a51f79b954b0f77202eb93cea786b7406f648bb', 121309)
+          assert s['source_changed_from_predecessor'] is True and s['page_identity_preserved'] is True and s['page_title_token_observed'] is True
+          assert s['source_requests'] == 1 and s['observed_link_rows'] == len(links) == 246 and s['observed_form_rows'] == len(forms) == 0
+          assert s['eligible_successor_unique_routes'] == len(successors) == 0
+          assert s['static_data_unique_routes'] == s['static_document_unique_routes'] == s['report_or_listing_unique_routes'] == s['query_bearing_eligible_unique_routes'] == 0
+          assert (s['predecessor_candidate_routes_present'], s['predecessor_candidate_routes_missing'], s['current_candidate_routes_added']) == (0, 2, 0)
+          zero_keys = ['successor_fetches_executed','query_submissions','forms_submitted','cookie_replays','subscription_purchases','identities_admitted','relationships_admitted','negative_existence_claims_created','street_address_rows_retained','contact_detail_rows_retained','officer_rows_retained','private_support_rows']
+          assert all(s[k] == 0 for k in zero_keys)
+          assert s['raw_source_retained'] is False and s['full_visible_text_retained'] is False and s['outside_human_dependency'] is False
+          assert s['publication_effect'] == s['adoption_effect'] == s['graph_effect'] == 'none'
 
-          summary = load('summary.json')
-          source = load('source-receipt.json')
-          drift = load('source-drift-comparison.json')
-          policy = load('route-policy.json')
-          manifest = load('artifact-manifest.json')
-          links = rows('link-observations.jsonl')
-          successors = rows('successor-routes.jsonl')
-          forms = rows('form-mechanics.jsonl')
+          assert r['state'] == 'terminal_current_source_captured_after_predecessor_drift' and r['request_method'] == 'GET' and r['http_status'] == 200
+          assert (r['content_sha256'], r['content_bytes'], r['observed_link_rows'], r['observed_form_rows']) == (s['source_content_sha256'], 121309, 246, 0)
+          assert (r['predecessor_content_sha256'], r['predecessor_content_bytes'], r['predecessor_link_rows'], r['predecessor_form_rows']) == ('21b5334028fae1c314ca0f63b21b1d57b85e95462c8749ecb79c1bd6108cc7ee', 120956, 245, 0)
+          assert r['page_identity_preserved'] is True and r['page_title_token_observed'] is True and r['raw_source_retained'] is False and r['full_visible_text_retained'] is False
+          assert r['query_submitted'] is False and r['forms_submitted'] == 0 and r['identity_admitted'] is False and r['relationship_admitted'] is False and r['negative_existence_claim_created'] is False
 
-          assert summary['schema_version'] == 'schoolhouse-nc-business-reports-data-census@2'
-          assert summary['state'] == 'terminal_current_nonprofit_report_link_denominator_after_predecessor_source_drift'
-          assert summary['source_content_sha256'] == '7740bc619e71d17b378df4348a51f79b954b0f77202eb93cea786b7406f648bb'
-          assert summary['source_content_bytes'] == 121309
-          assert summary['source_changed_from_predecessor'] is True
-          assert summary['page_identity_preserved'] is True
-          assert summary['page_title_token_observed'] is True
-          assert summary['source_requests'] == 1
-          assert summary['observed_link_rows'] == len(links) == 246
-          assert summary['observed_form_rows'] == len(forms) == 0
-          assert summary['eligible_successor_unique_routes'] == len(successors) == 0
-          assert summary['static_data_unique_routes'] == 0
-          assert summary['static_document_unique_routes'] == 0
-          assert summary['report_or_listing_unique_routes'] == 0
-          assert summary['query_bearing_eligible_unique_routes'] == 0
-          assert summary['predecessor_candidate_routes_present'] == 0
-          assert summary['predecessor_candidate_routes_missing'] == 2
-          assert summary['current_candidate_routes_added'] == 0
-          assert summary['successor_fetches_executed'] == 0
-          assert summary['query_submissions'] == 0
-          assert summary['forms_submitted'] == 0
-          assert summary['cookie_replays'] == 0
-          assert summary['subscription_purchases'] == 0
-          assert summary['identities_admitted'] == 0
-          assert summary['relationships_admitted'] == 0
-          assert summary['negative_existence_claims_created'] == 0
-          assert summary['raw_source_retained'] is False
-          assert summary['full_visible_text_retained'] is False
-          assert summary['street_address_rows_retained'] == 0
-          assert summary['contact_detail_rows_retained'] == 0
-          assert summary['officer_rows_retained'] == 0
-          assert summary['private_support_rows'] == 0
-          assert summary['outside_human_dependency'] is False
-          assert summary['publication_effect'] == summary['adoption_effect'] == summary['graph_effect'] == 'none'
+          assert d['source_changed_from_predecessor'] is True and d['page_identity_preserved'] is True
+          assert d['deltas'] == {'content_byte_delta': 353, 'current_candidate_routes_added': [], 'current_candidate_routes_added_count': 0, 'form_row_delta': 0, 'link_row_delta': 1, 'predecessor_candidate_routes_missing': d['deltas']['predecessor_candidate_routes_missing'], 'predecessor_candidate_routes_missing_count': 2, 'predecessor_candidate_routes_present': [], 'predecessor_candidate_routes_present_count': 0}
+          assert len(d['deltas']['predecessor_candidate_routes_missing']) == 2
+          assert d['interpretation']['byte_drift_is_not_identity_evidence'] is True and d['interpretation']['missing_predecessor_route_is_not_absence_evidence'] is True
 
-          assert source['state'] == 'terminal_current_source_captured_after_predecessor_drift'
-          assert source['request_method'] == 'GET'
-          assert source['http_status'] == 200
-          assert source['content_sha256'] == summary['source_content_sha256']
-          assert source['content_bytes'] == summary['source_content_bytes']
-          assert source['predecessor_content_sha256'] == '21b5334028fae1c314ca0f63b21b1d57b85e95462c8749ecb79c1bd6108cc7ee'
-          assert source['predecessor_content_bytes'] == 120956
-          assert source['predecessor_link_rows'] == 245
-          assert source['predecessor_form_rows'] == 0
-          assert source['observed_link_rows'] == 246
-          assert source['observed_form_rows'] == 0
-          assert source['page_identity_preserved'] is True
-          assert source['page_title_token_observed'] is True
-          assert source['raw_source_retained'] is False
-          assert source['full_visible_text_retained'] is False
-          assert source['query_submitted'] is False
-          assert source['forms_submitted'] == 0
-          assert source['identity_admitted'] is False
-          assert source['relationship_admitted'] is False
-          assert source['negative_existence_claim_created'] is False
+          assert p['request_bounds']['maximum_total_requests'] == 1 and p['request_bounds']['successor_fetches'] == 0
+          assert p['selection_contract']['current_complete_anchor_observation_denominator_required'] is True and p['selection_contract']['no_successor_fetches'] is True
+          assert p['interpretation']['query_bearing_route_requires_separate_fixed_route_execution'] is True
+          assert m['counts']['source_requests'] == 1 and m['counts']['successor_fetches'] == 0 and m['counts']['observed_link_rows'] == 246 and m['counts']['observed_form_rows'] == 0 and m['counts']['eligible_successor_unique_routes'] == 0
+          assert m['page_identity_preserved'] is True and m['raw_source_retained'] is False
 
-          assert drift['source_changed_from_predecessor'] is True
-          assert drift['page_identity_preserved'] is True
-          assert drift['predecessor']['content_sha256'] == '21b5334028fae1c314ca0f63b21b1d57b85e95462c8749ecb79c1bd6108cc7ee'
-          assert drift['predecessor']['content_bytes'] == 120956
-          assert drift['predecessor']['observed_link_rows'] == 245
-          assert drift['predecessor']['observed_form_rows'] == 0
-          assert drift['current']['content_sha256'] == summary['source_content_sha256']
-          assert drift['current']['content_bytes'] == 121309
-          assert drift['current']['observed_link_rows'] == 246
-          assert drift['current']['observed_form_rows'] == 0
-          assert drift['deltas']['content_byte_delta'] == 353
-          assert drift['deltas']['link_row_delta'] == 1
-          assert drift['deltas']['form_row_delta'] == 0
-          assert drift['deltas']['predecessor_candidate_routes_present_count'] == 0
-          assert drift['deltas']['predecessor_candidate_routes_missing_count'] == 2
-          assert drift['deltas']['current_candidate_routes_added_count'] == 0
-          assert drift['interpretation']['byte_drift_is_not_identity_evidence'] is True
-          assert drift['interpretation']['missing_predecessor_route_is_not_absence_evidence'] is True
+          assert [x['observation_ordinal'] for x in links] == list(range(1, 247))
+          forbidden = {'raw_html','raw_text','full_visible_text','street_address','mailing_address','postal_code','email','phone','cookie_value','hidden_value'}
+          for x in links:
+              assert not forbidden.intersection(x)
+              assert x['source_content_sha256'] == s['source_content_sha256'] and x['source_link_denominator'] == 246
+              assert all(x[k] is False for k in ['fetch_executed','query_submitted','form_submitted','cookie_replayed','subscription_purchased','identity_admitted','relationship_admitted','negative_existence_claim_created','raw_source_retained','full_visible_text_retained','outside_human_dependency'])
+              assert all(x[k] == 0 for k in ['street_address_rows_retained','contact_detail_rows_retained','officer_rows_retained','private_support_rows'])
+              assert x['publication_effect'] == x['adoption_effect'] == x['graph_effect'] == 'none'
+          assert not successors and not forms
+          assert not any(x.suffix.lower() in {'.html','.htm','.csv','.xlsx','.zip'} for x in root.rglob('*') if x.is_file())
 
-          assert policy['request_bounds']['maximum_total_requests'] == 1
-          assert policy['request_bounds']['successor_fetches'] == 0
-          assert policy['request_bounds']['interactive_search_submissions'] == 0
-          assert policy['request_bounds']['forms_submitted'] == 0
-          assert policy['request_bounds']['cookie_replays'] == 0
-          assert policy['request_bounds']['subscription_purchases'] == 0
-          assert policy['selection_contract']['current_complete_anchor_observation_denominator_required'] is True
-          assert policy['selection_contract']['no_successor_fetches'] is True
-          assert policy['interpretation']['query_bearing_route_requires_separate_fixed_route_execution'] is True
-          assert manifest['counts']['source_requests'] == 1
-          assert manifest['counts']['successor_fetches'] == 0
-          assert manifest['counts']['observed_link_rows'] == 246
-          assert manifest['counts']['observed_form_rows'] == 0
-          assert manifest['counts']['eligible_successor_unique_routes'] == 0
-          assert manifest['page_identity_preserved'] is True
-          assert manifest['raw_source_retained'] is False
-
-          assert [row['observation_ordinal'] for row in links] == list(range(1, 247))
-          forbidden = {'raw_html', 'raw_text', 'full_visible_text', 'street_address', 'mailing_address', 'postal_code', 'email', 'phone', 'cookie_value', 'hidden_value'}
-          for row in links:
-              assert not (forbidden & set(row))
-              assert row['source_content_sha256'] == summary['source_content_sha256']
-              assert row['source_link_denominator'] == 246
-              assert row['fetch_executed'] is False
-              assert row['query_submitted'] is False
-              assert row['form_submitted'] is False
-              assert row['cookie_replayed'] is False
-              assert row['subscription_purchased'] is False
-              assert row['identity_admitted'] is False
-              assert row['relationship_admitted'] is False
-              assert row['negative_existence_claim_created'] is False
-              assert row['raw_source_retained'] is False
-              assert row['full_visible_text_retained'] is False
-              assert row['street_address_rows_retained'] == 0
-              assert row['contact_detail_rows_retained'] == 0
-              assert row['officer_rows_retained'] == 0
-              assert row['private_support_rows'] == 0
-              assert row['outside_human_dependency'] is False
-              assert row['publication_effect'] == row['adoption_effect'] == row['graph_effect'] == 'none'
-
-          assert not successors
-          assert not forms
-          assert not any(path.suffix.lower() in {'.html', '.htm', '.csv', '.xlsx', '.zip'} for path in artifact.rglob('*') if path.is_file())
-
-          certification = {
-              'schema_version': 'schoolhouse-nc-business-reports-data-census-artifact-certification@1',
-              'certified_at': '2026-08-06',
-              'canonical_parent': '327648726320507532751f219a52d03f9c17fac5',
-              'source_pr': 1236,
-              'source_workflow_run_id': 31066659672,
-              'source_artifact_id': 8954062856,
-              'source_artifact_digest': 'sha256:48a83eb5d75ceb29fb73a6f5bfd3b315fdbd07ffd11463c473954145307dd472',
-              'runner_exit_code': 0,
-              'source_requests_in_acquisition': 1,
-              'source_requests_in_certification': 0,
-              'source_content_sha256': summary['source_content_sha256'],
-              'source_content_bytes': summary['source_content_bytes'],
-              'predecessor_content_sha256': source['predecessor_content_sha256'],
-              'predecessor_content_bytes': source['predecessor_content_bytes'],
-              'observed_link_rows': 246,
-              'observed_form_rows': 0,
-              'eligible_successor_unique_routes': 0,
-              'predecessor_candidate_routes_present': 0,
-              'predecessor_candidate_routes_missing': 2,
-              'current_candidate_routes_added': 0,
-              'identity_admitted': False,
-              'relationship_admitted': False,
-              'negative_existence_claim_created': False,
-              'outside_human_dependency': False,
-              'publication_effect': 'none',
-              'adoption_effect': 'none',
-              'graph_effect': 'none',
-              'state': 'certified_terminal_current_nc_nonprofit_report_link_denominator_after_source_drift_zero_eligible_successor_routes',
+          receipt = {
+            'schema_version': 'schoolhouse-nc-business-reports-data-census-artifact-certification@1',
+            'certified_at': '2026-08-06', 'canonical_parent': '327648726320507532751f219a52d03f9c17fac5',
+            'source_pr': 1236, 'source_workflow_run_id': 31066659672, 'source_artifact_id': 8954062856,
+            'source_artifact_digest': live_digest, 'runner_exit_code': 0,
+            'source_requests_in_acquisition': 1, 'source_requests_in_certification': 0,
+            'source_content_sha256': s['source_content_sha256'], 'source_content_bytes': s['source_content_bytes'],
+            'predecessor_content_sha256': r['predecessor_content_sha256'], 'predecessor_content_bytes': r['predecessor_content_bytes'],
+            'observed_link_rows': 246, 'observed_form_rows': 0, 'eligible_successor_unique_routes': 0,
+            'predecessor_candidate_routes_present': 0, 'predecessor_candidate_routes_missing': 2, 'current_candidate_routes_added': 0,
+            'identity_admitted': False, 'relationship_admitted': False, 'negative_existence_claim_created': False,
+            'outside_human_dependency': False, 'publication_effect': 'none', 'adoption_effect': 'none', 'graph_effect': 'none',
+            'state': 'certified_terminal_current_nc_nonprofit_report_link_denominator_after_source_drift_zero_eligible_successor_routes'
           }
-          receipt_dir.mkdir(parents=True, exist_ok=True)
-          (receipt_dir / 'certification.json').write_text(json.dumps(certification, sort_keys=True, indent=2) + '\n')
-          (receipt_dir / 'source-artifact-SHA256SUMS').write_bytes((artifact / 'SHA256SUMS').read_bytes())
-          (receipt_dir / 'source-artifact-manifest.json').write_bytes((artifact / 'artifact-manifest.json').read_bytes())
-          print(json.dumps(certification, sort_keys=True))
+          out.mkdir(parents=True, exist_ok=True)
+          (out/'certification.json').write_text(json.dumps(receipt, sort_keys=True, indent=2)+'\n')
+          (out/'source-artifact-SHA256SUMS').write_bytes((root/'SHA256SUMS').read_bytes())
+          (out/'source-artifact-manifest.json').write_bytes((root/'artifact-manifest.json').read_bytes())
+          print(json.dumps(receipt, sort_keys=True))
           PY
 
           node tools/validate-no-magic-human-gate.mjs
-
-          (
-            cd "$RECEIPT"
-            sha256sum certification.json source-artifact-SHA256SUMS source-artifact-manifest.json > SHA256SUMS
-            sha256sum -c SHA256SUMS
-          )
+          (cd "$RECEIPT" && sha256sum certification.json source-artifact-SHA256SUMS source-artifact-manifest.json > SHA256SUMS && sha256sum -c SHA256SUMS)
 
       - name: Upload certification receipt
         uses: actions/upload-artifact@v4
         with:
           name: schoolhouse-nc-business-reports-data-census-certification
-          path: /tmp/schoolhouse-nc-business-reports-data-census-certification
+          path: /tmp/nc-report-drift-certification
           if-no-files-found: error
           retention-days: 90
           compression-level: 9
