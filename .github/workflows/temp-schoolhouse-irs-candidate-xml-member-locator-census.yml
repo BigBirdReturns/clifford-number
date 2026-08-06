@@ -1,0 +1,173 @@
+name: TEMP census School.House IRS candidate XML member locators
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-irs-candidate-xml-member-locator-census.yml'
+      - '.schoolhouse-irs-candidate-xml-member-locator-census/EXECUTE'
+      - '.schoolhouse-irs-candidate-xml-member-locator-census/capture.py.gz.b64'
+  workflow_dispatch:
+
+concurrency:
+  group: schoolhouse-irs-candidate-xml-member-locator-census-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-irs-candidate-xml-member-locator-census-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate exact carrier, source denominator, and runner custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE_MAIN='773bdf96026e9fe6d5e11f4d9dffa1629e2c0ea3'
+          SOURCE='data/intake/schoolhouse-irs-candidate-filing-index-census/filing-index-matches.jsonl'
+          SOURCE_BLOB='6fdf8f0510c80b4a0e7d438dd03fc18fee0dd8e9'
+          ROOT='.schoolhouse-irs-candidate-xml-member-locator-census'
+          EXECUTE="$ROOT/EXECUTE"
+          BUNDLE="$ROOT/capture.py.gz.b64"
+          WORKFLOW='.github/workflows/temp-schoolhouse-irs-candidate-xml-member-locator-census.yml'
+          GZIP="$RUNNER_TEMP/schoolhouse-irs-candidate-xml-member-locator-census.py.gz"
+          RUNNER="$RUNNER_TEMP/schoolhouse-irs-candidate-xml-member-locator-census.py"
+
+          git fetch --no-tags origin main
+          MAIN_SHA="$(git rev-parse origin/main)"
+          git merge-base --is-ancestor "$BASE_MAIN" "$MAIN_SHA"
+          test "$(git merge-base HEAD origin/main)" = "$BASE_MAIN"
+          test "$(git rev-parse "origin/main:$SOURCE")" = "$SOURCE_BLOB"
+
+          mapfile -t CHANGED < <(git diff --name-only "$BASE_MAIN"..HEAD | sort)
+          EXPECTED=(
+            '.github/workflows/temp-schoolhouse-irs-candidate-xml-member-locator-census.yml'
+            '.schoolhouse-irs-candidate-xml-member-locator-census/EXECUTE'
+            '.schoolhouse-irs-candidate-xml-member-locator-census/capture.py.gz.b64'
+          )
+          test "${#CHANGED[@]}" -eq 3
+          for i in 0 1 2; do test "${CHANGED[$i]}" = "${EXPECTED[$i]}"; done
+
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = 'cd25fd381c48ae815dcc0800dee200434bec87858fca74a1edde60253b3d9548'
+          base64 -d "$BUNDLE" > "$GZIP"
+          test "$(sha256sum "$GZIP" | awk '{print $1}')" = '3b1acdc708166e82847a415928cee1e3bda78fb80bcb2dc67c0487d633b58f49'
+          gzip -dc "$GZIP" > "$RUNNER"
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = 'c525c534ba4094e5e3996db10b473f58e09c19578559b895a3974822c012a367'
+          python -m py_compile "$RUNNER"
+
+          grep -Fx 'acquire=schoolhouse-irs-candidate-xml-member-locator-census-v1' "$EXECUTE"
+          grep -Fx "canonical_parent=$BASE_MAIN" "$EXECUTE"
+          grep -Fx "source_git_blob=$SOURCE_BLOB" "$EXECUTE"
+          grep -Fx 'sealed_filing_objects=486' "$EXECUTE"
+          grep -Fx 'sealed_candidate_eins=92' "$EXECUTE"
+          grep -Fx 'declared_archive_routes=67' "$EXECUTE"
+          grep -Fx 'processing_years=2019,2020,2021,2022,2023,2024,2025,2026' "$EXECUTE"
+          grep -Fx 'maximum_total_requests=402' "$EXECUTE"
+          grep -Fx 'maximum_parallel_workers=4' "$EXECUTE"
+          grep -Fx 'maximum_aggregate_bytes=1073741824' "$EXECUTE"
+          grep -Fx 'full_archive_fetches=0' "$EXECUTE"
+          grep -Fx 'member_payload_fetches=0' "$EXECUTE"
+          grep -Fx 'xml_parses=0' "$EXECUTE"
+          grep -Fx 'identity_admitted=false' "$EXECUTE"
+          grep -Fx 'relationship_admitted=false' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+          grep -Fx 'graph_effect=none' "$EXECUTE"
+          grep -Fx 'runner_source_sha256=c525c534ba4094e5e3996db10b473f58e09c19578559b895a3974822c012a367' "$EXECUTE"
+          grep -Fx 'runner_gzip_sha256=3b1acdc708166e82847a415928cee1e3bda78fb80bcb2dc67c0487d633b58f49' "$EXECUTE"
+          grep -Fx 'runner_bundle_sha256=cd25fd381c48ae815dcc0800dee200434bec87858fca74a1edde60253b3d9548' "$EXECUTE"
+          git diff --exit-code -- "$WORKFLOW" "$EXECUTE" "$BUNDLE"
+
+      - name: Execute bounded 67-archive central-directory census
+        id: acquisition
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          OUT="$RUNNER_TEMP/schoolhouse-irs-candidate-xml-member-locator-census"
+          LOG="$RUNNER_TEMP/schoolhouse-irs-candidate-xml-member-locator-census.log"
+          rm -rf "$OUT"
+          python "$RUNNER_TEMP/schoolhouse-irs-candidate-xml-member-locator-census.py" \
+            --repo-root "$GITHUB_WORKSPACE" --output "$OUT" \
+            2>&1 | tee "$LOG"
+          status=${PIPESTATUS[0]}
+          mkdir -p "$OUT"
+          printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
+          cp "$LOG" "$OUT/RUNNER-OUTPUT.log"
+          exit "$status"
+
+      - name: Upload terminal privacy-minimized artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-candidate-xml-member-locator-census
+          path: ${{ runner.temp }}/schoolhouse-irs-candidate-xml-member-locator-census
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal denominator and authority boundary
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP/schoolhouse-irs-candidate-xml-member-locator-census"
+          test "$(cat "$ROOT/RUNNER_EXIT_CODE")" = '0'
+          (cd "$ROOT" && sha256sum -c SHA256SUMS)
+          python - "$ROOT" <<'PY'
+          from pathlib import Path
+          import json, sys
+          root=Path(sys.argv[1])
+          load=lambda n: json.loads((root/n).read_text())
+          rows=lambda n: [json.loads(x) for x in (root/n).read_text().splitlines() if x.strip()]
+          s=load('summary.json'); p=load('route-policy.json'); a=load('adjudication.json'); m=load('artifact-manifest.json')
+          archives=rows('archive-attempts.jsonl'); locators=rows('member-locators.jsonl'); objects=rows('object-resolutions.jsonl')
+          assert s['sealed_filing_index_rows']==486 and s['sealed_candidate_eins']==92
+          assert s['declared_archive_routes']==s['terminal_archive_routes']==len(archives)==67
+          assert s['object_rows']==len(objects)==486
+          assert s['exact_member_locator_rows']==len(locators)
+          assert s['accessible_archive_central_directories']+s['provider_or_schema_error_archives']==67
+          assert s['objects_with_exact_one_locator']+s['objects_with_duplicate_locators']+s['objects_without_locator']==486
+          assert s['range_requests']<=s['maximum_total_requests']==402
+          assert s['range_bytes_retrieved']<=s['maximum_aggregate_bytes']==1073741824
+          assert s['member_payload_fetches']==s['full_archive_fetches']==s['xml_parses']==0
+          assert s['query_submissions']==s['forms_submitted']==0
+          assert s['identities_admitted']==s['relationships_admitted']==s['negative_existence_claims_created']==0
+          assert s['street_address_rows_retained']==s['contact_detail_rows_retained']==s['preparer_rows_retained']==s['private_support_rows']==0
+          assert s['outside_human_dependency'] is False
+          assert s['publication_effect']==s['adoption_effect']==s['graph_effect']=='none'
+          assert p['request_bounds']['full_archive_fallback_forbidden'] is True
+          assert p['interpretation']['member_locator_is_routing_evidence_only'] is True
+          assert p['interpretation']['later_xml_fetch_requires_separate_fixed_locator_transaction'] is True
+          assert a['public_schoolhouse_legal_identity_admitted'] is False
+          assert m['counts']['archive_attempts']==67 and m['counts']['object_resolutions']==486 and m['counts']['member_locators']==len(locators)
+          assert all(x['member_payload_fetched'] is False and x['identity_admitted'] is False and x['relationship_admitted'] is False for x in locators)
+          assert all(x['outside_human_dependency'] is False and x['graph_effect']=='none' for x in [*archives,*locators,*objects])
+          assert not any(x.is_file() and x.suffix.lower() in {'.zip','.xml','.csv'} for x in root.rglob('*'))
+          print(json.dumps({
+            'archive_routes':len(archives),
+            'archive_errors':s['provider_or_schema_error_archives'],
+            'member_locators':len(locators),
+            'exact_object_resolutions':s['objects_with_exact_one_locator'],
+            'missing_objects':s['objects_without_locator'],
+            'duplicate_objects':s['objects_with_duplicate_locators'],
+            'range_requests':s['range_requests'],
+            'range_bytes':s['range_bytes_retrieved'],
+          },sort_keys=True))
+          PY
