@@ -1,4 +1,4 @@
-name: TEMP recover exact RD-04 State Options carrier from Git history
+name: TEMP export exact RD-04 State Options rebuild custody
 
 on:
   pull_request:
@@ -8,234 +8,104 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
-  group: temp-ssc-rd04-state-options-exemption-recovery-${{ github.event.pull_request.number || github.run_id }}
+  group: temp-ssc-rd04-state-options-export-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: false
 
+env:
+  CANONICAL_MAIN: 327648726320507532751f219a52d03f9c17fac5
+  SOURCE_ADJUDICATION_HEAD: f8a8d2ead8de1c9e6e9b06f5ae4d1389ccb30b51
+  SOURCE_ARTIFACT_ID: '8950104341'
+  SOURCE_ARTIFACT_SHA256: 72db2a9c3b481f59383275f2821cdb4978dd4f257cf0236f309e94214c7f45d1
+
 jobs:
-  recover:
+  export:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.pull_request.base.ref == 'main' &&
        github.event.pull_request.head.repo.full_name == github.repository &&
        github.event.pull_request.head.ref == 'agent/ssc-rd04-state-options-exemption-materializer-v2')
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ env.CANONICAL_MAIN }}
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
-      - name: Scan every reachable path value and Git blob
+      - name: Export exact current matrix, implementation, and source artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -Eeuo pipefail
-          OUT="$RUNNER_TEMP/ssc-rd04-state-options-exemption-recovery-v1"
+          OUT="$RUNNER_TEMP/ssc-rd04-state-options-rebuild-export-v1"
           rm -rf "$OUT"
-          mkdir -p "$OUT/recovered-shards" "$OUT/package"
-          git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*'
+          mkdir -p "$OUT/current-main" "$OUT/source-adjudication" "$OUT/receipts"
 
-          python - "$OUT" <<'PY'
-          from __future__ import annotations
+          test "$(git rev-parse HEAD)" = "$CANONICAL_MAIN"
+          git fetch --no-tags origin main
+          printf 'canonical_main=%s\nobserved_origin_main=%s\nsource_adjudication_head=%s\n' \
+            "$CANONICAL_MAIN" "$(git rev-parse origin/main)" "$SOURCE_ADJUDICATION_HEAD" \
+            > "$OUT/receipts/heads.txt"
 
-          import base64
-          import hashlib
-          import io
-          import json
-          import pathlib
-          import re
-          import subprocess
-          import sys
-          import tarfile
+          cat > "$OUT/receipts/current-main-paths.txt" <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-field-promotion.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-field-promotion/cell-promotion-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-field-promotion/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-field-promotion/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-field-promotion/promoted-partial-field-matrix.json
+          data/intake/status-sovereignty-rd-wave03-rd04-field-promotion/promotion-decisions.json
+          data/intake/status-sovereignty-rd-wave03-rd04-field-promotion/promotion-input-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-field-promotion/promotion-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-field-promotion/remaining-open-field-census.json
+          data/research/status-sovereignty-residual-denominator-wave-03-current.json
+          docs/milestones/ssc-rd-wave03-rd04-field-promotion.md
+          schemas/status-sovereignty-rd-wave03-rd04-field-promotion.schema.json
+          test/status-sovereignty-rd-wave03-rd04-field-promotion.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-field-promotion.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-field-promotion.mjs
+          EOF
+          sed -i 's/^          //' "$OUT/receipts/current-main-paths.txt"
+          while IFS= read -r rel; do
+            test -f "$rel"
+            mkdir -p "$OUT/current-main/$(dirname "$rel")"
+            cp -a "$rel" "$OUT/current-main/$rel"
+          done < "$OUT/receipts/current-main-paths.txt"
 
-          out = pathlib.Path(sys.argv[1])
-          shard_dir = out / 'recovered-shards'
-          package_dir = out / 'package'
-          root = '.transport/ssc-rd04-state-options-exemption-v2/shards'
-          expected = {
-              '000.b64': 'f35f055a4c8b7a7eac924082464f07a136aaf429e3e397467cc4e07e0e837070',
-              '001.b64': '10129330df19d0caca261dee198646fcaaa1900a3c6bcd017a23bf115bcfc8e2',
-              '002.b64': '3e0a18447253cfa0e910f7fd24925aa680f74f297f747b42133bead09cf5037d',
-          }
-          expected_paths = [
-              '.github/workflows/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.yml',
-              'data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/product-manifest.json',
-              'data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/promoted-partial-field-matrix.json',
-              'data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/promotion-summary.json',
-              'data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/remaining-open-field-census.json',
-              'data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/source-custody.json',
-              'data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/source-page-11.txt',
-              'data/intake/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion/state-field-register.jsonl',
-              'docs/milestones/ssc-rd-wave03-rd04-state-options-exemption-promotion.md',
-              'schemas/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.schema.json',
-              'test/status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.test.js',
-              'tools/build-status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.mjs',
-              'tools/validate-status-sovereignty-rd-wave03-rd04-state-options-exemption-promotion.mjs',
-          ]
+          git cat-file -e "$SOURCE_ADJUDICATION_HEAD^{commit}"
+          git show "$SOURCE_ADJUDICATION_HEAD:.github/workflows/temp-ssc-rd04-state-options-report-acquisition-v1.yml" \
+            > "$OUT/source-adjudication/workflow.yml"
+          git show "$SOURCE_ADJUDICATION_HEAD^{commit}" --no-patch --format='%H%n%T%n%P%n%s' \
+            > "$OUT/source-adjudication/commit.txt"
 
-          def run(*args: str, check: bool = True) -> bytes:
-              proc = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-              if check and proc.returncode:
-                  raise RuntimeError(f'{args!r}: {proc.stderr.decode(errors="replace")}')
-              return proc.stdout
+          curl --fail --location --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${SOURCE_ARTIFACT_ID}/zip" \
+            -o "$OUT/source-adjudication/artifact.zip"
+          test "$(sha256sum "$OUT/source-adjudication/artifact.zip" | awk '{print $1}')" = "$SOURCE_ARTIFACT_SHA256"
+          mkdir -p "$OUT/source-adjudication/artifact"
+          unzip -q "$OUT/source-adjudication/artifact.zip" -d "$OUT/source-adjudication/artifact"
 
-          def normalized(data: bytes) -> bytes:
-              return data.rstrip(b'\r\n')
-
-          def digest(data: bytes) -> str:
-              return hashlib.sha256(normalized(data)).hexdigest()
-
-          current_sizes = {}
-          for name in expected:
-              data = pathlib.Path(root, name).read_bytes()
-              current_sizes[name] = {
-                  'stored_bytes': len(data),
-                  'normalized_bytes': len(normalized(data)),
-                  'stored_sha256': hashlib.sha256(data).hexdigest(),
-                  'normalized_sha256': digest(data),
-              }
-
-          matches = {name: [] for name in expected}
-          seen = set()
-
-          # First scan every historical value at the declared shard paths.
-          for name in expected:
-              rel = f'{root}/{name}'
-              commits = run('git', 'log', '--all', '--format=%H', '--', rel).decode().splitlines()
-              for commit in commits:
-                  spec = f'{commit}:{rel}'
-                  exists = subprocess.run(['git', 'cat-file', '-e', spec], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                  if exists.returncode:
-                      continue
-                  blob = run('git', 'rev-parse', spec).decode().strip()
-                  data = run('git', 'cat-file', 'blob', blob)
-                  seen.add(blob)
-                  got = digest(data)
-                  for expected_name, expected_sha in expected.items():
-                      if got == expected_sha:
-                          matches[expected_name].append({
-                              'source': 'path_history',
-                              'commit': commit,
-                              'path': rel,
-                              'blob': blob,
-                              'stored_bytes': len(data),
-                              'terminal_framing_bytes': len(data) - len(normalized(data)),
-                          })
-
-          # Then scan all reachable blobs near the three current carrier sizes.
-          allowed_sizes = {
-              row['normalized_bytes'] + delta
-              for row in current_sizes.values()
-              for delta in range(-4, 5)
-              if row['normalized_bytes'] + delta > 0
-          }
-          rows = run(
-              'git', 'cat-file', '--batch-all-objects',
-              '--batch-check=%(objectname) %(objecttype) %(objectsize)'
-          ).decode().splitlines()
-          scanned_candidates = 0
-          for row in rows:
-              fields = row.split()
-              if len(fields) != 3 or fields[1] != 'blob':
-                  continue
-              blob, _, size_text = fields
-              size = int(size_text)
-              if blob in seen or size not in allowed_sizes:
-                  continue
-              data = run('git', 'cat-file', 'blob', blob)
-              clean = normalized(data)
-              if re.fullmatch(rb'[A-Za-z0-9+/=]+', clean) is None:
-                  continue
-              scanned_candidates += 1
-              got = hashlib.sha256(clean).hexdigest()
-              for expected_name, expected_sha in expected.items():
-                  if got == expected_sha:
-                      matches[expected_name].append({
-                          'source': 'all_reachable_objects',
-                          'blob': blob,
-                          'stored_bytes': len(data),
-                          'terminal_framing_bytes': len(data) - len(clean),
-                      })
-
-          recovered = {}
-          selected = {}
-          for name in sorted(expected):
-              unique = {str(row['blob']): row for row in matches[name]}
-              ordered = sorted(unique.values(), key=lambda row: (str(row['source']), str(row['blob'])))
-              matches[name] = ordered
-              if ordered:
-                  source = ordered[0]
-                  clean = normalized(run('git', 'cat-file', 'blob', str(source['blob'])))
-                  if hashlib.sha256(clean).hexdigest() != expected[name]:
-                      raise RuntimeError(f'{name}: selected source drift')
-                  (shard_dir / name).write_bytes(clean)
-                  recovered[name] = clean
-                  selected[name] = source
-
-          receipt = {
-              'schema_version': 'ssc-rd04-state-options-exemption-object-recovery@1',
-              'expected_shards': 3,
-              'recovered_shards': len(recovered),
-              'missing_shards': sorted(set(expected) - set(recovered)),
-              'current_shards': current_sizes,
-              'matches': matches,
-              'selected_sources': selected,
-              'candidate_blobs_scanned': scanned_candidates,
-              'repository_mutations': 0,
-              'outside_human_dependency': False,
-          }
-
-          if len(recovered) == 3:
-              aggregate = b''.join(recovered[name] for name in sorted(recovered))
-              receipt['aggregate_bytes'] = len(aggregate)
-              receipt['aggregate_sha256'] = hashlib.sha256(aggregate).hexdigest()
-              (out / 'product.b64').write_bytes(aggregate)
-              if len(aggregate) != 36208 or receipt['aggregate_sha256'] != '9b4a213e8c9e2ced70004d018e921d1c84e5b6a37aee682c59ef28c5a86897af':
-                  receipt['status'] = 'all_shards_found_but_aggregate_mismatch'
-              else:
-                  archive = base64.b64decode(aggregate, validate=True)
-                  receipt['archive_bytes'] = len(archive)
-                  receipt['archive_sha256'] = hashlib.sha256(archive).hexdigest()
-                  (out / 'product.tar.xz').write_bytes(archive)
-                  if len(archive) != 27156 or receipt['archive_sha256'] != 'a9e658679a0f89ffca0be00f3c9674b5312e2bbc0b4528f586f0c5dc3c955c01':
-                      receipt['status'] = 'aggregate_valid_but_archive_mismatch'
-                  else:
-                      with tarfile.open(fileobj=io.BytesIO(archive), mode='r:xz') as tf:
-                          members = tf.getmembers()
-                          paths = sorted(member.name.lstrip('./') for member in members if member.isfile())
-                          receipt['archive_paths'] = paths
-                          if paths != sorted(expected_paths):
-                              receipt['status'] = 'archive_path_denominator_mismatch'
-                          elif any(member.issym() or member.islnk() for member in members):
-                              receipt['status'] = 'archive_link_member_refused'
-                          else:
-                              tf.extractall(package_dir, filter='data')
-                              receipt['status'] = 'complete_exact_package_recovered'
-          else:
-              receipt['status'] = 'incomplete_exact_blob_recovery'
-
-          (out / 'recovery.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
-          checksum_rows = []
-          for path in sorted(out.rglob('*')):
-              if path.is_file() and path.name != 'SHA256SUMS':
-                  checksum_rows.append(f'{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(out)}')
-          (out / 'SHA256SUMS').write_text('\n'.join(checksum_rows) + '\n')
-          print(json.dumps({
-              'status': receipt['status'],
-              'recovered_shards': len(recovered),
-              'missing_shards': receipt['missing_shards'],
-              'candidate_blobs_scanned': scanned_candidates,
-          }, sort_keys=True))
-          PY
-      - name: Upload checksum-bound recovery receipt
-        if: always()
+          find "$OUT" -type f -printf '%P\n' | sort > "$OUT/receipts/export-paths.txt"
+          find "$OUT" -type f ! -path "$OUT/receipts/SHA256SUMS" -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            | sed "s#  $OUT/#  #" \
+            > "$OUT/receipts/SHA256SUMS"
+          node tools/validate-no-magic-human-gate.mjs
+          printf 'status=complete\noutside_human_dependency=false\nrepository_mutations=0\n' \
+            > "$OUT/receipts/final.txt"
+      - name: Upload exact rebuild export
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd04-state-options-exemption-object-recovery-v1
-          path: ${{ runner.temp }}/ssc-rd04-state-options-exemption-recovery-v1
+          name: ssc-rd04-state-options-rebuild-export-v1
+          path: ${{ runner.temp }}/ssc-rd04-state-options-rebuild-export-v1
           if-no-files-found: error
           retention-days: 90
