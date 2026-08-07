@@ -1,0 +1,143 @@
+name: TEMP materialize RD-04 seven-state row states clean v9
+
+on:
+  push:
+    branches:
+      - 'agent/ssc-rd04-mf7-row-state-clean-materializer-v9'
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: temp-ssc-rd04-mf7-row-state-clean-materializer-v9
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event_name == 'push' && github.ref_name == 'agent/ssc-rd04-mf7-row-state-clean-materializer-v9'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require one clean two-path carrier commit
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD^)" = 'e83b28ab2e9a8fdca4d9c97a9c76644ab1bffa95'
+          test "$(git rev-list --count HEAD^..HEAD)" = 1
+          test -f '.trigger/ssc-rd04-mf7-row-state-clean-materializer-v9/EXECUTE'
+          test "$(git diff --name-only HEAD^ HEAD | sort | tr '\n' ' ')" = '.github/workflows/temp-ssc-rd04-mf7-row-state-clean-materializer-v9.yml .trigger/ssc-rd04-mf7-row-state-clean-materializer-v9/EXECUTE '
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+      - id: locate
+        name: Locate this never-merge carrier PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -Eeuo pipefail
+          OWNER=${GH_REPOSITORY%%/*}
+          PR=$(gh api "repos/$GH_REPOSITORY/pulls?state=open&head=$OWNER:${GITHUB_REF_NAME}" --jq '.[0].number // empty')
+          test -n "$PR"
+          echo "pr=$PR" >> "$GITHUB_OUTPUT"
+          gh pr comment "$PR" --repo "$GH_REPOSITORY" --body "Clean RD-04 v9 materialization started in run \`${GITHUB_RUN_ID}\` on exact two-path carrier head \`${GITHUB_SHA}\`. It is executing the sealed replay-order-repaired materializer directly; no runtime source transformation is permitted."
+      - id: materialize
+        name: Recover and execute sealed materializer
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          MATERIALIZER_BLOB: 12cbecba2e87c79fac862981c228f86ca4633838
+          MATERIALIZER_XZ_BYTES: '5964'
+          MATERIALIZER_XZ_SHA256: 4ca715738443bc29d190b4160476e107ecd4960683c087698cc56d31101af327
+          MATERIALIZER_SOURCE_BYTES: '18504'
+          MATERIALIZER_SOURCE_SHA256: da7a72e651470eb4d43591b08f7dfaa356379828c6b7b47b2a4db366e5553ce5
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/rd04-mf7-clean-v9
+          RESULT=/tmp/rd04-mf7-row-state-materialization-v3
+          rm -rf "$OUT" "$RESULT"
+          mkdir -p "$OUT"
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GH_REPOSITORY/git/blobs/$MATERIALIZER_BLOB" \
+            > "$OUT/blob.json"
+          test "$(jq -r .encoding "$OUT/blob.json")" = base64
+          jq -r .content "$OUT/blob.json" | tr -d '\n' | base64 -d > "$OUT/materializer.sh.xz"
+          test "$(wc -c < "$OUT/materializer.sh.xz" | tr -d ' ')" = "$MATERIALIZER_XZ_BYTES"
+          test "$(sha256sum "$OUT/materializer.sh.xz" | awk '{print $1}')" = "$MATERIALIZER_XZ_SHA256"
+          test "$(git hash-object "$OUT/materializer.sh.xz")" = "$MATERIALIZER_BLOB"
+          xz -dc "$OUT/materializer.sh.xz" > "$OUT/materializer.sh"
+          test "$(wc -c < "$OUT/materializer.sh" | tr -d ' ')" = "$MATERIALIZER_SOURCE_BYTES"
+          test "$(sha256sum "$OUT/materializer.sh" | awk '{print $1}')" = "$MATERIALIZER_SOURCE_SHA256"
+          bash -n "$OUT/materializer.sh"
+          chmod 0755 "$OUT/materializer.sh"
+          bash "$OUT/materializer.sh"
+          test -f "$RESULT/receipt.json"
+      - name: Report exact terminal outcome
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          SELF_PR: ${{ steps.locate.outputs.pr }}
+          OUTCOME: ${{ steps.materialize.outcome }}
+        run: |
+          set -Eeuo pipefail
+          BODY=/tmp/rd04-mf7-clean-v9-comment.md
+          RECEIPT=/tmp/rd04-mf7-row-state-materialization-v3/receipt.json
+          if test "$OUTCOME" = success && test -f "$RECEIPT"; then
+            python - <<'PY' > "$BODY"
+          import json
+          from pathlib import Path
+          r=json.loads(Path('/tmp/rd04-mf7-row-state-materialization-v3/receipt.json').read_text())
+          print('Clean RD-04 v9 materialization completed successfully.\n')
+          print('```text')
+          for key in ['canonical_parent','full_head','full_tree','ordinary_head','ordinary_tree','permanent_pr','archive_sha256','permanent_paths','ordinary_paths','target_rows','terminal_cells_before','terminal_cells_after','terminal_units_before','terminal_units_after','adversarial_refusals','class_closed','outside_human_dependency']:
+              print(f'{key}: {r.get(key)}')
+          print('```')
+          print('\nThe permanent branch moved only after exact archive, path, schema, adversarial, no-magic-human, complete-release, restored-replay, current-main, and target-lease gates passed.')
+          PY
+          else
+            {
+              echo 'Clean RD-04 v9 materialization failed closed.'
+              echo
+              echo '```text'
+              echo "carrier_head: ${GITHUB_SHA}"
+              echo "workflow_run: ${GITHUB_RUN_ID}"
+              echo "materializer_outcome: ${OUTCOME}"
+              if test -f /tmp/rd04-mf7-row-state-materialization-v3/run.log; then
+                tail -240 /tmp/rd04-mf7-row-state-materialization-v3/run.log
+              fi
+              echo '```'
+              echo
+              echo 'No unverified product is authorized.'
+            } > "$BODY"
+          fi
+          gh pr comment "$SELF_PR" --repo "$GH_REPOSITORY" --body-file "$BODY"
+      - name: Preserve exact v9 materialization custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mf7-row-state-clean-materialization-v9
+          path: |
+            /tmp/rd04-mf7-clean-v9
+            /tmp/rd04-mf7-row-state-materialization-v3
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Refuse failed materialization
+        if: always()
+        env:
+          OUTCOME: ${{ steps.materialize.outcome }}
+        run: test "$OUTCOME" = success
