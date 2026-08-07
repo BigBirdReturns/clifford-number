@@ -1,0 +1,276 @@
+name: TEMP prove canonical School.House RDAP custody merge v3
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-rdap-exact-domain-census-postmerge-proof-32b8.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: schoolhouse-rdap-postmerge-proof-32b8-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  prove:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-rdap-exact-domain-census-postmerge-proof-32b8')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prove canonical topology and emit portable receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          BASE='681ae0d41bed04d068836ee9d746fe7701d234cb'
+          PRODUCT='f6048a4a8d5c5e74c5f6b19fb4b45bd2b0c260b4'
+          PRODUCT_TREE='45fca80e15c6df7443c0b063210606fdb244ff94'
+          MERGE='32b818c9d37ff5e65629848aca84c8d30859387b'
+          V2_HEAD='6e3c321efbd1c0e5d7ad44a5bca9b1198728477b'
+          V2_RUN='31155182255'
+          V2_RELEASE_RUN='31155182252'
+          V2_NOHUMAN_RUN='31155182258'
+          V2_ARTIFACT='8984875767'
+          V2_ARTIFACT_BYTES='23248'
+          V2_ARTIFACT_DIGEST='sha256:a78b6055ef28e7b48b194ee785c7fc85736dca466b26238dad724b80688fc9ec'
+          WORKFLOW='.github/workflows/temp-schoolhouse-rdap-exact-domain-census-postmerge-proof-32b8.yml'
+          VALIDATOR='tools/validate-schoolhouse-rdap-exact-domain-census-custody.py'
+          WORK="$RUNNER_TEMP/schoolhouse-rdap-canonical-v3"
+          ZIP="$RUNNER_TEMP/schoolhouse-rdap-postmerge-proof-v2.zip"
+          V2_OUT="$RUNNER_TEMP/schoolhouse-rdap-postmerge-proof-v2"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-rdap-postmerge-proof-32b8-v3"
+          rm -rf "$WORK" "$V2_OUT" "$RECEIPT"
+          mkdir -p "$V2_OUT" "$RECEIPT"
+
+          cat > "$RECEIPT/expected-paths.txt" <<'PATHS'
+          data/intake/schoolhouse-rdap-exact-domain-census-v1/product-manifest.json
+          data/intake/schoolhouse-rdap-exact-domain-census-v1/sealed-qualification-artifact.zip
+          data/intake/schoolhouse-rdap-exact-domain-census-v1/sealed-source-artifact.zip
+          data/intake/schoolhouse-rdap-exact-domain-census-v1/source-custody.json
+          docs/milestones/schoolhouse-rdap-exact-domain-census-v1.md
+          tools/validate-schoolhouse-rdap-exact-domain-census-custody.py
+          PATHS
+          sed -i 's/^          //' "$RECEIPT/expected-paths.txt"
+
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          MAIN="$(git rev-parse origin/main)"
+          PROOF="$(git rev-parse HEAD)"
+          {
+            printf 'canonical_main=%s\n' "$MAIN"
+            printf 'proof_head=%s\n' "$PROOF"
+            printf 'proof_parent=%s\n' "$(git rev-parse HEAD^)"
+            printf 'merge_parents=%s\n' "$(git show -s --format=%P "$MERGE")"
+            printf 'merge_tree=%s\n' "$(git rev-parse "$MERGE^{tree}")"
+            printf 'product_tree=%s\n' "$(git rev-parse "$PRODUCT^{tree}")"
+          } | tee "$RECEIPT/topology.txt"
+          test "$MAIN" = "$MERGE"
+          test "$(git rev-parse HEAD^)" = "$MERGE"
+          test "$(git merge-base HEAD origin/main)" = "$MERGE"
+          test "$(git show -s --format=%P "$MERGE")" = "$BASE $PRODUCT"
+          test "$(git rev-parse "$MERGE^{tree}")" = "$PRODUCT_TREE"
+          test "$(git rev-parse "$PRODUCT^{tree}")" = "$PRODUCT_TREE"
+          test "$(git rev-parse "$PRODUCT^")" = "$BASE"
+          git diff --quiet "$PRODUCT" "$MERGE"
+
+          mapfile -t PROOF_DELTA < <(git diff --name-only "$MERGE"..HEAD)
+          test "${#PROOF_DELTA[@]}" -eq 1
+          test "${PROOF_DELTA[0]}" = "$WORKFLOW"
+          git diff --name-status "$BASE" "$MERGE" > "$RECEIPT/canonical-name-status.txt"
+          python - "$RECEIPT/expected-paths.txt" "$RECEIPT/canonical-name-status.txt" <<'PY'
+          from pathlib import Path
+          import sys
+          expected = set(Path(sys.argv[1]).read_text().splitlines())
+          observed = set()
+          for row in Path(sys.argv[2]).read_text().splitlines():
+              status, path = row.split('\t', 1)
+              if status != 'A':
+                  raise SystemExit(f'non-addition canonical path: {row}')
+              observed.add(path)
+          if observed != expected:
+              raise SystemExit(f'canonical path drift: {sorted(observed ^ expected)}')
+          print('canonical_surface=6_addition_only_workflow_free')
+          PY
+          test -z "$(git diff --name-only "$BASE" "$MERGE" | grep '^\.github/' || true)"
+          test "$(git ls-tree "$MERGE" data/intake/schoolhouse-rdap-exact-domain-census-v1/sealed-source-artifact.zip | awk '{print $3}')" = '77ee92e96c88934cf6aa2d697eb985f13fda321b'
+          test "$(git ls-tree "$MERGE" data/intake/schoolhouse-rdap-exact-domain-census-v1/sealed-qualification-artifact.zip | awk '{print $3}')" = 'c493a3c4430dad167fc9a71d009eb33c48ca9ff8'
+          test "$(git ls-tree "$MERGE" data/intake/schoolhouse-rdap-exact-domain-census-v1/source-custody.json | awk '{print $3}')" = 'de7f0e4e83a11563215c9b94495a2dcb8004979e'
+          test "$(git ls-tree "$MERGE" data/intake/schoolhouse-rdap-exact-domain-census-v1/product-manifest.json | awk '{print $3}')" = '1381b1dc68f0e2b5c65706182df1262d89e1653c'
+          test "$(git ls-tree "$MERGE" docs/milestones/schoolhouse-rdap-exact-domain-census-v1.md | awk '{print $3}')" = '0bf154a783b08ede4a8c2fc88e0058f6c9298df9'
+          test "$(git ls-tree "$MERGE" "$VALIDATOR" | awk '{print $1}')" = '100755'
+          test "$(git ls-tree "$MERGE" "$VALIDATOR" | awk '{print $3}')" = '84a4a003e2849afaeea20b680c4db29051675207'
+
+          check_run() {
+            local id="$1" expected_name="$2" expected_head="$3"
+            gh api "repos/$REPO/actions/runs/$id" > "$RECEIPT/run-$id.json"
+            test "$(jq -r .name "$RECEIPT/run-$id.json")" = "$expected_name"
+            test "$(jq -r .head_sha "$RECEIPT/run-$id.json")" = "$expected_head"
+            test "$(jq -r .status "$RECEIPT/run-$id.json")" = 'completed'
+            test "$(jq -r .conclusion "$RECEIPT/run-$id.json")" = 'success'
+          }
+          check_run "$V2_RUN" 'TEMP prove canonical School.House RDAP custody merge v2' "$V2_HEAD"
+          check_run "$V2_RELEASE_RUN" 'Release checks' "$V2_HEAD"
+          check_run "$V2_NOHUMAN_RUN" 'No magic human gate' "$V2_HEAD"
+
+          gh api "repos/$REPO/actions/artifacts/$V2_ARTIFACT" > "$RECEIPT/v2-artifact.json"
+          test "$(jq -r .digest "$RECEIPT/v2-artifact.json")" = "$V2_ARTIFACT_DIGEST"
+          test "$(jq -r .name "$RECEIPT/v2-artifact.json")" = 'schoolhouse-rdap-exact-domain-census-postmerge-proof-32b8-v2'
+          test "$(jq -r .workflow_run.id "$RECEIPT/v2-artifact.json")" = "$V2_RUN"
+          test "$(jq -r .workflow_run.head_sha "$RECEIPT/v2-artifact.json")" = "$V2_HEAD"
+          gh api "repos/$REPO/actions/artifacts/$V2_ARTIFACT/zip" > "$ZIP"
+          test "$(stat -c%s "$ZIP")" = "$V2_ARTIFACT_BYTES"
+          test "sha256:$(sha256sum "$ZIP" | awk '{print $1}')" = "$V2_ARTIFACT_DIGEST"
+          unzip -q "$ZIP" -d "$V2_OUT"
+          test "$(find "$V2_OUT" -maxdepth 1 -type f | wc -l | tr -d ' ')" = '15'
+          jq -e '
+            .proof == "pass" and
+            .canonical_main_observed == "32b818c9d37ff5e65629848aca84c8d30859387b" and
+            .canonical_merge == "32b818c9d37ff5e65629848aca84c8d30859387b" and
+            .canonical_merge_parents == ["681ae0d41bed04d068836ee9d746fe7701d234cb","f6048a4a8d5c5e74c5f6b19fb4b45bd2b0c260b4"] and
+            .canonical_merge_tree == "45fca80e15c6df7443c0b063210606fdb244ff94" and
+            .canonical_paths == 6 and
+            .workflow_paths == 0 and
+            .fixed_routes == 2 and
+            .terminal_routes == 2 and
+            .total_requests == 2 and
+            .candidate_rows == 0 and
+            .registrar_role_name_values == 1 and
+            .registrant_organization_values == 0 and
+            .redaction_present == true and
+            .identities_admitted == 0 and
+            .relationships_admitted == 0 and
+            .negative_existence_claims == 0 and
+            .owner_or_operator_admissions == 0 and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none" and
+            .public_schoolhouse_legal_identity == "unresolved" and
+            .adversarial_refusals == 6 and
+            .clean_replay == "pass" and
+            .complete_release_gate == "pass"
+          ' "$V2_OUT/proof.json"
+          grep -qE '  /home/runner/' "$V2_OUT/SHA256SUMS"
+          printf 'superseded_v2_checksum_path_mode=runner_absolute_nonportable\n' | tee -a "$RECEIPT/topology.txt"
+
+          for attempt in $(seq 1 90); do
+            gh api "repos/$REPO/actions/runs?head_sha=$PROOF&per_page=100" > "$RECEIPT/proof-head-runs.json"
+            RELEASE="$(jq -r '[.workflow_runs[] | select(.name == "Release checks")] | sort_by(.created_at) | last | .conclusion // ""' "$RECEIPT/proof-head-runs.json")"
+            NOHUMAN="$(jq -r '[.workflow_runs[] | select(.name == "No magic human gate")] | sort_by(.created_at) | last | .conclusion // ""' "$RECEIPT/proof-head-runs.json")"
+            FAILURE="$(jq -r '[.workflow_runs[] | select((.name == "Release checks" or .name == "No magic human gate") and (.conclusion == "failure" or .conclusion == "cancelled" or .conclusion == "timed_out" or .conclusion == "action_required"))] | length' "$RECEIPT/proof-head-runs.json")"
+            test "$FAILURE" = '0'
+            if test "$RELEASE" = 'success' && test "$NOHUMAN" = 'success'; then break; fi
+            sleep 10
+          done
+          test "$RELEASE" = 'success'
+          test "$NOHUMAN" = 'success'
+          PROOF_RELEASE_RUN="$(jq -r '[.workflow_runs[] | select(.name == "Release checks")] | sort_by(.created_at) | last | .id' "$RECEIPT/proof-head-runs.json")"
+          PROOF_NOHUMAN_RUN="$(jq -r '[.workflow_runs[] | select(.name == "No magic human gate")] | sort_by(.created_at) | last | .id' "$RECEIPT/proof-head-runs.json")"
+
+          git worktree add --detach "$WORK" "$MERGE"
+          export TERM=xterm
+          {
+            cd "$WORK"
+            python -m py_compile "$VALIDATOR"
+            python "$VALIDATOR"
+            python "$VALIDATOR" --self-test
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          } 2>&1 | tee "$RECEIPT/focused-gates.log"
+          grep -q '"adversarial_refusals": 6' "$RECEIPT/focused-gates.log"
+          grep -q '"public_schoolhouse_legal_identity": "unresolved"' "$RECEIPT/focused-gates.log"
+          (cd "$WORK" && npm run release:check) 2>&1 | tee "$RECEIPT/release-check.log"
+
+          git -C "$WORK" restore --staged --worktree .
+          git -C "$WORK" clean -fdx
+          {
+            cd "$WORK"
+            python "$VALIDATOR"
+            python "$VALIDATOR" --self-test
+            node tools/validate-no-magic-human-gate.mjs
+          } 2>&1 | tee "$RECEIPT/clean-replay.log"
+          git -C "$WORK" diff --check
+          git -C "$WORK" diff --exit-code
+          test -z "$(git -C "$WORK" status --porcelain=v1 --untracked-files=all)"
+
+          cat > "$RECEIPT/proof.json" <<EOF
+          {
+            "schema_version": "schoolhouse-rdap-exact-domain-census-postmerge-proof-v3@1",
+            "canonical_predecessor": "$BASE",
+            "product_commit": "$PRODUCT",
+            "product_tree": "$PRODUCT_TREE",
+            "canonical_merge": "$MERGE",
+            "canonical_merge_parents": ["$BASE", "$PRODUCT"],
+            "canonical_merge_tree": "$PRODUCT_TREE",
+            "canonical_main_observed": "$MAIN",
+            "canonical_paths": 6,
+            "addition_only": true,
+            "workflow_paths": 0,
+            "superseded_v2_proof_run": $V2_RUN,
+            "superseded_v2_artifact": $V2_ARTIFACT,
+            "superseded_v2_artifact_digest": "$V2_ARTIFACT_DIGEST",
+            "superseded_v2_checksum_path_mode": "runner_absolute_nonportable",
+            "receipt_checksum_path_mode": "relative_portable",
+            "proof_head_release_check_run": $PROOF_RELEASE_RUN,
+            "proof_head_no_magic_human_run": $PROOF_NOHUMAN_RUN,
+            "fixed_routes": 2,
+            "terminal_routes": 2,
+            "total_requests": 2,
+            "candidate_rows": 0,
+            "registrar_role_name_values": 1,
+            "registrant_organization_values": 0,
+            "redaction_present": true,
+            "identities_admitted": 0,
+            "relationships_admitted": 0,
+            "negative_existence_claims": 0,
+            "owner_or_operator_admissions": 0,
+            "outside_human_dependency": false,
+            "publication_effect": "none",
+            "adoption_effect": "none",
+            "graph_effect": "none",
+            "public_schoolhouse_legal_identity": "unresolved",
+            "adversarial_refusals": 6,
+            "clean_replay": "pass",
+            "complete_release_gate": "pass",
+            "proof": "pass"
+          }
+          EOF
+          sed -i 's/^          //' "$RECEIPT/proof.json"
+          (
+            cd "$RECEIPT"
+            find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' | sort -z | xargs -0 sha256sum > SHA256SUMS
+            ! grep -qE '  /' SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+          cat "$RECEIPT/proof.json"
+
+      - name: Preserve portable canonical post-merge proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-rdap-exact-domain-census-postmerge-proof-32b8-v3
+          path: ${{ runner.temp }}/schoolhouse-rdap-postmerge-proof-32b8-v3
+          if-no-files-found: error
+          retention-days: 90
