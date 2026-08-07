@@ -1,0 +1,147 @@
+name: TEMP materialize RD-04 next-frontier route-discovery custody
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: temp-ssc-rd04-next-frontier-route-discovery-custody-materializer-v1
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: github.head_ref == 'agent/ssc-rd04-next-frontier-route-discovery-custody-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+      - id: materialize
+        name: Recover immutable controller and execute exact transaction
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          CARRIER_PARENT: d26cb838df12a877840ebe71eb9388d44b6ceaf9
+          CARRIER_PATH: .github/workflows/temp-ssc-rd04-next-frontier-route-discovery-custody-materializer-v1.yml
+          PROTOCOL_MERGE: 34583221f8d2485798fbe308241bf28fefd255ed
+          TARGET_BRANCH: agent/ssc-rd04-next-frontier-route-discovery-custody-product-v1
+          STANDING_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-next-frontier-route-discovery-custody.yml
+          ARCHIVE_BYTES: '66240'
+          ARCHIVE_SHA256: 7725c7283070117b4954c171c33cb6ddd29e2a0a22129e9d64d3c4b84fdee289
+          ARCHIVE_GIT_BLOB: ec0480e1013b9af886b6c1258d14a4c381936743
+          OUT: /tmp/ssc-rd04-route-discovery-custody-materializer-v1
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BOOT=/tmp/ssc-rd04-route-discovery-custody-controller-v1
+          rm -rf "$BOOT"
+          mkdir -p "$BOOT"
+          cat > "$BOOT/controller-shards.tsv" <<'EOF_SHARDS'
+          part-00.bin 82d00b998f57805f5ed39088bb34c8e50a9433a7 2048 3c25bc21e0c7c6154a67673b35558cd01efff2e40b012054140fbda05c8cda3e
+          part-01.bin 5aba034dc76961bb0d2139a499d2fa01c408251e 2048 4c29444fbfd8de42f2138ca62e52c9df3174755ca472a12e608cd0b567a201b3
+          part-02.bin 672070ef1c068ed1abed3d24ec4df454a6783924 1188 d6291d2561b8ca775971c97230f50fa1037564473b053a7c9e4f5150ebf8318f
+          EOF_SHARDS
+          : > "$BOOT/controller.sh.xz"
+          while read -r name blob bytes digest; do
+            curl -fsSL \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/$GH_REPOSITORY/git/blobs/$blob" \
+              > "$BOOT/$name.json"
+            test "$(jq -r .encoding "$BOOT/$name.json")" = base64
+            jq -r .content "$BOOT/$name.json" | tr -d '\n' | base64 -d > "$BOOT/$name"
+            test "$(wc -c < "$BOOT/$name" | tr -d ' ')" = "$bytes"
+            test "$(sha256sum "$BOOT/$name" | awk '{print $1}')" = "$digest"
+            test "$(git hash-object "$BOOT/$name")" = "$blob"
+            cat "$BOOT/$name" >> "$BOOT/controller.sh.xz"
+          done < "$BOOT/controller-shards.tsv"
+          test "$(wc -c < "$BOOT/controller.sh.xz" | tr -d ' ')" = 5284
+          test "$(sha256sum "$BOOT/controller.sh.xz" | awk '{print $1}')" = 2f47de53279275b1bdbd7df416aee402476bb92ea5382df575e62c53fd3f8a98
+          test "$(git hash-object "$BOOT/controller.sh.xz")" = c2c67a57f52ab87420058a0b742d98ac058a4f32
+          xz -dc "$BOOT/controller.sh.xz" > "$BOOT/controller.sh"
+          test "$(wc -c < "$BOOT/controller.sh" | tr -d ' ')" = 18857
+          test "$(sha256sum "$BOOT/controller.sh" | awk '{print $1}')" = 218926cae507f171436934ca306a46d8bc8ff0022dbc8b6a415d2287154493bf
+          test "$(git hash-object "$BOOT/controller.sh")" = 3c2cbd68164437d7f2a996373b1a6689c1908299
+          bash -n "$BOOT/controller.sh"
+          chmod 0755 "$BOOT/controller.sh"
+          bash "$BOOT/controller.sh"
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-next-frontier-route-discovery-custody-materialization-v1
+          path: |
+            /tmp/ssc-rd04-route-discovery-custody-materializer-v1/materialization-receipt.json
+            /tmp/ssc-rd04-route-discovery-custody-materializer-v1/failure.txt
+            /tmp/ssc-rd04-route-discovery-custody-materializer-v1/run.log
+            /tmp/ssc-rd04-route-discovery-custody-materializer-v1/release-check.log
+            /tmp/ssc-rd04-route-discovery-custody-materializer-v1/adversarial.log
+            /tmp/ssc-rd04-route-discovery-custody-materializer-v1/SHA256SUMS
+            /tmp/ssc-rd04-route-discovery-custody-materializer-v1/GIT-BLOBS
+            /tmp/ssc-rd04-route-discovery-custody-materializer-v1/permanent-paths.txt
+            /tmp/ssc-rd04-route-discovery-custody-materializer-v1/ordinary-paths.txt
+            /tmp/ssc-rd04-route-discovery-custody-controller-v1/controller-shards.tsv
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 90
+      - name: Report terminal outcome
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          OUTCOME: ${{ steps.materialize.outcome }}
+          OUT: /tmp/ssc-rd04-route-discovery-custody-materializer-v1
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BODY=/tmp/rd04-route-discovery-custody-materializer-comment.md
+          if test "$OUTCOME" = success && test -f "$OUT/materialization-receipt.json"; then
+            python - <<'PY' > "$BODY"
+          import json, os
+          from pathlib import Path
+          r=json.loads((Path(os.environ['OUT'])/'materialization-receipt.json').read_text())
+          print('RD-04 next-frontier route-discovery custody materialized successfully.\n')
+          print('```text')
+          for key in ['workflow_run','carrier_head','canonical_parent','canonical_parent_tree','qualified_full_head','qualified_full_tree','ordinary_head','ordinary_tree','standing_workflow_blob','archive_git_blob','permanent_paths','ordinary_paths','terminal_requests','candidate_route_rows','unique_candidate_urls','source_admissions','field_mutations','row_state_mutations','adversarial_refusals','class_closed','outside_human_dependency']:
+              print(f'{key}: {r[key]}')
+          print('```\n')
+          print('The ordinary branch moved only after immutable transport, exact package, committed full-tree, focused, schema, adversarial, no-magic-human, complete-release, clean-replay, path, and live-main lease gates passed. The standing workflow remains pending byte-identical connector composition.')
+          PY
+          else
+            {
+              echo 'RD-04 next-frontier route-discovery custody materialization failed closed.'
+              echo
+              echo '```text'
+              echo "workflow_run: $GITHUB_RUN_ID"
+              echo "carrier_head: $GITHUB_SHA"
+              echo "outcome: $OUTCOME"
+              test -f "$OUT/failure.txt" && cat "$OUT/failure.txt"
+              test -f "$OUT/run.log" && tail -240 "$OUT/run.log"
+              echo '```'
+              echo
+              echo 'No unverified custody, source, field, row, class, ledger, publication, adoption, or graph authority is represented.'
+            } > "$BODY"
+          fi
+          gh issue comment 1017 --repo "$GH_REPOSITORY" --body-file "$BODY"
+      - name: Refuse failed materialization
+        if: always()
+        env:
+          OUTCOME: ${{ steps.materialize.outcome }}
+        run: test "$OUTCOME" = success
