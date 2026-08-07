@@ -1,0 +1,251 @@
+name: TEMP materialize School.House SAM public entity census custody
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-custody-materializer-v1.yml'
+      - '.github/materializers/schoolhouse-sam-public-entity-registration-census-custody-v1/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: schoolhouse-sam-custody-materializer-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-sam-public-entity-registration-census-custody-materializer-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Materialize, qualify, and publish exact product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='d26cb838df12a877840ebe71eb9388d44b6ceaf9'
+          BASE_TREE='af520dd75d4111d60f8a15c681e9d04d23c2f8f4'
+          TARGET='agent/schoolhouse-sam-public-entity-registration-census-custody-product-v1'
+          WORKFLOW='.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-custody-materializer-v1.yml'
+          PAYLOAD='.github/materializers/schoolhouse-sam-public-entity-registration-census-custody-v1'
+          CARRIER_HEAD="$(git rev-parse HEAD)"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-sam-public-entity-registration-census-custody-materialization-v1"
+          rm -rf "$RECEIPT"
+          mkdir -p "$RECEIPT"
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test "$(git rev-parse "$BASE^{tree}")" = "$BASE_TREE"
+          test "$(git merge-base "$BASE" HEAD)" = "$BASE"
+
+          cat > "$RUNNER_TEMP/expected-carrier" <<EOF
+          $WORKFLOW
+          $PAYLOAD/part-00
+          $PAYLOAD/part-01
+          $PAYLOAD/part-02
+          $PAYLOAD/part-03
+          $PAYLOAD/part-04
+          $PAYLOAD/part-05
+          EOF
+          sort -o "$RUNNER_TEMP/expected-carrier" "$RUNNER_TEMP/expected-carrier"
+          git diff --name-only "$BASE"..HEAD | sort > "$RUNNER_TEMP/observed-carrier"
+          diff -u "$RUNNER_TEMP/expected-carrier" "$RUNNER_TEMP/observed-carrier"
+
+          SIZES=(10000 10000 15000 15000 15000 10100)
+          HASHES=(
+            278c8a57dd6204ab8d2de941bdecf6b41eb3713099e8dbbe05e686a4b13f048d
+            6020f5f047224341e7b09fe99669ba20165ec97bdaa652a777ef33966e606df6
+            57284b1c91664718f0e13c3da7238c0b4e2090ddd8ef2cc41192c68944f89eb5
+            d89b6d6b08c7f463a742aaa372089fcd8ecf881a7ae13cfd89b9729dd329384d
+            376e3844e5c0926c4259c9d12e2c5d47c48ad1317edc9d11bed81d9caa2f3093
+            59060364dd76ab13ea95ace24f3d58f3091426905f1b6ee2083884e725a50f9f
+          )
+          for index in "${!SIZES[@]}"; do
+            printf -v suffix '%02d' "$index"
+            chunk="$PAYLOAD/part-$suffix"
+            test "$(stat -c%s "$chunk")" = "${SIZES[$index]}"
+            test "$(sha256sum "$chunk" | awk '{print $1}')" = "${HASHES[$index]}"
+          done
+
+          B64="$RUNNER_TEMP/product.tar.xz.b64"
+          XZ="$RUNNER_TEMP/product.tar.xz"
+          TAR="$RUNNER_TEMP/product.tar"
+          PRODUCT="$RUNNER_TEMP/product"
+          cat "$PAYLOAD"/part-{00,01,02,03,04,05} > "$B64"
+          test "$(stat -c%s "$B64")" = '75100'
+          test "$(sha256sum "$B64" | awk '{print $1}')" = '10d6494b60bd28f1ab595aeecdf1cfb648b99e059327b2b3e66c2a264bb1eb42'
+          base64 --decode "$B64" > "$XZ"
+          test "$(stat -c%s "$XZ")" = '56324'
+          test "$(sha256sum "$XZ" | awk '{print $1}')" = '495c017ab33cea972045194cf8c56758f00fc45006ec433f2a31b4cddf9ca735'
+          xz --decompress --stdout "$XZ" > "$TAR"
+          test "$(stat -c%s "$TAR")" = '112640'
+          test "$(sha256sum "$TAR" | awk '{print $1}')" = 'e70db63987b6d9a8db695f08a679375d2c20ec5ceb8a3bacdb3e9ed7f21e781f'
+
+          cat > "$RUNNER_TEMP/expected-product" <<'EOF'
+          data/intake/schoolhouse-sam-public-entity-registration-census-v1/product-manifest.json
+          data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-qualification-artifact.zip
+          data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-source-artifact.zip
+          data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-wrapper-reconstruction-artifact.zip
+          data/intake/schoolhouse-sam-public-entity-registration-census-v1/source-custody.json
+          docs/milestones/schoolhouse-sam-public-entity-registration-census-v1.md
+          tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py
+          EOF
+          sort -o "$RUNNER_TEMP/expected-product" "$RUNNER_TEMP/expected-product"
+          python - "$TAR" "$RUNNER_TEMP/expected-product" <<'PY'
+          from pathlib import Path, PurePosixPath
+          import sys
+          import tarfile
+
+          expected = Path(sys.argv[2]).read_text().splitlines()
+          with tarfile.open(sys.argv[1], 'r:') as archive:
+              members = archive.getmembers()
+              assert sorted(member.name for member in members) == expected
+              assert len(members) == 7
+              for member in members:
+                  path = PurePosixPath(member.name)
+                  assert member.isfile()
+                  assert not path.is_absolute() and '..' not in path.parts
+                  assert member.uid == member.gid == 0
+          PY
+          rm -rf "$PRODUCT"
+          mkdir -p "$PRODUCT"
+          tar -xf "$TAR" -C "$PRODUCT"
+
+          WORKTREE="$RUNNER_TEMP/product-repository"
+          rm -rf "$WORKTREE"
+          git worktree add --detach "$WORKTREE" "$BASE"
+          cp -a "$PRODUCT"/. "$WORKTREE"/
+          cd "$WORKTREE"
+          chmod 0755 tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py
+          git add -- \
+            data/intake/schoolhouse-sam-public-entity-registration-census-v1 \
+            docs/milestones/schoolhouse-sam-public-entity-registration-census-v1.md \
+            tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py
+          git diff --cached --name-only | sort > "$RUNNER_TEMP/observed-product"
+          diff -u "$RUNNER_TEMP/expected-product" "$RUNNER_TEMP/observed-product"
+          git diff --cached --check
+
+          git config user.name 'School.House custody materializer'
+          git config user.email 'actions@users.noreply.github.com'
+          git config commit.gpgsign false
+          git commit \
+            -m 'Add bounded School.House SAM public entity census custody' \
+            -m 'Seal the independently qualified three-query SAM.gov public Entity Registrations boundary. Preserve three typed control-unavailable receipts, zero submitted searches, zero retained candidates, and no identity, relationship, federal-registration, award, ownership, absence, publication, adoption, or graph authority.'
+          PRODUCT_COMMIT="$(git rev-parse HEAD)"
+          PRODUCT_TREE="$(git rev-parse 'HEAD^{tree}')"
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+          git diff --name-only "$BASE"..HEAD | sort > "$RUNNER_TEMP/observed-product-commit"
+          diff -u "$RUNNER_TEMP/expected-product" "$RUNNER_TEMP/observed-product-commit"
+          ! git diff --name-only "$BASE"..HEAD | grep -q '^\.github/workflows/'
+
+          python -m py_compile tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py
+          python tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py --self-test \
+            | tee "$RECEIPT/focused-validator.log"
+          node tools/validate-no-magic-human-gate.mjs \
+            | tee "$RECEIPT/no-magic-human.log"
+          npm run release:check > "$RECEIPT/release-check.log" 2>&1
+          git reset --hard "$PRODUCT_COMMIT"
+          git clean -fd
+          python tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py --self-test \
+            | tee "$RECEIPT/deterministic-replay.log"
+          test -z "$(git status --porcelain)"
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE"
+          set +e
+          git ls-remote --exit-code --heads origin "refs/heads/$TARGET" > "$RECEIPT/prepush-target-ref.txt"
+          TARGET_RC="$?"
+          set -e
+          test "$TARGET_RC" -eq 2
+          git push origin "$PRODUCT_COMMIT:refs/heads/$TARGET" |& tee "$RECEIPT/push.log"
+          REMOTE_TARGET="$(git ls-remote --heads origin "refs/heads/$TARGET" | awk '{print $1}')"
+          test "$REMOTE_TARGET" = "$PRODUCT_COMMIT"
+
+          python - "$RECEIPT/materialization.json" \
+            "$BASE" "$BASE_TREE" "$CARRIER_HEAD" "$PRODUCT_COMMIT" "$PRODUCT_TREE" "$TARGET" <<'PY'
+          from pathlib import Path
+          import json
+          import sys
+
+          output, base, base_tree, carrier, commit, tree, target = sys.argv[1:]
+          value = {
+              'schema_version': 'schoolhouse-sam-public-entity-registration-census-custody-materialization@1',
+              'status': 'complete',
+              'issue': 1382,
+              'canonical_parent': base,
+              'canonical_parent_tree': base_tree,
+              'carrier_head': carrier,
+              'target_branch': target,
+              'product_commit': commit,
+              'product_tree': tree,
+              'product_parent': base,
+              'product_commit_count': 1,
+              'permanent_path_count': 7,
+              'payload_base64_sha256': '10d6494b60bd28f1ab595aeecdf1cfb648b99e059327b2b3e66c2a264bb1eb42',
+              'payload_xz_sha256': '495c017ab33cea972045194cf8c56758f00fc45006ec433f2a31b4cddf9ca735',
+              'payload_tar_sha256': 'e70db63987b6d9a8db695f08a679375d2c20ec5ceb8a3bacdb3e9ed7f21e781f',
+              'fixed_queries': 3,
+              'terminal_queries': 3,
+              'terminal_query_state_counts': {'bounded_public_search_controls_unavailable': 3},
+              'query_submissions': 0,
+              'retained_candidate_rows': 0,
+              'unique_public_ueis': 0,
+              'identities_admitted': 0,
+              'relationships_admitted': 0,
+              'negative_existence_claims': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'public_schoolhouse_legal_identity': 'unresolved',
+          }
+          Path(output).write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+          PY
+          {
+            printf 'canonical_parent=%s\n' "$BASE"
+            printf 'canonical_parent_tree=%s\n' "$BASE_TREE"
+            printf 'carrier_head=%s\n' "$CARRIER_HEAD"
+            printf 'product_commit=%s\n' "$PRODUCT_COMMIT"
+            printf 'product_tree=%s\n' "$PRODUCT_TREE"
+            printf 'target_branch=%s\n' "$TARGET"
+            printf 'remote_target=%s\n' "$REMOTE_TARGET"
+          } > "$RECEIPT/product-proof.txt"
+          (
+            cd "$RECEIPT"
+            sha256sum deterministic-replay.log focused-validator.log materialization.json \
+              no-magic-human.log prepush-target-ref.txt product-proof.txt push.log \
+              release-check.log > SHA256SUMS
+          )
+          cat "$RECEIPT/materialization.json"
+
+      - name: Upload exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-sam-public-entity-registration-census-custody-materialization-v1
+          path: ${{ runner.temp }}/schoolhouse-sam-public-entity-registration-census-custody-materialization-v1
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 9
