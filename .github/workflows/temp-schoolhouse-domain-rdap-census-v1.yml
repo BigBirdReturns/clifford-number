@@ -1,0 +1,1149 @@
+name: TEMP acquire School.House exact-domain RDAP custody
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-domain-rdap-census-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-domain-rdap-census-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  acquire:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-domain-rdap-census-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify carrier and reconstruct exact bounded runner
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PARENT='681ae0d41bed04d068836ee9d746fe7701d234cb'
+          PARENT_TREE='9ee392609c4c6bcce2806f9b8a1e514333c1428e'
+          WORKFLOW='.github/workflows/temp-schoolhouse-domain-rdap-census-v1.yml'
+          RUNNER="$RUNNER_TEMP/acquire-schoolhouse-domain-rdap.py"
+
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main' "$PARENT"
+          git merge-base --is-ancestor "$PARENT" origin/main
+          test "$(git rev-parse "$PARENT^{tree}")" = "$PARENT_TREE"
+          test "$(git rev-parse HEAD^)" = "$PARENT"
+          test "$(git rev-list --count "$PARENT"..HEAD)" = '1'
+          test "$(git merge-base HEAD origin/main)" = "$PARENT"
+
+          mapfile -t CHANGED < <(git diff --name-only "$PARENT"..HEAD)
+          test "${#CHANGED[@]}" -eq 1
+          test "${CHANGED[0]}" = "$WORKFLOW"
+
+          cat > "$RUNNER" <<'PY'
+          #!/usr/bin/env python3
+          from __future__ import annotations
+
+          import argparse
+          import hashlib
+          import json
+          import re
+          import ssl
+          import time
+          import unicodedata
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+          from collections import Counter
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from typing import Any
+
+          SCHEMA_VERSION = "schoolhouse-domain-rdap-census@1"
+          DOMAIN = "school.house"
+          BOOTSTRAP_URL = "https://data.iana.org/rdap/dns.json"
+          MAX_RESPONSE_BYTES = 5 * 1024 * 1024
+          MAX_ATTEMPTS_PER_ROUTE = 2
+          MAX_TOTAL_REQUESTS = 4
+          TIMEOUT_SECONDS = 45
+          USER_AGENT = "clifford-number-schoolhouse-rdap-custody/1.0"
+          CORE_FILES = (
+              "route-receipts.jsonl",
+              "source-receipt.json",
+              "route-policy.json",
+              "rdap-domain.json",
+              "registrant-organization-candidates.jsonl",
+              "summary.json",
+          )
+          FORBIDDEN_KEYS = {
+              "email",
+              "emails",
+              "phone",
+              "telephone",
+              "tel",
+              "fax",
+              "address",
+              "addresses",
+              "street_address",
+              "mailing_address",
+              "postal_code",
+              "person_name",
+              "registrant_name",
+              "administrative_name",
+              "technical_name",
+              "contact_uri",
+              "raw_bootstrap_json",
+              "raw_rdap_json",
+              "vcard_values",
+          }
+          CONTACT_PROPERTY_NAMES = {"adr", "email", "tel", "impp", "url", "geo", "tz", "label"}
+
+
+          class ProtocolError(RuntimeError):
+              pass
+
+
+          class BoundedResponseError(ProtocolError):
+              pass
+
+
+          class SameHostRedirect(urllib.request.HTTPRedirectHandler):
+              def __init__(self, allowed_host: str):
+                  super().__init__()
+                  self.allowed_host = allowed_host.lower()
+
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  parts = urllib.parse.urlsplit(newurl)
+                  if parts.scheme.lower() != "https" or (parts.hostname or "").lower() != self.allowed_host:
+                      raise urllib.error.URLError("blocked_off_host_redirect")
+                  if parts.username is not None or parts.password is not None:
+                      raise urllib.error.URLError("blocked_credentialed_redirect")
+                  return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+          def now_iso() -> str:
+              return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+          def sha256_bytes(data: bytes) -> str:
+              return hashlib.sha256(data).hexdigest()
+
+
+          def canonical_json(value: Any) -> bytes:
+              return (json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False) + "\n").encode("utf-8")
+
+
+          def canonical_jsonl(rows: list[dict[str, Any]]) -> bytes:
+              return b"".join(
+                  (json.dumps(row, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n").encode("utf-8")
+                  for row in rows
+              )
+
+
+          def clean_string(value: Any, *, maximum: int = 256) -> str | None:
+              if not isinstance(value, str):
+                  return None
+              text = unicodedata.normalize("NFKC", value)
+              text = " ".join(text.replace("\x00", " ").split())
+              if not text or len(text) > maximum:
+                  return None
+              if any(ord(ch) < 32 or ord(ch) == 127 for ch in text):
+                  return None
+              return text
+
+
+          def clean_organization(value: Any) -> str | None:
+              parts: list[str] = []
+              if isinstance(value, str):
+                  parts = [value]
+              elif isinstance(value, list):
+                  parts = [item for item in value if isinstance(item, str)]
+              else:
+                  return None
+              text = clean_string(" ".join(parts), maximum=256)
+              if not text:
+                  return None
+              lowered = text.casefold()
+              if "@" in text or "mailto:" in lowered or "tel:" in lowered or "http://" in lowered or "https://" in lowered:
+                  return None
+              return text
+
+
+          def normalize_domain(value: Any) -> str | None:
+              text = clean_string(value, maximum=253)
+              if not text:
+                  return None
+              text = text.rstrip(".").casefold()
+              try:
+                  return text.encode("idna").decode("ascii")
+              except UnicodeError:
+                  return None
+
+
+          def flatten_property_value(value: Any) -> list[str]:
+              if isinstance(value, str):
+                  return [value]
+              if isinstance(value, list):
+                  result: list[str] = []
+                  for item in value:
+                      if isinstance(item, str):
+                          result.append(item)
+                  return result
+              return []
+
+
+          def vcard_properties(entity: dict[str, Any]) -> list[tuple[str, Any]]:
+              raw = entity.get("vcardArray")
+              if not isinstance(raw, list) or len(raw) != 2 or not isinstance(raw[1], list):
+                  return []
+              properties: list[tuple[str, Any]] = []
+              for item in raw[1]:
+                  if not isinstance(item, list) or len(item) < 4:
+                      continue
+                  name = clean_string(item[0], maximum=64)
+                  if not name:
+                      continue
+                  properties.append((name.casefold(), item[3]))
+              return properties
+
+
+          def walk_entities(entities: Any) -> list[dict[str, Any]]:
+              output: list[dict[str, Any]] = []
+              stack: list[tuple[Any, int]] = [(entities, 0)]
+              while stack:
+                  current, depth = stack.pop()
+                  if depth > 8 or not isinstance(current, list):
+                      continue
+                  for entity in current:
+                      if not isinstance(entity, dict):
+                          continue
+                      output.append(entity)
+                      if len(output) > 200:
+                          raise ProtocolError("entity_denominator_exceeds_200")
+                      stack.append((entity.get("entities"), depth + 1))
+              return output
+
+
+          def extract_title_type(rows: Any) -> list[dict[str, str]]:
+              output: list[dict[str, str]] = []
+              if not isinstance(rows, list):
+                  return output
+              for row in rows[:100]:
+                  if not isinstance(row, dict):
+                      continue
+                  title = clean_string(row.get("title"), maximum=256)
+                  row_type = clean_string(row.get("type"), maximum=128)
+                  item: dict[str, str] = {}
+                  if title:
+                      item["title"] = title
+                  if row_type:
+                      item["type"] = row_type
+                  if item:
+                      output.append(item)
+              return output
+
+
+          def parse_domain_object(payload: dict[str, Any], *, terminal_public_retrieval: bool) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+              object_class = clean_string(payload.get("objectClassName"), maximum=64)
+              ldh_name = normalize_domain(payload.get("ldhName"))
+              unicode_name = normalize_domain(payload.get("unicodeName"))
+              ldh_exact = ldh_name == DOMAIN
+              unicode_exact = unicode_name == DOMAIN if unicode_name else False
+
+              statuses = sorted(
+                  {
+                      item
+                      for item in (clean_string(value, maximum=128) for value in payload.get("status", []) if isinstance(payload.get("status"), list))
+                      if item
+                  }
+              )[:100]
+
+              events: list[dict[str, str]] = []
+              raw_events = payload.get("events")
+              if isinstance(raw_events, list):
+                  for row in raw_events[:100]:
+                      if not isinstance(row, dict):
+                          continue
+                      action = clean_string(row.get("eventAction"), maximum=128)
+                      date = clean_string(row.get("eventDate"), maximum=128)
+                      if action or date:
+                          item: dict[str, str] = {}
+                          if action:
+                              item["action"] = action
+                          if date:
+                              item["date"] = date
+                          events.append(item)
+
+              nameservers: list[str] = []
+              raw_nameservers = payload.get("nameservers")
+              if isinstance(raw_nameservers, list):
+                  for row in raw_nameservers[:100]:
+                      if not isinstance(row, dict):
+                          continue
+                      name = normalize_domain(row.get("ldhName")) or normalize_domain(row.get("unicodeName"))
+                      if name:
+                          nameservers.append(name)
+              nameservers = sorted(set(nameservers))
+
+              secure_dns_raw = payload.get("secureDNS")
+              secure_dns: dict[str, Any] = {}
+              if isinstance(secure_dns_raw, dict):
+                  for source_key, target_key in (
+                      ("delegationSigned", "delegation_signed"),
+                      ("zoneSigned", "zone_signed"),
+                      ("maxSigLife", "maximum_signature_lifetime"),
+                  ):
+                      value = secure_dns_raw.get(source_key)
+                      if isinstance(value, (bool, int)) and not isinstance(value, str):
+                          secure_dns[target_key] = value
+
+              entity_role_counts: Counter[str] = Counter()
+              registrant_entity_count = 0
+              registrar_entity_count = 0
+              registrant_property_names: set[str] = set()
+              registrar_name_values: set[str] = set()
+              registrar_public_ids: set[tuple[str, str]] = set()
+              registrant_org_values_seen: set[str] = set()
+
+              for entity in walk_entities(payload.get("entities")):
+                  roles = sorted(
+                      {
+                          role.casefold()
+                          for role in (clean_string(value, maximum=64) for value in entity.get("roles", []) if isinstance(entity.get("roles"), list))
+                          if role
+                      }
+                  )
+                  for role in roles:
+                      entity_role_counts[role] += 1
+                  properties = vcard_properties(entity)
+                  property_names = {name for name, _ in properties}
+
+                  if "registrant" in roles:
+                      registrant_entity_count += 1
+                      registrant_property_names.update(property_names)
+                      for name, value in properties:
+                          if name == "org":
+                              organization = clean_organization(value)
+                              if organization:
+                                  registrant_org_values_seen.add(organization)
+
+                  if "registrar" in roles:
+                      registrar_entity_count += 1
+                      for name, value in properties:
+                          if name not in {"fn", "org"}:
+                              continue
+                          for candidate in flatten_property_value(value):
+                              cleaned = clean_organization(candidate)
+                              if cleaned:
+                                  registrar_name_values.add(cleaned)
+                      public_ids = entity.get("publicIds")
+                      if isinstance(public_ids, list):
+                          for public_id in public_ids[:50]:
+                              if not isinstance(public_id, dict):
+                                  continue
+                              identifier_type = clean_string(public_id.get("type"), maximum=128)
+                              identifier = clean_string(public_id.get("identifier"), maximum=128)
+                              if identifier_type and identifier:
+                                  registrar_public_ids.add((identifier_type, identifier))
+
+              notices = extract_title_type(payload.get("notices"))
+              remarks = extract_title_type(payload.get("remarks"))
+              redaction_text = " ".join(
+                  list(entity_role_counts)
+                  + [item.get("title", "") for item in notices + remarks]
+                  + [item.get("type", "") for item in notices + remarks]
+              ).casefold()
+              redaction_present = "redact" in redaction_text or "privacy" in redaction_text
+
+              exact_domain_object = object_class == "domain" and ldh_exact
+              retained_org_values = sorted(registrant_org_values_seen, key=str.casefold) if exact_domain_object else []
+              candidates: list[dict[str, Any]] = []
+              if terminal_public_retrieval and exact_domain_object:
+                  for organization in retained_org_values:
+                      candidate_id = hashlib.sha256((DOMAIN + "\0" + organization.casefold()).encode("utf-8")).hexdigest()[:24]
+                      candidates.append(
+                          {
+                              "schema_version": "schoolhouse-domain-rdap-registrant-organization-candidate@1",
+                              "candidate_id": f"rdap_org_{candidate_id}",
+                              "domain": DOMAIN,
+                              "organization_name": organization,
+                              "source_role": "registrant",
+                              "terminal_public_retrieval": True,
+                              "object_class_domain": True,
+                              "ldh_name_exact": True,
+                              "promotes_to": "domain_registrant_organization_candidate",
+                              "identity_admitted": False,
+                              "relationship_admitted": False,
+                              "owner_or_operator_admitted": False,
+                              "negative_existence_claim_created": False,
+                              "publication_effect": "none",
+                              "adoption_effect": "none",
+                              "graph_effect": "none",
+                          }
+                      )
+
+              conformance = sorted(
+                  {
+                      item
+                      for item in (clean_string(value, maximum=128) for value in payload.get("rdapConformance", []) if isinstance(payload.get("rdapConformance"), list))
+                      if item
+                  }
+              )[:100]
+
+              domain_record = {
+                  "schema_version": "schoolhouse-domain-rdap-privacy-minimized-object@1",
+                  "state": "parsed_terminal_public_rdap_domain" if terminal_public_retrieval else "not_parsed",
+                  "domain": DOMAIN,
+                  "object_class_name": object_class,
+                  "object_class_domain": object_class == "domain",
+                  "domain_handle": clean_string(payload.get("handle"), maximum=256),
+                  "ldh_name_exact": ldh_exact,
+                  "unicode_name_exact": unicode_exact,
+                  "statuses": statuses,
+                  "events": events,
+                  "nameservers": nameservers,
+                  "secure_dns": secure_dns,
+                  "rdap_conformance": conformance,
+                  "entity_role_counts": dict(sorted(entity_role_counts.items())),
+                  "registrant_entity_count": registrant_entity_count,
+                  "registrar_entity_count": registrar_entity_count,
+                  "registrant_vcard_property_names": sorted(registrant_property_names),
+                  "registrant_contact_property_names_present": sorted(registrant_property_names & CONTACT_PROPERTY_NAMES),
+                  "registrar_name_values": sorted(registrar_name_values, key=str.casefold),
+                  "registrar_public_ids": [
+                      {"type": identifier_type, "identifier": identifier}
+                      for identifier_type, identifier in sorted(registrar_public_ids)
+                  ],
+                  "notice_titles_and_types": notices,
+                  "remark_titles_and_types": remarks,
+                  "redaction_present": redaction_present,
+                  "public_registrant_organization_values_retained": len(retained_org_values),
+                  "domain_registrant_organization_candidate_rows": len(candidates),
+                  "raw_bootstrap_response_retained": False,
+                  "raw_rdap_response_retained": False,
+                  "registrant_person_name_values_retained": 0,
+                  "address_rows_retained": 0,
+                  "postal_code_rows_retained": 0,
+                  "telephone_or_fax_values_retained": 0,
+                  "email_values_retained": 0,
+                  "contact_uri_values_retained": 0,
+                  "private_support_rows": 0,
+              }
+              return domain_record, candidates
+
+
+          def select_house_service(payload: Any) -> tuple[str, int]:
+              if not isinstance(payload, dict):
+                  raise ProtocolError("bootstrap_payload_not_object")
+              services = payload.get("services")
+              if not isinstance(services, list):
+                  raise ProtocolError("bootstrap_services_missing")
+              matching_urls: list[str] = []
+              for service in services:
+                  if not isinstance(service, list) or len(service) != 2:
+                      continue
+                  labels, urls = service
+                  if not isinstance(labels, list) or not isinstance(urls, list):
+                      continue
+                  normalized_labels = {
+                      text.casefold().rstrip(".")
+                      for text in (clean_string(label, maximum=253) for label in labels)
+                      if text
+                  }
+                  if "house" not in normalized_labels:
+                      continue
+                  for raw_url in urls:
+                      url = clean_string(raw_url, maximum=2048)
+                      if not url:
+                          continue
+                      parts = urllib.parse.urlsplit(url)
+                      if (
+                          parts.scheme.lower() == "https"
+                          and parts.hostname
+                          and parts.username is None
+                          and parts.password is None
+                          and not parts.query
+                          and not parts.fragment
+                      ):
+                          matching_urls.append(url)
+              if not matching_urls:
+                  raise ProtocolError("house_https_rdap_service_not_found")
+              return matching_urls[0], len(matching_urls)
+
+
+          def domain_endpoint(service_base: str) -> str:
+              parts = urllib.parse.urlsplit(service_base)
+              if (
+                  parts.scheme.lower() != "https"
+                  or not parts.hostname
+                  or parts.username is not None
+                  or parts.password is not None
+                  or parts.query
+                  or parts.fragment
+              ):
+                  raise ProtocolError("invalid_selected_service_base")
+              path = parts.path
+              if not path.endswith("/"):
+                  path += "/"
+              path += "domain/" + urllib.parse.quote(DOMAIN, safe=".")
+              return urllib.parse.urlunsplit(("https", parts.netloc, path, "", ""))
+
+
+          def fetch_bounded_json(url: str, *, allowed_host: str, route_id: str) -> tuple[Any | None, list[dict[str, Any]], str]:
+              receipts: list[dict[str, Any]] = []
+              for attempt in range(1, MAX_ATTEMPTS_PER_ROUTE + 1):
+                  request_started = now_iso()
+                  request = urllib.request.Request(
+                      url,
+                      headers={
+                          "Accept": "application/rdap+json, application/json;q=0.9",
+                          "User-Agent": USER_AGENT,
+                          "Connection": "close",
+                      },
+                      method="GET",
+                  )
+                  opener = urllib.request.build_opener(SameHostRedirect(allowed_host))
+                  try:
+                      with opener.open(request, timeout=TIMEOUT_SECONDS) as response:
+                          final_url = response.geturl()
+                          final_parts = urllib.parse.urlsplit(final_url)
+                          if (
+                              final_parts.scheme.lower() != "https"
+                              or (final_parts.hostname or "").lower() != allowed_host.lower()
+                              or final_parts.username is not None
+                              or final_parts.password is not None
+                          ):
+                              raise ProtocolError("final_url_authority_violation")
+                          status = int(response.getcode())
+                          body = response.read(MAX_RESPONSE_BYTES + 1)
+                          if len(body) > MAX_RESPONSE_BYTES:
+                              raise BoundedResponseError("response_exceeded_five_mib")
+                          receipt = {
+                              "schema_version": "schoolhouse-domain-rdap-route-receipt@1",
+                              "route_id": route_id,
+                              "attempt": attempt,
+                              "method": "GET",
+                              "request_url": url,
+                              "final_url": final_url,
+                              "allowed_host": allowed_host,
+                              "status": status,
+                              "response_bytes": len(body),
+                              "response_sha256": sha256_bytes(body),
+                              "content_type": clean_string(response.headers.get("Content-Type"), maximum=256),
+                              "started_at": request_started,
+                              "completed_at": now_iso(),
+                              "state": "http_success" if 200 <= status < 300 else "http_non_success",
+                          }
+                          receipts.append(receipt)
+                          if not 200 <= status < 300:
+                              return None, receipts, "terminal_http_non_success"
+                          try:
+                              return json.loads(body), receipts, "terminal_http_success"
+                          except (UnicodeDecodeError, json.JSONDecodeError):
+                              receipts[-1]["state"] = "json_parse_error"
+                              return None, receipts, "terminal_json_parse_error"
+                  except urllib.error.HTTPError as error:
+                      body = error.read(MAX_RESPONSE_BYTES + 1)
+                      if len(body) > MAX_RESPONSE_BYTES:
+                          body = body[:MAX_RESPONSE_BYTES]
+                      final_url = error.geturl() or url
+                      receipts.append(
+                          {
+                              "schema_version": "schoolhouse-domain-rdap-route-receipt@1",
+                              "route_id": route_id,
+                              "attempt": attempt,
+                              "method": "GET",
+                              "request_url": url,
+                              "final_url": final_url,
+                              "allowed_host": allowed_host,
+                              "status": int(error.code),
+                              "response_bytes": len(body),
+                              "response_sha256": sha256_bytes(body),
+                              "content_type": clean_string(error.headers.get("Content-Type") if error.headers else None, maximum=256),
+                              "started_at": request_started,
+                              "completed_at": now_iso(),
+                              "state": "http_error",
+                              "error_type": "HTTPError",
+                          }
+                      )
+                      return None, receipts, "terminal_http_non_success"
+                  except Exception as error:
+                      error_type = type(error).__name__
+                      error_reason = ""
+                      if isinstance(error, urllib.error.URLError):
+                          error_reason = clean_string(error.reason, maximum=128) or ""
+                      state = "blocked_redirect" if "blocked_" in error_reason else "transport_error"
+                      receipts.append(
+                          {
+                              "schema_version": "schoolhouse-domain-rdap-route-receipt@1",
+                              "route_id": route_id,
+                              "attempt": attempt,
+                              "method": "GET",
+                              "request_url": url,
+                              "final_url": None,
+                              "allowed_host": allowed_host,
+                              "status": None,
+                              "response_bytes": 0,
+                              "response_sha256": None,
+                              "content_type": None,
+                              "started_at": request_started,
+                              "completed_at": now_iso(),
+                              "state": state,
+                              "error_type": error_type,
+                          }
+                      )
+                      if attempt == MAX_ATTEMPTS_PER_ROUTE:
+                          return None, receipts, "terminal_transport_error"
+                      time.sleep(1)
+              raise AssertionError("unreachable")
+
+
+          def assert_privacy(value: Any) -> None:
+              if isinstance(value, dict):
+                  forbidden = FORBIDDEN_KEYS & set(value)
+                  if forbidden:
+                      raise ProtocolError(f"forbidden_output_keys:{sorted(forbidden)}")
+                  for child in value.values():
+                      assert_privacy(child)
+              elif isinstance(value, list):
+                  for child in value:
+                      assert_privacy(child)
+
+
+          def write_artifact(output: Path, files: dict[str, bytes]) -> None:
+              output.mkdir(parents=True, exist_ok=True)
+              for name, data in files.items():
+                  (output / name).write_bytes(data)
+              manifest_rows = [
+                  {"path": name, "bytes": len(data), "sha256": sha256_bytes(data)}
+                  for name, data in sorted(files.items())
+              ]
+              combined = hashlib.sha256(
+                  b"".join(
+                      f"{row['sha256']}  {row['path']}\n".encode("utf-8")
+                      for row in manifest_rows
+                  )
+              ).hexdigest()
+              manifest = {
+                  "schema_version": "schoolhouse-domain-rdap-artifact-manifest@1",
+                  "files": manifest_rows,
+                  "combined_sha256": combined,
+              }
+              manifest_bytes = canonical_json(manifest)
+              (output / "artifact-manifest.json").write_bytes(manifest_bytes)
+              sums_rows = manifest_rows + [
+                  {
+                      "path": "artifact-manifest.json",
+                      "bytes": len(manifest_bytes),
+                      "sha256": sha256_bytes(manifest_bytes),
+                  }
+              ]
+              sums = "".join(f"{row['sha256']}  {row['path']}\n" for row in sorted(sums_rows, key=lambda row: row["path"]))
+              (output / "SHA256SUMS").write_text(sums, encoding="utf-8")
+
+
+          def run_self_test() -> None:
+              bootstrap = {"services": [[["house"], ["https://rdap.example.test/rdap/"]]]}
+              selected, count = select_house_service(bootstrap)
+              assert selected == "https://rdap.example.test/rdap/" and count == 1
+              assert domain_endpoint(selected) == "https://rdap.example.test/rdap/domain/school.house"
+
+              synthetic = {
+                  "objectClassName": "domain",
+                  "handle": "EXAMPLE-1",
+                  "ldhName": "SCHOOL.HOUSE",
+                  "status": ["active"],
+                  "events": [{"eventAction": "registration", "eventDate": "2023-01-01T00:00:00Z"}],
+                  "entities": [
+                      {
+                          "roles": ["registrant"],
+                          "vcardArray": [
+                              "vcard",
+                              [
+                                  ["version", {}, "text", "4.0"],
+                                  ["fn", {}, "text", "Private Person"],
+                                  ["org", {}, "text", "School House Foundation, Inc."],
+                                  ["email", {}, "text", "private@example.test"],
+                                  ["tel", {}, "text", "+1-555-0100"],
+                                  ["adr", {}, "text", ["", "", "1 Private Way", "City", "ST", "00000", "US"]],
+                              ],
+                          ],
+                      },
+                      {
+                          "roles": ["registrar"],
+                          "vcardArray": ["vcard", [["fn", {}, "text", "Example Registrar, LLC"]]],
+                          "publicIds": [{"type": "IANA Registrar ID", "identifier": "999"}],
+                      },
+                  ],
+                  "notices": [{"title": "Registration Data Redacted", "description": ["not retained"]}],
+              }
+              record, candidates = parse_domain_object(synthetic, terminal_public_retrieval=True)
+              assert record["ldh_name_exact"] is True
+              assert record["domain_registrant_organization_candidate_rows"] == 1
+              assert candidates[0]["organization_name"] == "School House Foundation, Inc."
+              serialized = json.dumps({"record": record, "candidates": candidates})
+              assert "Private Person" not in serialized
+              assert "private@example.test" not in serialized
+              assert "1 Private Way" not in serialized
+              assert "+1-555-0100" not in serialized
+              assert record["registrant_contact_property_names_present"] == ["adr", "email", "tel"]
+              assert record["redaction_present"] is True
+              assert_privacy(record)
+              assert_privacy(candidates)
+
+              mismatch = dict(synthetic)
+              mismatch["ldhName"] = "other.house"
+              mismatch_record, mismatch_candidates = parse_domain_object(mismatch, terminal_public_retrieval=True)
+              assert mismatch_record["ldh_name_exact"] is False
+              assert mismatch_candidates == []
+              assert mismatch_record["public_registrant_organization_values_retained"] == 0
+
+              redacted = {
+                  "objectClassName": "domain",
+                  "ldhName": "school.house",
+                  "entities": [{"roles": ["registrant"], "vcardArray": ["vcard", [["fn", {}, "text", "REDACTED"]]]}],
+                  "notices": [{"title": "Registrant data redacted"}],
+              }
+              redacted_record, redacted_candidates = parse_domain_object(redacted, terminal_public_retrieval=True)
+              assert redacted_candidates == []
+              assert redacted_record["redaction_present"] is True
+              assert clean_organization("mailto:private@example.test") is None
+              print("schoolhouse_domain_rdap_self_test=pass")
+
+
+          def acquire(output: Path) -> None:
+              started_at = now_iso()
+              all_receipts: list[dict[str, Any]] = []
+
+              bootstrap_payload, bootstrap_receipts, bootstrap_state = fetch_bounded_json(
+                  BOOTSTRAP_URL,
+                  allowed_host="data.iana.org",
+                  route_id="iana_dns_rdap_bootstrap",
+              )
+              all_receipts.extend(bootstrap_receipts)
+
+              selected_base: str | None = None
+              matching_https_services = 0
+              domain_url: str | None = None
+              domain_payload: Any | None = None
+              domain_state = "not_attempted_due_to_bootstrap_unavailable"
+              domain_record: dict[str, Any] = {
+                  "schema_version": "schoolhouse-domain-rdap-privacy-minimized-object@1",
+                  "state": domain_state,
+                  "domain": DOMAIN,
+                  "object_class_name": None,
+                  "object_class_domain": False,
+                  "domain_handle": None,
+                  "ldh_name_exact": False,
+                  "unicode_name_exact": False,
+                  "statuses": [],
+                  "events": [],
+                  "nameservers": [],
+                  "secure_dns": {},
+                  "rdap_conformance": [],
+                  "entity_role_counts": {},
+                  "registrant_entity_count": 0,
+                  "registrar_entity_count": 0,
+                  "registrant_vcard_property_names": [],
+                  "registrant_contact_property_names_present": [],
+                  "registrar_name_values": [],
+                  "registrar_public_ids": [],
+                  "notice_titles_and_types": [],
+                  "remark_titles_and_types": [],
+                  "redaction_present": False,
+                  "public_registrant_organization_values_retained": 0,
+                  "domain_registrant_organization_candidate_rows": 0,
+                  "raw_bootstrap_response_retained": False,
+                  "raw_rdap_response_retained": False,
+                  "registrant_person_name_values_retained": 0,
+                  "address_rows_retained": 0,
+                  "postal_code_rows_retained": 0,
+                  "telephone_or_fax_values_retained": 0,
+                  "email_values_retained": 0,
+                  "contact_uri_values_retained": 0,
+                  "private_support_rows": 0,
+              }
+              candidates: list[dict[str, Any]] = []
+
+              if bootstrap_state == "terminal_http_success" and isinstance(bootstrap_payload, dict):
+                  try:
+                      selected_base, matching_https_services = select_house_service(bootstrap_payload)
+                      domain_url = domain_endpoint(selected_base)
+                      selected_host = urllib.parse.urlsplit(selected_base).hostname
+                      if not selected_host:
+                          raise ProtocolError("selected_service_host_missing")
+                      domain_payload, domain_receipts, domain_state = fetch_bounded_json(
+                          domain_url,
+                          allowed_host=selected_host,
+                          route_id="school_house_domain_rdap",
+                      )
+                      all_receipts.extend(domain_receipts)
+                      if domain_state == "terminal_http_success" and isinstance(domain_payload, dict):
+                          domain_record, candidates = parse_domain_object(domain_payload, terminal_public_retrieval=True)
+                          if candidates:
+                              domain_record["state"] = "terminal_exact_domain_rdap_public_registrant_organization_candidate"
+                          else:
+                              domain_record["state"] = "terminal_exact_domain_rdap_no_public_registrant_organization_candidate"
+                      else:
+                          domain_record["state"] = {
+                              "terminal_http_non_success": "terminal_exact_domain_rdap_http_non_success",
+                              "terminal_json_parse_error": "terminal_exact_domain_rdap_json_parse_error",
+                              "terminal_transport_error": "terminal_exact_domain_rdap_transport_error",
+                          }.get(domain_state, "terminal_exact_domain_rdap_source_unavailable")
+                  except ProtocolError:
+                      domain_state = "terminal_bootstrap_selection_error"
+                      domain_record["state"] = "terminal_iana_bootstrap_selection_error"
+                      all_receipts.append(
+                          {
+                              "schema_version": "schoolhouse-domain-rdap-route-receipt@1",
+                              "route_id": "school_house_domain_rdap",
+                              "attempt": 0,
+                              "method": "GET",
+                              "request_url": domain_url,
+                              "final_url": None,
+                              "allowed_host": urllib.parse.urlsplit(selected_base).hostname if selected_base else None,
+                              "status": None,
+                              "response_bytes": 0,
+                              "response_sha256": None,
+                              "content_type": None,
+                              "started_at": started_at,
+                              "completed_at": now_iso(),
+                              "state": "not_attempted_due_to_bootstrap_selection_error",
+                              "error_type": "ProtocolError",
+                          }
+                      )
+              else:
+                  all_receipts.append(
+                      {
+                          "schema_version": "schoolhouse-domain-rdap-route-receipt@1",
+                          "route_id": "school_house_domain_rdap",
+                          "attempt": 0,
+                          "method": "GET",
+                          "request_url": None,
+                          "final_url": None,
+                          "allowed_host": None,
+                          "status": None,
+                          "response_bytes": 0,
+                          "response_sha256": None,
+                          "content_type": None,
+                          "started_at": started_at,
+                          "completed_at": now_iso(),
+                          "state": "not_attempted_due_to_bootstrap_unavailable",
+                          "error_type": None,
+                      }
+                  )
+
+              request_attempts = sum(1 for receipt in all_receipts if int(receipt.get("attempt") or 0) > 0)
+              if request_attempts > MAX_TOTAL_REQUESTS:
+                  raise ProtocolError("maximum_request_denominator_exceeded")
+              if len(candidates) > 20:
+                  raise ProtocolError("registrant_organization_candidate_denominator_exceeds_20")
+
+              bootstrap_terminal = bootstrap_state.startswith("terminal_")
+              domain_terminal = domain_record["state"].startswith("terminal_")
+              terminal_routes = int(bootstrap_terminal) + int(domain_terminal)
+
+              if candidates:
+                  state = "terminal_exact_domain_rdap_public_registrant_organization_candidate"
+              elif domain_record["state"] == "terminal_exact_domain_rdap_no_public_registrant_organization_candidate":
+                  state = "terminal_exact_domain_rdap_no_public_registrant_organization_candidate"
+              else:
+                  state = "terminal_exact_domain_rdap_source_unavailable_no_identity_admitted"
+
+              authority = {
+                  "promotes_to": "candidate_only",
+                  "identities_admitted": 0,
+                  "relationships_admitted": 0,
+                  "owner_or_operator_admissions": 0,
+                  "negative_existence_claims": 0,
+                  "outside_human_dependency": False,
+                  "publication_effect": "none",
+                  "adoption_effect": "none",
+                  "graph_effect": "none",
+                  "public_schoolhouse_legal_identity": "unresolved",
+              }
+              retention = {
+                  "registrant_person_name_values_retained": 0,
+                  "address_rows_retained": 0,
+                  "postal_code_rows_retained": 0,
+                  "telephone_or_fax_values_retained": 0,
+                  "email_values_retained": 0,
+                  "contact_uri_values_retained": 0,
+                  "raw_bootstrap_json_retained": False,
+                  "raw_rdap_json_retained": False,
+                  "browser_state_or_cookie_rows_retained": 0,
+                  "private_support_rows": 0,
+              }
+
+              source_receipt = {
+                  "schema_version": "schoolhouse-domain-rdap-source-receipt@1",
+                  "issue": 1335,
+                  "canonical_parent_commit": "681ae0d41bed04d068836ee9d746fe7701d234cb",
+                  "canonical_parent_tree": "9ee392609c4c6bcce2806f9b8a1e514333c1428e",
+                  "started_at": started_at,
+                  "completed_at": now_iso(),
+                  "bootstrap_url": BOOTSTRAP_URL,
+                  "bootstrap_state": bootstrap_state,
+                  "bootstrap_matching_https_service_urls": matching_https_services,
+                  "selected_rdap_service_base": selected_base,
+                  "domain_request_url": domain_url,
+                  "domain_state": domain_state,
+                  "fixed_routes": 2,
+                  "terminal_routes": terminal_routes,
+                  "request_attempts": request_attempts,
+                  "response_bytes": sum(int(receipt.get("response_bytes") or 0) for receipt in all_receipts),
+                  "domain_registrant_organization_candidate_rows": len(candidates),
+                  "retention": retention,
+                  "authority": authority,
+              }
+              route_policy = {
+                  "schema_version": "schoolhouse-domain-rdap-route-policy@1",
+                  "fixed_routes": [
+                      BOOTSTRAP_URL,
+                      "<bootstrap-selected-https-base>/domain/school.house",
+                  ],
+                  "maximum_attempts_per_route": MAX_ATTEMPTS_PER_ROUTE,
+                  "maximum_total_requests": MAX_TOTAL_REQUESTS,
+                  "maximum_response_bytes_per_route": MAX_RESPONSE_BYTES,
+                  "parallel_workers": 1,
+                  "methods": ["GET"],
+                  "query_submissions": 0,
+                  "form_submissions": 0,
+                  "result_spawned_requests": 0,
+                  "off_host_redirects_allowed": False,
+                  "raw_responses_retained": False,
+                  "candidate_rule": (
+                      "terminal HTTP success AND objectClassName domain AND exact school.house ldhName "
+                      "AND registrant role AND nonempty public vCard org value"
+                  ),
+                  "authority": authority,
+              }
+              summary = {
+                  "schema_version": SCHEMA_VERSION,
+                  "state": state,
+                  "fixed_routes": 2,
+                  "terminal_routes": terminal_routes,
+                  "request_attempts": request_attempts,
+                  "bootstrap_state": bootstrap_state,
+                  "domain_state": domain_record["state"],
+                  "selected_rdap_service_base_present": selected_base is not None,
+                  "object_class_domain": domain_record["object_class_domain"],
+                  "ldh_name_exact": domain_record["ldh_name_exact"],
+                  "registrant_entity_count": domain_record["registrant_entity_count"],
+                  "public_registrant_organization_values_retained": domain_record[
+                      "public_registrant_organization_values_retained"
+                  ],
+                  "domain_registrant_organization_candidate_rows": len(candidates),
+                  "redaction_present": domain_record["redaction_present"],
+                  "retention": retention,
+                  "authority": authority,
+                  "interpretation": {
+                      "registrar_is_not_registrant_identity": True,
+                      "nameserver_or_domain_handle_is_not_registrant_identity": True,
+                      "redacted_or_absent_registrant_org_is_not_entity_absence": True,
+                      "candidate_requires_separate_adjudication": True,
+                      "identical_source_retry_authorized": False,
+                  },
+              }
+
+              for value in (domain_record, candidates, source_receipt, route_policy, summary, all_receipts):
+                  assert_privacy(value)
+
+              files = {
+                  "route-receipts.jsonl": canonical_jsonl(all_receipts),
+                  "source-receipt.json": canonical_json(source_receipt),
+                  "route-policy.json": canonical_json(route_policy),
+                  "rdap-domain.json": canonical_json(domain_record),
+                  "registrant-organization-candidates.jsonl": canonical_jsonl(candidates),
+                  "summary.json": canonical_json(summary),
+              }
+              write_artifact(output, files)
+
+              # Re-open only the privacy-minimized outputs and prove denominator and checksums.
+              assert len(all_receipts) >= 2
+              assert terminal_routes == 2
+              assert request_attempts <= MAX_TOTAL_REQUESTS
+              assert source_receipt["authority"]["identities_admitted"] == 0
+              assert source_receipt["authority"]["outside_human_dependency"] is False
+              assert summary["authority"]["graph_effect"] == "none"
+              print(
+                  "schoolhouse_domain_rdap_acquisition=complete "
+                  f"state={state} requests={request_attempts} candidates={len(candidates)}"
+              )
+
+
+          def main() -> None:
+              parser = argparse.ArgumentParser()
+              parser.add_argument("--output", type=Path)
+              parser.add_argument("--self-test", action="store_true")
+              args = parser.parse_args()
+              if args.self_test:
+                  run_self_test()
+              if args.output is not None:
+                  acquire(args.output)
+              if not args.self_test and args.output is None:
+                  parser.error("one of --self-test or --output is required")
+
+
+          if __name__ == "__main__":
+              main()
+          PY
+          test "$(wc -c < "$RUNNER")" = '38189'
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = '084b2ef861fa6387be670dfdbb7f5efdeb2c4de2389da04d1f7ab8c0c90c3896'
+          python -m py_compile "$RUNNER"
+          python "$RUNNER" --self-test
+
+      - name: Execute exact IANA-bootstrap and domain-RDAP census
+        id: acquisition
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          OUT="$RUNNER_TEMP/schoolhouse-domain-rdap-census-v1"
+          RUNNER="$RUNNER_TEMP/acquire-schoolhouse-domain-rdap.py"
+          LOG="$RUNNER_TEMP/schoolhouse-domain-rdap-census-v1.log"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          python "$RUNNER" --output "$OUT" 2>&1 | tee "$LOG"
+          status=${PIPESTATUS[0]}
+          printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
+          cp "$LOG" "$OUT/RUNNER-OUTPUT.log"
+          printf 'runner_source_bytes=38189\n' > "$OUT/RUNNER-CUSTODY"
+          printf 'runner_source_sha256=084b2ef861fa6387be670dfdbb7f5efdeb2c4de2389da04d1f7ab8c0c90c3896\n' >> "$OUT/RUNNER-CUSTODY"
+          printf 'carrier_head=%s\n' "$GITHUB_SHA" >> "$OUT/RUNNER-CUSTODY"
+          exit "$status"
+
+      - name: Upload terminal exact-domain RDAP artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-domain-rdap-census-v1
+          path: ${{ runner.temp }}/schoolhouse-domain-rdap-census-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal denominator, privacy ceiling, and zero admissions
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP/schoolhouse-domain-rdap-census-v1"
+          test -f "$ROOT/RUNNER_EXIT_CODE"
+          test "$(cat "$ROOT/RUNNER_EXIT_CODE")" = '0'
+          for file in \
+            route-receipts.jsonl source-receipt.json route-policy.json \
+            rdap-domain.json registrant-organization-candidates.jsonl \
+            summary.json artifact-manifest.json SHA256SUMS \
+            RUNNER-OUTPUT.log RUNNER-CUSTODY; do
+            test -f "$ROOT/$file"
+          done
+          (cd "$ROOT" && sha256sum -c SHA256SUMS)
+
+          python - "$ROOT" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          root = Path(sys.argv[1])
+          load = lambda name: json.loads((root / name).read_text())
+          rows = lambda name: [
+              json.loads(line)
+              for line in (root / name).read_text().splitlines()
+              if line.strip()
+          ]
+
+          summary = load('summary.json')
+          source = load('source-receipt.json')
+          policy = load('route-policy.json')
+          domain = load('rdap-domain.json')
+          candidates = rows('registrant-organization-candidates.jsonl')
+          receipts = rows('route-receipts.jsonl')
+          manifest = load('artifact-manifest.json')
+
+          assert summary['schema_version'] == 'schoolhouse-domain-rdap-census@1'
+          assert summary['fixed_routes'] == summary['terminal_routes'] == 2
+          assert source['fixed_routes'] == source['terminal_routes'] == 2
+          assert source['request_attempts'] <= 4
+          assert len([row for row in receipts if int(row.get('attempt') or 0) > 0]) == source['request_attempts']
+          assert policy['maximum_total_requests'] == 4
+          assert policy['maximum_response_bytes_per_route'] == 5 * 1024 * 1024
+          assert policy['query_submissions'] == policy['form_submissions'] == 0
+          assert policy['result_spawned_requests'] == 0
+          assert policy['off_host_redirects_allowed'] is False
+          assert policy['raw_responses_retained'] is False
+
+          retention = summary['retention']
+          assert retention == source['retention']
+          assert retention['registrant_person_name_values_retained'] == 0
+          assert retention['address_rows_retained'] == 0
+          assert retention['postal_code_rows_retained'] == 0
+          assert retention['telephone_or_fax_values_retained'] == 0
+          assert retention['email_values_retained'] == 0
+          assert retention['contact_uri_values_retained'] == 0
+          assert retention['raw_bootstrap_json_retained'] is False
+          assert retention['raw_rdap_json_retained'] is False
+          assert retention['browser_state_or_cookie_rows_retained'] == 0
+          assert retention['private_support_rows'] == 0
+
+          authority = summary['authority']
+          assert authority == source['authority'] == policy['authority']
+          assert authority['identities_admitted'] == 0
+          assert authority['relationships_admitted'] == 0
+          assert authority['owner_or_operator_admissions'] == 0
+          assert authority['negative_existence_claims'] == 0
+          assert authority['outside_human_dependency'] is False
+          assert authority['publication_effect'] == authority['adoption_effect'] == authority['graph_effect'] == 'none'
+          assert authority['public_schoolhouse_legal_identity'] == 'unresolved'
+
+          assert domain['raw_bootstrap_response_retained'] is False
+          assert domain['raw_rdap_response_retained'] is False
+          assert domain['registrant_person_name_values_retained'] == 0
+          assert domain['address_rows_retained'] == 0
+          assert domain['postal_code_rows_retained'] == 0
+          assert domain['telephone_or_fax_values_retained'] == 0
+          assert domain['email_values_retained'] == 0
+          assert domain['contact_uri_values_retained'] == 0
+          assert domain['private_support_rows'] == 0
+          assert len(candidates) == summary['domain_registrant_organization_candidate_rows']
+          assert len(candidates) == domain['domain_registrant_organization_candidate_rows']
+          for candidate in candidates:
+              assert candidate['promotes_to'] == 'domain_registrant_organization_candidate'
+              assert candidate['identity_admitted'] is False
+              assert candidate['relationship_admitted'] is False
+              assert candidate['owner_or_operator_admitted'] is False
+              assert candidate['negative_existence_claim_created'] is False
+              assert candidate['publication_effect'] == candidate['adoption_effect'] == candidate['graph_effect'] == 'none'
+              value = candidate['organization_name']
+              assert '@' not in value and 'http://' not in value.casefold() and 'https://' not in value.casefold()
+              assert '\n' not in value and '\r' not in value
+
+          expected_manifest_paths = {
+              'route-receipts.jsonl',
+              'source-receipt.json',
+              'route-policy.json',
+              'rdap-domain.json',
+              'registrant-organization-candidates.jsonl',
+              'summary.json',
+          }
+          assert {row['path'] for row in manifest['files']} == expected_manifest_paths
+          assert summary['state'].startswith('terminal_')
+          print(
+              'schoolhouse_domain_rdap_terminal_validation=pass '
+              f"state={summary['state']} candidates={len(candidates)}"
+          )
+          PY
