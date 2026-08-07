@@ -1,0 +1,195 @@
+name: TEMP repair School.House SAM public entity census carrier v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-sam-public-entity-registration-repair-controller-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: schoolhouse-sam-public-entity-registration-repair-controller-v2-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-sam-public-entity-registration-repair-controller-v2')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Reconstruct, compile, and publish exact repaired v2 carrier
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='d26cb838df12a877840ebe71eb9388d44b6ceaf9'
+          SOURCE_BRANCH='agent/schoolhouse-sam-public-entity-registration-census-v1'
+          SOURCE_HEAD='61f69707e8425d2db62ded8631cf083e994757f4'
+          SOURCE_PATH='.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-v1.yml'
+          SOURCE_BLOB='7447515d3010594d7be25719045fbee8585a6882'
+          TARGET_BRANCH='agent/schoolhouse-sam-public-entity-registration-census-v2'
+          TARGET_PATH='.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-v2.yml'
+          CONTROLLER='.github/workflows/temp-schoolhouse-sam-public-entity-registration-repair-controller-v2.yml'
+          WORK="$RUNNER_TEMP/sam-repair-v2"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-sam-public-entity-registration-repair-controller-v2"
+          mkdir -p "$WORK" "$RECEIPT"
+
+          git fetch --no-tags origin main "$SOURCE_BRANCH"
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+          test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$SOURCE_HEAD"
+          test "$(git rev-parse "origin/$SOURCE_BRANCH:$SOURCE_PATH")" = "$SOURCE_BLOB"
+          mapfile -t DELTA < <(git diff --name-only "$BASE"..HEAD)
+          test "${#DELTA[@]}" -eq 1
+          test "${DELTA[0]}" = "$CONTROLLER"
+          test -z "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH")"
+
+          git show "origin/$SOURCE_BRANCH:$SOURCE_PATH" > "$WORK/source.yml"
+          test "$(git hash-object "$WORK/source.yml")" = "$SOURCE_BLOB"
+
+          python - "$WORK/source.yml" "$WORK/target.yml" <<'PY'
+          from pathlib import Path
+          import hashlib
+          import re
+          import sys
+          import textwrap
+
+          source = Path(sys.argv[1])
+          target = Path(sys.argv[2])
+          text = source.read_text()
+          old_namespace = 'schoolhouse-sam-public-entity-registration-census-v1'
+          new_namespace = 'schoolhouse-sam-public-entity-registration-census-v2'
+
+          assert text.count('nonlocal global_rows_inspected') == 2
+          assert text.count('nonlocal blocked_official_detail_views') == 1
+          assert text.count('nonlocal ') == 3
+          assert old_namespace in text
+
+          repaired = text.replace(
+              'nonlocal global_rows_inspected',
+              'global global_rows_inspected',
+          ).replace(
+              'nonlocal blocked_official_detail_views',
+              'global blocked_official_detail_views',
+          ).replace(old_namespace, new_namespace)
+
+          assert 'nonlocal ' not in repaired
+          assert repaired.count('global global_rows_inspected') == 2
+          assert repaired.count('global blocked_official_detail_views') == 1
+          assert old_namespace not in repaired
+          assert new_namespace in repaired
+          assert "head.ref == 'agent/schoolhouse-sam-public-entity-registration-census-v2'" in repaired
+          assert '.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-v2.yml' in repaired
+          assert 'name: schoolhouse-sam-public-entity-registration-census-v2' in repaired
+
+          scripts = re.findall(
+              r"python - .*?<<'PY'.*?\n(.*?)\n\s+PY\n",
+              repaired,
+              flags=re.S,
+          )
+          assert len(scripts) == 2, len(scripts)
+          for index, script in enumerate(scripts):
+              compile(textwrap.dedent(script), f'embedded-{index}.py', 'exec')
+
+          target.write_text(repaired)
+          print(f'source_bytes={source.stat().st_size}')
+          print(f'source_sha256={hashlib.sha256(source.read_bytes()).hexdigest()}')
+          print(f'target_bytes={target.stat().st_size}')
+          print(f'target_sha256={hashlib.sha256(target.read_bytes()).hexdigest()}')
+          print('source_blob=7447515d3010594d7be25719045fbee8585a6882')
+          print('embedded_python_programs=2')
+          print('embedded_python_syntax=pass')
+          print('scoping_replacements=3')
+          PY
+
+          ruby -e "require 'yaml'; YAML.load_file('$WORK/target.yml'); puts 'yaml_parse=pass'"
+          grep -Fq "head.ref == '$TARGET_BRANCH'" "$WORK/target.yml"
+          grep -Fq "name: schoolhouse-sam-public-entity-registration-census-v2" "$WORK/target.yml"
+          grep -Fq "name: TEMP census exact School.House SAM public entity registrations" "$WORK/target.yml"
+
+          git worktree add --detach "$WORK/repo" "$BASE"
+          mkdir -p "$WORK/repo/$(dirname "$TARGET_PATH")"
+          cp "$WORK/target.yml" "$WORK/repo/$TARGET_PATH"
+          git -C "$WORK/repo" add "$TARGET_PATH"
+          test "$(git -C "$WORK/repo" diff --cached --name-only | wc -l | tr -d ' ')" = '1'
+          test "$(git -C "$WORK/repo" diff --cached --name-only)" = "$TARGET_PATH"
+          git -C "$WORK/repo" config user.name 'github-actions[bot]'
+          git -C "$WORK/repo" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C "$WORK/repo" commit -m 'Repair School.House SAM public entity census carrier v2'
+          TARGET_HEAD="$(git -C "$WORK/repo" rev-parse HEAD)"
+          test "$(git -C "$WORK/repo" rev-parse HEAD^)" = "$BASE"
+          test "$(git -C "$WORK/repo" rev-list --count "$BASE"..HEAD)" = '1'
+          git -C "$WORK/repo" push origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          PR_URL="$(gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base main \
+            --head "$TARGET_BRANCH" \
+            --draft \
+            --title 'TEMP: census exact School.House public entity registrations in SAM.gov v2' \
+            --body-file - <<EOF
+          Execution-only repaired successor to PR #1384 for issue #1382. **Never merge this pull request.**
+
+          The v1 carrier passed topology and browser installation, then failed before browser launch because three module-level functions used Python \`nonlocal\` declarations where \`global\` was required. The preserved v1 artifact contains only that syntax error and runner exit code 1.
+
+          This v2 branch is a clean one-parent, one-path reconstruction from the exact source workflow blob \`$SOURCE_BLOB\` and the same canonical predecessor. It changes exactly those three scoping tokens, renames the carrier/artifact namespace from v1 to v2, parses the workflow YAML, and compiles both embedded Python programs before publication.
+
+          \`\`\`text
+          canonical predecessor:
+          $BASE
+
+          superseded v1 head:
+          $SOURCE_HEAD
+
+          repaired v2 head:
+          $TARGET_HEAD
+
+          repaired commits / paths:                  1 / 1
+          source requests performed by controller:       0
+          scoping replacements:                          3
+          embedded Python programs compiled:             2
+          \`\`\`
+
+          All fixed SAM.gov queries, browser/request/page/byte ceilings, exact-name-plus-public-UEI candidate rule, privacy exclusions, typed terminal states, and zero identity/relationship/absence/federal-registration/award/owner/operator/publication/adoption/graph authority remain unchanged.
+
+          Close PR #1384 unmerged only after this exact v2 artifact succeeds and is independently qualified.
+          EOF
+          )"
+          PR_NUMBER="${PR_URL##*/}"
+
+          cp "$WORK/source.yml" "$RECEIPT/source-workflow.yml"
+          cp "$WORK/target.yml" "$RECEIPT/repaired-workflow.yml"
+          printf 'canonical_parent=%s\n' "$BASE" > "$RECEIPT/receipt.txt"
+          printf 'source_branch=%s\nsource_head=%s\nsource_blob=%s\n' "$SOURCE_BRANCH" "$SOURCE_HEAD" "$SOURCE_BLOB" >> "$RECEIPT/receipt.txt"
+          printf 'target_branch=%s\ntarget_head=%s\n' "$TARGET_BRANCH" "$TARGET_HEAD" >> "$RECEIPT/receipt.txt"
+          printf 'target_pr=%s\n' "$PR_NUMBER" >> "$RECEIPT/receipt.txt"
+          printf 'target_paths=1\ntarget_commits=1\nscoping_replacements=3\nembedded_python_programs=2\n' >> "$RECEIPT/receipt.txt"
+          sha256sum "$RECEIPT"/* > "$RECEIPT/SHA256SUMS"
+          cat "$RECEIPT/receipt.txt"
+
+      - name: Preserve exact repair receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-sam-public-entity-registration-repair-controller-v2
+          path: ${{ runner.temp }}/schoolhouse-sam-public-entity-registration-repair-controller-v2
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
