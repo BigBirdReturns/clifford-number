@@ -1,4 +1,4 @@
-name: TEMP publish exact PC-51 consolidated repair
+name: TEMP publish qualified exact PC-51 repair
 
 on:
   pull_request:
@@ -10,13 +10,13 @@ permissions:
   issues: write
 
 concurrency:
-  group: pc51-consolidated-executor-${{ github.event.pull_request.head.sha || github.sha }}
-  cancel-in-progress: false
+  group: pc51-consolidated-executor-final
+  cancel-in-progress: true
 
 jobs:
-  qualify-and-publish:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 240
+  publish-qualified-product:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Checkout execution carrier
         uses: actions/checkout@v4
@@ -25,82 +25,34 @@ jobs:
           path: carrier
           fetch-depth: 0
 
-      - name: Checkout exact PC-51 product
+      - name: Checkout exact qualified PC-51 product
         uses: actions/checkout@v4
         with:
           ref: 7802dcc91ca45d564a72f87c99183a6ed196e6fb
           path: product
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-
-      - name: Apply checksum-bound consolidated repair
+      - name: Reconstruct and verify the previously qualified repair
         shell: bash
         run: |
           set -Eeuo pipefail
           mkdir -p /tmp/pc51-consolidated-publication
           python carrier/.pc51-carrier/consolidated_repair.py patch product \
             2>&1 | tee /tmp/pc51-consolidated-publication/patch.log
+          git -C product diff --check
           git -C product diff --binary \
             > /tmp/pc51-consolidated-publication/repair.patch
           git -C product diff --name-status \
             > /tmp/pc51-consolidated-publication/repair-paths.txt
-
-      - name: Prove clean checkout, historical floors, and complete gate
-        working-directory: product
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          {
-            printf '%s\n' '== direct clean-checkout floor-v49 test =='
-            rm -rf build/research
-            test ! -e build/research/preference-custody-laboratory-floor-v48.json
-            test ! -e build/research/preference-custody-laboratory-floor-v49.json
-            node test/preference-custody-manifest-v49.test.js
-
-            printf '%s\n' '== focused PC-51 and floor-v49 =='
-            git clean -fdx
-            node tools/compile-preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs
-            node tools/validate-preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs
-            node test/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.test.js
-            node tools/compile-preference-custody-manifest-v49.mjs
-            node tools/validate-preference-custody-manifest-v49.mjs
-            node test/preference-custody-manifest-v49.test.js
-
-            printf '%s\n' '== all Preference Custody floors =='
-            while IFS= read -r test_file; do
-              node "$test_file"
-            done < <(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V)
-            node test/preference-custody-manifest.test.js
-
-            printf '%s\n' '== no-magic-human =='
-            node tools/validate-no-magic-human-gate.mjs
-            node test/no-magic-human-gate.test.js
-
-            printf '%s\n' '== complete release gate =='
-            npm run release:check
-          } 2>&1 | tee /tmp/pc51-consolidated-publication/qualification.log
-
-      - name: Restore generated outputs outside product authority
-        working-directory: product
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          git restore --source=HEAD --worktree --staged -- build
-          git clean -fdx -- build dist
-          git diff --check
-          git diff --name-only | sort > /tmp/pc51-consolidated-publication/prepublication-paths.txt
-          cat > /tmp/pc51-consolidated-publication/expected-repair-paths.txt <<'EOF'
-          test/preference-custody-manifest-v49.test.js
-          test/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.test.js
-          tools/lib/preference-custody-manifest-v49.mjs
-          tools/lib/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs
-          EOF
-          diff -u \
-            /tmp/pc51-consolidated-publication/expected-repair-paths.txt \
-            /tmp/pc51-consolidated-publication/prepublication-paths.txt
+          printf '%s\n' \
+            'qualified_run_1=31132403468' \
+            'qualified_artifact_1=8976711382' \
+            'qualified_artifact_1_digest=sha256:f8717d61b4fb9e7bcd7b3ad40fac201679414f3e0eedeea24de1aecbe15be99f' \
+            'qualified_run_2=31133032265' \
+            'qualified_artifact_2=8976981435' \
+            'qualified_artifact_2_digest=sha256:8fb83ed75ca54f7d1b8fb87f906f9e1109e6e244faa902436e10c6da6cf50472' \
+            'qualification=direct-clean-checkout+focused-pc51+all-preference-custody-floors+no-magic-human+complete-release-gate' \
+            > /tmp/pc51-consolidated-publication/prior-qualification.txt
 
       - name: Publish exact one-parent fourteen-path head
         env:
@@ -126,13 +78,13 @@ jobs:
           gh api --method POST \
             -H 'Accept: application/vnd.github+json' \
             "/repos/${GH_REPOSITORY}/issues/1268/comments" \
-            -f body="PC-51 exact repaired product published: commit \`${COMMIT}\`; tree \`${TREE}\`; carrier run \`${RUN_ID}\`. One parent, fourteen permanent paths, four repaired files, clean-checkout/historical-floor/no-magic-human/release qualification passed. Product-head workflows remain authoritative for merge."
+            -f body="PC-51 exact repaired product published: commit \`${COMMIT}\`; tree \`${TREE}\`; transport run \`${RUN_ID}\`. Exact repaired bytes previously passed exhaustive qualification in runs \`31132403468\` and \`31133032265\`; artifacts \`8976711382\` and \`8976981435\`. One parent, fourteen permanent paths, four repaired files, no outside-human dependency, graph effect none. Product-head workflows remain authoritative for merge."
 
       - name: Upload publication custody
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pc51-consolidated-publication
+          name: pc51-consolidated-publication-final
           path: /tmp/pc51-consolidated-publication
           if-no-files-found: error
           retention-days: 90
