@@ -1,0 +1,186 @@
+name: TEMP qualify exact School.House SEC EDGAR product
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-sec-edgar-exact-domain-census-product-qualifier-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-sec-edgar-exact-domain-product-qualifier-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-sec-edgar-exact-domain-census-product-qualifier-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Prove exact one-parent six-path product topology
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='8a2f4538bdbcf9455f02e70c35a71cb39f805b18'
+          BASE_TREE='11e4905a11c1638cfc26865124f9ce181ae0c134'
+          PRODUCT='55f08221165d1f7985d18886fd2b8537903fade1'
+          PRODUCT_TREE='ddd19e1d72cdcfa59bac1db711d39c2789078c03'
+          PRODUCT_BRANCH='agent/schoolhouse-sec-edgar-exact-domain-census-custody-product-v1'
+          QUALIFIER_WORKFLOW='.github/workflows/temp-schoolhouse-sec-edgar-exact-domain-census-product-qualifier-v1.yml'
+          RECEIPT="$RUNNER_TEMP/schoolhouse-sec-edgar-exact-domain-product-qualification-v1"
+          mkdir -p "$RECEIPT"
+
+          git fetch --no-tags origin main "$PRODUCT_BRANCH"
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test "$(git rev-parse HEAD^)" = "$PRODUCT"
+          test "$(git rev-list --count "$PRODUCT"..HEAD)" = '1'
+          test "$(git rev-parse "$PRODUCT^")" = "$BASE"
+          test "$(git rev-parse "$BASE^{tree}")" = "$BASE_TREE"
+          test "$(git rev-parse "$PRODUCT^{tree}")" = "$PRODUCT_TREE"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PRODUCT"
+
+          cat > "$RECEIPT/expected-product-paths.txt" <<'PATHS'
+          data/intake/schoolhouse-sec-edgar-exact-domain-census-v1/product-manifest.json
+          data/intake/schoolhouse-sec-edgar-exact-domain-census-v1/sealed-qualification-artifact.zip.b64
+          data/intake/schoolhouse-sec-edgar-exact-domain-census-v1/sealed-source-artifact.zip.b64
+          data/intake/schoolhouse-sec-edgar-exact-domain-census-v1/source-custody.json
+          docs/milestones/schoolhouse-sec-edgar-exact-domain-census-v1.md
+          tools/validate-schoolhouse-sec-edgar-exact-domain-census-custody.py
+          PATHS
+          sed -i 's/^          //' "$RECEIPT/expected-product-paths.txt"
+
+          git diff --name-only "$BASE".."$PRODUCT" | sort > "$RECEIPT/observed-product-paths.txt"
+          diff -u "$RECEIPT/expected-product-paths.txt" "$RECEIPT/observed-product-paths.txt"
+          test "$(wc -l < "$RECEIPT/observed-product-paths.txt" | tr -d ' ')" = '6'
+
+          git diff --name-only --diff-filter=A "$BASE".."$PRODUCT" | sort > "$RECEIPT/observed-added-paths.txt"
+          diff -u "$RECEIPT/expected-product-paths.txt" "$RECEIPT/observed-added-paths.txt"
+          test -z "$(git diff --name-only --diff-filter=CDMRTUXB "$BASE".."$PRODUCT")"
+          ! grep -Eq '^\.github/workflows/' "$RECEIPT/observed-product-paths.txt"
+
+          mapfile -t QUALIFIER_DELTA < <(git diff --name-only "$PRODUCT"..HEAD)
+          test "${#QUALIFIER_DELTA[@]}" -eq 1
+          test "${QUALIFIER_DELTA[0]}" = "$QUALIFIER_WORKFLOW"
+
+          cp "$RECEIPT/expected-product-paths.txt" "$RECEIPT/permanent-paths.txt"
+          printf 'canonical_parent=%s\n' "$BASE" > "$RECEIPT/topology.txt"
+          printf 'canonical_parent_tree=%s\n' "$BASE_TREE" >> "$RECEIPT/topology.txt"
+          printf 'product_commit=%s\n' "$PRODUCT" >> "$RECEIPT/topology.txt"
+          printf 'product_tree=%s\n' "$PRODUCT_TREE" >> "$RECEIPT/topology.txt"
+          printf 'qualifier_head=%s\n' "$(git rev-parse HEAD)" >> "$RECEIPT/topology.txt"
+          printf 'product_commits=1\npermanent_paths=6\nworkflow_paths=0\naddition_only=true\n' >> "$RECEIPT/topology.txt"
+
+      - name: Install repository dependencies
+        run: npm ci
+
+      - name: Run focused controls, complete gate, and byte-neutral replay
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          RECEIPT="$RUNNER_TEMP/schoolhouse-sec-edgar-exact-domain-product-qualification-v1"
+          BASE='8a2f4538bdbcf9455f02e70c35a71cb39f805b18'
+          BASE_TREE='11e4905a11c1638cfc26865124f9ce181ae0c134'
+          PRODUCT='55f08221165d1f7985d18886fd2b8537903fade1'
+          PRODUCT_TREE='ddd19e1d72cdcfa59bac1db711d39c2789078c03'
+
+          xargs -d '\n' sha256sum < "$RECEIPT/permanent-paths.txt" > "$RECEIPT/product-hashes-before.txt"
+
+          python tools/validate-schoolhouse-sec-edgar-exact-domain-census-custody.py --self-test \
+            | tee "$RECEIPT/focused-validation.log"
+
+          npm run release:check \
+            | tee "$RECEIPT/complete-release-gate.log"
+
+          python tools/validate-schoolhouse-sec-edgar-exact-domain-census-custody.py --self-test \
+            | tee "$RECEIPT/focused-replay.log"
+
+          xargs -d '\n' sha256sum < "$RECEIPT/permanent-paths.txt" > "$RECEIPT/product-hashes-after.txt"
+          diff -u "$RECEIPT/product-hashes-before.txt" "$RECEIPT/product-hashes-after.txt"
+          test -z "$(git status --porcelain)"
+
+          python - "$RECEIPT" "$BASE" "$BASE_TREE" "$PRODUCT" "$PRODUCT_TREE" "$(git rev-parse HEAD)" "$(git rev-parse origin/main)" <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import sys
+
+          receipt = Path(sys.argv[1])
+          base, base_tree, product, product_tree, qualifier, main = sys.argv[2:]
+          path_rows = (receipt / 'permanent-paths.txt').read_text().splitlines()
+          assert len(path_rows) == 6
+          value = {
+              'schema_version': 'schoolhouse-sec-edgar-exact-domain-product-qualification@1',
+              'canonical_main_observed': main,
+              'canonical_parent': base,
+              'canonical_parent_tree': base_tree,
+              'product_commit': product,
+              'product_tree': product_tree,
+              'qualifier_head': qualifier,
+              'product_commits': 1,
+              'permanent_paths': path_rows,
+              'permanent_path_count': 6,
+              'addition_only': True,
+              'workflow_paths': 0,
+              'focused_validation': 'pass',
+              'adversarial_refusals': 5,
+              'complete_release_gate': 'pass',
+              'deterministic_replay': 'pass',
+              'byte_neutral_replay': True,
+              'query_terminal_state': 'bounded_source_unavailable',
+              'terminal_http_status': 403,
+              'retained_candidate_rows': 0,
+              'identities_admitted': 0,
+              'relationships_admitted': 0,
+              'negative_existence_claims': 0,
+              'issuer_admissions': 0,
+              'owner_or_operator_admissions': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'qualification': 'pass',
+          }
+          (receipt / 'qualification.json').write_text(
+              json.dumps(value, indent=2, sort_keys=True) + '\n'
+          )
+          sums = []
+          for path in sorted(receipt.iterdir()):
+              if path.is_file():
+                  sums.append(
+                      f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}"
+                  )
+          (receipt / 'SHA256SUMS').write_text('\n'.join(sums) + '\n')
+          print(json.dumps(value, indent=2, sort_keys=True))
+          PY
+
+      - name: Preserve exact product qualification receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-sec-edgar-exact-domain-product-qualification-v1
+          path: ${{ runner.temp }}/schoolhouse-sec-edgar-exact-domain-product-qualification-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
