@@ -1,0 +1,230 @@
+name: TEMP materialize School.House USAspending recipient census custody
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-usaspending-recipient-census-materializer-v1.yml'
+      - '.schoolhouse-usaspending-recipient-census-materializer-v1/**'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: schoolhouse-usaspending-recipient-census-materializer-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-usaspending-recipient-census-materializer-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Reconstruct, qualify, and publish exact permanent product
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          FROZEN='8a2f4538bdbcf9455f02e70c35a71cb39f805b18'
+          TARGET='agent/schoolhouse-usaspending-recipient-census-custody-product-v1'
+          TARGET_LEASE='8a2f4538bdbcf9455f02e70c35a71cb39f805b18'
+          ROOT='.schoolhouse-usaspending-recipient-census-materializer-v1'
+          EXECUTE="$ROOT/EXECUTE"
+          TEMPLATE_B64="$ROOT/validator-template.py.gz.b64"
+          WORKFLOW='.github/workflows/temp-schoolhouse-usaspending-recipient-census-materializer-v1.yml'
+          WORK="$RUNNER_TEMP/schoolhouse-usaspending-custody-worktree"
+          DOWNLOAD="$RUNNER_TEMP/schoolhouse-usaspending-download"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-usaspending-materialization-receipt"
+          mkdir -p "$DOWNLOAD" "$RECEIPT"
+
+          cat > "$RUNNER_TEMP/permanent-paths" <<'PATHS'
+          data/intake/schoolhouse-usaspending-recipient-census-v1/product-manifest.json
+          data/intake/schoolhouse-usaspending-recipient-census-v1/sealed-qualification-artifact.zip
+          data/intake/schoolhouse-usaspending-recipient-census-v1/sealed-source-artifact.zip
+          data/intake/schoolhouse-usaspending-recipient-census-v1/source-custody.json
+          docs/milestones/schoolhouse-usaspending-recipient-census-v1.md
+          tools/validate-schoolhouse-usaspending-recipient-census-custody.py
+          PATHS
+          sed -i 's/^          //' "$RUNNER_TEMP/permanent-paths"
+          sort -o "$RUNNER_TEMP/permanent-paths" "$RUNNER_TEMP/permanent-paths"
+
+          git fetch --no-tags origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            "+refs/heads/$TARGET:refs/remotes/origin/$TARGET"
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          LIVE_TREE="$(git rev-parse 'origin/main^{tree}')"
+          FROZEN_TREE="$(git rev-parse "$FROZEN^{tree}")"
+          MERGE_BASE="$(git merge-base HEAD origin/main)"
+          TARGET_REMOTE_SHA="$(git rev-parse "origin/$TARGET")"
+          {
+            printf 'carrier_head=%s\n' "$(git rev-parse HEAD)"
+            printf 'live_main=%s\n' "$LIVE_MAIN"
+            printf 'live_main_tree=%s\n' "$LIVE_TREE"
+            printf 'frozen_predecessor=%s\n' "$FROZEN"
+            printf 'frozen_tree=%s\n' "$FROZEN_TREE"
+            printf 'merge_base=%s\n' "$MERGE_BASE"
+            printf 'target_remote_sha=%s\n' "$TARGET_REMOTE_SHA"
+          } | tee "$RECEIPT/preflight.txt"
+          git merge-base --is-ancestor "$FROZEN" origin/main
+          test "$MERGE_BASE" = "$FROZEN"
+          test "$TARGET_REMOTE_SHA" = "$TARGET_LEASE"
+
+          mapfile -t CARRIER_PATHS < <(git diff --name-only "$FROZEN"..HEAD | sort)
+          EXPECTED_CARRIER=(
+            '.github/workflows/temp-schoolhouse-usaspending-recipient-census-materializer-v1.yml'
+            '.schoolhouse-usaspending-recipient-census-materializer-v1/EXECUTE'
+            '.schoolhouse-usaspending-recipient-census-materializer-v1/validator-template.py.gz.b64'
+          )
+          test "${#CARRIER_PATHS[@]}" -eq 3
+          for i in 0 1 2; do test "${CARRIER_PATHS[$i]}" = "${EXPECTED_CARRIER[$i]}"; done
+
+          git diff --name-only "$FROZEN"..origin/main | sort > "$RECEIPT/main-delta.txt"
+          comm -12 "$RECEIPT/main-delta.txt" "$RUNNER_TEMP/permanent-paths" > "$RECEIPT/main-overlap.txt"
+          test ! -s "$RECEIPT/main-overlap.txt"
+
+          grep -Fx 'issue=1358' "$EXECUTE"
+          grep -Fx 'source_artifact_id=9001168026' "$EXECUTE"
+          grep -Fx 'source_artifact_digest=sha256:b56408461a681a3f2b2388b33f08960abc9f81e6dade1b2b6efc64a9530eea2d' "$EXECUTE"
+          grep -Fx 'qualification_artifact_id=9001773839' "$EXECUTE"
+          grep -Fx 'qualification_artifact_digest=sha256:c80b2283050cad46e72ad82266ec7852ed76723d9ed17e2faac3b7f5960f25cf' "$EXECUTE"
+          grep -Fx 'permanent_paths=6' "$EXECUTE"
+          grep -Fx 'recipient_index_strict_name_matches=1' "$EXECUTE"
+          grep -Fx 'federal_spending_recipient_name_candidates=0' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+          grep -Fx 'publication_effect=none' "$EXECUTE"
+          grep -Fx 'adoption_effect=none' "$EXECUTE"
+          grep -Fx 'graph_effect=none' "$EXECUTE"
+
+          test "$(sha256sum "$TEMPLATE_B64" | awk '{print $1}')" = '5b2ecb8d43d9b490842ad615bc95d7a474c1f6f1dc46ee7a50c9e9b0277d8043'
+          base64 -d "$TEMPLATE_B64" > "$RUNNER_TEMP/validator-template.py.gz"
+          test "$(sha256sum "$RUNNER_TEMP/validator-template.py.gz" | awk '{print $1}')" = '938b50091a32ac50d1becd841c08477d65a0965e55e68cb400c2815b478c1717'
+          gzip -dc "$RUNNER_TEMP/validator-template.py.gz" > "$RUNNER_TEMP/validator-template.py"
+          test "$(sha256sum "$RUNNER_TEMP/validator-template.py" | awk '{print $1}')" = 'e00defafedb2205c9f4613c27b372e05dc876edc19f6c95834466957b7002bdc'
+
+          for spec in \
+            '9001168026 schoolhouse-usaspending-recipient-census-v1 31196898247 61fa1de957bdbe7ce0b1c6cd32947e825d690f31 sha256:b56408461a681a3f2b2388b33f08960abc9f81e6dade1b2b6efc64a9530eea2d 40601 source.zip' \
+            '9001773839 schoolhouse-usaspending-recipient-census-qualification-v1 31198311051 0b7a1f454216e7dd5586ad702f89f94140332b06 sha256:c80b2283050cad46e72ad82266ec7852ed76723d9ed17e2faac3b7f5960f25cf 10855 qualification.zip'; do
+            set -- $spec
+            ID="$1"; NAME="$2"; RUN="$3"; HEAD_SHA="$4"; DIGEST="$5"; BYTES="$6"; FILE="$7"
+            test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ID" --jq .name)" = "$NAME"
+            test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ID" --jq .workflow_run.id)" = "$RUN"
+            test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ID" --jq .workflow_run.head_sha)" = "$HEAD_SHA"
+            test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ID" --jq '.digest // ""')" = "$DIGEST"
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ID/zip" > "$DOWNLOAD/$FILE"
+            test "$(stat -c%s "$DOWNLOAD/$FILE")" = "$BYTES"
+            test "sha256:$(sha256sum "$DOWNLOAD/$FILE" | awk '{print $1}')" = "$DIGEST"
+          done
+
+          rm -rf "$WORK"
+          git worktree add --detach "$WORK" "$LIVE_MAIN"
+          mkdir -p \
+            "$WORK/data/intake/schoolhouse-usaspending-recipient-census-v1" \
+            "$WORK/docs/milestones" \
+            "$WORK/tools"
+          cp "$DOWNLOAD/source.zip" "$WORK/data/intake/schoolhouse-usaspending-recipient-census-v1/sealed-source-artifact.zip"
+          cp "$DOWNLOAD/qualification.zip" "$WORK/data/intake/schoolhouse-usaspending-recipient-census-v1/sealed-qualification-artifact.zip"
+
+          PRODUCT_PARENT="$LIVE_MAIN" \
+          PRODUCT_PARENT_TREE="$LIVE_TREE" \
+          TEMPLATE="$RUNNER_TEMP/validator-template.py" \
+          TARGET_FILE="$WORK/tools/validate-schoolhouse-usaspending-recipient-census-custody.py" \
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          template = Path(os.environ['TEMPLATE']).read_text()
+          replacements = {
+              '__PRODUCT_PARENT__': (os.environ['PRODUCT_PARENT'], 1),
+              '__PRODUCT_PARENT_TREE__': (os.environ['PRODUCT_PARENT_TREE'], 1),
+              '__QUALIFICATION_SHA256__': ('c80b2283050cad46e72ad82266ec7852ed76723d9ed17e2faac3b7f5960f25cf', 1),
+              '__QUALIFICATION_BYTES__': ('10855', 1),
+              '__QUALIFIER_HEAD__': ('0b7a1f454216e7dd5586ad702f89f94140332b06', 1),
+              '__QUALIFIER_RUN__': ('31198311051', 2),
+              '__QUALIFIER_ARTIFACT_ID__': ('9001773839', 2),
+              '__QUALIFIER_RELEASE_RUN__': ('31198311367', 1),
+              '__QUALIFIER_NMH_RUN__': ('31198310689', 1),
+          }
+          for token, (value, count) in replacements.items():
+              observed = template.count(token)
+              if observed != count:
+                  raise SystemExit(f'placeholder count drift: {token} expected={count} observed={observed}')
+              template = template.replace(token, value)
+          if '__' in template:
+              raise SystemExit('unreplaced placeholder remains')
+          Path(os.environ['TARGET_FILE']).write_text(template)
+          PY
+          chmod 0755 "$WORK/tools/validate-schoolhouse-usaspending-recipient-census-custody.py"
+
+          cd "$WORK"
+          python -m py_compile tools/validate-schoolhouse-usaspending-recipient-census-custody.py
+          python tools/validate-schoolhouse-usaspending-recipient-census-custody.py --write
+          python tools/validate-schoolhouse-usaspending-recipient-census-custody.py --check | tee "$RECEIPT/focused-validation.log"
+          python tools/validate-schoolhouse-usaspending-recipient-census-custody.py --self-test | tee "$RECEIPT/adversarial.log"
+          grep -qx 'schoolhouse_usaspending_custody_adversarial_refusals=6' "$RECEIPT/adversarial.log"
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check 2>&1 | tee "$RECEIPT/release-check.log"
+
+          git switch -C "$TARGET" "$LIVE_MAIN"
+          git add --pathspec-from-file="$RUNNER_TEMP/permanent-paths"
+          mapfile -t STAGED < <(git diff --cached --name-only | sort)
+          mapfile -t EXPECTED_PATHS < "$RUNNER_TEMP/permanent-paths"
+          test "${#STAGED[@]}" -eq 6
+          for i in "${!EXPECTED_PATHS[@]}"; do test "${STAGED[$i]}" = "${EXPECTED_PATHS[$i]}"; done
+          test -z "$(git diff --cached --name-only | grep '^\.github/' || true)"
+          git config user.name 'OpenAI Agent'
+          git config user.email 'agent@openai.invalid'
+          git commit -m 'Preserve School.House USAspending recipient census custody'
+          PRODUCT="$(git rev-parse HEAD)"
+          PRODUCT_TREE="$(git rev-parse 'HEAD^{tree}')"
+          test "$(git show -s --format=%P HEAD)" = "$LIVE_MAIN"
+          test "$(git diff --name-only "$LIVE_MAIN"..HEAD | wc -l | tr -d ' ')" = '6'
+          test -z "$(git diff --name-only "$LIVE_MAIN"..HEAD | grep '^\.github/' || true)"
+          git push --force-with-lease="refs/heads/$TARGET:$TARGET_LEASE" origin "HEAD:refs/heads/$TARGET"
+
+          {
+            printf 'canonical_parent=%s\n' "$LIVE_MAIN"
+            printf 'canonical_parent_tree=%s\n' "$LIVE_TREE"
+            printf 'product_commit=%s\n' "$PRODUCT"
+            printf 'product_tree=%s\n' "$PRODUCT_TREE"
+            printf 'permanent_paths=6\n'
+            printf 'source_artifact=9001168026\n'
+            printf 'source_digest=sha256:b56408461a681a3f2b2388b33f08960abc9f81e6dade1b2b6efc64a9530eea2d\n'
+            printf 'qualification_artifact=9001773839\n'
+            printf 'qualification_digest=sha256:c80b2283050cad46e72ad82266ec7852ed76723d9ed17e2faac3b7f5960f25cf\n'
+            printf 'fixed_routes=6\nterminal_routes=6\nrecipient_index_rows=684\nstrict_name_matches=1\ncandidates=0\n'
+            printf 'outside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n'
+          } > "$RECEIPT/materialization.txt"
+          cp "$RUNNER_TEMP/permanent-paths" "$RECEIPT/permanent-paths.txt"
+          sha256sum "$RECEIPT"/* > "$RECEIPT/SHA256SUMS"
+          cat "$RECEIPT/materialization.txt"
+
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-usaspending-recipient-census-materialization-v1
+          path: ${{ runner.temp }}/schoolhouse-usaspending-materialization-receipt
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
