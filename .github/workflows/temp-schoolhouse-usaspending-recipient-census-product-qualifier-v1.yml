@@ -1,0 +1,194 @@
+name: TEMP qualify exact School.House USAspending custody product
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-usaspending-recipient-census-product-qualifier-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-usaspending-product-qualifier-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-usaspending-recipient-census-product-qualifier-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prove exact product topology and rerun every gate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          FROZEN='8a2f4538bdbcf9455f02e70c35a71cb39f805b18'
+          PRODUCT_EXPECTED='86d64ffabfca1caca10fd2e9921f8f52c9e280e6'
+          PRODUCT_TREE_EXPECTED='6d6b7423e55d173db653127e810dad78eb9576c4'
+          TARGET='agent/schoolhouse-usaspending-recipient-census-custody-product-v1'
+          WORKFLOW='.github/workflows/temp-schoolhouse-usaspending-recipient-census-product-qualifier-v1.yml'
+          WORK="$RUNNER_TEMP/schoolhouse-usaspending-product-qualification-worktree"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-usaspending-product-qualification-v1"
+          mkdir -p "$RECEIPT"
+
+          cat > "$RECEIPT/expected-paths.txt" <<'PATHS'
+          data/intake/schoolhouse-usaspending-recipient-census-v1/product-manifest.json
+          data/intake/schoolhouse-usaspending-recipient-census-v1/sealed-qualification-artifact.zip
+          data/intake/schoolhouse-usaspending-recipient-census-v1/sealed-source-artifact.zip
+          data/intake/schoolhouse-usaspending-recipient-census-v1/source-custody.json
+          docs/milestones/schoolhouse-usaspending-recipient-census-v1.md
+          tools/validate-schoolhouse-usaspending-recipient-census-custody.py
+          PATHS
+          sed -i 's/^          //' "$RECEIPT/expected-paths.txt"
+          sort -o "$RECEIPT/expected-paths.txt" "$RECEIPT/expected-paths.txt"
+
+          git fetch --no-tags origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            "+refs/heads/$TARGET:refs/remotes/origin/$TARGET"
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          QUALIFIER="$(git rev-parse HEAD)"
+          QUALIFIER_PARENT="$(git rev-parse HEAD^)"
+          PRODUCT="$(git rev-parse "origin/$TARGET")"
+          PRODUCT_PARENT="$(git rev-parse "$PRODUCT^")"
+          PRODUCT_TREE="$(git rev-parse "$PRODUCT^{tree}")"
+          {
+            printf 'live_main=%s\n' "$LIVE_MAIN"
+            printf 'frozen_parent=%s\n' "$FROZEN"
+            printf 'qualifier=%s\n' "$QUALIFIER"
+            printf 'qualifier_parent=%s\n' "$QUALIFIER_PARENT"
+            printf 'product=%s\n' "$PRODUCT"
+            printf 'product_parent=%s\n' "$PRODUCT_PARENT"
+            printf 'product_tree=%s\n' "$PRODUCT_TREE"
+          } | tee "$RECEIPT/preflight.txt"
+          test "$QUALIFIER_PARENT" = "$FROZEN"
+          test "$PRODUCT" = "$PRODUCT_EXPECTED"
+          test "$PRODUCT_PARENT" = "$FROZEN"
+          test "$PRODUCT_TREE" = "$PRODUCT_TREE_EXPECTED"
+          test "$(git rev-list --count "$FROZEN".."$PRODUCT")" = '1'
+          git merge-base --is-ancestor "$FROZEN" origin/main
+
+          mapfile -t QUALIFIER_DELTA < <(git diff --name-only "$FROZEN"..HEAD)
+          test "${#QUALIFIER_DELTA[@]}" -eq 1
+          test "${QUALIFIER_DELTA[0]}" = "$WORKFLOW"
+
+          git diff --name-status "$FROZEN" "$PRODUCT" > "$RECEIPT/product-name-status.txt"
+          python - "$RECEIPT/expected-paths.txt" "$RECEIPT/product-name-status.txt" <<'PY'
+          from pathlib import Path
+          import sys
+          expected = set(Path(sys.argv[1]).read_text().splitlines())
+          rows = Path(sys.argv[2]).read_text().splitlines()
+          observed = set()
+          for row in rows:
+              status, path = row.split('\t', 1)
+              if status != 'A':
+                  raise SystemExit(f'non-addition product path: {row}')
+              observed.add(path)
+          if observed != expected:
+              raise SystemExit(f'product path-set drift: {sorted(observed ^ expected)}')
+          print('product_surface=6_addition_only_workflow_free')
+          PY
+          test -z "$(git diff --name-only "$FROZEN" "$PRODUCT" | grep '^\.github/' || true)"
+
+          git diff --name-only "$FROZEN"..origin/main | sort > "$RECEIPT/main-delta.txt"
+          comm -12 "$RECEIPT/main-delta.txt" "$RECEIPT/expected-paths.txt" > "$RECEIPT/main-overlap.txt"
+          test ! -s "$RECEIPT/main-overlap.txt"
+
+          rm -rf "$WORK"
+          git worktree add --detach "$WORK" "$PRODUCT"
+          export TERM=xterm
+          {
+            cd "$WORK"
+            python -m py_compile tools/validate-schoolhouse-usaspending-recipient-census-custody.py
+            python tools/validate-schoolhouse-usaspending-recipient-census-custody.py --check
+            python tools/validate-schoolhouse-usaspending-recipient-census-custody.py --self-test
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          } 2>&1 | tee "$RECEIPT/focused-gates.log"
+          grep -qx 'schoolhouse_usaspending_custody_adversarial_refusals=6' "$RECEIPT/focused-gates.log"
+          (cd "$WORK" && npm run release:check) 2>&1 | tee "$RECEIPT/release-check.log"
+
+          git -C "$WORK" restore --staged --worktree .
+          git -C "$WORK" clean -fdx
+          (
+            cd "$WORK"
+            python tools/validate-schoolhouse-usaspending-recipient-census-custody.py --write
+            python tools/validate-schoolhouse-usaspending-recipient-census-custody.py --check
+            python tools/validate-schoolhouse-usaspending-recipient-census-custody.py --self-test
+            node tools/validate-no-magic-human-gate.mjs
+          ) 2>&1 | tee "$RECEIPT/clean-replay.log"
+          git -C "$WORK" diff --check
+          git -C "$WORK" diff --exit-code
+          test -z "$(git -C "$WORK" status --porcelain=v1 --untracked-files=all)"
+
+          LIVE_MAIN="$LIVE_MAIN" FROZEN="$FROZEN" PRODUCT="$PRODUCT" PRODUCT_TREE="$PRODUCT_TREE" RECEIPT="$RECEIPT" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          receipt = {
+              'schema_version': 'schoolhouse-usaspending-recipient-census-product-qualification@1',
+              'live_main_observed': os.environ['LIVE_MAIN'],
+              'canonical_product_parent': os.environ['FROZEN'],
+              'product_commit': os.environ['PRODUCT'],
+              'product_tree': os.environ['PRODUCT_TREE'],
+              'product_pr': 1375,
+              'product_commits': 1,
+              'permanent_paths': 6,
+              'addition_only': True,
+              'workflow_paths_in_product': 0,
+              'fixed_routes': 6,
+              'terminal_routes': 6,
+              'total_request_attempts': 6,
+              'autocomplete_rows': 200,
+              'recipient_index_rows': 684,
+              'recipient_index_strict_name_matches': 1,
+              'strict_matches_with_public_uei': 0,
+              'federal_spending_recipient_name_candidates': 0,
+              'adversarial_refusals': 6,
+              'no_magic_human_adversarial_mutations': 23,
+              'identities_admitted': 0,
+              'relationships_admitted': 0,
+              'federal_awards_admitted': 0,
+              'funding_or_amount_admissions': 0,
+              'negative_existence_claims': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'source_requests_made_by_qualifier': 0,
+              'focused_validation': 'pass',
+              'complete_release_gate': 'pass',
+              'clean_replay': 'pass',
+              'status': 'complete',
+          }
+          target = Path(os.environ['RECEIPT']) / 'qualification.json'
+          target.write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          PY
+          sha256sum "$RECEIPT"/* > "$RECEIPT/SHA256SUMS"
+
+      - name: Preserve exact product qualification
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-usaspending-recipient-census-product-qualification-v1
+          path: ${{ runner.temp }}/schoolhouse-usaspending-product-qualification-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
