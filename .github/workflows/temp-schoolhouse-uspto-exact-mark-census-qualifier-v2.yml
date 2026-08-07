@@ -1,0 +1,306 @@
+name: TEMP qualify exact School.House USPTO census artifact v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: schoolhouse-uspto-exact-mark-census-qualifier-v2-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-uspto-exact-mark-census-qualifier-v2')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Authenticate and independently qualify the exact artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='b320e380723600fe39c3aa711a09d3d861f756c2'
+          BASE_TREE='50801e462a7e5d170a65dd0612e7ff1b96d75dd8'
+          SOURCE_HEAD='16cf3c313c6760814d6fca0ab491a093fba9ff4a'
+          SOURCE_RUN='31141096853'
+          ARTIFACT_ID='8979839804'
+          ARTIFACT_NAME='schoolhouse-uspto-exact-mark-census-v1'
+          ARTIFACT_BYTES='6026'
+          ARTIFACT_SHA='008180c6126a9281ce1016171ea01c5292cddcefd9896f15c78fa304fc65cce5'
+          WORKFLOW='.github/workflows/temp-schoolhouse-uspto-exact-mark-census-qualifier-v2.yml'
+          ZIP="$RUNNER_TEMP/$ARTIFACT_NAME.zip"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-uspto-exact-mark-census-qualification-v2"
+          mkdir -p "$RECEIPT"
+
+          git fetch --no-tags origin main
+          MAIN="$(git rev-parse origin/main)"
+          test "$(git rev-parse "$BASE^{tree}")" = "$BASE_TREE"
+          git merge-base --is-ancestor "$BASE" origin/main
+          test "$(git merge-base HEAD origin/main)" = "$BASE"
+          mapfile -t DELTA < <(git diff --name-only origin/main HEAD)
+          test "${#DELTA[@]}" -eq 1
+          test "${DELTA[0]}" = "$WORKFLOW"
+
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" --jq '.digest // ""')" = "sha256:$ARTIFACT_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" --jq .name)" = "$ARTIFACT_NAME"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" --jq .workflow_run.id)" = "$SOURCE_RUN"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" --jq .workflow_run.head_sha)" = "$SOURCE_HEAD"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" --jq .workflow_run.head_branch)" = 'agent/schoolhouse-uspto-exact-mark-census-v1'
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$ZIP"
+          test "$(stat -c%s "$ZIP")" = "$ARTIFACT_BYTES"
+          test "$(sha256sum "$ZIP" | awk '{print $1}')" = "$ARTIFACT_SHA"
+
+          python - "$ZIP" "$RECEIPT" "$MAIN" <<'PY'
+          from __future__ import annotations
+          from collections import Counter
+          from pathlib import Path
+          import hashlib
+          import json
+          import shutil
+          import sys
+          import zipfile
+
+          zip_path = Path(sys.argv[1])
+          receipt = Path(sys.argv[2])
+          main = sys.argv[3]
+          out = receipt / 'source'
+          out.mkdir(parents=True)
+
+          def sha256_bytes(value: bytes) -> str:
+              return hashlib.sha256(value).hexdigest()
+
+          def read_json(name: str):
+              return json.loads((out / name).read_text())
+
+          def read_jsonl(name: str):
+              text = (out / name).read_text()
+              return [json.loads(line) for line in text.splitlines() if line]
+
+          expected_members = sorted([
+              'RUNNER-OUTPUT.log', 'RUNNER_EXIT_CODE', 'SHA256SUMS',
+              'adjudication.json', 'artifact-manifest.json',
+              'query-receipts.jsonl', 'query-results.jsonl',
+              'route-policy.json', 'source-receipt.json', 'summary.json',
+          ])
+          with zipfile.ZipFile(zip_path) as archive:
+              assert archive.testzip() is None
+              assert sorted(archive.namelist()) == expected_members
+              archive.extractall(out)
+
+          assert (out / 'RUNNER_EXIT_CODE').read_text().strip() == '0'
+          sum_rows = []
+          for line in (out / 'SHA256SUMS').read_text().splitlines():
+              digest, name = line.split('  ', 1)
+              assert '/' not in name and name in expected_members
+              assert sha256_bytes((out / name).read_bytes()) == digest
+              sum_rows.append(name)
+          assert len(sum_rows) == 7
+
+          summary = read_json('summary.json')
+          adjudication = read_json('adjudication.json')
+          policy = read_json('route-policy.json')
+          source = read_json('source-receipt.json')
+          manifest = read_json('artifact-manifest.json')
+          queries = read_jsonl('query-receipts.jsonl')
+          assert (out / 'query-results.jsonl').read_bytes() == b''
+
+          assert summary == {
+              'schema_version': 'schoolhouse-uspto-exact-mark-census-v1@1',
+              'state': 'terminal_bounded_uspto_exact_mark_candidate_census',
+              'fixed_query_count': 3,
+              'terminal_query_count': 3,
+              'terminal_query_state_counts': {'terminal_public_search_rendered_no_parseable_rows': 3},
+              'retained_result_rows': 0,
+              'unique_serials': 0,
+              'trademark_serial_candidate_rows': 0,
+              'same_host_detail_views': 0,
+              'blocked_officially_unscoped_host_requests': 15,
+              'owner_or_applicant_name_values_retained': 0,
+              'person_names_retained': 0,
+              'addresses_retained': 0,
+              'phone_or_email_values_retained': 0,
+              'attorney_or_correspondence_values_retained': 0,
+              'complete_html_responses_retained': 0,
+              'screenshots_retained': 0,
+              'raw_json_responses_retained': 0,
+              'raw_browser_profiles_or_cookies_retained': 0,
+              'identities_admitted': 0,
+              'relationships_admitted': 0,
+              'negative_existence_claims_created': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          assert adjudication['state'] == summary['state']
+          assert adjudication['public_schoolhouse_identity_admitted'] is False
+          assert adjudication['trademark_owner_admitted'] is False
+          assert adjudication['school_house_domain_operation_admitted'] is False
+          assert adjudication['fiscal_sponsor_relationship_admitted'] is False
+          assert adjudication['funding_relationship_admitted'] is False
+          assert adjudication['governance_or_control_relationship_admitted'] is False
+          assert adjudication['related_party_relationship_admitted'] is False
+          assert adjudication['negative_existence_claim_created'] is False
+          assert adjudication['promotes_to'] == 'candidate_only'
+          assert adjudication['trademark_serial_candidate_rows'] == 0
+          assert all(adjudication['interpretation'].values())
+          assert adjudication['outside_human_dependency'] is False
+          assert [adjudication[k] for k in ('publication_effect','adoption_effect','graph_effect')] == ['none','none','none']
+
+          assert policy['schema_version'] == 'schoolhouse-uspto-trademark-route-policy-v1@1'
+          assert policy['issue'] == 1323
+          assert policy['canonical_parent'] == 'b320e380723600fe39c3aa711a09d3d861f756c2'
+          assert policy['canonical_parent_tree'] == '50801e462a7e5d170a65dd0612e7ff1b96d75dd8'
+          assert [row['query_id'] for row in policy['fixed_queries']] == ['q1_school_dot_house','q2_schoolhouse','q3_school_house']
+          assert policy['bounds'] == {
+              'browser_sessions': 1,
+              'fixed_search_submissions': 3,
+              'maximum_result_rows_per_query': 500,
+              'maximum_unique_serials_retained': 1000,
+              'maximum_same_host_detail_views': 1000,
+              'login_attempts': 0,
+              'account_creation_attempts': 0,
+              'api_key_requests': 0,
+              'captcha_or_waf_bypass_attempts': 0,
+              'cookie_export_or_replay_attempts': 0,
+              'query_derived_officially_unscoped_requests': 0,
+              'outside_human_dependency': False,
+          }
+          assert policy['candidate_rule']['promotes_to'] == 'trademark_serial_candidate'
+          assert policy['candidate_rule']['owner_identity_admission'] is False
+          assert policy['candidate_rule']['successor_tsd_document_adjudication_required'] is True
+          assert all(value == 0 for key, value in policy['retention'].items() if key != 'private_material_retained')
+          assert policy['retention']['private_material_retained'] == 0
+          assert policy['authority'] == {
+              'identities_admitted': 0, 'relationships_admitted': 0,
+              'negative_existence_claims': 0, 'outside_human_dependency': False,
+              'publication_effect': 'none', 'adoption_effect': 'none', 'graph_effect': 'none',
+          }
+
+          assert source['schema_version'] == 'schoolhouse-uspto-trademark-source-receipt-v1@1'
+          assert source['issue'] == 1323
+          assert source['canonical_parent'] == policy['canonical_parent']
+          assert source['canonical_parent_tree'] == policy['canonical_parent_tree']
+          assert source['official_source_host'] == 'tmsearch.uspto.gov'
+          assert source['browser_engine'] == 'playwright_chromium'
+          assert source['anonymous_session'] is True
+          assert source['fixed_query_count'] == 3
+          assert source['terminal_query_state_counts'] == summary['terminal_query_state_counts']
+          assert source['result_rows'] == source['unique_serials'] == source['trademark_serial_candidate_rows'] == 0
+          assert source['blocked_officially_unscoped_host_requests'] == 15
+          assert len(source['blocked_host_hashes']) == 4
+          assert source['outside_human_dependency'] is False
+          assert [source[k] for k in ('publication_effect','adoption_effect','graph_effect')] == ['none','none','none']
+
+          assert len(queries) == 3
+          assert [row['query_id'] for row in queries] == ['q1_school_dot_house','q2_schoolhouse','q3_school_house']
+          assert [row['expected_mark_normalized'] for row in queries] == ['school.house','schoolhouse','school house']
+          assert [row['blocked_officially_unscoped_host_requests'] for row in queries] == [5,10,15]
+          assert Counter(row['terminal_state'] for row in queries) == Counter({'terminal_public_search_rendered_no_parseable_rows': 3})
+          for row in queries:
+              assert row['retained_result_rows'] == 0
+              assert row['page_url'] == 'https://tmsearch.uspto.gov/search/search-results'
+              assert row['page_http_statuses'] == [200]
+              assert row['page_title'] == 'Trademark Search'
+              assert row['result_text_status'] == 'Trademark Search Trademark Search'
+              assert row['same_host_detail_views'] == 0
+              assert row['request_count'] == 108
+              assert row['response_count'] == 24
+              assert row['json_response_count'] == 8
+              assert row['json_parse_error_count'] == 0
+              assert row['login_attempts'] == 0
+              assert row['account_creation_attempts'] == 0
+              assert row['api_key_requests'] == 0
+              assert row['captcha_or_waf_bypass_attempts'] == 0
+              assert row['cookie_export_or_replay_attempts'] == 0
+              assert row['challenge_detected'] is False
+              assert row['access_block_http_statuses'] == []
+              assert row['error_class'] is None
+              assert row['outside_human_dependency'] is False
+              assert [row[k] for k in ('publication_effect','adoption_effect','graph_effect')] == ['none','none','none']
+
+          assert manifest['schema_version'] == 'schoolhouse-uspto-trademark-artifact-manifest-v1@1'
+          assert manifest['combined_sha256'] == 'bc6a37aac6a578e8a30a53c584db69b4d268d49db922ce8af1f4f9ed4f6e00a9'
+          assert manifest['counts'] == {'query_receipts':3,'result_rows':0,'trademark_serial_candidates':0,'unique_serials':0}
+          assert len(manifest['files']) == 6
+
+          prohibited = {
+              'owner', 'owner_name', 'applicant', 'applicant_name', 'person_name',
+              'attorney', 'correspondence', 'street_address', 'mailing_address',
+              'phone', 'email', 'cookie', 'browser_profile', 'raw_html',
+              'raw_json', 'screenshot',
+          }
+          def walk(value):
+              if isinstance(value, dict):
+                  assert prohibited.isdisjoint(value)
+                  for child in value.values(): walk(child)
+              elif isinstance(value, list):
+                  for child in value: walk(child)
+          for value in (summary, adjudication, policy, source, manifest, queries):
+              walk(value)
+
+          qualification = {
+              'schema_version': 'schoolhouse-uspto-exact-mark-census-qualification-v2@1',
+              'canonical_main_observed': main,
+              'canonical_predecessor': policy['canonical_parent'],
+              'canonical_predecessor_tree': policy['canonical_parent_tree'],
+              'source_pr': 1324,
+              'source_head': '16cf3c313c6760814d6fca0ab491a093fba9ff4a',
+              'source_workflow_run': 31141096853,
+              'source_workflow_conclusion': 'failure_after_successful_census_and_validation_wrapper',
+              'artifact_id': 8979839804,
+              'artifact_name': 'schoolhouse-uspto-exact-mark-census-v1',
+              'artifact_bytes': 6026,
+              'artifact_sha256': '008180c6126a9281ce1016171ea01c5292cddcefd9896f15c78fa304fc65cce5',
+              'fixed_query_count': 3,
+              'terminal_query_count': 3,
+              'terminal_state': summary['state'],
+              'query_terminal_state': 'terminal_public_search_rendered_no_parseable_rows',
+              'retained_result_rows': 0,
+              'unique_serials': 0,
+              'trademark_serial_candidate_rows': 0,
+              'identities_admitted': 0,
+              'relationships_admitted': 0,
+              'negative_existence_claims': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'qualification': 'pass',
+          }
+          (receipt / 'qualification.json').write_text(json.dumps(qualification, indent=2, sort_keys=True) + '\n')
+          shutil.copy2(out / 'summary.json', receipt / 'source-summary.json')
+          shutil.copy2(out / 'SHA256SUMS', receipt / 'source-SHA256SUMS')
+          for path in out.iterdir():
+              if path.name not in {'RUNNER-OUTPUT.log'}:
+                  shutil.rmtree(path) if path.is_dir() else path.unlink()
+          sums = []
+          for path in sorted(receipt.iterdir()):
+              if path.is_file(): sums.append(f'{sha256_bytes(path.read_bytes())}  {path.name}')
+          (receipt / 'SHA256SUMS').write_text('\n'.join(sums) + '\n')
+          print(json.dumps(qualification, indent=2, sort_keys=True))
+          PY
+
+      - name: Preserve independent qualification receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-uspto-exact-mark-census-qualification-v2
+          path: ${{ runner.temp }}/schoolhouse-uspto-exact-mark-census-qualification-v2
+          if-no-files-found: error
+          retention-days: 90
