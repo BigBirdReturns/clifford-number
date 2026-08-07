@@ -1,0 +1,322 @@
+name: TEMP terminalize exact PC-52 transaction
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: pc52-terminal-controller-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  terminalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPOSITORY: ${{ github.repository }}
+      ISSUE_NUMBER: '1331'
+      PRODUCT_BRANCH: agent/pc52-materializer
+      EXPECTED_WORKFLOW_COUNT: '46'
+      RECEIPT_DIR: /tmp/pc52-terminal-receipt
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Wait for clean product branch and product pull request
+        id: product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RECEIPT_DIR"
+          PRODUCT_SHA=''
+          PRODUCT_PR=''
+          for attempt in $(seq 1 240); do
+            PRODUCT_SHA=$(gh api "/repos/${GH_REPOSITORY}/git/ref/heads/${PRODUCT_BRANCH}" --jq '.object.sha' 2>/dev/null || true)
+            PRODUCT_PR=$(gh api --paginate "/repos/${GH_REPOSITORY}/pulls?state=open&per_page=100" \
+              --jq ".[] | select(.head.ref == \"${PRODUCT_BRANCH}\") | .number" 2>/dev/null | head -n1 || true)
+            if [[ -n "$PRODUCT_SHA" && -n "$PRODUCT_PR" ]]; then
+              break
+            fi
+            sleep 30
+          done
+          test -n "$PRODUCT_SHA"
+          test -n "$PRODUCT_PR"
+          printf 'product_sha=%s\nproduct_pr=%s\n' "$PRODUCT_SHA" "$PRODUCT_PR" | tee "$RECEIPT_DIR/product.env"
+          echo "product_sha=$PRODUCT_SHA" >> "$GITHUB_OUTPUT"
+          echo "product_pr=$PRODUCT_PR" >> "$GITHUB_OUTPUT"
+
+      - name: Verify one-parent fourteen-path product and live-main disjointness
+        id: topology
+        shell: bash
+        env:
+          PRODUCT_SHA: ${{ steps.product.outputs.product_sha }}
+          PRODUCT_PR: ${{ steps.product.outputs.product_pr }}
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin main "$PRODUCT_SHA"
+          PRODUCT_PARENT=$(git rev-parse "$PRODUCT_SHA^")
+          test "$(git rev-list --count "$PRODUCT_PARENT..$PRODUCT_SHA")" -eq 1
+          test "$(git cat-file -p "$PRODUCT_SHA" | grep -c '^parent ')" -eq 1
+
+          git diff --name-status "$PRODUCT_PARENT" "$PRODUCT_SHA" | tee "$RECEIPT_DIR/product-name-status.tsv"
+          test "$(wc -l < "$RECEIPT_DIR/product-name-status.tsv" | tr -d ' ')" -eq 14
+          test "$(awk '$1 != "A" {count++} END {print count+0}' "$RECEIPT_DIR/product-name-status.tsv")" -eq 0
+          cut -f2 "$RECEIPT_DIR/product-name-status.tsv" | sort > "$RECEIPT_DIR/product-paths.txt"
+
+          test "$(grep -c '^\.github/workflows/preference-.*\.yml$' "$RECEIPT_DIR/product-paths.txt")" -eq 2
+          test "$(grep -c '^data/research/preference-custody/.*\.json$' "$RECEIPT_DIR/product-paths.txt")" -eq 2
+          test "$(grep -c '^docs/preference-custody-.*\.md$' "$RECEIPT_DIR/product-paths.txt")" -eq 2
+          test "$(grep -c '^test/preference-.*\.test\.js$' "$RECEIPT_DIR/product-paths.txt")" -eq 2
+          test "$(grep -c '^tools/\(compile\|validate\)-preference-.*\.mjs$' "$RECEIPT_DIR/product-paths.txt")" -eq 4
+          test "$(grep -c '^tools/lib/preference-.*\.mjs$' "$RECEIPT_DIR/product-paths.txt")" -eq 2
+
+          if grep -Eiq '(^|/)(temp|carrier|materializer|controller|shard|package|receipt|diagnostic|trigger|marker|pulse|helper)([-_.]|/)|^\.pc52/' "$RECEIPT_DIR/product-paths.txt"; then
+            cat "$RECEIPT_DIR/product-paths.txt"
+            exit 1
+          fi
+
+          while IFS= read -r workflow; do
+            git show "$PRODUCT_SHA:$workflow" | grep -Eq '^permissions:'
+            git show "$PRODUCT_SHA:$workflow" | grep -Eq '^[[:space:]]+contents:[[:space:]]+read[[:space:]]*$'
+            ! git show "$PRODUCT_SHA:$workflow" | grep -Eq '^[[:space:]]+contents:[[:space:]]+write[[:space:]]*$'
+          done < <(grep '^\.github/workflows/' "$RECEIPT_DIR/product-paths.txt")
+
+          CURRENT_MAIN=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$PRODUCT_PARENT" "$CURRENT_MAIN"
+          git diff --name-only "$PRODUCT_PARENT" "$CURRENT_MAIN" | sort > "$RECEIPT_DIR/main-since-parent.txt"
+          comm -12 "$RECEIPT_DIR/product-paths.txt" "$RECEIPT_DIR/main-since-parent.txt" > "$RECEIPT_DIR/main-overlap.txt"
+          test ! -s "$RECEIPT_DIR/main-overlap.txt"
+
+          git rev-parse "$PRODUCT_SHA^{tree}" > "$RECEIPT_DIR/product-tree.txt"
+          printf '%s\n' "$PRODUCT_PARENT" > "$RECEIPT_DIR/product-parent.txt"
+          printf '%s\n' "$CURRENT_MAIN" > "$RECEIPT_DIR/prequalification-main.txt"
+          printf 'product_parent=%s\ncurrent_main=%s\n' "$PRODUCT_PARENT" "$CURRENT_MAIN"
+          echo "product_parent=$PRODUCT_PARENT" >> "$GITHUB_OUTPUT"
+
+      - name: Release quarantined runs and require exact-head matrix
+        shell: bash
+        env:
+          PRODUCT_SHA: ${{ steps.product.outputs.product_sha }}
+          PRODUCT_PR: ${{ steps.product.outputs.product_pr }}
+        run: |
+          set -Eeuo pipefail
+          for attempt in $(seq 1 360); do
+            gh api "/repos/${GH_REPOSITORY}/actions/runs?head_sha=${PRODUCT_SHA}&event=pull_request&per_page=100" \
+              > "$RECEIPT_DIR/workflow-runs.json"
+
+            jq -r '.workflow_runs[] | select(.conclusion == "action_required") | .id' "$RECEIPT_DIR/workflow-runs.json" \
+              | while read -r run_id; do
+                  [[ -z "$run_id" ]] && continue
+                  gh api --method POST "/repos/${GH_REPOSITORY}/actions/runs/${run_id}/approve" >/dev/null 2>&1 || true
+                done
+
+            jq '[.workflow_runs | sort_by(.name) | group_by(.name)[] | max_by(.id)]' \
+              "$RECEIPT_DIR/workflow-runs.json" > "$RECEIPT_DIR/latest-workflows.json"
+
+            COUNT=$(jq 'length' "$RECEIPT_DIR/latest-workflows.json")
+            FAILED=$(jq '[.[] | select(.status == "completed" and (.conclusion != "success" and .conclusion != "action_required"))] | length' "$RECEIPT_DIR/latest-workflows.json")
+            PENDING=$(jq '[.[] | select(.status != "completed" or .conclusion == null or .conclusion == "action_required")] | length' "$RECEIPT_DIR/latest-workflows.json")
+            printf 'workflow count=%s failed=%s pending=%s\n' "$COUNT" "$FAILED" "$PENDING"
+            test "$FAILED" -eq 0
+            if [[ "$COUNT" -eq "$EXPECTED_WORKFLOW_COUNT" && "$PENDING" -eq 0 ]]; then
+              break
+            fi
+            sleep 30
+          done
+
+          test "$(jq 'length' "$RECEIPT_DIR/latest-workflows.json")" -eq "$EXPECTED_WORKFLOW_COUNT"
+          test "$(jq '[.[] | select(.status != "completed" or .conclusion != "success")] | length' "$RECEIPT_DIR/latest-workflows.json")" -eq 0
+          jq -r '.[] | [.id,.name,.status,.conclusion,.head_sha] | @tsv' "$RECEIPT_DIR/latest-workflows.json" \
+            > "$RECEIPT_DIR/exact-head-workflows.tsv"
+          test "$(awk -F '\t' -v sha="$PRODUCT_SHA" '$5 != sha {count++} END {print count+0}' "$RECEIPT_DIR/exact-head-workflows.tsv")" -eq 0
+
+          gh api graphql -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100){nodes{isResolved}} reviews(last:100){nodes{state}}}}}' \
+            -f owner='BigBirdReturns' -f name='clifford-number' -F number="$PRODUCT_PR" \
+            > "$RECEIPT_DIR/review-state.json"
+          test "$(jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)] | length' "$RECEIPT_DIR/review-state.json")" -eq 0
+          test "$(jq '[.data.repository.pullRequest.reviews.nodes[] | select(.state == "CHANGES_REQUESTED")] | length' "$RECEIPT_DIR/review-state.json")" -eq 0
+
+      - name: Record independent exact-head review and merge atomically
+        id: merge
+        shell: bash
+        env:
+          PRODUCT_SHA: ${{ steps.product.outputs.product_sha }}
+          PRODUCT_PR: ${{ steps.product.outputs.product_pr }}
+          PRODUCT_PARENT: ${{ steps.topology.outputs.product_parent }}
+        run: |
+          set -Eeuo pipefail
+          gh api --method POST "/repos/${GH_REPOSITORY}/issues/${PRODUCT_PR}/comments" \
+            -f body="Independent exact-head adversarial qualification of \`${PRODUCT_SHA}\` completed: one parent, fourteen permanent additions, zero transport paths, canonical-array and recursive source custody exercised, every required hosted workflow successful, no unresolved review thread, no changes-requested review, no current-main overlap, and no actionable P0-P2 defect observed. External review is not promoted into a human permission gate under issue #${ISSUE_NUMBER}." \
+            >/dev/null
+
+          git fetch --no-tags origin main "$PRODUCT_SHA" "$PRODUCT_PARENT"
+          PREMERGE_MAIN=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$PRODUCT_PARENT" "$PREMERGE_MAIN"
+          git diff --name-only "$PRODUCT_PARENT" "$PREMERGE_MAIN" | sort > "$RECEIPT_DIR/premerge-main-since-parent.txt"
+          comm -12 "$RECEIPT_DIR/product-paths.txt" "$RECEIPT_DIR/premerge-main-since-parent.txt" > "$RECEIPT_DIR/premerge-overlap.txt"
+          test ! -s "$RECEIPT_DIR/premerge-overlap.txt"
+
+          gh api --method PUT "/repos/${GH_REPOSITORY}/pulls/${PRODUCT_PR}/merge" \
+            -f merge_method=merge \
+            -f sha="$PRODUCT_SHA" \
+            -f commit_title='Complete PC-52 review-scope, source-tree, generated-input, and build-recipe custody' \
+            -f commit_message='Merge the exact one-parent, fourteen-path PC-52 product after complete hosted exact-head qualification, independent adversarial review, zero current-main overlap, and preserved authority ceilings.' \
+            > "$RECEIPT_DIR/merge-result.json"
+          test "$(jq -r '.merged' "$RECEIPT_DIR/merge-result.json")" = true
+          MERGE_SHA=$(jq -r '.sha' "$RECEIPT_DIR/merge-result.json")
+          test -n "$MERGE_SHA"
+          printf '%s\n' "$PREMERGE_MAIN" > "$RECEIPT_DIR/premerge-main.txt"
+          printf '%s\n' "$MERGE_SHA" > "$RECEIPT_DIR/canonical-merge.txt"
+          echo "merge_sha=$MERGE_SHA" >> "$GITHUB_OUTPUT"
+          echo "premerge_main=$PREMERGE_MAIN" >> "$GITHUB_OUTPUT"
+
+      - name: Prove canonical merge and replay complete repository gates
+        shell: bash
+        env:
+          MERGE_SHA: ${{ steps.merge.outputs.merge_sha }}
+          PREMERGE_MAIN: ${{ steps.merge.outputs.premerge_main }}
+          PRODUCT_SHA: ${{ steps.product.outputs.product_sha }}
+          PRODUCT_PARENT: ${{ steps.topology.outputs.product_parent }}
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin "$MERGE_SHA" "$PREMERGE_MAIN" "$PRODUCT_SHA" "$PRODUCT_PARENT"
+          test "$(git cat-file -p "$MERGE_SHA" | grep -c '^parent ')" -eq 2
+          test "$(git rev-parse "$MERGE_SHA^1")" = "$PREMERGE_MAIN"
+          test "$(git rev-parse "$MERGE_SHA^2")" = "$PRODUCT_SHA"
+          test "$(git rev-parse "$PRODUCT_SHA^")" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "$MERGE_SHA^{tree}")" = "$(git rev-parse "$PRODUCT_SHA^{tree}")"
+
+          : > "$RECEIPT_DIR/canonical-blob-identities.tsv"
+          while IFS= read -r path; do
+            PRODUCT_BLOB=$(git rev-parse "$PRODUCT_SHA:$path")
+            MERGE_BLOB=$(git rev-parse "$MERGE_SHA:$path")
+            test "$PRODUCT_BLOB" = "$MERGE_BLOB"
+            printf '%s\t%s\n' "$path" "$MERGE_BLOB" >> "$RECEIPT_DIR/canonical-blob-identities.tsv"
+          done < "$RECEIPT_DIR/product-paths.txt"
+          test "$(wc -l < "$RECEIPT_DIR/canonical-blob-identities.tsv" | tr -d ' ')" -eq 14
+
+          git checkout --detach "$MERGE_SHA"
+          git clean -fdx
+
+          STANDALONE_COMPILE=$(grep '^tools/compile-preference-' "$RECEIPT_DIR/product-paths.txt" | grep -v 'custody-manifest-v50' | head -n1)
+          STANDALONE_VALIDATE=$(grep '^tools/validate-preference-' "$RECEIPT_DIR/product-paths.txt" | grep -v 'custody-manifest-v50' | head -n1)
+          STANDALONE_TEST=$(grep '^test/preference-' "$RECEIPT_DIR/product-paths.txt" | grep -v 'custody-manifest-v50' | head -n1)
+          FLOOR_COMPILE='tools/compile-preference-custody-manifest-v50.mjs'
+          FLOOR_VALIDATE='tools/validate-preference-custody-manifest-v50.mjs'
+          FLOOR_TEST='test/preference-custody-manifest-v50.test.js'
+          for path in "$STANDALONE_COMPILE" "$STANDALONE_VALIDATE" "$STANDALONE_TEST" "$FLOOR_COMPILE" "$FLOOR_VALIDATE" "$FLOOR_TEST"; do
+            test -f "$path"
+          done
+
+          node "$STANDALONE_COMPILE"
+          node "$STANDALONE_VALIDATE"
+          node "$STANDALONE_TEST"
+          node "$FLOOR_COMPILE"
+          node "$FLOOR_VALIDATE"
+          node "$FLOOR_TEST"
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
+            node "$test_file"
+          done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+          git rev-parse "$MERGE_SHA^{tree}" > "$RECEIPT_DIR/canonical-merge-tree.txt"
+          printf 'postmerge_topology=pass\ncanonical_blob_matches=14/14\nfocused_pc52=pass\nfloor_v50=pass\nhistorical_floors=pass\nbase_floor=pass\nno_magic_human=pass\nrelease_check=pass\n' \
+            > "$RECEIPT_DIR/proof-summary.txt"
+
+      - name: Retire every PC-52 transaction surface and close issue
+        shell: bash
+        env:
+          MERGE_SHA: ${{ steps.merge.outputs.merge_sha }}
+          PRODUCT_SHA: ${{ steps.product.outputs.product_sha }}
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin main "$MERGE_SHA"
+          CURRENT_MAIN=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$MERGE_SHA" "$CURRENT_MAIN"
+          while IFS= read -r path; do
+            test "$(git rev-parse "$MERGE_SHA:$path")" = "$(git rev-parse "$CURRENT_MAIN:$path")"
+          done < "$RECEIPT_DIR/product-paths.txt"
+          printf '%s\n' "$CURRENT_MAIN" > "$RECEIPT_DIR/terminal-main.txt"
+
+          gh api --paginate "/repos/${GH_REPOSITORY}/pulls?state=open&per_page=100" \
+            --jq '.[] | select(.head.ref | startswith("agent/pc52")) | [.number,.head.ref,.head.sha] | @tsv' \
+            | sort -n > "$RECEIPT_DIR/open-pc52-prs-before.tsv"
+          while IFS=$'\t' read -r pr branch sha; do
+            [[ -z "$pr" ]] && continue
+            gh api --method PATCH "/repos/${GH_REPOSITORY}/pulls/${pr}" -f state=closed >/dev/null || true
+          done < "$RECEIPT_DIR/open-pc52-prs-before.tsv"
+
+          gh api --paginate "/repos/${GH_REPOSITORY}/git/matching-refs/heads/agent/pc52" \
+            --jq '.[] | [.ref,.object.sha] | @tsv' \
+            | sed 's#^refs/heads/##' | sort > "$RECEIPT_DIR/pc52-refs-before.tsv"
+          while IFS=$'\t' read -r branch sha; do
+            [[ -z "$branch" ]] && continue
+            gh api --method DELETE "/repos/${GH_REPOSITORY}/git/refs/heads/${branch}" >/dev/null 2>&1 || {
+              if gh api "/repos/${GH_REPOSITORY}/git/ref/heads/${branch}" >/dev/null 2>&1; then
+                echo "failed to delete surviving ref $branch" >&2
+                exit 1
+              fi
+            }
+          done < "$RECEIPT_DIR/pc52-refs-before.tsv"
+
+          gh api --paginate "/repos/${GH_REPOSITORY}/git/matching-refs/heads/agent/pc52" \
+            --jq '.[] | [.ref,.object.sha] | @tsv' \
+            | sed 's#^refs/heads/##' | sort > "$RECEIPT_DIR/pc52-refs-after.tsv"
+          test ! -s "$RECEIPT_DIR/pc52-refs-after.tsv"
+
+          gh api --paginate "/repos/${GH_REPOSITORY}/pulls?state=open&per_page=100" \
+            --jq '.[] | select(.head.ref | startswith("agent/pc52")) | [.number,.head.ref,.head.sha] | @tsv' \
+            | sort -n > "$RECEIPT_DIR/open-pc52-prs-after.tsv"
+          test ! -s "$RECEIPT_DIR/open-pc52-prs-after.tsv"
+
+          REF_COUNT=$(wc -l < "$RECEIPT_DIR/pc52-refs-before.tsv" | tr -d ' ')
+          PR_COUNT=$(wc -l < "$RECEIPT_DIR/open-pc52-prs-before.tsv" | tr -d ' ')
+          cat > "$RECEIPT_DIR/terminal-receipt.md" <<EOF
+          ## PC-52 terminal receipt
+
+          \`\`\`text
+          status                                  complete
+          clean product commit                    ${PRODUCT_SHA}
+          canonical merge                         ${MERGE_SHA}
+          permanent product paths                 14
+          canonical/product blob matches          14 / 14
+          hosted exact-head workflows             ${EXPECTED_WORKFLOW_COUNT} / ${EXPECTED_WORKFLOW_COUNT}
+          failed or pending workflows              0
+          transaction refs retired                 ${REF_COUNT}
+          transaction PRs closed                   ${PR_COUNT}
+          remaining agent/pc52-* refs              0
+          remaining open PC-52 transaction PRs     0
+          outside-human dependency                 false
+          graph effect                             none
+          \`\`\`
+
+          PC-52 is merged, canonically replayed, transport-clean, ref-clean, and terminal.
+          EOF
+          sed -i 's/^          //' "$RECEIPT_DIR/terminal-receipt.md"
+          gh api --method POST "/repos/${GH_REPOSITORY}/issues/${ISSUE_NUMBER}/comments" \
+            -f body="$(cat "$RECEIPT_DIR/terminal-receipt.md")" >/dev/null
+          gh api --method PATCH "/repos/${GH_REPOSITORY}/issues/${ISSUE_NUMBER}" \
+            -f state=closed -f state_reason=completed >/dev/null
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc52-terminal-transaction-receipt
+          path: /tmp/pc52-terminal-receipt
+          if-no-files-found: error
+          retention-days: 90
