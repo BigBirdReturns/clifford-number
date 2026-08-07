@@ -1,0 +1,162 @@
+name: TEMP acquire RD-04 next-frontier official routes
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: temp-ssc-rd04-next-frontier-route-discovery-acquisition-v2
+  cancel-in-progress: true
+
+jobs:
+  acquire:
+    if: github.head_ref == 'agent/ssc-rd04-next-frontier-route-discovery-acquisition-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - id: acquire
+        name: Execute only the four bounded Florida discovery obligations
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUNNER_BLOB: 40a0aad989275ead401a48ced1ba9c68d96b03b9
+          RUNNER_XZ_BYTES: '6012'
+          RUNNER_XZ_SHA256: 03507977a52d5f9cbc2b2fe26d364f1ef8fad94176ef5bd806d3e902104ee434
+          RUNNER_SOURCE_BYTES: '23041'
+          RUNNER_SOURCE_SHA256: 76902dab8392f7de65d889161b9223fd120d215fc3729ad34796b5a3eff257b8
+          RUNNER_SOURCE_BLOB: 8bfb9265bc3a57eaa409f1df3117c89c9f7ab0a3
+          PROTOCOL_MERGE: 34583221f8d2485798fbe308241bf28fefd255ed
+          CARRIER_PARENT: 8a2f4538bdbcf9455f02e70c35a71cb39f805b18
+          CARRIER_PATH: .github/workflows/temp-ssc-rd04-next-frontier-route-discovery-acquisition-v2.yml
+          PROTOCOL_DIR: data/intake/status-sovereignty-rd-wave03-rd04-next-minimum-frontier-route-discovery-protocol
+          OUT: /tmp/ssc-rd04-next-frontier-route-discovery-acquisition-v1
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT/responses"
+          exec > >(tee "$OUT/workflow.log") 2>&1
+
+          HEAD_SHA=$(git rev-parse HEAD)
+          HEAD_PARENT=$(git rev-parse HEAD^)
+          test "$HEAD_PARENT" = "$CARRIER_PARENT"
+          test "$(git rev-list --count "$CARRIER_PARENT..$HEAD_SHA")" = 1
+          test "$(git diff --name-only "$CARRIER_PARENT" "$HEAD_SHA")" = "$CARRIER_PATH"
+
+          git fetch --force --no-tags origin main
+          LIVE_MAIN=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$PROTOCOL_MERGE" "$LIVE_MAIN"
+          test "$(git rev-parse "$PROTOCOL_MERGE:data/intake/status-sovereignty-rd-wave03-rd04-next-minimum-frontier-route-discovery-protocol/frontier-selection.json")" = 91b46dc3a7f0b07eab52b7ff6d72479283865212
+          test "$(git rev-parse "$PROTOCOL_MERGE:data/intake/status-sovereignty-rd-wave03-rd04-next-minimum-frontier-route-discovery-protocol/official-locator-inventory.json")" = 7c70af86d659e031bdfa8272cac4acc787783d93
+          test "$(git rev-parse "$PROTOCOL_MERGE:data/intake/status-sovereignty-rd-wave03-rd04-next-minimum-frontier-route-discovery-protocol/route-query-contract.json")" = d462416eba18d65c993a038d38619c27bac55cd6
+          test "$(git rev-parse "$PROTOCOL_MERGE:data/intake/status-sovereignty-rd-wave03-rd04-next-minimum-frontier-route-discovery-protocol/route-discovery-protocol.json")" = 35e09035659d54060547e84ab29d5ba440402b2c
+          test "$(git rev-parse "$PROTOCOL_MERGE:data/intake/status-sovereignty-rd-wave03-rd04-next-minimum-frontier-route-discovery-protocol/summary.json")" = c00e4af7f39f2b441a63b09d0b2c3ab395e02966
+          test "$(git rev-parse "$PROTOCOL_MERGE:data/intake/status-sovereignty-rd-wave03-rd04-next-minimum-frontier-route-discovery-protocol/product-manifest.json")" = b48afaf569be9d29be0c2db17716138161b9f3fc
+
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/git/blobs/$RUNNER_BLOB" \
+            > "$OUT/runner-blob.json"
+          test "$(jq -r .encoding "$OUT/runner-blob.json")" = base64
+          jq -r .content "$OUT/runner-blob.json" | tr -d '\n' | base64 -d > "$OUT/runner.py.xz"
+          test "$(wc -c < "$OUT/runner.py.xz" | tr -d ' ')" = "$RUNNER_XZ_BYTES"
+          test "$(sha256sum "$OUT/runner.py.xz" | awk '{print $1}')" = "$RUNNER_XZ_SHA256"
+          test "$(git hash-object "$OUT/runner.py.xz")" = "$RUNNER_BLOB"
+          xz -dc "$OUT/runner.py.xz" > "$OUT/runner.py"
+          test "$(wc -c < "$OUT/runner.py" | tr -d ' ')" = "$RUNNER_SOURCE_BYTES"
+          test "$(sha256sum "$OUT/runner.py" | awk '{print $1}')" = "$RUNNER_SOURCE_SHA256"
+          test "$(git hash-object "$OUT/runner.py")" = "$RUNNER_SOURCE_BLOB"
+          python -m py_compile "$OUT/runner.py"
+
+          export LIVE_MAIN HEAD_SHA HEAD_PARENT
+          python "$OUT/runner.py" 2>&1 | tee "$OUT/run.log"
+          (
+            cd "$OUT"
+            sha256sum -c SHA256SUMS
+            test "$(cat RUNNER_EXIT_CODE)" = 0
+          )
+
+      - name: Preserve exact acquisition artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-next-frontier-route-discovery-acquisition-v1
+          path: /tmp/ssc-rd04-next-frontier-route-discovery-acquisition-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+
+      - name: Record terminal outcome on RD-04
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          OUTCOME: ${{ steps.acquire.outcome }}
+          OUT: /tmp/ssc-rd04-next-frontier-route-discovery-acquisition-v1
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BODY=/tmp/rd04-next-frontier-route-discovery-comment.md
+          if test "$OUTCOME" = success && test -f "$OUT/summary.json"; then
+            python - <<'PY' > "$BODY"
+          import json, os
+          from pathlib import Path
+          summary=json.loads((Path(os.environ['OUT'])/'summary.json').read_text())
+          print('RD-04 next-frontier bounded route discovery completed.\n')
+          print('```text')
+          print(f"workflow_run: {os.environ['GITHUB_RUN_ID']}")
+          print(f"carrier_head: {os.environ['GITHUB_SHA']}")
+          for key in [
+              'protocol_merge',
+              'live_main_at_execution',
+              'bounded_discovery_obligations',
+              'fixed_repository_route_obligations_not_requested',
+              'request_attempts',
+              'terminal_request_receipts',
+              'request_terminal_states',
+              'candidate_route_rows',
+              'unique_candidate_urls',
+              'result_spawned_source_fetches',
+              'source_admissions',
+              'field_mutations',
+              'row_state_mutations',
+              'class_closed',
+              'outside_human_dependency',
+          ]:
+              print(f'{key}: {summary[key]}')
+          print('```\n')
+          print('All retained URLs remain candidate-only. No discovered candidate was fetched, and no source, field, row, class, cumulative-ledger, publication, adoption, or graph authority was created.')
+          PY
+          else
+            {
+              echo 'RD-04 next-frontier bounded route discovery failed closed.'
+              echo
+              echo '```text'
+              echo "workflow_run: $GITHUB_RUN_ID"
+              echo "carrier_head: $GITHUB_SHA"
+              echo "outcome: $OUTCOME"
+              test -f "$OUT/workflow.log" && tail -200 "$OUT/workflow.log"
+              echo '```'
+              echo
+              echo 'No unverified route, source, field, row, class, ledger, publication, adoption, or graph authority is represented.'
+            } > "$BODY"
+          fi
+          gh issue comment 1017 --repo "$GH_REPOSITORY" --body-file "$BODY"
+
+      - name: Refuse failed acquisition
+        if: always()
+        env:
+          OUTCOME: ${{ steps.acquire.outcome }}
+        run: test "$OUTCOME" = success
