@@ -1,0 +1,110 @@
+name: TEMP export exact canonical RD-04 next-frontier estate
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Export exact canonical RD-04 source estate
+        run: |
+          set -Eeuo pipefail
+          CANONICAL=a464dbbd96c365a7c040e17847486c5b3ba05c27
+          OUT=/tmp/ssc-rd04-next-frontier-export-a464
+          SRC=/tmp/ssc-rd04-canonical-a464
+          rm -rf "$OUT" "$SRC"
+          mkdir -p "$OUT/repository"
+          git cat-file -e "${CANONICAL}^{commit}"
+          git worktree add --detach "$SRC" "$CANONICAL"
+          cd "$SRC"
+          shopt -s nullglob globstar
+          paths=(
+            data/intake/status-sovereignty-rd-wave03-rd04-*/**
+            tools/*status-sovereignty-rd-wave03-rd04*
+            tools/acquisition/status-sovereignty-rd-wave03-rd04/**
+            schemas/*status-sovereignty-rd-wave03-rd04*
+            test/*status-sovereignty-rd-wave03-rd04*
+            .github/workflows/*status-sovereignty-rd-wave03-rd04*
+            docs/milestones/*ssc-rd-wave03-rd04*
+          )
+          files=()
+          for path in "${paths[@]}"; do
+            test -f "$path" && files+=("$path")
+          done
+          mapfile -t files < <(printf '%s\n' "${files[@]}" | sort -u)
+          test "${#files[@]}" -gt 0
+          for path in "${files[@]}"; do
+            mkdir -p "$OUT/repository/$(dirname "$path")"
+            cp -- "$path" "$OUT/repository/$path"
+          done
+          printf '%s\n' "${files[@]}" > "$OUT/paths.txt"
+          (
+            cd "$OUT/repository"
+            while IFS= read -r path; do
+              bytes=$(wc -c < "$path" | tr -d ' ')
+              sha=$(sha256sum "$path" | awk '{print $1}')
+              printf '%s\0%s\0%s\n' "$path" "$bytes" "$sha"
+            done < "$OUT/paths.txt"
+          ) > "$OUT/manifest.nul-lines"
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          out = Path('/tmp/ssc-rd04-next-frontier-export-a464')
+          rows = []
+          for raw in (out / 'manifest.nul-lines').read_bytes().splitlines():
+              path, size, digest = raw.split(b'\0')
+              rows.append({
+                  'path': path.decode(),
+                  'bytes': int(size),
+                  'sha256': digest.decode(),
+              })
+          payload = b''.join(
+              f"{row['path']}\0{row['bytes']}\0{row['sha256']}\n".encode()
+              for row in rows
+          )
+          receipt = {
+              'schema_version': 'ssc-rd04-next-frontier-canonical-export@1',
+              'canonical_commit': 'a464dbbd96c365a7c040e17847486c5b3ba05c27',
+              'canonical_tree': None,
+              'file_count': len(rows),
+              'entries': rows,
+              'manifest_combined_sha256': hashlib.sha256(payload).hexdigest(),
+              'outside_human_dependency': False,
+              'empirical_requests': 0,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          PY
+          tree=$(git rev-parse "${CANONICAL}^{tree}")
+          python - "$tree" <<'PY'
+          import json, sys
+          from pathlib import Path
+          p = Path('/tmp/ssc-rd04-next-frontier-export-a464/receipt.json')
+          value = json.loads(p.read_text())
+          value['canonical_tree'] = sys.argv[1]
+          p.write_text(json.dumps(value, indent=2) + '\n')
+          PY
+          tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner \
+            -cJf "$OUT/repository.tar.xz" -C "$OUT/repository" .
+          sha256sum "$OUT/repository.tar.xz" > "$OUT/repository.tar.xz.sha256"
+          printf 'canonical=%s\ntree=%s\nfiles=%s\n' \
+            "$CANONICAL" "$tree" "${#files[@]}" > "$OUT/summary.txt"
+      - name: Preserve exact canonical export
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-next-frontier-export-a464
+          path: /tmp/ssc-rd04-next-frontier-export-a464
+          if-no-files-found: error
+          retention-days: 90
