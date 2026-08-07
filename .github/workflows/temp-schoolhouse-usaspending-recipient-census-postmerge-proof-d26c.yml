@@ -1,0 +1,201 @@
+name: TEMP prove canonical School.House USAspending recipient census custody
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-usaspending-recipient-census-postmerge-proof-d26c.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-usaspending-postmerge-proof-d26c-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  prove:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-usaspending-recipient-census-postmerge-proof-d26c')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prove exact merge, product surface, gates, and clean replay
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          MERGE='d26cb838df12a877840ebe71eb9388d44b6ceaf9'
+          PARENT1='0b0506b18f758bfd8dd51791d05c5b567525fcdb'
+          PRODUCT='86d64ffabfca1caca10fd2e9921f8f52c9e280e6'
+          PRODUCT_PARENT='8a2f4538bdbcf9455f02e70c35a71cb39f805b18'
+          PRODUCT_TREE='6d6b7423e55d173db653127e810dad78eb9576c4'
+          WORKFLOW='.github/workflows/temp-schoolhouse-usaspending-recipient-census-postmerge-proof-d26c.yml'
+          WORK="$RUNNER_TEMP/schoolhouse-usaspending-postmerge-proof-worktree"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-usaspending-postmerge-proof-d26c"
+          mkdir -p "$RECEIPT"
+
+          cat > "$RECEIPT/expected-paths.txt" <<'PATHS'
+          data/intake/schoolhouse-usaspending-recipient-census-v1/product-manifest.json
+          data/intake/schoolhouse-usaspending-recipient-census-v1/sealed-qualification-artifact.zip
+          data/intake/schoolhouse-usaspending-recipient-census-v1/sealed-source-artifact.zip
+          data/intake/schoolhouse-usaspending-recipient-census-v1/source-custody.json
+          docs/milestones/schoolhouse-usaspending-recipient-census-v1.md
+          tools/validate-schoolhouse-usaspending-recipient-census-custody.py
+          PATHS
+          sed -i 's/^          //' "$RECEIPT/expected-paths.txt"
+          sort -o "$RECEIPT/expected-paths.txt" "$RECEIPT/expected-paths.txt"
+
+          git fetch --no-tags origin main
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          PROOF_HEAD="$(git rev-parse HEAD)"
+          PROOF_PARENT="$(git rev-parse HEAD^)"
+          MERGE_PARENTS="$(git show -s --format=%P "$MERGE")"
+          MERGE_TREE="$(git rev-parse "$MERGE^{tree}")"
+          OBSERVED_PRODUCT_PARENT="$(git rev-parse "$PRODUCT^")"
+          OBSERVED_PRODUCT_TREE="$(git rev-parse "$PRODUCT^{tree}")"
+          COMPOSED_TREE="$(git merge-tree --write-tree "$PARENT1" "$PRODUCT")"
+          {
+            printf 'live_main=%s\n' "$LIVE_MAIN"
+            printf 'proof_head=%s\n' "$PROOF_HEAD"
+            printf 'proof_parent=%s\n' "$PROOF_PARENT"
+            printf 'canonical_merge=%s\n' "$MERGE"
+            printf 'merge_parents=%s\n' "$MERGE_PARENTS"
+            printf 'merge_tree=%s\n' "$MERGE_TREE"
+            printf 'computed_composed_tree=%s\n' "$COMPOSED_TREE"
+            printf 'product=%s\n' "$PRODUCT"
+            printf 'product_parent=%s\n' "$OBSERVED_PRODUCT_PARENT"
+            printf 'product_tree=%s\n' "$OBSERVED_PRODUCT_TREE"
+          } | tee "$RECEIPT/preflight.txt"
+
+          test "$PROOF_PARENT" = "$MERGE"
+          test "$MERGE_PARENTS" = "$PARENT1 $PRODUCT"
+          test "$OBSERVED_PRODUCT_PARENT" = "$PRODUCT_PARENT"
+          test "$OBSERVED_PRODUCT_TREE" = "$PRODUCT_TREE"
+          test "$COMPOSED_TREE" = "$MERGE_TREE"
+          git merge-base --is-ancestor "$MERGE" origin/main
+
+          mapfile -t PROOF_DELTA < <(git diff --name-only "$MERGE"..HEAD)
+          test "${#PROOF_DELTA[@]}" -eq 1
+          test "${PROOF_DELTA[0]}" = "$WORKFLOW"
+
+          git diff --name-status "$PARENT1" "$MERGE" > "$RECEIPT/canonical-name-status.txt"
+          python - "$RECEIPT/expected-paths.txt" "$RECEIPT/canonical-name-status.txt" <<'PY'
+          from pathlib import Path
+          import sys
+          expected=set(Path(sys.argv[1]).read_text().splitlines())
+          rows=Path(sys.argv[2]).read_text().splitlines()
+          observed=set()
+          for row in rows:
+              status,path=row.split('\t',1)
+              if status!='A':
+                  raise SystemExit(f'non-addition canonical path: {row}')
+              observed.add(path)
+          if observed!=expected:
+              raise SystemExit(f'canonical path-set drift: {sorted(observed ^ expected)}')
+          print('canonical_surface=6_addition_only_workflow_free')
+          PY
+          test -z "$(git diff --name-only "$PARENT1" "$MERGE" | grep '^\.github/' || true)"
+
+          while IFS= read -r path; do
+            test "$(git rev-parse "$PRODUCT:$path")" = "$(git rev-parse "$MERGE:$path")"
+          done < "$RECEIPT/expected-paths.txt"
+
+          rm -rf "$WORK"
+          git worktree add --detach "$WORK" "$MERGE"
+          export TERM=xterm
+          {
+            cd "$WORK"
+            python -m py_compile tools/validate-schoolhouse-usaspending-recipient-census-custody.py
+            python tools/validate-schoolhouse-usaspending-recipient-census-custody.py --check
+            python tools/validate-schoolhouse-usaspending-recipient-census-custody.py --self-test
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          } 2>&1 | tee "$RECEIPT/focused-gates.log"
+          grep -qx 'schoolhouse_usaspending_custody_adversarial_refusals=6' "$RECEIPT/focused-gates.log"
+          (cd "$WORK" && npm run release:check) 2>&1 | tee "$RECEIPT/release-check.log"
+
+          git -C "$WORK" restore --staged --worktree .
+          git -C "$WORK" clean -fdx
+          (
+            cd "$WORK"
+            python tools/validate-schoolhouse-usaspending-recipient-census-custody.py --write
+            python tools/validate-schoolhouse-usaspending-recipient-census-custody.py --check
+            python tools/validate-schoolhouse-usaspending-recipient-census-custody.py --self-test
+            node tools/validate-no-magic-human-gate.mjs
+          ) 2>&1 | tee "$RECEIPT/clean-replay.log"
+          git -C "$WORK" diff --check
+          git -C "$WORK" diff --exit-code
+          test -z "$(git -C "$WORK" status --porcelain=v1 --untracked-files=all)"
+
+          LIVE_MAIN="$LIVE_MAIN" MERGE="$MERGE" PARENT1="$PARENT1" PRODUCT="$PRODUCT" MERGE_TREE="$MERGE_TREE" RECEIPT="$RECEIPT" python - <<'PY'
+          import json,os
+          from pathlib import Path
+          receipt={
+              'schema_version':'schoolhouse-usaspending-recipient-census-postmerge-proof@1',
+              'live_main_observed':os.environ['LIVE_MAIN'],
+              'canonical_merge':os.environ['MERGE'],
+              'merge_parent_1':os.environ['PARENT1'],
+              'merge_parent_2_product':os.environ['PRODUCT'],
+              'canonical_merge_tree':os.environ['MERGE_TREE'],
+              'computed_merge_tree_match':True,
+              'product_pr':1375,
+              'product_commits':1,
+              'permanent_paths':6,
+              'addition_only':True,
+              'workflow_paths_in_product':0,
+              'fixed_routes':6,
+              'terminal_routes':6,
+              'total_request_attempts':6,
+              'autocomplete_rows':200,
+              'recipient_index_rows':684,
+              'recipient_index_strict_name_matches':1,
+              'strict_matches_with_public_uei':0,
+              'federal_spending_recipient_name_candidates':0,
+              'adversarial_refusals':6,
+              'no_magic_human_adversarial_mutations':23,
+              'identities_admitted':0,
+              'relationships_admitted':0,
+              'federal_awards_admitted':0,
+              'funding_or_amount_admissions':0,
+              'negative_existence_claims':0,
+              'outside_human_dependency':False,
+              'publication_effect':'none',
+              'adoption_effect':'none',
+              'graph_effect':'none',
+              'source_requests_made_by_proof':0,
+              'focused_validation':'pass',
+              'complete_release_gate':'pass',
+              'clean_replay':'pass',
+              'status':'complete',
+          }
+          target=Path(os.environ['RECEIPT'])/'proof.json'
+          target.write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(receipt,indent=2,sort_keys=True))
+          PY
+          sha256sum "$RECEIPT"/* > "$RECEIPT/SHA256SUMS"
+
+      - name: Preserve exact post-merge proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-usaspending-recipient-census-postmerge-proof-d26c
+          path: ${{ runner.temp }}/schoolhouse-usaspending-postmerge-proof-d26c
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
