@@ -1,9 +1,6 @@
 name: TEMP inspect RD-04 MF8 protocol archive
 
 on:
-  push:
-    branches:
-      - 'agent/ssc-rd04-mf8-archive-inspection'
   pull_request:
     branches:
       - main
@@ -18,50 +15,71 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect exact archive bytes, members, modes, and digests
+      - name: Measure exact immutable archive object
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPOSITORY: ${{ github.repository }}
         run: |
-          set -Eeuxo pipefail
-          OUT=/tmp/ssc-rd04-mf8-archive-inspection
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-mf8-archive-inspection-v2
           ARCHIVE=.tmp/ssc-rd04-mf8-product/product.tar.xz
           PKG="$OUT/package"
           rm -rf "$OUT"
-          mkdir -p "$PKG"
-          test "$(wc -c < "$ARCHIVE" | tr -d ' ')" = 20748
-          test "$(sha256sum "$ARCHIVE" | awk '{print $1}')" = 3afa1a777dab75415cafc8a4b317a10771de0f5eb74ccbef5a18f6b4ae5c208f
-          test "$(git hash-object "$ARCHIVE")" = ba4ddfa57771ce747c365dfa04998fb1c18cb4b3
-          tar -xJf "$ARCHIVE" -C "$PKG"
-          find "$PKG" -type f -printf '%m %s %P\n' | sort > "$OUT/member-modes-sizes.txt"
-          find "$PKG" -type f -print0 | sort -z | xargs -0 sha256sum > "$OUT/member-sha256.txt"
-          find "$PKG" -type f -printf '%P\n' | sort > "$OUT/member-paths.txt"
-          test "$(wc -l < "$OUT/member-paths.txt" | tr -d ' ')" = 14
-          awk '{count[$1]++} END {for (mode in count) print mode, count[mode]}' "$OUT/member-modes-sizes.txt" | sort > "$OUT/mode-counts.txt"
+          mkdir -p "$OUT" "$PKG"
+
+          ACTUAL_BYTES=$(wc -c < "$ARCHIVE" | tr -d ' ')
+          ACTUAL_SHA256=$(sha256sum "$ARCHIVE" | awk '{print $1}')
+          ACTUAL_BLOB=$(git hash-object "$ARCHIVE")
+          printf '%s\n' "$ACTUAL_BYTES" > "$OUT/archive-bytes.txt"
+          printf '%s\n' "$ACTUAL_SHA256" > "$OUT/archive-sha256.txt"
+          printf '%s\n' "$ACTUAL_BLOB" > "$OUT/archive-git-blob.txt"
+
+          XZ_STATUS=fail
+          TAR_STATUS=not_attempted
+          MEMBERS=0
+          if xz -t "$ARCHIVE"; then
+            XZ_STATUS=pass
+            if tar -xJf "$ARCHIVE" -C "$PKG"; then
+              TAR_STATUS=pass
+              find "$PKG" -type f -printf '%m %s %P\n' | sort > "$OUT/member-modes-sizes.txt"
+              find "$PKG" -type f -print0 | sort -z | xargs -0 sha256sum > "$OUT/member-sha256.txt"
+              find "$PKG" -type f -printf '%P\n' | sort > "$OUT/member-paths.txt"
+              MEMBERS=$(wc -l < "$OUT/member-paths.txt" | tr -d ' ')
+              awk '{count[$1]++} END {for (mode in count) print mode, count[mode]}' "$OUT/member-modes-sizes.txt" | sort > "$OUT/mode-counts.txt"
+            else
+              TAR_STATUS=fail
+            fi
+          fi
+
           {
-            echo 'RD-04 MF8 immutable protocol archive inspection completed.'
+            echo 'RD-04 MF8 immutable archive measurement completed.'
             echo
             echo '```text'
             echo "workflow_run: ${GITHUB_RUN_ID}"
             echo "carrier_head: ${GITHUB_SHA}"
-            echo 'archive_bytes: 20748'
-            echo 'archive_sha256: 3afa1a777dab75415cafc8a4b317a10771de0f5eb74ccbef5a18f6b4ae5c208f'
-            echo 'archive_git_blob: ba4ddfa57771ce747c365dfa04998fb1c18cb4b3'
-            echo 'members: 14'
-            echo 'mode_counts:'
-            cat "$OUT/mode-counts.txt"
-            echo 'member_modes_sizes:'
-            cat "$OUT/member-modes-sizes.txt"
+            echo "actual_archive_bytes: ${ACTUAL_BYTES}"
+            echo "actual_archive_sha256: ${ACTUAL_SHA256}"
+            echo "actual_archive_git_blob: ${ACTUAL_BLOB}"
+            echo "claimed_archive_bytes: 20748"
+            echo 'claimed_archive_sha256: 3afa1a777dab75415cafc8a4b317a10771de0f5eb74ccbef5a18f6b4ae5c208f'
+            echo 'claimed_archive_git_blob: ba4ddfa57771ce747c365dfa04998fb1c18cb4b3'
+            echo "xz_integrity: ${XZ_STATUS}"
+            echo "tar_extraction: ${TAR_STATUS}"
+            echo "members: ${MEMBERS}"
+            if test -f "$OUT/mode-counts.txt"; then
+              echo 'mode_counts:'
+              cat "$OUT/mode-counts.txt"
+            fi
             echo '```'
             echo
-            echo 'This is read-only transport diagnosis. No protocol, matrix, field, row, class, ledger, publication, adoption, or graph authority is created.'
+            echo 'This receipt diagnoses transport only. It creates no protocol, evidence, matrix, field, row, class, ledger, publication, adoption, or graph authority.'
           } > "$OUT/comment.md"
           gh issue comment 1017 --repo "$GH_REPOSITORY" --body-file "$OUT/comment.md"
-      - name: Preserve inspection receipt
+      - name: Preserve measurement receipt
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd04-mf8-archive-inspection
-          path: /tmp/ssc-rd04-mf8-archive-inspection
-          if-no-files-found: warn
+          name: ssc-rd04-mf8-archive-measurement-v2
+          path: /tmp/ssc-rd04-mf8-archive-inspection-v2
+          if-no-files-found: error
           retention-days: 90
