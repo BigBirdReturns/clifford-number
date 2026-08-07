@@ -1,0 +1,163 @@
+name: TEMP export current School.House legal-identity frontier v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-legal-identity-frontier-export-46036c-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-legal-identity-frontier-export-46036c-v2-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  export:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-legal-identity-frontier-export-46036c-v2')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Reconstruct and execute exact repaired read-only export
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='46036c01eaba31bdb18045307fe3ebcb67d576a6'
+          BASE_TREE='0ffec7018bcfc038a73cd280970f783d12a5c222'
+          WORKFLOW='.github/workflows/temp-schoolhouse-legal-identity-frontier-export-46036c-v2.yml'
+          SOURCE_HEAD='57ffae0c7d8f1588fcf929346a91bccb1bca989e'
+          SOURCE_WORKFLOW='.github/workflows/temp-schoolhouse-legal-identity-frontier-export-46036c-v1.yml'
+          SOURCE_BLOB='11d94bb3aa5e81da368104f4d9915a2e68f46a25'
+          SOURCE_NAMESPACE='schoolhouse-legal-identity-frontier-export-46036c-v1'
+          TARGET_NAMESPACE='schoolhouse-legal-identity-frontier-export-46036c-v2'
+          OUT="$RUNNER_TEMP/$TARGET_NAMESPACE"
+          WORK="$RUNNER_TEMP/schoolhouse-frontier-export-v2-reconstruction"
+          rm -rf "$WORK"
+          mkdir -p "$WORK"
+
+          git fetch --no-tags origin main agent/schoolhouse-legal-identity-frontier-export-46036c-v1
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test "$(git rev-parse "$BASE^{tree}")" = "$BASE_TREE"
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+          mapfile -t DELTA < <(git diff --name-only "$BASE"..HEAD)
+          test "${#DELTA[@]}" -eq 1
+          test "${DELTA[0]}" = "$WORKFLOW"
+          git diff --check "$BASE"..HEAD
+          test "$(git rev-parse "$SOURCE_HEAD:$SOURCE_WORKFLOW")" = "$SOURCE_BLOB"
+
+          git show "$SOURCE_HEAD:$SOURCE_WORKFLOW" > "$WORK/source.yml"
+          python - "$WORK/source.yml" "$WORK/repaired.yml" "$WORK/export.sh" \
+            "$WORK/repair.json" "$SOURCE_HEAD" "$SOURCE_BLOB" \
+            "$SOURCE_NAMESPACE" "$TARGET_NAMESPACE" <<'PY'
+          from __future__ import annotations
+
+          from pathlib import Path
+          import hashlib
+          import json
+          import sys
+
+          (
+              source_path,
+              repaired_path,
+              script_path,
+              receipt_path,
+              source_head,
+              source_blob,
+              source_namespace,
+              target_namespace,
+          ) = sys.argv[1:]
+          source = Path(source_path).read_text(encoding='utf-8')
+          defect = "              for json_path, key, observed in walk(value, ()): \n"
+          repair = "              for json_path, key, observed in walk(value, ()):\n"
+          assert source.count(defect) == 1
+          assert source.count(source_namespace) == 6
+          repaired = source.replace(defect, repair)
+          repaired = repaired.replace(source_namespace, target_namespace)
+          assert defect not in repaired
+          assert source_namespace not in repaired
+          assert repaired.count(target_namespace) == 6
+
+          lines = repaired.splitlines()
+          step = "      - name: Export exact current School.House custody frontier"
+          start = lines.index(step)
+          run_line = lines.index("        run: |", start)
+          body = []
+          for line in lines[run_line + 1:]:
+              if line.startswith("      - name:"):
+                  break
+              assert not line or line.startswith("          "), line
+              body.append(line[10:] if line else "")
+          assert body and body[0] == 'set -Eeuo pipefail'
+          script = '\n'.join(body) + '\n'
+
+          Path(repaired_path).write_text(repaired, encoding='utf-8')
+          Path(script_path).write_text(script, encoding='utf-8')
+          value = {
+              'schema_version': 'schoolhouse-legal-identity-frontier-export-repair@1',
+              'state': 'complete',
+              'source_head': source_head,
+              'source_workflow_blob': source_blob,
+              'source_workflow_sha256': hashlib.sha256(source.encode()).hexdigest(),
+              'repaired_workflow_sha256': hashlib.sha256(repaired.encode()).hexdigest(),
+              'extracted_script_sha256': hashlib.sha256(script.encode()).hexdigest(),
+              'trailing_whitespace_repairs': 1,
+              'namespace_replacements': 6,
+              'other_source_changes': 0,
+              'source_requests': 0,
+              'identity_admissions': 0,
+              'relationship_admissions': 0,
+              'negative_existence_claims': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          Path(receipt_path).write_text(
+              json.dumps(value, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          print('frontier_export_reconstruction=pass repairs=1 namespace_replacements=6')
+          PY
+
+          bash -n "$WORK/export.sh"
+          bash "$WORK/export.sh"
+
+          test -d "$OUT"
+          cp "$WORK/repair.json" "$OUT/REPAIR.json"
+          cp "$WORK/repaired.yml" "$OUT/REPAIRED-SOURCE-WORKFLOW.yml"
+          cp "$WORK/export.sh" "$OUT/EXTRACTED-EXPORT-SCRIPT.sh"
+          (
+            cd "$OUT"
+            sha256sum REPAIR.json REPAIRED-SOURCE-WORKFLOW.yml \
+              EXTRACTED-EXPORT-SCRIPT.sh >> SHA256SUMS
+            sha256sum -c SHA256SUMS > FINAL-SHA256-CHECK.log
+          )
+          cat "$OUT/canonical.json"
+          cat "$OUT/REPAIR.json"
+
+      - name: Preserve exact read-only frontier export
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-legal-identity-frontier-export-46036c-v2
+          path: ${{ runner.temp }}/schoolhouse-legal-identity-frontier-export-46036c-v2
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
