@@ -41,6 +41,7 @@ jobs:
           find "$OUT/extracted" -type f -printf '%P\n' | sort > "$OUT/paths.txt"
           test "$(wc -l < "$OUT/paths.txt" | tr -d ' ')" = 14
           find "$OUT/extracted" -type f -print0 | sort -z | xargs -0 sha256sum > "$OUT/file-sha256.txt"
+          printf 'archive_reconstruction_pulse=2026-08-06T00:00:00Z\n' > "$OUT/pulse.txt"
       - name: Preserve exact reconstructed product
         uses: actions/upload-artifact@v4
         with:
