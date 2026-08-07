@@ -1,0 +1,276 @@
+name: TEMP prove canonical RD-04 five-state merge 9493
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: rd04-five-state-postmerge-proof-9493-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+jobs:
+  prove:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/ssc-rd04-five-state-postmerge-proof-9493'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Verify exact one-commit one-path proof carrier
+        shell: bash
+        env:
+          MERGE: '94937e425b38908e45b1288bcea69c7c33d00c77'
+          CARRIER_PATH: '.github/workflows/temp-ssc-rd04-five-state-postmerge-proof-9493.yml'
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = "$MERGE"
+          test "$(git rev-list --count "$MERGE"..HEAD)" = 1
+          test "$(git diff --name-only "$MERGE" HEAD)" = "$CARRIER_PATH"
+          test "$(git rev-parse HEAD)" = '${{ github.event.pull_request.head.sha }}'
+          test '${{ github.event.pull_request.base.ref }}' = main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+
+      - name: Prove canonical topology, blobs, native gate, and replay
+        id: proof
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRE_MERGE_MAIN: 'd26cb838df12a877840ebe71eb9388d44b6ceaf9'
+          PRODUCT: '3c0c2bc18cac5b35baa4afe3bf2c6c7f250b9f94'
+          MERGE: '94937e425b38908e45b1288bcea69c7c33d00c77'
+          PRODUCT_TREE: 'd6154ce261f8c5d6df71185ffe50040e2afc33fe'
+          PRODUCT_BRANCH: 'agent/ssc-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication-v1'
+          FINAL_QUALIFIER_RUN: '31211338626'
+          FINAL_QUALIFIER_ARTIFACT: '9006811040'
+          FINAL_QUALIFIER_ZIP_BYTES: '3224081'
+          FINAL_QUALIFIER_ZIP_SHA256: '0dbfd2931a54d68f70c51ab30b660dd12493c51799609552b13a35407d637d6a'
+          STANDING_WORKFLOW: 'status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.yml'
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/rd04-five-state-postmerge-proof-9493
+          WT=/tmp/rd04-five-state-postmerge-worktree-9493
+          rm -rf "$OUT" "$WT"
+          mkdir -p "$OUT/qualification"
+          exec > >(tee "$OUT/proof.log") 2>&1
+
+          git fetch --force --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse origin/main)" = "$MERGE"
+          test "$(git rev-parse origin/$PRODUCT_BRANCH)" = "$PRODUCT"
+
+          set -- $(git rev-list --parents -n 1 "$MERGE")
+          test "$#" = 3
+          test "$1" = "$MERGE"
+          test "$2" = "$PRE_MERGE_MAIN"
+          test "$3" = "$PRODUCT"
+
+          set -- $(git rev-list --parents -n 1 "$PRODUCT")
+          test "$#" = 2
+          test "$1" = "$PRODUCT"
+          test "$2" = "$PRE_MERGE_MAIN"
+
+          MERGE_TREE=$(git show -s --format=%T "$MERGE")
+          PRODUCT_OBSERVED_TREE=$(git show -s --format=%T "$PRODUCT")
+          test "$MERGE_TREE" = "$PRODUCT_TREE"
+          test "$PRODUCT_OBSERVED_TREE" = "$PRODUCT_TREE"
+          test -z "$(git diff --name-only "$PRODUCT" "$MERGE")"
+          test "$(git diff --name-only "$PRE_MERGE_MAIN" "$MERGE" | wc -l | tr -d ' ')" = 14
+          test "$(git diff --name-status "$PRE_MERGE_MAIN" "$MERGE" | awk '$1 != "A" { n++ } END { print n+0 }')" = 0
+
+          gh api "repos/$GITHUB_REPOSITORY/pulls/1391" > "$OUT/product-pr.json"
+          jq -e --arg merge "$MERGE" --arg product "$PRODUCT" '
+            .state == "closed" and
+            .merged == true and
+            .merge_commit_sha == $merge and
+            .head.sha == $product and
+            .base.ref == "main" and
+            .commits == 1 and
+            .changed_files == 14
+          ' "$OUT/product-pr.json" >/dev/null
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$FINAL_QUALIFIER_ARTIFACT/zip" > "$OUT/final-qualification.zip"
+          test "$(wc -c < "$OUT/final-qualification.zip" | tr -d ' ')" = "$FINAL_QUALIFIER_ZIP_BYTES"
+          test "$(sha256sum "$OUT/final-qualification.zip" | awk '{print $1}')" = "$FINAL_QUALIFIER_ZIP_SHA256"
+          unzip -q "$OUT/final-qualification.zip" -d "$OUT/qualification"
+          (cd "$OUT/qualification" && sha256sum -c SHA256SUMS)
+          jq -e --arg merge "$MERGE" '
+            .qualification == "pass" and
+            .product_commit == "3c0c2bc18cac5b35baa4afe3bf2c6c7f250b9f94" and
+            .product_tree == "d6154ce261f8c5d6df71185ffe50040e2afc33fe" and
+            .product_parent == "d26cb838df12a877840ebe71eb9388d44b6ceaf9" and
+            .product_commits == 1 and
+            .product_paths == 14 and
+            .addition_only == true and
+            .final_blob_identities_verified == 14 and
+            .closed_schema_objects == 8 and
+            .nested_unknown_key_refusals == 8 and
+            .open_object_schemas == 0 and
+            .adversarial_refusals == 532 and
+            .matrix_updates == 0 and
+            .source_requests == 0 and
+            .complete_release_gate == "pass" and
+            .clean_replay == "pass"
+          ' "$OUT/qualification/qualification.json" >/dev/null
+
+          python - "$OUT/qualification/final-blob-ledger.json" "$MERGE" "$PRODUCT" "$OUT/canonical-blob-ledger.json" <<'PYBLOBS'
+          import hashlib,json,pathlib,subprocess,sys
+          source=json.loads(pathlib.Path(sys.argv[1]).read_text())['entries']
+          merge,product=sys.argv[2],sys.argv[3]
+          rows=[]
+          for entry in source:
+              path=entry['path']
+              merge_blob=subprocess.check_output(['git','rev-parse',f'{merge}:{path}'],text=True).strip()
+              product_blob=subprocess.check_output(['git','rev-parse',f'{product}:{path}'],text=True).strip()
+              assert merge_blob==product_blob==entry['git_blob'],path
+              rows.append({**entry,'merge_blob':merge_blob,'product_blob':product_blob})
+          assert len(rows)==14
+          pathlib.Path(sys.argv[4]).write_text(json.dumps({'schema_version':'ssc-rd04-five-state-canonical-blob-proof@1','entries':rows},indent=2,sort_keys=True)+'\n')
+          print('canonical_blob_identities=pass count=14')
+          PYBLOBS
+
+          NATIVE_RUN=''
+          NATIVE_CONCLUSION=''
+          for attempt in $(seq 1 90); do
+            gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$STANDING_WORKFLOW/runs?branch=main&event=push&per_page=20" > "$OUT/standing-runs.json"
+            NATIVE_RUN=$(jq -r --arg merge "$MERGE" '[.workflow_runs[] | select(.head_sha == $merge)] | sort_by(.created_at) | reverse | .[0].id // empty' "$OUT/standing-runs.json")
+            if test -n "$NATIVE_RUN"; then
+              STATUS=$(jq -r --argjson id "$NATIVE_RUN" '.workflow_runs[] | select(.id == $id) | .status' "$OUT/standing-runs.json")
+              NATIVE_CONCLUSION=$(jq -r --argjson id "$NATIVE_RUN" '.workflow_runs[] | select(.id == $id) | .conclusion // empty' "$OUT/standing-runs.json")
+              if test "$STATUS" = completed; then break; fi
+            fi
+            sleep 4
+          done
+          test -n "$NATIVE_RUN"
+          test "$NATIVE_CONCLUSION" = success
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$NATIVE_RUN/jobs?per_page=100" > "$OUT/standing-jobs.json"
+          jq -e '.jobs | length == 1 and .[0].status == "completed" and .[0].conclusion == "success"' "$OUT/standing-jobs.json" >/dev/null
+
+          git worktree add --detach "$WT" "$MERGE"
+          cd "$WT"
+          test "$(git rev-parse HEAD)" = "$MERGE"
+          test "$(git show -s --format=%T HEAD)" = "$PRODUCT_TREE"
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs | tee "$OUT/build-check.log"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs | tee "$OUT/product-validation.log"
+          node test/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.test.js | tee "$OUT/adversarial.log"
+          grep -Fq 'rd04_five_state_source_field_adversarial=pass mutations_refused=532' "$OUT/adversarial.log"
+
+          python - <<'PYSCHEMA' | tee "$OUT/schema-closure.log"
+          import copy,json,pathlib
+          from jsonschema import Draft202012Validator
+          root=pathlib.Path('.'); data=root/'data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication'
+          schema=json.loads((root/'schemas/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.schema.json').read_text()); validator=Draft202012Validator(schema)
+          files=['capture-custody.json','source-adjudications.json','field-adjudications.json','pdf-review-receipts.json','promotion-candidate-protocol.json','selected-followup-protocol.json','index.json','product-manifest.json']
+          refusals=0
+          for name in files:
+              value=json.loads((data/name).read_text()); validator.validate(value); mutated=copy.deepcopy(value)
+              if 'capture_counts' in mutated: mutated['capture_counts']['unreviewed_authority']=True
+              elif 'decisions' in mutated: mutated['decisions'][0]['unreviewed_authority']=True
+              elif 'reviews' in mutated: mutated['reviews'][0]['unreviewed_authority']=True
+              elif 'candidates' in mutated: mutated['candidates'][0]['unreviewed_authority']=True
+              elif 'routes' in mutated: mutated['routes'][0]['unreviewed_authority']=True
+              elif 'counts' in mutated: mutated['counts']['unreviewed_authority']=True
+              elif 'entries' in mutated: mutated['entries'][0]['unreviewed_authority']=True
+              else: raise AssertionError(name)
+              assert list(validator.iter_errors(mutated)),name; refusals+=1
+          missing=[]
+          def walk(value,path='$'):
+              if isinstance(value,dict):
+                  if (value.get('type')=='object' or 'properties' in value) and value.get('additionalProperties') is not False and value.get('unevaluatedProperties') is not False: missing.append(path)
+                  for key,child in value.items(): walk(child,path+'/'+key)
+              elif isinstance(value,list):
+                  for index,child in enumerate(value): walk(child,path+f'/{index}')
+          walk(schema); assert not missing,missing
+          print(f'closed_schema_validation=pass objects={len(files)} nested_unknown_key_refusals={refusals} open_object_schemas={len(missing)}')
+          PYSCHEMA
+
+          node tools/validate-no-magic-human-gate.mjs | tee "$OUT/no-magic-human.log"
+          npm run release:check | tee "$OUT/release-check.log"
+
+          git restore --staged --worktree .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs --write | tee "$OUT/replay-write.log"
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs | tee "$OUT/replay-build.log"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs | tee "$OUT/replay-validation.log"
+          node test/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.test.js | tee "$OUT/replay-adversarial.log"
+          grep -Fq 'rd04_five_state_source_field_adversarial=pass mutations_refused=532' "$OUT/replay-adversarial.log"
+          node tools/validate-no-magic-human-gate.mjs | tee "$OUT/replay-no-magic-human.log"
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          cd "$GITHUB_WORKSPACE"
+          python - <<PYRECEIPT > "$OUT/proof.json"
+          import json,os
+          print(json.dumps({
+            'schema_version':'ssc-rd04-five-state-canonical-postmerge-proof@1',
+            'proof':'pass',
+            'workflow_run':int(os.environ['GITHUB_RUN_ID']),
+            'proof_head':os.environ['GITHUB_SHA'],
+            'canonical_merge':'$MERGE',
+            'ordered_parents':['$PRE_MERGE_MAIN','$PRODUCT'],
+            'product_commit':'$PRODUCT',
+            'product_tree':'$PRODUCT_TREE',
+            'merge_tree':'$MERGE_TREE',
+            'canonical_main':'$MERGE',
+            'permanent_paths':14,
+            'canonical_blob_identities_verified':14,
+            'final_qualifier_run':int('$FINAL_QUALIFIER_RUN'),
+            'final_qualifier_artifact':int('$FINAL_QUALIFIER_ARTIFACT'),
+            'final_qualifier_zip_sha256':'$FINAL_QUALIFIER_ZIP_SHA256',
+            'native_standing_workflow_run':int('$NATIVE_RUN'),
+            'native_standing_workflow_conclusion':'$NATIVE_CONCLUSION',
+            'closed_schema_objects':8,
+            'nested_unknown_key_refusals':8,
+            'open_object_schemas':0,
+            'adversarial_refusals':532,
+            'matrix_updates':0,
+            'source_requests':0,
+            'no_magic_human':'pass',
+            'complete_release_gate':'pass',
+            'clean_replay':'pass',
+            'outside_human_dependency':False,
+            'publication_effect':'none','adoption_effect':'none','graph_effect':'none'
+          },indent=2,sort_keys=True))
+          PYRECEIPT
+
+          find "$OUT" -maxdepth 1 -type f ! -name SHA256SUMS -printf '%f\n' | LC_ALL=C sort | while IFS= read -r name; do sha256sum "$OUT/$name"; done | sed "s#  $OUT/#  #" > "$OUT/SHA256SUMS"
+
+      - name: Preserve canonical proof artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-canonical-postmerge-proof-9493
+          path: /tmp/rd04-five-state-postmerge-proof-9493
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+
+      - name: Require successful canonical proof
+        if: always()
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.proof.outcome }}
+        run: test "$OUTCOME" = success
