@@ -1,0 +1,67 @@
+tus" "$RECEIPT/product-status.txt"
+git diff --cached --check
+! git diff --cached --name-only | grep -q '^\.github/workflows/'
+
+git config user.name 'School.House frontier reconciliation materializer'
+git config user.email 'actions@users.noreply.github.com'
+git config commit.gpgsign false
+git commit \
+  -m 'Reconcile the current School.House legal-identity frontier' \
+  -m 'Bind the authenticated 233-file source snapshot, compose twenty-three terminal source lanes, repair the stale central projection, and install a changed-input gate with zero active source leases and no successor candidate. Preserve zero identity, relationship, absence, outside-human, publication, adoption, or graph authority.'
+PRODUCT_COMMIT="$(git rev-parse HEAD)"
+PRODUCT_TREE="$(git rev-parse 'HEAD^{tree}')"
+test "$(git rev-parse HEAD^)" = "$BASE"
+test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+git diff --name-only "$BASE"..HEAD | sort > "$RECEIPT/product-commit-paths.txt"
+diff -u "$WORK/expected-paths" "$RECEIPT/product-commit-paths.txt"
+
+printf 'running-focused-and-complete-gates\n' > "$RECEIPT/STAGE"
+python -m py_compile tools/validate-schoolhouse-legal-identity-current-frontier.py
+python tools/validate-schoolhouse-legal-identity-current-frontier.py --self-test | tee "$RECEIPT/focused-validator.log"
+node tools/validate-bvvc-defense-capital.mjs | tee "$RECEIPT/bvvc-validator.log"
+node tools/validate-no-magic-human-gate.mjs | tee "$RECEIPT/no-magic-human.log"
+npm run release:check > "$RECEIPT/release-check.log" 2>&1
+
+printf 'restoring-and-replaying-product\n' > "$RECEIPT/STAGE"
+git reset --hard "$PRODUCT_COMMIT"
+git clean -fd
+python tools/validate-schoolhouse-legal-identity-current-frontier.py --self-test | tee "$RECEIPT/deterministic-replay.log"
+node tools/validate-bvvc-defense-capital.mjs | tee "$RECEIPT/bvvc-validator-replay.log"
+node tools/validate-no-magic-human-gate.mjs | tee "$RECEIPT/no-magic-human-replay.log"
+test -z "$(git status --porcelain)"
+
+printf 'leasing-and-pushing-product\n' > "$RECEIPT/STAGE"
+git fetch --no-tags origin main
+test "$(git rev-parse origin/main)" = "$BASE"
+set +e
+git ls-remote --exit-code --heads origin "refs/heads/$TARGET" > "$RECEIPT/prepush-target-ref.txt"
+TARGET_RC="$?"
+set -e
+test "$TARGET_RC" -eq 2
+git push origin "$PRODUCT_COMMIT:refs/heads/$TARGET" |& tee "$RECEIPT/push.log"
+REMOTE_TARGET="$(git ls-remote --heads origin "refs/heads/$TARGET" | awk '{print $1}')"
+test "$REMOTE_TARGET" = "$PRODUCT_COMMIT"
+mapfile -t PRODUCT_PATHS < "$WORK/expected-paths"
+git ls-tree -r "$PRODUCT_COMMIT" -- "${PRODUCT_PATHS[@]}" > "$RECEIPT/product-ls-tree.txt"
+test "$(wc -l < "$RECEIPT/product-ls-tree.txt" | tr -d ' ')" = '11'
+
+python - "$RECEIPT/materialization.json" "$CARRIER_BASE" "$SOURCE_CANONICAL" "$SOURCE_TREE" \
+  "$BASE" "$BASE_TREE" "$CARRIER_HEAD" "$CARRIER_TREE" \
+  "$PRODUCT_COMMIT" "$PRODUCT_TREE" "$TARGET" "$REMOTE_TARGET" \
+  "$EXPORT_RUN" "$EXPORT_ARTIFACT" "$EXPORT_DIGEST" <<'PY_RECEIPT'
+from pathlib import Path
+import json, sys
+(output,carrier_base,source,source_tree,parent,parent_tree,carrier,carrier_tree,product,product_tree,target,remote,export_run,export_artifact,export_digest)=sys.argv[1:]
+value={'schema_version':'schoolhouse-legal-identity-current-frontier-materialization@1','status':'complete','issue':1421,'carrier_base':carrier_base,'carrier_commit_count':13,'carrier_path_count':13,'source_canonical_main':source,'source_canonical_tree':source_tree,'product_parent':parent,'product_parent_tree':parent_tree,'carrier_head':carrier,'carrier_tree':carrier_tree,'target_branch':target,'product_commit':product,'product_tree':product_tree,'remote_target':remote,'product_commit_count':1,'permanent_path_count':11,'modified_path_count':3,'addition_path_count':8,'workflow_paths':0,'export_workflow_run':int(export_run),'export_artifact_id':int(export_artifact),'export_artifact_digest':export_digest,'source_slice_files':233,'source_lanes':23,'central_projection_lanes':15,'post_cutoff_lanes':8,'active_source_leases':0,'candidate_successors':0,'focused_validation':'pass','adversarial_refusals':15,'bvvc_validation':'pass','no_magic_human_gate':'pass','complete_release_gate':'pass','deterministic_replay':'pass','post_restore_clean':True,'source_requests':0,'registry_queries':0,'form_submissions':0,'identity_admissions':0,'relationship_admissions':0,'negative_existence_claims':0,'outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none','public_schoolhouse_legal_identity':'unresolved'}
+Path(output).write_text(json.dumps(value,indent=2,sort_keys=True)+'\n')
+PY_RECEIPT
+{
+  printf 'carrier_base=%s\n' "$CARRIER_BASE"
+  printf 'source_canonical=%s\n' "$SOURCE_CANONICAL"
+  printf 'source_tree=%s\n' "$SOURCE_TREE"
+  printf 'product_parent=%s\n' "$BASE"
+  printf 'product_parent_tree=%s\n' "$BASE_TREE"
+  printf 'carrier_head=%s\n' "$CARRIER_HEAD"
+  printf 'carrier_tree=%s\n' "$CARRIER_TREE"
+  printf 'product_commit=%s\n' "$PRODUCT_COMMIT"
+  printf 'product_tree=%s\n' "
