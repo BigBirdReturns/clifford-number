@@ -1,0 +1,292 @@
+name: TEMP prove canonical School.House SEC EDGAR custody v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-sec-edgar-exact-domain-census-postmerge-proof-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: schoolhouse-sec-edgar-postmerge-proof-v2-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  prove:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-sec-edgar-exact-domain-census-postmerge-proof-v2')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Bind canonical merge into descendant current main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PROOF_BASE='d26cb838df12a877840ebe71eb9388d44b6ceaf9'
+          BASE='8a2f4538bdbcf9455f02e70c35a71cb39f805b18'
+          BASE_TREE='11e4905a11c1638cfc26865124f9ce181ae0c134'
+          PRODUCT='55f08221165d1f7985d18886fd2b8537903fade1'
+          PRODUCT_TREE='ddd19e1d72cdcfa59bac1db711d39c2789078c03'
+          MERGE='0b0506b18f758bfd8dd51791d05c5b567525fcdb'
+          WORKFLOW='.github/workflows/temp-schoolhouse-sec-edgar-exact-domain-census-postmerge-proof-v2.yml'
+          RECEIPT="$RUNNER_TEMP/schoolhouse-sec-edgar-exact-domain-postmerge-proof-v2"
+          mkdir -p "$RECEIPT"
+
+          PRODUCT_PATHS=(
+            'data/intake/schoolhouse-sec-edgar-exact-domain-census-v1/product-manifest.json'
+            'data/intake/schoolhouse-sec-edgar-exact-domain-census-v1/sealed-qualification-artifact.zip.b64'
+            'data/intake/schoolhouse-sec-edgar-exact-domain-census-v1/sealed-source-artifact.zip.b64'
+            'data/intake/schoolhouse-sec-edgar-exact-domain-census-v1/source-custody.json'
+            'docs/milestones/schoolhouse-sec-edgar-exact-domain-census-v1.md'
+            'tools/validate-schoolhouse-sec-edgar-exact-domain-census-custody.py'
+          )
+          printf '%s\n' "${PRODUCT_PATHS[@]}" > "$RECEIPT/expected-product-paths.txt"
+
+          git fetch --no-tags origin main \
+            agent/schoolhouse-sec-edgar-exact-domain-census-custody-product-v1
+          CURRENT_MAIN="$(git rev-parse origin/main)"
+
+          test "$(git rev-parse HEAD^)" = "$PROOF_BASE"
+          test "$(git rev-list --count "$PROOF_BASE"..HEAD)" = '1'
+          git merge-base --is-ancestor "$PROOF_BASE" "$CURRENT_MAIN"
+          git merge-base --is-ancestor "$MERGE" "$CURRENT_MAIN"
+
+          mapfile -t PROOF_DELTA < <(git diff --name-only "$PROOF_BASE"..HEAD)
+          test "${#PROOF_DELTA[@]}" -eq 1
+          test "${PROOF_DELTA[0]}" = "$WORKFLOW"
+
+          test "$(git rev-parse "$BASE^{tree}")" = "$BASE_TREE"
+          test "$(git rev-parse "$PRODUCT^")" = "$BASE"
+          test "$(git rev-parse "$PRODUCT^{tree}")" = "$PRODUCT_TREE"
+          test "$(git rev-parse "$MERGE^1")" = "$BASE"
+          test "$(git rev-parse "$MERGE^2")" = "$PRODUCT"
+          test "$(git rev-parse "$MERGE^{tree}")" = "$PRODUCT_TREE"
+          test "$(git rev-parse origin/agent/schoolhouse-sec-edgar-exact-domain-census-custody-product-v1)" = "$PRODUCT"
+          test -z "$(git diff --name-only "$PRODUCT".."$MERGE")"
+
+          git diff --name-only "$BASE".."$PRODUCT" | sort > "$RECEIPT/product-paths.txt"
+          diff -u "$RECEIPT/expected-product-paths.txt" "$RECEIPT/product-paths.txt"
+          git diff --name-only --diff-filter=A "$BASE".."$PRODUCT" | sort > "$RECEIPT/product-added-paths.txt"
+          diff -u "$RECEIPT/expected-product-paths.txt" "$RECEIPT/product-added-paths.txt"
+          test -z "$(git diff --name-only --diff-filter=CDMRTUXB "$BASE".."$PRODUCT")"
+          ! grep -Eq '^\.github/workflows/' "$RECEIPT/product-paths.txt"
+
+          test -z "$(git diff --name-only "$MERGE".."$CURRENT_MAIN" -- "${PRODUCT_PATHS[@]}")"
+          for path in "${PRODUCT_PATHS[@]}"; do
+            test "$(git rev-parse "$MERGE:$path")" = "$(git rev-parse "$CURRENT_MAIN:$path")"
+          done
+
+          git log --format='%H' "$MERGE".."$CURRENT_MAIN" > "$RECEIPT/intervening-commits.txt"
+          git diff --name-only "$MERGE".."$CURRENT_MAIN" | sort > "$RECEIPT/intervening-paths.txt"
+          if grep -Fxf "$RECEIPT/expected-product-paths.txt" "$RECEIPT/intervening-paths.txt"; then
+            echo 'intervening current-main overlap with SEC product paths' >&2
+            exit 1
+          fi
+
+          test "$(gh api "repos/$GITHUB_REPOSITORY/pulls/1369" --jq .merged)" = 'true'
+          test "$(gh api "repos/$GITHUB_REPOSITORY/pulls/1369" --jq .head.sha)" = "$PRODUCT"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/pulls/1369" --jq .merge_commit_sha)" = "$MERGE"
+
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/31199268139" --jq .conclusion)" = 'success'
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/31199268139" --jq .head_sha)" = "$PRODUCT"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/31199267600" --jq .conclusion)" = 'success'
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/31199267600" --jq .head_sha)" = "$PRODUCT"
+
+          QUALIFIER_HEAD='00c759f21beda13fe12642c7ebb8be14b8aab259'
+          QUALIFIER_RUN='31200332722'
+          QUALIFIER_ARTIFACT='9002554070'
+          QUALIFIER_DIGEST='sha256:a1b8ff12dc661a9b4b0a378c5d1d7b25956149063ceee8a1610298b7ca76272d'
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$QUALIFIER_RUN" --jq .conclusion)" = 'success'
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$QUALIFIER_RUN" --jq .head_sha)" = "$QUALIFIER_HEAD"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$QUALIFIER_ARTIFACT" --jq .digest)" = "$QUALIFIER_DIGEST"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$QUALIFIER_ARTIFACT" --jq .size_in_bytes)" = '12248'
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$QUALIFIER_ARTIFACT" --jq .workflow_run.id)" = "$QUALIFIER_RUN"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$QUALIFIER_ARTIFACT" --jq .workflow_run.head_sha)" = "$QUALIFIER_HEAD"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/31200332596" --jq .conclusion)" = 'success'
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/31200332596" --jq .head_sha)" = "$QUALIFIER_HEAD"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/31200333038" --jq .conclusion)" = 'success'
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/31200333038" --jq .head_sha)" = "$QUALIFIER_HEAD"
+
+          printf 'proof_base=%s\n' "$PROOF_BASE" > "$RECEIPT/topology.txt"
+          printf 'current_main_observed=%s\n' "$CURRENT_MAIN" >> "$RECEIPT/topology.txt"
+          printf 'canonical_parent=%s\ncanonical_parent_tree=%s\n' "$BASE" "$BASE_TREE" >> "$RECEIPT/topology.txt"
+          printf 'product_commit=%s\nproduct_tree=%s\n' "$PRODUCT" "$PRODUCT_TREE" >> "$RECEIPT/topology.txt"
+          printf 'merge_commit=%s\nmerge_tree=%s\n' "$MERGE" "$PRODUCT_TREE" >> "$RECEIPT/topology.txt"
+          printf 'merge_parent_1=%s\nmerge_parent_2=%s\n' "$BASE" "$PRODUCT" >> "$RECEIPT/topology.txt"
+          printf 'proof_head=%s\n' "$(git rev-parse HEAD)" >> "$RECEIPT/topology.txt"
+          printf 'product_commits=1\npermanent_paths=6\nworkflow_paths=0\naddition_only=true\n' >> "$RECEIPT/topology.txt"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Qualify the SEC product at the live descendant main
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          RECEIPT="$RUNNER_TEMP/schoolhouse-sec-edgar-exact-domain-postmerge-proof-v2"
+          WORKTREE="$RUNNER_TEMP/schoolhouse-sec-edgar-current-main"
+          BASE='8a2f4538bdbcf9455f02e70c35a71cb39f805b18'
+          BASE_TREE='11e4905a11c1638cfc26865124f9ce181ae0c134'
+          PRODUCT='55f08221165d1f7985d18886fd2b8537903fade1'
+          PRODUCT_TREE='ddd19e1d72cdcfa59bac1db711d39c2789078c03'
+          MERGE='0b0506b18f758bfd8dd51791d05c5b567525fcdb'
+          CURRENT_MAIN="$(git rev-parse origin/main)"
+
+          GENERATED_PATHS=(
+            'build/axm-identity.json'
+            'build/build-hop-report.json'
+            'build/hop-graph.json'
+            'build/migration-review.md'
+            'build/migration-summary.json'
+            'build/receipt-graph.json'
+            'build/scores.json'
+            'build/scout-report.json'
+            'build/scout-report.md'
+            'build/surface-graph.json'
+          )
+          printf '%s\n' "${GENERATED_PATHS[@]}" > "$RECEIPT/expected-generated-paths.txt"
+
+          git worktree add --detach "$WORKTREE" "$CURRENT_MAIN"
+          test -z "$(git -C "$WORKTREE" status --porcelain=v1 --untracked-files=all)"
+
+          cp "$RECEIPT/expected-product-paths.txt" "$RECEIPT/permanent-paths.txt"
+          cd "$WORKTREE"
+          xargs -d '\n' sha256sum < "$RECEIPT/permanent-paths.txt" > "$RECEIPT/product-hashes-before.txt"
+
+          python tools/validate-schoolhouse-sec-edgar-exact-domain-census-custody.py --self-test \
+            | tee "$RECEIPT/focused-validation.log"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          npm run release:check | tee "$RECEIPT/complete-release-gate.log"
+
+          git diff --name-only | sort > "$RECEIPT/observed-generated-paths.txt"
+          diff -u "$RECEIPT/expected-generated-paths.txt" "$RECEIPT/observed-generated-paths.txt"
+          git diff --name-status | sort > "$RECEIPT/observed-generated-status.txt"
+          awk '$1 != "M" { exit 1 } END { if (NR != 10) exit 1 }' "$RECEIPT/observed-generated-status.txt"
+          test -z "$(git diff --cached --name-only)"
+          test -z "$(git ls-files --others --exclude-standard)"
+
+          git restore --source=HEAD --worktree -- "${GENERATED_PATHS[@]}"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          printf 'release_generated_paths=10\nrestored_to_head=true\n' > "$RECEIPT/generated-surface-restoration.txt"
+
+          python tools/validate-schoolhouse-sec-edgar-exact-domain-census-custody.py --self-test \
+            | tee "$RECEIPT/focused-replay.log"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          xargs -d '\n' sha256sum < "$RECEIPT/permanent-paths.txt" > "$RECEIPT/product-hashes-after.txt"
+          diff -u "$RECEIPT/product-hashes-before.txt" "$RECEIPT/product-hashes-after.txt"
+          cd "$GITHUB_WORKSPACE"
+
+          python - "$RECEIPT" "$BASE" "$BASE_TREE" "$PRODUCT" "$PRODUCT_TREE" "$MERGE" "$CURRENT_MAIN" "$(git rev-parse HEAD)" <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import sys
+
+          receipt = Path(sys.argv[1])
+          base, base_tree, product, product_tree, merge, current_main, proof = sys.argv[2:]
+          permanent = (receipt / 'permanent-paths.txt').read_text().splitlines()
+          generated = (receipt / 'expected-generated-paths.txt').read_text().splitlines()
+          intervening_commits = (receipt / 'intervening-commits.txt').read_text().splitlines()
+          intervening_paths = (receipt / 'intervening-paths.txt').read_text().splitlines()
+          assert len(permanent) == 6
+          assert len(generated) == 10
+          value = {
+              'schema_version': 'schoolhouse-sec-edgar-exact-domain-postmerge-proof-v2@1',
+              'canonical_parent': base,
+              'canonical_parent_tree': base_tree,
+              'product_commit': product,
+              'product_tree': product_tree,
+              'merge_commit': merge,
+              'merge_tree': product_tree,
+              'merge_parent_1': base,
+              'merge_parent_2': product,
+              'current_main_observed': current_main,
+              'merge_is_ancestor_of_current_main': True,
+              'intervening_commits': intervening_commits,
+              'intervening_commit_count': len(intervening_commits),
+              'intervening_paths': intervening_paths,
+              'sec_product_path_overlap_after_merge': 0,
+              'sec_product_blobs_unchanged_at_current_main': True,
+              'proof_head': proof,
+              'product_commits': 1,
+              'permanent_paths': permanent,
+              'permanent_path_count': 6,
+              'addition_only': True,
+              'workflow_paths': 0,
+              'product_and_merge_tree_equal': True,
+              'focused_validation_at_current_main': 'pass',
+              'adversarial_refusals': 5,
+              'complete_release_gate_at_current_main': 'pass',
+              'release_generated_paths': generated,
+              'release_generated_path_count': 10,
+              'release_generated_status': 'modified_only',
+              'generated_surface_restored_to_current_main': True,
+              'post_restore_clean': True,
+              'focused_replay_at_current_main': 'pass',
+              'byte_neutral_product_replay': True,
+              'product_release_run': 31199268139,
+              'product_no_magic_human_run': 31199267600,
+              'product_qualification_run': 31200332722,
+              'product_qualification_artifact': 9002554070,
+              'product_qualification_artifact_digest': 'sha256:a1b8ff12dc661a9b4b0a378c5d1d7b25956149063ceee8a1610298b7ca76272d',
+              'query_terminal_state': 'bounded_source_unavailable',
+              'terminal_http_status': 403,
+              'terminal_attempts': 2,
+              'retained_candidate_rows': 0,
+              'identities_admitted': 0,
+              'relationships_admitted': 0,
+              'negative_existence_claims': 0,
+              'issuer_admissions': 0,
+              'owner_or_operator_admissions': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'proof': 'pass',
+          }
+          (receipt / 'proof.json').write_text(
+              json.dumps(value, indent=2, sort_keys=True) + '\n'
+          )
+          sums = []
+          for path in sorted(receipt.iterdir()):
+              if path.is_file():
+                  sums.append(
+                      f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}"
+                  )
+          (receipt / 'SHA256SUMS').write_text('\n'.join(sums) + '\n')
+          print(json.dumps(value, indent=2, sort_keys=True))
+          PY
+
+      - name: Preserve exact post-merge proof receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-sec-edgar-exact-domain-postmerge-proof-v2
+          path: ${{ runner.temp }}/schoolhouse-sec-edgar-exact-domain-postmerge-proof-v2
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
