@@ -1,0 +1,59 @@
+name: TEMP export exact current main for PC-54
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pc54-current-main-source-export-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Seal exact parent repository source
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CARRIER_HEAD=$(git rev-parse HEAD)
+          PARENT=$(git rev-parse HEAD^)
+          MAIN=$(git rev-parse origin/main)
+          test "$PARENT" = "$MAIN"
+          mapfile -t DELTA < <(git diff --name-only "$PARENT" "$CARRIER_HEAD")
+          test "${#DELTA[@]}" -eq 1
+          test "${DELTA[0]}" = '.github/workflows/temp-pc54-source-export.yml'
+          TREE=$(git rev-parse "$PARENT^{tree}")
+          mkdir -p /tmp/pc54-current-main-source
+          git archive --format=tar "$PARENT" | xz -9e -T0 > /tmp/pc54-current-main-source/repository.tar.xz
+          ARCHIVE_SHA256=$(sha256sum /tmp/pc54-current-main-source/repository.tar.xz | awk '{print $1}')
+          ARCHIVE_BYTES=$(wc -c < /tmp/pc54-current-main-source/repository.tar.xz | tr -d ' ')
+          cat > /tmp/pc54-current-main-source/receipt.txt <<EOF
+          schema_version=pc54-current-main-source-export@1
+          canonical_main=$PARENT
+          canonical_tree=$TREE
+          carrier_head=$CARRIER_HEAD
+          archive_bytes=$ARCHIVE_BYTES
+          archive_sha256=$ARCHIVE_SHA256
+          outside_human_dependency=false
+          graph_effect=none
+          ref_updates=0
+          EOF
+          sed -i 's/^          //' /tmp/pc54-current-main-source/receipt.txt
+          sha256sum /tmp/pc54-current-main-source/receipt.txt /tmp/pc54-current-main-source/repository.tar.xz > /tmp/pc54-current-main-source/SHA256SUMS
+          cat /tmp/pc54-current-main-source/receipt.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc54-exact-current-main-source
+          path: /tmp/pc54-current-main-source
+          if-no-files-found: error
+          retention-days: 90
