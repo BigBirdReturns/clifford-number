@@ -1,0 +1,928 @@
+name: TEMP census exact school.house references in SEC EDGAR
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-sec-edgar-exact-domain-census-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-sec-edgar-exact-domain-census-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  census:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-sec-edgar-exact-domain-census-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prove carrier topology
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='8a2f4538bdbcf9455f02e70c35a71cb39f805b18'
+          WORKFLOW='.github/workflows/temp-schoolhouse-sec-edgar-exact-domain-census-v1.yml'
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+          git merge-base --is-ancestor "$BASE" origin/main
+
+          mapfile -t DELTA < <(git diff --name-only "$BASE"..HEAD)
+          test "${#DELTA[@]}" -eq 1
+          test "${DELTA[0]}" = "$WORKFLOW"
+
+          printf 'canonical_predecessor=%s\n' "$BASE"
+          printf 'canonical_main_observed=%s\n' "$(git rev-parse origin/main)"
+          printf 'carrier_head=%s\n' "$(git rev-parse HEAD)"
+          printf 'carrier_paths=1\n'
+
+      - name: Execute bounded SEC EDGAR Full-Text Search census
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/schoolhouse-sec-edgar-exact-domain-census-v1"
+          mkdir -p "$OUT"
+
+          set +e
+          BASE_TREE="$(git rev-parse '8a2f4538bdbcf9455f02e70c35a71cb39f805b18^{tree}')"
+          python - "$OUT" "$BASE_TREE" <<'PY' 2>&1 | tee "$OUT/RUNNER-OUTPUT.log"
+          from __future__ import annotations
+
+          from collections import Counter
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from typing import Any
+          import hashlib
+          import json
+          import re
+          import sys
+          import time
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          OUT = Path(sys.argv[1])
+          BASE = "8a2f4538bdbcf9455f02e70c35a71cb39f805b18"
+          BASE_TREE = sys.argv[2]
+          ISSUE = 1357
+          ENDPOINT = "https://efts.sec.gov/LATEST/search-index"
+          HOST = "efts.sec.gov"
+          QUERY_ID = "q1_exact_school_house_domain"
+          QUERY_TEXT = '"school.house"'
+          PAGE_SIZE = 100
+          MAX_PAGES = 10
+          MAX_HITS = 1000
+          MAX_ATTEMPTS = 2
+          MAX_PAGE_BYTES = 8 * 1024 * 1024
+          MAX_TOTAL_BYTES = 32 * 1024 * 1024
+          USER_AGENT = (
+              "BigBirdReturns/clifford-number SEC EDGAR exact-domain census "
+              "(https://github.com/BigBirdReturns/clifford-number)"
+          )
+
+          def now() -> str:
+              return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+          def sha256(value: bytes) -> str:
+              return hashlib.sha256(value).hexdigest()
+
+          def canonical_json(value: Any) -> bytes:
+              return (json.dumps(value, indent=2, sort_keys=True) + "\n").encode()
+
+          def write_json(name: str, value: Any) -> None:
+              (OUT / name).write_bytes(canonical_json(value))
+
+          def write_jsonl(name: str, rows: list[dict[str, Any]]) -> None:
+              payload = b"".join(
+                  json.dumps(row, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+                  for row in rows
+              )
+              (OUT / name).write_bytes(payload)
+
+          def string_list(value: Any) -> list[str]:
+              if value is None:
+                  return []
+              values = value if isinstance(value, list) else [value]
+              out: list[str] = []
+              for item in values:
+                  if isinstance(item, (str, int)):
+                      text = str(item).strip()
+                      if text and text not in out:
+                          out.append(text)
+              return out
+
+          def normalize_ciks(value: Any) -> list[str]:
+              out: list[str] = []
+              for raw in string_list(value):
+                  digits = re.sub(r"\D", "", raw)
+                  if 1 <= len(digits) <= 10:
+                      cik = digits.zfill(10)
+                      if cik not in out:
+                          out.append(cik)
+              return sorted(out)
+
+          def safe_date(value: Any) -> str | None:
+              if not isinstance(value, str):
+                  return None
+              text = value.strip()
+              return text if re.fullmatch(r"\d{4}-\d{2}-\d{2}", text) else None
+
+          def parse_hit_id(value: str) -> tuple[str | None, str | None]:
+              accession = None
+              document_name = None
+              left, separator, right = value.partition(":")
+              match = re.search(r"\d{10}-\d{2}-\d{6}", left)
+              if match:
+                  accession = match.group(0)
+              if separator:
+                  candidate = right.strip()
+                  if (
+                      candidate
+                      and len(candidate) <= 255
+                      and "/" not in candidate
+                      and "\\" not in candidate
+                      and re.fullmatch(r"[A-Za-z0-9._-]+", candidate)
+                  ):
+                      document_name = candidate
+              return accession, document_name
+
+          class FixedHostRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  parsed = urllib.parse.urlparse(newurl)
+                  if parsed.scheme != "https" or parsed.hostname != HOST:
+                      raise urllib.error.HTTPError(
+                          newurl, 470, "blocked off-host redirect", headers, fp
+                      )
+                  return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+          opener = urllib.request.build_opener(FixedHostRedirect())
+          route_policy = {
+              "schema_version": "schoolhouse-sec-edgar-exact-domain-route-policy@1",
+              "issue": ISSUE,
+              "canonical_predecessor": BASE,
+              "canonical_predecessor_tree": BASE_TREE,
+              "official_source": {
+                  "host": HOST,
+                  "endpoint": ENDPOINT,
+                  "fixed_query_id": QUERY_ID,
+                  "fixed_query_text": QUERY_TEXT,
+                  "date_range": "all",
+              },
+              "bounds": {
+                  "fixed_queries": 1,
+                  "results_per_page": PAGE_SIZE,
+                  "maximum_pages": MAX_PAGES,
+                  "maximum_result_hits_inspected": MAX_HITS,
+                  "maximum_attempts_per_page": MAX_ATTEMPTS,
+                  "maximum_response_bytes_per_page": MAX_PAGE_BYTES,
+                  "maximum_aggregate_response_bytes": MAX_TOTAL_BYTES,
+                  "parallel_workers": 1,
+                  "filing_document_fetches": 0,
+                  "query_derived_off_host_requests": 0,
+                  "outside_human_dependency": False,
+              },
+              "retention": {
+                  "sec_display_name_values": 0,
+                  "person_names": 0,
+                  "street_or_mailing_addresses": 0,
+                  "postal_codes": 0,
+                  "phone_or_email_values": 0,
+                  "signatures_or_officer_names": 0,
+                  "filing_body_text_or_snippets": 0,
+                  "complete_search_json_responses": 0,
+                  "filing_documents_or_attachments": 0,
+                  "browser_state_cookies_credentials_or_tokens": 0,
+                  "private_support_material": 0,
+              },
+              "candidate_rule": {
+                  "promotes_to": "sec_filing_reference_candidate",
+                  "requires_nonempty_opaque_result_id": True,
+                  "requires_public_cik": True,
+                  "literal_domain_occurrence_admitted": False,
+                  "issuer_identity_admitted": False,
+                  "successor_exact_filing_adjudication_required": True,
+              },
+              "authority": {
+                  "identities_admitted": 0,
+                  "relationships_admitted": 0,
+                  "negative_existence_claims": 0,
+                  "issuer_admissions": 0,
+                  "owner_or_operator_admissions": 0,
+                  "outside_human_dependency": False,
+                  "publication_effect": "none",
+                  "adoption_effect": "none",
+                  "graph_effect": "none",
+              },
+          }
+
+          query_receipts: list[dict[str, Any]] = []
+          candidates: list[dict[str, Any]] = []
+          seen_ids: set[str] = set()
+          aggregate_bytes = 0
+          raw_hits_seen = 0
+          hits_missing_candidate_fields = 0
+          total_value: int | None = None
+          total_relation: str | None = None
+          terminal_state: str | None = None
+          terminal_error_class: str | None = None
+          pages_requested = 0
+
+          for page_index in range(MAX_PAGES):
+              offset = page_index * PAGE_SIZE
+              params = {
+                  "q": QUERY_TEXT,
+                  "dateRange": "all",
+                  "category": "custom",
+                  "from": str(offset),
+                  "size": str(PAGE_SIZE),
+              }
+              request_url = ENDPOINT + "?" + urllib.parse.urlencode(
+                  params, quote_via=urllib.parse.quote
+              )
+              parsed_request = urllib.parse.urlparse(request_url)
+              assert parsed_request.scheme == "https"
+              assert parsed_request.hostname == HOST
+
+              page_receipt: dict[str, Any] = {
+                  "schema_version": "schoolhouse-sec-edgar-query-receipt@1",
+                  "query_id": QUERY_ID,
+                  "query_text": QUERY_TEXT,
+                  "page_index": page_index,
+                  "offset": offset,
+                  "page_size": PAGE_SIZE,
+                  "request_url": request_url,
+                  "attempts": 0,
+                  "terminal_state": None,
+                  "status": None,
+                  "response_bytes": 0,
+                  "response_sha256": None,
+                  "final_url": None,
+                  "hit_rows_returned": 0,
+                  "hit_rows_retained": 0,
+                  "observed_at": None,
+                  "error_class": None,
+                  "outside_human_dependency": False,
+                  "publication_effect": "none",
+                  "adoption_effect": "none",
+                  "graph_effect": "none",
+              }
+
+              payload: bytes | None = None
+              status: int | None = None
+              final_url: str | None = None
+              error_class: str | None = None
+
+              for attempt in range(1, MAX_ATTEMPTS + 1):
+                  page_receipt["attempts"] = attempt
+                  request = urllib.request.Request(
+                      request_url,
+                      headers={
+                          "Accept": "application/json",
+                          "Accept-Encoding": "identity",
+                          "Referer": "https://www.sec.gov/edgar/search/",
+                          "User-Agent": USER_AGENT,
+                      },
+                      method="GET",
+                  )
+                  try:
+                      with opener.open(request, timeout=45) as response:
+                          status = int(response.status)
+                          final_url = response.geturl()
+                          parsed_final = urllib.parse.urlparse(final_url)
+                          if parsed_final.scheme != "https" or parsed_final.hostname != HOST:
+                              raise RuntimeError("final URL escaped fixed SEC host")
+                          encoding = (response.headers.get("Content-Encoding") or "").lower()
+                          if encoding not in ("", "identity"):
+                              raise RuntimeError("unexpected response content encoding")
+                          payload = response.read(MAX_PAGE_BYTES + 1)
+                          if len(payload) > MAX_PAGE_BYTES:
+                              raise RuntimeError("per-page response byte ceiling exceeded")
+                      if status == 200:
+                          break
+                      error_class = f"http_status_{status}"
+                  except urllib.error.HTTPError as exc:
+                      status = int(exc.code)
+                      final_url = exc.geturl()
+                      try:
+                          payload = exc.read(MAX_PAGE_BYTES + 1)
+                      except Exception:
+                          payload = b""
+                      if payload is not None and len(payload) > MAX_PAGE_BYTES:
+                          payload = payload[:MAX_PAGE_BYTES]
+                      error_class = f"http_status_{status}"
+                  except Exception as exc:
+                      payload = None
+                      error_class = type(exc).__name__
+
+                  if attempt < MAX_ATTEMPTS:
+                      time.sleep(0.75 * attempt)
+
+              pages_requested += 1
+              page_receipt["status"] = status
+              page_receipt["final_url"] = final_url
+              page_receipt["observed_at"] = now()
+              page_receipt["error_class"] = error_class
+              if payload is not None:
+                  page_receipt["response_bytes"] = len(payload)
+                  page_receipt["response_sha256"] = sha256(payload)
+                  aggregate_bytes += len(payload)
+
+              if aggregate_bytes > MAX_TOTAL_BYTES:
+                  page_receipt["terminal_state"] = "bounded_aggregate_byte_limit_exceeded"
+                  query_receipts.append(page_receipt)
+                  terminal_state = "bounded_aggregate_byte_limit_exceeded"
+                  terminal_error_class = "aggregate_byte_limit"
+                  break
+
+              if status != 200 or payload is None:
+                  page_receipt["terminal_state"] = "bounded_source_unavailable"
+                  query_receipts.append(page_receipt)
+                  terminal_state = "bounded_source_unavailable"
+                  terminal_error_class = error_class or "source_unavailable"
+                  break
+
+              try:
+                  document = json.loads(payload)
+                  hits_object = document["hits"]
+                  page_hits = hits_object["hits"]
+                  total_object = hits_object["total"]
+                  if not isinstance(page_hits, list):
+                      raise TypeError("hits.hits must be a list")
+                  if isinstance(total_object, int):
+                      observed_total_value = total_object
+                      observed_total_relation = "eq"
+                  elif isinstance(total_object, dict):
+                      observed_total_value = int(total_object["value"])
+                      observed_total_relation = str(total_object.get("relation", "eq"))
+                  else:
+                      raise TypeError("hits.total has unsupported shape")
+                  if observed_total_value < 0:
+                      raise ValueError("negative hit total")
+              except Exception as exc:
+                  page_receipt["terminal_state"] = "terminal_parse_failure"
+                  page_receipt["error_class"] = type(exc).__name__
+                  query_receipts.append(page_receipt)
+                  terminal_state = "terminal_parse_failure"
+                  terminal_error_class = type(exc).__name__
+                  break
+
+              if total_value is None:
+                  total_value = observed_total_value
+                  total_relation = observed_total_relation
+              elif (
+                  total_value != observed_total_value
+                  or total_relation != observed_total_relation
+              ):
+                  page_receipt["terminal_state"] = "bounded_index_drift"
+                  page_receipt["error_class"] = "total_denominator_changed_between_pages"
+                  query_receipts.append(page_receipt)
+                  terminal_state = "bounded_index_drift"
+                  terminal_error_class = "total_denominator_changed_between_pages"
+                  break
+
+              page_retained = 0
+              for hit in page_hits:
+                  raw_hits_seen += 1
+                  if not isinstance(hit, dict):
+                      hits_missing_candidate_fields += 1
+                      continue
+                  hit_id = hit.get("_id")
+                  source = hit.get("_source")
+                  if not isinstance(hit_id, str) or not hit_id.strip() or not isinstance(source, dict):
+                      hits_missing_candidate_fields += 1
+                      continue
+                  hit_id = hit_id.strip()
+                  ciks = normalize_ciks(source.get("ciks", source.get("cik")))
+                  if not ciks:
+                      hits_missing_candidate_fields += 1
+                      continue
+                  if hit_id in seen_ids:
+                      continue
+                  seen_ids.add(hit_id)
+                  accession_number, document_name = parse_hit_id(hit_id)
+                  candidate = {
+                      "schema_version": "schoolhouse-sec-filing-reference-candidate@1",
+                      "classification": "sec_filing_reference_candidate",
+                      "query_id": QUERY_ID,
+                      "result_ordinal": len(candidates),
+                      "opaque_result_id": hit_id,
+                      "accession_number": accession_number,
+                      "filing_document_name": document_name,
+                      "ciks": ciks,
+                      "forms": sorted(string_list(source.get("form"))),
+                      "root_forms": sorted(string_list(source.get("root_forms"))),
+                      "filing_date": safe_date(source.get("file_date")),
+                      "period_ending": safe_date(source.get("period_ending")),
+                      "file_numbers": sorted(
+                          string_list(source.get("file_num", source.get("file_numbers")))
+                      ),
+                      "literal_school_house_occurrence_admitted": False,
+                      "issuer_identity_admitted": False,
+                      "identities_admitted": 0,
+                      "relationships_admitted": 0,
+                      "negative_existence_claims": 0,
+                      "outside_human_dependency": False,
+                      "publication_effect": "none",
+                      "adoption_effect": "none",
+                      "graph_effect": "none",
+                  }
+                  candidates.append(candidate)
+                  page_retained += 1
+
+              page_receipt["hit_rows_returned"] = len(page_hits)
+              page_receipt["hit_rows_retained"] = page_retained
+              page_receipt["terminal_state"] = "terminal_public_search_page_parsed"
+              query_receipts.append(page_receipt)
+
+              if total_relation == "eq" and total_value is not None:
+                  if total_value == 0 or raw_hits_seen >= total_value:
+                      terminal_state = "terminal_public_search_parsed"
+                      break
+                  if not page_hits:
+                      terminal_state = "bounded_index_drift"
+                      terminal_error_class = "page_exhausted_before_observed_total"
+                      break
+
+              if raw_hits_seen >= MAX_HITS:
+                  terminal_state = "bounded_result_limit_exceeded"
+                  terminal_error_class = "maximum_result_hits_inspected"
+                  break
+
+              if not page_hits:
+                  terminal_state = (
+                      "terminal_public_search_parsed"
+                      if total_relation == "eq"
+                      else "bounded_result_limit_exceeded"
+                  )
+                  if terminal_state != "terminal_public_search_parsed":
+                      terminal_error_class = "page_exhausted_with_non_exact_total"
+                  break
+
+              time.sleep(0.25)
+
+          if terminal_state is None:
+              if (
+                  total_value is not None
+                  and total_relation == "eq"
+                  and raw_hits_seen >= total_value
+              ):
+                  terminal_state = "terminal_public_search_parsed"
+              else:
+                  terminal_state = "bounded_result_limit_exceeded"
+                  terminal_error_class = "maximum_pages_reached"
+
+          search_complete = (
+              terminal_state == "terminal_public_search_parsed"
+              and total_relation == "eq"
+              and total_value is not None
+              and raw_hits_seen >= total_value
+          )
+          if total_value == 0 and terminal_state == "terminal_public_search_parsed":
+              search_complete = True
+
+          candidate_rows = sorted(
+              candidates,
+              key=lambda row: (
+                  row["opaque_result_id"],
+                  tuple(row["ciks"]),
+              ),
+          )
+          for ordinal, row in enumerate(candidate_rows):
+              row["result_ordinal"] = ordinal
+
+          terminal_counts = Counter(row["terminal_state"] for row in query_receipts)
+          summary = {
+              "schema_version": "schoolhouse-sec-edgar-exact-domain-census@1",
+              "state": "terminal_bounded_sec_edgar_exact_domain_candidate_census",
+              "query_id": QUERY_ID,
+              "query_text": QUERY_TEXT,
+              "query_terminal_state": terminal_state,
+              "query_terminal_error_class": terminal_error_class,
+              "search_complete_under_fixed_denominator": search_complete,
+              "observed_total_value": total_value,
+              "observed_total_relation": total_relation,
+              "pages_requested": pages_requested,
+              "query_receipt_rows": len(query_receipts),
+              "query_receipt_terminal_state_counts": dict(sorted(terminal_counts.items())),
+              "raw_hits_seen": raw_hits_seen,
+              "retained_candidate_rows": len(candidate_rows),
+              "unique_opaque_result_ids": len({row["opaque_result_id"] for row in candidate_rows}),
+              "unique_public_ciks": len(
+                  {cik for row in candidate_rows for cik in row["ciks"]}
+              ),
+              "hits_missing_candidate_fields": hits_missing_candidate_fields,
+              "aggregate_response_bytes": aggregate_bytes,
+              "filing_document_fetches": 0,
+              "query_derived_off_host_requests": 0,
+              "sec_display_name_values_retained": 0,
+              "person_names_retained": 0,
+              "addresses_or_postal_codes_retained": 0,
+              "phone_or_email_values_retained": 0,
+              "signatures_or_officer_names_retained": 0,
+              "filing_body_text_or_snippets_retained": 0,
+              "complete_search_json_responses_retained": 0,
+              "filing_documents_or_attachments_retained": 0,
+              "browser_state_cookies_credentials_or_tokens_retained": 0,
+              "private_support_rows": 0,
+              "identities_admitted": 0,
+              "relationships_admitted": 0,
+              "negative_existence_claims_created": 0,
+              "issuer_admissions": 0,
+              "owner_or_operator_admissions": 0,
+              "outside_human_dependency": False,
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none",
+              "public_schoolhouse_legal_identity": "unresolved",
+          }
+          adjudication = {
+              "schema_version": "schoolhouse-sec-edgar-exact-domain-adjudication@1",
+              "state": summary["state"],
+              "query_terminal_state": terminal_state,
+              "promotes_to": "candidate_only",
+              "sec_filing_reference_candidate_rows": len(candidate_rows),
+              "literal_school_house_occurrence_admitted": False,
+              "sec_issuer_admitted": False,
+              "public_schoolhouse_identity_admitted": False,
+              "owner_or_operator_admitted": False,
+              "fiscal_sponsor_relationship_admitted": False,
+              "funding_relationship_admitted": False,
+              "governance_or_control_relationship_admitted": False,
+              "related_party_relationship_admitted": False,
+              "negative_existence_claim_created": False,
+              "interpretation": {
+                  "search_hit_is_not_literal_domain_occurrence": True,
+                  "search_hit_is_not_issuer_identity": True,
+                  "zero_hits_is_not_sec_filing_absence": True,
+                  "source_failure_is_not_sec_filing_absence": True,
+                  "result_limit_is_not_complete_search_denominator": True,
+                  "candidate_requires_exact_filing_adjudication": True,
+              },
+              "outside_human_dependency": False,
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none",
+              "public_schoolhouse_legal_identity": "unresolved",
+          }
+
+          write_json("route-policy.json", route_policy)
+          write_jsonl("query-receipts.jsonl", query_receipts)
+          write_jsonl("candidate-filings.jsonl", candidate_rows)
+          write_json("summary.json", summary)
+          write_json("adjudication.json", adjudication)
+
+          manifest_files = []
+          for name in (
+              "adjudication.json",
+              "candidate-filings.jsonl",
+              "query-receipts.jsonl",
+              "route-policy.json",
+              "summary.json",
+          ):
+              path = OUT / name
+              manifest_files.append(
+                  {"path": name, "bytes": path.stat().st_size, "sha256": sha256(path.read_bytes())}
+              )
+          combined = hashlib.sha256()
+          for row in manifest_files:
+              combined.update(
+                  f"{row['sha256']}  {row['path']}\n".encode()
+              )
+          artifact_manifest = {
+              "schema_version": "schoolhouse-sec-edgar-exact-domain-artifact-manifest@1",
+              "files": manifest_files,
+              "counts": {
+                  "query_receipts": len(query_receipts),
+                  "candidate_rows": len(candidate_rows),
+                  "unique_opaque_result_ids": summary["unique_opaque_result_ids"],
+                  "unique_public_ciks": summary["unique_public_ciks"],
+              },
+              "combined_sha256": combined.hexdigest(),
+              "authority": route_policy["authority"],
+          }
+          write_json("artifact-manifest.json", artifact_manifest)
+
+          print(json.dumps(summary, indent=2, sort_keys=True))
+          PY
+          RC="${PIPESTATUS[0]}"
+          set -e
+          printf '%s\n' "$RC" > "$OUT/RUNNER_EXIT_CODE"
+          test "$RC" -eq 0
+
+          (
+            cd "$OUT"
+            sha256sum \
+              RUNNER_EXIT_CODE \
+              adjudication.json \
+              artifact-manifest.json \
+              candidate-filings.jsonl \
+              query-receipts.jsonl \
+              route-policy.json \
+              summary.json \
+              > SHA256SUMS
+          )
+
+          python - "$OUT" <<'PY'
+          from __future__ import annotations
+          from pathlib import Path
+          import hashlib
+          import json
+          import sys
+
+          root = Path(sys.argv[1])
+          expected = {
+              "RUNNER-OUTPUT.log",
+              "RUNNER_EXIT_CODE",
+              "SHA256SUMS",
+              "adjudication.json",
+              "artifact-manifest.json",
+              "candidate-filings.jsonl",
+              "query-receipts.jsonl",
+              "route-policy.json",
+              "summary.json",
+          }
+          observed = {path.name for path in root.iterdir() if path.is_file()}
+          assert observed == expected, sorted(observed ^ expected)
+          assert (root / "RUNNER_EXIT_CODE").read_text().strip() == "0"
+
+          rows = (root / "SHA256SUMS").read_text().splitlines()
+          assert len(rows) == 7
+          for row in rows:
+              digest, name = row.split("  ", 1)
+              assert "/" not in name
+              assert hashlib.sha256((root / name).read_bytes()).hexdigest() == digest
+
+          def read_json(name):
+              return json.loads((root / name).read_text())
+
+          def read_jsonl(name):
+              text = (root / name).read_text()
+              decoder = json.JSONDecoder()
+              values = []
+              index = 0
+              while True:
+                  while index < len(text) and text[index].isspace():
+                      index += 1
+                  if index == len(text):
+                      return values
+                  value, index = decoder.raw_decode(text, index)
+                  values.append(value)
+
+          policy = read_json("route-policy.json")
+          summary = read_json("summary.json")
+          adjudication = read_json("adjudication.json")
+          manifest = read_json("artifact-manifest.json")
+          receipts = read_jsonl("query-receipts.jsonl")
+          candidates = read_jsonl("candidate-filings.jsonl")
+
+          assert policy["schema_version"] == "schoolhouse-sec-edgar-exact-domain-route-policy@1"
+          assert policy["issue"] == 1357
+          assert policy["canonical_predecessor"] == "8a2f4538bdbcf9455f02e70c35a71cb39f805b18"
+          assert len(policy["canonical_predecessor_tree"]) == 40
+          assert policy["official_source"] == {
+              "host": "efts.sec.gov",
+              "endpoint": "https://efts.sec.gov/LATEST/search-index",
+              "fixed_query_id": "q1_exact_school_house_domain",
+              "fixed_query_text": '"school.house"',
+              "date_range": "all",
+          }
+          assert policy["bounds"] == {
+              "fixed_queries": 1,
+              "results_per_page": 100,
+              "maximum_pages": 10,
+              "maximum_result_hits_inspected": 1000,
+              "maximum_attempts_per_page": 2,
+              "maximum_response_bytes_per_page": 8388608,
+              "maximum_aggregate_response_bytes": 33554432,
+              "parallel_workers": 1,
+              "filing_document_fetches": 0,
+              "query_derived_off_host_requests": 0,
+              "outside_human_dependency": False,
+          }
+          assert all(value == 0 for value in policy["retention"].values())
+          assert policy["authority"] == {
+              "identities_admitted": 0,
+              "relationships_admitted": 0,
+              "negative_existence_claims": 0,
+              "issuer_admissions": 0,
+              "owner_or_operator_admissions": 0,
+              "outside_human_dependency": False,
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none",
+          }
+
+          assert summary["schema_version"] == "schoolhouse-sec-edgar-exact-domain-census@1"
+          assert summary["state"] == "terminal_bounded_sec_edgar_exact_domain_candidate_census"
+          assert summary["query_id"] == "q1_exact_school_house_domain"
+          assert summary["query_text"] == '"school.house"'
+          assert summary["query_terminal_state"] in {
+              "terminal_public_search_parsed",
+              "bounded_result_limit_exceeded",
+              "bounded_source_unavailable",
+              "terminal_parse_failure",
+              "bounded_aggregate_byte_limit_exceeded",
+              "bounded_index_drift",
+          }
+          assert 1 <= summary["pages_requested"] <= 10
+          assert summary["query_receipt_rows"] == len(receipts)
+          assert summary["raw_hits_seen"] <= 1000
+          assert summary["retained_candidate_rows"] == len(candidates)
+          assert summary["unique_opaque_result_ids"] == len(
+              {row["opaque_result_id"] for row in candidates}
+          )
+          assert summary["unique_public_ciks"] == len(
+              {cik for row in candidates for cik in row["ciks"]}
+          )
+          assert summary["aggregate_response_bytes"] <= 33554432
+          for key in (
+              "filing_document_fetches",
+              "query_derived_off_host_requests",
+              "sec_display_name_values_retained",
+              "person_names_retained",
+              "addresses_or_postal_codes_retained",
+              "phone_or_email_values_retained",
+              "signatures_or_officer_names_retained",
+              "filing_body_text_or_snippets_retained",
+              "complete_search_json_responses_retained",
+              "filing_documents_or_attachments_retained",
+              "browser_state_cookies_credentials_or_tokens_retained",
+              "private_support_rows",
+              "identities_admitted",
+              "relationships_admitted",
+              "negative_existence_claims_created",
+              "issuer_admissions",
+              "owner_or_operator_admissions",
+          ):
+              assert summary[key] == 0
+          assert summary["outside_human_dependency"] is False
+          assert [summary[k] for k in ("publication_effect", "adoption_effect", "graph_effect")] == [
+              "none", "none", "none"
+          ]
+          assert summary["public_schoolhouse_legal_identity"] == "unresolved"
+
+          assert adjudication["state"] == summary["state"]
+          assert adjudication["promotes_to"] == "candidate_only"
+          assert adjudication["sec_filing_reference_candidate_rows"] == len(candidates)
+          assert adjudication["literal_school_house_occurrence_admitted"] is False
+          assert adjudication["sec_issuer_admitted"] is False
+          assert adjudication["public_schoolhouse_identity_admitted"] is False
+          assert adjudication["owner_or_operator_admitted"] is False
+          assert adjudication["negative_existence_claim_created"] is False
+          assert all(adjudication["interpretation"].values())
+          assert adjudication["outside_human_dependency"] is False
+          assert [adjudication[k] for k in ("publication_effect", "adoption_effect", "graph_effect")] == [
+              "none", "none", "none"
+          ]
+
+          for receipt in receipts:
+              assert receipt["schema_version"] == "schoolhouse-sec-edgar-query-receipt@1"
+              assert receipt["query_id"] == "q1_exact_school_house_domain"
+              assert receipt["query_text"] == '"school.house"'
+              assert 0 <= receipt["page_index"] < 10
+              assert receipt["page_size"] == 100
+              assert 1 <= receipt["attempts"] <= 2
+              assert receipt["request_url"].startswith(
+                  "https://efts.sec.gov/LATEST/search-index?"
+              )
+              if receipt["final_url"] is not None:
+                  assert receipt["final_url"].startswith("https://efts.sec.gov/")
+              assert receipt["response_bytes"] <= 8388608
+              assert receipt["outside_human_dependency"] is False
+              assert [receipt[k] for k in ("publication_effect", "adoption_effect", "graph_effect")] == [
+                  "none", "none", "none"
+              ]
+
+          allowed_candidate_keys = {
+              "schema_version",
+              "classification",
+              "query_id",
+              "result_ordinal",
+              "opaque_result_id",
+              "accession_number",
+              "filing_document_name",
+              "ciks",
+              "forms",
+              "root_forms",
+              "filing_date",
+              "period_ending",
+              "file_numbers",
+              "literal_school_house_occurrence_admitted",
+              "issuer_identity_admitted",
+              "identities_admitted",
+              "relationships_admitted",
+              "negative_existence_claims",
+              "outside_human_dependency",
+              "publication_effect",
+              "adoption_effect",
+              "graph_effect",
+          }
+          for index, candidate in enumerate(candidates):
+              assert set(candidate) == allowed_candidate_keys
+              assert candidate["schema_version"] == "schoolhouse-sec-filing-reference-candidate@1"
+              assert candidate["classification"] == "sec_filing_reference_candidate"
+              assert candidate["query_id"] == "q1_exact_school_house_domain"
+              assert candidate["result_ordinal"] == index
+              assert candidate["opaque_result_id"]
+              assert candidate["ciks"]
+              assert all(len(cik) == 10 and cik.isdigit() for cik in candidate["ciks"])
+              assert candidate["literal_school_house_occurrence_admitted"] is False
+              assert candidate["issuer_identity_admitted"] is False
+              assert candidate["identities_admitted"] == 0
+              assert candidate["relationships_admitted"] == 0
+              assert candidate["negative_existence_claims"] == 0
+              assert candidate["outside_human_dependency"] is False
+              assert [candidate[k] for k in ("publication_effect", "adoption_effect", "graph_effect")] == [
+                  "none", "none", "none"
+              ]
+
+          assert manifest["schema_version"] == "schoolhouse-sec-edgar-exact-domain-artifact-manifest@1"
+          assert manifest["counts"] == {
+              "query_receipts": len(receipts),
+              "candidate_rows": len(candidates),
+              "unique_opaque_result_ids": summary["unique_opaque_result_ids"],
+              "unique_public_ciks": summary["unique_public_ciks"],
+          }
+          assert manifest["authority"] == policy["authority"]
+          assert len(manifest["files"]) == 5
+          combined = hashlib.sha256()
+          for row in manifest["files"]:
+              path = root / row["path"]
+              assert path.is_file()
+              assert path.stat().st_size == row["bytes"]
+              assert hashlib.sha256(path.read_bytes()).hexdigest() == row["sha256"]
+              combined.update(f"{row['sha256']}  {row['path']}\n".encode())
+          assert manifest["combined_sha256"] == combined.hexdigest()
+
+          prohibited_keys = {
+              "display_names",
+              "display_name",
+              "names",
+              "name",
+              "person_name",
+              "owner",
+              "owner_name",
+              "applicant",
+              "applicant_name",
+              "street_address",
+              "mailing_address",
+              "postal_code",
+              "phone",
+              "email",
+              "signature",
+              "officer_name",
+              "highlight",
+              "highlights",
+              "snippet",
+              "filing_text",
+              "raw_json",
+              "cookie",
+              "credential",
+              "token",
+          }
+          def walk(value):
+              if isinstance(value, dict):
+                  assert prohibited_keys.isdisjoint(value)
+                  for child in value.values():
+                      walk(child)
+              elif isinstance(value, list):
+                  for child in value:
+                      walk(child)
+
+          for value in (policy, summary, adjudication, manifest, receipts, candidates):
+              walk(value)
+
+          print("schoolhouse_sec_edgar_exact_domain_artifact_validation=pass")
+          print(f"query_terminal_state={summary['query_terminal_state']}")
+          print(f"retained_candidate_rows={len(candidates)}")
+          PY
+
+      - name: Preserve exact SEC EDGAR census artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-sec-edgar-exact-domain-census-v1
+          path: ${{ runner.temp }}/schoolhouse-sec-edgar-exact-domain-census-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
