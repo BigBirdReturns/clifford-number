@@ -1,0 +1,250 @@
+name: TEMP export current School.House legal-identity frontier
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-legal-identity-frontier-export-46036c-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-legal-identity-frontier-export-46036c-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  export:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-legal-identity-frontier-export-46036c-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Export exact current School.House custody frontier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='46036c01eaba31bdb18045307fe3ebcb67d576a6'
+          BASE_TREE='0ffec7018bcfc038a73cd280970f783d12a5c222'
+          WORKFLOW='.github/workflows/temp-schoolhouse-legal-identity-frontier-export-46036c-v1.yml'
+          OUT="$RUNNER_TEMP/schoolhouse-legal-identity-frontier-export-46036c-v1"
+          REPO_OUT="$OUT/repository-slice"
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test "$(git rev-parse "$BASE^{tree}")" = "$BASE_TREE"
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+          mapfile -t CHANGED < <(git diff --name-only "$BASE"..HEAD | sort)
+          test "${#CHANGED[@]}" -eq 1
+          test "${CHANGED[0]}" = "$WORKFLOW"
+          git diff --check "$BASE"..HEAD
+
+          rm -rf "$OUT"
+          mkdir -p "$REPO_OUT"
+
+          copy_path() {
+            local path="$1"
+            test -e "$path"
+            mkdir -p "$REPO_OUT/$(dirname "$path")"
+            cp -a "$path" "$REPO_OUT/$path"
+          }
+
+          # Canonical BVVC/School.House source lake and every durable
+          # School.House-specific product, milestone, schema, validator, and test.
+          copy_path 'data/intake/bvvc-defense-capital'
+          copy_path 'tools/validate-bvvc-defense-capital.mjs'
+
+          while IFS= read -r -d '' path; do
+            copy_path "$path"
+          done < <(find data/intake -mindepth 1 -maxdepth 1 -name 'schoolhouse-*' -print0 | sort -z)
+
+          while IFS= read -r -d '' path; do
+            copy_path "$path"
+          done < <(find docs/milestones -mindepth 1 -maxdepth 1 -iname 'schoolhouse-*' -print0 | sort -z)
+
+          while IFS= read -r -d '' path; do
+            copy_path "$path"
+          done < <(find schemas -mindepth 1 -maxdepth 1 -iname '*schoolhouse*' -print0 | sort -z)
+
+          while IFS= read -r -d '' path; do
+            copy_path "$path"
+          done < <(find tools -mindepth 1 -maxdepth 1 -iname '*schoolhouse*' -print0 | sort -z)
+
+          while IFS= read -r -d '' path; do
+            copy_path "$path"
+          done < <(find test -mindepth 1 -maxdepth 1 -iname '*schoolhouse*' -print0 | sort -z)
+
+          (cd "$REPO_OUT" && find . -type f -print | LC_ALL=C sort) > "$OUT/FILE-LIST.txt"
+          FILE_COUNT="$(wc -l < "$OUT/FILE-LIST.txt" | tr -d ' ')"
+          test "$FILE_COUNT" -gt 193
+
+          while IFS= read -r relative; do
+            path="${relative#./}"
+            git cat-file -e "$BASE:$path"
+          done < "$OUT/FILE-LIST.txt"
+
+          (
+            cd "$REPO_OUT"
+            find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum
+          ) > "$OUT/REPOSITORY-SHA256SUMS"
+          test "$(wc -l < "$OUT/REPOSITORY-SHA256SUMS" | tr -d ' ')" = "$FILE_COUNT"
+          (
+            cd "$REPO_OUT"
+            sha256sum -c "$OUT/REPOSITORY-SHA256SUMS"
+          ) > "$OUT/REPOSITORY-SHA256-CHECK.log"
+
+          while IFS= read -r relative; do
+            path="${relative#./}"
+            git ls-tree "$BASE" -- "$path"
+          done < "$OUT/FILE-LIST.txt" > "$OUT/GIT-LS-TREE.txt"
+          test "$(wc -l < "$OUT/GIT-LS-TREE.txt" | tr -d ' ')" = "$FILE_COUNT"
+
+          python - "$REPO_OUT" "$OUT/FRONTIER-STATE-INDEX.jsonl" <<'PY'
+          from __future__ import annotations
+
+          from pathlib import Path
+          from typing import Any
+          import json
+          import sys
+
+          root = Path(sys.argv[1])
+          output = Path(sys.argv[2])
+          interesting = {
+              'admitted_identities',
+              'identities_admitted',
+              'identity_admissions',
+              'negative_existence_claims',
+              'next_transition',
+              'outside_human_dependency',
+              'public_schoolhouse_identity_admitted',
+              'public_schoolhouse_legal_identity',
+              'relationships_admitted',
+              'source_family',
+              'state',
+              'status',
+              'stopping_rule',
+              'task_id',
+          }
+
+          def walk(value: Any, path: tuple[str, ...]):
+              if isinstance(value, dict):
+                  for key, child in value.items():
+                      next_path = path + (str(key),)
+                      if key in interesting and isinstance(child, (str, int, float, bool, type(None))):
+                          yield '.'.join(next_path), key, child
+                      yield from walk(child, next_path)
+              elif isinstance(value, list):
+                  for index, child in enumerate(value):
+                      yield from walk(child, path + (str(index),))
+
+          rows = []
+          for path in sorted(root.rglob('*.json')):
+              try:
+                  value = json.loads(path.read_text(encoding='utf-8'))
+              except (UnicodeDecodeError, json.JSONDecodeError):
+                  continue
+              relative = path.relative_to(root).as_posix()
+              for json_path, key, observed in walk(value, ()): 
+                  rows.append({
+                      'file': relative,
+                      'json_path': json_path,
+                      'key': key,
+                      'value': observed,
+                  })
+
+          with output.open('w', encoding='utf-8') as handle:
+              for row in rows:
+                  handle.write(json.dumps(row, sort_keys=True, ensure_ascii=False) + '\n')
+          print(f'frontier_state_index_rows={len(rows)}')
+          PY
+
+          rg -n --no-heading -i \
+            'public School\.House legal identity|next_transition|stopping_rule|identity remains unresolved|legal identity remains unresolved|registry-grade|no identical replay' \
+            "$REPO_OUT" > "$OUT/FRONTIER-SIGNALS.txt" || true
+
+          TAR="$OUT/schoolhouse-legal-identity-frontier-46036c.tar.xz"
+          tar -C "$REPO_OUT" -cJf "$TAR" .
+
+          python - "$OUT/canonical.json" "$BASE" "$BASE_TREE" "$(git rev-parse HEAD)" \
+            "$(git rev-parse 'HEAD^{tree}')" "$WORKFLOW" "$FILE_COUNT" \
+            "$(stat -c%s "$TAR")" "$(sha256sum "$TAR" | cut -d' ' -f1)" <<'PY'
+          from pathlib import Path
+          import json
+          import sys
+
+          (
+              output,
+              canonical_main,
+              canonical_tree,
+              export_head,
+              export_head_tree,
+              workflow,
+              file_count,
+              archive_bytes,
+              archive_sha256,
+          ) = sys.argv[1:]
+          value = {
+              'schema_version': 'schoolhouse-legal-identity-frontier-export@2',
+              'state': 'complete',
+              'canonical_main': canonical_main,
+              'canonical_tree': canonical_tree,
+              'export_head': export_head,
+              'export_head_tree': export_head_tree,
+              'export_workflow': workflow,
+              'exported_files': int(file_count),
+              'repository_file_hashes_verified': int(file_count),
+              'archive_bytes': int(archive_bytes),
+              'archive_sha256': archive_sha256,
+              'source_requests': 0,
+              'registry_queries': 0,
+              'form_submissions': 0,
+              'contacts': 0,
+              'payments': 0,
+              'uploads': 0,
+              'identity_admissions': 0,
+              'relationship_admissions': 0,
+              'negative_existence_claims': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'authority': 'read_only_frontier_export_only',
+          }
+          Path(output).write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+          PY
+
+          (
+            cd "$OUT"
+            sha256sum canonical.json FILE-LIST.txt FRONTIER-SIGNALS.txt \
+              FRONTIER-STATE-INDEX.jsonl GIT-LS-TREE.txt \
+              REPOSITORY-SHA256-CHECK.log REPOSITORY-SHA256SUMS \
+              "$(basename "$TAR")" > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          ) > "$OUT/EXPORT-SHA256-CHECK.log"
+
+          cat "$OUT/canonical.json"
+
+      - name: Preserve exact read-only frontier export
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-legal-identity-frontier-export-46036c-v1
+          path: ${{ runner.temp }}/schoolhouse-legal-identity-frontier-export-46036c-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
