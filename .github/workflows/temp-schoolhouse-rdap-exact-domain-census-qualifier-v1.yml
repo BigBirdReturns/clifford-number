@@ -1,0 +1,352 @@
+name: TEMP qualify exact School.House RDAP census artifact
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-rdap-exact-domain-census-qualifier-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: schoolhouse-rdap-exact-domain-census-qualifier-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-rdap-exact-domain-census-qualifier-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Authenticate and independently qualify the exact RDAP artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='681ae0d41bed04d068836ee9d746fe7701d234cb'
+          BASE_TREE='9ee392609c4c6bcce2806f9b8a1e514333c1428e'
+          SOURCE_PR='1337'
+          SOURCE_HEAD='6bd1f518cb000d976d2c5b9191f963ed32a32b29'
+          SOURCE_RUN='31152226533'
+          ARTIFACT_ID='8983728022'
+          ARTIFACT_NAME='schoolhouse-rdap-exact-domain-census-v1'
+          ARTIFACT_BYTES='6086'
+          ARTIFACT_SHA='cf2fdac90562612be9e843c5cff72e06aa3756d127445e37c0b5ea5287247c2e'
+          WORKFLOW='.github/workflows/temp-schoolhouse-rdap-exact-domain-census-qualifier-v1.yml'
+          ZIP="$RUNNER_TEMP/$ARTIFACT_NAME.zip"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-rdap-exact-domain-census-qualification-v1"
+          mkdir -p "$RECEIPT"
+
+          git fetch --no-tags origin main
+          MAIN="$(git rev-parse origin/main)"
+          test "$(git rev-parse "$BASE^{tree}")" = "$BASE_TREE"
+          git merge-base --is-ancestor "$BASE" origin/main
+          test "$(git merge-base HEAD origin/main)" = "$BASE"
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          mapfile -t DELTA < <(git diff --name-only "$BASE"..HEAD)
+          test "${#DELTA[@]}" -eq 1
+          test "${DELTA[0]}" = "$WORKFLOW"
+
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" --jq '.digest // ""')" = "sha256:$ARTIFACT_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" --jq .name)" = "$ARTIFACT_NAME"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" --jq .workflow_run.id)" = "$SOURCE_RUN"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" --jq .workflow_run.head_sha)" = "$SOURCE_HEAD"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" --jq .workflow_run.head_branch)" = 'agent/schoolhouse-rdap-exact-domain-census-v1'
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$ZIP"
+          test "$(stat -c%s "$ZIP")" = "$ARTIFACT_BYTES"
+          test "$(sha256sum "$ZIP" | awk '{print $1}')" = "$ARTIFACT_SHA"
+
+          python - "$ZIP" "$RECEIPT" "$MAIN" <<'PY'
+          from __future__ import annotations
+          from pathlib import Path
+          import hashlib
+          import json
+          import re
+          import shutil
+          import sys
+          import zipfile
+
+          zip_path = Path(sys.argv[1])
+          receipt = Path(sys.argv[2])
+          main = sys.argv[3]
+          source = receipt / 'source'
+          source.mkdir(parents=True)
+
+          def sha256_bytes(value: bytes) -> str:
+              return hashlib.sha256(value).hexdigest()
+
+          def read_json(name: str):
+              return json.loads((source / name).read_text())
+
+          expected_members = sorted([
+              'RUNNER-OUTPUT.log', 'RUNNER_EXIT_CODE', 'SHA256SUMS',
+              'VALIDATION_PASS', 'adjudication.json', 'artifact-manifest.json',
+              'bootstrap-receipt.json', 'candidates.jsonl', 'domain-receipt.json',
+              'route-policy.json', 'summary.json',
+          ])
+          with zipfile.ZipFile(zip_path) as archive:
+              assert archive.testzip() is None
+              assert sorted(archive.namelist()) == expected_members
+              archive.extractall(source)
+
+          assert (source / 'RUNNER_EXIT_CODE').read_text().strip() == '0'
+          assert (source / 'VALIDATION_PASS').read_bytes() == b''
+          checksum_rows = []
+          for line in (source / 'SHA256SUMS').read_text().splitlines():
+              digest, name = line.split('  ', 1)
+              assert '/' not in name and name in expected_members
+              assert sha256_bytes((source / name).read_bytes()) == digest
+              checksum_rows.append(name)
+          assert len(checksum_rows) == 7
+
+          summary = read_json('summary.json')
+          adjudication = read_json('adjudication.json')
+          policy = read_json('route-policy.json')
+          bootstrap = read_json('bootstrap-receipt.json')
+          domain = read_json('domain-receipt.json')
+          manifest = read_json('artifact-manifest.json')
+          assert (source / 'candidates.jsonl').read_bytes() == b''
+
+          assert summary == {
+              'adoption_effect': 'none',
+              'bootstrap_attempts': 1,
+              'browser_state_cookies_credentials_or_tokens_retained': 0,
+              'candidate_count': 0,
+              'contact_uris_retained': 0,
+              'domain': 'school.house',
+              'domain_attempts': 1,
+              'email_values_retained': 0,
+              'fixed_route_count': 2,
+              'graph_effect': 'none',
+              'identities_admitted': 0,
+              'negative_existence_claims_created': 0,
+              'outside_human_dependency': False,
+              'owner_or_operator_admissions': 0,
+              'postal_codes_retained': 0,
+              'private_support_material_retained': 0,
+              'publication_effect': 'none',
+              'raw_bootstrap_json_retained': 0,
+              'raw_rdap_json_retained': 0,
+              'redaction_present': True,
+              'registrant_or_administrative_person_names_retained': 0,
+              'registrant_organization_values_retained': 0,
+              'registrar_name_values_retained': 1,
+              'relationships_admitted': 0,
+              'schema_version': 'schoolhouse-rdap-exact-domain-census-v1@1:summary',
+              'state': 'terminal_bounded_rdap_exact_domain_candidate_census',
+              'street_or_mailing_addresses_retained': 0,
+              'telephone_or_fax_values_retained': 0,
+              'terminal_route_count': 2,
+              'terminal_route_state_counts': {'terminal_public_json_parsed': 2},
+              'total_requests': 2,
+              'vcard_labels_or_free_text_notes_retained': 0,
+          }
+
+          assert policy['schema_version'] == 'schoolhouse-rdap-exact-domain-census-v1@1:route-policy'
+          assert policy['issue'] == 1335
+          assert policy['canonical_parent'] == '681ae0d41bed04d068836ee9d746fe7701d234cb'
+          assert policy['canonical_parent_tree'] == '9ee392609c4c6bcce2806f9b8a1e514333c1428e'
+          assert policy['fixed_routes'] == {
+              'iana_bootstrap': 'https://data.iana.org/rdap/dns.json',
+              'exact_domain_suffix': 'domain/school.house',
+          }
+          assert policy['bounds'] == {
+              'iana_bootstrap_routes': 1,
+              'exact_rdap_domain_routes': 1,
+              'maximum_attempts_per_route': 2,
+              'maximum_total_requests': 4,
+              'maximum_response_bytes_per_route': 5242880,
+              'parallel_workers': 1,
+              'query_or_form_submissions': 0,
+              'result_spawned_requests': 0,
+              'whois_broker_requests': 0,
+              'search_engine_requests': 0,
+              'historical_whois_requests': 0,
+              'registrar_account_attempts': 0,
+              'paid_lookup_attempts': 0,
+              'captcha_or_waf_bypass_attempts': 0,
+              'browser_token_transfers': 0,
+              'outside_human_dependency': False,
+          }
+          assert policy['candidate_rule']['promotes_to'] == 'domain_registrant_organization_candidate'
+          assert policy['candidate_rule']['requires_exact_ldh_name'] == 'school.house'
+          assert policy['candidate_rule']['requires_registrant_role'] is True
+          assert policy['candidate_rule']['requires_nonempty_public_vcard_org'] is True
+          assert policy['candidate_rule']['identity_admission'] is False
+          assert all(value == 0 for value in policy['retention'].values())
+          assert policy['authority'] == {
+              'identities_admitted': 0,
+              'relationships_admitted': 0,
+              'negative_existence_claims': 0,
+              'owner_or_operator_admissions': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+
+          assert bootstrap['schema_version'] == 'schoolhouse-rdap-exact-domain-census-v1@1:route-receipt'
+          assert bootstrap['route_id'] == 'iana_dns_bootstrap'
+          assert bootstrap['initial_url'] == bootstrap['final_url'] == 'https://data.iana.org/rdap/dns.json'
+          assert bootstrap['terminal_state'] == 'terminal_public_json_parsed'
+          assert bootstrap['http_status'] == 200 and bootstrap['attempt_count'] == 1
+          assert bootstrap['response_bytes'] == 71095
+          assert bootstrap['response_sha256'] == 'fb297362ea4d0b627bd92fe18dc251a3af594fa60b0b7da58ff708181e3d7bb5'
+          assert bootstrap['selected_rdap_service_base'] == 'https://rdap.identitydigital.services/rdap/'
+          assert bootstrap['selected_service_host'] == 'rdap.identitydigital.services'
+          assert bootstrap['service_rows_observed'] == 590
+          assert bootstrap['matching_https_service_count'] == 1
+          assert bootstrap['malformed_service_rows'] == 0
+          assert len(bootstrap['attempts']) == 1
+          assert re.fullmatch(r'2026-08-07T05:56:33Z', bootstrap['attempts'][0]['requested_at'])
+
+          assert domain['schema_version'] == 'schoolhouse-rdap-exact-domain-census-v1@1:route-receipt'
+          assert domain['route_id'] == 'exact_school_house_domain'
+          assert domain['initial_url'] == domain['final_url'] == 'https://rdap.identitydigital.services/rdap/domain/school.house'
+          assert domain['terminal_state'] == 'terminal_public_json_parsed'
+          assert domain['http_status'] == 200 and domain['attempt_count'] == 1
+          assert domain['response_bytes'] == 7644
+          assert domain['response_sha256'] == '7cf047e8f252a0eb911745d733225099a5c6b970f60a3b2ec186209226f6be2a'
+          rdap = domain['domain']
+          assert rdap['object_class_name'] == 'domain'
+          assert rdap['ldh_name'] == rdap['unicode_name'] == 'school.house'
+          assert rdap['exact_ldh_name_match'] is True
+          assert rdap['exact_unicode_name_match'] is True
+          assert rdap['domain_handle'] == ''
+          assert rdap['registrant_organizations'] == []
+          assert rdap['registrar_names'] == ['NameCheap, Inc.']
+          assert rdap['entity_role_counts'] == {'registrar': 1}
+          assert rdap['entities'] == [{
+              'entity_index': 0,
+              'public_identifier_types': ['IANA Registrar ID'],
+              'registrant_organizations': [],
+              'registrar_names': ['NameCheap, Inc.'],
+              'roles': ['registrar'],
+          }]
+          assert rdap['nameserver_hostnames'] == ['ns1.siteground.net', 'ns2.siteground.net']
+          assert rdap['dnssec'] == {'delegation_signed': False, 'zone_signed': None}
+          assert rdap['statuses'] == ['client transfer prohibited']
+          assert rdap['redaction_present'] is True
+          assert 'redacted' in rdap['rdap_conformance']
+          assert any(row['title'] == 'Terms of Service' and row['redaction_present'] for row in rdap['notices'])
+          assert len(domain['attempts']) == 1
+          assert domain['attempts'][0]['allowed_host'] == 'rdap.identitydigital.services'
+          assert domain['attempts'][0]['terminal_state'] == 'terminal_public_json_parsed'
+
+          assert adjudication == {
+              'adoption_effect': 'none',
+              'candidate_count': 0,
+              'domain': 'school.house',
+              'domain_handle_is_not_registrant_identity': True,
+              'domain_owner_or_operator_admitted': False,
+              'graph_effect': 'none',
+              'identical_source_retry_authorized': False,
+              'independent_candidate_adjudication_required': False,
+              'nameserver_is_not_registrant': True,
+              'negative_existence_claim_created': False,
+              'outside_human_dependency': False,
+              'promotes_to': 'no_candidate_promoted',
+              'public_schoolhouse_identity_admitted': False,
+              'publication_effect': 'none',
+              'redaction_present': True,
+              'registrant_organization_redaction_or_absence_is_not_nonexistence': True,
+              'registrar_is_not_registrant': True,
+              'relationships_admitted': 0,
+              'schema_version': 'schoolhouse-rdap-exact-domain-census-v1@1:adjudication',
+              'state': 'terminal_bounded_rdap_exact_domain_candidate_census',
+          }
+
+          assert manifest['schema_version'] == 'schoolhouse-rdap-exact-domain-census-v1@1:artifact-manifest'
+          assert manifest['combined_sha256'] == '6e37d2da468addb6347707e1f5ababd20329fb82cf536b7be8247e9db3b41122'
+          assert manifest['counts'] == {
+              'candidate_rows': 0,
+              'fixed_routes': 2,
+              'terminal_routes': 2,
+              'total_requests': 2,
+          }
+          assert len(manifest['files']) == 6
+
+          prohibited = {
+              'registrant_name', 'administrative_name', 'person_name',
+              'street_address', 'mailing_address', 'postal_code',
+              'telephone', 'fax', 'email', 'contact_uri', 'vcard_label',
+              'free_text_note', 'browser_state', 'cookie',
+              'credential', 'token',
+          }
+          def walk(value):
+              if isinstance(value, dict):
+                  assert prohibited.isdisjoint(value)
+                  for child in value.values():
+                      walk(child)
+              elif isinstance(value, list):
+                  for child in value:
+                      walk(child)
+          for value in (summary, adjudication, policy, bootstrap, domain, manifest):
+              walk(value)
+
+          qualification = {
+              'schema_version': 'schoolhouse-rdap-exact-domain-census-qualification-v1@1',
+              'canonical_main_observed': main,
+              'canonical_predecessor': '681ae0d41bed04d068836ee9d746fe7701d234cb',
+              'canonical_predecessor_tree': '9ee392609c4c6bcce2806f9b8a1e514333c1428e',
+              'source_pr': 1337,
+              'source_head': '6bd1f518cb000d976d2c5b9191f963ed32a32b29',
+              'source_workflow_run': 31152226533,
+              'source_workflow_conclusion': 'success',
+              'artifact_id': 8983728022,
+              'artifact_name': 'schoolhouse-rdap-exact-domain-census-v1',
+              'artifact_bytes': 6086,
+              'artifact_sha256': 'cf2fdac90562612be9e843c5cff72e06aa3756d127445e37c0b5ea5287247c2e',
+              'fixed_route_count': 2,
+              'terminal_route_count': 2,
+              'total_requests': 2,
+              'terminal_state': 'terminal_bounded_rdap_exact_domain_candidate_census',
+              'candidate_count': 0,
+              'registrar_name_values_retained': 1,
+              'registrant_organization_values_retained': 0,
+              'redaction_present': True,
+              'identities_admitted': 0,
+              'relationships_admitted': 0,
+              'negative_existence_claims': 0,
+              'owner_or_operator_admissions': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'qualification': 'pass',
+          }
+          (receipt / 'qualification.json').write_text(json.dumps(qualification, indent=2, sort_keys=True) + '\n')
+          shutil.copy2(source / 'summary.json', receipt / 'source-summary.json')
+          shutil.copy2(source / 'adjudication.json', receipt / 'source-adjudication.json')
+          shutil.copy2(source / 'domain-receipt.json', receipt / 'source-domain-receipt.json')
+          shutil.copy2(source / 'SHA256SUMS', receipt / 'source-SHA256SUMS')
+          shutil.rmtree(source)
+          rows = []
+          for path in sorted(receipt.iterdir()):
+              if path.is_file():
+                  rows.append(f'{sha256_bytes(path.read_bytes())}  {path.name}')
+          (receipt / 'SHA256SUMS').write_text('\n'.join(rows) + '\n')
+          print(json.dumps(qualification, indent=2, sort_keys=True))
+          PY
+
+      - name: Preserve independent qualification receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-rdap-exact-domain-census-qualification-v1
+          path: ${{ runner.temp }}/schoolhouse-rdap-exact-domain-census-qualification-v1
+          if-no-files-found: error
+          retention-days: 90
