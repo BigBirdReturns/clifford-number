@@ -1,0 +1,57 @@
+name: TEMP probe exact RD-04 five-state promotion parent tree
+
+on:
+  push:
+    branches:
+      - 'agent/rd04-five-state-parent-tree-probe-v1'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  probe:
+    if: github.ref_name == 'agent/rd04-five-state-parent-tree-probe-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Preserve exact parent identity
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          BASE='1e52a58be874538509d6c0d3c06adc12fc53cad7'
+          WORKFLOW='.github/workflows/temp-rd04-five-state-parent-tree-probe-v1.yml'
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+          test "$(git diff --name-only "$BASE"..HEAD)" = "$WORKFLOW"
+          OUT="$RUNNER_TEMP/rd04-five-state-parent-tree-probe-v1"
+          mkdir -p "$OUT"
+          BASE_TREE="$(git rev-parse "$BASE^{tree}")"
+          printf 'canonical_parent=%s\ncanonical_parent_tree=%s\nprobe_head=%s\n' \
+            "$BASE" "$BASE_TREE" "$(git rev-parse HEAD)" > "$OUT/receipt.txt"
+          sha256sum "$OUT/receipt.txt" > "$OUT/SHA256SUMS"
+          cat "$OUT/receipt.txt"
+          {
+            echo 'RD-04 five-state promotion parent tree recovered.'
+            echo
+            echo '```text'
+            cat "$OUT/receipt.txt"
+            echo '```'
+            echo
+            echo 'Read-only custody only; no matrix or product authority.'
+          } > /tmp/comment.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rd04-five-state-parent-tree-probe-v1
+          path: ${{ runner.temp }}/rd04-five-state-parent-tree-probe-v1
+          if-no-files-found: error
+          retention-days: 30
