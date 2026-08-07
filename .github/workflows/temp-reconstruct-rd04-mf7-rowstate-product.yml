@@ -1,0 +1,50 @@
+name: TEMP reconstruct exact RD-04 MF7 row-state product archive
+
+on:
+  push:
+    branches:
+      - 'agent/ssc-rd04-mf7-row-state-archive-reconstruction'
+
+permissions:
+  contents: read
+
+jobs:
+  reconstruct:
+    if: github.event_name == 'push' && github.ref_name == 'agent/ssc-rd04-mf7-row-state-archive-reconstruction'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct and verify exact fourteen-path archive
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/rd04-mf7-rowstate-product
+          rm -rf "$OUT"
+          mkdir -p "$OUT/extracted"
+          cat \
+            .tmp/rd04-mf7-rowstate-archive/part-00.bin \
+            .tmp/rd04-mf7-rowstate-archive/part-01.bin \
+            .tmp/rd04-mf7-rowstate-archive/part-02.bin \
+            .tmp/rd04-mf7-rowstate-archive/part-03.bin \
+            .tmp/rd04-mf7-rowstate-archive/part-04.bin \
+            .tmp/rd04-mf7-rowstate-archive/part-05.bin \
+            .tmp/rd04-mf7-rowstate-archive/part-06.bin \
+            .tmp/rd04-mf7-rowstate-archive/part-07.bin \
+            .tmp/rd04-mf7-rowstate-archive/part-08.bin \
+            .tmp/rd04-mf7-rowstate-archive/part-09.bin \
+            .tmp/rd04-mf7-rowstate-archive/part-10.bin \
+            .tmp/rd04-mf7-rowstate-archive/part-11.bin \
+            > "$OUT/product.tar.xz"
+          test "$(wc -c < "$OUT/product.tar.xz" | tr -d ' ')" = 39124
+          test "$(sha256sum "$OUT/product.tar.xz" | awk '{print $1}')" = 672be321f243be0e3bc4867256fb68641f4319d43fd1fdc06271ff0ddcb85ccd
+          tar -xJf "$OUT/product.tar.xz" -C "$OUT/extracted"
+          find "$OUT/extracted" -type f -printf '%P\n' | sort > "$OUT/paths.txt"
+          test "$(wc -l < "$OUT/paths.txt" | tr -d ' ')" = 14
+          find "$OUT/extracted" -type f -print0 | sort -z | xargs -0 sha256sum > "$OUT/file-sha256.txt"
+      - name: Preserve exact reconstructed product
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mf7-row-state-exact-product-reconstruction
+          path: /tmp/rd04-mf7-rowstate-product
+          if-no-files-found: error
+          retention-days: 90
