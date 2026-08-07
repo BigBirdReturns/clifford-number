@@ -1,0 +1,358 @@
+name: TEMP qualify RD-04 five-state recursive schema closure repair
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: rd04-five-state-schema-closure-repair-v1-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+jobs:
+  qualify-repair:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/ssc-rd04-five-state-schema-closure-repair-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Verify exact one-commit one-path repair carrier
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PARENT: 'd26cb838df12a877840ebe71eb9388d44b6ceaf9'
+          PRODUCT: '0d9fcc77cac1da8a973781c7fd03ec0390095dce'
+          PRODUCT_BRANCH: 'agent/ssc-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication-v1'
+          CARRIER_PATH: '.github/workflows/temp-ssc-rd04-five-state-schema-closure-repair-v1.yml'
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = "$PARENT"
+          test "$(git rev-list --count "$PARENT"..HEAD)" = 1
+          test "$(git diff --name-only "$PARENT" HEAD)" = "$CARRIER_PATH"
+          test "$(git rev-parse HEAD)" = '${{ github.event.pull_request.head.sha }}'
+          test '${{ github.event.pull_request.base.ref }}' = main
+          git fetch --force --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse origin/main)" = "$PARENT"
+          test "$(git rev-parse origin/$PRODUCT_BRANCH)" = "$PRODUCT"
+          gh api "repos/$GITHUB_REPOSITORY/pulls/1391" > /tmp/rd04-product-pr.json
+          jq -e --arg product "$PRODUCT" '.state == "open" and .draft == true and .base.ref == "main" and .head.sha == $product and .commits == 1 and .changed_files == 14' /tmp/rd04-product-pr.json >/dev/null
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+
+      - name: Build and qualify exact two-file recursive-closure repair
+        id: repair
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PARENT: 'd26cb838df12a877840ebe71eb9388d44b6ceaf9'
+          PRODUCT: '0d9fcc77cac1da8a973781c7fd03ec0390095dce'
+          SCHEMA_PATH: 'schemas/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.schema.json'
+          WORKFLOW_PATH: '.github/workflows/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.yml'
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/rd04-five-state-schema-closure-repair-v1
+          WORK=/tmp/rd04-five-state-schema-closure-work-v1
+          FINAL=/tmp/rd04-five-state-schema-closure-final-v1
+          rm -rf "$OUT" "$WORK" "$FINAL"
+          mkdir -p "$OUT"
+          exec > >(tee "$OUT/qualification.log") 2>&1
+
+          git worktree add --detach "$WORK" "$PRODUCT"
+          ORIGINAL_TREE=$(git -C "$WORK" show -s --format=%T HEAD)
+
+          python - "$WORK" <<'PYDEFECT'
+          import copy,json,pathlib,sys
+          from jsonschema import Draft202012Validator
+          root=pathlib.Path(sys.argv[1])
+          data=root/'data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication'
+          schema=json.loads((root/'schemas/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.schema.json').read_text())
+          validator=Draft202012Validator(schema)
+          files=['capture-custody.json','source-adjudications.json','field-adjudications.json','pdf-review-receipts.json','promotion-candidate-protocol.json','selected-followup-protocol.json','index.json','product-manifest.json']
+          accepted=0
+          for name in files:
+              value=json.loads((data/name).read_text())
+              validator.validate(value)
+              mutated=copy.deepcopy(value)
+              if 'capture_counts' in mutated: mutated['capture_counts']['unreviewed_authority']=True
+              elif 'decisions' in mutated: mutated['decisions'][0]['unreviewed_authority']=True
+              elif 'reviews' in mutated: mutated['reviews'][0]['unreviewed_authority']=True
+              elif 'candidates' in mutated: mutated['candidates'][0]['unreviewed_authority']=True
+              elif 'routes' in mutated: mutated['routes'][0]['unreviewed_authority']=True
+              elif 'counts' in mutated: mutated['counts']['unreviewed_authority']=True
+              elif 'entries' in mutated: mutated['entries'][0]['unreviewed_authority']=True
+              else: raise AssertionError(name)
+              assert not list(validator.iter_errors(mutated)), name
+              accepted+=1
+          assert accepted==8
+          print('pre_repair_schema_defect=confirmed nested_unknown_keys_accepted=8')
+          PYDEFECT
+
+          python - "$WORK" <<'PYSCHEMA'
+          from __future__ import annotations
+          import json,sys
+          from pathlib import Path
+          from typing import Any
+          root=Path(sys.argv[1])
+          data=root/'data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication'
+          files=['capture-custody.json','source-adjudications.json','field-adjudications.json','pdf-review-receipts.json','promotion-candidate-protocol.json','selected-followup-protocol.json','index.json','product-manifest.json']
+          const_keys={'schema_version','wave_id','lane_id','class_id','issue','capture_artifact_id','predecessor_capture_artifact_id','automatic_source_admission','automatic_field_classification','automatic_row_terminalization','automatic_class_closure','outside_human_dependency','publication_effect','adoption_effect','graph_effect','national_prevalence_effect','discrimination_effect','racial_order_effect','coordination_effect','common_purpose_effect','complete_compact_effect','field_classification_effect','row_state_effect','class_closed','result_spawned_requests','matrix_update_authority','field_terminalization_authority','row_state_authority','class_closure_authority','candidate_only','raw_rendered_images_retained_in_product','reviewed_disposition_changes','cumulative_ledger_effect','field_matrix_changed','offline_source_adjudication_complete','offline_field_adjudication_complete','promotion_candidates_frozen_without_promotion','followup_routes_frozen_without_execution','source_admissions','field_classifications','row_state_mutations','matrix_updates','field_terminalizations','substantive_field_terminalizations','cross_host_redirects_allowed','maximum_attempts','maximum_redirects','maximum_body_bytes','maximum_total_requests'}
+          enum_keys={'terminal_state','surface','source_class','disposition','rationale_code','field_id','postal_code','unit_id','method','content_type','state_name','page_subject','selection_reason','source_anchor','required_predecessor_cell_state','class_state','candidate_origin','transport_terminal_state','tool','image_format'}
+          sha_keys={'artifact_zip_sha256','artifact_manifest_combined_sha256','body_sha256','pdf_body_sha256','rendered_png_sha256','sha256','combined_sha256'}
+          hex40_keys={'protocol_merge','execution_parent','carrier_head'}
+          uri_keys={'requested_url','final_url'}
+          def kind(v):
+              if isinstance(v,bool): return bool
+              if isinstance(v,int): return int
+              if isinstance(v,float): return float
+              if isinstance(v,str): return str
+              return type(v)
+          def scalar(values,key):
+              nonnull=[v for v in values if v is not None]; has_null=len(nonnull)!=len(values)
+              if not nonnull:return {'type':'null'}
+              schemas=[]
+              for typ in sorted({kind(v) for v in nonnull},key=lambda x:x.__name__):
+                  vals=[v for v in nonnull if kind(v) is typ]
+                  if typ is bool:s={'type':'boolean'}
+                  elif typ is int:
+                      s={'type':'integer'}
+                      if min(vals)>=0:s['minimum']=0
+                  elif typ is float:s={'type':'number'}
+                  elif typ is str:
+                      s={'type':'string'}
+                      if key in sha_keys:s['pattern']='^[0-9a-f]{64}$'
+                      elif key in hex40_keys:s['pattern']='^[0-9a-f]{40}$'
+                      elif key in uri_keys:s['format']='uri'
+                      if key in const_keys and len(set(vals))==1:s={'const':vals[0]}
+                      elif key in enum_keys and len(set(vals))<=64:s['enum']=sorted(set(vals))
+                  else:raise TypeError((key,typ))
+                  if key in const_keys and len(set(vals))==1 and typ is not str:s={'const':vals[0]}
+                  schemas.append(s)
+              if has_null:schemas.append({'type':'null'})
+              return schemas[0] if len(schemas)==1 else {'oneOf':schemas}
+          def infer(values,key=None):
+              nonnull=[v for v in values if v is not None]
+              if nonnull and all(isinstance(v,dict) for v in nonnull):
+                  keys=set().union(*(v.keys() for v in nonnull))
+                  required=sorted(set.intersection(*(set(v.keys()) for v in nonnull)))
+                  schema={'type':'object','required':required,'properties':{k:infer([v[k] for v in nonnull if k in v],k) for k in sorted(keys)},'additionalProperties':False}
+                  return {'oneOf':[schema,{'type':'null'}]} if len(nonnull)!=len(values) else schema
+              if nonnull and all(isinstance(v,list) for v in nonnull):
+                  lengths=[len(v) for v in nonnull]; items=[x for v in nonnull for x in v]
+                  schema={'type':'array','minItems':min(lengths),'maxItems':max(lengths),'items':infer(items,key) if items else False}
+                  if key and key.endswith('_ids'):schema['uniqueItems']=True
+                  return {'oneOf':[schema,{'type':'null'}]} if len(nonnull)!=len(values) else schema
+              return scalar(values,key)
+          branches=[]
+          for name in files:
+              value=json.loads((data/name).read_text())
+              branch=infer([value]); branch['properties']['schema_version']={'const':value['schema_version']}; branches.append(branch)
+          schema={'$schema':'https://json-schema.org/draft/2020-12/schema','$id':'https://clifford-number.invalid/schemas/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.schema.json','title':'RD-04 five-state source and field adjudication product family (recursively closed)','oneOf':branches}
+          (root/'schemas/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.schema.json').write_text(json.dumps(schema,indent=2,sort_keys=True,ensure_ascii=False)+'\n')
+          PYSCHEMA
+
+          python - "$WORK/$WORKFLOW_PATH" <<'PYWORKFLOW'
+          from pathlib import Path
+          import sys
+          path=Path(sys.argv[1]); text=path.read_text()
+          start=text.index("          python - <<'PYSCHEMA'\n")
+          end=text.index('PYSCHEMA\n',start)+len('PYSCHEMA\n')
+          block="""          python - <<'PYSCHEMA'\nimport copy,json,pathlib\nfrom jsonschema import Draft202012Validator\nroot=pathlib.Path('.')\nschema=json.loads((root/'schemas/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.schema.json').read_text())\nvalidator=Draft202012Validator(schema)\ndata=root/'data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication'\nfiles=['capture-custody.json','source-adjudications.json','field-adjudications.json','pdf-review-receipts.json','promotion-candidate-protocol.json','selected-followup-protocol.json','index.json','product-manifest.json']\nrefusals=0\nfor name in files:\n    value=json.loads((data/name).read_text())\n    validator.validate(value)\n    mutated=copy.deepcopy(value)\n    if 'capture_counts' in mutated: mutated['capture_counts']['unreviewed_authority']=True\n    elif 'decisions' in mutated: mutated['decisions'][0]['unreviewed_authority']=True\n    elif 'reviews' in mutated: mutated['reviews'][0]['unreviewed_authority']=True\n    elif 'candidates' in mutated: mutated['candidates'][0]['unreviewed_authority']=True\n    elif 'routes' in mutated: mutated['routes'][0]['unreviewed_authority']=True\n    elif 'counts' in mutated: mutated['counts']['unreviewed_authority']=True\n    elif 'entries' in mutated: mutated['entries'][0]['unreviewed_authority']=True\n    else: raise AssertionError(name)\n    assert list(validator.iter_errors(mutated)), name\n    refusals+=1\nprint(f'closed_schema_validation=pass objects={len(files)} nested_unknown_key_refusals={refusals}')\nPYSCHEMA\n"""
+          path.write_text(text[:start]+block+text[end:])
+          PYWORKFLOW
+
+          python - "$WORK" <<'PYVERIFY'
+          import copy,json,pathlib,sys
+          from jsonschema import Draft202012Validator
+          root=pathlib.Path(sys.argv[1]); data=root/'data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication'
+          schema=json.loads((root/'schemas/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.schema.json').read_text()); validator=Draft202012Validator(schema)
+          files=['capture-custody.json','source-adjudications.json','field-adjudications.json','pdf-review-receipts.json','promotion-candidate-protocol.json','selected-followup-protocol.json','index.json','product-manifest.json']
+          refusals=0
+          for name in files:
+              value=json.loads((data/name).read_text()); validator.validate(value); mutated=copy.deepcopy(value)
+              if 'capture_counts' in mutated: mutated['capture_counts']['unreviewed_authority']=True
+              elif 'decisions' in mutated: mutated['decisions'][0]['unreviewed_authority']=True
+              elif 'reviews' in mutated: mutated['reviews'][0]['unreviewed_authority']=True
+              elif 'candidates' in mutated: mutated['candidates'][0]['unreviewed_authority']=True
+              elif 'routes' in mutated: mutated['routes'][0]['unreviewed_authority']=True
+              elif 'counts' in mutated: mutated['counts']['unreviewed_authority']=True
+              elif 'entries' in mutated: mutated['entries'][0]['unreviewed_authority']=True
+              else: raise AssertionError(name)
+              assert list(validator.iter_errors(mutated)),name; refusals+=1
+          missing=[]
+          def walk(v,p='$'):
+              if isinstance(v,dict):
+                  if (v.get('type')=='object' or 'properties' in v) and v.get('additionalProperties') is not False and v.get('unevaluatedProperties') is not False:missing.append(p)
+                  for k,x in v.items():walk(x,p+'/'+k)
+              elif isinstance(v,list):
+                  for i,x in enumerate(v):walk(x,p+f'/{i}')
+          walk(schema); assert not missing,missing
+          print(f'repaired_schema_validation=pass objects={len(files)} nested_unknown_key_refusals={refusals} open_object_schemas={len(missing)}')
+          PYVERIFY
+
+          git -C "$WORK" diff --check
+          test "$(git -C "$WORK" diff --name-only "$PRODUCT" | LC_ALL=C sort | paste -sd, -)" = "$WORKFLOW_PATH,$SCHEMA_PATH"
+          mkdir -p "$OUT/repaired-files/$(dirname "$SCHEMA_PATH")" "$OUT/repaired-files/$(dirname "$WORKFLOW_PATH")"
+          cp "$WORK/$SCHEMA_PATH" "$OUT/repaired-files/$SCHEMA_PATH"
+          cp "$WORK/$WORKFLOW_PATH" "$OUT/repaired-files/$WORKFLOW_PATH"
+
+          git -C "$WORK" add "$SCHEMA_PATH" "$WORKFLOW_PATH"
+          REPAIRED_TREE=$(git -C "$WORK" write-tree)
+          export GIT_AUTHOR_NAME='OpenAI Agent' GIT_AUTHOR_EMAIL='agent@openai.invalid' GIT_COMMITTER_NAME='OpenAI Agent' GIT_COMMITTER_EMAIL='agent@openai.invalid'
+          REPAIRED_COMMIT=$(printf '%s\n' 'Repair RD-04 recursive schema closure' | git -C "$WORK" commit-tree "$REPAIRED_TREE" -p "$PARENT")
+          git worktree add --detach "$FINAL" "$REPAIRED_COMMIT"
+
+          test "$(git -C "$FINAL" rev-parse HEAD^)" = "$PARENT"
+          test "$(git -C "$FINAL" rev-list --count "$PARENT"..HEAD)" = 1
+          test "$(git -C "$FINAL" diff --name-only "$PARENT" HEAD | wc -l | tr -d ' ')" = 14
+          test "$(git -C "$FINAL" diff --name-status "$PARENT" HEAD | awk '$1 != "A" { n++ } END { print n+0 }')" = 0
+          test "$(git diff --name-only "$PRODUCT" "$REPAIRED_COMMIT" | LC_ALL=C sort | paste -sd, -)" = "$WORKFLOW_PATH,$SCHEMA_PATH"
+
+          cd "$FINAL"
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs | tee "$OUT/build-check.log"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs | tee "$OUT/product-validation.log"
+          node test/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.test.js | tee "$OUT/adversarial.log"
+          grep -Fq 'rd04_five_state_source_field_adversarial=pass mutations_refused=532' "$OUT/adversarial.log"
+          python - <<'PYFINAL' | tee "$OUT/schema-closure.log"
+          import copy,json,pathlib
+          from jsonschema import Draft202012Validator
+          root=pathlib.Path('.'); data=root/'data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication'
+          schema=json.loads((root/'schemas/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.schema.json').read_text()); validator=Draft202012Validator(schema)
+          files=['capture-custody.json','source-adjudications.json','field-adjudications.json','pdf-review-receipts.json','promotion-candidate-protocol.json','selected-followup-protocol.json','index.json','product-manifest.json']
+          refusals=0
+          for name in files:
+              value=json.loads((data/name).read_text()); validator.validate(value); mutated=copy.deepcopy(value)
+              if 'capture_counts' in mutated: mutated['capture_counts']['unreviewed_authority']=True
+              elif 'decisions' in mutated: mutated['decisions'][0]['unreviewed_authority']=True
+              elif 'reviews' in mutated: mutated['reviews'][0]['unreviewed_authority']=True
+              elif 'candidates' in mutated: mutated['candidates'][0]['unreviewed_authority']=True
+              elif 'routes' in mutated: mutated['routes'][0]['unreviewed_authority']=True
+              elif 'counts' in mutated: mutated['counts']['unreviewed_authority']=True
+              elif 'entries' in mutated: mutated['entries'][0]['unreviewed_authority']=True
+              else: raise AssertionError(name)
+              assert list(validator.iter_errors(mutated)),name; refusals+=1
+          print(f'closed_schema_validation=pass objects={len(files)} nested_unknown_key_refusals={refusals}')
+          PYFINAL
+          node tools/validate-no-magic-human-gate.mjs | tee "$OUT/no-magic-human.log"
+          npm run release:check | tee "$OUT/release-check.log"
+
+          cp "$SCHEMA_PATH" "$OUT/schema.final"
+          cp "$WORKFLOW_PATH" "$OUT/workflow.final"
+          git restore --staged --worktree .
+          git clean -fdx
+          cmp "$SCHEMA_PATH" "$OUT/schema.final"
+          cmp "$WORKFLOW_PATH" "$OUT/workflow.final"
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs --write | tee "$OUT/replay-write.log"
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs | tee "$OUT/replay-build.log"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs | tee "$OUT/replay-validation.log"
+          node test/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.test.js | tee "$OUT/replay-adversarial.log"
+          node tools/validate-no-magic-human-gate.mjs | tee "$OUT/replay-no-magic-human.log"
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          cd "$GITHUB_WORKSPACE"
+          : > "$OUT/blob-ledger.tsv"
+          for path in "$SCHEMA_PATH" "$WORKFLOW_PATH"; do
+            BYTES=$(wc -c < "$FINAL/$path" | tr -d ' ')
+            SHA256=$(sha256sum "$FINAL/$path" | awk '{print $1}')
+            LOCAL_BLOB=$(git -C "$FINAL" hash-object "$path")
+            base64 -w0 "$FINAL/$path" > "$OUT/blob-content.b64"
+            jq -n --rawfile content "$OUT/blob-content.b64" '{content:($content|gsub("\\n";"")),encoding:"base64"}' > "$OUT/blob-request.json"
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input "$OUT/blob-request.json" > "$OUT/blob-response.json"
+            REMOTE_BLOB=$(jq -r .sha "$OUT/blob-response.json")
+            test "$REMOTE_BLOB" = "$LOCAL_BLOB"
+            printf '%s\t%s\t%s\t%s\n' "$path" "$BYTES" "$SHA256" "$LOCAL_BLOB" >> "$OUT/blob-ledger.tsv"
+          done
+          python - "$OUT/blob-ledger.tsv" "$OUT/blob-ledger.json" <<'PYLEDGER'
+          import json,pathlib,sys
+          rows=[]
+          for line in pathlib.Path(sys.argv[1]).read_text().splitlines():
+              path,size,sha256,blob=line.split('\t'); rows.append({'path':path,'bytes':int(size),'sha256':sha256,'git_blob':blob,'mode':'100644'})
+          pathlib.Path(sys.argv[2]).write_text(json.dumps({'schema_version':'ssc-rd04-five-state-schema-closure-repair-blob-ledger@1','entries':rows},indent=2,sort_keys=True)+'\n')
+          PYLEDGER
+
+          SCHEMA_BYTES=$(wc -c < "$FINAL/$SCHEMA_PATH" | tr -d ' ')
+          SCHEMA_SHA256=$(sha256sum "$FINAL/$SCHEMA_PATH" | awk '{print $1}')
+          SCHEMA_BLOB=$(git -C "$FINAL" hash-object "$SCHEMA_PATH")
+          WORKFLOW_BYTES=$(wc -c < "$FINAL/$WORKFLOW_PATH" | tr -d ' ')
+          WORKFLOW_SHA256=$(sha256sum "$FINAL/$WORKFLOW_PATH" | awk '{print $1}')
+          WORKFLOW_BLOB=$(git -C "$FINAL" hash-object "$WORKFLOW_PATH")
+          python - <<PYRECEIPT > "$OUT/qualification.json"
+          import json,os
+          print(json.dumps({
+            'schema_version':'ssc-rd04-five-state-schema-closure-repair-qualification@1',
+            'qualification':'pass',
+            'workflow_run':int(os.environ['GITHUB_RUN_ID']),
+            'qualifier_head':os.environ['GITHUB_SHA'],
+            'product_commit':'$PRODUCT',
+            'product_tree':'$ORIGINAL_TREE',
+            'product_parent':'$PARENT',
+            'qualified_repaired_commit':'$REPAIRED_COMMIT',
+            'qualified_repaired_tree':'$REPAIRED_TREE',
+            'final_product_commits':1,
+            'final_product_paths':14,
+            'repair_paths':2,
+            'schema_bytes':int('$SCHEMA_BYTES'),
+            'schema_sha256':'$SCHEMA_SHA256',
+            'schema_git_blob':'$SCHEMA_BLOB',
+            'standing_workflow_bytes':int('$WORKFLOW_BYTES'),
+            'standing_workflow_sha256':'$WORKFLOW_SHA256',
+            'standing_workflow_git_blob':'$WORKFLOW_BLOB',
+            'pre_repair_nested_unknown_keys_accepted':8,
+            'post_repair_nested_unknown_keys_refused':8,
+            'open_object_schemas_after':0,
+            'research_decisions_changed':0,
+            'matrix_updates':0,
+            'adversarial_refusals':532,
+            'no_magic_human':'pass',
+            'complete_release_gate':'pass',
+            'clean_replay':'pass',
+            'source_requests':0,
+            'outside_human_dependency':False,
+            'publication_effect':'none','adoption_effect':'none','graph_effect':'none'
+          },indent=2,sort_keys=True))
+          PYRECEIPT
+          find "$OUT" -maxdepth 1 -type f ! -name SHA256SUMS -printf '%f\n' | LC_ALL=C sort | while IFS= read -r name; do sha256sum "$OUT/$name"; done | sed "s#  $OUT/#  #" > "$OUT/SHA256SUMS"
+          echo "repaired_tree=$REPAIRED_TREE" >> "$GITHUB_OUTPUT"
+          echo "schema_blob=$SCHEMA_BLOB" >> "$GITHUB_OUTPUT"
+          echo "workflow_blob=$WORKFLOW_BLOB" >> "$GITHUB_OUTPUT"
+
+      - name: Preserve exact repair qualification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-schema-closure-repair-qualification-v1
+          path: /tmp/rd04-five-state-schema-closure-repair-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+
+      - name: Require successful repair qualification
+        if: always()
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.repair.outcome }}
+        run: test "$OUTCOME" = success
