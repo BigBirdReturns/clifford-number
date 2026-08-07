@@ -44,8 +44,8 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          BASE='a464dbbd96c365a7c040e17847486c5b3ba05c27'
-          BASE_TREE='e4a8b0072fcdd8ca575f6c0d279f035277110163'
+          FROZEN_BASE='a464dbbd96c365a7c040e17847486c5b3ba05c27'
+          FROZEN_TREE='e4a8b0072fcdd8ca575f6c0d279f035277110163'
           TARGET='agent/schoolhouse-irs-historical-filing-website-screen-custody-product-v1'
           ROOT='.schoolhouse-irs-historical-filing-website-screen-materializer'
           EXECUTE="$ROOT/EXECUTE"
@@ -72,6 +72,7 @@ jobs:
           tools/validate-schoolhouse-irs-historical-filing-website-screen-custody.mjs
           PATHS
           sed -i 's/^          //' "$RUNNER_TEMP/permanent-paths"
+          sort "$RUNNER_TEMP/permanent-paths" > "$RUNNER_TEMP/permanent-paths.sorted"
 
           git fetch --no-tags origin \
             '+refs/heads/main:refs/remotes/origin/main' \
@@ -80,21 +81,22 @@ jobs:
           LIVE_TREE="$(git rev-parse 'origin/main^{tree}')"
           MERGE_BASE="$(git merge-base HEAD origin/main)"
           TARGET_REMOTE_SHA="$(git rev-parse "origin/$TARGET")"
+          FROZEN_TREE_OBSERVED="$(git rev-parse "$FROZEN_BASE^{tree}")"
           {
             printf 'materializer_head=%s\n' "$(git rev-parse HEAD)"
+            printf 'frozen_base=%s\n' "$FROZEN_BASE"
+            printf 'frozen_tree=%s\n' "$FROZEN_TREE"
+            printf 'frozen_tree_observed=%s\n' "$FROZEN_TREE_OBSERVED"
             printf 'live_main=%s\n' "$LIVE_MAIN"
-            printf 'expected_main=%s\n' "$BASE"
             printf 'live_main_tree=%s\n' "$LIVE_TREE"
-            printf 'expected_main_tree=%s\n' "$BASE_TREE"
             printf 'merge_base=%s\n' "$MERGE_BASE"
             printf 'target_remote_sha=%s\n' "$TARGET_REMOTE_SHA"
           } | tee -a "$RECEIPT/preflight.txt"
-          test "$LIVE_MAIN" = "$BASE"
-          test "$LIVE_TREE" = "$BASE_TREE"
-          test "$MERGE_BASE" = "$BASE"
-          test "$TARGET_REMOTE_SHA" = "$BASE"
+          test "$FROZEN_TREE_OBSERVED" = "$FROZEN_TREE"
+          test "$MERGE_BASE" = "$FROZEN_BASE"
+          test "$TARGET_REMOTE_SHA" = "$FROZEN_BASE"
 
-          mapfile -t CHANGED < <(git diff --name-only "$BASE"..HEAD | sort)
+          mapfile -t CHANGED < <(git diff --name-only "$FROZEN_BASE"..HEAD | sort)
           EXPECTED=(
             '.github/workflows/temp-schoolhouse-irs-historical-filing-website-screen-materializer.yml'
             '.schoolhouse-irs-historical-filing-website-screen-materializer/EXECUTE'
@@ -107,10 +109,20 @@ jobs:
           test "${#CHANGED[@]}" -eq 5
           for i in "${!EXPECTED[@]}"; do test "${CHANGED[$i]}" = "${EXPECTED[$i]}"; done
 
-          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = '671217d3f8718a0f406af0ccfdfa0fe74606765181e5e60b05ea0b9f7899da18'
+          git diff --name-only "$FROZEN_BASE"..origin/main | sort > "$RECEIPT/intervening-main-paths.txt"
+          comm -12 "$RUNNER_TEMP/permanent-paths.sorted" "$RECEIPT/intervening-main-paths.txt" > "$RECEIPT/intervening-overlap.txt"
+          test ! -s "$RECEIPT/intervening-overlap.txt"
+          while IFS= read -r product_path; do
+            if git cat-file -e "$LIVE_MAIN:$product_path" 2>/dev/null; then
+              printf 'preexisting_product_path=%s\n' "$product_path" >&2
+              exit 1
+            fi
+          done < "$RUNNER_TEMP/permanent-paths"
+
+          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = '8fdc3fc4fc6f8e10b93bde35360acd8e31a6971eb0e31801c8a27eefb775d619'
           test "$(sha256sum "$BUILD" | awk '{print $1}')" = '2ed241aabd3048b4e83d05bf5ea4e5a61710fa0928720ba458b52d7c899ff2fb'
           test "$(sha256sum "$VALIDATE" | awk '{print $1}')" = '61f59d58faaa737c809c59a68765002a973f38b2d31da9ff4cc899500912dee8'
-          test "$(sha256sum "$TEST" | awk '{print $1}')" = '9f12ba77970db2bb92b2f788cc50748b497f4cd2d229c3205179f07edee64247'
+          test "$(sha256sum "$TEST" | awk '{print $1}')" = '155e7961fd3dfe59d1b5b58928466de23a7a880f46b9759bf4a6ee07050949dd'
           grep -Fx 'canonical_parent=a464dbbd96c365a7c040e17847486c5b3ba05c27' "$EXECUTE"
           grep -Fx 'canonical_parent_tree=e4a8b0072fcdd8ca575f6c0d279f035277110163' "$EXECUTE"
           grep -Fx 'acquisition_workflow_run=31137021052' "$EXECUTE"
@@ -160,7 +172,7 @@ jobs:
           }
 
           rm -rf "$WORK"
-          git worktree add --detach "$WORK" "$BASE"
+          git worktree add --detach "$WORK" "$LIVE_MAIN"
           reconstruct
           export TERM=xterm
           {
@@ -176,13 +188,13 @@ jobs:
           } 2>&1 | tee "$RECEIPT/focused-gates.log"
           (cd "$WORK" && npm run release:check) 2>&1 | tee "$RECEIPT/release-check.log"
 
-          git -C "$WORK" reset --hard "$BASE"
+          git -C "$WORK" reset --hard "$LIVE_MAIN"
           git -C "$WORK" clean -fdx
           reconstruct
-          git -C "$WORK" switch -C "$TARGET" "$BASE"
+          git -C "$WORK" switch -C "$TARGET" "$LIVE_MAIN"
           git -C "$WORK" add --pathspec-from-file="$RUNNER_TEMP/permanent-paths"
           mapfile -t STAGED < <(git -C "$WORK" diff --cached --name-only | sort)
-          mapfile -t EXPECTED_PATHS < "$RUNNER_TEMP/permanent-paths"
+          mapfile -t EXPECTED_PATHS < "$RUNNER_TEMP/permanent-paths.sorted"
           test "${#STAGED[@]}" -eq 8
           for i in "${!EXPECTED_PATHS[@]}"; do test "${STAGED[$i]}" = "${EXPECTED_PATHS[$i]}"; done
           test -z "$(git -C "$WORK" diff --cached --name-only | grep '^\.github/' || true)"
@@ -193,16 +205,22 @@ jobs:
           git -C "$WORK" commit -m 'Preserve School.House historical filing website screen custody'
           PRODUCT="$(git -C "$WORK" rev-parse HEAD)"
           TREE="$(git -C "$WORK" rev-parse 'HEAD^{tree}')"
-          test "$(git -C "$WORK" show -s --format=%P HEAD)" = "$BASE"
-          test "$(git -C "$WORK" diff --name-only "$BASE"..HEAD | wc -l | tr -d ' ')" = '8'
-          test -z "$(git -C "$WORK" diff --name-only "$BASE"..HEAD | grep '^\.github/' || true)"
-          test "$(git rev-parse origin/main)" = "$BASE"
-          test "$(git rev-parse "origin/$TARGET")" = "$BASE"
-          git -C "$WORK" push --force-with-lease="refs/heads/$TARGET:$BASE" origin "HEAD:refs/heads/$TARGET"
+          test "$(git -C "$WORK" show -s --format=%P HEAD)" = "$LIVE_MAIN"
+          test "$(git -C "$WORK" diff --name-only "$LIVE_MAIN"..HEAD | wc -l | tr -d ' ')" = '8'
+          test -z "$(git -C "$WORK" diff --name-only "$LIVE_MAIN"..HEAD | grep '^\.github/' || true)"
+
+          git fetch --no-tags origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            "+refs/heads/$TARGET:refs/remotes/origin/$TARGET"
+          test "$(git rev-parse origin/main)" = "$LIVE_MAIN"
+          test "$(git rev-parse "origin/$TARGET")" = "$TARGET_REMOTE_SHA"
+          git -C "$WORK" push --force-with-lease="refs/heads/$TARGET:$TARGET_REMOTE_SHA" origin "HEAD:refs/heads/$TARGET"
 
           {
-            printf 'canonical_parent=%s\n' "$BASE"
-            printf 'canonical_parent_tree=%s\n' "$BASE_TREE"
+            printf 'frozen_acquisition_parent=%s\n' "$FROZEN_BASE"
+            printf 'frozen_acquisition_tree=%s\n' "$FROZEN_TREE"
+            printf 'product_parent=%s\n' "$LIVE_MAIN"
+            printf 'product_parent_tree=%s\n' "$LIVE_TREE"
             printf 'acquisition_pr=1318\n'
             printf 'acquisition_workflow_run=31137021052\n'
             printf 'acquisition_artifact_id=8978343039\n'
