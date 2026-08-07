@@ -1,0 +1,165 @@
+name: TEMP retire exact RD-04 five-state transaction refs v2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  actions: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: rd04-five-state-terminal-cleanup-v2-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+jobs:
+  cleanup:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/ssc-rd04-five-state-terminal-cleanup-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Recover immutable cleanup runner
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUNNER_BLOB: '3b7e06eda7e19ef13c62f2cf432ac834c8c080dc'
+          RUNNER_XZ_BYTES: '3036'
+          RUNNER_XZ_SHA256: 'bcebad8516af7c41758c14b9b3f437850fbbca679fe0f8affe34a4d234ad0b48'
+          RUNNER_SOURCE_BYTES: '9644'
+          RUNNER_SOURCE_SHA256: '3fe35911674d1cb227534e646a50ef4349351e3ff058caf533e2d4f9f451da71'
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/rd04-five-state-cleanup-runner-v2
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          gh api "repos/$GITHUB_REPOSITORY/git/blobs/$RUNNER_BLOB" > "$OUT/blob.json"
+          test "$(jq -r .encoding "$OUT/blob.json")" = base64
+          jq -r .content "$OUT/blob.json" | tr -d '\n' | base64 -d > "$OUT/cleanup.sh.xz"
+          test "$(wc -c < "$OUT/cleanup.sh.xz" | tr -d ' ')" = "$RUNNER_XZ_BYTES"
+          test "$(sha256sum "$OUT/cleanup.sh.xz" | awk '{print $1}')" = "$RUNNER_XZ_SHA256"
+          test "$(git hash-object "$OUT/cleanup.sh.xz")" = "$RUNNER_BLOB"
+          xz -t "$OUT/cleanup.sh.xz"
+          xz -dc "$OUT/cleanup.sh.xz" > "$OUT/cleanup.sh"
+          test "$(wc -c < "$OUT/cleanup.sh" | tr -d ' ')" = "$RUNNER_SOURCE_BYTES"
+          test "$(sha256sum "$OUT/cleanup.sh" | awk '{print $1}')" = "$RUNNER_SOURCE_SHA256"
+          bash -n "$OUT/cleanup.sh"
+          jq -n \
+            --arg schema_version 'ssc-rd04-five-state-terminal-cleanup-runner-v2@1' \
+            --arg git_blob "$RUNNER_BLOB" \
+            --arg xz_sha256 "$RUNNER_XZ_SHA256" \
+            --arg source_sha256 "$RUNNER_SOURCE_SHA256" \
+            --argjson xz_bytes "$RUNNER_XZ_BYTES" \
+            --argjson source_bytes "$RUNNER_SOURCE_BYTES" \
+            '{schema_version:$schema_version,git_blob:$git_blob,xz_bytes:$xz_bytes,xz_sha256:$xz_sha256,source_bytes:$source_bytes,source_sha256:$source_sha256}' \
+            > "$OUT/runner-custody.json"
+
+      - name: Execute exact terminal cleanup
+        id: cleanup
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CARRIER_PARENT: '0a4091391e4c17c64683bd91f6a739a2a0a152fc'
+          CARRIER_PATH: '.github/workflows/temp-ssc-rd04-five-state-terminal-cleanup-v2.yml'
+          SELF_BRANCH: 'agent/ssc-rd04-five-state-terminal-cleanup-v2'
+          TERMINAL_PROOF_ARTIFACT: '9007489841'
+          TERMINAL_PROOF_BYTES: '6433806'
+          TERMINAL_PROOF_SHA256: '5db3ddc7fc113ed3f2458d60a1d902bff31505cce2b70bddd0ccce9636d5c833'
+          NATIVE_STANDING_RUN: '31212908721'
+        run: |
+          set -Eeuo pipefail
+          bash /tmp/rd04-five-state-cleanup-runner-v2/cleanup.sh
+
+      - name: Preserve cleanup and runner custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-terminal-cleanup-v2
+          path: |
+            /tmp/ssc-rd04-five-state-terminal-cleanup-v2
+            /tmp/rd04-five-state-cleanup-runner-v2
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+
+      - name: Close PR, retire self ref, and publish terminal zero-surface receipt
+        if: steps.cleanup.outcome == 'success'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANONICAL_MAIN: '0a4091391e4c17c64683bd91f6a739a2a0a152fc'
+          CANONICAL_TREE: 'a44489a4af8f1c5ef2ad735e9f7a2b7f49d5feb1'
+          SELF_BRANCH: 'agent/ssc-rd04-five-state-terminal-cleanup-v2'
+          ARTIFACT_NAME: 'ssc-rd04-five-state-terminal-cleanup-v2'
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-five-state-terminal-cleanup-v2
+          test -f "$OUT/cleanup-receipt.json"
+          jq -e '.target_refs == 16 and .target_refs_remaining == 0 and .mapped_pull_requests_open == 0 and .self_ref_pending_retirement == true' "$OUT/cleanup-receipt.json" >/dev/null
+
+          ARTIFACT_ID=''
+          ARTIFACT_BYTES=''
+          ARTIFACT_DIGEST=''
+          for attempt in $(seq 1 30); do
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" > /tmp/cleanup-v2-artifacts.json
+            ARTIFACT_ID=$(jq -r --arg name "$ARTIFACT_NAME" '[.artifacts[] | select(.name == $name)] | .[0].id // empty' /tmp/cleanup-v2-artifacts.json)
+            if test -n "$ARTIFACT_ID"; then
+              ARTIFACT_BYTES=$(jq -r --argjson id "$ARTIFACT_ID" '.artifacts[] | select(.id == $id) | .size_in_bytes' /tmp/cleanup-v2-artifacts.json)
+              ARTIFACT_DIGEST=$(jq -r --argjson id "$ARTIFACT_ID" '.artifacts[] | select(.id == $id) | .digest // "unavailable"' /tmp/cleanup-v2-artifacts.json)
+              break
+            fi
+            sleep 2
+          done
+          test -n "$ARTIFACT_ID"
+
+          git fetch --force --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$CANONICAL_MAIN"
+          test "$(git show -s --format=%T origin/main)" = "$CANONICAL_TREE"
+          while IFS= read -r branch; do
+            if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$branch" > /dev/null 2>&1; then
+              echo "target ref reappeared: $branch" >&2
+              exit 1
+            fi
+          done < "$OUT/target-branches.txt"
+
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" -f state=closed > /tmp/cleanup-v2-pr.json
+          test "$(jq -r .state /tmp/cleanup-v2-pr.json)" = closed
+          gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$SELF_BRANCH"
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$SELF_BRANCH" > /dev/null 2>&1; then
+            echo 'cleanup v2 self ref survived deletion' >&2
+            exit 1
+          fi
+
+          BODY=/tmp/ssc-rd04-five-state-terminal-cleanup-v2-comment.md
+          {
+            echo 'RD-04 five-state transaction cleanup completed.'
+            echo
+            echo '```text'
+            echo "canonical main: $CANONICAL_MAIN"
+            echo "canonical tree: $CANONICAL_TREE"
+            echo "cleanup workflow run: $GITHUB_RUN_ID"
+            echo "cleanup artifact: $ARTIFACT_ID"
+            echo "cleanup artifact bytes: $ARTIFACT_BYTES"
+            echo "cleanup artifact digest: $ARTIFACT_DIGEST"
+            echo 'mapped transaction PRs open: 0 / 16'
+            echo 'target transaction refs remaining: 0 / 16'
+            echo 'cleanup self ref remaining: 0 / 1'
+            echo 'main mutation: false'
+            echo 'product mutation: false'
+            echo 'research decisions changed: 0'
+            echo 'matrix updates: 0'
+            echo 'outside-human dependency: false'
+            echo 'publication / adoption / graph: none / none / none'
+            echo '```'
+            echo
+            echo 'RD-04-C02 remains open. The next authorized operation is the separately bounded four-candidate current-cell validation and eleven-route one-attempt follow-up capture.'
+          } > "$BODY"
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file "$BODY"
