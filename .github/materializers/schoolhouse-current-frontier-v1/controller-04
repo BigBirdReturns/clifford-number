@@ -1,0 +1,13 @@
+$PRODUCT_TREE"
+  printf 'target_branch=%s\n' "$TARGET"
+  printf 'remote_target=%s\n' "$REMOTE_TARGET"
+} > "$RECEIPT/product-proof.txt"
+cp "$WORK/export-run.json" "$RECEIPT/export-workflow-run.json"
+cp "$WORK/export-metadata.json" "$RECEIPT/export-artifact-metadata.json"
+printf 'complete\n' > "$RECEIPT/STAGE"
+(
+  cd "$RECEIPT"
+  find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+)
+cat "$RECEIPT/materialization.json"
+
