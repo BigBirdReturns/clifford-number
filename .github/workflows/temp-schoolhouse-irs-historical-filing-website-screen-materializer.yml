@@ -107,9 +107,9 @@ jobs:
           test "${#CHANGED[@]}" -eq 5
           for i in "${!EXPECTED[@]}"; do test "${CHANGED[$i]}" = "${EXPECTED[$i]}"; done
 
-          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = '005f56a40c74ef99ee2251e3c0eff9a8a0102ca5a381cd0067f5553b9197931e'
+          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = '671217d3f8718a0f406af0ccfdfa0fe74606765181e5e60b05ea0b9f7899da18'
           test "$(sha256sum "$BUILD" | awk '{print $1}')" = '2ed241aabd3048b4e83d05bf5ea4e5a61710fa0928720ba458b52d7c899ff2fb'
-          test "$(sha256sum "$VALIDATE" | awk '{print $1}')" = 'c1562df712577e14019b470abe51d2cfefa32ea414731cdf857cbd23aa747c8d'
+          test "$(sha256sum "$VALIDATE" | awk '{print $1}')" = '61f59d58faaa737c809c59a68765002a973f38b2d31da9ff4cc899500912dee8'
           test "$(sha256sum "$TEST" | awk '{print $1}')" = '9f12ba77970db2bb92b2f788cc50748b497f4cd2d229c3205179f07edee64247'
           grep -Fx 'canonical_parent=a464dbbd96c365a7c040e17847486c5b3ba05c27' "$EXECUTE"
           grep -Fx 'canonical_parent_tree=e4a8b0072fcdd8ca575f6c0d279f035277110163' "$EXECUTE"
