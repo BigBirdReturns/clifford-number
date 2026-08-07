@@ -1,0 +1,269 @@
+name: TEMP materialize RD-04 eight-state minimum-frontier protocol
+
+on:
+  push:
+    branches:
+      - 'agent/ssc-rd04-mf8-protocol-materializer-v1'
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: temp-ssc-rd04-mf8-protocol-materializer-v1
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: github.ref_name == 'agent/ssc-rd04-mf8-protocol-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+      - id: materialize
+        name: Recover exact archive, qualify, and lease-publish ordinary product
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          ARCHIVE_BLOB: ba4ddfa57771ce747c365dfa04998fb1c18cb4b3
+          ARCHIVE_BYTES: '20748'
+          ARCHIVE_SHA256: 3afa1a777dab75415cafc8a4b317a10771de0f5eb74ccbef5a18f6b4ae5c208f
+          EMPIRICAL_MERGE: a464dbbd96c365a7c040e17847486c5b3ba05c27
+          TARGET_BRANCH: agent/ssc-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol-v1
+          STANDING_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.yml
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-mf8-protocol-materializer-v1
+          PKG="$OUT/package"
+          WT="$OUT/worktree"
+          rm -rf "$OUT"
+          mkdir -p "$OUT" "$PKG"
+          exec > >(tee "$OUT/run.log") 2>&1
+
+          curl -fsSL             -H "Authorization: Bearer $GH_TOKEN"             -H 'Accept: application/vnd.github+json'             -H 'X-GitHub-Api-Version: 2022-11-28'             "https://api.github.com/repos/$GH_REPOSITORY/git/blobs/$ARCHIVE_BLOB"             > "$OUT/archive-blob.json"
+          test "$(jq -r .encoding "$OUT/archive-blob.json")" = base64
+          jq -r .content "$OUT/archive-blob.json" | tr -d '\n' | base64 -d > "$OUT/product.tar.xz"
+          test "$(wc -c < "$OUT/product.tar.xz" | tr -d ' ')" = "$ARCHIVE_BYTES"
+          test "$(sha256sum "$OUT/product.tar.xz" | awk '{print $1}')" = "$ARCHIVE_SHA256"
+          test "$(git hash-object "$OUT/product.tar.xz")" = "$ARCHIVE_BLOB"
+          tar -xJf "$OUT/product.tar.xz" -C "$PKG"
+
+          cat > "$OUT/permanent-paths.txt" <<'EOF_PATHS'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/authored-protocol.json
+          data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/execution-receipt-template.json
+          data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/route-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/source-interpretation-constraints.json
+          data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/target-cell-ledger.json
+          docs/milestones/ssc-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.md
+          schemas/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.schema.json
+          test/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.test.js
+          tools/acquisition/status-sovereignty-rd-wave03-rd04/run-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.py
+          tools/build-status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.mjs
+          EOF_PATHS
+          cat > "$OUT/ordinary-paths.txt" <<'EOF_ORDINARY'
+          data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/authored-protocol.json
+          data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/execution-receipt-template.json
+          data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/route-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/source-interpretation-constraints.json
+          data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/target-cell-ledger.json
+          docs/milestones/ssc-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.md
+          schemas/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.schema.json
+          test/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.test.js
+          tools/acquisition/status-sovereignty-rd-wave03-rd04/run-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.py
+          tools/build-status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.mjs
+          EOF_ORDINARY
+          cat > "$OUT/SHA256SUMS" <<'EOF_SUMS'
+          1b2a1fec3cd3ebeaa7a2c3b4bdc66f70b102ce87c5f8adb8498cbe99b71e2f90  .github/workflows/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.yml
+          1a2c94d8eae0ec6bbcc2e2fe038fee1953b44538ce4e05c9e821889233b8e3b3  data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/authored-protocol.json
+          7e25609b263aa377e77718172356511df2f6ecc8553891830ee5391c89ecaffa  data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/execution-receipt-template.json
+          95531be070d9982da8ec7bdb286555c6e8465a218a8ae01a4dcee7d21678a173  data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/index.json
+          63098a3be6ae033abf37414898055b98d9121e516eae48fca6d228085da02c42  data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/product-manifest.json
+          b878c79aeffbef4e35d6bfcce8382167acabe589fdcb69aec484a56db4059a68  data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/route-ledger.json
+          71ab02a1c6d0e01a27ca70617024833863dc659b704044f55105476ee781059d  data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/source-interpretation-constraints.json
+          00dee1be968d4fd986692b324847e6d37fc12be10e8dd2732a41ab07612aaa7d  data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol/target-cell-ledger.json
+          e80c440779237f8d4f27080553b4b2084fd3fee13e07b2f853b931e530df3775  docs/milestones/ssc-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.md
+          dff69db76e067d4ce0897c647a8255d49e3459e4d36f68e63c68962124530dac  schemas/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.schema.json
+          182bfd04b3033627689ac45cfd233ffe55f51cd8d7b35349e17338e4cddf863a  test/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.test.js
+          a35373fed9c3d69d3adad3aa8dc7cb77e81490f0b7b490615df0056a41299a02  tools/acquisition/status-sovereignty-rd-wave03-rd04/run-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.py
+          e10b358b624e1e9d18c8074cf0da9ec2b94f56909df126d76e669e8cb3fa1257  tools/build-status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.mjs
+          c1c6808f9ac82143470d1511fdd503eae5ae4a3779e51c4af3760bb7fba61d43  tools/validate-status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.mjs
+          EOF_SUMS
+          (cd "$PKG" && sha256sum -c "$OUT/SHA256SUMS")
+          find "$PKG" -type f -printf '%P\n' | sort > "$OUT/extracted-paths.txt"
+          diff -u "$OUT/permanent-paths.txt" "$OUT/extracted-paths.txt"
+          test "$(wc -l < "$OUT/permanent-paths.txt" | tr -d ' ')" -eq 14
+          test "$(wc -l < "$OUT/ordinary-paths.txt" | tr -d ' ')" -eq 13
+          while IFS= read -r path; do test "$(stat -c '%a' "$PKG/$path")" = 644; done < "$OUT/permanent-paths.txt"
+
+          git fetch --force --no-tags origin main
+          LIVE_MAIN=$(git rev-parse origin/main)
+          LIVE_TREE=$(git rev-parse "${LIVE_MAIN}^{tree}")
+          git merge-base --is-ancestor "$EMPIRICAL_MERGE" "$LIVE_MAIN"
+          while IFS= read -r path; do
+            if git cat-file -e "$LIVE_MAIN:$path" 2>/dev/null; then
+              echo "target path already exists on live main: $path" >&2
+              exit 1
+            fi
+          done < "$OUT/permanent-paths.txt"
+          test "$(git rev-parse "$LIVE_MAIN:data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-row-state-adjudication/summary.json")" = 14d34c2da3ef3bf1d40caf2f81a2af299ae1dd83
+          test "$(git rev-parse "$LIVE_MAIN:data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-row-state-adjudication/index.json")" = babcaebc949f62271f3298ad76cd12ecd93e001b
+          test "$(git rev-parse "$LIVE_MAIN:data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-row-state-adjudication/remaining-open-field-census.json")" = 89a6c85075299e9df00e387a21746a2747325d19
+          test -z "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH")"
+
+          git worktree add --detach "$WT" "$LIVE_MAIN"
+          copy_ordinary() {
+            while IFS= read -r path; do
+              mkdir -p "$WT/$(dirname "$path")"
+              cp -- "$PKG/$path" "$WT/$path"
+            done < "$OUT/ordinary-paths.txt"
+          }
+          focused() {
+            cd "$WT"
+            node --check tools/build-status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.mjs
+            node --check tools/validate-status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.mjs
+            node --check test/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.test.js
+            python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd04/run-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.py
+            node tools/build-status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.mjs --check
+            node tools/validate-status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.mjs
+            python - <<'PY_SCHEMA'
+          import json
+          from pathlib import Path
+          import jsonschema
+          schema=json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.schema.json').read_text())
+          files=sorted(Path('data/intake/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol').glob('*.json'))
+          assert len(files)==7, len(files)
+          validator=jsonschema.Draft202012Validator(schema)
+          for path in files: validator.validate(json.loads(path.read_text()))
+          print('closed_schema_validation=pass objects=7')
+          PY_SCHEMA
+            node test/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.test.js
+            python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.py --validate-only
+            node tools/validate-no-magic-human-gate.mjs
+            git diff --check
+          }
+
+          copy_ordinary
+          focused
+          cd "$WT"
+          npm run release:check
+
+          git restore --staged --worktree .
+          git clean -fdx
+          copy_ordinary
+          focused
+          node tools/build-status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.mjs --check
+          node tools/validate-status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.mjs
+          node test/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04/run-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.py --validate-only
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+
+          git add --pathspec-from-file="$OUT/ordinary-paths.txt"
+          git diff --cached --name-only | sort > "$OUT/staged-paths.txt"
+          diff -u "$OUT/ordinary-paths.txt" "$OUT/staged-paths.txt"
+          test "$(git diff --cached --diff-filter=A --name-only | wc -l | tr -d ' ')" -eq 13
+          test -z "$(git status --porcelain=v1 --untracked-files=all | awk '$1 != "A" && $1 != "??" {print}')"
+
+          git fetch --force --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$LIVE_MAIN"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Freeze RD-04 eight-state minimum-frontier protocol ordinary product'
+          ORDINARY_HEAD=$(git rev-parse HEAD)
+          ORDINARY_TREE=$(git rev-parse 'HEAD^{tree}')
+          test "$(git rev-parse HEAD^)" = "$LIVE_MAIN"
+          git push origin "$ORDINARY_HEAD:refs/heads/$TARGET_BRANCH"
+
+          STANDING_BLOB=$(git hash-object "$PKG/$STANDING_WORKFLOW")
+          python - "$LIVE_MAIN" "$LIVE_TREE" "$ORDINARY_HEAD" "$ORDINARY_TREE" "$STANDING_BLOB" <<'PY_RECEIPT'
+          import json,sys
+          from pathlib import Path
+          out=Path('/tmp/ssc-rd04-mf8-protocol-materializer-v1')
+          r={
+            'schema_version':'ssc-rd04-mf8-protocol-materialization@1',
+            'canonical_parent':sys.argv[1],
+            'canonical_parent_tree':sys.argv[2],
+            'ordinary_head':sys.argv[3],
+            'ordinary_tree':sys.argv[4],
+            'standing_workflow_blob':sys.argv[5],
+            'standing_workflow_path':'.github/workflows/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.yml',
+            'archive_blob':'ba4ddfa57771ce747c365dfa04998fb1c18cb4b3',
+            'archive_bytes':20748,
+            'archive_sha256':'3afa1a777dab75415cafc8a4b317a10771de0f5eb74ccbef5a18f6b4ae5c208f',
+            'permanent_paths':14,'ordinary_paths':13,'fixed_routes':34,'target_states':8,'target_cells':32,
+            'terminal_cells_before':218,'still_open_substantive_cells_before':192,'adversarial_refusals':884,
+            'class_closed':False,'outside_human_dependency':False,
+            'publication_effect':'none','adoption_effect':'none','graph_effect':'none'
+          }
+          out.joinpath('materialization-receipt.json').write_text(json.dumps(r,indent=2)+'\n')
+          print(json.dumps(r,indent=2))
+          PY_RECEIPT
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mf8-protocol-materialization-v1
+          path: /tmp/ssc-rd04-mf8-protocol-materializer-v1
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Report terminal outcome
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          OUTCOME: ${{ steps.materialize.outcome }}
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-mf8-protocol-materializer-v1
+          BODY="$OUT/issue-comment.md"
+          mkdir -p "$OUT"
+          if test "$OUTCOME" = success && test -f "$OUT/materialization-receipt.json"; then
+            python - <<'PY_COMMENT' > "$BODY"
+          import json
+          from pathlib import Path
+          r=json.loads(Path('/tmp/ssc-rd04-mf8-protocol-materializer-v1/materialization-receipt.json').read_text())
+          print('RD-04 eight-state minimum-frontier protocol materialized successfully.\n')
+          print('```text')
+          for k in ['canonical_parent','canonical_parent_tree','ordinary_head','ordinary_tree','standing_workflow_blob','archive_sha256','permanent_paths','ordinary_paths','fixed_routes','target_states','target_cells','adversarial_refusals','class_closed','outside_human_dependency']:
+              print(f'{k}: {r[k]}')
+          print('```')
+          print('\nThe ordinary thirteen-path branch moved only after exact archive, predecessor, schema, adversarial, no-magic-human, complete-release, replay, path, and live-main lease gates passed. The standing workflow remains pending byte-identical connector composition.')
+          PY_COMMENT
+          else
+            {
+              echo 'RD-04 eight-state minimum-frontier protocol materialization failed closed.'
+              echo
+              echo '```text'
+              echo "carrier_head: $GITHUB_SHA"
+              echo "outcome: $OUTCOME"
+              test -f "$OUT/run.log" && tail -220 "$OUT/run.log"
+              echo '```'
+              echo
+              echo 'No unverified product or evidentiary authority is represented.'
+            } > "$BODY"
+          fi
+          gh issue comment 1017 --repo "$GH_REPOSITORY" --body-file "$BODY"
+      - name: Refuse failed materialization
+        if: always()
+        env:
+          OUTCOME: ${{ steps.materialize.outcome }}
+        run: test "$OUTCOME" = success
