@@ -1,16 +1,15 @@
 name: TEMP reconstruct exact RD-04 MF7 row-state product archive
 
 on:
-  push:
-    branches:
-      - 'agent/ssc-rd04-mf7-row-state-archive-reconstruction'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
 
 jobs:
   reconstruct:
-    if: github.event_name == 'push' && github.ref_name == 'agent/ssc-rd04-mf7-row-state-archive-reconstruction'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -41,7 +40,6 @@ jobs:
           find "$OUT/extracted" -type f -printf '%P\n' | sort > "$OUT/paths.txt"
           test "$(wc -l < "$OUT/paths.txt" | tr -d ' ')" = 14
           find "$OUT/extracted" -type f -print0 | sort -z | xargs -0 sha256sum > "$OUT/file-sha256.txt"
-          printf 'archive_reconstruction_pulse=2026-08-06T00:00:00Z\n' > "$OUT/pulse.txt"
       - name: Preserve exact reconstructed product
         uses: actions/upload-artifact@v4
         with:
