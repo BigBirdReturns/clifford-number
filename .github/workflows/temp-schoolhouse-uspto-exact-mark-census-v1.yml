@@ -1,0 +1,251 @@
+name: TEMP census exact School.House USPTO marks
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-uspto-exact-mark-census-v1.yml'
+      - '.schoolhouse-uspto-exact-mark-census-v1/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-uspto-exact-mark-census-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  acquire:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-uspto-exact-mark-census-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify exact carrier, protocol, and runner custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          FROZEN='b320e380723600fe39c3aa711a09d3d861f756c2'
+          FROZEN_TREE='50801e462a7e5d170a65dd0612e7ff1b96d75dd8'
+          ROOT='.schoolhouse-uspto-exact-mark-census-v1'
+          EXECUTE="$ROOT/EXECUTE"
+          SHARDS=(
+            "$ROOT/census.py.gz.b64.00"
+            "$ROOT/census.py.gz.b64.01"
+            "$ROOT/census.py.gz.b64.02"
+            "$ROOT/census.py.gz.b64.03"
+          )
+          BUNDLE="$RUNNER_TEMP/schoolhouse-uspto-exact-mark-census-v1.py.gz.b64"
+          GZIP="$RUNNER_TEMP/schoolhouse-uspto-exact-mark-census-v1.py.gz"
+          RUNNER="$RUNNER_TEMP/schoolhouse-uspto-exact-mark-census-v1.py"
+          DIAGNOSTIC="$RUNNER_TEMP/schoolhouse-uspto-exact-mark-census-v1"
+          mkdir -p "$DIAGNOSTIC"
+          printf 'preflight_started=true\n' > "$DIAGNOSTIC/PREFLIGHT"
+
+          git fetch --no-tags origin main
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          FROZEN_TREE_OBSERVED="$(git rev-parse "$FROZEN^{tree}")"
+          MERGE_BASE="$(git merge-base HEAD origin/main)"
+          printf 'carrier_head=%s\nlive_main=%s\nfrozen_predecessor=%s\nfrozen_tree=%s\nmerge_base=%s\n' \
+            "$(git rev-parse HEAD)" "$LIVE_MAIN" "$FROZEN" "$FROZEN_TREE_OBSERVED" "$MERGE_BASE"
+          test "$FROZEN_TREE_OBSERVED" = "$FROZEN_TREE"
+          git merge-base --is-ancestor "$FROZEN" origin/main
+          test "$MERGE_BASE" = "$FROZEN"
+
+          mapfile -t CHANGED < <(git diff --name-only "$FROZEN"..HEAD | sort)
+          EXPECTED=(
+            '.github/workflows/temp-schoolhouse-uspto-exact-mark-census-v1.yml'
+            '.schoolhouse-uspto-exact-mark-census-v1/EXECUTE'
+            '.schoolhouse-uspto-exact-mark-census-v1/census.py.gz.b64.00'
+            '.schoolhouse-uspto-exact-mark-census-v1/census.py.gz.b64.01'
+            '.schoolhouse-uspto-exact-mark-census-v1/census.py.gz.b64.02'
+            '.schoolhouse-uspto-exact-mark-census-v1/census.py.gz.b64.03'
+          )
+          test "${#CHANGED[@]}" -eq 6
+          for i in "${!EXPECTED[@]}"; do test "${CHANGED[$i]}" = "${EXPECTED[$i]}"; done
+
+          test "$(stat -c%s "$EXECUTE")" = '1905'
+          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = 'c3818d200b43a2e4c0b284ec318a275bcb3a6ec57de976ec9e7357ac27f3bfe6'
+          EXPECTED_SHARD_BYTES=(2926 2926 2926 2882)
+          EXPECTED_SHARD_SHA256=(
+            eff277717f2c820833c0b6860b031483ff744f7ef73be57b2c88f4c999c5e80d
+            fa1ccbdd80ff4b9e55cfead317a6608602595bacb37550859090f6f01f226a33
+            06e9b6cbd11e794b56dceda1b48168234ef93e6b8581805ec65d36284d9b2b33
+            4dab4b078390b04c624ec5ea2e952e0a53c0c771c110a879d45bbd7c08056041
+          )
+          for i in "${!SHARDS[@]}"; do
+            test "$(stat -c%s "${SHARDS[$i]}")" = "${EXPECTED_SHARD_BYTES[$i]}"
+            test "$(sha256sum "${SHARDS[$i]}" | awk '{print $1}')" = "${EXPECTED_SHARD_SHA256[$i]}"
+          done
+          cat "${SHARDS[@]}" > "$BUNDLE"
+          test "$(stat -c%s "$BUNDLE")" = '11660'
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '281f68abc171d9c56ab4508d32cb54bc214cce4234b4bd126175551f718898aa'
+          base64 -d "$BUNDLE" > "$GZIP"
+          test "$(stat -c%s "$GZIP")" = '8630'
+          test "$(sha256sum "$GZIP" | awk '{print $1}')" = '9e8eebf8e7a2937334999ad88d2776c7f2182daa4840a3b32868c24fce135302'
+          gzip -dc "$GZIP" > "$RUNNER"
+          test "$(stat -c%s "$RUNNER")" = '36587'
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = '762cbfe6d8c5b4db936516ae8162807bc3e4382c1f240398f2cf71a8c5ddcdb8'
+          python -m py_compile "$RUNNER"
+          python "$RUNNER" --self-test
+
+          grep -Fx 'issue=1323' "$EXECUTE"
+          grep -Fx 'canonical_predecessor=b320e380723600fe39c3aa711a09d3d861f756c2' "$EXECUTE"
+          grep -Fx 'canonical_predecessor_tree=50801e462a7e5d170a65dd0612e7ff1b96d75dd8' "$EXECUTE"
+          grep -Fx 'fixed_query_count=3' "$EXECUTE"
+          grep -Fx 'query_01=CM:"school.house"' "$EXECUTE"
+          grep -Fx 'query_02=CM:"schoolhouse"' "$EXECUTE"
+          grep -Fx 'query_03=CM:"school house"' "$EXECUTE"
+          grep -Fx 'browser_sessions=1' "$EXECUTE"
+          grep -Fx 'login_attempts=0' "$EXECUTE"
+          grep -Fx 'account_creation=0' "$EXECUTE"
+          grep -Fx 'api_key_requests=0' "$EXECUTE"
+          grep -Fx 'captcha_or_waf_bypass=0' "$EXECUTE"
+          grep -Fx 'query_derived_off_host_requests=0' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+          grep -Fx 'publication_effect=none' "$EXECUTE"
+          grep -Fx 'adoption_effect=none' "$EXECUTE"
+          grep -Fx 'graph_effect=none' "$EXECUTE"
+
+      - name: Install pinned anonymous-browser runtime
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check --no-input 'playwright==1.54.0'
+          python -m playwright install --with-deps chromium
+
+      - name: Execute bounded exact-mark census
+        id: census
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          ROOT='.schoolhouse-uspto-exact-mark-census-v1'
+          SHARDS=(
+            "$ROOT/census.py.gz.b64.00"
+            "$ROOT/census.py.gz.b64.01"
+            "$ROOT/census.py.gz.b64.02"
+            "$ROOT/census.py.gz.b64.03"
+          )
+          BUNDLE="$RUNNER_TEMP/schoolhouse-uspto-exact-mark-census-v1.py.gz.b64"
+          GZIP="$RUNNER_TEMP/schoolhouse-uspto-exact-mark-census-v1.py.gz"
+          RUNNER="$RUNNER_TEMP/schoolhouse-uspto-exact-mark-census-v1.py"
+          OUT="$RUNNER_TEMP/schoolhouse-uspto-exact-mark-census-v1"
+          LOG="$RUNNER_TEMP/schoolhouse-uspto-exact-mark-census-v1.log"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          cat "${SHARDS[@]}" > "$BUNDLE"
+          test "$(stat -c%s "$BUNDLE")" = '11660'
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '281f68abc171d9c56ab4508d32cb54bc214cce4234b4bd126175551f718898aa'
+          base64 -d "$BUNDLE" > "$GZIP"
+          gzip -dc "$GZIP" > "$RUNNER"
+          python "$RUNNER" --output "$OUT" 2>&1 | tee "$LOG"
+          status=${PIPESTATUS[0]}
+          printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
+          cp "$LOG" "$OUT/RUNNER-OUTPUT.log"
+          exit "$status"
+
+      - name: Validate terminal artifact and authority ceiling
+        id: validate
+        if: steps.census.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/schoolhouse-uspto-exact-mark-census-v1"
+          test "$(cat "$OUT/RUNNER_EXIT_CODE")" = '0'
+          for name in route-policy.json source-receipt.json query-receipts.jsonl query-results.jsonl adjudication.json summary.json artifact-manifest.json SHA256SUMS; do
+            test -f "$OUT/$name"
+          done
+          test "$(wc -l < "$OUT/SHA256SUMS" | tr -d ' ')" = '7'
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          test "$(wc -l < "$OUT/query-receipts.jsonl" | tr -d ' ')" = '3'
+          jq -e '
+            (.state == "terminal_bounded_uspto_exact_mark_candidate_census" or
+             .state == "terminal_bounded_uspto_source_unavailable") and
+            .fixed_query_count == 3 and
+            .terminal_query_count == 3 and
+            .retained_result_rows <= 1500 and
+            .unique_serials <= 1000 and
+            .trademark_serial_candidate_rows <= 1000 and
+            .owner_or_applicant_name_values_retained == 0 and
+            .person_names_retained == 0 and
+            .addresses_retained == 0 and
+            .phone_or_email_values_retained == 0 and
+            .attorney_or_correspondence_values_retained == 0 and
+            .complete_html_responses_retained == 0 and
+            .screenshots_retained == 0 and
+            .raw_json_responses_retained == 0 and
+            .raw_browser_profiles_or_cookies_retained == 0 and
+            .identities_admitted == 0 and
+            .relationships_admitted == 0 and
+            .negative_existence_claims_created == 0 and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/summary.json"
+          jq -e '
+            (.state == "terminal_bounded_uspto_exact_mark_candidate_census" or
+             .state == "terminal_bounded_uspto_source_unavailable") and
+            .public_schoolhouse_identity_admitted == false and
+            .trademark_owner_admitted == false and
+            .negative_existence_claim_created == false and
+            .promotes_to == "candidate_only" and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/adjudication.json"
+          jq -e '
+            .counts.query_receipts == 3 and
+            .counts.unique_serials <= 1000 and
+            .counts.trademark_serial_candidates <= 1000 and
+            (.files | length) == 6
+          ' "$OUT/artifact-manifest.json"
+          jq -c . "$OUT/query-receipts.jsonl" >/dev/null
+          if test -s "$OUT/query-results.jsonl"; then
+            jq -c . "$OUT/query-results.jsonl" >/dev/null
+            jq -e -s '
+              all(.;
+                (.serial_number | test("^[0-9]{8}$")) and
+                (.identity_admitted == false) and
+                (.relationship_admitted == false) and
+                (.negative_existence_claim_created == false) and
+                (.outside_human_dependency == false) and
+                (.publication_effect == "none") and
+                (.adoption_effect == "none") and
+                (.graph_effect == "none") and
+                ((.promotes_to != "trademark_serial_candidate") or
+                  (.exact_fixed_query_form == true and .terminal_state == "public_result_parsed"))
+              )
+            ' "$OUT/query-results.jsonl"
+          fi
+          ! grep -Eiq '"(owner|owner_name|applicant|applicant_name|person_name|attorney|correspondence|street_address|mailing_address|phone|email|cookie|browser_profile|raw_html|raw_json|screenshot)"[[:space:]]*:' \
+            "$OUT"/*.json "$OUT"/*.jsonl
+
+      - name: Preserve exact acquisition artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-uspto-exact-mark-census-v1
+          path: ${{ runner.temp }}/schoolhouse-uspto-exact-mark-census-v1
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Propagate acquisition or validation failure
+        if: steps.census.outcome != 'success' || steps.validate.outcome != 'success'
+        run: exit 1
