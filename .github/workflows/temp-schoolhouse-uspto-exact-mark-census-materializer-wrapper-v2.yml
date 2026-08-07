@@ -1,0 +1,99 @@
+name: TEMP repair and run School.House USPTO census materializer
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-uspto-exact-mark-census-materializer-wrapper-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: schoolhouse-uspto-exact-mark-census-materializer-wrapper-v2-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-uspto-exact-mark-census-materializer-wrapper-v2')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Recover, repair, and execute exact materializer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ORIGINAL='169b9bf4c96430043a0c5ca6aacd924185a54412'
+          ORIGINAL_BRANCH='agent/schoolhouse-uspto-exact-mark-census-materializer-v1'
+          ORIGINAL_WORKFLOW='.github/workflows/temp-schoolhouse-uspto-exact-mark-census-materializer-v1.yml'
+          ORIGINAL_WORKFLOW_BLOB='a2b97e25fcb87da4d9cfcefdd87560b5094df5d0'
+          ORIGINAL_EXECUTE='.schoolhouse-uspto-exact-mark-census-materializer-v1/EXECUTE'
+          ORIGINAL_EXECUTE_BLOB='bf5a006799eeaa27748acbd1213cc053dfb84575'
+          SCRIPT="$RUNNER_TEMP/schoolhouse-uspto-materializer-repaired.sh"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-uspto-materialization-receipt"
+          mkdir -p "$RECEIPT"
+
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$ORIGINAL_BRANCH:refs/remotes/origin/schoolhouse-uspto-original"
+          test "$(git rev-parse origin/schoolhouse-uspto-original)" = "$ORIGINAL"
+          test "$(git rev-parse "$ORIGINAL:$ORIGINAL_WORKFLOW")" = "$ORIGINAL_WORKFLOW_BLOB"
+          test "$(git rev-parse "$ORIGINAL:$ORIGINAL_EXECUTE")" = "$ORIGINAL_EXECUTE_BLOB"
+
+          git show "$ORIGINAL:$ORIGINAL_WORKFLOW" > "$RUNNER_TEMP/original-materializer.yml"
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          tmp = Path(os.environ['RUNNER_TEMP'])
+          src = (tmp / 'original-materializer.yml').read_text().splitlines()
+          marker = '      - name: Reconstruct, qualify, and publish exact permanent product'
+          step = src.index(marker)
+          start = next(i for i in range(step, len(src)) if src[i] == '        run: |') + 1
+          end = next(i for i in range(start, len(src)) if src[i].startswith('      - name: Preserve exact materialization receipt'))
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in src[start:end]) + '\n'
+          old = "sed -i 's/^          //' \"$RUNNER_TEMP/permanent-paths\""
+          replacement = old + '\nsort -o "$RUNNER_TEMP/permanent-paths" "$RUNNER_TEMP/permanent-paths"'
+          if script.count(old) != 1:
+              raise SystemExit(f'permanent-path ordering repair target count drift: {script.count(old)}')
+          script = script.replace(old, replacement)
+          (tmp / 'schoolhouse-uspto-materializer-repaired.sh').write_text(script)
+          PY
+
+          sha256sum "$RUNNER_TEMP/original-materializer.yml" "$SCRIPT" | tee "$RECEIPT/wrapper-SHA256SUMS"
+          bash -n "$SCRIPT"
+          printf 'original_materializer=%s\n' "$ORIGINAL" > "$RECEIPT/wrapper-preflight.txt"
+          printf 'repair=sort_permanent_paths_before_comm_and_staged_comparison\n' >> "$RECEIPT/wrapper-preflight.txt"
+          git checkout --detach "$ORIGINAL"
+          bash "$SCRIPT"
+
+      - name: Preserve exact repaired-materializer receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-uspto-exact-mark-census-materialization-wrapper-v2
+          path: ${{ runner.temp }}/schoolhouse-uspto-materialization-receipt
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
