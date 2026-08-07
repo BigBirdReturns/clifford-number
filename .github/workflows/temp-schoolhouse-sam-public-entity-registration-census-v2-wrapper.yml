@@ -1,0 +1,207 @@
+name: TEMP census exact School.House SAM public entity registrations v2 wrapper
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-v2-wrapper.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-sam-public-entity-registration-census-v2-wrapper-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  census:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-sam-public-entity-registration-census-v2-wrapper')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prove exact one-path wrapper topology
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='d26cb838df12a877840ebe71eb9388d44b6ceaf9'
+          WORKFLOW='.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-v2-wrapper.yml'
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+          mapfile -t DELTA < <(git diff --name-only "$BASE"..HEAD)
+          test "${#DELTA[@]}" -eq 1
+          test "${DELTA[0]}" = "$WORKFLOW"
+
+          printf 'canonical_parent=%s\n' "$BASE"
+          printf 'canonical_parent_tree=%s\n' "$(git rev-parse "$BASE^{tree}")"
+          printf 'wrapper_head=%s\n' "$(git rev-parse HEAD)"
+          printf 'wrapper_paths=1\n'
+
+      - name: Materialize exact repaired v2 source program
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE_BRANCH='agent/schoolhouse-sam-public-entity-registration-census-v1'
+          SOURCE_HEAD='61f69707e8425d2db62ded8631cf083e994757f4'
+          SOURCE_PATH='.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-v1.yml'
+          SOURCE_BLOB='7447515d3010594d7be25719045fbee8585a6882'
+          SOURCE_SHA256='c508787106c9245605ed990b605deb05c806d1685ef50ce24b76e208a9619d1c'
+          TARGET_SHA256='8ee7ef9de15bb7cc2d7a8ce94d45451c98b524660b3f8620b06df859032d4f46'
+          WORK="$RUNNER_TEMP/sam-v2-wrapper"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-sam-public-entity-registration-census-v2-wrapper-receipt"
+          mkdir -p "$WORK" "$RECEIPT"
+
+          git fetch --no-tags origin "$SOURCE_BRANCH"
+          test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$SOURCE_HEAD"
+          test "$(git rev-parse "origin/$SOURCE_BRANCH:$SOURCE_PATH")" = "$SOURCE_BLOB"
+          git show "origin/$SOURCE_BRANCH:$SOURCE_PATH" > "$WORK/source.yml"
+          test "$(git hash-object "$WORK/source.yml")" = "$SOURCE_BLOB"
+          test "$(sha256sum "$WORK/source.yml" | cut -d' ' -f1)" = "$SOURCE_SHA256"
+
+          python - "$WORK/source.yml" "$WORK/repaired.yml" "$WORK/install.sh" "$WORK/execute.sh" <<'PY'
+          from pathlib import Path
+          import hashlib
+          import re
+          import sys
+          import textwrap
+
+          source = Path(sys.argv[1])
+          repaired_path = Path(sys.argv[2])
+          install_path = Path(sys.argv[3])
+          execute_path = Path(sys.argv[4])
+          text = source.read_text()
+          old_namespace = 'schoolhouse-sam-public-entity-registration-census-v1'
+          new_namespace = 'schoolhouse-sam-public-entity-registration-census-v2'
+
+          assert source.stat().st_size == 74640
+          assert hashlib.sha256(source.read_bytes()).hexdigest() == 'c508787106c9245605ed990b605deb05c806d1685ef50ce24b76e208a9619d1c'
+          assert text.count('nonlocal global_rows_inspected') == 2
+          assert text.count('nonlocal blocked_official_detail_views') == 1
+          assert text.count('nonlocal ') == 3
+          assert old_namespace in text
+
+          repaired = text.replace(
+              'nonlocal global_rows_inspected',
+              'global global_rows_inspected',
+          ).replace(
+              'nonlocal blocked_official_detail_views',
+              'global blocked_official_detail_views',
+          ).replace(old_namespace, new_namespace)
+
+          assert 'nonlocal ' not in repaired
+          assert repaired.count('global global_rows_inspected') == 2
+          assert repaired.count('global blocked_official_detail_views') == 1
+          assert old_namespace not in repaired
+          assert new_namespace in repaired
+          assert len(repaired.encode()) == 74634
+          assert hashlib.sha256(repaired.encode()).hexdigest() == '8ee7ef9de15bb7cc2d7a8ce94d45451c98b524660b3f8620b06df859032d4f46'
+
+          embedded = re.findall(
+              r"python - .*?<<'PY'.*?\n(.*?)\n\s+PY\n",
+              repaired,
+              flags=re.S,
+          )
+          assert len(embedded) == 2, len(embedded)
+          for index, program in enumerate(embedded):
+              compile(textwrap.dedent(program), f'embedded-{index}.py', 'exec')
+
+          def extract_run(step_name: str) -> str:
+              lines = repaired.splitlines()
+              marker = f'      - name: {step_name}'
+              assert lines.count(marker) == 1, step_name
+              index = lines.index(marker) + 1
+              while index < len(lines) and lines[index] != '        run: |':
+                  index += 1
+              assert index < len(lines), step_name
+              index += 1
+              body: list[str] = []
+              while index < len(lines):
+                  line = lines[index]
+                  if line.startswith('      - name: ') or line.startswith('      - uses: '):
+                      break
+                  assert line == '' or line.startswith('          '), (step_name, line)
+                  body.append(line[10:] if line else '')
+                  index += 1
+              script = '\n'.join(body).rstrip() + '\n'
+              assert script.startswith('set -Eeuo pipefail\n')
+              return script
+
+          install = extract_run('Install bounded browser runtime')
+          execute = extract_run('Execute anonymous public SAM.gov entity-registration census')
+          assert "playwright==1.55.0" in install
+          assert 'python -m playwright install --with-deps chromium' in install
+          assert 'OUT="$RUNNER_TEMP/schoolhouse-sam-public-entity-registration-census-v2"' in execute
+          assert 'schoolhouse_sam_public_entity_registration_artifact_validation=pass' in execute
+          assert 'test "$RC" -eq 0' in execute
+
+          repaired_path.write_text(repaired)
+          install_path.write_text(install)
+          execute_path.write_text(execute)
+          print('source_blob=7447515d3010594d7be25719045fbee8585a6882')
+          print('source_sha256=c508787106c9245605ed990b605deb05c806d1685ef50ce24b76e208a9619d1c')
+          print('repaired_sha256=8ee7ef9de15bb7cc2d7a8ce94d45451c98b524660b3f8620b06df859032d4f46')
+          print('scoping_replacements=3')
+          print('embedded_python_programs=2')
+          print('embedded_python_syntax=pass')
+          print('extracted_run_blocks=2')
+          PY
+
+          ruby -e "require 'yaml'; YAML.load_file('$WORK/repaired.yml'); puts 'repaired_yaml_parse=pass'"
+          cp "$WORK/source.yml" "$RECEIPT/source-workflow.yml"
+          cp "$WORK/repaired.yml" "$RECEIPT/repaired-workflow.yml"
+          cp "$WORK/install.sh" "$RECEIPT/install.sh"
+          cp "$WORK/execute.sh" "$RECEIPT/execute.sh"
+          printf 'source_branch=%s\nsource_head=%s\nsource_path=%s\nsource_blob=%s\n' \
+            "$SOURCE_BRANCH" "$SOURCE_HEAD" "$SOURCE_PATH" "$SOURCE_BLOB" \
+            > "$RECEIPT/receipt.txt"
+          printf 'source_sha256=%s\nrepaired_sha256=%s\nscoping_replacements=3\nembedded_python_programs=2\nextracted_run_blocks=2\n' \
+            "$SOURCE_SHA256" "$TARGET_SHA256" >> "$RECEIPT/receipt.txt"
+          sha256sum "$RECEIPT/source-workflow.yml" "$RECEIPT/repaired-workflow.yml" \
+            "$RECEIPT/install.sh" "$RECEIPT/execute.sh" "$RECEIPT/receipt.txt" \
+            > "$RECEIPT/SHA256SUMS"
+
+      - name: Install exact bounded browser runtime
+        shell: bash
+        run: bash "$RUNNER_TEMP/sam-v2-wrapper/install.sh"
+
+      - name: Execute exact repaired anonymous public SAM.gov census
+        shell: bash
+        run: bash "$RUNNER_TEMP/sam-v2-wrapper/execute.sh"
+
+      - name: Preserve exact SAM.gov v2 census artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-sam-public-entity-registration-census-v2
+          path: ${{ runner.temp }}/schoolhouse-sam-public-entity-registration-census-v2
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Preserve exact wrapper reconstruction receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-sam-public-entity-registration-census-v2-wrapper-receipt
+          path: ${{ runner.temp }}/schoolhouse-sam-public-entity-registration-census-v2-wrapper-receipt
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
