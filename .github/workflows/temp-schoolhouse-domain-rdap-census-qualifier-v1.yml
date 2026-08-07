@@ -1,0 +1,320 @@
+name: TEMP qualify School.House exact-domain RDAP custody
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-domain-rdap-census-qualifier-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: schoolhouse-domain-rdap-census-qualifier-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-domain-rdap-census-qualifier-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Authenticate source artifact and qualify corrected privacy-minimized projection
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PARENT='681ae0d41bed04d068836ee9d746fe7701d234cb'
+          PARENT_TREE='9ee392609c4c6bcce2806f9b8a1e514333c1428e'
+          SOURCE_RUN='31151863299'
+          SOURCE_HEAD='2774e386f5603d89238e22e29d127fef4ae269a0'
+          SOURCE_ARTIFACT='8983593982'
+          SOURCE_DIGEST='sha256:6df4bfb8a027a35e6fe6ae98bb072feb27646c39e4907152627554563c2e1e0a'
+          SOURCE="$RUNNER_TEMP/schoolhouse-domain-rdap-census-v1"
+          OUT="$RUNNER_TEMP/schoolhouse-domain-rdap-census-qualification-v1"
+          WORKFLOW='.github/workflows/temp-schoolhouse-domain-rdap-census-qualifier-v1.yml'
+
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main' "$PARENT"
+          git merge-base --is-ancestor "$PARENT" origin/main
+          test "$(git rev-parse "$PARENT^{tree}")" = "$PARENT_TREE"
+          test "$(git rev-parse HEAD^)" = "$PARENT"
+          test "$(git rev-list --count "$PARENT"..HEAD)" = '1'
+          test "$(git merge-base HEAD origin/main)" = "$PARENT"
+          mapfile -t CHANGED < <(git diff --name-only "$PARENT"..HEAD)
+          test "${#CHANGED[@]}" -eq 1
+          test "${CHANGED[0]}" = "$WORKFLOW"
+
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ARTIFACT" --jq '.digest // ""')" = "$SOURCE_DIGEST"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ARTIFACT" --jq '.workflow_run.head_sha // ""')" = "$SOURCE_HEAD"
+          rm -rf "$SOURCE" "$OUT"
+          mkdir -p "$SOURCE" "$OUT"
+          gh run download "$SOURCE_RUN" --repo "$GITHUB_REPOSITORY" \
+            --name schoolhouse-domain-rdap-census-v1 --dir "$SOURCE"
+          test "$(cat "$SOURCE/RUNNER_EXIT_CODE")" = '0'
+          (cd "$SOURCE" && sha256sum -c SHA256SUMS)
+
+          test "$(sha256sum "$SOURCE/summary.json" | awk '{print $1}')" = '68f823b33121fdb05e804fc8790d0e1b12d92cd51d29bd3835d3e4d35e5127af'
+          test "$(sha256sum "$SOURCE/source-receipt.json" | awk '{print $1}')" = '16a69d6e36b98917ce0db323e49715bba8b4caf992c0702d2051fdeb80064972'
+          test "$(sha256sum "$SOURCE/rdap-domain.json" | awk '{print $1}')" = '6a53fe0ed4bdc99ad126e438914f50aab604c15d5611324b7094d7aa3f499814'
+          test "$(sha256sum "$SOURCE/route-receipts.jsonl" | awk '{print $1}')" = '343a20a9bbe556b6d74c33d5ab5db517df4857fca92aa85fe8c8f1891912734e'
+          test "$(sha256sum "$SOURCE/route-policy.json" | awk '{print $1}')" = '80646d0113232bfa45114975a8511f4cac7a258c9cdcfaf1b49e3f37e77819cf'
+          test "$(sha256sum "$SOURCE/registrant-organization-candidates.jsonl" | awk '{print $1}')" = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+          test "$(sha256sum "$SOURCE/artifact-manifest.json" | awk '{print $1}')" = 'd24e8d505821fc34c63aa5fae51ce13d3356f29f21210dc492f84f53205756d8'
+
+          SOURCE="$SOURCE" OUT="$OUT" SOURCE_RUN="$SOURCE_RUN" SOURCE_HEAD="$SOURCE_HEAD" \
+          SOURCE_ARTIFACT="$SOURCE_ARTIFACT" SOURCE_DIGEST="$SOURCE_DIGEST" \
+          PARENT="$PARENT" PARENT_TREE="$PARENT_TREE" python - <<'PY'
+          from __future__ import annotations
+
+          import copy
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          from typing import Any
+
+          source = Path(os.environ['SOURCE'])
+          out = Path(os.environ['OUT'])
+          load = lambda name: json.loads((source / name).read_text())
+          rows = lambda name: [json.loads(line) for line in (source / name).read_text().splitlines() if line.strip()]
+
+          summary = load('summary.json')
+          receipt = load('source-receipt.json')
+          policy = load('route-policy.json')
+          domain = load('rdap-domain.json')
+          route_rows = rows('route-receipts.jsonl')
+          candidates = rows('registrant-organization-candidates.jsonl')
+          manifest = load('artifact-manifest.json')
+
+          assert summary['state'] == 'terminal_exact_domain_rdap_no_public_registrant_organization_candidate'
+          assert summary['fixed_routes'] == summary['terminal_routes'] == 2
+          assert summary['request_attempts'] == 2
+          assert receipt['fixed_routes'] == receipt['terminal_routes'] == 2
+          assert receipt['request_attempts'] == 2
+          assert receipt['response_bytes'] == 78739
+          assert receipt['selected_rdap_service_base'] == 'https://rdap.identitydigital.services/rdap/'
+          assert receipt['domain_request_url'] == 'https://rdap.identitydigital.services/rdap/domain/school.house'
+          assert receipt['canonical_parent_commit'] == os.environ['PARENT']
+          assert receipt['canonical_parent_tree'] == os.environ['PARENT_TREE']
+
+          assert len(route_rows) == 2
+          expected_routes = {
+              'iana_dns_rdap_bootstrap': (
+                  'https://data.iana.org/rdap/dns.json',
+                  200,
+                  71095,
+                  'fb297362ea4d0b627bd92fe18dc251a3af594fa60b0b7da58ff708181e3d7bb5',
+              ),
+              'school_house_domain_rdap': (
+                  'https://rdap.identitydigital.services/rdap/domain/school.house',
+                  200,
+                  7644,
+                  '28c5b660c03493f9edef960b28255576e675c9b0dddb5a7c7ba5bfd5ce6f1588',
+              ),
+          }
+          for row in route_rows:
+              url, status, size, digest = expected_routes[row['route_id']]
+              assert row['request_url'] == row['final_url'] == url
+              assert row['status'] == status and row['state'] == 'http_success'
+              assert row['response_bytes'] == size and row['response_sha256'] == digest
+              assert row['method'] == 'GET' and row['attempt'] == 1
+
+          assert domain['object_class_domain'] is True
+          assert domain['object_class_name'] == 'domain'
+          assert domain['ldh_name_exact'] is True and domain['unicode_name_exact'] is True
+          assert domain['registrant_entity_count'] == 0
+          assert domain['registrar_entity_count'] == 1
+          assert domain['entity_role_counts'] == {'abuse': 1, 'registrar': 1}
+          assert domain['registrar_name_values'] == ['NameCheap, Inc.']
+          assert domain['registrar_public_ids'] == [{'identifier': '1068', 'type': 'IANA Registrar ID'}]
+          assert domain['public_registrant_organization_values_retained'] == 0
+          assert domain['domain_registrant_organization_candidate_rows'] == 0
+          assert candidates == []
+          assert 'redacted' in domain['rdap_conformance']
+          assert domain['redaction_present'] is False
+          assert summary['redaction_present'] is False
+
+          retention = summary['retention']
+          assert retention == receipt['retention']
+          assert all(value in (0, False) for value in retention.values())
+          authority = summary['authority']
+          assert authority == receipt['authority'] == policy['authority']
+          assert authority['identities_admitted'] == authority['relationships_admitted'] == 0
+          assert authority['owner_or_operator_admissions'] == authority['negative_existence_claims'] == 0
+          assert authority['outside_human_dependency'] is False
+          assert authority['publication_effect'] == authority['adoption_effect'] == authority['graph_effect'] == 'none'
+
+          corrected_domain = copy.deepcopy(domain)
+          corrected_summary = copy.deepcopy(summary)
+          corrected_domain['redaction_present'] = True
+          corrected_summary['redaction_present'] = True
+          corrected_domain['state'] = 'terminal_exact_domain_rdap_no_public_registrant_organization_candidate_semantic_correction'
+          corrected_summary['state'] = 'terminal_exact_domain_rdap_no_public_registrant_organization_candidate_semantic_correction'
+
+          qualification = {
+              'schema_version': 'schoolhouse-domain-rdap-census-qualification@1',
+              'issue': 1335,
+              'canonical_parent_commit': os.environ['PARENT'],
+              'canonical_parent_tree': os.environ['PARENT_TREE'],
+              'source_workflow_run': int(os.environ['SOURCE_RUN']),
+              'source_head': os.environ['SOURCE_HEAD'],
+              'source_artifact_id': int(os.environ['SOURCE_ARTIFACT']),
+              'source_artifact_digest': os.environ['SOURCE_DIGEST'],
+              'source_artifact_file_rows': len(manifest['files']),
+              'source_artifact_combined_sha256': manifest['combined_sha256'],
+              'fixed_routes': 2,
+              'terminal_routes': 2,
+              'request_attempts': 2,
+              'response_bytes': 78739,
+              'object_class_domain': True,
+              'ldh_name_exact': True,
+              'unicode_name_exact': True,
+              'registrant_entity_count': 0,
+              'registrar_entity_count': 1,
+              'public_registrant_organization_values_retained': 0,
+              'domain_registrant_organization_candidate_rows': 0,
+              'source_projection_defects': 1,
+              'semantic_corrections': [
+                  {
+                      'field': 'redaction_present',
+                      'source_value': False,
+                      'qualified_value': True,
+                      'basis': 'rdap_conformance_contains_redacted',
+                      'source_reacquisition_required': False,
+                  }
+              ],
+              'retention': retention,
+              'authority': authority,
+              'interpretation': {
+                  'redacted_conformance_is_redaction_presence': True,
+                  'no_registrant_entity_is_not_registrant_or_entity_absence': True,
+                  'registrar_is_not_registrant_identity': True,
+                  'zero_candidates_is_not_owner_or_legal_entity_absence': True,
+                  'identical_source_retry_authorized': False,
+              },
+              'status': 'complete',
+          }
+
+          forbidden_keys = {
+              'raw_bootstrap_json', 'raw_rdap_json', 'registrant_name', 'person_name',
+              'street_address', 'mailing_address', 'postal_code', 'phone', 'telephone',
+              'fax', 'email', 'contact_uri', 'vcard_values',
+          }
+          def privacy_walk(value: Any) -> None:
+              if isinstance(value, dict):
+                  overlap = forbidden_keys & set(value)
+                  if overlap:
+                      raise AssertionError(f'forbidden retained keys: {sorted(overlap)}')
+                  for child in value.values():
+                      privacy_walk(child)
+              elif isinstance(value, list):
+                  for child in value:
+                      privacy_walk(child)
+          for value in (corrected_domain, corrected_summary, qualification):
+              privacy_walk(value)
+
+          def validate_qualified(q: dict[str, Any], d: dict[str, Any], s: dict[str, Any]) -> None:
+              assert q['fixed_routes'] == q['terminal_routes'] == 2
+              assert q['request_attempts'] == 2 and q['response_bytes'] == 78739
+              assert q['source_projection_defects'] == 1
+              assert len(q['semantic_corrections']) == 1
+              assert q['semantic_corrections'][0]['field'] == 'redaction_present'
+              assert q['semantic_corrections'][0]['qualified_value'] is True
+              assert d['redaction_present'] is True and s['redaction_present'] is True
+              assert 'redacted' in d['rdap_conformance']
+              assert q['domain_registrant_organization_candidate_rows'] == 0
+              assert d['domain_registrant_organization_candidate_rows'] == 0
+              assert s['domain_registrant_organization_candidate_rows'] == 0
+              assert q['authority']['identities_admitted'] == q['authority']['relationships_admitted'] == 0
+              assert q['authority']['negative_existence_claims'] == 0
+              assert q['authority']['outside_human_dependency'] is False
+              assert q['authority']['graph_effect'] == 'none'
+              privacy_walk(q); privacy_walk(d); privacy_walk(s)
+
+          validate_qualified(qualification, corrected_domain, corrected_summary)
+          refusals = 0
+          mutations = []
+
+          mutated = copy.deepcopy(qualification); mutated['domain_registrant_organization_candidate_rows'] = 1; mutations.append((mutated, corrected_domain, corrected_summary))
+          mutated = copy.deepcopy(qualification); mutated['authority']['identities_admitted'] = 1; mutations.append((mutated, corrected_domain, corrected_summary))
+          mutated_domain = copy.deepcopy(corrected_domain); mutated_domain['raw_rdap_response_retained'] = True; mutations.append((qualification, mutated_domain, corrected_summary))
+          mutated_domain = copy.deepcopy(corrected_domain); mutated_domain['redaction_present'] = False; mutations.append((qualification, mutated_domain, corrected_summary))
+          mutated_summary = copy.deepcopy(corrected_summary); mutated_summary['terminal_routes'] = 1; mutations.append((qualification, corrected_domain, mutated_summary))
+          mutated = copy.deepcopy(qualification); mutated['source_artifact_digest'] = 'sha256:' + '0' * 64; mutations.append((mutated, corrected_domain, corrected_summary))
+
+          for q, d, s in mutations:
+              try:
+                  validate_qualified(q, d, s)
+                  assert q['source_artifact_digest'] == os.environ['SOURCE_DIGEST']
+                  assert d['raw_rdap_response_retained'] is False
+                  assert s['terminal_routes'] == 2
+              except (AssertionError, KeyError, TypeError):
+                  refusals += 1
+          assert refusals == 6
+          qualification['adversarial_refusals'] = refusals
+          validate_qualified(qualification, corrected_domain, corrected_summary)
+
+          outputs = {
+              'qualification.json': qualification,
+              'corrected-rdap-domain.json': corrected_domain,
+              'corrected-summary.json': corrected_summary,
+          }
+          for name, value in outputs.items():
+              (out / name).write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+
+          file_rows = []
+          for path in sorted(out.iterdir()):
+              data = path.read_bytes()
+              file_rows.append({'path': path.name, 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()})
+          manifest_out = {
+              'schema_version': 'schoolhouse-domain-rdap-census-qualification-manifest@1',
+              'files': file_rows,
+              'combined_sha256': hashlib.sha256(
+                  ''.join(f"{row['sha256']}  {row['path']}\n" for row in file_rows).encode()
+              ).hexdigest(),
+          }
+          manifest_bytes = (json.dumps(manifest_out, indent=2, sort_keys=True) + '\n').encode()
+          (out / 'artifact-manifest.json').write_bytes(manifest_bytes)
+          all_rows = file_rows + [{
+              'path': 'artifact-manifest.json',
+              'bytes': len(manifest_bytes),
+              'sha256': hashlib.sha256(manifest_bytes).hexdigest(),
+          }]
+          (out / 'SHA256SUMS').write_text(''.join(f"{row['sha256']}  {row['path']}\n" for row in sorted(all_rows, key=lambda row: row['path'])))
+          print('schoolhouse_domain_rdap_qualification=pass semantic_corrections=1 adversarial_refusals=6 candidates=0')
+          PY
+
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+      - name: Preserve exact request-free RDAP qualification
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-domain-rdap-census-qualification-v1
+          path: ${{ runner.temp }}/schoolhouse-domain-rdap-census-qualification-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
