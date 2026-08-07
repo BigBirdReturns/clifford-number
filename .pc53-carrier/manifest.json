@@ -1,11 +1,11 @@
 {
-  "schema_version": "pc53-product-manifest@1",
+  "schema_version": "pc53-product-manifest@2",
   "qualified_source_parent": "8a2f4538bdbcf9455f02e70c35a71cb39f805b18",
   "source_parent_tree": "11e4905a11c1638cfc26865124f9ce181ae0c134",
   "path_count": 14,
   "path_list_sha256": "84b960b4334eb8338f466f9ff30a6538a3a45b187f9637891d937eb993c357d7",
-  "archive_bytes": 22120,
-  "archive_sha256": "3443bd39fbfd67118970418d58a1f39410e3362ca1941be2e59014ae10e65599",
+  "archive_bytes": 22716,
+  "archive_sha256": "ecc9526540494d45a90df7cb400279fa4b49a3d72e114ed7dae861d7ba69bea8",
   "files": [
     {
       "path": ".github/workflows/preference-custody-v51.yml",
@@ -52,16 +52,16 @@
     {
       "path": "test/preference-custody-manifest-v51.test.js",
       "mode": "100644",
-      "bytes": 9245,
-      "sha256": "bbe2e04896a1d7027dac83e9c95cfa979e2197c67ca4156a1ee5fe244e968716",
-      "git_blob_sha1": "904b6c1826f92316c078e4da4fc08af2b8c0870e"
+      "bytes": 10178,
+      "sha256": "5acfc870ec07d588afa93a12fd2aaa94253f59b2100727e223ccce5e5ce2d14e",
+      "git_blob_sha1": "4efe7fd7be37b7c596c27dae7f455c1516358d60"
     },
     {
       "path": "test/preference-linkage-repository-commit-tree-blob-diff-review-disposition-owner-scope-assurance.test.js",
       "mode": "100644",
-      "bytes": 8259,
-      "sha256": "13717e2ba7c72237a0aa09be630964358a9b99edf02556aae885864d47bb0f31",
-      "git_blob_sha1": "ea0cdb77bd0205e88da5b9e2f3ae63eac7ee35f7"
+      "bytes": 9140,
+      "sha256": "917778bbd11f9d04a11e3c46ff5d9756c1695d83c6568e14c1df2e88f760a780",
+      "git_blob_sha1": "b1f319b3e7894449716c72be89ccca292fa5494a"
     },
     {
       "path": "tools/compile-preference-custody-manifest-v51.mjs",
@@ -80,16 +80,16 @@
     {
       "path": "tools/lib/preference-custody-manifest-v51.mjs",
       "mode": "100644",
-      "bytes": 43025,
-      "sha256": "06a3e2b9a03e2244378b632ad3648e29684e414010d71cd00312db39ffb19cc7",
-      "git_blob_sha1": "6d6e705b254caafc493c233b53e747ed263f6a6e"
+      "bytes": 46418,
+      "sha256": "260232b0ef9792e09ca005c5a5bfc553eec397d3d094e30b1029b4dbce968427",
+      "git_blob_sha1": "45bd3fa2d6ea4f74b2841d68fd6e79e5959cd36f"
     },
     {
       "path": "tools/lib/preference-linkage-repository-commit-tree-blob-diff-review-disposition-owner-scope-assurance.mjs",
       "mode": "100644",
-      "bytes": 82055,
-      "sha256": "761593513614b5ded96a3ec177a9ceaf5183b056f038b146ee6015d4dca3f552",
-      "git_blob_sha1": "bf628cb8e03260b351111726a483855f04893095"
+      "bytes": 85190,
+      "sha256": "ab3b137856f544f9c401a246779cb6207ab9eb44637387191458c56f41732234",
+      "git_blob_sha1": "4e1dcd53a553c061c25238af81a7a2247327292e"
     },
     {
       "path": "tools/validate-preference-custody-manifest-v51.mjs",
@@ -107,5 +107,9 @@
     }
   ],
   "outside_human_dependency": false,
-  "graph_effect": "none"
+  "graph_effect": "none",
+  "repairs": [
+    "reject_non_json_exotic_objects_with_reset_prototypes",
+    "require_structured_clone_plain_container_preservation"
+  ]
 }
