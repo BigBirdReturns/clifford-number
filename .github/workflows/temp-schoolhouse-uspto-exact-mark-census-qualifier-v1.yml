@@ -1,0 +1,289 @@
+name: TEMP qualify exact School.House USPTO census artifact
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: schoolhouse-uspto-exact-mark-census-qualifier-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-uspto-exact-mark-census-qualifier-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Authenticate, inspect, and independently qualify the exact artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='b320e380723600fe39c3aa711a09d3d861f756c2'
+          BASE_TREE='50801e462a7e5d170a65dd0612e7ff1b96d75dd8'
+          ACQUISITION_PR='1324'
+          ACQUISITION_HEAD='16cf3c313c6760814d6fca0ab491a093fba9ff4a'
+          ACQUISITION_RUN='31141096853'
+          ARTIFACT_ID='8979839804'
+          ARTIFACT_NAME='schoolhouse-uspto-exact-mark-census-v1'
+          ARTIFACT_BYTES='6026'
+          ARTIFACT_SHA='008180c6126a9281ce1016171ea01c5292cddcefd9896f15c78fa304fc65cce5'
+          WORKFLOW='.github/workflows/temp-schoolhouse-uspto-exact-mark-census-qualifier-v1.yml'
+          ZIP="$RUNNER_TEMP/$ARTIFACT_NAME.zip"
+          OUT="$RUNNER_TEMP/$ARTIFACT_NAME"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-uspto-exact-mark-census-qualification-v1"
+          mkdir -p "$OUT" "$RECEIPT"
+
+          git fetch --no-tags origin main
+          MAIN="$(git rev-parse origin/main)"
+          test "$(git rev-parse "$BASE^{tree}")" = "$BASE_TREE"
+          git merge-base --is-ancestor "$BASE" origin/main
+          test "$(git merge-base HEAD origin/main)" = "$BASE"
+          mapfile -t DELTA < <(git diff --name-only origin/main HEAD)
+          test "${#DELTA[@]}" -eq 1
+          test "${DELTA[0]}" = "$WORKFLOW"
+
+          META_DIGEST="$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" --jq '.digest // ""')"
+          META_NAME="$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" --jq .name)"
+          META_RUN="$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" --jq .workflow_run.id)"
+          META_HEAD="$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" --jq .workflow_run.head_sha)"
+          META_BRANCH="$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" --jq .workflow_run.head_branch)"
+          test "$META_DIGEST" = "sha256:$ARTIFACT_SHA"
+          test "$META_NAME" = "$ARTIFACT_NAME"
+          test "$META_RUN" = "$ACQUISITION_RUN"
+          test "$META_HEAD" = "$ACQUISITION_HEAD"
+          test "$META_BRANCH" = 'agent/schoolhouse-uspto-exact-mark-census-v1'
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$ZIP"
+          test "$(stat -c%s "$ZIP")" = "$ARTIFACT_BYTES"
+          test "$(sha256sum "$ZIP" | awk '{print $1}')" = "$ARTIFACT_SHA"
+          unzip -q "$ZIP" -d "$OUT"
+
+          find "$OUT" -maxdepth 1 -type f -printf '%f\n' | sort > "$RECEIPT/member-names.txt"
+          cat > "$RECEIPT/expected-members.txt" <<'MEMBERS'
+          RUNNER-OUTPUT.log
+          RUNNER_EXIT_CODE
+          SHA256SUMS
+          adjudication.json
+          artifact-manifest.json
+          query-receipts.jsonl
+          query-results.jsonl
+          route-policy.json
+          source-receipt.json
+          summary.json
+          MEMBERS
+          sed -i 's/^          //' "$RECEIPT/expected-members.txt"
+          diff -u "$RECEIPT/expected-members.txt" "$RECEIPT/member-names.txt"
+          test "$(cat "$OUT/RUNNER_EXIT_CODE")" = '0'
+          test "$(wc -l < "$OUT/SHA256SUMS" | tr -d ' ')" = '7'
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          test "$(wc -l < "$OUT/query-receipts.jsonl" | tr -d ' ')" = '3'
+          test ! -s "$OUT/query-results.jsonl"
+
+          jq -e '
+            .state == "terminal_bounded_uspto_exact_mark_candidate_census" and
+            .schema_version == "schoolhouse-uspto-exact-mark-census-v1@1" and
+            .fixed_query_count == 3 and
+            .terminal_query_count == 3 and
+            .terminal_query_state_counts == {"terminal_public_search_rendered_no_parseable_rows": 3} and
+            .retained_result_rows == 0 and
+            .unique_serials == 0 and
+            .trademark_serial_candidate_rows == 0 and
+            .blocked_officially_unscoped_host_requests == 15 and
+            .owner_or_applicant_name_values_retained == 0 and
+            .person_names_retained == 0 and
+            .addresses_retained == 0 and
+            .phone_or_email_values_retained == 0 and
+            .attorney_or_correspondence_values_retained == 0 and
+            .complete_html_responses_retained == 0 and
+            .screenshots_retained == 0 and
+            .raw_json_responses_retained == 0 and
+            .raw_browser_profiles_or_cookies_retained == 0 and
+            .identities_admitted == 0 and
+            .relationships_admitted == 0 and
+            .negative_existence_claims_created == 0 and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/summary.json"
+
+          jq -e '
+            .state == "terminal_bounded_uspto_exact_mark_candidate_census" and
+            .public_schoolhouse_identity_admitted == false and
+            .trademark_owner_admitted == false and
+            .school_house_domain_operation_admitted == false and
+            .fiscal_sponsor_relationship_admitted == false and
+            .funding_relationship_admitted == false and
+            .governance_or_control_relationship_admitted == false and
+            .related_party_relationship_admitted == false and
+            .negative_existence_claim_created == false and
+            .promotes_to == "candidate_only" and
+            .trademark_serial_candidate_rows == 0 and
+            .interpretation.zero_results_is_not_registry_absence == true and
+            .interpretation.source_unavailable_is_not_registry_absence == true and
+            .interpretation.serial_candidate_is_not_owner_identity == true and
+            .interpretation.separate_exact_domain_document_adjudication_required == true and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/adjudication.json"
+
+          jq -e '
+            .schema_version == "schoolhouse-uspto-trademark-route-policy-v1@1" and
+            .issue == 1323 and
+            .canonical_parent == "b320e380723600fe39c3aa711a09d3d861f756c2" and
+            .canonical_parent_tree == "50801e462a7e5d170a65dd0612e7ff1b96d75dd8" and
+            (.fixed_queries | length) == 3 and
+            .bounds.browser_sessions == 1 and
+            .bounds.fixed_search_submissions == 3 and
+            .bounds.maximum_result_rows_per_query == 500 and
+            .bounds.maximum_unique_serials_retained == 1000 and
+            .bounds.maximum_same_host_detail_views == 1000 and
+            .bounds.login_attempts == 0 and
+            .bounds.account_creation_attempts == 0 and
+            .bounds.api_key_requests == 0 and
+            .bounds.captcha_or_waf_bypass_attempts == 0 and
+            .bounds.cookie_export_or_replay_attempts == 0 and
+            .bounds.query_derived_officially_unscoped_requests == 0 and
+            .candidate_rule.promotes_to == "trademark_serial_candidate" and
+            .candidate_rule.owner_identity_admission == false and
+            .candidate_rule.successor_tsd_document_adjudication_required == true and
+            .retention.owner_or_applicant_name_values_retained == 0 and
+            .retention.person_names_retained == 0 and
+            .retention.addresses_retained == 0 and
+            .retention.phone_or_email_values_retained == 0 and
+            .retention.attorney_or_correspondence_values_retained == 0 and
+            .retention.complete_html_responses_retained == 0 and
+            .retention.screenshots_retained == 0 and
+            .retention.raw_json_responses_retained == 0 and
+            .retention.raw_browser_profiles_or_cookies_retained == 0 and
+            .retention.private_material_retained == 0 and
+            .authority.identities_admitted == 0 and
+            .authority.relationships_admitted == 0 and
+            .authority.negative_existence_claims == 0 and
+            .authority.outside_human_dependency == false and
+            .authority.publication_effect == "none" and
+            .authority.adoption_effect == "none" and
+            .authority.graph_effect == "none"
+          ' "$OUT/route-policy.json"
+
+          jq -e '
+            .schema_version == "schoolhouse-uspto-trademark-source-receipt-v1@1" and
+            .issue == 1323 and
+            .canonical_parent == "b320e380723600fe39c3aa711a09d3d861f756c2" and
+            .canonical_parent_tree == "50801e462a7e5d170a65dd0612e7ff1b96d75dd8" and
+            .official_source_host == "tmsearch.uspto.gov" and
+            .browser_engine == "playwright_chromium" and
+            .anonymous_session == true and
+            .fixed_query_count == 3 and
+            .terminal_query_state_counts == {"terminal_public_search_rendered_no_parseable_rows": 3} and
+            .result_rows == 0 and
+            .unique_serials == 0 and
+            .trademark_serial_candidate_rows == 0 and
+            .blocked_officially_unscoped_host_requests == 15 and
+            (.blocked_host_hashes | length) == 4 and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/source-receipt.json"
+
+          jq -e -s '
+            length == 3 and
+            ([.[].query_id] | sort) == ["q1_school_dot_house","q2_schoolhouse","q3_school_house"] and
+            ([.[].expected_mark_normalized] | sort) == ["school house","school.house","schoolhouse"] and
+            all(.;
+              .terminal_state == "terminal_public_search_rendered_no_parseable_rows" and
+              .retained_result_rows == 0 and
+              .login_attempts == 0 and
+              .account_creation_attempts == 0 and
+              .api_key_requests == 0 and
+              .captcha_or_waf_bypass_attempts == 0 and
+              .cookie_export_or_replay_attempts == 0 and
+              .challenge_detected == false and
+              .access_block_http_statuses == [] and
+              .error_class == null and
+              .json_response_count == 8 and
+              .json_parse_error_count == 0 and
+              .request_count == 108 and
+              .response_count == 24 and
+              .outside_human_dependency == false and
+              .publication_effect == "none" and
+              .adoption_effect == "none" and
+              .graph_effect == "none"
+            )
+          ' "$OUT/query-receipts.jsonl"
+
+          jq -e '
+            .schema_version == "schoolhouse-uspto-trademark-artifact-manifest-v1@1" and
+            .combined_sha256 == "bc6a37aac6a578e8a30a53c584db69b4d268d49db922ce8af1f4f9ed4f6e00a9" and
+            .counts == {"query_receipts":3,"result_rows":0,"trademark_serial_candidates":0,"unique_serials":0} and
+            (.files | length) == 6
+          ' "$OUT/artifact-manifest.json"
+
+          ! grep -Eiq '"(owner|owner_name|applicant|applicant_name|person_name|attorney|correspondence|street_address|mailing_address|phone|email|cookie|browser_profile|raw_html|raw_json|screenshot)"[[:space:]]*:' \
+            "$OUT"/*.json "$OUT"/*.jsonl
+
+          cat > "$RECEIPT/qualification.json" <<EOF
+          {
+            "schema_version": "schoolhouse-uspto-exact-mark-census-qualification-v1@1",
+            "canonical_main_observed": "$MAIN",
+            "canonical_predecessor": "$BASE",
+            "canonical_predecessor_tree": "$BASE_TREE",
+            "acquisition_pr": $ACQUISITION_PR,
+            "acquisition_head": "$ACQUISITION_HEAD",
+            "acquisition_workflow_run": $ACQUISITION_RUN,
+            "acquisition_workflow_conclusion": "failure_after_successful_census_and_validation_wrapper",
+            "artifact_id": $ARTIFACT_ID,
+            "artifact_name": "$ARTIFACT_NAME",
+            "artifact_bytes": $ARTIFACT_BYTES,
+            "artifact_sha256": "$ARTIFACT_SHA",
+            "fixed_query_count": 3,
+            "terminal_query_count": 3,
+            "terminal_state": "terminal_bounded_uspto_exact_mark_candidate_census",
+            "query_terminal_state": "terminal_public_search_rendered_no_parseable_rows",
+            "retained_result_rows": 0,
+            "unique_serials": 0,
+            "trademark_serial_candidate_rows": 0,
+            "blocked_officially_unscoped_host_requests": 15,
+            "identities_admitted": 0,
+            "relationships_admitted": 0,
+            "negative_existence_claims": 0,
+            "outside_human_dependency": false,
+            "publication_effect": "none",
+            "adoption_effect": "none",
+            "graph_effect": "none",
+            "qualification": "pass"
+          }
+          EOF
+          sed -i 's/^          //' "$RECEIPT/qualification.json"
+          cp "$OUT/SHA256SUMS" "$RECEIPT/source-SHA256SUMS"
+          cp "$OUT/summary.json" "$RECEIPT/source-summary.json"
+          sha256sum "$RECEIPT"/* > "$RECEIPT/SHA256SUMS"
+          cat "$RECEIPT/qualification.json"
+
+      - name: Preserve independent qualification receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-uspto-exact-mark-census-qualification-v1
+          path: ${{ runner.temp }}/schoolhouse-uspto-exact-mark-census-qualification-v1
+          if-no-files-found: error
+          retention-days: 90
