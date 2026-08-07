@@ -1,4 +1,4 @@
-name: TEMP execute timestamp-restored RD-04 seven-state row-state materializer v8
+name: TEMP execute worktree-aware RD-04 seven-state row-state materializer v9
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: temp-ssc-rd04-mf7-row-state-repaired-push-v8
+  group: temp-ssc-rd04-mf7-row-state-repaired-push-v9
   cancel-in-progress: true
 
 jobs:
@@ -38,20 +38,14 @@ jobs:
           python-version: '3.13'
       - name: Install pinned JSON Schema validator
         run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
-      - id: locate
-        name: Locate never-merge carrier PR
+      - name: Report start to RD-04 issue
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPOSITORY: ${{ github.repository }}
         run: |
-          set -Eeuo pipefail
-          OWNER=${GH_REPOSITORY%%/*}
-          PR=$(gh api "repos/$GH_REPOSITORY/pulls?state=open&head=$OWNER:${GITHUB_REF_NAME}" --jq '.[0].number // empty')
-          test -n "$PR"
-          echo "pr=$PR" >> "$GITHUB_OUTPUT"
-          gh pr comment "$PR" --repo "$GH_REPOSITORY" --body "Timestamp-restored push-v8 materialization started on exact clean carrier head \`${GITHUB_SHA}\`. It verifies the sealed 18,250-byte materializer, injects a fail-closed ten-file timestamp-only restore before every cleanliness assertion, seals that transformed source as a Git blob, and then runs the complete transaction."
+          gh issue comment 1017 --repo "$GH_REPOSITORY" --body "Worktree-aware push-v9 materialization started on exact clean carrier head \`${GITHUB_SHA}\`. It verifies the sealed 18,250-byte materializer, injects the timestamp-only helper after every release-gate invocation, seals the transformed source as a Git blob, and runs the complete fourteen-path transaction against live main."
       - id: materialize
-        name: Seal and execute timestamp-restored materializer
+        name: Seal and execute worktree-aware materializer
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
@@ -63,7 +57,7 @@ jobs:
           BASE_MATERIALIZER_SOURCE_SHA256: bd81b35aeabe92c5624e803a7543c88683b03285ea30bb443a5d544a47a286a1
         run: |
           set -Eeuo pipefail
-          OUT=/tmp/rd04-mf7-repaired-push-v8
+          OUT=/tmp/rd04-mf7-repaired-push-v9
           RESULT=/tmp/rd04-mf7-row-state-materialization-v3
           rm -rf "$OUT" "$RESULT"
           mkdir -p "$OUT"
@@ -84,7 +78,6 @@ jobs:
           test "$(sha256sum "$OUT/materializer.base.sh" | awk '{print $1}')" = "$BASE_MATERIALIZER_SOURCE_SHA256"
 
           cat > "$OUT/restore-generated-timestamp-drift.py" <<'PY'
-          import datetime as dt
           import json
           import re
           import subprocess
@@ -107,60 +100,75 @@ jobs:
           paths = json_paths + markdown_paths
           iso = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$')
 
-          def head_bytes(path: str) -> bytes:
-              return subprocess.check_output(['git', 'show', f'HEAD:{path}'])
+          raw = subprocess.check_output(['git', 'worktree', 'list', '--porcelain'], text=True)
+          worktrees = [
+              Path(line.removeprefix('worktree '))
+              for line in raw.splitlines()
+              if line.startswith('worktree ')
+          ]
+          if not worktrees:
+              raise SystemExit('registered worktree denominator is zero')
 
-          def normalize_markdown(raw: bytes, path: str) -> bytes:
-              text = raw.decode('utf-8')
+          def head_bytes(root: Path, path: str) -> bytes:
+              return subprocess.check_output(['git', '-C', str(root), 'show', f'HEAD:{path}'])
+
+          def normalize_markdown(raw_bytes: bytes, label: str) -> bytes:
+              text = raw_bytes.decode('utf-8')
               lines = text.splitlines(keepends=True)
               indexes = [i for i, line in enumerate(lines) if line.startswith('Generated: ')]
               if len(indexes) != 1:
-                  raise SystemExit(f'{path}: Generated-line denominator drift: {len(indexes)}')
-              i = indexes[0]
-              stamp = lines[i][len('Generated: '):].rstrip('\r\n')
+                  raise SystemExit(f'{label}: Generated-line denominator drift: {len(indexes)}')
+              index = indexes[0]
+              stamp = lines[index][len('Generated: '):].rstrip('\r\n')
               if not iso.fullmatch(stamp):
-                  raise SystemExit(f'{path}: malformed generated timestamp: {stamp!r}')
-              ending = '\r\n' if lines[i].endswith('\r\n') else '\n' if lines[i].endswith('\n') else ''
-              lines[i] = 'Generated: <normalized>' + ending
+                  raise SystemExit(f'{label}: malformed generated timestamp: {stamp!r}')
+              ending = '\r\n' if lines[index].endswith('\r\n') else '\n' if lines[index].endswith('\n') else ''
+              lines[index] = 'Generated: <normalized>' + ending
               return ''.join(lines).encode('utf-8')
 
-          changed = []
-          for path in paths:
-              current_path = Path(path)
-              if not current_path.is_file():
-                  raise SystemExit(f'{path}: generated product missing')
-              before = head_bytes(path)
-              after = current_path.read_bytes()
-              if before == after:
+          restored_roots = []
+          for root in worktrees:
+              if not all((root / path).is_file() for path in paths):
                   continue
-              if path.endswith('.json'):
-                  old = json.loads(before)
-                  new = json.loads(after)
-                  if not isinstance(old, dict) or not isinstance(new, dict):
-                      raise SystemExit(f'{path}: expected top-level JSON objects')
-                  if set(old) != set(new) or 'generated' not in old:
-                      raise SystemExit(f'{path}: JSON structure changed outside timestamp')
-                  if not isinstance(old['generated'], str) or not iso.fullmatch(old['generated']):
-                      raise SystemExit(f'{path}: malformed HEAD generated timestamp')
-                  if not isinstance(new['generated'], str) or not iso.fullmatch(new['generated']):
-                      raise SystemExit(f'{path}: malformed worktree generated timestamp')
-                  old['generated'] = '<normalized>'
-                  new['generated'] = '<normalized>'
-                  if old != new:
-                      raise SystemExit(f'{path}: substantive generated product drift')
-              else:
-                  if normalize_markdown(before, path) != normalize_markdown(after, path):
-                      raise SystemExit(f'{path}: substantive markdown generated product drift')
-              changed.append(path)
+              changed = []
+              for path in paths:
+                  before = head_bytes(root, path)
+                  after = (root / path).read_bytes()
+                  if before == after:
+                      continue
+                  if path.endswith('.json'):
+                      old = json.loads(before)
+                      new = json.loads(after)
+                      if not isinstance(old, dict) or not isinstance(new, dict):
+                          raise SystemExit(f'{root}:{path}: expected top-level JSON objects')
+                      if set(old) != set(new) or 'generated' not in old:
+                          raise SystemExit(f'{root}:{path}: JSON structure changed outside timestamp')
+                      if not isinstance(old['generated'], str) or not iso.fullmatch(old['generated']):
+                          raise SystemExit(f'{root}:{path}: malformed HEAD generated timestamp')
+                      if not isinstance(new['generated'], str) or not iso.fullmatch(new['generated']):
+                          raise SystemExit(f'{root}:{path}: malformed worktree generated timestamp')
+                      old['generated'] = '<normalized>'
+                      new['generated'] = '<normalized>'
+                      if old != new:
+                          raise SystemExit(f'{root}:{path}: substantive generated product drift')
+                  else:
+                      if normalize_markdown(before, f'{root}:{path}') != normalize_markdown(after, f'{root}:{path}'):
+                          raise SystemExit(f'{root}:{path}: substantive markdown generated product drift')
+                  changed.append(path)
+              if len(changed) not in (0, 10):
+                  raise SystemExit(f'{root}: generated timestamp drift denominator: {len(changed)} {changed}')
+              if changed:
+                  subprocess.run(
+                      ['git', '-C', str(root), 'restore', '--staged', '--worktree', '--', *changed],
+                      check=True,
+                  )
+                  restored_roots.append(str(root))
 
-          if len(changed) not in (0, 10):
-              raise SystemExit(f'generated timestamp drift denominator: {len(changed)} {changed}')
-          if changed:
-              subprocess.run(
-                  ['git', 'restore', '--staged', '--worktree', '--', *changed],
-                  check=True,
-              )
-          print(f'generated_timestamp_drift_restored={len(changed)}')
+          print(json.dumps({
+              'registered_worktrees': len(worktrees),
+              'restored_worktrees': restored_roots,
+              'generated_timestamp_paths_per_restore': 10,
+          }, sort_keys=True))
           PY
           chmod 0755 "$OUT/restore-generated-timestamp-drift.py"
           export RD04_GENERATED_DRIFT_HELPER="$OUT/restore-generated-timestamp-drift.py"
@@ -169,35 +177,36 @@ jobs:
           import hashlib
           import json
           import os
-          import re
           from pathlib import Path
 
-          out = Path('/tmp/rd04-mf7-repaired-push-v8')
+          out = Path('/tmp/rd04-mf7-repaired-push-v9')
           source = (out / 'materializer.base.sh').read_text()
-          pattern = re.compile(r'(?m)^(?P<indent>[ \t]*)git diff --check[ \t]*$')
-          matches = list(pattern.finditer(source))
-          if not 1 <= len(matches) <= 8:
-              raise SystemExit(f'git-diff-check insertion denominator drift: {len(matches)}')
+          lines = source.splitlines(keepends=True)
+          release_sites = []
+          transformed = []
+          for line_number, line in enumerate(lines, start=1):
+              transformed.append(line)
+              stripped = line.strip()
+              if 'release:check' not in stripped or stripped.startswith('#'):
+                  continue
+              release_sites.append({'line': line_number, 'source': line.rstrip('\r\n')})
+              indent = line[: len(line) - len(line.lstrip())]
+              transformed.append(f'{indent}python "$RD04_GENERATED_DRIFT_HELPER"\n')
 
-          def inject(match: re.Match[str]) -> str:
-              indent = match.group('indent')
-              return (
-                  f'{indent}python "$RD04_GENERATED_DRIFT_HELPER"\n'
-                  f'{match.group(0)}'
-              )
-
-          transformed = pattern.sub(inject, source)
-          body = transformed.encode('utf-8')
+          if not 1 <= len(release_sites) <= 6:
+              raise SystemExit(f'release-gate insertion denominator drift: {len(release_sites)} {release_sites}')
+          body = ''.join(transformed).encode('utf-8')
           target = out / 'materializer.sh'
           target.write_bytes(body)
           target.chmod(0o755)
           custody = {
-              'schema_version': 'rd04-mf7-materializer-generated-timestamp-restore@1',
+              'schema_version': 'rd04-mf7-materializer-worktree-timestamp-restore@1',
               'base_blob': os.environ['BASE_MATERIALIZER_BLOB'],
               'base_source_bytes': len(source.encode('utf-8')),
               'base_source_sha256': hashlib.sha256(source.encode('utf-8')).hexdigest(),
               'restore_helper_sha256': hashlib.sha256((out / 'restore-generated-timestamp-drift.py').read_bytes()).hexdigest(),
-              'git_diff_check_sites': len(matches),
+              'release_gate_sites': release_sites,
+              'release_gate_site_count': len(release_sites),
               'generated_timestamp_paths': 10,
               'transformed_source_bytes': len(body),
               'transformed_source_sha256': hashlib.sha256(body).hexdigest(),
@@ -234,54 +243,51 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPOSITORY: ${{ github.repository }}
-          SELF_PR: ${{ steps.locate.outputs.pr }}
           OUTCOME: ${{ steps.materialize.outcome }}
         run: |
           set -Eeuo pipefail
-          BODY=/tmp/rd04-mf7-repaired-push-v8-comment.md
+          BODY=/tmp/rd04-mf7-repaired-push-v9-comment.md
           RECEIPT=/tmp/rd04-mf7-row-state-materialization-v3/materialization-receipt.json
-          CUSTODY=/tmp/rd04-mf7-repaired-push-v8/materializer-transform-custody.json
+          CUSTODY=/tmp/rd04-mf7-repaired-push-v9/materializer-transform-custody.json
           if test "$OUTCOME" = success && test -f "$RECEIPT" && test -f "$CUSTODY"; then
             python - <<'PY' > "$BODY"
           import json
           from pathlib import Path
           r = json.loads(Path('/tmp/rd04-mf7-row-state-materialization-v3/materialization-receipt.json').read_text())
-          c = json.loads(Path('/tmp/rd04-mf7-repaired-push-v8/materializer-transform-custody.json').read_text())
-          print('Timestamp-restored push-v8 materialization completed successfully.\n')
+          c = json.loads(Path('/tmp/rd04-mf7-repaired-push-v9/materializer-transform-custody.json').read_text())
+          print('Worktree-aware push-v9 materialization completed successfully.\n')
           print('```text')
-          for key in ['transformed_source_git_blob','transformed_source_bytes','transformed_source_sha256','restore_helper_sha256','git_diff_check_sites','generated_timestamp_paths']:
+          for key in ['transformed_source_git_blob','transformed_source_bytes','transformed_source_sha256','restore_helper_sha256','release_gate_site_count','generated_timestamp_paths']:
               print(f'{key}: {c.get(key)}')
           for key in ['canonical_parent','full_head','full_tree','ordinary_head','ordinary_tree','permanent_pr','archive_sha256','permanent_paths','ordinary_paths','target_rows','terminal_cells_before','terminal_cells_after','terminal_units_before','terminal_units_after','adversarial_refusals','class_closed','outside_human_dependency']:
               print(f'{key}: {r.get(key)}')
           print('```')
-          print('\nEvery generated-file restore was admitted only after timestamp-only semantic equality across the exact ten-file denominator.')
+          print('\nEvery restore was admitted only after semantic equality across the exact ten timestamp-bearing generated files in the affected registered worktree.')
           PY
           else
             {
-              echo 'Timestamp-restored push-v8 materialization failed closed.'
+              echo 'Worktree-aware push-v9 materialization failed closed.'
               echo
               echo '```text'
               echo "carrier_head: ${GITHUB_SHA}"
               echo "materializer_outcome: ${OUTCOME}"
               if test -f "$CUSTODY"; then cat "$CUSTODY"; fi
               if test -f /tmp/rd04-mf7-row-state-materialization-v3/run.log; then
-                tail -220 /tmp/rd04-mf7-row-state-materialization-v3/run.log
+                tail -240 /tmp/rd04-mf7-row-state-materialization-v3/run.log
               fi
               echo '```'
               echo
               echo 'No success is represented and no unverified product is authorized.'
             } > "$BODY"
           fi
-          if test -n "$SELF_PR"; then
-            gh pr comment "$SELF_PR" --repo "$GH_REPOSITORY" --body-file "$BODY"
-          fi
-      - name: Preserve exact timestamp-restored materialization receipt
+          gh issue comment 1017 --repo "$GH_REPOSITORY" --body-file "$BODY"
+      - name: Preserve exact worktree-aware materialization receipt
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd04-mf7-row-state-repaired-push-v8
+          name: ssc-rd04-mf7-row-state-repaired-push-v9
           path: |
-            /tmp/rd04-mf7-repaired-push-v8
+            /tmp/rd04-mf7-repaired-push-v9
             /tmp/rd04-mf7-row-state-materialization-v3
           if-no-files-found: warn
           retention-days: 90
