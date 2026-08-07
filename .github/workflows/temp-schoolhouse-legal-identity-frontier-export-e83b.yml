@@ -1,0 +1,118 @@
+name: TEMP export School.House legal-identity frontier
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-legal-identity-frontier-export-e83b.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-legal-identity-frontier-export-e83b-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  export:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-legal-identity-frontier-export-e83b')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Export exact current School.House custody frontier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='e83b28ab2e9a8fdca4d9c97a9c76644ab1bffa95'
+          BASE_TREE='4e784301ace586c68eef103463bad31bf92c1952'
+          WORKFLOW='.github/workflows/temp-schoolhouse-legal-identity-frontier-export-e83b.yml'
+          OUT="$RUNNER_TEMP/schoolhouse-legal-identity-frontier-export-e83b"
+          REPO_OUT="$OUT/repository-slice"
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test "$(git rev-parse 'origin/main^{tree}')" = "$BASE_TREE"
+          test "$(git merge-base HEAD origin/main)" = "$BASE"
+
+          mapfile -t CHANGED < <(git diff --name-only "$BASE"..HEAD | sort)
+          test "${#CHANGED[@]}" -eq 1
+          test "${CHANGED[0]}" = "$WORKFLOW"
+          git diff --exit-code -- "$WORKFLOW"
+
+          rm -rf "$OUT"
+          mkdir -p "$REPO_OUT"
+
+          copy_path() {
+            local path="$1"
+            test -e "$path"
+            mkdir -p "$REPO_OUT/$(dirname "$path")"
+            cp -a "$path" "$REPO_OUT/$path"
+          }
+
+          # The complete current BVVC/School.House estate slice.
+          copy_path 'data/intake/bvvc-defense-capital'
+
+          while IFS= read -r -d '' path; do
+            copy_path "$path"
+          done < <(find data/intake -mindepth 1 -maxdepth 1 -name 'schoolhouse-*' -print0 | sort -z)
+
+          while IFS= read -r -d '' path; do
+            copy_path "$path"
+          done < <(find docs/milestones -mindepth 1 -maxdepth 1 -iname 'schoolhouse-*' -print0 | sort -z)
+
+          while IFS= read -r -d '' path; do
+            copy_path "$path"
+          done < <(find tools -mindepth 1 -maxdepth 1 -iname '*schoolhouse*' -print0 | sort -z)
+
+          while IFS= read -r -d '' path; do
+            copy_path "$path"
+          done < <(find test -mindepth 1 -maxdepth 1 -iname '*schoolhouse*' -print0 | sort -z)
+
+          {
+            printf 'canonical_main=%s\n' "$BASE"
+            printf 'canonical_tree=%s\n' "$BASE_TREE"
+            printf 'export_head=%s\n' "$(git rev-parse HEAD)"
+            printf 'export_head_tree=%s\n' "$(git rev-parse 'HEAD^{tree}')"
+            printf 'export_workflow=%s\n' "$WORKFLOW"
+            printf 'outside_human_dependency=false\n'
+            printf 'publication_effect=none\n'
+            printf 'adoption_effect=none\n'
+            printf 'graph_effect=none\n'
+          } > "$OUT/canonical.txt"
+
+          (cd "$REPO_OUT" && find . -type f -print | LC_ALL=C sort) > "$OUT/FILE-LIST.txt"
+          FILE_COUNT="$(wc -l < "$OUT/FILE-LIST.txt" | tr -d ' ')"
+          test "$FILE_COUNT" -gt 0
+          printf 'exported_files=%s\n' "$FILE_COUNT" >> "$OUT/canonical.txt"
+
+          (cd "$REPO_OUT" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum) > "$OUT/REPOSITORY-SHA256SUMS"
+          tar -C "$REPO_OUT" -cJf "$OUT/schoolhouse-legal-identity-frontier-e83b.tar.xz" .
+          sha256sum \
+            "$OUT/canonical.txt" \
+            "$OUT/FILE-LIST.txt" \
+            "$OUT/REPOSITORY-SHA256SUMS" \
+            "$OUT/schoolhouse-legal-identity-frontier-e83b.tar.xz" \
+            > "$OUT/SHA256SUMS"
+
+          cat "$OUT/canonical.txt"
+          sha256sum -c "$OUT/SHA256SUMS"
+
+      - name: Preserve exact read-only frontier export
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-legal-identity-frontier-export-e83b
+          path: ${{ runner.temp }}/schoolhouse-legal-identity-frontier-export-e83b
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
