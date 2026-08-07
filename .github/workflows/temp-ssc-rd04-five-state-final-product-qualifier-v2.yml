@@ -1,0 +1,352 @@
+name: TEMP qualify final repaired RD-04 five-state product v2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: rd04-five-state-final-product-qualifier-v2-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/ssc-rd04-five-state-final-product-qualifier-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Verify exact one-commit one-path qualifier
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PARENT: 'd26cb838df12a877840ebe71eb9388d44b6ceaf9'
+          PRODUCT: '3c0c2bc18cac5b35baa4afe3bf2c6c7f250b9f94'
+          PRODUCT_TREE: 'd6154ce261f8c5d6df71185ffe50040e2afc33fe'
+          PRODUCT_BRANCH: 'agent/ssc-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication-v1'
+          CARRIER_PATH: '.github/workflows/temp-ssc-rd04-five-state-final-product-qualifier-v2.yml'
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/rd04-five-state-final-product-qualification-v2
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+
+          test "$(git rev-parse HEAD^)" = "$PARENT"
+          test "$(git rev-list --count "$PARENT"..HEAD)" = 1
+          test "$(git diff --name-only "$PARENT" HEAD)" = "$CARRIER_PATH"
+          test "$(git rev-parse HEAD)" = '${{ github.event.pull_request.head.sha }}'
+          test '${{ github.event.pull_request.base.ref }}' = main
+
+          git fetch --force --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse origin/main)" = "$PARENT"
+          test "$(git rev-parse origin/$PRODUCT_BRANCH)" = "$PRODUCT"
+          test "$(git show -s --format=%T "$PRODUCT")" = "$PRODUCT_TREE"
+
+          set -- $(git rev-list --parents -n 1 "$PRODUCT")
+          test "$#" = 2
+          test "$1" = "$PRODUCT"
+          test "$2" = "$PARENT"
+          test "$(git rev-list --count "$PARENT".."$PRODUCT")" = 1
+          test "$(git diff --name-only "$PARENT" "$PRODUCT" | wc -l | tr -d ' ')" = 14
+          test "$(git diff --name-status "$PARENT" "$PRODUCT" | awk '$1 != "A" { n++ } END { print n+0 }')" = 0
+          git diff --name-only "$PARENT" "$PRODUCT" | LC_ALL=C sort > "$OUT/product-paths.txt"
+
+          gh api "repos/$GITHUB_REPOSITORY/pulls/1391" > "$OUT/product-pr.json"
+          jq -e --arg product "$PRODUCT" '
+            .state == "open" and
+            .draft == true and
+            .base.ref == "main" and
+            .head.sha == $product and
+            .commits == 1 and
+            .changed_files == 14
+          ' "$OUT/product-pr.json" >/dev/null
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+
+      - name: Authenticate full custody chain, final blobs, and all gates
+        id: qualification
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PARENT: 'd26cb838df12a877840ebe71eb9388d44b6ceaf9'
+          PRODUCT: '3c0c2bc18cac5b35baa4afe3bf2c6c7f250b9f94'
+          PRODUCT_TREE: 'd6154ce261f8c5d6df71185ffe50040e2afc33fe'
+          CAPTURE_ARTIFACT: '9002226845'
+          CAPTURE_ZIP_BYTES: '1201940'
+          CAPTURE_ZIP_SHA256: '0ddb75c966d20bf9d05385adce6960b06b8c96c3696aed55bafabc853f9e2b63'
+          CAPTURE_MANIFEST_SHA256: '5c850c7e4dc0644204a8cda60b9a540a0851e1e428ad2069373a56ef4db84358'
+          MATERIALIZER_ARTIFACT: '9005832188'
+          MATERIALIZER_ZIP_BYTES: '101618'
+          MATERIALIZER_ZIP_SHA256: '60aa8ad9e5099391cdefa29217a8707be67fadaa9bc303693c5ac5b44d2d22b0'
+          PREDECESSOR_QUAL_ARTIFACT: '9006119634'
+          PREDECESSOR_QUAL_ZIP_BYTES: '268646'
+          PREDECESSOR_QUAL_ZIP_SHA256: '126b8b2c6a60813fa55531da497a65628be668f95870783f2160c885c177c760'
+          REPAIR_ARTIFACT: '9006533695'
+          REPAIR_ZIP_BYTES: '42202'
+          REPAIR_ZIP_SHA256: '522fe88a567624d9bc6350357f3bbdf345b0b20d0f75b39f0f14bf02818445c0'
+          SCHEMA_PATH: 'schemas/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.schema.json'
+          WORKFLOW_PATH: '.github/workflows/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.yml'
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/rd04-five-state-final-product-qualification-v2
+          WT=/tmp/rd04-five-state-final-product-worktree-v2
+          rm -rf "$WT" "$OUT/capture" "$OUT/materializer" "$OUT/predecessor-qualification" "$OUT/repair"
+          mkdir -p "$OUT/capture" "$OUT/materializer" "$OUT/predecessor-qualification" "$OUT/repair"
+          exec > >(tee "$OUT/qualification.log") 2>&1
+
+          download_and_verify() {
+            local artifact_id=$1
+            local bytes=$2
+            local sha=$3
+            local zip=$4
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > "$zip"
+            test "$(wc -c < "$zip" | tr -d ' ')" = "$bytes"
+            test "$(sha256sum "$zip" | awk '{print $1}')" = "$sha"
+          }
+
+          download_and_verify "$CAPTURE_ARTIFACT" "$CAPTURE_ZIP_BYTES" "$CAPTURE_ZIP_SHA256" "$OUT/capture.zip"
+          unzip -q "$OUT/capture.zip" -d "$OUT/capture"
+          python - "$OUT/capture" <<'PYCAPTURE'
+          import hashlib,json,pathlib,sys
+          base=pathlib.Path(sys.argv[1])
+          candidates=list(base.rglob('manifest.json'))
+          manifests=[]
+          for path in candidates:
+              try:
+                  value=json.loads(path.read_text())
+              except Exception:
+                  continue
+              if isinstance(value,dict) and value.get('entry_count')==60 and isinstance(value.get('entries'),list):
+                  manifests.append((path,value))
+          assert len(manifests)==1, [str(x[0]) for x in manifests]
+          path,manifest=manifests[0]; root=path.parent
+          combined=hashlib.sha256()
+          for entry in manifest['entries']:
+              data=(root/entry['path']).read_bytes()
+              assert len(data)==entry['bytes']
+              assert hashlib.sha256(data).hexdigest()==entry['sha256']
+              combined.update(entry['path'].encode()+b'\0'+entry['sha256'].encode()+b'\n')
+          assert combined.hexdigest()=='5c850c7e4dc0644204a8cda60b9a540a0851e1e428ad2069373a56ef4db84358'
+          assert (root/'SHA256SUMS').read_text()==''.join(f"{e['sha256']}  {e['path']}\n" for e in manifest['entries'])
+          print('capture_artifact=pass entries=60')
+          PYCAPTURE
+
+          download_and_verify "$MATERIALIZER_ARTIFACT" "$MATERIALIZER_ZIP_BYTES" "$MATERIALIZER_ZIP_SHA256" "$OUT/materializer.zip"
+          unzip -q "$OUT/materializer.zip" -d "$OUT/materializer"
+          test -f "$OUT/materializer/rd04-five-state-source-field-materializer/product.tar.xz"
+          test "$(wc -c < "$OUT/materializer/rd04-five-state-source-field-materializer/product.tar.xz" | tr -d ' ')" = 17004
+          test "$(sha256sum "$OUT/materializer/rd04-five-state-source-field-materializer/product.tar.xz" | awk '{print $1}')" = db341e88a3dbcb4679c87f1bb3591f09fad3c9161d5e4941bb8d950ebd647de3
+          xz -t "$OUT/materializer/rd04-five-state-source-field-materializer/product.tar.xz"
+
+          download_and_verify "$PREDECESSOR_QUAL_ARTIFACT" "$PREDECESSOR_QUAL_ZIP_BYTES" "$PREDECESSOR_QUAL_ZIP_SHA256" "$OUT/predecessor-qualification.zip"
+          unzip -q "$OUT/predecessor-qualification.zip" -d "$OUT/predecessor-qualification"
+          (cd "$OUT/predecessor-qualification" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .qualification == "pass" and
+            .product_commit == "0d9fcc77cac1da8a973781c7fd03ec0390095dce" and
+            .product_tree == "29ec9fca19f8c803f271ff589f6b44dca7018410" and
+            .product_parent == "d26cb838df12a877840ebe71eb9388d44b6ceaf9" and
+            .product_paths == 14 and
+            .blob_identities_verified == 14 and
+            .closed_schema_objects == 8 and
+            .adversarial_refusals == 532 and
+            .complete_release_gate == "pass" and
+            .clean_replay == "pass"
+          ' "$OUT/predecessor-qualification/qualification.json" >/dev/null
+
+          download_and_verify "$REPAIR_ARTIFACT" "$REPAIR_ZIP_BYTES" "$REPAIR_ZIP_SHA256" "$OUT/repair.zip"
+          unzip -q "$OUT/repair.zip" -d "$OUT/repair"
+          (cd "$OUT/repair" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .qualification == "pass" and
+            .qualified_repaired_tree == "d6154ce261f8c5d6df71185ffe50040e2afc33fe" and
+            .product_parent == "d26cb838df12a877840ebe71eb9388d44b6ceaf9" and
+            .final_product_commits == 1 and
+            .final_product_paths == 14 and
+            .repair_paths == 2 and
+            .schema_git_blob == "d0ce2e6f863452ab262a64b556675966891b7df6" and
+            .standing_workflow_git_blob == "efab2ef325db10e1205e71ab55a76f85f927ec19" and
+            .pre_repair_nested_unknown_keys_accepted == 8 and
+            .post_repair_nested_unknown_keys_refused == 8 and
+            .open_object_schemas_after == 0 and
+            .research_decisions_changed == 0 and
+            .matrix_updates == 0 and
+            .adversarial_refusals == 532 and
+            .complete_release_gate == "pass" and
+            .clean_replay == "pass"
+          ' "$OUT/repair/qualification.json" >/dev/null
+
+          git worktree add --detach "$WT" "$PRODUCT"
+          test "$(git -C "$WT" rev-parse HEAD^)" = "$PARENT"
+          test "$(git -C "$WT" show -s --format=%T HEAD)" = "$PRODUCT_TREE"
+          cmp "$WT/$SCHEMA_PATH" "$OUT/repair/schema.final"
+          cmp "$WT/$WORKFLOW_PATH" "$OUT/repair/workflow.final"
+
+          python - "$OUT/predecessor-qualification/blob-ledger.json" "$OUT/repair/blob-ledger.json" "$WT" "$OUT/final-blob-ledger.json" <<'PYBLOBS'
+          import hashlib,json,pathlib,subprocess,sys
+          old=json.loads(pathlib.Path(sys.argv[1]).read_text())['entries']
+          repair=json.loads(pathlib.Path(sys.argv[2]).read_text())['entries']
+          wt=pathlib.Path(sys.argv[3]); output=pathlib.Path(sys.argv[4])
+          expected={entry['path']:entry for entry in old}
+          for entry in repair: expected[entry['path']]=entry
+          assert len(expected)==14
+          rows=[]
+          for path in sorted(expected):
+              entry=expected[path]; data=(wt/path).read_bytes()
+              assert len(data)==entry['bytes'],path
+              assert hashlib.sha256(data).hexdigest()==entry['sha256'],path
+              blob=subprocess.check_output(['git','-C',str(wt),'hash-object',path],text=True).strip()
+              assert blob==entry['git_blob'],(path,blob,entry['git_blob'])
+              listing=subprocess.check_output(['git','-C',str(wt),'ls-tree','HEAD','--',path],text=True).split()
+              assert listing[0]==entry['mode']=='100644',path
+              rows.append({'path':path,'bytes':len(data),'sha256':entry['sha256'],'git_blob':blob,'mode':'100644'})
+          output.write_text(json.dumps({'schema_version':'ssc-rd04-five-state-final-product-blob-ledger@1','entries':rows},indent=2,sort_keys=True)+'\n')
+          print('final_blob_identities=pass count=14')
+          PYBLOBS
+
+          python - "$WT/$WORKFLOW_PATH" <<'PYWORKFLOW'
+          from pathlib import Path
+          import sys
+          text=Path(sys.argv[1]).read_text()
+          assert 'contents: read' in text and 'actions: read' in text
+          assert 'nested_unknown_key_refusals={refusals}' in text
+          for forbidden in ('contents: write','issues: write','pull-requests: write','git push','gh pr merge','gh api -X POST','gh api -X PATCH','gh api -X PUT','gh api -X DELETE'):
+              assert forbidden not in text,forbidden
+          print('standing_workflow_authority=pass read_only=true')
+          PYWORKFLOW
+
+          cd "$WT"
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs | tee "$OUT/build-check.log"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs | tee "$OUT/product-validation.log"
+          node test/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.test.js | tee "$OUT/adversarial.log"
+          grep -Fq 'rd04_five_state_source_field_adversarial=pass mutations_refused=532' "$OUT/adversarial.log"
+
+          python - <<'PYSCHEMA' | tee "$OUT/schema-closure.log"
+          import copy,json,pathlib
+          from jsonschema import Draft202012Validator
+          root=pathlib.Path('.'); data=root/'data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication'
+          schema=json.loads((root/'schemas/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.schema.json').read_text()); validator=Draft202012Validator(schema)
+          files=['capture-custody.json','source-adjudications.json','field-adjudications.json','pdf-review-receipts.json','promotion-candidate-protocol.json','selected-followup-protocol.json','index.json','product-manifest.json']
+          refusals=0
+          for name in files:
+              value=json.loads((data/name).read_text()); validator.validate(value); mutated=copy.deepcopy(value)
+              if 'capture_counts' in mutated: mutated['capture_counts']['unreviewed_authority']=True
+              elif 'decisions' in mutated: mutated['decisions'][0]['unreviewed_authority']=True
+              elif 'reviews' in mutated: mutated['reviews'][0]['unreviewed_authority']=True
+              elif 'candidates' in mutated: mutated['candidates'][0]['unreviewed_authority']=True
+              elif 'routes' in mutated: mutated['routes'][0]['unreviewed_authority']=True
+              elif 'counts' in mutated: mutated['counts']['unreviewed_authority']=True
+              elif 'entries' in mutated: mutated['entries'][0]['unreviewed_authority']=True
+              else: raise AssertionError(name)
+              assert list(validator.iter_errors(mutated)),name; refusals+=1
+          missing=[]
+          def walk(value,path='$'):
+              if isinstance(value,dict):
+                  if (value.get('type')=='object' or 'properties' in value) and value.get('additionalProperties') is not False and value.get('unevaluatedProperties') is not False: missing.append(path)
+                  for key,child in value.items(): walk(child,path+'/'+key)
+              elif isinstance(value,list):
+                  for index,child in enumerate(value): walk(child,path+f'/{index}')
+          walk(schema); assert not missing,missing
+          print(f'closed_schema_validation=pass objects={len(files)} nested_unknown_key_refusals={refusals} open_object_schemas={len(missing)}')
+          PYSCHEMA
+
+          node tools/validate-no-magic-human-gate.mjs | tee "$OUT/no-magic-human.log"
+          npm run release:check | tee "$OUT/release-check.log"
+
+          cp "$SCHEMA_PATH" "$OUT/schema.before-replay"
+          cp "$WORKFLOW_PATH" "$OUT/workflow.before-replay"
+          git restore --staged --worktree .
+          git clean -fdx
+          cmp "$SCHEMA_PATH" "$OUT/schema.before-replay"
+          cmp "$WORKFLOW_PATH" "$OUT/workflow.before-replay"
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs --write | tee "$OUT/replay-write.log"
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs | tee "$OUT/replay-build.log"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs | tee "$OUT/replay-validation.log"
+          node test/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.test.js | tee "$OUT/replay-adversarial.log"
+          grep -Fq 'rd04_five_state_source_field_adversarial=pass mutations_refused=532' "$OUT/replay-adversarial.log"
+          node tools/validate-no-magic-human-gate.mjs | tee "$OUT/replay-no-magic-human.log"
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          cd "$GITHUB_WORKSPACE"
+          python - <<PYQUAL > "$OUT/qualification.json"
+          import json,os
+          print(json.dumps({
+            'schema_version':'ssc-rd04-five-state-final-product-qualification-v2@1',
+            'qualification':'pass',
+            'workflow_run':int(os.environ['GITHUB_RUN_ID']),
+            'qualifier_head':os.environ['GITHUB_SHA'],
+            'product_commit':'$PRODUCT',
+            'product_tree':'$PRODUCT_TREE',
+            'product_parent':'$PARENT',
+            'product_commits':1,
+            'product_paths':14,
+            'addition_only':True,
+            'capture_artifact':int('$CAPTURE_ARTIFACT'),
+            'capture_zip_bytes':int('$CAPTURE_ZIP_BYTES'),
+            'capture_zip_sha256':'$CAPTURE_ZIP_SHA256',
+            'materializer_artifact':int('$MATERIALIZER_ARTIFACT'),
+            'materializer_zip_bytes':int('$MATERIALIZER_ZIP_BYTES'),
+            'materializer_zip_sha256':'$MATERIALIZER_ZIP_SHA256',
+            'predecessor_qualification_artifact':int('$PREDECESSOR_QUAL_ARTIFACT'),
+            'predecessor_qualification_zip_sha256':'$PREDECESSOR_QUAL_ZIP_SHA256',
+            'repair_artifact':int('$REPAIR_ARTIFACT'),
+            'repair_zip_sha256':'$REPAIR_ZIP_SHA256',
+            'final_blob_identities_verified':14,
+            'closed_schema_objects':8,
+            'nested_unknown_key_refusals':8,
+            'open_object_schemas':0,
+            'adversarial_refusals':532,
+            'research_decisions_changed_by_repair':0,
+            'matrix_updates':0,
+            'source_requests':0,
+            'no_magic_human':'pass',
+            'complete_release_gate':'pass',
+            'clean_replay':'pass',
+            'outside_human_dependency':False,
+            'publication_effect':'none','adoption_effect':'none','graph_effect':'none'
+          },indent=2,sort_keys=True))
+          PYQUAL
+
+          find "$OUT" -maxdepth 1 -type f ! -name SHA256SUMS -printf '%f\n' | LC_ALL=C sort | while IFS= read -r name; do sha256sum "$OUT/$name"; done | sed "s#  $OUT/#  #" > "$OUT/SHA256SUMS"
+
+      - name: Preserve final exact-head qualification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-final-product-qualification-v2
+          path: /tmp/rd04-five-state-final-product-qualification-v2
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+
+      - name: Require successful final qualification
+        if: always()
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.qualification.outcome }}
+        run: test "$OUTCOME" = success
