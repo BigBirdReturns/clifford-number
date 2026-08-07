@@ -1,0 +1,127 @@
+name: TEMP RD-04 five-state selected follow-up capture v1
+
+on:
+  push:
+    branches:
+      - 'agent/ssc-rd04-five-state-followup-capture-v1'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  capture:
+    if: github.event_name == 'push' && github.ref_name == 'agent/ssc-rd04-five-state-followup-capture-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - name: Verify exact one-file carrier and frozen protocol
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = '0a4091391e4c17c64683bd91f6a739a2a0a152fc'
+          test "$(git rev-list --count HEAD^..HEAD)" = 1
+          test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/temp-ssc-rd04-five-state-followup-capture-v1.yml'
+          PROTOCOL='data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/selected-followup-protocol.json'
+          test -f "$PROTOCOL"
+          test "$(git hash-object "$PROTOCOL")" = '88cb73c7bae87a4031d1571d7dd5ebdcb58aa2f4'
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          o=json.loads(Path('data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/selected-followup-protocol.json').read_text())
+          assert o['route_count']==11 and len(o['routes'])==11
+          assert o['execution_ceiling']['maximum_total_requests']==11
+          assert o['execution_ceiling']['maximum_attempts_per_route']==1
+          assert o['execution_ceiling']['result_spawned_requests']==0
+          assert [r['route_ordinal'] for r in o['routes']]==list(range(1,12))
+          assert len({r['route_id'] for r in o['routes']})==11
+          print('frozen_followup_protocol=pass routes=11')
+          PY
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Recover immutable capture runner
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUNNER_BLOB: b806465f4c86f17511e0310e8ed4acace44b78f5
+          RUNNER_XZ_BYTES: '2740'
+          RUNNER_XZ_SHA256: f9e9d7ec8fbfd26b0392ecec612cf1034035105da10d40ed4ea2d7fec1a7e7ea
+          RUNNER_SOURCE_BYTES: '8298'
+          RUNNER_SOURCE_SHA256: cb8edc6e3ddd53dab3394746902f09e7e54df9f3cd80ec92bf33f061f0399215
+        run: |
+          set -Eeuo pipefail
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/git/blobs/$RUNNER_BLOB" \
+            > /tmp/runner-blob.json
+          test "$(jq -r .encoding /tmp/runner-blob.json)" = base64
+          jq -r .content /tmp/runner-blob.json | tr -d '\n' | base64 -d > /tmp/rd04-followup-runner.py.xz
+          test "$(wc -c < /tmp/rd04-followup-runner.py.xz | tr -d ' ')" = "$RUNNER_XZ_BYTES"
+          test "$(sha256sum /tmp/rd04-followup-runner.py.xz | awk '{print $1}')" = "$RUNNER_XZ_SHA256"
+          test "$(git hash-object /tmp/rd04-followup-runner.py.xz)" = "$RUNNER_BLOB"
+          xz -dc /tmp/rd04-followup-runner.py.xz > /tmp/rd04-followup-runner.py
+          test "$(wc -c < /tmp/rd04-followup-runner.py | tr -d ' ')" = "$RUNNER_SOURCE_BYTES"
+          test "$(sha256sum /tmp/rd04-followup-runner.py | awk '{print $1}')" = "$RUNNER_SOURCE_SHA256"
+          python -m py_compile /tmp/rd04-followup-runner.py
+
+      - name: Execute exact eleven-route bounded capture
+        shell: bash
+        env:
+          EXECUTION_PARENT: 0a4091391e4c17c64683bd91f6a739a2a0a152fc
+          EXECUTION_HEAD: ${{ github.sha }}
+          WORKFLOW_RUN: ${{ github.run_id }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/ssc-rd04-five-state-followup-capture-v1
+          python /tmp/rd04-followup-runner.py | tee /tmp/rd04-followup-run.log
+          test -f /tmp/ssc-rd04-five-state-followup-capture-v1/execution-receipt.json
+          test -f /tmp/ssc-rd04-five-state-followup-capture-v1/request-ledger.json
+          test -f /tmp/ssc-rd04-five-state-followup-capture-v1/manifest.json
+          test "$(jq -r .terminal_route_count /tmp/ssc-rd04-five-state-followup-capture-v1/execution-receipt.json)" = 11
+
+      - name: Preserve exact capture artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-followup-capture-v1
+          path: /tmp/ssc-rd04-five-state-followup-capture-v1
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Report bounded terminal result
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          RECEIPT=/tmp/ssc-rd04-five-state-followup-capture-v1/execution-receipt.json
+          if test -f "$RECEIPT"; then
+            {
+              echo 'RD-04 exact eleven-route follow-up capture completed.'
+              echo
+              echo '```text'
+              for key in workflow_run execution_head route_count request_count terminal_route_count http_success_count http_non_success_count cross_host_redirect_refusal_count transport_error_count body_limit_exceeded_count result_spawned_requests source_admissions field_classifications row_state_mutations terminal_cells_after open_substantive_cells_after class_closed outside_human_dependency; do
+                echo "$key: $(jq -r --arg key "$key" '.[$key]' "$RECEIPT")"
+              done
+              echo '```'
+              echo
+              echo 'Transport custody only. No captured body is admitted as evidence or converted into a field state by this lane.'
+            } >/tmp/comment.md
+          else
+            {
+              echo 'RD-04 exact eleven-route follow-up capture failed closed before a terminal receipt was created.'
+              echo
+              echo 'No unverified route, source, field, row, class, ledger, publication, adoption, or graph authority is represented.'
+            } >/tmp/comment.md
+          fi
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
