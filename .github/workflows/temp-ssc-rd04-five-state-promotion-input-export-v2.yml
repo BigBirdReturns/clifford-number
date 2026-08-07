@@ -1,0 +1,137 @@
+name: TEMP RD-04 five-state promotion input export v2
+
+on:
+  push:
+    branches:
+      - 'agent/ssc-rd04-five-state-promotion-input-export-v2'
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  export:
+    if: >-
+      (github.event_name == 'push' && github.ref_name == 'agent/ssc-rd04-five-state-promotion-input-export-v2') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/ssc-rd04-five-state-promotion-input-export-v2' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Verify exact one-path export carrier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = '46036c01eaba31bdb18045307fe3ebcb67d576a6'
+          test "$(git rev-list --count HEAD^..HEAD)" = 1
+          test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/temp-ssc-rd04-five-state-promotion-input-export-v2.yml'
+
+      - name: Export and checksum exact promotion inputs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-five-state-promotion-input-export-v2
+          rm -rf "$OUT"
+          mkdir -p "$OUT/input"
+
+          declare -A SOURCES=(
+            [promoted-partial-field-matrix.json]='data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-row-state-adjudication/promoted-partial-field-matrix.json'
+            [promotion-candidate-protocol.json]='data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/promotion-candidate-protocol.json'
+            [field-adjudications.json]='data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/field-adjudications.json'
+            [capture-custody.json]='data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/capture-custody.json'
+            [source-adjudications.json]='data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/source-adjudications.json'
+          )
+
+          test "$(git hash-object "${SOURCES[promoted-partial-field-matrix.json]}")" = ab5f136d887aa6f21edc793e7394fee38b8ad6f6
+          test "$(sha256sum "${SOURCES[promoted-partial-field-matrix.json]}" | awk '{print $1}')" = a23febb325b1ac2224ad357225ffa22166223c24c7296d09551eb181269821e1
+          test "$(git hash-object "${SOURCES[promotion-candidate-protocol.json]}")" = 30705b3d0f74d1b75f81175c2e9ca3fa9bf76c4a
+          test "$(git hash-object "${SOURCES[field-adjudications.json]}")" = ca0be819a522532ecc7b0ee07909382ece6a8329
+
+          for name in "${!SOURCES[@]}"; do
+            cp "${SOURCES[$name]}" "$OUT/input/$name"
+          done
+          (
+            cd "$OUT/input"
+            sha256sum capture-custody.json field-adjudications.json promoted-partial-field-matrix.json promotion-candidate-protocol.json source-adjudications.json > ../SHA256SUMS
+          )
+
+          python - <<'PY'
+          import hashlib, json, os, subprocess
+          from pathlib import Path
+          out=Path('/tmp/ssc-rd04-five-state-promotion-input-export-v2')
+          repo_paths={
+            'promoted-partial-field-matrix.json':'data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-row-state-adjudication/promoted-partial-field-matrix.json',
+            'promotion-candidate-protocol.json':'data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/promotion-candidate-protocol.json',
+            'field-adjudications.json':'data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/field-adjudications.json',
+            'capture-custody.json':'data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/capture-custody.json',
+            'source-adjudications.json':'data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/source-adjudications.json',
+          }
+          files=[]
+          for name,path in sorted(repo_paths.items()):
+              data=(out/'input'/name).read_bytes()
+              blob=subprocess.check_output(['git','hash-object',path],text=True).strip()
+              files.append({'path':f'input/{name}','repository_path':path,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),'git_blob':blob})
+          receipt={
+            'schema_version':'ssc-rd04-wave03-five-state-promotion-input-export@2',
+            'issue':1017,
+            'canonical_main':'46036c01eaba31bdb18045307fe3ebcb67d576a6',
+            'export_head':os.environ['GITHUB_SHA'],
+            'workflow_run':int(os.environ['GITHUB_RUN_ID']),
+            'files':files,
+            'source_requests':0,
+            'matrix_updates':0,
+            'field_terminalizations':0,
+            'row_state_mutations':0,
+            'class_closed':False,
+            'outside_human_dependency':False,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+          }
+          payload=json.dumps(receipt,indent=2,sort_keys=True)+'\n'
+          (out/'receipt.json').write_text(payload)
+          print(f"promotion_input_export_v2=pass files={len(files)} bytes={sum(x['bytes'] for x in files)}")
+          PY
+
+      - name: Preserve exact promotion inputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-promotion-input-export-v2
+          path: /tmp/ssc-rd04-five-state-promotion-input-export-v2
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Report exact input export
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R=/tmp/ssc-rd04-five-state-promotion-input-export-v2/receipt.json
+          if test -f "$R"; then
+            {
+              echo 'RD-04 exact five-state promotion inputs v2 exported successfully.'
+              echo
+              echo '```text'
+              echo "workflow_run: $(jq -r .workflow_run "$R")"
+              echo "export_head: $(jq -r .export_head "$R")"
+              echo "file_count: $(jq -r '.files | length' "$R")"
+              echo "source_requests: $(jq -r .source_requests "$R")"
+              echo "matrix_updates: $(jq -r .matrix_updates "$R")"
+              echo '```'
+              echo
+              echo 'This read-only lane creates input custody only.'
+            } >/tmp/comment.md
+          else
+            echo 'RD-04 five-state promotion input export v2 failed closed; no product authority is represented.' >/tmp/comment.md
+          fi
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
