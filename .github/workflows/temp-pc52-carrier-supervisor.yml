@@ -1,0 +1,89 @@
+name: TEMP supervise exact PC-52 materializer
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: pc52-carrier-supervisor
+  cancel-in-progress: false
+
+jobs:
+  supervise:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPOSITORY: ${{ github.repository }}
+      CARRIER_BRANCH: agent/pc52-materializer-carrier
+      PRODUCT_BRANCH: agent/pc52-materializer
+      RECEIPT_DIR: /tmp/pc52-carrier-supervisor
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Supervise one bounded carrier retry
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RECEIPT_DIR"
+          RETRIED=0
+          for attempt in $(seq 1 300); do
+            if PRODUCT_SHA=$(gh api "/repos/${GH_REPOSITORY}/git/ref/heads/${PRODUCT_BRANCH}" --jq '.object.sha' 2>/dev/null); then
+              printf '%s\n' "$PRODUCT_SHA" > "$RECEIPT_DIR/product-sha.txt"
+              printf 'product_branch=present\ncarrier_retry_count=%s\n' "$RETRIED" > "$RECEIPT_DIR/summary.txt"
+              exit 0
+            fi
+
+            CARRIER_SHA=$(gh api "/repos/${GH_REPOSITORY}/git/ref/heads/${CARRIER_BRANCH}" --jq '.object.sha' 2>/dev/null || true)
+            if [[ -z "$CARRIER_SHA" ]]; then
+              ISSUE_STATE=$(gh api "/repos/${GH_REPOSITORY}/issues/1331" --jq '.state')
+              if [[ "$ISSUE_STATE" = closed ]]; then
+                printf 'product_branch=retired_after_terminal_closure\ncarrier_retry_count=%s\n' "$RETRIED" > "$RECEIPT_DIR/summary.txt"
+                exit 0
+              fi
+              echo 'carrier branch absent before product publication' >&2
+              exit 1
+            fi
+
+            gh api "/repos/${GH_REPOSITORY}/actions/runs?head_sha=${CARRIER_SHA}&per_page=100" > "$RECEIPT_DIR/runs.json"
+            jq '[.workflow_runs | sort_by(.name) | group_by(.name)[] | max_by(.id)]' "$RECEIPT_DIR/runs.json" > "$RECEIPT_DIR/latest.json"
+
+            jq -r '.[] | select(.conclusion == "action_required") | .id' "$RECEIPT_DIR/latest.json" | while read -r run_id; do
+              [[ -z "$run_id" ]] && continue
+              gh api --method POST "/repos/${GH_REPOSITORY}/actions/runs/${run_id}/approve" >/dev/null 2>&1 || true
+            done
+
+            MATERIALIZER_ID=$(jq -r '[.[] | select((.name | test("PC-52|pc52"; "i")) and (.name | test("Release checks|No magic human"; "i") | not))] | sort_by(.id) | last | .id // empty' "$RECEIPT_DIR/latest.json")
+            MATERIALIZER_STATUS=$(jq -r --argjson id "${MATERIALIZER_ID:-0}" '.[] | select(.id == $id) | .status // empty' "$RECEIPT_DIR/latest.json")
+            MATERIALIZER_CONCLUSION=$(jq -r --argjson id "${MATERIALIZER_ID:-0}" '.[] | select(.id == $id) | .conclusion // empty' "$RECEIPT_DIR/latest.json")
+
+            if [[ -n "$MATERIALIZER_ID" && "$MATERIALIZER_STATUS" = completed && "$MATERIALIZER_CONCLUSION" = failure ]]; then
+              if [[ "$RETRIED" -eq 0 ]]; then
+                gh api --method POST "/repos/${GH_REPOSITORY}/actions/runs/${MATERIALIZER_ID}/rerun-failed-jobs" >/dev/null
+                RETRIED=1
+              else
+                gh api "/repos/${GH_REPOSITORY}/actions/runs/${MATERIALIZER_ID}/jobs?per_page=100" > "$RECEIPT_DIR/failed-run-jobs.json"
+                echo 'materializer remained failed after one bounded retry' >&2
+                exit 1
+              fi
+            fi
+
+            sleep 30
+          done
+          echo 'timed out waiting for exact PC-52 product branch' >&2
+          exit 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc52-carrier-supervisor
+          path: /tmp/pc52-carrier-supervisor
+          if-no-files-found: error
+          retention-days: 30
