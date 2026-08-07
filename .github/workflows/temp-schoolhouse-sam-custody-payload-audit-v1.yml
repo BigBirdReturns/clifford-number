@@ -1,0 +1,241 @@
+name: TEMP audit sealed School.House SAM custody payload
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-sam-custody-payload-audit-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-sam-custody-payload-audit-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-sam-custody-payload-audit-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Reconstruct and audit exact sealed payload without source requests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='0a4091391e4c17c64683bd91f6a739a2a0a152fc'
+          SOURCE_BRANCH='agent/schoolhouse-sam-public-entity-registration-census-custody-materializer-v1'
+          SOURCE_HEAD='86f59e5240ccc0c3de0fc6e6ed81c03c597604e1'
+          SOURCE_WORKFLOW='.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-custody-materializer-v1.yml'
+          PAYLOAD='.github/materializers/schoolhouse-sam-public-entity-registration-census-custody-v1'
+          THIS_WORKFLOW='.github/workflows/temp-schoolhouse-sam-custody-payload-audit-v1.yml'
+          WORK="$RUNNER_TEMP/sam-payload-audit-v1"
+          OUT="$RUNNER_TEMP/schoolhouse-sam-custody-payload-audit-v1"
+          rm -rf "$WORK" "$OUT"
+          mkdir -p "$WORK/chunks" "$OUT/product"
+
+          git fetch --no-tags origin main "$SOURCE_BRANCH"
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+          mapfile -t DELTA < <(git diff --name-only "$BASE"..HEAD)
+          test "${#DELTA[@]}" -eq 1
+          test "${DELTA[0]}" = "$THIS_WORKFLOW"
+          test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$SOURCE_HEAD"
+
+          SIZES=(10000 10000 15000 15000 15000 10100)
+          HASHES=(
+            278c8a57dd6204ab8d2de941bdecf6b41eb3713099e8dbbe05e686a4b13f048d
+            6020f5f047224341e7b09fe99669ba20165ec97bdaa652a777ef33966e606df6
+            57284b1c91664718f0e13c3da7238c0b4e2090ddd8ef2cc41192c68944f89eb5
+            d89b6d6b08c7f463a742aaa372089fcd8ecf881a7ae13cfd89b9729dd329384d
+            376e3844e5c0926c4259c9d12e2c5d47c48ad1317edc9d11bed81d9caa2f3093
+            59060364dd76ab13ea95ace24f3d58f3091426905f1b6ee2083884e725a50f9f
+          )
+          for index in "${!SIZES[@]}"; do
+            printf -v suffix '%02d' "$index"
+            source_path="$PAYLOAD/part-$suffix"
+            local_path="$WORK/chunks/part-$suffix"
+            git show "origin/$SOURCE_BRANCH:$source_path" > "$local_path"
+            test "$(stat -c%s "$local_path")" = "${SIZES[$index]}"
+            test "$(sha256sum "$local_path" | awk '{print $1}')" = "${HASHES[$index]}"
+          done
+          git show "origin/$SOURCE_BRANCH:$SOURCE_WORKFLOW" > "$OUT/source-materializer-workflow.yml"
+
+          B64="$WORK/product.tar.xz.b64"
+          XZ="$WORK/product.tar.xz"
+          TAR="$WORK/product.tar"
+          cat "$WORK/chunks"/part-{00,01,02,03,04,05} > "$B64"
+          test "$(stat -c%s "$B64")" = '75100'
+          test "$(sha256sum "$B64" | awk '{print $1}')" = '10d6494b60bd28f1ab595aeecdf1cfb648b99e059327b2b3e66c2a264bb1eb42'
+          base64 --decode "$B64" > "$XZ"
+          test "$(stat -c%s "$XZ")" = '56324'
+          test "$(sha256sum "$XZ" | awk '{print $1}')" = '495c017ab33cea972045194cf8c56758f00fc45006ec433f2a31b4cddf9ca735'
+          xz --decompress --stdout "$XZ" > "$TAR"
+          test "$(stat -c%s "$TAR")" = '112640'
+          test "$(sha256sum "$TAR" | awk '{print $1}')" = 'e70db63987b6d9a8db695f08a679375d2c20ec5ceb8a3bacdb3e9ed7f21e781f'
+
+          python - "$TAR" <<'PY'
+          from pathlib import PurePosixPath
+          import sys
+          import tarfile
+
+          expected = {
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/product-manifest.json',
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-qualification-artifact.zip',
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-source-artifact.zip',
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-wrapper-reconstruction-artifact.zip',
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/source-custody.json',
+              'docs/milestones/schoolhouse-sam-public-entity-registration-census-v1.md',
+              'tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py',
+          }
+          with tarfile.open(sys.argv[1], 'r:') as archive:
+              members = archive.getmembers()
+              assert {member.name for member in members} == expected
+              assert len(members) == 7
+              for member in members:
+                  path = PurePosixPath(member.name)
+                  assert member.isfile()
+                  assert not path.is_absolute() and '..' not in path.parts
+                  assert member.uid == member.gid == 0
+          print('sealed_tar_contract=pass members=7')
+          PY
+          tar -xf "$TAR" -C "$OUT/product"
+
+          python - "$OUT/product" "$OUT/payload-audit.json" <<'PY'
+          from pathlib import Path
+          from typing import Any
+          import hashlib
+          import json
+          import re
+          import sys
+          import zipfile
+
+          root = Path(sys.argv[1])
+          output = Path(sys.argv[2])
+          old_parent = 'd26cb838df12a877840ebe71eb9388d44b6ceaf9'
+          old_tree = 'af520dd75d4111d60f8a15c681e9d04d23c2f8f4'
+          live_parent = '0a4091391e4c17c64683bd91f6a739a2a0a152fc'
+
+          def sha(path: Path) -> str:
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+
+          def collect_paths(value: Any, prefix: str = '') -> list[dict[str, Any]]:
+              rows: list[dict[str, Any]] = []
+              if isinstance(value, dict):
+                  for key, child in value.items():
+                      path = f'{prefix}.{key}' if prefix else str(key)
+                      if key in {'canonical_parent', 'canonical_parent_tree', 'source_parent', 'source_parent_tree', 'product_parent'}:
+                          rows.append({'json_path': path, 'value': child})
+                      rows.extend(collect_paths(child, path))
+              elif isinstance(value, list):
+                  for index, child in enumerate(value):
+                      rows.extend(collect_paths(child, f'{prefix}[{index}]'))
+              return rows
+
+          files = []
+          sha_occurrences: dict[str, list[dict[str, Any]]] = {}
+          bindings: list[dict[str, Any]] = []
+          for path in sorted(p for p in root.rglob('*') if p.is_file()):
+              rel = path.relative_to(root).as_posix()
+              row: dict[str, Any] = {
+                  'path': rel,
+                  'bytes': path.stat().st_size,
+                  'sha256': sha(path),
+              }
+              if path.suffix == '.zip':
+                  with zipfile.ZipFile(path) as archive:
+                      assert archive.testzip() is None
+                      row['zip_members'] = len(archive.namelist())
+              else:
+                  text = path.read_text(encoding='utf-8')
+                  row['old_parent_occurrences'] = text.count(old_parent)
+                  row['old_tree_occurrences'] = text.count(old_tree)
+                  row['live_parent_occurrences'] = text.count(live_parent)
+                  for match in re.finditer(r'(?<![0-9a-f])[0-9a-f]{40}(?![0-9a-f])', text):
+                      sha_occurrences.setdefault(match.group(0), []).append({
+                          'path': rel,
+                          'offset': match.start(),
+                      })
+                  if path.suffix == '.json':
+                      value = json.loads(text)
+                      row['top_level_keys'] = sorted(value)
+                      bindings.extend(
+                          {'file': rel, **binding}
+                          for binding in collect_paths(value)
+                      )
+              files.append(row)
+
+          value = {
+              'schema_version': 'schoolhouse-sam-custody-payload-audit@1',
+              'state': 'request_free_exact_payload_reconstruction',
+              'source_materializer_branch': 'agent/schoolhouse-sam-public-entity-registration-census-custody-materializer-v1',
+              'source_materializer_head': '86f59e5240ccc0c3de0fc6e6ed81c03c597604e1',
+              'payload_base64_sha256': '10d6494b60bd28f1ab595aeecdf1cfb648b99e059327b2b3e66c2a264bb1eb42',
+              'payload_xz_sha256': '495c017ab33cea972045194cf8c56758f00fc45006ec433f2a31b4cddf9ca735',
+              'payload_tar_sha256': 'e70db63987b6d9a8db695f08a679375d2c20ec5ceb8a3bacdb3e9ed7f21e781f',
+              'source_requests': 0,
+              'file_count': len(files),
+              'files': files,
+              'named_parent_bindings': bindings,
+              'forty_hex_occurrences': [
+                  {'value': value, 'occurrences': occurrences}
+                  for value, occurrences in sorted(sha_occurrences.items())
+              ],
+          }
+          output.write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+          print(f'payload_audit=pass files={len(files)} bindings={len(bindings)}')
+          PY
+
+          WORKTREE="$WORK/repo"
+          git worktree add --detach "$WORKTREE" "$BASE"
+          cp -a "$OUT/product"/. "$WORKTREE"/
+          chmod 0755 "$WORKTREE/tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py"
+          set +e
+          (
+            cd "$WORKTREE"
+            python tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py --self-test
+          ) > "$OUT/focused-validator.log" 2>&1
+          VALIDATOR_RC="$?"
+          set -e
+          printf '%s\n' "$VALIDATOR_RC" > "$OUT/focused-validator-exit-code"
+
+          {
+            printf 'live_parent=%s\n' "$BASE"
+            printf 'source_materializer_head=%s\n' "$SOURCE_HEAD"
+            printf 'payload_base64_sha256=%s\n' '10d6494b60bd28f1ab595aeecdf1cfb648b99e059327b2b3e66c2a264bb1eb42'
+            printf 'payload_xz_sha256=%s\n' '495c017ab33cea972045194cf8c56758f00fc45006ec433f2a31b4cddf9ca735'
+            printf 'payload_tar_sha256=%s\n' 'e70db63987b6d9a8db695f08a679375d2c20ec5ceb8a3bacdb3e9ed7f21e781f'
+            printf 'focused_validator_exit_code=%s\n' "$VALIDATOR_RC"
+            printf 'source_requests=0\n'
+          } > "$OUT/AUDIT-RECEIPT"
+          (
+            cd "$OUT"
+            find . -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          )
+
+      - name: Preserve exact request-free payload audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-sam-custody-payload-audit-v1
+          path: ${{ runner.temp }}/schoolhouse-sam-custody-payload-audit-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
