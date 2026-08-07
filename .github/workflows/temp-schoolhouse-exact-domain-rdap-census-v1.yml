@@ -1,0 +1,182 @@
+name: TEMP census exact School.House domain RDAP object
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-exact-domain-rdap-census-v1.yml'
+      - '.schoolhouse-exact-domain-rdap-census-v1/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-exact-domain-rdap-census-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  acquire:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-exact-domain-rdap-census-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify exact carrier, protocol, and runner custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          FROZEN='681ae0d41bed04d068836ee9d746fe7701d234cb'
+          FROZEN_TREE='9ee392609c4c6bcce2806f9b8a1e514333c1428e'
+          ROOT='.schoolhouse-exact-domain-rdap-census-v1'
+          EXECUTE="$ROOT/EXECUTE"
+          SHARDS=("$ROOT/runner.py.gz.b64.00" "$ROOT/runner.py.gz.b64.01" "$ROOT/runner.py.gz.b64.02" "$ROOT/runner.py.gz.b64.03")
+          BUNDLE="$RUNNER_TEMP/runner.py.gz.b64"
+          GZIP="$RUNNER_TEMP/runner.py.gz"
+          RUNNER="$RUNNER_TEMP/runner.py"
+
+          git fetch --no-tags origin main
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          MERGE_BASE="$(git merge-base HEAD origin/main)"
+          printf 'carrier_head=%s\nlive_main=%s\nfrozen=%s\nmerge_base=%s\n' "$(git rev-parse HEAD)" "$LIVE_MAIN" "$FROZEN" "$MERGE_BASE"
+          test "$(git rev-parse "$FROZEN^{tree}")" = "$FROZEN_TREE"
+          git merge-base --is-ancestor "$FROZEN" origin/main
+          test "$MERGE_BASE" = "$FROZEN"
+
+          mapfile -t CHANGED < <(git diff --name-only "$FROZEN"..HEAD | sort)
+          EXPECTED=(
+            '.github/workflows/temp-schoolhouse-exact-domain-rdap-census-v1.yml'
+            '.schoolhouse-exact-domain-rdap-census-v1/EXECUTE'
+            '.schoolhouse-exact-domain-rdap-census-v1/runner.py.gz.b64.00'
+            '.schoolhouse-exact-domain-rdap-census-v1/runner.py.gz.b64.01'
+            '.schoolhouse-exact-domain-rdap-census-v1/runner.py.gz.b64.02'
+            '.schoolhouse-exact-domain-rdap-census-v1/runner.py.gz.b64.03'
+          )
+          test "${#CHANGED[@]}" -eq 6
+          for i in "${!EXPECTED[@]}"; do test "${CHANGED[$i]}" = "${EXPECTED[$i]}"; done
+
+          test "$(stat -c%s "$EXECUTE")" = '2083'
+          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = '5424405bcae594861e31bc9aad1c923bca21763f52066f0957ad290013b6735f'
+          BYTES=(3700 3700 3700 3697)
+          HASHES=(
+            3d0bcda4a564b3b22c082361c1690265edc1cb41ac48d6a4827478299fce2a32
+            3415eb454f68cfcf3698e56ca829029e6c51c3c0077a864bbee9b91b408cae48
+            1f90626a2fb4c7940059a7a8c51ae6713de7cc9baa84a2533b6686d038cfcde5
+            553c908510fac799fa82abb1c88fd9063f51b9d0df00685f0f9425c10d34fa9e
+          )
+          for i in "${!SHARDS[@]}"; do
+            test "$(stat -c%s "${SHARDS[$i]}")" = "${BYTES[$i]}"
+            test "$(sha256sum "${SHARDS[$i]}" | awk '{print $1}')" = "${HASHES[$i]}"
+          done
+          cat "${SHARDS[@]}" > "$BUNDLE"
+          test "$(stat -c%s "$BUNDLE")" = '14797'
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '835c73d76d5401a3c8981f569bff47f4af3dbfe9d45461a445b55b72df3dcec1'
+          base64 -d "$BUNDLE" > "$GZIP"
+          test "$(stat -c%s "$GZIP")" = '11097'
+          test "$(sha256sum "$GZIP" | awk '{print $1}')" = '7363f9a05128724507ea256f0d2e7293047165f7dc2759f94bd6e43a225c393a'
+          gzip -dc "$GZIP" > "$RUNNER"
+          test "$(stat -c%s "$RUNNER")" = '51188'
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = '09f5f002daf407e9dfa62a45784a2da06dab98b6044964cc9b3c2e15706847d3'
+          python -m py_compile "$RUNNER"
+          python "$RUNNER" --self-test
+
+          grep -Fx 'issue=1335' "$EXECUTE"
+          grep -Fx 'bootstrap_url=https://data.iana.org/rdap/dns.json' "$EXECUTE"
+          grep -Fx 'exact_domain=school.house' "$EXECUTE"
+          grep -Fx 'maximum_total_requests=4' "$EXECUTE"
+          grep -Fx 'result_spawned_requests=0' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+          grep -Fx 'publication_effect=none' "$EXECUTE"
+          grep -Fx 'adoption_effect=none' "$EXECUTE"
+          grep -Fx 'graph_effect=none' "$EXECUTE"
+
+      - name: Execute and validate bounded exact-domain RDAP census
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT='.schoolhouse-exact-domain-rdap-census-v1'
+          SHARDS=("$ROOT/runner.py.gz.b64.00" "$ROOT/runner.py.gz.b64.01" "$ROOT/runner.py.gz.b64.02" "$ROOT/runner.py.gz.b64.03")
+          BUNDLE="$RUNNER_TEMP/runner.py.gz.b64"
+          GZIP="$RUNNER_TEMP/runner.py.gz"
+          RUNNER="$RUNNER_TEMP/runner.py"
+          OUT="$RUNNER_TEMP/schoolhouse-exact-domain-rdap-census-v1"
+          LOG="$RUNNER_TEMP/schoolhouse-exact-domain-rdap-census-v1.log"
+          rm -rf "$OUT" && mkdir -p "$OUT"
+          cat "${SHARDS[@]}" > "$BUNDLE"
+          base64 -d "$BUNDLE" > "$GZIP"
+          gzip -dc "$GZIP" > "$RUNNER"
+
+          set +e
+          python "$RUNNER" --output "$OUT" 2>&1 | tee "$LOG"
+          status=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
+          cp "$LOG" "$OUT/RUNNER-OUTPUT.log"
+          test "$status" = '0'
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+
+          python - "$OUT" <<'PY'
+          from pathlib import Path
+          import json, sys
+          root=Path(sys.argv[1])
+          expected={'route-policy.json','bootstrap-receipt.json','domain-receipt.json','domain-observation.json','candidate-adjudication.json','summary.json','artifact-manifest.json','SHA256SUMS','RUNNER_EXIT_CODE','RUNNER-OUTPUT.log'}
+          assert {p.name for p in root.iterdir() if p.is_file()} == expected
+          assert (root/'RUNNER_EXIT_CODE').read_text().strip() == '0'
+          load=lambda n: json.loads((root/n).read_text())
+          policy,boot,domain,obs,adj,summary,manifest=(load(n) for n in ['route-policy.json','bootstrap-receipt.json','domain-receipt.json','domain-observation.json','candidate-adjudication.json','summary.json','artifact-manifest.json'])
+          assert summary['state'] in {'terminal_bounded_exact_domain_rdap_candidate_census','terminal_public_rdap_domain_object_not_returned','terminal_bounded_domain_rdap_source_unavailable'}
+          assert summary['issue']==1335 and summary['canonical_parent']=='681ae0d41bed04d068836ee9d746fe7701d234cb' and summary['canonical_parent_tree']=='9ee392609c4c6bcce2806f9b8a1e514333c1428e'
+          assert summary['bootstrap_route_terminal'] is summary['domain_route_terminal'] is True
+          assert 1 <= summary['total_requests'] <= 4 and 1 <= summary['bootstrap_attempts'] <= 2 and 0 <= summary['domain_attempts'] <= 2
+          assert all(v==0 for v in summary['retention'].values())
+          ceiling={'identities_admitted':0,'relationships_admitted':0,'negative_existence_claims':0,'owner_or_operator_admissions':0,'outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none','public_schoolhouse_legal_identity':'unresolved'}
+          assert summary['authority']==policy['authority']==obs['authority']==adj['authority']==manifest['authority']==ceiling
+          bounds=policy['bounds']; assert bounds['iana_bootstrap_routes']==bounds['exact_rdap_domain_routes']==bounds['parallel_workers']==1
+          assert bounds['maximum_attempts_per_route']==2 and bounds['maximum_total_requests']==4 and bounds['maximum_response_bytes_per_route']==5242880
+          for key in ['query_or_form_submissions','result_spawned_requests','whois_broker_requests','historical_whois_requests','registrar_account_attempts','paid_lookup_attempts','captcha_or_waf_bypass_attempts','browser_token_or_cookie_transfer_attempts']:
+              assert bounds[key]==0
+          assert boot['route_id']=='iana_dns_bootstrap' and 1 <= boot['attempt_count'] <= 2
+          assert domain['route_id']=='exact_domain_rdap' and 0 <= domain['attempt_count'] <= 2
+          assert len(obs['registrant_organization_candidates'])==adj['candidate_count']==summary['registrant_organization_candidate_count']
+          for row in obs['registrant_organization_candidates']:
+              assert row['http_terminal_success'] and row['object_class_name_exact'] and row['ldh_name_exact'] and row['explicit_public_vcard_org']
+              assert row['promotes_to']=='domain_registrant_organization_candidate' and not row['identity_admitted'] and not row['owner_or_operator_admitted'] and 'registrant' in row['entity_roles']
+          assert not adj['public_schoolhouse_identity_admitted'] and not adj['domain_owner_or_operator_admitted'] and adj['promotes_to']=='candidate_only'
+          assert len(manifest['files'])==manifest['counts']['payload_files']==6 and manifest['counts']['total_requests']==summary['total_requests']
+          prohibited={'fn','adr','tel','email','phone','fax','address','street_address','mailing_address','postal_code','contact_uri','vcard','vcardarray','raw_json','raw_rdap_json','raw_bootstrap_json','description','descriptions'}
+          def walk(v):
+              if isinstance(v,dict):
+                  assert prohibited.isdisjoint(k.casefold() for k in v)
+                  for x in v.values(): walk(x)
+              elif isinstance(v,list):
+                  for x in v: walk(x)
+              elif isinstance(v,str):
+                  assert '@' not in v
+          for value in [policy,boot,domain,obs,adj,summary,manifest]: walk(value)
+          assert len((root/'SHA256SUMS').read_text().splitlines())==7
+          assert not any(p.suffix.lower() in {'.html','.png','.jpg','.jpeg','.har'} or 'raw' in p.name.lower() for p in root.iterdir())
+          print('artifact_validation=pass')
+          PY
+
+      - name: Preserve exact acquisition artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-exact-domain-rdap-census-v1
+          path: ${{ runner.temp }}/schoolhouse-exact-domain-rdap-census-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
