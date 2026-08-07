@@ -1,0 +1,209 @@
+name: TEMP RD-04 five-state promotion validation v3
+
+on:
+  push:
+    branches:
+      - 'agent/ssc-rd04-five-state-promotion-validation-v3'
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  validate:
+    if: >-
+      (github.event_name == 'push' && github.ref_name == 'agent/ssc-rd04-five-state-promotion-validation-v3') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/ssc-rd04-five-state-promotion-validation-v3' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Validate exact current cells and candidate custody
+        shell: bash
+        env:
+          EXECUTION_PARENT: 46036c01eaba31bdb18045307fe3ebcb67d576a6
+          WORKFLOW_RUN: ${{ github.run_id }}
+        run: |
+          set -Eeuo pipefail
+          HEAD_SHA="$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$EXECUTION_PARENT"
+          test "$(git rev-list --count HEAD^..HEAD)" = 1
+          test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/temp-ssc-rd04-five-state-promotion-validation-v3.yml'
+
+          MATRIX='data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-row-state-adjudication/promoted-partial-field-matrix.json'
+          CANDIDATES='data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/promotion-candidate-protocol.json'
+          FIELDS='data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/field-adjudications.json'
+
+          test "$(git hash-object "$MATRIX")" = ab5f136d887aa6f21edc793e7394fee38b8ad6f6
+          test "$(sha256sum "$MATRIX" | awk '{print $1}')" = a23febb325b1ac2224ad357225ffa22166223c24c7296d09551eb181269821e1
+          test "$(git hash-object "$CANDIDATES")" = 30705b3d0f74d1b75f81175c2e9ca3fa9bf76c4a
+          test "$(git hash-object "$FIELDS")" = ca0be819a522532ecc7b0ee07909382ece6a8329
+
+          export HEAD_SHA MATRIX CANDIDATES FIELDS
+          rm -rf /tmp/ssc-rd04-five-state-promotion-validation-v3
+          mkdir -p /tmp/ssc-rd04-five-state-promotion-validation-v3
+
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path('.')
+          out = Path('/tmp/ssc-rd04-five-state-promotion-validation-v3')
+          matrix_path = root / os.environ['MATRIX']
+          candidate_path = root / os.environ['CANDIDATES']
+          field_path = root / os.environ['FIELDS']
+
+          matrix = json.loads(matrix_path.read_text())
+          protocol = json.loads(candidate_path.read_text())
+          field_text = field_path.read_text()
+          counts = matrix['counts']
+          rows = matrix['rows']
+
+          assert matrix['schema_version'] == 'ssc-rd04-wave03-mf7-row-state-promoted-partial-field-matrix@1'
+          assert matrix['class_id'] == 'RD-04-C02'
+          assert len(matrix['field_order']) == 9
+          assert len(rows) == 50
+          assert counts['units'] == 50
+          assert counts['required_fields_per_unit'] == 9
+          assert counts['materialized_cells'] == 450
+          assert sum(len(row['cells']) for row in rows) == 450
+          assert counts['terminal_cells'] == 218
+          assert counts['still_open_cells'] == 232
+          assert counts['terminal_substantive_cells'] == 108
+          assert counts['still_open_substantive_cells'] == 192
+          assert counts['row_terminal_state_cells_terminal'] == 10
+          assert counts['row_terminal_state_cells_open'] == 40
+          assert counts['terminal_units'] == 10
+          assert counts['class_closed'] is False
+          assert sum(1 for row in rows for cell in row['cells'] if cell['terminal']) == 218
+          assert sum(1 for row in rows if row['row_state'] == 'terminal_fixed_public_record_obligation_complete') == 10
+
+          assert protocol['schema_version'] == 'ssc-rd04-wave03-five-state-promotion-candidate-protocol@1'
+          assert protocol['candidate_count'] == 4
+          assert len(protocol['candidates']) == 4
+          expected = [
+              ('MT', 'verification_evidence_and_staff_discretion_surface'),
+              ('ND', 'verification_evidence_and_staff_discretion_surface'),
+              ('OR', 'implementation_effective_date_or_typed_gap'),
+              ('WI', 'implementation_effective_date_or_typed_gap'),
+          ]
+          assert [(c['postal_code'], c['field_id']) for c in protocol['candidates']] == expected
+
+          validations = []
+          for candidate in protocol['candidates']:
+              row = next(r for r in rows if r['unit_id'] == candidate['unit_id'])
+              cell = next(c for c in row['cells'] if c['field_id'] == candidate['field_id'])
+              assert row['postal_code'] == candidate['postal_code']
+              assert cell['state'] == 'still_open'
+              assert cell['terminal'] is False
+              assert candidate['required_predecessor_cell_state'] == 'still_open'
+              assert candidate['disposition'] == 'evidence_complete_bounded_finding'
+              assert candidate['candidate_only'] is True
+              assert candidate['matrix_update_authority'] is False
+              assert candidate['source_request_ids']
+              for request_id in candidate['source_request_ids']:
+                  assert request_id in field_text
+
+              cell_bytes = (json.dumps(cell, sort_keys=True, separators=(',', ':')) + '\n').encode()
+              row_bytes = (json.dumps(row, sort_keys=True, separators=(',', ':')) + '\n').encode()
+              validations.append({
+                  'promotion_candidate_id': candidate['promotion_candidate_id'],
+                  'unit_id': candidate['unit_id'],
+                  'postal_code': candidate['postal_code'],
+                  'field_id': candidate['field_id'],
+                  'current_cell_state': cell['state'],
+                  'current_cell_terminal': cell['terminal'],
+                  'current_cell_canonical_sha256': hashlib.sha256(cell_bytes).hexdigest(),
+                  'current_row_canonical_sha256': hashlib.sha256(row_bytes).hexdigest(),
+                  'candidate_disposition': candidate['disposition'],
+                  'candidate_bounded_finding': candidate['bounded_finding'],
+                  'source_request_ids': candidate['source_request_ids'],
+                  'evidence_locators': candidate['evidence_locators'],
+                  'exact_current_cell_validation': 'pass',
+                  'promotion_authority_created': False,
+              })
+
+          receipt = {
+              'schema_version': 'ssc-rd04-wave03-five-state-promotion-validation@3',
+              'issue': 1017,
+              'wave_id': 'SSC-RD-W03',
+              'lane_id': 'RD-04',
+              'class_id': 'RD-04-C02',
+              'workflow_run': int(os.environ['WORKFLOW_RUN']),
+              'execution_parent': os.environ['EXECUTION_PARENT'],
+              'execution_head': os.environ['HEAD_SHA'],
+              'matrix_path': str(matrix_path.relative_to(root)),
+              'matrix_git_blob': 'ab5f136d887aa6f21edc793e7394fee38b8ad6f6',
+              'matrix_sha256': 'a23febb325b1ac2224ad357225ffa22166223c24c7296d09551eb181269821e1',
+              'candidate_protocol_path': str(candidate_path.relative_to(root)),
+              'candidate_protocol_git_blob': '30705b3d0f74d1b75f81175c2e9ca3fa9bf76c4a',
+              'candidate_count': 4,
+              'validated_open_cell_count': 4,
+              'validations': validations,
+              'terminal_cells_before': 218,
+              'still_open_cells_before': 232,
+              'open_substantive_cells_before': 192,
+              'terminal_units_before': 10,
+              'matrix_updates': 0,
+              'field_terminalizations': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          payload = json.dumps(receipt, indent=2, sort_keys=True) + '\n'
+          (out / 'validation-receipt.json').write_text(payload)
+          digest = hashlib.sha256(payload.encode()).hexdigest()
+          (out / 'SHA256SUMS').write_text(f'{digest}  validation-receipt.json\n')
+          print(f'promotion_candidate_validation=pass candidates=4 matrix=218/450 receipt_sha256={digest}')
+          PY
+
+      - name: Preserve exact request-free validation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-promotion-validation-v3
+          path: /tmp/ssc-rd04-five-state-promotion-validation-v3
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Report exact-current-cell result
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R=/tmp/ssc-rd04-five-state-promotion-validation-v3/validation-receipt.json
+          if test -f "$R"; then
+            {
+              echo 'RD-04 five-state promotion candidates passed exact-current-cell validation v3.'
+              echo
+              echo '```text'
+              for key in workflow_run execution_head candidate_count validated_open_cell_count terminal_cells_before still_open_cells_before open_substantive_cells_before terminal_units_before matrix_updates field_terminalizations row_state_mutations class_closed outside_human_dependency; do
+                echo "$key: $(jq -r --arg key "$key" '.[$key]' "$R")"
+              done
+              echo '```'
+              echo
+              echo 'Validation custody only. A separate deterministic promotion product is required before any matrix cell changes.'
+            } >/tmp/comment.md
+          else
+            echo 'RD-04 five-state promotion validation v3 failed closed; no promotion authority is represented.' >/tmp/comment.md
+          fi
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
