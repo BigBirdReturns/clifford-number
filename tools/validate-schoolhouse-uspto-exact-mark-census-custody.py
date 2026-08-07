@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import argparse, hashlib, json, shutil, tempfile, zipfile
+from pathlib import Path
+D=Path('data/intake/schoolhouse-uspto-exact-mark-census-v1'); S=D/'sealed-source-artifact.zip'; Q=D/'sealed-qualification-artifact.zip'; C=D/'source-custody.json'; M=D/'product-manifest.json'; DOC=Path('docs/milestones/schoolhouse-uspto-exact-mark-census-v1.md'); TOOL=Path('tools/validate-schoolhouse-uspto-exact-mark-census-custody.py')
+PARENT='b320e380723600fe39c3aa711a09d3d861f756c2'; TREE='50801e462a7e5d170a65dd0612e7ff1b96d75dd8'; SS='008180c6126a9281ce1016171ea01c5292cddcefd9896f15c78fa304fc65cce5'; QS='361643c8c09bfbdfe0d47a20452a57aa40941a16b0982a393fb21b3c84918f76'
+PATHS=[S,Q,C,M,DOC,TOOL]; SM=sorted(['RUNNER-OUTPUT.log','RUNNER_EXIT_CODE','SHA256SUMS','adjudication.json','artifact-manifest.json','query-receipts.jsonl','query-results.jsonl','route-policy.json','source-receipt.json','summary.json']); QM=sorted(['SHA256SUMS','qualification.json','source-SHA256SUMS','source-summary.json'])
+BAD={'owner','owner_name','applicant','applicant_name','person_name','attorney','correspondence','street_address','mailing_address','phone','email','cookie','browser_profile','raw_html','raw_json','screenshot'}
+def h(b): return hashlib.sha256(b).hexdigest()
+def canon(v): return (json.dumps(v,indent=2,sort_keys=True)+'\n').encode()
+def documents(text):
+ d=json.JSONDecoder(); out=[]; i=0
+ while True:
+  while i<len(text) and text[i].isspace(): i+=1
+  if i==len(text): return out
+  v,i=d.raw_decode(text,i); out.append(v)
+def walk(v):
+ if isinstance(v,dict):
+  assert BAD.isdisjoint(v)
+  for x in v.values(): walk(x)
+ elif isinstance(v,list):
+  for x in v: walk(x)
+def manifest(): return {'schema_version':'schoolhouse-uspto-exact-mark-census-product-manifest@3','permanent_paths':[str(x) for x in PATHS],'permanent_path_count':6,'sealed_source':{'path':str(S),'bytes':6026,'sha256':SS,'members':10},'sealed_qualification':{'path':str(Q),'bytes':2127,'sha256':QS,'members':4},'terminal_result':{'fixed_queries':3,'terminal_queries':3,'terminal_query_states':{'terminal_public_search_rendered_no_parseable_rows':3},'retained_result_rows':0,'unique_serials':0,'trademark_serial_candidates':0,'blocked_officially_unscoped_host_requests':15},'authority':{'promotes_to':'candidate_only','identities_admitted':0,'relationships_admitted':0,'negative_existence_claims':0,'outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none','public_schoolhouse_legal_identity':'unresolved'}}
+def custody(): return {'schema_version':'schoolhouse-uspto-exact-mark-census-custody@2','state':'terminal_bounded_uspto_exact_mark_candidate_census','canonical_parent_commit':PARENT,'canonical_parent_tree':TREE,'issue':1323,'source':{'pr':1324,'head':'16cf3c313c6760814d6fca0ab491a093fba9ff4a','workflow_run':31141096853,'workflow_conclusion':'failure_after_successful_census_and_validation_wrapper','artifact_id':8979839804,'artifact_name':'schoolhouse-uspto-exact-mark-census-v1','artifact_bytes':6026,'artifact_digest':'sha256:'+SS},'qualification':{'pr':1326,'head':'9c48c52ab3a25d5c9c26865f6bcc20ed33c1172b','workflow_run':31141931037,'workflow_conclusion':'success','artifact_id':8980098074,'artifact_name':'schoolhouse-uspto-exact-mark-census-qualification-v2','artifact_bytes':2127,'artifact_digest':'sha256:'+QS,'release_check_run':31141930933,'no_magic_human_run':31141930912},'counts':{'fixed_queries':3,'terminal_queries':3,'terminal_query_states':{'terminal_public_search_rendered_no_parseable_rows':3},'retained_result_rows':0,'unique_serials':0,'trademark_serial_candidates':0,'blocked_officially_unscoped_host_requests':15},'retention':{'owner_or_applicant_name_values':0,'person_names':0,'addresses':0,'phone_or_email_values':0,'attorney_or_correspondence_values':0,'complete_html_responses':0,'screenshots':0,'raw_json_responses':0,'raw_browser_profiles_or_cookies':0},'authority':{'promotes_to':'candidate_only','identities_admitted':0,'relationships_admitted':0,'negative_existence_claims':0,'outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none','public_schoolhouse_legal_identity':'unresolved'},'interpretation':{'zero_parseable_rows_is_not_registry_absence':True,'rendered_search_shell_is_not_a_complete_result_denominator':True,'blocked_officially_unscoped_requests_are_privacy_boundary_enforcement':True,'serial_candidate_would_not_be_owner_identity':True,'no_serial_candidate_authorizes_no_tsdr_successor':True,'identical_source_retry_authorized':False}}
+def milestone(): return '# School.House USPTO exact-mark census\n\nThree fixed combined-mark searches ran in one anonymous USPTO Trademark Search browser session. All three reached `terminal_public_search_rendered_no_parseable_rows`; the rendered shell and eight JSON responses per query yielded zero parseable serial rows under the fixed parser.\n\n```text\nfixed / terminal queries: 3 / 3\nretained rows / unique serials / serial candidates: 0 / 0 / 0\nblocked officially-unscoped requests: 15\nidentities / relationships / negative-existence claims: 0 / 0 / 0\noutside-human dependency: false\npublication / adoption / graph: none / none / none\npublic School.House legal identity: unresolved\n```\n\nZero parseable rows is not evidence that the USPTO contains no relevant mark or owner. No TSDR successor is authorized because no serial candidate was retained. An identical source replay is not authorized absent a material provider or denominator change.\n'
+def openzip(root,rel,size,digest,members):
+ b=(root/rel).read_bytes(); assert len(b)==size and h(b)==digest
+ t=Path(tempfile.mkdtemp(prefix='uspto-custody-'))
+ with zipfile.ZipFile(root/rel) as z: assert z.testzip() is None; assert sorted(z.namelist())==members; z.extractall(t)
+ return t
+def sums(t,n):
+ rows=(t/'SHA256SUMS').read_text().splitlines(); assert len(rows)==n
+ for row in rows: digest,name=row.split('  ',1); assert '/' not in name and h((t/name).read_bytes())==digest
+def write(root): (root/C).write_bytes(canon(custody())); (root/M).write_bytes(canon(manifest())); (root/DOC).write_text(milestone())
+def validate(root):
+ assert json.loads((root/C).read_text())==custody(); assert json.loads((root/M).read_text())==manifest(); assert (root/DOC).read_text()==milestone()
+ sd=openzip(root,S,6026,SS,SM); qd=openzip(root,Q,2127,QS,QM)
+ try:
+  assert (sd/'RUNNER_EXIT_CODE').read_text().strip()=='0'; sums(sd,7); sums(qd,3); assert (sd/'query-results.jsonl').read_bytes()==b''
+  s=json.loads((sd/'summary.json').read_text()); a=json.loads((sd/'adjudication.json').read_text()); p=json.loads((sd/'route-policy.json').read_text()); r=json.loads((sd/'source-receipt.json').read_text()); am=json.loads((sd/'artifact-manifest.json').read_text()); qs=documents((sd/'query-receipts.jsonl').read_text()); q=json.loads((qd/'qualification.json').read_text())
+  assert (qd/'source-summary.json').read_bytes()==(sd/'summary.json').read_bytes(); assert (qd/'source-SHA256SUMS').read_bytes()==(sd/'SHA256SUMS').read_bytes()
+  assert s['state']=='terminal_bounded_uspto_exact_mark_candidate_census' and s['fixed_query_count']==s['terminal_query_count']==3 and s['terminal_query_state_counts']=={'terminal_public_search_rendered_no_parseable_rows':3} and s['query_row_counts']==s['exact_form_counts']=={}
+  zero=['retained_result_rows','unique_serials','trademark_serial_candidate_rows','owner_or_applicant_name_values_retained','person_names_retained','addresses_retained','phone_or_email_values_retained','attorney_or_correspondence_values_retained','complete_html_responses_retained','screenshots_retained','raw_json_responses_retained','raw_browser_profiles_or_cookies_retained','identities_admitted','relationships_admitted','negative_existence_claims_created']; assert all(s[k]==0 for k in zero); assert s['blocked_officially_unscoped_host_requests']==15 and s['outside_human_dependency'] is False
+  falsekeys=['public_schoolhouse_identity_admitted','trademark_owner_admitted','school_house_domain_operation_admitted','fiscal_sponsor_relationship_admitted','funding_relationship_admitted','governance_or_control_relationship_admitted','related_party_relationship_admitted','negative_existence_claim_created']; assert a['promotes_to']=='candidate_only' and all(a[k] is False for k in falsekeys) and all(a['interpretation'].values())
+  assert p['issue']==1323 and p['canonical_parent']==PARENT and p['canonical_parent_tree']==TREE and len(p['fixed_queries'])==3 and all(p['bounds'][k]==0 for k in ['login_attempts','account_creation_attempts','api_key_requests','captcha_or_waf_bypass_attempts','cookie_export_or_replay_attempts','query_derived_officially_unscoped_requests']) and all(v==0 for v in p['retention'].values())
+  assert r['anonymous_session'] is True and r['result_rows']==r['unique_serials']==r['trademark_serial_candidate_rows']==0 and r['blocked_officially_unscoped_host_requests']==15 and len(r['blocked_host_hashes'])==4
+  assert len(qs)==3 and [x['query_id'] for x in qs]==['q1_school_dot_house','q2_schoolhouse','q3_school_house'] and [x['blocked_officially_unscoped_host_requests'] for x in qs]==[5,10,15]
+  for x in qs: assert x['terminal_state']=='terminal_public_search_rendered_no_parseable_rows' and x['retained_result_rows']==0 and x['request_count']==108 and x['response_count']==24 and x['json_response_count']==8 and x['json_parse_error_count']==0 and x['challenge_detected'] is False and x['access_block_http_statuses']==[] and x['error_class'] is None
+  assert am['combined_sha256']=='bc6a37aac6a578e8a30a53c584db69b4d268d49db922ce8af1f4f9ed4f6e00a9' and q['qualification']=='pass' and q['artifact_sha256']==SS and q['terminal_query_count']==3 and q['retained_result_rows']==q['trademark_serial_candidate_rows']==0
+  walk({'s':s,'a':a,'p':p,'r':r,'am':am,'qs':qs,'q':q,'c':custody(),'m':manifest()}); return {'queries':3,'results':0,'candidates':0,'blocked':15}
+ finally: shutil.rmtree(sd,ignore_errors=True); shutil.rmtree(qd,ignore_errors=True)
+def selftest(root):
+ validate(root); refused=0
+ def run(mut):
+  nonlocal refused
+  with tempfile.TemporaryDirectory(prefix='uspto-fixture-') as td:
+   f=Path(td); shutil.copytree(root/D,f/D); shutil.copytree(root/DOC.parent,f/DOC.parent); shutil.copytree(root/TOOL.parent,f/TOOL.parent); mut(f)
+   try: validate(f)
+   except Exception: refused+=1
+   else: raise AssertionError('mutation accepted')
+ def flip(rel):
+  def m(f): p=f/rel; b=bytearray(p.read_bytes()); b[50]^=1; p.write_bytes(b)
+  return m
+ def mutate_json(rel,keys,val):
+  def m(f):
+   p=f/rel; x=json.loads(p.read_text()); y=x
+   for k in keys[:-1]: y=y[k]
+   y[keys[-1]]=val; p.write_bytes(canon(x))
+  return m
+ run(flip(S)); run(flip(Q)); run(mutate_json(C,['authority','identities_admitted'],1)); run(mutate_json(M,['permanent_path_count'],7))
+ def dm(f): p=f/DOC; p.write_text(p.read_text().replace('not evidence that the USPTO contains no relevant mark or owner','proof that the USPTO contains no relevant mark or owner'))
+ run(dm); assert refused==5; return refused
+def main():
+ ap=argparse.ArgumentParser(); ap.add_argument('--write',action='store_true'); ap.add_argument('--check',action='store_true'); ap.add_argument('--self-test',action='store_true'); x=ap.parse_args(); root=Path.cwd()
+ if x.write: write(root)
+ result=validate(root)
+ if x.self_test: print(f'schoolhouse_uspto_custody_adversarial_refusals={selftest(root)}')
+ else: print(f"schoolhouse_uspto_custody=pass queries={result['queries']} results={result['results']} candidates={result['candidates']} blocked={result['blocked']}")
+if __name__=='__main__': main()
