@@ -1,4 +1,4 @@
-name: TEMP qualify exact PC-53 product tree
+name: TEMP qualify exact PC-53 repaired product tree
 
 on:
   pull_request:
@@ -19,8 +19,13 @@ jobs:
     env:
       QUALIFIED_SOURCE_PARENT: 8a2f4538bdbcf9455f02e70c35a71cb39f805b18
       QUALIFIED_SOURCE_TREE: 11e4905a11c1638cfc26865124f9ce181ae0c134
-      ARCHIVE_BYTES: '22120'
-      ARCHIVE_SHA256: 3443bd39fbfd67118970418d58a1f39410e3362ca1941be2e59014ae10e65599
+      ORIGINAL_ARCHIVE_BYTES: '22120'
+      ORIGINAL_ARCHIVE_SHA256: 3443bd39fbfd67118970418d58a1f39410e3362ca1941be2e59014ae10e65599
+      REPAIR_PATCH_XZ_BYTES: '5224'
+      REPAIR_PATCH_XZ_SHA256: 6444e6dcadb0ddcd8811adab86179cb75f410fbedb71b41e62ee80480d6f5a08
+      REPAIR_PATCH_BYTES: '26445'
+      REPAIR_PATCH_SHA256: 64202a7239e097a2b747c7822671b34dcd80ddabcfa2ae930a7759f5c1fc2722
+      FINAL_PRODUCT_TREE: 770fca23b4ec1533c70d7173c7dc26f15153ebca
       PATH_COUNT: '14'
       PATH_LIST_SHA256: 84b960b4334eb8338f466f9ff30a6538a3a45b187f9637891d937eb993c357d7
       RECEIPT_DIR: /tmp/pc53-qualified-product-tree
@@ -33,7 +38,7 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Reconstruct and authenticate exact fourteen-file package
+      - name: Reconstruct and authenticate original package and bounded repair
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -49,8 +54,10 @@ jobs:
           for ordinal in 00 01 02; do
             cp ".pc53-carrier/part-${ordinal}.b64" "/tmp/pc53-carrier/part-${ordinal}.b64"
           done
+          cp .pc53-carrier/exotic-repair.patch.xz.b64 /tmp/pc53-carrier/exotic-repair.patch.xz.b64
           cat > /tmp/pc53-carrier/expected-carrier-paths.txt <<'EOF'
           .github/workflows/temp-pc53-materializer.yml
+          .pc53-carrier/exotic-repair.patch.xz.b64
           .pc53-carrier/manifest.json
           .pc53-carrier/part-00.b64
           .pc53-carrier/part-01.b64
@@ -62,21 +69,47 @@ jobs:
 
           cat /tmp/pc53-carrier/part-*.b64 > /tmp/pc53-carrier/product.tar.xz.b64
           base64 --decode /tmp/pc53-carrier/product.tar.xz.b64 > /tmp/pc53-carrier/product.tar.xz
-          test "$(wc -c < /tmp/pc53-carrier/product.tar.xz | tr -d ' ')" = "$ARCHIVE_BYTES"
-          test "$(sha256sum /tmp/pc53-carrier/product.tar.xz | awk '{print $1}')" = "$ARCHIVE_SHA256"
+          test "$(wc -c < /tmp/pc53-carrier/product.tar.xz | tr -d ' ')" = "$ORIGINAL_ARCHIVE_BYTES"
+          test "$(sha256sum /tmp/pc53-carrier/product.tar.xz | awk '{print $1}')" = "$ORIGINAL_ARCHIVE_SHA256"
+
+          base64 --decode /tmp/pc53-carrier/exotic-repair.patch.xz.b64 > /tmp/pc53-carrier/exotic-repair.patch.xz
+          test "$(wc -c < /tmp/pc53-carrier/exotic-repair.patch.xz | tr -d ' ')" = "$REPAIR_PATCH_XZ_BYTES"
+          test "$(sha256sum /tmp/pc53-carrier/exotic-repair.patch.xz | awk '{print $1}')" = "$REPAIR_PATCH_XZ_SHA256"
+          xz --decompress --stdout /tmp/pc53-carrier/exotic-repair.patch.xz > /tmp/pc53-carrier/exotic-repair.patch
+          test "$(wc -c < /tmp/pc53-carrier/exotic-repair.patch | tr -d ' ')" = "$REPAIR_PATCH_BYTES"
+          test "$(sha256sum /tmp/pc53-carrier/exotic-repair.patch | awk '{print $1}')" = "$REPAIR_PATCH_SHA256"
 
           python - <<'PY'
           import hashlib, json, os, tarfile
           from pathlib import Path
           manifest=json.loads(Path('/tmp/pc53-carrier/manifest.json').read_text())
-          expected={'schema_version','qualified_source_parent','source_parent_tree','path_count','path_list_sha256','archive_bytes','archive_sha256','files','outside_human_dependency','graph_effect'}
-          if set(manifest)!=expected: raise SystemExit('manifest keys mismatch')
-          if manifest['schema_version']!='pc53-product-manifest@1': raise SystemExit('manifest schema mismatch')
-          if manifest['qualified_source_parent']!=os.environ['QUALIFIED_SOURCE_PARENT']: raise SystemExit('qualified parent mismatch')
-          if manifest['source_parent_tree']!=os.environ['QUALIFIED_SOURCE_TREE']: raise SystemExit('source tree mismatch')
-          if manifest['path_count']!=int(os.environ['PATH_COUNT']): raise SystemExit('path count mismatch')
-          if manifest['archive_bytes']!=int(os.environ['ARCHIVE_BYTES']) or manifest['archive_sha256']!=os.environ['ARCHIVE_SHA256']: raise SystemExit('archive identity mismatch')
-          if manifest['path_list_sha256']!=os.environ['PATH_LIST_SHA256']: raise SystemExit('path list mismatch')
+          expected={
+            'schema_version','qualified_source_parent','source_parent_tree','path_count','path_list_sha256',
+            'archive_bytes','archive_sha256','repair_patch_xz_bytes','repair_patch_xz_sha256',
+            'repair_patch_bytes','repair_patch_sha256','final_product_tree','files',
+            'outside_human_dependency','graph_effect','repairs'
+          }
+          if set(manifest)!=expected: raise SystemExit(f'manifest keys mismatch: {sorted(manifest)}')
+          if manifest['schema_version']!='pc53-product-manifest@2': raise SystemExit('manifest schema mismatch')
+          checks={
+            'qualified_source_parent':os.environ['QUALIFIED_SOURCE_PARENT'],
+            'source_parent_tree':os.environ['QUALIFIED_SOURCE_TREE'],
+            'archive_bytes':int(os.environ['ORIGINAL_ARCHIVE_BYTES']),
+            'archive_sha256':os.environ['ORIGINAL_ARCHIVE_SHA256'],
+            'repair_patch_xz_bytes':int(os.environ['REPAIR_PATCH_XZ_BYTES']),
+            'repair_patch_xz_sha256':os.environ['REPAIR_PATCH_XZ_SHA256'],
+            'repair_patch_bytes':int(os.environ['REPAIR_PATCH_BYTES']),
+            'repair_patch_sha256':os.environ['REPAIR_PATCH_SHA256'],
+            'final_product_tree':os.environ['FINAL_PRODUCT_TREE'],
+            'path_count':int(os.environ['PATH_COUNT']),
+            'path_list_sha256':os.environ['PATH_LIST_SHA256'],
+          }
+          for key,value in checks.items():
+            if manifest[key]!=value: raise SystemExit(f'{key} mismatch')
+          if manifest['repairs'] != [
+            'reject_non_json_exotic_objects_with_reset_prototypes',
+            'require_structured_clone_plain_container_preservation'
+          ]: raise SystemExit('repair ledger mismatch')
           if manifest['outside_human_dependency'] is not False or manifest['graph_effect']!='none': raise SystemExit('authority mismatch')
           files=manifest['files']; paths=[entry['path'] for entry in files]
           if len(files)!=14 or paths!=sorted(paths) or len(set(paths))!=14: raise SystemExit('file ledger mismatch')
@@ -102,7 +135,7 @@ jobs:
           printf '%s\n' "$CARRIER_BASE" > /tmp/pc53-carrier/carrier-base.txt
           printf '%s\n' "$CURRENT_MAIN" > /tmp/pc53-carrier/current-main.txt
 
-      - name: Materialize exact product over observed live main
+      - name: Materialize and repair exact product over observed live main
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -110,6 +143,7 @@ jobs:
           git reset --hard "$CURRENT_MAIN"
           git clean -fdx
           tar -xJf /tmp/pc53-carrier/product.tar.xz
+          patch --batch --forward -p1 < /tmp/pc53-carrier/exotic-repair.patch
           python - <<'PY'
           import hashlib,json,subprocess
           from pathlib import Path
@@ -128,6 +162,7 @@ jobs:
           diff -u /tmp/pc53-carrier/product-paths.txt /tmp/pc53-carrier/staged-paths.txt
           git diff --cached --check
           git write-tree > /tmp/pc53-carrier/local-product-tree.txt
+          test "$(cat /tmp/pc53-carrier/local-product-tree.txt)" = "$FINAL_PRODUCT_TREE"
           git rev-parse "$CURRENT_MAIN^{tree}" > /tmp/pc53-carrier/publication-parent-tree.txt
 
       - name: Prove direct clean-checkout construction
@@ -190,7 +225,7 @@ jobs:
               record['remote_git_blob_sha1']=result['sha']; record['requires_connector_publication']=False
             files.append(record)
           receipt={
-            'schema_version':'pc53-qualified-product-tree-receipt@1',
+            'schema_version':'pc53-qualified-product-tree-receipt@2',
             'qualified_source_parent':os.environ['QUALIFIED_SOURCE_PARENT'],
             'qualified_source_tree':os.environ['QUALIFIED_SOURCE_TREE'],
             'publication_parent':Path('/tmp/pc53-carrier/current-main.txt').read_text().strip(),
@@ -198,13 +233,17 @@ jobs:
             'carrier_head':Path('/tmp/pc53-carrier/carrier-head.txt').read_text().strip(),
             'carrier_base':Path('/tmp/pc53-carrier/carrier-base.txt').read_text().strip(),
             'product_tree':Path('/tmp/pc53-carrier/local-product-tree.txt').read_text().strip(),
-            'path_count':14,'archive_bytes':manifest['archive_bytes'],'archive_sha256':manifest['archive_sha256'],'path_list_sha256':manifest['path_list_sha256'],'files':files,
+            'path_count':14,'original_archive_bytes':int(os.environ['ORIGINAL_ARCHIVE_BYTES']),'original_archive_sha256':os.environ['ORIGINAL_ARCHIVE_SHA256'],
+            'repair_patch_xz_bytes':int(os.environ['REPAIR_PATCH_XZ_BYTES']),'repair_patch_xz_sha256':os.environ['REPAIR_PATCH_XZ_SHA256'],
+            'repair_patch_bytes':int(os.environ['REPAIR_PATCH_BYTES']),'repair_patch_sha256':os.environ['REPAIR_PATCH_SHA256'],
+            'path_list_sha256':os.environ['PATH_LIST_SHA256'],'files':files,'repairs':manifest['repairs'],
             'direct_clean_checkout':'pass','standalone_pc53':'pass','floor_v51':'pass','historical_floor_reconstruction':'pass','base_preference_custody':'pass','no_magic_human':'pass','release_check':'pass','ref_updates':0,'outside_human_dependency':False,'graph_effect':'none'
           }
           out=Path(os.environ['RECEIPT_DIR']);out.mkdir(parents=True,exist_ok=True)
           (out/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
           (out/'product-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
-          (out/'product.tar.xz').write_bytes(Path('/tmp/pc53-carrier/product.tar.xz').read_bytes())
+          (out/'original-product.tar.xz').write_bytes(Path('/tmp/pc53-carrier/product.tar.xz').read_bytes())
+          (out/'exotic-repair.patch.xz').write_bytes(Path('/tmp/pc53-carrier/exotic-repair.patch.xz').read_bytes())
           (out/'product-paths.txt').write_bytes(Path('/tmp/pc53-carrier/product-paths.txt').read_bytes())
           print(json.dumps(receipt,indent=2))
           PY
@@ -212,7 +251,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: pc53-qualified-product-tree
+          name: pc53-qualified-repaired-product-tree
           path: /tmp/pc53-qualified-product-tree
           if-no-files-found: error
           retention-days: 90
