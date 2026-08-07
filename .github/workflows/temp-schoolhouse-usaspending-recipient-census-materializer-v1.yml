@@ -169,7 +169,7 @@ jobs:
               if observed != count:
                   raise SystemExit(f'placeholder count drift: {token} expected={count} observed={observed}')
               template = template.replace(token, value)
-          if '__' in template:
+          if any(token in template for token in replacements):
               raise SystemExit('unreplaced placeholder remains')
           Path(os.environ['TARGET_FILE']).write_text(template)
           PY
