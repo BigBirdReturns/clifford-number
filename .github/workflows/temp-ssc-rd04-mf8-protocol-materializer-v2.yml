@@ -1,0 +1,133 @@
+name: TEMP materialize RD-04 eight-state minimum-frontier protocol v2
+
+on:
+  push:
+    branches:
+      - 'agent/ssc-rd04-mf8-protocol-materializer-v2'
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: temp-ssc-rd04-mf8-protocol-materializer-v2
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: github.ref_name == 'agent/ssc-rd04-mf8-protocol-materializer-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+      - id: materialize
+        name: Recover immutable controller and execute exact transaction
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          ARCHIVE_GIT_BLOB: f76674753c9e2e64183fcda0ff16bb8b948a1c81
+          ARCHIVE_BYTES: '20748'
+          ARCHIVE_SHA256: 3afa1a777dab75415cafc8a4b317a10771de0f5eb74ccbef5a18f6b4ae5c208f
+          EMPIRICAL_MERGE: a464dbbd96c365a7c040e17847486c5b3ba05c27
+          TARGET_BRANCH: agent/ssc-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol-v1
+          STANDING_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-fl-mo-mt-ne-nv-nd-or-wi-minimum-frontier-protocol.yml
+        run: |
+          set -Eeuo pipefail
+          BOOT=/tmp/ssc-rd04-mf8-controller-v2
+          rm -rf "$BOOT"
+          mkdir -p "$BOOT"
+          cat > "$BOOT/controller-shards.tsv" <<'EOF_SHARDS'
+          part-00.bin 7761ccfab89cf3dd76b3a4ac7fb981a06835891e 1536 0ea222686716553832fc91cea6fe38f8e3cd80a53c814f2f16665cb02dc37f1e
+          part-01.bin 4e2d6fb19cce59e9d69dda969f3b22c81ee501da 1536 2b52f6bd70f7402e14622adbc9926f4f0de8bb1cad88324eb2b776b6c6e269d0
+          part-02.bin 0f4b1e2d77f880a29d2620c1d42c78274363230e 1320 b200175c3d650768a462502e763c4b61fc65641cce1ab45b7844a1eae73f8059
+          EOF_SHARDS
+          : > "$BOOT/controller.sh.xz"
+          while read -r name blob bytes digest; do
+            curl -fsSL \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/$GH_REPOSITORY/git/blobs/$blob" \
+              > "$BOOT/$name.json"
+            test "$(jq -r .encoding "$BOOT/$name.json")" = base64
+            jq -r .content "$BOOT/$name.json" | tr -d '\n' | base64 -d > "$BOOT/$name"
+            test "$(wc -c < "$BOOT/$name" | tr -d ' ')" = "$bytes"
+            test "$(sha256sum "$BOOT/$name" | awk '{print $1}')" = "$digest"
+            test "$(git hash-object "$BOOT/$name")" = "$blob"
+            cat "$BOOT/$name" >> "$BOOT/controller.sh.xz"
+          done < "$BOOT/controller-shards.tsv"
+          test "$(wc -c < "$BOOT/controller.sh.xz" | tr -d ' ')" = 4392
+          test "$(sha256sum "$BOOT/controller.sh.xz" | awk '{print $1}')" = c1bb52aef9f00f1b7d4eecc242b3360496308bb07beaff49e54913a4321d2bb8
+          test "$(git hash-object "$BOOT/controller.sh.xz")" = 8ab0706e21c6540560dcaafba720ffc679f31ef0
+          xz -dc "$BOOT/controller.sh.xz" > "$BOOT/controller.sh"
+          test "$(wc -c < "$BOOT/controller.sh" | tr -d ' ')" = 14989
+          test "$(sha256sum "$BOOT/controller.sh" | awk '{print $1}')" = 405f80f1d71a06c77742c452d39a1fc4896d65f887fa8b2fd64dc49d278170b7
+          bash -n "$BOOT/controller.sh"
+          chmod 0755 "$BOOT/controller.sh"
+          bash "$BOOT/controller.sh"
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mf8-protocol-materialization-v2
+          path: |
+            /tmp/ssc-rd04-mf8-controller-v2
+            /tmp/ssc-rd04-mf8-protocol-materializer-v1
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Report terminal outcome
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          OUTCOME: ${{ steps.materialize.outcome }}
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-mf8-protocol-materializer-v1
+          BODY=/tmp/ssc-rd04-mf8-v2-comment.md
+          if test "$OUTCOME" = success && test -f "$OUT/materialization-receipt.json"; then
+            python - <<'PY' > "$BODY"
+          import json, os
+          from pathlib import Path
+          r=json.loads(Path('/tmp/ssc-rd04-mf8-protocol-materializer-v1/materialization-receipt.json').read_text())
+          print('RD-04 eight-state minimum-frontier protocol V2 materialized successfully.\n')
+          print('```text')
+          print(f"workflow_run: {os.environ['GITHUB_RUN_ID']}")
+          print(f"carrier_head: {os.environ['GITHUB_SHA']}")
+          for k in ['canonical_parent','canonical_parent_tree','ordinary_head','ordinary_tree','standing_workflow_blob','archive_git_blob','transport_shards','permanent_paths','ordinary_paths','fixed_routes','target_states','target_cells','adversarial_refusals','class_closed','outside_human_dependency']:
+              print(f'{k}: {r[k]}')
+          print('```')
+          print('\nThe ordinary branch moved only after exact controller, fourteen-shard archive, predecessor, schema, adversarial, no-magic-human, complete-release, replay, path, and live-main lease gates passed. The standing workflow remains pending byte-identical connector composition.')
+          PY
+          else
+            {
+              echo 'RD-04 eight-state minimum-frontier protocol V2 failed closed.'
+              echo
+              echo '```text'
+              echo "workflow_run: $GITHUB_RUN_ID"
+              echo "carrier_head: $GITHUB_SHA"
+              echo "outcome: $OUTCOME"
+              test -f "$OUT/failure.json" && cat "$OUT/failure.json"
+              test -f "$OUT/run.log" && tail -260 "$OUT/run.log"
+              echo '```'
+              echo
+              echo 'No unverified product or evidentiary authority is represented.'
+            } > "$BODY"
+          fi
+          gh issue comment 1017 --repo "$GH_REPOSITORY" --body-file "$BODY"
+      - name: Refuse failed materialization
+        if: always()
+        env:
+          OUTCOME: ${{ steps.materialize.outcome }}
+        run: test "$OUTCOME" = success
