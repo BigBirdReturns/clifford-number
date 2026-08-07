@@ -25,7 +25,7 @@ jobs:
       REPAIR_PATCH_XZ_SHA256: 6444e6dcadb0ddcd8811adab86179cb75f410fbedb71b41e62ee80480d6f5a08
       REPAIR_PATCH_BYTES: '26445'
       REPAIR_PATCH_SHA256: 64202a7239e097a2b747c7822671b34dcd80ddabcfa2ae930a7759f5c1fc2722
-      FINAL_PRODUCT_TREE: 770fca23b4ec1533c70d7173c7dc26f15153ebca
+      QUALIFIED_SOURCE_PRODUCT_TREE: 770fca23b4ec1533c70d7173c7dc26f15153ebca
       PATH_COUNT: '14'
       PATH_LIST_SHA256: 84b960b4334eb8338f466f9ff30a6538a3a45b187f9637891d937eb993c357d7
       RECEIPT_DIR: /tmp/pc53-qualified-product-tree
@@ -100,7 +100,7 @@ jobs:
             'repair_patch_xz_sha256':os.environ['REPAIR_PATCH_XZ_SHA256'],
             'repair_patch_bytes':int(os.environ['REPAIR_PATCH_BYTES']),
             'repair_patch_sha256':os.environ['REPAIR_PATCH_SHA256'],
-            'final_product_tree':os.environ['FINAL_PRODUCT_TREE'],
+            'final_product_tree':os.environ['QUALIFIED_SOURCE_PRODUCT_TREE'],
             'path_count':int(os.environ['PATH_COUNT']),
             'path_list_sha256':os.environ['PATH_LIST_SHA256'],
           }
@@ -154,6 +154,7 @@ jobs:
             blob=subprocess.check_output(['git','hash-object',str(path)],text=True).strip()
             if blob!=entry['git_blob_sha1']: raise SystemExit(f'Git blob mismatch {path}')
           PY
+
           git add --pathspec-from-file=/tmp/pc53-carrier/product-paths.txt
           git diff --cached --name-status "$CURRENT_MAIN" > /tmp/pc53-carrier/product-delta.tsv
           test "$(wc -l < /tmp/pc53-carrier/product-delta.tsv | tr -d ' ')" = "$PATH_COUNT"
@@ -161,9 +162,14 @@ jobs:
           cut -f2 /tmp/pc53-carrier/product-delta.tsv | sort > /tmp/pc53-carrier/staged-paths.txt
           diff -u /tmp/pc53-carrier/product-paths.txt /tmp/pc53-carrier/staged-paths.txt
           git diff --cached --check
-          git write-tree > /tmp/pc53-carrier/local-product-tree.txt
-          test "$(cat /tmp/pc53-carrier/local-product-tree.txt)" = "$FINAL_PRODUCT_TREE"
+          git write-tree > /tmp/pc53-carrier/publication-product-tree.txt
           git rev-parse "$CURRENT_MAIN^{tree}" > /tmp/pc53-carrier/publication-parent-tree.txt
+
+          rm -f /tmp/pc53-carrier/qualified-source-product.index
+          GIT_INDEX_FILE=/tmp/pc53-carrier/qualified-source-product.index git read-tree "$QUALIFIED_SOURCE_PARENT^{tree}"
+          GIT_INDEX_FILE=/tmp/pc53-carrier/qualified-source-product.index git add --pathspec-from-file=/tmp/pc53-carrier/product-paths.txt
+          GIT_INDEX_FILE=/tmp/pc53-carrier/qualified-source-product.index git write-tree > /tmp/pc53-carrier/qualified-source-product-tree.txt
+          test "$(cat /tmp/pc53-carrier/qualified-source-product-tree.txt)" = "$QUALIFIED_SOURCE_PRODUCT_TREE"
 
       - name: Prove direct clean-checkout construction
         shell: bash
@@ -225,14 +231,15 @@ jobs:
               record['remote_git_blob_sha1']=result['sha']; record['requires_connector_publication']=False
             files.append(record)
           receipt={
-            'schema_version':'pc53-qualified-product-tree-receipt@2',
+            'schema_version':'pc53-qualified-product-tree-receipt@3',
             'qualified_source_parent':os.environ['QUALIFIED_SOURCE_PARENT'],
             'qualified_source_tree':os.environ['QUALIFIED_SOURCE_TREE'],
+            'qualified_source_product_tree':Path('/tmp/pc53-carrier/qualified-source-product-tree.txt').read_text().strip(),
             'publication_parent':Path('/tmp/pc53-carrier/current-main.txt').read_text().strip(),
             'publication_parent_tree':Path('/tmp/pc53-carrier/publication-parent-tree.txt').read_text().strip(),
+            'publication_product_tree':Path('/tmp/pc53-carrier/publication-product-tree.txt').read_text().strip(),
             'carrier_head':Path('/tmp/pc53-carrier/carrier-head.txt').read_text().strip(),
             'carrier_base':Path('/tmp/pc53-carrier/carrier-base.txt').read_text().strip(),
-            'product_tree':Path('/tmp/pc53-carrier/local-product-tree.txt').read_text().strip(),
             'path_count':14,'original_archive_bytes':int(os.environ['ORIGINAL_ARCHIVE_BYTES']),'original_archive_sha256':os.environ['ORIGINAL_ARCHIVE_SHA256'],
             'repair_patch_xz_bytes':int(os.environ['REPAIR_PATCH_XZ_BYTES']),'repair_patch_xz_sha256':os.environ['REPAIR_PATCH_XZ_SHA256'],
             'repair_patch_bytes':int(os.environ['REPAIR_PATCH_BYTES']),'repair_patch_sha256':os.environ['REPAIR_PATCH_SHA256'],
