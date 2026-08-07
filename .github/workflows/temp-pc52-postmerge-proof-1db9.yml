@@ -1,0 +1,158 @@
+name: TEMP prove exact PC-52 canonical merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pc52-postmerge-proof-1db9-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      MERGE_SHA: 1db9ac3c7ee9ffa07c06e029008d23f1f5ba7b5a
+      MERGE_FIRST_PARENT: 32b818c9d37ff5e65629848aca84c8d30859387b
+      PRODUCT_COMMIT: efd23fd6ad44bc6983315de51c51d9774b2cc114
+      PRODUCT_PARENT: 681ae0d41bed04d068836ee9d746fe7701d234cb
+      PRODUCT_TREE: 1bcf0e1f9e29182b25ff3309cc1f2c6793aabf1c
+      PATH_COUNT: '14'
+      RECEIPT_DIR: /tmp/pc52-exact-postmerge-proof
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify exact canonical topology, paths, and blobs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin main "$MERGE_SHA" "$MERGE_FIRST_PARENT" "$PRODUCT_COMMIT" "$PRODUCT_PARENT"
+          CURRENT_MAIN=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$MERGE_SHA" "$CURRENT_MAIN"
+
+          mapfile -t MERGE_LINE < <(git rev-list --parents -n 1 "$MERGE_SHA")
+          read -r OBS_MERGE OBS_FIRST OBS_SECOND EXTRA <<< "${MERGE_LINE[0]}"
+          test "$OBS_MERGE" = "$MERGE_SHA"
+          test "$OBS_FIRST" = "$MERGE_FIRST_PARENT"
+          test "$OBS_SECOND" = "$PRODUCT_COMMIT"
+          test -z "${EXTRA:-}"
+          test "$(git rev-parse "$PRODUCT_COMMIT^")" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^{tree}")" = "$PRODUCT_TREE"
+          MERGE_TREE=$(git rev-parse "$MERGE_SHA^{tree}")
+
+          mkdir -p "$RECEIPT_DIR"
+          cat > "$RECEIPT_DIR/expected-paths.txt" <<'EOF'
+          .github/workflows/preference-custody-v50.yml
+          .github/workflows/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.yml
+          data/research/preference-custody/control-manifest-v50.json
+          data/research/preference-custody/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.fixture.json
+          docs/preference-custody-laboratory-floor-v50.md
+          docs/preference-custody-review-scope-source-tree-generated-input-build-recipe-assurance.md
+          test/preference-custody-manifest-v50.test.js
+          test/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.test.js
+          tools/compile-preference-custody-manifest-v50.mjs
+          tools/compile-preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs
+          tools/lib/preference-custody-manifest-v50.mjs
+          tools/lib/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs
+          tools/validate-preference-custody-manifest-v50.mjs
+          tools/validate-preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs
+          EOF
+          sed -i 's/^          //' "$RECEIPT_DIR/expected-paths.txt"
+          sort -o "$RECEIPT_DIR/expected-paths.txt" "$RECEIPT_DIR/expected-paths.txt"
+          test "$(wc -l < "$RECEIPT_DIR/expected-paths.txt" | tr -d ' ')" = "$PATH_COUNT"
+
+          git diff --name-status "$PRODUCT_PARENT" "$PRODUCT_COMMIT" > "$RECEIPT_DIR/product-delta.tsv"
+          test "$(wc -l < "$RECEIPT_DIR/product-delta.tsv" | tr -d ' ')" = "$PATH_COUNT"
+          awk '$1 != "A" { exit 1 }' "$RECEIPT_DIR/product-delta.tsv"
+          cut -f2 "$RECEIPT_DIR/product-delta.tsv" | sort > "$RECEIPT_DIR/product-paths.txt"
+          diff -u "$RECEIPT_DIR/expected-paths.txt" "$RECEIPT_DIR/product-paths.txt"
+
+          git diff --name-status "$MERGE_FIRST_PARENT" "$MERGE_SHA" > "$RECEIPT_DIR/merge-delta.tsv"
+          test "$(wc -l < "$RECEIPT_DIR/merge-delta.tsv" | tr -d ' ')" = "$PATH_COUNT"
+          awk '$1 != "A" { exit 1 }' "$RECEIPT_DIR/merge-delta.tsv"
+          cut -f2 "$RECEIPT_DIR/merge-delta.tsv" | sort > "$RECEIPT_DIR/merge-paths.txt"
+          diff -u "$RECEIPT_DIR/expected-paths.txt" "$RECEIPT_DIR/merge-paths.txt"
+
+          : > "$RECEIPT_DIR/blob-identities.tsv"
+          while IFS= read -r path; do
+            PRODUCT_BLOB=$(git rev-parse "$PRODUCT_COMMIT:$path")
+            MERGE_BLOB=$(git rev-parse "$MERGE_SHA:$path")
+            MAIN_BLOB=$(git rev-parse "$CURRENT_MAIN:$path")
+            test "$PRODUCT_BLOB" = "$MERGE_BLOB"
+            test "$MERGE_BLOB" = "$MAIN_BLOB"
+            printf '%s\t%s\n' "$path" "$MERGE_BLOB" >> "$RECEIPT_DIR/blob-identities.tsv"
+          done < "$RECEIPT_DIR/expected-paths.txt"
+
+          if grep -Eq '(^|/)(temp|carrier|shard|controller|marker|pulse|receipt|diagnostic)([-_.]|/)|^\.pc52/' "$RECEIPT_DIR/expected-paths.txt"; then
+            exit 1
+          fi
+
+          printf '%s\n' "$CURRENT_MAIN" > "$RECEIPT_DIR/current-main.txt"
+          printf '%s\n' "$MERGE_TREE" > "$RECEIPT_DIR/merge-tree.txt"
+
+      - name: Replay PC-52, floor v50, historical floors, and complete gates
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git checkout --detach "$MERGE_SHA"
+          git clean -fdx
+          node tools/compile-preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs
+          node tools/validate-preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs
+          node test/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.test.js
+          node tools/compile-preference-custody-manifest-v50.mjs
+          node tools/validate-preference-custody-manifest-v50.mjs
+          node test/preference-custody-manifest-v50.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do node "$test_file"; done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+      - name: Seal exact post-merge receipt
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          MERGE_TREE=$(cat "$RECEIPT_DIR/merge-tree.txt")
+          CURRENT_MAIN=$(cat "$RECEIPT_DIR/current-main.txt")
+          cat > "$RECEIPT_DIR/receipt.txt" <<EOF
+          schema_version=pc52-exact-postmerge-proof@1
+          status=complete
+          canonical_merge=$MERGE_SHA
+          canonical_merge_tree=$MERGE_TREE
+          merge_first_parent=$MERGE_FIRST_PARENT
+          merge_second_parent=$PRODUCT_COMMIT
+          product_parent=$PRODUCT_PARENT
+          product_tree=$PRODUCT_TREE
+          live_main=$CURRENT_MAIN
+          permanent_path_count=$PATH_COUNT
+          canonical_product_blob_matches=$PATH_COUNT
+          standalone_pc52=pass
+          floor_v50=pass
+          historical_floor_reconstruction=pass
+          base_preference_custody=pass
+          no_magic_human=pass
+          release_check=pass
+          outside_human_dependency=false
+          graph_effect=none
+          EOF
+          sed -i 's/^          //' "$RECEIPT_DIR/receipt.txt"
+          sha256sum "$RECEIPT_DIR"/* > "$RECEIPT_DIR/SHA256SUMS"
+          cat "$RECEIPT_DIR/receipt.txt"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc52-exact-postmerge-proof-1db9
+          path: /tmp/pc52-exact-postmerge-proof
+          if-no-files-found: error
+          retention-days: 90
