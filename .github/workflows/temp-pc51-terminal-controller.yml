@@ -1,52 +1,58 @@
-name: TEMP prove exact PC-51 canonical merge
+name: TEMP retire exact PC-51 transaction refs
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
+  actions: read
 
 concurrency:
-  group: pc51-exact-postmerge-proof-08288d
+  group: pc51-terminal-ref-retirement-08288d
   cancel-in-progress: false
 
 jobs:
-  prove:
+  retire:
     runs-on: ubuntu-24.04
-    timeout-minutes: 360
+    timeout-minutes: 60
     env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPOSITORY: ${{ github.repository }}
+      CONTROLLER_HEAD: ${{ github.event.pull_request.head.sha }}
       MERGE_SHA: 08288d7358bd9d2a14babd9893cecea61cdb7334
-      MERGE_FIRST_PARENT: a464dbbd96c365a7c040e17847486c5b3ba05c27
       PRODUCT_COMMIT: 030ece737067699236883bc1f1533af9866fa140
-      PRODUCT_TREE: f60fcdcd969d9082d166db74660814976012e187
-      FROZEN_PARENT: 5b841fcfe6d30929e0adfbb36548224d8d1959e8
-      SLUG: preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance
-      RECEIPT_DIR: /tmp/pc51-exact-postmerge-proof
+      PROOF_RUN: '31138928325'
+      PROOF_ARTIFACT_ID: '8979188016'
+      PROOF_ARTIFACT_DIGEST: sha256:1a18bfbde6aa970d85efc8648320fbfe05f796fa41e2435948e92a7b9d9e27b8
+      RECEIPT_DIR: /tmp/pc51-terminal-ref-retirement
     steps:
       - uses: actions/checkout@v4
         with:
           ref: 08288d7358bd9d2a14babd9893cecea61cdb7334
           fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
 
-      - name: Verify canonical topology, paths, and blobs
+      - name: Verify canonical proof and live-main preservation
         shell: bash
         run: |
           set -Eeuo pipefail
           mkdir -p "$RECEIPT_DIR"
-          test "$(git rev-parse HEAD)" = "$MERGE_SHA"
-          git fetch --no-tags origin main "$MERGE_SHA" "$PRODUCT_COMMIT" "$FROZEN_PARENT" >/dev/null 2>&1
+          git fetch --no-tags origin main "$MERGE_SHA" "$PRODUCT_COMMIT" >/dev/null 2>&1
+          CURRENT_MAIN=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$MERGE_SHA" "$CURRENT_MAIN"
 
-          mapfile -t PARENTS < <(git rev-list --parents -n 1 "$MERGE_SHA" | cut -d' ' -f2- | tr ' ' '\n')
-          test "${#PARENTS[@]}" -eq 2
-          test "${PARENTS[0]}" = "$MERGE_FIRST_PARENT"
-          test "${PARENTS[1]}" = "$PRODUCT_COMMIT"
-          test "$(git rev-parse "$PRODUCT_COMMIT^")" = "$FROZEN_PARENT"
-          test "$(git rev-list --count "$FROZEN_PARENT..$PRODUCT_COMMIT")" -eq 1
-          test "$(git rev-parse "$PRODUCT_COMMIT^{tree}")" = "$PRODUCT_TREE"
+          gh api "/repos/${GH_REPOSITORY}/actions/runs/${PROOF_RUN}" > "$RECEIPT_DIR/proof-run.json"
+          test "$(jq -r '.status' "$RECEIPT_DIR/proof-run.json")" = completed
+          test "$(jq -r '.conclusion' "$RECEIPT_DIR/proof-run.json")" = success
+          gh api "/repos/${GH_REPOSITORY}/actions/runs/${PROOF_RUN}/artifacts?per_page=100" \
+            > "$RECEIPT_DIR/proof-artifacts.json"
+          jq --argjson id "$PROOF_ARTIFACT_ID" \
+            '.artifacts[] | select(.id == $id)' "$RECEIPT_DIR/proof-artifacts.json" \
+            > "$RECEIPT_DIR/proof-artifact.json"
+          test "$(jq -r '.name' "$RECEIPT_DIR/proof-artifact.json")" = pc51-exact-postmerge-proof-08288d
+          test "$(jq -r '.digest' "$RECEIPT_DIR/proof-artifact.json")" = "$PROOF_ARTIFACT_DIGEST"
+          test "$(jq -r '.expired' "$RECEIPT_DIR/proof-artifact.json")" = false
 
           cat > "$RECEIPT_DIR/expected-paths.txt" <<'EOF'
           .github/workflows/preference-custody-v49.yml
@@ -67,118 +73,133 @@ jobs:
           sed -i 's/^          //' "$RECEIPT_DIR/expected-paths.txt"
           sort -o "$RECEIPT_DIR/expected-paths.txt" "$RECEIPT_DIR/expected-paths.txt"
 
-          git diff --name-only "$MERGE_FIRST_PARENT" "$MERGE_SHA" | sort > "$RECEIPT_DIR/merge-paths.txt"
-          git diff --name-status "$MERGE_FIRST_PARENT" "$MERGE_SHA" > "$RECEIPT_DIR/merge-name-status.txt"
-          diff -u "$RECEIPT_DIR/expected-paths.txt" "$RECEIPT_DIR/merge-paths.txt"
-          test "$(wc -l < "$RECEIPT_DIR/merge-paths.txt" | tr -d ' ')" -eq 14
-          test "$(awk '$1 != "A" {n++} END {print n+0}' "$RECEIPT_DIR/merge-name-status.txt")" -eq 0
-          if grep -Eq '(^|/)(temp|carrier|shard|controller|marker|pulse|receipt|diagnostic)([-_.]|/)|^\.pc51/' "$RECEIPT_DIR/merge-paths.txt"; then
-            echo 'transport path entered canonical PC-51 merge' >&2
-            exit 1
-          fi
-
-          : > "$RECEIPT_DIR/blob-identities.tsv"
+          : > "$RECEIPT_DIR/live-main-blob-identities.tsv"
           while IFS= read -r path; do
-            PRODUCT_BLOB=$(git rev-parse "$PRODUCT_COMMIT:$path")
             MERGE_BLOB=$(git rev-parse "$MERGE_SHA:$path")
-            test "$PRODUCT_BLOB" = "$MERGE_BLOB"
-            printf '%s\t%s\n' "$path" "$MERGE_BLOB" >> "$RECEIPT_DIR/blob-identities.tsv"
+            MAIN_BLOB=$(git rev-parse "$CURRENT_MAIN:$path")
+            test "$MERGE_BLOB" = "$MAIN_BLOB"
+            printf '%s\t%s\n' "$path" "$MAIN_BLOB" >> "$RECEIPT_DIR/live-main-blob-identities.tsv"
           done < "$RECEIPT_DIR/expected-paths.txt"
+          printf '%s\n' "$CURRENT_MAIN" > "$RECEIPT_DIR/current-main.txt"
 
-          grep -q '^permissions:$' .github/workflows/preference-custody-v49.yml
-          grep -q 'contents: read' .github/workflows/preference-custody-v49.yml
-          grep -q '^permissions:$' .github/workflows/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.yml
-          grep -q 'contents: read' .github/workflows/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.yml
-          ! grep -Eq 'contents: write|pull-requests: write|issues: write|actions: write' \
-            .github/workflows/preference-custody-v49.yml \
-            .github/workflows/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.yml
-
-      - name: Replay PC-51, floor v49, historical floors, and complete gates
+      - name: Close never-merge PRs and retire all PC-51 refs
         shell: bash
         run: |
           set -Eeuo pipefail
-          git clean -fdx
-          mkdir -p "$RECEIPT_DIR"
-          node "tools/compile-${SLUG}.mjs" | tee "$RECEIPT_DIR/standalone-compile.log"
-          node "tools/validate-${SLUG}.mjs" | tee "$RECEIPT_DIR/standalone-validate.log"
-          node "test/${SLUG}.test.js" | tee "$RECEIPT_DIR/standalone-test.log"
-          node tools/compile-preference-custody-manifest-v49.mjs | tee "$RECEIPT_DIR/floor-v49-compile.log"
-          node tools/validate-preference-custody-manifest-v49.mjs | tee "$RECEIPT_DIR/floor-v49-validate.log"
-          node test/preference-custody-manifest-v49.test.js | tee "$RECEIPT_DIR/floor-v49-test.log"
-          : > "$RECEIPT_DIR/historical-floors.log"
-          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
-            node "$test_file" | tee -a "$RECEIPT_DIR/historical-floors.log"
-          done
-          node test/preference-custody-manifest.test.js | tee "$RECEIPT_DIR/base-floor.log"
-          node tools/validate-no-magic-human-gate.mjs | tee "$RECEIPT_DIR/no-magic-human-validate.log"
-          node test/no-magic-human-gate.test.js | tee "$RECEIPT_DIR/no-magic-human-test.log"
-          npm run release:check | tee "$RECEIPT_DIR/release-check.log"
+          cat > "$RECEIPT_DIR/expected-ref-allowlist.txt" <<'EOF'
+          agent/pc51-array-key-repair-carrier
+          agent/pc51-ci-repro-export
+          agent/pc51-clean-checkout-observer
+          agent/pc51-clean-checkout-repair
+          agent/pc51-clean-checkout-repair-v2
+          agent/pc51-consolidated-repair-carrier
+          agent/pc51-consolidated-repair-carrier-v2
+          agent/pc51-consolidated-repair-executor-v2
+          agent/pc51-export-base
+          agent/pc51-materializer
+          agent/pc51-product-carrier
+          agent/pc51-repaired-head-qualifier
+          agent/pc51-source-export
+          agent/pc51-terminal-controller
+          agent/pc51-v48-inherited-consistency-probe
+          EOF
+          sed -i 's/^          //' "$RECEIPT_DIR/expected-ref-allowlist.txt"
+          sort -o "$RECEIPT_DIR/expected-ref-allowlist.txt" "$RECEIPT_DIR/expected-ref-allowlist.txt"
 
-      - name: Seal exact post-merge receipt
+          gh api --paginate "/repos/${GH_REPOSITORY}/pulls?state=open&per_page=100" \
+            --jq '.[] | select(.head.ref | startswith("agent/pc51")) | [.number,.head.ref,.head.sha] | @tsv' \
+            | sort -n > "$RECEIPT_DIR/open-pc51-prs-before.tsv"
+
+          gh api --paginate "/repos/${GH_REPOSITORY}/git/matching-refs/heads/agent/pc51" \
+            --jq '.[] | [.ref,.object.sha] | @tsv' \
+            | sed 's#^refs/heads/##' | sort > "$RECEIPT_DIR/pc51-refs-before.tsv"
+          cut -f1 "$RECEIPT_DIR/pc51-refs-before.tsv" > "$RECEIPT_DIR/pc51-ref-names-before.txt"
+          comm -23 "$RECEIPT_DIR/pc51-ref-names-before.txt" "$RECEIPT_DIR/expected-ref-allowlist.txt" \
+            > "$RECEIPT_DIR/unexpected-pc51-refs.txt"
+          test ! -s "$RECEIPT_DIR/unexpected-pc51-refs.txt"
+          grep -qx 'agent/pc51-materializer' "$RECEIPT_DIR/pc51-ref-names-before.txt"
+          grep -qx 'agent/pc51-terminal-controller' "$RECEIPT_DIR/pc51-ref-names-before.txt"
+          test "$(awk -F '\t' '$1=="agent/pc51-materializer" {print $2}' "$RECEIPT_DIR/pc51-refs-before.tsv")" = "$PRODUCT_COMMIT"
+          test "$(awk -F '\t' '$1=="agent/pc51-terminal-controller" {print $2}' "$RECEIPT_DIR/pc51-refs-before.tsv")" = "$CONTROLLER_HEAD"
+
+          while IFS=$'\t' read -r pr branch sha; do
+            [[ -z "$pr" ]] && continue
+            gh api --method PATCH "/repos/${GH_REPOSITORY}/pulls/${pr}" -f state=closed >/dev/null
+          done < "$RECEIPT_DIR/open-pc51-prs-before.tsv"
+
+          grep -v '^agent/pc51-terminal-controller\t' "$RECEIPT_DIR/pc51-refs-before.tsv" \
+            > "$RECEIPT_DIR/pc51-refs-first.tsv" || true
+          while IFS=$'\t' read -r branch sha; do
+            [[ -z "$branch" ]] && continue
+            gh api --method DELETE "/repos/${GH_REPOSITORY}/git/refs/heads/${branch}" >/dev/null
+          done < "$RECEIPT_DIR/pc51-refs-first.tsv"
+
+          gh api --method DELETE "/repos/${GH_REPOSITORY}/git/refs/heads/agent/pc51-terminal-controller" >/dev/null
+
+          gh api --paginate "/repos/${GH_REPOSITORY}/git/matching-refs/heads/agent/pc51" \
+            --jq '.[] | [.ref,.object.sha] | @tsv' \
+            | sed 's#^refs/heads/##' | sort > "$RECEIPT_DIR/pc51-refs-after.tsv"
+          test ! -s "$RECEIPT_DIR/pc51-refs-after.tsv"
+
+          gh api --paginate "/repos/${GH_REPOSITORY}/pulls?state=open&per_page=100" \
+            --jq '.[] | select(.head.ref | startswith("agent/pc51")) | [.number,.head.ref,.head.sha] | @tsv' \
+            | sort -n > "$RECEIPT_DIR/open-pc51-prs-after.tsv"
+          test ! -s "$RECEIPT_DIR/open-pc51-prs-after.tsv"
+
+      - name: Seal ref-retirement receipt
         shell: bash
         run: |
           set -Eeuo pipefail
-          MERGE_TREE=$(git rev-parse "$MERGE_SHA^{tree}")
-          git fetch --no-tags origin main >/dev/null 2>&1
-          CURRENT_MAIN=$(git rev-parse origin/main)
-          git merge-base --is-ancestor "$MERGE_SHA" "$CURRENT_MAIN"
-          git diff --name-only "$MERGE_SHA" "$CURRENT_MAIN" | sort -u > "$RECEIPT_DIR/main-after-merge-paths.txt"
-          if comm -12 "$RECEIPT_DIR/expected-paths.txt" "$RECEIPT_DIR/main-after-merge-paths.txt" | grep -q .; then
-            echo 'post-merge main successor overlaps canonical PC-51 paths' >&2
-            exit 1
-          fi
-
-          MERGE_TREE="$MERGE_TREE" CURRENT_MAIN="$CURRENT_MAIN" python - <<'PY'
+          CURRENT_MAIN=$(cat "$RECEIPT_DIR/current-main.txt")
+          CURRENT_MAIN="$CURRENT_MAIN" python - <<'PY'
           import json, os
           from pathlib import Path
-          root = Path('/tmp/pc51-exact-postmerge-proof')
+          root = Path('/tmp/pc51-terminal-ref-retirement')
+          refs = []
+          for line in (root / 'pc51-refs-before.tsv').read_text().splitlines():
+              if line:
+                  branch, sha = line.split('\t', 1)
+                  refs.append({'branch': branch, 'sha': sha})
+          prs = []
+          for line in (root / 'open-pc51-prs-before.tsv').read_text().splitlines():
+              if line:
+                  number, branch, sha = line.split('\t', 2)
+                  prs.append({'number': int(number), 'branch': branch, 'sha': sha})
           receipt = {
-              'schema_version': 'pc51-exact-postmerge-proof@1',
+              'schema_version': 'pc51-terminal-ref-retirement@1',
               'issue': 1268,
               'product_pr': 1277,
-              'qualified_parent_commit': os.environ['FROZEN_PARENT'],
-              'product_commit': os.environ['PRODUCT_COMMIT'],
-              'product_tree': os.environ['PRODUCT_TREE'],
               'canonical_merge': os.environ['MERGE_SHA'],
-              'canonical_merge_tree': os.environ['MERGE_TREE'],
-              'merge_first_parent': os.environ['MERGE_FIRST_PARENT'],
-              'merge_second_parent': os.environ['PRODUCT_COMMIT'],
-              'current_main_at_proof': os.environ['CURRENT_MAIN'],
-              'permanent_paths': 14,
-              'canonical_product_blob_matches': 14,
-              'transport_paths': 0,
-              'write_capable_permanent_workflows': 0,
-              'hosted_exact_head_workflows_success': 45,
-              'standalone_pc51': 'pass',
-              'floor_v49': 'pass',
-              'historical_preference_custody_floors': 'pass',
-              'base_preference_custody': 'pass',
-              'no_magic_human': 'pass',
-              'complete_release_gate': 'pass',
+              'product_commit': os.environ['PRODUCT_COMMIT'],
+              'current_main_at_retirement': os.environ['CURRENT_MAIN'],
+              'proof_run': int(os.environ['PROOF_RUN']),
+              'proof_artifact_id': int(os.environ['PROOF_ARTIFACT_ID']),
+              'proof_artifact_digest': os.environ['PROOF_ARTIFACT_DIGEST'],
+              'refs_retired': refs,
+              'ref_count_retired': len(refs),
+              'open_pc51_prs_closed': prs,
+              'open_pc51_pr_count_closed': len(prs),
+              'residual_pc51_refs': 0,
+              'residual_open_pc51_prs': 0,
+              'canonical_product_blob_matches_on_live_main': 14,
               'outside_human_dependency': False,
               'graph_effect': 'none',
           }
-          (root / 'postmerge-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          (root / 'ref-retirement-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
           PY
-
-          mkdir -p "$RECEIPT_DIR/build"
-          find build/research -maxdepth 1 -type f \( -name "${SLUG}.*" -o -name 'preference-custody-laboratory-floor-v49.*' \) \
-            -exec cp {} "$RECEIPT_DIR/build/" \;
-          tar -C "$RECEIPT_DIR" -czf "$RECEIPT_DIR/pc51-exact-postmerge-proof.tar.gz" \
-            postmerge-receipt.json expected-paths.txt merge-paths.txt merge-name-status.txt \
-            blob-identities.tsv main-after-merge-paths.txt build \
-            standalone-compile.log standalone-validate.log standalone-test.log \
-            floor-v49-compile.log floor-v49-validate.log floor-v49-test.log \
-            historical-floors.log base-floor.log no-magic-human-validate.log \
-            no-magic-human-test.log release-check.log
-          sha256sum "$RECEIPT_DIR/pc51-exact-postmerge-proof.tar.gz" \
-            > "$RECEIPT_DIR/pc51-exact-postmerge-proof.tar.gz.sha256"
-          cat "$RECEIPT_DIR/postmerge-receipt.json"
-          cat "$RECEIPT_DIR/pc51-exact-postmerge-proof.tar.gz.sha256"
+          tar -C "$RECEIPT_DIR" -czf "$RECEIPT_DIR/pc51-terminal-ref-retirement.tar.gz" \
+            ref-retirement-receipt.json proof-run.json proof-artifact.json \
+            expected-paths.txt live-main-blob-identities.tsv current-main.txt \
+            expected-ref-allowlist.txt open-pc51-prs-before.tsv open-pc51-prs-after.tsv \
+            pc51-refs-before.tsv pc51-refs-after.tsv unexpected-pc51-refs.txt
+          sha256sum "$RECEIPT_DIR/pc51-terminal-ref-retirement.tar.gz" \
+            > "$RECEIPT_DIR/pc51-terminal-ref-retirement.tar.gz.sha256"
+          cat "$RECEIPT_DIR/ref-retirement-receipt.json"
+          cat "$RECEIPT_DIR/pc51-terminal-ref-retirement.tar.gz.sha256"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: pc51-exact-postmerge-proof-08288d
-          path: /tmp/pc51-exact-postmerge-proof
+          name: pc51-terminal-ref-retirement-08288d
+          path: /tmp/pc51-terminal-ref-retirement
           if-no-files-found: error
           retention-days: 90
