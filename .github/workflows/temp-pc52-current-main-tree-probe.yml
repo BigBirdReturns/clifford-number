@@ -1,0 +1,50 @@
+name: TEMP probe exact live-main Git tree for PC-52 publication
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Seal parent commit and tree
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          HEAD_SHA=$(git rev-parse HEAD)
+          PARENT=$(git rev-parse HEAD^)
+          git fetch --no-tags origin main
+          test "$PARENT" = "$(git rev-parse origin/main)"
+          TREE=$(git rev-parse "$PARENT^{tree}")
+          mapfile -t DELTA < <(git diff --name-only "$PARENT" "$HEAD_SHA")
+          test "${#DELTA[@]}" -eq 1
+          test "${DELTA[0]}" = '.github/workflows/temp-pc52-current-main-tree-probe.yml'
+          mkdir -p /tmp/pc52-current-main-tree
+          cat > /tmp/pc52-current-main-tree/receipt.txt <<EOF
+          schema_version=pc52-current-main-tree-probe@1
+          parent_commit=$PARENT
+          parent_tree=$TREE
+          probe_head=$HEAD_SHA
+          ref_updates=0
+          outside_human_dependency=false
+          graph_effect=none
+          EOF
+          sed -i 's/^          //' /tmp/pc52-current-main-tree/receipt.txt
+          sha256sum /tmp/pc52-current-main-tree/receipt.txt > /tmp/pc52-current-main-tree/SHA256SUMS
+          cat /tmp/pc52-current-main-tree/receipt.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc52-current-main-tree-probe
+          path: /tmp/pc52-current-main-tree
+          if-no-files-found: error
+          retention-days: 30
