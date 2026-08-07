@@ -1,0 +1,300 @@
+name: TEMP finalize School.House USPTO exact-mark census custody
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: schoolhouse-uspto-finalizer-v1
+  cancel-in-progress: false
+
+jobs:
+  finalize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-uspto-exact-mark-census-finalizer-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prove, merge, replay, and bind canonical custody
+        id: finalize
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          TARGET='agent/schoolhouse-uspto-exact-mark-census-custody-product-v1'
+          WORKFLOW='.github/workflows/temp-schoolhouse-uspto-exact-mark-census-finalizer-v1.yml'
+          PRODUCT_WORK="$RUNNER_TEMP/schoolhouse-uspto-finalizer-product"
+          MERGE_WORK="$RUNNER_TEMP/schoolhouse-uspto-finalizer-merge"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-uspto-finalization-v1"
+          mkdir -p "$RECEIPT"
+          trap 'rc=$?; printf "exit_code=%s\nfailed_line=%s\n" "$rc" "$LINENO" >> "$RECEIPT/preflight.txt"; exit "$rc"' ERR
+
+          cat > "$RECEIPT/expected-paths.txt" <<'PATHS'
+          data/intake/schoolhouse-uspto-exact-mark-census-v1/sealed-source-artifact.zip
+          data/intake/schoolhouse-uspto-exact-mark-census-v1/sealed-qualification-artifact.zip
+          data/intake/schoolhouse-uspto-exact-mark-census-v1/source-custody.json
+          data/intake/schoolhouse-uspto-exact-mark-census-v1/product-manifest.json
+          docs/milestones/schoolhouse-uspto-exact-mark-census-v1.md
+          tools/validate-schoolhouse-uspto-exact-mark-census-custody.py
+          PATHS
+          sed -i 's/^          //' "$RECEIPT/expected-paths.txt"
+
+          wait_for_required_checks() {
+            local sha="$1" label="$2"
+            local attempts=90
+            for attempt in $(seq 1 "$attempts"); do
+              gh api "repos/$REPO/actions/runs?head_sha=$sha&per_page=100" > "$RECEIPT/${label}-runs.json"
+              local release nohuman terminal_failure
+              release="$(jq -r '[.workflow_runs[] | select(.name == "Release checks")] | sort_by(.created_at) | last | .conclusion // ""' "$RECEIPT/${label}-runs.json")"
+              nohuman="$(jq -r '[.workflow_runs[] | select(.name == "No magic human gate")] | sort_by(.created_at) | last | .conclusion // ""' "$RECEIPT/${label}-runs.json")"
+              terminal_failure="$(jq -r '[.workflow_runs[] | select((.name == "Release checks" or .name == "No magic human gate") and (.conclusion == "failure" or .conclusion == "cancelled" or .conclusion == "timed_out" or .conclusion == "action_required"))] | length' "$RECEIPT/${label}-runs.json")"
+              if test "$terminal_failure" != '0'; then
+                printf '%s_required_check_failure release=%s no_magic_human=%s\n' "$label" "$release" "$nohuman" >&2
+                return 1
+              fi
+              if test "$release" = 'success' && test "$nohuman" = 'success'; then
+                printf '%s_required_checks=success attempt=%s\n' "$label" "$attempt" | tee -a "$RECEIPT/preflight.txt"
+                return 0
+              fi
+              sleep 10
+            done
+            printf '%s_required_checks_timeout\n' "$label" >&2
+            return 1
+          }
+
+          git fetch --no-tags origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            "+refs/heads/$TARGET:refs/remotes/origin/$TARGET"
+          MAIN="$(git rev-parse origin/main)"
+          FINALIZER_PARENT="$(git rev-parse HEAD^)"
+          PRODUCT="$(git rev-parse "origin/$TARGET")"
+          PRODUCT_PARENT="$(git rev-parse "$PRODUCT^")"
+          PRODUCT_TREE="$(git rev-parse "$PRODUCT^{tree}")"
+          {
+            printf 'main=%s\n' "$MAIN"
+            printf 'finalizer_head=%s\n' "$(git rev-parse HEAD)"
+            printf 'finalizer_parent=%s\n' "$FINALIZER_PARENT"
+            printf 'product=%s\n' "$PRODUCT"
+            printf 'product_parent=%s\n' "$PRODUCT_PARENT"
+            printf 'product_tree=%s\n' "$PRODUCT_TREE"
+          } | tee "$RECEIPT/preflight.txt"
+          test "$FINALIZER_PARENT" = "$MAIN"
+          test "$PRODUCT_PARENT" = "$MAIN"
+          test "$(git rev-list --count "$MAIN".."$PRODUCT")" = '1'
+
+          mapfile -t FINALIZER_DELTA < <(git diff --name-only "$MAIN"..HEAD)
+          test "${#FINALIZER_DELTA[@]}" -eq 1
+          test "${FINALIZER_DELTA[0]}" = "$WORKFLOW"
+
+          git diff --name-status "$MAIN" "$PRODUCT" > "$RECEIPT/product-name-status.txt"
+          python - "$RECEIPT/expected-paths.txt" "$RECEIPT/product-name-status.txt" <<'PY'
+          from pathlib import Path
+          import sys
+          expected = set(Path(sys.argv[1]).read_text().splitlines())
+          rows = Path(sys.argv[2]).read_text().splitlines()
+          observed = set()
+          for row in rows:
+              status, path = row.split('\t', 1)
+              if status != 'A':
+                  raise SystemExit(f'non-addition product path: {row}')
+              observed.add(path)
+          if observed != expected:
+              raise SystemExit(f'product path-set drift: {sorted(observed ^ expected)}')
+          print('product_surface=6_addition_only_workflow_free')
+          PY
+          test -z "$(git diff --name-only "$MAIN" "$PRODUCT" | grep '^\.github/' || true)"
+
+          gh pr list --repo "$REPO" --state open --base main --head "$TARGET" --limit 10 --json number,headRefOid > "$RECEIPT/product-prs.json"
+          test "$(jq 'length' "$RECEIPT/product-prs.json")" = '1'
+          PRODUCT_PR="$(jq -r '.[0].number' "$RECEIPT/product-prs.json")"
+          test "$(jq -r '.[0].headRefOid' "$RECEIPT/product-prs.json")" = "$PRODUCT"
+          printf 'product_pr=%s\n' "$PRODUCT_PR" | tee -a "$RECEIPT/preflight.txt"
+
+          wait_for_required_checks "$PRODUCT" product
+
+          rm -rf "$PRODUCT_WORK"
+          git worktree add --detach "$PRODUCT_WORK" "$PRODUCT"
+          export TERM=xterm
+          {
+            cd "$PRODUCT_WORK"
+            python -m py_compile tools/validate-schoolhouse-uspto-exact-mark-census-custody.py
+            python tools/validate-schoolhouse-uspto-exact-mark-census-custody.py --check
+            python tools/validate-schoolhouse-uspto-exact-mark-census-custody.py --self-test
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          } 2>&1 | tee "$RECEIPT/product-focused-gates.log"
+          grep -qx 'schoolhouse_uspto_custody_adversarial_refusals=5' "$RECEIPT/product-focused-gates.log"
+          (cd "$PRODUCT_WORK" && npm run release:check) 2>&1 | tee "$RECEIPT/product-release-check.log"
+
+          git -C "$PRODUCT_WORK" restore --staged --worktree .
+          git -C "$PRODUCT_WORK" clean -fdx
+          (
+            cd "$PRODUCT_WORK"
+            python tools/validate-schoolhouse-uspto-exact-mark-census-custody.py --write
+            python tools/validate-schoolhouse-uspto-exact-mark-census-custody.py --check
+            python tools/validate-schoolhouse-uspto-exact-mark-census-custody.py --self-test
+            node tools/validate-no-magic-human-gate.mjs
+          ) 2>&1 | tee "$RECEIPT/product-clean-replay.log"
+          git -C "$PRODUCT_WORK" diff --check
+          git -C "$PRODUCT_WORK" diff --exit-code
+          test -z "$(git -C "$PRODUCT_WORK" status --porcelain=v1 --untracked-files=all)"
+
+          MERGE_RESPONSE="$(gh api --method PUT "repos/$REPO/pulls/$PRODUCT_PR/merge" \
+            -f merge_method=merge \
+            -f sha="$PRODUCT" \
+            -f commit_title='Preserve School.House USPTO exact-mark census custody' \
+            -f commit_message='Merge the exact one-parent, six-path USPTO exact-mark census custody product after sealed-artifact authentication, independent request-free qualification, five adversarial refusals, all no-magic-human mutations, the complete repository release gate, and clean deterministic replay. Preserve three terminal fixed searches, zero retained serial rows or candidates, fifteen blocked officially-unscoped requests, zero identity or relationship admissions, no negative-existence claim, no outside-human dependency, and no publication, adoption, or graph effect.')"
+          printf '%s\n' "$MERGE_RESPONSE" > "$RECEIPT/merge-response.json"
+          test "$(jq -r .merged "$RECEIPT/merge-response.json")" = 'true'
+          MERGE="$(jq -r .sha "$RECEIPT/merge-response.json")"
+          test -n "$MERGE"; test "$MERGE" != 'null'
+          printf 'merge_commit=%s\n' "$MERGE" | tee -a "$RECEIPT/preflight.txt"
+
+          for attempt in $(seq 1 60); do
+            git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+            test "$(git rev-parse origin/main)" = "$MERGE" && break
+            sleep 5
+          done
+          test "$(git rev-parse origin/main)" = "$MERGE"
+          test "$(git show -s --format=%P "$MERGE")" = "$MAIN $PRODUCT"
+          test "$(git rev-parse "$MERGE^{tree}")" = "$PRODUCT_TREE"
+          test "$(git rev-parse "$PRODUCT^")" = "$MAIN"
+
+          rm -rf "$MERGE_WORK"
+          git worktree add --detach "$MERGE_WORK" "$MERGE"
+          {
+            cd "$MERGE_WORK"
+            python -m py_compile tools/validate-schoolhouse-uspto-exact-mark-census-custody.py
+            python tools/validate-schoolhouse-uspto-exact-mark-census-custody.py --check
+            python tools/validate-schoolhouse-uspto-exact-mark-census-custody.py --self-test
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          } 2>&1 | tee "$RECEIPT/postmerge-focused-gates.log"
+          grep -qx 'schoolhouse_uspto_custody_adversarial_refusals=5' "$RECEIPT/postmerge-focused-gates.log"
+          (cd "$MERGE_WORK" && npm run release:check) 2>&1 | tee "$RECEIPT/postmerge-release-check.log"
+
+          git -C "$MERGE_WORK" restore --staged --worktree .
+          git -C "$MERGE_WORK" clean -fdx
+          (
+            cd "$MERGE_WORK"
+            python tools/validate-schoolhouse-uspto-exact-mark-census-custody.py --write
+            python tools/validate-schoolhouse-uspto-exact-mark-census-custody.py --check
+            python tools/validate-schoolhouse-uspto-exact-mark-census-custody.py --self-test
+            node tools/validate-no-magic-human-gate.mjs
+          ) 2>&1 | tee "$RECEIPT/postmerge-clean-replay.log"
+          git -C "$MERGE_WORK" diff --check
+          git -C "$MERGE_WORK" diff --exit-code
+          test -z "$(git -C "$MERGE_WORK" status --porcelain=v1 --untracked-files=all)"
+
+          wait_for_required_checks "$MERGE" postmerge
+
+          MAIN="$MAIN" PRODUCT="$PRODUCT" PRODUCT_TREE="$PRODUCT_TREE" PRODUCT_PR="$PRODUCT_PR" MERGE="$MERGE" RECEIPT="$RECEIPT" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          receipt = {
+              'schema_version': 'schoolhouse-uspto-exact-mark-census-finalization@1',
+              'canonical_parent': os.environ['MAIN'],
+              'product_pr': int(os.environ['PRODUCT_PR']),
+              'product_commit': os.environ['PRODUCT'],
+              'product_tree': os.environ['PRODUCT_TREE'],
+              'merge_commit': os.environ['MERGE'],
+              'merge_tree': os.environ['PRODUCT_TREE'],
+              'product_commits': 1,
+              'permanent_paths': 6,
+              'addition_only': True,
+              'workflow_paths_in_product': 0,
+              'source_artifact_id': 8979839804,
+              'source_artifact_sha256': '008180c6126a9281ce1016171ea01c5292cddcefd9896f15c78fa304fc65cce5',
+              'qualification_artifact_id': 8980098074,
+              'qualification_artifact_sha256': '361643c8c09bfbdfe0d47a20452a57aa40941a16b0982a393fb21b3c84918f76',
+              'fixed_queries': 3,
+              'terminal_queries': 3,
+              'query_terminal_state': 'terminal_public_search_rendered_no_parseable_rows',
+              'retained_result_rows': 0,
+              'unique_serials': 0,
+              'trademark_serial_candidates': 0,
+              'blocked_officially_unscoped_host_requests': 15,
+              'adversarial_refusals': 5,
+              'no_magic_human_adversarial_mutations': 23,
+              'identities_admitted': 0,
+              'relationships_admitted': 0,
+              'negative_existence_claims': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'public_schoolhouse_legal_identity': 'unresolved',
+              'product_head_checks': 'success',
+              'postmerge_checks': 'success',
+              'focused_validation': 'pass',
+              'complete_release_gate': 'pass',
+              'clean_replay': 'pass',
+              'status': 'complete',
+          }
+          target = Path(os.environ['RECEIPT']) / 'finalization.json'
+          target.write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          PY
+          sha256sum "$RECEIPT"/* > "$RECEIPT/SHA256SUMS"
+          printf 'merge_commit=%s\n' "$MERGE" >> "$GITHUB_OUTPUT"
+
+      - name: Preserve exact finalization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-uspto-exact-mark-census-finalization-v1
+          path: ${{ runner.temp }}/schoolhouse-uspto-finalization-v1
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Retire temporary lanes without merge
+        if: steps.finalize.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          MERGE='${{ steps.finalize.outputs.merge_commit }}'
+          for branch in \
+            agent/schoolhouse-uspto-exact-mark-census-v1 \
+            agent/schoolhouse-uspto-exact-mark-census-qualifier-v1 \
+            agent/schoolhouse-uspto-exact-mark-census-qualifier-v2 \
+            agent/schoolhouse-uspto-exact-mark-census-materializer-v1 \
+            agent/schoolhouse-uspto-exact-mark-census-product-qualifier-v1 \
+            agent/schoolhouse-uspto-exact-mark-census-finalizer-v1; do
+            mapfile -t numbers < <(gh pr list --repo "$GITHUB_REPOSITORY" --state open --head "$branch" --json number --jq '.[].number')
+            for number in "${numbers[@]}"; do
+              gh pr comment "$number" --repo "$GITHUB_REPOSITORY" --body "Retired without merge after canonical USPTO custody finalization at merge \`$MERGE\`. This temporary lane has no independent identity, relationship, absence, publication, adoption, or graph authority."
+              gh pr close "$number" --repo "$GITHUB_REPOSITORY"
+            done
+          done
+
+      - name: Propagate finalization failure
+        if: steps.finalize.outcome != 'success'
+        run: exit 1
