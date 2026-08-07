@@ -1,0 +1,1564 @@
+name: TEMP census exact School.House SAM public entity registrations
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-sam-public-entity-registration-census-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  census:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-sam-public-entity-registration-census-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prove exact one-path carrier topology
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='d26cb838df12a877840ebe71eb9388d44b6ceaf9'
+          WORKFLOW='.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-v1.yml'
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+          mapfile -t DELTA < <(git diff --name-only "$BASE"..HEAD)
+          test "${#DELTA[@]}" -eq 1
+          test "${DELTA[0]}" = "$WORKFLOW"
+
+          printf 'canonical_parent=%s\n' "$BASE"
+          printf 'canonical_parent_tree=%s\n' "$(git rev-parse "$BASE^{tree}")"
+          printf 'carrier_head=%s\n' "$(git rev-parse HEAD)"
+          printf 'carrier_paths=1\n'
+
+      - name: Install bounded browser runtime
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir 'playwright==1.55.0'
+          python -m playwright install --with-deps chromium
+
+      - name: Execute anonymous public SAM.gov entity-registration census
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/schoolhouse-sam-public-entity-registration-census-v1"
+          mkdir -p "$OUT"
+
+          set +e
+          BASE_TREE="$(git rev-parse 'd26cb838df12a877840ebe71eb9388d44b6ceaf9^{tree}')"
+          python - "$OUT" "$BASE_TREE" <<'PY' 2>&1 | tee "$OUT/RUNNER-OUTPUT.log"
+          from __future__ import annotations
+
+          from collections import Counter
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from typing import Any
+          import hashlib
+          import json
+          import re
+          import sys
+          import time
+          import unicodedata
+          import urllib.parse
+
+          from playwright.sync_api import (
+              Error as PlaywrightError,
+              TimeoutError as PlaywrightTimeoutError,
+              sync_playwright,
+          )
+
+          OUT = Path(sys.argv[1])
+          BASE = "d26cb838df12a877840ebe71eb9388d44b6ceaf9"
+          BASE_TREE = sys.argv[2]
+          ISSUE = 1382
+          SURFACE = "https://sam.gov/entity-information"
+          TARGET_KEY = "schoolhouse"
+          QUERIES = [
+              ("q1_school_dot_house", "School.House"),
+              ("q2_schoolhouse", "Schoolhouse"),
+              ("q3_school_house", "School House"),
+          ]
+          MAX_PAGES_PER_QUERY = 5
+          MAX_ROWS_PER_QUERY = 500
+          MAX_ROWS_TOTAL = 1500
+          MAX_CANDIDATES = 300
+          MAX_OFFICIAL_REQUESTS_PER_QUERY = 250
+          MAX_RESPONSE_BYTES_PER_QUERY = 64 * 1024 * 1024
+          MAX_JSON_BODY_BYTES = 8 * 1024 * 1024
+          ALLOWED_TERMINAL_STATES = {
+              "terminal_public_search_rendered",
+              "terminal_public_search_no_results",
+              "terminal_public_search_rendered_no_parseable_rows",
+              "bounded_public_search_controls_unavailable",
+              "bounded_sign_in_required",
+              "bounded_challenge_detected",
+              "bounded_provider_error",
+              "bounded_page_limit_exceeded",
+              "bounded_request_limit_exceeded",
+              "bounded_response_byte_limit_exceeded",
+              "terminal_browser_or_parse_failure",
+          }
+
+          def now() -> str:
+              return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+          def sha256(value: bytes) -> str:
+              return hashlib.sha256(value).hexdigest()
+
+          def canonical_json(value: Any) -> bytes:
+              return (json.dumps(value, indent=2, sort_keys=True) + "\n").encode()
+
+          def write_json(name: str, value: Any) -> None:
+              (OUT / name).write_bytes(canonical_json(value))
+
+          def write_jsonl(name: str, rows: list[dict[str, Any]]) -> None:
+              payload = b"".join(
+                  json.dumps(row, sort_keys=True, separators=(",", ":")).encode()
+                  + b"\n"
+                  for row in rows
+              )
+              (OUT / name).write_bytes(payload)
+
+          def compact_key(value: Any) -> str:
+              if not isinstance(value, str):
+                  return ""
+              normalized = unicodedata.normalize("NFKC", value).casefold()
+              return "".join(character for character in normalized if character.isalnum())
+
+          def clean_text(value: Any, maximum: int = 200) -> str | None:
+              if not isinstance(value, (str, int)):
+                  return None
+              text = re.sub(r"\s+", " ", str(value)).strip()
+              if not text or len(text) > maximum:
+                  return None
+              return text
+
+          def normalize_uei(value: Any) -> str | None:
+              text = clean_text(value, 32)
+              if text is None:
+                  return None
+              text = re.sub(r"[^A-Za-z0-9]", "", text).upper()
+              return text if re.fullmatch(r"[A-Z0-9]{12}", text) else None
+
+          def normalize_cage(value: Any) -> str | None:
+              text = clean_text(value, 16)
+              if text is None:
+                  return None
+              text = re.sub(r"[^A-Za-z0-9]", "", text).upper()
+              return text if re.fullmatch(r"[A-Z0-9]{5}", text) else None
+
+          def normalized_key(value: Any) -> str:
+              return re.sub(r"[^a-z0-9]", "", str(value).casefold())
+
+          def first_by_keys(mapping: dict[str, Any], keys: set[str]) -> Any:
+              for key, value in mapping.items():
+                  if normalized_key(key) in keys:
+                      return value
+              return None
+
+          def official_host(url: str) -> bool:
+              host = (urllib.parse.urlparse(url).hostname or "").casefold()
+              return host == "sam.gov" or host.endswith(".sam.gov")
+
+          def safe_official_url(url: str) -> str | None:
+              parsed = urllib.parse.urlparse(url)
+              if parsed.scheme != "https" or not official_host(url):
+                  return None
+              if len(url) > 2000:
+                  return None
+              return url
+
+          route_policy = {
+              "schema_version": "schoolhouse-sam-public-entity-registration-route-policy@1",
+              "issue": ISSUE,
+              "canonical_parent": BASE,
+              "canonical_parent_tree": BASE_TREE,
+              "official_surface": {
+                  "url": SURFACE,
+                  "search_category": "Entity Registrations",
+                  "target_normalized_key": TARGET_KEY,
+                  "fixed_queries": [
+                      {"query_id": query_id, "query_text": query_text}
+                      for query_id, query_text in QUERIES
+                  ],
+              },
+              "bounds": {
+                  "fresh_anonymous_browser_contexts": 1,
+                  "fixed_entity_registration_submissions": 3,
+                  "maximum_result_pages_per_query": MAX_PAGES_PER_QUERY,
+                  "maximum_rendered_rows_per_query": MAX_ROWS_PER_QUERY,
+                  "maximum_rendered_rows_total": MAX_ROWS_TOTAL,
+                  "maximum_retained_candidates_total": MAX_CANDIDATES,
+                  "maximum_query_phase_official_requests_per_query": MAX_OFFICIAL_REQUESTS_PER_QUERY,
+                  "maximum_query_phase_response_bytes_per_query": MAX_RESPONSE_BYTES_PER_QUERY,
+                  "parallel_workers": 1,
+                  "entity_detail_views": 0,
+                  "api_calls_using_api_key": 0,
+                  "login_attempts": 0,
+                  "account_creation_attempts": 0,
+                  "federal_role_or_cac_piv_attempts": 0,
+                  "captcha_or_waf_bypass_attempts": 0,
+                  "cookie_or_profile_export_or_replay_attempts": 0,
+                  "outside_human_dependency": False,
+              },
+              "candidate_rule": {
+                  "classification": "sam_public_entity_registration_candidate",
+                  "requires_public_uei": True,
+                  "requires_exact_normalized_organization_name_key": TARGET_KEY,
+                  "allowed_matched_fields": [
+                      "legal_business_name",
+                      "dba_name",
+                      "public_display_name",
+                  ],
+                  "identity_admission": False,
+                  "successor_exact_uei_adjudication_required": True,
+              },
+              "retention": {
+                  "nonmatching_organization_names": 0,
+                  "person_names": 0,
+                  "street_or_mailing_addresses": 0,
+                  "cities_states_countries_or_postal_codes": 0,
+                  "phone_fax_or_email_values": 0,
+                  "points_of_contact": 0,
+                  "officers_owners_principals_or_parent_entities": 0,
+                  "financial_banking_eft_or_debt_information": 0,
+                  "proceedings_exclusions_or_integrity_material": 0,
+                  "complete_html_or_json_responses": 0,
+                  "screenshots": 0,
+                  "browser_profiles_cookies_credentials_or_tokens": 0,
+                  "private_support_material": 0,
+              },
+              "authority": {
+                  "identities_admitted": 0,
+                  "relationships_admitted": 0,
+                  "negative_existence_claims": 0,
+                  "federal_registration_admissions": 0,
+                  "federal_award_or_funding_admissions": 0,
+                  "owner_admissions": 0,
+                  "operator_admissions": 0,
+                  "outside_human_dependency": False,
+                  "publication_effect": "none",
+                  "adoption_effect": "none",
+                  "graph_effect": "none",
+              },
+          }
+
+          candidates_by_key: dict[tuple[str, str, str], dict[str, Any]] = {}
+          exact_name_without_uei_keys: set[tuple[str, str, int, str]] = set()
+          query_receipts: list[dict[str, Any]] = []
+          blocked_official_detail_views = 0
+          global_rows_inspected = 0
+
+          runtime: dict[str, Any] = {"current": None}
+
+          def consider_candidate(
+              *,
+              query_id: str,
+              query_text: str,
+              page_ordinal: int,
+              source_kind: str,
+              matched_field: str,
+              matched_name: Any,
+              uei_value: Any,
+              cage_value: Any = None,
+              registration_status: Any = None,
+              uei_status: Any = None,
+              purpose_code: Any = None,
+              purpose_label: Any = None,
+          ) -> None:
+              nonlocal global_rows_inspected
+              name = clean_text(matched_name)
+              if name is None or compact_key(name) != TARGET_KEY:
+                  return
+              uei = normalize_uei(uei_value)
+              if uei is None:
+                  exact_name_without_uei_keys.add(
+                      (query_id, matched_field, page_ordinal, sha256(name.encode()))
+                  )
+                  return
+              if len(candidates_by_key) >= MAX_CANDIDATES:
+                  return
+              key = (uei, matched_field, name.casefold())
+              if key in candidates_by_key:
+                  candidates_by_key[key]["observed_query_ids"] = sorted(
+                      set(candidates_by_key[key]["observed_query_ids"] + [query_id])
+                  )
+                  return
+              candidates_by_key[key] = {
+                  "schema_version": "schoolhouse-sam-public-entity-registration-candidate@1",
+                  "classification": "sam_public_entity_registration_candidate",
+                  "query_id": query_id,
+                  "query_text": query_text,
+                  "observed_query_ids": [query_id],
+                  "page_ordinal": page_ordinal,
+                  "source_kind": source_kind,
+                  "public_uei": uei,
+                  "public_cage_code": normalize_cage(cage_value),
+                  "matched_name_field": matched_field,
+                  "matched_organization_name": name,
+                  "registration_status": clean_text(registration_status, 100),
+                  "uei_status": clean_text(uei_status, 100),
+                  "purpose_of_registration_code": clean_text(purpose_code, 32),
+                  "purpose_of_registration_label": clean_text(purpose_label, 160),
+                  "identity_admitted": False,
+                  "federal_registration_admitted": False,
+                  "federal_award_or_funding_admitted": False,
+                  "owner_or_operator_admitted": False,
+                  "relationships_admitted": 0,
+                  "negative_existence_claims": 0,
+                  "outside_human_dependency": False,
+                  "publication_effect": "none",
+                  "adoption_effect": "none",
+                  "graph_effect": "none",
+              }
+
+          def inspect_json(value: Any, query: dict[str, Any], depth: int = 0) -> None:
+              if depth > 20:
+                  return
+              if isinstance(value, dict):
+                  legal_name = first_by_keys(
+                      value,
+                      {"legalbusinessname", "legalname", "businessname"},
+                  )
+                  dba_name = first_by_keys(
+                      value,
+                      {"dbaname", "doingbusinessasname", "doingbusinessas"},
+                  )
+                  display_name = first_by_keys(
+                      value,
+                      {"entityname", "displayname", "publicdisplayname", "name"},
+                  )
+                  uei = first_by_keys(
+                      value,
+                      {"ueisam", "uei", "uniqueentityid", "uniqueentityidentifier"},
+                  )
+                  cage = first_by_keys(value, {"cagecode", "cage"})
+                  registration_status = first_by_keys(
+                      value, {"registrationstatus", "registrationstate"}
+                  )
+                  uei_status = first_by_keys(value, {"ueistatus"})
+                  purpose_code = first_by_keys(
+                      value, {"purposeofregistrationcode", "purposecode"}
+                  )
+                  purpose_label = first_by_keys(
+                      value,
+                      {"purposeofregistrationdesc", "purposeofregistrationdescription", "purposelabel"},
+                  )
+                  for field, name in (
+                      ("legal_business_name", legal_name),
+                      ("dba_name", dba_name),
+                      ("public_display_name", display_name),
+                  ):
+                      consider_candidate(
+                          query_id=query["query_id"],
+                          query_text=query["query_text"],
+                          page_ordinal=query["page_ordinal"],
+                          source_kind="same_host_json",
+                          matched_field=field,
+                          matched_name=name,
+                          uei_value=uei,
+                          cage_value=cage,
+                          registration_status=registration_status,
+                          uei_status=uei_status,
+                          purpose_code=purpose_code,
+                          purpose_label=purpose_label,
+                      )
+                  for child in value.values():
+                      inspect_json(child, query, depth + 1)
+              elif isinstance(value, list):
+                  for child in value[:5000]:
+                      inspect_json(child, query, depth + 1)
+
+          def inspect_dom_blocks(page: Any, query: dict[str, Any]) -> tuple[int, str, int]:
+              nonlocal global_rows_inspected
+              body_text = page.locator("body").inner_text(timeout=15_000)
+              body_bytes = body_text[:2_000_000].encode("utf-8", errors="replace")
+              body_hash = sha256(body_bytes)
+              blocks = page.evaluate(
+                  """
+                  () => {
+                    const selectors = [
+                      'article', 'li', 'tr', '[role="row"]',
+                      '[class*="result"]', '[class*="card"]',
+                      '[data-testid*="result"]'
+                    ];
+                    const seen = new Set();
+                    const out = [];
+                    for (const element of document.querySelectorAll(selectors.join(','))) {
+                      const text = (element.innerText || '').replace(/\s+/g, ' ').trim();
+                      if (!text || text.length > 12000 || seen.has(text)) continue;
+                      if (/\b[A-Z0-9]{12}\b/i.test(text) || /legal business name|doing business as|unique entity/i.test(text)) {
+                        seen.add(text);
+                        out.push(text);
+                        if (out.length >= 1000) break;
+                      }
+                    }
+                    return out;
+                  }
+                  """
+              )
+              inspected = 0
+              for block in blocks:
+                  if inspected >= MAX_ROWS_PER_QUERY or global_rows_inspected >= MAX_ROWS_TOTAL:
+                      break
+                  if not isinstance(block, str):
+                      continue
+                  inspected += 1
+                  global_rows_inspected += 1
+                  lines = [re.sub(r"\s+", " ", line).strip() for line in block.splitlines()]
+                  lines = [line for line in lines if line]
+                  if len(lines) <= 1:
+                      lines = [
+                          segment.strip()
+                          for segment in re.split(
+                              r"(?i)(?=legal business name|doing business as|dba name|entity name|unique entity|uei|cage code|registration status)",
+                              block,
+                          )
+                          if segment.strip()
+                      ]
+                  uei_match = re.search(
+                      r"(?i)(?:unique entity (?:id|identifier)|uei(?:sam)?)\s*[:#-]?\s*([A-Z0-9]{12})",
+                      block,
+                  )
+                  uei = uei_match.group(1).upper() if uei_match else None
+                  cage_match = re.search(
+                      r"(?i)cage(?: code)?\s*[:#-]?\s*([A-Z0-9]{5})",
+                      block,
+                  )
+                  cage = cage_match.group(1).upper() if cage_match else None
+                  status_match = re.search(
+                      r"(?i)registration status\s*[:#-]?\s*([A-Za-z][A-Za-z /-]{0,80})",
+                      block,
+                  )
+                  uei_status_match = re.search(
+                      r"(?i)uei status\s*[:#-]?\s*([A-Za-z][A-Za-z /-]{0,80})",
+                      block,
+                  )
+                  name_observations: list[tuple[str, str]] = []
+                  for line in lines:
+                      match = re.match(
+                          r"(?i)^(legal business name|legal name|doing business as|dba name|entity name|name)\s*[:#-]?\s*(.+)$",
+                          line,
+                      )
+                      if match:
+                          label = normalized_key(match.group(1))
+                          field = (
+                              "legal_business_name"
+                              if label in {"legalbusinessname", "legalname"}
+                              else "dba_name"
+                              if label in {"doingbusinessas", "dbaname"}
+                              else "public_display_name"
+                          )
+                          name_observations.append((field, match.group(2)))
+                      elif compact_key(line) == TARGET_KEY:
+                          name_observations.append(("public_display_name", line))
+                  for field, name in name_observations:
+                      consider_candidate(
+                          query_id=query["query_id"],
+                          query_text=query["query_text"],
+                          page_ordinal=query["page_ordinal"],
+                          source_kind="rendered_dom",
+                          matched_field=field,
+                          matched_name=name,
+                          uei_value=uei,
+                          cage_value=cage,
+                          registration_status=(
+                              status_match.group(1).strip() if status_match else None
+                          ),
+                          uei_status=(
+                              uei_status_match.group(1).strip()
+                              if uei_status_match
+                              else None
+                          ),
+                      )
+              return inspected, body_hash, len(body_bytes)
+
+          def visible(locator: Any) -> bool:
+              try:
+                  return locator.is_visible(timeout=1_500)
+              except Exception:
+                  return False
+
+          def choose_entity_registration_category(page: Any) -> bool:
+              selects = page.locator("select")
+              for index in range(selects.count()):
+                  select = selects.nth(index)
+                  if not visible(select):
+                      continue
+                  options = select.locator("option")
+                  for option_index in range(options.count()):
+                      option = options.nth(option_index)
+                      text = (option.inner_text() or "").strip()
+                      if "entity registration" in text.casefold():
+                          value = option.get_attribute("value")
+                          if value is not None:
+                              select.select_option(value=value)
+                          else:
+                              select.select_option(label=text)
+                          return True
+
+              comboboxes = page.get_by_role("combobox")
+              for index in range(comboboxes.count()):
+                  combo = comboboxes.nth(index)
+                  if not visible(combo):
+                      continue
+                  try:
+                      combo.click(timeout=3_000)
+                      page.wait_for_timeout(300)
+                      option = page.get_by_role(
+                          "option", name=re.compile("Entity Registrations", re.I)
+                      )
+                      if option.count() and visible(option.first):
+                          option.first.click(timeout=3_000)
+                          return True
+                      exact_text = page.get_by_text(
+                          re.compile(r"^Entity Registrations$", re.I)
+                      )
+                      if exact_text.count() and visible(exact_text.first):
+                          exact_text.first.click(timeout=3_000)
+                          return True
+                      page.keyboard.press("Escape")
+                  except Exception:
+                      try:
+                          page.keyboard.press("Escape")
+                      except Exception:
+                          pass
+              return False
+
+          def find_query_input(page: Any) -> Any | None:
+              candidates = [
+                  page.get_by_placeholder(re.compile("Smith Corp", re.I)),
+                  page.get_by_placeholder(re.compile("123456789", re.I)),
+                  page.locator('input[type="search"]'),
+                  page.locator('input[name*="keyword" i]'),
+                  page.locator('input[aria-label*="entity" i]'),
+              ]
+              for group in candidates:
+                  try:
+                      for index in range(group.count()):
+                          candidate = group.nth(index)
+                          if visible(candidate) and candidate.is_editable(timeout=1_500):
+                              return candidate
+                  except Exception:
+                      continue
+              return None
+
+          def submit_query(page: Any, query_input: Any, query_text: str) -> bool:
+              query_input.fill(query_text, timeout=5_000)
+              form = query_input.locator("xpath=ancestor::form[1]")
+              if form.count():
+                  buttons = form.get_by_role("button", name=re.compile("search", re.I))
+                  for index in range(buttons.count()):
+                      button = buttons.nth(index)
+                      if visible(button) and button.is_enabled(timeout=1_500):
+                          button.click(timeout=5_000)
+                          return True
+              buttons = page.get_by_role("button", name=re.compile(r"^Search$", re.I))
+              for index in range(buttons.count()):
+                  button = buttons.nth(index)
+                  if visible(button) and button.is_enabled(timeout=1_500):
+                      button.click(timeout=5_000)
+                      return True
+              query_input.press("Enter")
+              return True
+
+          def next_control(page: Any) -> Any | None:
+              patterns = [
+                  re.compile(r"^Next$", re.I),
+                  re.compile(r"Next Page", re.I),
+                  re.compile(r"Go to next page", re.I),
+              ]
+              for role in ("button", "link"):
+                  for pattern in patterns:
+                      group = page.get_by_role(role, name=pattern)
+                      for index in range(group.count()):
+                          candidate = group.nth(index)
+                          if visible(candidate):
+                              try:
+                                  if role == "button" and not candidate.is_enabled(timeout=1_000):
+                                      continue
+                              except Exception:
+                                  continue
+                              if candidate.get_attribute("aria-disabled") == "true":
+                                  continue
+                              return candidate
+              return None
+
+          def terminal_from_body(body_text: str) -> str | None:
+              lowered = body_text.casefold()
+              if any(
+                  phrase in lowered
+                  for phrase in (
+                      "verify you are human",
+                      "captcha",
+                      "access denied",
+                      "automated access",
+                      "unusual traffic",
+                  )
+              ):
+                  return "bounded_challenge_detected"
+              if any(
+                  phrase in lowered
+                  for phrase in (
+                      "sign in to search",
+                      "you must sign in to search",
+                      "authentication is required",
+                  )
+              ):
+                  return "bounded_sign_in_required"
+              if any(
+                  phrase in lowered
+                  for phrase in (
+                      "no results found",
+                      "no matching entities",
+                      "0 results",
+                      "zero results",
+                  )
+              ):
+                  return "terminal_public_search_no_results"
+              if any(
+                  phrase in lowered
+                  for phrase in (
+                      "something went wrong",
+                      "service unavailable",
+                      "temporarily unavailable",
+                      "error searching entity",
+                  )
+              ):
+                  return "bounded_provider_error"
+              return None
+
+          def candidate_count_for_query(query_id: str) -> int:
+              return sum(
+                  1
+                  for candidate in candidates_by_key.values()
+                  if query_id in candidate["observed_query_ids"]
+              )
+
+          browser_session_started = False
+          browser_launch_error: str | None = None
+          try:
+              with sync_playwright() as playwright:
+                  browser = playwright.chromium.launch(
+                      headless=True,
+                      args=[
+                          "--disable-background-networking",
+                          "--disable-component-update",
+                          "--disable-default-apps",
+                          "--disable-sync",
+                          "--no-default-browser-check",
+                      ],
+                  )
+                  context = browser.new_context(
+                      user_agent=(
+                          "BigBirdReturns/clifford-number public SAM entity census "
+                          "(https://github.com/BigBirdReturns/clifford-number)"
+                      ),
+                      locale="en-US",
+                      timezone_id="UTC",
+                      java_script_enabled=True,
+                      accept_downloads=False,
+                  )
+                  browser_session_started = True
+                  page = context.new_page()
+                  page.set_default_timeout(15_000)
+                  page.set_default_navigation_timeout(60_000)
+
+                  def route_handler(route: Any, request: Any) -> None:
+                      nonlocal blocked_official_detail_views
+                      query = runtime["current"]
+                      if query is None:
+                          route.continue_()
+                          return
+                      url = request.url
+                      parsed = urllib.parse.urlparse(url)
+                      host = (parsed.hostname or "").casefold()
+                      if not official_host(url):
+                          query["blocked_off_host_requests"] += 1
+                          query["blocked_off_host_hashes"].add(
+                              sha256(host.encode()) if host else sha256(url.encode())
+                          )
+                          route.abort()
+                          return
+                      if (
+                          request.resource_type == "document"
+                          and not parsed.path.startswith("/entity-information")
+                      ):
+                          blocked_official_detail_views += 1
+                          query["blocked_entity_detail_views"] += 1
+                          route.abort()
+                          return
+                      query["official_request_count"] += 1
+                      if query["official_request_count"] > MAX_OFFICIAL_REQUESTS_PER_QUERY:
+                          query["request_limit_hit"] = True
+                          route.abort()
+                          return
+                      route.continue_()
+
+                  def response_handler(response: Any) -> None:
+                      query = runtime["current"]
+                      if query is None or not official_host(response.url):
+                          return
+                      try:
+                          content_type = (
+                              response.headers.get("content-type", "").casefold()
+                          )
+                          amount = 0
+                          body: bytes | None = None
+                          if "json" in content_type:
+                              body = response.body()
+                              amount = len(body)
+                              query["json_response_count"] += 1
+                              query["json_response_bytes"] += amount
+                              query["json_response_hashes"].append(
+                                  {
+                                      "url_sha256": sha256(response.url.encode()),
+                                      "status": response.status,
+                                      "bytes": amount,
+                                      "sha256": sha256(body),
+                                  }
+                              )
+                          else:
+                              raw_length = response.headers.get("content-length")
+                              if raw_length and raw_length.isdigit():
+                                  amount = int(raw_length)
+                          query["response_bytes_accounted"] += amount
+                          if query["response_bytes_accounted"] > MAX_RESPONSE_BYTES_PER_QUERY:
+                              query["response_byte_limit_hit"] = True
+                          if body is not None and len(body) <= MAX_JSON_BODY_BYTES:
+                              try:
+                                  inspect_json(json.loads(body), query)
+                              except Exception:
+                                  query["json_parse_error_count"] += 1
+                      except Exception:
+                          query["response_inspection_error_count"] += 1
+
+                  page.route("**/*", route_handler)
+                  page.on("response", response_handler)
+
+                  for query_index, (query_id, query_text) in enumerate(QUERIES):
+                      query: dict[str, Any] = {
+                          "query_id": query_id,
+                          "query_text": query_text,
+                          "query_index": query_index,
+                          "page_ordinal": 0,
+                          "official_request_count": 0,
+                          "response_bytes_accounted": 0,
+                          "json_response_count": 0,
+                          "json_response_bytes": 0,
+                          "json_parse_error_count": 0,
+                          "response_inspection_error_count": 0,
+                          "json_response_hashes": [],
+                          "blocked_off_host_requests": 0,
+                          "blocked_off_host_hashes": set(),
+                          "blocked_entity_detail_views": 0,
+                          "request_limit_hit": False,
+                          "response_byte_limit_hit": False,
+                      }
+                      runtime["current"] = query
+                      receipt: dict[str, Any] = {
+                          "schema_version": "schoolhouse-sam-public-entity-registration-query-receipt@1",
+                          "query_id": query_id,
+                          "query_text": query_text,
+                          "query_index": query_index,
+                          "surface_url": SURFACE,
+                          "search_category": "Entity Registrations",
+                          "category_control_selected": False,
+                          "query_input_found": False,
+                          "query_submitted": False,
+                          "pages_visited": 0,
+                          "rendered_rows_inspected": 0,
+                          "body_text_bytes_hashed": 0,
+                          "body_text_sha256_by_page": [],
+                          "candidate_rows_observed": 0,
+                          "exact_name_rows_without_public_uei": 0,
+                          "official_request_count": 0,
+                          "response_bytes_accounted": 0,
+                          "json_response_count": 0,
+                          "json_response_bytes": 0,
+                          "json_parse_error_count": 0,
+                          "response_inspection_error_count": 0,
+                          "json_response_hashes": [],
+                          "blocked_off_host_requests": 0,
+                          "blocked_off_host_hashes": [],
+                          "blocked_entity_detail_views": 0,
+                          "challenge_detected": False,
+                          "login_attempts": 0,
+                          "account_creation_attempts": 0,
+                          "api_key_requests": 0,
+                          "federal_role_or_cac_piv_attempts": 0,
+                          "captcha_or_waf_bypass_attempts": 0,
+                          "cookie_or_profile_export_or_replay_attempts": 0,
+                          "final_url": None,
+                          "page_title": None,
+                          "terminal_state": None,
+                          "error_class": None,
+                          "observed_at": None,
+                          "outside_human_dependency": False,
+                          "publication_effect": "none",
+                          "adoption_effect": "none",
+                          "graph_effect": "none",
+                      }
+                      exact_without_before = len(exact_name_without_uei_keys)
+                      candidates_before = candidate_count_for_query(query_id)
+                      terminal_state: str | None = None
+                      error_class: str | None = None
+                      try:
+                          response = page.goto(
+                              SURFACE,
+                              wait_until="domcontentloaded",
+                              timeout=60_000,
+                          )
+                          page.wait_for_timeout(4_000)
+                          if response is not None and response.status >= 400:
+                              terminal_state = "bounded_provider_error"
+                              error_class = f"surface_http_status_{response.status}"
+                          if terminal_state is None:
+                              body = page.locator("body").inner_text(timeout=15_000)
+                              detected = terminal_from_body(body)
+                              if detected in {
+                                  "bounded_challenge_detected",
+                                  "bounded_sign_in_required",
+                                  "bounded_provider_error",
+                              }:
+                                  terminal_state = detected
+                                  receipt["challenge_detected"] = (
+                                      detected == "bounded_challenge_detected"
+                                  )
+                          if terminal_state is None:
+                              receipt["category_control_selected"] = (
+                                  choose_entity_registration_category(page)
+                              )
+                              query_input = find_query_input(page)
+                              receipt["query_input_found"] = query_input is not None
+                              if (
+                                  not receipt["category_control_selected"]
+                                  or query_input is None
+                              ):
+                                  terminal_state = (
+                                      "bounded_public_search_controls_unavailable"
+                                  )
+                              else:
+                                  receipt["query_submitted"] = submit_query(
+                                      page, query_input, query_text
+                                  )
+                                  page.wait_for_timeout(7_000)
+
+                          if terminal_state is None and receipt["query_submitted"]:
+                              for page_ordinal in range(MAX_PAGES_PER_QUERY):
+                                  query["page_ordinal"] = page_ordinal
+                                  receipt["pages_visited"] += 1
+                                  page.wait_for_timeout(1_500)
+                                  inspected, body_hash, body_bytes = inspect_dom_blocks(
+                                      page, query
+                                  )
+                                  receipt["rendered_rows_inspected"] += inspected
+                                  receipt["body_text_bytes_hashed"] += body_bytes
+                                  receipt["body_text_sha256_by_page"].append(
+                                      {
+                                          "page_ordinal": page_ordinal,
+                                          "sha256": body_hash,
+                                          "bytes": body_bytes,
+                                      }
+                                  )
+                                  body = page.locator("body").inner_text(timeout=15_000)
+                                  detected = terminal_from_body(body)
+                                  if detected is not None:
+                                      terminal_state = detected
+                                      receipt["challenge_detected"] = (
+                                          detected == "bounded_challenge_detected"
+                                      )
+                                      break
+                                  if query["request_limit_hit"]:
+                                      terminal_state = "bounded_request_limit_exceeded"
+                                      break
+                                  if query["response_byte_limit_hit"]:
+                                      terminal_state = (
+                                          "bounded_response_byte_limit_exceeded"
+                                      )
+                                      break
+                                  if (
+                                      receipt["rendered_rows_inspected"]
+                                      >= MAX_ROWS_PER_QUERY
+                                      or global_rows_inspected >= MAX_ROWS_TOTAL
+                                  ):
+                                      terminal_state = "bounded_page_limit_exceeded"
+                                      break
+                                  next_page = next_control(page)
+                                  if next_page is None:
+                                      if candidate_count_for_query(query_id) > candidates_before:
+                                          terminal_state = "terminal_public_search_rendered"
+                                      elif query["json_response_count"] > 0 or inspected > 0:
+                                          terminal_state = (
+                                              "terminal_public_search_rendered_no_parseable_rows"
+                                          )
+                                      else:
+                                          terminal_state = (
+                                              "terminal_public_search_rendered_no_parseable_rows"
+                                          )
+                                      break
+                                  if page_ordinal + 1 >= MAX_PAGES_PER_QUERY:
+                                      terminal_state = "bounded_page_limit_exceeded"
+                                      break
+                                  next_page.click(timeout=5_000)
+                                  page.wait_for_timeout(5_000)
+
+                          if terminal_state is None:
+                              terminal_state = "terminal_browser_or_parse_failure"
+                              error_class = "missing_terminal_state"
+                      except (PlaywrightTimeoutError, PlaywrightError) as exc:
+                          terminal_state = "terminal_browser_or_parse_failure"
+                          error_class = type(exc).__name__
+                      except Exception as exc:
+                          terminal_state = "terminal_browser_or_parse_failure"
+                          error_class = type(exc).__name__
+
+                      if query["request_limit_hit"]:
+                          terminal_state = "bounded_request_limit_exceeded"
+                      if query["response_byte_limit_hit"]:
+                          terminal_state = "bounded_response_byte_limit_exceeded"
+                      if terminal_state not in ALLOWED_TERMINAL_STATES:
+                          terminal_state = "terminal_browser_or_parse_failure"
+                          error_class = error_class or "unsupported_terminal_state"
+
+                      receipt["candidate_rows_observed"] = (
+                          candidate_count_for_query(query_id) - candidates_before
+                      )
+                      receipt["exact_name_rows_without_public_uei"] = (
+                          len(exact_name_without_uei_keys) - exact_without_before
+                      )
+                      receipt["official_request_count"] = query[
+                          "official_request_count"
+                      ]
+                      receipt["response_bytes_accounted"] = query[
+                          "response_bytes_accounted"
+                      ]
+                      receipt["json_response_count"] = query["json_response_count"]
+                      receipt["json_response_bytes"] = query["json_response_bytes"]
+                      receipt["json_parse_error_count"] = query[
+                          "json_parse_error_count"
+                      ]
+                      receipt["response_inspection_error_count"] = query[
+                          "response_inspection_error_count"
+                      ]
+                      receipt["json_response_hashes"] = query[
+                          "json_response_hashes"
+                      ][:100]
+                      receipt["blocked_off_host_requests"] = query[
+                          "blocked_off_host_requests"
+                      ]
+                      receipt["blocked_off_host_hashes"] = sorted(
+                          query["blocked_off_host_hashes"]
+                      )
+                      receipt["blocked_entity_detail_views"] = query[
+                          "blocked_entity_detail_views"
+                      ]
+                      receipt["terminal_state"] = terminal_state
+                      receipt["error_class"] = error_class
+                      receipt["final_url"] = safe_official_url(page.url)
+                      try:
+                          receipt["page_title"] = clean_text(page.title(), 200)
+                      except Exception:
+                          receipt["page_title"] = None
+                      receipt["observed_at"] = now()
+                      query_receipts.append(receipt)
+                      runtime["current"] = None
+
+                  try:
+                      context.clear_cookies()
+                  finally:
+                      context.close()
+                      browser.close()
+          except Exception as exc:
+              browser_launch_error = type(exc).__name__
+
+          if not browser_session_started:
+              query_receipts = []
+              for query_index, (query_id, query_text) in enumerate(QUERIES):
+                  query_receipts.append(
+                      {
+                          "schema_version": "schoolhouse-sam-public-entity-registration-query-receipt@1",
+                          "query_id": query_id,
+                          "query_text": query_text,
+                          "query_index": query_index,
+                          "surface_url": SURFACE,
+                          "search_category": "Entity Registrations",
+                          "category_control_selected": False,
+                          "query_input_found": False,
+                          "query_submitted": False,
+                          "pages_visited": 0,
+                          "rendered_rows_inspected": 0,
+                          "body_text_bytes_hashed": 0,
+                          "body_text_sha256_by_page": [],
+                          "candidate_rows_observed": 0,
+                          "exact_name_rows_without_public_uei": 0,
+                          "official_request_count": 0,
+                          "response_bytes_accounted": 0,
+                          "json_response_count": 0,
+                          "json_response_bytes": 0,
+                          "json_parse_error_count": 0,
+                          "response_inspection_error_count": 0,
+                          "json_response_hashes": [],
+                          "blocked_off_host_requests": 0,
+                          "blocked_off_host_hashes": [],
+                          "blocked_entity_detail_views": 0,
+                          "challenge_detected": False,
+                          "login_attempts": 0,
+                          "account_creation_attempts": 0,
+                          "api_key_requests": 0,
+                          "federal_role_or_cac_piv_attempts": 0,
+                          "captcha_or_waf_bypass_attempts": 0,
+                          "cookie_or_profile_export_or_replay_attempts": 0,
+                          "final_url": None,
+                          "page_title": None,
+                          "terminal_state": "terminal_browser_or_parse_failure",
+                          "error_class": browser_launch_error or "browser_launch_failure",
+                          "observed_at": now(),
+                          "outside_human_dependency": False,
+                          "publication_effect": "none",
+                          "adoption_effect": "none",
+                          "graph_effect": "none",
+                      }
+                  )
+
+          candidates = sorted(
+              candidates_by_key.values(),
+              key=lambda row: (
+                  row["public_uei"],
+                  row["matched_name_field"],
+                  row["matched_organization_name"].casefold(),
+              ),
+          )
+          for ordinal, candidate in enumerate(candidates):
+              candidate["candidate_ordinal"] = ordinal
+
+          terminal_counts = Counter(
+              receipt["terminal_state"] for receipt in query_receipts
+          )
+          summary = {
+              "schema_version": "schoolhouse-sam-public-entity-registration-census@1",
+              "state": "terminal_bounded_sam_public_entity_registration_candidate_census",
+              "fixed_queries": 3,
+              "terminal_queries": len(query_receipts),
+              "terminal_query_state_counts": dict(sorted(terminal_counts.items())),
+              "browser_contexts_started": 1 if browser_session_started else 0,
+              "browser_launch_error_class": browser_launch_error,
+              "query_submissions": sum(
+                  1 for receipt in query_receipts if receipt["query_submitted"]
+              ),
+              "result_pages_visited": sum(
+                  receipt["pages_visited"] for receipt in query_receipts
+              ),
+              "rendered_rows_inspected": sum(
+                  receipt["rendered_rows_inspected"] for receipt in query_receipts
+              ),
+              "official_request_count": sum(
+                  receipt["official_request_count"] for receipt in query_receipts
+              ),
+              "response_bytes_accounted": sum(
+                  receipt["response_bytes_accounted"] for receipt in query_receipts
+              ),
+              "json_response_count": sum(
+                  receipt["json_response_count"] for receipt in query_receipts
+              ),
+              "blocked_off_host_requests": sum(
+                  receipt["blocked_off_host_requests"] for receipt in query_receipts
+              ),
+              "blocked_official_entity_detail_views": blocked_official_detail_views,
+              "exact_name_rows_without_public_uei": len(
+                  exact_name_without_uei_keys
+              ),
+              "retained_candidate_rows": len(candidates),
+              "unique_public_ueis": len(
+                  {candidate["public_uei"] for candidate in candidates}
+              ),
+              "entity_detail_views": 0,
+              "api_calls_using_api_key": 0,
+              "login_attempts": 0,
+              "account_creation_attempts": 0,
+              "federal_role_or_cac_piv_attempts": 0,
+              "captcha_or_waf_bypass_attempts": 0,
+              "cookie_or_profile_export_or_replay_attempts": 0,
+              "nonmatching_organization_names_retained": 0,
+              "person_names_retained": 0,
+              "addresses_or_location_values_retained": 0,
+              "phone_fax_or_email_values_retained": 0,
+              "points_of_contact_retained": 0,
+              "officers_owners_principals_or_parent_entities_retained": 0,
+              "financial_banking_eft_or_debt_information_retained": 0,
+              "proceedings_exclusions_or_integrity_material_retained": 0,
+              "complete_html_or_json_responses_retained": 0,
+              "screenshots_retained": 0,
+              "browser_profiles_cookies_credentials_or_tokens_retained": 0,
+              "private_support_rows": 0,
+              "identities_admitted": 0,
+              "relationships_admitted": 0,
+              "negative_existence_claims_created": 0,
+              "federal_registration_admissions": 0,
+              "federal_award_or_funding_admissions": 0,
+              "owner_admissions": 0,
+              "operator_admissions": 0,
+              "outside_human_dependency": False,
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none",
+              "public_schoolhouse_legal_identity": "unresolved",
+          }
+          adjudication = {
+              "schema_version": "schoolhouse-sam-public-entity-registration-adjudication@1",
+              "state": summary["state"],
+              "promotes_to": (
+                  "sam_public_entity_registration_candidate_only"
+                  if candidates
+                  else "no_candidate_promoted"
+              ),
+              "candidate_rows": len(candidates),
+              "public_schoolhouse_identity_admitted": False,
+              "sam_entity_identity_admitted": False,
+              "federal_registration_admitted": False,
+              "federal_award_or_funding_admitted": False,
+              "owner_or_operator_admitted": False,
+              "fiscal_sponsor_relationship_admitted": False,
+              "governance_or_control_relationship_admitted": False,
+              "related_party_relationship_admitted": False,
+              "negative_existence_claim_created": False,
+              "interpretation": {
+                  "name_and_uei_candidate_is_not_target_identity": True,
+                  "sam_registration_display_is_not_federal_award": True,
+                  "zero_candidates_is_not_entity_absence": True,
+                  "public_search_unavailability_is_not_entity_absence": True,
+                  "opted_out_entities_are_outside_public_denominator": True,
+                  "candidate_requires_exact_uei_adjudication": True,
+              },
+              "outside_human_dependency": False,
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none",
+              "public_schoolhouse_legal_identity": "unresolved",
+          }
+
+          write_json("route-policy.json", route_policy)
+          write_jsonl("query-receipts.jsonl", query_receipts)
+          write_jsonl("candidates.jsonl", candidates)
+          write_json("summary.json", summary)
+          write_json("adjudication.json", adjudication)
+
+          manifest_files = []
+          for name in (
+              "adjudication.json",
+              "candidates.jsonl",
+              "query-receipts.jsonl",
+              "route-policy.json",
+              "summary.json",
+          ):
+              path = OUT / name
+              manifest_files.append(
+                  {
+                      "path": name,
+                      "bytes": path.stat().st_size,
+                      "sha256": sha256(path.read_bytes()),
+                  }
+              )
+          combined = hashlib.sha256()
+          for row in manifest_files:
+              combined.update(f"{row['sha256']}  {row['path']}\n".encode())
+          artifact_manifest = {
+              "schema_version": "schoolhouse-sam-public-entity-registration-artifact-manifest@1",
+              "files": manifest_files,
+              "counts": {
+                  "query_receipts": len(query_receipts),
+                  "candidate_rows": len(candidates),
+                  "unique_public_ueis": summary["unique_public_ueis"],
+                  "exact_name_rows_without_public_uei": summary[
+                      "exact_name_rows_without_public_uei"
+                  ],
+              },
+              "combined_sha256": combined.hexdigest(),
+              "authority": route_policy["authority"],
+          }
+          write_json("artifact-manifest.json", artifact_manifest)
+
+          print(json.dumps(summary, indent=2, sort_keys=True))
+          PY
+          RC="${PIPESTATUS[0]}"
+          set -e
+          printf '%s\n' "$RC" > "$OUT/RUNNER_EXIT_CODE"
+          test "$RC" -eq 0
+
+          (
+            cd "$OUT"
+            sha256sum \
+              RUNNER_EXIT_CODE \
+              adjudication.json \
+              artifact-manifest.json \
+              candidates.jsonl \
+              query-receipts.jsonl \
+              route-policy.json \
+              summary.json \
+              > SHA256SUMS
+          )
+
+          python - "$OUT" <<'PY'
+          from __future__ import annotations
+          from pathlib import Path
+          from typing import Any
+          import hashlib
+          import json
+          import re
+          import sys
+          import unicodedata
+
+          root = Path(sys.argv[1])
+          expected_files = {
+              "RUNNER-OUTPUT.log",
+              "RUNNER_EXIT_CODE",
+              "SHA256SUMS",
+              "adjudication.json",
+              "artifact-manifest.json",
+              "candidates.jsonl",
+              "query-receipts.jsonl",
+              "route-policy.json",
+              "summary.json",
+          }
+          observed_files = {path.name for path in root.iterdir() if path.is_file()}
+          assert observed_files == expected_files, sorted(observed_files ^ expected_files)
+          assert (root / "RUNNER_EXIT_CODE").read_text().strip() == "0"
+
+          checksum_rows = (root / "SHA256SUMS").read_text().splitlines()
+          assert len(checksum_rows) == 7
+          for row in checksum_rows:
+              digest, name = row.split("  ", 1)
+              assert "/" not in name and name in expected_files
+              assert hashlib.sha256((root / name).read_bytes()).hexdigest() == digest
+
+          def read_json(name: str) -> Any:
+              return json.loads((root / name).read_text())
+
+          def read_jsonl(name: str) -> list[Any]:
+              text = (root / name).read_text()
+              decoder = json.JSONDecoder()
+              rows = []
+              index = 0
+              while True:
+                  while index < len(text) and text[index].isspace():
+                      index += 1
+                  if index == len(text):
+                      return rows
+                  row, index = decoder.raw_decode(text, index)
+                  rows.append(row)
+
+          def compact_key(value: str) -> str:
+              value = unicodedata.normalize("NFKC", value).casefold()
+              return "".join(character for character in value if character.isalnum())
+
+          policy = read_json("route-policy.json")
+          summary = read_json("summary.json")
+          adjudication = read_json("adjudication.json")
+          manifest = read_json("artifact-manifest.json")
+          receipts = read_jsonl("query-receipts.jsonl")
+          candidates = read_jsonl("candidates.jsonl")
+
+          assert policy["schema_version"] == "schoolhouse-sam-public-entity-registration-route-policy@1"
+          assert policy["issue"] == 1382
+          assert policy["canonical_parent"] == "d26cb838df12a877840ebe71eb9388d44b6ceaf9"
+          assert len(policy["canonical_parent_tree"]) == 40
+          assert policy["official_surface"] == {
+              "url": "https://sam.gov/entity-information",
+              "search_category": "Entity Registrations",
+              "target_normalized_key": "schoolhouse",
+              "fixed_queries": [
+                  {"query_id": "q1_school_dot_house", "query_text": "School.House"},
+                  {"query_id": "q2_schoolhouse", "query_text": "Schoolhouse"},
+                  {"query_id": "q3_school_house", "query_text": "School House"},
+              ],
+          }
+          assert policy["bounds"] == {
+              "fresh_anonymous_browser_contexts": 1,
+              "fixed_entity_registration_submissions": 3,
+              "maximum_result_pages_per_query": 5,
+              "maximum_rendered_rows_per_query": 500,
+              "maximum_rendered_rows_total": 1500,
+              "maximum_retained_candidates_total": 300,
+              "maximum_query_phase_official_requests_per_query": 250,
+              "maximum_query_phase_response_bytes_per_query": 67108864,
+              "parallel_workers": 1,
+              "entity_detail_views": 0,
+              "api_calls_using_api_key": 0,
+              "login_attempts": 0,
+              "account_creation_attempts": 0,
+              "federal_role_or_cac_piv_attempts": 0,
+              "captcha_or_waf_bypass_attempts": 0,
+              "cookie_or_profile_export_or_replay_attempts": 0,
+              "outside_human_dependency": False,
+          }
+          assert all(value == 0 for value in policy["retention"].values())
+          assert policy["authority"] == {
+              "identities_admitted": 0,
+              "relationships_admitted": 0,
+              "negative_existence_claims": 0,
+              "federal_registration_admissions": 0,
+              "federal_award_or_funding_admissions": 0,
+              "owner_admissions": 0,
+              "operator_admissions": 0,
+              "outside_human_dependency": False,
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none",
+          }
+
+          allowed_terminal_states = {
+              "terminal_public_search_rendered",
+              "terminal_public_search_no_results",
+              "terminal_public_search_rendered_no_parseable_rows",
+              "bounded_public_search_controls_unavailable",
+              "bounded_sign_in_required",
+              "bounded_challenge_detected",
+              "bounded_provider_error",
+              "bounded_page_limit_exceeded",
+              "bounded_request_limit_exceeded",
+              "bounded_response_byte_limit_exceeded",
+              "terminal_browser_or_parse_failure",
+          }
+          assert summary["schema_version"] == "schoolhouse-sam-public-entity-registration-census@1"
+          assert summary["state"] == "terminal_bounded_sam_public_entity_registration_candidate_census"
+          assert summary["fixed_queries"] == 3
+          assert summary["terminal_queries"] == 3
+          assert sum(summary["terminal_query_state_counts"].values()) == 3
+          assert set(summary["terminal_query_state_counts"]).issubset(allowed_terminal_states)
+          assert summary["browser_contexts_started"] in {0, 1}
+          assert 0 <= summary["query_submissions"] <= 3
+          assert 0 <= summary["result_pages_visited"] <= 15
+          assert 0 <= summary["rendered_rows_inspected"] <= 1500
+          assert 0 <= summary["retained_candidate_rows"] <= 300
+          assert summary["retained_candidate_rows"] == len(candidates)
+          assert summary["unique_public_ueis"] == len(
+              {candidate["public_uei"] for candidate in candidates}
+          )
+          assert summary["entity_detail_views"] == 0
+          for key in (
+              "api_calls_using_api_key",
+              "login_attempts",
+              "account_creation_attempts",
+              "federal_role_or_cac_piv_attempts",
+              "captcha_or_waf_bypass_attempts",
+              "cookie_or_profile_export_or_replay_attempts",
+              "nonmatching_organization_names_retained",
+              "person_names_retained",
+              "addresses_or_location_values_retained",
+              "phone_fax_or_email_values_retained",
+              "points_of_contact_retained",
+              "officers_owners_principals_or_parent_entities_retained",
+              "financial_banking_eft_or_debt_information_retained",
+              "proceedings_exclusions_or_integrity_material_retained",
+              "complete_html_or_json_responses_retained",
+              "screenshots_retained",
+              "browser_profiles_cookies_credentials_or_tokens_retained",
+              "private_support_rows",
+              "identities_admitted",
+              "relationships_admitted",
+              "negative_existence_claims_created",
+              "federal_registration_admissions",
+              "federal_award_or_funding_admissions",
+              "owner_admissions",
+              "operator_admissions",
+          ):
+              assert summary[key] == 0
+          assert summary["outside_human_dependency"] is False
+          assert [summary[key] for key in (
+              "publication_effect", "adoption_effect", "graph_effect"
+          )] == ["none", "none", "none"]
+          assert summary["public_schoolhouse_legal_identity"] == "unresolved"
+
+          assert len(receipts) == 3
+          expected_queries = [
+              ("q1_school_dot_house", "School.House"),
+              ("q2_schoolhouse", "Schoolhouse"),
+              ("q3_school_house", "School House"),
+          ]
+          for index, receipt in enumerate(receipts):
+              query_id, query_text = expected_queries[index]
+              assert receipt["schema_version"] == "schoolhouse-sam-public-entity-registration-query-receipt@1"
+              assert receipt["query_id"] == query_id
+              assert receipt["query_text"] == query_text
+              assert receipt["query_index"] == index
+              assert receipt["surface_url"] == "https://sam.gov/entity-information"
+              assert receipt["search_category"] == "Entity Registrations"
+              assert receipt["terminal_state"] in allowed_terminal_states
+              assert 0 <= receipt["pages_visited"] <= 5
+              assert 0 <= receipt["rendered_rows_inspected"] <= 500
+              assert receipt["official_request_count"] <= 251
+              assert receipt["response_bytes_accounted"] <= 67108864 + 8388608
+              assert receipt["blocked_entity_detail_views"] >= 0
+              for key in (
+                  "login_attempts",
+                  "account_creation_attempts",
+                  "api_key_requests",
+                  "federal_role_or_cac_piv_attempts",
+                  "captcha_or_waf_bypass_attempts",
+                  "cookie_or_profile_export_or_replay_attempts",
+              ):
+                  assert receipt[key] == 0
+              assert receipt["outside_human_dependency"] is False
+              assert [receipt[key] for key in (
+                  "publication_effect", "adoption_effect", "graph_effect"
+              )] == ["none", "none", "none"]
+              if receipt["final_url"] is not None:
+                  assert receipt["final_url"].startswith("https://")
+                  host = re.sub(r"^https://", "", receipt["final_url"]).split("/", 1)[0].split(":", 1)[0].casefold()
+                  assert host == "sam.gov" or host.endswith(".sam.gov")
+
+          allowed_candidate_keys = {
+              "schema_version",
+              "classification",
+              "query_id",
+              "query_text",
+              "observed_query_ids",
+              "page_ordinal",
+              "source_kind",
+              "public_uei",
+              "public_cage_code",
+              "matched_name_field",
+              "matched_organization_name",
+              "registration_status",
+              "uei_status",
+              "purpose_of_registration_code",
+              "purpose_of_registration_label",
+              "identity_admitted",
+              "federal_registration_admitted",
+              "federal_award_or_funding_admitted",
+              "owner_or_operator_admitted",
+              "relationships_admitted",
+              "negative_existence_claims",
+              "outside_human_dependency",
+              "publication_effect",
+              "adoption_effect",
+              "graph_effect",
+              "candidate_ordinal",
+          }
+          for ordinal, candidate in enumerate(candidates):
+              assert set(candidate) == allowed_candidate_keys
+              assert candidate["schema_version"] == "schoolhouse-sam-public-entity-registration-candidate@1"
+              assert candidate["classification"] == "sam_public_entity_registration_candidate"
+              assert candidate["candidate_ordinal"] == ordinal
+              assert re.fullmatch(r"[A-Z0-9]{12}", candidate["public_uei"])
+              if candidate["public_cage_code"] is not None:
+                  assert re.fullmatch(r"[A-Z0-9]{5}", candidate["public_cage_code"])
+              assert candidate["matched_name_field"] in {
+                  "legal_business_name", "dba_name", "public_display_name"
+              }
+              assert compact_key(candidate["matched_organization_name"]) == "schoolhouse"
+              assert candidate["identity_admitted"] is False
+              assert candidate["federal_registration_admitted"] is False
+              assert candidate["federal_award_or_funding_admitted"] is False
+              assert candidate["owner_or_operator_admitted"] is False
+              assert candidate["relationships_admitted"] == 0
+              assert candidate["negative_existence_claims"] == 0
+              assert candidate["outside_human_dependency"] is False
+              assert [candidate[key] for key in (
+                  "publication_effect", "adoption_effect", "graph_effect"
+              )] == ["none", "none", "none"]
+
+          assert adjudication["schema_version"] == "schoolhouse-sam-public-entity-registration-adjudication@1"
+          assert adjudication["state"] == summary["state"]
+          assert adjudication["candidate_rows"] == len(candidates)
+          assert adjudication["promotes_to"] in {
+              "sam_public_entity_registration_candidate_only",
+              "no_candidate_promoted",
+          }
+          assert adjudication["public_schoolhouse_identity_admitted"] is False
+          assert adjudication["sam_entity_identity_admitted"] is False
+          assert adjudication["federal_registration_admitted"] is False
+          assert adjudication["federal_award_or_funding_admitted"] is False
+          assert adjudication["owner_or_operator_admitted"] is False
+          assert adjudication["negative_existence_claim_created"] is False
+          assert all(adjudication["interpretation"].values())
+          assert adjudication["outside_human_dependency"] is False
+          assert [adjudication[key] for key in (
+              "publication_effect", "adoption_effect", "graph_effect"
+          )] == ["none", "none", "none"]
+
+          assert manifest["schema_version"] == "schoolhouse-sam-public-entity-registration-artifact-manifest@1"
+          assert manifest["counts"] == {
+              "query_receipts": len(receipts),
+              "candidate_rows": len(candidates),
+              "unique_public_ueis": summary["unique_public_ueis"],
+              "exact_name_rows_without_public_uei": summary[
+                  "exact_name_rows_without_public_uei"
+              ],
+          }
+          assert manifest["authority"] == policy["authority"]
+          assert len(manifest["files"]) == 5
+          combined = hashlib.sha256()
+          for row in manifest["files"]:
+              path = root / row["path"]
+              assert path.is_file()
+              assert path.stat().st_size == row["bytes"]
+              assert hashlib.sha256(path.read_bytes()).hexdigest() == row["sha256"]
+              combined.update(f"{row['sha256']}  {row['path']}\n".encode())
+          assert manifest["combined_sha256"] == combined.hexdigest()
+
+          forbidden_keys = {
+              "address", "addressline1", "addressline2", "physicaladdress",
+              "mailingaddress", "city", "state", "stateorprovincecode",
+              "country", "countrycode", "zipcode", "postalcode", "phone",
+              "fax", "email", "pointsofcontact", "officer", "owner",
+              "principal", "parententity", "financialinformation", "eft",
+              "debt", "proceeding", "exclusion", "integrityinformation",
+              "rawhtml", "rawjson", "screenshot", "cookie", "credential",
+              "token", "private_support",
+          }
+          def walk(value: Any) -> None:
+              if isinstance(value, dict):
+                  observed = {
+                      re.sub(r"[^a-z0-9]", "", str(key).casefold())
+                      for key in value
+                  }
+                  assert forbidden_keys.isdisjoint(observed)
+                  for child in value.values():
+                      walk(child)
+              elif isinstance(value, list):
+                  for child in value:
+                      walk(child)
+
+          for value in (policy, summary, adjudication, manifest, receipts, candidates):
+              walk(value)
+
+          print("schoolhouse_sam_public_entity_registration_artifact_validation=pass")
+          print(f"terminal_queries={len(receipts)}")
+          print(f"retained_candidate_rows={len(candidates)}")
+          PY
+
+      - name: Preserve exact SAM.gov census artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-sam-public-entity-registration-census-v1
+          path: ${{ runner.temp }}/schoolhouse-sam-public-entity-registration-census-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
