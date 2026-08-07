@@ -1,0 +1,182 @@
+name: TEMP prove canonical School.House USPTO exact-mark census custody
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-uspto-exact-mark-census-postmerge-proof-681a.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-uspto-postmerge-proof-681a-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  prove:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-uspto-exact-mark-census-postmerge-proof-681a')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prove exact merge, product surface, gates, and clean replay
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          MERGE='681ae0d41bed04d068836ee9d746fe7701d234cb'
+          PARENT='b320e380723600fe39c3aa711a09d3d861f756c2'
+          PRODUCT='9ab7b3e47bea9462a97db9d23efd1d0b6e8b0d95'
+          TREE='9ee392609c4c6bcce2806f9b8a1e514333c1428e'
+          WORKFLOW='.github/workflows/temp-schoolhouse-uspto-exact-mark-census-postmerge-proof-681a.yml'
+          WORK="$RUNNER_TEMP/schoolhouse-uspto-postmerge-proof-worktree"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-uspto-postmerge-proof-681a"
+          mkdir -p "$RECEIPT"
+
+          cat > "$RECEIPT/expected-paths.txt" <<'PATHS'
+          data/intake/schoolhouse-uspto-exact-mark-census-v1/product-manifest.json
+          data/intake/schoolhouse-uspto-exact-mark-census-v1/sealed-qualification-artifact.zip
+          data/intake/schoolhouse-uspto-exact-mark-census-v1/sealed-source-artifact.zip
+          data/intake/schoolhouse-uspto-exact-mark-census-v1/source-custody.json
+          docs/milestones/schoolhouse-uspto-exact-mark-census-v1.md
+          tools/validate-schoolhouse-uspto-exact-mark-census-custody.py
+          PATHS
+          sed -i 's/^          //' "$RECEIPT/expected-paths.txt"
+          sort -o "$RECEIPT/expected-paths.txt" "$RECEIPT/expected-paths.txt"
+
+          git fetch --no-tags origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            "$MERGE" "$PARENT" "$PRODUCT"
+          test "$(git rev-parse origin/main)" = "$MERGE"
+          test "$(git rev-list --parents -n 1 "$MERGE")" = "$MERGE $PARENT $PRODUCT"
+          test "$(git rev-parse "$PRODUCT^")" = "$PARENT"
+          test "$(git rev-list --count "$PARENT".."$PRODUCT")" = '1'
+          test "$(git rev-parse "$PRODUCT^{tree}")" = "$TREE"
+          test "$(git rev-parse "$MERGE^{tree}")" = "$TREE"
+          test -z "$(git diff --name-only "$PRODUCT" "$MERGE")"
+
+          mapfile -t PROOF_DELTA < <(git diff --name-only "$MERGE"..HEAD)
+          test "${#PROOF_DELTA[@]}" -eq 1
+          test "${PROOF_DELTA[0]}" = "$WORKFLOW"
+
+          git diff --name-status "$PARENT" "$PRODUCT" > "$RECEIPT/product-name-status.txt"
+          python - "$RECEIPT/expected-paths.txt" "$RECEIPT/product-name-status.txt" <<'PY'
+          from pathlib import Path
+          import sys
+          expected = set(Path(sys.argv[1]).read_text().splitlines())
+          observed = set()
+          for row in Path(sys.argv[2]).read_text().splitlines():
+              status, path = row.split('\t', 1)
+              if status != 'A':
+                  raise SystemExit(f'non-addition product path: {row}')
+              observed.add(path)
+          if observed != expected:
+              raise SystemExit(f'product path-set drift: {sorted(observed ^ expected)}')
+          print('product_surface=6_addition_only_workflow_free')
+          PY
+          test -z "$(git diff --name-only "$PARENT" "$PRODUCT" | grep '^\.github/' || true)"
+
+          {
+            printf 'canonical_merge=%s\n' "$MERGE"
+            printf 'merge_parent_1=%s\n' "$PARENT"
+            printf 'merge_parent_2=%s\n' "$PRODUCT"
+            printf 'product_tree=%s\n' "$TREE"
+            printf 'merge_tree=%s\n' "$TREE"
+            printf 'proof_head=%s\n' "$(git rev-parse HEAD)"
+          } | tee "$RECEIPT/preflight.txt"
+
+          rm -rf "$WORK"
+          git worktree add --detach "$WORK" "$MERGE"
+          export TERM=xterm
+          {
+            cd "$WORK"
+            python -m py_compile tools/validate-schoolhouse-uspto-exact-mark-census-custody.py
+            python tools/validate-schoolhouse-uspto-exact-mark-census-custody.py --check
+            python tools/validate-schoolhouse-uspto-exact-mark-census-custody.py --self-test
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          } 2>&1 | tee "$RECEIPT/focused-gates.log"
+          grep -qx 'schoolhouse_uspto_custody_adversarial_refusals=5' "$RECEIPT/focused-gates.log"
+          (cd "$WORK" && npm run release:check) 2>&1 | tee "$RECEIPT/release-check.log"
+
+          git -C "$WORK" restore --staged --worktree .
+          git -C "$WORK" clean -fdx
+          (
+            cd "$WORK"
+            python tools/validate-schoolhouse-uspto-exact-mark-census-custody.py --write
+            python tools/validate-schoolhouse-uspto-exact-mark-census-custody.py --check
+            python tools/validate-schoolhouse-uspto-exact-mark-census-custody.py --self-test
+            node tools/validate-no-magic-human-gate.mjs
+          ) 2>&1 | tee "$RECEIPT/clean-replay.log"
+          git -C "$WORK" diff --check
+          git -C "$WORK" diff --exit-code
+          test -z "$(git -C "$WORK" status --porcelain=v1 --untracked-files=all)"
+
+          MERGE="$MERGE" PARENT="$PARENT" PRODUCT="$PRODUCT" TREE="$TREE" RECEIPT="$RECEIPT" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          receipt = {
+              'schema_version': 'schoolhouse-uspto-exact-mark-census-postmerge-proof@1',
+              'canonical_merge': os.environ['MERGE'],
+              'merge_parent_1': os.environ['PARENT'],
+              'merge_parent_2': os.environ['PRODUCT'],
+              'product_commit': os.environ['PRODUCT'],
+              'product_parent': os.environ['PARENT'],
+              'product_tree': os.environ['TREE'],
+              'merge_tree': os.environ['TREE'],
+              'product_commits': 1,
+              'permanent_paths': 6,
+              'addition_only': True,
+              'workflow_paths_in_product': 0,
+              'fixed_queries': 3,
+              'terminal_queries': 3,
+              'query_terminal_state': 'terminal_public_search_rendered_no_parseable_rows',
+              'retained_result_rows': 0,
+              'unique_serials': 0,
+              'trademark_serial_candidates': 0,
+              'blocked_officially_unscoped_host_requests': 15,
+              'adversarial_refusals': 5,
+              'no_magic_human_adversarial_mutations': 23,
+              'identities_admitted': 0,
+              'relationships_admitted': 0,
+              'negative_existence_claims': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'public_schoolhouse_legal_identity': 'unresolved',
+              'complete_release_gate': 'pass',
+              'clean_replay': 'pass',
+              'status': 'complete',
+          }
+          target = Path(os.environ['RECEIPT']) / 'proof.json'
+          target.write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          PY
+          sha256sum "$RECEIPT"/* > "$RECEIPT/SHA256SUMS"
+
+      - name: Preserve exact post-merge proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-uspto-exact-mark-census-postmerge-proof-681a
+          path: ${{ runner.temp }}/schoolhouse-uspto-postmerge-proof-681a
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
