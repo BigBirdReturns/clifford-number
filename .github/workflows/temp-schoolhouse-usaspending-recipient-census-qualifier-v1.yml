@@ -124,7 +124,13 @@ jobs:
               'outside_human_dependency':False,'promotes_to':'federal_spending_recipient_name_candidate_only',
               'public_schoolhouse_legal_identity':'unresolved','publication_effect':'none','relationships_admitted':0,
           }
-          assert all(summary['interpretation'].values())
+          assert summary['interpretation']=={
+              'autocomplete_rows_cannot_be_candidates':True,
+              'identical_source_retry_authorized':False,
+              'recipient_index_presence_is_not_award_attribution_to_target':True,
+              'recipient_name_match_is_not_target_identity':True,
+              'zero_candidates_is_not_entity_or_award_absence':True,
+          }
           assert adjudication['state']==summary['state'] and adjudication['candidate_rows']==0 and adjudication['successor_required'] is False
           assert adjudication['promotes_to']=='no_candidate_promoted'
           assert all(adjudication[k]==0 for k in ['identity_admissions','relationship_admissions','federal_award_admissions','funding_or_amount_admissions','negative_existence_claims'])
