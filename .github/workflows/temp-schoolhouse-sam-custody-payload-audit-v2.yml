@@ -1,0 +1,294 @@
+name: TEMP audit sealed School.House SAM custody payload v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-sam-custody-payload-audit-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-sam-custody-payload-audit-v2-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-sam-custody-payload-audit-v2')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Inventory exact payload bytes and diagnostic replay
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE_HEAD='86f59e5240ccc0c3de0fc6e6ed81c03c597604e1'
+          SOURCE_WORKFLOW='.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-custody-materializer-v1.yml'
+          PAYLOAD='.github/materializers/schoolhouse-sam-public-entity-registration-census-custody-v1'
+          WORK="$RUNNER_TEMP/sam-payload-audit-v2"
+          OUT="$RUNNER_TEMP/schoolhouse-sam-custody-payload-audit-v2"
+          rm -rf "$WORK" "$OUT"
+          mkdir -p "$WORK/chunks" "$OUT/product"
+          printf 'initializing\n' > "$OUT/STAGE"
+          printf 'source_requests=0\n' > "$OUT/AUDIT-RECEIPT"
+          trap 'rc=$?; printf "%s\n" "$rc" > "$OUT/SCRIPT_EXIT_CODE"' EXIT
+
+          printf 'resolving-exact-source-commit\n' > "$OUT/STAGE"
+          git cat-file -e "$SOURCE_HEAD^{commit}"
+          git show "$SOURCE_HEAD:$SOURCE_WORKFLOW" > "$OUT/source-materializer-workflow.yml"
+          printf 'source_head=%s\n' "$SOURCE_HEAD" >> "$OUT/AUDIT-RECEIPT"
+          printf 'observed_main=%s\n' "$(git rev-parse origin/main)" >> "$OUT/AUDIT-RECEIPT"
+          printf 'audit_head=%s\n' "$(git rev-parse HEAD)" >> "$OUT/AUDIT-RECEIPT"
+
+          printf 'reading-six-exact-chunks\n' > "$OUT/STAGE"
+          for index in 00 01 02 03 04 05; do
+            git show "$SOURCE_HEAD:$PAYLOAD/part-$index" > "$WORK/chunks/part-$index"
+          done
+
+          printf 'auditing-and-decoding-payload\n' > "$OUT/STAGE"
+          python - "$WORK/chunks" "$OUT" <<'PY'
+          from __future__ import annotations
+
+          from pathlib import Path, PurePosixPath
+          from typing import Any
+          import base64
+          import hashlib
+          import json
+          import lzma
+          import re
+          import sys
+          import tarfile
+          import traceback
+          import zipfile
+
+          chunks_root = Path(sys.argv[1])
+          out = Path(sys.argv[2])
+          product = out / 'product'
+          product.mkdir(parents=True, exist_ok=True)
+
+          expected_chunk_sizes = [10000, 10000, 15000, 15000, 15000, 10100]
+          expected_chunk_hashes = [
+              '278c8a57dd6204ab8d2de941bdecf6b41eb3713099e8dbbe05e686a4b13f048d',
+              '6020f5f047224341e7b09fe99669ba20165ec97bdaa652a777ef33966e606df6',
+              '57284b1c91664718f0e13c3da7238c0b4e2090ddd8ef2cc41192c68944f89eb5',
+              'd89b6d6b08c7f463a742aaa372089fcd8ecf881a7ae13cfd89b9729dd329384d',
+              '376e3844e5c0926c4259c9d12e2c5d47c48ad1317edc9d11bed81d9caa2f3093',
+              '59060364dd76ab13ea95ace24f3d58f3091426905f1b6ee2083884e725a50f9f',
+          ]
+          expected = {
+              'base64_bytes': 75100,
+              'base64_sha256': '10d6494b60bd28f1ab595aeecdf1cfb648b99e059327b2b3e66c2a264bb1eb42',
+              'xz_bytes': 56324,
+              'xz_sha256': '495c017ab33cea972045194cf8c56758f00fc45006ec433f2a31b4cddf9ca735',
+              'tar_bytes': 112640,
+              'tar_sha256': 'e70db63987b6d9a8db695f08a679375d2c20ec5ceb8a3bacdb3e9ed7f21e781f',
+          }
+          expected_members = {
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/product-manifest.json',
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-qualification-artifact.zip',
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-source-artifact.zip',
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-wrapper-reconstruction-artifact.zip',
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/source-custody.json',
+              'docs/milestones/schoolhouse-sam-public-entity-registration-census-v1.md',
+              'tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py',
+          }
+
+          def sha(data: bytes) -> str:
+              return hashlib.sha256(data).hexdigest()
+
+          audit: dict[str, Any] = {
+              'schema_version': 'schoolhouse-sam-custody-payload-audit@2',
+              'state': 'inventory_started',
+              'source_requests': 0,
+              'source_materializer_head': '86f59e5240ccc0c3de0fc6e6ed81c03c597604e1',
+              'expected': expected,
+              'chunks': [],
+              'checks': {},
+              'errors': [],
+          }
+
+          try:
+              chunks: list[bytes] = []
+              for ordinal in range(6):
+                  path = chunks_root / f'part-{ordinal:02d}'
+                  data = path.read_bytes()
+                  chunks.append(data)
+                  observed_hash = sha(data)
+                  audit['chunks'].append({
+                      'ordinal': ordinal,
+                      'path': path.name,
+                      'bytes': len(data),
+                      'sha256': observed_hash,
+                      'expected_bytes': expected_chunk_sizes[ordinal],
+                      'expected_sha256': expected_chunk_hashes[ordinal],
+                      'size_matches': len(data) == expected_chunk_sizes[ordinal],
+                      'sha256_matches': observed_hash == expected_chunk_hashes[ordinal],
+                      'ends_with_newline': data.endswith(b'\n'),
+                  })
+
+              encoded = b''.join(chunks)
+              (out / 'observed-product.tar.xz.b64').write_bytes(encoded)
+              audit['observed_base64'] = {
+                  'bytes': len(encoded),
+                  'sha256': sha(encoded),
+              }
+              audit['checks']['chunk_contract'] = all(
+                  row['size_matches'] and row['sha256_matches']
+                  for row in audit['chunks']
+              )
+              audit['checks']['base64_contract'] = (
+                  len(encoded) == expected['base64_bytes']
+                  and sha(encoded) == expected['base64_sha256']
+              )
+
+              decoded = base64.b64decode(encoded, validate=False)
+              (out / 'observed-product.tar.xz').write_bytes(decoded)
+              audit['observed_xz'] = {
+                  'bytes': len(decoded),
+                  'sha256': sha(decoded),
+              }
+              audit['checks']['xz_contract'] = (
+                  len(decoded) == expected['xz_bytes']
+                  and sha(decoded) == expected['xz_sha256']
+              )
+
+              tar_bytes = lzma.decompress(decoded)
+              tar_path = out / 'observed-product.tar'
+              tar_path.write_bytes(tar_bytes)
+              audit['observed_tar'] = {
+                  'bytes': len(tar_bytes),
+                  'sha256': sha(tar_bytes),
+              }
+              audit['checks']['tar_contract'] = (
+                  len(tar_bytes) == expected['tar_bytes']
+                  and sha(tar_bytes) == expected['tar_sha256']
+              )
+
+              with tarfile.open(tar_path, 'r:') as archive:
+                  members = archive.getmembers()
+                  observed_members = {member.name for member in members}
+                  audit['tar_members'] = [
+                      {
+                          'name': member.name,
+                          'bytes': member.size,
+                          'uid': member.uid,
+                          'gid': member.gid,
+                          'mode': member.mode,
+                          'is_file': member.isfile(),
+                      }
+                      for member in members
+                  ]
+                  audit['checks']['member_contract'] = (
+                      len(members) == 7
+                      and observed_members == expected_members
+                      and all(
+                          member.isfile()
+                          and not PurePosixPath(member.name).is_absolute()
+                          and '..' not in PurePosixPath(member.name).parts
+                          and member.uid == member.gid == 0
+                          for member in members
+                      )
+                  )
+                  if audit['checks']['member_contract']:
+                      archive.extractall(product, filter='data')
+
+              old_parent = 'd26cb838df12a877840ebe71eb9388d44b6ceaf9'
+              old_tree = 'af520dd75d4111d60f8a15c681e9d04d23c2f8f4'
+              audit['files'] = []
+              for path in sorted(p for p in product.rglob('*') if p.is_file()):
+                  rel = path.relative_to(product).as_posix()
+                  data = path.read_bytes()
+                  row: dict[str, Any] = {
+                      'path': rel,
+                      'bytes': len(data),
+                      'sha256': sha(data),
+                  }
+                  if path.suffix == '.zip':
+                      with zipfile.ZipFile(path) as archive:
+                          row['zip_integrity'] = archive.testzip() is None
+                          row['zip_members'] = archive.namelist()
+                  else:
+                      text = data.decode('utf-8')
+                      row['old_parent_occurrences'] = text.count(old_parent)
+                      row['old_tree_occurrences'] = text.count(old_tree)
+                      row['forty_hex_values'] = sorted(set(re.findall(
+                          r'(?<![0-9a-f])[0-9a-f]{40}(?![0-9a-f])', text
+                      )))
+                      if path.suffix == '.json':
+                          value = json.loads(text)
+                          row['top_level_keys'] = sorted(value)
+                  audit['files'].append(row)
+
+              audit['state'] = 'inventory_complete'
+          except Exception as exc:
+              audit['state'] = 'inventory_failed'
+              audit['errors'].append({
+                  'class': type(exc).__name__,
+                  'message': str(exc),
+                  'traceback': traceback.format_exc(),
+              })
+          finally:
+              (out / 'payload-audit.json').write_text(
+                  json.dumps(audit, indent=2, sort_keys=True) + '\n'
+              )
+
+          print(json.dumps({
+              'state': audit['state'],
+              'checks': audit['checks'],
+              'chunks': audit['chunks'],
+              'errors': audit['errors'],
+          }, indent=2, sort_keys=True))
+          PY
+
+          printf 'running-focused-validator-diagnostically\n' > "$OUT/STAGE"
+          if test -f "$OUT/product/tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py"; then
+            chmod 0755 "$OUT/product/tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py"
+            WORKTREE="$WORK/repo"
+            git worktree add --detach "$WORKTREE" "$(git rev-parse origin/main)"
+            cp -a "$OUT/product"/. "$WORKTREE"/
+            set +e
+            (
+              cd "$WORKTREE"
+              python tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py --self-test
+            ) > "$OUT/focused-validator.log" 2>&1
+            VALIDATOR_RC="$?"
+            set -e
+          else
+            VALIDATOR_RC=125
+            printf 'validator unavailable because payload extraction did not complete\n' > "$OUT/focused-validator.log"
+          fi
+          printf '%s\n' "$VALIDATOR_RC" > "$OUT/focused-validator-exit-code"
+          printf 'focused_validator_exit_code=%s\n' "$VALIDATOR_RC" >> "$OUT/AUDIT-RECEIPT"
+
+          printf 'complete\n' > "$OUT/STAGE"
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          )
+
+      - name: Preserve exact request-free payload audit v2
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-sam-custody-payload-audit-v2
+          path: ${{ runner.temp }}/schoolhouse-sam-custody-payload-audit-v2
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
