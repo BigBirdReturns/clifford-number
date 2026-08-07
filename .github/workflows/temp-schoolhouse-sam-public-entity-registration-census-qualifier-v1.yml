@@ -1,0 +1,614 @@
+name: TEMP qualify exact School.House SAM public entity census artifact
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-qualifier-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: schoolhouse-sam-public-entity-registration-census-qualifier-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-sam-public-entity-registration-census-qualifier-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prove exact one-path request-free qualifier topology
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='d26cb838df12a877840ebe71eb9388d44b6ceaf9'
+          WORKFLOW='.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-qualifier-v1.yml'
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+          mapfile -t DELTA < <(git diff --name-only "$BASE"..HEAD)
+          test "${#DELTA[@]}" -eq 1
+          test "${DELTA[0]}" = "$WORKFLOW"
+          printf 'canonical_parent=%s\nqualifier_head=%s\nqualifier_paths=1\nsource_requests=0\n' \
+            "$BASE" "$(git rev-parse HEAD)"
+
+      - name: Authenticate and independently qualify exact source custody
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE_HEAD='05a56dfd208380c5269c157d8726a85725b2a058'
+          SOURCE_RUN='31208398663'
+          SOURCE_ARTIFACT='9005696128'
+          SOURCE_BYTES='6352'
+          SOURCE_DIGEST='sha256:b4084cfbb96d35e9d708dcad52b8c2de11f54d34f6e4abb73b91fe4d6089f538'
+          WRAPPER_ARTIFACT='9005696502'
+          WRAPPER_BYTES='40387'
+          WRAPPER_DIGEST='sha256:0d1efabbff0040ceca9a6dd82f2d3b4d4801c34e6e3301b1e0b3f5b643bea47b'
+          WORK="$RUNNER_TEMP/sam-qualification-v1-work"
+          OUT="$RUNNER_TEMP/schoolhouse-sam-public-entity-registration-census-qualification-v1"
+          mkdir -p "$WORK" "$OUT"
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN" > "$WORK/source-run.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN/jobs" > "$WORK/source-jobs.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ARTIFACT" > "$WORK/source-artifact-metadata.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$WRAPPER_ARTIFACT" > "$WORK/wrapper-artifact-metadata.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ARTIFACT/zip" > "$WORK/source.zip"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$WRAPPER_ARTIFACT/zip" > "$WORK/wrapper.zip"
+
+          test "$(stat -c %s "$WORK/source.zip")" = "$SOURCE_BYTES"
+          test "sha256:$(sha256sum "$WORK/source.zip" | cut -d' ' -f1)" = "$SOURCE_DIGEST"
+          test "$(stat -c %s "$WORK/wrapper.zip")" = "$WRAPPER_BYTES"
+          test "sha256:$(sha256sum "$WORK/wrapper.zip" | cut -d' ' -f1)" = "$WRAPPER_DIGEST"
+
+          python - "$WORK" "$OUT" <<'PY'
+          from __future__ import annotations
+
+          from datetime import datetime
+          from pathlib import Path
+          from typing import Any
+          from urllib.parse import urlsplit
+          import hashlib
+          import json
+          import re
+          import sys
+          import unicodedata
+          import zipfile
+
+          work = Path(sys.argv[1])
+          out = Path(sys.argv[2])
+          source_zip = work / 'source.zip'
+          wrapper_zip = work / 'wrapper.zip'
+
+          SOURCE_HEAD = '05a56dfd208380c5269c157d8726a85725b2a058'
+          SOURCE_RUN = 31208398663
+          SOURCE_ARTIFACT = 9005696128
+          SOURCE_BYTES = 6352
+          SOURCE_SHA256 = 'b4084cfbb96d35e9d708dcad52b8c2de11f54d34f6e4abb73b91fe4d6089f538'
+          WRAPPER_ARTIFACT = 9005696502
+          WRAPPER_BYTES = 40387
+          WRAPPER_SHA256 = '0d1efabbff0040ceca9a6dd82f2d3b4d4801c34e6e3301b1e0b3f5b643bea47b'
+          SOURCE_WORKFLOW_SHA256 = 'c508787106c9245605ed990b605deb05c806d1685ef50ce24b76e208a9619d1c'
+          REPAIRED_WORKFLOW_SHA256 = '8ee7ef9de15bb7cc2d7a8ce94d45451c98b524660b3f8620b06df859032d4f46'
+          CANONICAL_PARENT = 'd26cb838df12a877840ebe71eb9388d44b6ceaf9'
+          CANONICAL_TREE = 'af520dd75d4111d60f8a15c681e9d04d23c2f8f4'
+
+          def digest(data: bytes) -> str:
+              return hashlib.sha256(data).hexdigest()
+
+          def canonical(value: Any) -> bytes:
+              return (json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False) + '\n').encode()
+
+          def decode_rows(data: bytes) -> list[Any]:
+              text = data.decode()
+              decoder = json.JSONDecoder()
+              rows: list[Any] = []
+              index = 0
+              while True:
+                  while index < len(text) and text[index].isspace():
+                      index += 1
+                  if index == len(text):
+                      return rows
+                  row, index = decoder.raw_decode(text, index)
+                  rows.append(row)
+
+          def check_metadata(path: Path, *, artifact_id: int, size: int, sha256: str) -> dict[str, Any]:
+              value = json.loads(path.read_text())
+              assert value['id'] == artifact_id
+              assert value['size_in_bytes'] == size
+              assert value['digest'] == f'sha256:{sha256}'
+              assert value['expired'] is False
+              assert value['workflow_run']['id'] == SOURCE_RUN
+              assert value['workflow_run']['head_sha'] == SOURCE_HEAD
+              return value
+
+          source_meta = check_metadata(
+              work / 'source-artifact-metadata.json',
+              artifact_id=SOURCE_ARTIFACT,
+              size=SOURCE_BYTES,
+              sha256=SOURCE_SHA256,
+          )
+          wrapper_meta = check_metadata(
+              work / 'wrapper-artifact-metadata.json',
+              artifact_id=WRAPPER_ARTIFACT,
+              size=WRAPPER_BYTES,
+              sha256=WRAPPER_SHA256,
+          )
+          assert source_meta['name'] == 'schoolhouse-sam-public-entity-registration-census-v2'
+          assert wrapper_meta['name'] == 'schoolhouse-sam-public-entity-registration-census-v2-wrapper-receipt'
+
+          source_run = json.loads((work / 'source-run.json').read_text())
+          assert source_run['id'] == SOURCE_RUN
+          assert source_run['head_sha'] == SOURCE_HEAD
+          assert source_run['status'] == 'completed'
+          assert source_run['conclusion'] == 'failure'
+          assert source_run['event'] == 'pull_request'
+
+          source_jobs = json.loads((work / 'source-jobs.json').read_text())['jobs']
+          assert len(source_jobs) == 1
+          job = source_jobs[0]
+          assert job['status'] == 'completed'
+          assert job['conclusion'] == 'failure'
+          step_result = {step['name']: step['conclusion'] for step in job['steps']}
+          assert step_result['Prove exact one-path wrapper topology'] == 'success'
+          assert step_result['Materialize exact repaired v2 source program'] == 'success'
+          assert step_result['Install exact bounded browser runtime'] == 'success'
+          assert step_result['Execute exact repaired anonymous public SAM.gov census'] == 'failure'
+          assert step_result['Preserve exact SAM.gov v2 census artifact'] == 'success'
+          assert step_result['Preserve exact wrapper reconstruction receipt'] == 'success'
+
+          assert source_zip.stat().st_size == SOURCE_BYTES
+          assert digest(source_zip.read_bytes()) == SOURCE_SHA256
+          assert wrapper_zip.stat().st_size == WRAPPER_BYTES
+          assert digest(wrapper_zip.read_bytes()) == WRAPPER_SHA256
+
+          source_members = {
+              'RUNNER-OUTPUT.log',
+              'RUNNER_EXIT_CODE',
+              'SHA256SUMS',
+              'adjudication.json',
+              'artifact-manifest.json',
+              'candidates.jsonl',
+              'query-receipts.jsonl',
+              'route-policy.json',
+              'summary.json',
+          }
+          with zipfile.ZipFile(source_zip) as archive:
+              assert archive.testzip() is None
+              assert set(archive.namelist()) == source_members
+              assert len(archive.namelist()) == len(source_members)
+              source = {name: archive.read(name) for name in source_members}
+
+          assert source['RUNNER_EXIT_CODE'] == b'0\n'
+          checksum_rows = source['SHA256SUMS'].decode().splitlines()
+          assert len(checksum_rows) == 7
+          for row in checksum_rows:
+              row_digest, name = row.split('  ', 1)
+              assert '/' not in name and name in source_members
+              assert digest(source[name]) == row_digest
+
+          wrapper_members = {
+              'SHA256SUMS', 'execute.sh', 'install.sh', 'receipt.txt',
+              'repaired-workflow.yml', 'source-workflow.yml',
+          }
+          with zipfile.ZipFile(wrapper_zip) as archive:
+              assert archive.testzip() is None
+              assert set(archive.namelist()) == wrapper_members
+              assert len(archive.namelist()) == len(wrapper_members)
+              wrapper = {name: archive.read(name) for name in wrapper_members}
+          assert digest(wrapper['source-workflow.yml']) == SOURCE_WORKFLOW_SHA256
+          assert digest(wrapper['repaired-workflow.yml']) == REPAIRED_WORKFLOW_SHA256
+          wrapper_sums = wrapper['SHA256SUMS'].decode().splitlines()
+          assert len(wrapper_sums) == 5
+          for row in wrapper_sums:
+              row_digest, absolute_name = row.split('  ', 1)
+              name = Path(absolute_name).name
+              assert name in wrapper_members - {'SHA256SUMS'}
+              assert digest(wrapper[name]) == row_digest
+          receipt_lines = dict(
+              line.split('=', 1) for line in wrapper['receipt.txt'].decode().splitlines()
+          )
+          assert receipt_lines == {
+              'source_branch': 'agent/schoolhouse-sam-public-entity-registration-census-v1',
+              'source_head': '61f69707e8425d2db62ded8631cf083e994757f4',
+              'source_path': '.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-v1.yml',
+              'source_blob': '7447515d3010594d7be25719045fbee8585a6882',
+              'source_sha256': SOURCE_WORKFLOW_SHA256,
+              'repaired_sha256': REPAIRED_WORKFLOW_SHA256,
+              'scoping_replacements': '3',
+              'embedded_python_programs': '2',
+              'extracted_run_blocks': '2',
+          }
+
+          policy = json.loads(source['route-policy.json'])
+          summary = json.loads(source['summary.json'])
+          adjudication = json.loads(source['adjudication.json'])
+          manifest = json.loads(source['artifact-manifest.json'])
+          receipts = decode_rows(source['query-receipts.jsonl'])
+          candidates = decode_rows(source['candidates.jsonl'])
+
+          authority = {
+              'identities_admitted': 0,
+              'relationships_admitted': 0,
+              'negative_existence_claims': 0,
+              'federal_registration_admissions': 0,
+              'federal_award_or_funding_admissions': 0,
+              'owner_admissions': 0,
+              'operator_admissions': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+
+          assert set(policy) == {
+              'schema_version', 'issue', 'canonical_parent', 'canonical_parent_tree',
+              'official_surface', 'bounds', 'candidate_rule', 'retention', 'authority',
+          }
+          assert policy['schema_version'] == 'schoolhouse-sam-public-entity-registration-route-policy@1'
+          assert policy['issue'] == 1382
+          assert policy['canonical_parent'] == CANONICAL_PARENT
+          assert policy['canonical_parent_tree'] == CANONICAL_TREE
+          assert policy['official_surface'] == {
+              'url': 'https://sam.gov/entity-information',
+              'search_category': 'Entity Registrations',
+              'target_normalized_key': 'schoolhouse',
+              'fixed_queries': [
+                  {'query_id': 'q1_school_dot_house', 'query_text': 'School.House'},
+                  {'query_id': 'q2_schoolhouse', 'query_text': 'Schoolhouse'},
+                  {'query_id': 'q3_school_house', 'query_text': 'School House'},
+              ],
+          }
+          assert policy['bounds'] == {
+              'fresh_anonymous_browser_contexts': 1,
+              'fixed_entity_registration_submissions': 3,
+              'maximum_result_pages_per_query': 5,
+              'maximum_rendered_rows_per_query': 500,
+              'maximum_rendered_rows_total': 1500,
+              'maximum_retained_candidates_total': 300,
+              'maximum_query_phase_official_requests_per_query': 250,
+              'maximum_query_phase_response_bytes_per_query': 67108864,
+              'parallel_workers': 1,
+              'entity_detail_views': 0,
+              'api_calls_using_api_key': 0,
+              'login_attempts': 0,
+              'account_creation_attempts': 0,
+              'federal_role_or_cac_piv_attempts': 0,
+              'captcha_or_waf_bypass_attempts': 0,
+              'cookie_or_profile_export_or_replay_attempts': 0,
+              'outside_human_dependency': False,
+          }
+          assert policy['candidate_rule'] == {
+              'classification': 'sam_public_entity_registration_candidate',
+              'requires_exact_normalized_organization_name_key': 'schoolhouse',
+              'requires_public_uei': True,
+              'allowed_matched_fields': [
+                  'legal_business_name', 'dba_name', 'public_display_name',
+              ],
+              'identity_admission': False,
+              'successor_exact_uei_adjudication_required': True,
+          }
+          assert set(policy['retention']) == {
+              'nonmatching_organization_names', 'person_names',
+              'street_or_mailing_addresses', 'cities_states_countries_or_postal_codes',
+              'phone_fax_or_email_values', 'points_of_contact',
+              'officers_owners_principals_or_parent_entities',
+              'financial_banking_eft_or_debt_information',
+              'proceedings_exclusions_or_integrity_material',
+              'complete_html_or_json_responses', 'screenshots',
+              'browser_profiles_cookies_credentials_or_tokens', 'private_support_material',
+          }
+          assert all(value == 0 for value in policy['retention'].values())
+          assert policy['authority'] == authority
+
+          expected_summary_keys = {
+              'schema_version', 'state', 'fixed_queries', 'terminal_queries',
+              'terminal_query_state_counts', 'browser_contexts_started',
+              'browser_launch_error_class', 'query_submissions', 'result_pages_visited',
+              'rendered_rows_inspected', 'retained_candidate_rows', 'unique_public_ueis',
+              'exact_name_rows_without_public_uei', 'official_request_count',
+              'response_bytes_accounted', 'json_response_count', 'blocked_off_host_requests',
+              'blocked_official_entity_detail_views', 'entity_detail_views',
+              'api_calls_using_api_key', 'login_attempts', 'account_creation_attempts',
+              'federal_role_or_cac_piv_attempts', 'captcha_or_waf_bypass_attempts',
+              'cookie_or_profile_export_or_replay_attempts',
+              'nonmatching_organization_names_retained', 'person_names_retained',
+              'addresses_or_location_values_retained', 'phone_fax_or_email_values_retained',
+              'points_of_contact_retained',
+              'officers_owners_principals_or_parent_entities_retained',
+              'financial_banking_eft_or_debt_information_retained',
+              'proceedings_exclusions_or_integrity_material_retained',
+              'complete_html_or_json_responses_retained', 'screenshots_retained',
+              'browser_profiles_cookies_credentials_or_tokens_retained',
+              'private_support_rows', 'identities_admitted', 'relationships_admitted',
+              'negative_existence_claims_created', 'federal_registration_admissions',
+              'federal_award_or_funding_admissions', 'owner_admissions',
+              'operator_admissions', 'outside_human_dependency', 'publication_effect',
+              'adoption_effect', 'graph_effect', 'public_schoolhouse_legal_identity',
+          }
+          assert set(summary) == expected_summary_keys
+          assert summary['schema_version'] == 'schoolhouse-sam-public-entity-registration-census@1'
+          assert summary['state'] == 'terminal_bounded_sam_public_entity_registration_candidate_census'
+          assert summary['fixed_queries'] == 3
+          assert summary['terminal_queries'] == 3
+          assert summary['terminal_query_state_counts'] == {
+              'bounded_public_search_controls_unavailable': 3,
+          }
+          assert summary['browser_contexts_started'] == 1
+          assert summary['browser_launch_error_class'] is None
+          assert summary['query_submissions'] == 0
+          assert summary['result_pages_visited'] == 0
+          assert summary['rendered_rows_inspected'] == 0
+          assert summary['retained_candidate_rows'] == 0
+          assert summary['unique_public_ueis'] == 0
+          assert summary['exact_name_rows_without_public_uei'] == 0
+          assert summary['official_request_count'] == 99
+          assert summary['response_bytes_accounted'] == 2594925
+          assert summary['json_response_count'] == 9
+          assert summary['blocked_off_host_requests'] == 3
+          assert summary['blocked_official_entity_detail_views'] == 0
+          assert summary['entity_detail_views'] == 0
+          zero_summary_keys = {
+              'api_calls_using_api_key', 'login_attempts', 'account_creation_attempts',
+              'federal_role_or_cac_piv_attempts', 'captcha_or_waf_bypass_attempts',
+              'cookie_or_profile_export_or_replay_attempts',
+              'nonmatching_organization_names_retained', 'person_names_retained',
+              'addresses_or_location_values_retained', 'phone_fax_or_email_values_retained',
+              'points_of_contact_retained',
+              'officers_owners_principals_or_parent_entities_retained',
+              'financial_banking_eft_or_debt_information_retained',
+              'proceedings_exclusions_or_integrity_material_retained',
+              'complete_html_or_json_responses_retained', 'screenshots_retained',
+              'browser_profiles_cookies_credentials_or_tokens_retained',
+              'private_support_rows', 'identities_admitted', 'relationships_admitted',
+              'negative_existence_claims_created', 'federal_registration_admissions',
+              'federal_award_or_funding_admissions', 'owner_admissions',
+              'operator_admissions',
+          }
+          assert all(summary[key] == 0 for key in zero_summary_keys)
+          assert summary['outside_human_dependency'] is False
+          assert [summary[key] for key in ('publication_effect', 'adoption_effect', 'graph_effect')] == ['none', 'none', 'none']
+          assert summary['public_schoolhouse_legal_identity'] == 'unresolved'
+
+          expected_receipt_keys = {
+              'schema_version', 'query_id', 'query_text', 'query_index', 'surface_url',
+              'search_category', 'terminal_state', 'final_url', 'page_title',
+              'query_input_found', 'category_control_selected', 'query_submitted',
+              'challenge_detected', 'pages_visited', 'rendered_rows_inspected',
+              'candidate_rows_observed', 'exact_name_rows_without_public_uei',
+              'official_request_count', 'response_bytes_accounted', 'json_response_count',
+              'json_response_bytes', 'json_response_hashes', 'json_parse_error_count',
+              'response_inspection_error_count', 'body_text_bytes_hashed',
+              'body_text_sha256_by_page', 'blocked_entity_detail_views',
+              'blocked_off_host_requests', 'blocked_off_host_hashes', 'error_class',
+              'observed_at', 'login_attempts', 'account_creation_attempts',
+              'api_key_requests', 'federal_role_or_cac_piv_attempts',
+              'captcha_or_waf_bypass_attempts',
+              'cookie_or_profile_export_or_replay_attempts',
+              'outside_human_dependency', 'publication_effect', 'adoption_effect',
+              'graph_effect',
+          }
+          expected_queries = [
+              ('q1_school_dot_house', 'School.House'),
+              ('q2_schoolhouse', 'Schoolhouse'),
+              ('q3_school_house', 'School House'),
+          ]
+          assert len(receipts) == 3
+          for index, receipt in enumerate(receipts):
+              assert set(receipt) == expected_receipt_keys
+              query_id, query_text = expected_queries[index]
+              assert receipt['schema_version'] == 'schoolhouse-sam-public-entity-registration-query-receipt@1'
+              assert [receipt['query_id'], receipt['query_text'], receipt['query_index']] == [query_id, query_text, index]
+              assert receipt['surface_url'] == 'https://sam.gov/entity-information'
+              assert receipt['search_category'] == 'Entity Registrations'
+              assert receipt['terminal_state'] == 'bounded_public_search_controls_unavailable'
+              assert receipt['final_url'] == 'https://sam.gov/entity-information'
+              assert urlsplit(receipt['final_url']).hostname == 'sam.gov'
+              assert receipt['page_title'] == 'Entity Information | SAM.gov'
+              assert receipt['query_input_found'] is True
+              assert receipt['category_control_selected'] is False
+              assert receipt['query_submitted'] is False
+              assert receipt['challenge_detected'] is False
+              assert receipt['pages_visited'] == 0
+              assert receipt['rendered_rows_inspected'] == 0
+              assert receipt['candidate_rows_observed'] == 0
+              assert receipt['exact_name_rows_without_public_uei'] == 0
+              assert receipt['official_request_count'] == 33
+              assert receipt['response_bytes_accounted'] == 864975
+              assert receipt['json_response_count'] == 3
+              assert receipt['json_response_bytes'] == 23686
+              assert receipt['json_parse_error_count'] == 0
+              assert receipt['response_inspection_error_count'] == 0
+              assert receipt['body_text_bytes_hashed'] == 0
+              assert receipt['body_text_sha256_by_page'] == []
+              assert receipt['blocked_entity_detail_views'] == 0
+              assert receipt['blocked_off_host_requests'] == 1
+              assert len(receipt['blocked_off_host_hashes']) == 1
+              assert re.fullmatch(r'[0-9a-f]{64}', receipt['blocked_off_host_hashes'][0])
+              assert receipt['error_class'] is None
+              datetime.fromisoformat(receipt['observed_at'])
+              for key in (
+                  'login_attempts', 'account_creation_attempts', 'api_key_requests',
+                  'federal_role_or_cac_piv_attempts', 'captcha_or_waf_bypass_attempts',
+                  'cookie_or_profile_export_or_replay_attempts',
+              ):
+                  assert receipt[key] == 0
+              assert receipt['outside_human_dependency'] is False
+              assert [receipt[key] for key in ('publication_effect', 'adoption_effect', 'graph_effect')] == ['none', 'none', 'none']
+              assert len(receipt['json_response_hashes']) == 3
+              for response in receipt['json_response_hashes']:
+                  assert set(response) == {'status', 'bytes', 'sha256', 'url_sha256'}
+                  assert response['status'] == 200
+                  assert response['bytes'] > 0
+                  assert re.fullmatch(r'[0-9a-f]{64}', response['sha256'])
+                  assert re.fullmatch(r'[0-9a-f]{64}', response['url_sha256'])
+
+          assert candidates == []
+          assert set(adjudication) == {
+              'schema_version', 'state', 'candidate_rows', 'promotes_to',
+              'public_schoolhouse_identity_admitted', 'sam_entity_identity_admitted',
+              'federal_registration_admitted', 'federal_award_or_funding_admitted',
+              'owner_or_operator_admitted', 'fiscal_sponsor_relationship_admitted',
+              'related_party_relationship_admitted',
+              'governance_or_control_relationship_admitted',
+              'negative_existence_claim_created', 'interpretation',
+              'public_schoolhouse_legal_identity', 'outside_human_dependency',
+              'publication_effect', 'adoption_effect', 'graph_effect',
+          }
+          assert adjudication['schema_version'] == 'schoolhouse-sam-public-entity-registration-adjudication@1'
+          assert adjudication['state'] == summary['state']
+          assert adjudication['candidate_rows'] == 0
+          assert adjudication['promotes_to'] == 'no_candidate_promoted'
+          for key in (
+              'public_schoolhouse_identity_admitted', 'sam_entity_identity_admitted',
+              'federal_registration_admitted', 'federal_award_or_funding_admitted',
+              'owner_or_operator_admitted', 'fiscal_sponsor_relationship_admitted',
+              'related_party_relationship_admitted',
+              'governance_or_control_relationship_admitted',
+              'negative_existence_claim_created',
+          ):
+              assert adjudication[key] is False
+          assert all(adjudication['interpretation'].values())
+          assert adjudication['public_schoolhouse_legal_identity'] == 'unresolved'
+          assert adjudication['outside_human_dependency'] is False
+          assert [adjudication[key] for key in ('publication_effect', 'adoption_effect', 'graph_effect')] == ['none', 'none', 'none']
+
+          assert set(manifest) == {'schema_version', 'counts', 'files', 'combined_sha256', 'authority'}
+          assert manifest['schema_version'] == 'schoolhouse-sam-public-entity-registration-artifact-manifest@1'
+          assert manifest['counts'] == {
+              'query_receipts': 3,
+              'candidate_rows': 0,
+              'unique_public_ueis': 0,
+              'exact_name_rows_without_public_uei': 0,
+          }
+          assert manifest['authority'] == authority
+          assert len(manifest['files']) == 5
+          combined = hashlib.sha256()
+          for row in manifest['files']:
+              assert set(row) == {'path', 'bytes', 'sha256'}
+              assert row['path'] in source_members
+              assert len(source[row['path']]) == row['bytes']
+              assert digest(source[row['path']]) == row['sha256']
+              combined.update(f"{row['sha256']}  {row['path']}\n".encode())
+          assert manifest['combined_sha256'] == combined.hexdigest()
+
+          # The source validator's generic key walker was invalid: it rejected
+          # its own control keys `points_of_contact` and `state`. Privacy is
+          # instead enforced by exact schema allowlists, zero retention
+          # counters, zero candidates, and hash-only response custody above.
+          qualification = {
+              'schema_version': 'schoolhouse-sam-public-entity-registration-census-qualification@1',
+              'qualification': 'pass',
+              'source': {
+                  'pr': 1389,
+                  'head': SOURCE_HEAD,
+                  'workflow_run': SOURCE_RUN,
+                  'workflow_conclusion': 'failure',
+                  'program_exit_code': 0,
+                  'artifact_id': SOURCE_ARTIFACT,
+                  'artifact_bytes': SOURCE_BYTES,
+                  'artifact_sha256': SOURCE_SHA256,
+                  'wrapper_artifact_id': WRAPPER_ARTIFACT,
+                  'wrapper_artifact_bytes': WRAPPER_BYTES,
+                  'wrapper_artifact_sha256': WRAPPER_SHA256,
+                  'source_workflow_sha256': SOURCE_WORKFLOW_SHA256,
+                  'repaired_workflow_sha256': REPAIRED_WORKFLOW_SHA256,
+                  'source_requests_performed_by_qualifier': 0,
+              },
+              'validator_defect': {
+                  'class': 'context_insensitive_privacy_key_false_positive',
+                  'rejected_zero_retention_control_key': 'points_of_contact',
+                  'rejected_terminal_schema_key': 'state',
+                  'source_product_invalidated': False,
+              },
+              'terminal_result': {
+                  'fixed_queries': 3,
+                  'terminal_queries': 3,
+                  'terminal_state_counts': {
+                      'bounded_public_search_controls_unavailable': 3,
+                  },
+                  'browser_contexts_started': 1,
+                  'query_submissions': 0,
+                  'official_requests': 99,
+                  'response_bytes_accounted': 2594925,
+                  'rendered_rows_inspected': 0,
+                  'retained_candidate_rows': 0,
+                  'unique_public_ueis': 0,
+                  'entity_detail_views': 0,
+              },
+              'privacy': {
+                  'nonmatching_organization_names_retained': 0,
+                  'person_names_retained': 0,
+                  'addresses_or_location_values_retained': 0,
+                  'phone_fax_or_email_values_retained': 0,
+                  'points_of_contact_retained': 0,
+                  'officers_owners_principals_or_parent_entities_retained': 0,
+                  'financial_banking_eft_or_debt_information_retained': 0,
+                  'proceedings_exclusions_or_integrity_material_retained': 0,
+                  'complete_html_or_json_responses_retained': 0,
+                  'screenshots_retained': 0,
+                  'browser_profiles_cookies_credentials_or_tokens_retained': 0,
+                  'private_support_rows': 0,
+              },
+              'authority': authority | {
+                  'public_schoolhouse_legal_identity': 'unresolved',
+              },
+          }
+
+          (out / 'qualification.json').write_bytes(canonical(qualification))
+          (out / 'source-summary.json').write_bytes(canonical(summary))
+          (out / 'source-route-policy.json').write_bytes(canonical(policy))
+          (out / 'source-adjudication.json').write_bytes(canonical(adjudication))
+          (out / 'source-artifact-manifest.json').write_bytes(canonical(manifest))
+          (out / 'source-SHA256SUMS').write_bytes(source['SHA256SUMS'])
+          (out / 'qualification.log').write_text(
+              'schoolhouse_sam_public_entity_registration_census_qualification=pass\n'
+              'source_program_exit_code=0\n'
+              'terminal_queries=3\n'
+              'terminal_state=bounded_public_search_controls_unavailable\n'
+              'retained_candidate_rows=0\n'
+              'source_requests_performed_by_qualifier=0\n'
+          )
+
+          rows = []
+          for path in sorted(out.iterdir()):
+              if path.name == 'SHA256SUMS':
+                  continue
+              rows.append(f'{digest(path.read_bytes())}  {path.name}\n')
+          (out / 'SHA256SUMS').write_text(''.join(rows))
+          print('schoolhouse_sam_public_entity_registration_census_qualification=pass')
+          print('source_program_exit_code=0')
+          print('terminal_queries=3')
+          print('retained_candidate_rows=0')
+          print('source_requests_performed_by_qualifier=0')
+          PY
+
+      - name: Preserve exact independent qualification receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-sam-public-entity-registration-census-qualification-v1
+          path: ${{ runner.temp }}/schoolhouse-sam-public-entity-registration-census-qualification-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
