@@ -1,0 +1,89 @@
+T/preexisting-target-ref.txt"
+TARGET_RC="$?"
+set -e
+test "$TARGET_RC" -eq 2
+
+printf 'authenticating-read-only-source-export\n' > "$RECEIPT/STAGE"
+gh api "repos/$GITHUB_REPOSITORY/actions/runs/$EXPORT_RUN" > "$WORK/export-run.json"
+test "$(jq -r .head_sha "$WORK/export-run.json")" = "$EXPORT_HEAD"
+test "$(jq -r .status "$WORK/export-run.json")" = 'completed'
+test "$(jq -r .conclusion "$WORK/export-run.json")" = 'success'
+gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$EXPORT_ARTIFACT" > "$WORK/export-metadata.json"
+test "$(jq -r .size_in_bytes "$WORK/export-metadata.json")" = "$EXPORT_BYTES"
+test "$(jq -r .digest "$WORK/export-metadata.json")" = "$EXPORT_DIGEST"
+test "$(jq -r .workflow_run.id "$WORK/export-metadata.json")" = "$EXPORT_RUN"
+test "$(jq -r .workflow_run.head_sha "$WORK/export-metadata.json")" = "$EXPORT_HEAD"
+test "$(jq -r .expired "$WORK/export-metadata.json")" = 'false'
+gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$EXPORT_ARTIFACT/zip" > "$WORK/export.zip"
+test "$(stat -c%s "$WORK/export.zip")" = "$EXPORT_BYTES"
+test "sha256:$(sha256sum "$WORK/export.zip" | cut -d' ' -f1)" = "$EXPORT_DIGEST"
+unzip -q "$WORK/export.zip" -d "$WORK/export"
+(
+  cd "$WORK/export"
+  sha256sum -c SHA256SUMS > "$RECEIPT/export-internal-sha256.log"
+)
+EXPORT_TAR="$WORK/export/schoolhouse-legal-identity-frontier-46036c.tar.xz"
+test "$(stat -c%s "$EXPORT_TAR")" = "$EXPORT_TAR_BYTES"
+test "$(sha256sum "$EXPORT_TAR" | cut -d' ' -f1)" = "$EXPORT_TAR_SHA256"
+
+printf 'reconstructing-eleven-path-product-template\n' > "$RECEIPT/STAGE"
+CHUNK_SIZES=(10000 10000 10000 10000 10000 10000 5880)
+CHUNK_SHA256=(
+  e932c87c3204e01fc208e6c2e3e46b86e255d42d57dadd1360e65f80269ae12b
+  f814e46666d96edaf076c6d8b992310e66baa62cc58622083955e38b7752e6d2
+  a2c3a61652bde254bb66dd7e27546bfd2c3bc078220aae89aa7ebbca482fda89
+  55b32a2d8c045e8cb2f2eebb565b70a5a3155b84746b05ac4895438487887f2f
+  ce1a3e3f3c19cd97215580d8f0fd1f7548c633828f468d0f0949a891fc8639c8
+  116a5d7864e3557b40ee4a4f35c466c6e0e82b13fc14d4326841dd86e2772a04
+  22a59c63b9aeea9f8a27febcaf5a0b12d34a07fc7c5340c1142825e0ec53339d
+)
+for index in "${!CHUNK_SIZES[@]}"; do
+  printf -v suffix '%02d' "$index"
+  chunk="$PAYLOAD/part-$suffix"
+  test "$(stat -c%s "$chunk")" = "${CHUNK_SIZES[$index]}"
+  test "$(sha256sum "$chunk" | cut -d' ' -f1)" = "${CHUNK_SHA256[$index]}"
+done
+cat "$PAYLOAD"/part-{00,01,02,03,04,05,06} > "$WORK/payload.b64"
+test "$(stat -c%s "$WORK/payload.b64")" = "$PAYLOAD_B64_BYTES"
+test "$(sha256sum "$WORK/payload.b64" | cut -d' ' -f1)" = "$PAYLOAD_B64_SHA256"
+base64 --decode "$WORK/payload.b64" > "$WORK/product.tar.xz"
+test "$(stat -c%s "$WORK/product.tar.xz")" = "$PAYLOAD_XZ_BYTES"
+test "$(sha256sum "$WORK/product.tar.xz" | cut -d' ' -f1)" = "$PAYLOAD_XZ_SHA256"
+xz --decompress --stdout "$WORK/product.tar.xz" > "$WORK/product.tar"
+test "$(stat -c%s "$WORK/product.tar")" = "$PAYLOAD_TAR_BYTES"
+test "$(sha256sum "$WORK/product.tar" | cut -d' ' -f1)" = "$PAYLOAD_TAR_SHA256"
+python - "$WORK/product.tar" "$WORK/expected-paths" <<'PY_TAR'
+from pathlib import Path, PurePosixPath
+import sys, tarfile
+archive_path=Path(sys.argv[1]); expected=Path(sys.argv[2]).read_text().splitlines()
+with tarfile.open(archive_path,'r:') as archive:
+    members=archive.getmembers()
+    assert sorted(m.name for m in members)==expected
+    assert len(members)==11
+    for m in members:
+        p=PurePosixPath(m.name)
+        assert m.isfile() and not p.is_absolute() and '..' not in p.parts
+        assert m.uid==m.gid==0
+        if m.name=='tools/validate-schoolhouse-legal-identity-current-frontier.py':
+            assert m.mode==0o755
+        else:
+            assert m.mode==0o644
+PY_TAR
+tar -xf "$WORK/product.tar" -C "$WORK/product"
+test "$(sha256sum "$WORK/product/tools/validate-schoolhouse-legal-identity-current-frontier.py" | cut -d' ' -f1)" = "$TEMPLATE_VALIDATOR_SHA256"
+test "$(sha256sum "$WORK/product/data/intake/schoolhouse-legal-identity-current-frontier-v1/product-manifest.json" | cut -d' ' -f1)" = "$TEMPLATE_MANIFEST_SHA256"
+
+printf 'cross-checking-233-file-source-custody\n' > "$RECEIPT/STAGE"
+python - "$WORK/product/data/intake/schoolhouse-legal-identity-current-frontier-v1/canonical-slice-manifest.jsonl" \
+  "$WORK/export" "$SOURCE_CANONICAL" "$BASE" "$RECEIPT/source-slice-proof.json" <<'PY_SOURCE'
+from __future__ import annotations
+from pathlib import Path
+import hashlib, json, subprocess, sys, tarfile
+manifest_path=Path(sys.argv[1]); export=Path(sys.argv[2]); source=sys.argv[3]; base=sys.argv[4]; output=Path(sys.argv[5])
+rows=[json.loads(line) for line in manifest_path.read_text().splitlines() if line]
+assert len(rows)==233 and len({r['path'] for r in rows})==233
+canonical=json.loads((export/'canonical.json').read_text())
+assert canonical['canonical_main']==source
+assert canonical['canonical_tree']=='0ffec7018bcfc038a73cd280970f783d12a5c222'
+assert canonical['exported_files']==canonical['repository_file_hashes_verified']==233
+assert canonical['source_requests']==canonical['registry_que
