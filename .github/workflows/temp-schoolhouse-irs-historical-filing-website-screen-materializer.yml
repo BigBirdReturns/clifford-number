@@ -1,0 +1,237 @@
+name: TEMP materialize School.House historical filing website custody
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-irs-historical-filing-website-screen-materializer.yml'
+      - '.schoolhouse-irs-historical-filing-website-screen-materializer/**'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: schoolhouse-historical-filing-website-materializer-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-irs-historical-filing-website-screen-materializer-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct, qualify, and publish exact permanent product
+        id: materialize
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='a464dbbd96c365a7c040e17847486c5b3ba05c27'
+          BASE_TREE='e4a8b0072fcdd8ca575f6c0d279f035277110163'
+          TARGET='agent/schoolhouse-irs-historical-filing-website-screen-custody-product-v1'
+          ROOT='.schoolhouse-irs-historical-filing-website-screen-materializer'
+          EXECUTE="$ROOT/EXECUTE"
+          BUILD="$ROOT/build-schoolhouse-irs-historical-filing-website-screen-custody.mjs"
+          VALIDATE="$ROOT/validate-schoolhouse-irs-historical-filing-website-screen-custody.mjs"
+          TEST="$ROOT/test-schoolhouse-irs-historical-filing-website-screen-custody.mjs"
+          WORKFLOW='.github/workflows/temp-schoolhouse-irs-historical-filing-website-screen-materializer.yml'
+          ARTIFACT_ZIP="$RUNNER_TEMP/schoolhouse-irs-historical-filing-website-screen-v1.zip"
+          ARTIFACT_ROOT="$RUNNER_TEMP/schoolhouse-irs-historical-filing-website-screen-v1"
+          WORK="$RUNNER_TEMP/schoolhouse-historical-filing-website-product"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-historical-filing-website-materialization-receipt"
+          mkdir -p "$RECEIPT"
+          printf 'materializer_started=true\n' > "$RECEIPT/preflight.txt"
+          trap 'rc=$?; printf "exit_code=%s\nfailed_line=%s\n" "$rc" "$LINENO" >> "$RECEIPT/preflight.txt"; exit "$rc"' ERR
+
+          cat > "$RUNNER_TEMP/permanent-paths" <<'PATHS'
+          data/intake/schoolhouse-irs-historical-filing-website-screen-v1/SHA256SUMS
+          data/intake/schoolhouse-irs-historical-filing-website-screen-v1/product-manifest.json
+          data/intake/schoolhouse-irs-historical-filing-website-screen-v1/sealed-acquisition-artifact.zip
+          data/intake/schoolhouse-irs-historical-filing-website-screen-v1/source-custody.json
+          docs/milestones/schoolhouse-irs-historical-filing-website-screen-v1.md
+          tools/build-schoolhouse-irs-historical-filing-website-screen-custody.mjs
+          tools/test-schoolhouse-irs-historical-filing-website-screen-custody.mjs
+          tools/validate-schoolhouse-irs-historical-filing-website-screen-custody.mjs
+          PATHS
+          sed -i 's/^          //' "$RUNNER_TEMP/permanent-paths"
+
+          git fetch --no-tags origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            "+refs/heads/$TARGET:refs/remotes/origin/$TARGET"
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          LIVE_TREE="$(git rev-parse 'origin/main^{tree}')"
+          MERGE_BASE="$(git merge-base HEAD origin/main)"
+          TARGET_REMOTE_SHA="$(git rev-parse "origin/$TARGET")"
+          {
+            printf 'materializer_head=%s\n' "$(git rev-parse HEAD)"
+            printf 'live_main=%s\n' "$LIVE_MAIN"
+            printf 'expected_main=%s\n' "$BASE"
+            printf 'live_main_tree=%s\n' "$LIVE_TREE"
+            printf 'expected_main_tree=%s\n' "$BASE_TREE"
+            printf 'merge_base=%s\n' "$MERGE_BASE"
+            printf 'target_remote_sha=%s\n' "$TARGET_REMOTE_SHA"
+          } | tee -a "$RECEIPT/preflight.txt"
+          test "$LIVE_MAIN" = "$BASE"
+          test "$LIVE_TREE" = "$BASE_TREE"
+          test "$MERGE_BASE" = "$BASE"
+          test "$TARGET_REMOTE_SHA" = "$BASE"
+
+          mapfile -t CHANGED < <(git diff --name-only "$BASE"..HEAD | sort)
+          EXPECTED=(
+            '.github/workflows/temp-schoolhouse-irs-historical-filing-website-screen-materializer.yml'
+            '.schoolhouse-irs-historical-filing-website-screen-materializer/EXECUTE'
+            '.schoolhouse-irs-historical-filing-website-screen-materializer/build-schoolhouse-irs-historical-filing-website-screen-custody.mjs'
+            '.schoolhouse-irs-historical-filing-website-screen-materializer/test-schoolhouse-irs-historical-filing-website-screen-custody.mjs'
+            '.schoolhouse-irs-historical-filing-website-screen-materializer/validate-schoolhouse-irs-historical-filing-website-screen-custody.mjs'
+          )
+          printf 'carrier_paths=%s\n' "${#CHANGED[@]}" | tee -a "$RECEIPT/preflight.txt"
+          printf '%s\n' "${CHANGED[@]}" > "$RECEIPT/carrier-paths.txt"
+          test "${#CHANGED[@]}" -eq 5
+          for i in "${!EXPECTED[@]}"; do test "${CHANGED[$i]}" = "${EXPECTED[$i]}"; done
+
+          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = '005f56a40c74ef99ee2251e3c0eff9a8a0102ca5a381cd0067f5553b9197931e'
+          test "$(sha256sum "$BUILD" | awk '{print $1}')" = '2ed241aabd3048b4e83d05bf5ea4e5a61710fa0928720ba458b52d7c899ff2fb'
+          test "$(sha256sum "$VALIDATE" | awk '{print $1}')" = 'c1562df712577e14019b470abe51d2cfefa32ea414731cdf857cbd23aa747c8d'
+          test "$(sha256sum "$TEST" | awk '{print $1}')" = '9f12ba77970db2bb92b2f788cc50748b497f4cd2d229c3205179f07edee64247'
+          grep -Fx 'canonical_parent=a464dbbd96c365a7c040e17847486c5b3ba05c27' "$EXECUTE"
+          grep -Fx 'canonical_parent_tree=e4a8b0072fcdd8ca575f6c0d279f035277110163' "$EXECUTE"
+          grep -Fx 'acquisition_workflow_run=31137021052' "$EXECUTE"
+          grep -Fx 'acquisition_artifact_id=8978343039' "$EXECUTE"
+          grep -Fx 'product_branch_lease=a464dbbd96c365a7c040e17847486c5b3ba05c27' "$EXECUTE"
+          grep -Fx 'permanent_paths=8' "$EXECUTE"
+          grep -Fx 'identifier_grade_candidate_rows=0' "$EXECUTE"
+          grep -Fx 'negative_existence_claims=0' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+          grep -Fx 'graph_effect=none' "$EXECUTE"
+
+          REPO="$GITHUB_REPOSITORY"
+          test "$(gh api "repos/$REPO/actions/artifacts/8978343039" --jq '.digest // ""')" = \
+            'sha256:3a9a39b3a7ee14a2c9ac58578c7e542338a02a5dcf415cc411c29d31f1dc6fd3'
+          gh api "repos/$REPO/actions/artifacts/8978343039/zip" > "$ARTIFACT_ZIP"
+          test "$(stat -c%s "$ARTIFACT_ZIP")" = '91926'
+          test "$(sha256sum "$ARTIFACT_ZIP" | awk '{print $1}')" = \
+            '3a9a39b3a7ee14a2c9ac58578c7e542338a02a5dcf415cc411c29d31f1dc6fd3'
+          rm -rf "$ARTIFACT_ROOT"
+          mkdir -p "$ARTIFACT_ROOT"
+          unzip -q "$ARTIFACT_ZIP" -d "$ARTIFACT_ROOT"
+          test "$(cat "$ARTIFACT_ROOT/RUNNER_EXIT_CODE")" = '0'
+          (cd "$ARTIFACT_ROOT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .state == "terminal_historical_website_identifier_screen_no_identifier_grade_candidate" and
+            .historical_exact_locator_rows == 180 and
+            .historical_unique_candidate_eins == 72 and
+            .screened_official_xml_rows == 180 and
+            .website_field_present_rows == 161 and
+            .school_house_exact_website_host_rows == 0 and
+            .identifier_grade_candidate_rows == 0 and
+            .identities_admitted == 0 and
+            .relationships_admitted == 0 and
+            .negative_existence_claims_created == 0 and
+            .outside_human_dependency == false and
+            .graph_effect == "none"
+          ' "$ARTIFACT_ROOT/summary.json"
+
+          reconstruct() {
+            rm -rf "$WORK/data/intake/schoolhouse-irs-historical-filing-website-screen-v1"
+            mkdir -p "$WORK/data/intake/schoolhouse-irs-historical-filing-website-screen-v1" "$WORK/docs/milestones" "$WORK/tools"
+            cp "$ARTIFACT_ZIP" "$WORK/data/intake/schoolhouse-irs-historical-filing-website-screen-v1/sealed-acquisition-artifact.zip"
+            cp "$BUILD" "$WORK/tools/build-schoolhouse-irs-historical-filing-website-screen-custody.mjs"
+            cp "$VALIDATE" "$WORK/tools/validate-schoolhouse-irs-historical-filing-website-screen-custody.mjs"
+            cp "$TEST" "$WORK/tools/test-schoolhouse-irs-historical-filing-website-screen-custody.mjs"
+            (cd "$WORK" && node tools/build-schoolhouse-irs-historical-filing-website-screen-custody.mjs --write)
+          }
+
+          rm -rf "$WORK"
+          git worktree add --detach "$WORK" "$BASE"
+          reconstruct
+          export TERM=xterm
+          {
+            cd "$WORK"
+            node --check tools/build-schoolhouse-irs-historical-filing-website-screen-custody.mjs
+            node --check tools/validate-schoolhouse-irs-historical-filing-website-screen-custody.mjs
+            node --check tools/test-schoolhouse-irs-historical-filing-website-screen-custody.mjs
+            node tools/build-schoolhouse-irs-historical-filing-website-screen-custody.mjs --check
+            node tools/validate-schoolhouse-irs-historical-filing-website-screen-custody.mjs
+            node tools/test-schoolhouse-irs-historical-filing-website-screen-custody.mjs
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          } 2>&1 | tee "$RECEIPT/focused-gates.log"
+          (cd "$WORK" && npm run release:check) 2>&1 | tee "$RECEIPT/release-check.log"
+
+          git -C "$WORK" reset --hard "$BASE"
+          git -C "$WORK" clean -fdx
+          reconstruct
+          git -C "$WORK" switch -C "$TARGET" "$BASE"
+          git -C "$WORK" add --pathspec-from-file="$RUNNER_TEMP/permanent-paths"
+          mapfile -t STAGED < <(git -C "$WORK" diff --cached --name-only | sort)
+          mapfile -t EXPECTED_PATHS < "$RUNNER_TEMP/permanent-paths"
+          test "${#STAGED[@]}" -eq 8
+          for i in "${!EXPECTED_PATHS[@]}"; do test "${STAGED[$i]}" = "${EXPECTED_PATHS[$i]}"; done
+          test -z "$(git -C "$WORK" diff --cached --name-only | grep '^\.github/' || true)"
+          test -z "$(git -C "$WORK" status --porcelain | grep '^??' || true)"
+
+          git -C "$WORK" config user.name 'OpenAI Agent'
+          git -C "$WORK" config user.email 'agent@openai.invalid'
+          git -C "$WORK" commit -m 'Preserve School.House historical filing website screen custody'
+          PRODUCT="$(git -C "$WORK" rev-parse HEAD)"
+          TREE="$(git -C "$WORK" rev-parse 'HEAD^{tree}')"
+          test "$(git -C "$WORK" show -s --format=%P HEAD)" = "$BASE"
+          test "$(git -C "$WORK" diff --name-only "$BASE"..HEAD | wc -l | tr -d ' ')" = '8'
+          test -z "$(git -C "$WORK" diff --name-only "$BASE"..HEAD | grep '^\.github/' || true)"
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test "$(git rev-parse "origin/$TARGET")" = "$BASE"
+          git -C "$WORK" push --force-with-lease="refs/heads/$TARGET:$BASE" origin "HEAD:refs/heads/$TARGET"
+
+          {
+            printf 'canonical_parent=%s\n' "$BASE"
+            printf 'canonical_parent_tree=%s\n' "$BASE_TREE"
+            printf 'acquisition_pr=1318\n'
+            printf 'acquisition_workflow_run=31137021052\n'
+            printf 'acquisition_artifact_id=8978343039\n'
+            printf 'acquisition_artifact_sha256=3a9a39b3a7ee14a2c9ac58578c7e542338a02a5dcf415cc411c29d31f1dc6fd3\n'
+            printf 'product_commit=%s\n' "$PRODUCT"
+            printf 'product_tree=%s\n' "$TREE"
+            printf 'permanent_paths=8\n'
+            printf 'identifier_grade_candidate_rows=0\n'
+            printf 'identities_admitted=0\n'
+            printf 'relationships_admitted=0\n'
+            printf 'negative_existence_claims=0\n'
+            printf 'outside_human_dependency=false\n'
+            printf 'publication_effect=none\n'
+            printf 'adoption_effect=none\n'
+            printf 'graph_effect=none\n'
+          } > "$RECEIPT/receipt.txt"
+          cp "$RUNNER_TEMP/permanent-paths" "$RECEIPT/permanent-paths.txt"
+          sha256sum "$RECEIPT"/* > "$RECEIPT/SHA256SUMS"
+          cat "$RECEIPT/receipt.txt"
+
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-irs-historical-filing-website-screen-materialization-receipt-v1
+          path: ${{ runner.temp }}/schoolhouse-historical-filing-website-materialization-receipt
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Propagate materialization failure
+        if: steps.materialize.outcome != 'success'
+        run: exit 1
