@@ -1,0 +1,78 @@
+name: TEMP orchestrate RD-04 next-frontier protocol v5
+
+on:
+  push:
+    branches:
+      - 'agent/ssc-rd04-next-frontier-protocol-orchestrator-v5'
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+  issues: write
+
+env:
+  CONTROLLER: .transport/ssc-rd04-next-frontier-protocol-orchestrator-v5.py
+
+concurrency:
+  group: temp-ssc-rd04-next-frontier-protocol-orchestrator-v5
+  cancel-in-progress: true
+
+jobs:
+  orchestrate:
+    if: github.ref_name == 'agent/ssc-rd04-next-frontier-protocol-orchestrator-v5'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 420
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: gate
+        name: Require inert v5 execution trigger
+        run: |
+          set -Eeuo pipefail
+          if test -f '.trigger/ssc-rd04-next-frontier-protocol-orchestrator-v5/EXECUTE'; then
+            echo 'execute=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'execute=false' >> "$GITHUB_OUTPUT"
+            echo 'registration_only=true'
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.execute == 'true'
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.execute == 'true'
+        with:
+          python-version: '3.13'
+      - name: Install pinned controller dependencies
+        if: steps.gate.outputs.execute == 'true'
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+      - id: controller
+        name: Rebuild or rebind, await PR, merge, prove, and clean
+        if: steps.gate.outputs.execute == 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          test -f "$CONTROLLER"
+          python -m py_compile "$CONTROLLER"
+          python "$CONTROLLER"
+      - name: Preserve exact v5 orchestration custody
+        if: always() && steps.gate.outputs.execute == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-next-frontier-protocol-orchestrator-v5
+          path: |
+            /tmp/ssc-rd04-next-frontier-protocol-orchestrator-v5
+            /tmp/ssc-rd04-next-frontier-protocol-v1
+            /tmp/ssc-rd04-next-frontier-protocol-merge-v2
+            /tmp/ssc-rd04-next-frontier-protocol-postmerge-proof-v2
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Refuse failed v5 orchestration
+        if: always() && steps.gate.outputs.execute == 'true'
+        env:
+          OUTCOME: ${{ steps.controller.outcome }}
+        run: test "$OUTCOME" = success
