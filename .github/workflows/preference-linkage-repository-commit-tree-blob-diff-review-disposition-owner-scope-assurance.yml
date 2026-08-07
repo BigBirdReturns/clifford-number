@@ -1,0 +1,35 @@
+name: Preference linkage repository, commit, tree, blob, diff, review disposition, and owner scope assurance
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/preference-linkage-repository-commit-tree-blob-diff-review-disposition-owner-scope-assurance.fixture.json'
+      - 'tools/lib/preference-linkage-repository-commit-tree-blob-diff-review-disposition-owner-scope-assurance.mjs'
+      - 'tools/compile-preference-linkage-repository-commit-tree-blob-diff-review-disposition-owner-scope-assurance.mjs'
+      - 'tools/validate-preference-linkage-repository-commit-tree-blob-diff-review-disposition-owner-scope-assurance.mjs'
+      - 'test/preference-linkage-repository-commit-tree-blob-diff-review-disposition-owner-scope-assurance.test.js'
+      - 'docs/preference-custody-repository-commit-tree-blob-diff-review-disposition-owner-scope-assurance.md'
+      - '.github/workflows/preference-linkage-repository-commit-tree-blob-diff-review-disposition-owner-scope-assurance.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pc53:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - name: Compile, validate, and test PC-53
+        run: |
+          node tools/compile-preference-linkage-repository-commit-tree-blob-diff-review-disposition-owner-scope-assurance.mjs
+          node tools/validate-preference-linkage-repository-commit-tree-blob-diff-review-disposition-owner-scope-assurance.mjs
+          node test/preference-linkage-repository-commit-tree-blob-diff-review-disposition-owner-scope-assurance.test.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preference-linkage-repository-commit-tree-blob-diff-review-disposition-owner-scope-assurance
+          path: |
+            build/research/preference-linkage-repository-commit-tree-blob-diff-review-disposition-owner-scope-assurance.json
+            build/research/preference-linkage-repository-commit-tree-blob-diff-review-disposition-owner-scope-assurance.md
+          if-no-files-found: error
