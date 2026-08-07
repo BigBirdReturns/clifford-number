@@ -1,0 +1,173 @@
+name: TEMP qualify exact School.House USPTO custody product
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-uspto-product-qualifier-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-uspto-exact-mark-census-product-qualifier-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prove exact product topology and rerun every gate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          TARGET='agent/schoolhouse-uspto-exact-mark-census-custody-product-v1'
+          WORKFLOW='.github/workflows/temp-schoolhouse-uspto-exact-mark-census-product-qualifier-v1.yml'
+          WORK="$RUNNER_TEMP/schoolhouse-uspto-product-qualification-worktree"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-uspto-product-qualification-v1"
+          mkdir -p "$RECEIPT"
+
+          cat > "$RECEIPT/expected-paths.txt" <<'PATHS'
+          data/intake/schoolhouse-uspto-exact-mark-census-v1/sealed-source-artifact.zip
+          data/intake/schoolhouse-uspto-exact-mark-census-v1/sealed-qualification-artifact.zip
+          data/intake/schoolhouse-uspto-exact-mark-census-v1/source-custody.json
+          data/intake/schoolhouse-uspto-exact-mark-census-v1/product-manifest.json
+          docs/milestones/schoolhouse-uspto-exact-mark-census-v1.md
+          tools/validate-schoolhouse-uspto-exact-mark-census-custody.py
+          PATHS
+          sed -i 's/^          //' "$RECEIPT/expected-paths.txt"
+
+          git fetch --no-tags origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            "+refs/heads/$TARGET:refs/remotes/origin/$TARGET"
+          MAIN="$(git rev-parse origin/main)"
+          QUALIFIER_PARENT="$(git rev-parse HEAD^)"
+          PRODUCT="$(git rev-parse "origin/$TARGET")"
+          PRODUCT_PARENT="$(git rev-parse "$PRODUCT^")"
+          PRODUCT_TREE="$(git rev-parse "$PRODUCT^{tree}")"
+          {
+            printf 'main=%s\n' "$MAIN"
+            printf 'qualifier_head=%s\n' "$(git rev-parse HEAD)"
+            printf 'qualifier_parent=%s\n' "$QUALIFIER_PARENT"
+            printf 'product=%s\n' "$PRODUCT"
+            printf 'product_parent=%s\n' "$PRODUCT_PARENT"
+            printf 'product_tree=%s\n' "$PRODUCT_TREE"
+          } | tee "$RECEIPT/preflight.txt"
+          test "$QUALIFIER_PARENT" = "$MAIN"
+          test "$PRODUCT_PARENT" = "$MAIN"
+          test "$(git rev-list --count "$MAIN".."$PRODUCT")" = '1'
+
+          mapfile -t QUALIFIER_DELTA < <(git diff --name-only "$MAIN"..HEAD)
+          test "${#QUALIFIER_DELTA[@]}" -eq 1
+          test "${QUALIFIER_DELTA[0]}" = "$WORKFLOW"
+
+          git diff --name-status "$MAIN" "$PRODUCT" > "$RECEIPT/product-name-status.txt"
+          python - "$RECEIPT/expected-paths.txt" "$RECEIPT/product-name-status.txt" <<'PY'
+          from pathlib import Path
+          import sys
+          expected = set(Path(sys.argv[1]).read_text().splitlines())
+          rows = Path(sys.argv[2]).read_text().splitlines()
+          observed = set()
+          for row in rows:
+              status, path = row.split('\t', 1)
+              if status != 'A':
+                  raise SystemExit(f'non-addition product path: {row}')
+              observed.add(path)
+          if observed != expected:
+              raise SystemExit(f'product path-set drift: {sorted(observed ^ expected)}')
+          print('product_surface=6_addition_only_workflow_free')
+          PY
+          test -z "$(git diff --name-only "$MAIN" "$PRODUCT" | grep '^\.github/' || true)"
+
+          rm -rf "$WORK"
+          git worktree add --detach "$WORK" "$PRODUCT"
+          export TERM=xterm
+          {
+            cd "$WORK"
+            python -m py_compile tools/validate-schoolhouse-uspto-exact-mark-census-custody.py
+            python tools/validate-schoolhouse-uspto-exact-mark-census-custody.py --check
+            python tools/validate-schoolhouse-uspto-exact-mark-census-custody.py --self-test
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          } 2>&1 | tee "$RECEIPT/focused-gates.log"
+          grep -qx 'schoolhouse_uspto_custody_adversarial_refusals=5' "$RECEIPT/focused-gates.log"
+          (cd "$WORK" && npm run release:check) 2>&1 | tee "$RECEIPT/release-check.log"
+
+          git -C "$WORK" restore --staged --worktree .
+          git -C "$WORK" clean -fdx
+          (
+            cd "$WORK"
+            python tools/validate-schoolhouse-uspto-exact-mark-census-custody.py --write
+            python tools/validate-schoolhouse-uspto-exact-mark-census-custody.py --check
+            python tools/validate-schoolhouse-uspto-exact-mark-census-custody.py --self-test
+            node tools/validate-no-magic-human-gate.mjs
+          ) 2>&1 | tee "$RECEIPT/clean-replay.log"
+          git -C "$WORK" diff --check
+          git -C "$WORK" diff --exit-code
+          test -z "$(git -C "$WORK" status --porcelain=v1 --untracked-files=all)"
+
+          MAIN="$MAIN" PRODUCT="$PRODUCT" PRODUCT_TREE="$PRODUCT_TREE" RECEIPT="$RECEIPT" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          receipt = {
+              'schema_version': 'schoolhouse-uspto-exact-mark-census-product-qualification@1',
+              'canonical_main': os.environ['MAIN'],
+              'product_commit': os.environ['PRODUCT'],
+              'product_parent': os.environ['MAIN'],
+              'product_tree': os.environ['PRODUCT_TREE'],
+              'product_commits': 1,
+              'permanent_paths': 6,
+              'addition_only': True,
+              'workflow_paths_in_product': 0,
+              'fixed_queries': 3,
+              'terminal_queries': 3,
+              'query_terminal_state': 'terminal_public_search_rendered_no_parseable_rows',
+              'retained_result_rows': 0,
+              'unique_serials': 0,
+              'trademark_serial_candidates': 0,
+              'blocked_officially_unscoped_host_requests': 15,
+              'adversarial_refusals': 5,
+              'no_magic_human_adversarial_mutations': 23,
+              'identities_admitted': 0,
+              'relationships_admitted': 0,
+              'negative_existence_claims': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'focused_validation': 'pass',
+              'complete_release_gate': 'pass',
+              'clean_replay': 'pass',
+              'status': 'complete',
+          }
+          target = Path(os.environ['RECEIPT']) / 'qualification.json'
+          target.write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          PY
+          sha256sum "$RECEIPT"/* > "$RECEIPT/SHA256SUMS"
+
+      - name: Preserve exact product qualification
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-uspto-exact-mark-census-product-qualification-v1
+          path: ${{ runner.temp }}/schoolhouse-uspto-product-qualification-v1
+          if-no-files-found: error
+          retention-days: 90
