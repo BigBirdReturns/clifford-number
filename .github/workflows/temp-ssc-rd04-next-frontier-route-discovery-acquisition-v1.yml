@@ -1,0 +1,157 @@
+name: TEMP RD-04 next-frontier route discovery acquisition v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: rd04-next-frontier-route-discovery-acquisition-v1-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/ssc-rd04-next-frontier-route-discovery-acquisition-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Verify exact one-path execution carrier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-list --count 8a2f4538bdbcf9455f02e70c35a71cb39f805b18..HEAD)" = 3
+          test "$(git diff --name-only 8a2f4538bdbcf9455f02e70c35a71cb39f805b18 HEAD)" = '.github/workflows/temp-ssc-rd04-next-frontier-route-discovery-acquisition-v1.yml'
+          test "$(git rev-parse HEAD)" = '${{ github.event.pull_request.head.sha }}'
+          test '${{ github.event.pull_request.base.ref }}' = main
+          git merge-base --is-ancestor 34583221f8d2485798fbe308241bf28fefd255ed 8a2f4538bdbcf9455f02e70c35a71cb39f805b18
+          test -f data/intake/status-sovereignty-rd-wave03-rd04-next-minimum-frontier-route-discovery-protocol/route-discovery-protocol.json
+          test -f data/intake/status-sovereignty-rd-wave03-rd04-next-minimum-frontier-route-discovery-protocol/route-query-contract.json
+
+      - name: Report start
+        id: carrier
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -Eeuo pipefail
+          echo "pr=$PR" >> "$GITHUB_OUTPUT"
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "RD-04 route-discovery acquisition started in run \`${GITHUB_RUN_ID}\` at exact carrier head \`${{ github.event.pull_request.head.sha }}\`. Immutable runner blob: \`f3e3cdc475111738cfc535b297e43aa88a3f9318\`."
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Recover immutable acquisition runner
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUNNER_BLOB: 'f3e3cdc475111738cfc535b297e43aa88a3f9318'
+          RUNNER_XZ_BYTES: '5796'
+          RUNNER_XZ_SHA256: '0832a2bac4ac7499933c07045414cc8c96e747013de137bcf1cbdc4157bf8834'
+          RUNNER_SOURCE_BYTES: '21787'
+          RUNNER_SOURCE_SHA256: 'ff3bb7ca8a10403850e9bfbed89c5206e4b8d52b5c333c327914af2f70a29f32'
+        run: |
+          set -Eeuo pipefail
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/git/blobs/$RUNNER_BLOB" \
+            > /tmp/rd04-route-discovery-runner-blob.json
+          test "$(jq -r .encoding /tmp/rd04-route-discovery-runner-blob.json)" = base64
+          jq -r .content /tmp/rd04-route-discovery-runner-blob.json | tr -d '\n' | base64 -d > /tmp/rd04-route-discovery-runner.py.xz
+          test "$(wc -c < /tmp/rd04-route-discovery-runner.py.xz | tr -d ' ')" = "$RUNNER_XZ_BYTES"
+          test "$(sha256sum /tmp/rd04-route-discovery-runner.py.xz | awk '{print $1}')" = "$RUNNER_XZ_SHA256"
+          test "$(git hash-object /tmp/rd04-route-discovery-runner.py.xz)" = "$RUNNER_BLOB"
+          xz -dc /tmp/rd04-route-discovery-runner.py.xz > /tmp/rd04-route-discovery-runner.py
+          test "$(wc -c < /tmp/rd04-route-discovery-runner.py | tr -d ' ')" = "$RUNNER_SOURCE_BYTES"
+          test "$(sha256sum /tmp/rd04-route-discovery-runner.py | awk '{print $1}')" = "$RUNNER_SOURCE_SHA256"
+          python -m py_compile /tmp/rd04-route-discovery-runner.py
+
+      - name: Execute bounded route discovery
+        id: acquisition
+        shell: bash
+        env:
+          EXECUTION_PARENT: '8a2f4538bdbcf9455f02e70c35a71cb39f805b18'
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/ssc-rd04-next-frontier-route-discovery-acquisition-v1
+          python /tmp/rd04-route-discovery-runner.py | tee /tmp/rd04-route-discovery-run.log
+          test -f /tmp/ssc-rd04-next-frontier-route-discovery-acquisition-v1/execution-receipt.json
+          test -f /tmp/ssc-rd04-next-frontier-route-discovery-acquisition-v1/request-ledger.json
+          test -f /tmp/ssc-rd04-next-frontier-route-discovery-acquisition-v1/candidate-ledger.json
+          test -f /tmp/ssc-rd04-next-frontier-route-discovery-acquisition-v1/manifest.json
+
+      - name: Preserve bounded route-discovery artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-next-frontier-route-discovery-acquisition-v1
+          path: |
+            /tmp/ssc-rd04-next-frontier-route-discovery-acquisition-v1
+            /tmp/rd04-route-discovery-run.log
+            /tmp/rd04-route-discovery-runner.py
+            /tmp/rd04-route-discovery-runner.py.xz
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Report terminal outcome
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ steps.carrier.outputs.pr }}
+          OUTCOME: ${{ steps.acquisition.outcome }}
+        run: |
+          set -Eeuo pipefail
+          BODY=/tmp/rd04-route-discovery-comment.md
+          RECEIPT=/tmp/ssc-rd04-next-frontier-route-discovery-acquisition-v1/execution-receipt.json
+          MANIFEST=/tmp/ssc-rd04-next-frontier-route-discovery-acquisition-v1/manifest.json
+          if test "$OUTCOME" = success && test -f "$RECEIPT" && test -f "$MANIFEST"; then
+            {
+              echo 'RD-04 route-discovery acquisition completed successfully.'
+              echo
+              echo '```text'
+              for key in workflow_run execution_head obligation_count request_count http_success_count http_non_success_count cross_host_redirect_refusal_count transport_error_count candidate_url_count source_admissions field_classifications row_state_mutations terminal_cells_after open_substantive_cells_after class_closed outside_human_dependency; do
+                value=$(jq -r --arg key "$key" '.[$key]' "$RECEIPT")
+                echo "$key: $value"
+              done
+              echo "artifact_manifest_entries: $(jq -r .entry_count "$MANIFEST")"
+              echo "artifact_combined_sha256: $(jq -r .combined_sha256 "$MANIFEST")"
+              echo '```'
+              echo
+              echo 'No discovered candidate was fetched, admitted, or converted into a field classification.'
+            } > "$BODY"
+          else
+            {
+              echo 'RD-04 route-discovery acquisition failed closed.'
+              echo
+              echo '```text'
+              echo "workflow_run: $GITHUB_RUN_ID"
+              echo "execution_head: ${{ github.event.pull_request.head.sha }}"
+              echo "acquisition_outcome: $OUTCOME"
+              test -f /tmp/rd04-route-discovery-run.log && tail -120 /tmp/rd04-route-discovery-run.log || true
+              echo '```'
+              echo
+              echo 'No unverified discovery result is authorized.'
+            } > "$BODY"
+          fi
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file "$BODY"
+
+      - name: Require successful acquisition
+        if: always()
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.acquisition.outcome }}
+        run: test "$OUTCOME" = success
