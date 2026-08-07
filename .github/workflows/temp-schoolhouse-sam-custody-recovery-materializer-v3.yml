@@ -1,0 +1,427 @@
+name: TEMP recover School.House SAM custody product v3
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-sam-custody-recovery-materializer-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: schoolhouse-sam-custody-recovery-materializer-v3-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-sam-custody-recovery-materializer-v3')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Recover, rebind, qualify, and publish seven-path product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='0a4091391e4c17c64683bd91f6a739a2a0a152fc'
+          BASE_TREE='a44489a4af8f1c5ef2ad735e9f7a2b7f49d5feb1'
+          SOURCE_PARENT='d26cb838df12a877840ebe71eb9388d44b6ceaf9'
+          SOURCE_PARENT_TREE='af520dd75d4111d60f8a15c681e9d04d23c2f8f4'
+          SOURCE_HEAD='86f59e5240ccc0c3de0fc6e6ed81c03c597604e1'
+          SOURCE_PAYLOAD='.github/materializers/schoolhouse-sam-public-entity-registration-census-custody-v1'
+          WORKFLOW='.github/workflows/temp-schoolhouse-sam-custody-recovery-materializer-v3.yml'
+          TARGET='agent/schoolhouse-sam-public-entity-registration-census-custody-product-v2'
+          WORK="$RUNNER_TEMP/sam-custody-recovery-v3"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-sam-custody-recovery-materialization-v3"
+          rm -rf "$WORK" "$RECEIPT"
+          mkdir -p "$WORK/chunks" "$RECEIPT"
+          printf 'source_requests=0\n' > "$RECEIPT/BOUNDARY"
+          printf 'initializing\n' > "$RECEIPT/STAGE"
+          trap 'rc=$?; trap - EXIT; printf "%s\n" "$rc" > "$RECEIPT/SCRIPT_EXIT_CODE"; exit "$rc"' EXIT
+
+          printf 'proving-carrier-and-live-main\n' > "$RECEIPT/STAGE"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test "$(git rev-parse "$BASE^{tree}")" = "$BASE_TREE"
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+          mapfile -t CARRIER_DELTA < <(git diff --name-only "$BASE"..HEAD)
+          test "${#CARRIER_DELTA[@]}" -eq 1
+          test "${CARRIER_DELTA[0]}" = "$WORKFLOW"
+          git cat-file -e "$SOURCE_HEAD^{commit}"
+          test "$(git rev-parse "$SOURCE_PARENT^{tree}")" = "$SOURCE_PARENT_TREE"
+          git merge-base --is-ancestor "$SOURCE_PARENT" "$BASE"
+          test -z "$(git ls-remote --heads origin "refs/heads/$TARGET")"
+
+          cat > "$WORK/expected-paths" <<'EOF'
+          data/intake/schoolhouse-sam-public-entity-registration-census-v1/product-manifest.json
+          data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-qualification-artifact.zip
+          data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-source-artifact.zip
+          data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-wrapper-reconstruction-artifact.zip
+          data/intake/schoolhouse-sam-public-entity-registration-census-v1/source-custody.json
+          docs/milestones/schoolhouse-sam-public-entity-registration-census-v1.md
+          tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py
+          EOF
+          sort -o "$WORK/expected-paths" "$WORK/expected-paths"
+          while IFS= read -r path; do
+            ! git cat-file -e "$BASE:$path" 2>/dev/null
+          done < "$WORK/expected-paths"
+
+          printf 'reading-six-immutable-chunks\n' > "$RECEIPT/STAGE"
+          for index in 00 01 02 03 04 05; do
+            git show "$SOURCE_HEAD:$SOURCE_PAYLOAD/part-$index" > "$WORK/chunks/part-$index"
+          done
+
+          printf 'repairing-payload-and-validator-scope\n' > "$RECEIPT/STAGE"
+          python - "$WORK/chunks" "$WORK" "$BASE" "$BASE_TREE" "$RECEIPT/recovery.json" <<'PY'
+          from __future__ import annotations
+
+          from pathlib import Path, PurePosixPath
+          import base64
+          import hashlib
+          import json
+          import lzma
+          import os
+          import runpy
+          import sys
+          import tarfile
+          import zipfile
+
+          chunks_root = Path(sys.argv[1])
+          work = Path(sys.argv[2])
+          product_parent = sys.argv[3]
+          product_parent_tree = sys.argv[4]
+          receipt = Path(sys.argv[5])
+          product = work / 'product'
+          product.mkdir(parents=True, exist_ok=True)
+
+          source_parent = 'd26cb838df12a877840ebe71eb9388d44b6ceaf9'
+          source_parent_tree = 'af520dd75d4111d60f8a15c681e9d04d23c2f8f4'
+          observed_sizes = [10001, 10000, 15000, 15000, 15000, 10100]
+          observed_hashes = [
+              'dedbb645d6d28c28022213b748446cbee4ed758aafc38eca1fb692c8516b613d',
+              '6020f5f047224341e7b09fe99669ba20165ec97bdaa652a777ef33966e606df6',
+              '57284b1c91664718f0e13c3da7238c0b4e2090ddd8ef2cc41192c68944f89eb5',
+              '4da59a735ed220c8ab6edd8f8ef63eec4544e9e20a77465d98e35ed78214ed2d',
+              '376e3844e5c0926c4259c9d12e2c5d47c48ad1317edc9d11bed81d9caa2f3093',
+              '59060364dd76ab13ea95ace24f3d58f3091426905f1b6ee2083884e725a50f9f',
+          ]
+          repaired_sizes = [10000, 10000, 15000, 15000, 15000, 10100]
+          repaired_hashes = [
+              '278c8a57dd6204ab8d2de941bdecf6b41eb3713099e8dbbe05e686a4b13f048d',
+              '6020f5f047224341e7b09fe99669ba20165ec97bdaa652a777ef33966e606df6',
+              '57284b1c91664718f0e13c3da7238c0b4e2090ddd8ef2cc41192c68944f89eb5',
+              'd89b6d6b08c7f463a742aaa372089fcd8ecf881a7ae13cfd89b9729dd329384d',
+              '376e3844e5c0926c4259c9d12e2c5d47c48ad1317edc9d11bed81d9caa2f3093',
+              '59060364dd76ab13ea95ace24f3d58f3091426905f1b6ee2083884e725a50f9f',
+          ]
+          expected_members = {
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/product-manifest.json',
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-qualification-artifact.zip',
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-source-artifact.zip',
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-wrapper-reconstruction-artifact.zip',
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/source-custody.json',
+              'docs/milestones/schoolhouse-sam-public-entity-registration-census-v1.md',
+              'tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py',
+          }
+
+          def digest(value: bytes) -> str:
+              return hashlib.sha256(value).hexdigest()
+
+          chunks: list[bytearray] = []
+          observed = []
+          for ordinal in range(6):
+              value = bytearray((chunks_root / f'part-{ordinal:02d}').read_bytes())
+              assert len(value) == observed_sizes[ordinal]
+              assert digest(value) == observed_hashes[ordinal]
+              chunks.append(value)
+              observed.append({'ordinal': ordinal, 'bytes': len(value), 'sha256': digest(value)})
+
+          assert chunks[0][6148] == ord('6')
+          del chunks[0][6148]
+          assert chunks[3][8134] == ord('k')
+          chunks[3][8134] = ord('f')
+          repaired = []
+          for ordinal, value in enumerate(chunks):
+              assert len(value) == repaired_sizes[ordinal]
+              assert digest(value) == repaired_hashes[ordinal]
+              repaired.append({'ordinal': ordinal, 'bytes': len(value), 'sha256': digest(value)})
+
+          encoded = b''.join(bytes(value) for value in chunks)
+          assert len(encoded) == 75100
+          assert digest(encoded) == '10d6494b60bd28f1ab595aeecdf1cfb648b99e059327b2b3e66c2a264bb1eb42'
+          decoded = base64.b64decode(encoded, validate=False)
+          assert len(decoded) == 56324
+          assert digest(decoded) == '495c017ab33cea972045194cf8c56758f00fc45006ec433f2a31b4cddf9ca735'
+          tar_bytes = lzma.decompress(decoded)
+          assert len(tar_bytes) == 112640
+          assert digest(tar_bytes) == 'e70db63987b6d9a8db695f08a679375d2c20ec5ceb8a3bacdb3e9ed7f21e781f'
+          tar_path = work / 'product.tar'
+          tar_path.write_bytes(tar_bytes)
+          with tarfile.open(tar_path, 'r:') as archive:
+              members = archive.getmembers()
+              assert {member.name for member in members} == expected_members
+              assert len(members) == 7
+              for member in members:
+                  path = PurePosixPath(member.name)
+                  assert member.isfile()
+                  assert not path.is_absolute() and '..' not in path.parts
+                  assert member.uid == member.gid == 0
+              archive.extractall(product, filter='data')
+
+          tool = product / 'tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py'
+          text = tool.read_text(encoding='utf-8')
+          assert digest(text.encode()) == 'f06c6177a0d7f221d66062cb08819a11ffb1ef07ac0251eb1d342775bf15db36'
+          old_constants = (
+              f"PRODUCT_PARENT = '{source_parent}'\n"
+              f"PRODUCT_PARENT_TREE = '{source_parent_tree}'"
+          )
+          new_constants = (
+              f"SOURCE_PARENT = '{source_parent}'\n"
+              f"SOURCE_PARENT_TREE = '{source_parent_tree}'\n"
+              f"PRODUCT_PARENT = '{product_parent}'\n"
+              f"PRODUCT_PARENT_TREE = '{product_parent_tree}'"
+          )
+          assert text.count(old_constants) == 1
+          text = text.replace(old_constants, new_constants)
+          for old, new in [
+              ("'canonical_parent': PRODUCT_PARENT,", "'canonical_parent': SOURCE_PARENT,"),
+              ("'canonical_parent_tree': PRODUCT_PARENT_TREE,", "'canonical_parent_tree': SOURCE_PARENT_TREE,"),
+              ("'source_canonical_parent_commit': PRODUCT_PARENT,", "'source_canonical_parent_commit': SOURCE_PARENT,"),
+          ]:
+              assert text.count(old) == 1
+              text = text.replace(old, new)
+
+          old_validate = '''def validate_product(root: Path) -> None:\n    observed_paths = sorted(\n        str(path.relative_to(root))\n        for path in root.rglob('*')\n        if path.is_file()\n    )\n    expected_paths = sorted(str(path) for path in PATHS)\n    assert observed_paths == expected_paths\n    assert all(not path.startswith('.github/workflows/') for path in observed_paths)\n'''
+          new_validate = '''def product_surface_paths(root: Path) -> list[str]:\n    observed: list[str] = []\n    data_root = root / DATA\n    if data_root.exists():\n        observed.extend(\n            str(path.relative_to(root))\n            for path in data_root.rglob('*')\n            if path.is_file()\n        )\n    for relative in (DOC, TOOL):\n        path = root / relative\n        if path.is_file():\n            observed.append(str(relative))\n    return sorted(observed)\n\n\ndef validate_product(root: Path) -> None:\n    observed_paths = product_surface_paths(root)\n    expected_paths = sorted(str(path) for path in PATHS)\n    assert observed_paths == expected_paths\n    assert all(not path.startswith('.github/workflows/') for path in observed_paths)\n'''
+          assert text.count(old_validate) == 1
+          text = text.replace(old_validate, new_validate)
+
+          old_self = '''def self_test(root: Path) -> None:\n    mutations: list[tuple[str, Callable[[Path], None]]] = [\n'''
+          new_self = '''def self_test(root: Path) -> None:\n    with tempfile.TemporaryDirectory(prefix='schoolhouse-sam-composable-') as directory:\n        work = Path(directory)\n        copy_product(root, work)\n        unrelated = work / 'unrelated/repository-file.txt'\n        unrelated.parent.mkdir(parents=True, exist_ok=True)\n        unrelated.write_text('unrelated repository content\\n')\n        validate_product(work)\n    print('schoolhouse_sam_repository_composability=pass')\n\n    mutations: list[tuple[str, Callable[[Path], None]]] = [\n'''
+          assert text.count(old_self) == 1
+          text = text.replace(old_self, new_self)
+          tool.write_text(text, encoding='utf-8')
+          assert digest(tool.read_bytes()) == 'f784076e32d387ef6aaae27a00fd9bfb8ee77b82d4741307c82a5567d9dd8d04'
+
+          previous = Path.cwd()
+          os.chdir(product)
+          try:
+              namespace = runpy.run_path(str(tool))
+              Path('data/intake/schoolhouse-sam-public-entity-registration-census-v1/source-custody.json').write_bytes(
+                  namespace['canonical'](namespace['custody']())
+              )
+              Path('data/intake/schoolhouse-sam-public-entity-registration-census-v1/product-manifest.json').write_bytes(
+                  namespace['canonical'](namespace['manifest']())
+              )
+              Path('docs/milestones/schoolhouse-sam-public-entity-registration-census-v1.md').write_text(
+                  namespace['milestone'](), encoding='utf-8'
+              )
+          finally:
+              os.chdir(previous)
+
+          expected_hashes = {
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/product-manifest.json': 'aa1170fe305761a6c7104efee9e4cf6f0dd17bb3e8733f15433978e6f9e12f5c',
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-qualification-artifact.zip': '483a7ede58e8f052a5ce4b85ed85d22a955783bafaaf333e574d8a1979b7b96c',
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-source-artifact.zip': 'b4084cfbb96d35e9d708dcad52b8c2de11f54d34f6e4abb73b91fe4d6089f538',
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-wrapper-reconstruction-artifact.zip': '0d1efabbff0040ceca9a6dd82f2d3b4d4801c34e6e3301b1e0b3f5b643bea47b',
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/source-custody.json': 'f3862078b2580336ab6dabf7d4a8d496b51d26b4dab77d47ec3e6f4b6b61d1c5',
+              'docs/milestones/schoolhouse-sam-public-entity-registration-census-v1.md': '3719ba10a6f703e3a1448f480433ac9e26d920694c04b3628dd9307cb8d21e6f',
+              'tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py': 'f784076e32d387ef6aaae27a00fd9bfb8ee77b82d4741307c82a5567d9dd8d04',
+          }
+          observed_hashes = {
+              path.relative_to(product).as_posix(): digest(path.read_bytes())
+              for path in product.rglob('*')
+              if path.is_file()
+          }
+          assert observed_hashes == expected_hashes
+          for relative in (
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-source-artifact.zip',
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-wrapper-reconstruction-artifact.zip',
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-qualification-artifact.zip',
+          ):
+              with zipfile.ZipFile(product / relative) as archive:
+                  assert archive.testzip() is None
+
+          value = {
+              'schema_version': 'schoolhouse-sam-custody-recovery@3',
+              'state': 'complete',
+              'source_requests': 0,
+              'source_parent_commit': source_parent,
+              'source_parent_tree': source_parent_tree,
+              'product_parent_commit': product_parent,
+              'product_parent_tree': product_parent_tree,
+              'source_materializer_head': '86f59e5240ccc0c3de0fc6e6ed81c03c597604e1',
+              'observed_chunks': observed,
+              'payload_repairs': [
+                  {'chunk': 'part-00', 'operation': 'delete_byte', 'offset': 6148, 'byte': 54},
+                  {'chunk': 'part-03', 'operation': 'replace_byte', 'offset': 8134, 'from_byte': 107, 'to_byte': 102},
+              ],
+              'repaired_chunks': repaired,
+              'payload_base64_sha256': digest(encoded),
+              'payload_xz_sha256': digest(decoded),
+              'payload_tar_sha256': digest(tar_bytes),
+              'validator_scope_repair': 'unique_data_namespace_plus_doc_and_tool_singletons',
+              'repository_composability_fixture': True,
+              'permanent_path_count': 7,
+              'permanent_hashes': expected_hashes,
+          }
+          receipt.write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+          print('sam_custody_recovery=pass paths=7 transport_repairs=2 scope_repairs=1')
+          PY
+
+          printf 'constructing-product-commit\n' > "$RECEIPT/STAGE"
+          WORKTREE="$WORK/repository"
+          git worktree add --detach "$WORKTREE" "$BASE"
+          cp -a "$WORK/product"/. "$WORKTREE"/
+          chmod 0755 "$WORKTREE/tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py"
+          cd "$WORKTREE"
+          git add -- \
+            data/intake/schoolhouse-sam-public-entity-registration-census-v1 \
+            docs/milestones/schoolhouse-sam-public-entity-registration-census-v1.md \
+            tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py
+          git diff --cached --name-only | sort > "$WORK/observed-paths"
+          diff -u "$WORK/expected-paths" "$WORK/observed-paths"
+          test "$(git diff --cached --name-status | wc -l | tr -d ' ')" = '7'
+          git diff --cached --name-status | awk '$1 != "A" { exit 1 }'
+          git diff --cached --check
+          git config user.name 'School.House SAM custody materializer'
+          git config user.email 'actions@users.noreply.github.com'
+          git config commit.gpgsign false
+          git commit \
+            -m 'Add bounded School.House SAM public entity census custody' \
+            -m 'Recover the exact seven-path custody payload through two checksum-proven transport repairs, preserve immutable source ancestry, bind product custody to the live canonical parent, and make the validator repository-composable. Admit no identity, relationship, registration, award, ownership, absence, publication, adoption, or graph authority.'
+          PRODUCT_COMMIT="$(git rev-parse HEAD)"
+          PRODUCT_TREE="$(git rev-parse 'HEAD^{tree}')"
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+          git diff --name-only "$BASE"..HEAD | sort > "$WORK/commit-paths"
+          diff -u "$WORK/expected-paths" "$WORK/commit-paths"
+          ! git diff --name-only "$BASE"..HEAD | grep -q '^\.github/workflows/'
+
+          printf 'running-focused-and-complete-gates\n' > "$RECEIPT/STAGE"
+          python tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py --self-test \
+            | tee "$RECEIPT/focused-validator.log"
+          node tools/validate-no-magic-human-gate.mjs \
+            | tee "$RECEIPT/no-magic-human.log"
+          npm run release:check > "$RECEIPT/release-check.log" 2>&1
+
+          printf 'restoring-and-replaying\n' > "$RECEIPT/STAGE"
+          git reset --hard "$PRODUCT_COMMIT"
+          git clean -fd
+          python tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py --self-test \
+            | tee "$RECEIPT/deterministic-replay.log"
+          node tools/validate-no-magic-human-gate.mjs \
+            | tee "$RECEIPT/no-magic-human-replay.log"
+          test -z "$(git status --porcelain)"
+
+          printf 'leasing-and-pushing-product\n' > "$RECEIPT/STAGE"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test -z "$(git ls-remote --heads origin "refs/heads/$TARGET")"
+          git push origin "$PRODUCT_COMMIT:refs/heads/$TARGET" |& tee "$RECEIPT/push.log"
+          REMOTE_TARGET="$(git ls-remote --heads origin "refs/heads/$TARGET" | awk '{print $1}')"
+          test "$REMOTE_TARGET" = "$PRODUCT_COMMIT"
+
+          cp "$WORK/expected-paths" "$RECEIPT/permanent-paths.txt"
+          git ls-tree -r "$PRODUCT_COMMIT" \
+            data/intake/schoolhouse-sam-public-entity-registration-census-v1 \
+            docs/milestones/schoolhouse-sam-public-entity-registration-census-v1.md \
+            tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py \
+            > "$RECEIPT/product-ls-tree.txt"
+          python - "$RECEIPT/materialization.json" "$PRODUCT_COMMIT" "$PRODUCT_TREE" "$REMOTE_TARGET" <<'PY'
+          from pathlib import Path
+          import json
+          import sys
+
+          output, product_commit, product_tree, remote_target = sys.argv[1:]
+          value = {
+              'schema_version': 'schoolhouse-sam-custody-materialization@3',
+              'status': 'complete',
+              'issue': 1382,
+              'source_requests': 0,
+              'source_parent_commit': 'd26cb838df12a877840ebe71eb9388d44b6ceaf9',
+              'source_parent_tree': 'af520dd75d4111d60f8a15c681e9d04d23c2f8f4',
+              'product_parent_commit': '0a4091391e4c17c64683bd91f6a739a2a0a152fc',
+              'product_parent_tree': 'a44489a4af8f1c5ef2ad735e9f7a2b7f49d5feb1',
+              'product_commit': product_commit,
+              'product_tree': product_tree,
+              'remote_target': remote_target,
+              'target_branch': 'agent/schoolhouse-sam-public-entity-registration-census-custody-product-v2',
+              'product_commit_count': 1,
+              'permanent_path_count': 7,
+              'addition_only': True,
+              'workflow_paths': 0,
+              'payload_transport_repairs': 2,
+              'validator_scope_repairs': 1,
+              'focused_validation': 'pass',
+              'repository_composability': 'pass',
+              'adversarial_refusals': 10,
+              'no_magic_human_gate': 'pass',
+              'complete_release_gate': 'pass',
+              'deterministic_replay': 'pass',
+              'post_restore_clean': True,
+              'terminal_query_state_counts': {'bounded_public_search_controls_unavailable': 3},
+              'query_submissions': 0,
+              'retained_candidate_rows': 0,
+              'unique_public_ueis': 0,
+              'identities_admitted': 0,
+              'relationships_admitted': 0,
+              'negative_existence_claims': 0,
+              'federal_registration_admissions': 0,
+              'federal_award_or_funding_admissions': 0,
+              'owner_admissions': 0,
+              'operator_admissions': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'public_schoolhouse_legal_identity': 'unresolved',
+          }
+          Path(output).write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+          PY
+
+          printf 'complete\n' > "$RECEIPT/STAGE"
+          {
+            printf 'product_parent=%s\n' "$BASE"
+            printf 'product_parent_tree=%s\n' "$BASE_TREE"
+            printf 'product_commit=%s\n' "$PRODUCT_COMMIT"
+            printf 'product_tree=%s\n' "$PRODUCT_TREE"
+            printf 'target_branch=%s\n' "$TARGET"
+            printf 'remote_target=%s\n' "$REMOTE_TARGET"
+          } > "$RECEIPT/product-proof.txt"
+          (
+            cd "$RECEIPT"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          )
+          cat "$RECEIPT/materialization.json"
+
+      - name: Upload exact recovery receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-sam-custody-recovery-materialization-v3
+          path: ${{ runner.temp }}/schoolhouse-sam-custody-recovery-materialization-v3
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
