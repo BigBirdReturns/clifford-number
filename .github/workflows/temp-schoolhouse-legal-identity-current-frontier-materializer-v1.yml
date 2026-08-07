@@ -1,0 +1,134 @@
+name: TEMP materialize current School.House legal-identity frontier
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-legal-identity-current-frontier-materializer-v1.yml'
+      - '.github/materializers/schoolhouse-current-frontier-v1/**'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: schoolhouse-legal-identity-current-frontier-materializer-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-legal-identity-current-frontier-materializer-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct, authenticate, and execute exact materializer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PAYLOAD='.github/materializers/schoolhouse-current-frontier-v1'
+          RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-materialization-v1"
+          CONTROLLER="$RUNNER_TEMP/schoolhouse-current-frontier-materializer-v1.sh"
+          CUSTODY="$RUNNER_TEMP/schoolhouse-current-frontier-controller-custody-v1.json"
+          CHUNK_SIZES=(5000 5000 5000 5000 456)
+          CHUNK_SHA256=(
+            ec8b175c1473fd9f7f7c893a495269df2dfd440e4960f9d74487d706c14060f9
+            8e69b377c4a4208bded118d4b8477a9ceac6ef35e66931455816ce786a1e54e2
+            f764d261b300f0062345e7df8c5a6d530455560896094b405df87520f7be618f
+            79b2e68a76dc3ff0d13ec8c30cbedc8c41cbb8c5fc01cd95d94c2dbd513af2ee
+            0bdb8068c48e536d5d6698be2bc58031af338bedd7cb2231148e959af4170f68
+          )
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            mkdir -p "$RECEIPT"
+            if test -f "$CUSTODY"; then
+              cp "$CUSTODY" "$RECEIPT/controller-custody.json"
+            fi
+            printf '%s\n' "$rc" > "$RECEIPT/BOOTSTRAP_EXIT_CODE"
+            (
+              cd "$RECEIPT"
+              find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          for index in "${!CHUNK_SIZES[@]}"; do
+            printf -v suffix '%02d' "$index"
+            chunk="$PAYLOAD/controller-$suffix"
+            test "$(stat -c%s "$chunk")" = "${CHUNK_SIZES[$index]}"
+            test "$(sha256sum "$chunk" | cut -d' ' -f1)" = "${CHUNK_SHA256[$index]}"
+          done
+          cat "$PAYLOAD"/controller-{00,01,02,03,04} > "$CONTROLLER"
+          test "$(stat -c%s "$CONTROLLER")" = '20456'
+          test "$(sha256sum "$CONTROLLER" | cut -d' ' -f1)" = \
+            '7f0cd764206a434841307110ff72d555580fea79215159786bdf96e1afe216bd'
+          chmod 0755 "$CONTROLLER"
+          bash -n "$CONTROLLER"
+
+          python - "$CUSTODY" <<'PY'
+          from pathlib import Path
+          import json
+
+          value = {
+              'schema_version': 'schoolhouse-current-frontier-controller-custody@1',
+              'state': 'complete',
+              'controller_chunks': 5,
+              'controller_bytes': 20456,
+              'controller_sha256': '7f0cd764206a434841307110ff72d555580fea79215159786bdf96e1afe216bd',
+              'payload_chunks': 7,
+              'carrier_commit_count': 13,
+              'carrier_path_count': 13,
+              'source_requests': 0,
+              'registry_queries': 0,
+              'form_submissions': 0,
+              'contacts': 0,
+              'payments': 0,
+              'uploads': 0,
+              'identity_admissions': 0,
+              'relationship_admissions': 0,
+              'negative_existence_claims': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          Path(__import__('sys').argv[1]).write_text(
+              json.dumps(value, indent=2, sort_keys=True) + '\n'
+          )
+          PY
+
+          bash "$CONTROLLER"
+
+      - name: Upload exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-legal-identity-current-frontier-materialization-v1
+          path: ${{ runner.temp }}/schoolhouse-current-frontier-materialization-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
