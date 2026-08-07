@@ -66,6 +66,7 @@ jobs:
           tools/validate-schoolhouse-uspto-exact-mark-census-custody.py
           PATHS
           sed -i 's/^          //' "$RUNNER_TEMP/permanent-paths"
+          sort -o "$RUNNER_TEMP/permanent-paths" "$RUNNER_TEMP/permanent-paths"
 
           git fetch --no-tags origin main
           LIVE_MAIN="$(git rev-parse origin/main)"
