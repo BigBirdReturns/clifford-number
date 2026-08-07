@@ -1,0 +1,129 @@
+name: TEMP diagnose School.House SEC EDGAR product cleanliness
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-sec-edgar-product-cleanliness-diagnostic-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-sec-edgar-product-cleanliness-diagnostic-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  diagnose:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-sec-edgar-exact-domain-census-product-cleanliness-diagnostic-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run exact gates and capture repository mutations
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='8a2f4538bdbcf9455f02e70c35a71cb39f805b18'
+          PRODUCT='55f08221165d1f7985d18886fd2b8537903fade1'
+          PRODUCT_TREE='ddd19e1d72cdcfa59bac1db711d39c2789078c03'
+          WORKFLOW='.github/workflows/temp-schoolhouse-sec-edgar-product-cleanliness-diagnostic-v1.yml'
+          RECEIPT="$RUNNER_TEMP/schoolhouse-sec-edgar-product-cleanliness-diagnostic-v1"
+          mkdir -p "$RECEIPT"
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test "$(git rev-parse HEAD^)" = "$PRODUCT"
+          test "$(git rev-list --count "$PRODUCT"..HEAD)" = '1'
+          test "$(git rev-parse "$PRODUCT^{tree}")" = "$PRODUCT_TREE"
+          mapfile -t DELTA < <(git diff --name-only "$PRODUCT"..HEAD)
+          test "${#DELTA[@]}" -eq 1
+          test "${DELTA[0]}" = "$WORKFLOW"
+
+          snapshot() {
+            local label="$1"
+            git status --porcelain=v1 --untracked-files=all | tee "$RECEIPT/status-$label.txt"
+            git diff --name-status | tee "$RECEIPT/diff-$label.txt"
+            git diff --cached --name-status | tee "$RECEIPT/cached-$label.txt"
+          }
+
+          snapshot initial
+          python tools/validate-schoolhouse-sec-edgar-exact-domain-census-custody.py --self-test \
+            | tee "$RECEIPT/focused-first.log"
+          snapshot after-focused-first
+
+          npm run release:check | tee "$RECEIPT/complete-release-gate.log"
+          snapshot after-release
+
+          python tools/validate-schoolhouse-sec-edgar-exact-domain-census-custody.py --self-test \
+            | tee "$RECEIPT/focused-replay.log"
+          snapshot after-focused-replay
+
+          python - "$RECEIPT" "$(git rev-parse HEAD)" <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import sys
+
+          root = Path(sys.argv[1])
+          statuses = {}
+          for label in (
+              'initial', 'after-focused-first', 'after-release',
+              'after-focused-replay',
+          ):
+              statuses[label] = (root / f'status-{label}.txt').read_text().splitlines()
+          value = {
+              'schema_version': 'schoolhouse-sec-edgar-product-cleanliness-diagnostic@1',
+              'diagnostic_head': sys.argv[2],
+              'product_commit': '55f08221165d1f7985d18886fd2b8537903fade1',
+              'focused_first': 'pass',
+              'complete_release_gate': 'pass',
+              'focused_replay': 'pass',
+              'statuses': statuses,
+              'initial_clean': not statuses['initial'],
+              'after_focused_first_clean': not statuses['after-focused-first'],
+              'after_release_clean': not statuses['after-release'],
+              'after_focused_replay_clean': not statuses['after-focused-replay'],
+              'authority': 'diagnostic_only',
+          }
+          (root / 'diagnostic.json').write_text(
+              json.dumps(value, indent=2, sort_keys=True) + '\n'
+          )
+          sums = []
+          for path in sorted(root.iterdir()):
+              if path.is_file():
+                  sums.append(
+                      f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}"
+                  )
+          (root / 'SHA256SUMS').write_text('\n'.join(sums) + '\n')
+          print(json.dumps(value, indent=2, sort_keys=True))
+          PY
+
+      - name: Preserve cleanliness diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-sec-edgar-product-cleanliness-diagnostic-v1
+          path: ${{ runner.temp }}/schoolhouse-sec-edgar-product-cleanliness-diagnostic-v1
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
