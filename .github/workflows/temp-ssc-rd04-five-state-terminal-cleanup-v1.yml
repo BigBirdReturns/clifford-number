@@ -1,0 +1,332 @@
+name: TEMP retire exact RD-04 five-state transaction refs
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  actions: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: rd04-five-state-terminal-cleanup-v1-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+jobs:
+  cleanup:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/ssc-rd04-five-state-terminal-cleanup-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Authenticate terminal proof and retire exact closed transaction refs
+        id: cleanup
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANONICAL_MAIN: '0a4091391e4c17c64683bd91f6a739a2a0a152fc'
+          CANONICAL_TREE: 'a44489a4af8f1c5ef2ad735e9f7a2b7f49d5feb1'
+          TERMINAL_PROOF_ARTIFACT: '9007489841'
+          TERMINAL_PROOF_BYTES: '6433806'
+          TERMINAL_PROOF_SHA256: '5db3ddc7fc113ed3f2458d60a1d902bff31505cce2b70bddd0ccce9636d5c833'
+          NATIVE_STANDING_RUN: '31212908721'
+          CARRIER_PATH: '.github/workflows/temp-ssc-rd04-five-state-terminal-cleanup-v1.yml'
+          SELF_BRANCH: 'agent/ssc-rd04-five-state-terminal-cleanup-v1'
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-five-state-terminal-cleanup-v1
+          SCRATCH="$OUT/scratch"
+          rm -rf "$OUT"
+          mkdir -p "$SCRATCH"
+          trap 'status=$?; printf "exit_code=%s\nfailure_line=%s\nfailure_command=%s\n" "$status" "${BASH_LINENO[0]:-unknown}" "${BASH_COMMAND:-unknown}" > "$OUT/failure.txt"; exit "$status"' ERR
+          exec > >(tee "$OUT/cleanup.log") 2>&1
+
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_MAIN"
+          test "$(git rev-list --count "$CANONICAL_MAIN"..HEAD)" = 1
+          test "$(git diff --name-only "$CANONICAL_MAIN" HEAD)" = "$CARRIER_PATH"
+          test "$(git rev-parse HEAD)" = '${{ github.event.pull_request.head.sha }}'
+          test '${{ github.event.pull_request.base.ref }}' = main
+          test '${{ github.event.pull_request.head.ref }}' = "$SELF_BRANCH"
+
+          git fetch --force --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$CANONICAL_MAIN"
+          test "$(git show -s --format=%T origin/main)" = "$CANONICAL_TREE"
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$TERMINAL_PROOF_ARTIFACT/zip" > "$SCRATCH/proof.zip"
+          test "$(wc -c < "$SCRATCH/proof.zip" | tr -d ' ')" = "$TERMINAL_PROOF_BYTES"
+          test "$(sha256sum "$SCRATCH/proof.zip" | awk '{print $1}')" = "$TERMINAL_PROOF_SHA256"
+          mkdir -p "$SCRATCH/proof"
+          unzip -q "$SCRATCH/proof.zip" -d "$SCRATCH/proof"
+          PROOF_JSON=$(find "$SCRATCH/proof" -type f -name proof.json -print -quit)
+          test -n "$PROOF_JSON"
+          PROOF_DIR=$(dirname "$PROOF_JSON")
+          test -f "$PROOF_DIR/SHA256SUMS"
+          (cd "$PROOF_DIR" && sha256sum -c SHA256SUMS) | tee "$OUT/proof-checksum.log"
+          cp "$PROOF_JSON" "$OUT/canonical-proof.json"
+          jq -e '
+            .schema_version == "ssc-rd04-five-state-repaired-canonical-postmerge-proof@1" and
+            .proof == "pass" and
+            .canonical_repair_merge == "0a4091391e4c17c64683bd91f6a739a2a0a152fc" and
+            .canonical_repair_merge_tree == "a44489a4af8f1c5ef2ad735e9f7a2b7f49d5feb1" and
+            .product_merge == "94937e425b38908e45b1288bcea69c7c33d00c77" and
+            .product_commit == "3c0c2bc18cac5b35baa4afe3bf2c6c7f250b9f94" and
+            .product_tree == "d6154ce261f8c5d6df71185ffe50040e2afc33fe" and
+            .repair_commit == "068dbc8d528c0b3e5a37070ffe9b0e408999eda3" and
+            .permanent_product_paths == 14 and
+            .unchanged_product_blobs == 13 and
+            .repaired_workflow_blobs == 1 and
+            .native_standing_workflow_run == 31212908721 and
+            .native_standing_workflow_conclusion == "success" and
+            .closed_schema_objects == 8 and
+            .nested_unknown_key_refusals == 8 and
+            .open_object_schemas == 0 and
+            .adversarial_refusals == 532 and
+            .source_requests == 0 and
+            .matrix_updates == 0 and
+            .no_magic_human == "pass" and
+            .complete_release_gate == "pass" and
+            .clean_replay == "pass" and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/canonical-proof.json" >/dev/null
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$NATIVE_STANDING_RUN" > "$OUT/native-standing-run.json"
+          jq -e --arg main "$CANONICAL_MAIN" '
+            .head_sha == $main and
+            .event == "push" and
+            .status == "completed" and
+            .conclusion == "success"
+          ' "$OUT/native-standing-run.json" >/dev/null
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$NATIVE_STANDING_RUN/jobs?per_page=100" > "$OUT/native-standing-jobs.json"
+          jq -e '
+            .jobs | length == 1 and
+            .[0].name == "validate" and
+            .[0].status == "completed" and
+            .[0].conclusion == "success"
+          ' "$OUT/native-standing-jobs.json" >/dev/null
+
+          cat > "$OUT/pr-expectations.tsv" <<'EOF'
+          1400	false	agent/ssc-rd04-five-state-postmerge-proof-0a40
+          1399	true	agent/ssc-rd04-standing-workflow-yaml-repair-v1
+          1397	false	agent/ssc-rd04-five-state-postmerge-proof-9493
+          1396	false	agent/ssc-rd04-five-state-final-product-qualifier-v2
+          1394	false	agent/ssc-rd04-five-state-schema-closure-repair-v1
+          1392	false	agent/ssc-rd04-five-state-source-field-adjudication-product-qualifier-v1
+          1391	true	agent/ssc-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication-v1
+          1388	false	agent/ssc-rd04-five-state-source-field-adjudication-materializer-v2
+          1383	false	agent/ssc-rd04-next-frontier-route-discovery-custody-materializer-v1
+          1381	false	agent/ssc-rd04-five-state-source-field-adjudication-materializer-v1
+          1372	false	agent/ssc-rd04-fl-mt-nd-or-wi-route-discovery-v3
+          1367	false	agent/ssc-rd04-next-frontier-route-discovery-acquisition-v2
+          1366	false	agent/ssc-rd-wave03-rd04-fl-mt-nd-or-wi-route-discovery-v1
+          1361	false	agent/ssc-rd04-next-frontier-route-discovery-acquisition-v1
+          1353	true	agent/ssc-rd-wave03-rd04-next-minimum-frontier-route-discovery-protocol-v1
+          EOF
+          sed -i 's/^          //' "$OUT/pr-expectations.tsv"
+          test "$(wc -l < "$OUT/pr-expectations.tsv" | tr -d ' ')" = 15
+          test "$(cut -f1 "$OUT/pr-expectations.tsv" | LC_ALL=C sort -u | wc -l | tr -d ' ')" = 15
+          test "$(cut -f3 "$OUT/pr-expectations.tsv" | LC_ALL=C sort -u | wc -l | tr -d ' ')" = 15
+
+          : > "$OUT/pr-census.tsv"
+          while IFS=$'\t' read -r pr expected_merged expected_branch; do
+            gh api "repos/$GITHUB_REPOSITORY/pulls/$pr" > "$SCRATCH/pr.json"
+            STATE=$(jq -r .state "$SCRATCH/pr.json")
+            MERGED=$(jq -r .merged "$SCRATCH/pr.json")
+            HEAD_REF=$(jq -r .head.ref "$SCRATCH/pr.json")
+            test "$STATE" = closed
+            test "$MERGED" = "$expected_merged"
+            test "$HEAD_REF" = "$expected_branch"
+            printf '%s\t%s\t%s\t%s\n' "$pr" "$STATE" "$MERGED" "$HEAD_REF" >> "$OUT/pr-census.tsv"
+          done < "$OUT/pr-expectations.tsv"
+          test "$(wc -l < "$OUT/pr-census.tsv" | tr -d ' ')" = 15
+
+          cut -f3 "$OUT/pr-expectations.tsv" > "$OUT/target-branches.txt"
+          while IFS= read -r branch; do
+            case "$branch" in
+              agent/ssc-rd04-*|agent/ssc-rd-wave03-rd04-*) ;;
+              *) echo "ref outside cleanup allowlist: $branch" >&2; exit 1 ;;
+            esac
+            test "$branch" != "$SELF_BRANCH"
+            test "$branch" != main
+          done < "$OUT/target-branches.txt"
+
+          : > "$OUT/ref-census-before.tsv"
+          : > "$OUT/ref-deletions.tsv"
+          PRESENT_BEFORE=0
+          ABSENT_BEFORE=0
+          DELETED=0
+          while IFS= read -r branch; do
+            if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$branch" > "$SCRATCH/ref.json" 2>/dev/null; then
+              REF_SHA=$(jq -r .object.sha "$SCRATCH/ref.json")
+              printf '%s\tpresent\t%s\n' "$branch" "$REF_SHA" >> "$OUT/ref-census-before.tsv"
+              PRESENT_BEFORE=$((PRESENT_BEFORE + 1))
+              gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch"
+              printf '%s\tdeleted\t%s\n' "$branch" "$REF_SHA" >> "$OUT/ref-deletions.tsv"
+              DELETED=$((DELETED + 1))
+            else
+              printf '%s\tabsent\t-\n' "$branch" >> "$OUT/ref-census-before.tsv"
+              printf '%s\talready_absent\t-\n' "$branch" >> "$OUT/ref-deletions.tsv"
+              ABSENT_BEFORE=$((ABSENT_BEFORE + 1))
+            fi
+          done < "$OUT/target-branches.txt"
+          test "$DELETED" = "$PRESENT_BEFORE"
+          test "$((PRESENT_BEFORE + ABSENT_BEFORE))" = 15
+
+          : > "$OUT/ref-census-after.tsv"
+          while IFS= read -r branch; do
+            if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$branch" > /dev/null 2>&1; then
+              echo "ref survived cleanup: $branch" >&2
+              exit 1
+            fi
+            printf '%s\tabsent\n' "$branch" >> "$OUT/ref-census-after.tsv"
+          done < "$OUT/target-branches.txt"
+          test "$(wc -l < "$OUT/ref-census-after.tsv" | tr -d ' ')" = 15
+
+          git fetch --force --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$CANONICAL_MAIN"
+          test "$(git show -s --format=%T origin/main)" = "$CANONICAL_TREE"
+
+          jq -n \
+            --arg schema_version 'ssc-rd04-five-state-terminal-cleanup@1' \
+            --arg state 'target_refs_retired_self_ref_pending' \
+            --arg canonical_main "$CANONICAL_MAIN" \
+            --arg canonical_tree "$CANONICAL_TREE" \
+            --arg cleanup_head "$GITHUB_SHA" \
+            --arg terminal_proof_sha256 "$TERMINAL_PROOF_SHA256" \
+            --argjson workflow_run "$GITHUB_RUN_ID" \
+            --argjson terminal_proof_artifact "$TERMINAL_PROOF_ARTIFACT" \
+            --argjson native_standing_run "$NATIVE_STANDING_RUN" \
+            --argjson target_refs 15 \
+            --argjson present_before "$PRESENT_BEFORE" \
+            --argjson absent_before "$ABSENT_BEFORE" \
+            --argjson deleted "$DELETED" \
+            '{
+              schema_version:$schema_version,
+              state:$state,
+              workflow_run:$workflow_run,
+              cleanup_head:$cleanup_head,
+              canonical_main:$canonical_main,
+              canonical_tree:$canonical_tree,
+              terminal_proof_artifact:$terminal_proof_artifact,
+              terminal_proof_sha256:$terminal_proof_sha256,
+              native_standing_workflow_run:$native_standing_run,
+              native_standing_workflow_conclusion:"success",
+              target_refs:$target_refs,
+              target_refs_present_before:$present_before,
+              target_refs_already_absent:$absent_before,
+              target_refs_deleted:$deleted,
+              target_refs_remaining:0,
+              mapped_pull_requests:15,
+              mapped_pull_requests_open:0,
+              self_ref_pending_retirement:true,
+              main_mutation:false,
+              product_mutation:false,
+              research_decisions_changed:0,
+              matrix_updates:0,
+              source_requests:0,
+              outside_human_dependency:false,
+              publication_effect:"none",
+              adoption_effect:"none",
+              graph_effect:"none"
+            }' > "$OUT/cleanup-receipt.json"
+
+          rm -rf "$SCRATCH"
+          find "$OUT" -maxdepth 1 -type f ! -name SHA256SUMS -printf '%f\n' | LC_ALL=C sort | while IFS= read -r name; do
+            sha256sum "$OUT/$name"
+          done | sed "s#  $OUT/#  #" > "$OUT/SHA256SUMS"
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+
+      - name: Preserve target-ref cleanup receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-terminal-cleanup-v1
+          path: /tmp/ssc-rd04-five-state-terminal-cleanup-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+
+      - name: Close cleanup PR, delete self ref, and publish zero-surface receipt
+        if: steps.cleanup.outcome == 'success'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANONICAL_MAIN: '0a4091391e4c17c64683bd91f6a739a2a0a152fc'
+          CANONICAL_TREE: 'a44489a4af8f1c5ef2ad735e9f7a2b7f49d5feb1'
+          SELF_BRANCH: 'agent/ssc-rd04-five-state-terminal-cleanup-v1'
+          ARTIFACT_NAME: 'ssc-rd04-five-state-terminal-cleanup-v1'
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-five-state-terminal-cleanup-v1
+          test -f "$OUT/cleanup-receipt.json"
+          jq -e '.target_refs_remaining == 0 and .mapped_pull_requests_open == 0 and .self_ref_pending_retirement == true' "$OUT/cleanup-receipt.json" >/dev/null
+
+          ARTIFACT_ID=''
+          ARTIFACT_BYTES=''
+          ARTIFACT_DIGEST=''
+          for attempt in $(seq 1 30); do
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" > /tmp/cleanup-artifacts.json
+            ARTIFACT_ID=$(jq -r --arg name "$ARTIFACT_NAME" '[.artifacts[] | select(.name == $name)] | .[0].id // empty' /tmp/cleanup-artifacts.json)
+            if test -n "$ARTIFACT_ID"; then
+              ARTIFACT_BYTES=$(jq -r --argjson id "$ARTIFACT_ID" '.artifacts[] | select(.id == $id) | .size_in_bytes' /tmp/cleanup-artifacts.json)
+              ARTIFACT_DIGEST=$(jq -r --argjson id "$ARTIFACT_ID" '.artifacts[] | select(.id == $id) | .digest // "unavailable"' /tmp/cleanup-artifacts.json)
+              break
+            fi
+            sleep 2
+          done
+          test -n "$ARTIFACT_ID"
+
+          git fetch --force --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$CANONICAL_MAIN"
+          test "$(git show -s --format=%T origin/main)" = "$CANONICAL_TREE"
+
+          while IFS= read -r branch; do
+            if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$branch" > /dev/null 2>&1; then
+              echo "target ref reappeared: $branch" >&2
+              exit 1
+            fi
+          done < "$OUT/target-branches.txt"
+
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" -f state=closed > /tmp/cleanup-pr-closed.json
+          test "$(jq -r .state /tmp/cleanup-pr-closed.json)" = closed
+          gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$SELF_BRANCH"
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$SELF_BRANCH" > /dev/null 2>&1; then
+            echo 'cleanup self ref survived deletion' >&2
+            exit 1
+          fi
+
+          BODY=/tmp/ssc-rd04-five-state-terminal-cleanup-comment.md
+          {
+            echo 'RD-04 five-state transaction cleanup completed.'
+            echo
+            echo '```text'
+            echo "canonical main: $CANONICAL_MAIN"
+            echo "canonical tree: $CANONICAL_TREE"
+            echo "cleanup workflow run: $GITHUB_RUN_ID"
+            echo "cleanup artifact: $ARTIFACT_ID"
+            echo "cleanup artifact bytes: $ARTIFACT_BYTES"
+            echo "cleanup artifact digest: $ARTIFACT_DIGEST"
+            echo 'mapped transaction PRs open: 0 / 15'
+            echo 'target transaction refs remaining: 0 / 15'
+            echo 'cleanup self ref remaining: 0 / 1'
+            echo 'main mutation: false'
+            echo 'product mutation: false'
+            echo 'research decisions changed: 0'
+            echo 'matrix updates: 0'
+            echo 'outside-human dependency: false'
+            echo 'publication / adoption / graph: none / none / none'
+            echo '```'
+            echo
+            echo 'RD-04-C02 remains open. The next authorized operation is the separately bounded four-candidate current-cell validation and eleven-route one-attempt follow-up capture.'
+          } > "$BODY"
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file "$BODY"
