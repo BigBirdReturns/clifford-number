@@ -1,0 +1,295 @@
+name: TEMP materialize permanent School.House SAM public entity census custody
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-materializer-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: schoolhouse-sam-public-entity-registration-census-materializer-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-sam-public-entity-registration-census-materializer-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Authenticate custody, reconstruct six-path product, and publish exact head
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='d26cb838df12a877840ebe71eb9388d44b6ceaf9'
+          BASE_TREE='af520dd75d4111d60f8a15c681e9d04d23c2f8f4'
+          MATERIALIZER='.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-materializer-v1.yml'
+          PRODUCT_BRANCH='agent/schoolhouse-sam-public-entity-registration-census-custody-product-v1'
+          SOURCE_RUN='31208398663'
+          SOURCE_HEAD='05a56dfd208380c5269c157d8726a85725b2a058'
+          SOURCE_ARTIFACT='9005696128'
+          SOURCE_BYTES='6352'
+          SOURCE_DIGEST='sha256:b4084cfbb96d35e9d708dcad52b8c2de11f54d34f6e4abb73b91fe4d6089f538'
+          QUALIFIER_RUN='31209050398'
+          QUALIFIER_HEAD='642582f003af4d01474f35b0ad3a300d0733f2e5'
+          QUALIFIER_ARTIFACT='9006024017'
+          QUALIFIER_BYTES='6088'
+          QUALIFIER_DIGEST='sha256:483a7ede58e8f052a5ce4b85ed85d22a955783bafaaf333e574d8a1979b7b96c'
+          PAYLOAD_BYTES='13402'
+          PAYLOAD_SHA256='824c93cc28bbf59ad81dbedf1cec4a3c1ed0c8a3dd62103b48e3516fc8fd731c'
+          WORK="$RUNNER_TEMP/sam-custody-materializer-v1"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-sam-public-entity-registration-census-materializer-v1"
+          mkdir -p "$WORK" "$RECEIPT"
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test "$(git rev-parse "$BASE^{tree}")" = "$BASE_TREE"
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+          mapfile -t MATERIALIZER_DELTA < <(git diff --name-only "$BASE"..HEAD)
+          test "${#MATERIALIZER_DELTA[@]}" -eq 1
+          test "${MATERIALIZER_DELTA[0]}" = "$MATERIALIZER"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN" --jq .head_sha)" = "$SOURCE_HEAD"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN" --jq .conclusion)" = 'failure'
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/31208402677" --jq .conclusion)" = 'success'
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/31208402452" --jq .conclusion)" = 'success'
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$QUALIFIER_RUN" --jq .head_sha)" = "$QUALIFIER_HEAD"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$QUALIFIER_RUN" --jq .conclusion)" = 'success'
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/31209050912" --jq .conclusion)" = 'success'
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/31209050486" --jq .conclusion)" = 'success'
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ARTIFACT" > "$WORK/source-metadata.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$QUALIFIER_ARTIFACT" > "$WORK/qualification-metadata.json"
+          test "$(jq -r .size_in_bytes "$WORK/source-metadata.json")" = "$SOURCE_BYTES"
+          test "$(jq -r .digest "$WORK/source-metadata.json")" = "$SOURCE_DIGEST"
+          test "$(jq -r .workflow_run.id "$WORK/source-metadata.json")" = "$SOURCE_RUN"
+          test "$(jq -r .workflow_run.head_sha "$WORK/source-metadata.json")" = "$SOURCE_HEAD"
+          test "$(jq -r .expired "$WORK/source-metadata.json")" = 'false'
+          test "$(jq -r .size_in_bytes "$WORK/qualification-metadata.json")" = "$QUALIFIER_BYTES"
+          test "$(jq -r .digest "$WORK/qualification-metadata.json")" = "$QUALIFIER_DIGEST"
+          test "$(jq -r .workflow_run.id "$WORK/qualification-metadata.json")" = "$QUALIFIER_RUN"
+          test "$(jq -r .workflow_run.head_sha "$WORK/qualification-metadata.json")" = "$QUALIFIER_HEAD"
+          test "$(jq -r .expired "$WORK/qualification-metadata.json")" = 'false'
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ARTIFACT/zip" > "$WORK/source.zip"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$QUALIFIER_ARTIFACT/zip" > "$WORK/qualification.zip"
+          test "$(stat -c %s "$WORK/source.zip")" = "$SOURCE_BYTES"
+          test "sha256:$(sha256sum "$WORK/source.zip" | cut -d' ' -f1)" = "$SOURCE_DIGEST"
+          test "$(stat -c %s "$WORK/qualification.zip")" = "$QUALIFIER_BYTES"
+          test "sha256:$(sha256sum "$WORK/qualification.zip" | cut -d' ' -f1)" = "$QUALIFIER_DIGEST"
+
+          cat > "$WORK/product-text-payload.zip.b64" <<'B64'
+          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
+          B64
+          base64 -d "$WORK/product-text-payload.zip.b64" > "$WORK/product-text-payload.zip"
+          test "$(stat -c %s "$WORK/product-text-payload.zip")" = "$PAYLOAD_BYTES"
+          test "$(sha256sum "$WORK/product-text-payload.zip" | cut -d' ' -f1)" = "$PAYLOAD_SHA256"
+
+          python - "$WORK/product-text-payload.zip" "$WORK/text-product" <<'PY'
+          from pathlib import Path, PurePosixPath
+          import sys
+          import zipfile
+
+          source = Path(sys.argv[1])
+          target = Path(sys.argv[2])
+          expected = {
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/source-custody.json',
+              'data/intake/schoolhouse-sam-public-entity-registration-census-v1/product-manifest.json',
+              'docs/milestones/schoolhouse-sam-public-entity-registration-census-v1.md',
+              'tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py',
+          }
+          target.mkdir(parents=True)
+          with zipfile.ZipFile(source) as archive:
+              assert archive.testzip() is None
+              assert set(archive.namelist()) == expected
+              assert len(archive.namelist()) == len(expected)
+              for name in archive.namelist():
+                  path = PurePosixPath(name)
+                  assert not path.is_absolute() and '..' not in path.parts
+              archive.extractall(target)
+          PY
+
+          cat > "$WORK/expected-paths.txt" <<'PATHS'
+          data/intake/schoolhouse-sam-public-entity-registration-census-v1/product-manifest.json
+          data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-qualification-artifact.zip
+          data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-source-artifact.zip
+          data/intake/schoolhouse-sam-public-entity-registration-census-v1/source-custody.json
+          docs/milestones/schoolhouse-sam-public-entity-registration-census-v1.md
+          tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py
+          PATHS
+          sed -i 's/^          //' "$WORK/expected-paths.txt"
+
+          git worktree add --detach "$WORK/repo" "$BASE"
+          cp -a "$WORK/text-product/." "$WORK/repo/"
+          DATA="$WORK/repo/data/intake/schoolhouse-sam-public-entity-registration-census-v1"
+          cp "$WORK/source.zip" "$DATA/sealed-source-artifact.zip"
+          cp "$WORK/qualification.zip" "$DATA/sealed-qualification-artifact.zip"
+
+          python "$WORK/repo/tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py" --check
+          python "$WORK/repo/tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py" --self-test
+
+          git -C "$WORK/repo" status --porcelain=v1 --untracked-files=all \
+            | sed -n 's/^?? //p' | sort > "$WORK/untracked-paths.txt"
+          diff -u "$WORK/expected-paths.txt" "$WORK/untracked-paths.txt"
+          test -z "$(git -C "$WORK/repo" diff --name-only)"
+          test -z "$(git -C "$WORK/repo" diff --cached --name-only)"
+          while IFS= read -r path; do
+            ! git -C "$WORK/repo" cat-file -e "$BASE:$path"
+          done < "$WORK/expected-paths.txt"
+
+          git -C "$WORK/repo" add --pathspec-from-file="$WORK/expected-paths.txt"
+          git -C "$WORK/repo" diff --cached --name-only | sort > "$WORK/staged-paths.txt"
+          diff -u "$WORK/expected-paths.txt" "$WORK/staged-paths.txt"
+          git -C "$WORK/repo" diff --cached --name-only --diff-filter=A | sort \
+            > "$WORK/added-paths.txt"
+          diff -u "$WORK/expected-paths.txt" "$WORK/added-paths.txt"
+          test -z "$(git -C "$WORK/repo" diff --cached --name-only --diff-filter=CDMRTUXB)"
+          ! grep -Eq '^\.github/workflows/' "$WORK/staged-paths.txt"
+
+          git -C "$WORK/repo" config user.name 'github-actions[bot]'
+          git -C "$WORK/repo" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C "$WORK/repo" commit -m 'Preserve School.House SAM public entity census custody'
+          PRODUCT_HEAD="$(git -C "$WORK/repo" rev-parse HEAD)"
+          PRODUCT_TREE="$(git -C "$WORK/repo" rev-parse 'HEAD^{tree}')"
+          test "$(git -C "$WORK/repo" rev-parse HEAD^)" = "$BASE"
+          test "$(git -C "$WORK/repo" rev-list --count "$BASE"..HEAD)" = '1'
+          git -C "$WORK/repo" diff --name-only "$BASE"..HEAD | sort > "$WORK/product-paths.txt"
+          diff -u "$WORK/expected-paths.txt" "$WORK/product-paths.txt"
+          git -C "$WORK/repo" diff --name-only --diff-filter=A "$BASE"..HEAD | sort \
+            > "$WORK/product-added-paths.txt"
+          diff -u "$WORK/expected-paths.txt" "$WORK/product-added-paths.txt"
+          test -z "$(git -C "$WORK/repo" diff --name-only --diff-filter=CDMRTUXB "$BASE"..HEAD)"
+          test -z "$(git -C "$WORK/repo" status --porcelain=v1 --untracked-files=all)"
+          python "$WORK/repo/tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py" --check
+          python "$WORK/repo/tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py" --self-test
+
+          git -C "$WORK/repo" push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+
+          PR_URL="$(gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base main \
+            --head "$PRODUCT_BRANCH" \
+            --title 'Preserve bounded School.House SAM public entity census custody' \
+            --body-file - <<EOF
+          ## Permanent custody product
+
+          Preserve the independently qualified anonymous public SAM.gov Entity Registrations boundary for issue #1382.
+
+          \`\`\`text
+          canonical parent:
+          $BASE
+          canonical parent tree:
+          $BASE_TREE
+
+          product commit:
+          $PRODUCT_HEAD
+          product tree:
+          $PRODUCT_TREE
+
+          product commits:                                  1
+          permanent changed paths:                          6
+          addition-only paths:                           true
+          workflow or carrier paths:                        0
+          \`\`\`
+
+          ## Exact source and qualification custody
+
+          \`\`\`text
+          source PR / run / artifact:       #1389 / $SOURCE_RUN / $SOURCE_ARTIFACT
+          source program exit code:                                  0
+          hosted source workflow conclusion:                   failure
+          source artifact bytes:                              $SOURCE_BYTES
+          source artifact SHA-256:
+          b4084cfbb96d35e9d708dcad52b8c2de11f54d34f6e4abb73b91fe4d6089f538
+
+          qualification PR / run / artifact:#1390 / $QUALIFIER_RUN / $QUALIFIER_ARTIFACT
+          qualification artifact bytes:                       $QUALIFIER_BYTES
+          qualification artifact SHA-256:
+          483a7ede58e8f052a5ce4b85ed85d22a955783bafaaf333e574d8a1979b7b96c
+          qualification result:                                  pass
+          qualification Release checks:                       success
+          qualification no-magic-human gate:                  success
+          \`\`\`
+
+          The source program completed and wrote exit code zero. Its hosted job is red only because the final generic privacy walker rejected its own zero-retention control key \`points_of_contact\` and terminal schema key \`state\`. The independent request-free qualifier authenticated the exact source and wrapper artifacts, exact schemas, zero retention, empty candidates, and zero authority.
+
+          ## Terminal source result
+
+          \`\`\`text
+          fixed / terminal queries:                         3 / 3
+          terminal state:
+            bounded_public_search_controls_unavailable:         3
+          browser contexts:                                     1
+          query submissions / result pages:                  0 / 0
+          official requests / accounted bytes:       99 / 2,594,925
+          JSON responses observed and hashed:                   9
+          rendered rows / retained candidates:              0 / 0
+          unique public UEIs:                                   0
+          entity-detail views:                                  0
+          \`\`\`
+
+          The required public Entity Registrations category control was unavailable, so no fixed query was submitted. This is typed provider/interface custody, not a zero-result or negative-existence finding.
+
+          ## Authority ceiling
+
+          \`\`\`text
+          identities / relationships admitted:              0 / 0
+          negative-existence claims:                             0
+          federal-registration / award admissions:           0 / 0
+          owner / operator admissions:                       0 / 0
+          outside-human dependency:                          false
+          publication / adoption / graph:      none / none / none
+          public School.House legal identity:          unresolved
+          \`\`\`
+
+          Merge only after the exact product head passes hosted Release checks, the no-magic-human gate, the permanent validator with eight adversarial refusals, and an independent one-path product-head qualifier. All acquisition, repair, recovery, materializer, and qualifier PRs remain never-merge carriers.
+          EOF
+          )"
+          PR_NUMBER="${PR_URL##*/}"
+
+          cp "$WORK/source-metadata.json" "$RECEIPT/source-artifact-metadata.json"
+          cp "$WORK/qualification-metadata.json" "$RECEIPT/qualification-artifact-metadata.json"
+          cp "$WORK/expected-paths.txt" "$RECEIPT/product-paths.txt"
+          printf 'canonical_parent=%s\ncanonical_parent_tree=%s\n' "$BASE" "$BASE_TREE" > "$RECEIPT/topology.txt"
+          printf 'product_branch=%s\nproduct_commit=%s\nproduct_tree=%s\nproduct_pr=%s\n' \
+            "$PRODUCT_BRANCH" "$PRODUCT_HEAD" "$PRODUCT_TREE" "$PR_NUMBER" >> "$RECEIPT/topology.txt"
+          printf 'product_commits=1\npermanent_paths=6\naddition_only=true\nworkflow_paths=0\n' >> "$RECEIPT/topology.txt"
+          (
+            cd "$WORK/repo"
+            sha256sum $(cat "$WORK/expected-paths.txt") > "$RECEIPT/product-SHA256SUMS"
+          )
+          sha256sum "$RECEIPT"/* > "$RECEIPT/SHA256SUMS"
+          cat "$RECEIPT/topology.txt"
+
+      - name: Preserve exact materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-sam-public-entity-registration-census-materializer-v1
+          path: ${{ runner.temp }}/schoolhouse-sam-public-entity-registration-census-materializer-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
