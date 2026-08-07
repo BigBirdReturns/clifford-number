@@ -1,0 +1,286 @@
+name: TEMP qualify exact RD-04 five-state source-field product
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: rd04-five-state-source-field-product-qualifier-v1-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/ssc-rd04-five-state-source-field-adjudication-product-qualifier-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Verify exact one-commit one-path qualifier
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PARENT: 'd26cb838df12a877840ebe71eb9388d44b6ceaf9'
+          PRODUCT: '0d9fcc77cac1da8a973781c7fd03ec0390095dce'
+          PRODUCT_BRANCH: 'agent/ssc-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication-v1'
+          CARRIER_PATH: '.github/workflows/temp-ssc-rd04-five-state-source-field-adjudication-product-qualifier-v1.yml'
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/rd04-five-state-product-qualification-v1
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+
+          test "$(git rev-parse HEAD^)" = "$PARENT"
+          test "$(git rev-list --count "$PARENT"..HEAD)" = 1
+          test "$(git diff --name-only "$PARENT" HEAD)" = "$CARRIER_PATH"
+          test "$(git rev-parse HEAD)" = '${{ github.event.pull_request.head.sha }}'
+          test '${{ github.event.pull_request.base.ref }}' = main
+
+          git fetch --force --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse origin/main)" = "$PARENT"
+          test "$(git rev-parse origin/$PRODUCT_BRANCH)" = "$PRODUCT"
+
+          set -- $(git rev-list --parents -n 1 "$PRODUCT")
+          test "$#" = 2
+          test "$1" = "$PRODUCT"
+          test "$2" = "$PARENT"
+          test "$(git rev-list --count "$PARENT".."$PRODUCT")" = 1
+          test "$(git diff --name-only "$PARENT" "$PRODUCT" | wc -l | tr -d ' ')" = 14
+          test "$(git diff --name-status "$PARENT" "$PRODUCT" | awk '$1 != "A" { n++ } END { print n+0 }')" = 0
+          git diff --name-only "$PARENT" "$PRODUCT" | LC_ALL=C sort > "$OUT/git-product-paths.txt"
+
+          gh api "repos/$GITHUB_REPOSITORY/pulls/1391" > "$OUT/product-pr.json"
+          jq -e --arg product "$PRODUCT" '
+            .state == "open" and
+            .base.ref == "main" and
+            .head.sha == $product and
+            .commits == 1 and
+            .changed_files == 14
+          ' "$OUT/product-pr.json" >/dev/null
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+
+      - name: Authenticate materializer artifact and every product blob
+        id: qualification
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PARENT: 'd26cb838df12a877840ebe71eb9388d44b6ceaf9'
+          PRODUCT: '0d9fcc77cac1da8a973781c7fd03ec0390095dce'
+          MATERIALIZER_RUN: '31208763773'
+          MATERIALIZER_ARTIFACT: '9005832188'
+          MATERIALIZER_ZIP_BYTES: '101618'
+          MATERIALIZER_ZIP_SHA256: '60aa8ad9e5099391cdefa29217a8707be67fadaa9bc303693c5ac5b44d2d22b0'
+          PRODUCT_ARCHIVE_BYTES: '17004'
+          PRODUCT_ARCHIVE_SHA256: 'db341e88a3dbcb4679c87f1bb3591f09fad3c9161d5e4941bb8d950ebd647de3'
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/rd04-five-state-product-qualification-v1
+          WT=/tmp/rd04-five-state-product-worktree-v1
+          ART="$OUT/materialization"
+          MAT="$ART/rd04-five-state-source-field-materializer"
+          ART_PRODUCT="$MAT/product"
+          ARCHIVE_PRODUCT="$OUT/archive-product"
+          rm -rf "$WT" "$ART" "$ARCHIVE_PRODUCT"
+          mkdir -p "$ART" "$ARCHIVE_PRODUCT"
+          exec > >(tee "$OUT/qualification.log") 2>&1
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$MATERIALIZER_ARTIFACT/zip" > "$OUT/materialization.zip"
+          test "$(wc -c < "$OUT/materialization.zip" | tr -d ' ')" = "$MATERIALIZER_ZIP_BYTES"
+          test "$(sha256sum "$OUT/materialization.zip" | awk '{print $1}')" = "$MATERIALIZER_ZIP_SHA256"
+          unzip -q "$OUT/materialization.zip" -d "$ART"
+
+          test -f "$MAT/product.tar.xz"
+          test -f "$MAT/product-paths.txt"
+          test -f "$MAT/staged-paths.txt"
+          test -f "$MAT/expected-paths.txt"
+          test -f "$ART/rd04-five-state-materializer-runner-v2/repaired-runner-custody.json"
+          test "$(wc -c < "$MAT/product.tar.xz" | tr -d ' ')" = "$PRODUCT_ARCHIVE_BYTES"
+          test "$(sha256sum "$MAT/product.tar.xz" | awk '{print $1}')" = "$PRODUCT_ARCHIVE_SHA256"
+          xz -t "$MAT/product.tar.xz"
+
+          cat \
+            "$MAT/chunks/part-00" \
+            "$MAT/chunks/part-01" \
+            "$MAT/chunks/part-02" \
+            "$MAT/chunks/part-03" \
+            "$MAT/chunks/part-04" \
+            > "$OUT/reconstructed-product.tar.xz"
+          cmp "$MAT/product.tar.xz" "$OUT/reconstructed-product.tar.xz"
+          test "$(sha256sum "$OUT/reconstructed-product.tar.xz" | awk '{print $1}')" = "$PRODUCT_ARCHIVE_SHA256"
+
+          jq -e '
+            .schema_version == "ssc-rd04-five-state-materializer-repair-custody@1" and
+            .workflow_run == 31208763773 and
+            .repaired_runner_git_blob == "7021bbb8c215424634a9b41ff1f14026f676516b" and
+            .repaired_runner_xz_bytes == 3972 and
+            .repaired_runner_xz_sha256 == "667946be2b2496973cd6505ab478e402838e64417082c16ef5748a41c455ce79" and
+            .repaired_runner_source_bytes == 12428 and
+            .repaired_runner_source_sha256 == "9dadf0f1988a8f58a033b91ff66a4dbcb438863d44e5014efe75c8ad14d6c3aa" and
+            .product_archive_sha256 == "db341e88a3dbcb4679c87f1bb3591f09fad3c9161d5e4941bb8d950ebd647de3" and
+            .product_bytes_changed == false and
+            .authority_changed == false
+          ' "$ART/rd04-five-state-materializer-runner-v2/repaired-runner-custody.json" >/dev/null
+
+          test "$(wc -l < "$MAT/product-paths.txt" | tr -d ' ')" = 14
+          test "$(LC_ALL=C sort -u "$MAT/product-paths.txt" | wc -l | tr -d ' ')" = 14
+          cmp "$MAT/product-paths.txt" "$MAT/staged-paths.txt"
+          cmp "$MAT/product-paths.txt" "$MAT/expected-paths.txt"
+          cmp "$MAT/product-paths.txt" "$OUT/git-product-paths.txt"
+
+          tar -xJf "$MAT/product.tar.xz" -C "$ARCHIVE_PRODUCT"
+          git worktree add --detach "$WT" "$PRODUCT"
+          PRODUCT_TREE=$(git -C "$WT" show -s --format=%T HEAD)
+          : > "$OUT/blob-ledger.tsv"
+          while IFS= read -r path; do
+            test -f "$ART_PRODUCT/$path"
+            test -f "$ARCHIVE_PRODUCT/$path"
+            test -f "$WT/$path"
+            cmp "$ART_PRODUCT/$path" "$ARCHIVE_PRODUCT/$path"
+            cmp "$ART_PRODUCT/$path" "$WT/$path"
+            BYTES=$(wc -c < "$WT/$path" | tr -d ' ')
+            SHA256=$(sha256sum "$WT/$path" | awk '{print $1}')
+            GIT_BLOB=$(git -C "$WT" hash-object "$path")
+            EXPECTED_BLOB=$(git rev-parse "$PRODUCT:$path")
+            MODE=$(git ls-tree "$PRODUCT" -- "$path" | awk '{print $1}')
+            test "$GIT_BLOB" = "$EXPECTED_BLOB"
+            test "$MODE" = 100644
+            printf '%s\t%s\t%s\t%s\t%s\n' "$path" "$BYTES" "$SHA256" "$GIT_BLOB" "$MODE" >> "$OUT/blob-ledger.tsv"
+          done < "$MAT/product-paths.txt"
+
+          python - "$OUT/blob-ledger.tsv" "$OUT/blob-ledger.json" <<'PYLEDGER'
+          import json, pathlib, sys
+          rows=[]
+          for line in pathlib.Path(sys.argv[1]).read_text().splitlines():
+              path, size, sha256, blob, mode = line.split('\t')
+              rows.append({'path': path, 'bytes': int(size), 'sha256': sha256, 'git_blob': blob, 'mode': mode})
+          assert len(rows) == 14
+          pathlib.Path(sys.argv[2]).write_text(json.dumps({'schema_version':'ssc-rd04-five-state-product-blob-ledger@1','entries':rows}, indent=2, sort_keys=True)+'\n')
+          PYLEDGER
+
+          python - "$WT/.github/workflows/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.yml" <<'PYWORKFLOW'
+          from pathlib import Path
+          import sys
+          text=Path(sys.argv[1]).read_text()
+          assert 'contents: read' in text
+          assert 'actions: read' in text
+          for forbidden in ('contents: write','issues: write','pull-requests: write','git push','gh pr merge','gh api -X POST','gh api -X PATCH','gh api -X PUT','gh api -X DELETE'):
+              assert forbidden not in text, forbidden
+          print('standing_workflow_read_only=pass')
+          PYWORKFLOW
+
+          cd "$WT"
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs | tee "$OUT/build-check.log"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs | tee "$OUT/product-validation.log"
+          node test/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.test.js | tee "$OUT/adversarial.log"
+          grep -Fq 'rd04_five_state_source_field_adversarial=pass mutations_refused=532' "$OUT/adversarial.log"
+
+          python - <<'PYSCHEMA' | tee "$OUT/closed-schema.log"
+          import json,pathlib
+          from jsonschema import Draft202012Validator
+          root=pathlib.Path('.')
+          schema=json.loads((root/'schemas/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.schema.json').read_text())
+          validator=Draft202012Validator(schema)
+          data=root/'data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication'
+          files=['capture-custody.json','source-adjudications.json','field-adjudications.json','pdf-review-receipts.json','promotion-candidate-protocol.json','selected-followup-protocol.json','index.json','product-manifest.json']
+          for name in files:
+              validator.validate(json.loads((data/name).read_text()))
+          print(f'closed_schema_validation=pass objects={len(files)}')
+          PYSCHEMA
+
+          node tools/validate-no-magic-human-gate.mjs | tee "$OUT/no-magic-human.log"
+          npm run release:check | tee "$OUT/release-check.log"
+
+          git restore --staged --worktree .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs --write | tee "$OUT/replay-write.log"
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs | tee "$OUT/replay-build.log"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.mjs | tee "$OUT/replay-validation.log"
+          node test/status-sovereignty-rd-wave03-rd04-five-state-source-field-adjudication.test.js | tee "$OUT/replay-adversarial.log"
+          grep -Fq 'rd04_five_state_source_field_adversarial=pass mutations_refused=532' "$OUT/replay-adversarial.log"
+          node tools/validate-no-magic-human-gate.mjs | tee "$OUT/replay-no-magic-human.log"
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          cd "$GITHUB_WORKSPACE"
+          python - "$OUT/qualification.json" <<PYQUAL
+          import json, pathlib, os
+          qualification={
+            'schema_version':'ssc-rd04-five-state-source-field-product-qualification@1',
+            'qualification':'pass',
+            'workflow_run':int(os.environ['GITHUB_RUN_ID']),
+            'qualifier_head':os.environ['GITHUB_SHA'],
+            'source_requests':0,
+            'product_commit':'$PRODUCT',
+            'product_tree':'$PRODUCT_TREE',
+            'product_parent':'$PARENT',
+            'product_commits':1,
+            'product_paths':14,
+            'addition_only':True,
+            'materializer_run':int('$MATERIALIZER_RUN'),
+            'materializer_artifact':int('$MATERIALIZER_ARTIFACT'),
+            'materializer_zip_bytes':int('$MATERIALIZER_ZIP_BYTES'),
+            'materializer_zip_sha256':'$MATERIALIZER_ZIP_SHA256',
+            'product_archive_bytes':int('$PRODUCT_ARCHIVE_BYTES'),
+            'product_archive_sha256':'$PRODUCT_ARCHIVE_SHA256',
+            'blob_identities_verified':14,
+            'closed_schema_objects':8,
+            'adversarial_refusals':532,
+            'no_magic_human':'pass',
+            'complete_release_gate':'pass',
+            'clean_replay':'pass',
+            'outside_human_dependency':False,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+          }
+          pathlib.Path('$OUT/qualification.json').write_text(json.dumps(qualification,indent=2,sort_keys=True)+'\n')
+          PYQUAL
+
+          find "$OUT" -maxdepth 1 -type f \
+            ! -name SHA256SUMS \
+            -printf '%f\n' | LC_ALL=C sort | while IFS= read -r name; do
+              sha256sum "$OUT/$name"
+            done | sed "s#  $OUT/#  #" > "$OUT/SHA256SUMS"
+          echo "product_tree=$PRODUCT_TREE" >> "$GITHUB_OUTPUT"
+
+      - name: Preserve independent qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-source-field-product-qualification-v1
+          path: /tmp/rd04-five-state-product-qualification-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+
+      - name: Require successful qualification
+        if: always()
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.qualification.outcome }}
+        run: test "$OUTCOME" = success
