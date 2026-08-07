@@ -1,0 +1,387 @@
+name: TEMP direct School.House current-frontier materializer v4
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-legal-identity-current-frontier-materializer-v4.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: schoolhouse-legal-identity-current-frontier-materializer-v4-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-legal-identity-current-frontier-materializer-v4')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Recover immutable blobs, repair exact controller, and execute
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CARRIER_BASE='1e52a58be874538509d6c0d3c06adc12fc53cad7'
+          WORKFLOW='.github/workflows/temp-schoolhouse-legal-identity-current-frontier-materializer-v4.yml'
+          SOURCE_BRANCH='agent/schoolhouse-legal-identity-current-frontier-materializer-v1'
+          SOURCE_HEAD='901c16b0a8f32bfe2a83c4e0d619d3168cd668ff'
+          SOURCE_WORKFLOW='.github/workflows/temp-schoolhouse-legal-identity-current-frontier-materializer-v1.yml'
+          SOURCE_WORKFLOW_BLOB='3bf838822ea34a8d5c6b69d7af37be9969f8891f'
+          SOURCE_PAYLOAD='.github/materializers/schoolhouse-current-frontier-v1'
+          V3_BRANCH='agent/schoolhouse-legal-identity-current-frontier-materializer-v3'
+          V3_HEAD='b6da369610bc0bd50587b22541360ffd25c71721'
+          V3_RUN='31227457242'
+          V3_ARTIFACT='9012600581'
+          V3_ARTIFACT_BYTES='13247'
+          V3_ARTIFACT_DIGEST='sha256:9ead09559c96aba6fde9afdca842876b3a158e799b1c3ca134ab88b0a503b9b1'
+          TARGET='agent/schoolhouse-legal-identity-current-frontier-product-v1'
+          RECOVERED_PAYLOAD="$RUNNER_TEMP/schoolhouse-current-frontier-recovered-payload-v4"
+          SOURCE_CONTROLLER="$RUNNER_TEMP/schoolhouse-current-frontier-source-controller-v4.sh"
+          PATCHED_CONTROLLER="$RUNNER_TEMP/schoolhouse-current-frontier-materializer-v4.sh"
+          PATCH_RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-controller-repair-v4.json"
+          BOOTSTRAP="$RUNNER_TEMP/schoolhouse-current-frontier-bootstrap-v4"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-materialization-v4"
+          SOURCE_CONTROLLER_BYTES='20456'
+          SOURCE_CONTROLLER_SHA256='7f0cd764206a434841307110ff72d555580fea79215159786bdf96e1afe216bd'
+          PATCHED_CONTROLLER_BYTES='20059'
+          PATCHED_CONTROLLER_SHA256='afacca79e3a1e6ba37081e352f3ceb762c1da9d84521f9b83a5968fff24336e3'
+          rm -rf "$RECOVERED_PAYLOAD" "$BOOTSTRAP" "$RECEIPT"
+          mkdir -p "$RECOVERED_PAYLOAD" "$BOOTSTRAP" "$RECEIPT"
+          printf 'initializing-direct-v4\n' > "$BOOTSTRAP/STAGE"
+          printf 'source_requests=0\nregistry_queries=0\nform_submissions=0\ncontacts=0\npayments=0\nuploads=0\n' > "$BOOTSTRAP/BOUNDARY"
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            mkdir -p "$RECEIPT/bootstrap"
+            for path in "$SOURCE_CONTROLLER" "$PATCHED_CONTROLLER" "$PATCH_RECEIPT"; do
+              if test -f "$path"; then
+                cp "$path" "$BOOTSTRAP/$(basename "$path")"
+              fi
+            done
+            cp -a "$BOOTSTRAP"/. "$RECEIPT/bootstrap/"
+            printf '%s\n' "$rc" > "$RECEIPT/V4_BOOTSTRAP_EXIT_CODE"
+            (
+              cd "$RECEIPT"
+              find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          printf 'proving-one-workflow-v4-and-immutable-predecessors\n' > "$BOOTSTRAP/STAGE"
+          git fetch --no-tags origin main "$SOURCE_BRANCH" "$V3_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$CARRIER_BASE"
+          test "$(git rev-list --count "$CARRIER_BASE"..HEAD)" = '1'
+          mapfile -t V4_PATHS < <(git diff --name-only "$CARRIER_BASE"..HEAD)
+          test "${#V4_PATHS[@]}" -eq 1
+          test "${V4_PATHS[0]}" = "$WORKFLOW"
+          git diff --check "$CARRIER_BASE"..HEAD
+          git merge-base --is-ancestor "$CARRIER_BASE" "$(git rev-parse origin/main)"
+
+          test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$SOURCE_HEAD"
+          test "$(git rev-parse "$SOURCE_HEAD:$SOURCE_WORKFLOW")" = "$SOURCE_WORKFLOW_BLOB"
+          test "$(git rev-parse "$SOURCE_HEAD^")" = "$CARRIER_BASE"
+          test "$(git rev-list --count "$CARRIER_BASE".."$SOURCE_HEAD")" = '13'
+
+          cat > "$BOOTSTRAP/expected-source-carrier-paths.txt" <<'EOF_SOURCE_PATHS'
+          .github/materializers/schoolhouse-current-frontier-v1/controller-00
+          .github/materializers/schoolhouse-current-frontier-v1/controller-01
+          .github/materializers/schoolhouse-current-frontier-v1/controller-02
+          .github/materializers/schoolhouse-current-frontier-v1/controller-03
+          .github/materializers/schoolhouse-current-frontier-v1/controller-04
+          .github/materializers/schoolhouse-current-frontier-v1/part-00
+          .github/materializers/schoolhouse-current-frontier-v1/part-01
+          .github/materializers/schoolhouse-current-frontier-v1/part-02
+          .github/materializers/schoolhouse-current-frontier-v1/part-03
+          .github/materializers/schoolhouse-current-frontier-v1/part-04
+          .github/materializers/schoolhouse-current-frontier-v1/part-05
+          .github/materializers/schoolhouse-current-frontier-v1/part-06
+          .github/workflows/temp-schoolhouse-legal-identity-current-frontier-materializer-v1.yml
+          EOF_SOURCE_PATHS
+          sort -o "$BOOTSTRAP/expected-source-carrier-paths.txt" \
+            "$BOOTSTRAP/expected-source-carrier-paths.txt"
+          git diff --name-only "$CARRIER_BASE".."$SOURCE_HEAD" | sort \
+            > "$BOOTSTRAP/source-carrier-paths.txt"
+          diff -u "$BOOTSTRAP/expected-source-carrier-paths.txt" \
+            "$BOOTSTRAP/source-carrier-paths.txt"
+
+          test "$(git rev-parse "origin/$V3_BRANCH")" = "$V3_HEAD"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$V3_RUN" > "$BOOTSTRAP/v3-run.json"
+          test "$(jq -r .head_sha "$BOOTSTRAP/v3-run.json")" = "$V3_HEAD"
+          test "$(jq -r .status "$BOOTSTRAP/v3-run.json")" = 'completed'
+          test "$(jq -r .conclusion "$BOOTSTRAP/v3-run.json")" = 'failure'
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$V3_ARTIFACT" > "$BOOTSTRAP/v3-artifact-metadata.json"
+          test "$(jq -r .size_in_bytes "$BOOTSTRAP/v3-artifact-metadata.json")" = "$V3_ARTIFACT_BYTES"
+          test "$(jq -r .digest "$BOOTSTRAP/v3-artifact-metadata.json")" = "$V3_ARTIFACT_DIGEST"
+          test "$(jq -r .workflow_run.id "$BOOTSTRAP/v3-artifact-metadata.json")" = "$V3_RUN"
+          test "$(jq -r .expired "$BOOTSTRAP/v3-artifact-metadata.json")" = 'false'
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$V3_ARTIFACT/zip" > "$BOOTSTRAP/v3-artifact.zip"
+          test "$(stat -c%s "$BOOTSTRAP/v3-artifact.zip")" = "$V3_ARTIFACT_BYTES"
+          test "sha256:$(sha256sum "$BOOTSTRAP/v3-artifact.zip" | cut -d' ' -f1)" = "$V3_ARTIFACT_DIGEST"
+
+          set +e
+          git ls-remote --exit-code --heads origin "refs/heads/$TARGET" > "$BOOTSTRAP/preexisting-target-ref.txt"
+          TARGET_RC="$?"
+          set -e
+          test "$TARGET_RC" -eq 2
+
+          printf 'recovering-immutable-source-blobs\n' > "$BOOTSTRAP/STAGE"
+          printf 'ordinal\tkind\tpath\texpected_blob\tobserved_blob\tlocal_blob\texpected_bytes\tobserved_bytes\texpected_sha256\tobserved_sha256\n' \
+            > "$BOOTSTRAP/chunk-observations.tsv"
+
+          recover_blob() {
+            ordinal="$1"
+            kind="$2"
+            relative="$3"
+            expected_blob="$4"
+            expected_bytes="$5"
+            expected_sha256="$6"
+            output="$7"
+            printf 'recovering:%s\n' "$relative" > "$BOOTSTRAP/STAGE"
+            git cat-file -e "$SOURCE_HEAD:$relative"
+            observed_blob="$(git rev-parse "$SOURCE_HEAD:$relative")"
+            git cat-file blob "$SOURCE_HEAD:$relative" > "$output"
+            observed_bytes="$(stat -c%s "$output")"
+            observed_sha256="$(sha256sum "$output" | cut -d' ' -f1)"
+            local_blob="$(git hash-object "$output")"
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+              "$ordinal" "$kind" "$relative" "$expected_blob" "$observed_blob" "$local_blob" \
+              "$expected_bytes" "$observed_bytes" "$expected_sha256" "$observed_sha256" \
+              >> "$BOOTSTRAP/chunk-observations.tsv"
+            test "$observed_blob" = "$expected_blob"
+            test "$local_blob" = "$expected_blob"
+            test "$observed_bytes" = "$expected_bytes"
+            test "$observed_sha256" = "$expected_sha256"
+          }
+
+          CONTROLLER_BLOBS=(
+            c38b28b1598f126d2727a4d9228f494e4c1079d5
+            4b80357e74d23fe7edb0e7ce25052e1929f81db0
+            9ceb01ab8c0f5efd09e26d66672a6dc9ceaf248d
+            9175ec1ad24346b9db9ab88722bb02ae1020414b
+            22d3e5b938499d0b56df11ac1a9211e05712dc30
+          )
+          CONTROLLER_SIZES=(5000 5000 5000 5000 456)
+          CONTROLLER_SHA256=(
+            ec8b175c1473fd9f7f7c893a495269df2dfd440e4960f9d74487d706c14060f9
+            8e69b377c4a4208bded118d4b8477a9ceac6ef35e66931455816ce786a1e54e2
+            f764d261b300f0062345e7df8c5a6d530455560896094b405df87520f7be618f
+            79b2e68a76dc3ff0d13ec8c30cbedc8c41cbb8c5fc01cd95d94c2dbd513af2ee
+            0bdb8068c48e536d5d6698be2bc58031af338bedd7cb2231148e959af4170f68
+          )
+          PAYLOAD_BLOBS=(
+            417dab959423065d8cbfbe9af183cde4b7c5fd25
+            35607251fbb7fcf7370b710a0baf1e99f196577b
+            ebd9841e850cef407c4d35191e234ec86a9da407
+            21971133a07421db3e3c219473c717d54e3479fb
+            fc8dc1c4bb1cf991ae4a7f74f723569fa7307bf6
+            5fb94d345a19f9b7df3fdc778ca2a89c03d18b57
+            70c0d173f6b887ebc5f488ac407b504ee2a95835
+          )
+          PAYLOAD_SIZES=(10000 10000 10000 10000 10000 10000 5880)
+          PAYLOAD_SHA256=(
+            e932c87c3204e01fc208e6c2e3e46b86e255d42d57dadd1360e65f80269ae12b
+            f814e46666d96edaf076c6d8b992310e66baa62cc58622083955e38b7752e6d2
+            a2c3a61652bde254bb66dd7e27546bfd2c3bc078220aae89aa7ebbca482fda89
+            55b32a2d8c045e8cb2f2eebb565b70a5a3155b84746b05ac4895438487887f2f
+            ce1a3e3f3c19cd97215580d8f0fd1f7548c633828f468d0f0949a891fc8639c8
+            116a5d7864e3557b40ee4a4f35c466c6e0e82b13fc14d4326841dd86e2772a04
+            22a59c63b9aeea9f8a27febcaf5a0b12d34a07fc7c5340c1142825e0ec53339d
+          )
+
+          for index in "${!CONTROLLER_SIZES[@]}"; do
+            printf -v suffix '%02d' "$index"
+            relative="$SOURCE_PAYLOAD/controller-$suffix"
+            recover_blob "$index" controller "$relative" "${CONTROLLER_BLOBS[$index]}" \
+              "${CONTROLLER_SIZES[$index]}" "${CONTROLLER_SHA256[$index]}" \
+              "$RECOVERED_PAYLOAD/controller-$suffix"
+          done
+          for index in "${!PAYLOAD_SIZES[@]}"; do
+            printf -v suffix '%02d' "$index"
+            relative="$SOURCE_PAYLOAD/part-$suffix"
+            recover_blob "$index" payload "$relative" "${PAYLOAD_BLOBS[$index]}" \
+              "${PAYLOAD_SIZES[$index]}" "${PAYLOAD_SHA256[$index]}" \
+              "$RECOVERED_PAYLOAD/part-$suffix"
+          done
+
+          printf 'reconstructing-exact-source-controller\n' > "$BOOTSTRAP/STAGE"
+          cat "$RECOVERED_PAYLOAD"/controller-{00,01,02,03,04} > "$SOURCE_CONTROLLER"
+          SOURCE_CONTROLLER_OBSERVED_BYTES="$(stat -c%s "$SOURCE_CONTROLLER")"
+          SOURCE_CONTROLLER_OBSERVED_SHA256="$(sha256sum "$SOURCE_CONTROLLER" | cut -d' ' -f1)"
+          printf 'expected_bytes=%s\nobserved_bytes=%s\nexpected_sha256=%s\nobserved_sha256=%s\n' \
+            "$SOURCE_CONTROLLER_BYTES" "$SOURCE_CONTROLLER_OBSERVED_BYTES" \
+            "$SOURCE_CONTROLLER_SHA256" "$SOURCE_CONTROLLER_OBSERVED_SHA256" \
+            > "$BOOTSTRAP/source-controller-proof.txt"
+          test "$SOURCE_CONTROLLER_OBSERVED_BYTES" = "$SOURCE_CONTROLLER_BYTES"
+          test "$SOURCE_CONTROLLER_OBSERVED_SHA256" = "$SOURCE_CONTROLLER_SHA256"
+          bash -n "$SOURCE_CONTROLLER"
+
+          printf 'applying-seven-exact-v4-controller-repairs\n' > "$BOOTSTRAP/STAGE"
+          python - "$SOURCE_CONTROLLER" "$PATCHED_CONTROLLER" "$PATCH_RECEIPT" \
+            "$SOURCE_HEAD" "$SOURCE_WORKFLOW_BLOB" <<'PY_REPAIR'
+          from __future__ import annotations
+
+          from pathlib import Path
+          import hashlib
+          import json
+          import sys
+
+          source_path, output_path, receipt_path, source_head, source_workflow_blob = sys.argv[1:]
+          source = Path(source_path).read_text(encoding='utf-8')
+          assert len(source.encode()) == 20456
+          assert hashlib.sha256(source.encode()).hexdigest() == (
+              '7f0cd764206a434841307110ff72d555580fea79215159786bdf96e1afe216bd'
+          )
+
+          old_topology = '''git merge-base --is-ancestor "$CARRIER_BASE" "$BASE"
+          test "$(git rev-list --count "$CARRIER_BASE"..HEAD)" = '13'
+          cat > "$WORK/expected-carrier-paths" <<EOF_CARRIER
+          $WORKFLOW
+          $PAYLOAD/part-00
+          $PAYLOAD/part-01
+          $PAYLOAD/part-02
+          $PAYLOAD/part-03
+          $PAYLOAD/part-04
+          $PAYLOAD/part-05
+          $PAYLOAD/part-06
+          $PAYLOAD/controller-00
+          $PAYLOAD/controller-01
+          $PAYLOAD/controller-02
+          $PAYLOAD/controller-03
+          $PAYLOAD/controller-04
+          EOF_CARRIER
+          sort -o "$WORK/expected-carrier-paths" "$WORK/expected-carrier-paths"
+          git diff --name-only "$CARRIER_BASE"..HEAD | sort > "$RECEIPT/carrier-paths.txt"
+          diff -u "$WORK/expected-carrier-paths" "$RECEIPT/carrier-paths.txt"
+          git diff --check "$CARRIER_BASE"..HEAD'''
+          new_topology = '''git merge-base --is-ancestor "$CARRIER_BASE" "$BASE"
+          test "$(git rev-list --count "$CARRIER_BASE"..HEAD)" = '1'
+          printf '%s\\n' "$WORKFLOW" > "$WORK/expected-carrier-paths"
+          git diff --name-only "$CARRIER_BASE"..HEAD | sort > "$RECEIPT/carrier-paths.txt"
+          diff -u "$WORK/expected-carrier-paths" "$RECEIPT/carrier-paths.txt"
+          git diff --check "$CARRIER_BASE"..HEAD'''
+
+          payload_literal = 'PAYLOAD="$RUNNER_TEMP/schoolhouse-current-frontier-recovered-payload-v4"'
+          replacements = [
+              (
+                  "WORKFLOW='.github/workflows/temp-schoolhouse-legal-identity-current-frontier-materializer-v1.yml'",
+                  "WORKFLOW='.github/workflows/temp-schoolhouse-legal-identity-current-frontier-materializer-v4.yml'",
+                  'wrapper_workflow_path',
+              ),
+              (
+                  "PAYLOAD='.github/materializers/schoolhouse-current-frontier-v1'",
+                  payload_literal,
+                  'literal_recovered_payload_path',
+              ),
+              (
+                  'WORK="$RUNNER_TEMP/schoolhouse-current-frontier-materializer-v1"',
+                  'WORK="$RUNNER_TEMP/schoolhouse-current-frontier-materializer-v4"',
+                  'work_namespace',
+              ),
+              (
+                  'RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-materialization-v1"',
+                  'RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-materialization-v4"',
+                  'receipt_namespace',
+              ),
+              (old_topology, new_topology, 'one_workflow_carrier_topology'),
+              (
+                  'test "$(jq -r .workflow_run.head_sha "$WORK/export-metadata.json")" = "$EXPORT_HEAD"\n',
+                  '',
+                  'remove_redundant_artifact_metadata_head_assertion',
+              ),
+              (
+                  "'carrier_commit_count':13,'carrier_path_count':13",
+                  "'carrier_commit_count':1,'carrier_path_count':1",
+                  'materialization_receipt_carrier_counts',
+              ),
+          ]
+
+          repaired = source
+          applied = []
+          for old, new, name in replacements:
+              count = repaired.count(old)
+              assert count == 1, (name, count)
+              repaired = repaired.replace(old, new)
+              applied.append(name)
+
+          assert repaired.count(payload_literal) == 1
+          assert '/home/runner/' not in repaired
+          assert '.workflow_run.head_sha' not in repaired
+          assert len(repaired.encode()) == 20059
+          repaired_sha256 = hashlib.sha256(repaired.encode()).hexdigest()
+          assert repaired_sha256 == 'afacca79e3a1e6ba37081e352f3ceb762c1da9d84521f9b83a5968fff24336e3'
+          Path(output_path).write_text(repaired, encoding='utf-8')
+          Path(output_path).chmod(0o755)
+
+          value = {
+              'schema_version': 'schoolhouse-current-frontier-controller-repair@4',
+              'state': 'complete',
+              'source_head': source_head,
+              'source_workflow_blob': source_workflow_blob,
+              'source_controller_bytes': 20456,
+              'source_controller_sha256': '7f0cd764206a434841307110ff72d555580fea79215159786bdf96e1afe216bd',
+              'repaired_controller_bytes': 20059,
+              'repaired_controller_sha256': repaired_sha256,
+              'exact_repairs': applied,
+              'repair_count': len(applied),
+              'literal_runner_temp_expression_preserved': True,
+              'runtime_absolute_path_interpolation_refused': True,
+              'product_payload_changes': 0,
+              'source_requests': 0,
+              'registry_queries': 0,
+              'form_submissions': 0,
+              'identity_admissions': 0,
+              'relationship_admissions': 0,
+              'negative_existence_claims': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          Path(receipt_path).write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+          print('direct_v4_controller_repair=pass exact_repairs=7 product_payload_changes=0')
+          PY_REPAIR
+
+          test "$(stat -c%s "$PATCHED_CONTROLLER")" = "$PATCHED_CONTROLLER_BYTES"
+          test "$(sha256sum "$PATCHED_CONTROLLER" | cut -d' ' -f1)" = "$PATCHED_CONTROLLER_SHA256"
+          bash -n "$PATCHED_CONTROLLER"
+
+          printf 'executing-exact-direct-v4-controller\n' > "$BOOTSTRAP/STAGE"
+          bash "$PATCHED_CONTROLLER"
+          printf 'complete\n' > "$BOOTSTRAP/STAGE"
+
+      - name: Upload exact direct-v4 materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-legal-identity-current-frontier-materialization-v4
+          path: ${{ runner.temp }}/schoolhouse-current-frontier-materialization-v4
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
