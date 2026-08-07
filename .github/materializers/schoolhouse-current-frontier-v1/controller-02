@@ -1,0 +1,90 @@
+ries']==canonical['form_submissions']==0
+
+def tree(ref: str):
+    raw=subprocess.check_output(['git','ls-tree','-r',ref],text=True)
+    out={}
+    for line in raw.splitlines():
+        meta,path=line.split('\t',1); mode,typ,blob=meta.split()
+        out[path]=(mode,typ,blob)
+    return out
+source_tree=tree(source); base_tree=tree(base)
+sha_rows={}
+for line in (export/'REPOSITORY-SHA256SUMS').read_text().splitlines():
+    digest,name=line.split('  ',1); sha_rows[name.removeprefix('./')]=digest
+ls_rows={}
+for line in (export/'GIT-LS-TREE.txt').read_text().splitlines():
+    meta,path=line.split('\t',1); mode,typ,blob=meta.split(); ls_rows[path]=(mode,typ,blob)
+archive=export/'schoolhouse-legal-identity-frontier-46036c.tar.xz'
+with tarfile.open(archive,'r:xz') as tf:
+    members={m.name.removeprefix('./'):m for m in tf.getmembers() if m.isfile()}
+    assert len(members)==233
+    for row in rows:
+        path=row['path']; assert path in members and path in sha_rows and path in ls_rows
+        data=tf.extractfile(members[path]).read()
+        assert len(data)==row['bytes']
+        assert hashlib.sha256(data).hexdigest()==row['sha256']==sha_rows[path]
+        expected=(row['mode'],row['type'],row['git_blob'])
+        assert ls_rows[path]==source_tree[path]==base_tree[path]==expected
+value={'schema_version':'schoolhouse-current-frontier-source-slice-proof@1','state':'complete','source_canonical':source,'product_parent':base,'slice_files':233,'source_and_parent_blobs_equal':True,'artifact_internal_hashes':'pass','source_requests':0}
+output.write_text(json.dumps(value,indent=2,sort_keys=True)+'\n')
+print('source_slice_proof=pass files=233 source_and_parent_blobs_equal=true')
+PY_SOURCE
+
+printf 'rebinding-product-publication-parent\n' > "$RECEIPT/STAGE"
+python - "$WORK/product" "$BASE" "$BASE_TREE" "$RECEIPT/product-rebind.json" <<'PY_REBIND'
+from __future__ import annotations
+from pathlib import Path
+import hashlib, json, sys
+root=Path(sys.argv[1]); parent=sys.argv[2]; tree=sys.argv[3]; receipt=Path(sys.argv[4])
+pm_rel=Path('data/intake/schoolhouse-legal-identity-current-frontier-v1/product-manifest.json')
+tool_rel=Path('tools/validate-schoolhouse-legal-identity-current-frontier.py')
+pm=root/pm_rel; tool=root/tool_rel
+manifest=json.loads(pm.read_text())
+assert manifest['canonical_parent']=='__PRODUCT_PARENT__'
+assert manifest['canonical_parent_tree']=='__PRODUCT_PARENT_TREE__'
+manifest['canonical_parent']=parent; manifest['canonical_parent_tree']=tree
+text=tool.read_text()
+assert text.count('__PRODUCT_PARENT__')==1
+assert text.count('__PRODUCT_PARENT_TREE__')==1
+text=text.replace('__PRODUCT_PARENT__',parent).replace('__PRODUCT_PARENT_TREE__',tree)
+tool.write_text(text); tool.chmod(0o755)
+def digest(p): return hashlib.sha256(p.read_bytes()).hexdigest()
+manifest['file_digests']={}
+for rel in manifest['permanent_paths']:
+    if rel==pm_rel.as_posix(): continue
+    p=root/rel
+    manifest['file_digests'][rel]={'bytes':p.stat().st_size,'sha256':digest(p)}
+pm.write_text(json.dumps(manifest,indent=2,sort_keys=True,ensure_ascii=False)+'\n')
+value={'schema_version':'schoolhouse-current-frontier-product-rebind@1','state':'complete','product_parent':parent,'product_parent_tree':tree,'permanent_paths':11,'rebound_paths':[pm_rel.as_posix(),tool_rel.as_posix()],'product_manifest_sha256':digest(pm),'validator_sha256':digest(tool),'source_requests':0}
+receipt.write_text(json.dumps(value,indent=2,sort_keys=True)+'\n')
+print('product_parent_rebind=pass paths=2')
+PY_REBIND
+
+printf 'constructing-one-commit-product\n' > "$RECEIPT/STAGE"
+WORKTREE="$WORK/product-repository"
+git worktree add --detach "$WORKTREE" "$BASE"
+cp -a "$WORK/product"/. "$WORKTREE"/
+cd "$WORKTREE"
+chmod 0755 tools/validate-schoolhouse-legal-identity-current-frontier.py
+for path in \
+  data/intake/schoolhouse-legal-identity-current-frontier-v1/canonical-slice-manifest.jsonl \
+  data/intake/schoolhouse-legal-identity-current-frontier-v1/frontier-reconciliation.json \
+  data/intake/schoolhouse-legal-identity-current-frontier-v1/next-source-gate.json \
+  data/intake/schoolhouse-legal-identity-current-frontier-v1/product-manifest.json \
+  data/intake/schoolhouse-legal-identity-current-frontier-v1/source-custody.json \
+  data/intake/schoolhouse-legal-identity-current-frontier-v1/source-lanes.json \
+  docs/milestones/schoolhouse-legal-identity-current-frontier-v1.md \
+  tools/validate-schoolhouse-legal-identity-current-frontier.py; do
+  ! git cat-file -e "$BASE:$path" 2>/dev/null
+done
+for path in \
+  data/intake/bvvc-defense-capital/acquisition-frontier.json \
+  data/intake/bvvc-defense-capital/manifest.json \
+  data/intake/bvvc-defense-capital/schoolhouse.json; do
+  git cat-file -e "$BASE:$path"
+done
+git add --pathspec-from-file="$WORK/expected-paths"
+git diff --cached --name-only | sort > "$RECEIPT/product-paths.txt"
+diff -u "$WORK/expected-paths" "$RECEIPT/product-paths.txt"
+git diff --cached --name-status | sort > "$RECEIPT/product-status.txt"
+diff -u "$WORK/expected-sta
