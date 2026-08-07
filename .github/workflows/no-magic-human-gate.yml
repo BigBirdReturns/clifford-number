@@ -88,7 +88,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          git restore --source=HEAD --worktree --staged -- build dist 2>/dev/null || true
+          git restore --source=HEAD --worktree --staged -- build
           git clean -fdx -- build dist
           git diff --check
           git diff --name-only | sort > /tmp/pc51-consolidated-publication/prepublication-paths.txt
