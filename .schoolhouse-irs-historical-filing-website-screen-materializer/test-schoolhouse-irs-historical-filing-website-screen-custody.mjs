@@ -1,14 +1,30 @@
 import assert from 'node:assert/strict';
-import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ARCHIVE_PATH, CUSTODY_PATH, DATA_DIR, DOC_PATH, MANIFEST_PATH, SUMS_PATH } from './build-schoolhouse-irs-historical-filing-website-screen-custody.mjs';
+import {
+  ARCHIVE_PATH,
+  BUILD_PATH,
+  CUSTODY_PATH,
+  DATA_DIR,
+  DOC_PATH,
+  MANIFEST_PATH,
+  SUMS_PATH,
+  TEST_PATH,
+  VALIDATE_PATH,
+} from './build-schoolhouse-irs-historical-filing-website-screen-custody.mjs';
 import { validateProduct } from './validate-schoolhouse-irs-historical-filing-website-screen-custody.mjs';
 
+async function copyPath(root, rel) {
+  const target = path.join(root, rel);
+  await mkdir(path.dirname(target), { recursive: true });
+  await cp(rel, target, { recursive: true });
+}
+
 async function copyProduct(root) {
-  for (const rel of [DATA_DIR, DOC_PATH]) {
-    await cp(rel, path.join(root, rel), { recursive: true });
+  for (const rel of [DATA_DIR, DOC_PATH, BUILD_PATH, TEST_PATH, VALIDATE_PATH]) {
+    await copyPath(root, rel);
   }
 }
 
