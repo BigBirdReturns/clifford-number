@@ -1,0 +1,652 @@
+name: TEMP census exact School.House USAspending recipient candidates
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-usaspending-recipient-census-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-usaspending-recipient-census-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  acquire:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-usaspending-recipient-census-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Execute bounded six-route recipient census
+        shell: bash
+        env:
+          OUTPUT_DIR: ${{ runner.temp }}/schoolhouse-usaspending-recipient-census-v1
+        run: |
+          set -Eeuo pipefail
+          cat > "$RUNNER_TEMP/schoolhouse-usaspending-recipient-census-v1.py" <<'PY'
+          #!/usr/bin/env python3
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import os
+          import re
+          import ssl
+          import sys
+          import time
+          import unicodedata
+          import urllib.error
+          import urllib.request
+          from collections import Counter
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from typing import Any
+
+          ISSUE = 1358
+          CANONICAL_PARENT = "8a2f4538bdbcf9455f02e70c35a71cb39f805b18"
+          CANONICAL_RDAP_MERGE = "32b818c9d37ff5e65629848aca84c8d30859387b"
+          AUTOCOMPLETE_URL = "https://api.usaspending.gov/api/v2/autocomplete/recipient/"
+          INDEX_URL = "https://api.usaspending.gov/api/v2/recipient/"
+          MAX_RESPONSE_BYTES = 5 * 1024 * 1024
+          MAX_ATTEMPTS = 2
+          MAX_TOTAL_REQUESTS = 12
+          TARGET_NORMALIZED = "schoolhouse"
+          QUERIES = [
+              ("q1_school_dot_house", "School.House"),
+              ("q2_schoolhouse", "Schoolhouse"),
+              ("q3_school_house", "School House"),
+          ]
+          ALLOWED_LEVELS = {"C", "P", "R"}
+          TERMINAL_STATES = {
+              "terminal_public_json_parsed",
+              "terminal_bounded_first_page_only",
+              "terminal_bounded_http_error",
+              "terminal_bounded_transport_error",
+              "terminal_bounded_response_too_large",
+              "terminal_bounded_non_json_content",
+              "terminal_bounded_json_parse_error",
+              "terminal_bounded_schema_error",
+              "terminal_blocked_redirect",
+          }
+          FORBIDDEN_KEYS = {
+              "duns",
+              "amount",
+              "address",
+              "address_line_1",
+              "address_line_2",
+              "physical_address",
+              "mailing_address",
+              "person_name",
+              "points_of_contact",
+              "phone",
+              "fax",
+              "email",
+              "award_description",
+              "transaction_description",
+              "raw_json",
+              "cookies",
+              "credentials",
+              "tokens",
+              "private_support",
+          }
+
+          OUT = Path(os.environ.get("OUTPUT_DIR", "artifact"))
+          OUT.mkdir(parents=True, exist_ok=True)
+          LOG_LINES: list[str] = []
+
+
+          def log(message: str) -> None:
+              line = f"{datetime.now(timezone.utc).isoformat()} {message}"
+              LOG_LINES.append(line)
+              print(line, flush=True)
+
+
+          def canonical_bytes(value: Any) -> bytes:
+              return (json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False) + "\n").encode("utf-8")
+
+
+          def compact_bytes(value: Any) -> bytes:
+              return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
+          def sha256(data: bytes) -> str:
+              return hashlib.sha256(data).hexdigest()
+
+
+          def normalize_name(value: str) -> str:
+              text = unicodedata.normalize("NFKC", value).casefold()
+              return re.sub(r"[^a-z0-9]", "", text)
+
+
+          def write_json(path: Path, value: Any) -> None:
+              path.write_bytes(canonical_bytes(value))
+
+
+          def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+              with path.open("w", encoding="utf-8", newline="\n") as handle:
+                  for row in rows:
+                      handle.write(json.dumps(row, sort_keys=True, ensure_ascii=False, separators=(",", ":")) + "\n")
+
+
+          def walk_forbidden(value: Any, location: str = "$") -> None:
+              if isinstance(value, dict):
+                  for key, child in value.items():
+                      normalized = str(key).casefold()
+                      assert normalized not in FORBIDDEN_KEYS, f"forbidden retained key {location}.{key}"
+                      walk_forbidden(child, f"{location}.{key}")
+              elif isinstance(value, list):
+                  for index, child in enumerate(value):
+                      walk_forbidden(child, f"{location}[{index}]")
+
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+
+
+          OPENER = urllib.request.build_opener(
+              urllib.request.HTTPSHandler(context=ssl.create_default_context()),
+              NoRedirect(),
+          )
+
+
+          def request_json(route_id: str, endpoint_class: str, url: str, body: dict[str, Any]) -> tuple[dict[str, Any], Any | None]:
+              payload = compact_bytes(body)
+              receipt: dict[str, Any] = {
+                  "route_id": route_id,
+                  "endpoint_class": endpoint_class,
+                  "url": url,
+                  "request_body_sha256": sha256(payload),
+                  "attempts": 0,
+                  "terminal_state": None,
+                  "status_code": None,
+                  "final_url": url,
+                  "response_bytes": 0,
+                  "response_sha256": None,
+                  "content_type": None,
+                  "timestamp_utc": None,
+                  "error_class": None,
+              }
+              parsed: Any | None = None
+              for attempt in range(1, MAX_ATTEMPTS + 1):
+                  receipt["attempts"] = attempt
+                  receipt["timestamp_utc"] = datetime.now(timezone.utc).isoformat()
+                  request = urllib.request.Request(
+                      url,
+                      data=payload,
+                      method="POST",
+                      headers={
+                          "Accept": "application/json",
+                          "Content-Type": "application/json",
+                          "User-Agent": "BigBirdReturns-clifford-number/1.0 public-record-census",
+                      },
+                  )
+                  try:
+                      with OPENER.open(request, timeout=45) as response:
+                          receipt["status_code"] = int(response.status)
+                          receipt["final_url"] = response.geturl()
+                          receipt["content_type"] = response.headers.get("Content-Type", "")
+                          content_length = response.headers.get("Content-Length")
+                          if content_length and int(content_length) > MAX_RESPONSE_BYTES:
+                              receipt["terminal_state"] = "terminal_bounded_response_too_large"
+                              receipt["error_class"] = "content_length_exceeded"
+                              break
+                          data = response.read(MAX_RESPONSE_BYTES + 1)
+                          receipt["response_bytes"] = len(data)
+                          receipt["response_sha256"] = sha256(data)
+                          if len(data) > MAX_RESPONSE_BYTES:
+                              receipt["terminal_state"] = "terminal_bounded_response_too_large"
+                              receipt["error_class"] = "stream_limit_exceeded"
+                              break
+                          if receipt["final_url"] != url:
+                              receipt["terminal_state"] = "terminal_blocked_redirect"
+                              receipt["error_class"] = "unexpected_final_url"
+                              break
+                          if "json" not in receipt["content_type"].casefold():
+                              receipt["terminal_state"] = "terminal_bounded_non_json_content"
+                              receipt["error_class"] = "non_json_content_type"
+                              break
+                          try:
+                              parsed = json.loads(data)
+                          except json.JSONDecodeError:
+                              receipt["terminal_state"] = "terminal_bounded_json_parse_error"
+                              receipt["error_class"] = "json_decode_error"
+                              break
+                          receipt["terminal_state"] = "terminal_public_json_parsed"
+                          break
+                  except urllib.error.HTTPError as exc:
+                      receipt["status_code"] = int(exc.code)
+                      receipt["final_url"] = exc.geturl() or url
+                      receipt["content_type"] = exc.headers.get("Content-Type", "") if exc.headers else ""
+                      if 300 <= exc.code < 400:
+                          receipt["terminal_state"] = "terminal_blocked_redirect"
+                          receipt["error_class"] = f"http_{exc.code}_redirect"
+                          break
+                      receipt["error_class"] = f"http_{exc.code}"
+                      if attempt < MAX_ATTEMPTS and (exc.code == 429 or 500 <= exc.code < 600):
+                          time.sleep(2 * attempt)
+                          continue
+                      receipt["terminal_state"] = "terminal_bounded_http_error"
+                      break
+                  except Exception as exc:
+                      receipt["error_class"] = type(exc).__name__
+                      if attempt < MAX_ATTEMPTS:
+                          time.sleep(2 * attempt)
+                          continue
+                      receipt["terminal_state"] = "terminal_bounded_transport_error"
+                      break
+              assert receipt["terminal_state"] in TERMINAL_STATES
+              return receipt, parsed
+
+
+          def parse_autocomplete(query_id: str, query_text: str, parsed: Any) -> list[dict[str, Any]]:
+              assert isinstance(parsed, dict)
+              rows = parsed.get("results")
+              assert isinstance(rows, list)
+              output: list[dict[str, Any]] = []
+              for ordinal, row in enumerate(rows, start=1):
+                  assert isinstance(row, dict)
+                  name = row.get("recipient_name")
+                  level = row.get("recipient_level")
+                  assert name is None or isinstance(name, str)
+                  assert level is None or level in ALLOWED_LEVELS
+                  normalized = normalize_name(name) if isinstance(name, str) else None
+                  output.append(
+                      {
+                          "query_id": query_id,
+                          "query_text": query_text,
+                          "result_ordinal": ordinal,
+                          "recipient_name": name,
+                          "recipient_level": level,
+                          "normalized_name": normalized,
+                          "strict_name_match": normalized == TARGET_NORMALIZED,
+                          "candidate": False,
+                      }
+                  )
+              return output
+
+
+          def parse_index(query_id: str, query_text: str, parsed: Any) -> tuple[list[dict[str, Any]], bool]:
+              assert isinstance(parsed, dict)
+              metadata = parsed.get("page_metadata")
+              rows = parsed.get("results")
+              assert isinstance(metadata, dict)
+              assert isinstance(rows, list)
+              assert metadata.get("page") == 1
+              assert isinstance(metadata.get("total"), int) and metadata["total"] >= len(rows)
+              assert isinstance(metadata.get("limit"), int) and 1 <= metadata["limit"] <= 1000
+              has_next = metadata.get("hasNext")
+              assert isinstance(has_next, bool)
+              output: list[dict[str, Any]] = []
+              for ordinal, row in enumerate(rows, start=1):
+                  assert isinstance(row, dict)
+                  name = row.get("name")
+                  uei = row.get("uei")
+                  recipient_id = row.get("id")
+                  level = row.get("recipient_level")
+                  assert name is None or isinstance(name, str)
+                  assert uei is None or isinstance(uei, str)
+                  assert recipient_id is None or isinstance(recipient_id, str)
+                  assert level in ALLOWED_LEVELS
+                  normalized = normalize_name(name) if isinstance(name, str) else None
+                  exact = normalized == TARGET_NORMALIZED
+                  candidate = bool(
+                      not has_next
+                      and exact
+                      and isinstance(uei, str)
+                      and uei.strip()
+                      and isinstance(recipient_id, str)
+                      and recipient_id.strip()
+                      and level in ALLOWED_LEVELS
+                  )
+                  output.append(
+                      {
+                          "query_id": query_id,
+                          "query_text": query_text,
+                          "result_ordinal": ordinal,
+                          "recipient_name": name,
+                          "uei": uei,
+                          "recipient_id": recipient_id,
+                          "recipient_level": level,
+                          "normalized_name": normalized,
+                          "strict_name_match": exact,
+                          "candidate": candidate,
+                      }
+                  )
+              return output, has_next
+
+
+          def main() -> None:
+              policy = {
+                  "schema_version": "schoolhouse-usaspending-recipient-census-route-policy@1",
+                  "issue": ISSUE,
+                  "canonical_parent": CANONICAL_PARENT,
+                  "canonical_rdap_merge": CANONICAL_RDAP_MERGE,
+                  "fixed_queries": [{"query_id": query_id, "query_text": query_text} for query_id, query_text in QUERIES],
+                  "routes": {
+                      "autocomplete": AUTOCOMPLETE_URL,
+                      "recipient_index": INDEX_URL,
+                  },
+                  "request_ceiling": {
+                      "fixed_autocomplete_posts": 3,
+                      "fixed_recipient_index_posts": 3,
+                      "maximum_attempts_per_request": MAX_ATTEMPTS,
+                      "maximum_total_requests": MAX_TOTAL_REQUESTS,
+                      "maximum_response_bytes_per_request": MAX_RESPONSE_BYTES,
+                      "parallel_workers": 1,
+                      "result_spawned_requests": 0,
+                      "login_attempts": 0,
+                      "account_creation_attempts": 0,
+                      "api_key_requests": 0,
+                      "outside_human_dependency": False,
+                  },
+                  "normalization": {
+                      "algorithm": "unicode_nfkc_casefold_remove_non_ascii_alphanumeric",
+                      "target": TARGET_NORMALIZED,
+                  },
+                  "retention": {
+                      "duns_values": 0,
+                      "recipient_amount_values": 0,
+                      "addresses_retained": 0,
+                      "person_names_retained": 0,
+                      "points_of_contact_retained": 0,
+                      "phone_fax_email_values": 0,
+                      "award_or_transaction_narratives": 0,
+                      "raw_response_json": 0,
+                      "cookies_browser_state_credentials_or_tokens": 0,
+                      "private_support_material": 0,
+                  },
+                  "authority": {
+                      "promotes_to": "federal_spending_recipient_name_candidate_only",
+                      "identities_admitted": 0,
+                      "relationships_admitted": 0,
+                      "federal_awards_admitted": 0,
+                      "funding_or_amount_admissions": 0,
+                      "negative_existence_claims": 0,
+                      "outside_human_dependency": False,
+                      "publication_effect": "none",
+                      "adoption_effect": "none",
+                      "graph_effect": "none",
+                      "public_schoolhouse_legal_identity": "unresolved",
+                  },
+              }
+
+              receipts: list[dict[str, Any]] = []
+              autocomplete_rows: list[dict[str, Any]] = []
+              index_rows: list[dict[str, Any]] = []
+              index_has_next: dict[str, bool | None] = {}
+
+              for query_id, query_text in QUERIES:
+                  body = {"search_text": query_text, "limit": 100}
+                  route_id = f"autocomplete_{query_id}"
+                  receipt, parsed = request_json(route_id, "autocomplete", AUTOCOMPLETE_URL, body)
+                  receipt["query_id"] = query_id
+                  receipt["query_text"] = query_text
+                  if receipt["terminal_state"] == "terminal_public_json_parsed":
+                      try:
+                          rows = parse_autocomplete(query_id, query_text, parsed)
+                          autocomplete_rows.extend(rows)
+                          receipt["returned_rows"] = len(rows)
+                          receipt["strict_match_rows"] = sum(1 for row in rows if row["strict_name_match"])
+                      except Exception as exc:
+                          receipt["terminal_state"] = "terminal_bounded_schema_error"
+                          receipt["error_class"] = type(exc).__name__
+                          receipt["returned_rows"] = 0
+                          receipt["strict_match_rows"] = 0
+                  else:
+                      receipt["returned_rows"] = 0
+                      receipt["strict_match_rows"] = 0
+                  receipts.append(receipt)
+
+                  body = {
+                      "keyword": query_text,
+                      "page": 1,
+                      "limit": 1000,
+                      "sort": "name",
+                      "order": "asc",
+                      "award_type": "all",
+                  }
+                  route_id = f"recipient_index_{query_id}"
+                  receipt, parsed = request_json(route_id, "recipient_index", INDEX_URL, body)
+                  receipt["query_id"] = query_id
+                  receipt["query_text"] = query_text
+                  index_has_next[query_id] = None
+                  if receipt["terminal_state"] == "terminal_public_json_parsed":
+                      try:
+                          rows, has_next = parse_index(query_id, query_text, parsed)
+                          index_has_next[query_id] = has_next
+                          if has_next:
+                              for row in rows:
+                                  row["candidate"] = False
+                              receipt["terminal_state"] = "terminal_bounded_first_page_only"
+                              receipt["error_class"] = "recipient_index_has_next"
+                          index_rows.extend(rows)
+                          receipt["returned_rows"] = len(rows)
+                          receipt["strict_match_rows"] = sum(1 for row in rows if row["strict_name_match"])
+                          receipt["candidate_rows"] = sum(1 for row in rows if row["candidate"])
+                          receipt["has_next"] = has_next
+                      except Exception as exc:
+                          receipt["terminal_state"] = "terminal_bounded_schema_error"
+                          receipt["error_class"] = type(exc).__name__
+                          receipt["returned_rows"] = 0
+                          receipt["strict_match_rows"] = 0
+                          receipt["candidate_rows"] = 0
+                          receipt["has_next"] = None
+                  else:
+                      receipt["returned_rows"] = 0
+                      receipt["strict_match_rows"] = 0
+                      receipt["candidate_rows"] = 0
+                      receipt["has_next"] = None
+                  receipts.append(receipt)
+
+              candidates = [row for row in index_rows if row["candidate"]]
+              total_attempts = sum(int(receipt["attempts"]) for receipt in receipts)
+              terminal_counts = dict(sorted(Counter(receipt["terminal_state"] for receipt in receipts).items()))
+              all_terminal = len(receipts) == 6 and all(receipt["terminal_state"] in TERMINAL_STATES for receipt in receipts)
+              all_public_or_bounded = all_terminal and total_attempts <= MAX_TOTAL_REQUESTS
+              state = (
+                  "terminal_bounded_usaspending_recipient_candidate_census"
+                  if all_public_or_bounded
+                  else "invalid_nonterminal_usaspending_recipient_census"
+              )
+
+              summary = {
+                  "schema_version": "schoolhouse-usaspending-recipient-census-summary@1",
+                  "state": state,
+                  "issue": ISSUE,
+                  "canonical_parent": CANONICAL_PARENT,
+                  "fixed_query_count": 3,
+                  "fixed_route_count": 6,
+                  "terminal_route_count": len(receipts),
+                  "terminal_route_state_counts": terminal_counts,
+                  "total_request_attempts": total_attempts,
+                  "autocomplete_returned_rows": len(autocomplete_rows),
+                  "autocomplete_strict_match_rows": sum(1 for row in autocomplete_rows if row["strict_name_match"]),
+                  "recipient_index_returned_rows": len(index_rows),
+                  "recipient_index_strict_match_rows": sum(1 for row in index_rows if row["strict_name_match"]),
+                  "federal_spending_recipient_name_candidate_rows": len(candidates),
+                  "candidate_ueis": sorted({row["uei"] for row in candidates if row.get("uei")}),
+                  "recipient_index_has_next_by_query": index_has_next,
+                  "retention": policy["retention"],
+                  "authority": policy["authority"],
+                  "interpretation": {
+                      "autocomplete_rows_cannot_be_candidates": True,
+                      "recipient_name_match_is_not_target_identity": True,
+                      "recipient_index_presence_is_not_award_attribution_to_target": True,
+                      "zero_candidates_is_not_entity_or_award_absence": True,
+                      "identical_source_retry_authorized": False,
+                  },
+              }
+              adjudication = {
+                  "schema_version": "schoolhouse-usaspending-recipient-census-adjudication@1",
+                  "state": state,
+                  "promotes_to": "candidate_only" if candidates else "no_candidate_promoted",
+                  "candidate_rows": len(candidates),
+                  "successor_required": bool(candidates),
+                  "identity_admissions": 0,
+                  "relationship_admissions": 0,
+                  "federal_award_admissions": 0,
+                  "funding_or_amount_admissions": 0,
+                  "negative_existence_claims": 0,
+                  "outside_human_dependency": False,
+                  "publication_effect": "none",
+                  "adoption_effect": "none",
+                  "graph_effect": "none",
+                  "public_schoolhouse_legal_identity": "unresolved",
+              }
+
+              for value in [policy, receipts, autocomplete_rows, index_rows, candidates, summary, adjudication]:
+                  walk_forbidden(value)
+
+              assert len(receipts) == 6
+              assert [receipt["route_id"] for receipt in receipts] == [
+                  "autocomplete_q1_school_dot_house",
+                  "recipient_index_q1_school_dot_house",
+                  "autocomplete_q2_schoolhouse",
+                  "recipient_index_q2_schoolhouse",
+                  "autocomplete_q3_school_house",
+                  "recipient_index_q3_school_house",
+              ]
+              assert total_attempts <= MAX_TOTAL_REQUESTS
+              assert all(receipt["final_url"] in {AUTOCOMPLETE_URL, INDEX_URL} for receipt in receipts)
+              assert all(receipt["terminal_state"] in TERMINAL_STATES for receipt in receipts)
+              assert all(row["candidate"] is False for row in autocomplete_rows)
+              assert candidates == [row for row in index_rows if row["candidate"]]
+              for row in candidates:
+                  assert row["strict_name_match"] is True
+                  assert normalize_name(row["recipient_name"]) == TARGET_NORMALIZED
+                  assert isinstance(row["uei"], str) and row["uei"].strip()
+                  assert isinstance(row["recipient_id"], str) and row["recipient_id"].strip()
+                  assert row["recipient_level"] in ALLOWED_LEVELS
+
+              write_json(OUT / "route-policy.json", policy)
+              write_jsonl(OUT / "request-receipts.jsonl", receipts)
+              write_jsonl(OUT / "autocomplete-results.jsonl", autocomplete_rows)
+              write_jsonl(OUT / "recipient-index-results.jsonl", index_rows)
+              write_jsonl(OUT / "candidates.jsonl", candidates)
+              write_json(OUT / "summary.json", summary)
+              write_json(OUT / "adjudication.json", adjudication)
+              (OUT / "RUNNER_EXIT_CODE").write_text("0\n", encoding="utf-8")
+              (OUT / "RUNNER-OUTPUT.log").write_text("\n".join(LOG_LINES + [
+                  f"state={state}",
+                  f"fixed_routes={len(receipts)}",
+                  f"terminal_routes={len(receipts)}",
+                  f"total_request_attempts={total_attempts}",
+                  f"autocomplete_rows={len(autocomplete_rows)}",
+                  f"recipient_index_rows={len(index_rows)}",
+                  f"candidate_rows={len(candidates)}",
+                  "outside_human_dependency=false",
+                  "publication_effect=none",
+                  "adoption_effect=none",
+                  "graph_effect=none",
+              ]) + "\n", encoding="utf-8")
+
+              manifest_members = [
+                  "RUNNER-OUTPUT.log",
+                  "RUNNER_EXIT_CODE",
+                  "adjudication.json",
+                  "autocomplete-results.jsonl",
+                  "candidates.jsonl",
+                  "recipient-index-results.jsonl",
+                  "request-receipts.jsonl",
+                  "route-policy.json",
+                  "summary.json",
+              ]
+              manifest = {
+                  "schema_version": "schoolhouse-usaspending-recipient-census-artifact-manifest@1",
+                  "issue": ISSUE,
+                  "canonical_parent": CANONICAL_PARENT,
+                  "members": [
+                      {
+                          "name": name,
+                          "bytes": (OUT / name).stat().st_size,
+                          "sha256": sha256((OUT / name).read_bytes()),
+                      }
+                      for name in manifest_members
+                  ],
+              }
+              manifest["combined_sha256"] = sha256(canonical_bytes(manifest["members"]))
+              write_json(OUT / "artifact-manifest.json", manifest)
+
+              checksum_members = manifest_members + ["artifact-manifest.json"]
+              with (OUT / "SHA256SUMS").open("w", encoding="utf-8", newline="\n") as handle:
+                  for name in checksum_members:
+                      handle.write(f"{sha256((OUT / name).read_bytes())}  {name}\n")
+
+              # Final self-validation from only retained artifact content.
+              assert (OUT / "RUNNER_EXIT_CODE").read_text().strip() == "0"
+              checksum_lines = (OUT / "SHA256SUMS").read_text().splitlines()
+              assert len(checksum_lines) == len(checksum_members)
+              for line in checksum_lines:
+                  digest, name = line.split("  ", 1)
+                  assert "/" not in name
+                  assert digest == sha256((OUT / name).read_bytes())
+              retained_summary = json.loads((OUT / "summary.json").read_text())
+              retained_candidates = [
+                  json.loads(line)
+                  for line in (OUT / "candidates.jsonl").read_text().splitlines()
+                  if line.strip()
+              ]
+              assert retained_summary["federal_spending_recipient_name_candidate_rows"] == len(retained_candidates)
+              assert retained_summary["fixed_route_count"] == retained_summary["terminal_route_count"] == 6
+              assert retained_summary["total_request_attempts"] <= MAX_TOTAL_REQUESTS
+              print(json.dumps(retained_summary, indent=2, sort_keys=True))
+
+
+          if __name__ == "__main__":
+              try:
+                  main()
+              except Exception as exc:
+                  log(f"fatal_internal_error={type(exc).__name__}:{exc}")
+                  (OUT / "RUNNER_EXIT_CODE").write_text("1\n", encoding="utf-8")
+                  (OUT / "RUNNER-OUTPUT.log").write_text("\n".join(LOG_LINES) + "\n", encoding="utf-8")
+                  raise
+          PY
+          python -m py_compile "$RUNNER_TEMP/schoolhouse-usaspending-recipient-census-v1.py"
+          python "$RUNNER_TEMP/schoolhouse-usaspending-recipient-census-v1.py" | tee "$RUNNER_TEMP/schoolhouse-usaspending-summary.log"
+          python - "$OUTPUT_DIR" <<'PY'
+          import json, sys
+          from pathlib import Path
+          root = Path(sys.argv[1])
+          summary = json.loads((root / 'summary.json').read_text())
+          assert summary['issue'] == 1358
+          assert summary['canonical_parent'] == '8a2f4538bdbcf9455f02e70c35a71cb39f805b18'
+          assert summary['fixed_route_count'] == summary['terminal_route_count'] == 6
+          assert summary['total_request_attempts'] <= 12
+          assert summary['authority']['outside_human_dependency'] is False
+          assert summary['authority']['identities_admitted'] == 0
+          assert summary['authority']['federal_awards_admitted'] == 0
+          assert summary['authority']['funding_or_amount_admissions'] == 0
+          print(
+              'schoolhouse_usaspending_source=pass '
+              f"routes={summary['terminal_route_count']} "
+              f"candidates={summary['federal_spending_recipient_name_candidate_rows']} "
+              f"attempts={summary['total_request_attempts']}"
+          )
+          PY
+
+      - name: Preserve exact source artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-usaspending-recipient-census-v1
+          path: ${{ runner.temp }}/schoolhouse-usaspending-recipient-census-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
