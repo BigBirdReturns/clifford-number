@@ -1,0 +1,204 @@
+name: TEMP recover exact School.House SAM public entity census
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-recovery-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-sam-public-entity-registration-census-recovery-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  recover:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-sam-public-entity-registration-census-recovery-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prove exact recovery topology and source custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='d26cb838df12a877840ebe71eb9388d44b6ceaf9'
+          SOURCE='61f69707e8425d2db62ded8631cf083e994757f4'
+          SOURCE_BLOB='7447515d3010594d7be25719045fbee8585a6882'
+          SOURCE_WORKFLOW='.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-v1.yml'
+          RECOVERY_WORKFLOW='.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-recovery-v1.yml'
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test "$(git rev-parse HEAD^)" = "$SOURCE"
+          test "$(git rev-parse "$SOURCE^")" = "$BASE"
+          test "$(git rev-list --count "$SOURCE"..HEAD)" = '1'
+          test "$(git rev-parse "$SOURCE:$SOURCE_WORKFLOW")" = "$SOURCE_BLOB"
+
+          mapfile -t SOURCE_DELTA < <(git diff --name-only "$BASE".."$SOURCE")
+          test "${#SOURCE_DELTA[@]}" -eq 1
+          test "${SOURCE_DELTA[0]}" = "$SOURCE_WORKFLOW"
+
+          mapfile -t RECOVERY_DELTA < <(git diff --name-only "$SOURCE"..HEAD)
+          test "${#RECOVERY_DELTA[@]}" -eq 1
+          test "${RECOVERY_DELTA[0]}" = "$RECOVERY_WORKFLOW"
+
+          printf 'canonical_parent=%s\n' "$BASE"
+          printf 'source_carrier=%s\n' "$SOURCE"
+          printf 'source_workflow_blob=%s\n' "$SOURCE_BLOB"
+          printf 'recovery_head=%s\n' "$(git rev-parse HEAD)"
+
+      - name: Install bounded browser and recovery parser
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir \
+            'playwright==1.55.0' \
+            'PyYAML==6.0.2'
+          python -m playwright install --with-deps chromium
+
+      - name: Recover the runner with three exact scope substitutions
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE='61f69707e8425d2db62ded8631cf083e994757f4'
+          SOURCE_BLOB='7447515d3010594d7be25719045fbee8585a6882'
+          SOURCE_WORKFLOW='.github/workflows/temp-schoolhouse-sam-public-entity-registration-census-v1.yml'
+          SOURCE_FILE="$RUNNER_TEMP/source-carrier.yml"
+          PATCHED_FILE="$RUNNER_TEMP/recovered-carrier.yml"
+          RUN_FILE="$RUNNER_TEMP/recovered-run.sh"
+          RECEIPT_FILE="$RUNNER_TEMP/recovery-custody.json"
+
+          git show "$SOURCE:$SOURCE_WORKFLOW" > "$SOURCE_FILE"
+
+          python - "$SOURCE_FILE" "$PATCHED_FILE" "$RUN_FILE" "$RECEIPT_FILE" "$SOURCE" "$SOURCE_BLOB" "$GITHUB_SHA" <<'PY'
+          from __future__ import annotations
+
+          from pathlib import Path
+          import hashlib
+          import json
+          import sys
+          import yaml
+
+          source_path = Path(sys.argv[1])
+          patched_path = Path(sys.argv[2])
+          run_path = Path(sys.argv[3])
+          receipt_path = Path(sys.argv[4])
+          source_commit = sys.argv[5]
+          source_blob = sys.argv[6]
+          recovery_head = sys.argv[7]
+
+          source = source_path.read_text()
+          assert source.count("nonlocal global_rows_inspected") == 2
+          assert source.count("nonlocal blocked_official_detail_views") == 1
+          assert source.count("nonlocal ") == 3
+
+          patched = source.replace(
+              "nonlocal global_rows_inspected",
+              "global global_rows_inspected",
+          ).replace(
+              "nonlocal blocked_official_detail_views",
+              "global blocked_official_detail_views",
+          )
+
+          assert "nonlocal " not in patched
+          assert patched.count("global global_rows_inspected") == 2
+          assert patched.count("global blocked_official_detail_views") == 1
+          patched_path.write_text(patched)
+
+          document = yaml.safe_load(patched)
+          steps = document["jobs"]["census"]["steps"]
+          matches = [
+              step
+              for step in steps
+              if step.get("name")
+              == "Execute anonymous public SAM.gov entity-registration census"
+          ]
+          assert len(matches) == 1
+          run = matches[0]["run"]
+          assert isinstance(run, str)
+          assert "nonlocal " not in run
+          assert run.count("global global_rows_inspected") == 2
+          assert run.count("global blocked_official_detail_views") == 1
+          run_path.write_text("#!/usr/bin/env bash\n" + run)
+          run_path.chmod(0o700)
+
+          sha256 = lambda value: hashlib.sha256(value).hexdigest()
+          receipt = {
+              "schema_version": "schoolhouse-sam-public-entity-registration-recovery-custody@1",
+              "canonical_parent": "d26cb838df12a877840ebe71eb9388d44b6ceaf9",
+              "source_carrier_commit": source_commit,
+              "source_workflow_blob_sha1": source_blob,
+              "source_workflow_sha256": sha256(source.encode()),
+              "patched_workflow_sha256": sha256(patched.encode()),
+              "recovery_head": recovery_head,
+              "substitutions": {
+                  "nonlocal_global_rows_inspected_to_global": 2,
+                  "nonlocal_blocked_official_detail_views_to_global": 1,
+                  "total": 3,
+              },
+              "other_source_changes": 0,
+              "outside_human_dependency": False,
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none",
+          }
+          receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
+
+          print(f"source_workflow_sha256={receipt['source_workflow_sha256']}")
+          print(f"patched_workflow_sha256={receipt['patched_workflow_sha256']}")
+          print("exact_scope_substitutions=3")
+          PY
+
+          bash -n "$RUN_FILE"
+
+      - name: Execute recovered bounded census and preserve custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/schoolhouse-sam-public-entity-registration-census-v1"
+          RUN_FILE="$RUNNER_TEMP/recovered-run.sh"
+          RECEIPT_FILE="$RUNNER_TEMP/recovery-custody.json"
+
+          set +e
+          bash "$RUN_FILE"
+          RC="$?"
+          set -e
+
+          mkdir -p "$OUT"
+          cp "$RECEIPT_FILE" "$OUT/RECOVERY-CUSTODY.json"
+          printf '%s\n' "$RC" > "$OUT/RECOVERED_RUN_EXIT_CODE"
+          (
+            cd "$OUT"
+            sha256sum RECOVERY-CUSTODY.json RECOVERED_RUN_EXIT_CODE \
+              > RECOVERY-SHA256SUMS
+          )
+
+          test "$RC" -eq 0
+
+      - name: Upload exact recovered census artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-sam-public-entity-registration-census-recovery-v1
+          path: ${{ runner.temp }}/schoolhouse-sam-public-entity-registration-census-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
