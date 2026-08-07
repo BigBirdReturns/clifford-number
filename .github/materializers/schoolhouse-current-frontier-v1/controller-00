@@ -1,0 +1,170 @@
+set -Eeuo pipefail
+CARRIER_BASE='1e52a58be874538509d6c0d3c06adc12fc53cad7'
+SOURCE_CANONICAL='46036c01eaba31bdb18045307fe3ebcb67d576a6'
+SOURCE_TREE='0ffec7018bcfc038a73cd280970f783d12a5c222'
+WORKFLOW='.github/workflows/temp-schoolhouse-legal-identity-current-frontier-materializer-v1.yml'
+PAYLOAD='.github/materializers/schoolhouse-current-frontier-v1'
+TARGET='agent/schoolhouse-legal-identity-current-frontier-product-v1'
+EXPORT_RUN='31223901158'
+EXPORT_HEAD='bf374b46e3eff3d4936cc97e37e9bfdfec91bd6c'
+EXPORT_ARTIFACT='9011399743'
+EXPORT_BYTES='1918341'
+EXPORT_DIGEST='sha256:0009dc40ae1c9be74e4b89c7fd4deb05e8eec3bc5f3fd8b2a88a7dc74e96c28e'
+EXPORT_TAR_BYTES='706192'
+EXPORT_TAR_SHA256='6d2d25325570c28648ca70cf30f9608622e95da078a9c8ec40d9f951eeeda3e2'
+PAYLOAD_B64_BYTES='65880'
+PAYLOAD_B64_SHA256='2ef3e418be0d06986d9825f7810e69e700884fc70a437c93bb381c40dd627aaa'
+PAYLOAD_XZ_BYTES='49408'
+PAYLOAD_XZ_SHA256='b0482a70ace37bdd3ba554241a9adca7e1c65a8cb6ed025b7639e41d525ce213'
+PAYLOAD_TAR_BYTES='317440'
+PAYLOAD_TAR_SHA256='606ee4efaac88f5c0ee97cd21f4e68979b6818da8e26e359c88ead9385cb3bb8'
+TEMPLATE_VALIDATOR_SHA256='ce062526a534718d1dc1dd055d4cf78d1f50eba7005b62cde7481a6206e170cf'
+TEMPLATE_MANIFEST_SHA256='ab9ca9d89ba8f4726e5b58cda93274b59e2d0da34ed2ba5cd8465ecb9a6088e1'
+WORK="$RUNNER_TEMP/schoolhouse-current-frontier-materializer-v1"
+RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-materialization-v1"
+rm -rf "$WORK" "$RECEIPT"
+mkdir -p "$WORK/export" "$WORK/product" "$RECEIPT"
+printf 'initializing\n' > "$RECEIPT/STAGE"
+printf 'source_requests=0\nregistry_queries=0\nform_submissions=0\ncontacts=0\npayments=0\nuploads=0\n' > "$RECEIPT/BOUNDARY"
+trap 'rc=$?; trap - EXIT; printf "%s\n" "$rc" > "$RECEIPT/SCRIPT_EXIT_CODE"; exit "$rc"' EXIT
+
+printf 'proving-carrier-and-live-parent\n' > "$RECEIPT/STAGE"
+git fetch --no-tags origin main
+BASE="$(git rev-parse origin/main)"
+BASE_TREE="$(git rev-parse "$BASE^{tree}")"
+CARRIER_HEAD="$(git rev-parse HEAD)"
+CARRIER_TREE="$(git rev-parse 'HEAD^{tree}')"
+git merge-base --is-ancestor "$CARRIER_BASE" "$BASE"
+test "$(git rev-list --count "$CARRIER_BASE"..HEAD)" = '13'
+cat > "$WORK/expected-carrier-paths" <<EOF_CARRIER
+$WORKFLOW
+$PAYLOAD/part-00
+$PAYLOAD/part-01
+$PAYLOAD/part-02
+$PAYLOAD/part-03
+$PAYLOAD/part-04
+$PAYLOAD/part-05
+$PAYLOAD/part-06
+$PAYLOAD/controller-00
+$PAYLOAD/controller-01
+$PAYLOAD/controller-02
+$PAYLOAD/controller-03
+$PAYLOAD/controller-04
+EOF_CARRIER
+sort -o "$WORK/expected-carrier-paths" "$WORK/expected-carrier-paths"
+git diff --name-only "$CARRIER_BASE"..HEAD | sort > "$RECEIPT/carrier-paths.txt"
+diff -u "$WORK/expected-carrier-paths" "$RECEIPT/carrier-paths.txt"
+git diff --check "$CARRIER_BASE"..HEAD
+git merge-base --is-ancestor "$SOURCE_CANONICAL" "$BASE"
+test "$(git rev-parse "$SOURCE_CANONICAL^{tree}")" = "$SOURCE_TREE"
+
+cat > "$WORK/expected-paths" <<'EOF_PATHS'
+data/intake/bvvc-defense-capital/acquisition-frontier.json
+data/intake/bvvc-defense-capital/manifest.json
+data/intake/bvvc-defense-capital/schoolhouse.json
+data/intake/schoolhouse-legal-identity-current-frontier-v1/canonical-slice-manifest.jsonl
+data/intake/schoolhouse-legal-identity-current-frontier-v1/frontier-reconciliation.json
+data/intake/schoolhouse-legal-identity-current-frontier-v1/next-source-gate.json
+data/intake/schoolhouse-legal-identity-current-frontier-v1/product-manifest.json
+data/intake/schoolhouse-legal-identity-current-frontier-v1/source-custody.json
+data/intake/schoolhouse-legal-identity-current-frontier-v1/source-lanes.json
+docs/milestones/schoolhouse-legal-identity-current-frontier-v1.md
+tools/validate-schoolhouse-legal-identity-current-frontier.py
+EOF_PATHS
+sort -o "$WORK/expected-paths" "$WORK/expected-paths"
+cat > "$WORK/expected-status" <<'EOF_STATUS'
+M	data/intake/bvvc-defense-capital/acquisition-frontier.json
+M	data/intake/bvvc-defense-capital/manifest.json
+M	data/intake/bvvc-defense-capital/schoolhouse.json
+A	data/intake/schoolhouse-legal-identity-current-frontier-v1/canonical-slice-manifest.jsonl
+A	data/intake/schoolhouse-legal-identity-current-frontier-v1/frontier-reconciliation.json
+A	data/intake/schoolhouse-legal-identity-current-frontier-v1/next-source-gate.json
+A	data/intake/schoolhouse-legal-identity-current-frontier-v1/product-manifest.json
+A	data/intake/schoolhouse-legal-identity-current-frontier-v1/source-custody.json
+A	data/intake/schoolhouse-legal-identity-current-frontier-v1/source-lanes.json
+A	docs/milestones/schoolhouse-legal-identity-current-frontier-v1.md
+A	tools/validate-schoolhouse-legal-identity-current-frontier.py
+EOF_STATUS
+sort -o "$WORK/expected-status" "$WORK/expected-status"
+
+# The PC-53 advance must be disjoint from every reconciliation path.
+git diff --name-only "$SOURCE_CANONICAL".."$BASE" | sort > "$RECEIPT/intervening-paths.txt"
+comm -12 "$WORK/expected-paths" "$RECEIPT/intervening-paths.txt" > "$RECEIPT/intervening-overlap.txt"
+test ! -s "$RECEIPT/intervening-overlap.txt"
+set +e
+git ls-remote --exit-code --heads origin "refs/heads/$TARGET" > "$RECEIPT/preexisting-target-ref.txt"
+TARGET_RC="$?"
+set -e
+test "$TARGET_RC" -eq 2
+
+printf 'authenticating-read-only-source-export\n' > "$RECEIPT/STAGE"
+gh api "repos/$GITHUB_REPOSITORY/actions/runs/$EXPORT_RUN" > "$WORK/export-run.json"
+test "$(jq -r .head_sha "$WORK/export-run.json")" = "$EXPORT_HEAD"
+test "$(jq -r .status "$WORK/export-run.json")" = 'completed'
+test "$(jq -r .conclusion "$WORK/export-run.json")" = 'success'
+gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$EXPORT_ARTIFACT" > "$WORK/export-metadata.json"
+test "$(jq -r .size_in_bytes "$WORK/export-metadata.json")" = "$EXPORT_BYTES"
+test "$(jq -r .digest "$WORK/export-metadata.json")" = "$EXPORT_DIGEST"
+test "$(jq -r .workflow_run.id "$WORK/export-metadata.json")" = "$EXPORT_RUN"
+test "$(jq -r .workflow_run.head_sha "$WORK/export-metadata.json")" = "$EXPORT_HEAD"
+test "$(jq -r .expired "$WORK/export-metadata.json")" = 'false'
+gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$EXPORT_ARTIFACT/zip" > "$WORK/export.zip"
+test "$(stat -c%s "$WORK/export.zip")" = "$EXPORT_BYTES"
+test "sha256:$(sha256sum "$WORK/export.zip" | cut -d' ' -f1)" = "$EXPORT_DIGEST"
+unzip -q "$WORK/export.zip" -d "$WORK/export"
+(
+  cd "$WORK/export"
+  sha256sum -c SHA256SUMS > "$RECEIPT/export-internal-sha256.log"
+)
+EXPORT_TAR="$WORK/export/schoolhouse-legal-identity-frontier-46036c.tar.xz"
+test "$(stat -c%s "$EXPORT_TAR")" = "$EXPORT_TAR_BYTES"
+test "$(sha256sum "$EXPORT_TAR" | cut -d' ' -f1)" = "$EXPORT_TAR_SHA256"
+
+printf 'reconstructing-eleven-path-product-template\n' > "$RECEIPT/STAGE"
+CHUNK_SIZES=(10000 10000 10000 10000 10000 10000 5880)
+CHUNK_SHA256=(
+  e932c87c3204e01fc208e6c2e3e46b86e255d42d57dadd1360e65f80269ae12b
+  f814e46666d96edaf076c6d8b992310e66baa62cc58622083955e38b7752e6d2
+  a2c3a61652bde254bb66dd7e27546bfd2c3bc078220aae89aa7ebbca482fda89
+  55b32a2d8c045e8cb2f2eebb565b70a5a3155b84746b05ac4895438487887f2f
+  ce1a3e3f3c19cd97215580d8f0fd1f7548c633828f468d0f0949a891fc8639c8
+  116a5d7864e3557b40ee4a4f35c466c6e0e82b13fc14d4326841dd86e2772a04
+  22a59c63b9aeea9f8a27febcaf5a0b12d34a07fc7c5340c1142825e0ec53339d
+)
+for index in "${!CHUNK_SIZES[@]}"; do
+  printf -v suffix '%02d' "$index"
+  chunk="$PAYLOAD/part-$suffix"
+  test "$(stat -c%s "$chunk")" = "${CHUNK_SIZES[$index]}"
+  test "$(sha256sum "$chunk" | cut -d' ' -f1)" = "${CHUNK_SHA256[$index]}"
+done
+cat "$PAYLOAD"/part-{00,01,02,03,04,05,06} > "$WORK/payload.b64"
+test "$(stat -c%s "$WORK/payload.b64")" = "$PAYLOAD_B64_BYTES"
+test "$(sha256sum "$WORK/payload.b64" | cut -d' ' -f1)" = "$PAYLOAD_B64_SHA256"
+base64 --decode "$WORK/payload.b64" > "$WORK/product.tar.xz"
+test "$(stat -c%s "$WORK/product.tar.xz")" = "$PAYLOAD_XZ_BYTES"
+test "$(sha256sum "$WORK/product.tar.xz" | cut -d' ' -f1)" = "$PAYLOAD_XZ_SHA256"
+xz --decompress --stdout "$WORK/product.tar.xz" > "$WORK/product.tar"
+test "$(stat -c%s "$WORK/product.tar")" = "$PAYLOAD_TAR_BYTES"
+test "$(sha256sum "$WORK/product.tar" | cut -d' ' -f1)" = "$PAYLOAD_TAR_SHA256"
+python - "$WORK/product.tar" "$WORK/expected-paths" <<'PY_TAR'
+from pathlib import Path, PurePosixPath
+import sys, tarfile
+archive_path=Path(sys.argv[1]); expected=Path(sys.argv[2]).read_text().splitlines()
+with tarfile.open(archive_path,'r:') as archive:
+    members=archive.getmembers()
+    assert sorted(m.name for m in members)==expected
+    assert len(members)==11
+    for m in members:
+        p=PurePosixPath(m.name)
+        assert m.isfile() and not p.is_absolute() and '..' not in p.parts
+        assert m.uid==m.gid==0
+        if m.name=='tools/validate-schoolhouse-legal-identity-current-frontier.py':
+            assert m.mode==0o755
+        else:
+            assert m.mode==0o644
+PY_TAR
+tar -xf "$WORK/product.tar" -C "$WORK/product"
+test "$(sha256sum "$WORK/product/tools/validate-schoolhouse-legal-identity-current-frontier.py" | cut -d' ' -f1)" = "$TEMPLATE_VALIDATOR_SHA256"
+test "$(sha256sum "$WORK/product/data/intake/schoolhouse-legal-identity-current-frontier-v1/product-manifest.json" | cut -d' ' -f1)" = "$TEMPLATE_MANIFEST_SHA256"
+
+printf 'cross-checking-233-file-source-custody\n' > "$RECEIP
