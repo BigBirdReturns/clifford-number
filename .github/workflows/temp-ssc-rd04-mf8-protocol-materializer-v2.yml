@@ -1,4 +1,4 @@
-name: TEMP materialize RD-04 eight-state minimum-frontier protocol v3
+name: TEMP materialize RD-04 eight-state minimum-frontier protocol v4
 
 on:
   push:
@@ -48,9 +48,9 @@ jobs:
           rm -rf "$BOOT"
           mkdir -p "$BOOT"
           cat > "$BOOT/controller-shards.tsv" <<'EOF_SHARDS'
-          part-00.bin 30f74bd58863c512a0b41656a48fac2cf2e0f9d2 1536 0d50c689e3a72247118ae575bfad6db093bfb225ee2805959ccc61954c72c0f4
+          part-00.bin 6289cd093707f073ec61533df407aebd05dc0aea 1536 202121aa791052a4fb0ce2640cc4abb7d909c07af357a478f90d30d4d7e71799
           part-01.bin 6ae83c8c7b20b66b9c987c9156eca036a9db0051 1536 528234d35c7b94d236e484feac7de6c59699de3fbc6450ff0a1f606a5596c57c
-          part-02.bin 8860f67dbe75738d3e9b1c1a823cf678eee71d47 1320 3703ed185594bfeeda8a525604bb85f2fd4580a88e083c1a4bb794401295544b
+          part-02.bin bf8900391fb61539c154a184e95283435de46305 1320 ea8cb0fd5a9d6e43e89e2b7620bdca42b11a135e804a3b9050cb222dc8e7df68
           EOF_SHARDS
           : > "$BOOT/controller.sh.xz"
           while read -r name blob bytes digest; do
@@ -68,11 +68,11 @@ jobs:
             cat "$BOOT/$name" >> "$BOOT/controller.sh.xz"
           done < "$BOOT/controller-shards.tsv"
           test "$(wc -c < "$BOOT/controller.sh.xz" | tr -d ' ')" = 4392
-          test "$(sha256sum "$BOOT/controller.sh.xz" | awk '{print $1}')" = d9a73f24047be237b2fc92af7b5e742520b7843d73969ef0c45349975251d879
-          test "$(git hash-object "$BOOT/controller.sh.xz")" = 33c3566577fd30c697295367721b57587d70b430
+          test "$(sha256sum "$BOOT/controller.sh.xz" | awk '{print $1}')" = 3b4e3e50707bd801accb983a96b431fff66c0f3fc86486b927b5029301fc08ba
+          test "$(git hash-object "$BOOT/controller.sh.xz")" = b9ab5308a2d2b0ec75a7f0a4fd052ba391a5394d
           xz -dc "$BOOT/controller.sh.xz" > "$BOOT/controller.sh"
-          test "$(wc -c < "$BOOT/controller.sh" | tr -d ' ')" = 15057
-          test "$(sha256sum "$BOOT/controller.sh" | awk '{print $1}')" = ddaf44a6984ccc2b7d7a6801b08028e8911d1f69a09f465b421648376f3f415a
+          test "$(wc -c < "$BOOT/controller.sh" | tr -d ' ')" = 15046
+          test "$(sha256sum "$BOOT/controller.sh" | awk '{print $1}')" = 801af2fdc17c4ce362583ac5079e53de40103ca03e68f248c855307529d526a0
           bash -n "$BOOT/controller.sh"
           chmod 0755 "$BOOT/controller.sh"
           bash "$BOOT/controller.sh"
