@@ -1,0 +1,303 @@
+name: TEMP repair and materialize current School.House legal-identity frontier v3
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-legal-identity-current-frontier-materializer-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: schoolhouse-legal-identity-current-frontier-materializer-v3-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-legal-identity-current-frontier-materializer-v3')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct exact v2 shell, repair runtime path, and execute
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='1e52a58be874538509d6c0d3c06adc12fc53cad7'
+          WORKFLOW='.github/workflows/temp-schoolhouse-legal-identity-current-frontier-materializer-v3.yml'
+          V2_BRANCH='agent/schoolhouse-legal-identity-current-frontier-materializer-v2'
+          V2_HEAD='5f7df44dec221d786d5999f9964ebecd595779ae'
+          V2_WORKFLOW='.github/workflows/temp-schoolhouse-legal-identity-current-frontier-materializer-v2.yml'
+          V2_WORKFLOW_BLOB='4ebd10b0321cee84e0370bcf2faf19161aaa8eee'
+          V2_WORKFLOW_BYTES='14962'
+          V2_WORKFLOW_SHA256='01aceea07e69e3d3338f0c23bc6ff94fe1a1d77f57b5e380eb3b8b075dcee983'
+          V2_RUN='31226979952'
+          V2_ARTIFACT='9012434888'
+          V2_ARTIFACT_BYTES='1168'
+          V2_ARTIFACT_DIGEST='sha256:61fd409d1b1a4ecb3f9cc01c73c753e609747d5000862d4e71ad68c8c992c697'
+          SOURCE_RUN_BYTES='10775'
+          SOURCE_RUN_SHA256='7ef513f5b7028efc0fac0bcdb1286e9f57ffc6b982348416865a510d23e6a161'
+          PATCHED_RUN_BYTES='10889'
+          PATCHED_RUN_SHA256='73600b70495f63e4c84a745ca22d1b6f0c37274112b851f392c1f5ff56cced25'
+          WORK="$RUNNER_TEMP/schoolhouse-current-frontier-v3-wrapper"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-materialization-v3"
+          SOURCE_YAML="$WORK/source-v2-workflow.yml"
+          SOURCE_RUN_SCRIPT="$WORK/source-v2-run.sh"
+          PATCHED_RUN_SCRIPT="$WORK/patched-v3-run.sh"
+          PATCH_RECEIPT="$WORK/v3-wrapper-repair.json"
+          rm -rf "$WORK" "$RECEIPT"
+          mkdir -p "$WORK" "$RECEIPT"
+          printf 'initializing-v3-wrapper\n' > "$RECEIPT/V3-WRAPPER-STAGE"
+          printf 'source_requests=0\nregistry_queries=0\nform_submissions=0\ncontacts=0\npayments=0\nuploads=0\n' > "$RECEIPT/V3-WRAPPER-BOUNDARY"
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            mkdir -p "$RECEIPT"
+            for path in "$PATCH_RECEIPT" "$SOURCE_YAML" "$SOURCE_RUN_SCRIPT" "$PATCHED_RUN_SCRIPT"; do
+              if test -f "$path"; then
+                cp "$path" "$RECEIPT/$(basename "$path")"
+              fi
+            done
+            printf '%s\n' "$rc" > "$RECEIPT/V3_WRAPPER_EXIT_CODE"
+            (
+              cd "$RECEIPT"
+              find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          printf 'proving-one-workflow-v3-and-exact-v2-failure\n' > "$RECEIPT/V3-WRAPPER-STAGE"
+          git fetch --no-tags origin main "$V2_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+          mapfile -t V3_PATHS < <(git diff --name-only "$BASE"..HEAD)
+          test "${#V3_PATHS[@]}" -eq 1
+          test "${V3_PATHS[0]}" = "$WORKFLOW"
+          git diff --check "$BASE"..HEAD
+          test "$(git rev-parse "origin/$V2_BRANCH")" = "$V2_HEAD"
+          test "$(git rev-parse "$V2_HEAD^")" = "$BASE"
+          test "$(git rev-list --count "$BASE".."$V2_HEAD")" = '1'
+          test "$(git rev-parse "$V2_HEAD:$V2_WORKFLOW")" = "$V2_WORKFLOW_BLOB"
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$V2_RUN" > "$RECEIPT/v2-run.json"
+          test "$(jq -r .head_sha "$RECEIPT/v2-run.json")" = "$V2_HEAD"
+          test "$(jq -r .status "$RECEIPT/v2-run.json")" = 'completed'
+          test "$(jq -r .conclusion "$RECEIPT/v2-run.json")" = 'failure'
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$V2_ARTIFACT" > "$RECEIPT/v2-artifact-metadata.json"
+          test "$(jq -r .size_in_bytes "$RECEIPT/v2-artifact-metadata.json")" = "$V2_ARTIFACT_BYTES"
+          test "$(jq -r .digest "$RECEIPT/v2-artifact-metadata.json")" = "$V2_ARTIFACT_DIGEST"
+          test "$(jq -r .workflow_run.id "$RECEIPT/v2-artifact-metadata.json")" = "$V2_RUN"
+          test "$(jq -r .expired "$RECEIPT/v2-artifact-metadata.json")" = 'false'
+
+          printf 'extracting-and-repairing-exact-v2-run-block\n' > "$RECEIPT/V3-WRAPPER-STAGE"
+          git show "$V2_HEAD:$V2_WORKFLOW" > "$SOURCE_YAML"
+          test "$(stat -c%s "$SOURCE_YAML")" = "$V2_WORKFLOW_BYTES"
+          test "$(sha256sum "$SOURCE_YAML" | cut -d' ' -f1)" = "$V2_WORKFLOW_SHA256"
+
+          python - "$SOURCE_YAML" "$SOURCE_RUN_SCRIPT" "$PATCHED_RUN_SCRIPT" \
+            "$PATCH_RECEIPT" "$V2_HEAD" "$V2_WORKFLOW_BLOB" <<'PY'
+          from __future__ import annotations
+
+          from pathlib import Path
+          import hashlib
+          import json
+          import sys
+
+          source_yaml_path, source_run_path, patched_run_path, receipt_path, v2_head, v2_blob = sys.argv[1:]
+          workflow = Path(source_yaml_path).read_text(encoding='utf-8')
+          lines = workflow.splitlines()
+          step = '      - name: Authenticate failed carrier, repair controller, and publish exact product'
+          start = lines.index(step)
+          run_line = lines.index('        run: |', start)
+          body = []
+          for line in lines[run_line + 1:]:
+              if line.startswith('      - name:'):
+                  break
+              assert not line or line.startswith('          '), line
+              body.append(line[10:] if line else '')
+          source = '\n'.join(body) + '\n'
+          assert len(source.encode()) == 10775
+          assert hashlib.sha256(source.encode()).hexdigest() == (
+              '7ef513f5b7028efc0fac0bcdb1286e9f57ffc6b982348416865a510d23e6a161'
+          )
+          Path(source_run_path).write_text(source, encoding='utf-8')
+
+          operations = [
+              (
+                  "WORKFLOW='.github/workflows/temp-schoolhouse-legal-identity-current-frontier-materializer-v2.yml'",
+                  "WORKFLOW='.github/workflows/temp-schoolhouse-legal-identity-current-frontier-materializer-v3.yml'",
+                  'wrapper_workflow_v2_to_v3',
+                  None,
+              ),
+              (
+                  'RECOVERED_PAYLOAD="$RUNNER_TEMP/schoolhouse-current-frontier-recovered-payload-v2"',
+                  'RECOVERED_PAYLOAD="$RUNNER_TEMP/schoolhouse-current-frontier-recovered-payload-v3"',
+                  'recovered_payload_namespace',
+                  None,
+              ),
+              (
+                  'PATCHED_CONTROLLER="$RUNNER_TEMP/schoolhouse-current-frontier-materializer-v2.sh"',
+                  'PATCHED_CONTROLLER="$RUNNER_TEMP/schoolhouse-current-frontier-materializer-v3.sh"',
+                  'patched_controller_namespace',
+                  None,
+              ),
+              (
+                  'PATCH_RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-controller-repair-v2.json"',
+                  'PATCH_RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-controller-repair-v3.json"',
+                  'patch_receipt_namespace',
+                  None,
+              ),
+              (
+                  'RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-materialization-v2"\n',
+                  'RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-materialization-v3"\n',
+                  'materialization_receipt_namespace',
+                  None,
+              ),
+              (
+                  "PATCHED_CONTROLLER_SHA256='cfef9a73fc32139eae644d3089e893a336ad7dc5b5c8e83e9c767946bc822b7d'",
+                  "PATCHED_CONTROLLER_SHA256='56fe722b8d1b1ab900fd061e891f6dce53db279341315939633159e8fe2a5237'",
+                  'expected_controller_sha256',
+                  1,
+              ),
+              (
+                  "printf 'initializing-v2-repair\\n'",
+                  "printf 'initializing-v3-repair\\n'",
+                  'repair_stage_namespace',
+                  None,
+              ),
+              (
+                  'replacements = [',
+                  'payload_literal = \'PAYLOAD="$RUNNER_TEMP/schoolhouse-current-frontier-recovered-payload-v3"\'\n\nreplacements = [',
+                  'declare_literal_runner_temp_expression',
+                  None,
+              ),
+              (
+                  'f\'PAYLOAD="{recovered_payload}"\'',
+                  'payload_literal',
+                  'refuse_runtime_absolute_path_interpolation',
+                  None,
+              ),
+              (
+                  '\'WORK="$RUNNER_TEMP/schoolhouse-current-frontier-materializer-v2"\'',
+                  '\'WORK="$RUNNER_TEMP/schoolhouse-current-frontier-materializer-v3"\'',
+                  'inner_work_namespace',
+                  None,
+              ),
+              (
+                  '\'RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-materialization-v2"\'',
+                  '\'RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-materialization-v3"\'',
+                  'inner_receipt_namespace',
+                  None,
+              ),
+              (
+                  'assert repaired.count(recovered_payload) == 1',
+                  "assert repaired.count(payload_literal) == 1\nassert '/home/runner/' not in repaired",
+                  'literal_path_assertion',
+                  None,
+              ),
+              (
+                  "assert repaired_sha256 == 'cfef9a73fc32139eae644d3089e893a336ad7dc5b5c8e83e9c767946bc822b7d'",
+                  "assert repaired_sha256 == '56fe722b8d1b1ab900fd061e891f6dce53db279341315939633159e8fe2a5237'",
+                  'inner_controller_sha256',
+                  None,
+              ),
+              (
+                  "'schema_version': 'schoolhouse-current-frontier-controller-repair@2'",
+                  "'schema_version': 'schoolhouse-current-frontier-controller-repair@3'",
+                  'inner_repair_schema_version',
+                  None,
+              ),
+          ]
+
+          repaired = source
+          applied = []
+          for old, new, name, limit in operations:
+              count = repaired.count(old)
+              assert count == 1, (name, count)
+              repaired = repaired.replace(old, new, limit or -1)
+              applied.append(name)
+
+          assert len(repaired.encode()) == 10889
+          repaired_sha256 = hashlib.sha256(repaired.encode()).hexdigest()
+          assert repaired_sha256 == '73600b70495f63e4c84a745ca22d1b6f0c37274112b851f392c1f5ff56cced25'
+          assert 'f\'PAYLOAD="{recovered_payload}"\'' not in repaired
+          assert 'payload_literal' in repaired
+          assert "assert '/home/runner/' not in repaired" in repaired
+          Path(patched_run_path).write_text(repaired, encoding='utf-8')
+          Path(patched_run_path).chmod(0o755)
+
+          value = {
+              'schema_version': 'schoolhouse-current-frontier-v3-wrapper-repair@1',
+              'state': 'complete',
+              'v2_head': v2_head,
+              'v2_workflow_blob': v2_blob,
+              'v2_workflow_bytes': len(workflow.encode()),
+              'v2_workflow_sha256': hashlib.sha256(workflow.encode()).hexdigest(),
+              'v2_run_bytes': len(source.encode()),
+              'v2_run_sha256': hashlib.sha256(source.encode()).hexdigest(),
+              'v3_run_bytes': len(repaired.encode()),
+              'v3_run_sha256': repaired_sha256,
+              'exact_repairs': applied,
+              'repair_count': len(applied),
+              'runtime_absolute_path_interpolation_removed': True,
+              'literal_runner_temp_expression_preserved': True,
+              'product_payload_changes': 0,
+              'source_requests': 0,
+              'registry_queries': 0,
+              'form_submissions': 0,
+              'identity_admissions': 0,
+              'relationship_admissions': 0,
+              'negative_existence_claims': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          Path(receipt_path).write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+          print('v3_wrapper_repair=pass exact_repairs=14 product_payload_changes=0')
+          PY
+
+          test "$(stat -c%s "$SOURCE_RUN_SCRIPT")" = "$SOURCE_RUN_BYTES"
+          test "$(sha256sum "$SOURCE_RUN_SCRIPT" | cut -d' ' -f1)" = "$SOURCE_RUN_SHA256"
+          test "$(stat -c%s "$PATCHED_RUN_SCRIPT")" = "$PATCHED_RUN_BYTES"
+          test "$(sha256sum "$PATCHED_RUN_SCRIPT" | cut -d' ' -f1)" = "$PATCHED_RUN_SHA256"
+          bash -n "$PATCHED_RUN_SCRIPT"
+
+          printf 'executing-exact-v3-run-block\n' > "$RECEIPT/V3-WRAPPER-STAGE"
+          bash "$PATCHED_RUN_SCRIPT"
+          printf 'complete\n' > "$RECEIPT/V3-WRAPPER-STAGE"
+
+      - name: Upload exact v3 materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-legal-identity-current-frontier-materialization-v3
+          path: ${{ runner.temp }}/schoolhouse-current-frontier-materialization-v3
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
