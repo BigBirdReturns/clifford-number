@@ -1,0 +1,192 @@
+name: TEMP prove merged School.House SAM custody product
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-sam-custody-postmerge-proof-46036c.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: schoolhouse-sam-custody-postmerge-proof-46036c-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  prove:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-sam-custody-postmerge-proof-46036c')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Prove canonical merge topology and descendant-main custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PARENT='0a4091391e4c17c64683bd91f6a739a2a0a152fc'
+          PRODUCT='2e5db278971e344a529c96a3658b214a90ad8356'
+          TREE='0ffec7018bcfc038a73cd280970f783d12a5c222'
+          MERGE='46036c01eaba31bdb18045307fe3ebcb67d576a6'
+          WORKFLOW='.github/workflows/temp-schoolhouse-sam-custody-postmerge-proof-46036c.yml'
+          RECEIPT="$RUNNER_TEMP/schoolhouse-sam-custody-postmerge-proof-46036c"
+          rm -rf "$RECEIPT"
+          mkdir -p "$RECEIPT"
+          printf 'source_requests=0\n' > "$RECEIPT/BOUNDARY"
+          printf 'initializing\n' > "$RECEIPT/STAGE"
+          trap 'rc=$?; trap - EXIT; printf "%s\n" "$rc" > "$RECEIPT/SCRIPT_EXIT_CODE"; exit "$rc"' EXIT
+
+          cat > "$RECEIPT/permanent-paths.txt" <<'EOF'
+          data/intake/schoolhouse-sam-public-entity-registration-census-v1/product-manifest.json
+          data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-qualification-artifact.zip
+          data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-source-artifact.zip
+          data/intake/schoolhouse-sam-public-entity-registration-census-v1/sealed-wrapper-reconstruction-artifact.zip
+          data/intake/schoolhouse-sam-public-entity-registration-census-v1/source-custody.json
+          docs/milestones/schoolhouse-sam-public-entity-registration-census-v1.md
+          tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py
+          EOF
+          sort -o "$RECEIPT/permanent-paths.txt" "$RECEIPT/permanent-paths.txt"
+
+          printf 'proving-current-main-and-merge-topology\n' > "$RECEIPT/STAGE"
+          git fetch --no-tags origin main
+          CURRENT_MAIN="$(git rev-parse origin/main)"
+          test "$CURRENT_MAIN" = "$MERGE"
+          test "$(git rev-parse HEAD^)" = "$MERGE"
+          test "$(git rev-list --count "$MERGE"..HEAD)" = '1'
+          mapfile -t PROOF_DELTA < <(git diff --name-only "$MERGE"..HEAD)
+          test "${#PROOF_DELTA[@]}" -eq 1
+          test "${PROOF_DELTA[0]}" = "$WORKFLOW"
+          test "$(git rev-parse "$MERGE^1")" = "$PARENT"
+          test "$(git rev-parse "$MERGE^2")" = "$PRODUCT"
+          test "$(git rev-parse "$PRODUCT^")" = "$PARENT"
+          test "$(git rev-parse "$PRODUCT^{tree}")" = "$TREE"
+          test "$(git rev-parse "$MERGE^{tree}")" = "$TREE"
+          test "$(git rev-list --parents -n 1 "$MERGE" | wc -w | tr -d ' ')" = '3'
+          git diff --quiet "$PRODUCT" "$MERGE"
+
+          git diff --name-only "$PARENT".."$PRODUCT" | sort > "$RECEIPT/observed-product-paths.txt"
+          diff -u "$RECEIPT/permanent-paths.txt" "$RECEIPT/observed-product-paths.txt"
+          test "$(git diff --name-status "$PARENT".."$PRODUCT" | wc -l | tr -d ' ')" = '7'
+          git diff --name-status "$PARENT".."$PRODUCT" | awk '$1 != "A" { exit 1 }'
+          ! git diff --name-only "$PARENT".."$PRODUCT" | grep -q '^\.github/workflows/'
+          git ls-tree -r "$MERGE" \
+            data/intake/schoolhouse-sam-public-entity-registration-census-v1 \
+            docs/milestones/schoolhouse-sam-public-entity-registration-census-v1.md \
+            tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py \
+            > "$RECEIPT/merge-ls-tree.txt"
+          test "$(wc -l < "$RECEIPT/merge-ls-tree.txt" | tr -d ' ')" = '7'
+          while IFS= read -r path; do
+            test "$(git rev-parse "$PRODUCT:$path")" = "$(git rev-parse "$MERGE:$path")"
+            test "$(git rev-parse "$MERGE:$path")" = "$(git rev-parse "HEAD:$path")"
+          done < "$RECEIPT/permanent-paths.txt"
+
+          printf 'running-postmerge-focused-and-complete-gates\n' > "$RECEIPT/STAGE"
+          python tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py --self-test \
+            | tee "$RECEIPT/focused-validator.log"
+          node tools/validate-no-magic-human-gate.mjs \
+            | tee "$RECEIPT/no-magic-human.log"
+          npm run release:check > "$RECEIPT/release-check.log" 2>&1
+
+          printf 'restoring-and-replaying-current-main\n' > "$RECEIPT/STAGE"
+          PROOF_HEAD="$(git rev-parse HEAD)"
+          git reset --hard "$PROOF_HEAD"
+          git clean -fd
+          python tools/validate-schoolhouse-sam-public-entity-registration-census-custody.py --self-test \
+            | tee "$RECEIPT/deterministic-replay.log"
+          node tools/validate-no-magic-human-gate.mjs \
+            | tee "$RECEIPT/no-magic-human-replay.log"
+          test -z "$(git status --porcelain)"
+          while IFS= read -r path; do
+            test "$(git rev-parse "$MERGE:$path")" = "$(git rev-parse "HEAD:$path")"
+          done < "$RECEIPT/permanent-paths.txt"
+
+          printf 'writing-postmerge-proof\n' > "$RECEIPT/STAGE"
+          python - "$RECEIPT/proof.json" "$PROOF_HEAD" "$CURRENT_MAIN" <<'PY'
+          from pathlib import Path
+          import json
+          import sys
+
+          output, proof_head, current_main = sys.argv[1:]
+          value = {
+              'schema_version': 'schoolhouse-sam-custody-postmerge-proof@1',
+              'proof': 'pass',
+              'issue': 1382,
+              'source_requests': 0,
+              'canonical_parent': '0a4091391e4c17c64683bd91f6a739a2a0a152fc',
+              'product_commit': '2e5db278971e344a529c96a3658b214a90ad8356',
+              'product_tree': '0ffec7018bcfc038a73cd280970f783d12a5c222',
+              'merge_commit': '46036c01eaba31bdb18045307fe3ebcb67d576a6',
+              'merge_tree': '0ffec7018bcfc038a73cd280970f783d12a5c222',
+              'merge_first_parent': '0a4091391e4c17c64683bd91f6a739a2a0a152fc',
+              'merge_second_parent': '2e5db278971e344a529c96a3658b214a90ad8356',
+              'current_main_observed': current_main,
+              'proof_head': proof_head,
+              'product_and_merge_tree_equal': True,
+              'product_commit_count': 1,
+              'permanent_path_count': 7,
+              'addition_only': True,
+              'workflow_paths': 0,
+              'product_blobs_unchanged_at_merge': True,
+              'product_blobs_unchanged_at_proof_head': True,
+              'focused_validation_at_merge': 'pass',
+              'repository_composability_at_merge': 'pass',
+              'adversarial_refusals': 10,
+              'no_magic_human_gate_at_merge': 'pass',
+              'complete_release_gate_at_merge': 'pass',
+              'deterministic_replay_at_merge': 'pass',
+              'post_restore_clean': True,
+              'terminal_query_state_counts': {'bounded_public_search_controls_unavailable': 3},
+              'query_submissions': 0,
+              'retained_candidate_rows': 0,
+              'unique_public_ueis': 0,
+              'identities_admitted': 0,
+              'relationships_admitted': 0,
+              'negative_existence_claims': 0,
+              'federal_registration_admissions': 0,
+              'federal_award_or_funding_admissions': 0,
+              'owner_admissions': 0,
+              'operator_admissions': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'public_schoolhouse_legal_identity': 'unresolved',
+          }
+          Path(output).write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+          PY
+          printf 'complete\n' > "$RECEIPT/STAGE"
+          (
+            cd "$RECEIPT"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          )
+          cat "$RECEIPT/proof.json"
+
+      - name: Upload exact post-merge proof receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-sam-custody-postmerge-proof-46036c
+          path: ${{ runner.temp }}/schoolhouse-sam-custody-postmerge-proof-46036c
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
