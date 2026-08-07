@@ -1,0 +1,168 @@
+name: TEMP qualify complete PC-52 canonical-number and sparse-array repair
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc52-canonical-number-sparse-repair-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      OLD_PRODUCT: d8e6f89304e1ca6760bde06e951ab8d1438b4aa5
+      OLD_TREE: 847b80b72b48c570f86f3235dbbd25f24ac4c4b3
+      PRODUCT_PARENT: 681ae0d41bed04d068836ee9d746fe7701d234cb
+      RECEIPT_DIR: /tmp/pc52-canonical-number-sparse-repair
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Apply and identify the exact four-file repair
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse "$OLD_PRODUCT^{tree}")" = "$OLD_TREE"
+          test "$(git rev-parse "$OLD_PRODUCT^")" = "$PRODUCT_PARENT"
+          git reset --hard "$OLD_PRODUCT"
+          git clean -fdx
+          python - <<'PY'
+          import subprocess
+          from pathlib import Path
+
+          sources={
+            'tools/lib/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs':'dcee2da9d00d7edb36d41ed64dee121f81ac99b1',
+            'tools/lib/preference-custody-manifest-v50.mjs':'743296c92d94cadd1337250308179606928a84d8',
+            'test/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.test.js':'00cb2582581f9298c14df82dc215c9650fb3a48a',
+            'test/preference-custody-manifest-v50.test.js':'cb8f6fbd8196f3be121421f7e13ca962215dd687',
+          }
+          for path,blob in sources.items():
+            observed=subprocess.check_output(['git','hash-object',path],text=True).strip()
+            if observed!=blob: raise SystemExit(f'source blob mismatch {path}: {observed} != {blob}')
+
+          def replace(path,old,new):
+            p=Path(path);text=p.read_text();count=text.count(old)
+            if count!=1: raise SystemExit(f'expected one anchor in {path}, observed {count}')
+            p.write_text(text.replace(old,new,1))
+
+          standalone='tools/lib/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs'
+          floor='tools/lib/preference-custody-manifest-v50.mjs'
+          stest='test/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.test.js'
+          ftest='test/preference-custody-manifest-v50.test.js'
+
+          replace(standalone,
+            "  if (typeof value === 'number') { if (!Number.isFinite(value)) errors.push(`${label} contains a non-finite number`); return; }",
+            "  if (typeof value === 'number') { if (!Number.isFinite(value)) errors.push(`${label} contains a non-finite number`); else if (Object.is(value,-0)) errors.push(`${label} contains negative zero`); return; }")
+          replace(standalone,
+            "    for (let index = 0; index < arrayLength; index += 1) if (!Object.prototype.hasOwnProperty.call(value,index)) errors.push(`${label} contains a sparse array hole at ${index}`);",
+            "    const indexKeyCount=keys.filter(key=>typeof key==='string'&&key!=='length'&&/^(0|[1-9]\\d*)$/.test(key)&&Number(key)<arrayLength).length; if(indexKeyCount!==arrayLength) errors.push(`${label} contains a sparse array hole`);")
+          replace(floor,
+            " if(value===null||typeof value==='string'||typeof value==='boolean')return;if(typeof value==='number'){if(!Number.isFinite(value))errors.push(`${label} contains a non-finite number`);return;}if(typeof value!=='object'){errors.push(`${label} contains unsupported ${typeof value}`);return;}",
+            " if(value===null||typeof value==='string'||typeof value==='boolean')return;if(typeof value==='number'){if(!Number.isFinite(value))errors.push(`${label} contains a non-finite number`);else if(Object.is(value,-0))errors.push(`${label} contains negative zero`);return;}if(typeof value!=='object'){errors.push(`${label} contains unsupported ${typeof value}`);return;}")
+          replace(floor,
+            "if(isArray){if(proto!==Array.prototype)errors.push(`${label} array prototype must be canonical`);try{arrayLength=value.length;}catch(error){errors.push(`${label} array length cannot be read: ${error.message}`);return;}for(let i=0;i<arrayLength;i+=1)if(!Object.prototype.hasOwnProperty.call(value,i))errors.push(`${label} contains a sparse array hole at ${i}`);}else if(proto!==Object.prototype)errors.push(`${label} object prototype must be canonical`);",
+            "if(isArray){if(proto!==Array.prototype)errors.push(`${label} array prototype must be canonical`);try{arrayLength=value.length;}catch(error){errors.push(`${label} array length cannot be read: ${error.message}`);return;}const indexKeyCount=keys.filter(key=>typeof key==='string'&&key!=='length'&&/^(0|[1-9]\\d*)$/.test(key)&&Number(key)<arrayLength).length;if(indexKeyCount!==arrayLength)errors.push(`${label} contains a sparse array hole`);}else if(proto!==Object.prototype)errors.push(`${label} object prototype must be canonical`);")
+          replace(stest,
+            "const symbolFixture=clone(fixture);symbolFixture.worlds[Symbol('unapproved')]=true;fixtureRefused(symbolFixture,'symbol fixture array property');const sparse=clone(fixture);delete sparse.worlds[2];fixtureRefused(sparse,'sparse world array');",
+            "const symbolFixture=clone(fixture);symbolFixture.worlds[Symbol('unapproved')]=true;fixtureRefused(symbolFixture,'symbol fixture array property');const negativeZeroFixture=clone(fixture);negativeZeroFixture.worlds[0].repository_scope.repository_parent_tree_substitution_decisions=-0;fixtureRefused(negativeZeroFixture,'negative-zero fixture burden');const negativeZeroBuild=clone(build);negativeZeroBuild.worlds[0].numeric_burden.repository_parent_tree_substitution_decisions=-0;buildRefused(negativeZeroBuild,'negative-zero compiled burden');const sparse=clone(fixture);delete sparse.worlds[2];fixtureRefused(sparse,'sparse world array');const hugeSparse=clone(fixture);hugeSparse.worlds.length=2**32-1;fixtureRefused(hugeSparse,'huge sparse world array');const hugeSparseBuild=clone(build);hugeSparseBuild.worlds.length=2**32-1;buildRefused(hugeSparseBuild,'huge sparse compiled-world array');")
+          replace(ftest,
+            "const namedManifestArray=clone(manifest);namedManifestArray.real_case_requirements_added.unapproved=true;manifestRefused(namedManifestArray,'named manifest array property');const namedSourceArray=clone(baseSources);",
+            "const namedManifestArray=clone(manifest);namedManifestArray.real_case_requirements_added.unapproved=true;manifestRefused(namedManifestArray,'named manifest array property');const hugeSparseManifest=clone(manifest);hugeSparseManifest.real_case_requirements_added.length=2**32-1;manifestRefused(hugeSparseManifest,'huge sparse manifest array');const namedSourceArray=clone(baseSources);")
+          replace(ftest,
+            "const namedSourceArray=clone(baseSources);namedSourceArray.targetBuild.worlds.unapproved=true;assert.ok(validatePreferenceCustodyManifestV50Build(build,manifest,baseBuild,targetBuild,targetFixture,namedSourceArray).length>0,'named source-bundle array property must be refused');const namedFloorBuildArray=clone(build);namedFloorBuildArray.controls.unapproved=true;buildRefused(namedFloorBuildArray,'named floor-build array property');",
+            "const namedSourceArray=clone(baseSources);namedSourceArray.targetBuild.worlds.unapproved=true;assert.ok(validatePreferenceCustodyManifestV50Build(build,manifest,baseBuild,targetBuild,targetFixture,namedSourceArray).length>0,'named source-bundle array property must be refused');const negativeZeroSource=clone(baseSources);negativeZeroSource.targetBuild.worlds[0].numeric_burden.repository_parent_tree_substitution_decisions=-0;assert.ok(validatePreferenceCustodyManifestV50Build(build,manifest,baseBuild,targetBuild,targetFixture,negativeZeroSource).length>0,'negative-zero transitive source burden must be refused');const hugeSparseSource=clone(baseSources);hugeSparseSource.targetBuild.worlds.length=2**32-1;assert.ok(validatePreferenceCustodyManifestV50Build(build,manifest,baseBuild,targetBuild,targetFixture,hugeSparseSource).length>0,'huge sparse transitive source array must be refused');const namedFloorBuildArray=clone(build);namedFloorBuildArray.controls.unapproved=true;buildRefused(namedFloorBuildArray,'named floor-build array property');const negativeZeroFloorBuild=clone(build);negativeZeroFloorBuild.controls.at(-1).metrics.repository_parent_tree_substitution_decisions=-0;buildRefused(negativeZeroFloorBuild,'negative-zero floor build burden');")
+          PY
+
+          git diff --check
+          mapfile -t CHANGED < <(git diff --name-only "$OLD_PRODUCT" | sort)
+          test "${#CHANGED[@]}" -eq 4
+          cat > /tmp/expected-paths.txt <<'EOF'
+          test/preference-custody-manifest-v50.test.js
+          test/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.test.js
+          tools/lib/preference-custody-manifest-v50.mjs
+          tools/lib/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs
+          EOF
+          sed -i 's/^          //' /tmp/expected-paths.txt
+          printf '%s\n' "${CHANGED[@]}" > /tmp/observed-paths.txt
+          diff -u /tmp/expected-paths.txt /tmp/observed-paths.txt
+
+          test "$(wc -c < tools/lib/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs | tr -d ' ')" = 83720
+          test "$(sha256sum tools/lib/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs | awk '{print $1}')" = 9a2b470ed61f94aa08fb0b41d7f34f026c219611408ac0892100c94d452128e0
+          test "$(git hash-object tools/lib/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs)" = 2a34d57aae48edcc61c72fc4e6e0989bf0038bdf
+          test "$(wc -c < tools/lib/preference-custody-manifest-v50.mjs | tr -d ' ')" = 42761
+          test "$(sha256sum tools/lib/preference-custody-manifest-v50.mjs | awk '{print $1}')" = c1bc0e15f4ba52a9bafaa1ea3cb5c2ac012f576d913343795202956371a9c4af
+          test "$(git hash-object tools/lib/preference-custody-manifest-v50.mjs)" = 284df9f570dd9794a5d97181bf3a7c9060ca3e4f
+          test "$(wc -c < test/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.test.js | tr -d ' ')" = 8095
+          test "$(sha256sum test/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.test.js | awk '{print $1}')" = 24a41b08c67dba4e329e435ab77ebdf0190560aaa50806ffad511d1f2d5194c3
+          test "$(git hash-object test/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.test.js)" = d2cf108133b1641e691f25256408f6f071ae256d
+          test "$(wc -c < test/preference-custody-manifest-v50.test.js | tr -d ' ')" = 9217
+          test "$(sha256sum test/preference-custody-manifest-v50.test.js | awk '{print $1}')" = 9490bbc664d41487458fb8a41f6277c318f473a933b7b0c22aaa2a2ab3b70d53
+          test "$(git hash-object test/preference-custody-manifest-v50.test.js)" = 4a5e3aca4c251668cbd95a6158a1fb392e538ca0
+
+      - name: Prove focused and complete repository gates
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf build/research
+          node test/preference-custody-manifest-v50.test.js
+          node tools/compile-preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs
+          node tools/validate-preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs
+          node test/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.test.js
+          node tools/compile-preference-custody-manifest-v50.mjs
+          node tools/validate-preference-custody-manifest-v50.mjs
+          node test/preference-custody-manifest-v50.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do node "$test_file"; done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+      - name: Create exact non-workflow blobs and receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import base64,hashlib,json,os,subprocess,urllib.request
+          from pathlib import Path
+          expected={
+            'tools/lib/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs':('9a2b470ed61f94aa08fb0b41d7f34f026c219611408ac0892100c94d452128e0','2a34d57aae48edcc61c72fc4e6e0989bf0038bdf'),
+            'tools/lib/preference-custody-manifest-v50.mjs':('c1bc0e15f4ba52a9bafaa1ea3cb5c2ac012f576d913343795202956371a9c4af','284df9f570dd9794a5d97181bf3a7c9060ca3e4f'),
+            'test/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.test.js':('24a41b08c67dba4e329e435ab77ebdf0190560aaa50806ffad511d1f2d5194c3','d2cf108133b1641e691f25256408f6f071ae256d'),
+            'test/preference-custody-manifest-v50.test.js':('9490bbc664d41487458fb8a41f6277c318f473a933b7b0c22aaa2a2ab3b70d53','4a5e3aca4c251668cbd95a6158a1fb392e538ca0'),
+          }
+          token=os.environ['GH_TOKEN'];repo=os.environ['GH_REPOSITORY'];files=[]
+          for path,(digest,blob) in expected.items():
+            raw=Path(path).read_bytes()
+            if hashlib.sha256(raw).hexdigest()!=digest or subprocess.check_output(['git','hash-object',path],text=True).strip()!=blob: raise SystemExit(f'identity mismatch {path}')
+            payload=json.dumps({'content':base64.b64encode(raw).decode(),'encoding':'base64'}).encode()
+            req=urllib.request.Request(f'https://api.github.com/repos/{repo}/git/blobs',data=payload,method='POST',headers={'Authorization':f'Bearer {token}','Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json','User-Agent':'pc52-canonical-number-sparse-repair'})
+            with urllib.request.urlopen(req,timeout=180) as response: result=json.load(response)
+            if result.get('sha')!=blob: raise SystemExit(f'remote blob mismatch {path}')
+            files.append({'path':path,'bytes':len(raw),'sha256':digest,'git_blob_sha1':blob,'remote_git_blob_sha1':result['sha']})
+          root=Path(os.environ['RECEIPT_DIR']);root.mkdir(parents=True,exist_ok=True)
+          receipt={'schema_version':'pc52-canonical-number-sparse-repair-receipt@1','prior_product_commit':os.environ['OLD_PRODUCT'],'prior_product_tree':os.environ['OLD_TREE'],'product_parent':os.environ['PRODUCT_PARENT'],'changed_permanent_files':4,'files':files,'negative_zero_refusal':'pass','bounded_sparse_array_refusal':'pass','standalone_pc52':'pass','floor_v50':'pass','historical_floor_reconstruction':'pass','base_preference_custody':'pass','no_magic_human':'pass','release_check':'pass','ref_updates':0,'outside_human_dependency':False,'graph_effect':'none'}
+          (root/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n');print(json.dumps(receipt,indent=2))
+          PY
+          sha256sum "$RECEIPT_DIR"/* > "$RECEIPT_DIR/SHA256SUMS"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc52-canonical-number-sparse-repair
+          path: /tmp/pc52-canonical-number-sparse-repair
+          if-no-files-found: error
+          retention-days: 90
