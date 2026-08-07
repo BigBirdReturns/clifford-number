@@ -1,0 +1,68 @@
+{
+  "object_type": "frontier_selection",
+  "schema_version": "ssc-rd04-next-frontier-route-discovery-protocol@1",
+  "wave_id": "SSC-RD-W03",
+  "lane_id": "RD-04",
+  "class_id": "RD-04-C02",
+  "issue": 1017,
+  "canonical_rd04_merge": "a464dbbd96c365a7c040e17847486c5b3ba05c27",
+  "live_main_parent": "1db9ac3c7ee9ffa07c06e029008d23f1f5ba7b5a",
+  "state_denominator": 50,
+  "field_denominator_per_state": 9,
+  "terminal_cells_before": 218,
+  "open_cells_before": 232,
+  "open_substantive_cells_before": 192,
+  "open_state_rows_before": 40,
+  "minimum_open_substantive_cells_per_row": 4,
+  "minimum_cohorts": [
+    {
+      "field_ids": [
+        "abawd_or_work_requirement_waiver_state_and_governing_period",
+        "implementation_effective_date_or_typed_gap",
+        "operative_state_implementation_authority_and_version",
+        "verification_evidence_and_staff_discretion_surface"
+      ],
+      "state_ids": [
+        "US-STATE-FL",
+        "US-STATE-MT",
+        "US-STATE-ND",
+        "US-STATE-OR",
+        "US-STATE-WI"
+      ],
+      "row_count": 5
+    },
+    {
+      "field_ids": [
+        "abawd_or_work_requirement_waiver_state_and_governing_period",
+        "fitness_for_work_or_eligibility_screening_rule",
+        "implementation_effective_date_or_typed_gap",
+        "operative_state_implementation_authority_and_version"
+      ],
+      "state_ids": [
+        "US-STATE-MO",
+        "US-STATE-NE",
+        "US-STATE-NV"
+      ],
+      "row_count": 3
+    }
+  ],
+  "selection_rule": "minimum positive substantive-cell count; then largest exact field-signature cohort; then lexicographic field signature and state IDs",
+  "selected_state_ids": [
+    "US-STATE-FL",
+    "US-STATE-MT",
+    "US-STATE-ND",
+    "US-STATE-OR",
+    "US-STATE-WI"
+  ],
+  "selected_field_ids": [
+    "abawd_or_work_requirement_waiver_state_and_governing_period",
+    "implementation_effective_date_or_typed_gap",
+    "operative_state_implementation_authority_and_version",
+    "verification_evidence_and_staff_discretion_surface"
+  ],
+  "selected_state_count": 5,
+  "selected_substantive_cell_count": 20,
+  "derivative_row_state_cells_excluded": 5,
+  "class_closed": false,
+  "outside_human_dependency": false
+}

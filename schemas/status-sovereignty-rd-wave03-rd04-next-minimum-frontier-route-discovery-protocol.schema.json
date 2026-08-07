@@ -1,0 +1,1379 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "status-sovereignty-rd-wave03-rd04-next-minimum-frontier-route-discovery-protocol.schema.json",
+  "title": "SSC RD-04 next minimum-frontier route-discovery protocol objects",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "object_type",
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "canonical_rd04_merge",
+        "live_main_parent",
+        "state_denominator",
+        "field_denominator_per_state",
+        "terminal_cells_before",
+        "open_cells_before",
+        "open_substantive_cells_before",
+        "open_state_rows_before",
+        "minimum_open_substantive_cells_per_row",
+        "minimum_cohorts",
+        "selection_rule",
+        "selected_state_ids",
+        "selected_field_ids",
+        "selected_state_count",
+        "selected_substantive_cell_count",
+        "derivative_row_state_cells_excluded",
+        "class_closed",
+        "outside_human_dependency"
+      ],
+      "properties": {
+        "object_type": {
+          "type": "string"
+        },
+        "schema_version": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "canonical_rd04_merge": {
+          "type": "string"
+        },
+        "live_main_parent": {
+          "type": "string"
+        },
+        "state_denominator": {
+          "type": "integer"
+        },
+        "field_denominator_per_state": {
+          "type": "integer"
+        },
+        "terminal_cells_before": {
+          "type": "integer"
+        },
+        "open_cells_before": {
+          "type": "integer"
+        },
+        "open_substantive_cells_before": {
+          "type": "integer"
+        },
+        "open_state_rows_before": {
+          "type": "integer"
+        },
+        "minimum_open_substantive_cells_per_row": {
+          "type": "integer"
+        },
+        "minimum_cohorts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "field_ids",
+              "state_ids",
+              "row_count"
+            ],
+            "properties": {
+              "field_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "state_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "row_count": {
+                "type": "integer"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "selection_rule": {
+          "type": "string"
+        },
+        "selected_state_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "selected_field_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "selected_state_count": {
+          "type": "integer"
+        },
+        "selected_substantive_cell_count": {
+          "type": "integer"
+        },
+        "derivative_row_state_cells_excluded": {
+          "type": "integer"
+        },
+        "class_closed": {
+          "type": "boolean"
+        },
+        "outside_human_dependency": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "object_type",
+        "schema_version",
+        "canonical_merge",
+        "canonical_merge_tree",
+        "matrix_path",
+        "matrix_sha256",
+        "open_census_path",
+        "open_census_sha256",
+        "live_main_parent",
+        "successor_paths_since_canonical_rd04_merge",
+        "rd04_successor_overlap_count",
+        "terminal_cells",
+        "open_cells",
+        "open_substantive_cells",
+        "terminal_units",
+        "open_units"
+      ],
+      "properties": {
+        "object_type": {
+          "type": "string"
+        },
+        "schema_version": {
+          "type": "string"
+        },
+        "canonical_merge": {
+          "type": "string"
+        },
+        "canonical_merge_tree": {
+          "type": "string"
+        },
+        "matrix_path": {
+          "type": "string"
+        },
+        "matrix_sha256": {
+          "type": "string"
+        },
+        "open_census_path": {
+          "type": "string"
+        },
+        "open_census_sha256": {
+          "type": "string"
+        },
+        "live_main_parent": {
+          "type": "string"
+        },
+        "successor_paths_since_canonical_rd04_merge": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rd04_successor_overlap_count": {
+          "type": "integer"
+        },
+        "terminal_cells": {
+          "type": "integer"
+        },
+        "open_cells": {
+          "type": "integer"
+        },
+        "open_substantive_cells": {
+          "type": "integer"
+        },
+        "terminal_units": {
+          "type": "integer"
+        },
+        "open_units": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "object_type",
+        "schema_version",
+        "selected_state_ids",
+        "selected_field_ids",
+        "scanned_repository_files",
+        "official_route_rows",
+        "state_official_roots",
+        "coverage",
+        "inventory_effect",
+        "automatic_source_admission",
+        "automatic_field_classification"
+      ],
+      "properties": {
+        "object_type": {
+          "type": "string"
+        },
+        "schema_version": {
+          "type": "string"
+        },
+        "selected_state_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "selected_field_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "scanned_repository_files": {
+          "type": "integer"
+        },
+        "official_route_rows": {
+          "type": "integer"
+        },
+        "state_official_roots": {
+          "type": "object",
+          "required": [
+            "US-STATE-FL",
+            "US-STATE-MT",
+            "US-STATE-ND",
+            "US-STATE-OR",
+            "US-STATE-WI"
+          ],
+          "properties": {
+            "US-STATE-FL": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "US-STATE-MT": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "US-STATE-ND": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "US-STATE-OR": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "US-STATE-WI": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "coverage": {
+          "type": "object",
+          "required": [
+            "US-STATE-FL",
+            "US-STATE-MT",
+            "US-STATE-ND",
+            "US-STATE-OR",
+            "US-STATE-WI"
+          ],
+          "properties": {
+            "US-STATE-FL": {
+              "type": "object",
+              "required": [
+                "abawd_or_work_requirement_waiver_state_and_governing_period",
+                "implementation_effective_date_or_typed_gap",
+                "operative_state_implementation_authority_and_version",
+                "verification_evidence_and_staff_discretion_surface"
+              ],
+              "properties": {
+                "abawd_or_work_requirement_waiver_state_and_governing_period": {
+                  "type": "object",
+                  "required": [
+                    "official_repository_urls",
+                    "uncaptured_repository_urls",
+                    "official_repository_url_count",
+                    "uncaptured_repository_url_count"
+                  ],
+                  "properties": {
+                    "official_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "uncaptured_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "official_repository_url_count": {
+                      "type": "integer"
+                    },
+                    "uncaptured_repository_url_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "implementation_effective_date_or_typed_gap": {
+                  "type": "object",
+                  "required": [
+                    "official_repository_urls",
+                    "uncaptured_repository_urls",
+                    "official_repository_url_count",
+                    "uncaptured_repository_url_count"
+                  ],
+                  "properties": {
+                    "official_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "uncaptured_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "official_repository_url_count": {
+                      "type": "integer"
+                    },
+                    "uncaptured_repository_url_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "operative_state_implementation_authority_and_version": {
+                  "type": "object",
+                  "required": [
+                    "official_repository_urls",
+                    "uncaptured_repository_urls",
+                    "official_repository_url_count",
+                    "uncaptured_repository_url_count"
+                  ],
+                  "properties": {
+                    "official_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "uncaptured_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "official_repository_url_count": {
+                      "type": "integer"
+                    },
+                    "uncaptured_repository_url_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "verification_evidence_and_staff_discretion_surface": {
+                  "type": "object",
+                  "required": [
+                    "official_repository_urls",
+                    "uncaptured_repository_urls",
+                    "official_repository_url_count",
+                    "uncaptured_repository_url_count"
+                  ],
+                  "properties": {
+                    "official_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "uncaptured_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "official_repository_url_count": {
+                      "type": "integer"
+                    },
+                    "uncaptured_repository_url_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "US-STATE-MT": {
+              "type": "object",
+              "required": [
+                "abawd_or_work_requirement_waiver_state_and_governing_period",
+                "implementation_effective_date_or_typed_gap",
+                "operative_state_implementation_authority_and_version",
+                "verification_evidence_and_staff_discretion_surface"
+              ],
+              "properties": {
+                "abawd_or_work_requirement_waiver_state_and_governing_period": {
+                  "type": "object",
+                  "required": [
+                    "official_repository_urls",
+                    "uncaptured_repository_urls",
+                    "official_repository_url_count",
+                    "uncaptured_repository_url_count"
+                  ],
+                  "properties": {
+                    "official_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "uncaptured_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "official_repository_url_count": {
+                      "type": "integer"
+                    },
+                    "uncaptured_repository_url_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "implementation_effective_date_or_typed_gap": {
+                  "type": "object",
+                  "required": [
+                    "official_repository_urls",
+                    "uncaptured_repository_urls",
+                    "official_repository_url_count",
+                    "uncaptured_repository_url_count"
+                  ],
+                  "properties": {
+                    "official_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "uncaptured_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "official_repository_url_count": {
+                      "type": "integer"
+                    },
+                    "uncaptured_repository_url_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "operative_state_implementation_authority_and_version": {
+                  "type": "object",
+                  "required": [
+                    "official_repository_urls",
+                    "uncaptured_repository_urls",
+                    "official_repository_url_count",
+                    "uncaptured_repository_url_count"
+                  ],
+                  "properties": {
+                    "official_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "uncaptured_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "official_repository_url_count": {
+                      "type": "integer"
+                    },
+                    "uncaptured_repository_url_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "verification_evidence_and_staff_discretion_surface": {
+                  "type": "object",
+                  "required": [
+                    "official_repository_urls",
+                    "uncaptured_repository_urls",
+                    "official_repository_url_count",
+                    "uncaptured_repository_url_count"
+                  ],
+                  "properties": {
+                    "official_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "uncaptured_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "official_repository_url_count": {
+                      "type": "integer"
+                    },
+                    "uncaptured_repository_url_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "US-STATE-ND": {
+              "type": "object",
+              "required": [
+                "abawd_or_work_requirement_waiver_state_and_governing_period",
+                "implementation_effective_date_or_typed_gap",
+                "operative_state_implementation_authority_and_version",
+                "verification_evidence_and_staff_discretion_surface"
+              ],
+              "properties": {
+                "abawd_or_work_requirement_waiver_state_and_governing_period": {
+                  "type": "object",
+                  "required": [
+                    "official_repository_urls",
+                    "uncaptured_repository_urls",
+                    "official_repository_url_count",
+                    "uncaptured_repository_url_count"
+                  ],
+                  "properties": {
+                    "official_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "uncaptured_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "official_repository_url_count": {
+                      "type": "integer"
+                    },
+                    "uncaptured_repository_url_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "implementation_effective_date_or_typed_gap": {
+                  "type": "object",
+                  "required": [
+                    "official_repository_urls",
+                    "uncaptured_repository_urls",
+                    "official_repository_url_count",
+                    "uncaptured_repository_url_count"
+                  ],
+                  "properties": {
+                    "official_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "uncaptured_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "official_repository_url_count": {
+                      "type": "integer"
+                    },
+                    "uncaptured_repository_url_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "operative_state_implementation_authority_and_version": {
+                  "type": "object",
+                  "required": [
+                    "official_repository_urls",
+                    "uncaptured_repository_urls",
+                    "official_repository_url_count",
+                    "uncaptured_repository_url_count"
+                  ],
+                  "properties": {
+                    "official_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "uncaptured_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "official_repository_url_count": {
+                      "type": "integer"
+                    },
+                    "uncaptured_repository_url_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "verification_evidence_and_staff_discretion_surface": {
+                  "type": "object",
+                  "required": [
+                    "official_repository_urls",
+                    "uncaptured_repository_urls",
+                    "official_repository_url_count",
+                    "uncaptured_repository_url_count"
+                  ],
+                  "properties": {
+                    "official_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "uncaptured_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "official_repository_url_count": {
+                      "type": "integer"
+                    },
+                    "uncaptured_repository_url_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "US-STATE-OR": {
+              "type": "object",
+              "required": [
+                "abawd_or_work_requirement_waiver_state_and_governing_period",
+                "implementation_effective_date_or_typed_gap",
+                "operative_state_implementation_authority_and_version",
+                "verification_evidence_and_staff_discretion_surface"
+              ],
+              "properties": {
+                "abawd_or_work_requirement_waiver_state_and_governing_period": {
+                  "type": "object",
+                  "required": [
+                    "official_repository_urls",
+                    "uncaptured_repository_urls",
+                    "official_repository_url_count",
+                    "uncaptured_repository_url_count"
+                  ],
+                  "properties": {
+                    "official_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "uncaptured_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "official_repository_url_count": {
+                      "type": "integer"
+                    },
+                    "uncaptured_repository_url_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "implementation_effective_date_or_typed_gap": {
+                  "type": "object",
+                  "required": [
+                    "official_repository_urls",
+                    "uncaptured_repository_urls",
+                    "official_repository_url_count",
+                    "uncaptured_repository_url_count"
+                  ],
+                  "properties": {
+                    "official_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "uncaptured_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "official_repository_url_count": {
+                      "type": "integer"
+                    },
+                    "uncaptured_repository_url_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "operative_state_implementation_authority_and_version": {
+                  "type": "object",
+                  "required": [
+                    "official_repository_urls",
+                    "uncaptured_repository_urls",
+                    "official_repository_url_count",
+                    "uncaptured_repository_url_count"
+                  ],
+                  "properties": {
+                    "official_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "uncaptured_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "official_repository_url_count": {
+                      "type": "integer"
+                    },
+                    "uncaptured_repository_url_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "verification_evidence_and_staff_discretion_surface": {
+                  "type": "object",
+                  "required": [
+                    "official_repository_urls",
+                    "uncaptured_repository_urls",
+                    "official_repository_url_count",
+                    "uncaptured_repository_url_count"
+                  ],
+                  "properties": {
+                    "official_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "uncaptured_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "official_repository_url_count": {
+                      "type": "integer"
+                    },
+                    "uncaptured_repository_url_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "US-STATE-WI": {
+              "type": "object",
+              "required": [
+                "abawd_or_work_requirement_waiver_state_and_governing_period",
+                "implementation_effective_date_or_typed_gap",
+                "operative_state_implementation_authority_and_version",
+                "verification_evidence_and_staff_discretion_surface"
+              ],
+              "properties": {
+                "abawd_or_work_requirement_waiver_state_and_governing_period": {
+                  "type": "object",
+                  "required": [
+                    "official_repository_urls",
+                    "uncaptured_repository_urls",
+                    "official_repository_url_count",
+                    "uncaptured_repository_url_count"
+                  ],
+                  "properties": {
+                    "official_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "uncaptured_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "official_repository_url_count": {
+                      "type": "integer"
+                    },
+                    "uncaptured_repository_url_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "implementation_effective_date_or_typed_gap": {
+                  "type": "object",
+                  "required": [
+                    "official_repository_urls",
+                    "uncaptured_repository_urls",
+                    "official_repository_url_count",
+                    "uncaptured_repository_url_count"
+                  ],
+                  "properties": {
+                    "official_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "uncaptured_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "official_repository_url_count": {
+                      "type": "integer"
+                    },
+                    "uncaptured_repository_url_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "operative_state_implementation_authority_and_version": {
+                  "type": "object",
+                  "required": [
+                    "official_repository_urls",
+                    "uncaptured_repository_urls",
+                    "official_repository_url_count",
+                    "uncaptured_repository_url_count"
+                  ],
+                  "properties": {
+                    "official_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "uncaptured_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "official_repository_url_count": {
+                      "type": "integer"
+                    },
+                    "uncaptured_repository_url_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "verification_evidence_and_staff_discretion_surface": {
+                  "type": "object",
+                  "required": [
+                    "official_repository_urls",
+                    "uncaptured_repository_urls",
+                    "official_repository_url_count",
+                    "uncaptured_repository_url_count"
+                  ],
+                  "properties": {
+                    "official_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "uncaptured_repository_urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "official_repository_url_count": {
+                      "type": "integer"
+                    },
+                    "uncaptured_repository_url_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "inventory_effect": {
+          "type": "string"
+        },
+        "automatic_source_admission": {
+          "type": "boolean"
+        },
+        "automatic_field_classification": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "object_type",
+        "schema_version",
+        "selected_state_ids",
+        "selected_field_ids",
+        "field_query_terms",
+        "allowed_discovery_surfaces",
+        "maximum_official_roots_per_state",
+        "maximum_discovery_requests_per_root",
+        "maximum_candidate_urls_per_cell",
+        "maximum_attempts_per_request",
+        "maximum_redirects",
+        "result_spawned_source_fetches",
+        "cross_host_redirects_allowed",
+        "automatic_source_admission",
+        "automatic_field_classification",
+        "outside_human_dependency"
+      ],
+      "properties": {
+        "object_type": {
+          "type": "string"
+        },
+        "schema_version": {
+          "type": "string"
+        },
+        "selected_state_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "selected_field_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "field_query_terms": {
+          "type": "object",
+          "required": [
+            "abawd_or_work_requirement_waiver_state_and_governing_period",
+            "implementation_effective_date_or_typed_gap",
+            "operative_state_implementation_authority_and_version",
+            "verification_evidence_and_staff_discretion_surface"
+          ],
+          "properties": {
+            "abawd_or_work_requirement_waiver_state_and_governing_period": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "implementation_effective_date_or_typed_gap": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "operative_state_implementation_authority_and_version": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "verification_evidence_and_staff_discretion_surface": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "allowed_discovery_surfaces": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "maximum_official_roots_per_state": {
+          "type": "integer"
+        },
+        "maximum_discovery_requests_per_root": {
+          "type": "integer"
+        },
+        "maximum_candidate_urls_per_cell": {
+          "type": "integer"
+        },
+        "maximum_attempts_per_request": {
+          "type": "integer"
+        },
+        "maximum_redirects": {
+          "type": "integer"
+        },
+        "result_spawned_source_fetches": {
+          "type": "integer"
+        },
+        "cross_host_redirects_allowed": {
+          "type": "boolean"
+        },
+        "automatic_source_admission": {
+          "type": "boolean"
+        },
+        "automatic_field_classification": {
+          "type": "boolean"
+        },
+        "outside_human_dependency": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "object_type",
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "selected_state_ids",
+        "selected_field_ids",
+        "selected_substantive_cell_count",
+        "obligations",
+        "obligation_count",
+        "fixed_repository_route_cells",
+        "bounded_official_route_discovery_cells",
+        "maximum_total_discovery_requests",
+        "maximum_total_candidate_urls",
+        "source_requests_executed",
+        "source_admissions",
+        "field_mutations",
+        "row_state_mutations",
+        "class_closed",
+        "cumulative_ledger_effect",
+        "outside_human_dependency",
+        "publication_effect",
+        "adoption_effect",
+        "graph_effect"
+      ],
+      "properties": {
+        "object_type": {
+          "type": "string"
+        },
+        "schema_version": {
+          "type": "string"
+        },
+        "wave_id": {
+          "type": "string"
+        },
+        "lane_id": {
+          "type": "string"
+        },
+        "class_id": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "integer"
+        },
+        "selected_state_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "selected_field_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "selected_substantive_cell_count": {
+          "type": "integer"
+        },
+        "obligations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "obligation_id",
+              "state_id",
+              "field_id",
+              "mode",
+              "official_roots",
+              "repository_candidate_urls",
+              "query_terms",
+              "maximum_candidate_urls",
+              "maximum_discovery_requests",
+              "automatic_source_admission",
+              "automatic_field_classification",
+              "terminalizes_field"
+            ],
+            "properties": {
+              "obligation_id": {
+                "type": "string"
+              },
+              "state_id": {
+                "type": "string"
+              },
+              "field_id": {
+                "type": "string"
+              },
+              "mode": {
+                "type": "string"
+              },
+              "official_roots": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "repository_candidate_urls": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "query_terms": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "maximum_candidate_urls": {
+                "type": "integer"
+              },
+              "maximum_discovery_requests": {
+                "type": "integer"
+              },
+              "automatic_source_admission": {
+                "type": "boolean"
+              },
+              "automatic_field_classification": {
+                "type": "boolean"
+              },
+              "terminalizes_field": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "obligation_count": {
+          "type": "integer"
+        },
+        "fixed_repository_route_cells": {
+          "type": "integer"
+        },
+        "bounded_official_route_discovery_cells": {
+          "type": "integer"
+        },
+        "maximum_total_discovery_requests": {
+          "type": "integer"
+        },
+        "maximum_total_candidate_urls": {
+          "type": "integer"
+        },
+        "source_requests_executed": {
+          "type": "integer"
+        },
+        "source_admissions": {
+          "type": "integer"
+        },
+        "field_mutations": {
+          "type": "integer"
+        },
+        "row_state_mutations": {
+          "type": "integer"
+        },
+        "class_closed": {
+          "type": "boolean"
+        },
+        "cumulative_ledger_effect": {
+          "type": "string"
+        },
+        "outside_human_dependency": {
+          "type": "boolean"
+        },
+        "publication_effect": {
+          "type": "string"
+        },
+        "adoption_effect": {
+          "type": "string"
+        },
+        "graph_effect": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "object_type",
+        "schema_version",
+        "canonical_rd04_merge",
+        "live_main_parent",
+        "selected_state_count",
+        "selected_field_count",
+        "selected_substantive_cell_count",
+        "derivative_row_state_cells_excluded",
+        "protocol_obligations",
+        "fixed_repository_route_cells",
+        "bounded_official_route_discovery_cells",
+        "source_requests_executed",
+        "source_admissions",
+        "field_mutations",
+        "row_state_mutations",
+        "terminal_cells_before",
+        "open_substantive_cells_before",
+        "class_closed",
+        "outside_human_dependency",
+        "cumulative_ledger_effect",
+        "publication_effect",
+        "adoption_effect",
+        "graph_effect"
+      ],
+      "properties": {
+        "object_type": {
+          "type": "string"
+        },
+        "schema_version": {
+          "type": "string"
+        },
+        "canonical_rd04_merge": {
+          "type": "string"
+        },
+        "live_main_parent": {
+          "type": "string"
+        },
+        "selected_state_count": {
+          "type": "integer"
+        },
+        "selected_field_count": {
+          "type": "integer"
+        },
+        "selected_substantive_cell_count": {
+          "type": "integer"
+        },
+        "derivative_row_state_cells_excluded": {
+          "type": "integer"
+        },
+        "protocol_obligations": {
+          "type": "integer"
+        },
+        "fixed_repository_route_cells": {
+          "type": "integer"
+        },
+        "bounded_official_route_discovery_cells": {
+          "type": "integer"
+        },
+        "source_requests_executed": {
+          "type": "integer"
+        },
+        "source_admissions": {
+          "type": "integer"
+        },
+        "field_mutations": {
+          "type": "integer"
+        },
+        "row_state_mutations": {
+          "type": "integer"
+        },
+        "terminal_cells_before": {
+          "type": "integer"
+        },
+        "open_substantive_cells_before": {
+          "type": "integer"
+        },
+        "class_closed": {
+          "type": "boolean"
+        },
+        "outside_human_dependency": {
+          "type": "boolean"
+        },
+        "cumulative_ledger_effect": {
+          "type": "string"
+        },
+        "publication_effect": {
+          "type": "string"
+        },
+        "adoption_effect": {
+          "type": "string"
+        },
+        "graph_effect": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}
