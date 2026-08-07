@@ -1,0 +1,190 @@
+name: TEMP qualify exact School.House RDAP custody product
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-rdap-exact-domain-census-product-qualifier-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-rdap-product-qualifier-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-rdap-exact-domain-census-product-qualifier-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prove and qualify exact workflow-free product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='681ae0d41bed04d068836ee9d746fe7701d234cb'
+          BASE_TREE='9ee392609c4c6bcce2806f9b8a1e514333c1428e'
+          TARGET='agent/schoolhouse-rdap-exact-domain-census-custody-product-v1'
+          PRODUCT='f6048a4a8d5c5e74c5f6b19fb4b45bd2b0c260b4'
+          PRODUCT_TREE='45fca80e15c6df7443c0b063210606fdb244ff94'
+          WORKFLOW='.github/workflows/temp-schoolhouse-rdap-exact-domain-census-product-qualifier-v1.yml'
+          VALIDATOR='tools/validate-schoolhouse-rdap-exact-domain-census-custody.py'
+          WORK="$RUNNER_TEMP/schoolhouse-rdap-product"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-rdap-product-qualification-v1"
+          mkdir -p "$RECEIPT"
+
+          cat > "$RECEIPT/expected-paths.txt" <<'PATHS'
+          data/intake/schoolhouse-rdap-exact-domain-census-v1/product-manifest.json
+          data/intake/schoolhouse-rdap-exact-domain-census-v1/sealed-qualification-artifact.zip
+          data/intake/schoolhouse-rdap-exact-domain-census-v1/sealed-source-artifact.zip
+          data/intake/schoolhouse-rdap-exact-domain-census-v1/source-custody.json
+          docs/milestones/schoolhouse-rdap-exact-domain-census-v1.md
+          tools/validate-schoolhouse-rdap-exact-domain-census-custody.py
+          PATHS
+          sed -i 's/^          //' "$RECEIPT/expected-paths.txt"
+
+          git fetch --no-tags origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            "+refs/heads/$TARGET:refs/remotes/origin/$TARGET"
+          MAIN="$(git rev-parse origin/main)"
+          QUALIFIER="$(git rev-parse HEAD)"
+          OBSERVED_PRODUCT="$(git rev-parse "origin/$TARGET")"
+          {
+            printf 'main=%s\n' "$MAIN"
+            printf 'qualifier=%s\n' "$QUALIFIER"
+            printf 'qualifier_parent=%s\n' "$(git rev-parse HEAD^)"
+            printf 'product=%s\n' "$OBSERVED_PRODUCT"
+            printf 'product_parent=%s\n' "$(git rev-parse "$OBSERVED_PRODUCT^")"
+            printf 'product_tree=%s\n' "$(git rev-parse "$OBSERVED_PRODUCT^{tree}")"
+          } | tee "$RECEIPT/preflight.txt"
+          test "$MAIN" = "$BASE"
+          test "$(git rev-parse "$BASE^{tree}")" = "$BASE_TREE"
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git merge-base HEAD origin/main)" = "$BASE"
+          test "$OBSERVED_PRODUCT" = "$PRODUCT"
+          test "$(git rev-parse "$PRODUCT^")" = "$BASE"
+          test "$(git rev-parse "$PRODUCT^{tree}")" = "$PRODUCT_TREE"
+          test "$(git rev-list --count "$BASE".."$PRODUCT")" = '1'
+
+          mapfile -t QUALIFIER_DELTA < <(git diff --name-only "$BASE"..HEAD)
+          test "${#QUALIFIER_DELTA[@]}" -eq 1
+          test "${QUALIFIER_DELTA[0]}" = "$WORKFLOW"
+
+          git diff --name-status "$BASE" "$PRODUCT" > "$RECEIPT/product-name-status.txt"
+          python - "$RECEIPT/expected-paths.txt" "$RECEIPT/product-name-status.txt" <<'PY'
+          from pathlib import Path
+          import sys
+          expected = set(Path(sys.argv[1]).read_text().splitlines())
+          rows = Path(sys.argv[2]).read_text().splitlines()
+          observed = set()
+          for row in rows:
+              status, path = row.split('\t', 1)
+              if status != 'A':
+                  raise SystemExit(f'non-addition product path: {row}')
+              observed.add(path)
+          if observed != expected:
+              raise SystemExit(f'product path drift: {sorted(observed ^ expected)}')
+          print('product_surface=6_addition_only')
+          PY
+          test -z "$(git diff --name-only "$BASE" "$PRODUCT" | grep '^\.github/' || true)"
+
+          test "$(git ls-tree "$PRODUCT" data/intake/schoolhouse-rdap-exact-domain-census-v1/sealed-source-artifact.zip | awk '{print $3}')" = '77ee92e96c88934cf6aa2d697eb985f13fda321b'
+          test "$(git ls-tree "$PRODUCT" data/intake/schoolhouse-rdap-exact-domain-census-v1/sealed-qualification-artifact.zip | awk '{print $3}')" = 'c493a3c4430dad167fc9a71d009eb33c48ca9ff8'
+          test "$(git ls-tree "$PRODUCT" data/intake/schoolhouse-rdap-exact-domain-census-v1/source-custody.json | awk '{print $3}')" = 'de7f0e4e83a11563215c9b94495a2dcb8004979e'
+          test "$(git ls-tree "$PRODUCT" data/intake/schoolhouse-rdap-exact-domain-census-v1/product-manifest.json | awk '{print $3}')" = '1381b1dc68f0e2b5c65706182df1262d89e1653c'
+          test "$(git ls-tree "$PRODUCT" docs/milestones/schoolhouse-rdap-exact-domain-census-v1.md | awk '{print $3}')" = '0bf154a783b08ede4a8c2fc88e0058f6c9298df9'
+          test "$(git ls-tree "$PRODUCT" "$VALIDATOR" | awk '{print $1}')" = '100755'
+          test "$(git ls-tree "$PRODUCT" "$VALIDATOR" | awk '{print $3}')" = '84a4a003e2849afaeea20b680c4db29051675207'
+
+          rm -rf "$WORK"
+          git worktree add --detach "$WORK" "$PRODUCT"
+          export TERM=xterm
+          {
+            cd "$WORK"
+            python -m py_compile "$VALIDATOR"
+            python "$VALIDATOR"
+            python "$VALIDATOR" --self-test
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          } 2>&1 | tee "$RECEIPT/focused-gates.log"
+          grep -q '"adversarial_refusals": 6' "$RECEIPT/focused-gates.log"
+          grep -q '"public_schoolhouse_legal_identity": "unresolved"' "$RECEIPT/focused-gates.log"
+          (cd "$WORK" && npm run release:check) 2>&1 | tee "$RECEIPT/release-check.log"
+
+          git -C "$WORK" restore --staged --worktree .
+          git -C "$WORK" clean -fdx
+          {
+            cd "$WORK"
+            python "$VALIDATOR"
+            python "$VALIDATOR" --self-test
+            node tools/validate-no-magic-human-gate.mjs
+          } 2>&1 | tee "$RECEIPT/clean-replay.log"
+          git -C "$WORK" diff --check
+          git -C "$WORK" diff --exit-code
+          test -z "$(git -C "$WORK" status --porcelain=v1 --untracked-files=all)"
+
+          cat > "$RECEIPT/qualification.json" <<EOF
+          {
+            "schema_version": "schoolhouse-rdap-exact-domain-census-product-qualification-v1@1",
+            "canonical_parent": "$BASE",
+            "canonical_parent_tree": "$BASE_TREE",
+            "product_commit": "$PRODUCT",
+            "product_tree": "$PRODUCT_TREE",
+            "product_paths": 6,
+            "product_commits": 1,
+            "addition_only": true,
+            "workflow_paths": 0,
+            "validator_blob": "84a4a003e2849afaeea20b680c4db29051675207",
+            "fixed_routes": 2,
+            "terminal_routes": 2,
+            "total_requests": 2,
+            "candidate_rows": 0,
+            "registrar_role_name_values": 1,
+            "registrant_organization_values": 0,
+            "redaction_present": true,
+            "identities_admitted": 0,
+            "relationships_admitted": 0,
+            "negative_existence_claims": 0,
+            "owner_or_operator_admissions": 0,
+            "outside_human_dependency": false,
+            "publication_effect": "none",
+            "adoption_effect": "none",
+            "graph_effect": "none",
+            "public_schoolhouse_legal_identity": "unresolved",
+            "adversarial_refusals": 6,
+            "clean_replay": "pass",
+            "complete_release_gate": "pass",
+            "qualification": "pass"
+          }
+          EOF
+          sed -i 's/^          //' "$RECEIPT/qualification.json"
+          sha256sum "$RECEIPT"/* > "$RECEIPT/SHA256SUMS"
+          cat "$RECEIPT/qualification.json"
+
+      - name: Preserve exact product qualification receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-rdap-exact-domain-census-product-qualification-v1
+          path: ${{ runner.temp }}/schoolhouse-rdap-product-qualification-v1
+          if-no-files-found: error
+          retention-days: 90
