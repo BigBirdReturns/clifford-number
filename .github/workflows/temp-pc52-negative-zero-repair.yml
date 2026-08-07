@@ -1,0 +1,209 @@
+name: TEMP qualify PC-52 negative-zero canonicalization repair
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc52-negative-zero-repair-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      OLD_PRODUCT: d8e6f89304e1ca6760bde06e951ab8d1438b4aa5
+      OLD_TREE: 847b80b72b48c570f86f3235dbbd25f24ac4c4b3
+      PRODUCT_PARENT: 681ae0d41bed04d068836ee9d746fe7701d234cb
+      RECEIPT_DIR: /tmp/pc52-negative-zero-repair
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Apply the exact four-file negative-zero repair
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git cat-file -e "$OLD_PRODUCT^{commit}"
+          test "$(git rev-parse "$OLD_PRODUCT^{tree}")" = "$OLD_TREE"
+          test "$(git rev-parse "$OLD_PRODUCT^")" = "$PRODUCT_PARENT"
+          git reset --hard "$OLD_PRODUCT"
+          git clean -fdx
+
+          python - <<'PY'
+          import subprocess
+          from pathlib import Path
+
+          source_blobs = {
+              'tools/lib/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs': 'dcee2da9d00d7edb36d41ed64dee121f81ac99b1',
+              'tools/lib/preference-custody-manifest-v50.mjs': '743296c92d94cadd1337250308179606928a84d8',
+              'test/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.test.js': '00cb2582581f9298c14df82dc215c9650fb3a48a',
+              'test/preference-custody-manifest-v50.test.js': 'cb8f6fbd8196f3be121421f7e13ca962215dd687',
+          }
+          for path, expected in source_blobs.items():
+              observed = subprocess.check_output(['git','hash-object',path], text=True).strip()
+              if observed != expected:
+                  raise SystemExit(f'source blob mismatch {path}: {observed} != {expected}')
+
+          def replace_once(path, old, new):
+              file = Path(path)
+              text = file.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'expected one repair anchor in {path}, observed {count}')
+              file.write_text(text.replace(old, new, 1))
+
+          replace_once(
+              'tools/lib/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs',
+              "  if (typeof value === 'number') { if (!Number.isFinite(value)) errors.push(`${label} contains a non-finite number`); return; }",
+              "  if (typeof value === 'number') { if (!Number.isFinite(value)) errors.push(`${label} contains a non-finite number`); else if (Object.is(value,-0)) errors.push(`${label} contains negative zero`); return; }",
+          )
+          replace_once(
+              'tools/lib/preference-custody-manifest-v50.mjs',
+              " if(value===null||typeof value==='string'||typeof value==='boolean')return;if(typeof value==='number'){if(!Number.isFinite(value))errors.push(`${label} contains a non-finite number`);return;}if(typeof value!=='object'){errors.push(`${label} contains unsupported ${typeof value}`);return;}",
+              " if(value===null||typeof value==='string'||typeof value==='boolean')return;if(typeof value==='number'){if(!Number.isFinite(value))errors.push(`${label} contains a non-finite number`);else if(Object.is(value,-0))errors.push(`${label} contains negative zero`);return;}if(typeof value!=='object'){errors.push(`${label} contains unsupported ${typeof value}`);return;}",
+          )
+          replace_once(
+              'test/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.test.js',
+              "const symbolFixture=clone(fixture);symbolFixture.worlds[Symbol('unapproved')]=true;fixtureRefused(symbolFixture,'symbol fixture array property');const sparse=clone(fixture);delete sparse.worlds[2];fixtureRefused(sparse,'sparse world array');",
+              "const symbolFixture=clone(fixture);symbolFixture.worlds[Symbol('unapproved')]=true;fixtureRefused(symbolFixture,'symbol fixture array property');const negativeZeroFixture=clone(fixture);negativeZeroFixture.worlds[0].repository_scope.repository_parent_tree_substitution_decisions=-0;fixtureRefused(negativeZeroFixture,'negative-zero fixture burden');const negativeZeroBuild=clone(build);negativeZeroBuild.worlds[0].numeric_burden.repository_parent_tree_substitution_decisions=-0;buildRefused(negativeZeroBuild,'negative-zero compiled burden');const sparse=clone(fixture);delete sparse.worlds[2];fixtureRefused(sparse,'sparse world array');",
+          )
+          replace_once(
+              'test/preference-custody-manifest-v50.test.js',
+              "const namedManifestArray=clone(manifest);namedManifestArray.real_case_requirements_added.unapproved=true;manifestRefused(namedManifestArray,'named manifest array property');const namedSourceArray=clone(baseSources);namedSourceArray.targetBuild.worlds.unapproved=true;assert.ok(validatePreferenceCustodyManifestV50Build(build,manifest,baseBuild,targetBuild,targetFixture,namedSourceArray).length>0,'named source-bundle array property must be refused');const namedFloorBuildArray=clone(build);namedFloorBuildArray.controls.unapproved=true;buildRefused(namedFloorBuildArray,'named floor-build array property');",
+              "const namedManifestArray=clone(manifest);namedManifestArray.real_case_requirements_added.unapproved=true;manifestRefused(namedManifestArray,'named manifest array property');const namedSourceArray=clone(baseSources);namedSourceArray.targetBuild.worlds.unapproved=true;assert.ok(validatePreferenceCustodyManifestV50Build(build,manifest,baseBuild,targetBuild,targetFixture,namedSourceArray).length>0,'named source-bundle array property must be refused');const negativeZeroSource=clone(baseSources);negativeZeroSource.targetBuild.worlds[0].numeric_burden.repository_parent_tree_substitution_decisions=-0;assert.ok(validatePreferenceCustodyManifestV50Build(build,manifest,baseBuild,targetBuild,targetFixture,negativeZeroSource).length>0,'negative-zero transitive source burden must be refused');const namedFloorBuildArray=clone(build);namedFloorBuildArray.controls.unapproved=true;buildRefused(namedFloorBuildArray,'named floor-build array property');const negativeZeroFloorBuild=clone(build);negativeZeroFloorBuild.controls.at(-1).metrics.repository_parent_tree_substitution_decisions=-0;buildRefused(negativeZeroFloorBuild,'negative-zero floor build burden');",
+          )
+          PY
+
+          git diff --check
+          mapfile -t CHANGED < <(git diff --name-only "$OLD_PRODUCT" | sort)
+          test "${#CHANGED[@]}" -eq 4
+          printf '%s\n' "${CHANGED[@]}" > /tmp/pc52-negative-zero-paths.txt
+          cat > /tmp/pc52-negative-zero-expected-paths.txt <<'EOF'
+          test/preference-custody-manifest-v50.test.js
+          test/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.test.js
+          tools/lib/preference-custody-manifest-v50.mjs
+          tools/lib/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs
+          EOF
+          sed -i 's/^          //' /tmp/pc52-negative-zero-expected-paths.txt
+          diff -u /tmp/pc52-negative-zero-expected-paths.txt /tmp/pc52-negative-zero-paths.txt
+
+          test "$(wc -c < tools/lib/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs | tr -d ' ')" = 83672
+          test "$(sha256sum tools/lib/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs | awk '{print $1}')" = dafd0e9039e6f4f9aa3b179a216b5571df7d48e7aee43be3e5b71c0f98b262db
+          test "$(git hash-object tools/lib/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs)" = e647c1a38d9427c851c3da587369330da83c044f
+
+          test "$(wc -c < tools/lib/preference-custody-manifest-v50.mjs | tr -d ' ')" = 42683
+          test "$(sha256sum tools/lib/preference-custody-manifest-v50.mjs | awk '{print $1}')" = ea3e709364a25eeb5b5253d280c1cc946beef87c6d3d658313aab38422e47ffe
+          test "$(git hash-object tools/lib/preference-custody-manifest-v50.mjs)" = bce37c5d6766fbd6c825ef7e9c905de50bdd5910
+
+          test "$(wc -c < test/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.test.js | tr -d ' ')" = 7839
+          test "$(sha256sum test/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.test.js | awk '{print $1}')" = 315da5c59bc8ed1df14565d3fc990e45bad259a7e99cda10afdfea4d165fa80e
+          test "$(git hash-object test/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.test.js)" = 7f5ae0258307e1fa4562b58c718c053d69b8ac0d
+
+          test "$(wc -c < test/preference-custody-manifest-v50.test.js | tr -d ' ')" = 8770
+          test "$(sha256sum test/preference-custody-manifest-v50.test.js | awk '{print $1}')" = 5b28658509e1f303371c3a9eb9ee0b9992a43129718b0e757290c607b0f002fc
+          test "$(git hash-object test/preference-custody-manifest-v50.test.js)" = 4658c1b9a6787e93cb202f78adbe9ad3b1d0a9fa
+
+      - name: Prove focused and complete repository gates
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf build/research
+          node test/preference-custody-manifest-v50.test.js
+          node tools/compile-preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs
+          node tools/validate-preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs
+          node test/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.test.js
+          node tools/compile-preference-custody-manifest-v50.mjs
+          node tools/validate-preference-custody-manifest-v50.mjs
+          node test/preference-custody-manifest-v50.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do node "$test_file"; done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+      - name: Create immutable repaired blobs and receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          import subprocess
+          import urllib.request
+          from pathlib import Path
+
+          expected = {
+              'tools/lib/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.mjs': ('dafd0e9039e6f4f9aa3b179a216b5571df7d48e7aee43be3e5b71c0f98b262db','e647c1a38d9427c851c3da587369330da83c044f'),
+              'tools/lib/preference-custody-manifest-v50.mjs': ('ea3e709364a25eeb5b5253d280c1cc946beef87c6d3d658313aab38422e47ffe','bce37c5d6766fbd6c825ef7e9c905de50bdd5910'),
+              'test/preference-linkage-review-scope-source-tree-generated-input-build-recipe-assurance.test.js': ('315da5c59bc8ed1df14565d3fc990e45bad259a7e99cda10afdfea4d165fa80e','7f5ae0258307e1fa4562b58c718c053d69b8ac0d'),
+              'test/preference-custody-manifest-v50.test.js': ('5b28658509e1f303371c3a9eb9ee0b9992a43129718b0e757290c607b0f002fc','4658c1b9a6787e93cb202f78adbe9ad3b1d0a9fa'),
+          }
+          token = os.environ['GH_TOKEN']
+          repo = os.environ['GH_REPOSITORY']
+          files = []
+          for path,(expected_sha256,expected_blob) in expected.items():
+              raw = Path(path).read_bytes()
+              sha256 = hashlib.sha256(raw).hexdigest()
+              blob = subprocess.check_output(['git','hash-object',path], text=True).strip()
+              if sha256 != expected_sha256 or blob != expected_blob:
+                  raise SystemExit(f'local identity mismatch for {path}')
+              payload = json.dumps({'content':base64.b64encode(raw).decode(),'encoding':'base64'}).encode()
+              request = urllib.request.Request(
+                  f'https://api.github.com/repos/{repo}/git/blobs', data=payload, method='POST',
+                  headers={'Authorization':f'Bearer {token}','Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json','User-Agent':'pc52-negative-zero-repair'},
+              )
+              with urllib.request.urlopen(request,timeout=180) as response:
+                  result=json.load(response)
+              if result.get('sha') != expected_blob:
+                  raise SystemExit(f'remote blob mismatch for {path}')
+              files.append({'path':path,'bytes':len(raw),'sha256':sha256,'git_blob_sha1':blob,'remote_git_blob_sha1':result['sha']})
+
+          root=Path(os.environ['RECEIPT_DIR']);root.mkdir(parents=True,exist_ok=True)
+          receipt={
+              'schema_version':'pc52-negative-zero-repair-receipt@1',
+              'prior_product_commit':os.environ['OLD_PRODUCT'],
+              'prior_product_tree':os.environ['OLD_TREE'],
+              'product_parent':os.environ['PRODUCT_PARENT'],
+              'changed_permanent_files':4,
+              'files':files,
+              'negative_zero_fixture_refused':'pass',
+              'negative_zero_compiled_build_refused':'pass',
+              'negative_zero_transitive_source_refused':'pass',
+              'negative_zero_floor_build_refused':'pass',
+              'standalone_pc52':'pass',
+              'floor_v50':'pass',
+              'historical_floor_reconstruction':'pass',
+              'base_preference_custody':'pass',
+              'no_magic_human':'pass',
+              'release_check':'pass',
+              'ref_updates':0,
+              'outside_human_dependency':False,
+              'graph_effect':'none',
+          }
+          (root/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          print(json.dumps(receipt,indent=2))
+          PY
+          sha256sum "$RECEIPT_DIR"/* > "$RECEIPT_DIR/SHA256SUMS"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc52-negative-zero-repair
+          path: /tmp/pc52-negative-zero-repair
+          if-no-files-found: error
+          retention-days: 90
