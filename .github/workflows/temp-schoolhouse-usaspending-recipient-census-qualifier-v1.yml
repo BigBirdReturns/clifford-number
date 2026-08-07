@@ -1,0 +1,198 @@
+name: TEMP qualify exact School.House USAspending recipient census
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-usaspending-recipient-census-qualifier-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: schoolhouse-usaspending-recipient-census-qualifier-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-usaspending-recipient-census-qualifier-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Authenticate and independently qualify exact source artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ARTIFACT_ID='9001168026'
+          ARTIFACT_NAME='schoolhouse-usaspending-recipient-census-v1'
+          SOURCE_RUN='31196898247'
+          SOURCE_HEAD='61fa1de957bdbe7ce0b1c6cd32947e825d690f31'
+          SOURCE_BYTES='40601'
+          SOURCE_DIGEST='sha256:b56408461a681a3f2b2388b33f08960abc9f81e6dade1b2b6efc64a9530eea2d'
+          WORK="$RUNNER_TEMP/schoolhouse-usaspending-source-qualification-work"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-usaspending-recipient-census-qualification-v1"
+          ZIP="$RUNNER_TEMP/schoolhouse-usaspending-recipient-census-v1.zip"
+          rm -rf "$WORK" "$RECEIPT"
+          mkdir -p "$WORK" "$RECEIPT"
+
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" --jq .name)" = "$ARTIFACT_NAME"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" --jq .workflow_run.id)" = "$SOURCE_RUN"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" --jq .workflow_run.head_sha)" = "$SOURCE_HEAD"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" --jq '.digest // ""')" = "$SOURCE_DIGEST"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$ZIP"
+          test "$(stat -c%s "$ZIP")" = "$SOURCE_BYTES"
+          test "sha256:$(sha256sum "$ZIP" | awk '{print $1}')" = "$SOURCE_DIGEST"
+          unzip -q "$ZIP" -d "$WORK"
+
+          SOURCE_ZIP="$ZIP" WORK="$WORK" RECEIPT="$RECEIPT" python - <<'PY'
+          from __future__ import annotations
+          import hashlib, json, os
+          from pathlib import Path
+
+          work=Path(os.environ['WORK']); receipt=Path(os.environ['RECEIPT']); source_zip=Path(os.environ['SOURCE_ZIP'])
+          expected_members=sorted([
+              'RUNNER-OUTPUT.log','RUNNER_EXIT_CODE','SHA256SUMS','adjudication.json',
+              'artifact-manifest.json','autocomplete-results.jsonl','candidates.jsonl',
+              'recipient-index-results.jsonl','request-receipts.jsonl','route-policy.json','summary.json'
+          ])
+          assert sorted(p.name for p in work.iterdir() if p.is_file()) == expected_members
+          def h(b:bytes)->str: return hashlib.sha256(b).hexdigest()
+          def docs(path:Path): return [json.loads(x) for x in path.read_text().splitlines() if x.strip()]
+          def walk(v):
+              forbidden={'duns','amount','address','address_line_1','address_line_2','physical_address','mailing_address','person_name','points_of_contact','phone','fax','email','award_description','transaction_description','raw_json','cookies','credentials','tokens','private_support'}
+              if isinstance(v,dict):
+                  assert forbidden.isdisjoint({str(k).casefold() for k in v})
+                  for x in v.values(): walk(x)
+              elif isinstance(v,list):
+                  for x in v: walk(x)
+
+          assert (work/'RUNNER_EXIT_CODE').read_text().strip() == '0'
+          sums=(work/'SHA256SUMS').read_text().splitlines(); assert len(sums)==10
+          seen=[]
+          for line in sums:
+              digest,name=line.split('  ',1); assert '/' not in name and name!='SHA256SUMS'
+              assert h((work/name).read_bytes())==digest; seen.append(name)
+          assert sorted(seen)==sorted(set(expected_members)-{'SHA256SUMS'})
+
+          manifest=json.loads((work/'artifact-manifest.json').read_text())
+          assert manifest['schema_version']=='schoolhouse-usaspending-recipient-census-artifact-manifest@1'
+          assert manifest['issue']==1358 and manifest['canonical_parent']=='8a2f4538bdbcf9455f02e70c35a71cb39f805b18'
+          assert len(manifest['members'])==9
+          for row in manifest['members']:
+              assert row['name'] in expected_members and row['name'] not in {'SHA256SUMS','artifact-manifest.json'}
+              b=(work/row['name']).read_bytes(); assert len(b)==row['bytes'] and h(b)==row['sha256']
+          canonical=(json.dumps(manifest['members'],indent=2,sort_keys=True)+'\n').encode()
+          assert h(canonical)==manifest['combined_sha256']=='3373f8ab62a4432f900f0d2f17dbc0790e239fe62d9a8feb18e8821e6c762884'
+
+          summary=json.loads((work/'summary.json').read_text()); adjudication=json.loads((work/'adjudication.json').read_text()); policy=json.loads((work/'route-policy.json').read_text())
+          requests=docs(work/'request-receipts.jsonl'); autocomplete=docs(work/'autocomplete-results.jsonl'); index=docs(work/'recipient-index-results.jsonl'); candidates=docs(work/'candidates.jsonl')
+          assert summary['schema_version']=='schoolhouse-usaspending-recipient-census-summary@1'
+          assert summary['state']=='terminal_bounded_usaspending_recipient_candidate_census'
+          assert summary['issue']==1358 and summary['canonical_parent']=='8a2f4538bdbcf9455f02e70c35a71cb39f805b18'
+          assert summary['fixed_query_count']==3 and summary['fixed_route_count']==summary['terminal_route_count']==6
+          assert summary['terminal_route_state_counts']=={'terminal_public_json_parsed':6}
+          assert summary['total_request_attempts']==6
+          assert summary['autocomplete_returned_rows']==len(autocomplete)==200 and summary['autocomplete_strict_match_rows']==0
+          assert summary['recipient_index_returned_rows']==len(index)==684 and summary['recipient_index_strict_match_rows']==1
+          assert summary['federal_spending_recipient_name_candidate_rows']==len(candidates)==0 and summary['candidate_ueis']==[]
+          assert summary['recipient_index_has_next_by_query']=={'q1_school_dot_house':False,'q2_schoolhouse':False,'q3_school_house':False}
+          assert all(v==0 for v in summary['retention'].values())
+          assert summary['authority']=={
+              'adoption_effect':'none','federal_awards_admitted':0,'funding_or_amount_admissions':0,
+              'graph_effect':'none','identities_admitted':0,'negative_existence_claims':0,
+              'outside_human_dependency':False,'promotes_to':'federal_spending_recipient_name_candidate_only',
+              'public_schoolhouse_legal_identity':'unresolved','publication_effect':'none','relationships_admitted':0,
+          }
+          assert all(summary['interpretation'].values())
+          assert adjudication['state']==summary['state'] and adjudication['candidate_rows']==0 and adjudication['successor_required'] is False
+          assert adjudication['promotes_to']=='no_candidate_promoted'
+          assert all(adjudication[k]==0 for k in ['identity_admissions','relationship_admissions','federal_award_admissions','funding_or_amount_admissions','negative_existence_claims'])
+          assert adjudication['outside_human_dependency'] is False and [adjudication[k] for k in ['publication_effect','adoption_effect','graph_effect']]==['none','none','none']
+          assert policy['schema_version']=='schoolhouse-usaspending-recipient-census-route-policy@1' and policy['issue']==1358
+          assert policy['canonical_parent']==summary['canonical_parent'] and policy['canonical_rdap_merge']=='32b818c9d37ff5e65629848aca84c8d30859387b'
+          assert policy['request_ceiling']['fixed_autocomplete_posts']==3 and policy['request_ceiling']['fixed_recipient_index_posts']==3
+          assert policy['request_ceiling']['maximum_total_requests']==12 and policy['request_ceiling']['outside_human_dependency'] is False
+          assert all(v==0 for k,v in policy['request_ceiling'].items() if k in {'result_spawned_requests','login_attempts','account_creation_attempts','api_key_requests'})
+          assert all(v==0 for v in policy['retention'].values())
+
+          expected_routes=['autocomplete_q1_school_dot_house','recipient_index_q1_school_dot_house','autocomplete_q2_schoolhouse','recipient_index_q2_schoolhouse','autocomplete_q3_school_house','recipient_index_q3_school_house']
+          assert [x['route_id'] for x in requests]==expected_routes
+          assert all(x['attempts']==1 and x['status_code']==200 and x['terminal_state']=='terminal_public_json_parsed' and x['error_class'] is None for x in requests)
+          assert all(x['url']==x['final_url'] for x in requests)
+          expected_receipts={
+              'autocomplete_q1_school_dot_house':(248,'6d875e12098a54a9cde69b22d7bf824446a801477ddec75040ff6db8d70f8cc9',0,0),
+              'recipient_index_q1_school_dot_house':(128,'de16274141105d13fad23603c91b6b6f5b8c0c2c910fcd8b580ad775bdded54b',0,0),
+              'autocomplete_q2_schoolhouse':(9997,'1296e33c2446c5f59d40f8155879044f562ded5710a6e267beb4101a6d9b4daf',100,0),
+              'recipient_index_q2_schoolhouse':(71786,'4b41ef5ca13458783761ad661ed61fe2c24b7ff3c4bd0979388fec7095d015ce',489,1),
+              'autocomplete_q3_school_house':(10303,'19c6c9a1d6ae603e8e933f0aaf7dcefe1ade10eace94e3ab9c5423c2c8561f3e',100,0),
+              'recipient_index_q3_school_house':(28782,'285ff7c2e701af2f50b41a622201413354515ce7f1ade60b3fb50d9e0db48de2',195,0),
+          }
+          for x in requests:
+              size,digest,rows,matches=expected_receipts[x['route_id']]
+              assert (x['response_bytes'],x['response_sha256'],x['returned_rows'],x['strict_match_rows'])==(size,digest,rows,matches)
+              if x['endpoint_class']=='recipient_index': assert x['has_next'] is False and x['candidate_rows']==0
+
+          assert len(autocomplete)==200 and all(x['candidate'] is False and x['strict_name_match'] is False for x in autocomplete)
+          strict=[x for x in index if x['strict_name_match']]
+          assert strict==[{
+              'candidate':False,'normalized_name':'schoolhouse','query_id':'q2_schoolhouse','query_text':'Schoolhouse',
+              'recipient_id':'aa57943a-76bc-70ac-d4a0-281c071f6a88-R','recipient_level':'R',
+              'recipient_name':'SCHOOLHOUSE','result_ordinal':229,'strict_name_match':True,'uei':None,
+          }]
+          assert all(x['candidate'] is False for x in index)
+          for value in [manifest,summary,adjudication,policy,requests,autocomplete,index,candidates]: walk(value)
+
+          qualification={
+              'schema_version':'schoolhouse-usaspending-recipient-census-source-qualification@1',
+              'qualification':'pass','issue':1358,'canonical_parent':summary['canonical_parent'],
+              'source_workflow_run':31196898247,'source_head':'61fa1de957bdbe7ce0b1c6cd32947e825d690f31',
+              'source_artifact_id':9001168026,'source_artifact_bytes':source_zip.stat().st_size,
+              'source_artifact_sha256':h(source_zip.read_bytes()),'fixed_routes':6,'terminal_routes':6,
+              'terminal_route_state_counts':{'terminal_public_json_parsed':6},'total_request_attempts':6,
+              'autocomplete_rows':200,'recipient_index_rows':684,'recipient_index_strict_name_matches':1,
+              'candidate_rows':0,'candidate_ueis':[],'outside_human_dependency':False,
+              'identity_admissions':0,'federal_award_admissions':0,'funding_or_amount_admissions':0,
+              'negative_existence_claims':0,'publication_effect':'none','adoption_effect':'none','graph_effect':'none',
+              'source_requests_made_by_qualifier':0,'status':'complete',
+          }
+          (receipt/'qualification.json').write_text(json.dumps(qualification,indent=2,sort_keys=True)+'\n')
+          (receipt/'source-summary.json').write_bytes((work/'summary.json').read_bytes())
+          (receipt/'source-SHA256SUMS').write_bytes((work/'SHA256SUMS').read_bytes())
+          (receipt/'source-artifact-manifest.json').write_bytes((work/'artifact-manifest.json').read_bytes())
+          (receipt/'qualification.log').write_text('schoolhouse_usaspending_source_qualification=pass routes=6 rows=684 strict_matches=1 candidates=0 source_requests=0\n')
+          PY
+
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check > "$RECEIPT/release-check.log" 2>&1
+          (cd "$RECEIPT" && sha256sum qualification.json source-summary.json source-SHA256SUMS source-artifact-manifest.json qualification.log release-check.log > SHA256SUMS)
+          cat "$RECEIPT/qualification.json"
+
+      - name: Preserve exact request-free qualification
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-usaspending-recipient-census-qualification-v1
+          path: ${{ runner.temp }}/schoolhouse-usaspending-recipient-census-qualification-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
