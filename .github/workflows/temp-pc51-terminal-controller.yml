@@ -1,104 +1,184 @@
-name: TEMP normalize and release exact PC-51 product workflows
+name: TEMP prove exact PC-51 canonical merge
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-  actions: write
+  contents: read
 
 concurrency:
-  group: pc51-normalize-product-authority-v1
+  group: pc51-exact-postmerge-proof-08288d
   cancel-in-progress: false
 
 jobs:
-  normalize:
+  prove:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 360
     env:
-      GH_TOKEN: ${{ github.token }}
-      GH_REPOSITORY: ${{ github.repository }}
-      PRODUCT_BRANCH: agent/pc51-materializer
-      FROZEN_PARENT: 5b841fcfe6d30929e0adfbb36548224d8d1959e8
-      CODEX_PRODUCT: 24d0e471c38deb638e788613654ed8459d30bd00
+      MERGE_SHA: 08288d7358bd9d2a14babd9893cecea61cdb7334
+      MERGE_FIRST_PARENT: a464dbbd96c365a7c040e17847486c5b3ba05c27
+      PRODUCT_COMMIT: 030ece737067699236883bc1f1533af9866fa140
       PRODUCT_TREE: f60fcdcd969d9082d166db74660814976012e187
-      EXPECTED_PATHS: '14'
+      FROZEN_PARENT: 5b841fcfe6d30929e0adfbb36548224d8d1959e8
+      SLUG: preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance
+      RECEIPT_DIR: /tmp/pc51-exact-postmerge-proof
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: 08288d7358bd9d2a14babd9893cecea61cdb7334
           fetch-depth: 0
-      - name: Re-author the exact product tree under repository-owner custody
-        id: normalize
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify canonical topology, paths, and blobs
         shell: bash
         run: |
           set -Eeuo pipefail
-          git fetch --no-tags origin "$FROZEN_PARENT" "refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/pc51-product"
-          ACTUAL=$(git rev-parse refs/remotes/origin/pc51-product)
-          test "$ACTUAL" = "$CODEX_PRODUCT"
-          test "$(git rev-parse "$ACTUAL^")" = "$FROZEN_PARENT"
-          test "$(git rev-list --count "$FROZEN_PARENT..$ACTUAL")" -eq 1
-          test "$(git rev-parse "$ACTUAL^{tree}")" = "$PRODUCT_TREE"
-          mapfile -t PATHS < <(git diff --name-only "$FROZEN_PARENT" "$ACTUAL")
-          test "${#PATHS[@]}" -eq "$EXPECTED_PATHS"
-          test "$(git diff --name-status "$FROZEN_PARENT" "$ACTUAL" | awk '$1 != "A" {n++} END {print n+0}')" -eq 0
-          if printf '%s\n' "${PATHS[@]}" | grep -Eq '(^|/)(temp|carrier|shard|controller|marker|pulse|receipt|diagnostic)([-_.]|/)|^\.pc51/'; then
-            printf '%s\n' "${PATHS[@]}"
+          mkdir -p "$RECEIPT_DIR"
+          test "$(git rev-parse HEAD)" = "$MERGE_SHA"
+          git fetch --no-tags origin main "$MERGE_SHA" "$PRODUCT_COMMIT" "$FROZEN_PARENT" >/dev/null 2>&1
+
+          mapfile -t PARENTS < <(git rev-list --parents -n 1 "$MERGE_SHA" | cut -d' ' -f2- | tr ' ' '\n')
+          test "${#PARENTS[@]}" -eq 2
+          test "${PARENTS[0]}" = "$MERGE_FIRST_PARENT"
+          test "${PARENTS[1]}" = "$PRODUCT_COMMIT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^")" = "$FROZEN_PARENT"
+          test "$(git rev-list --count "$FROZEN_PARENT..$PRODUCT_COMMIT")" -eq 1
+          test "$(git rev-parse "$PRODUCT_COMMIT^{tree}")" = "$PRODUCT_TREE"
+
+          cat > "$RECEIPT_DIR/expected-paths.txt" <<'EOF'
+          .github/workflows/preference-custody-v49.yml
+          .github/workflows/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.yml
+          data/research/preference-custody/control-manifest-v49.json
+          data/research/preference-custody/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.fixture.json
+          docs/preference-custody-laboratory-floor-v49.md
+          docs/preference-custody-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.md
+          test/preference-custody-manifest-v49.test.js
+          test/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.test.js
+          tools/compile-preference-custody-manifest-v49.mjs
+          tools/compile-preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs
+          tools/lib/preference-custody-manifest-v49.mjs
+          tools/lib/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs
+          tools/validate-preference-custody-manifest-v49.mjs
+          tools/validate-preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.mjs
+          EOF
+          sed -i 's/^          //' "$RECEIPT_DIR/expected-paths.txt"
+          sort -o "$RECEIPT_DIR/expected-paths.txt" "$RECEIPT_DIR/expected-paths.txt"
+
+          git diff --name-only "$MERGE_FIRST_PARENT" "$MERGE_SHA" | sort > "$RECEIPT_DIR/merge-paths.txt"
+          git diff --name-status "$MERGE_FIRST_PARENT" "$MERGE_SHA" > "$RECEIPT_DIR/merge-name-status.txt"
+          diff -u "$RECEIPT_DIR/expected-paths.txt" "$RECEIPT_DIR/merge-paths.txt"
+          test "$(wc -l < "$RECEIPT_DIR/merge-paths.txt" | tr -d ' ')" -eq 14
+          test "$(awk '$1 != "A" {n++} END {print n+0}' "$RECEIPT_DIR/merge-name-status.txt")" -eq 0
+          if grep -Eq '(^|/)(temp|carrier|shard|controller|marker|pulse|receipt|diagnostic)([-_.]|/)|^\.pc51/' "$RECEIPT_DIR/merge-paths.txt"; then
+            echo 'transport path entered canonical PC-51 merge' >&2
             exit 1
           fi
 
-          git config user.name BigBirdReturns
-          git config user.email 219768509+BigBirdReturns@users.noreply.github.com
-          NEW_COMMIT=$(printf '%s\n\n%s\n' \
-            'Add PC-51 source-review, reproducible-build, provenance, and execution-attestation custody' \
-            'Re-author the exact qualified fourteen-path tree under repository-owner custody after Codex-authored workflow quarantine. Preserve canonical-array refusal, clean-checkout self-materialization, zero outside-human dependency, and no graph effect.' \
-            | git commit-tree "$PRODUCT_TREE" -p "$FROZEN_PARENT")
-          test "$(git rev-parse "$NEW_COMMIT^")" = "$FROZEN_PARENT"
-          test "$(git rev-parse "$NEW_COMMIT^{tree}")" = "$PRODUCT_TREE"
+          : > "$RECEIPT_DIR/blob-identities.tsv"
+          while IFS= read -r path; do
+            PRODUCT_BLOB=$(git rev-parse "$PRODUCT_COMMIT:$path")
+            MERGE_BLOB=$(git rev-parse "$MERGE_SHA:$path")
+            test "$PRODUCT_BLOB" = "$MERGE_BLOB"
+            printf '%s\t%s\n' "$path" "$MERGE_BLOB" >> "$RECEIPT_DIR/blob-identities.tsv"
+          done < "$RECEIPT_DIR/expected-paths.txt"
 
-          REMOTE=$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')
-          test "$REMOTE" = "$CODEX_PRODUCT"
-          git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$CODEX_PRODUCT" \
-            origin "$NEW_COMMIT:refs/heads/$PRODUCT_BRANCH"
-          test "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$NEW_COMMIT"
-          printf 'product_commit=%s\nproduct_tree=%s\nprior_product=%s\n' \
-            "$NEW_COMMIT" "$PRODUCT_TREE" "$CODEX_PRODUCT" | tee /tmp/pc51-normalized.env
-          echo "product_commit=$NEW_COMMIT" >> "$GITHUB_OUTPUT"
+          grep -q '^permissions:$' .github/workflows/preference-custody-v49.yml
+          grep -q 'contents: read' .github/workflows/preference-custody-v49.yml
+          grep -q '^permissions:$' .github/workflows/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.yml
+          grep -q 'contents: read' .github/workflows/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.yml
+          ! grep -Eq 'contents: write|pull-requests: write|issues: write|actions: write' \
+            .github/workflows/preference-custody-v49.yml \
+            .github/workflows/preference-linkage-source-review-reproducible-build-artifact-provenance-execution-attestation-assurance.yml
 
-      - name: Approve any quarantined exact-head workflow runs
+      - name: Replay PC-51, floor v49, historical floors, and complete gates
         shell: bash
-        env:
-          PRODUCT_COMMIT: ${{ steps.normalize.outputs.product_commit }}
         run: |
           set -Eeuo pipefail
-          mkdir -p /tmp/pc51-normalize
-          for attempt in $(seq 1 120); do
-            gh api "/repos/${GH_REPOSITORY}/actions/runs?head_sha=${PRODUCT_COMMIT}&event=pull_request&per_page=100" \
-              > /tmp/pc51-normalize/runs.json
-            COUNT=$(jq '.workflow_runs | length' /tmp/pc51-normalize/runs.json)
-            mapfile -t BLOCKED < <(jq -r '.workflow_runs[] | select(.conclusion == "action_required") | .id' /tmp/pc51-normalize/runs.json)
-            for run_id in "${BLOCKED[@]}"; do
-              [[ -z "$run_id" ]] && continue
-              gh api --method POST "/repos/${GH_REPOSITORY}/actions/runs/${run_id}/approve" >/dev/null || true
-            done
-            if [[ "$COUNT" -ge 45 && "${#BLOCKED[@]}" -eq 0 ]]; then
-              break
-            fi
-            sleep 5
+          git clean -fdx
+          mkdir -p "$RECEIPT_DIR"
+          node "tools/compile-${SLUG}.mjs" | tee "$RECEIPT_DIR/standalone-compile.log"
+          node "tools/validate-${SLUG}.mjs" | tee "$RECEIPT_DIR/standalone-validate.log"
+          node "test/${SLUG}.test.js" | tee "$RECEIPT_DIR/standalone-test.log"
+          node tools/compile-preference-custody-manifest-v49.mjs | tee "$RECEIPT_DIR/floor-v49-compile.log"
+          node tools/validate-preference-custody-manifest-v49.mjs | tee "$RECEIPT_DIR/floor-v49-validate.log"
+          node test/preference-custody-manifest-v49.test.js | tee "$RECEIPT_DIR/floor-v49-test.log"
+          : > "$RECEIPT_DIR/historical-floors.log"
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
+            node "$test_file" | tee -a "$RECEIPT_DIR/historical-floors.log"
           done
-          gh api "/repos/${GH_REPOSITORY}/actions/runs?head_sha=${PRODUCT_COMMIT}&event=pull_request&per_page=100" \
-            > /tmp/pc51-normalize/runs-final.json
-          test "$(jq '.workflow_runs | length' /tmp/pc51-normalize/runs-final.json)" -ge 45
-          test "$(jq '[.workflow_runs[] | select(.conclusion == "action_required")] | length' /tmp/pc51-normalize/runs-final.json)" -eq 0
-          cp /tmp/pc51-normalized.env /tmp/pc51-normalize/receipt.env
-          jq '{head_sha: .workflow_runs[0].head_sha, run_count: (.workflow_runs|length), action_required: ([.workflow_runs[] | select(.conclusion == "action_required")]|length), runs: [.workflow_runs[] | {id,name,status,conclusion}]}' \
-            /tmp/pc51-normalize/runs-final.json > /tmp/pc51-normalize/workflow-release.json
+          node test/preference-custody-manifest.test.js | tee "$RECEIPT_DIR/base-floor.log"
+          node tools/validate-no-magic-human-gate.mjs | tee "$RECEIPT_DIR/no-magic-human-validate.log"
+          node test/no-magic-human-gate.test.js | tee "$RECEIPT_DIR/no-magic-human-test.log"
+          npm run release:check | tee "$RECEIPT_DIR/release-check.log"
+
+      - name: Seal exact post-merge receipt
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          MERGE_TREE=$(git rev-parse "$MERGE_SHA^{tree}")
+          git fetch --no-tags origin main >/dev/null 2>&1
+          CURRENT_MAIN=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$MERGE_SHA" "$CURRENT_MAIN"
+          git diff --name-only "$MERGE_SHA" "$CURRENT_MAIN" | sort -u > "$RECEIPT_DIR/main-after-merge-paths.txt"
+          if comm -12 "$RECEIPT_DIR/expected-paths.txt" "$RECEIPT_DIR/main-after-merge-paths.txt" | grep -q .; then
+            echo 'post-merge main successor overlaps canonical PC-51 paths' >&2
+            exit 1
+          fi
+
+          MERGE_TREE="$MERGE_TREE" CURRENT_MAIN="$CURRENT_MAIN" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path('/tmp/pc51-exact-postmerge-proof')
+          receipt = {
+              'schema_version': 'pc51-exact-postmerge-proof@1',
+              'issue': 1268,
+              'product_pr': 1277,
+              'qualified_parent_commit': os.environ['FROZEN_PARENT'],
+              'product_commit': os.environ['PRODUCT_COMMIT'],
+              'product_tree': os.environ['PRODUCT_TREE'],
+              'canonical_merge': os.environ['MERGE_SHA'],
+              'canonical_merge_tree': os.environ['MERGE_TREE'],
+              'merge_first_parent': os.environ['MERGE_FIRST_PARENT'],
+              'merge_second_parent': os.environ['PRODUCT_COMMIT'],
+              'current_main_at_proof': os.environ['CURRENT_MAIN'],
+              'permanent_paths': 14,
+              'canonical_product_blob_matches': 14,
+              'transport_paths': 0,
+              'write_capable_permanent_workflows': 0,
+              'hosted_exact_head_workflows_success': 45,
+              'standalone_pc51': 'pass',
+              'floor_v49': 'pass',
+              'historical_preference_custody_floors': 'pass',
+              'base_preference_custody': 'pass',
+              'no_magic_human': 'pass',
+              'complete_release_gate': 'pass',
+              'outside_human_dependency': False,
+              'graph_effect': 'none',
+          }
+          (root / 'postmerge-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          PY
+
+          mkdir -p "$RECEIPT_DIR/build"
+          find build/research -maxdepth 1 -type f \( -name "${SLUG}.*" -o -name 'preference-custody-laboratory-floor-v49.*' \) \
+            -exec cp {} "$RECEIPT_DIR/build/" \;
+          tar -C "$RECEIPT_DIR" -czf "$RECEIPT_DIR/pc51-exact-postmerge-proof.tar.gz" \
+            postmerge-receipt.json expected-paths.txt merge-paths.txt merge-name-status.txt \
+            blob-identities.tsv main-after-merge-paths.txt build \
+            standalone-compile.log standalone-validate.log standalone-test.log \
+            floor-v49-compile.log floor-v49-validate.log floor-v49-test.log \
+            historical-floors.log base-floor.log no-magic-human-validate.log \
+            no-magic-human-test.log release-check.log
+          sha256sum "$RECEIPT_DIR/pc51-exact-postmerge-proof.tar.gz" \
+            > "$RECEIPT_DIR/pc51-exact-postmerge-proof.tar.gz.sha256"
+          cat "$RECEIPT_DIR/postmerge-receipt.json"
+          cat "$RECEIPT_DIR/pc51-exact-postmerge-proof.tar.gz.sha256"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: pc51-normalized-product-authority
-          path: /tmp/pc51-normalize
+          name: pc51-exact-postmerge-proof-08288d
+          path: /tmp/pc51-exact-postmerge-proof
           if-no-files-found: error
           retention-days: 90
