@@ -1,0 +1,234 @@
+name: TEMP census exact School.House RDAP domain object
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-rdap-exact-domain-census-v1.yml'
+      - '.schoolhouse-rdap-exact-domain-census-v1/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-rdap-exact-domain-census-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  acquire:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-rdap-exact-domain-census-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify exact carrier, protocol, and runner custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          FROZEN='681ae0d41bed04d068836ee9d746fe7701d234cb'
+          FROZEN_TREE='9ee392609c4c6bcce2806f9b8a1e514333c1428e'
+          ROOT='.schoolhouse-rdap-exact-domain-census-v1'
+          EXECUTE="$ROOT/EXECUTE"
+          SHARDS=(
+            "$ROOT/census.py.gz.b64.00"
+            "$ROOT/census.py.gz.b64.01"
+            "$ROOT/census.py.gz.b64.02"
+            "$ROOT/census.py.gz.b64.03"
+          )
+          BUNDLE="$RUNNER_TEMP/schoolhouse-rdap-exact-domain-census-v1.py.gz.b64"
+          GZIP="$RUNNER_TEMP/schoolhouse-rdap-exact-domain-census-v1.py.gz"
+          RUNNER="$RUNNER_TEMP/schoolhouse-rdap-exact-domain-census-v1.py"
+
+          git fetch --no-tags origin main
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          FROZEN_TREE_OBSERVED="$(git rev-parse "$FROZEN^{tree}")"
+          MERGE_BASE="$(git merge-base HEAD origin/main)"
+          printf 'carrier_head=%s\nlive_main=%s\nfrozen_predecessor=%s\nfrozen_tree=%s\nmerge_base=%s\n' \
+            "$(git rev-parse HEAD)" "$LIVE_MAIN" "$FROZEN" "$FROZEN_TREE_OBSERVED" "$MERGE_BASE"
+          test "$FROZEN_TREE_OBSERVED" = "$FROZEN_TREE"
+          git merge-base --is-ancestor "$FROZEN" origin/main
+          test "$MERGE_BASE" = "$FROZEN"
+          test "$(git rev-parse HEAD^)" = "$FROZEN"
+
+          mapfile -t CHANGED < <(git diff --name-only "$FROZEN"..HEAD | sort)
+          EXPECTED=(
+            '.github/workflows/temp-schoolhouse-rdap-exact-domain-census-v1.yml'
+            '.schoolhouse-rdap-exact-domain-census-v1/EXECUTE'
+            '.schoolhouse-rdap-exact-domain-census-v1/census.py.gz.b64.00'
+            '.schoolhouse-rdap-exact-domain-census-v1/census.py.gz.b64.01'
+            '.schoolhouse-rdap-exact-domain-census-v1/census.py.gz.b64.02'
+            '.schoolhouse-rdap-exact-domain-census-v1/census.py.gz.b64.03'
+          )
+          test "${#CHANGED[@]}" -eq 6
+          for i in "${!EXPECTED[@]}"; do test "${CHANGED[$i]}" = "${EXPECTED[$i]}"; done
+
+          test "$(stat -c%s "$EXECUTE")" = '2066'
+          test "$(sha256sum "$EXECUTE" | awk '{print $1}')" = '3337a4b7ff18a3bde221b0a3b5a2849f1c40bd1dead7571e7deaf720a2251860'
+          EXPECTED_SHARD_BYTES=(3003 3080 3003 3072)
+          EXPECTED_SHARD_SHA256=(
+            fa06a1cf2aff53c12d98d715678189bddaf56fe0100d0d88968da1632a436dbd
+            fc2c2d9e21e96fe5cc310e3444c22623b0c5d2ef8c9ead3342bd198c935010df
+            50c19a6c136485ba1375460b8fa86abe6dcbd1d88e2a2be8e57b2ab87e785b5d
+            c53b562b6500941333c6adb0ab83eb8a9ec49bf3033eb998dc7e42d0c610b4d3
+          )
+          for i in "${!SHARDS[@]}"; do
+            test "$(stat -c%s "${SHARDS[$i]}")" = "${EXPECTED_SHARD_BYTES[$i]}"
+            test "$(sha256sum "${SHARDS[$i]}" | awk '{print $1}')" = "${EXPECTED_SHARD_SHA256[$i]}"
+          done
+          cat "${SHARDS[@]}" > "$BUNDLE"
+          test "$(stat -c%s "$BUNDLE")" = '12158'
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '132faf8efba8238b33b124f6e3a53b82556124b07f9ed9cb99cc902f82bcb930'
+          base64 -d "$BUNDLE" > "$GZIP"
+          test "$(stat -c%s "$GZIP")" = '8999'
+          test "$(sha256sum "$GZIP" | awk '{print $1}')" = '5c4f212d342da93eedf24c713e29dbaf730d2f5db6302dd2e9294bd9e7e0289a'
+          gzip -dc "$GZIP" > "$RUNNER"
+          test "$(stat -c%s "$RUNNER")" = '38709'
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = '4c40a6cc8ac45438415aeb1a69695e45a94e15cd2fccf5b42553435e5fed0448'
+          python -m py_compile "$RUNNER"
+          python "$RUNNER" --self-test
+
+          grep -Fx 'issue=1335' "$EXECUTE"
+          grep -Fx 'canonical_predecessor=681ae0d41bed04d068836ee9d746fe7701d234cb' "$EXECUTE"
+          grep -Fx 'canonical_predecessor_tree=9ee392609c4c6bcce2806f9b8a1e514333c1428e' "$EXECUTE"
+          grep -Fx 'iana_bootstrap_url=https://data.iana.org/rdap/dns.json' "$EXECUTE"
+          grep -Fx 'exact_domain=school.house' "$EXECUTE"
+          grep -Fx 'maximum_attempts_per_route=2' "$EXECUTE"
+          grep -Fx 'maximum_total_requests=4' "$EXECUTE"
+          grep -Fx 'maximum_response_bytes_per_route=5242880' "$EXECUTE"
+          grep -Fx 'query_or_form_submissions=0' "$EXECUTE"
+          grep -Fx 'result_spawned_requests=0' "$EXECUTE"
+          grep -Fx 'outside_human_dependency=false' "$EXECUTE"
+          grep -Fx 'publication_effect=none' "$EXECUTE"
+          grep -Fx 'adoption_effect=none' "$EXECUTE"
+          grep -Fx 'graph_effect=none' "$EXECUTE"
+
+      - name: Execute bounded IANA-bootstrap and exact-domain RDAP census
+        id: census
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          ROOT='.schoolhouse-rdap-exact-domain-census-v1'
+          SHARDS=(
+            "$ROOT/census.py.gz.b64.00"
+            "$ROOT/census.py.gz.b64.01"
+            "$ROOT/census.py.gz.b64.02"
+            "$ROOT/census.py.gz.b64.03"
+          )
+          BUNDLE="$RUNNER_TEMP/schoolhouse-rdap-exact-domain-census-v1.py.gz.b64"
+          GZIP="$RUNNER_TEMP/schoolhouse-rdap-exact-domain-census-v1.py.gz"
+          RUNNER="$RUNNER_TEMP/schoolhouse-rdap-exact-domain-census-v1.py"
+          OUT="$RUNNER_TEMP/schoolhouse-rdap-exact-domain-census-v1"
+          LOG="$RUNNER_TEMP/schoolhouse-rdap-exact-domain-census-v1.log"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          cat "${SHARDS[@]}" > "$BUNDLE"
+          test "$(stat -c%s "$BUNDLE")" = '12158'
+          test "$(sha256sum "$BUNDLE" | awk '{print $1}')" = '132faf8efba8238b33b124f6e3a53b82556124b07f9ed9cb99cc902f82bcb930'
+          base64 -d "$BUNDLE" > "$GZIP"
+          gzip -dc "$GZIP" > "$RUNNER"
+          python "$RUNNER" --output "$OUT" 2>&1 | tee "$LOG"
+          status=${PIPESTATUS[0]}
+          printf '%s\n' "$status" > "$OUT/RUNNER_EXIT_CODE"
+          cp "$LOG" "$OUT/RUNNER-OUTPUT.log"
+          exit "$status"
+
+      - name: Validate terminal artifact and authority ceiling
+        id: validate
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          RUNNER="$RUNNER_TEMP/schoolhouse-rdap-exact-domain-census-v1.py"
+          OUT="$RUNNER_TEMP/schoolhouse-rdap-exact-domain-census-v1"
+          test -f "$OUT/RUNNER_EXIT_CODE"
+          test "$(cat "$OUT/RUNNER_EXIT_CODE")" = '0'
+          python "$RUNNER" --check-output "$OUT"
+          test "$(wc -l < "$OUT/SHA256SUMS" | tr -d ' ')" = '7'
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          test "$(find "$OUT" -maxdepth 1 -type f | wc -l | tr -d ' ')" = '10'
+          jq -e '
+            (.state == "terminal_bounded_rdap_exact_domain_candidate_census" or
+             .state == "terminal_bounded_rdap_source_unavailable") and
+            .fixed_route_count == 2 and
+            .terminal_route_count == 2 and
+            .total_requests <= 4 and
+            .bootstrap_attempts <= 2 and
+            .domain_attempts <= 2 and
+            .registrant_or_administrative_person_names_retained == 0 and
+            .street_or_mailing_addresses_retained == 0 and
+            .postal_codes_retained == 0 and
+            .telephone_or_fax_values_retained == 0 and
+            .email_values_retained == 0 and
+            .contact_uris_retained == 0 and
+            .vcard_labels_or_free_text_notes_retained == 0 and
+            .raw_bootstrap_json_retained == 0 and
+            .raw_rdap_json_retained == 0 and
+            .browser_state_cookies_credentials_or_tokens_retained == 0 and
+            .private_support_material_retained == 0 and
+            .identities_admitted == 0 and
+            .relationships_admitted == 0 and
+            .negative_existence_claims_created == 0 and
+            .owner_or_operator_admissions == 0 and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/summary.json"
+          jq -e '
+            .public_schoolhouse_identity_admitted == false and
+            .domain_owner_or_operator_admitted == false and
+            .relationships_admitted == 0 and
+            .negative_existence_claim_created == false and
+            .registrant_organization_redaction_or_absence_is_not_nonexistence == true and
+            .registrar_is_not_registrant == true and
+            .nameserver_is_not_registrant == true and
+            .domain_handle_is_not_registrant_identity == true and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/adjudication.json"
+          jq -e '
+            .counts.fixed_routes == 2 and
+            .counts.terminal_routes == 2 and
+            .counts.total_requests <= 4 and
+            (.files | length) == 6
+          ' "$OUT/artifact-manifest.json"
+          jq -c . "$OUT/bootstrap-receipt.json" "$OUT/domain-receipt.json" >/dev/null
+          if test -s "$OUT/candidates.jsonl"; then jq -c . "$OUT/candidates.jsonl" >/dev/null; fi
+          touch "$OUT/VALIDATION_PASS"
+
+      - name: Preserve exact acquisition artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-rdap-exact-domain-census-v1
+          path: ${{ runner.temp }}/schoolhouse-rdap-exact-domain-census-v1
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Propagate acquisition or validation failure
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/schoolhouse-rdap-exact-domain-census-v1"
+          test -f "$OUT/RUNNER_EXIT_CODE"
+          test "$(cat "$OUT/RUNNER_EXIT_CODE")" = '0'
+          test -f "$OUT/VALIDATION_PASS"
