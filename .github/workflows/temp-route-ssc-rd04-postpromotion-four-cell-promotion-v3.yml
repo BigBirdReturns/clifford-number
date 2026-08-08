@@ -1,0 +1,343 @@
+name: TEMP route sealed RD-04 four-cell promotion materializer v3
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-route-ssc-rd04-postpromotion-four-cell-promotion-v3.yml'
+permissions:
+  contents: write
+  actions: read
+  issues: write
+
+concurrency:
+  group: temp-route-rd04-postpromotion-four-cell-promotion-v3
+  cancel-in-progress: false
+
+jobs:
+  route:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install sealed transaction dependencies
+        run: python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2' 'jsonschema==4.25.1'
+
+      - name: Authenticate and route sealed materializer
+        id: routed
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          SOURCE_PARENT=d35deab5ef1e255e5957f29e11fe53fcf74e1cfd
+          SOURCE_HEAD=f1c508ecc347300073552717843a59bcac0ea250
+          SOURCE_BRANCH=agent/rd04-four-cell-promotion-materializer-v1
+          SOURCE_PATH=.github/workflows/temp-materialize-ssc-rd04-postpromotion-four-cell-promotion-v1.yml
+          SOURCE_BLOB=1a3edc22e73f887047b1e40e583bffaafcf73a0e
+          SOURCE_WORKFLOW_NAME='TEMP materialize RD-04 postpromotion four-cell promotion v1'
+          SOURCE_STEP_NAME='Materialize and qualify exact product'
+
+          WRAPPER_PARENT=d35deab5ef1e255e5957f29e11fe53fcf74e1cfd
+          WRAPPER_BRANCH=agent/rd04-four-cell-promotion-materializer-router-v3
+          WRAPPER_PATH=.github/workflows/temp-route-ssc-rd04-postpromotion-four-cell-promotion-v3.yml
+
+          SOURCE_WT="${RUNNER_TEMP}/rd04-four-cell-promotion-source-v1"
+          ROUTER_OUT="${RUNNER_TEMP}/rd04-four-cell-promotion-router-v3"
+          MATERIALIZER_OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-four-cell-promotion-materializer-v1"
+          rm -rf "$SOURCE_WT" "$ROUTER_OUT" "$MATERIALIZER_OUT"
+          mkdir -p "$ROUTER_OUT"
+          exec > >(tee "$ROUTER_OUT/router.log") 2>&1
+          stage=bootstrap
+
+          finalize_router() {
+            set +e
+            (
+              cd "$ROUTER_OUT"
+              find . -maxdepth 1 -type f ! -name SHA256SUMS -print0 |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+            )
+          }
+
+          on_error() {
+            local code=$?
+            trap - ERR
+            set +e
+            printf '%s\n' "$code" > "$ROUTER_OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$ROUTER_OUT/STAGE"
+            jq -n \
+              --arg stage "$stage" \
+              --argjson exit_code "$code" \
+              --arg source_parent "$SOURCE_PARENT" \
+              --arg source_head "$SOURCE_HEAD" \
+              --arg wrapper_head "$(git rev-parse HEAD 2>/dev/null || true)" \
+              '{
+                schema_version:"ssc-rd04-postpromotion-four-cell-promotion-router@3",
+                state:"failed_closed",
+                failed_or_final_stage:$stage,
+                exit_code:$exit_code,
+                source_parent:$source_parent,
+                source_head:$source_head,
+                wrapper_head:(if $wrapper_head=="" then null else $wrapper_head end),
+                inner_exit_code:null,
+                inner_stage:null,
+                candidate_commit:null,
+                candidate_tree:null,
+                staging_branch:null,
+                permanent_path_count:0,
+                matrix_updates:0,
+                field_terminalizations:0,
+                row_state_mutations:0,
+                class_closed:false,
+                cumulative_ledger_effect:"none",
+                outside_human_dependency:false,
+                publication_effect:"none",
+                adoption_effect:"none",
+                graph_effect:"none"
+              }' > "$ROUTER_OUT/router-receipt.json"
+            finalize_router
+            exit "$code"
+          }
+
+          trap on_error ERR
+          set -Eeuo pipefail
+
+          stage=bind_wrapper_and_live_main
+          test "${{ github.event.pull_request.head.repo.full_name }}" = "$GITHUB_REPOSITORY"
+          test "${{ github.event.pull_request.head.ref }}" = "$WRAPPER_BRANCH"
+          test "${{ github.event.pull_request.head.sha }}" = "$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$WRAPPER_PARENT"
+          test "$(git rev-list --count "$WRAPPER_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$WRAPPER_PARENT" HEAD)" = "$WRAPPER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$WRAPPER_PARENT" HEAD)" = "$WRAPPER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MD "$WRAPPER_PARENT" HEAD)"
+          git diff --check "$WRAPPER_PARENT" HEAD
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$WRAPPER_PARENT"
+          git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$WRAPPER_PARENT"
+
+          stage=authenticate_sealed_source
+          git fetch --no-tags origin "+refs/heads/$SOURCE_BRANCH:refs/remotes/origin/$SOURCE_BRANCH"
+          test "$(git rev-parse "refs/remotes/origin/$SOURCE_BRANCH")" = "$SOURCE_HEAD"
+          test "$(git rev-parse "$SOURCE_HEAD^")" = "$SOURCE_PARENT"
+          test "$(git rev-list --count "$SOURCE_PARENT".."$SOURCE_HEAD")" -eq 1
+          test "$(git diff --name-only "$SOURCE_PARENT" "$SOURCE_HEAD")" = "$SOURCE_PATH"
+          test "$(git diff --name-only --diff-filter=A "$SOURCE_PARENT" "$SOURCE_HEAD")" = "$SOURCE_PATH"
+          test -z "$(git diff --name-only --diff-filter=MD "$SOURCE_PARENT" "$SOURCE_HEAD")"
+          test "$(git ls-tree "$SOURCE_HEAD" "$SOURCE_PATH" | awk '{print $3}')" = "$SOURCE_BLOB"
+          git show "$SOURCE_HEAD:$SOURCE_PATH" > "$ROUTER_OUT/source-workflow.yml"
+          test "$(git hash-object "$ROUTER_OUT/source-workflow.yml")" = "$SOURCE_BLOB"
+
+          stage=extract_raw_transaction
+          git worktree add --detach "$SOURCE_WT" "$SOURCE_HEAD"
+          export SOURCE_WT ROUTER_OUT SOURCE_PARENT SOURCE_HEAD SOURCE_BRANCH SOURCE_PATH SOURCE_BLOB SOURCE_WORKFLOW_NAME SOURCE_STEP_NAME
+          python - <<'PY'
+          import os
+          import shlex
+          from pathlib import Path
+          import yaml
+
+          router_out = Path(os.environ['ROUTER_OUT'])
+          source_wt = Path(os.environ['SOURCE_WT'])
+          source = yaml.safe_load((router_out / 'source-workflow.yml').read_text())
+          if not isinstance(source, dict):
+              raise SystemExit('sealed source workflow is not an object')
+          if source.get('name') != os.environ['SOURCE_WORKFLOW_NAME']:
+              raise SystemExit('sealed source workflow name mismatch')
+
+          source_env = source.get('env')
+          if not isinstance(source_env, dict):
+              raise SystemExit('sealed source workflow env missing')
+          expected_env = {
+              'PRODUCT_PARENT': os.environ['SOURCE_PARENT'],
+              'PRODUCT_PARENT_TREE': 'cb129c2c7297ef5aa2dc0076030f8d2eb5440860',
+              'CARRIER_BRANCH': os.environ['SOURCE_BRANCH'],
+              'CARRIER_PATH': os.environ['SOURCE_PATH'],
+              'PRODUCT_BRANCH': 'agent/ssc-rd04-postpromotion-four-cell-promotion-product-v1',
+              'STAGING_BRANCH': 'staging/ssc-rd04-postpromotion-four-cell-promotion-v1',
+              'VALIDATION_RUN': 31271473675,
+              'VALIDATION_HEAD': '7980e6872ff4954e5e5e17d2b905bb8a9cf99db6',
+              'VALIDATION_ARTIFACT': 9025731830,
+              'VALIDATION_ARTIFACT_BYTES': 8693,
+              'VALIDATION_ARTIFACT_ZIP_SHA256': 'af8d61caf7f13e0c665b320cc38ded6b4f73b6be89da7624130a4d6793e148c1',
+              'VALIDATION_RECEIPT_SHA256': 'c1ea0e2d0ba38d1f913eecb3edd33c85413e2d97cf82364b5d49ed0821967586',
+              'VALIDATION_CANDIDATE_LEDGER_SHA256': '8b125d7037bed8d2a23e8a9e5ba66e735ec84aa39a568614b7fa6b35b11a45d4',
+              'VALIDATION_INPUT_INVENTORY_SHA256': '911c3d04ac06bbf0207572c1906a20075971caa13bd91e50a8c0d7722bafc9fe',
+          }
+          for key, expected in expected_env.items():
+              if str(source_env.get(key)) != str(expected):
+                  raise SystemExit(f'sealed source env mismatch for {key}')
+
+          job = source.get('jobs', {}).get('materialize')
+          if not isinstance(job, dict):
+              raise SystemExit('sealed materialize job missing')
+          condition = str(job.get('if', ''))
+          if 'env.CARRIER_BRANCH' not in condition:
+              raise SystemExit('sealed job condition no longer contains bounded unavailable env context')
+
+          run_block = None
+          for step in job.get('steps', []):
+              if isinstance(step, dict) and step.get('name') == os.environ['SOURCE_STEP_NAME']:
+                  if run_block is not None:
+                      raise SystemExit('duplicate sealed materialization step')
+                  run_block = step.get('run')
+          if not isinstance(run_block, str) or not run_block.strip():
+              raise SystemExit('sealed materialization run block missing')
+
+          replacements = {
+              '${{ github.event_name }}': 'pull_request',
+              '${{ github.event.pull_request.head.ref }}': os.environ['SOURCE_BRANCH'],
+              '${{ github.event.pull_request.head.sha }}': os.environ['SOURCE_HEAD'],
+          }
+          for old, new in replacements.items():
+              if run_block.count(old) != 1:
+                  raise SystemExit(f'unexpected expression count for {old!r}: {run_block.count(old)}')
+              run_block = run_block.replace(old, new)
+          if '${{' in run_block:
+              raise SystemExit('unresolved GitHub expression remains in sealed run block')
+
+          exports = []
+          for key, value in source_env.items():
+              if key == 'GH_TOKEN':
+                  continue
+              exports.append(f'export {key}={shlex.quote(str(value))}')
+          script = '\n'.join([
+              '#!/usr/bin/env bash',
+              'set -Eeuo pipefail',
+              f'cd {shlex.quote(str(source_wt))}',
+              *exports,
+              run_block,
+              '',
+          ])
+          (router_out / 'transaction.sh').write_text(script)
+          PY
+          chmod 700 "$ROUTER_OUT/transaction.sh"
+          bash -n "$ROUTER_OUT/transaction.sh"
+
+          stage=execute_sealed_transaction
+          set +e
+          bash "$ROUTER_OUT/transaction.sh"
+          inner_code=$?
+          set -e
+          printf '%s\n' "$inner_code" > "$ROUTER_OUT/INNER_EXIT_CODE"
+          test -d "$MATERIALIZER_OUT"
+          test -f "$MATERIALIZER_OUT/EXIT_CODE"
+          test -f "$MATERIALIZER_OUT/STAGE"
+          test -f "$MATERIALIZER_OUT/materialization-receipt.json"
+          inner_stage="$(cat "$MATERIALIZER_OUT/STAGE")"
+          printf '%s\n' "$inner_stage" > "$ROUTER_OUT/INNER_STAGE"
+          test "$inner_code" -eq 0
+          test "$(cat "$MATERIALIZER_OUT/EXIT_CODE")" = 0
+          test "$inner_stage" = complete
+
+          stage=verify_staged_candidate
+          jq -e \
+            --arg parent "$SOURCE_PARENT" \
+            --arg source_head "$SOURCE_HEAD" \
+            --arg staging_branch 'staging/ssc-rd04-postpromotion-four-cell-promotion-v1' \
+            '.state=="complete" and
+             .failed_or_final_stage=="complete" and
+             .exit_code==0 and
+             .product_parent==$parent and
+             .carrier_head==$source_head and
+             .staging_branch==$staging_branch and
+             (.candidate_commit|test("^[0-9a-f]{40}$")) and
+             (.candidate_tree|test("^[0-9a-f]{40}$")) and
+             .permanent_path_count==14 and
+             .matrix_updates==4 and
+             .field_terminalizations==4 and
+             .row_state_mutations==0 and
+             .class_closed==false and
+             .cumulative_ledger_effect=="none" and
+             .outside_human_dependency==false and
+             .publication_effect=="none" and
+             .adoption_effect=="none" and
+             .graph_effect=="none"' \
+            "$MATERIALIZER_OUT/materialization-receipt.json" > /dev/null
+          staging_commit="$(jq -r '.candidate_commit' "$MATERIALIZER_OUT/materialization-receipt.json")"
+          staging_tree="$(jq -r '.candidate_tree' "$MATERIALIZER_OUT/materialization-receipt.json")"
+          test "$(git ls-remote --heads origin refs/heads/staging/ssc-rd04-postpromotion-four-cell-promotion-v1 | awk '{print $1}')" = "$staging_commit"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$SOURCE_PARENT"
+          test -z "$(git ls-remote --heads origin refs/heads/agent/ssc-rd04-postpromotion-four-cell-promotion-product-v1 | awk '{print $1}')"
+
+          stage=complete
+          printf '0\n' > "$ROUTER_OUT/EXIT_CODE"
+          printf '%s\n' "$stage" > "$ROUTER_OUT/STAGE"
+          jq -n \
+            --arg source_parent "$SOURCE_PARENT" \
+            --arg source_head "$SOURCE_HEAD" \
+            --arg source_blob "$SOURCE_BLOB" \
+            --arg wrapper_head "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" \
+            --arg candidate_commit "$staging_commit" \
+            --arg candidate_tree "$staging_tree" \
+            '{
+              schema_version:"ssc-rd04-postpromotion-four-cell-promotion-router@3",
+              state:"complete",
+              failed_or_final_stage:"complete",
+              exit_code:0,
+              source_parent:$source_parent,
+              source_head:$source_head,
+              source_workflow_blob:$source_blob,
+              wrapper_head:$wrapper_head,
+              inner_exit_code:0,
+              inner_stage:"complete",
+              candidate_commit:$candidate_commit,
+              candidate_tree:$candidate_tree,
+              staging_branch:"staging/ssc-rd04-postpromotion-four-cell-promotion-v1",
+              permanent_path_count:14,
+              matrix_updates:4,
+              field_terminalizations:4,
+              row_state_mutations:0,
+              class_closed:false,
+              cumulative_ledger_effect:"none",
+              outside_human_dependency:false,
+              publication_effect:"none",
+              adoption_effect:"none",
+              graph_effect:"none"
+            }' > "$ROUTER_OUT/router-receipt.json"
+          finalize_router
+          (
+            cd "$ROUTER_OUT"
+            sha256sum -c SHA256SUMS
+          )
+
+      - name: Preserve router and sealed transaction custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-four-cell-promotion-router-v3
+          path: |
+            ${{ runner.temp }}/rd04-four-cell-promotion-router-v3
+            ${{ runner.temp }}/ssc-rd04-postpromotion-four-cell-promotion-materializer-v1
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce terminal routed result
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROUTER_OUT="${RUNNER_TEMP}/rd04-four-cell-promotion-router-v3"
+          test -f "$ROUTER_OUT/EXIT_CODE"
+          test -f "$ROUTER_OUT/STAGE"
+          test -f "$ROUTER_OUT/router-receipt.json"
+          test "$(cat "$ROUTER_OUT/EXIT_CODE")" = 0
+          test "$(cat "$ROUTER_OUT/STAGE")" = complete
+          jq -e '.state=="complete" and .failed_or_final_stage=="complete" and .exit_code==0' "$ROUTER_OUT/router-receipt.json" > /dev/null
