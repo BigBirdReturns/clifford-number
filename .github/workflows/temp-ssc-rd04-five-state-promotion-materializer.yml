@@ -113,18 +113,50 @@ jobs:
           (cd /tmp/product && sha256sum -c /tmp/product-sums)
           cp -a /tmp/product/. "$GITHUB_WORKSPACE/"
 
-      - name: Qualify product bytes
+      - name: Initialize fail-closed materialization ledger
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/materialization
+          python - <<'PYLEDGER'
+          import json, os
+          from pathlib import Path
+          Path('/tmp/materialization/status.json').write_text(json.dumps({
+              'schema_version': 'ssc-rd04-five-state-promotion-materialization-status@1',
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'canonical_parent': os.environ['PRODUCT_PARENT'],
+              'product_branch': os.environ['PRODUCT_BRANCH'],
+              'workflow_run': int(os.environ['GITHUB_RUN_ID']),
+              'materializer_head': os.environ['GITHUB_SHA'],
+              'qualification_state': 'pending',
+              'candidate_created': False,
+              'ref_updated': False,
+              'authority': 'none',
+          }, indent=2, sort_keys=True) + '\n')
+          PYLEDGER
+
+      - name: Install exact-parent dependencies
         shell: bash
         run: |
           set -Eeuo pipefail
           npm ci
+
+      - name: Verify product syntax and deterministic bytes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
           node --check tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
           node --check tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
           node --check test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
           node tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
           sha256sum -c /tmp/product-sums
+
+      - name: Validate recursive product schema
+        shell: bash
+        run: |
+          set -Eeuo pipefail
           python -m pip install --disable-pip-version-check jsonschema==4.25.1
-          python - <<'PY'
+          python - <<'PYSCHEMA'
           import json
           from pathlib import Path
           from jsonschema import Draft202012Validator
@@ -135,11 +167,26 @@ jobs:
               errors=sorted(v.iter_errors(json.loads(p.read_text())),key=lambda e:list(e.path))
               if errors: raise SystemExit(f'{p}: {errors[0].message} at {list(errors[0].path)}')
           print('recursive_schema_validation=pass')
-          PY
+          PYSCHEMA
+
+      - name: Run product validator and adversarial replay
+        shell: bash
+        run: |
+          set -Eeuo pipefail
           node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
           node test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+
+      - name: Preserve no-magic-human floor
+        shell: bash
+        run: |
+          set -Eeuo pipefail
           node tools/validate-no-magic-human-gate.mjs
           node test/no-magic-human-gate.test.js
+
+      - name: Run complete repository release check
+        shell: bash
+        run: |
+          set -Eeuo pipefail
           npm run release:check
 
       - name: Create exact candidate and receipt
@@ -179,11 +226,38 @@ jobs:
           candidate=commit['sha']
           status,response=api('POST','/git/refs',{'ref':f'refs/heads/{branch}','sha':candidate},allow=True)
           receipt={'schema_version':'ssc-rd04-five-state-promotion-materialization@1','repository':repo,'canonical_parent':parent,'base_tree':base_tree,'candidate_commit':candidate,'candidate_tree':tree['sha'],'product_branch':branch,'ref_update_status':status,'ref_updated':200<=status<300,'ref_response':response,'workflow_run':int(os.environ['GITHUB_RUN_ID']),'materializer_head':os.environ['GITHUB_SHA'],'archive_bytes':int(os.environ['ARCHIVE_BYTES']),'archive_sha256':os.environ['ARCHIVE_SHA256'],'permanent_paths':14,'files':files,'terminal_cells_before':218,'terminal_cells_after':222,'still_open_substantive_cells_before':192,'still_open_substantive_cells_after':188,'row_terminalizations':0,'class_closed':False,'cumulative_ledger_effect':'none','outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none'}
-          out=Path('/tmp/materialization'); out.mkdir()
+          out=Path('/tmp/materialization'); out.mkdir(exist_ok=True)
           (out/'receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
           (out/'candidate-sha.txt').write_text(candidate+'\n'); (out/'candidate-tree.txt').write_text(tree['sha']+'\n'); (out/'parent-sha.txt').write_text(parent+'\n'); (out/'product-archive.tar.xz').write_bytes(Path('/tmp/product.tar.xz').read_bytes())
           print(json.dumps(receipt,indent=2,sort_keys=True))
           PY
+          (cd /tmp/materialization && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum >SHA256SUMS)
+
+      - name: Seal fail-closed failure receipt
+        if: failure()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/materialization
+          python - <<'PYFAIL'
+          import json, os
+          from pathlib import Path
+          path=Path('/tmp/materialization/status.json')
+          current=json.loads(path.read_text()) if path.exists() else {}
+          current.update({
+              'schema_version': 'ssc-rd04-five-state-promotion-materialization-status@1',
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'canonical_parent': os.environ['PRODUCT_PARENT'],
+              'product_branch': os.environ['PRODUCT_BRANCH'],
+              'workflow_run': int(os.environ['GITHUB_RUN_ID']),
+              'materializer_head': os.environ['GITHUB_SHA'],
+              'qualification_state': 'failed',
+              'candidate_created': False,
+              'ref_updated': False,
+              'authority': 'none',
+          })
+          path.write_text(json.dumps(current, indent=2, sort_keys=True) + '\n')
+          PYFAIL
           (cd /tmp/materialization && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum >SHA256SUMS)
 
       - name: Upload materialization receipt
