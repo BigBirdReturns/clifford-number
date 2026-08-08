@@ -1,0 +1,167 @@
+name: TEMP replay RD-04 adjudication predecessor repair v8
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/temp-ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v1.yml
+
+permissions:
+  contents: write
+
+jobs:
+  warehouse:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      SOURCE_CARRIER: 2aace1f2000efd990a8060b6aa0fb385fabda605
+      SOURCE_CARRIER_BLOB: 568000a9d0cc500ee8885844fb4f48d1e542a905
+      SOURCE_PARENT: c108c323d9c254d8e4a6bb4f3089a7fae7975009
+      CURRENT_MAIN: bf48e7f424283232bae5060779d2d33e4d85bbcb
+      SOURCE_PRODUCT: e6a5e2065839abf9c4538a315aa08884453907b8
+      SOURCE_TREE: 40583441335ab70722ce2962987b5639369d8df6
+      PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-product-v1
+      CARRIER_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v1
+      CARRIER_PATH: .github/workflows/temp-ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v1.yml
+      WAREHOUSE_BRANCH: staging/ssc-rd04-postpromotion-next-adjudication-predecessor-repair-blobs-v1
+      WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml
+      MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/product-manifest.json
+      SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json
+      BUILDER_PATH: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+      OLD_QUERY_BLOB: d5c445435dd74bea61e7e50887a27a3ffb1edcf1
+      CURRENT_QUERY_BLOB: 6e3d9eb55ebcc029151144ce9965754ac4e35e1a
+      REPAIRED_WORKFLOW_BLOB: 009a748e8ef4a2ecd5a3b65a064b4cb96a4073ab
+      REPAIRED_BUILDER_BLOB: 92350e741520f1c6eee7582e401d165afc746e0f
+      REPAIRED_MANIFEST_BLOB: 4ccb40c5a3e14a63feff4c213b336e205f541c65
+      REPAIRED_SCHEMA_BLOB: 741ebbde0385822ef6823c547294cee69d468ef3
+      WH_WORKFLOW: .tmp/ssc-rd04-postpromotion-next-adjudication-predecessor-repair/workflow.yml
+      WH_BUILDER: .tmp/ssc-rd04-postpromotion-next-adjudication-predecessor-repair/builder.mjs
+      WH_MANIFEST: .tmp/ssc-rd04-postpromotion-next-adjudication-predecessor-repair/product-manifest.json
+      WH_SCHEMA: .tmp/ssc-rd04-postpromotion-next-adjudication-predecessor-repair/schema.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Extract immutable v7 transaction and replay corrected manifest identity
+        id: warehouse
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          WRAP_OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-next-adjudication-predecessor-repair-wrapper-v8"
+          TARGET_OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-next-adjudication-predecessor-repair-v8"
+          SOURCE_YAML="$RUNNER_TEMP/ssc-rd04-postpromotion-next-adjudication-predecessor-repair-v7.yml"
+          REPLAY_SCRIPT="$RUNNER_TEMP/ssc-rd04-postpromotion-next-adjudication-predecessor-repair-v8.sh"
+          rm -rf "$WRAP_OUT" "$TARGET_OUT" "$SOURCE_YAML" "$REPLAY_SCRIPT"
+          mkdir -p "$WRAP_OUT"
+          printf 'initializing\n' > "$WRAP_OUT/STAGE"
+          exec > >(tee "$WRAP_OUT/wrapper.log") 2>&1
+          finalize() {
+            rc=$?
+            trap - EXIT
+            printf '%s\n' "$rc" > "$WRAP_OUT/EXIT_CODE"
+            (cd "$WRAP_OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          printf 'bind-live-and-source-carrier\n' > "$WRAP_OUT/STAGE"
+          test "${{ github.event.pull_request.head.ref }}" = "$CARRIER_BRANCH"
+          test "${{ github.event.pull_request.head.sha }}" = "$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$CURRENT_MAIN"
+          test "$(git rev-list --count "$CURRENT_MAIN"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CURRENT_MAIN" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" HEAD)" = "$CARRIER_PATH"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CURRENT_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$SOURCE_PRODUCT"
+          test "$(git ls-remote --heads origin "refs/heads/$WAREHOUSE_BRANCH" | awk '{print $1}')" = "$CURRENT_MAIN"
+          git fetch --no-tags origin "$SOURCE_CARRIER" --depth=1
+          git cat-file -e "$SOURCE_CARRIER^{commit}"
+          test "$(git rev-parse "$SOURCE_CARRIER:$CARRIER_PATH")" = "$SOURCE_CARRIER_BLOB"
+          git show "$SOURCE_CARRIER:$CARRIER_PATH" > "$SOURCE_YAML"
+          printf '%s\n' "$SOURCE_CARRIER" > "$WRAP_OUT/source-carrier.txt"
+          printf '%s\n' "$SOURCE_CARRIER_BLOB" > "$WRAP_OUT/source-carrier-blob.txt"
+          sha256sum "$SOURCE_YAML" > "$WRAP_OUT/source-yaml.sha256"
+
+          printf 'extract-and-patch-exact-run-block\n' > "$WRAP_OUT/STAGE"
+          python - <<'PYEXTRACT'
+          import os
+          from pathlib import Path
+
+          source = Path(os.environ['RUNNER_TEMP']) / 'ssc-rd04-postpromotion-next-adjudication-predecessor-repair-v7.yml'
+          target = Path(os.environ['RUNNER_TEMP']) / 'ssc-rd04-postpromotion-next-adjudication-predecessor-repair-v8.sh'
+          lines = source.read_text().splitlines()
+          marker = '      - name: Repair, qualify, and warehouse exact product objects'
+          end_marker = '      - name: Upload predecessor-repair receipt'
+          starts = [i for i, line in enumerate(lines) if line == marker]
+          if len(starts) != 1:
+              raise SystemExit(f'source step denominator={len(starts)}')
+          start = starts[0]
+          run_lines = [i for i in range(start + 1, len(lines)) if lines[i] == '        run: |']
+          if not run_lines:
+              raise SystemExit('source run block missing')
+          run_line = run_lines[0]
+          ends = [i for i in range(run_line + 1, len(lines)) if lines[i] == end_marker]
+          if len(ends) != 1:
+              raise SystemExit(f'source end denominator={len(ends)}')
+          body = []
+          for line in lines[run_line + 1:ends[0]]:
+              if line.startswith('          '):
+                  body.append(line[10:])
+              elif line.strip():
+                  raise SystemExit(f'run indentation breach: {line!r}')
+              else:
+                  body.append('')
+          script = '\n'.join(body) + '\n'
+          if script.count('predecessor-repair-v7') < 3:
+              raise SystemExit('v7 path denominator')
+          script = script.replace('predecessor-repair-v7', 'predecessor-repair-v8')
+          head_ref_expr = '$' + '{{ github.event.pull_request.head.ref }}'
+          head_sha_expr = '$' + '{{ github.event.pull_request.head.sha }}'
+          if script.count(head_ref_expr) != 1 or script.count(head_sha_expr) != 1:
+              raise SystemExit('GitHub expression denominator')
+          script = script.replace(head_ref_expr, os.environ['CARRIER_BRANCH'])
+          script = script.replace(head_sha_expr, os.environ['GITHUB_SHA'])
+          target.write_text(script)
+          PYEXTRACT
+          chmod 700 "$REPLAY_SCRIPT"
+          bash -n "$REPLAY_SCRIPT"
+          sha256sum "$REPLAY_SCRIPT" > "$WRAP_OUT/replay-script.sha256"
+          grep -n 'REPAIRED_MANIFEST_BLOB' "$SOURCE_YAML" > "$WRAP_OUT/source-stale-manifest-binding.txt"
+          printf '%s\n' "$REPAIRED_MANIFEST_BLOB" > "$WRAP_OUT/corrected-manifest-blob.txt"
+
+          printf 'execute-corrected-transaction\n' > "$WRAP_OUT/STAGE"
+          python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2'
+          bash "$REPLAY_SCRIPT"
+
+          printf 'verify-complete-target-artifact\n' > "$WRAP_OUT/STAGE"
+          test "$(cat "$TARGET_OUT/EXIT_CODE")" = 0
+          test "$(cat "$TARGET_OUT/STAGE")" = complete
+          test -f "$TARGET_OUT/receipt.json"
+          test "$(git ls-remote --heads origin "refs/heads/$WAREHOUSE_BRANCH" | awk '{print $1}')" = "$(cat "$TARGET_OUT/warehouse-commit.txt")"
+          printf '%s\n' "$SOURCE_CARRIER" > "$TARGET_OUT/replay-source-carrier.txt"
+          printf '%s\n' "$SOURCE_CARRIER_BLOB" > "$TARGET_OUT/replay-source-carrier-blob.txt"
+          printf '%s\n' "$REPAIRED_MANIFEST_BLOB" > "$TARGET_OUT/replay-corrected-manifest-blob.txt"
+          (cd "$TARGET_OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+          printf 'complete\n' > "$WRAP_OUT/STAGE"
+      - name: Upload corrected predecessor-repair receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-adjudication-predecessor-repair-v8
+          path: |
+            ${{ runner.temp }}/ssc-rd04-postpromotion-next-adjudication-predecessor-repair-v8
+            ${{ runner.temp }}/ssc-rd04-postpromotion-next-adjudication-predecessor-repair-wrapper-v8
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+      - name: Enforce corrected predecessor-repair result
+        if: always()
+        run: test '${{ steps.warehouse.outcome }}' = success
