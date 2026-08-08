@@ -1,0 +1,99 @@
+name: TEMP diagnose RD-04 postpromotion protocol CI drift
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-rd04-postpromotion-protocol-ci-repair-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd04-postpromotion-protocol-ci-repair-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  diagnose:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'diagnostic/ssc-rd04-postpromotion-protocol-ci-repair-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Regenerate exact typo-corrected product bytes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-protocol-ci-repair-v1"
+          WORKFLOW='.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.yml'
+          MANIFEST='data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/product-manifest.json'
+          BUILDER='tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs'
+          rm -rf "$OUT"
+          mkdir -p "$OUT/original" "$OUT/corrected"
+          printf 'source_requests=0\nsource_admissions=0\nfield_classifications=0\nrow_state_mutations=0\noutside_human_dependency=false\n' > "$OUT/BOUNDARY"
+          cp "$WORKFLOW" "$OUT/original/workflow.yml"
+          cp "$MANIFEST" "$OUT/original/product-manifest.json"
+
+          python - "$WORKFLOW" <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          text = path.read_text()
+          old = '          node tols/validate-no-magic-human-gate.mjs\n'
+          new = '          node tools/validate-no-magic-human-gate.mjs\n'
+          if text.count(old) != 1:
+              raise SystemExit(f'expected exactly one workflow typo, observed {text.count(old)}')
+          path.write_text(text.replace(old, new))
+          PY
+
+          node "$BUILDER" --write
+          node "$BUILDER"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py --dry-run > "$OUT/execution-plan.json"
+
+          git diff --name-only | sort > "$OUT/changed-paths.txt"
+          cat > "$OUT/expected-changed-paths.txt" <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/product-manifest.json
+          EOF
+          diff -u "$OUT/expected-changed-paths.txt" "$OUT/changed-paths.txt"
+          git diff --check
+          git diff -- "$WORKFLOW" "$MANIFEST" > "$OUT/correction.patch"
+          cp "$WORKFLOW" "$OUT/corrected/workflow.yml"
+          cp "$MANIFEST" "$OUT/corrected/product-manifest.json"
+          sha256sum "$OUT"/original/* "$OUT"/corrected/* > "$OUT/file-sha256.txt"
+          git rev-parse HEAD > "$OUT/diagnostic-head.txt"
+          git rev-parse HEAD^ > "$OUT/diagnostic-parent.txt"
+          printf 'complete\n' > "$OUT/STAGE"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+
+      - name: Upload exact correction bytes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-protocol-ci-repair-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-protocol-ci-repair-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
