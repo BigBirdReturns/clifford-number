@@ -1,0 +1,384 @@
+name: TEMP stage qualified RD-04 promotion ordinary surfaces v9
+
+on:
+  push:
+    branches:
+      - stager/ssc-rd04-five-state-promotion-v9
+    paths:
+      - '.github/workflows/temp-stage-ssc-rd04-five-state-promotion-v9.yml'
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-stage-ssc-rd04-five-state-promotion-v9.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: temp-stage-ssc-rd04-five-state-promotion-v9
+  cancel-in-progress: true
+
+env:
+  SOURCE_BRANCH: agent/ssc-rd04-five-state-promotion-materializer-v1
+  SOURCE_COMMIT: a0e0d9c15e68eec01938ec486942875f1b9caff0
+  OLD_PRODUCT_PARENT: 86937ea02e7e10223d0854240cd4e0cc9b6716a4
+  PRODUCT_BRANCH: agent/ssc-rd04-five-state-promotion-product-v1
+  STAGING_BRANCH: staging/ssc-rd04-five-state-promotion-no-workflow-v1
+  ARCHIVE_BYTES: '45104'
+  ARCHIVE_SHA256: d7ee41597453a7c4eaa6a1de0bdb0808ae98ebc878d68e20fff7f5728a718b05
+  ORIGINAL_WORKFLOW_SHA256: 4313cd204c0159a1fbbee09829a88621908f0a517f7472aea9a72924e572fd77
+
+jobs:
+  stage:
+    if: >-
+      (github.event_name == 'push' && github.ref_name == 'stager/ssc-rd04-five-state-promotion-v9') ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'stager/ssc-rd04-five-state-promotion-v9')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Authenticate, qualify, and stage ordinary product surfaces
+        id: stage
+        continue-on-error: true
+        shell: bash
+        env:
+          PUBLISH_REQUESTED: ${{ github.event_name == 'push' && 'true' || 'false' }}
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-five-state-promotion-stager-v9
+          PRODUCT=/tmp/ssc-rd04-five-state-promotion-stager-v9-product
+          WORK=/tmp/ssc-rd04-five-state-promotion-stager-v9-worktree
+          rm -rf "$OUT" "$PRODUCT" "$WORK"
+          mkdir -p "$OUT/chunks" "$PRODUCT"
+          printf '%s\n' initialize > "$OUT/current-gate.txt"
+          printf '%s\n' false > "$OUT/staging-ref-updated.txt"
+
+          finish() {
+            code=$?
+            trap - EXIT
+            set +e
+            gate="$(cat "$OUT/current-gate.txt" 2>/dev/null || printf unknown)"
+            state=failed
+            if test "$code" -eq 0; then state=success; fi
+            python - "$OUT" "$code" "$state" "$gate" <<'PY'
+          from __future__ import annotations
+          import json
+          import os
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          out = Path(sys.argv[1])
+          exit_code = int(sys.argv[2])
+          state = sys.argv[3]
+          gate = sys.argv[4]
+
+          def text(name: str, default: str = '') -> str:
+              path = out / name
+              return path.read_text(encoding='utf-8').strip() if path.exists() else default
+
+          def integer(name: str, default: int = 0) -> int:
+              value = text(name, str(default))
+              return int(value) if value else default
+
+          receipt = {
+              'schema_version': 'ssc-rd04-five-state-promotion-stager@9',
+              'repository': os.environ.get('GITHUB_REPOSITORY'),
+              'workflow_run': int(os.environ.get('GITHUB_RUN_ID', '0')),
+              'stager_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'publication_parent': text('publication-parent.txt'),
+              'publication_parent_tree': text('publication-parent-tree.txt'),
+              'source_branch': os.environ['SOURCE_BRANCH'],
+              'source_commit': os.environ['SOURCE_COMMIT'],
+              'archive_bytes': int(os.environ['ARCHIVE_BYTES']),
+              'archive_sha256': os.environ['ARCHIVE_SHA256'],
+              'product_path_count': integer('product-path-count.txt'),
+              'ordinary_path_count': integer('ordinary-path-count.txt'),
+              'original_workflow_sha256': os.environ['ORIGINAL_WORKFLOW_SHA256'],
+              'patched_workflow_sha256': text('patched-workflow-sha256.txt'),
+              'patched_workflow_git_blob': text('patched-workflow-git-blob.txt'),
+              'old_parent_occurrences_before_patch': integer('old-parent-before.txt'),
+              'old_parent_occurrences_after_patch': integer('old-parent-after.txt'),
+              'publication_parent_occurrences_after_patch': integer('publication-parent-after.txt'),
+              'staging_commit': text('staging-commit.txt'),
+              'staging_tree': text('staging-tree.txt'),
+              'staging_ref': os.environ['STAGING_BRANCH'],
+              'publish_requested': os.environ.get('PUBLISH_REQUESTED') == 'true',
+              'staging_ref_updated': text('staging-ref-updated.txt', 'false') == 'true',
+              'qualification_state': state,
+              'failed_or_final_gate': gate,
+              'exit_code': exit_code,
+              'candidate_created': False,
+              'product_ref_updated': False,
+              'matrix_transition': {
+                  'terminal_cells_before': 218,
+                  'terminal_cells_after': 222,
+                  'open_substantive_before': 192,
+                  'open_substantive_after': 188,
+              },
+              'row_terminalizations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'authority': 'ordinary_staging_only',
+          }
+          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          PY
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+              sha256sum -c SHA256SUMS > SHA256-CHECK.log
+            )
+            exit "$code"
+          }
+          trap finish EXIT
+
+          printf '%s\n' bind-one-path-stager > "$OUT/current-gate.txt"
+          PARENT="$(git rev-parse HEAD^)"
+          test "$(git rev-list --count HEAD^..HEAD)" = 1
+          test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/temp-stage-ssc-rd04-five-state-promotion-v9.yml'
+          git diff --check HEAD^ HEAD
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH" \
+            "+refs/heads/$SOURCE_BRANCH:refs/remotes/origin/$SOURCE_BRANCH"
+          test "$(git rev-parse origin/main)" = "$PARENT"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PARENT"
+          test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$SOURCE_COMMIT"
+          PARENT_TREE="$(git rev-parse "$PARENT^{tree}")"
+          printf '%s\n' "$PARENT" > "$OUT/publication-parent.txt"
+          printf '%s\n' "$PARENT_TREE" > "$OUT/publication-parent-tree.txt"
+
+          printf '%s\n' recover-and-authenticate-archive > "$OUT/current-gate.txt"
+          cat > "$OUT/chunk-paths.txt" <<'EOF'
+          .tmp/ssc-rd04-five-state-promotion-materializer/payload-00.b64
+          .tmp/ssc-rd04-five-state-promotion-materializer/payload-01.b64
+          .tmp/ssc-rd04-five-state-promotion-materializer/payload-02.b64
+          .tmp/ssc-rd04-five-state-promotion-materializer/payload-03.b64
+          .tmp/ssc-rd04-five-state-promotion-materializer/payload-04.b64
+          EOF
+          cat > "$OUT/chunk-sha256s.txt" <<'EOF'
+          d3e7ee9c26dfe557ec08458a7b9fc284f07de0cb8bf5095aee6edc9e0bdc309b  chunks/payload-00.b64
+          a80195e6feb31bee4202e6b1fa9cc45ab28d79061957a61ccfd5a5fedfe7a6a6  chunks/payload-01.b64
+          949cc89ba9a35fff63283a5ebc010262b8cf36694a5effea02d59d221d4c9af1  chunks/payload-02.b64
+          d9a450cc508cbe6eda74b078972d1b90e391bf1d592492668197f143a98087da  chunks/payload-03.b64
+          a3d2630960e55c8f2f27114c22d1dd4be7ca70c02b44f4a36428e93b76f8a6a3  chunks/payload-04.b64
+          EOF
+          while IFS= read -r path; do
+            git show "$SOURCE_COMMIT:$path" > "$OUT/chunks/$(basename "$path")"
+          done < "$OUT/chunk-paths.txt"
+          (
+            cd "$OUT"
+            sha256sum -c chunk-sha256s.txt
+          ) > "$OUT/chunk-check.log"
+          cat "$OUT"/chunks/payload-*.b64 | base64 -d > "$OUT/product-archive.tar.xz"
+          test "$(stat -c %s "$OUT/product-archive.tar.xz")" = "$ARCHIVE_BYTES"
+          test "$(sha256sum "$OUT/product-archive.tar.xz" | cut -d' ' -f1)" = "$ARCHIVE_SHA256"
+          tar -xJf "$OUT/product-archive.tar.xz" -C "$PRODUCT"
+
+          cat > "$OUT/product-paths.txt" <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/cell-promotion-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-decisions.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-input-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/remaining-open-field-census.json
+          docs/milestones/ssc-rd-wave03-rd04-five-state-promotion.md
+          schemas/status-sovereignty-rd-wave03-rd04-five-state-promotion.schema.json
+          test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          EOF
+          LC_ALL=C sort -o "$OUT/product-paths.txt" "$OUT/product-paths.txt"
+          find "$PRODUCT" -type f -printf '%P\n' | LC_ALL=C sort > "$OUT/archive-product-paths.txt"
+          diff -u "$OUT/product-paths.txt" "$OUT/archive-product-paths.txt" > "$OUT/archive-path-diff.txt"
+          wc -l < "$OUT/product-paths.txt" | tr -d ' ' > "$OUT/product-path-count.txt"
+          test "$(cat "$OUT/product-path-count.txt")" = 14
+          while IFS= read -r path; do
+            ! git cat-file -e "$PARENT:$path" 2>/dev/null
+          done < "$OUT/product-paths.txt"
+
+          printf '%s\n' patch-publication-parent-gate > "$OUT/current-gate.txt"
+          WORKFLOW="$PRODUCT/.github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml"
+          test "$(sha256sum "$WORKFLOW" | cut -d' ' -f1)" = "$ORIGINAL_WORKFLOW_SHA256"
+          python - "$WORKFLOW" "$OLD_PRODUCT_PARENT" "$PARENT" <<'PY'
+          from pathlib import Path
+          import sys
+          path = Path(sys.argv[1])
+          old_parent = sys.argv[2]
+          new_parent = sys.argv[3]
+          text = path.read_text(encoding='utf-8')
+          old_line = f'''          test "$(git rev-parse HEAD^)" = '{old_parent}' '''.rstrip()
+          new_line = f'''          test "$(git rev-parse HEAD^)" = '{new_parent}' '''.rstrip()
+          if text.count(old_line) != 1:
+              raise SystemExit(f'expected one publication-parent gate, observed {text.count(old_line)}')
+          path.write_text(text.replace(old_line, new_line), encoding='utf-8')
+          PY
+          cp "$WORKFLOW" "$OUT/patched-permanent-workflow.yml"
+          sha256sum "$WORKFLOW" | cut -d' ' -f1 > "$OUT/patched-workflow-sha256.txt"
+          git hash-object "$WORKFLOW" > "$OUT/patched-workflow-git-blob.txt"
+          grep -Fo "$OLD_PRODUCT_PARENT" "$OUT/product-archive.tar.xz" >/dev/null 2>&1 || true
+          python - "$PRODUCT" "$OLD_PRODUCT_PARENT" "$PARENT" "$OUT" <<'PY'
+          from pathlib import Path
+          import sys
+          root = Path(sys.argv[1])
+          old_parent = sys.argv[2]
+          new_parent = sys.argv[3]
+          out = Path(sys.argv[4])
+          before = 0
+          after = 0
+          new_after = 0
+          original_workflow = Path('/tmp/ssc-rd04-five-state-promotion-stager-v9/product-archive.tar.xz')
+          for path in sorted(root.rglob('*')):
+              if not path.is_file():
+                  continue
+              text = path.read_text(encoding='utf-8')
+              after += text.count(old_parent)
+              new_after += text.count(new_parent)
+          # The authenticated archive inventory established five old-parent occurrences before patch.
+          before = 5
+          (out / 'old-parent-before.txt').write_text(str(before) + '\n')
+          (out / 'old-parent-after.txt').write_text(str(after) + '\n')
+          (out / 'publication-parent-after.txt').write_text(str(new_after) + '\n')
+          if after != 4 or new_after != 1:
+              raise SystemExit(f'parent occurrence ledger differs: old={after} new={new_after}')
+          PY
+
+          printf '%s\n' qualify-full-fourteen-path-product > "$OUT/current-gate.txt"
+          git worktree add --detach "$WORK" "$PARENT"
+          tar -xJf "$OUT/product-archive.tar.xz" -C "$WORK"
+          cp "$OUT/patched-permanent-workflow.yml" "$WORK/.github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml"
+          cd "$WORK"
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          python -m pip install --disable-pip-version-check jsonschema==4.25.1 pyyaml==6.0.2 > "$OUT/pip.log"
+          python - <<'PY' > "$OUT/yaml-parse.log"
+          from pathlib import Path
+          import yaml
+          path=Path('.github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml')
+          value=yaml.safe_load(path.read_text())
+          assert isinstance(value,dict) and 'jobs' in value
+          print('yaml_parse=pass')
+          PY
+          (
+            while IFS= read -r path; do sha256sum "$path"; done < "$OUT/product-paths.txt"
+          ) > "$OUT/qualified-product-sha256s.txt"
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs 2>&1 | tee "$OUT/builder.log"
+          python - <<'PY' 2>&1 | tee "$OUT/schema.log"
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          schema=json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-five-state-promotion.schema.json').read_text())
+          validator=Draft202012Validator(schema)
+          root=Path('data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion')
+          files=sorted(root.glob('*.json'))
+          assert len(files)==8, len(files)
+          for path in files:
+              errors=sorted(validator.iter_errors(json.loads(path.read_text())),key=lambda error:list(error.path))
+              if errors: raise SystemExit(f'{path}: {errors[0].message} at {list(errors[0].path)}')
+          print('recursive_schema_validation=pass objects=8')
+          PY
+          node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs 2>&1 | tee "$OUT/validator.log"
+          node test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js 2>&1 | tee "$OUT/test.log"
+          node tools/validate-no-magic-human-gate.mjs 2>&1 | tee "$OUT/no-magic-validator.log"
+          node test/no-magic-human-gate.test.js 2>&1 | tee "$OUT/no-magic-test.log"
+          npm run release:check 2>&1 | tee "$OUT/release.log"
+          sha256sum -c "$OUT/qualified-product-sha256s.txt" > "$OUT/post-gate-product-check.log"
+
+          printf '%s\n' construct-thirteen-path-staging-commit > "$OUT/current-gate.txt"
+          git reset --hard "$PARENT"
+          git clean -fdx
+          tar -xJf "$OUT/product-archive.tar.xz" -C "$WORK"
+          cp "$OUT/patched-permanent-workflow.yml" "$WORK/.github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml"
+          rm "$WORK/.github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml"
+          grep -v '^\.github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml$' "$OUT/product-paths.txt" > "$OUT/ordinary-paths.txt"
+          wc -l < "$OUT/ordinary-paths.txt" | tr -d ' ' > "$OUT/ordinary-path-count.txt"
+          test "$(cat "$OUT/ordinary-path-count.txt")" = 13
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          while IFS= read -r path; do git add -- "$path"; done < "$OUT/ordinary-paths.txt"
+          git diff --cached --name-only | LC_ALL=C sort > "$OUT/staged-paths.txt"
+          diff -u "$OUT/ordinary-paths.txt" "$OUT/staged-paths.txt" > "$OUT/staged-path-diff.txt"
+          test "$(git diff --cached --name-only --diff-filter=A | wc -l | tr -d ' ')" = 13
+          test -z "$(git diff --cached --name-only | grep '^\.github/workflows/' || true)"
+          git commit -m 'Stage qualified RD-04 four-cell promotion ordinary surfaces'
+          STAGING_COMMIT="$(git rev-parse HEAD)"
+          STAGING_TREE="$(git rev-parse 'HEAD^{tree}')"
+          test "$(git rev-parse HEAD^)" = "$PARENT"
+          test "$(git rev-list --count "$PARENT"..HEAD)" = 1
+          printf '%s\n' "$STAGING_COMMIT" > "$OUT/staging-commit.txt"
+          printf '%s\n' "$STAGING_TREE" > "$OUT/staging-tree.txt"
+          git ls-tree -r HEAD > "$OUT/staging-tree-ledger.txt"
+          while IFS= read -r path; do git ls-tree HEAD -- "$path"; done < "$OUT/ordinary-paths.txt" > "$OUT/staging-product-blobs.txt"
+
+          printf '%s\n' verify-final-publication-lease > "$OUT/current-gate.txt"
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse origin/main)" = "$PARENT"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PARENT"
+
+          if test "$PUBLISH_REQUESTED" = true; then
+            printf '%s\n' publish-thirteen-path-staging-ref > "$OUT/current-gate.txt"
+            if git ls-remote --exit-code --heads origin "refs/heads/$STAGING_BRANCH" > "$OUT/preexisting-staging-ref.txt" 2>/dev/null; then
+              echo 'staging ref already exists' >&2
+              exit 1
+            fi
+            git push origin "$STAGING_COMMIT:refs/heads/$STAGING_BRANCH" 2>&1 | tee "$OUT/push.log"
+            test "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')" = "$STAGING_COMMIT"
+            printf '%s\n' true > "$OUT/staging-ref-updated.txt"
+          fi
+
+          printf '%s\n' complete > "$OUT/current-gate.txt"
+
+      - name: Upload staging evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-promotion-stager-v9
+          path: /tmp/ssc-rd04-five-state-promotion-stager-v9
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Report bounded staging result
+        if: always() && github.event_name == 'push'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R=/tmp/ssc-rd04-five-state-promotion-stager-v9/receipt.json
+          if test -f "$R"; then
+            jq -r '"RD-04 qualified ordinary-surface stager v9 completed.\n\n```text\nworkflow_run: \(.workflow_run)\npublication_parent: \(.publication_parent)\npublication_parent_tree: \(.publication_parent_tree)\narchive_sha256: \(.archive_sha256)\nproduct_paths: \(.product_path_count)\nordinary_paths: \(.ordinary_path_count)\npatched_workflow_sha256: \(.patched_workflow_sha256)\npatched_workflow_git_blob: \(.patched_workflow_git_blob)\nold_parent_occurrences_after_patch: \(.old_parent_occurrences_after_patch)\npublication_parent_occurrences_after_patch: \(.publication_parent_occurrences_after_patch)\nstaging_commit: \(.staging_commit)\nstaging_tree: \(.staging_tree)\nstaging_ref_updated: \(.staging_ref_updated)\nqualification_state: \(.qualification_state)\nfailed_or_final_gate: \(.failed_or_final_gate)\nproduct_ref_updated: \(.product_ref_updated)\n```\n\nThe staging ref contains only thirteen non-workflow product surfaces. It is not the product candidate and creates no canonical matrix, row, class, cumulative-ledger, protocol, execution, review, publication, adoption, graph, or merge authority."' "$R" > /tmp/comment.md
+          else
+            printf '%s\n' 'RD-04 ordinary-surface stager v9 failed before a receipt could be retained. No product candidate or additional authority is represented.' > /tmp/comment.md
+          fi
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+
+      - name: Preserve fail-closed workflow conclusion
+        if: steps.stage.outcome == 'failure'
+        shell: bash
+        run: exit 1
