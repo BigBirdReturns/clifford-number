@@ -1,0 +1,150 @@
+name: TEMP validate RD-04 postpromotion four-cell promotion v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/scripts/temp-validate-ssc-rd04-postpromotion-four-cell-promotion-v1.sh'
+      - '.github/workflows/temp-validate-ssc-rd04-postpromotion-four-cell-promotion-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: temp-validate-ssc-rd04-postpromotion-four-cell-promotion-v1
+  cancel-in-progress: false
+
+env:
+  CURRENT_MAIN: 8d05486534829671fff7a73e72e0df4f0c6a6efd
+  CARRIER_SCRIPT_PATH: .github/scripts/temp-validate-ssc-rd04-postpromotion-four-cell-promotion-v1.sh
+  CARRIER_WORKFLOW_PATH: .github/workflows/temp-validate-ssc-rd04-postpromotion-four-cell-promotion-v1.yml
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 42361e559db90777e1d60aea5530df5694c86dc6
+  PROTOCOL_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/promotion-candidate-protocol.json
+  PROTOCOL_BLOB: 6cf3afcaff8d6c959afdd24ffe714f63b31d8d8d
+  FIELD_ADJUDICATIONS_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json
+  FIELD_ADJUDICATIONS_BLOB: f1cf0653668985d1919e2ec6061564d65faceea9
+  CAPTURE_CUSTODY_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/capture-custody.json
+  CAPTURE_CUSTODY_BLOB: c44f1dc9bafa1736ae67aeb3f596cd5df73c9739
+  SOURCE_ADJUDICATIONS_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/source-adjudications.json
+  SOURCE_ADJUDICATIONS_BLOB: b1706a96bdf334e6c13b7636f0ffd97a13c50a38
+  PDF_REVIEW_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/pdf-review-receipts.json
+  PDF_REVIEW_BLOB: 5f63ae64257bac655e219211930af60f2713f8a4
+
+jobs:
+  validate:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-four-cell-promotion-validation-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Execute request-free exact-current-cell validation
+        id: validation
+        continue-on-error: true
+        shell: bash
+        run: bash "$CARRIER_SCRIPT_PATH"
+
+      - name: Upload exact validation custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-four-cell-promotion-validation-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-four-cell-promotion-validation-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Report exact-current-cell validation result
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R="${RUNNER_TEMP}/ssc-rd04-postpromotion-four-cell-promotion-validation-v1/validation-receipt.json"
+          test -s "$R"
+          state="$(jq -r .state "$R")"
+          stage="$(jq -r .failed_or_final_stage "$R")"
+          {
+            printf '%s\n\n' 'RD-04 postpromotion four-cell candidates reached a typed exact-current-cell result.'
+            printf '%s\n' '```text'
+            printf 'state: %s\n' "$state"
+            printf 'stage: %s\n' "$stage"
+            printf 'execution_parent: %s\n' "$(jq -r .execution_parent "$R")"
+            printf 'candidate_count: %s\n' "$(jq -r .candidate_count "$R")"
+            printf 'validated_open_cell_count: %s\n' "$(jq -r .validated_open_cell_count "$R")"
+            printf 'held_cell_count: %s\n' "$(jq -r .held_cell_count "$R")"
+            printf 'terminal_cells_before: %s\n' "$(jq -r '.matrix_transition_if_separately_promoted.terminal_cells_before // "none"' "$R")"
+            printf 'terminal_cells_after_if_promoted: %s\n' "$(jq -r '.matrix_transition_if_separately_promoted.terminal_cells_after // "none"' "$R")"
+            printf 'open_substantive_cells_after_if_promoted: %s\n' "$(jq -r '.matrix_transition_if_separately_promoted.open_substantive_cells_after // "none"' "$R")"
+            printf 'matrix_updates: %s\n' "$(jq -r .matrix_updates "$R")"
+            printf 'field_terminalizations: %s\n' "$(jq -r .field_terminalizations "$R")"
+            printf 'class_closed: %s\n' "$(jq -r .class_closed "$R")"
+            printf '%s\n\n' '```'
+            printf '%s\n' 'This lane creates validation custody only. Promotion remains unauthorized until a separate deterministic permanent product reauthenticates this exact parent, these six input blobs, these four open cells, and the exclusion of both held decisions.'
+          } > /tmp/rd04-postpromotion-validation-result.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/rd04-postpromotion-validation-result.md
+
+      - name: Preserve fail-closed conclusion
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-four-cell-promotion-validation-v1"
+          R="$OUT/validation-receipt.json"
+          test "${{ steps.validation.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e \
+            --arg parent "$CURRENT_MAIN" \
+            --arg matrix "$MATRIX_BLOB" \
+            --arg protocol "$PROTOCOL_BLOB" \
+            --arg fields "$FIELD_ADJUDICATIONS_BLOB" \
+            --arg capture "$CAPTURE_CUSTODY_BLOB" \
+            --arg sources "$SOURCE_ADJUDICATIONS_BLOB" \
+            --arg pdf "$PDF_REVIEW_BLOB" \
+            '.state=="validated" and
+             .failed_or_final_stage=="complete" and
+             .exit_code==0 and
+             .execution_parent==$parent and
+             .input_inventory.matrix.git_blob==$matrix and
+             .input_inventory.promotion_candidate_protocol.git_blob==$protocol and
+             .input_inventory.field_adjudications.git_blob==$fields and
+             .input_inventory.capture_custody.git_blob==$capture and
+             .input_inventory.source_adjudications.git_blob==$sources and
+             .input_inventory.pdf_review_receipts.git_blob==$pdf and
+             .candidate_count==4 and
+             .unique_candidate_cell_count==4 and
+             .validated_open_cell_count==4 and
+             .held_cell_count==2 and
+             (.validations|length)==4 and
+             .matrix_transition_if_separately_promoted.terminal_cells_before==222 and
+             .matrix_transition_if_separately_promoted.terminal_cells_after==226 and
+             .matrix_transition_if_separately_promoted.open_substantive_cells_before==188 and
+             .matrix_transition_if_separately_promoted.open_substantive_cells_after==184 and
+             .matrix_updates==0 and
+             .field_terminalizations==0 and
+             .row_state_mutations==0 and
+             .class_closed==false and
+             .cumulative_ledger_effect=="none" and
+             .outside_human_dependency==false and
+             .publication_effect=="none" and
+             .adoption_effect=="none" and
+             .graph_effect=="none" and
+             .promotion_authority_created==false' \
+            "$R" > /dev/null
