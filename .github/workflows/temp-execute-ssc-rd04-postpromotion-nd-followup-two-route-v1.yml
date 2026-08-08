@@ -1,0 +1,877 @@
+name: TEMP execute RD-04 postpromotion ND two-route follow-up v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened]
+    paths:
+      - '.github/workflows/temp-execute-ssc-rd04-postpromotion-nd-followup-two-route-v1.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rd04-postpromotion-nd-followup-two-route-execution-v1
+  cancel-in-progress: false
+
+env:
+  CANONICAL_MERGE: 048e9d13a2555d8e6fabdbee5f45aea858f919b7
+  CANONICAL_TREE: d354309d6b936b499c78f3d0ff47d20f69abda78
+  PRODUCT_HEAD: ef8a9de8d7fba418cd1fb493bd7899f9db77f649
+  PRODUCT_PARENT: d35deab5ef1e255e5957f29e11fe53fcf74e1cfd
+  CARRIER_BRANCH: agent/ssc-rd04-postpromotion-nd-followup-two-route-execution-v1
+  CARRIER_PATH: .github/workflows/temp-execute-ssc-rd04-postpromotion-nd-followup-two-route-v1.yml
+  PROTOCOL_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/selected-followup-protocol.json
+  PROTOCOL_BLOB: 7bbafd8f8c6c915442770ebbeca85b37afba8047
+  FIELD_ADJUDICATIONS_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json
+  FIELD_ADJUDICATIONS_BLOB: 522ec8503299c0458d45f43f23512c8ff90ac0f2
+  SOURCE_ADJUDICATIONS_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/source-adjudications.json
+  SOURCE_ADJUDICATIONS_BLOB: 3b8e43073f9828d80d39a9dd2baadea471d7a301
+  PROMOTED_MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promoted-partial-field-matrix.json
+  PROMOTED_MATRIX_BLOB: 66896190dd575f9867f1e121d845acfb4d27f56f
+  PROMOTION_SUMMARY_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promotion-summary.json
+  PROMOTION_SUMMARY_BLOB: 5e0adc541a22c9b0bf4cd8a059bf083e08831a15
+  PROMOTION_BUILDER_PATH: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs
+  PROMOTION_BUILDER_BLOB: 98bc8123a20e23b0739baf3c27dec4312440dde9
+  PROMOTION_VALIDATOR_PATH: tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs
+  PROMOTION_VALIDATOR_BLOB: 4c40d30eb8e79284c47245d275fe3d0b50a834f8
+  PROMOTION_TEST_PATH: test/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.test.js
+  PROMOTION_TEST_BLOB: 9254fb8808ddb37c8753ceb19c2a1966decf935a
+  PROMOTION_WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.yml
+  PROMOTION_WORKFLOW_BLOB: 963682f980f2725669dcb66e87100a6b45b9139e
+  PYTHONDONTWRITEBYTECODE: '1'
+
+jobs:
+  execute:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-nd-followup-two-route-execution-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned parsers
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+
+      - name: Bind, qualify, and execute exact two-route denominator
+        id: execution
+        continue-on-error: true
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          WORKFLOW_RUN_ID: ${{ github.run_id }}
+          WORKFLOW_JOB: ${{ github.job }}
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-nd-followup-two-route-execution-v1"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          exec > >(tee "$OUT/execution.log") 2>&1
+          stage=bootstrap
+
+          finalize() {
+            set +e
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS ! -name execution.log -print0 |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+            )
+          }
+
+          on_error() {
+            local code=$?
+            trap - ERR
+            set +e
+            printf '%s\n' "$code" > "$OUT/EXIT_CODE"
+            if test ! -s "$OUT/execution-receipt.json"; then
+              jq -n \
+                --arg stage "$stage" \
+                --argjson exit_code "$code" \
+                --arg parent "$CANONICAL_MERGE" \
+                --arg head "$(git rev-parse HEAD 2>/dev/null || true)" \
+                '{schema_version:"ssc-rd04-postpromotion-nd-followup-two-route-execution@1",state:"failed_closed",failed_or_final_stage:$stage,exit_code:$exit_code,canonical_merge:$parent,carrier_head:(if $head=="" then null else $head end),fixed_route_count:2,maximum_total_physical_requests:2,physical_requests_executed:0,initiated_route_attempts:0,terminal_route_ids:[],results:[],result_spawned_requests:0,automatic_source_admissions:0,automatic_field_classifications:0,automatic_field_terminalizations:0,automatic_row_terminalizations:0,automatic_class_closures:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' > "$OUT/execution-receipt.json"
+            fi
+            finalize
+            exit "$code"
+          }
+          trap on_error ERR
+
+          stage=bind_one_path_carrier_and_live_main
+          test "$EVENT_NAME" = pull_request
+          test "$PR_HEAD_REF" = "$CARRIER_BRANCH"
+          test "$PR_HEAD_SHA" = "$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_MERGE"
+          test "$(git rev-list --count "$CANONICAL_MERGE"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CANONICAL_MERGE" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_MERGE" HEAD)" = "$CARRIER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MD "$CANONICAL_MERGE" HEAD)"
+          git diff --check "$CANONICAL_MERGE" HEAD
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/main)" = "$CANONICAL_MERGE"
+          test "$(git rev-parse "$CANONICAL_MERGE^{tree}")" = "$CANONICAL_TREE"
+          test "$(git rev-parse "$CANONICAL_MERGE^1")" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "$CANONICAL_MERGE^2")" = "$PRODUCT_HEAD"
+          test "$(git rev-parse "$PRODUCT_HEAD^{tree}")" = "$CANONICAL_TREE"
+          test -z "$(git diff --name-only "$PRODUCT_HEAD" "$CANONICAL_MERGE")"
+          git rev-parse HEAD > "$OUT/carrier-head.txt"
+          git rev-parse HEAD^ > "$OUT/carrier-parent.txt"
+          printf '%s\n' "$CANONICAL_MERGE" > "$OUT/canonical-merge.txt"
+          printf '%s\n' "$CANONICAL_TREE" > "$OUT/canonical-tree.txt"
+          printf '%s\n' "$PRODUCT_HEAD" > "$OUT/product-head.txt"
+
+          stage=authenticate_protocol_and_current_open_cells
+          while IFS=$'\t' read -r path blob; do
+            test "$(git hash-object "$path")" = "$blob"
+          done <<EOF_BLOBS
+          $PROTOCOL_PATH	$PROTOCOL_BLOB
+          $FIELD_ADJUDICATIONS_PATH	$FIELD_ADJUDICATIONS_BLOB
+          $SOURCE_ADJUDICATIONS_PATH	$SOURCE_ADJUDICATIONS_BLOB
+          $PROMOTED_MATRIX_PATH	$PROMOTED_MATRIX_BLOB
+          $PROMOTION_SUMMARY_PATH	$PROMOTION_SUMMARY_BLOB
+          $PROMOTION_BUILDER_PATH	$PROMOTION_BUILDER_BLOB
+          $PROMOTION_VALIDATOR_PATH	$PROMOTION_VALIDATOR_BLOB
+          $PROMOTION_TEST_PATH	$PROMOTION_TEST_BLOB
+          $PROMOTION_WORKFLOW_PATH	$PROMOTION_WORKFLOW_BLOB
+          EOF_BLOBS
+
+          python - "$OUT/execution-plan.json" <<'PYPLAN'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import subprocess
+          import sys
+          import urllib.parse
+
+          output = pathlib.Path(sys.argv[1])
+          protocol = json.loads(pathlib.Path(os.environ['PROTOCOL_PATH']).read_text())
+          fields = json.loads(pathlib.Path(os.environ['FIELD_ADJUDICATIONS_PATH']).read_text())
+          sources = json.loads(pathlib.Path(os.environ['SOURCE_ADJUDICATIONS_PATH']).read_text())
+          matrix = json.loads(pathlib.Path(os.environ['PROMOTED_MATRIX_PATH']).read_text())
+          summary = json.loads(pathlib.Path(os.environ['PROMOTION_SUMMARY_PATH']).read_text())
+
+          expected = [
+              {
+                  'route_id': 'RD04-W03-PPN-ND-FU-001',
+                  'requested_url': 'https://www.nd.gov/dhs/policymanuals/SNAP/Content/Release%20Log.htm',
+                  'url_sha256': '2c86704f48dd300b64fe4a719bbea16b641e06ee16897e1c5f11fc09c64e69a1',
+                  'target_decision_id': 'RD04-PPN-ND-OPERATIVE-STATE-IMPLEMENTATION-AUTHORITY-AND-VERSION',
+                  'target_field_id': 'operative_state_implementation_authority_and_version',
+                  'disposition': 'no_relevant_support_hold_open',
+              },
+              {
+                  'route_id': 'RD04-W03-PPN-ND-FU-002',
+                  'requested_url': 'https://www.nd.gov/dhs/policymanuals/SNAP/Content/History/403%20Geographic%20Waiver/403%20History%20Log.htm',
+                  'url_sha256': '4d8eda2c6f512d784cca2430bfcf2ef04beef438c1616762c55604d599de9c57',
+                  'target_decision_id': 'RD04-PPN-ND-ABAWD-OR-WORK-REQUIREMENT-WAIVER-STATE-AND-GOVERNING-PERIOD',
+                  'target_field_id': 'abawd_or_work_requirement_waiver_state_and_governing_period',
+                  'disposition': 'temporal_or_scope_ambiguity_hold_open',
+              },
+          ]
+          assert protocol['schema_version'] == 'ssc-rd04-postpromotion-five-route-adjudication@1'
+          assert protocol['fixed_route_count'] == 2
+          assert protocol['maximum_attempts_per_route'] == 1
+          assert protocol['maximum_total_requests_in_later_separate_execution'] == 2
+          assert protocol['parallel_workers'] == 1
+          assert protocol['result_spawned_requests'] == 0
+          assert protocol['authority_boundary']['source_requests_executed_by_adjudication'] == 0
+          assert protocol['authority_boundary']['source_admissions_created'] == 0
+          assert protocol['authority_boundary']['field_terminalizations_created'] == 0
+          assert protocol['authority_boundary']['matrix_updates'] == 0
+          assert protocol['authority_boundary']['row_state_mutations'] == 0
+          assert protocol['authority_boundary']['class_closed'] is False
+          assert protocol['authority_boundary']['outside_human_dependency'] is False
+          assert protocol['url_exclusion_custody']['selected_exact_overlap_count'] == 0
+          assert protocol['url_exclusion_custody']['selected_normalized_overlap_count'] == 0
+          assert protocol['source_capture']['source_route_id'] == 'RD04-W03-PPN-ND-002'
+          assert protocol['source_capture']['source_body_sha256'] == 'a4bd1f3911ecb5693494dcbbf2a18b0e2758895bcee8b7d7fbb2e7c71fc6486a'
+
+          field_by_id = {row['decision_id']: row for row in fields['decisions']}
+          source_by_route = {row['route_id']: row for row in sources['decisions']}
+          assert source_by_route['RD04-W03-PPN-ND-002']['body_sha256'] == protocol['source_capture']['source_body_sha256']
+          assert source_by_route['RD04-W03-PPN-ND-002']['source_admitted_for_narrow_scope'] is True
+
+          assert summary['matrix_transition']['terminal_cells_after'] == 226
+          assert summary['matrix_transition']['still_open_cells_after'] == 224
+          assert summary['matrix_transition']['substantive_fields_still_open_after'] == 184
+          assert summary['matrix_transition']['terminal_units_after'] == 10
+          assert summary['current_result']['held_north_dakota_cells_remaining'] == 2
+          assert summary['current_result']['class_closed'] is False
+          assert matrix['counts']['terminal_cells'] == 226
+          assert matrix['counts']['still_open_cells'] == 224
+          assert matrix['counts']['still_open_substantive_cells'] == 184
+          assert matrix['counts']['terminal_units'] == 10
+          assert matrix['current_result']['class_closed'] is False
+
+          nd_row = next(row for row in matrix['rows'] if row['unit_id'] == 'US-STATE-ND' and row['postal_code'] == 'ND')
+          route_rows = []
+          for ordinal, (route, spec) in enumerate(zip(protocol['routes'], expected), start=1):
+              assert route['route_ordinal'] == ordinal
+              assert route['route_id'] == spec['route_id']
+              assert route['requested_url'] == spec['requested_url']
+              assert route['normalized_url'] == spec['requested_url']
+              assert route['url_sha256'] == spec['url_sha256']
+              assert route['normalized_url_sha256'] == spec['url_sha256']
+              assert hashlib.sha256(route['requested_url'].encode()).hexdigest() == spec['url_sha256']
+              assert route['target_decision_id'] == spec['target_decision_id']
+              assert route['target_field_ids'] == [spec['target_field_id']]
+              assert route['state_id'] == 'US-STATE-ND'
+              assert route['postal_code'] == 'ND'
+              assert route['request_method'] == 'GET'
+              assert route['expected_host'] == 'www.nd.gov'
+              assert urllib.parse.urlsplit(route['requested_url']).hostname == route['expected_host']
+              assert route['maximum_attempts'] == 1
+              assert route['maximum_redirects'] == 4
+              assert route['maximum_body_bytes'] == 33554432
+              assert route['cross_host_redirects_allowed'] is False
+              assert route['result_spawned_requests'] == 0
+              assert route['automatic_source_admission'] is False
+              assert route['automatic_field_classification'] is False
+              assert route['automatic_row_terminalization'] is False
+              assert route['automatic_class_closure'] is False
+              assert route['outside_human_dependency'] is False
+              assert route['publication_effect'] == 'none'
+              assert route['adoption_effect'] == 'none'
+              assert route['graph_effect'] == 'none'
+              decision = field_by_id[spec['target_decision_id']]
+              assert decision['field_id'] == spec['target_field_id']
+              assert decision['disposition'] == spec['disposition']
+              assert decision['promotion_candidate'] is False
+              assert decision['substantive_field_terminalizations'] == 0
+              assert route['route_id'] in decision['selected_followup_route_ids']
+              cell = next(cell for cell in nd_row['cells'] if cell['field_id'] == spec['target_field_id'])
+              assert cell['state'] == 'still_open'
+              assert cell['terminal'] is False
+              route_rows.append({
+                  'route': route,
+                  'target_decision': {
+                      'decision_id': decision['decision_id'],
+                      'field_id': decision['field_id'],
+                      'disposition': decision['disposition'],
+                      'selected_followup_route_ids': decision['selected_followup_route_ids'],
+                  },
+                  'current_cell': {
+                      'state': cell['state'],
+                      'terminal': cell['terminal'],
+                      'canonical_sha256': hashlib.sha256(json.dumps(cell, sort_keys=True, separators=(',', ':')).encode()).hexdigest(),
+                  },
+              })
+
+          plan = {
+              'schema_version': 'ssc-rd04-postpromotion-nd-followup-two-route-plan@1',
+              'canonical_merge': os.environ['CANONICAL_MERGE'],
+              'canonical_tree': os.environ['CANONICAL_TREE'],
+              'carrier_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'protocol_path': os.environ['PROTOCOL_PATH'],
+              'protocol_blob': os.environ['PROTOCOL_BLOB'],
+              'fixed_route_count': 2,
+              'maximum_attempts_per_route': 1,
+              'maximum_total_physical_requests': 2,
+              'parallel_workers': 1,
+              'route_ids': [row['route']['route_id'] for row in route_rows],
+              'route_custody': route_rows,
+              'held_north_dakota_cells': 2,
+              'source_admission_effect': 'none',
+              'field_classification_effect': 'none',
+              'field_terminalization_effect': 'none',
+              'row_state_effect': 'none',
+              'class_effect': 'none',
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          output.write_text(json.dumps(plan, indent=2, sort_keys=True) + '\n')
+          print(json.dumps({'execution_plan': 'pass', 'routes': plan['route_ids'], 'physical_request_ceiling': 2}, sort_keys=True))
+          PYPLAN
+
+          stage=run_complete_preexecution_gates
+          python -c "import yaml; value=yaml.safe_load(open('$PROMOTION_WORKFLOW_PATH')); assert isinstance(value, dict)"
+          node --check "$PROMOTION_BUILDER_PATH"
+          node --check "$PROMOTION_VALIDATOR_PATH"
+          node --check "$PROMOTION_TEST_PATH"
+          node "$PROMOTION_BUILDER_PATH"
+          git diff --exit-code -- data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion
+          node "$PROMOTION_VALIDATOR_PATH"
+          node "$PROMOTION_TEST_PATH"
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+          stage=restore_generated_outputs_and_reassert_clean_exact_head
+          git reset --hard HEAD
+          git clean -fdx
+          node "$PROMOTION_BUILDER_PATH"
+          node "$PROMOTION_VALIDATOR_PATH"
+          node "$PROMOTION_TEST_PATH"
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/main)" = "$CANONICAL_MERGE"
+
+          stage=set_exact_execution_interlock
+          python - "$OUT/execution-interlock.json" <<'PYINTERLOCK'
+          import json
+          import os
+          import pathlib
+          import subprocess
+          import sys
+          from datetime import datetime, timezone
+
+          value = {
+              'schema_version': 'ssc-rd04-postpromotion-nd-followup-two-route-interlock@1',
+              'set_at': datetime.now(timezone.utc).isoformat(),
+              'workflow_run_id': int(os.environ['WORKFLOW_RUN_ID']),
+              'workflow_job': os.environ['WORKFLOW_JOB'],
+              'canonical_merge': os.environ['CANONICAL_MERGE'],
+              'carrier_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'protocol_blob': os.environ['PROTOCOL_BLOB'],
+              'fixed_route_count': 2,
+              'maximum_total_physical_requests': 2,
+              'route_ids': ['RD04-W03-PPN-ND-FU-001', 'RD04-W03-PPN-ND-FU-002'],
+              'additional_execution_authorized_by_this_receipt': False,
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+          PYINTERLOCK
+
+          stage=execute_two_frozen_routes
+          export OUT
+          python - <<'PYEXECUTE'
+          import hashlib
+          import http.client
+          import json
+          import os
+          import pathlib
+          import ssl
+          import subprocess
+          import time
+          import urllib.parse
+          from datetime import datetime, timezone
+
+          out = pathlib.Path(os.environ['OUT'])
+          protocol = json.loads(pathlib.Path(os.environ['PROTOCOL_PATH']).read_text())
+          routes_root = out / 'routes'
+          routes_root.mkdir(parents=True, exist_ok=True)
+          physical_budget = protocol['maximum_total_requests_in_later_separate_execution']
+          physical_count = 0
+          results = []
+
+          def now():
+              return datetime.now(timezone.utc).isoformat()
+
+          def write_json(path, value):
+              path.parent.mkdir(parents=True, exist_ok=True)
+              path.write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+
+          def relative(path):
+              return path.relative_to(out).as_posix()
+
+          for route in protocol['routes']:
+              route_id = route['route_id']
+              route_dir = routes_root / route_id
+              route_dir.mkdir(parents=True, exist_ok=True)
+              result = {
+                  'route_ordinal': route['route_ordinal'],
+                  'route_id': route_id,
+                  'route_category': route['route_category'],
+                  'target_decision_id': route['target_decision_id'],
+                  'target_field_ids': route['target_field_ids'],
+                  'requested_url': route['requested_url'],
+                  'normalized_url': route['normalized_url'],
+                  'url_sha256': route['url_sha256'],
+                  'expected_host': route['expected_host'],
+                  'request_method': route['request_method'],
+                  'attempts': 0,
+                  'physical_request_count': 0,
+                  'redirect_count': 0,
+                  'redirect_chain': [],
+                  'physical_requests_path': None,
+                  'terminal_state': None,
+                  'http_status': None,
+                  'http_reason': None,
+                  'final_url': None,
+                  'content_type': None,
+                  'body_path': None,
+                  'body_bytes': 0,
+                  'body_sha256': None,
+                  'body_truncated': False,
+                  'headers_path': None,
+                  'error_path': None,
+                  'result_spawned_requests': 0,
+                  'source_admission_effect': 'none',
+                  'field_classification_effect': 'none',
+                  'field_terminalization_effect': 'none',
+                  'row_state_effect': 'none',
+                  'class_effect': 'none',
+                  'cumulative_ledger_effect': 'none',
+                  'outside_human_dependency': False,
+                  'publication_effect': 'none',
+                  'adoption_effect': 'none',
+                  'graph_effect': 'none',
+              }
+              physical_rows = []
+              if physical_count >= physical_budget:
+                  result['terminal_state'] = 'terminal_request_budget_exhausted_before_route'
+                  write_json(route_dir / 'receipt.json', result)
+                  results.append(result)
+                  continue
+
+              result['attempts'] = 1
+              current_url = route['requested_url']
+              route_body_total = 0
+              route_physical_ordinal = 0
+
+              while True:
+                  if physical_count >= physical_budget:
+                      result['terminal_state'] = 'terminal_request_budget_exhausted_on_redirect'
+                      break
+                  parsed = urllib.parse.urlsplit(current_url)
+                  if parsed.scheme.lower() != 'https':
+                      result['terminal_state'] = 'terminal_insecure_target_refused'
+                      break
+                  if (parsed.hostname or '').lower() != route['expected_host'].lower():
+                      result['terminal_state'] = 'terminal_cross_host_redirect_refused'
+                      break
+
+                  physical_count += 1
+                  route_physical_ordinal += 1
+                  request_ordinal = physical_count
+                  result['physical_request_count'] += 1
+                  request_headers = {
+                      'Accept': '*/*',
+                      'Accept-Encoding': 'identity',
+                      'Connection': 'close',
+                      'User-Agent': 'clifford-number-rd04-bounded-acquisition/1.0',
+                  }
+                  started = now()
+                  physical = {
+                      'global_request_ordinal': request_ordinal,
+                      'route_request_ordinal': route_physical_ordinal,
+                      'method': 'GET',
+                      'url': current_url,
+                      'host': parsed.hostname,
+                      'started_at': started,
+                      'request_headers': request_headers,
+                      'status': None,
+                      'reason': None,
+                      'response_headers': [],
+                      'headers_path': None,
+                      'body_path': None,
+                      'body_bytes': 0,
+                      'body_sha256': None,
+                      'body_truncated': False,
+                      'location': None,
+                      'redirect_target': None,
+                      'completed_at': None,
+                      'transport_error': None,
+                  }
+                  connection = None
+                  response = None
+                  try:
+                      context = ssl.create_default_context()
+                      connection = http.client.HTTPSConnection(parsed.hostname, parsed.port or 443, timeout=45, context=context)
+                      target = parsed.path or '/'
+                      if parsed.query:
+                          target += '?' + parsed.query
+                      connection.request('GET', target, headers=request_headers)
+                      response = connection.getresponse()
+                      physical['status'] = response.status
+                      physical['reason'] = response.reason
+                      headers = [[key, value] for key, value in response.getheaders()]
+                      physical['response_headers'] = headers
+                      header_file = route_dir / f'physical-{request_ordinal:02d}-headers.json'
+                      write_json(header_file, {
+                          'status': response.status,
+                          'reason': response.reason,
+                          'http_version': response.version,
+                          'headers': headers,
+                      })
+                      physical['headers_path'] = relative(header_file)
+                      body_limit = route['maximum_body_bytes'] - route_body_total
+                      body = response.read(body_limit + 1)
+                      truncated = len(body) > body_limit
+                      if truncated:
+                          body = body[:body_limit]
+                      route_body_total += len(body)
+                      if body or truncated:
+                          body_file = route_dir / f'physical-{request_ordinal:02d}-body.bin'
+                          body_file.write_bytes(body)
+                          physical['body_path'] = relative(body_file)
+                          physical['body_bytes'] = len(body)
+                          physical['body_sha256'] = hashlib.sha256(body).hexdigest()
+                          physical['body_truncated'] = truncated
+                      location = response.getheader('Location')
+                      physical['location'] = location
+                      physical['completed_at'] = now()
+                      physical_rows.append(physical)
+
+                      if truncated:
+                          result['terminal_state'] = 'terminal_body_limit_exceeded'
+                          result['http_status'] = response.status
+                          result['http_reason'] = response.reason
+                          result['final_url'] = current_url
+                          result['content_type'] = response.getheader('Content-Type')
+                          result['body_path'] = physical['body_path']
+                          result['body_bytes'] = physical['body_bytes']
+                          result['body_sha256'] = physical['body_sha256']
+                          result['body_truncated'] = True
+                          result['headers_path'] = physical['headers_path']
+                          break
+
+                      if response.status in {301, 302, 303, 307, 308} and location:
+                          next_url = urllib.parse.urljoin(current_url, location)
+                          physical['redirect_target'] = next_url
+                          physical_rows[-1] = physical
+                          result['redirect_chain'].append({
+                              'from_url': current_url,
+                              'status': response.status,
+                              'location': location,
+                              'to_url': next_url,
+                          })
+                          result['redirect_count'] += 1
+                          next_parts = urllib.parse.urlsplit(next_url)
+                          if next_parts.scheme.lower() != 'https':
+                              result['terminal_state'] = 'terminal_insecure_redirect_refused'
+                              result['http_status'] = response.status
+                              result['http_reason'] = response.reason
+                              result['final_url'] = current_url
+                              result['headers_path'] = physical['headers_path']
+                              break
+                          if (next_parts.hostname or '').lower() != route['expected_host'].lower():
+                              result['terminal_state'] = 'terminal_cross_host_redirect_refused'
+                              result['http_status'] = response.status
+                              result['http_reason'] = response.reason
+                              result['final_url'] = current_url
+                              result['headers_path'] = physical['headers_path']
+                              break
+                          if result['redirect_count'] > route['maximum_redirects']:
+                              result['terminal_state'] = 'terminal_redirect_limit_exceeded'
+                              result['http_status'] = response.status
+                              result['http_reason'] = response.reason
+                              result['final_url'] = current_url
+                              result['headers_path'] = physical['headers_path']
+                              break
+                          current_url = next_url
+                          continue
+
+                      result['http_status'] = response.status
+                      result['http_reason'] = response.reason
+                      result['final_url'] = current_url
+                      result['content_type'] = response.getheader('Content-Type')
+                      result['body_path'] = physical['body_path']
+                      result['body_bytes'] = physical['body_bytes']
+                      result['body_sha256'] = physical['body_sha256']
+                      result['headers_path'] = physical['headers_path']
+                      if 200 <= response.status < 300:
+                          result['terminal_state'] = 'terminal_http_success_body_captured' if physical['body_bytes'] else 'terminal_http_success_no_body'
+                      else:
+                          result['terminal_state'] = 'terminal_http_non_success'
+                      break
+                  except Exception as error:
+                      physical['completed_at'] = now()
+                      physical['transport_error'] = f'{type(error).__name__}: {error}'
+                      physical_rows.append(physical)
+                      error_file = route_dir / f'physical-{request_ordinal:02d}-error.json'
+                      write_json(error_file, {
+                          'error_type': type(error).__name__,
+                          'error_message': str(error),
+                          'url': current_url,
+                          'started_at': started,
+                          'completed_at': physical['completed_at'],
+                      })
+                      result['terminal_state'] = 'terminal_transport_error'
+                      result['final_url'] = current_url
+                      result['error_path'] = relative(error_file)
+                      break
+                  finally:
+                      if response is not None:
+                          try:
+                              response.close()
+                          except Exception:
+                              pass
+                      if connection is not None:
+                          try:
+                              connection.close()
+                          except Exception:
+                              pass
+
+              physical_file = route_dir / 'physical-requests.json'
+              write_json(physical_file, physical_rows)
+              result['physical_requests_path'] = relative(physical_file)
+              write_json(route_dir / 'receipt.json', result)
+              results.append(result)
+              time.sleep(1)
+
+          receipt = {
+              'schema_version': 'ssc-rd04-postpromotion-nd-followup-two-route-execution@1',
+              'state': 'terminal_transport_custody',
+              'failed_or_final_stage': 'complete',
+              'exit_code': 0,
+              'canonical_merge': os.environ['CANONICAL_MERGE'],
+              'canonical_tree': os.environ['CANONICAL_TREE'],
+              'carrier_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'workflow_run_id': int(os.environ['WORKFLOW_RUN_ID']),
+              'protocol_path': os.environ['PROTOCOL_PATH'],
+              'protocol_blob': os.environ['PROTOCOL_BLOB'],
+              'fixed_route_count': 2,
+              'maximum_attempts_per_route': 1,
+              'maximum_total_physical_requests': physical_budget,
+              'physical_requests_executed': physical_count,
+              'initiated_route_attempts': sum(result['attempts'] for result in results),
+              'captured_route_ids': [result['route_id'] for result in results],
+              'terminal_route_ids': [result['route_id'] for result in results if result['terminal_state'] is not None],
+              'results': results,
+              'result_spawned_requests': 0,
+              'automatic_source_admissions': 0,
+              'automatic_field_classifications': 0,
+              'automatic_field_terminalizations': 0,
+              'automatic_row_terminalizations': 0,
+              'automatic_class_closures': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'additional_execution_authorized_by_this_receipt': False,
+              'next_authorized_operation': 'offline_artifact_only_source_and_field_adjudication_over_this_exact_transport_custody',
+          }
+          write_json(out / 'route-results.json', results)
+          write_json(out / 'execution-receipt.json', receipt)
+          print(json.dumps({
+              'state': receipt['state'],
+              'physical_requests_executed': physical_count,
+              'initiated_route_attempts': receipt['initiated_route_attempts'],
+              'terminal_states': [result['terminal_state'] for result in results],
+          }, sort_keys=True))
+          PYEXECUTE
+
+          stage=validate_terminal_transport_custody
+          python - "$OUT" <<'PYVALIDATE'
+          import hashlib
+          import json
+          import pathlib
+          import sys
+          import urllib.parse
+          from collections import Counter
+
+          out = pathlib.Path(sys.argv[1])
+          receipt = json.loads((out / 'execution-receipt.json').read_text())
+          results = json.loads((out / 'route-results.json').read_text())
+          expected = [
+              ('RD04-W03-PPN-ND-FU-001', 'https://www.nd.gov/dhs/policymanuals/SNAP/Content/Release%20Log.htm', '2c86704f48dd300b64fe4a719bbea16b641e06ee16897e1c5f11fc09c64e69a1'),
+              ('RD04-W03-PPN-ND-FU-002', 'https://www.nd.gov/dhs/policymanuals/SNAP/Content/History/403%20Geographic%20Waiver/403%20History%20Log.htm', '4d8eda2c6f512d784cca2430bfcf2ef04beef438c1616762c55604d599de9c57'),
+          ]
+          allowed_terminal = {
+              'terminal_http_success_body_captured',
+              'terminal_http_success_no_body',
+              'terminal_http_non_success',
+              'terminal_cross_host_redirect_refused',
+              'terminal_insecure_redirect_refused',
+              'terminal_redirect_limit_exceeded',
+              'terminal_body_limit_exceeded',
+              'terminal_transport_error',
+          }
+          assert receipt['schema_version'] == 'ssc-rd04-postpromotion-nd-followup-two-route-execution@1'
+          assert receipt['state'] == 'terminal_transport_custody'
+          assert receipt['failed_or_final_stage'] == 'complete'
+          assert receipt['exit_code'] == 0
+          assert receipt['fixed_route_count'] == 2
+          assert receipt['maximum_attempts_per_route'] == 1
+          assert receipt['maximum_total_physical_requests'] == 2
+          assert receipt['physical_requests_executed'] == 2
+          assert receipt['initiated_route_attempts'] == 2
+          assert receipt['captured_route_ids'] == [row[0] for row in expected]
+          assert receipt['terminal_route_ids'] == [row[0] for row in expected]
+          assert len(results) == 2 and receipt['results'] == results
+          assert receipt['result_spawned_requests'] == 0
+          assert receipt['automatic_source_admissions'] == 0
+          assert receipt['automatic_field_classifications'] == 0
+          assert receipt['automatic_field_terminalizations'] == 0
+          assert receipt['automatic_row_terminalizations'] == 0
+          assert receipt['automatic_class_closures'] == 0
+          assert receipt['class_closed'] is False
+          assert receipt['cumulative_ledger_effect'] == 'none'
+          assert receipt['outside_human_dependency'] is False
+          assert receipt['publication_effect'] == 'none'
+          assert receipt['adoption_effect'] == 'none'
+          assert receipt['graph_effect'] == 'none'
+          assert receipt['additional_execution_authorized_by_this_receipt'] is False
+
+          state_counts = Counter()
+          total_body_bytes = 0
+          for ordinal, (spec, result) in enumerate(zip(expected, results), start=1):
+              route_id, requested_url, url_sha256 = spec
+              assert result['route_ordinal'] == ordinal
+              assert result['route_id'] == route_id
+              assert result['requested_url'] == requested_url
+              assert result['normalized_url'] == requested_url
+              assert result['url_sha256'] == url_sha256
+              assert result['expected_host'] == 'www.nd.gov'
+              assert urllib.parse.urlsplit(result['requested_url']).hostname == result['expected_host']
+              assert result['attempts'] == 1
+              assert result['physical_request_count'] == 1
+              assert result['redirect_count'] == 0
+              assert result['terminal_state'] in allowed_terminal
+              assert result['result_spawned_requests'] == 0
+              assert result['source_admission_effect'] == 'none'
+              assert result['field_classification_effect'] == 'none'
+              assert result['field_terminalization_effect'] == 'none'
+              assert result['row_state_effect'] == 'none'
+              assert result['class_effect'] == 'none'
+              assert result['cumulative_ledger_effect'] == 'none'
+              assert result['outside_human_dependency'] is False
+              assert result['publication_effect'] == 'none'
+              assert result['adoption_effect'] == 'none'
+              assert result['graph_effect'] == 'none'
+              if result['final_url'] is not None:
+                  assert urllib.parse.urlsplit(result['final_url']).hostname == result['expected_host']
+              route_dir = out / 'routes' / route_id
+              assert json.loads((route_dir / 'receipt.json').read_text()) == result
+              physical = json.loads((out / result['physical_requests_path']).read_text())
+              assert len(physical) == 1
+              assert physical[0]['global_request_ordinal'] == ordinal
+              if result['body_path'] is None:
+                  assert result['body_bytes'] == 0
+                  assert result['body_sha256'] is None
+              else:
+                  body = (out / result['body_path']).read_bytes()
+                  assert len(body) == result['body_bytes']
+                  assert hashlib.sha256(body).hexdigest() == result['body_sha256']
+                  total_body_bytes += len(body)
+              if result['headers_path'] is not None:
+                  assert (out / result['headers_path']).is_file()
+              if result['error_path'] is not None:
+                  assert (out / result['error_path']).is_file()
+              state_counts[result['terminal_state']] += 1
+
+          summary = {
+              'schema_version': 'ssc-rd04-postpromotion-nd-followup-two-route-transport-summary@1',
+              'canonical_merge': receipt['canonical_merge'],
+              'carrier_head': receipt['carrier_head'],
+              'protocol_blob': receipt['protocol_blob'],
+              'fixed_routes': 2,
+              'initiated_route_attempts': 2,
+              'physical_requests_executed': 2,
+              'terminal_routes': 2,
+              'terminal_state_counts': dict(sorted(state_counts.items())),
+              'captured_body_bytes': total_body_bytes,
+              'result_spawned_requests': 0,
+              'source_admissions': 0,
+              'field_classifications': 0,
+              'field_terminalizations': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'next_authorized_operation': receipt['next_authorized_operation'],
+          }
+          (out / 'transport-summary.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(summary, indent=2, sort_keys=True))
+          PYVALIDATE
+
+          cat > "$OUT/BOUNDARY" <<'EOF_BOUNDARY'
+          fixed_routes=2
+          initiated_route_attempts=2
+          physical_requests_executed=2
+          terminal_routes=2
+          result_spawned_requests=0
+          source_admissions=0
+          field_classifications=0
+          field_terminalizations=0
+          row_state_mutations=0
+          class_closed=false
+          cumulative_ledger_effect=none
+          outside_human_dependency=false
+          publication_effect=none
+          adoption_effect=none
+          graph_effect=none
+          additional_execution_authorized=false
+          EOF_BOUNDARY
+
+          stage=complete
+          trap - ERR
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          finalize
+
+      - name: Upload exact two-route transport custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-nd-followup-two-route-execution-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-nd-followup-two-route-execution-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Preserve fail-closed conclusion
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-nd-followup-two-route-execution-v1"
+          R="$OUT/execution-receipt.json"
+          test "${{ steps.execution.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (
+            cd "$OUT"
+            sha256sum -c SHA256SUMS
+          )
+          jq -e \
+            --arg merge "$CANONICAL_MERGE" \
+            --arg protocol "$PROTOCOL_BLOB" \
+            '.state=="terminal_transport_custody" and
+             .failed_or_final_stage=="complete" and
+             .exit_code==0 and
+             .canonical_merge==$merge and
+             .protocol_blob==$protocol and
+             .fixed_route_count==2 and
+             .maximum_attempts_per_route==1 and
+             .maximum_total_physical_requests==2 and
+             .physical_requests_executed==2 and
+             .initiated_route_attempts==2 and
+             (.terminal_route_ids|length)==2 and
+             (.results|length)==2 and
+             ([.results[].attempts]|all(.==1)) and
+             ([.results[].physical_request_count]|all(.==1)) and
+             ([.results[].redirect_count]|all(.==0)) and
+             .result_spawned_requests==0 and
+             .automatic_source_admissions==0 and
+             .automatic_field_classifications==0 and
+             .automatic_field_terminalizations==0 and
+             .automatic_row_terminalizations==0 and
+             .automatic_class_closures==0 and
+             .class_closed==false and
+             .cumulative_ledger_effect=="none" and
+             .outside_human_dependency==false and
+             .publication_effect=="none" and
+             .adoption_effect=="none" and
+             .graph_effect=="none" and
+             .additional_execution_authorized_by_this_receipt==false' \
+            "$R" > /dev/null
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/main)" = "$CANONICAL_MERGE"
