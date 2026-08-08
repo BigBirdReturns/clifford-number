@@ -6,6 +6,11 @@ on:
       - agent/ssc-rd04-five-state-promotion-materializer-v1
     paths:
       - '.github/workflows/temp-ssc-rd04-five-state-promotion-materializer-v2.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temp-ssc-rd04-five-state-promotion-materializer-v2.yml'
   workflow_dispatch:
 
 permissions:
@@ -24,7 +29,10 @@ env:
 
 jobs:
   materialize:
-    if: github.ref_name == 'agent/ssc-rd04-five-state-promotion-materializer-v1'
+    if: >-
+      (github.event_name == 'push' && github.ref_name == 'agent/ssc-rd04-five-state-promotion-materializer-v1') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/ssc-rd04-five-state-promotion-materializer-v1' && github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'workflow_dispatch' && github.ref_name == 'agent/ssc-rd04-five-state-promotion-materializer-v1')
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     steps:
