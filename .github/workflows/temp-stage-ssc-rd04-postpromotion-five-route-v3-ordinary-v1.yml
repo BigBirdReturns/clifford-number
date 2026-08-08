@@ -1,0 +1,402 @@
+name: TEMP stage exact RD-04 five-route V3 ordinary product blobs
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-stage-ssc-rd04-postpromotion-five-route-v3-ordinary-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  stage:
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-five-route-v3-ordinary-stager-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      OBSERVED_MAIN: a18f19ddc923e553848a5165cdf29fb1b9add97a
+      CARRIER_BRANCH: agent/ssc-rd04-postpromotion-five-route-v3-ordinary-stager-v1
+      CARRIER_WORKFLOW: .github/workflows/temp-stage-ssc-rd04-postpromotion-five-route-v3-ordinary-v1.yml
+      PRODUCT_PARENT: 91b386df809079884825b19a6b5d864b6e739172
+      PRODUCT_PARENT_TREE: 7825098153b33c15418c973d1d04ff22eb50e015
+      STAGING_BRANCH: staging/ssc-rd04-postpromotion-five-route-adjudication-ordinary-v1
+      ARTIFACT_ID: '9023748767'
+      ARTIFACT_ZIP_SHA256: e37c1088ff5bcab1c89825535a468470cacc260a83c4d8db4e463a4b7bb59421
+      PRODUCT_ARCHIVE_BYTES: '24972'
+      PRODUCT_ARCHIVE_SHA256: 376ddae342dad3829c17412c11db5aaae7b692eefc5aa2573b7c47b4aa231662
+      PRODUCT_MANIFEST_BLOB: 35b45ee0946fa0fe344d2ec8b3fffbb0e0607d1b
+      PERMANENT_WORKFLOW_BLOB: 6e85ed36416821131bbd5ddc9ee3b579a25859d6
+      DATA_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication
+      MANIFEST_REL: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/product-manifest.json
+      PERMANENT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.yml
+      SCHEMA_REL: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.schema.json
+      BUILDER_REL: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+      VALIDATOR_REL: tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+      TEST_REL: test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned validators
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+
+      - name: Authenticate, qualify, and stage ordinary product blobs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-five-route-v3-ordinary-stager-v1"
+          DOWNLOAD="$OUT/github-actions-artifact.zip"
+          ARTIFACT="$OUT/artifact"
+          EXTRACT="$OUT/exact-product"
+          FULL_WORK="$RUNNER_TEMP/ssc-rd04-postpromotion-five-route-v3-full-product"
+          ORDINARY_WORK="$RUNNER_TEMP/ssc-rd04-postpromotion-five-route-v3-ordinary-product"
+          rm -rf "$OUT" "$FULL_WORK" "$ORDINARY_WORK"
+          mkdir -p "$ARTIFACT" "$EXTRACT"
+          printf 'initializing\n' > "$OUT/STAGE"
+          printf 'source_requests=0\nroute_executions=0\nnew_transport_captures=0\nsource_admissions_created=0\nfield_classifications_created=0\nfield_terminalizations_created=0\nmatrix_updates=0\nrow_state_mutations=0\nclass_closed=false\ncumulative_ledger_effect=none\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' > "$OUT/BOUNDARY"
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            for pair in "full:$FULL_WORK" "ordinary:$ORDINARY_WORK"; do
+              label="${pair%%:*}"
+              path="${pair#*:}"
+              if test -d "$path"; then
+                git -C "$path" rev-parse HEAD > "$OUT/$label-head-final.txt" 2>/dev/null || true
+                git -C "$path" rev-parse 'HEAD^{tree}' > "$OUT/$label-tree-final.txt" 2>/dev/null || true
+                git -C "$path" status --porcelain=v1 --untracked-files=all > "$OUT/$label-status-final.txt" 2>/dev/null || true
+              fi
+            done
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          focused_validate() {
+            node --check "$BUILDER_REL"
+            node --check "$VALIDATOR_REL"
+            node --check "$TEST_REL"
+            python - <<'PYYAML'
+          import os
+          from pathlib import Path
+          import yaml
+          value = yaml.safe_load(Path(os.environ['PERMANENT_WORKFLOW']).read_text())
+          if not isinstance(value, dict):
+              raise SystemExit('permanent workflow did not parse to an object')
+          print('workflow_yaml_parse=pass')
+          PYYAML
+            node "$BUILDER_REL"
+            git diff --exit-code -- "$DATA_ROOT"
+            python - <<'PYSCHEMA'
+          import json
+          import os
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          schema = json.loads(Path(os.environ['SCHEMA_REL']).read_text())
+          Draft202012Validator.check_schema(schema)
+          validator = Draft202012Validator(schema)
+          root = Path(os.environ['DATA_ROOT'])
+          names = [
+              'capture-custody.json',
+              'source-adjudications.json',
+              'field-adjudications.json',
+              'pdf-review-receipts.json',
+              'promotion-candidate-protocol.json',
+              'selected-followup-protocol.json',
+              'index.json',
+              'product-manifest.json',
+          ]
+          for name in names:
+              value = json.loads((root / name).read_text())
+              errors = sorted(validator.iter_errors(value), key=lambda error: list(error.path))
+              if errors:
+                  error = errors[0]
+                  raise SystemExit(f'{name}: {error.message} at {list(error.path)}')
+          print(f'recursive_schema_validation=pass objects={len(names)}')
+          PYSCHEMA
+            node "$VALIDATOR_REL"
+            node "$TEST_REL"
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          }
+
+          printf 'binding-one-path-carrier\n' > "$OUT/STAGE"
+          git rev-parse HEAD > "$OUT/carrier-head.txt"
+          git rev-parse 'HEAD^{tree}' > "$OUT/carrier-tree.txt"
+          test "${{ github.event_name }}" != pull_request || test "${{ github.event.pull_request.head.ref }}" = "$CARRIER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$OBSERVED_MAIN"
+          test "$(git rev-list --count "$OBSERVED_MAIN"..HEAD)" -eq 1
+          printf '%s\n' "$CARRIER_WORKFLOW" > "$OUT/expected-carrier-paths.txt"
+          git diff --name-only --diff-filter=ACDMRTUXB "$OBSERVED_MAIN" HEAD | sort > "$OUT/actual-carrier-paths.txt"
+          git diff --name-only --diff-filter=A "$OBSERVED_MAIN" HEAD | sort > "$OUT/added-carrier-paths.txt"
+          diff -u "$OUT/expected-carrier-paths.txt" "$OUT/actual-carrier-paths.txt"
+          diff -u "$OUT/expected-carrier-paths.txt" "$OUT/added-carrier-paths.txt"
+          git diff --check "$OBSERVED_MAIN" HEAD
+
+          printf 'acquiring-live-leases\n' > "$OUT/STAGE"
+          git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$OBSERVED_MAIN"
+          test "$(git rev-parse "$PRODUCT_PARENT^{tree}")" = "$PRODUCT_PARENT_TREE"
+          test -z "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH")"
+
+          printf 'downloading-authenticated-recovery-artifact\n' > "$OUT/STAGE"
+          curl --fail-with-body --silent --show-error --location \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" \
+            --output "$DOWNLOAD"
+          test "$(sha256sum "$DOWNLOAD" | cut -d' ' -f1)" = "$ARTIFACT_ZIP_SHA256"
+          unzip -q "$DOWNLOAD" -d "$ARTIFACT"
+          test -f "$ARTIFACT/product.tar.xz"
+          test "$(stat -c %s "$ARTIFACT/product.tar.xz")" -eq "$PRODUCT_ARCHIVE_BYTES"
+          test "$(sha256sum "$ARTIFACT/product.tar.xz" | cut -d' ' -f1)" = "$PRODUCT_ARCHIVE_SHA256"
+          xz --test "$ARTIFACT/product.tar.xz"
+
+          printf 'extracting-safe-fourteen-path-product\n' > "$OUT/STAGE"
+          python - "$ARTIFACT/product.tar.xz" "$EXTRACT" <<'PYTAR'
+          import sys
+          import tarfile
+          from pathlib import Path, PurePosixPath
+
+          archive = Path(sys.argv[1])
+          extract = Path(sys.argv[2])
+          with tarfile.open(archive, mode='r:xz') as bundle:
+              files = [member for member in bundle.getmembers() if member.isfile()]
+              paths = []
+              for member in files:
+                  if not member.name.startswith('./'):
+                      raise SystemExit(f'non-relative archive path: {member.name}')
+                  relative = member.name[2:]
+                  pure = PurePosixPath(relative)
+                  if pure.is_absolute() or '..' in pure.parts or relative.startswith('.tmp/') or '.trigger' in pure.parts:
+                      raise SystemExit(f'unsafe archive path: {relative}')
+                  paths.append(relative)
+              if len(paths) != 14 or len(set(paths)) != 14:
+                  raise SystemExit(f'archive path denominator mismatch: {len(paths)}')
+              bundle.extractall(extract)
+          print('safe_archive_extract=pass files=14')
+          PYTAR
+          (cd "$EXTRACT" && find . -type f -printf '%P\n' | sort) > "$OUT/product-paths.txt"
+          test "$(wc -l < "$OUT/product-paths.txt")" -eq 14
+          grep -v '^\.github/workflows/' "$OUT/product-paths.txt" > "$OUT/ordinary-paths.txt"
+          test "$(wc -l < "$OUT/ordinary-paths.txt")" -eq 13
+          test "$(grep -c '^\.github/workflows/' "$OUT/product-paths.txt")" -eq 1
+
+          printf 'authenticating-manifest-and-all-file-identities\n' > "$OUT/STAGE"
+          test "$(git hash-object "$EXTRACT/$MANIFEST_REL")" = "$PRODUCT_MANIFEST_BLOB"
+          test "$(git hash-object "$EXTRACT/$PERMANENT_WORKFLOW")" = "$PERMANENT_WORKFLOW_BLOB"
+          python - "$EXTRACT" "$OUT/product-paths.txt" <<'PYMANIFEST'
+          import hashlib
+          import json
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          root = Path(sys.argv[1])
+          observed_paths = Path(sys.argv[2]).read_text().splitlines()
+          manifest_rel = 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/product-manifest.json'
+          manifest = json.loads((root / manifest_rel).read_text())
+          if manifest['schema_version'] != 'ssc-rd04-postpromotion-five-route-adjudication@1':
+              raise SystemExit('manifest schema version mismatch')
+          if manifest['object_type'] != 'product_manifest':
+              raise SystemExit('manifest object type mismatch')
+          if manifest['permanent_path_count'] != 14 or sorted(manifest['permanent_paths']) != observed_paths:
+              raise SystemExit('manifest path denominator mismatch')
+          rows = manifest['hashed_files']
+          if manifest['hashed_file_count'] != 13 or len(rows) != 13:
+              raise SystemExit('manifest hash denominator mismatch')
+          expected_rows = sorted(path for path in observed_paths if path != manifest_rel)
+          if sorted(row['path'] for row in rows) != expected_rows:
+              raise SystemExit('manifest hashed path set mismatch')
+          boundary = manifest['authority_boundary']
+          expected_boundary = {
+              'source_requests_executed_by_adjudication': 0,
+              'source_admissions_created': 4,
+              'field_classifications_created': 0,
+              'field_terminalizations_created': 0,
+              'matrix_updates': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'external_contacts': 0,
+              'external_reviews': 0,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'national_prevalence_effect': 'none',
+              'discrimination_effect': 'none',
+              'racial_order_effect': 'none',
+              'coordination_effect': 'none',
+              'common_purpose_effect': 'none',
+              'complete_compact_effect': 'none',
+          }
+          if boundary != expected_boundary:
+              raise SystemExit('manifest authority boundary mismatch')
+          for row in rows:
+              path = root / row['path']
+              data = path.read_bytes()
+              observed_sha = hashlib.sha256(data).hexdigest()
+              observed_blob = subprocess.check_output(['git', 'hash-object', str(path)], text=True).strip()
+              if len(data) != row['bytes'] or observed_sha != row['sha256'] or observed_blob != row['git_blob']:
+                  raise SystemExit(f"manifest identity mismatch: {row['path']}")
+          print('manifest_identity_validation=pass paths=14 hashed=13')
+          PYMANIFEST
+
+          printf 'constructing-exact-fourteen-path-candidate\n' > "$OUT/STAGE"
+          git worktree add --detach "$FULL_WORK" "$PRODUCT_PARENT"
+          while IFS= read -r path; do test ! -e "$FULL_WORK/$path"; done < "$OUT/product-paths.txt"
+          cp -a "$EXTRACT"/. "$FULL_WORK"/
+          cd "$FULL_WORK"
+          git config user.name 'OpenAI Agent'
+          git config user.email 'openai-agent@users.noreply.github.com'
+          git config commit.gpgsign false
+          while IFS= read -r path; do git add -- "$path"; done < "$OUT/product-paths.txt"
+          git diff --cached --name-only --diff-filter=ACDMRTUXB | sort > "$OUT/full-candidate-paths.txt"
+          git diff --cached --name-only --diff-filter=A | sort > "$OUT/full-candidate-added-paths.txt"
+          diff -u "$OUT/product-paths.txt" "$OUT/full-candidate-paths.txt"
+          diff -u "$OUT/product-paths.txt" "$OUT/full-candidate-added-paths.txt"
+          git diff --cached --check
+          git commit -m 'Adjudicate RD-04 postpromotion five-route capture' -m 'Admit four narrow official sources for bounded review, preserve six field decisions with four promotion candidates and two holds, retain two follow-up routes, and create no automatic field terminalization, matrix, row-state, class, cumulative-ledger, publication, adoption, graph, or outside-human effect.'
+          FULL_HEAD="$(git rev-parse HEAD)"
+          FULL_TREE="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$FULL_HEAD" > "$OUT/full-candidate-head.txt"
+          printf '%s\n' "$FULL_TREE" > "$OUT/full-candidate-tree.txt"
+          test "$(git rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          test "$(git rev-list --count "$PRODUCT_PARENT"..HEAD)" -eq 1
+
+          printf 'running-focused-and-complete-product-gates\n' > "$OUT/STAGE"
+          focused_validate
+          npm run release:check
+
+          printf 'proving-clean-deterministic-replay\n' > "$OUT/STAGE"
+          git reset --hard HEAD
+          git clean -fdx
+          node "$BUILDER_REL" --write
+          focused_validate
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          printf 'constructing-thirteen-path-ordinary-staging\n' > "$OUT/STAGE"
+          cd "$GITHUB_WORKSPACE"
+          git worktree add --detach "$ORDINARY_WORK" "$PRODUCT_PARENT"
+          while IFS= read -r path; do
+            test ! -e "$ORDINARY_WORK/$path"
+            mkdir -p "$ORDINARY_WORK/$(dirname "$path")"
+            cp "$EXTRACT/$path" "$ORDINARY_WORK/$path"
+          done < "$OUT/ordinary-paths.txt"
+          cd "$ORDINARY_WORK"
+          git config user.name 'OpenAI Agent'
+          git config user.email 'openai-agent@users.noreply.github.com'
+          git config commit.gpgsign false
+          while IFS= read -r path; do git add -- "$path"; done < "$OUT/ordinary-paths.txt"
+          git diff --cached --name-only --diff-filter=ACDMRTUXB | sort > "$OUT/ordinary-candidate-paths.txt"
+          git diff --cached --name-only --diff-filter=A | sort > "$OUT/ordinary-candidate-added-paths.txt"
+          diff -u "$OUT/ordinary-paths.txt" "$OUT/ordinary-candidate-paths.txt"
+          diff -u "$OUT/ordinary-paths.txt" "$OUT/ordinary-candidate-added-paths.txt"
+          test -z "$(grep '^\.github/workflows/' "$OUT/ordinary-candidate-paths.txt" || true)"
+          git diff --cached --check
+          git commit -m 'Stage ordinary RD-04 postpromotion five-route adjudication files' -m 'Publish only the thirteen non-workflow blobs from the fully qualified fourteen-path product so the connected GitHub app can assemble the exact permanent workflow-bearing tree without granting the Actions token workflow-write authority.'
+          ORDINARY_HEAD="$(git rev-parse HEAD)"
+          ORDINARY_TREE="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$ORDINARY_HEAD" > "$OUT/ordinary-staging-head.txt"
+          printf '%s\n' "$ORDINARY_TREE" > "$OUT/ordinary-staging-tree.txt"
+          test "$(git rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          test "$(git rev-list --count "$PRODUCT_PARENT"..HEAD)" -eq 1
+          while IFS= read -r path; do
+            test "$(git rev-parse "$FULL_HEAD:$path")" = "$(git rev-parse "HEAD:$path")"
+          done < "$OUT/ordinary-paths.txt"
+
+          printf 'rechecking-leases-and-publishing-ordinary-staging\n' > "$OUT/STAGE"
+          git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$OBSERVED_MAIN"
+          test -z "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH")"
+          git push origin "$ORDINARY_HEAD:refs/heads/$STAGING_BRANCH"
+          git fetch --no-tags origin "+refs/heads/$STAGING_BRANCH:refs/remotes/origin/$STAGING_BRANCH"
+          test "$(git rev-parse refs/remotes/origin/$STAGING_BRANCH)" = "$ORDINARY_HEAD"
+          test "$(git rev-parse refs/remotes/origin/$STAGING_BRANCH^{tree})" = "$ORDINARY_TREE"
+
+          printf 'writing-staging-receipt\n' > "$OUT/STAGE"
+          cd "$GITHUB_WORKSPACE"
+          python - "$OUT" <<'PYRECEIPT'
+          import json
+          import sys
+          from pathlib import Path
+
+          out = Path(sys.argv[1])
+          receipt = {
+              'schema_version': 'ssc-rd04-postpromotion-five-route-v3-ordinary-staging@1',
+              'carrier_head': (out / 'carrier-head.txt').read_text().strip(),
+              'observed_main': 'a18f19ddc923e553848a5165cdf29fb1b9add97a',
+              'product_parent': '91b386df809079884825b19a6b5d864b6e739172',
+              'artifact_id': 9023748767,
+              'artifact_zip_sha256': 'e37c1088ff5bcab1c89825535a468470cacc260a83c4d8db4e463a4b7bb59421',
+              'product_archive_bytes': 24972,
+              'product_archive_sha256': '376ddae342dad3829c17412c11db5aaae7b692eefc5aa2573b7c47b4aa231662',
+              'full_candidate_head': (out / 'full-candidate-head.txt').read_text().strip(),
+              'full_candidate_tree': (out / 'full-candidate-tree.txt').read_text().strip(),
+              'ordinary_staging_branch': 'staging/ssc-rd04-postpromotion-five-route-adjudication-ordinary-v1',
+              'ordinary_staging_head': (out / 'ordinary-staging-head.txt').read_text().strip(),
+              'ordinary_staging_tree': (out / 'ordinary-staging-tree.txt').read_text().strip(),
+              'permanent_paths': (out / 'product-paths.txt').read_text().splitlines(),
+              'ordinary_paths': (out / 'ordinary-paths.txt').read_text().splitlines(),
+              'permanent_path_count': 14,
+              'ordinary_path_count': 13,
+              'workflow_path_count': 1,
+              'source_requests_executed_by_stager': 0,
+              'route_executions': 0,
+              'new_transport_captures': 0,
+              'source_admissions_created_by_stager': 0,
+              'field_classifications_created': 0,
+              'field_terminalizations_created': 0,
+              'matrix_updates': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'focused_product_gate': 'pass',
+              'complete_release_gate': 'pass',
+              'clean_deterministic_replay': 'pass',
+              'ordinary_staging_published': True,
+              'permanent_product_published': False,
+          }
+          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          PYRECEIPT
+          printf 'complete\n' > "$OUT/STAGE"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ssc-rd04-postpromotion-five-route-v3-ordinary-stager-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-five-route-v3-ordinary-stager-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
