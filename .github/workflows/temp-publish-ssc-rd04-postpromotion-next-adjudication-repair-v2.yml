@@ -1,0 +1,129 @@
+name: TEMP publish repaired RD-04 postpromotion adjudication candidate v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/scripts/temp-publish-ssc-rd04-postpromotion-next-adjudication-repair-v2.sh'
+      - '.github/workflows/temp-publish-ssc-rd04-postpromotion-next-adjudication-repair-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+
+concurrency:
+  group: temp-publish-ssc-rd04-postpromotion-next-adjudication-repair-v2
+  cancel-in-progress: false
+
+env:
+  LIVE_MAIN_LEASE: a18f19ddc923e553848a5165cdf29fb1b9add97a
+  CANONICAL_PARENT: 91b386df809079884825b19a6b5d864b6e739172
+  PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-product-v1
+  OLD_PRODUCT_HEAD: 0e79772a84e99bce1a1ca9e78209c9ae5b55637a
+  OLD_PRODUCT_TREE: f3031844264107b0b329e7dd9af175eea8dd2456
+  SOURCE_ARTIFACT_ID: '9018606331'
+  SOURCE_ARTIFACT_BYTES: '297520724'
+  SOURCE_ARTIFACT_DIGEST: sha256:b7ab5b8ee55ba0a9d8d00fe7ce5b41e89b3109bbe0c717b407813e529dae1ab2
+  EPHEMERAL_CANDIDATE: 92613e1896c861d562fc789980ee46b4ef832f6f
+  EXPECTED_REPAIRED_TREE: a1c47f564452683a1c0fc830801d945c6a9a4b20
+  REPAIRED_WORKFLOW_BLOB: 4099df5c71ea26cda54bcfa2dbc4b5528c82e7b7
+  REPAIRED_WORKFLOW_SHA256: 9077132b5bbc18349bc96cb42bd08982a099541b2424f6499c2bc9b7ae4a7f21
+  REPAIRED_MANIFEST_BLOB: d98146f793c7aba3d2212404ea887306f59cc13b
+  REPAIRED_MANIFEST_SHA256: 2eb34993c661e88879b8acefea3a2e112a52ef54083984cf2f5b761f8db69a38
+  REPAIRED_SCHEMA_BLOB: 81c4857e67cb1eeb84980eb3845af48a5fdb3b17
+  REPAIRED_SCHEMA_SHA256: 6b197f44617599db9f7f155dad00ced800f531255eaa5fd46788b9a689b80126
+
+jobs:
+  publish:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Execute exact repaired-candidate publisher
+        id: publisher
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash .github/scripts/temp-publish-ssc-rd04-postpromotion-next-adjudication-repair-v2.sh
+
+      - name: Upload exact publisher receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2
+          path: |
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/EXIT_CODE
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/STAGE
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/receipt.json
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/publisher.log
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/SHA256SUMS
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/product-paths.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/repaired-paths.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/actual-product-paths.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/actual-repaired-paths.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/added-product-paths.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/intervening-main-paths.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/intervening-product-overlap.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/source-zip-test.log
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/source-internal-check.log
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/published-candidate.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/published-tree.txt
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 9
+
+      - name: Report exact publisher outcome
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R=/tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/receipt.json
+          test -s "$R"
+          state="$(jq -r .state "$R")"
+          stage="$(jq -r .failed_or_final_stage "$R")"
+          candidate="$(jq -r '.published_candidate // "none"' "$R")"
+          tree="$(jq -r '.published_tree // "none"' "$R")"
+          updated="$(jq -r .product_ref_updated "$R")"
+          {
+            printf '%s\n\n' 'RD-04 postpromotion adjudication repaired-candidate publisher completed.'
+            printf '%s\n' '```text'
+            printf 'state: %s\n' "$state"
+            printf 'stage: %s\n' "$stage"
+            printf 'old_product_head: %s\n' "$OLD_PRODUCT_HEAD"
+            printf 'published_candidate: %s\n' "$candidate"
+            printf 'published_tree: %s\n' "$tree"
+            printf 'product_ref_updated: %s\n' "$updated"
+            printf 'source_artifact: %s\n' "$SOURCE_ARTIFACT_ID"
+            printf 'source_artifact_digest: %s\n' "$SOURCE_ARTIFACT_DIGEST"
+            printf '%s\n' 'matrix_updates: 0' 'row_state_mutations: 0' 'class_closed: false'
+            printf '%s\n\n' '```'
+            printf '%s\n' 'The object is a product-ref publication receipt. It grants no route execution, field terminalization, row transition, class closure, cumulative-ledger, publication, adoption, or graph authority. The control question is whether the exact published head receives every native PR gate while current main remains path-disjoint.'
+          } > /tmp/comment.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+
+      - name: Preserve fail-closed conclusion
+        if: steps.publisher.outcome == 'failure'
+        shell: bash
+        run: exit 1
