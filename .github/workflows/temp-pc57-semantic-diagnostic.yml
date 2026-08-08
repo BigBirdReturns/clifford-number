@@ -1,0 +1,84 @@
+name: TEMP diagnose exact PC-57 semantic qualification
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pc57-semantic-diagnostic
+  cancel-in-progress: true
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct exact product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          out=/tmp/pc57-semantic-diagnostic
+          rm -rf "$out"
+          mkdir -p "$out/logs" "$out/repo"
+          for shard in .tmp/pc57/product.b64.0{0..8}; do tr -d '\r\n' < "$shard"; done | base64 -d > "$out/product.tar.gz"
+          test "$(sha256sum "$out/product.tar.gz" | awk '{print $1}')" = a714b950dc0755b9e110b4d5e541175aea7cf1891ddaf5444cbe1c4a250ea03f
+          tar -xzf "$out/product.tar.gz" -C "$out/repo"
+      - name: Run each semantic gate independently
+        shell: bash
+        run: |
+          set +e
+          out=/tmp/pc57-semantic-diagnostic
+          cd "$out/repo"
+          : > "$out/status.tsv"
+          run_gate() {
+            name="$1"
+            shift
+            echo "==> $name"
+            "$@" > "$out/logs/$name.log" 2>&1
+            code=$?
+            printf '%s\t%s\n' "$name" "$code" | tee -a "$out/status.tsv"
+            return 0
+          }
+
+          rm -rf build/research
+          run_gate standalone-pc57 node test/preference-linkage-repository-owner-immutable-owner-id-repository-id-transfer-lineage-assurance.test.js
+          run_gate floor-v55 node test/preference-custody-manifest-v55.test.js
+
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
+            version=$(basename "$test_file" .test.js | tr '/' '_')
+            run_gate "$version" node "$test_file"
+          done
+          run_gate preference-custody-base node test/preference-custody-manifest.test.js
+          run_gate no-magic-human-validator node tools/validate-no-magic-human-gate.mjs
+          run_gate no-magic-human-test node test/no-magic-human-gate.test.js
+          run_gate release-check npm run release:check
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          out = Path('/tmp/pc57-semantic-diagnostic')
+          rows = []
+          for line in (out / 'status.tsv').read_text().splitlines():
+              name, code = line.split('\t')
+              rows.append({'gate': name, 'exit_code': int(code), 'status': 'pass' if code == '0' else 'fail'})
+          summary = {
+              'schema_version': 'pc57-semantic-diagnostic@1',
+              'gates': rows,
+              'failed': [row['gate'] for row in rows if row['exit_code'] != 0]
+          }
+          (out / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pc57-semantic-diagnostic
+          path: /tmp/pc57-semantic-diagnostic
+          if-no-files-found: error
