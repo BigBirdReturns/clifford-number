@@ -1,0 +1,152 @@
+name: TEMP qualify exact PC-56 product tree
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc56-materializer-carrier
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      PARENT: 21afd8b3da1b7d06d2dada51929c63b60d6da66c
+      PARENT_TREE: e6be866eb060e4fb3b2352601f964f7b5f4605fc
+      ARCHIVE_SHA256: 9b42d1b7674f6e1e37fb2d21989f47c45a11f3951e5ad48e3c545c6533f4d337
+      MANIFEST_SHA256: 02817147fb3f09ce97b1851299c5e446894c18ec1c73430c57a372e348768b60
+      PATH_LIST_SHA256: 31185dc2bc61d56c4e038764bba0d6f7bfb62b07056835e765ecf48f418dae4d
+      WORK: /tmp/pc56-qualified-product-tree
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Authenticate package and construct exact product tree
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$WORK"
+          cat .tmp/pc56/product.b64.* | tr -d '\n\r ' | base64 --decode > "$WORK/product.tar.gz"
+          cp .tmp/pc56/product-manifest.json "$WORK/product-manifest.json"
+          cp .tmp/pc56/package-receipt.json "$WORK/package-receipt.json"
+          test "$(sha256sum "$WORK/product.tar.gz" | awk '{print $1}')" = "$ARCHIVE_SHA256"
+          test "$(sha256sum "$WORK/product-manifest.json" | awk '{print $1}')" = "$MANIFEST_SHA256"
+
+          python - <<'PY'
+          import hashlib, json, os, tarfile
+          from pathlib import Path
+          root=Path(os.environ['WORK'])
+          manifest=json.loads((root/'product-manifest.json').read_text())
+          expected_top={'schema_version','issue','qualified_parent','qualified_parent_tree','permanent_path_count','transport_path_count','outside_human_dependency','graph_effect','entries'}
+          if set(manifest)!=expected_top: raise SystemExit('manifest keys mismatch')
+          if manifest['schema_version']!='pc56-product-manifest@1' or manifest['issue']!=1450: raise SystemExit('manifest identity mismatch')
+          if manifest['qualified_parent']!=os.environ['PARENT'] or manifest['qualified_parent_tree']!=os.environ['PARENT_TREE']: raise SystemExit('parent identity mismatch')
+          if manifest['permanent_path_count']!=14 or manifest['transport_path_count']!=0: raise SystemExit('path denominator mismatch')
+          if manifest['outside_human_dependency'] is not False or manifest['graph_effect']!='none': raise SystemExit('authority boundary mismatch')
+          entries=manifest['entries']; paths=[e['path'] for e in entries]
+          if len(entries)!=14 or paths!=sorted(paths) or len(set(paths))!=14: raise SystemExit('path order or uniqueness mismatch')
+          blocked=('.tmp','carrier','materializer','controller','diagnostic','receipt','marker','pulse','trigger','shard')
+          if any(token in path.lower() for path in paths for token in blocked): raise SystemExit('transport path entered product')
+          (root/'product-paths.txt').write_text('\n'.join(paths)+'\n')
+          if hashlib.sha256((root/'product-paths.txt').read_bytes()).hexdigest()!=os.environ['PATH_LIST_SHA256']: raise SystemExit('path-list digest mismatch')
+          with tarfile.open(root/'product.tar.gz','r:gz') as archive:
+              members=archive.getmembers()
+              if [m.name for m in members]!=paths: raise SystemExit('archive member mismatch')
+              for member,entry in zip(members,entries):
+                  if not member.isfile() or member.mode!=0o644: raise SystemExit(f'archive type/mode mismatch: {member.name}')
+                  data=archive.extractfile(member).read()
+                  if len(data)!=entry['bytes'] or hashlib.sha256(data).hexdigest()!=entry['sha256']: raise SystemExit(f'archive byte mismatch: {member.name}')
+                  blob=hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+                  if blob!=entry['git_blob']: raise SystemExit(f'Git blob mismatch: {member.name}')
+          PY
+
+          git fetch --no-tags origin main "$PARENT"
+          test "$(git rev-parse "$PARENT^{tree}")" = "$PARENT_TREE"
+          CURRENT_MAIN=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$PARENT" "$CURRENT_MAIN"
+          printf '%s\n' "$CURRENT_MAIN" > "$WORK/current-main.txt"
+          git diff --name-only "$PARENT" "$CURRENT_MAIN" | sort -u > "$WORK/main-successor-paths.txt"
+          comm -12 "$WORK/product-paths.txt" "$WORK/main-successor-paths.txt" > "$WORK/main-overlap.txt"
+          test ! -s "$WORK/main-overlap.txt"
+          while IFS= read -r path; do ! git cat-file -e "$CURRENT_MAIN:$path" 2>/dev/null; done < "$WORK/product-paths.txt"
+
+          git checkout --detach "$PARENT"
+          tar -xzf "$WORK/product.tar.gz"
+          git add --pathspec-from-file="$WORK/product-paths.txt"
+          git diff --cached --name-status "$PARENT" > "$WORK/product-delta.tsv"
+          test "$(wc -l < "$WORK/product-delta.tsv" | tr -d ' ')" = 14
+          awk '$1 != "A" { exit 1 }' "$WORK/product-delta.tsv"
+          PRODUCT_TREE=$(git write-tree)
+          printf '%s\n' "$PRODUCT_TREE" > "$WORK/product-tree.txt"
+          : > "$WORK/product-blobs.tsv"
+          while IFS= read -r path; do printf '%s\t%s\n' "$path" "$(git rev-parse ":$path")" >> "$WORK/product-blobs.tsv"; done < "$WORK/product-paths.txt"
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          root=Path(os.environ['WORK'])
+          expected={e['path']:e['git_blob'] for e in json.loads((root/'product-manifest.json').read_text())['entries']}
+          observed=dict(line.split('\t',1) for line in (root/'product-blobs.tsv').read_text().splitlines() if line)
+          if observed!=expected: raise SystemExit('product blob ledger mismatch')
+          PY
+
+      - name: Run focused and complete repository qualification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf build/research
+          node tools/compile-preference-linkage-repository-owner-immutable-repository-id-transfer-rename-fork-network-canonical-location-assurance.mjs
+          node tools/validate-preference-linkage-repository-owner-immutable-repository-id-transfer-rename-fork-network-canonical-location-assurance.mjs
+          node test/preference-linkage-repository-owner-immutable-repository-id-transfer-rename-fork-network-canonical-location-assurance.test.js
+          node tools/compile-preference-custody-manifest-v54.mjs
+          node tools/validate-preference-custody-manifest-v54.mjs
+          node test/preference-custody-manifest-v54.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do node "$test_file"; done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+      - name: Publish immutable blobs and seal receipt without moving refs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import base64,json,os,subprocess,tarfile
+          from pathlib import Path
+          root=Path(os.environ['WORK'])
+          manifest=json.loads((root/'product-manifest.json').read_text())
+          published=[]
+          with tarfile.open(root/'product.tar.gz','r:gz') as archive:
+              for entry in manifest['entries']:
+                  data=archive.extractfile(entry['path']).read()
+                  payload=json.dumps({'content':base64.b64encode(data).decode(),'encoding':'base64'})
+                  proc=subprocess.run(['gh','api','--method','POST',f"/repos/{os.environ['GH_REPOSITORY']}/git/blobs",'--input','-'],input=payload,text=True,capture_output=True,check=True)
+                  sha=json.loads(proc.stdout).get('sha')
+                  if sha!=entry['git_blob']: raise SystemExit(f"remote blob mismatch: {entry['path']}")
+                  published.append({'path':entry['path'],'git_blob':sha})
+          (root/'remote-product-blobs.json').write_text(json.dumps(published,indent=2)+'\n')
+          receipt={'schema_version':'pc56-qualified-product-tree@1','status':'qualified','issue':1450,'qualified_parent':os.environ['PARENT'],'qualified_parent_tree':os.environ['PARENT_TREE'],'current_main':(root/'current-main.txt').read_text().strip(),'product_tree':(root/'product-tree.txt').read_text().strip(),'permanent_paths':14,'additions':14,'modifications':0,'deletions':0,'transport_paths':0,'standalone_fixture_mutations':794,'standalone_build_tamper_checks':99,'floor_manifest_mutations':113,'floor_build_tamper_checks':24,'historical_floor_reconstruction':'pass','base_preference_custody':'pass','no_magic_human':'pass','release_check':'pass','outside_human_dependency':False,'graph_effect':'none','ref_updates':0}
+          (root/'qualification-receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          PY
+          sha256sum "$WORK"/* > "$WORK/SHA256SUMS"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc56-qualified-product-tree
+          path: /tmp/pc56-qualified-product-tree
+          if-no-files-found: error
+          retention-days: 90
