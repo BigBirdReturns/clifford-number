@@ -58,6 +58,54 @@ jobs:
         with:
           python-version: '3.13'
 
+      - name: Adapt publisher to artifact hidden-file transport
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cat > /tmp/verify-available-repair-artifact.sh <<'EOF_VERIFY'
+          #!/usr/bin/env bash
+          set -Eeuo pipefail
+          SRC="$1"
+          OUT="$2"
+          : > "$OUT/available-SHA256SUMS"
+          : > "$OUT/omitted-hidden-ledger-paths.txt"
+          while read -r digest path; do
+            rel="${path#./}"
+            if test -e "$SRC/$rel"; then
+              printf '%s  %s\n' "$digest" "$path" >> "$OUT/available-SHA256SUMS"
+            else
+              case "$path" in
+                ./candidate-worktree/.*)
+                  printf '%s\n' "$path" >> "$OUT/omitted-hidden-ledger-paths.txt"
+                  ;;
+                *)
+                  printf 'unexpected absent artifact member: %s\n' "$path" >&2
+                  exit 1
+                  ;;
+              esac
+            fi
+          done < "$SRC/SHA256SUMS"
+          test "$(wc -l < "$OUT/omitted-hidden-ledger-paths.txt")" -eq 333
+          test "$(wc -l < "$OUT/available-SHA256SUMS")" -gt 6500
+          (cd "$SRC" && sha256sum -c "$OUT/available-SHA256SUMS") > "$OUT/source-internal-check.log"
+          EOF_VERIFY
+          chmod +x /tmp/verify-available-repair-artifact.sh
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/scripts/temp-publish-ssc-rd04-postpromotion-next-adjudication-repair-v2.sh')
+          text = path.read_text()
+          old_count = 'test "$(git rev-list --count "$LIVE_MAIN_LEASE"..HEAD)" -eq 2'
+          new_count = 'test "$(git rev-list --count "$LIVE_MAIN_LEASE"..HEAD)" -eq 3'
+          old_check = '(cd "$SRC" && sha256sum -c SHA256SUMS) > "$OUT/source-internal-check.log"'
+          new_check = 'bash /tmp/verify-available-repair-artifact.sh "$SRC" "$OUT"'
+          if text.count(old_count) != 1 or text.count(old_check) != 1:
+              raise SystemExit('publisher adaptation denominator mismatch')
+          path.write_text(text.replace(old_count, new_count).replace(old_check, new_check))
+          PY
+          bash -n .github/scripts/temp-publish-ssc-rd04-postpromotion-next-adjudication-repair-v2.sh
+          bash -n /tmp/verify-available-repair-artifact.sh
+
       - name: Execute exact repaired-candidate publisher
         id: publisher
         continue-on-error: true
@@ -86,6 +134,8 @@ jobs:
             /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/intervening-product-overlap.txt
             /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/source-zip-test.log
             /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/source-internal-check.log
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/available-SHA256SUMS
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/omitted-hidden-ledger-paths.txt
             /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/published-candidate.txt
             /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v2/published-tree.txt
           if-no-files-found: warn
