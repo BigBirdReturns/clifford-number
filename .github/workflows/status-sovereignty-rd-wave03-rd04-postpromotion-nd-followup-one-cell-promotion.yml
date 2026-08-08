@@ -41,7 +41,7 @@ jobs:
       EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
       PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion
       PRODUCT_SCHEMA: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.schema.json
-      RELEASE_STATUS: ${{ runner.temp }}/rd04-nd-followup-one-cell-post-release-status.txt
+      RELEASE_STATUS: /tmp/rd04-nd-followup-one-cell-post-release-status.txt
     steps:
       - uses: actions/checkout@v4
         with:
@@ -132,7 +132,7 @@ jobs:
             data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion
             docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.md
             schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.schema.json
-            ${{ runner.temp }}/rd04-nd-followup-one-cell-post-release-status.txt
+            /tmp/rd04-nd-followup-one-cell-post-release-status.txt
           if-no-files-found: error
           retention-days: 90
           compression-level: 9
