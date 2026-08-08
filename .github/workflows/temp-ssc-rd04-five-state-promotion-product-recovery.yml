@@ -1,0 +1,124 @@
+name: TEMP recover exact RD-04 five-state promotion product
+
+on:
+  push:
+    branches:
+      - 'agent/ssc-rd04-postpromotion-recovery-scratch-do-not-use'
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    if: >-
+      (github.event_name == 'push' && github.ref_name == 'agent/ssc-rd04-postpromotion-recovery-scratch-do-not-use') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-recovery-scratch-do-not-use' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SEALED_PARENT: fdcbfbcd7e5a373444b25d3132d058669f8b3a71
+      SOURCE_BRANCH: agent/ssc-rd04-five-state-promotion-materializer-v1
+      SOURCE_COMMIT: a0e0d9c15e68eec01938ec486942875f1b9caff0
+      ARCHIVE_BYTES: '45104'
+      ARCHIVE_SHA256: d7ee41597453a7c4eaa6a1de0bdb0808ae98ebc878d68e20fff7f5728a718b05
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Verify exact one-path recovery carrier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = "$SEALED_PARENT"
+          test "$(git rev-list --count HEAD^..HEAD)" = 1
+          test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/temp-ssc-rd04-five-state-promotion-product-recovery.yml'
+          git diff --check HEAD^ HEAD
+
+      - name: Recover and authenticate exact product archive
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-five-state-promotion-product-recovery
+          rm -rf "$OUT"
+          mkdir -p "$OUT/chunks" "$OUT/product"
+          git fetch origin "$SOURCE_BRANCH" --depth=32
+          test "$(git rev-parse FETCH_HEAD)" = "$SOURCE_COMMIT"
+
+          for index in 00 01 02 03 04; do
+            path=".tmp/ssc-rd04-five-state-promotion-materializer/payload-$index.b64"
+            git show "$SOURCE_COMMIT:$path" >"$OUT/chunks/payload-$index.b64"
+          done
+          cat >"$OUT/chunk-sha256" <<'EOF'
+          d3e7ee9c26dfe557ec08458a7b9fc284f07de0cb8bf5095aee6edc9e0bdc309b  chunks/payload-00.b64
+          a80195e6feb31bee4202e6b1fa9cc45ab28d79061957a61ccfd5a5fedfe7a6a6  chunks/payload-01.b64
+          949cc89ba9a35fff63283a5ebc010262b8cf36694a5effea02d59d221d4c9af1  chunks/payload-02.b64
+          d9a450cc508cbe6eda74b078972d1b90e391bf1d592492668197f143a98087da  chunks/payload-03.b64
+          a3d2630960e55c8f2f27114c22d1dd4be7ca70c02b44f4a36428e93b76f8a6a3  chunks/payload-04.b64
+          EOF
+          (cd "$OUT" && sha256sum -c chunk-sha256)
+
+          cat "$OUT"/chunks/payload-*.b64 | base64 -d >"$OUT/product.tar.xz"
+          test "$(stat -c %s "$OUT/product.tar.xz")" = "$ARCHIVE_BYTES"
+          test "$(sha256sum "$OUT/product.tar.xz" | cut -d' ' -f1)" = "$ARCHIVE_SHA256"
+          tar -xJf "$OUT/product.tar.xz" -C "$OUT/product"
+
+          cat >"$OUT/expected-product-paths" <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/cell-promotion-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-decisions.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-input-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/remaining-open-field-census.json
+          docs/milestones/ssc-rd-wave03-rd04-five-state-promotion.md
+          schemas/status-sovereignty-rd-wave03-rd04-five-state-promotion.schema.json
+          test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          EOF
+          (cd "$OUT/product" && find . -type f -printf '%P\n' | sort) >"$OUT/actual-product-paths"
+          diff -u "$OUT/expected-product-paths" "$OUT/actual-product-paths"
+
+          python - <<'PY'
+          import hashlib, json, os, subprocess
+          from pathlib import Path
+          out=Path('/tmp/ssc-rd04-five-state-promotion-product-recovery')
+          paths=(out/'actual-product-paths').read_text().splitlines()
+          receipt={
+            'schema_version':'ssc-rd04-five-state-promotion-product-recovery@1',
+            'recovery_head':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+            'recovery_parent':os.environ['SEALED_PARENT'],
+            'source_branch':os.environ['SOURCE_BRANCH'],
+            'source_commit':os.environ['SOURCE_COMMIT'],
+            'archive_bytes':int(os.environ['ARCHIVE_BYTES']),
+            'archive_sha256':os.environ['ARCHIVE_SHA256'],
+            'permanent_paths':len(paths),
+            'path_list_sha256':hashlib.sha256(('\n'.join(paths)+'\n').encode()).hexdigest(),
+            'product_authority':'none',
+            'merge_authority':'none',
+            'matrix_updates':0,
+            'row_state_mutations':0,
+            'class_closed':False,
+            'outside_human_dependency':False,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+          }
+          (out/'receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          PY
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum >SHA256SUMS)
+
+      - name: Preserve exact recovered product
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-promotion-exact-product-recovery
+          path: /tmp/ssc-rd04-five-state-promotion-product-recovery
+          if-no-files-found: error
+          retention-days: 90
