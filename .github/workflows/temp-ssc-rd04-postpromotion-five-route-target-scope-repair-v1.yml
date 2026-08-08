@@ -1,0 +1,280 @@
+name: TEMP repair RD-04 five-route target-field scope v1
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-ssc-rd04-postpromotion-five-route-target-scope-repair-v1.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      MAIN_HEAD: f0bf84537bdcb8b9f9de57c392ad83d01bac6f35
+      REPAIR_BRANCH: repair/ssc-rd04-postpromotion-five-route-target-scope-v1
+      REPAIR_HEAD: 27a01a69bb8c9e2fe555d514cf8ae51675f644b9
+      CARRIER_BRANCH: agent/ssc-rd04-postpromotion-five-route-target-scope-repair-carrier-v1
+      CARRIER_PATH: .github/workflows/temp-ssc-rd04-postpromotion-five-route-target-scope-repair-v1.yml
+      WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.yml
+      REPAIRED_WORKFLOW_BLOB: b66118cb3c08e0c3f38bf86aefaa1472c9eff9a2
+      ARCHIVE_BYTES: '18764'
+      ARCHIVE_SHA256: a0efdbd363c2a076fcd5fc392a15cd973f970adf877366be2c937e09553f0360
+      BASE64_BYTES: '25020'
+      BASE64_SHA256: b031090dbed1abfa5b1aa8f322104aa53c48595817f654ba4e6f2a970827a18b
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Reconstruct, qualify, and publish bounded repair
+        id: repair
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-five-route-target-scope-repair-v1"
+          WT="$RUNNER_TEMP/ssc-rd04-postpromotion-five-route-target-scope-repair-wt"
+          rm -rf "$OUT" "$WT"
+          mkdir -p "$OUT"
+          printf 'initializing\n' >"$OUT/STAGE"
+          cat >"$OUT/BOUNDARY" <<'EOF_BOUNDARY'
+          source_requests=0
+          route_executions=0
+          reviewed_source_admissions=4
+          promotion_candidates=4
+          held_open_cells=2
+          matrix_updates=0
+          field_terminalizations=0
+          row_state_mutations=0
+          class_closed=false
+          cumulative_ledger_effect=none
+          outside_human_dependency=false
+          publication_effect=none
+          adoption_effect=none
+          graph_effect=none
+          EOF_BOUNDARY
+          exec > >(tee "$OUT/repair.log") 2>&1
+          finish() {
+            rc=$?
+            trap - EXIT
+            printf '%s\n' "$rc" >"$OUT/EXIT_CODE"
+            (cd "$OUT" && find . -type f ! -name SHA256SUMS ! -name repair.log -print0 | LC_ALL=C sort -z | xargs -0 sha256sum >SHA256SUMS)
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          printf 'bind-live-leases\n' >"$OUT/STAGE"
+          test "${{ github.event.pull_request.head.ref }}" = "$CARRIER_BRANCH"
+          test "${{ github.event.pull_request.head.sha }}" = "$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$MAIN_HEAD"
+          test "$(git rev-list --count "$MAIN_HEAD"..HEAD)" -eq 1
+          test "$(git diff --name-only "$MAIN_HEAD" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$MAIN_HEAD" HEAD)" = "$CARRIER_PATH"
+          git diff --check "$MAIN_HEAD" HEAD
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$MAIN_HEAD"
+          test "$(git ls-remote --heads origin "refs/heads/$REPAIR_BRANCH" | awk '{print $1}')" = "$REPAIR_HEAD"
+
+          printf 'reconstruct-payload\n' >"$OUT/STAGE"
+          cat >"$OUT/chunk-ledger.tsv" <<'EOF_CHUNKS'
+          00	ab2012bff51d7f6352610d2b0a68dea94ae3f679	5000	925eb160ce33cdd22f08106b03e2257aea07671282ea1c0915f4f608aaf23cc8
+          01	ccd893d422dbd1b39df174aada201411ec40cc40	5000	acc3847bccce5f761110440447db520549393589b1db4f4402bc1f09a6ef6f69
+          02	2ae6d872b5840721c61b356eb7ad2299870468cc	5000	91f3f5199a85112e86d938685325064ce7e0a32e8028da521e6b34737d6d6c77
+          03	4dd54a54084a2906b7010cc56e93d431790a87a4	5000	4349e2ed6ba567ed2dbd6d0e687be463d8b9286b53055c84a2eddd2be58f98e1
+          04	f85ad23748f94050821bab518e4340756362956a	5000	cf9a6a7fd4c3da083dfc90da1a2e0768ba60c7d5c90abccfccaf3cf7dce27ba2
+          05	47ff86ad4495467099bc872d2204d3a975b8a20c	20	fe1ad05fa4278b9f3afb5d4496757e1efa944bcf353675c3fa4116044779877b
+          EOF_CHUNKS
+          : >"$OUT/payload.b64"
+          while IFS=$'\t' read -r ordinal blob expected_bytes expected_sha; do
+            gh api "repos/$GITHUB_REPOSITORY/git/blobs/$blob" --jq .content | tr -d '\n' | base64 -d >"$OUT/chunk-$ordinal.b64"
+            test "$(wc -c <"$OUT/chunk-$ordinal.b64")" -eq "$expected_bytes"
+            test "$(sha256sum "$OUT/chunk-$ordinal.b64" | awk '{print $1}')" = "$expected_sha"
+            cat "$OUT/chunk-$ordinal.b64" >>"$OUT/payload.b64"
+          done <"$OUT/chunk-ledger.tsv"
+          test "$(wc -c <"$OUT/payload.b64")" -eq "$BASE64_BYTES"
+          test "$(sha256sum "$OUT/payload.b64" | awk '{print $1}')" = "$BASE64_SHA256"
+          base64 -d "$OUT/payload.b64" >"$OUT/repair.tar.xz"
+          test "$(wc -c <"$OUT/repair.tar.xz")" -eq "$ARCHIVE_BYTES"
+          test "$(sha256sum "$OUT/repair.tar.xz" | awk '{print $1}')" = "$ARCHIVE_SHA256"
+          xz -t "$OUT/repair.tar.xz"
+          cat >"$OUT/expected-paths.txt" <<'EOF_PATHS'
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/promotion-candidate-protocol.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/source-adjudications.json
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+          EOF_PATHS
+          LC_ALL=C sort -o "$OUT/expected-paths.txt" "$OUT/expected-paths.txt"
+          tar -tJf "$OUT/repair.tar.xz" | LC_ALL=C sort >"$OUT/archive-paths.txt"
+          diff -u "$OUT/expected-paths.txt" "$OUT/archive-paths.txt"
+          python - "$OUT/archive-paths.txt" <<'PYSAFE'
+          from pathlib import Path, PurePosixPath
+          import sys
+          for raw in Path(sys.argv[1]).read_text().splitlines():
+              p = PurePosixPath(raw)
+              if p.is_absolute() or '..' in p.parts or not raw:
+                  raise SystemExit(f'unsafe archive path: {raw!r}')
+          PYSAFE
+          cat >"$OUT/expected-file-ledger.tsv" <<'EOF_LEDGER'
+          522ec8503299c0458d45f43f23512c8ff90ac0f2	19476	09cc77b74c3ed0c63f4c99f57df84bd9a8069f7f0ab72d10c0cdd202e5ff93fc	data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json
+          d2fce7e6ec725095cc59ef4f6f0a19d64921a8d5	6392	fe96723824c26a8faf5e00e38a8d77c562ad3f2998cdfd5fdf763b5c4465712c	data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/product-manifest.json
+          518cd7b836290baa9ef825410d973116d6b825cb	7509	262e6069926b941d0ca82ca573b055a1331bce1e848b4eed50777931aca65030	data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/promotion-candidate-protocol.json
+          3b8e43073f9828d80d39a9dd2baadea471d7a301	21649	cbd69bb511268b9b6882b4eb359d92f61ac03ace468f8b4ee3de4693f3202eaf	data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/source-adjudications.json
+          39fe7835b9725f09f5b911104067de6750ba5eae	91771	7d348d23f84e89eabbe75aadf26c820adfad5e6d82c95a5af220076c5cd1e07e	schemas/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.schema.json
+          155334d2b5d28cea1f962bb16e08f05aabf1a0be	7820	fc0100c764c916df98708a10cf91fd96f74463b698a5c1eb21113daaf528bc72	test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js
+          194f52ac592bf8d629abea3e0e838b007bea31f9	14318	5af4962c8e73777cca8efd83d66368facbbae8da7c51ddaa1bb7f6c740b5663d	tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+          EOF_LEDGER
+
+          printf 'apply-repair\n' >"$OUT/STAGE"
+          git fetch --no-tags origin "refs/heads/$REPAIR_BRANCH:refs/remotes/origin/$REPAIR_BRANCH"
+          test "$(git rev-parse "refs/remotes/origin/$REPAIR_BRANCH")" = "$REPAIR_HEAD"
+          git worktree add --detach "$WT" "refs/remotes/origin/$REPAIR_BRANCH"
+          tar -xJf "$OUT/repair.tar.xz" -C "$WT"
+          cd "$WT"
+          test "$(git hash-object "$WORKFLOW_PATH")" = "$REPAIRED_WORKFLOW_BLOB"
+          git diff --name-only --diff-filter=M | LC_ALL=C sort >"$OUT/actual-repair-paths.txt"
+          diff -u "$OUT/expected-paths.txt" "$OUT/actual-repair-paths.txt"
+          test -z "$(git diff --name-only --diff-filter=ACDRTUXB)"
+          while IFS=$'\t' read -r expected_blob expected_bytes expected_sha path; do
+            test -f "$path"
+            test "$(wc -c <"$path")" -eq "$expected_bytes"
+            test "$(sha256sum "$path" | awk '{print $1}')" = "$expected_sha"
+            test "$(git hash-object "$path")" = "$expected_blob"
+          done <"$OUT/expected-file-ledger.tsv"
+
+          printf 'focused-qualification\n' >"$OUT/STAGE"
+          python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+          python - <<'PYYAML'
+          from pathlib import Path
+          import yaml
+          value = yaml.safe_load(Path('.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.yml').read_text())
+          if not isinstance(value, dict):
+              raise SystemExit('workflow YAML did not parse as an object')
+          print('workflow_yaml_parse=pass')
+          PYYAML
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+          python - <<'PYSCHEMA'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          schema = json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.schema.json').read_text())
+          Draft202012Validator.check_schema(schema)
+          validator = Draft202012Validator(schema)
+          root = Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication')
+          names = ['capture-custody.json','source-adjudications.json','field-adjudications.json','pdf-review-receipts.json','promotion-candidate-protocol.json','selected-followup-protocol.json','index.json','product-manifest.json']
+          for name in names:
+              value = json.loads((root / name).read_text())
+              errors = sorted(validator.iter_errors(value), key=lambda error: list(error.path))
+              if errors:
+                  raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
+          print(f'recursive_schema_validation=pass objects={len(names)}')
+          PYSCHEMA
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs | tee "$OUT/validation.json"
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js | tee "$OUT/adversarial.json"
+          grep -q '64 adversarial refusals PASS' "$OUT/adversarial.json"
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+
+          printf 'complete-release-gate\n' >"$OUT/STAGE"
+          npm run release:check
+
+          printf 'clean-replay\n' >"$OUT/STAGE"
+          git restore --staged --worktree .
+          git clean -fdx
+          tar -xJf "$OUT/repair.tar.xz" -C "$WT"
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs >"$OUT/validation-replay.json"
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js >"$OUT/adversarial-replay.json"
+          grep -q '64 adversarial refusals PASS' "$OUT/adversarial-replay.json"
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --name-only --diff-filter=M | LC_ALL=C sort >"$OUT/final-repair-paths.txt"
+          diff -u "$OUT/expected-paths.txt" "$OUT/final-repair-paths.txt"
+          test -z "$(git status --porcelain=v1 --untracked-files=all | grep '^??' || true)"
+          while IFS=$'\t' read -r expected_blob expected_bytes expected_sha path; do
+            test "$(wc -c <"$path")" -eq "$expected_bytes"
+            test "$(sha256sum "$path" | awk '{print $1}')" = "$expected_sha"
+            test "$(git hash-object "$path")" = "$expected_blob"
+          done <"$OUT/expected-file-ledger.tsv"
+
+          printf 'publish-repair-branch\n' >"$OUT/STAGE"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$MAIN_HEAD"
+          test "$(git ls-remote --heads origin "refs/heads/$REPAIR_BRANCH" | awk '{print $1}')" = "$REPAIR_HEAD"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- $(cat "$OUT/expected-paths.txt")
+          git commit -m 'Restrict RD-04 adjudication evidence to frozen route targets'
+          REPAIR_COMMIT=$(git rev-parse HEAD)
+          REPAIR_TREE=$(git rev-parse 'HEAD^{tree}')
+          test "$(git rev-parse HEAD^)" = "$REPAIR_HEAD"
+          test "$(git diff --name-only "$REPAIR_HEAD" HEAD | LC_ALL=C sort)" = "$(cat "$OUT/expected-paths.txt")"
+          printf '%s\n' "$REPAIR_COMMIT" >"$OUT/repair-commit.txt"
+          printf '%s\n' "$REPAIR_TREE" >"$OUT/repair-tree.txt"
+          git ls-tree -r HEAD -- $(cat "$OUT/expected-paths.txt") >"$OUT/repair-tree-rows.txt"
+          git push --force-with-lease="refs/heads/$REPAIR_BRANCH:$REPAIR_HEAD" origin HEAD:"refs/heads/$REPAIR_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$REPAIR_BRANCH" | awk '{print $1}')" = "$REPAIR_COMMIT"
+          printf 'qualified_repair_published\n' >"$OUT/STAGE"
+          cat >"$OUT/receipt.json" <<EOF_RECEIPT
+          {
+            "status": "qualified_repair_published",
+            "main_head": "$MAIN_HEAD",
+            "repair_parent": "$REPAIR_HEAD",
+            "repair_commit": "$REPAIR_COMMIT",
+            "repair_tree": "$REPAIR_TREE",
+            "permanent_paths_changed": 8,
+            "workflow_paths_changed": 1,
+            "nonworkflow_paths_changed": 7,
+            "promotion_candidates": 4,
+            "held_open_cells": 2,
+            "source_requests": 0,
+            "route_executions": 0,
+            "matrix_updates": 0,
+            "field_terminalizations": 0,
+            "row_state_mutations": 0,
+            "class_closed": false,
+            "outside_human_dependency": false,
+            "publication_effect": "none",
+            "adoption_effect": "none",
+            "graph_effect": "none"
+          }
+          EOF_RECEIPT
+
+      - name: Upload repair qualification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-five-route-target-scope-repair-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-five-route-target-scope-repair-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce repair result
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-five-route-target-scope-repair-v1"
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = qualified_repair_published
+          test -s "$OUT/receipt.json"
