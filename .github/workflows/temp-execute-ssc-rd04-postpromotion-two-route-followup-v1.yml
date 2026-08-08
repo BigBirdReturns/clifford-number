@@ -1,0 +1,431 @@
+name: TEMP execute RD-04 postpromotion two-route follow-up v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/scripts/temp-execute-ssc-rd04-postpromotion-two-route-followup-v1.py'
+      - '.github/workflows/temp-execute-ssc-rd04-postpromotion-two-route-followup-v1.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rd04-postpromotion-two-route-followup-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+jobs:
+  execute:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-two-route-followup-execution-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      CANONICAL_PARENT: 048e9d13a2555d8e6fabdbee5f45aea858f919b7
+      CARRIER_BRANCH: agent/ssc-rd04-postpromotion-two-route-followup-execution-v1
+      SCRIPT: .github/scripts/temp-execute-ssc-rd04-postpromotion-two-route-followup-v1.py
+      WORKFLOW: .github/workflows/temp-execute-ssc-rd04-postpromotion-two-route-followup-v1.yml
+      OUT: ${{ runner.temp }}/ssc-rd04-postpromotion-two-route-followup-execution-v1
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Bind exact carrier, canonical parent, and frozen authority
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          cat >"$RUNNER_TEMP/expected-carrier-paths" <<'EOF'
+          .github/scripts/temp-execute-ssc-rd04-postpromotion-two-route-followup-v1.py
+          .github/workflows/temp-execute-ssc-rd04-postpromotion-two-route-followup-v1.yml
+          EOF
+          LC_ALL=C sort -o "$RUNNER_TEMP/expected-carrier-paths" "$RUNNER_TEMP/expected-carrier-paths"
+
+          test "$(git rev-parse HEAD~2)" = "$CANONICAL_PARENT"
+          test "$(git rev-list --count "$CANONICAL_PARENT"..HEAD)" -eq 2
+          git diff --name-only --diff-filter=ACDMRTUXB "$CANONICAL_PARENT" HEAD | LC_ALL=C sort >"$RUNNER_TEMP/actual-carrier-paths"
+          git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD | LC_ALL=C sort >"$RUNNER_TEMP/added-carrier-paths"
+          diff -u "$RUNNER_TEMP/expected-carrier-paths" "$RUNNER_TEMP/actual-carrier-paths"
+          diff -u "$RUNNER_TEMP/expected-carrier-paths" "$RUNNER_TEMP/added-carrier-paths"
+          git diff --check "$CANONICAL_PARENT" HEAD
+
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/main)" = "$CANONICAL_PARENT"
+
+          test "$(git hash-object "$SCRIPT")" = 60249a516dd4df53a51ea891601a76116a3215b3
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/selected-followup-protocol.json)" = 7bbafd8f8c6c915442770ebbeca85b37afba8047
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json)" = 522ec8503299c0458d45f43f23512c8ff90ac0f2
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promoted-partial-field-matrix.json)" = 66896190dd575f9867f1e121d845acfb4d27f56f
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promotion-summary.json)" = 5e0adc541a22c9b0bf4cd8a059bf083e08831a15
+
+          PYTHONPYCACHEPREFIX="$RUNNER_TEMP/pycache" python -m py_compile "$SCRIPT"
+          python "$SCRIPT" --self-test
+          python "$SCRIPT" --dry-run >"$RUNNER_TEMP/execution-plan.json"
+
+          python - "$RUNNER_TEMP/execution-plan.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          plan = json.loads(Path(sys.argv[1]).read_text())
+          assert plan["schema_version"] == "ssc-rd04-postpromotion-two-route-followup-execution-plan@1"
+          assert plan["canonical_parent"] == "048e9d13a2555d8e6fabdbee5f45aea858f919b7"
+          assert plan["fixed_route_count"] == 2
+          assert plan["maximum_logical_route_attempts"] == 2
+          assert plan["maximum_physical_requests_including_redirects"] == 2
+          assert plan["parallel_workers"] == 1
+          assert plan["route_ids"] == [
+              "RD04-W03-PPN-ND-FU-001",
+              "RD04-W03-PPN-ND-FU-002",
+          ]
+          assert plan["target_decision_ids"] == [
+              "RD04-PPN-ND-OPERATIVE-STATE-IMPLEMENTATION-AUTHORITY-AND-VERSION",
+              "RD04-PPN-ND-ABAWD-OR-WORK-REQUIREMENT-WAIVER-STATE-AND-GOVERNING-PERIOD",
+          ]
+          assert len(plan["held_decisions"]) == 2
+          assert all(item["current_cell_state"] == "still_open" for item in plan["held_decisions"])
+          assert all(item["current_cell_terminal"] is False for item in plan["held_decisions"])
+          for key in (
+              "source_admission_effect",
+              "field_classification_effect",
+              "field_terminalization_effect",
+              "matrix_effect",
+              "row_state_effect",
+              "class_effect",
+              "cumulative_ledger_effect",
+              "publication_effect",
+              "adoption_effect",
+              "graph_effect",
+          ):
+              assert plan[key] == "none"
+          assert plan["outside_human_dependency"] is False
+          print("execution_plan=pass routes=2 logical=2 physical=2")
+          PY
+
+      - name: Reproduce current product and repository gates before transport
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2'
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+          value = yaml.safe_load(Path(
+              '.github/workflows/temp-execute-ssc-rd04-postpromotion-two-route-followup-v1.yml'
+          ).read_text())
+          if not isinstance(value, dict):
+              raise SystemExit('carrier workflow YAML did not parse as an object')
+          print('carrier_workflow_yaml_parse=pass')
+          PY
+
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Execute exactly two frozen GET attempts
+        id: transport
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          set +e
+          EXECUTE_RD04_POSTPROMOTION_FOLLOWUP=YES \
+            python "$SCRIPT" --execute --output "$OUT"
+          code=$?
+          set -e
+
+          mkdir -p "$OUT"
+          printf '%s\n' "$code" >"$OUT/workflow-exit-code.txt"
+          git rev-parse HEAD >"$OUT/workflow-carrier-head.txt"
+          git rev-parse HEAD~2 >"$OUT/workflow-canonical-parent.txt"
+          cp "$RUNNER_TEMP/execution-plan.json" "$OUT/preexecution-plan.json"
+
+          rm -f "$OUT/SHA256SUMS"
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 |
+              LC_ALL=C sort -z |
+              xargs -0 sha256sum >SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+          echo "exit_code=$code" >>"$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Validate terminal transport custody and unchanged authority
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -d "$OUT"
+          (
+            cd "$OUT"
+            sha256sum -c SHA256SUMS
+          )
+
+          python - "$OUT" <<'PY'
+          import hashlib
+          import json
+          import sys
+          import urllib.parse
+          from pathlib import Path
+
+          out = Path(sys.argv[1])
+          completion = json.loads((out / "completion.json").read_text())
+          receipt = json.loads((out / "execution-receipt.json").read_text())
+          results = json.loads((out / "route-results.json").read_text())
+          summary = json.loads((out / "transport-summary.json").read_text())
+          input_ledger = json.loads((out / "input-ledger.json").read_text())
+          plan = json.loads((out / "execution-plan.json").read_text())
+          receipt_ledger = json.loads((out / "receipt-file-ledger.json").read_text())
+
+          expected_routes = [
+              "RD04-W03-PPN-ND-FU-001",
+              "RD04-W03-PPN-ND-FU-002",
+          ]
+          expected_blobs = {
+              "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/selected-followup-protocol.json":
+                  "7bbafd8f8c6c915442770ebbeca85b37afba8047",
+              "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json":
+                  "522ec8503299c0458d45f43f23512c8ff90ac0f2",
+              "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promoted-partial-field-matrix.json":
+                  "66896190dd575f9867f1e121d845acfb4d27f56f",
+              "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promotion-summary.json":
+                  "5e0adc541a22c9b0bf4cd8a059bf083e08831a15",
+          }
+          allowed_terminal = {
+              "terminal_http_success_body_captured",
+              "terminal_http_success_no_body",
+              "terminal_http_non_success",
+              "terminal_non_https_redirect_refused",
+              "terminal_cross_host_redirect_refused",
+              "terminal_maximum_redirects_refused",
+              "terminal_final_url_boundary_refused",
+              "terminal_redirect_refused",
+              "terminal_request_budget_exhausted",
+              "terminal_body_limit_exceeded",
+              "terminal_transport_error",
+          }
+
+          assert (out / "workflow-exit-code.txt").read_text().strip() == "0"
+          assert completion["stage"] == "complete"
+          assert completion["exit_code"] == 0
+          assert completion["qualified_transport_completion"] is True
+          assert completion["terminal_route_ids"] == expected_routes
+          assert completion["logical_attempts_used"] == 2
+          assert completion["physical_requests_used"] == 2
+
+          assert receipt["schema_version"] == "ssc-rd04-postpromotion-two-route-followup-execution-receipt@1"
+          assert receipt["canonical_parent"] == "048e9d13a2555d8e6fabdbee5f45aea858f919b7"
+          assert receipt["carrier_head"] == (out / "workflow-carrier-head.txt").read_text().strip()
+          assert receipt["fixed_route_count"] == 2
+          assert receipt["captured_route_ids"] == expected_routes
+          assert receipt["terminal_route_ids"] == expected_routes
+          assert receipt["logical_attempt_budget"] == 2
+          assert receipt["logical_attempts_used"] == 2
+          assert receipt["physical_request_budget"] == 2
+          assert receipt["physical_requests_used"] == 2
+          assert len(receipt["physical_request_events"]) == 2
+          assert [event["request_kind"] for event in receipt["physical_request_events"]] == [
+              "initial",
+              "initial",
+          ]
+          assert len(results) == 2
+          assert receipt["results"] == results
+
+          for key in (
+              "result_spawned_requests",
+              "automatic_source_admissions",
+              "automatic_field_classifications",
+              "automatic_field_terminalizations",
+              "automatic_matrix_updates",
+              "automatic_row_terminalizations",
+              "automatic_class_closures",
+          ):
+              assert receipt[key] == 0
+          assert receipt["cumulative_ledger_effect"] == "none"
+          assert receipt["outside_human_dependency"] is False
+          assert receipt["publication_effect"] == "none"
+          assert receipt["adoption_effect"] == "none"
+          assert receipt["graph_effect"] == "none"
+
+          assert len(receipt_ledger["entries"]) == 2
+          receipt_entries = {item["route_id"]: item for item in receipt_ledger["entries"]}
+
+          for ordinal, (route_id, result) in enumerate(zip(expected_routes, results), start=1):
+              assert result["route_ordinal"] == ordinal
+              assert result["route_id"] == route_id
+              assert result["attempts"] == 1
+              assert result["physical_request_count"] == 1
+              assert result["terminal_state"] in allowed_terminal
+              assert result["expected_host"] == "www.nd.gov"
+              assert urllib.parse.urlsplit(result["requested_url"]).hostname == "www.nd.gov"
+              if result["final_url"] is not None:
+                  assert urllib.parse.urlsplit(result["final_url"]).hostname == "www.nd.gov"
+              assert result["redirect_chain"] == []
+              assert result["result_spawned_requests"] == 0
+              assert result["source_admission_effect"] == "none"
+              assert result["field_classification_effect"] == "none"
+              assert result["field_terminalization_effect"] == "none"
+              assert result["matrix_effect"] == "none"
+              assert result["row_state_effect"] == "none"
+              assert result["class_effect"] == "none"
+              assert result["cumulative_ledger_effect"] == "none"
+              assert result["publication_effect"] == "none"
+              assert result["adoption_effect"] == "none"
+              assert result["graph_effect"] == "none"
+              assert result["outside_human_dependency"] is False
+
+              route_dir = out / "routes" / route_id
+              route_receipt = json.loads((route_dir / "receipt.json").read_text())
+              assert route_receipt == result
+              entry = receipt_entries[route_id]
+              retained = (out / entry["receipt_path"]).read_bytes()
+              assert hashlib.sha256(retained).hexdigest() == entry["receipt_sha256"]
+              assert entry["receipt_preimage_sha256"] == result["receipt_preimage_sha256"]
+
+              if result["body_path"] is None:
+                  assert result["body_bytes"] == 0
+                  assert result["body_sha256"] is None
+              else:
+                  body = (out / result["body_path"]).read_bytes()
+                  assert len(body) == result["body_bytes"]
+                  assert hashlib.sha256(body).hexdigest() == result["body_sha256"]
+              if result["headers_path"] is not None:
+                  headers = (out / result["headers_path"]).read_bytes()
+                  assert hashlib.sha256(headers).hexdigest() == result["headers_sha256"]
+
+          assert {row["path"]: row["git_blob"] for row in input_ledger} == expected_blobs
+          assert plan["route_ids"] == expected_routes
+          assert len(plan["held_decisions"]) == 2
+          assert all(item["current_cell_state"] == "still_open" for item in plan["held_decisions"])
+          assert all(item["current_cell_terminal"] is False for item in plan["held_decisions"])
+
+          assert summary["qualified_transport_completion"] is True
+          assert summary["logical_source_requests_executed"] == 2
+          assert summary["physical_http_requests_executed"] == 2
+          assert summary["terminal_routes"] == 2
+          assert summary["held_north_dakota_cells_preserved"] == 2
+          for key in (
+              "result_spawned_requests",
+              "source_admissions",
+              "field_classifications",
+              "field_terminalizations",
+              "matrix_updates",
+              "row_state_mutations",
+          ):
+              assert summary[key] == 0
+          assert summary["class_closed"] is False
+          assert summary["cumulative_ledger_effect"] == "none"
+          assert summary["outside_human_dependency"] is False
+          assert summary["publication_effect"] == "none"
+          assert summary["adoption_effect"] == "none"
+          assert summary["graph_effect"] == "none"
+
+          qualification = {
+              "schema_version": "ssc-rd04-postpromotion-two-route-followup-qualification@1",
+              "qualification": "pass",
+              "canonical_parent": receipt["canonical_parent"],
+              "carrier_head": receipt["carrier_head"],
+              "route_ids": expected_routes,
+              "logical_attempts": 2,
+              "physical_requests": 2,
+              "terminal_state_counts": summary["terminal_state_counts"],
+              "captured_body_bytes": summary["captured_body_bytes"],
+              "held_north_dakota_cells_preserved": 2,
+              "source_admissions": 0,
+              "field_terminalizations": 0,
+              "matrix_updates": 0,
+              "row_state_mutations": 0,
+              "class_closed": False,
+              "cumulative_ledger_effect": "none",
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none",
+              "outside_human_dependency": False,
+          }
+          (out / "qualification.json").write_text(
+              json.dumps(qualification, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(qualification, indent=2, sort_keys=True))
+          PY
+
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/main)" = "$CANONICAL_PARENT"
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+
+          rm -f "$OUT/SHA256SUMS"
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 |
+              LC_ALL=C sort -z |
+              xargs -0 sha256sum >SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - name: Preserve exact two-route transport custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-two-route-followup-execution-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-two-route-followup-execution-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Report bounded execution result
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## RD-04 two-route follow-up transport'
+            echo
+            if test -f "$OUT/transport-summary.json"; then
+              echo '```json'
+              cat "$OUT/transport-summary.json"
+              echo '```'
+            else
+              echo 'No terminal transport summary was produced.'
+            fi
+          } >>"$GITHUB_STEP_SUMMARY"
+
+      - name: Preserve fail-closed conclusion
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -f "$OUT/qualification.json"
+          python - "$OUT/qualification.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          value = json.loads(Path(sys.argv[1]).read_text())
+          assert value["qualification"] == "pass"
+          assert value["logical_attempts"] == 2
+          assert value["physical_requests"] == 2
+          assert value["source_admissions"] == 0
+          assert value["field_terminalizations"] == 0
+          assert value["matrix_updates"] == 0
+          assert value["row_state_mutations"] == 0
+          assert value["class_closed"] is False
+          assert value["outside_human_dependency"] is False
+          PY
