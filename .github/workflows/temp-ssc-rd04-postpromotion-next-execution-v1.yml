@@ -1,0 +1,275 @@
+name: TEMP execute RD-04 postpromotion next routes v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-rd04-postpromotion-next-execution-v1.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-ssc-rd04-postpromotion-next-execution-v1
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-next-execution-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      CANONICAL_MERGE: 91b386df809079884825b19a6b5d864b6e739172
+      CANONICAL_MERGE_TREE: 7825098153b33c15418c973d1d04ff22eb50e015
+      FIRST_PARENT: d99146fe88617e002463481732a54626aafe3924
+      PRODUCT_COMMIT: f45bc61a634082d6146182c880e4855ae8e8bc20
+      PRODUCT_PARENT: 3918c799f8b8dcdac49c33cec5c7bbd01ac428e4
+      PRODUCT_TREE: 0b209b311baf7de54bfd638fcbf042f08bc3bfc1
+      ROUTE_LEDGER_BLOB: ad4a82bc1a23e0957137468dfc0a4c3333d84394
+      QUERY_CONTRACT_BLOB: d5c445435dd74bea61e7e50887a27a3ffb1edcf1
+      EXECUTION_RUNNER_BLOB: 4ba13bc82914eb04bc4ad3ad8052b94a458a1d9d
+      CARRIER_PATH: .github/workflows/temp-ssc-rd04-postpromotion-next-execution-v1.yml
+      PYTHONDONTWRITEBYTECODE: '1'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Execute exact five-route denominator and preserve custody
+        id: execute_routes
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-next-execution-v1"
+          CAPTURE="$OUT/capture"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          printf 'initializing\n' > "$OUT/STAGE"
+          printf 'source_admissions=0\nfield_classifications=0\nfield_terminalizations=0\nrow_state_mutations=0\nclass_closed=false\ncumulative_ledger_effect=none\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' > "$OUT/BOUNDARY"
+          exec > >(tee "$OUT/workflow.log") 2>&1
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            git status --porcelain=v1 --untracked-files=all > "$OUT/repository-status.txt" 2>/dev/null || true
+            if test -d "$CAPTURE"; then
+              find "$CAPTURE" -type f -printf '%P\n' | sort > "$OUT/capture-files.txt" 2>/dev/null || true
+            fi
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          printf 'binding-exact-carrier-and-canonical-lease\n' > "$OUT/STAGE"
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_MERGE"
+          test "$(git rev-list --count HEAD^..HEAD)" -eq 1
+          test "$(git diff --name-only HEAD^ HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A HEAD^ HEAD)" = "$CARRIER_PATH"
+          git diff --check HEAD^ HEAD
+          test "$(git rev-parse "$CANONICAL_MERGE^{tree}")" = "$CANONICAL_MERGE_TREE"
+          test "$(git rev-parse "$CANONICAL_MERGE^1")" = "$FIRST_PARENT"
+          test "$(git rev-parse "$CANONICAL_MERGE^2")" = "$PRODUCT_COMMIT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^")" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^{tree}")" = "$PRODUCT_TREE"
+          LIVE_MAIN="$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')"
+          test "$LIVE_MAIN" = "$CANONICAL_MERGE"
+          printf '%s\n' "$LIVE_MAIN" > "$OUT/canonical-main.txt"
+          git rev-parse HEAD > "$OUT/carrier-head.txt"
+          git rev-parse 'HEAD^{tree}' > "$OUT/carrier-tree.txt"
+
+          cat > "$OUT/expected-product-paths.txt" <<'EOF_PRODUCT_PATHS'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/frontier-selection.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/predecessor-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/previously-frozen-url-exclusion.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-query-contract.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/summary.json
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-next-protocol.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          EOF_PRODUCT_PATHS
+          sort -o "$OUT/expected-product-paths.txt" "$OUT/expected-product-paths.txt"
+          : > "$OUT/permanent-blob-ledger.tsv"
+          while IFS= read -r path; do
+            product_entry="$(git ls-tree "$PRODUCT_COMMIT" -- "$path")"
+            merge_entry="$(git ls-tree "$CANONICAL_MERGE" -- "$path")"
+            test -n "$product_entry"
+            test "$product_entry" = "$merge_entry"
+            printf '%s\t%s\n' "$path" "$merge_entry" >> "$OUT/permanent-blob-ledger.tsv"
+          done < "$OUT/expected-product-paths.txt"
+          test "$(wc -l < "$OUT/permanent-blob-ledger.tsv")" -eq 14
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-ledger.json)" = "$ROUTE_LEDGER_BLOB"
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-query-contract.json)" = "$QUERY_CONTRACT_BLOB"
+          test "$(git hash-object tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py)" = "$EXECUTION_RUNNER_BLOB"
+
+          printf 'verifying-immutable-protocol-inputs\n' > "$OUT/STAGE"
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json)" = 42361e559db90777e1d60aea5530df5694c86dc6
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/remaining-open-field-census.json)" = e6ea2bb2722d084d0bb601864d4de5d9db4c7b47
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-summary.json)" = e774a9ed555364e4c6616c407a24001dd39f8f51
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-next-minimum-frontier-route-discovery-protocol/route-discovery-protocol.json)" = 35e09035659d54060547e84ab29d5ba440402b2c
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/selected-followup-protocol.json)" = 88cb73c7bae87a4031d1571d7dd5ebdcb58aa2f4
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/source-adjudications.json)" = 53f378c9c4a56ca4aab0312bba38150b071786af
+
+          printf 'running-preexecution-gates\n' > "$OUT/STAGE"
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          git diff --exit-code -- data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py --dry-run > "$OUT/execution-plan.json"
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+          git diff --check
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CANONICAL_MERGE"
+
+          printf 'executing-five-fixed-routes\n' > "$OUT/STAGE"
+          export EXECUTE_RD04_POSTPROMOTION_NEXT=YES
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py \
+            --execute \
+            --output "$CAPTURE" \
+            | tee "$OUT/execution.log"
+
+          printf 'validating-transport-custody\n' > "$OUT/STAGE"
+          (
+            cd "$CAPTURE"
+            sha256sum -c SHA256SUMS
+          ) > "$OUT/capture-checksum-verification.txt"
+          python - "$CAPTURE" "$OUT/execution-summary.json" <<'PYVERIFY'
+          import hashlib
+          import json
+          import pathlib
+          import sys
+          import urllib.parse
+
+          capture = pathlib.Path(sys.argv[1])
+          summary_path = pathlib.Path(sys.argv[2])
+          expected_ids = [
+              'RD04-W03-PPN-MT-001',
+              'RD04-W03-PPN-MT-002',
+              'RD04-W03-PPN-MT-003',
+              'RD04-W03-PPN-ND-001',
+              'RD04-W03-PPN-ND-002',
+          ]
+          receipt = json.loads((capture / 'execution-receipt.json').read_text())
+          results = json.loads((capture / 'route-results.json').read_text())
+          assert receipt['schema_version'] == 'ssc-rd04-postpromotion-next-execution-receipt@1'
+          assert receipt['fixed_route_count'] == 5
+          assert receipt['captured_route_ids'] == expected_ids
+          assert receipt['terminal_route_ids'] == expected_ids
+          assert len(results) == 5 and [row['route_id'] for row in results] == expected_ids
+          assert sum(row['attempts'] for row in results) == 5
+          assert receipt['result_spawned_requests'] == 0
+          assert receipt['automatic_source_admissions'] == 0
+          assert receipt['automatic_field_classifications'] == 0
+          assert receipt['automatic_row_terminalizations'] == 0
+          assert receipt['automatic_class_closures'] == 0
+          assert receipt['outside_human_dependency'] is False
+          assert receipt['publication_effect'] == receipt['adoption_effect'] == receipt['graph_effect'] == 'none'
+          allowed_states = {
+              'terminal_http_success_body_captured',
+              'terminal_http_success_no_body',
+              'terminal_http_non_success',
+              'terminal_cross_host_redirect_refused',
+              'terminal_body_limit_exceeded',
+              'terminal_transport_error',
+          }
+          bodies = 0
+          status_counts = {}
+          for row in results:
+              assert row['attempts'] == 1
+              assert row['terminal_state'] in allowed_states
+              assert row['result_spawned_requests'] == 0
+              assert row['source_admission_effect'] == 'none'
+              assert row['field_classification_effect'] == 'none'
+              assert row['row_state_effect'] == 'none'
+              assert row['class_effect'] == 'none'
+              assert row['outside_human_dependency'] is False
+              assert row['body_bytes'] <= 33554432
+              bodies += row['body_bytes']
+              status_counts[row['terminal_state']] = status_counts.get(row['terminal_state'], 0) + 1
+              if row['final_url'] is not None:
+                  assert urllib.parse.urlsplit(row['final_url']).hostname == row['expected_host']
+              for redirect in row['redirect_chain']:
+                  assert urllib.parse.urlsplit(redirect['to_url']).hostname == row['expected_host']
+              if row['body_path']:
+                  body = (capture / row['body_path']).read_bytes()
+                  assert len(body) == row['body_bytes']
+                  assert hashlib.sha256(body).hexdigest() == row['body_sha256']
+          summary = {
+              'schema_version': 'ssc-rd04-postpromotion-next-execution-summary@1',
+              'canonical_protocol_merge': '91b386df809079884825b19a6b5d864b6e739172',
+              'fixed_route_count': 5,
+              'request_attempts': 5,
+              'terminal_routes': 5,
+              'terminal_state_counts': status_counts,
+              'captured_body_bytes': bodies,
+              'source_admissions': 0,
+              'field_classifications': 0,
+              'field_terminalizations': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(summary, indent=2, sort_keys=True))
+          PYVERIFY
+
+          printf 'rechecking-postexecution-leases\n' > "$OUT/STAGE"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CANONICAL_MERGE"
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-ledger.json)" = "$ROUTE_LEDGER_BLOB"
+          test "$(git hash-object tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py)" = "$EXECUTION_RUNNER_BLOB"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          printf '%s\n' "$CANONICAL_MERGE_TREE" > "$OUT/canonical-merge-tree.txt"
+          printf '%s\n' "$PRODUCT_COMMIT" > "$OUT/product-commit.txt"
+          printf '%s\n' "$PRODUCT_TREE" > "$OUT/product-tree.txt"
+          printf '%s\n' "$ROUTE_LEDGER_BLOB" > "$OUT/route-ledger-blob.txt"
+          printf '%s\n' "$QUERY_CONTRACT_BLOB" > "$OUT/query-contract-blob.txt"
+          printf '%s\n' "$EXECUTION_RUNNER_BLOB" > "$OUT/execution-runner-blob.txt"
+          printf 'complete\n' > "$OUT/STAGE"
+
+      - name: Upload exact execution custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-execution-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-next-execution-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce execution result
+        if: always()
+        shell: bash
+        run: test '${{ steps.execute_routes.outcome }}' = success
