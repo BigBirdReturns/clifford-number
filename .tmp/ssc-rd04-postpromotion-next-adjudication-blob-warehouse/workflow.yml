@@ -1,0 +1,170 @@
+name: Status sovereignty RD Wave 03 RD-04 postpromotion next adjudication
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/capture-custody.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/source-adjudications.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/field-adjudications.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/promotion-candidate-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/adjudication-summary.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/index.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/product-manifest.json'
+      - 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-next-adjudication.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/capture-custody.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/source-adjudications.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/field-adjudications.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/promotion-candidate-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/adjudication-summary.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/index.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/product-manifest.json'
+      - 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-next-adjudication.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-next-adjudication-product-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      PRODUCT_PARENT: c108c323d9c254d8e4a6bb4f3089a7fae7975009
+      PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-product-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Bind exact one-parent thirteen-path product
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ github.event.pull_request.head.ref }}" = "$PRODUCT_BRANCH"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$PRODUCT_PARENT"
+          git fetch origin "$PRODUCT_PARENT" --depth=256
+          test "$(git rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          test "$(git rev-list --count "$PRODUCT_PARENT"..HEAD)" -eq 1
+          cat >/tmp/expected-paths <<'EOF_PATHS'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/adjudication-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/capture-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/field-adjudications.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/promotion-candidate-protocol.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/source-adjudications.json
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-next-adjudication.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          EOF_PATHS
+          git diff --name-only --diff-filter=ACDMRTUXB "$PRODUCT_PARENT" HEAD | sort >/tmp/actual-paths
+          git diff --name-only --diff-filter=A "$PRODUCT_PARENT" HEAD | sort >/tmp/added-paths
+          diff -u /tmp/expected-paths /tmp/actual-paths
+          diff -u /tmp/expected-paths /tmp/added-paths
+          test "$(wc -l </tmp/actual-paths)" -eq 13
+          test -z "$(grep -E '(^|/)(\.tmp|.*\.trigger)(/|$)' /tmp/actual-paths || true)"
+          git diff --check "$PRODUCT_PARENT" HEAD
+      - name: Verify immutable capture and predecessor inputs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-ledger.json)" = ad4a82bc1a23e0957137468dfc0a4c3333d84394
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-query-contract.json)" = d5c445435dd74bea61e7e50887a27a3ffb1edcf1
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json)" = 42361e559db90777e1d60aea5530df5694c86dc6
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/remaining-open-field-census.json)" = e6ea2bb2722d084d0bb601864d4de5d9db4c7b47
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/field-adjudications.json)" = ca0be819a522532ecc7b0ee07909382ece6a8329
+      - name: Deterministic build, exact schema, focused validator, and adversarial refusals
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+          python - <<'PYSCHEMA'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          schema=json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json').read_text())
+          Draft202012Validator.check_schema(schema)
+          validator=Draft202012Validator(schema)
+          root=Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication')
+          names=['capture-custody.json','source-adjudications.json','field-adjudications.json','promotion-candidate-protocol.json','adjudication-summary.json','index.json','product-manifest.json']
+          for name in names:
+              value=json.loads((root/name).read_text())
+              errors=sorted(validator.iter_errors(value),key=lambda e:list(e.path))
+              if errors: raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
+          print(f'recursive_schema_validation=pass objects={len(names)}')
+          PYSCHEMA
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+      - name: Complete repository release gate
+        run: npm run release:check
+      - name: Prove clean deterministic replay
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git restore --staged --worktree .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+      - name: Reconfirm live canonical parent
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$PRODUCT_PARENT"
+      - name: Preserve exact-head qualification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-postpromotion-next-adjudication-qualification
+          rm -rf "$OUT"; mkdir -p "$OUT/product"
+          cp -R data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication "$OUT/product/data"
+          cp docs/milestones/ssc-rd-wave03-rd04-postpromotion-next-adjudication.md schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json "$OUT/product/"
+          git rev-parse HEAD >"$OUT/head-sha.txt"
+          git rev-parse 'HEAD^{tree}' >"$OUT/head-tree.txt"
+          printf '%s\n' "$PRODUCT_PARENT" >"$OUT/product-parent.txt"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum >SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-adjudication-qualification
+          path: /tmp/ssc-rd04-postpromotion-next-adjudication-qualification
+          if-no-files-found: error
+          retention-days: 90
