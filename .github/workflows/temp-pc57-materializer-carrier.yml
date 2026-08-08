@@ -41,7 +41,18 @@ jobs:
 
           test "$(git rev-parse "$PARENT^{tree}")" = "$PARENT_TREE"
           test "$(sha256sum .tmp/pc57/product-manifest.json | awk '{print $1}')" = "$MANIFEST_SHA256"
-          base64 -d .tmp/pc57/product.tar.gz.b64 > "$WORK/product.tar.gz"
+          sha256sum -c <<'SUMS'
+          dd2b0dd8965713cf7eff06a91672a303a2904e416704e173ab7aa5d6fe223791  .tmp/pc57/product.b64.00
+          988cc395b7c27f70964ef6512fc58cfb2bd33d38319e098c3e3cc66b3ab01380  .tmp/pc57/product.b64.01
+          c452b63b92c42ef4ae7ffebb3150f79586012d6819b33840f1c8b1486ae0790c  .tmp/pc57/product.b64.02
+          26ddf26f43b67897186f3bd7ba3639053be71e0f2738f4855e46c9d3102c2f3c  .tmp/pc57/product.b64.03
+          f761ce582bb536d5bccb689b6219bd6ad0be016672fbaff5a5ca0a49b299b7d8  .tmp/pc57/product.b64.04
+          e074c3b4064ac2c69f273a2a73a4c7728ce3276dcf683b44f8de6b8a1366e5a9  .tmp/pc57/product.b64.05
+          dead2fed57443eeaf6b4d5a06f77761760e474f5e9beef6fb98c0ea8b00e5bfd  .tmp/pc57/product.b64.06
+          04170d1b25d6337e8588c8e13db16db04ce936614b06834b37919225afe1bddf  .tmp/pc57/product.b64.07
+          0b9dafbe899b7882e5b4705a48238d30b21df9ede6287153bcef8547f42d8190  .tmp/pc57/product.b64.08
+          SUMS
+          cat .tmp/pc57/product.b64.* | tr -d '\n\r' | base64 -d > "$WORK/product.tar.gz"
           test "$(sha256sum "$WORK/product.tar.gz" | awk '{print $1}')" = "$ARCHIVE_SHA256"
 
           git worktree add --detach "$WORK/repo" "$PARENT"
