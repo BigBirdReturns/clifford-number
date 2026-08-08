@@ -1,0 +1,211 @@
+name: TEMP qualify PC-56 lifecycle-completeness repair
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc56-lineage-completeness-repair
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPOSITORY: ${{ github.repository }}
+      PRODUCT: cb15d5f6663fe398d0a493e16e100a507eb7246d
+      PRODUCT_PARENT: 21afd8b3da1b7d06d2dada51929c63b60d6da66c
+      PRODUCT_TREE: 3b2bfd2916f86d59adad372c07c5942f676f6aab
+      LIB: tools/lib/preference-linkage-repository-owner-immutable-repository-id-transfer-rename-fork-network-canonical-location-assurance.mjs
+      TEST: test/preference-linkage-repository-owner-immutable-repository-id-transfer-rename-fork-network-canonical-location-assurance.test.js
+      RECEIPT: /tmp/pc56-lineage-completeness-repair
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.PRODUCT }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify frozen product topology and apply bounded repair
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RECEIPT"
+          test "$(git rev-parse HEAD)" = "$PRODUCT"
+          test "$(git show -s --format='%P' HEAD)" = "$PRODUCT_PARENT"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$PRODUCT_TREE"
+          git diff --name-status "$PRODUCT_PARENT" "$PRODUCT" > "$RECEIPT/original-product-delta.tsv"
+          test "$(wc -l < "$RECEIPT/original-product-delta.tsv" | tr -d ' ')" = 14
+          awk '$1 != "A" { exit 1 }' "$RECEIPT/original-product-delta.tsv"
+
+          python - <<'PY'
+          from pathlib import Path
+
+          lib = Path('tools/lib/preference-linkage-repository-owner-immutable-repository-id-transfer-rename-fork-network-canonical-location-assurance.mjs')
+          test = Path('test/preference-linkage-repository-owner-immutable-repository-id-transfer-rename-fork-network-canonical-location-assurance.test.js')
+
+          lib_text = lib.read_text()
+          old_lineage = """  const current_repository_identity_lineage = sectionComplete(
+            world.lineage,
+            [
+              'assurance_current',
+              'approved_owner_lineage_current',
+              'approved_repository_id_lineage_current',
+              'approved_canonical_location_lineage_current',
+              'approved_repository_state_lineage_current',
+              'approved_fork_network_lineage_current',
+              'approved_transfer_lineage_current',
+              'approved_repository_rename_lineage_current',
+              'approved_owner_rename_lineage_current',
+              'approved_policy_lineage_current',
+              'approved_correction_lineage_current',
+              'approved_release_lineage_current',
+              'approved_use_lineage_current'
+            ]
+          );"""
+          new_lineage = """  const current_repository_identity_lineage = sectionComplete(
+            world.lineage,
+            SECTION_BOOLEAN_KEYS.lineage.filter(key => key !== 'binding_public_authority')
+          );"""
+          if lib_text.count(old_lineage) != 1:
+              raise SystemExit('expected exactly one stale lineage-completeness predicate')
+          lib.write_text(lib_text.replace(old_lineage, new_lineage))
+
+          test_text = test.read_text()
+          old_import = """import {
+            compilePreferenceLinkageRepositoryOwnerImmutableRepositoryIdTransferRenameForkNetworkCanonicalLocationAssuranceFixture,"""
+          new_import = """import {
+            classifyPreferenceLinkageRepositoryOwnerImmutableRepositoryIdTransferRenameForkNetworkCanonicalLocationAssuranceWorld,
+            compilePreferenceLinkageRepositoryOwnerImmutableRepositoryIdTransferRenameForkNetworkCanonicalLocationAssuranceFixture,"""
+          if test_text.count(old_import) != 1:
+              raise SystemExit('expected exactly one PC-56 import insertion point')
+          test_text = test_text.replace(old_import, new_import)
+
+          anchor = """assert.equal(build.metrics.binding_public_authority_worlds, 0);
+
+const mutateLeaf = value => {"""
+          regression = """assert.equal(build.metrics.binding_public_authority_worlds, 0);
+
+const lineageCompletenessSafeguards = Object.freeze([
+  'owner_invalidation_defined',
+  'repository_id_invalidation_defined',
+  'location_invalidation_defined',
+  'state_invalidation_defined',
+  'fork_invalidation_defined',
+  'transfer_invalidation_defined',
+  'repository_rename_invalidation_defined',
+  'owner_rename_invalidation_defined',
+  'policy_invalidation_defined',
+  'quarantine_defined',
+  'correction_defined',
+  'rollback_defined',
+  'rereview_defined',
+  'republication_defined',
+  'appeal_defined',
+  'durability_defined'
+]);
+for (const safeguard of lineageCompletenessSafeguards) {
+  const candidate = clone(fixture.worlds[0]);
+  candidate.lineage[safeguard] = false;
+  const flags = classifyPreferenceLinkageRepositoryOwnerImmutableRepositoryIdTransferRenameForkNetworkCanonicalLocationAssuranceWorld(candidate);
+  assert.equal(
+    flags.current_repository_identity_lineage,
+    false,
+    `${safeguard} must invalidate current repository-identity lineage`
+  );
+  assert.equal(
+    flags.complete_repository_owner_id_location_fork_transfer_rename_assurance,
+    false,
+    `${safeguard} must invalidate complete PC-56 assurance`
+  );
+}
+
+const mutateLeaf = value => {"""
+          if test_text.count(anchor) != 1:
+              raise SystemExit('expected exactly one PC-56 regression insertion point')
+          test.write_text(test_text.replace(anchor, regression))
+          PY
+
+          git diff --check
+          git diff -- "$LIB" "$TEST" > "$RECEIPT/repair.patch"
+          test "$(git diff --name-only | sort | tr '\n' ' ')" = "${TEST} ${LIB} "
+          sha256sum "$LIB" "$TEST" "$RECEIPT/repair.patch" > "$RECEIPT/SHA256SUMS"
+
+      - name: Run focused and complete qualification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf build/research
+          node test/preference-linkage-repository-owner-immutable-repository-id-transfer-rename-fork-network-canonical-location-assurance.test.js
+          node test/preference-custody-manifest-v54.test.js
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do node "$test_file"; done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+      - name: Publish immutable repaired blobs and seal receipt
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import hashlib, json, os, subprocess
+          from pathlib import Path
+
+          root = Path(os.environ['RECEIPT'])
+          paths = [Path(os.environ['LIB']), Path(os.environ['TEST'])]
+          files = []
+          for path in paths:
+              content = path.read_bytes()
+              encoded = __import__('base64').b64encode(content).decode()
+              proc = subprocess.run(
+                  ['gh','api','--method','POST',f"/repos/{os.environ['GH_REPOSITORY']}/git/blobs",'-f',f'content={encoded}','-f','encoding=base64','--jq','.sha'],
+                  check=True, text=True, capture_output=True
+              )
+              blob = proc.stdout.strip()
+              git_blob = subprocess.run(['git','hash-object',str(path)], check=True, text=True, capture_output=True).stdout.strip()
+              if blob != git_blob:
+                  raise SystemExit(f'Git blob mismatch for {path}: {blob} != {git_blob}')
+              files.append({
+                  'path': str(path),
+                  'bytes': len(content),
+                  'sha256': hashlib.sha256(content).hexdigest(),
+                  'git_blob': blob,
+              })
+          receipt = {
+              'schema_version': 'pc56-lineage-completeness-repair@1',
+              'status': 'qualified',
+              'product_before': os.environ['PRODUCT'],
+              'product_parent': os.environ['PRODUCT_PARENT'],
+              'product_tree_before': os.environ['PRODUCT_TREE'],
+              'changed_paths': 2,
+              'lifecycle_safeguards_bound': 16,
+              'focused_pc56': 'pass',
+              'floor_v54': 'pass',
+              'historical_floors': 'pass',
+              'base_preference_custody': 'pass',
+              'no_magic_human': 'pass',
+              'release_check': 'pass',
+              'ref_updates': 0,
+              'outside_human_dependency': False,
+              'graph_effect': 'none',
+              'files': files,
+          }
+          (root/'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          PY
+          sha256sum "$RECEIPT"/* > "$RECEIPT/ARTIFACT-SHA256SUMS"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc56-lineage-completeness-repair
+          path: /tmp/pc56-lineage-completeness-repair
+          if-no-files-found: error
+          retention-days: 90
