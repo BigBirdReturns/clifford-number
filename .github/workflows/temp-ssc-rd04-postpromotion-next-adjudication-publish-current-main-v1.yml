@@ -1,0 +1,221 @@
+name: TEMP publish repaired RD-04 adjudication current-main head v1
+
+on:
+  push:
+    branches:
+      - agent/ssc-rd04-postpromotion-next-adjudication-terminal-controller-v1
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      ISSUE: '1017'
+      CURRENT_MAIN: a18f19ddc923e553848a5165cdf29fb1b9add97a
+      OLD_PRODUCT_HEAD: 0e79772a84e99bce1a1ca9e78209c9ae5b55637a
+      PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-product-v1
+      STAGING_BRANCH: staging/ssc-rd04-postpromotion-next-adjudication-current-main-v1
+      CARRIER_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-terminal-controller-v1
+      CARRIER_PATH: .github/workflows/temp-ssc-rd04-postpromotion-next-adjudication-publish-current-main-v1.yml
+      WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml
+      BUILDER_PATH: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+      MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/product-manifest.json
+      SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json
+      EXPECTED_WORKFLOW_BLOB: 071b86443bf40c8908c901835e90eb956fc110f7
+      EXPECTED_BUILDER_BLOB: 58eb521c3da014557e9cff9cc051536e28031977
+      EXPECTED_MANIFEST_BLOB: 6a58c42f81823b46e8ae078d038e6df4afab2d44
+      EXPECTED_SCHEMA_BLOB: 87e00957c70c9301deaf6864a1a7dace4e48a8d6
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Sanitize, qualify, and publish exact product head
+        id: publish
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-next-adjudication-publish-current-main-v1"
+          WT="$RUNNER_TEMP/ssc-rd04-postpromotion-next-adjudication-publish-current-main-wt"
+          rm -rf "$OUT" "$WT"
+          mkdir -p "$OUT"
+          printf 'initializing\n' > "$OUT/STAGE"
+          printf 'source_requests=0\nroute_executions=0\nreviewed_source_admissions=4\npromotion_candidates=4\nheld_open_cells=2\nmatrix_updates=0\nfield_terminalizations=0\nrow_state_mutations=0\nclass_closed=false\ncumulative_ledger_effect=none\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' > "$OUT/BOUNDARY"
+          exec > >(tee "$OUT/publish.log") 2>&1
+          finalize() {
+            rc=$?
+            trap - EXIT
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          printf 'bind-controller-and-live-refs\n' > "$OUT/STAGE"
+          test "${{ github.ref_name }}" = "$CARRIER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$CURRENT_MAIN"
+          test "$(git rev-list --count "$CURRENT_MAIN"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CURRENT_MAIN" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" HEAD)" = "$CARRIER_PATH"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CURRENT_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$OLD_PRODUCT_HEAD"
+          STAGING_REMOTE_HEAD="$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')"
+          test -n "$STAGING_REMOTE_HEAD"
+          printf '%s\n' "$STAGING_REMOTE_HEAD" > "$OUT/staging-original-head.txt"
+          git fetch --no-tags origin \
+            "refs/heads/main:refs/remotes/origin/main" \
+            "refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH" \
+            "refs/heads/$STAGING_BRANCH:refs/remotes/origin/$STAGING_BRANCH"
+
+          printf 'strip-exact-probe-signatures\n' > "$OUT/STAGE"
+          CANDIDATE="$STAGING_REMOTE_HEAD"
+          : > "$OUT/stripped-probes.tsv"
+          while true; do
+            subject="$(git log -1 --format=%s "$CANDIDATE")"
+            mapfile -t paths < <(git diff-tree --no-commit-id --name-only -r "$CANDIDATE")
+            if test "$subject" = probe && test "${#paths[@]}" -eq 1 && test "${paths[0]}" = .tmp/rd04-probe; then
+              printf '%s\t%s\n' "$CANDIDATE" '.tmp/rd04-probe' >> "$OUT/stripped-probes.tsv"
+              CANDIDATE="$(git rev-parse "$CANDIDATE^")"
+              continue
+            fi
+            if test "$subject" = noop && test "${#paths[@]}" -eq 1 && test "${paths[0]}" = README.md; then
+              printf '%s\t%s\n' "$CANDIDATE" 'README.md' >> "$OUT/stripped-probes.tsv"
+              CANDIDATE="$(git rev-parse "$CANDIDATE^")"
+              continue
+            fi
+            break
+          done
+          printf '%s\n' "$CANDIDATE" > "$OUT/candidate-commit.txt"
+          CANDIDATE_TREE="$(git rev-parse "$CANDIDATE^{tree}")"
+          printf '%s\n' "$CANDIDATE_TREE" > "$OUT/candidate-tree.txt"
+
+          printf 'verify-exact-candidate-topology\n' > "$OUT/STAGE"
+          test "$(git rev-parse "$CANDIDATE^")" = "$CURRENT_MAIN"
+          test "$(git rev-list --count "$CURRENT_MAIN".."$CANDIDATE")" -eq 1
+          git diff --name-only "$CURRENT_MAIN" "$CANDIDATE" | LC_ALL=C sort > "$OUT/candidate-paths.txt"
+          test "$(wc -l < "$OUT/candidate-paths.txt")" -eq 13
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" "$CANDIDATE" | wc -l)" -eq 13
+          test -z "$(git diff --name-only --diff-filter=MD "$CURRENT_MAIN" "$CANDIDATE")"
+          test -z "$(grep -E '(^|/)(\.tmp|trigger)(/|$)' "$OUT/candidate-paths.txt" || true)"
+          git diff --name-only "$(git rev-parse "$OLD_PRODUCT_HEAD^")" "$OLD_PRODUCT_HEAD" | LC_ALL=C sort > "$OUT/source-product-paths.txt"
+          diff -u "$OUT/source-product-paths.txt" "$OUT/candidate-paths.txt"
+          test "$(git rev-parse "$CANDIDATE:$WORKFLOW_PATH")" = "$EXPECTED_WORKFLOW_BLOB"
+          test "$(git rev-parse "$CANDIDATE:$BUILDER_PATH")" = "$EXPECTED_BUILDER_BLOB"
+          test "$(git rev-parse "$CANDIDATE:$MANIFEST_PATH")" = "$EXPECTED_MANIFEST_BLOB"
+          test "$(git rev-parse "$CANDIDATE:$SCHEMA_PATH")" = "$EXPECTED_SCHEMA_BLOB"
+          git diff --check "$CURRENT_MAIN" "$CANDIDATE"
+
+          printf 'qualify-exact-candidate\n' > "$OUT/STAGE"
+          git worktree add --detach "$WT" "$CANDIDATE"
+          cd "$WT"
+          python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2' 'jsonschema==4.25.1'
+          python -c "import yaml; yaml.safe_load(open('$WORKFLOW_PATH'))"
+          node --check "$BUILDER_PATH"
+          node "$BUILDER_PATH"
+          python - <<'PYSCHEMA'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          schema=json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json').read_text())
+          Draft202012Validator.check_schema(schema)
+          validator=Draft202012Validator(schema)
+          root=Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication')
+          names=['capture-custody.json','source-adjudications.json','field-adjudications.json','promotion-candidate-protocol.json','adjudication-summary.json','index.json','product-manifest.json']
+          for name in names:
+              value=json.loads((root/name).read_text())
+              errors=sorted(validator.iter_errors(value),key=lambda e:list(e.path))
+              if errors:
+                  raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
+          print(f'recursive_schema_validation=pass objects={len(names)}')
+          PYSCHEMA
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+          git restore --staged --worktree .
+          git clean -fdx
+          node "$BUILDER_PATH" --write
+          node "$BUILDER_PATH"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          test "$(git hash-object "$WORKFLOW_PATH")" = "$EXPECTED_WORKFLOW_BLOB"
+          test "$(git hash-object "$BUILDER_PATH")" = "$EXPECTED_BUILDER_BLOB"
+          test "$(git hash-object "$MANIFEST_PATH")" = "$EXPECTED_MANIFEST_BLOB"
+          test "$(git hash-object "$SCHEMA_PATH")" = "$EXPECTED_SCHEMA_BLOB"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          printf 'publish-permanent-head\n' > "$OUT/STAGE"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CURRENT_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$OLD_PRODUCT_HEAD"
+          test "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')" = "$STAGING_REMOTE_HEAD"
+          if test "$STAGING_REMOTE_HEAD" != "$CANDIDATE"; then
+            git push --force-with-lease="refs/heads/$STAGING_BRANCH:$STAGING_REMOTE_HEAD" origin "$CANDIDATE:refs/heads/$STAGING_BRANCH"
+          fi
+          git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$OLD_PRODUCT_HEAD" origin "$CANDIDATE:refs/heads/$PRODUCT_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$CANDIDATE"
+          test "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')" = "$CANDIDATE"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CURRENT_MAIN"
+
+          printf 'seal-receipt\n' > "$OUT/STAGE"
+          export OUT CANDIDATE CANDIDATE_TREE STAGING_REMOTE_HEAD
+          python - <<'PYRECEIPT'
+          import hashlib,json,os
+          from pathlib import Path
+          out=Path(os.environ['OUT'])
+          value={
+            'schema_version':'ssc-rd04-postpromotion-next-adjudication-publish-current-main-receipt@1',
+            'canonical_parent':os.environ['CURRENT_MAIN'],
+            'source_product_head':os.environ['OLD_PRODUCT_HEAD'],
+            'staging_original_head':os.environ['STAGING_REMOTE_HEAD'],
+            'published_product_head':os.environ['CANDIDATE'],
+            'published_product_tree':os.environ['CANDIDATE_TREE'],
+            'product_branch':os.environ['PRODUCT_BRANCH'],
+            'staging_branch':os.environ['STAGING_BRANCH'],
+            'permanent_path_count':13,
+            'addition_only':True,
+            'reviewed_source_admissions':4,
+            'promotion_candidates':4,
+            'held_open_cells':2,
+            'matrix_updates':0,
+            'field_terminalizations':0,
+            'row_state_mutations':0,
+            'class_closed':False,
+            'cumulative_ledger_effect':'none',
+            'outside_human_dependency':False,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none'
+          }
+          (out/'receipt.json').write_text(json.dumps(value,indent=2,sort_keys=True)+'\n')
+          PYRECEIPT
+          gh issue comment "$ISSUE" --repo "$REPO" --body "RD-04 current-main adjudication head publication completed. Canonical parent: \`$CURRENT_MAIN\`. Exact product head: \`$CANDIDATE\`. Exact product tree: \`$CANDIDATE_TREE\`. Permanent paths: 13 additions, 0 modifications, 0 deletions. Reviewed source admissions: 4. Candidate findings: 4. Held-open cells: 2. Matrix updates, field terminalizations, row mutations, and class closures remain zero. Permanent PR qualification must be triggered by a separate non-Actions transaction before merge."
+          printf 'complete\n' > "$OUT/STAGE"
+      - name: Upload publication receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-adjudication-publish-current-main-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-next-adjudication-publish-current-main-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+      - name: Enforce publication
+        if: always()
+        run: test '${{ steps.publish.outcome }}' = success
