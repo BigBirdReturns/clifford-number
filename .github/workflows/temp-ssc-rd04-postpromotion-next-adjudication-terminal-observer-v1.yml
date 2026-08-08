@@ -1,0 +1,229 @@
+name: TEMP terminal observer RD-04 postpromotion adjudication v1
+
+on:
+  push:
+    branches:
+      - observer/ssc-rd04-postpromotion-next-adjudication-terminal-v1
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  terminalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      ISSUE: '1017'
+      CANONICAL_PARENT: a18f19ddc923e553848a5165cdf29fb1b9add97a
+      FINAL_BRANCH: observer/ssc-rd04-postpromotion-next-adjudication-terminal-v1
+      FINAL_PATH: .github/workflows/temp-ssc-rd04-postpromotion-next-adjudication-terminal-observer-v1.yml
+      CLEANUP_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-terminal-cleanup-v1
+      CLEANUP_WORKFLOW: TEMP terminal cleanup RD-04 postpromotion adjudication v1
+      CLEANUP_ARTIFACT: ssc-rd04-postpromotion-next-adjudication-terminal-cleanup-v1
+      PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-product-v1
+      STAGING_BRANCH: staging/ssc-rd04-postpromotion-next-adjudication-current-main-v1
+      REBIND_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v1
+      PUBLISH_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-terminal-controller-v1
+      MERGE_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-merge-controller-v1
+      REPAIR_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-workflow-repair-v1
+      OBSERVER_BRANCH: observer/ssc-rd04-postpromotion-next-adjudication-postmerge-v1
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+      - name: Verify cleanup and terminal repository state
+        id: terminalize
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-next-adjudication-terminal-v1"
+          CLEAN="$RUNNER_TEMP/ssc-rd04-postpromotion-next-adjudication-cleanup-artifact"
+          rm -rf "$OUT" "$CLEAN"
+          mkdir -p "$OUT" "$CLEAN"
+          printf 'initializing\n' > "$OUT/STAGE"
+          printf 'source_requests=0\nroute_executions=0\nreviewed_source_admissions=4\nsource_holds=1\npromotion_candidates=4\nheld_open_cells=2\nmatrix_updates=0\nfield_terminalizations=0\nrow_state_mutations=0\nclass_closed=false\ncumulative_ledger_effect=none\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' > "$OUT/BOUNDARY"
+          exec > >(tee "$OUT/terminal.log") 2>&1
+          finalize() {
+            rc=$?
+            trap - EXIT
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          printf 'bind-final-observer-topology\n' > "$OUT/STAGE"
+          test "${{ github.ref_name }}" = "$FINAL_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"
+          test "$(git rev-list --count "$CANONICAL_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CANONICAL_PARENT" HEAD)" = "$FINAL_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD)" = "$FINAL_PATH"
+
+          printf 'wait-for-terminal-cleanup-receipt\n' > "$OUT/STAGE"
+          CLEANUP_RUN=''
+          for attempt in $(seq 1 180); do
+            gh api -X GET "repos/$REPO/actions/runs" -f branch="$CLEANUP_BRANCH" -f event=push -f per_page=100 > "$OUT/cleanup-runs.json"
+            set +e
+            CLEANUP_RUN="$(python - <<'PYRUN'
+          import json,os,sys
+          from pathlib import Path
+          rows=json.loads((Path(os.environ['RUNNER_TEMP'])/'ssc-rd04-postpromotion-next-adjudication-terminal-v1'/'cleanup-runs.json').read_text()).get('workflow_runs',[])
+          rows=[r for r in rows if r.get('name')==os.environ['CLEANUP_WORKFLOW'] and r.get('head_branch')==os.environ['CLEANUP_BRANCH']]
+          rows=sorted(rows,key=lambda r:r.get('run_number',0),reverse=True)
+          if not rows: sys.exit(2)
+          r=rows[0]
+          if r.get('status')!='completed': sys.exit(2)
+          if r.get('conclusion')!='success':
+              print(f"cleanup terminal non-success id={r['id']} conclusion={r.get('conclusion')}",file=sys.stderr); sys.exit(1)
+          print(r['id'])
+          PYRUN
+            )"
+            rc=$?
+            set -e
+            if test "$rc" -eq 0; then break; fi
+            if test "$rc" -eq 1; then exit 1; fi
+            sleep 10
+          done
+          test -n "$CLEANUP_RUN"
+          printf '%s\n' "$CLEANUP_RUN" > "$OUT/cleanup-run.txt"
+
+          printf 'authenticate-cleanup-artifact\n' > "$OUT/STAGE"
+          gh run download "$CLEANUP_RUN" --repo "$REPO" --name "$CLEANUP_ARTIFACT" --dir "$CLEAN"
+          RECEIPT="$(find "$CLEAN" -type f -name receipt.json -print -quit)"
+          SUMS="$(find "$CLEAN" -type f -name SHA256SUMS -print -quit)"
+          STAGE_FILE="$(find "$CLEAN" -type f -name STAGE -print -quit)"
+          EXIT_FILE="$(find "$CLEAN" -type f -name EXIT_CODE -print -quit)"
+          test -n "$RECEIPT" && test -n "$SUMS" && test -n "$STAGE_FILE" && test -n "$EXIT_FILE"
+          test "$(cat "$STAGE_FILE")" = complete
+          test "$(cat "$EXIT_FILE")" = 0
+          (cd "$(dirname "$SUMS")" && sha256sum -c "$(basename "$SUMS")")
+          cp "$RECEIPT" "$OUT/cleanup-receipt.json"
+          export OUT RECEIPT
+          eval "$(python - <<'PYRECEIPT'
+          import json,os,shlex
+          from pathlib import Path
+          r=json.loads(Path(os.environ['RECEIPT']).read_text())
+          required={
+            'independent_postmerge_observer_complete':True,
+            'transport_refs_retired':True,
+            'reviewed_source_admissions':4,
+            'source_holds':1,
+            'promotion_candidates':4,
+            'held_open_cells':2,
+            'matrix_updates':0,
+            'field_terminalizations':0,
+            'row_state_mutations':0,
+            'class_closed':False,
+            'cumulative_ledger_effect':'none',
+            'outside_human_dependency':False,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none'
+          }
+          for k,v in required.items():
+              if r.get(k)!=v: raise SystemExit(f'{k} mismatch: {r.get(k)!r} != {v!r}')
+          for key in ('canonical_merge','product_head','product_tree','permanent_pr','observer_run'):
+              if key not in r: raise SystemExit(f'missing {key}')
+          print('MERGE_COMMIT='+shlex.quote(r['canonical_merge']))
+          print('PRODUCT_HEAD='+shlex.quote(r['product_head']))
+          print('PRODUCT_TREE='+shlex.quote(r['product_tree']))
+          print('PERMANENT_PR='+shlex.quote(str(r['permanent_pr'])))
+          print('OBSERVER_RUN='+shlex.quote(str(r['observer_run'])))
+          PYRECEIPT
+          )"
+          export MERGE_COMMIT PRODUCT_HEAD PRODUCT_TREE PERMANENT_PR OBSERVER_RUN
+
+          printf 'verify-canonical-and-retired-ref-state\n' > "$OUT/STAGE"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$MERGE_COMMIT"
+          : > "$OUT/ref-state.tsv"
+          for branch in "$PRODUCT_BRANCH" "$STAGING_BRANCH" "$REBIND_BRANCH" "$PUBLISH_BRANCH" "$MERGE_BRANCH" "$REPAIR_BRANCH" "$OBSERVER_BRANCH"; do
+            remote="$(git ls-remote --heads origin "refs/heads/$branch" | awk '{print $1}')"
+            printf '%s\t%s\n' "$branch" "${remote:-absent}" >> "$OUT/ref-state.tsv"
+            test -z "$remote"
+          done
+          cleanup_head="$(git ls-remote --heads origin "refs/heads/$CLEANUP_BRANCH" | awk '{print $1}')"
+          test -n "$cleanup_head"
+          printf '%s\t%s\n' "$CLEANUP_BRANCH" "$cleanup_head" >> "$OUT/ref-state.tsv"
+
+          printf 'retire-cleanup-ref\n' > "$OUT/STAGE"
+          git push origin --delete "$CLEANUP_BRANCH"
+          test -z "$(git ls-remote --heads origin "refs/heads/$CLEANUP_BRANCH" | awk '{print $1}')"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$MERGE_COMMIT"
+
+          printf 'seal-terminal-receipt\n' > "$OUT/STAGE"
+          python - <<'PYFINAL'
+          import json,os
+          from pathlib import Path
+          out=Path(os.environ['OUT'])
+          value={
+            'schema_version':'ssc-rd04-postpromotion-next-adjudication-terminal-receipt@1',
+            'canonical_merge':os.environ['MERGE_COMMIT'],
+            'product_head':os.environ['PRODUCT_HEAD'],
+            'product_tree':os.environ['PRODUCT_TREE'],
+            'permanent_pr':int(os.environ['PERMANENT_PR']),
+            'observer_run':int(os.environ['OBSERVER_RUN']),
+            'cleanup_run':int((out/'cleanup-run.txt').read_text().strip()),
+            'independent_postmerge_observer_complete':True,
+            'all_named_transport_refs_retired':True,
+            'final_observer_ref_retirement_pending':True,
+            'reviewed_source_admissions':4,
+            'source_holds':1,
+            'promotion_candidates':4,
+            'held_open_cells':2,
+            'matrix_updates':0,
+            'field_terminalizations':0,
+            'row_state_mutations':0,
+            'class_closed':False,
+            'cumulative_ledger_effect':'none',
+            'outside_human_dependency':False,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+            'next_authorized_transaction':'separate_four_cell_promotion_product'
+          }
+          (out/'receipt.json').write_text(json.dumps(value,indent=2,sort_keys=True)+'\n')
+          PYFINAL
+          printf 'complete\n' > "$OUT/STAGE"
+      - name: Upload terminal receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-adjudication-terminal-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-next-adjudication-terminal-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+      - name: Retire final observer and record terminal state
+        if: steps.terminalize.outcome == 'success'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-next-adjudication-terminal-v1"
+          MERGE_COMMIT="$(python -c "import json; print(json.load(open('$OUT/receipt.json'))['canonical_merge'])")"
+          PRODUCT_HEAD="$(python -c "import json; print(json.load(open('$OUT/receipt.json'))['product_head'])")"
+          PRODUCT_TREE="$(python -c "import json; print(json.load(open('$OUT/receipt.json'))['product_tree'])")"
+          PERMANENT_PR="$(python -c "import json; print(json.load(open('$OUT/receipt.json'))['permanent_pr'])")"
+          git push origin --delete "$FINAL_BRANCH"
+          test -z "$(git ls-remote --heads origin "refs/heads/$FINAL_BRANCH" | awk '{print $1}')"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$MERGE_COMMIT"
+          gh issue comment "$ISSUE" --repo "$REPO" --body "RD-04 postpromotion adjudication is terminal at canonical merge \`$MERGE_COMMIT\`, exact product head \`$PRODUCT_HEAD\`, product tree \`$PRODUCT_TREE\`, and permanent PR #$PERMANENT_PR. Independent post-merge proof and checksum-bound cleanup completed, every named repair, rebind, staging, publication, merge-controller, product, observer, cleanup, and final-observer transport ref was retired, and stale carriers were closed where still open. Canonical custody contains four reviewed source admissions, one source hold, four bounded promotion candidates, and two held-open cells. Matrix updates, field terminalizations, row mutations, class closure, cumulative-ledger, publication, adoption, and graph effects remain zero. The next authorized transaction is a separate four-cell promotion product that preserves both North Dakota holds and the open RD-04-C02 class boundary."
+      - name: Report terminal failure boundary
+        if: always() && steps.terminalize.outcome != 'success'
+        shell: bash
+        run: |
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-next-adjudication-terminal-v1"
+          stage="$(cat "$OUT/STAGE" 2>/dev/null || printf unavailable)"
+          code="$(cat "$OUT/EXIT_CODE" 2>/dev/null || printf unavailable)"
+          gh issue comment "$ISSUE" --repo "$REPO" --body "RD-04 final terminal observer failed closed. Stage: \`$stage\`. Exit code: \`$code\`. No terminal cleanup or downstream promotion authority is claimed beyond the last independently authenticated receipt."
+      - name: Enforce terminal state
+        if: always()
+        run: test '${{ steps.terminalize.outcome }}' = success
