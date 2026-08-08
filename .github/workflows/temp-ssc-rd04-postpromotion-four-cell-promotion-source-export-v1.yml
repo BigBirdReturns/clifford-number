@@ -1,0 +1,84 @@
+name: TEMP export exact current source for RD-04 postpromotion four-cell promotion
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-ssc-rd04-postpromotion-four-cell-promotion-source-export-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-four-cell-promotion-source-export-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      EXPECTED_PARENT: d35deab5ef1e255e5957f29e11fe53fcf74e1cfd
+      CARRIER_BRANCH: agent/ssc-rd04-postpromotion-four-cell-promotion-source-export-v1
+      CARRIER_PATH: .github/workflows/temp-ssc-rd04-postpromotion-four-cell-promotion-source-export-v1.yml
+      OUT: /tmp/ssc-rd04-postpromotion-four-cell-promotion-source-export-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Bind exact one-parent one-path carrier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ github.event.pull_request.head.ref }}" = "$CARRIER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_PARENT"
+          test "$(git rev-list --count "$EXPECTED_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$EXPECTED_PARENT" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$EXPECTED_PARENT" HEAD)" = "$CARRIER_PATH"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$EXPECTED_PARENT"
+          git diff --check "$EXPECTED_PARENT" HEAD
+
+      - name: Export exact canonical tracked source
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          printf 'exporting\n' > "$OUT/STAGE"
+          printf '%s\n' "$EXPECTED_PARENT" > "$OUT/source-main.txt"
+          git rev-parse "$EXPECTED_PARENT^{tree}" > "$OUT/source-tree.txt"
+          git ls-tree -r --name-only "$EXPECTED_PARENT" > "$OUT/tracked-paths.txt"
+          git archive --format=tar "$EXPECTED_PARENT" | gzip -1 > "$OUT/source.tar.gz"
+          tar -tzf "$OUT/source.tar.gz" | sed '/\/$/d' > "$OUT/archive-paths.txt"
+          diff -u "$OUT/tracked-paths.txt" "$OUT/archive-paths.txt"
+          grep -Fxq '.github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml' "$OUT/archive-paths.txt"
+          grep -Fxq '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.yml' "$OUT/archive-paths.txt"
+          grep -Fxq 'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json' "$OUT/archive-paths.txt"
+          grep -Fxq 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/promotion-candidate-protocol.json' "$OUT/archive-paths.txt"
+          sha256sum "$OUT/source.tar.gz" > "$OUT/source.tar.gz.sha256"
+          printf 'complete\n' > "$OUT/STAGE"
+
+      - name: Reconfirm live canonical lease
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$EXPECTED_PARENT"
+          test "$(cat "$OUT/STAGE")" = complete
+
+      - name: Preserve terminal receipt
+        if: always()
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p "$OUT"
+          printf '%s\n' "${{ job.status }}" > "$OUT/JOB_STATUS"
+          if [[ ! -f "$OUT/STAGE" ]]; then printf 'failed-before-export\n' > "$OUT/STAGE"; fi
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ssc-rd04-postpromotion-four-cell-promotion-source-export-v1
+          path: /tmp/ssc-rd04-postpromotion-four-cell-promotion-source-export-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
