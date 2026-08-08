@@ -1,0 +1,276 @@
+name: TEMP adjudicate RD-04 postpromotion ND follow-up artifacts v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/payloads/ssc-rd04-postpromotion-nd-followup-adjudication-v1.py.gz'
+      - '.github/workflows/temp-adjudicate-ssc-rd04-postpromotion-nd-followup-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: temp-adjudicate-ssc-rd04-postpromotion-nd-followup-v1
+  cancel-in-progress: false
+
+env:
+  CANONICAL_MAIN: 048e9d13a2555d8e6fabdbee5f45aea858f919b7
+  CANONICAL_TREE: d354309d6b936b499c78f3d0ff47d20f69abda78
+  CARRIER_BRANCH: agent/ssc-rd04-postpromotion-nd-followup-adjudication-v1
+  PAYLOAD_PATH: .github/payloads/ssc-rd04-postpromotion-nd-followup-adjudication-v1.py.gz
+  PAYLOAD_BLOB: d7a83e1e0279e876523e83ad73f5ff25f0b69f0a
+  PAYLOAD_BYTES: '10555'
+  PAYLOAD_SHA256: 46f343451970af960d949dad145adb8117e175deff4c7d6a9c6351a8a53ab785
+  SCRIPT_BYTES: '54273'
+  SCRIPT_SHA256: 25581ce3973cc6e038c54282e77b5ec918c9a323a105b3896de763f426920d4c
+  SCRIPT_GIT_BLOB: 4f7efd2eca06e8f5643be2caf5ad650177d4bb80
+  WORKFLOW_PATH: .github/workflows/temp-adjudicate-ssc-rd04-postpromotion-nd-followup-v1.yml
+  AUTH_ARTIFACT_ID: '9026693727'
+  AUTH_ARTIFACT_BYTES: '31603'
+  AUTH_ARTIFACT_SHA256: 8bd5195c615a183a14d7234bf216bedaf8a62f02701e0ae0d7bce9ef9b9c6c45
+  DUP_ARTIFACT_ID: '9026709327'
+  DUP_ARTIFACT_BYTES: '20578'
+  DUP_ARTIFACT_SHA256: 5b329ec2cd498c42cffc96a7698739df04780ec0c095d8f112978c91c60cec95
+  PROTOCOL_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/selected-followup-protocol.json
+  PROTOCOL_BLOB: 7bbafd8f8c6c915442770ebbeca85b37afba8047
+  FIELD_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json
+  FIELD_BLOB: 522ec8503299c0458d45f43f23512c8ff90ac0f2
+  SOURCE_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/source-adjudications.json
+  SOURCE_BLOB: 3b8e43073f9828d80d39a9dd2baadea471d7a301
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 66896190dd575f9867f1e121d845acfb4d27f56f
+  SUMMARY_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promotion-summary.json
+  SUMMARY_BLOB: 5e0adc541a22c9b0bf4cd8a059bf083e08831a15
+  GH_TOKEN: ${{ github.token }}
+  PYTHONDONTWRITEBYTECODE: '1'
+
+jobs:
+  adjudicate:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-nd-followup-adjudication-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Adjudicate exact authoritative and duplicate artifacts
+        id: adjudication
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-nd-followup-adjudication-v1"
+          AUTH="$OUT/authoritative"
+          DUP="$OUT/duplicate"
+          PRODUCT="$OUT/adjudication"
+          SCRIPT="$OUT/adjudicate.py"
+          rm -rf "$OUT"
+          mkdir -p "$AUTH" "$DUP" "$PRODUCT"
+          exec > >(tee "$OUT/adjudication.log") 2>&1
+          stage=bootstrap
+
+          finalize() {
+            set +e
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS ! -name adjudication.log -print0 |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+            )
+          }
+
+          on_error() {
+            local code=$?
+            trap - ERR
+            set +e
+            printf '%s\n' "$code" > "$OUT/EXIT_CODE"
+            if test ! -s "$PRODUCT/adjudication-receipt.json"; then
+              jq -n \
+                --arg stage "$stage" \
+                --argjson exit_code "$code" \
+                --arg main "$CANONICAL_MAIN" \
+                --arg head "$(git rev-parse HEAD 2>/dev/null || true)" \
+                '{schema_version:"ssc-rd04-postpromotion-nd-followup-artifact-only-adjudication-receipt@1",state:"failed_closed",failed_or_final_stage:$stage,exit_code:$exit_code,canonical_main:$main,carrier_head:(if $head=="" then null else $head end),source_requests:0,source_admissions:0,field_decisions:0,promotion_candidates:0,held_open_fields:0,matrix_updates:0,field_terminalizations:0,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' > "$PRODUCT/adjudication-receipt.json"
+            fi
+            finalize
+            exit "$code"
+          }
+          trap on_error ERR
+
+          stage=bind_two_path_carrier_and_live_main
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_MAIN"
+          test "$(git rev-parse "$CANONICAL_MAIN^{tree}")" = "$CANONICAL_TREE"
+          test "$(git rev-list --count "$CANONICAL_MAIN"..HEAD)" -eq 1
+          printf '%s\n' "$PAYLOAD_PATH" "$WORKFLOW_PATH" | LC_ALL=C sort > "$OUT/expected-carrier-paths.txt"
+          git diff --name-only "$CANONICAL_MAIN" HEAD | LC_ALL=C sort > "$OUT/actual-carrier-paths.txt"
+          git diff --name-only --diff-filter=A "$CANONICAL_MAIN" HEAD | LC_ALL=C sort > "$OUT/added-carrier-paths.txt"
+          diff -u "$OUT/expected-carrier-paths.txt" "$OUT/actual-carrier-paths.txt"
+          diff -u "$OUT/expected-carrier-paths.txt" "$OUT/added-carrier-paths.txt"
+          test -z "$(git diff --name-only --diff-filter=MD "$CANONICAL_MAIN" HEAD)"
+          git diff --check "$CANONICAL_MAIN" HEAD
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/main)" = "$CANONICAL_MAIN"
+          git rev-parse HEAD > "$OUT/carrier-head.txt"
+          git rev-parse HEAD^ > "$OUT/carrier-parent.txt"
+
+          stage=authenticate_payload_and_current_inputs
+          test "$(git hash-object "$PAYLOAD_PATH")" = "$PAYLOAD_BLOB"
+          test "$(wc -c < "$PAYLOAD_PATH")" -eq "$PAYLOAD_BYTES"
+          test "$(sha256sum "$PAYLOAD_PATH" | awk '{print $1}')" = "$PAYLOAD_SHA256"
+          gzip -t "$PAYLOAD_PATH"
+          gzip -dc "$PAYLOAD_PATH" > "$SCRIPT"
+          test "$(wc -c < "$SCRIPT")" -eq "$SCRIPT_BYTES"
+          test "$(sha256sum "$SCRIPT" | awk '{print $1}')" = "$SCRIPT_SHA256"
+          test "$(git hash-object "$SCRIPT")" = "$SCRIPT_GIT_BLOB"
+          python -m py_compile "$SCRIPT"
+          while IFS=$'\t' read -r path blob; do
+            test "$(git hash-object "$path")" = "$blob"
+          done <<EOF_INPUTS
+          $PROTOCOL_PATH	$PROTOCOL_BLOB
+          $FIELD_PATH	$FIELD_BLOB
+          $SOURCE_PATH	$SOURCE_BLOB
+          $MATRIX_PATH	$MATRIX_BLOB
+          $SUMMARY_PATH	$SUMMARY_BLOB
+          EOF_INPUTS
+
+          stage=download_and_verify_retained_artifacts
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$AUTH_ARTIFACT_ID/zip" > "$OUT/authoritative.zip"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$DUP_ARTIFACT_ID/zip" > "$OUT/duplicate.zip"
+          test "$(wc -c < "$OUT/authoritative.zip")" -eq "$AUTH_ARTIFACT_BYTES"
+          test "$(sha256sum "$OUT/authoritative.zip" | awk '{print $1}')" = "$AUTH_ARTIFACT_SHA256"
+          test "$(wc -c < "$OUT/duplicate.zip")" -eq "$DUP_ARTIFACT_BYTES"
+          test "$(sha256sum "$OUT/duplicate.zip" | awk '{print $1}')" = "$DUP_ARTIFACT_SHA256"
+          unzip -t "$OUT/authoritative.zip" > "$OUT/authoritative-zip-test.txt"
+          unzip -t "$OUT/duplicate.zip" > "$OUT/duplicate-zip-test.txt"
+          unzip -q "$OUT/authoritative.zip" -d "$AUTH"
+          unzip -q "$OUT/duplicate.zip" -d "$DUP"
+          (cd "$AUTH" && sha256sum -c SHA256SUMS)
+          (cd "$DUP" && sha256sum -c SHA256SUMS)
+          test "$(cat "$AUTH/EXIT_CODE")" = 0
+          test "$(cat "$AUTH/STAGE")" = complete
+          test "$(cat "$DUP/EXIT_CODE")" = 0
+          test "$(cat "$DUP/STAGE")" = complete
+
+          stage=adjudicate_artifacts_without_source_requests
+          python "$SCRIPT" \
+            --authoritative-root "$AUTH" \
+            --duplicate-root "$DUP" \
+            --output-root "$PRODUCT"
+          cp "$PRODUCT/adjudication-receipt.json" "$OUT/adjudication-receipt.json"
+          jq -e \
+            --arg main "$CANONICAL_MAIN" \
+            '.state=="adjudicated" and
+             .failed_or_final_stage=="complete" and
+             .exit_code==0 and
+             .canonical_main==$main and
+             .source_requests==0 and
+             .artifact_downloads==2 and
+             .source_admissions==2 and
+             .field_decisions==2 and
+             .promotion_candidates==1 and
+             .held_open_fields==1 and
+             .duplicate_transport_observations==2 and
+             .duplicate_transport_substantive_weight_effect=="none" and
+             .adversarial_refusals==35 and
+             .matrix_updates==0 and
+             .field_terminalizations==0 and
+             .row_state_mutations==0 and
+             .class_closed==false and
+             .cumulative_ledger_effect=="none" and
+             .outside_human_dependency==false and
+             .publication_effect=="none" and
+             .adoption_effect=="none" and
+             .graph_effect=="none" and
+             .additional_source_execution_authorized==false' \
+            "$PRODUCT/adjudication-receipt.json" > /dev/null
+
+          stage=replay_canonical_product_and_repository_gates
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs
+          git diff --exit-code -- data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.test.js
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+          stage=prove_clean_deterministic_replay
+          git reset --hard HEAD
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/main)" = "$CANONICAL_MAIN"
+
+          stage=complete
+          trap - ERR
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          finalize
+
+      - name: Upload exact artifact-only adjudication custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-nd-followup-adjudication-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-nd-followup-adjudication-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+          include-hidden-files: true
+
+      - name: Preserve fail-closed conclusion
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-nd-followup-adjudication-v1"
+          R="$OUT/adjudication/adjudication-receipt.json"
+          test "${{ steps.adjudication.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          test -s "$R"
+          jq -e \
+            --arg main "$CANONICAL_MAIN" \
+            '.state=="adjudicated" and
+             .canonical_main==$main and
+             .source_requests==0 and
+             .source_admissions==2 and
+             .promotion_candidates==1 and
+             .held_open_fields==1 and
+             .adversarial_refusals==35 and
+             .matrix_updates==0 and
+             .field_terminalizations==0 and
+             .row_state_mutations==0 and
+             .class_closed==false and
+             .cumulative_ledger_effect=="none" and
+             .outside_human_dependency==false and
+             .additional_source_execution_authorized==false' \
+            "$R" > /dev/null
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/main)" = "$CANONICAL_MAIN"
