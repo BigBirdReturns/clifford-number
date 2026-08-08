@@ -1,0 +1,151 @@
+name: TEMP recover exact RD-04 five-state promotion product
+
+on:
+  push:
+    branches:
+      - 'agent/ssc-rd04-postpromotion-recovery-scratch-do-not-use'
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    if: >-
+      (github.event_name == 'push' && github.ref_name == 'agent/ssc-rd04-postpromotion-recovery-scratch-do-not-use') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-recovery-scratch-do-not-use' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SEALED_PARENT: 21afd8b3da1b7d06d2dada51929c63b60d6da66c
+      SOURCE_BRANCH: agent/ssc-rd04-five-state-promotion-materializer-v1
+      SOURCE_COMMIT: a0e0d9c15e68eec01938ec486942875f1b9caff0
+      ARCHIVE_BYTES: '45104'
+      ARCHIVE_SHA256: d7ee41597453a7c4eaa6a1de0bdb0808ae98ebc878d68e20fff7f5728a718b05
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify exact one-path recovery carrier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = "$SEALED_PARENT"
+          test "$(git rev-list --count HEAD^..HEAD)" = 1
+          test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/temp-ssc-rd04-five-state-promotion-product-recovery.yml'
+          git diff --check HEAD^ HEAD
+
+      - name: Recover and authenticate exact product archive
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-five-state-promotion-product-recovery
+          rm -rf "$OUT"
+          mkdir -p "$OUT/chunks" "$OUT/product"
+
+          git fetch origin "$SOURCE_BRANCH" --depth=32
+          test "$(git rev-parse FETCH_HEAD)" = "$SOURCE_COMMIT"
+
+          cat >"$OUT/chunk-paths" <<'EOF'
+          .tmp/ssc-rd04-five-state-promotion-materializer/payload-00.b64
+          .tmp/ssc-rd04-five-state-promotion-materializer/payload-01.b64
+          .tmp/ssc-rd04-five-state-promotion-materializer/payload-02.b64
+          .tmp/ssc-rd04-five-state-promotion-materializer/payload-03.b64
+          .tmp/ssc-rd04-five-state-promotion-materializer/payload-04.b64
+          EOF
+
+          cat >"$OUT/chunk-sha256" <<'EOF'
+          d3e7ee9c26dfe557ec08458a7b9fc284f07de0cb8bf5095aee6edc9e0bdc309b  chunks/payload-00.b64
+          a80195e6feb31bee4202e6b1fa9cc45ab28d79061957a61ccfd5a5fedfe7a6a6  chunks/payload-01.b64
+          949cc89ba9a35fff63283a5ebc010262b8cf36694a5effea02d59d221d4c9af1  chunks/payload-02.b64
+          d9a450cc508cbe6eda74b078972d1b90e391bf1d592492668197f143a98087da  chunks/payload-03.b64
+          a3d2630960e55c8f2f27114c22d1dd4be7ca70c02b44f4a36428e93b76f8a6a3  chunks/payload-04.b64
+          EOF
+
+          while IFS= read -r path; do
+            name="$(basename "$path")"
+            git show "$SOURCE_COMMIT:$path" >"$OUT/chunks/$name"
+          done <"$OUT/chunk-paths"
+          (cd "$OUT" && sha256sum -c chunk-sha256)
+
+          cat "$OUT"/chunks/payload-*.b64 | base64 -d >"$OUT/product.tar.xz"
+          test "$(stat -c %s "$OUT/product.tar.xz")" = "$ARCHIVE_BYTES"
+          test "$(sha256sum "$OUT/product.tar.xz" | cut -d' ' -f1)" = "$ARCHIVE_SHA256"
+          tar -xJf "$OUT/product.tar.xz" -C "$OUT/product"
+
+          cat >"$OUT/expected-product-paths" <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/cell-promotion-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-decisions.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-input-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/remaining-open-field-census.json
+          docs/milestones/ssc-rd-wave03-rd04-five-state-promotion.md
+          schemas/status-sovereignty-rd-wave03-rd04-five-state-promotion.schema.json
+          test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          EOF
+          (cd "$OUT/product" && find . -type f -printf '%P\n' | sort) >"$OUT/actual-product-paths"
+          diff -u "$OUT/expected-product-paths" "$OUT/actual-product-paths"
+
+          cat >"$OUT/product-sha256" <<'EOF'
+          4313cd204c0159a1fbbee09829a88621908f0a517f7472aea9a72924e572fd77  product/.github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml
+          9c8785b51a3c753d593fa07ea9aef49de7534fbec305c2b785e53ec1e97303b0  product/data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/cell-promotion-ledger.json
+          7c76c7782dc118f8e94500a5eeca08c95d411c467dd2e251b6024e21baf1f33d  product/data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/index.json
+          516806153ddca774b695a85f162bd18134e5f5d722a7b34a23384141ae25fe27  product/data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/product-manifest.json
+          46885a3fedfabb0fb6154500982d8234dc4fa67834f8d000f5749ec15914705c  product/data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json
+          df55121a68fe602488be77b87359533749e3ccefc20c20802081f3b60eb3a107  product/data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-decisions.json
+          bef82827ba54e4edcc5c3676abf32fa2ef91171bd02e23c8dcfa16b556e5f5db  product/data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-input-custody.json
+          89cef0ab5aeafdcf12fa12fce00c4e819be0ba9e1f6b1f1a6a26ad56c50c34c9  product/data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-summary.json
+          ce1581ad8d8e7f0f9fbdb02b4e7510d6b7505825d91c4d97c08b60d9c8ac7ad0  product/data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/remaining-open-field-census.json
+          f51043a4d647e8575b3e841da64fdd37866ea8407b24662c8d7555267031f43f  product/docs/milestones/ssc-rd-wave03-rd04-five-state-promotion.md
+          ab80ff2eae1d283c089743d977712d78907f9104b557b5ce72dc43f355ac8809  product/schemas/status-sovereignty-rd-wave03-rd04-five-state-promotion.schema.json
+          8bf490d4cf6cef3379e48919ceb62f7b0a0994d1de031d7c106078172b1d4d23  product/test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          db53d0ca1b5bcba07eccd5b0979a38d87e81a0e307d3fd62259f41da617749ff  product/tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          d5d7f573cf3a14c505b30b73cd2664b0e2db235213c0a137e90b6af8a8817ba8  product/tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          EOF
+          (cd "$OUT" && sha256sum -c product-sha256)
+
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          out=Path('/tmp/ssc-rd04-five-state-promotion-product-recovery')
+          paths=(out/'actual-product-paths').read_text().splitlines()
+          receipt={
+            'schema_version':'ssc-rd04-five-state-promotion-product-recovery@1',
+            'recovery_head':os.environ['GITHUB_SHA'],
+            'recovery_parent':os.environ['SEALED_PARENT'],
+            'source_branch':os.environ['SOURCE_BRANCH'],
+            'source_commit':os.environ['SOURCE_COMMIT'],
+            'archive_bytes':int(os.environ['ARCHIVE_BYTES']),
+            'archive_sha256':os.environ['ARCHIVE_SHA256'],
+            'permanent_paths':len(paths),
+            'path_list_sha256':hashlib.sha256(('\n'.join(paths)+'\n').encode()).hexdigest(),
+            'product_authority':'none',
+            'merge_authority':'none',
+            'matrix_updates':0,
+            'row_state_mutations':0,
+            'class_closed':False,
+            'outside_human_dependency':False,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+          }
+          (out/'receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          PY
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum >SHA256SUMS)
+
+      - name: Preserve exact recovered product
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-promotion-exact-product-recovery
+          path: /tmp/ssc-rd04-five-state-promotion-product-recovery
+          if-no-files-found: error
+          retention-days: 90
