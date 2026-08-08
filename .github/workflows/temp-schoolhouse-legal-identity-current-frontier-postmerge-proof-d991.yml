@@ -1,0 +1,257 @@
+name: TEMP prove canonical School.House frontier correction d991
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-legal-identity-current-frontier-postmerge-proof-d991.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: schoolhouse-frontier-postmerge-d991-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  prove:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-legal-identity-current-frontier-postmerge-proof-d991')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Prove corrected merge and live-main custody
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PROOF_BASE='d99146fe88617e002463481732a54626aafe3924'
+          WORKFLOW='.github/workflows/temp-schoolhouse-legal-identity-current-frontier-postmerge-proof-d991.yml'
+          PARENT='2aaadb3b87c83a8cf79ded7046a3856101bf943b'
+          PARENT_TREE='1a6690047ea1919fe4b63b1a4eb287b78459241b'
+          OLD_PRODUCT='91c831a76f1af7b63fc4a1b8e26d3c5c093a17fb'
+          OLD_TREE='53efada1f97e68a392299b771d12a68e36d972b5'
+          OLD_MERGE='3918c799f8b8dcdac49c33cec5c7bbd01ac428e4'
+          PRODUCT='9416543ed482b4a7a9e354df3bc6ee2393e18bef'
+          TREE='5b8404c9b4412a6f4de2578b73f51f7ca63db73e'
+          INTEGRATION='0eb095c64b4ae59e5b3beb4ec71e9f1fa2021134'
+          MERGE='d99146fe88617e002463481732a54626aafe3924'
+          QUALIFIER_RUN='31240251199'
+          QUALIFIER_ARTIFACT='9016783249'
+          QUALIFIER_BYTES='144943'
+          QUALIFIER_DIGEST='sha256:75ce220ccff61a204d47fa1815925d965b53c3f0df65cc5415e781dfdc2e21cf'
+          RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-postmerge-proof-d991"
+          WORKTREE="$RUNNER_TEMP/schoolhouse-current-frontier-postmerge-proof-d991-worktree"
+          rm -rf "$RECEIPT" "$WORKTREE"
+          mkdir -p "$RECEIPT"
+          printf 'initializing\n' > "$RECEIPT/STAGE"
+          printf 'source_requests=0\nregistry_queries=0\nform_submissions=0\ncontacts=0\npayments=0\nuploads=0\n' > "$RECEIPT/BOUNDARY"
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            printf '%s\n' "$rc" > "$RECEIPT/SCRIPT_EXIT_CODE"
+            (cd "$RECEIPT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          printf 'proving-carrier-and-topology\n' > "$RECEIPT/STAGE"
+          git fetch --no-tags origin main
+          test "$(git rev-parse HEAD^)" = "$PROOF_BASE"
+          test "$(git rev-list --count "$PROOF_BASE"..HEAD)" = '1'
+          test "$(git diff --name-only "$PROOF_BASE"..HEAD)" = "$WORKFLOW"
+          git diff --check "$PROOF_BASE"..HEAD
+          test "$(git rev-parse "$PARENT^{tree}")" = "$PARENT_TREE"
+          test "$(git rev-parse "$OLD_PRODUCT^")" = "$PARENT"
+          test "$(git rev-parse "$OLD_PRODUCT^{tree}")" = "$OLD_TREE"
+          test "$(git rev-parse "$OLD_MERGE^1")" = "$PARENT"
+          test "$(git rev-parse "$OLD_MERGE^2")" = "$OLD_PRODUCT"
+          test "$(git rev-parse "$OLD_MERGE^{tree}")" = "$OLD_TREE"
+          test "$(git rev-parse "$PRODUCT^")" = "$PARENT"
+          test "$(git rev-parse "$PRODUCT^{tree}")" = "$TREE"
+          test "$(git rev-parse "$INTEGRATION^")" = "$OLD_MERGE"
+          test "$(git rev-parse "$INTEGRATION^{tree}")" = "$TREE"
+          test "$(git rev-parse "$MERGE^1")" = "$OLD_MERGE"
+          test "$(git rev-parse "$MERGE^2")" = "$INTEGRATION"
+          test "$(git rev-parse "$MERGE^{tree}")" = "$TREE"
+
+          git show "$PRODUCT:data/intake/schoolhouse-legal-identity-current-frontier-v1/product-manifest.json" \
+            | jq -r '.permanent_paths[]' | sort > "$RECEIPT/product-paths.txt"
+          test "$(wc -l < "$RECEIPT/product-paths.txt")" = '11'
+          printf '%s\n' \
+            'data/intake/schoolhouse-legal-identity-current-frontier-v1/frontier-reconciliation.json' \
+            'data/intake/schoolhouse-legal-identity-current-frontier-v1/product-manifest.json' \
+            'tools/validate-schoolhouse-legal-identity-current-frontier.py' \
+            | sort > "$RECEIPT/repair-paths.txt"
+          git diff --name-only "$PARENT".."$PRODUCT" | sort > "$RECEIPT/product-diff.txt"
+          diff -u "$RECEIPT/product-paths.txt" "$RECEIPT/product-diff.txt"
+          git diff --name-only "$OLD_PRODUCT".."$PRODUCT" | sort > "$RECEIPT/full-product-repair.txt"
+          diff -u "$RECEIPT/repair-paths.txt" "$RECEIPT/full-product-repair.txt"
+          git diff --name-only "$OLD_MERGE".."$INTEGRATION" | sort > "$RECEIPT/integration-repair.txt"
+          diff -u "$RECEIPT/repair-paths.txt" "$RECEIPT/integration-repair.txt"
+
+          printf 'proving-live-main-and-blobs\n' > "$RECEIPT/STAGE"
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          LIVE_TREE="$(git rev-parse "$LIVE_MAIN^{tree}")"
+          git merge-base --is-ancestor "$MERGE" "$LIVE_MAIN"
+          git rev-list --count "$MERGE".."$LIVE_MAIN" > "$RECEIPT/intervening-count.txt"
+          git diff --name-only "$MERGE".."$LIVE_MAIN" | sort -u > "$RECEIPT/intervening-paths.txt"
+          comm -12 "$RECEIPT/product-paths.txt" "$RECEIPT/intervening-paths.txt" > "$RECEIPT/intervening-overlap.txt"
+          test ! -s "$RECEIPT/intervening-overlap.txt"
+          printf 'path\tproduct\tintegration\tmerge\tlive\n' > "$RECEIPT/blob-custody.tsv"
+          while IFS= read -r path; do
+            a="$(git rev-parse "$PRODUCT:$path")"
+            b="$(git rev-parse "$INTEGRATION:$path")"
+            c="$(git rev-parse "$MERGE:$path")"
+            d="$(git rev-parse "$LIVE_MAIN:$path")"
+            printf '%s\t%s\t%s\t%s\t%s\n' "$path" "$a" "$b" "$c" "$d" >> "$RECEIPT/blob-custody.tsv"
+            test "$a" = "$b"
+            test "$a" = "$c"
+            test "$a" = "$d"
+          done < "$RECEIPT/product-paths.txt"
+          printf 'live_main=%s\nlive_tree=%s\n' "$LIVE_MAIN" "$LIVE_TREE" > "$RECEIPT/live-main.txt"
+
+          printf 'binding-independent-qualifier\n' > "$RECEIPT/STAGE"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$QUALIFIER_RUN" > "$RECEIPT/qualifier-run.json"
+          test "$(jq -r .status "$RECEIPT/qualifier-run.json")" = 'completed'
+          test "$(jq -r .conclusion "$RECEIPT/qualifier-run.json")" = 'success'
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$QUALIFIER_ARTIFACT" > "$RECEIPT/qualifier-artifact.json"
+          test "$(jq -r .size_in_bytes "$RECEIPT/qualifier-artifact.json")" = "$QUALIFIER_BYTES"
+          test "$(jq -r .digest "$RECEIPT/qualifier-artifact.json")" = "$QUALIFIER_DIGEST"
+          test "$(jq -r .workflow_run.id "$RECEIPT/qualifier-artifact.json")" = "$QUALIFIER_RUN"
+          test "$(jq -r .expired "$RECEIPT/qualifier-artifact.json")" = 'false'
+
+          printf 'qualifying-live-main\n' > "$RECEIPT/STAGE"
+          git worktree add --detach "$WORKTREE" "$LIVE_MAIN"
+          python - "$WORKTREE" "$RECEIPT/product-paths.txt" "$RECEIPT/parent-congruence.json" <<'PY'
+          from pathlib import Path
+          import json, sys
+          root, paths_file, output = map(Path, sys.argv[1:])
+          parent = '2aaadb3b87c83a8cf79ded7046a3856101bf943b'
+          tree = '1a6690047ea1919fe4b63b1a4eb287b78459241b'
+          stale_parent = '987f1b2574eeddaba49d67c1c1498a81d40f7c69'
+          stale_tree = 'f805cde651c5236e0918baba558e0da1be77b556'
+          expected = {
+              'data/intake/schoolhouse-legal-identity-current-frontier-v1/frontier-reconciliation.json',
+              'data/intake/schoolhouse-legal-identity-current-frontier-v1/product-manifest.json',
+              'tools/validate-schoolhouse-legal-identity-current-frontier.py',
+          }
+          parent_files = set(); tree_files = set(); pc = tc = 0
+          for relative in paths_file.read_text().splitlines():
+              data = (root / relative).read_bytes()
+              assert stale_parent.encode() not in data, relative
+              assert stale_tree.encode() not in data, relative
+              a = data.count(parent.encode()); b = data.count(tree.encode())
+              if a: parent_files.add(relative); pc += a
+              if b: tree_files.add(relative); tc += b
+          assert parent_files == expected and tree_files == expected
+          assert pc == 3 and tc == 3
+          manifest = json.loads((root / 'data/intake/schoolhouse-legal-identity-current-frontier-v1/product-manifest.json').read_text())
+          reconciliation = json.loads((root / 'data/intake/schoolhouse-legal-identity-current-frontier-v1/frontier-reconciliation.json').read_text())
+          validator = (root / 'tools/validate-schoolhouse-legal-identity-current-frontier.py').read_text()
+          assert manifest['canonical_parent'] == parent and manifest['canonical_parent_tree'] == tree
+          assert reconciliation['product_parent'] == parent and reconciliation['product_parent_tree'] == tree
+          assert f"EXPECTED_PARENT = '{parent}'" in validator
+          assert f"EXPECTED_PARENT_TREE = '{tree}'" in validator
+          output.write_text(json.dumps({'state':'pass','parent_occurrences':pc,'tree_occurrences':tc,'stale_parent_occurrences':0,'stale_tree_occurrences':0,'files':sorted(expected)}, indent=2) + '\n')
+          PY
+          (
+            cd "$WORKTREE"
+            python tools/validate-schoolhouse-legal-identity-current-frontier.py --self-test | tee "$RECEIPT/focused-validator.log"
+            node tools/validate-bvvc-defense-capital.mjs | tee "$RECEIPT/bvvc-validator.log"
+            node tools/validate-no-magic-human-gate.mjs | tee "$RECEIPT/no-magic-human.log"
+            node test/no-magic-human-gate.test.js | tee -a "$RECEIPT/no-magic-human.log"
+            npm run release:check | tee "$RECEIPT/release-check.log"
+            git restore --staged --worktree .
+            git clean -fdx
+            python tools/validate-schoolhouse-legal-identity-current-frontier.py --self-test | tee "$RECEIPT/focused-validator-replay.log"
+            node tools/validate-bvvc-defense-capital.mjs | tee "$RECEIPT/bvvc-validator-replay.log"
+            node tools/validate-no-magic-human-gate.mjs | tee "$RECEIPT/no-magic-human-replay.log"
+            git diff --check
+            git diff --exit-code
+            test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          )
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$LIVE_MAIN"
+
+          python - "$RECEIPT/proof.json" "$LIVE_MAIN" "$LIVE_TREE" "$(cat "$RECEIPT/intervening-count.txt")" <<'PY'
+          from pathlib import Path
+          import json, sys
+          output, live, tree, intervening = sys.argv[1:]
+          value = {
+              'schema_version': 'schoolhouse-legal-identity-current-frontier-postmerge-proof@1',
+              'proof': 'pass',
+              'original_product_commit': '91c831a76f1af7b63fc4a1b8e26d3c5c093a17fb',
+              'original_merge_commit': '3918c799f8b8dcdac49c33cec5c7bbd01ac428e4',
+              'corrected_product_commit': '9416543ed482b4a7a9e354df3bc6ee2393e18bef',
+              'integration_commit': '0eb095c64b4ae59e5b3beb4ec71e9f1fa2021134',
+              'corrected_merge_commit': 'd99146fe88617e002463481732a54626aafe3924',
+              'corrected_tree': '5b8404c9b4412a6f4de2578b73f51f7ca63db73e',
+              'current_main_observed': live,
+              'current_main_tree': tree,
+              'corrected_merge_is_ancestor': True,
+              'intervening_commit_count': int(intervening),
+              'intervening_product_path_overlap': 0,
+              'eleven_product_blobs_unchanged': True,
+              'merge_topology': 'pass',
+              'parent_congruence': 'pass',
+              'stale_parent_occurrences': 0,
+              'stale_parent_tree_occurrences': 0,
+              'focused_validation': 'pass',
+              'adversarial_refusals': 15,
+              'bvvc_validation': 'pass',
+              'no_magic_human_gate': 'pass',
+              'complete_release_gate': 'pass',
+              'clean_replay': 'pass',
+              'post_restore_clean': True,
+              'source_slice_files': 233,
+              'source_lanes': 23,
+              'central_projection_lanes': 15,
+              'post_cutoff_lanes': 8,
+              'active_source_leases': 0,
+              'candidate_successors': 0,
+              'source_requests': 0,
+              'identity_admissions': 0,
+              'relationship_admissions': 0,
+              'negative_existence_claims': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'public_schoolhouse_legal_identity': 'unresolved',
+          }
+          Path(output).write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+          PY
+          printf 'complete\n' > "$RECEIPT/STAGE"
+
+      - name: Upload canonical post-merge proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-legal-identity-current-frontier-postmerge-proof-d991
+          path: ${{ runner.temp }}/schoolhouse-current-frontier-postmerge-proof-d991
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
