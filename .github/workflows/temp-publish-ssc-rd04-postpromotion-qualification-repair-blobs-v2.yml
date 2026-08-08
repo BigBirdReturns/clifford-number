@@ -1,0 +1,201 @@
+name: TEMP publish exact RD-04 qualification repair blobs V2
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-publish-ssc-rd04-postpromotion-qualification-repair-blobs-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-qualification-repair-blob-publisher-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      OBSERVED_MAIN: f0bf84537bdcb8b9f9de57c392ad83d01bac6f35
+      CARRIER_BRANCH: agent/ssc-rd04-postpromotion-qualification-repair-blob-publisher-v2
+      CARRIER_WORKFLOW: .github/workflows/temp-publish-ssc-rd04-postpromotion-qualification-repair-blobs-v2.yml
+      PRODUCT_PARENT: 91b386df809079884825b19a6b5d864b6e739172
+      WORKFLOW_REL: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.yml
+      MANIFEST_REL: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/product-manifest.json
+      BUILDER_REL: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+      VALIDATOR_REL: tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+      TEST_REL: test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js
+      WORKFLOW_BLOB: 01406e2e9ff8568a7a3432effea572de78c436de
+      MANIFEST_BLOB: ecc18e4f2b771eb11805aea464ae080df087c459
+      WORKFLOW_SHA256: 5c25a1627ff1057e121ef7c93a7f7b97d499eb3a39ad59eb782efea01157ede4
+      MANIFEST_SHA256: 9a82bf9643ab11dfb51c5ece18f1ec8aa2897c638bc6b3456814040a91787a5a
+      COMBINED_SHA256: db3acdbdff1d727e17c9a52ba5a2a19965a82cc38e5a5ed3f0933802ec337439
+      WORKFLOW_TAG: staging/ssc-rd04-postpromotion-qualification-repair-workflow-blob-v2
+      MANIFEST_TAG: staging/ssc-rd04-postpromotion-qualification-repair-manifest-blob-v2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned YAML parser
+        run: python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2'
+
+      - name: Construct, qualify, and publish exact repair blobs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-postpromotion-qualification-repair-blob-publisher-v2
+          WORK="$RUNNER_TEMP/ssc-rd04-postpromotion-qualification-repair-v2"
+          rm -rf "$OUT" "$WORK"
+          mkdir -p "$OUT"
+          printf 'initializing\n' >"$OUT/STAGE"
+          printf 'source_requests=0\nroute_executions=0\nnew_transport_captures=0\nsource_admissions=0\nfield_classifications=0\nfield_terminalizations=0\nmatrix_updates=0\nrow_state_mutations=0\nclass_closed=false\ncumulative_ledger_effect=none\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' >"$OUT/BOUNDARY"
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            printf '%s\n' "$rc" >"$OUT/EXIT_CODE"
+            if test -d "$WORK"; then
+              git -C "$WORK" rev-parse HEAD >"$OUT/repair-head-final.txt" 2>/dev/null || true
+              git -C "$WORK" rev-parse 'HEAD^{tree}' >"$OUT/repair-tree-final.txt" 2>/dev/null || true
+              git -C "$WORK" status --porcelain=v1 --untracked-files=all >"$OUT/repair-status-final.txt" 2>/dev/null || true
+            fi
+            (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum >SHA256SUMS)
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          printf 'binding-one-path-carrier\n' >"$OUT/STAGE"
+          git rev-parse HEAD >"$OUT/carrier-head.txt"
+          test "${{ github.event_name }}" != pull_request || test "${{ github.event.pull_request.head.ref }}" = "$CARRIER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$OBSERVED_MAIN"
+          test "$(git rev-list --count "$OBSERVED_MAIN"..HEAD)" -eq 1
+          printf '%s\n' "$CARRIER_WORKFLOW" >"$OUT/expected-carrier-paths.txt"
+          git diff --name-only --diff-filter=ACDMRTUXB "$OBSERVED_MAIN" HEAD | LC_ALL=C sort >"$OUT/actual-carrier-paths.txt"
+          git diff --name-only --diff-filter=A "$OBSERVED_MAIN" HEAD | LC_ALL=C sort >"$OUT/added-carrier-paths.txt"
+          diff -u "$OUT/expected-carrier-paths.txt" "$OUT/actual-carrier-paths.txt"
+          diff -u "$OUT/expected-carrier-paths.txt" "$OUT/added-carrier-paths.txt"
+          git diff --check "$OBSERVED_MAIN" HEAD
+
+          printf 'binding-main-and-product-parent\n' >"$OUT/STAGE"
+          git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$OBSERVED_MAIN"
+          test "$(git rev-parse "${PRODUCT_PARENT}:data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json")" = 42361e559db90777e1d60aea5530df5694c86dc6
+          test "$(git rev-parse "${PRODUCT_PARENT}:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-ledger.json")" = ad4a82bc1a23e0957137468dfc0a4c3333d84394
+          test "$(git rev-parse "${PRODUCT_PARENT}:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-query-contract.json")" = d5c445435dd74bea61e7e50887a27a3ffb1edcf1
+          test "$(git rev-parse "${PRODUCT_PARENT}:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/previously-frozen-url-exclusion.json")" = 5d5890f4bc84d943d3a0ac6a3042321448c63959
+          test -z "$(git ls-remote --tags origin "refs/tags/$WORKFLOW_TAG")"
+          test -z "$(git ls-remote --tags origin "refs/tags/$MANIFEST_TAG")"
+
+          printf 'constructing-exact-two-path-repair\n' >"$OUT/STAGE"
+          git worktree add --detach "$WORK" "$OBSERVED_MAIN"
+          cd "$WORK"
+          git config user.name 'OpenAI Agent'
+          git config user.email 'openai-agent@users.noreply.github.com'
+          git config commit.gpgsign false
+          python - <<'PYREPAIR'
+          from pathlib import Path
+          path = Path('.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.yml')
+          text = path.read_text()
+          replacements = {
+              '          sha256sum -c "$OUT/SHA256SUMS"\n': '          (cd "$OUT" && sha256sum -c SHA256SUMS)\n',
+              '          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json)" = 42361e559db90777e1d60aea5530df5694c86dc6\n': '          test "$(git rev-parse "${PRODUCT_PARENT}:data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json")" = 42361e559db90777e1d60aea5530df5694c86dc6\n',
+              '          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-ledger.json)" = ad4a82bc1a23e0957137468dfc0a4c3333d84394\n': '          test "$(git rev-parse "${PRODUCT_PARENT}:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-ledger.json")" = ad4a82bc1a23e0957137468dfc0a4c3333d84394\n',
+              '          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-query-contract.json)" = d5c445435dd74bea61e7e50887a27a3ffb1edcf1\n': '          test "$(git rev-parse "${PRODUCT_PARENT}:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-query-contract.json")" = d5c445435dd74bea61e7e50887a27a3ffb1edcf1\n',
+              '          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/previously-frozen-url-exclusion.json)" = 5d5890f4bc84d943d3a0ac6a3042321448c63959\n': '          test "$(git rev-parse "${PRODUCT_PARENT}:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/previously-frozen-url-exclusion.json")" = 5d5890f4bc84d943d3a0ac6a3042321448c63959\n',
+          }
+          for old, new in replacements.items():
+              if text.count(old) != 1:
+                  raise SystemExit(f'replacement denominator mismatch: {text.count(old)}')
+              text = text.replace(old, new)
+          path.write_text(text)
+          PYREPAIR
+
+          node --check "$BUILDER_REL"
+          node --check "$VALIDATOR_REL"
+          node --check "$TEST_REL"
+          node "$BUILDER_REL" --write
+          node "$BUILDER_REL"
+          python - <<'PYYAML'
+          from pathlib import Path
+          import yaml
+          value = yaml.safe_load(Path('.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.yml').read_text())
+          if not isinstance(value, dict):
+              raise SystemExit('repaired workflow did not parse as an object')
+          print('workflow_yaml_parse=pass')
+          PYYAML
+          node "$VALIDATOR_REL" | tee "$OUT/validation.json"
+          node "$TEST_REL" | tee "$OUT/adversarial.json"
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+
+          printf '%s\n' "$WORKFLOW_REL" "$MANIFEST_REL" | LC_ALL=C sort >"$OUT/expected-repair-paths.txt"
+          git diff --name-only --diff-filter=ACDMRTUXB "$OBSERVED_MAIN" | LC_ALL=C sort >"$OUT/actual-repair-paths.txt"
+          git diff --name-only --diff-filter=M "$OBSERVED_MAIN" | LC_ALL=C sort >"$OUT/modified-repair-paths.txt"
+          diff -u "$OUT/expected-repair-paths.txt" "$OUT/actual-repair-paths.txt"
+          diff -u "$OUT/expected-repair-paths.txt" "$OUT/modified-repair-paths.txt"
+          test -z "$(git diff --name-only --diff-filter=ADRTUXB "$OBSERVED_MAIN")"
+          git diff --check "$OBSERVED_MAIN"
+          test "$(git hash-object "$WORKFLOW_REL")" = "$WORKFLOW_BLOB"
+          test "$(git hash-object "$MANIFEST_REL")" = "$MANIFEST_BLOB"
+          test "$(sha256sum "$WORKFLOW_REL" | cut -d' ' -f1)" = "$WORKFLOW_SHA256"
+          test "$(sha256sum "$MANIFEST_REL" | cut -d' ' -f1)" = "$MANIFEST_SHA256"
+          python - <<'PYMANIFEST'
+          import json
+          from pathlib import Path
+          manifest = json.loads(Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/product-manifest.json').read_text())
+          if manifest['combined_sha256'] != 'db3acdbdff1d727e17c9a52ba5a2a19965a82cc38e5a5ed3f0933802ec337439':
+              raise SystemExit('combined manifest digest mismatch')
+          PYMANIFEST
+
+          git add -- "$WORKFLOW_REL" "$MANIFEST_REL"
+          git commit -m 'Repair RD-04 qualification input custody' -m 'Verify historical source inputs at the product parent, preserve qualification checksums from their owning directory, and rebind the manifest without changing any source, field, matrix, row-state, class, ledger, publication, adoption, graph, or outside-human boundary.'
+          REPAIR_HEAD="$(git rev-parse HEAD)"
+          REPAIR_TREE="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$REPAIR_HEAD" >"$OUT/repair-head.txt"
+          printf '%s\n' "$REPAIR_TREE" >"$OUT/repair-tree.txt"
+          test "$(git rev-parse HEAD^)" = "$OBSERVED_MAIN"
+          test "$(git rev-list --count "$OBSERVED_MAIN"..HEAD)" -eq 1
+          npm run release:check
+
+          printf 'proving-clean-replay\n' >"$OUT/STAGE"
+          git reset --hard HEAD
+          git clean -fdx
+          node "$BUILDER_REL" --write
+          node "$BUILDER_REL"
+          node "$VALIDATOR_REL" >"$OUT/validation-replay.json"
+          node "$TEST_REL" >"$OUT/adversarial-replay.json"
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          printf 'publishing-explicit-blob-refs\n' >"$OUT/STAGE"
+          git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$OBSERVED_MAIN"
+          git update-ref "refs/tags/$WORKFLOW_TAG" "$WORKFLOW_BLOB"
+          git update-ref "refs/tags/$MANIFEST_TAG" "$MANIFEST_BLOB"
+          git push origin "refs/tags/$WORKFLOW_TAG:refs/tags/$WORKFLOW_TAG" "refs/tags/$MANIFEST_TAG:refs/tags/$MANIFEST_TAG"
+          test "$(git ls-remote --tags origin "refs/tags/$WORKFLOW_TAG" | cut -f1)" = "$WORKFLOW_BLOB"
+          test "$(git ls-remote --tags origin "refs/tags/$MANIFEST_TAG" | cut -f1)" = "$MANIFEST_BLOB"
+          printf 'complete\n' >"$OUT/STAGE"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ssc-rd04-postpromotion-qualification-repair-blob-publisher-v2
+          path: /tmp/ssc-rd04-postpromotion-qualification-repair-blob-publisher-v2
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
