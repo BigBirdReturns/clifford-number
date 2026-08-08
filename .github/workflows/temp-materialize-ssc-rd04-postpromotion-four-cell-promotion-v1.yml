@@ -1,0 +1,198 @@
+name: TEMP materialize RD-04 postpromotion four-cell promotion v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-postpromotion-four-cell-promotion-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+  issues: write
+
+concurrency:
+  group: temp-materialize-rd04-postpromotion-four-cell-promotion-v1
+  cancel-in-progress: false
+
+env:
+  PRODUCT_PARENT: d35deab5ef1e255e5957f29e11fe53fcf74e1cfd
+  PRODUCT_PARENT_TREE: cb129c2c7297ef5aa2dc0076030f8d2eb5440860
+  CARRIER_BRANCH: agent/rd04-four-cell-promotion-materializer-v1
+  CARRIER_PATH: .github/workflows/temp-materialize-ssc-rd04-postpromotion-four-cell-promotion-v1.yml
+  PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-four-cell-promotion-product-v1
+  STAGING_BRANCH: staging/ssc-rd04-postpromotion-four-cell-promotion-v1
+  OUTPUT_DIR: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion
+  SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.schema.json
+  BUILDER_PATH: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs
+  VALIDATOR_PATH: tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs
+  TEST_PATH: test/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.test.js
+  WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.yml
+  VALIDATION_RUN: 31271473675
+  VALIDATION_HEAD: 7980e6872ff4954e5e5e17d2b905bb8a9cf99db6
+  VALIDATION_ARTIFACT: 9025731830
+  VALIDATION_ARTIFACT_BYTES: 8693
+  VALIDATION_ARTIFACT_ZIP_SHA256: af8d61caf7f13e0c665b320cc38ded6b4f73b6be89da7624130a4d6793e148c1
+  VALIDATION_RECEIPT_SHA256: c1ea0e2d0ba38d1f913eecb3edd33c85413e2d97cf82364b5d49ed0821967586
+  VALIDATION_CANDIDATE_LEDGER_SHA256: 8b125d7037bed8d2a23e8a9e5ba66e735ec84aa39a568614b7fa6b35b11a45d4
+  VALIDATION_INPUT_INVENTORY_SHA256: 911c3d04ac06bbf0207572c1906a20075971caa13bd91e50a8c0d7722bafc9fe
+  GH_TOKEN: ${{ github.token }}
+  PYTHONDONTWRITEBYTECODE: '1'
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == env.CARRIER_BRANCH)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install deterministic validators
+        run: python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2' 'jsonschema==4.25.1'
+
+      - name: Materialize and qualify exact product
+        id: materialization
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-four-cell-promotion-materializer-v1"
+          WT="${RUNNER_TEMP}/ssc-rd04-postpromotion-four-cell-promotion-materializer-wt"
+          CWT="${RUNNER_TEMP}/ssc-rd04-postpromotion-four-cell-promotion-candidate-wt"
+          rm -rf "$OUT" "$WT" "$CWT"
+          mkdir -p "$OUT"
+          exec > >(tee "$OUT/materialization.log") 2>&1
+          stage=bootstrap
+
+          finalize() {
+            set +e
+            (
+              cd "$OUT"
+              find . -maxdepth 1 -type f ! -name SHA256SUMS -print0 |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+            )
+          }
+
+          on_error() {
+            local code=$?
+            trap - ERR
+            set +e
+            printf '%s\n' "$code" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            jq -n \
+              --arg stage "$stage" \
+              --argjson exit_code "$code" \
+              --arg parent "$PRODUCT_PARENT" \
+              --arg carrier_head "$(git rev-parse HEAD 2>/dev/null || true)" \
+              '{
+                schema_version:"ssc-rd04-postpromotion-four-cell-promotion-materializer@1",
+                state:"failed_closed",
+                failed_or_final_stage:$stage,
+                exit_code:$exit_code,
+                product_parent:$parent,
+                carrier_head:(if $carrier_head=="" then null else $carrier_head end),
+                candidate_commit:null,
+                candidate_tree:null,
+                staging_branch:null,
+                permanent_path_count:0,
+                matrix_updates:0,
+                field_terminalizations:0,
+                row_state_mutations:0,
+                class_closed:false,
+                cumulative_ledger_effect:"none",
+                outside_human_dependency:false,
+                publication_effect:"none",
+                adoption_effect:"none",
+                graph_effect:"none"
+              }' > "$OUT/materialization-receipt.json"
+            finalize
+            exit "$code"
+          }
+
+          trap on_error ERR
+          set -Eeuo pipefail
+
+          stage=bind_carrier_and_live_main
+          if test "${{ github.event_name }}" = pull_request; then
+            test "${{ github.event.pull_request.head.ref }}" = "$CARRIER_BRANCH"
+            test "${{ github.event.pull_request.head.sha }}" = "$(git rev-parse HEAD)"
+          fi
+          test "$(git rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "$PRODUCT_PARENT^{tree}")" = "$PRODUCT_PARENT_TREE"
+          test "$(git rev-list --count "$PRODUCT_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$PRODUCT_PARENT" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$PRODUCT_PARENT" HEAD)" = "$CARRIER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MD "$PRODUCT_PARENT" HEAD)"
+          git diff --check "$PRODUCT_PARENT" HEAD
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$PRODUCT_PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')"
+          test -z "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')"
+          git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$PRODUCT_PARENT"
+
+          stage=authenticate_validation_artifact
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$VALIDATION_ARTIFACT/zip" > "$OUT/validation.zip"
+          test "$(wc -c < "$OUT/validation.zip")" -eq "$VALIDATION_ARTIFACT_BYTES"
+          test "$(sha256sum "$OUT/validation.zip" | awk '{print $1}')" = "$VALIDATION_ARTIFACT_ZIP_SHA256"
+          mkdir -p "$OUT/validation"
+          unzip -q "$OUT/validation.zip" -d "$OUT/validation"
+          (
+            cd "$OUT/validation"
+            sha256sum -c SHA256SUMS
+          )
+          test "$(sha256sum "$OUT/validation/validation-receipt.json" | awk '{print $1}')" = "$VALIDATION_RECEIPT_SHA256"
+          test "$(sha256sum "$OUT/validation/candidate-validation-ledger.json" | awk '{print $1}')" = "$VALIDATION_CANDIDATE_LEDGER_SHA256"
+          test "$(sha256sum "$OUT/validation/input-inventory.json" | awk '{print $1}')" = "$VALIDATION_INPUT_INVENTORY_SHA256"
+          jq -e \
+            --arg parent "$PRODUCT_PARENT" \
+            --arg head "$VALIDATION_HEAD" \
+            --argjson run "$VALIDATION_RUN" \
+            '.state=="validated" and
+             .failed_or_final_stage=="complete" and
+             .exit_code==0 and
+             .execution_parent==$parent and
+             .execution_head==$head and
+             .workflow_run==$run and
+             .candidate_count==4 and
+             .admissible_candidate_count==4 and
+             .scope_held_candidate_count==0 and
+             .unique_candidate_cell_count==4 and
+             .validated_open_cell_count==4 and
+             .held_cell_count==2 and
+             (.validations|length)==4 and
+             ([.validations[].route_target_scope_validation]|all(.=="pass")) and
+             ([.validations[].source_candidate_field_scope_validation]|all(.=="pass")) and
+             .matrix_transition_if_separately_promoted.terminal_cells_before==222 and
+             .matrix_transition_if_separately_promoted.terminal_cells_after==226 and
+             .matrix_transition_if_separately_promoted.open_substantive_cells_before==188 and
+             .matrix_transition_if_separately_promoted.open_substantive_cells_after==184 and
+             .matrix_updates==0 and
+             .field_terminalizations==0 and
+             .row_state_mutations==0 and
+             .class_closed==false and
+             .cumulative_ledger_effect=="none" and
+             .promotion_authority_created==false' \
+            "$OUT/validation/validation-receipt.json" > /dev/null
+
+          stage=write_static_product_surfaces
+          git worktree add --detach "$WT" "$PRODUCT_PARENT"
+          cd "$WT"
+          export STATIC_PAYLOADS_JSON='{".github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.yml":"bmFtZTogU3RhdHVzIHNvdmVyZWlnbnR5IFJELTA0IHBvc3Rwcm9tb3Rpb24gZm91ci1jZWxsIHByb21vdGlvbgoKb246CiAgcHVsbF9yZXF1ZXN0OgogICAgYnJhbmNoZXM6IFttYWluXQogICAgdHlwZXM6IFtvcGVuZWQsIHN5bmNocm9uaXplLCByZW9wZW5lZF0KICAgIHBhdGhzOgogICAgICAtICcuZ2l0aHViL3dvcmtmbG93cy9zdGF0dXMtc292ZXJlaWdudHktcmQtd2F2ZTAzLXJkMDQtcG9zdHByb21vdGlvbi1mb3VyLWNlbGwtcHJvbW90aW9uLnltbCcKICAgICAgLSAnZGF0YS9pbnRha2Uvc3RhdHVzLXNvdmVyZWlndHktcmQtd2F2ZTAzLXJkMDQtcG9zdHByb21vdGlvbi1mb3VyLWNlbGwtcHJvbW90aW9uLyoqJwogICAgICAtICdkb2NzL21pbGVzdG9uZXMvc3NjLXJkLXdhdmUwMy1yZDA0LXBvc3Rwcm9tb3Rpb24tZm91ci1jZWxsLXByb21vdGlvbi5tZCcKICAgICAgLSAnc2NoZW1hcy9zdGF0dXMtc292ZXJlaWdudHktcmQtd2F2ZTAzLXJkMDQtcG9zdHByb21vdGlvbi1mb3VyLWNlbGwtcHJvbW90aW9uLnNjaGVtYS5qc29uJwogICAgICAtICd0ZXN0L3N0YXR1cy1zb3ZlcmVpZ250eS1yZC13YXZlMDMtcmQwNC1wb3N0cHJvbW90aW9uLWZvdXItY2VsbC1wcm9tb3Rpb24udGVzdC5qcycKICAgICAgLSAndG9vbHMvYnVpbGQtc3RhdHVzLXNvdmVyZWlndHktcmQtd2F2ZTAzLXJkMDQtcG9zdHByb21vdGlvbi1mb3VyLWNlbGwtcHJvbW90aW9uLm1qcycKICAgICAgLSAndG9vbHMvdmFsaWRhdGUtc3RhdHVzLXNvdmVyZWlndHktcmQtd2F2ZTAzLXJkMDQtcG9zdHByb21vdGlvbi1mb3VyLWNlbGwtcHJvbW90aW9uLm1qcycKICB3b3JrZmxvd19kaXNwYXRjaDoKCnBlcm1pc3Npb25zOgogIGNvbnRlbnRzOiByZWFkCiAgaXNzdWVzOiB3cml0ZQogIGFjdGlvbnM6IHJlYWQKCmNvbmN1cnJlbmN5OgogIGdyb3VwOiBzdGF0dXMtc292ZXJlaWdudHktcmQwNC1wb3N0cHJvbW90aW9uLWZvdXItY2VsbC1wcm9tb3Rpb24KICBjYW5jZWwtaW4tcHJvZ3Jlc3M6IGZhbHNlCgplbnY6CiAgUFJPRFVDVF9QQVJFTlQ6IGQzNWRlYWI1ZWYxZTI1NWU1OTU3ZjI5ZTExZmU1M2ZjZjc0ZTFjZmQKICBQUk9EVUNUX1BBUkVOVF9UUkVFOiBjYjEyOWMyYzcyOTdlZjVhYTJkYzAwNzYwMzBmOGQyZWI1NDQwODYwCiAgUFJPRFVDVF9CUkFOQ0g6IGFnZW50L3NzYy1yZDA0LXBvc3Rwcm9tb3Rpb24tZm91ci1jZWxsLXByb21vdGlvbi1wcm9kdWN0LXYxCiAgT1VUUFVUX0RJUjogZGF0YS9pbnRha2Uvc3RhdHVzLXNvdmVyZWlndHktcmQtd2F2ZTAzLXJkMDQtcG9zdHByb21vdGlvbi1mb3VyLWNlbGwtcHJvbW90aW9uCiAgU0NIRU1BX1BBVEg6IHNjaGVtYXMvc3RhdHVzLXNvdmVyZWlndHktcmQtd2F2ZTAzLXJkMDQtcG9zdHByb21vdGlvbi1mb3VyLWNlbGwtcHJvbW90aW9uLnNjaGVtYS5qc29uCiAgQlVJTERFUl9QQVRIOiB0b29scy9idWlsZC1zdGF0dXMtc292ZXJlaWdudHktcmQtd2F2ZTAzLXJkMDQtcG9zdHByb21vdGlvbi1mb3VyLWNlbGwtcHJvbW90aW9uLm1qcwogIFZBTElEQVRPUl9QQVRIOiB0b29scy92YWxpZGF0ZS1zdGF0dXMtc292ZXJlaWdudHktcmQtd2F2ZTAzLXJkMDQtcG9zdHByb21vdGlvbi1mb3VyLWNlbGwtcHJvbW90aW9uLm1qcwogIFRFU1RfUEFUSDogdGVzdC9zdGF0dXMtc292ZXJlaWdudHktcmQtd2F2ZTAzLXJkMDQtcG9zdHByb21vdGlvbi1mb3VyLWNlbGwtcHJvbW90aW9uLnRlc3QuanMKICBNSUxFU1RPTkVfUEFUSDogZG9jcy9taWxlc3RvbmVzL3NzYy1yZC13YXZlMDMtcmQwNC1wb3N0cHJvbW90aW9uLWZvdXItY2VsbC1wcm9tb3Rpb24ubWQKICBXT1JLRkxPV19QQVRIOiAuZ2l0aHViL3dvcmtmbG93cy9zdGF0dXMtc292ZXJlaWdudHktcmQtd2F2ZTAzLXJkMDQtcG9zdHByb21vdGlvbi1mb3VyLWNlbGwtcHJvbW90aW9uLnltbAogIE1BVFJJWF9QQVRIOiBkYXRhL2ludGFrZS9zdGF0dXMtc292ZXJlaWdudHktcmQtd2F2ZTAzLXJkMDQtZml2ZS1zdGF0ZS1wcm9tb3Rpb24vcHJvbW90ZWQtcGFydGlhbC1maWVsZC1tYXRyaXguanNvbgogIE1BVFJJWF9CTE9COiA0MjM2MWU1NTlkYjkwNzc3ZTFkNjBhZTU1MzBkZjU2OTRjODZkYzYKICBQUk9UT0NPTF9QQVRIOiBkYXRhL2ludGFrZS9zdGF0dXMtc292ZXJlaWdudHktcmQtd2F2ZTAzLXJkMDQtcG9zdHByb21vdGlvbi1maXZlLXJvdXRlLWFkanVkaWNhdGlvbi9wcm9tb3Rpb24tY2FuZGlkYXRlLXByb3RvY29sLmpzb24KICBQUk9UT0NPTF9CTE9COiA1MThjZDdiODM2MjkwYmFhOWVmODI1NDEwZDk3MzExNmQ2YjgyNWNiCiAgRklFTERfQURKVURJQ0FUSU9OU19QQVRIOiBkYXRhL2ludGFrZS9zdGF0dXMtc292ZXJlaWdudHktcmQtd2F2ZTAzLXJkMDQtcG9zdHByb21vdGlvbi1maXZlLXJvdXRlLWFkanVkaWNhdGlvbi9maWVsZC1hZGp1ZGljYXRpb25zLmpzb24KICBGSUVMRF9BREpVRElDQVRJT05TX0JMT0I6IDUyMmVjODUwMzI5OWMwNDU4ZDQ1ZjQzZjIzNTEyYzhmZjkwYWMwZjIKICBDQVBUVVJFX0NVU1RPRFlfUEFUSDogZGF0YS9pbnRha2Uvc3RhdHVzLXNvdmVyZWlndHktcmQtd2F2ZTAzLXJkMDQtcG9zdHByb21vdGlvbi1maXZlLXJvdXRlLWFkanVkaWNhdGlvbi9jYXB0dXJlLWN1c3RvZHkuanNvbgogIENBUFRVUkVfQ1VTVE9EWV9CTE9COiBjNDRmMWRjOWJhZmExNzM2YWU2N2FlYjNmNTk2Y2Q1ZGY3M2M5NzM5CiAgU09VUkNFX0FESlVESUNBVElPTlNfUEFUSDogZGF0YS9pbnRha2Uvc3RhdHVzLXNvdmVyZWlndHktcmQtd2F2ZTAzLXJkMDQtcG9zdHByb21vdGlvbi1maXZlLXJvdXRlLWFkanVkaWNhdGlvbi9zb3VyY2UtYWRqdWRpY2F0aW9ucy5qc29uCiAgU09VUkNFX0FESlVESUNBVElPTlNfQkxPQjogM2I4ZTQzMDczZjk4MjhkODBkMzlhOWRkMmJhYWRlYTQ3MWQ3YTMwMQogIFBERl9SRVZJRVdfUEFUSDogZGF0YS9pbnRha2Uvc3RhdHVzLXNvdmVyZWlndHktcmQtd2F2ZTAzLXJkMDQtcG9zdHByb21vdGlvbi1maXZlLXJvdXRlLWFkanVkaWNhdGlvbi9wZGYtcmV2aWV3LXJlY2VpcHRzLmpzb24KICBQREZfUkVWSUVXX0JMT0I6IDVmNjNhZTY0MjU3YmFjNjU1ZTIxOTIxMTkzMGFmNjBmMjcxM2Y4YTQKICBWQUxJREFUSU9OX1JVTjogMzEyNzE0NzM2NzUKICBWQUxJREFUSU9OX0hFQUQ6IDc5ODBlNjg3MmZmNDk1NGU1ZTVlMTdkMmI5MDViYjhhOWNmOTlkYjYKICBWQUxJREFUSU9OX0FSVElGQUNUOiA5MDI1NzMxODMwCiAgVkFMSURBVElPTl9BUlRJRkFDVF9aSVBfU0hBMjU2OiBhZjhkNjFjYWY3ZjEzZTBjNjY1YjMyMGNjMzhkZWQ2YjRmNzNiNmJlODlkYTc2MjQxMzBhNGQ2NzkzZTE0OGMxCiAgVkFMSURBVElPTl9SRUNFSVBUX1NIQTI1NjogYzFlYTBlMmQwYmEzOGQxZjkxM2VlY2IzZWRkMzNjODU0MTNlMmQ5N2NmODIzNjRiNWQ0OWVkMDgyMTk2NzU4NgoKam9iczoKICBxdWFsaWZ5OgogICAgaWY6ID4tCiAgICAgIGdpdGh1Yi5ldmVudF9uYW1lID09ICd3b3JrZmxvd19kaXNwYXRjaCcgfHwKICAgICAgKGdpdGh1Yi5ldmVudC5wdWxsX3JlcXVlc3QuaGVhZC5yZXBvLmZ1bGxfbmFtZSA9PSBnaXRodWIucmVwb3NpdG9yeSAmJgogICAgICAgZ2l0aHViLmV2ZW50LnB1bGxfcmVxdWVzdC5oZWFkLnJlZiA9PSBlbnYuUFJPRFVDVF9CUkFOQ0gpCiAgICBydW5zLW9uOiB1YnVudHUtMjQuMDQKICAgIHRpbWVvdXQtbWludXRlczogOTAKCiAgICBzdGVwczoKICAgICAgLSB1c2VzOiBhY3Rpb25zL2NoZWNrb3V0QHY0CiAgICAgICAgd2l0aDoKICAgICAgICAgIHJlZjogJHt7IGdpdGh1Yi5ldmVudC5wdWxsX3JlcXVlc3QuaGVhZC5zaGEgfHwgZ2l0aHViLnNoYSB9fQogICAgICAgICAgZmV0Y2gtZGVwdGg6IDAKCiAgICAgIC0gdXNlczogYWN0aW9ucy9zZXR1cC1ub2RlQHY0CiAgICAgICAgd2l0aDoKICAgICAgICAgIG5vZGUtdmVyc2lvbjogJzI0JwoKICAgICAgLSB1c2VzOiBhY3Rpb25zL3NldHVwLXB5dGhvbkB2NQogICAgICAgIHdpdGg6CiAgICAgICAgICBweXRob24tdmVyc2lvbjogJzMuMTMnCgogICAgICAtIG5hbWU6IEluc3RhbGwgY2xvc2VkLXNjaGVtYSB2YWxpZGF0b3JzCiAgICAgICAgcnVuOiBweXRob24gLW0gcGlwIGluc3RhbGwgLS1kaXNhYmxlLXBpcC12ZXJzaW9uLWNoZWNrIC0tbm8taW5wdXQgJ1B5WUFNTD09Ni4wLjInICdqc29uc2NoZW1hPT00LjI1LjEnCgogICAgICAtIG5hbWU6IFF1YWxpZnkgZXhhY3QgcGVybWFuZW50IHByb2R1Y3QKICAgICAgICBpZDogcXVhbGlmaWNhdGlvbgogICAgICAgIGNvbnRpbnVlLW9uLWVycm9yOiB0cnVlCiAgICAgICAgc2hlbGw6IGJhc2gKICAgICAgICBydW46IHwKICAgICAgICAgIHNldCAtdW8gcGlwZWZhaWwKICAgICAgICAgIE9VVD0iJHtSVU5ORVJfVEVNUH0vc3NjLXJkMDQtcG9zdHByb21vdGlvbi1mb3VyLWNlbGwtcHJvbW90aW9uLXF1YWxpZmljYXRpb24tdjEiCiAgICAgICAgICBybSAtcmYgIiRPVVQiCiAgICAgICAgICBta2RpciAtcCAiJE9VVCIKICAgICAgICAgIGV4ZWMgPiA+KHRlZSAiJE9VVC9xdWFsaWZpY2F0aW9uLmxvZyIpIDI+JjEKICAgICAgICAgIHN0YWdlPWJvb3RzdHJhcAoKICAgICAgICAgIGZpbmFsaXplKCkgewogICAgICAgICAgICBzZXQgK2UKICAgICAgICAgICAgKAogICAgICAgICAgICAgIGNkICIkT1VUIgogICAgICAgICAgICAgIGZpbmQgLiAtbWF4ZGVwdGggMSAtdHlwZSBmICEgLW5hbWUgU0hBMjU2U1VNUyAtcHJpbnQwIHwKICAgICAgICAgICAgICAgIExDX0FMTD1DIHNvcnQgLXogfAogICAgICAgICAgICAgICAgeGFyZ3MgLTAgc2hhMjU2c3VtID4gU0hBMjU2U1VNUwogICAgICAgICAgICApCiAgICAgICAgICB9CgogICAgICAgICAgb25fZXJyb3IoKSB7CiAgICAgICAgICAgIGxvY2FsIGNvZGU9JD8KICAgICAgICAgICAgdHJhcCAtIEVSUgogICAgICAgICAgICBzZXQgK2UKICAgICAgICAgICAgcHJpbnRmICclc1xuJyAiJGNvZGUiID4gIiRPVVQvRVhJVF9DT0RFIgogICAgICAgICAgICBwcmludGYgJyVzXG4nICIkc3RhZ2UiID4gIiRPVVQvU1RBR0UiCiAgICAgICAgICAgIGpxIC1uIFwKICAgICAgICAgICAgICAtLWFyZyBzdGFnZSAiJHN0YWdlIiBcCiAgICAgICAgICAgICAgLS1hcmdqc29uIGV4aXRfY29kZSAiJGNvZGUiIFwKICAgICAgICAgICAgICAtLWFyZyBwYXJlbnQgIiRQUk9EVUNUX1BBUkVOVCIgXAogICAgICAgICAgICAgIC0tYXJnIGhlYWQgIiQoZ2l0IHJldi1wYXJzZSBIRUFEIDI+L2Rldi9udWxsIHx8IHRydWUpIiBcCiAgICAgICAgICAgICAgJ3sKICAgICAgICAgICAgICAgIHNjaGVtYV92ZXJzaW9uOiJzc2MtcmQwNC1wb3N0cHJvbW90aW9uLWZvdXItY2VsbC1wcm9tb3Rpb24tcXVhbGlmaWNhdGlvbkAxIiwKICAgICAgICAgICAgICAgIHN0YXRlOiJmYWlsZWRfY2xvc2VkIiwKICAgICAgICAgICAgICAgIGZhaWxlZF9vcl9maW5hbF9zdGFnZTokc3RhZ2UsCiAgICAgICAgICAgICAgICBleGl0X2NvZGU6JGV4aXRfY29kZSwKICAgICAgICAgICAgICAgIHByb2R1Y3RfcGFyZW50OiRwYXJlbnQsCiAgICAgICAgICAgICAgICBwcm9kdWN0X2hlYWQ6KGlmICRoZWFkPT0iIiB0aGVuIG51bGwgZWxzZSAkaGVhZCBlbmQpLAogICAgICAgICAgICAgICAgcGVybWFuZW50X3BhdGhfY291bnQ6MCwKICAgICAgICAgICAgICAgIG1hdHJpeF91cGRhdGVzOjAsCiAgICAgICAgICAgICAgICBmaWVsZF90ZXJtaW5hbGl6YXRpb25zOjAsCiAgICAgICAgICAgICAgICByb3dfc3RhdGVfbXV0YXRpb25zOjAsCiAgICAgICAgICAgICAgICBjbGFzc19jbG9zZWQ6ZmFsc2UsCiAgICAgICAgICAgICAgICBjdW11bGF0aXZlX2xlZGdlcl9lZmZlY3Q6Im5vbmUiLAogICAgICAgICAgICAgICAgb3V0c2lkZV9odW1hbl9kZXBlbmRlbmN5OmZhbHNlLAogICAgICAgICAgICAgICAgcHVibGljYXRpb25fZWZmZWN0OiJub25lIiwKICAgICAgICAgICAgICAgIGFkb3B0aW9uX2VmZmVjdDoibm9uZSIsCiAgICAgICAgICAgICAgICBncmFwaF9lZmZlY3Q6Im5vbmUiCiAgICAgICAgICAgICAgfScgPiAiJE9VVC9xdWFsaWZpY2F0aW9uLXJlY2VpcHQuanNvbiIKICAgICAgICAgICAgZmluYWxpemUKICAgICAgICAgICAgZXhpdCAiJGNvZGUiCiAgICAgICAgICB9CgogICAgICAgICAgdHJhcCBvbl9lcnJvciBFUlIKICAgICAgICAgIHNldCAtRWV1byBwaXBlZmFpbAoKICAgICAgICAgIHN0YWdlPWJpbmRfZXhhY3RfaGVhZF9hbmRfcGFyZW50CiAgICAgICAgICBpZiB0ZXN0ICIke3sgZ2l0aHViLmV2ZW50X25hbWUgfX0iID0gcHVsbF9yZXF1ZXN0OyB0aGVuCiAgICAgICAgICAgIHRlc3QgIiR7eyBnaXRodWIuZXZlbnQucHVsbF9yZXF1ZXN0LmhlYWQucmVmIH19IiA9ICIkUFJPRFVDVF9CUkFOQ0giCiAgICAgICAgICAgIHRlc3QgIiR7eyBnaXRodWIuZXZlbnQucHVsbF9yZXF1ZXN0LmhlYWQuc2hhIH19IiA9ICIkKGdpdCByZXYtcGFyc2UgSEVBR...92968 chars truncated...
