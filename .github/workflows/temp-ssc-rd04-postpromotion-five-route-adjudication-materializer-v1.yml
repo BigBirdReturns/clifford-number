@@ -1,0 +1,111 @@
+name: TEMP materialize RD-04 postpromotion five-route adjudication v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-rd04-postpromotion-five-route-adjudication-materializer-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ssc-rd04-postpromotion-five-route-adjudication-materializer-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-five-route-adjudication-materializer-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PRODUCT_PARENT: 91b386df809079884825b19a6b5d864b6e739172
+      PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-five-route-adjudication-product-v1
+      CAPTURE_RUN: '31244816987'
+      CAPTURE_JOB: '93071567852'
+      CAPTURE_ARTIFACT: '9018149945'
+      CAPTURE_ARTIFACT_NAME: ssc-rd04-postpromotion-five-route-execution-v1
+      CAPTURE_HEAD: cd3d70ac82ea9845f2990e42d83b622aa3ebf8b8
+      CAPTURE_ZIP_BYTES: '255560'
+      CAPTURE_ZIP_SHA256: 9b828cef364b156cc995409e445d5a1250c981127d21b841d56b05ef14b036e3
+      STATIC_TAR_BYTES: '12144'
+      STATIC_TAR_SHA256: 31b9dac62ed47451ac923956148959fcc6fe4ba28fdaf5c524a4972b2c489382
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Reconstruct authenticated adjudication bundle
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BOOT="$RUNNER_TEMP/rd04-postpromotion-five-route-adjudication-bootstrap-v1"
+          BUNDLE="$BOOT/bundle.tar.xz"
+          rm -rf "$BOOT"
+          mkdir -p "$BOOT/chunks"
+
+          BLOBS=(
+            d5ad43920531e80e388a7ead971144e58773fa63
+            666ad4b3a1c20ff9525e3fc36b95e924f20e3969
+            f1d0a3560dbf51ec6e641cc725a796fbfb6646f9
+            d5da9807a59dbb766094a697b5bf54ed0b04a406
+          )
+          BYTES=(4000 4000 4000 3780)
+          SHA256=(
+            d09bb826e644ac3ed37057ae8a859f3c845fbad3e19b639957161a382b03513e
+            463cbeee10777fb57112f69ffac19224ab3e7c075b7b7e838ae539d90e173fa8
+            de33298641370b957d6015cc8e1330c56665c41fbc36fd85ce06155b6f04dff6
+            d1f30d1e9723431863ad5a4de06796a923ae50543591249c2cfbe60557d4bf1a
+          )
+
+          for index in "${!BLOBS[@]}"; do
+            printf -v suffix '%02d' "$index"
+            chunk="$BOOT/chunks/chunk-$suffix"
+            gh api "repos/$GITHUB_REPOSITORY/git/blobs/${BLOBS[$index]}" --jq .content |
+              tr -d '\n' | base64 --decode > "$chunk"
+            test "$(stat -c%s "$chunk")" = "${BYTES[$index]}"
+            test "$(sha256sum "$chunk" | cut -d' ' -f1)" = "${SHA256[$index]}"
+            test "$(git hash-object "$chunk")" = "${BLOBS[$index]}"
+          done
+
+          cat "$BOOT"/chunks/chunk-* > "$BUNDLE"
+          test "$(stat -c%s "$BUNDLE")" = '15780'
+          test "$(sha256sum "$BUNDLE" | cut -d' ' -f1)" = \
+            '996b15c8a0377091f13b6d2ddbb54f23e15c8f61d1b8700927a886620aa77dc2'
+          test "$(git hash-object "$BUNDLE")" = \
+            '9f80ac7809ace9866d1cefe43a1bc2ccef840421'
+
+          tar -xJf "$BUNDLE" -C "$BOOT"
+          test "$(stat -c%s "$BOOT/static.tar.xz")" = "$STATIC_TAR_BYTES"
+          test "$(sha256sum "$BOOT/static.tar.xz" | cut -d' ' -f1)" = "$STATIC_TAR_SHA256"
+          chmod 0755 "$BOOT/run.sh"
+          bash -n "$BOOT/run.sh"
+          bash "$BOOT/run.sh"
+
+      - name: Upload exact adjudication product
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-five-route-adjudication-materialization-v1
+          path: ${{ runner.temp }}/rd04-postpromotion-five-route-adjudication-materializer-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
