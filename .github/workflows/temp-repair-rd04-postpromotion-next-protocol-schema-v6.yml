@@ -1,0 +1,391 @@
+name: TEMP repair RD-04 postpromotion protocol schema v6
+
+on:
+  push:
+    branches:
+      - agent/ssc-rd04-postpromotion-next-protocol-schema-repair-materializer-v6
+    paths:
+      - '.github/workflows/temp-repair-rd04-postpromotion-next-protocol-schema-v6.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: temp-repair-rd04-postpromotion-next-protocol-schema-v6
+  cancel-in-progress: false
+
+env:
+  PRODUCT_PARENT: 3918c799f8b8dcdac49c33cec5c7bbd01ac428e4
+  PRODUCT_PARENT_TREE: 53efada1f97e68a392299b771d12a68e36d972b5
+  PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-protocol-product-v2
+  SOURCE_HEAD: 77127ed471ac1fef966d2322076bc91375448257
+  SOURCE_ARCHIVE_BRANCH: archive/ssc-rd04-postpromotion-next-protocol-contaminated-77127ed
+  WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.yml
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/product-manifest.json
+  SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.schema.json
+  EXPECTED_WORKFLOW_BLOB: 71595555edf68f60227d064dcb4a0eda7961ea77
+  EXPECTED_MANIFEST_BLOB: 046f9ebfb3ddb8cce8eb6c24097489e9a7d13c8c
+  SOURCE_SCHEMA_BLOB: d23b19967b5ae4af09a78d73e5f3ecf503ec2504
+  CORRECTED_SCHEMA_BLOB: 4fb934b161d139629323058890f3eea78ae839fd
+  CORRECTED_SCHEMA_SHA256: df07bf3476ab602fe01081ff495791527a93a59fda974650252a84a4cef842d7
+
+jobs:
+  repair-publish:
+    if: github.event_name == 'workflow_dispatch' || github.ref_name == 'agent/ssc-rd04-postpromotion-next-protocol-schema-repair-materializer-v6'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Rebind schema, qualify exact product, and publish
+        id: repair
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-postpromotion-next-protocol-schema-repair-v6
+          SOURCE_WT=/tmp/ssc-rd04-schema-source-v6
+          PRODUCT=/tmp/ssc-rd04-schema-product-v6
+          PARENT_WT=/tmp/ssc-rd04-schema-parent-v6
+          LIVE_WT=/tmp/ssc-rd04-schema-live-v6
+          rm -rf "$OUT" "$SOURCE_WT" "$PRODUCT" "$PARENT_WT" "$LIVE_WT"
+          mkdir -p "$OUT" "$PRODUCT"
+          printf '%s\n' bootstrap > "$OUT/current-gate.txt"
+          exec > >(tee "$OUT/qualification.log") 2>&1
+
+          finalize() {
+            code=$?
+            set +e
+            gate="$(cat "$OUT/current-gate.txt" 2>/dev/null || printf unknown)"
+            candidate="$(cat "$OUT/candidate-sha.txt" 2>/dev/null || true)"
+            candidate_tree="$(cat "$OUT/candidate-tree.txt" 2>/dev/null || true)"
+            live_main="$(cat "$OUT/live-main.txt" 2>/dev/null || true)"
+            remote_head="$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" 2>/dev/null | awk '{print $1}')"
+            if test "$code" -eq 0; then state=success; authority=qualified_product_branch; else state=failure; authority=none; fi
+            jq -n \
+              --arg schema_version 'ssc-rd04-postpromotion-next-protocol-schema-repair-status@6' \
+              --arg state "$state" \
+              --arg authority "$authority" \
+              --arg gate "$gate" \
+              --argjson exit_code "$code" \
+              --arg product_parent "$PRODUCT_PARENT" \
+              --arg product_parent_tree "$PRODUCT_PARENT_TREE" \
+              --arg product_branch "$PRODUCT_BRANCH" \
+              --arg source_head "$SOURCE_HEAD" \
+              --arg source_archive_branch "$SOURCE_ARCHIVE_BRANCH" \
+              --arg candidate_sha "$candidate" \
+              --arg candidate_tree "$candidate_tree" \
+              --arg live_main "$live_main" \
+              --arg remote_head "$remote_head" \
+              '{schema_version:$schema_version,qualification_state:$state,authority:$authority,failed_or_final_gate:$gate,exit_code:$exit_code,product_parent:$product_parent,product_parent_tree:$product_parent_tree,product_branch:$product_branch,source_head:$source_head,source_archive_branch:$source_archive_branch,candidate_sha:($candidate_sha|select(length>0)),candidate_tree:($candidate_tree|select(length>0)),live_main:($live_main|select(length>0)),remote_product_head:($remote_head|select(length>0)),permanent_path_count:14,fixed_route_count:5,corrected_surface_count:1,source_requests_executed:0,source_admissions:0,field_classifications:0,matrix_updates:0,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+              > "$OUT/status.json"
+            sync
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            return "$code"
+          }
+          trap finalize EXIT
+
+          printf '%s\n' bind-source-and-live-refs > "$OUT/current-gate.txt"
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH" \
+            "+refs/heads/$SOURCE_ARCHIVE_BRANCH:refs/remotes/origin/$SOURCE_ARCHIVE_BRANCH"
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          printf '%s\n' "$LIVE_MAIN" > "$OUT/live-main.txt"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$SOURCE_HEAD"
+          test "$(git rev-parse "origin/$SOURCE_ARCHIVE_BRANCH")" = "$SOURCE_HEAD"
+          test "$(git rev-parse "$PRODUCT_PARENT^{tree}")" = "$PRODUCT_PARENT_TREE"
+          git merge-base --is-ancestor "$PRODUCT_PARENT" "$LIVE_MAIN"
+          test "$(git rev-parse "$SOURCE_HEAD^")" = "$PRODUCT_PARENT"
+          test "$(git rev-list --count "$PRODUCT_PARENT".."$SOURCE_HEAD")" -eq 1
+          test "$(git rev-parse "$SOURCE_HEAD:$WORKFLOW_PATH")" = "$EXPECTED_WORKFLOW_BLOB"
+          test "$(git rev-parse "$SOURCE_HEAD:$MANIFEST_PATH")" = "$EXPECTED_MANIFEST_BLOB"
+          test "$(git rev-parse "$SOURCE_HEAD:$SCHEMA_PATH")" = "$SOURCE_SCHEMA_BLOB"
+
+          printf '%s\n' recover-exact-fourteen-path-source > "$OUT/current-gate.txt"
+          git worktree add --detach "$SOURCE_WT" "$SOURCE_HEAD"
+          python - "$SOURCE_WT" "$OUT/product-paths.txt" <<'PYPATHS'
+          from pathlib import Path
+          import json
+          import sys
+          root = Path(sys.argv[1])
+          manifest = json.loads((root / 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/product-manifest.json').read_text())
+          paths = sorted(manifest['permanent_paths'])
+          if len(paths) != 14 or len(set(paths)) != 14:
+              raise SystemExit('permanent path denominator mismatch')
+          Path(sys.argv[2]).write_text(chr(10).join(paths) + chr(10))
+          PYPATHS
+          git -C "$SOURCE_WT" diff-tree --no-commit-id --name-only -r "$SOURCE_HEAD" | LC_ALL=C sort > "$OUT/source-paths.txt"
+          diff -u "$OUT/product-paths.txt" "$OUT/source-paths.txt"
+          tar -C "$SOURCE_WT" -cf - -T "$OUT/product-paths.txt" | tar -C "$PRODUCT" -xf -
+
+          printf '%s\n' rebind-recursively-closed-schema > "$OUT/current-gate.txt"
+          python - "$PRODUCT" "$OUT/schema-repair-ledger.json" <<'PYREPAIR'
+          from pathlib import Path
+          import hashlib
+          import json
+          import os
+          import sys
+
+          root = Path(sys.argv[1])
+          ledger_path = Path(sys.argv[2])
+          schema_path = root / os.environ['SCHEMA_PATH']
+          workflow_path = root / os.environ['WORKFLOW_PATH']
+          manifest_path = root / os.environ['MANIFEST_PATH']
+          schema = json.loads(schema_path.read_text())
+          changes = {'bytes': 0, 'sha256': 0}
+          def walk(value):
+              if isinstance(value, dict):
+                  if value.get('const') == 12389:
+                      value['const'] = 12390
+                      changes['bytes'] += 1
+                  if value.get('const') == '2ff2925ace7b0e8a9a97cc92d1d334f109631a8ae94561680cce4aae04bcfa95':
+                      value['const'] = 'c34dd991abe1b0629df13a41da33d0ba0f41eceea877262234c6950839d596d8'
+                      changes['sha256'] += 1
+                  for child in value.values():
+                      walk(child)
+              elif isinstance(value, list):
+                  for child in value:
+                      walk(child)
+          walk(schema)
+          if changes != {'bytes': 1, 'sha256': 1}:
+              raise SystemExit(f'schema correction denominator mismatch: {changes}')
+          schema_path.write_text(json.dumps(schema, indent=2, sort_keys=True) + chr(10))
+
+          def git_blob(data):
+              return hashlib.sha1(f'blob {len(data)}'.encode() + bytes([0]) + data).hexdigest()
+          schema_bytes = schema_path.read_bytes()
+          if hashlib.sha256(schema_bytes).hexdigest() != os.environ['CORRECTED_SCHEMA_SHA256']:
+              raise SystemExit('corrected schema SHA-256 mismatch')
+          if git_blob(schema_bytes) != os.environ['CORRECTED_SCHEMA_BLOB']:
+              raise SystemExit('corrected schema Git blob mismatch')
+          if git_blob(workflow_path.read_bytes()) != os.environ['EXPECTED_WORKFLOW_BLOB']:
+              raise SystemExit('workflow blob drift')
+          if git_blob(manifest_path.read_bytes()) != os.environ['EXPECTED_MANIFEST_BLOB']:
+              raise SystemExit('manifest blob drift')
+          ledger = {
+              'schema_version': 'ssc-rd04-postpromotion-next-protocol-schema-repair-ledger@6',
+              'product_parent': os.environ['PRODUCT_PARENT'],
+              'source_head': os.environ['SOURCE_HEAD'],
+              'product_branch': os.environ['PRODUCT_BRANCH'],
+              'corrected_path': os.environ['SCHEMA_PATH'],
+              'source_schema_git_blob': os.environ['SOURCE_SCHEMA_BLOB'],
+              'corrected_schema_git_blob': os.environ['CORRECTED_SCHEMA_BLOB'],
+              'corrected_schema_sha256': os.environ['CORRECTED_SCHEMA_SHA256'],
+              'workflow_git_blob': os.environ['EXPECTED_WORKFLOW_BLOB'],
+              'manifest_git_blob': os.environ['EXPECTED_MANIFEST_BLOB'],
+              'permanent_path_count': 14,
+              'fixed_route_count': 5,
+              'source_requests_executed': 0,
+              'source_admissions': 0,
+              'field_classifications': 0,
+              'matrix_updates': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          ledger_path.write_text(json.dumps(ledger, indent=2, sort_keys=True) + chr(10))
+          PYREPAIR
+
+          python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+          python - "$PRODUCT" <<'PYLOCAL'
+          from pathlib import Path
+          import json
+          import subprocess
+          import sys
+          import yaml
+          from jsonschema import Draft202012Validator
+          root = Path(sys.argv[1])
+          workflow = yaml.safe_load((root / '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.yml').read_text())
+          if not isinstance(workflow, dict):
+              raise SystemExit('workflow YAML parse failure')
+          schema = json.loads((root / 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.schema.json').read_text())
+          validator = Draft202012Validator(schema)
+          product = root / 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol'
+          names = ['predecessor-custody.json','frontier-selection.json','previously-frozen-url-exclusion.json','route-ledger.json','route-query-contract.json','summary.json','product-manifest.json']
+          for name in names:
+              value = json.loads((product / name).read_text())
+              errors = sorted(validator.iter_errors(value), key=lambda error: list(error.path))
+              if errors:
+                  raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
+          for relative in ['tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs','tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs','test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js']:
+              subprocess.run(['node', '--check', str(root / relative)], check=True)
+          subprocess.run([sys.executable, '-m', 'py_compile', str(root / 'tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py')], check=True)
+          for cache in root.rglob('__pycache__'):
+              import shutil
+              shutil.rmtree(cache)
+          print('schema_repair_local_validation=pass yaml=1 schema_objects=7 js=3 python=1')
+          PYLOCAL
+
+          printf '%s\n' prepare-one-commit-parent-product > "$OUT/current-gate.txt"
+          git diff --name-only "$PRODUCT_PARENT" "$LIVE_MAIN" | LC_ALL=C sort > "$OUT/intervening-paths.txt"
+          comm -12 "$OUT/product-paths.txt" "$OUT/intervening-paths.txt" > "$OUT/intervening-overlap.txt"
+          test ! -s "$OUT/intervening-overlap.txt"
+          git worktree add --detach "$PARENT_WT" "$PRODUCT_PARENT"
+          tar -C "$PRODUCT" -cf - -T "$OUT/product-paths.txt" | tar -C "$PARENT_WT" -xf -
+          git -C "$PARENT_WT" add --all
+          git -C "$PARENT_WT" diff --cached --name-only --diff-filter=ACDMRTUXB | LC_ALL=C sort > "$OUT/candidate-paths.txt"
+          git -C "$PARENT_WT" diff --cached --name-only --diff-filter=A | LC_ALL=C sort > "$OUT/candidate-added-paths.txt"
+          diff -u "$OUT/product-paths.txt" "$OUT/candidate-paths.txt"
+          diff -u "$OUT/product-paths.txt" "$OUT/candidate-added-paths.txt"
+          test "$(wc -l < "$OUT/candidate-paths.txt")" -eq 14
+          test -z "$(grep -E '(^|/)(\.tmp|.*\.trigger)(/|$)' "$OUT/candidate-paths.txt" || true)"
+          git -C "$PARENT_WT" diff --cached --check
+          git -C "$PARENT_WT" config user.name 'BigBirdReturns'
+          git -C "$PARENT_WT" config user.email 'actions@users.noreply.github.com'
+          git -C "$PARENT_WT" commit -m 'Freeze RD-04 postpromotion protocol with recursively closed workflow identity'
+          CANDIDATE="$(git -C "$PARENT_WT" rev-parse HEAD)"
+          CANDIDATE_TREE="$(git -C "$PARENT_WT" rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$CANDIDATE" > "$OUT/candidate-sha.txt"
+          printf '%s\n' "$CANDIDATE_TREE" > "$OUT/candidate-tree.txt"
+          test "$(git -C "$PARENT_WT" rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          test "$(git -C "$PARENT_WT" rev-list --count "$PRODUCT_PARENT"..HEAD)" -eq 1
+          test "$(git -C "$PARENT_WT" rev-parse "HEAD:$WORKFLOW_PATH")" = "$EXPECTED_WORKFLOW_BLOB"
+          test "$(git -C "$PARENT_WT" rev-parse "HEAD:$MANIFEST_PATH")" = "$EXPECTED_MANIFEST_BLOB"
+          test "$(git -C "$PARENT_WT" rev-parse "HEAD:$SCHEMA_PATH")" = "$CORRECTED_SCHEMA_BLOB"
+
+          qualify_tree() {
+            local wt="$1"
+            local label="$2"
+            printf '%s\n' "qualify-$label" > "$OUT/current-gate.txt"
+            test "$(git -C "$wt" hash-object data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json)" = 42361e559db90777e1d60aea5530df5694c86dc6
+            test "$(git -C "$wt" hash-object data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/remaining-open-field-census.json)" = e6ea2bb2722d084d0bb601864d4de5d9db4c7b47
+            test "$(git -C "$wt" hash-object data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-summary.json)" = e774a9ed555364e4c6616c407a24001dd39f8f51
+            test "$(git -C "$wt" hash-object data/intake/status-sovereignty-rd-wave03-rd04-next-minimum-frontier-route-discovery-protocol/route-discovery-protocol.json)" = 35e09035659d54060547e84ab29d5ba440402b2c
+            test "$(git -C "$wt" hash-object data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/selected-followup-protocol.json)" = 88cb73c7bae87a4031d1571d7dd5ebdcb58aa2f4
+            test "$(git -C "$wt" hash-object data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/source-adjudications.json)" = 53f378c9c4a56ca4aab0312bba38150b071786af
+            (
+              cd "$wt"
+              python - <<'PYYAML'
+          from pathlib import Path
+          import yaml
+          value = yaml.safe_load(Path('.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.yml').read_text())
+          if not isinstance(value, dict):
+              raise SystemExit('permanent workflow YAML parse failure')
+          PYYAML
+              node --check tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+              node --check tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+              node --check test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+              python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py
+              find . -type d -name __pycache__ -prune -exec rm -rf {} +
+              node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+              python - <<'PYSCHEMA'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          schema = json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.schema.json').read_text())
+          validator = Draft202012Validator(schema)
+          root = Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol')
+          names = ['predecessor-custody.json','frontier-selection.json','previously-frozen-url-exclusion.json','route-ledger.json','route-query-contract.json','summary.json','product-manifest.json']
+          for name in names:
+              value = json.loads((root / name).read_text())
+              errors = sorted(validator.iter_errors(value), key=lambda error: list(error.path))
+              if errors:
+                  raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
+          print('recursive_schema_validation=pass objects=7')
+          PYSCHEMA
+              node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+              node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+              python tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py --dry-run > "$OUT/execution-plan-$label.json"
+              node tools/validate-no-magic-human-gate.mjs
+              node test/no-magic-human-gate.test.js
+              npm run release:check
+              git reset --hard HEAD
+              git clean -fdx
+              node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs --write
+              node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+              node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+              node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+              python tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py --dry-run > "$OUT/execution-plan-$label-replay.json"
+              node tools/validate-no-magic-human-gate.mjs
+              git diff --check
+              git diff --exit-code
+              test -z "$(git status --porcelain=v1 --untracked-files=all)"
+            )
+          }
+
+          qualify_tree "$PARENT_WT" parent
+
+          printf '%s\n' qualify-live-main-compatibility > "$OUT/current-gate.txt"
+          git worktree add --detach "$LIVE_WT" "$LIVE_MAIN"
+          tar -C "$PRODUCT" -cf - -T "$OUT/product-paths.txt" | tar -C "$LIVE_WT" -xf -
+          git -C "$LIVE_WT" add --all
+          git -C "$LIVE_WT" diff --cached --name-only --diff-filter=ACDMRTUXB | LC_ALL=C sort > "$OUT/live-product-paths.txt"
+          diff -u "$OUT/product-paths.txt" "$OUT/live-product-paths.txt"
+          git -C "$LIVE_WT" config user.name 'BigBirdReturns'
+          git -C "$LIVE_WT" config user.email 'actions@users.noreply.github.com'
+          git -C "$LIVE_WT" commit -m 'TEMP qualify recursively closed RD-04 postpromotion protocol on live main'
+          printf '%s\n' "$(git -C "$LIVE_WT" rev-parse HEAD)" > "$OUT/live-compatibility-sha.txt"
+          printf '%s\n' "$(git -C "$LIVE_WT" rev-parse 'HEAD^{tree}')" > "$OUT/live-compatibility-tree.txt"
+          qualify_tree "$LIVE_WT" live-main
+
+          printf '%s\n' compare-qualified-product-blobs > "$OUT/current-gate.txt"
+          while IFS= read -r path; do
+            test "$(git -C "$PARENT_WT" rev-parse "HEAD:$path")" = "$(git -C "$LIVE_WT" rev-parse "HEAD:$path")"
+          done < "$OUT/product-paths.txt"
+
+          printf '%s\n' publish-exact-ref-with-lease > "$OUT/current-gate.txt"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$SOURCE_HEAD"
+          git -C "$PARENT_WT" push \
+            --force-with-lease="refs/heads/$PRODUCT_BRANCH:$SOURCE_HEAD" \
+            origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$CANDIDATE"
+
+          printf '%s\n' seal-terminal-receipt > "$OUT/current-gate.txt"
+          tar -C "$PARENT_WT" -cJf "$OUT/corrected-product.tar.xz" -T "$OUT/product-paths.txt"
+          sha256sum "$OUT/corrected-product.tar.xz" > "$OUT/corrected-product.tar.xz.sha256"
+          git -C "$PARENT_WT" ls-tree -r HEAD -- $(cat "$OUT/product-paths.txt") > "$OUT/candidate-tree-rows.txt"
+          git -C "$PARENT_WT" show --stat --oneline HEAD > "$OUT/candidate-show.txt"
+          printf '%s\n' complete > "$OUT/current-gate.txt"
+
+      - name: Upload exact schema-repair evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-protocol-schema-repair-v6
+          path: /tmp/ssc-rd04-postpromotion-next-protocol-schema-repair-v6
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Report bounded schema-repair result
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R=/tmp/ssc-rd04-postpromotion-next-protocol-schema-repair-v6/status.json
+          if jq -e '.qualification_state=="success"' "$R" >/dev/null; then
+            jq -r '"RD-04 postpromotion protocol schema repair completed.\n\n```text\nsource_head: \(.source_head)\nsource_archive: \(.source_archive_branch)\nproduct_parent: \(.product_parent)\nproduct_parent_tree: \(.product_parent_tree)\ncandidate_sha: \(.candidate_sha)\ncandidate_tree: \(.candidate_tree)\nlive_main: \(.live_main)\nremote_product_head: \(.remote_product_head)\npermanent_paths: \(.permanent_path_count)\ncorrected_surfaces: \(.corrected_surface_count)\nfixed_routes: \(.fixed_route_count)\nsource_requests: \(.source_requests_executed)\nmatrix_updates: \(.matrix_updates)\nrow_state_mutations: \(.row_state_mutations)\nclass_closed: \(.class_closed)\n```\n\nThe source product already held the exact corrected workflow and manifest. This transaction changed only the recursively closed schema constants that bind that workflow identity, then rebuilt a one-commit fourteen-path product over the canonical parent and qualified the same blobs on live main. No route was executed, and no source, field, row, class, cumulative-ledger, publication, adoption, or graph authority was created. The control question is whether this exact head now passes its native pull-request workflow and independent review before canonical merge."' "$R" > /tmp/comment.md
+          else
+            jq -r '"RD-04 postpromotion protocol schema repair failed closed.\n\n```text\nfailed_gate: \(.failed_or_final_gate)\nexit_code: \(.exit_code)\nsource_head: \(.source_head)\nproduct_parent: \(.product_parent)\ncandidate_sha: \(.candidate_sha // "none")\nremote_product_head: \(.remote_product_head // "unavailable")\nsource_requests: \(.source_requests_executed)\nmatrix_updates: \(.matrix_updates)\nrow_state_mutations: \(.row_state_mutations)\nclass_closed: \(.class_closed)\n```\n\nNo protocol, route execution, source, field, row, class, cumulative-ledger, publication, adoption, or graph authority is represented. The control question remains the exact failed gate above."' "$R" > /tmp/comment.md
+          fi
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+
+      - name: Preserve fail-closed conclusion
+        if: steps.repair.outcome == 'failure'
+        shell: bash
+        run: exit 1
