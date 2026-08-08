@@ -1,0 +1,97 @@
+name: Status sovereignty RD Wave 03 RD-04 postpromotion ND follow-up two-route adjudication
+
+on:
+  pull_request:
+    paths:
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promoted-partial-field-matrix.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/selected-followup-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/source-adjudications.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promotion-summary.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/**'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.test.js'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.schema.json'
+      - 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.md'
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promoted-partial-field-matrix.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/selected-followup-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/source-adjudications.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promotion-summary.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/**'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.test.js'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.schema.json'
+      - 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.md'
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned schema and workflow parsers
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+      - name: Verify immutable inputs and standing workflow
+        run: |
+          test "$(git rev-parse HEAD:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promoted-partial-field-matrix.json)" = 66896190dd575f9867f1e121d845acfb4d27f56f
+          test "$(git rev-parse HEAD:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/selected-followup-protocol.json)" = 7bbafd8f8c6c915442770ebbeca85b37afba8047
+          test "$(git rev-parse HEAD:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json)" = 522ec8503299c0458d45f43f23512c8ff90ac0f2
+          test "$(git rev-parse HEAD:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/source-adjudications.json)" = 3b8e43073f9828d80d39a9dd2baadea471d7a301
+          test "$(git rev-parse HEAD:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promotion-summary.json)" = 5e0adc541a22c9b0bf4cd8a059bf083e08831a15
+          python -c "import yaml; yaml.safe_load(open('.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.yml'))"
+      - name: Rebuild exact permanent data product
+        run: |
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs
+          git diff --exit-code -- data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication
+      - name: Enforce recursively closed product schemas
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          schema=json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.schema.json').read_text())
+          Draft202012Validator.check_schema(schema)
+          validator=Draft202012Validator(schema)
+          root=Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication')
+          for name in ["capture-custody.json", "field-adjudications.json", "html-review-receipts.json", "index.json", "product-manifest.json", "promotion-candidate-protocol.json", "source-adjudications.json", "transport-duplication-ledger.json"]:
+              errors=sorted(validator.iter_errors(json.loads((root/name).read_text())), key=lambda e:list(e.path))
+              if errors: raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
+          print('recursive_schema_validation=pass objects=8')
+          PY
+      - name: Validate focused and adversarial adjudication controls
+        run: |
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication
+          path: |
+            data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication
+            docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.md
+          if-no-files-found: error
+          retention-days: 90
