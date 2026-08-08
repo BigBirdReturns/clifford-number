@@ -1,0 +1,205 @@
+name: TEMP qualify exact PC-58 product tree v2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc58-materializer-carrier-v2
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      PARENT: 79a7e18bfd45f1b1d893fa8b9683710891d4bbca
+      PARENT_TREE: de7b86fbc9caa247bfa2a960f190626e22f1c4b6
+      ARCHIVE_SHA256: 4cbe134b3d33b870f0a200d3c793f56f57d7bdd988f33ab611ce59c7002cfcd8
+      MANIFEST_SHA256: f3f6c79f654cd4f0b8aa87dc2de6d4e8d1969b4f2ee6c87ce9ce35f4321bf247
+      GH_REPOSITORY: ${{ github.repository }}
+      PACKAGE_DIR: ${{ github.workspace }}/.tmp/pc58
+      MANIFEST: ${{ github.workspace }}/.tmp/pc58/product-manifest.json
+      WORK: /tmp/pc58-qualified-product
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Authenticate carrier and reconstruct exact product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$WORK/receipt"
+          test "$(git show -s --format='%P' HEAD)" = "$PARENT"
+          test "$(git rev-parse "$PARENT^{tree}")" = "$PARENT_TREE"
+          git diff --name-status "$PARENT" HEAD > "$WORK/receipt/carrier-delta.tsv"
+          test "$(wc -l < "$WORK/receipt/carrier-delta.tsv" | tr -d ' ')" = 8
+          awk '$1 != "A" { exit 1 }' "$WORK/receipt/carrier-delta.tsv"
+          printf '%s\n' \
+            '.github/workflows/temp-pc58-materializer-carrier-v2.yml' \
+            '.tmp/pc58/product-manifest.json' \
+            '.tmp/pc58/product.b64.00' \
+            '.tmp/pc58/product.b64.01' \
+            '.tmp/pc58/product.b64.02' \
+            '.tmp/pc58/product.b64.03' \
+            '.tmp/pc58/product.b64.04' \
+            '.tmp/pc58/product.b64.05' | sort > "$WORK/receipt/expected-carrier-paths.txt"
+          cut -f2 "$WORK/receipt/carrier-delta.tsv" | sort > "$WORK/receipt/actual-carrier-paths.txt"
+          cmp "$WORK/receipt/expected-carrier-paths.txt" "$WORK/receipt/actual-carrier-paths.txt"
+
+          test "$(sha256sum "$MANIFEST" | cut -d' ' -f1)" = "$MANIFEST_SHA256"
+          cat "$PACKAGE_DIR"/product.b64.* | base64 -d > "$WORK/product.tar.xz"
+          test "$(sha256sum "$WORK/product.tar.xz" | cut -d' ' -f1)" = "$ARCHIVE_SHA256"
+
+          git worktree add --detach "$WORK/repo" "$PARENT"
+          tar -xJf "$WORK/product.tar.xz" -C "$WORK/repo"
+
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          root=Path(os.environ['WORK'])/'repo'
+          manifest=json.loads(Path(os.environ['MANIFEST']).read_text())
+          assert manifest['schema_version']=='pc58-product-manifest@1'
+          assert manifest['issue']==1592
+          assert manifest['parent_commit']==os.environ['PARENT']
+          assert manifest['parent_tree']==os.environ['PARENT_TREE']
+          assert manifest['permanent_paths']==14
+          assert len(manifest['files'])==14
+          paths=[]
+          for item in manifest['files']:
+              path=item['path']; data=(root/path).read_bytes(); paths.append(path)
+              assert item['mode']=='100644'
+              assert len(data)==item['bytes']
+              assert hashlib.sha256(data).hexdigest()==item['sha256']
+              blob=hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
+              assert blob==item['git_blob_sha']
+          assert len(paths)==len(set(paths))==14
+          assert all(not p.startswith(('.tmp/','.trigger/')) for p in paths)
+          assert sum(p.startswith('.github/workflows/') for p in paths)==2
+          Path(os.environ['WORK']+'/receipt/product-paths.txt').write_text('\n'.join(sorted(paths))+'\n')
+          PY
+
+          test -z "$(git -C "$WORK/repo" diff --name-only "$PARENT")"
+          git -C "$WORK/repo" ls-files --others --exclude-standard | sort > "$WORK/receipt/actual-product-paths.txt"
+          test "$(wc -l < "$WORK/receipt/actual-product-paths.txt" | tr -d ' ')" = 14
+          cmp "$WORK/receipt/product-paths.txt" "$WORK/receipt/actual-product-paths.txt"
+          awk '{print "A\t" $0}' "$WORK/receipt/actual-product-paths.txt" > "$WORK/receipt/product-delta.tsv"
+
+          git fetch --no-tags origin main
+          LIVE_MAIN=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$PARENT" "$LIVE_MAIN"
+          git diff --name-only "$PARENT" "$LIVE_MAIN" | sort > "$WORK/receipt/live-main-successor-paths.txt"
+          comm -12 "$WORK/receipt/product-paths.txt" "$WORK/receipt/live-main-successor-paths.txt" > "$WORK/receipt/live-main-overlap.txt"
+          test ! -s "$WORK/receipt/live-main-overlap.txt"
+          printf '%s\n' "$LIVE_MAIN" > "$WORK/receipt/live-main.txt"
+
+      - name: Run focused and complete repository qualification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd "$WORK/repo"
+          rm -rf build/research
+          node test/preference-linkage-repository-owner-login-immutable-owner-id-account-state-owner-rename-assurance.test.js
+          node test/preference-custody-manifest-v56.test.js
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+      - name: Seal exact product tree and qualification receipt
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd "$WORK/repo"
+          cp "$MANIFEST" "$WORK/receipt/product-manifest.json"
+          cp "$WORK/product.tar.xz" "$WORK/receipt/product.tar.xz"
+          index="$WORK/product.index"
+          rm -f "$index"
+          GIT_INDEX_FILE="$index" git read-tree "$PARENT^{tree}"
+          : > "$WORK/receipt/product-blobs.tsv"
+          : > "$WORK/receipt/remote-product-blobs.tsv"
+          while IFS= read -r path; do
+            blob=$(git hash-object -w "$path")
+            expected=$(jq -r --arg p "$path" '.files[] | select(.path==$p) | .git_blob_sha' "$MANIFEST")
+            test "$blob" = "$expected"
+            content=$(base64 -w0 "$path")
+            remote=$(jq -n --arg content "$content" '{content:$content,encoding:"base64"}' | \
+              gh api --method POST "/repos/$GH_REPOSITORY/git/blobs" --input - --jq .sha)
+            test "$remote" = "$expected"
+            GIT_INDEX_FILE="$index" git update-index --add --cacheinfo "100644,$blob,$path"
+            printf '%s\t%s\n' "$blob" "$path" >> "$WORK/receipt/product-blobs.tsv"
+            printf '%s\t%s\n' "$remote" "$path" >> "$WORK/receipt/remote-product-blobs.tsv"
+          done < "$WORK/receipt/product-paths.txt"
+          PRODUCT_TREE=$(GIT_INDEX_FILE="$index" git write-tree)
+          printf '%s\n' "$PRODUCT_TREE" > "$WORK/receipt/product-tree.txt"
+
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          work=Path(os.environ['WORK'])
+          entries=[]
+          for line in (work/'receipt/remote-product-blobs.tsv').read_text().splitlines():
+              sha,path=line.split('\t',1)
+              entries.append({'path':path,'mode':'100644','type':'blob','sha':sha})
+          payload={'base_tree':os.environ['PARENT_TREE'],'tree':entries}
+          (work/'receipt/remote-tree-payload.json').write_text(json.dumps(payload,indent=2)+'\n')
+          PY
+          REMOTE_TREE=$(gh api --method POST "/repos/$GH_REPOSITORY/git/trees" \
+            --input "$WORK/receipt/remote-tree-payload.json" --jq .sha)
+          test "$REMOTE_TREE" = "$PRODUCT_TREE"
+          printf '%s\n' "$REMOTE_TREE" > "$WORK/receipt/remote-product-tree.txt"
+
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          receipt=Path(os.environ['WORK'])/'receipt'
+          manifest=json.loads((receipt/'product-manifest.json').read_text())
+          state={
+            'schema_version':'pc58-qualified-product-tree@1',
+            'status':'complete',
+            'issue':1592,
+            'parent_commit':os.environ['PARENT'],
+            'parent_tree':os.environ['PARENT_TREE'],
+            'live_main':(receipt/'live-main.txt').read_text().strip(),
+            'product_tree':(receipt/'product-tree.txt').read_text().strip(),
+            'remote_product_tree':(receipt/'remote-product-tree.txt').read_text().strip(),
+            'remote_product_blobs':14,
+            'permanent_paths':14,
+            'standalone_fixture_mutations':manifest['standalone_fixture_mutations'],
+            'standalone_build_tamper_checks':manifest['standalone_build_tamper_checks'],
+            'floor_manifest_mutations':manifest['floor_manifest_mutations'],
+            'floor_build_tamper_checks':manifest['floor_build_tamper_checks'],
+            'no_magic_human_mutations':manifest['no_magic_human_mutations'],
+            'focused_pc58':'pass',
+            'floor_v56':'pass',
+            'base_preference_custody':'pass',
+            'no_magic_human':'pass',
+            'release_check':'pass',
+            'ref_updates':0,
+            'remote_object_publication':'pass',
+            'outside_human_dependency':False,
+            'graph_effect':'none'
+          }
+          (receipt/'receipt.json').write_text(json.dumps(state,indent=2)+'\n')
+          sums=[]
+          for p in sorted(receipt.iterdir()):
+              if p.name=='SHA256SUMS' or not p.is_file(): continue
+              sums.append(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n")
+          (receipt/'SHA256SUMS').write_text(''.join(sums))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc58-qualified-product-tree
+          path: /tmp/pc58-qualified-product/receipt
+          if-no-files-found: error
+          retention-days: 90
