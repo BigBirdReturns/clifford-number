@@ -1,0 +1,178 @@
+name: TEMP prove canonical RD-04 North Dakota follow-up adjudication
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-prove-ssc-rd04-postpromotion-nd-followup-adjudication-v1.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prove canonical merge and native push execution
+        id: proof
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -Eeuo pipefail
+          MERGE='30e151b3ff4aeb5e6353d443fab1c535bc6d7b69'
+          PRODUCT='9ac648d062d6a1ec5a19fec849be29bf76c69bad'
+          PARENT='048e9d13a2555d8e6fabdbee5f45aea858f919b7'
+          TREE='9d5b15d4b78e3027a316f507e46692e215f7e5a8'
+          BRANCH='observer/ssc-rd04-postpromotion-nd-followup-adjudication-postmerge-v1'
+          PATH_ONLY='.github/workflows/temp-prove-ssc-rd04-postpromotion-nd-followup-adjudication-v1.yml'
+          WORKFLOW='.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.yml'
+          WORKFLOW_BLOB='a22c45e11e0341c74acfc80527ac6b5911ce92a4'
+          WORKFLOW_NAME='Status sovereignty RD Wave 03 RD-04 postpromotion ND follow-up two-route adjudication'
+          ARTIFACT_NAME='status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication'
+          MANIFEST='data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/product-manifest.json'
+          MANIFEST_SHA='6323bd5270be9b56f38639b8c8b5ccadbd986ee585f7f73ec7871a119134a98a'
+          COMBINED_SHA='3acba5f350fdce3a2e74f3b302b5074087f294af8e940f176c65d404b0ac58eb'
+          RUN=31276965024
+          JOB=93152005238
+          ARTIFACT=9027286884
+          ZIP_BYTES=17798
+          ZIP_SHA='b75d5c8227315ff943bab82e82b1f67476647bac7b70fa6ce37d1e4c52ac7233'
+          OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-nd-followup-adjudication-postmerge-v2"
+          mkdir -p "$OUT"
+
+          test "$EVENT_NAME" = pull_request
+          test "$PR_HEAD_REF" = "$BRANCH"
+          test "$(git rev-parse HEAD^)" = "$MERGE"
+          test "$(git diff --name-only "$MERGE" HEAD)" = "$PATH_ONLY"
+          test "$(git diff --diff-filter=A --name-only "$MERGE" HEAD)" = "$PATH_ONLY"
+          test -z "$(git diff --diff-filter=MDTCRUXB --name-only "$MERGE" HEAD)"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$MERGE"
+          test "$(git rev-list --parents -n1 "$MERGE")" = "$MERGE $PARENT $PRODUCT"
+          test "$(git rev-parse "$PRODUCT^")" = "$PARENT"
+          test "$(git rev-parse "$PRODUCT^{tree}")" = "$TREE"
+          test "$(git rev-parse "$MERGE^{tree}")" = "$TREE"
+          test "$(git rev-parse "$MERGE:$WORKFLOW")" = "$WORKFLOW_BLOB"
+          git diff --name-status "$PARENT" "$PRODUCT" > "$OUT/product-name-status.txt"
+          git diff --name-status "$PRODUCT" "$MERGE" > "$OUT/merge-wrapper-name-status.txt"
+          test ! -s "$OUT/merge-wrapper-name-status.txt"
+
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/$RUN" > "$OUT/run.json"
+          jq -e --arg name "$WORKFLOW_NAME" --arg sha "$MERGE" --argjson id "$RUN" \
+            '.id==$id and .name==$name and .event=="push" and .head_sha==$sha and .status=="completed" and .conclusion=="success"' \
+            "$OUT/run.json" >/dev/null
+
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/$RUN/jobs?per_page=100" > "$OUT/jobs.json"
+          jq -e --argjson job "$JOB" '
+            .total_count==1 and .jobs[0].id==$job and .jobs[0].name=="validate" and
+            .jobs[0].status=="completed" and .jobs[0].conclusion=="success" and
+            ([.jobs[0].steps[] |
+              select(.name=="Install pinned schema and workflow parsers" or
+                     .name=="Verify immutable inputs and standing workflow" or
+                     .name=="Rebuild exact permanent data product" or
+                     .name=="Enforce recursively closed product schemas" or
+                     .name=="Validate focused and adversarial adjudication controls" or
+                     .name=="Run complete repository release gate" or
+                     .name=="Run actions/upload-artifact@v4") |
+              select(.status=="completed" and .conclusion=="success")] | length)==7' \
+            "$OUT/jobs.json" >/dev/null
+
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/$RUN/artifacts?per_page=100" > "$OUT/artifacts.json"
+          jq -e --argjson id "$ARTIFACT" --arg name "$ARTIFACT_NAME" --argjson bytes "$ZIP_BYTES" --arg digest "sha256:$ZIP_SHA" '
+            ([.artifacts[] | select(.id==$id and .name==$name and .size_in_bytes==$bytes and .digest==$digest and .expired==false)] | length)==1' \
+            "$OUT/artifacts.json" >/dev/null
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/$ARTIFACT/zip" > "$OUT/product-artifact.zip"
+          test "$(stat -c %s "$OUT/product-artifact.zip")" -eq "$ZIP_BYTES"
+          test "$(sha256sum "$OUT/product-artifact.zip" | cut -d' ' -f1)" = "$ZIP_SHA"
+          unzip -t "$OUT/product-artifact.zip" > "$OUT/zip-test.txt"
+          mkdir -p "$OUT/product-artifact"
+          unzip -q "$OUT/product-artifact.zip" -d "$OUT/product-artifact"
+          test "$(sha256sum "$OUT/product-artifact/$MANIFEST" | cut -d' ' -f1)" = "$MANIFEST_SHA"
+          jq -e --arg combined "$COMBINED_SHA" '
+            .permanent_path_count==14 and .combined_sha256==$combined and
+            .authority_boundary.source_admissions_created==2 and
+            .authority_boundary.source_requests_executed_by_adjudication==0 and
+            .authority_boundary.matrix_updates==0 and
+            .authority_boundary.field_terminalizations_created==0 and
+            .authority_boundary.row_state_mutations==0 and
+            .authority_boundary.class_closed==false and
+            .authority_boundary.cumulative_ledger_effect=="none" and
+            .authority_boundary.outside_human_dependency==false and
+            .authority_boundary.publication_effect=="none" and
+            .authority_boundary.adoption_effect=="none" and
+            .authority_boundary.graph_effect=="none"' \
+            "$OUT/product-artifact/$MANIFEST" >/dev/null
+
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs
+          git diff --exit-code -- data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+          git status --porcelain > "$OUT/post-release-status.txt"
+
+          git reset --hard "$MERGE"
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs
+          git diff --exit-code -- data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          test -z "$(git status --porcelain)"
+
+          jq -n --arg merge "$MERGE" --arg product "$PRODUCT" --arg parent "$PARENT" --arg tree "$TREE" \
+            --argjson run "$RUN" --argjson job "$JOB" --argjson artifact "$ARTIFACT" --arg zip_sha "$ZIP_SHA" \
+            '{schema_version:"ssc-rd04-postpromotion-nd-followup-adjudication-postmerge-proof@2",state:"canonical_postmerge_verified",
+              canonical_merge:$merge,product_commit:$product,product_parent:$parent,shared_tree:$tree,
+              native_push_workflow_run:$run,native_push_workflow_job:$job,native_product_artifact:$artifact,
+              native_artifact_digest:("sha256:"+$zip_sha),native_artifact_zip_sha256:$zip_sha,
+              permanent_paths:14,source_admissions:2,promotion_candidates:1,held_open_cells:1,source_requests:0,
+              matrix_updates:0,field_terminalizations:0,row_state_mutations:0,class_closed:false,
+              cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",
+              adoption_effect:"none",graph_effect:"none"}' > "$OUT/receipt.json"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ssc-rd04-postpromotion-nd-followup-adjudication-postmerge-proof-v2
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-nd-followup-adjudication-postmerge-v2
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - name: Require terminal postmerge proof
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-nd-followup-adjudication-postmerge-v2"
+          test "${{ steps.proof.outcome }}" = success
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .state=="canonical_postmerge_verified" and
+            .schema_version=="ssc-rd04-postpromotion-nd-followup-adjudication-postmerge-proof@2" and
+            .canonical_merge=="30e151b3ff4aeb5e6353d443fab1c535bc6d7b69" and
+            .product_commit=="9ac648d062d6a1ec5a19fec849be29bf76c69bad" and
+            .product_parent=="048e9d13a2555d8e6fabdbee5f45aea858f919b7" and
+            .shared_tree=="9d5b15d4b78e3027a316f507e46692e215f7e5a8" and
+            .native_push_workflow_run==31276965024 and
+            .native_push_workflow_job==93152005238 and
+            .native_product_artifact==9027286884 and
+            .native_artifact_zip_sha256=="b75d5c8227315ff943bab82e82b1f67476647bac7b70fa6ce37d1e4c52ac7233" and
+            .permanent_paths==14 and .source_admissions==2 and .promotion_candidates==1 and .held_open_cells==1 and
+            .source_requests==0 and .matrix_updates==0 and .field_terminalizations==0 and .row_state_mutations==0 and
+            .class_closed==false and .cumulative_ledger_effect=="none" and .outside_human_dependency==false and
+            .publication_effect=="none" and .adoption_effect=="none" and .graph_effect=="none"' \
+            "$OUT/receipt.json" >/dev/null
