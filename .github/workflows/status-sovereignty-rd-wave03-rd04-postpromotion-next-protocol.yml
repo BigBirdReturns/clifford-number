@@ -1,0 +1,201 @@
+name: Status sovereignty RD Wave 03 RD-04 postpromotion next protocol
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/frontier-selection.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/predecessor-custody.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/previously-frozen-url-exclusion.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/product-manifest.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-ledger.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-query-contract.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/summary.json'
+      - 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-next-protocol.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.schema.json'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js'
+      - 'tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/frontier-selection.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/predecessor-custody.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/previously-frozen-url-exclusion.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/product-manifest.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-ledger.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-query-contract.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/summary.json'
+      - 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-next-protocol.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.schema.json'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js'
+      - 'tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.ref == 'staging/ssc-rd04-postpromotion-next-protocol-v2' ||
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-next-protocol-product-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      PRODUCT_PARENT: 3918c799f8b8dcdac49c33cec5c7bbd01ac428e4
+      STAGING_BRANCH: staging/ssc-rd04-postpromotion-next-protocol-v2
+      PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-protocol-product-v2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Bind exact product surface and parent
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch origin "$PRODUCT_PARENT" --depth=256
+          test "$(git merge-base HEAD "$PRODUCT_PARENT")" = "$PRODUCT_PARENT"
+          cat >/tmp/expected-paths <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/frontier-selection.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/predecessor-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/previously-frozen-url-exclusion.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-query-contract.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/summary.json
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-next-protocol.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          EOF
+          sort -o /tmp/expected-paths /tmp/expected-paths
+          git diff --name-only --diff-filter=ACDMRTUXB "$PRODUCT_PARENT" HEAD | sort >/tmp/actual-paths
+          git diff --name-only --diff-filter=A "$PRODUCT_PARENT" HEAD | sort >/tmp/added-paths
+          diff -u /tmp/expected-paths /tmp/actual-paths
+          diff -u /tmp/expected-paths /tmp/added-paths
+          test "$(wc -l </tmp/actual-paths)" -eq 14
+          test -z "$(grep -E '(^|/)(\.tmp|.*\.trigger)(/|$)' /tmp/actual-paths || true)"
+          git diff --check "$PRODUCT_PARENT" HEAD
+          if test "${{ github.event.pull_request.head.ref }}" = "$PRODUCT_BRANCH"; then
+            test "$(git rev-parse HEAD^)" = "$PRODUCT_PARENT"
+            test "$(git rev-list --count "$PRODUCT_PARENT"..HEAD)" -eq 1
+          else
+            test "${{ github.event.pull_request.head.ref }}" = "$STAGING_BRANCH"
+          fi
+
+      - name: Verify immutable postpromotion inputs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json)" = 42361e559db90777e1d60aea5530df5694c86dc6
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/remaining-open-field-census.json)" = e6ea2bb2722d084d0bb601864d4de5d9db4c7b47
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-summary.json)" = e774a9ed555364e4c6616c407a24001dd39f8f51
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-next-minimum-frontier-route-discovery-protocol/route-discovery-protocol.json)" = 35e09035659d54060547e84ab29d5ba440402b2c
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/selected-followup-protocol.json)" = 88cb73c7bae87a4031d1571d7dd5ebdcb58aa2f4
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/source-adjudications.json)" = 53f378c9c4a56ca4aab0312bba38150b071786af
+
+      - name: Deterministic build and recursively closed schema validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          git diff --exit-code -- data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol
+          python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+          python - <<'PYSCHEMA'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          schema = json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.schema.json').read_text())
+          validator = Draft202012Validator(schema)
+          root = Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol')
+          names = [
+              'predecessor-custody.json',
+              'frontier-selection.json',
+              'previously-frozen-url-exclusion.json',
+              'route-ledger.json',
+              'route-query-contract.json',
+              'summary.json',
+              'product-manifest.json',
+          ]
+          for name in names:
+              value = json.loads((root / name).read_text())
+              errors = sorted(validator.iter_errors(value), key=lambda error: list(error.path))
+              if errors:
+                  raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
+          print(f'recursive_schema_validation=pass objects={len(names)}')
+          PYSCHEMA
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py --dry-run
+
+      - name: Enforce authority and repository gates
+        run: |
+          node tols/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+      - name: Prove clean deterministic replay
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git restore --staged --worktree .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py --dry-run >/tmp/execution-plan.json
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Preserve exact-head qualification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-postpromotion-next-protocol-qualification
+          rm -rf "$OUT"
+          mkdir -p "$OUT/product"
+          cp -R data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol "$OUT/product/data"
+          cp docs/milestones/ssc-rd-wave03-rd04-postpromotion-next-protocol.md "$OUT/product/"
+          cp schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.schema.json "$OUT/product/"
+          cp /tmp/execution-plan.json "$OUT/"
+          git rev-parse HEAD >"$OUT/head-sha.txt"
+          git rev-parse 'HEAD^{tree}' >"$OUT/head-tree.txt"
+          if test "${{ github.event_name }}" = pull_request; then
+            printf '%s\n' "$PRODUCT_PARENT" >"$OUT/product-parent.txt"
+          fi
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum >SHA256SUMS)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-protocol-qualification
+          path: /tmp/ssc-rd04-postpromotion-next-protocol-qualification
+          if-no-files-found: error
+          retention-days: 90
