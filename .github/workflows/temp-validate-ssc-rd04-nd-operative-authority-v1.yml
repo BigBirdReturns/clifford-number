@@ -1,0 +1,156 @@
+name: TEMP validate RD-04 ND operative-authority candidate v1
+
+on:
+  pull_request:
+    branches: [observer/ssc-rd04-nd-operative-authority-validation-base-v1]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/triggers/temp-validate-ssc-rd04-nd-operative-authority-v1.trigger'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rd04-nd-operative-authority-validation-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+env:
+  PARENT: 30e151b3ff4aeb5e6353d443fab1c535bc6d7b69
+  TREE: 9d5b15d4b78e3027a316f507e46692e215f7e5a8
+  WORKFLOW: .github/workflows/temp-validate-ssc-rd04-nd-operative-authority-v1.yml
+  TRIGGER: .github/triggers/temp-validate-ssc-rd04-nd-operative-authority-v1.trigger
+  MATRIX: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 66896190dd575f9867f1e121d845acfb4d27f56f
+  CANDIDATE: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/promotion-candidate-protocol.json
+  CANDIDATE_BLOB: a93c685b47f2678e39bba8fb395fc5fdfdbee7ff
+  FIELD: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/field-adjudications.json
+  FIELD_BLOB: 11875231a4b074ea2ec4125cfbf0d27fcde44222
+  CAPTURE: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/capture-custody.json
+  CAPTURE_BLOB: c53688f9540033383594863cfec2dc932a515146
+  SOURCE: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/source-adjudications.json
+  SOURCE_BLOB: c46480e360d4302ec3e1846e43097d163c7d3c88
+  HTML: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/html-review-receipts.json
+  HTML_BLOB: a9e82f717fe9293aaa588940b0974ffc095e7cfd
+  DUP: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/transport-duplication-ledger.json
+  DUP_BLOB: 6d3efcbd5137e6e94229cebd57a79f5a80c95467
+  VALIDATOR: tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs
+  VALIDATOR_BLOB: fce38f5d25d8a69673f1c7144c6cb0cbf5c9df1f
+  TEST: test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.test.js
+  TEST_BLOB: 5511a1c17ca6d010df1b568e7ccfcf258895e9cb
+
+jobs:
+  validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'observer/ssc-rd04-nd-operative-authority-validation-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with: {node-version: '24'}
+
+      - name: Bind exact topology and inputs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD~2)" = "$PARENT"
+          test "$(git rev-parse "$PARENT^{tree}")" = "$TREE"
+          test "$(git rev-list --count "$PARENT"..HEAD)" -eq 2
+          test "$(git rev-parse HEAD^)" = "${{ github.event.pull_request.base.sha }}"
+          printf '%s\n' "$WORKFLOW" "$TRIGGER" | LC_ALL=C sort >/tmp/expected
+          git diff --name-only "$PARENT" HEAD | LC_ALL=C sort >/tmp/actual
+          git diff --name-only --diff-filter=A "$PARENT" HEAD | LC_ALL=C sort >/tmp/added
+          diff -u /tmp/expected /tmp/actual
+          diff -u /tmp/expected /tmp/added
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/main)" = "$PARENT"
+          while IFS='|' read -r path blob; do test "$(git rev-parse "HEAD:$path")" = "$blob"; done <<EOF
+          $MATRIX|$MATRIX_BLOB
+          $CANDIDATE|$CANDIDATE_BLOB
+          $FIELD|$FIELD_BLOB
+          $CAPTURE|$CAPTURE_BLOB
+          $SOURCE|$SOURCE_BLOB
+          $HTML|$HTML_BLOB
+          $DUP|$DUP_BLOB
+          $VALIDATOR|$VALIDATOR_BLOB
+          $TEST|$TEST_BLOB
+          EOF
+          git diff --check "$PARENT" HEAD
+
+      - name: Replay canonical adjudication controls
+        run: |
+          node "$VALIDATOR"
+          node "$TEST"
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+
+      - name: Validate exact open candidate and held cell
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/rd04-nd-operative-authority-validation-v1"
+          rm -rf "$OUT"; mkdir -p "$OUT"
+          python - "$OUT" <<'PY'
+          import hashlib,json,os,pathlib,subprocess,sys
+          root=pathlib.Path('.'); out=pathlib.Path(sys.argv[1])
+          specs={k:(os.environ[p],os.environ[b]) for k,p,b in [
+            ('matrix','MATRIX','MATRIX_BLOB'),('candidate','CANDIDATE','CANDIDATE_BLOB'),
+            ('field','FIELD','FIELD_BLOB'),('capture','CAPTURE','CAPTURE_BLOB'),
+            ('source','SOURCE','SOURCE_BLOB'),('html','HTML','HTML_BLOB'),('dup','DUP','DUP_BLOB')]}
+          def stable(v):
+            if isinstance(v,list): return [stable(x) for x in v]
+            if isinstance(v,dict): return {k:stable(v[k]) for k in sorted(v)}
+            return v
+          def csha(v): return hashlib.sha256(json.dumps(stable(v),separators=(',',':')).encode()).hexdigest()
+          values={}; inventory={}
+          for name,(rel,blob) in specs.items():
+            data=(root/rel).read_bytes(); observed=subprocess.check_output(['git','hash-object',rel],text=True).strip(); assert observed==blob
+            values[name]=json.loads(data); inventory[name]={'path':rel,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),'git_blob':observed}
+          m,c,f,cap,s,h,d=(values[x] for x in ('matrix','candidate','field','capture','source','html','dup'))
+          assert tuple(m['counts'][k] for k in ('materialized_cells','terminal_cells','still_open_cells','still_open_substantive_cells','terminal_units'))==(450,226,224,184,10)
+          row=next(x for x in m['rows'] if x['unit_id']=='US-STATE-ND'); assert (row['row_state'],row['terminal_fields'],row['open_fields'])==('still_open',6,3)
+          assert csha(row)=='f95e6f6514687768713b4e29df4a54de3bc5a8c03d0c46aabec88e0785d9e995'
+          cells={x['field_id']:x for x in row['cells']}; target=cells['operative_state_implementation_authority_and_version']; held=cells['abawd_or_work_requirement_waiver_state_and_governing_period']
+          assert target['state']=='still_open' and target['terminal'] is False and csha(target)=='1e857cb90de38207a82ca2f844083ea56ef8d616c0aa229d135b0bb53f0cc382'
+          assert held['state']=='still_open' and held['terminal'] is False and csha(held)=='cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe'
+          assert (c['candidate_count'],c['unique_candidate_cell_count'],c['held_cell_count'])==(1,1,1); cand=c['candidates'][0]
+          assert cand['candidate_id']=='RD04-PPN-ND-FU-CANDIDATE-OPERATIVE-STATE-IMPLEMENTATION-AUTHORITY-AND-VERSION'
+          assert cand['current_cell_canonical_sha256']==csha(target) and cand['source_route_ids']==['RD04-W03-PPN-ND-FU-001']
+          assert (cand['bounded_finding']['current_public_release_identifier'],cand['bounded_finding']['current_public_release_effective_date'])==('26.5','2026-06-15')
+          decisions={x['decision_id']:x for x in f['decisions']}; decision=decisions[cand['decision_id']]
+          assert decision['promotion_candidate'] is True and decision['disposition']=='evidence_complete_bounded_finding'
+          assert (decision['bounded_finding'],decision['source_route_ids'],decision['evidence_locators'])==(cand['bounded_finding'],cand['source_route_ids'],cand['evidence_locators'])
+          hold=decisions['RD04-PPN-ND-FU-ABAWD-OR-WORK-REQUIREMENT-WAIVER-STATE-AND-GOVERNING-PERIOD']
+          assert hold['promotion_candidate'] is False and hold['disposition']=='temporal_or_scope_ambiguity_hold_open'
+          assert hold['bounded_finding']['current_post_2025_10_31_state']=='not_expressly_stated_in_captured_history_log'
+          sources={x['route_id']:x for x in s['decisions']}; bodies={x['route_id']:x for x in cap['route_bodies']}; reviews={x['route_id']:x for x in h['receipts']}
+          src=sources['RD04-W03-PPN-ND-FU-001']; body=bodies['RD04-W03-PPN-ND-FU-001']; review=reviews['RD04-W03-PPN-ND-FU-001']
+          assert src['candidate_fields_for_offline_review']==['operative_state_implementation_authority_and_version'] and src['substantive_weight_count']==1
+          assert (src['body_sha256'],src['body_bytes'],src['final_url'])==(body['body_sha256'],body['body_bytes'],body['final_url'])
+          assert review['all_visible_text_reviewed'] is True and review['body_sha256']==src['body_sha256'] and review['visible_text_sha256']=='0db5be97b1050b9ee8e96d3384d4b37a44ce113681d4a6b651c83666561713cb'
+          assert all(x['route_id']=='RD04-W03-PPN-ND-FU-001' for x in cand['evidence_locators'])
+          assert cap['additional_execution_authorized'] is False and cap['transport_ledger']['duplicate_transport_substantive_weight_effect']=='none'
+          assert d['additional_execution_authorized'] is False and d['summary']['body_changes']==0 and all(x['substantive_weight_count']==1 and x['artifact_body_identity_count']==3 for x in d['route_body_identity'])
+          receipt={'schema_version':'ssc-rd04-postpromotion-nd-operative-authority-validation@1','state':'validated','failed_or_final_stage':'complete','exit_code':0,'issue':1017,'class_id':'RD-04-C02','canonical_parent':os.environ['PARENT'],'canonical_tree':os.environ['TREE'],'execution_head':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'input_inventory':inventory,'candidate_count':1,'validated_open_cell_count':1,'held_cell_count':1,'candidate_id':cand['candidate_id'],'candidate_field_id':cand['field_id'],'candidate_cell_sha256':csha(target),'held_decision_id':hold['decision_id'],'held_field_id':hold['field_id'],'held_cell_sha256':csha(held),'source_route_id':src['route_id'],'source_body_sha256':src['body_sha256'],'html_review_sha256':review['visible_text_sha256'],'matrix_transition_if_separately_promoted':{'terminal_cells_before':226,'terminal_cells_after':227,'still_open_cells_before':224,'still_open_cells_after':223,'open_substantive_cells_before':184,'open_substantive_cells_after':183,'terminal_units_before':10,'terminal_units_after':10},'matrix_updates':0,'field_terminalizations':0,'row_state_mutations':0,'class_closed':False,'cumulative_ledger_effect':'none','outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none','promotion_authority_created':False,'next_authorized_operation':'construct a separate permanent one-cell promotion product over this exact parent and candidate; exclude the waiver-period hold'}
+          payload=json.dumps(receipt,indent=2,sort_keys=True)+'\n'; (out/'validation-receipt.json').write_text(payload); (out/'validation-receipt-sha256.txt').write_text(hashlib.sha256(payload.encode()).hexdigest()+'\n'); (out/'input-inventory.json').write_text(json.dumps(inventory,indent=2,sort_keys=True)+'\n')
+          PY
+          printf 'complete\n' >"$OUT/STAGE"; printf '0\n' >"$OUT/EXIT_CODE"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum >SHA256SUMS && sha256sum -c SHA256SUMS)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-nd-operative-authority-validation-v1
+          path: ${{ runner.temp }}/rd04-nd-operative-authority-validation-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Preserve fail-closed conclusion
+        run: |
+          OUT="$RUNNER_TEMP/rd04-nd-operative-authority-validation-v1"
+          test "$(cat "$OUT/STAGE")" = complete
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '.state=="validated" and .candidate_count==1 and .validated_open_cell_count==1 and .held_cell_count==1 and .matrix_updates==0 and .field_terminalizations==0 and .row_state_mutations==0 and .class_closed==false and .promotion_authority_created==false' "$OUT/validation-receipt.json" >/dev/null
