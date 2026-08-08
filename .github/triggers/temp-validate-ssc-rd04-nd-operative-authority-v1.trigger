@@ -1,0 +1,4 @@
+trigger schema_version=ssc-rd04-postpromotion-nd-operative-authority-validation-trigger@1
+canonical_parent=30e151b3ff4aeb5e6353d443fab1c535bc6d7b69
+source_requests=0
+promotion_authority_created=false
