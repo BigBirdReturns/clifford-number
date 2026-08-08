@@ -1,0 +1,105 @@
+name: TEMP materialize RD-04 postpromotion five-route adjudication v3
+
+on:
+  push:
+    branches:
+      - agent/ssc-rd04-postpromotion-five-route-adjudication-materializer-v3
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-postpromotion-five-route-adjudication-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: temp-materialize-ssc-rd04-postpromotion-five-route-adjudication-v3
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event_name == 'workflow_dispatch' || github.ref_name == 'agent/ssc-rd04-postpromotion-five-route-adjudication-materializer-v3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Bind exact workflow commit and reconstruct controller
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CONTROLLER_PARENT='52017c9522c92d097a6831c7acaece15d950199e'
+          WORKFLOW='.github/workflows/temp-materialize-ssc-rd04-postpromotion-five-route-adjudication-v3.yml'
+          CHUNK_DIR='.tmp/ssc-rd04-postpromotion-five-route-adjudication-v3'
+          ROOT='/tmp/ssc-rd04-postpromotion-five-route-adjudication-controller-v3'
+          rm -rf "$ROOT"
+          mkdir -p "$ROOT"
+
+          test "$(git rev-parse HEAD^)" = "$CONTROLLER_PARENT"
+          test "$(git rev-list --count "$CONTROLLER_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CONTROLLER_PARENT" HEAD)" = "$WORKFLOW"
+          test "$(git diff --name-only --diff-filter=A "$CONTROLLER_PARENT" HEAD)" = "$WORKFLOW"
+          git diff --check "$CONTROLLER_PARENT" HEAD
+
+          cat > "$ROOT/chunk-ledger.txt" <<'EOF'
+          controller-chunk-00.b64 5000 1674256b8d8e25db249199e66ea445b95b5d635ca77553c8a9d602db3d2ea49d
+          controller-chunk-01.b64 5000 98037f1b2d748e51df3987521f233a07abf12b3296defc49433edaa0c1fc5671
+          controller-chunk-02.b64 5000 77df11672e017de9fda004e0c48d7e7842fc2f150c0c6be400d5bf4c30fdcf87
+          controller-chunk-03.b64 5000 4912e066e8d831619781bf230192c0ef6cbec5d1d75446e1685ab099c626f17a
+          controller-chunk-04.b64 5000 08f5fd1b09464781a70e6e1c19a96453d532ee13cbf3fed84a36851b0ec0ae3e
+          controller-chunk-05.b64 5000 f52a65bc2fad6b73d32d543928292d93680445b2a77850215ce3bc6c01ac3702
+          controller-chunk-06.b64 2532 770dd3ac9b26fb9e66b405b89c6e1c46c0312b7b63f6ede050cb3230671ea6b3
+          EOF
+          mapfile -t actual < <(find "$CHUNK_DIR" -maxdepth 1 -type f -name 'controller-chunk-*.b64' -printf '%f\n' | LC_ALL=C sort)
+          mapfile -t expected < <(awk '{print $1}' "$ROOT/chunk-ledger.txt")
+          test "${#actual[@]}" -eq 7
+          diff -u <(printf '%s\n' "${expected[@]}") <(printf '%s\n' "${actual[@]}")
+
+          : > "$ROOT/controller.py.b64"
+          while read -r name bytes digest; do
+            test "$(stat -c %s "$CHUNK_DIR/$name")" -eq "$bytes"
+            test "$(sha256sum "$CHUNK_DIR/$name" | cut -d' ' -f1)" = "$digest"
+            cat "$CHUNK_DIR/$name" >> "$ROOT/controller.py.b64"
+          done < "$ROOT/chunk-ledger.txt"
+          test "$(stat -c %s "$ROOT/controller.py.b64")" -eq 32532
+          test "$(sha256sum "$ROOT/controller.py.b64" | cut -d' ' -f1)" = f762373177e12d447a5ac0fc0b7bf9986ad08fdc2f1cbbebc02a0ce76a26df13
+          base64 -d "$ROOT/controller.py.b64" > "$ROOT/controller.py"
+          test "$(stat -c %s "$ROOT/controller.py")" -eq 24398
+          test "$(sha256sum "$ROOT/controller.py" | cut -d' ' -f1)" = 90361e4640c1f5c84bee75aa026bbec8a802a8a2bbb84e68ae0a6fdebc52f695
+          python -m py_compile "$ROOT/controller.py"
+
+      - name: Install pinned validation dependencies
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+
+      - name: Execute exact materializer controller
+        id: materialize
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python /tmp/ssc-rd04-postpromotion-five-route-adjudication-controller-v3/controller.py
+
+      - name: Upload exact materialization evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-five-route-adjudication-materializer-v3
+          path: /tmp/ssc-rd04-postpromotion-five-route-adjudication-materializer-v2
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Preserve fail-closed conclusion
+        if: steps.materialize.outcome == 'failure'
+        shell: bash
+        run: exit 1
