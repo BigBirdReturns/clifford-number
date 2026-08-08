@@ -1,0 +1,425 @@
+name: TEMP compose RD-04 target-field scope repair on current main V2
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-ssc-rd04-postpromotion-target-scope-current-main-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  compose:
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-target-scope-current-main-carrier-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      OBSERVED_MAIN: 8d05486534829671fff7a73e72e0df4f0c6a6efd
+      CARRIER_BRANCH: agent/ssc-rd04-postpromotion-target-scope-current-main-carrier-v2
+      CARRIER_WORKFLOW: .github/workflows/temp-ssc-rd04-postpromotion-target-scope-current-main-v2.yml
+      PRODUCT_BRANCH: repair/ssc-rd04-postpromotion-target-scope-current-main-v2
+      PRODUCT_PARENT: 91b386df809079884825b19a6b5d864b6e739172
+      WORKFLOW_REL: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.yml
+      WORKFLOW_BLOB: df82e16b34e5fffcd02c301685e2210a4cef1ac8
+      MANIFEST_REL: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/product-manifest.json
+      DATA_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication
+      BUILDER_REL: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+      VALIDATOR_REL: tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+      TEST_REL: test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js
+      SCHEMA_REL: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.schema.json
+      ARCHIVE_BYTES: '18764'
+      ARCHIVE_SHA256: a0efdbd363c2a076fcd5fc392a15cd973f970adf877366be2c937e09553f0360
+      BASE64_BYTES: '25020'
+      BASE64_SHA256: b031090dbed1abfa5b1aa8f322104aa53c48595817f654ba4e6f2a970827a18b
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned validators
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+
+      - name: Reconstruct, compose, qualify, and publish exact current-main repair
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-target-scope-current-main-v2"
+          PAYLOAD="$OUT/payload"
+          WORK="$RUNNER_TEMP/ssc-rd04-postpromotion-target-scope-current-main-v2-worktree"
+          rm -rf "$OUT" "$WORK"
+          mkdir -p "$OUT/chunks" "$PAYLOAD"
+          printf 'initializing\n' >"$OUT/STAGE"
+          cat >"$OUT/BOUNDARY" <<'EOF_BOUNDARY'
+          source_requests=0
+          route_executions=0
+          new_transport_captures=0
+          reviewed_source_admissions=4
+          promotion_candidates=4
+          held_open_cells=2
+          followup_routes=2
+          matrix_updates=0
+          field_terminalizations=0
+          row_state_mutations=0
+          class_closed=false
+          cumulative_ledger_effect=none
+          outside_human_dependency=false
+          publication_effect=none
+          adoption_effect=none
+          graph_effect=none
+          EOF_BOUNDARY
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            printf '%s\n' "$rc" >"$OUT/EXIT_CODE"
+            if test -d "$WORK"; then
+              git -C "$WORK" rev-parse HEAD >"$OUT/product-head-final.txt" 2>/dev/null || true
+              git -C "$WORK" rev-parse 'HEAD^{tree}' >"$OUT/product-tree-final.txt" 2>/dev/null || true
+              git -C "$WORK" status --porcelain=v1 --untracked-files=all >"$OUT/product-status-final.txt" 2>/dev/null || true
+            fi
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum >SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          printf 'binding-one-path-carrier-and-live-main\n' >"$OUT/STAGE"
+          git rev-parse HEAD >"$OUT/carrier-head.txt"
+          git rev-parse 'HEAD^{tree}' >"$OUT/carrier-tree.txt"
+          test "${{ github.event_name }}" != pull_request || test "${{ github.event.pull_request.head.ref }}" = "$CARRIER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$OBSERVED_MAIN"
+          test "$(git rev-list --count "$OBSERVED_MAIN"..HEAD)" -eq 1
+          printf '%s\n' "$CARRIER_WORKFLOW" >"$OUT/expected-carrier-paths.txt"
+          git diff --name-only --diff-filter=ACDMRTUXB "$OBSERVED_MAIN" HEAD | LC_ALL=C sort >"$OUT/actual-carrier-paths.txt"
+          git diff --name-only --diff-filter=A "$OBSERVED_MAIN" HEAD | LC_ALL=C sort >"$OUT/added-carrier-paths.txt"
+          diff -u "$OUT/expected-carrier-paths.txt" "$OUT/actual-carrier-paths.txt"
+          diff -u "$OUT/expected-carrier-paths.txt" "$OUT/added-carrier-paths.txt"
+          git diff --check "$OBSERVED_MAIN" HEAD
+          git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$OBSERVED_MAIN"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+
+          printf 'reconstructing-authenticated-seven-file-payload\n' >"$OUT/STAGE"
+          cat >"$OUT/chunk-ledger.tsv" <<'EOF_CHUNKS'
+          00	ab2012bff51d7f6352610d2b0a68dea94ae3f679	5000	925eb160ce33cdd22f08106b03e2257aea07671282ea1c0915f4f608aaf23cc8
+          01	ccd893d422dbd1b39df174aada201411ec40cc40	5000	acc3847bccce5f761110440447db520549393589b1db4f4402bc1f09a6ef6f69
+          02	2ae6d872b5840721c61b356eb7ad2299870468cc	5000	91f3f5199a85112e86d938685325064ce7e0a32e8028da521e6b34737d6d6c77
+          03	4dd54a54084a2906b7010cc56e93d431790a87a4	5000	4349e2ed6ba567ed2dbd6d0e687be463d8b9286b53055c84a2eddd2be58f98e1
+          04	f85ad23748f94050821bab518e4340756362956a	5000	cf9a6a7fd4c3da083dfc90da1a2e0768ba60c7d5c90abccfccaf3cf7dce27ba2
+          05	47ff86ad4495467099bc872d2204d3a975b8a20c	20	fe1ad05fa4278b9f3afb5d4496757e1efa944bcf353675c3fa4116044779877b
+          EOF_CHUNKS
+          : >"$OUT/payload.b64"
+          while IFS=$'\t' read -r ordinal blob expected_bytes expected_sha; do
+            gh api "repos/$GITHUB_REPOSITORY/git/blobs/$blob" --jq .content | tr -d '\n' | base64 -d >"$OUT/chunks/chunk-$ordinal.b64"
+            test "$(wc -c <"$OUT/chunks/chunk-$ordinal.b64")" -eq "$expected_bytes"
+            test "$(sha256sum "$OUT/chunks/chunk-$ordinal.b64" | cut -d' ' -f1)" = "$expected_sha"
+            cat "$OUT/chunks/chunk-$ordinal.b64" >>"$OUT/payload.b64"
+          done <"$OUT/chunk-ledger.tsv"
+          test "$(wc -c <"$OUT/payload.b64")" -eq "$BASE64_BYTES"
+          test "$(sha256sum "$OUT/payload.b64" | cut -d' ' -f1)" = "$BASE64_SHA256"
+          base64 -d "$OUT/payload.b64" >"$OUT/repair.tar.xz"
+          test "$(wc -c <"$OUT/repair.tar.xz")" -eq "$ARCHIVE_BYTES"
+          test "$(sha256sum "$OUT/repair.tar.xz" | cut -d' ' -f1)" = "$ARCHIVE_SHA256"
+          xz -t "$OUT/repair.tar.xz"
+
+          cat >"$OUT/archive-paths-expected.txt" <<'EOF_ARCHIVE_PATHS'
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/promotion-candidate-protocol.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/source-adjudications.json
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+          EOF_ARCHIVE_PATHS
+          LC_ALL=C sort -o "$OUT/archive-paths-expected.txt" "$OUT/archive-paths-expected.txt"
+          tar -tJf "$OUT/repair.tar.xz" | LC_ALL=C sort >"$OUT/archive-paths-actual.txt"
+          diff -u "$OUT/archive-paths-expected.txt" "$OUT/archive-paths-actual.txt"
+          python - "$OUT/archive-paths-actual.txt" <<'PYSAFE'
+          from pathlib import Path, PurePosixPath
+          import sys
+          paths = Path(sys.argv[1]).read_text().splitlines()
+          if len(paths) != 7 or len(set(paths)) != 7:
+              raise SystemExit(f'archive path denominator mismatch: {len(paths)}')
+          for raw in paths:
+              pure = PurePosixPath(raw)
+              if pure.is_absolute() or '..' in pure.parts or not raw or raw.startswith('.tmp/') or '.trigger' in pure.parts:
+                  raise SystemExit(f'unsafe archive path: {raw!r}')
+          print('safe_archive_paths=pass files=7')
+          PYSAFE
+          tar -xJf "$OUT/repair.tar.xz" -C "$PAYLOAD"
+
+          cat >"$OUT/payload-file-ledger.tsv" <<'EOF_FILE_LEDGER'
+          522ec8503299c0458d45f43f23512c8ff90ac0f2	19476	09cc77b74c3ed0c63f4c99f57df84bd9a8069f7f0ab72d10c0cdd202e5ff93fc	data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json
+          d2fce7e6ec725095cc59ef4f6f0a19d64921a8d5	6392	fe96723824c26a8faf5e00e38a8d77c562ad3f2998cdfd5fdf763b5c4465712c	data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/product-manifest.json
+          518cd7b836290baa9ef825410d973116d6b825cb	7509	262e6069926b941d0ca82ca573b055a1331bce1e848b4eed50777931aca65030	data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/promotion-candidate-protocol.json
+          3b8e43073f9828d80d39a9dd2baadea471d7a301	21649	cbd69bb511268b9b6882b4eb359d92f61ac03ace468f8b4ee3de4693f3202eaf	data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/source-adjudications.json
+          39fe7835b9725f09f5b911104067de6750ba5eae	91771	7d348d23f84e89eabbe75aadf26c820adfad5e6d82c95a5af220076c5cd1e07e	schemas/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.schema.json
+          155334d2b5d28cea1f962bb16e08f05aabf1a0be	7820	fc0100c764c916df98708a10cf91fd96f74463b698a5c1eb21113daaf528bc72	test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js
+          194f52ac592bf8d629abea3e0e838b007bea31f9	14318	5af4962c8e73777cca8efd83d66368facbbae8da7c51ddaa1bb7f6c740b5663d	tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+          EOF_FILE_LEDGER
+          while IFS=$'\t' read -r expected_blob expected_bytes expected_sha path; do
+            test -f "$PAYLOAD/$path"
+            test "$(wc -c <"$PAYLOAD/$path")" -eq "$expected_bytes"
+            test "$(sha256sum "$PAYLOAD/$path" | cut -d' ' -f1)" = "$expected_sha"
+            test "$(git hash-object "$PAYLOAD/$path")" = "$expected_blob"
+          done <"$OUT/payload-file-ledger.tsv"
+
+          printf 'composing-six-semantic-files-over-current-main\n' >"$OUT/STAGE"
+          cat >"$OUT/semantic-paths.txt" <<'EOF_SEMANTIC_PATHS'
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/promotion-candidate-protocol.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/source-adjudications.json
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+          EOF_SEMANTIC_PATHS
+          LC_ALL=C sort -o "$OUT/semantic-paths.txt" "$OUT/semantic-paths.txt"
+          git worktree add --detach "$WORK" "$OBSERVED_MAIN"
+          cd "$WORK"
+          git config user.name 'OpenAI Agent'
+          git config user.email 'openai-agent@users.noreply.github.com'
+          git config commit.gpgsign false
+          test "$(git hash-object "$WORKFLOW_REL")" = "$WORKFLOW_BLOB"
+          while IFS= read -r path; do
+            cp "$PAYLOAD/$path" "$path"
+          done <"$OUT/semantic-paths.txt"
+          test "$(git hash-object "$WORKFLOW_REL")" = "$WORKFLOW_BLOB"
+
+          printf 'regenerating-current-main-manifest\n' >"$OUT/STAGE"
+          node --check "$BUILDER_REL"
+          node --check "$VALIDATOR_REL"
+          node --check "$TEST_REL"
+          node "$BUILDER_REL" --write
+          node "$BUILDER_REL"
+          test "$(git hash-object "$WORKFLOW_REL")" = "$WORKFLOW_BLOB"
+
+          printf '%s\n' "$MANIFEST_REL" >>"$OUT/semantic-paths.txt"
+          LC_ALL=C sort -o "$OUT/expected-product-paths.txt" "$OUT/semantic-paths.txt"
+          git diff --name-only --diff-filter=ACDMRTUXB "$OBSERVED_MAIN" | LC_ALL=C sort >"$OUT/actual-product-paths.txt"
+          git diff --name-only --diff-filter=M "$OBSERVED_MAIN" | LC_ALL=C sort >"$OUT/modified-product-paths.txt"
+          diff -u "$OUT/expected-product-paths.txt" "$OUT/actual-product-paths.txt"
+          diff -u "$OUT/expected-product-paths.txt" "$OUT/modified-product-paths.txt"
+          test -z "$(git diff --name-only --diff-filter=ACDRTUXB "$OBSERVED_MAIN")"
+          test "$(wc -l <"$OUT/actual-product-paths.txt")" -eq 7
+          git diff --check "$OBSERVED_MAIN"
+
+          printf 'validating-manifest-and-recursive-schema\n' >"$OUT/STAGE"
+          python - <<'PYYAML'
+          from pathlib import Path
+          import yaml
+          value = yaml.safe_load(Path('.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.yml').read_text())
+          if not isinstance(value, dict):
+              raise SystemExit('standing workflow did not parse as an object')
+          print('workflow_yaml_parse=pass')
+          PYYAML
+          python - <<'PYMANIFEST'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          root = Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication')
+          manifest = json.loads((root / 'product-manifest.json').read_text())
+          if manifest['permanent_path_count'] != 14 or manifest['hashed_file_count'] != 13:
+              raise SystemExit('manifest denominator mismatch')
+          rows = {row['path']: row for row in manifest['hashed_files']}
+          expected = {
+              '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.yml': 'df82e16b34e5fffcd02c301685e2210a4cef1ac8',
+              'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json': '522ec8503299c0458d45f43f23512c8ff90ac0f2',
+              'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/promotion-candidate-protocol.json': '518cd7b836290baa9ef825410d973116d6b825cb',
+              'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/source-adjudications.json': '3b8e43073f9828d80d39a9dd2baadea471d7a301',
+              'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.schema.json': '39fe7835b9725f09f5b911104067de6750ba5eae',
+              'test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js': '155334d2b5d28cea1f962bb16e08f05aabf1a0be',
+              'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs': '194f52ac592bf8d629abea3e0e838b007bea31f9',
+          }
+          for path, blob in expected.items():
+              row = rows.get(path)
+              if row is None or row['git_blob'] != blob:
+                  raise SystemExit(f'manifest identity mismatch: {path}')
+              observed = subprocess.check_output(['git', 'hash-object', path], text=True).strip()
+              if observed != blob:
+                  raise SystemExit(f'worktree identity mismatch: {path}')
+          boundary = manifest['authority_boundary']
+          expected_boundary = {
+              'source_requests_executed_by_adjudication': 0,
+              'source_admissions_created': 4,
+              'field_classifications_created': 0,
+              'field_terminalizations_created': 0,
+              'matrix_updates': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'external_contacts': 0,
+              'external_reviews': 0,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'national_prevalence_effect': 'none',
+              'discrimination_effect': 'none',
+              'racial_order_effect': 'none',
+              'coordination_effect': 'none',
+              'common_purpose_effect': 'none',
+              'complete_compact_effect': 'none',
+          }
+          if boundary != expected_boundary:
+              raise SystemExit('authority boundary changed')
+          print(f"manifest_identity_validation=pass combined_sha256={manifest['combined_sha256']}")
+          PYMANIFEST
+          python - <<'PYSCHEMA'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          schema = json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.schema.json').read_text())
+          Draft202012Validator.check_schema(schema)
+          validator = Draft202012Validator(schema)
+          root = Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication')
+          names = [
+              'capture-custody.json',
+              'source-adjudications.json',
+              'field-adjudications.json',
+              'pdf-review-receipts.json',
+              'promotion-candidate-protocol.json',
+              'selected-followup-protocol.json',
+              'index.json',
+              'product-manifest.json',
+          ]
+          for name in names:
+              value = json.loads((root / name).read_text())
+              errors = sorted(validator.iter_errors(value), key=lambda error: list(error.path))
+              if errors:
+                  error = errors[0]
+                  raise SystemExit(f'{name}: {error.message} at {list(error.path)}')
+          print(f'recursive_schema_validation=pass objects={len(names)}')
+          PYSCHEMA
+
+          printf 'running-focused-authority-gates\n' >"$OUT/STAGE"
+          node "$VALIDATOR_REL" | tee "$OUT/validation.json"
+          node "$TEST_REL" | tee "$OUT/adversarial.json"
+          grep -Eq '"adversarial_refusals":64([,}])' "$OUT/adversarial.json"
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+
+          printf 'committing-exact-seven-path-product\n' >"$OUT/STAGE"
+          while IFS= read -r path; do git add -- "$path"; done <"$OUT/expected-product-paths.txt"
+          git diff --cached --name-only --diff-filter=ACDMRTUXB | LC_ALL=C sort >"$OUT/cached-product-paths.txt"
+          diff -u "$OUT/expected-product-paths.txt" "$OUT/cached-product-paths.txt"
+          git diff --cached --check
+          git commit -m 'Repair RD-04 postpromotion target-field scope' -m 'Enforce route-to-target-field subset validation, hold the MT-003 legal-authority candidate that exceeds its frozen target scope, preserve three admissible promotion candidates and two follow-up routes, and change no source, matrix, row-state, class, cumulative-ledger, publication, adoption, graph, or outside-human boundary.'
+          PRODUCT_HEAD="$(git rev-parse HEAD)"
+          PRODUCT_TREE="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$PRODUCT_HEAD" >"$OUT/product-head.txt"
+          printf '%s\n' "$PRODUCT_TREE" >"$OUT/product-tree.txt"
+          test "$(git rev-parse HEAD^)" = "$OBSERVED_MAIN"
+          test "$(git rev-list --count "$OBSERVED_MAIN"..HEAD)" -eq 1
+          git diff --name-only --diff-filter=ACDMRTUXB "$OBSERVED_MAIN" HEAD | LC_ALL=C sort >"$OUT/committed-product-paths.txt"
+          diff -u "$OUT/expected-product-paths.txt" "$OUT/committed-product-paths.txt"
+
+          printf 'running-complete-repository-gate\n' >"$OUT/STAGE"
+          npm run release:check
+
+          printf 'proving-clean-deterministic-replay\n' >"$OUT/STAGE"
+          git reset --hard HEAD
+          git clean -fdx
+          node "$BUILDER_REL" --write
+          node "$BUILDER_REL"
+          node "$VALIDATOR_REL" >"$OUT/validation-replay.json"
+          node "$TEST_REL" >"$OUT/adversarial-replay.json"
+          grep -Eq '"adversarial_refusals":64([,}])' "$OUT/adversarial-replay.json"
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test "$(git hash-object "$WORKFLOW_REL")" = "$WORKFLOW_BLOB"
+
+          printf 'publishing-exact-current-main-repair\n' >"$OUT/STAGE"
+          git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$OBSERVED_MAIN"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+          git push origin "$PRODUCT_HEAD:refs/heads/$PRODUCT_BRANCH"
+          git fetch --no-tags origin "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse "refs/remotes/origin/$PRODUCT_BRANCH")" = "$PRODUCT_HEAD"
+          test "$(git rev-parse "refs/remotes/origin/$PRODUCT_BRANCH^{tree}")" = "$PRODUCT_TREE"
+
+          printf 'writing-receipt\n' >"$OUT/STAGE"
+          cd "$GITHUB_WORKSPACE"
+          python - "$OUT" <<'PYRECEIPT'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+
+          out = Path(sys.argv[1])
+          work = Path(out.parent) / 'ssc-rd04-postpromotion-target-scope-current-main-v2-worktree'
+          manifest_path = work / 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/product-manifest.json'
+          manifest = json.loads(manifest_path.read_text())
+          receipt = {
+              'schema_version': 'ssc-rd04-postpromotion-target-scope-current-main-composition@1',
+              'carrier_head': (out / 'carrier-head.txt').read_text().strip(),
+              'observed_main': '8d05486534829671fff7a73e72e0df4f0c6a6efd',
+              'product_parent': '91b386df809079884825b19a6b5d864b6e739172',
+              'product_branch': 'repair/ssc-rd04-postpromotion-target-scope-current-main-v2',
+              'product_head': (out / 'product-head.txt').read_text().strip(),
+              'product_tree': (out / 'product-tree.txt').read_text().strip(),
+              'changed_paths': (out / 'committed-product-paths.txt').read_text().splitlines(),
+              'changed_path_count': 7,
+              'standing_workflow_blob': 'df82e16b34e5fffcd02c301685e2210a4cef1ac8',
+              'manifest_blob': __import__('subprocess').check_output(['git', '-C', str(work), 'hash-object', str(manifest_path)], text=True).strip(),
+              'manifest_sha256': hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+              'combined_sha256': manifest['combined_sha256'],
+              'archive_bytes': 18764,
+              'archive_sha256': 'a0efdbd363c2a076fcd5fc392a15cd973f970adf877366be2c937e09553f0360',
+              'reused_semantic_blob_count': 6,
+              'promotion_candidates': 4,
+              'admissible_promotion_candidates': 3,
+              'scope_held_candidates': 1,
+              'held_open_cells': 2,
+              'followup_routes': 2,
+              'focused_gate': 'pass',
+              'adversarial_refusals': 64,
+              'no_magic_human_gate': 'pass',
+              'complete_release_gate': 'pass',
+              'clean_deterministic_replay': 'pass',
+              'source_requests': 0,
+              'route_executions': 0,
+              'new_transport_captures': 0,
+              'matrix_updates': 0,
+              'field_terminalizations': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          PYRECEIPT
+          printf 'complete\n' >"$OUT/STAGE"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ssc-rd04-postpromotion-target-scope-current-main-v2
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-target-scope-current-main-v2
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
