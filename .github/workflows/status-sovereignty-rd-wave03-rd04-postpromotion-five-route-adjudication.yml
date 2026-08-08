@@ -103,10 +103,11 @@ jobs:
             git diff --check "$PRODUCT_PARENT" HEAD
           fi
 
-          test "$(git rev-parse "${PRODUCT_PARENT}:data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json")" = 42361e559db90777e1d60aea5530df5694c86dc6
-          test "$(git rev-parse "${PRODUCT_PARENT}:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-ledger.json")" = ad4a82bc1a23e0957137468dfc0a4c3333d84394
-          test "$(git rev-parse "${PRODUCT_PARENT}:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-query-contract.json")" = d5c445435dd74bea61e7e50887a27a3ffb1edcf1
-          test "$(git rev-parse "${PRODUCT_PARENT}:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/previously-frozen-url-exclusion.json")" = 5d5890f4bc84d943d3a0ac6a3042321448c63959
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json)" = 42361e559db90777e1d60aea5530df5694c86dc6
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-ledger.json)" = ad4a82bc1a23e0957137468dfc0a4c3333d84394
+          test "$(git rev-parse "$PRODUCT_PARENT:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-query-contract.json")" = d5c445435dd74bea61e7e50887a27a3ffb1edcf1
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-query-contract.json)" = 6e3d9eb55ebcc029151144ce9965754ac4e35e1a
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/previously-frozen-url-exclusion.json)" = 5d5890f4bc84d943d3a0ac6a3042321448c63959
 
       - name: Parse workflow and install pinned schema validator
         shell: bash
