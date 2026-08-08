@@ -1,0 +1,139 @@
+name: TEMP launch exact RD-04 adjudication current-main rebind v1
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-launch-ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-launch-ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v1
+  cancel-in-progress: false
+
+jobs:
+  launch:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-launch-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install launcher parser
+        run: python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2'
+
+      - name: Authenticate and execute frozen source transaction
+        id: launch
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURRENT_MAIN: a18f19ddc923e553848a5165cdf29fb1b9add97a
+          SOURCE_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v1
+          SOURCE_COMMIT: e2a87c7f1fda9dcfee0d6bee80016eacbd46405e
+          SOURCE_PATH: .github/workflows/temp-ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v1.yml
+          SOURCE_BLOB: cd2055c713b90904825b4db3bdff46c4977f4c6e
+          LAUNCHER_PATH: .github/workflows/temp-launch-ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v1.yml
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP/ssc-rd04-current-main-rebind-launch-v1"
+          SOURCE_WT="$RUNNER_TEMP/ssc-rd04-current-main-rebind-source-wt"
+          rm -rf "$ROOT" "$SOURCE_WT"
+          mkdir -p "$ROOT"
+
+          test "$(git rev-parse HEAD^)" = "$CURRENT_MAIN"
+          test "$(git rev-list --count "$CURRENT_MAIN"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CURRENT_MAIN" HEAD)" = "$LAUNCHER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" HEAD)" = "$LAUNCHER_PATH"
+          git diff --check "$CURRENT_MAIN" HEAD
+
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CURRENT_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$SOURCE_BRANCH" | awk '{print $1}')" = "$SOURCE_COMMIT"
+          test "$(git rev-parse "$SOURCE_COMMIT^")" = "$CURRENT_MAIN"
+          test "$(git rev-list --count "$CURRENT_MAIN".."$SOURCE_COMMIT")" -eq 1
+          test "$(git diff --name-only "$CURRENT_MAIN" "$SOURCE_COMMIT")" = "$SOURCE_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" "$SOURCE_COMMIT")" = "$SOURCE_PATH"
+          test "$(git rev-parse "$SOURCE_COMMIT:$SOURCE_PATH")" = "$SOURCE_BLOB"
+          git show "$SOURCE_COMMIT:$SOURCE_PATH" >"$ROOT/source-workflow.yml"
+
+          python - "$ROOT/source-workflow.yml" "$ROOT/source-env.sh" "$ROOT/source-run.sh" <<'PY'
+          import pathlib, shlex, sys, yaml
+
+          source = pathlib.Path(sys.argv[1])
+          env_out = pathlib.Path(sys.argv[2])
+          run_out = pathlib.Path(sys.argv[3])
+          value = yaml.safe_load(source.read_text())
+          job = value['jobs']['materialize']
+          expected = {
+              'PRIOR_PARENT': '91b386df809079884825b19a6b5d864b6e739172',
+              'CURRENT_MAIN': 'a18f19ddc923e553848a5165cdf29fb1b9add97a',
+              'SOURCE_PRODUCT': '0e79772a84e99bce1a1ca9e78209c9ae5b55637a',
+              'SOURCE_TREE': 'f3031844264107b0b329e7dd9af175eea8dd2456',
+              'OLD_COMMIT': '92613e1896c861d562fc789980ee46b4ef832f6f',
+              'OLD_TREE': 'a1c47f564452683a1c0fc830801d945c6a9a4b20',
+              'PRODUCT_BRANCH': 'agent/ssc-rd04-postpromotion-next-adjudication-product-v1',
+              'STAGING_BRANCH': 'staging/ssc-rd04-postpromotion-next-adjudication-current-main-v1',
+              'CARRIER_BRANCH': 'agent/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v1',
+              'CARRIER_PATH': '.github/workflows/temp-ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v1.yml',
+              'WORKFLOW_PATH': '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml',
+              'MANIFEST_PATH': 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/product-manifest.json',
+              'SCHEMA_PATH': 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json',
+              'BUILDER_PATH': 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs',
+              'REBOUND_WORKFLOW_BLOB': '071b86443bf40c8908c901835e90eb956fc110f7',
+              'REBOUND_BUILDER_BLOB': '58eb521c3da014557e9cff9cc051536e28031977',
+              'REBOUND_MANIFEST_BLOB': '6a58c42f81823b46e8ae078d038e6df4afab2d44',
+              'REBOUND_SCHEMA_BLOB': '87e00957c70c9301deaf6864a1a7dace4e48a8d6',
+          }
+          actual = {str(k): str(v) for k, v in job['env'].items()}
+          if actual != expected:
+              raise SystemExit(f'source env mismatch: {actual!r}')
+          steps = [step for step in job['steps'] if step.get('name') == 'Materialize exact current-main candidate']
+          if len(steps) != 1:
+              raise SystemExit(f'source run-step denominator={len(steps)}')
+          script = steps[0]['run']
+          old = 'test "${{ github.ref_name }}" = "$CARRIER_BRANCH"'
+          new = 'test "$SOURCE_BRANCH" = "$CARRIER_BRANCH"'
+          if script.count(old) != 1:
+              raise SystemExit(f'github.ref_name replacement denominator={script.count(old)}')
+          script = script.replace(old, new, 1)
+          env_lines = [f'export {key}={shlex.quote(value)}' for key, value in sorted(expected.items())]
+          env_lines.append('export SOURCE_BRANCH=' + shlex.quote(expected['CARRIER_BRANCH']))
+          env_out.write_text('\n'.join(env_lines) + '\n')
+          run_out.write_text(script)
+          PY
+          bash -n "$ROOT/source-run.sh"
+          git worktree add --detach "$SOURCE_WT" "$SOURCE_COMMIT"
+          cd "$SOURCE_WT"
+          source "$ROOT/source-env.sh"
+          bash "$ROOT/source-run.sh"
+
+      - name: Upload exact source-transaction evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-adjudication-current-main-rebind-launch-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Preserve fail-closed conclusion
+        if: steps.launch.outcome == 'failure'
+        shell: bash
+        run: exit 1
