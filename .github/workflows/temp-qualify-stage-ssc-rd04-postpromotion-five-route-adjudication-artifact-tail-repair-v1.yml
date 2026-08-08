@@ -1,0 +1,168 @@
+name: TEMP qualify and stage RD-04 adjudication artifact-tail repair v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/scripts/temp-qualify-stage-ssc-rd04-postpromotion-five-route-adjudication-artifact-tail-repair-v1.sh'
+      - '.github/workflows/temp-qualify-stage-ssc-rd04-postpromotion-five-route-adjudication-artifact-tail-repair-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: temp-qualify-stage-ssc-rd04-postpromotion-five-route-adjudication-artifact-tail-repair-v1
+  cancel-in-progress: false
+
+env:
+  CURRENT_MAIN: f0bf84537bdcb8b9f9de57c392ad83d01bac6f35
+  SOURCE_REPAIR: 528b0dc28c1e27dac95d3af21119837393da4542
+  SOURCE_REPAIR_TREE: f30dc35e19302cd583abb4d31e2becdebb4367fe
+  REPAIR_BRANCH: agent/ssc-rd04-postpromotion-five-route-adjudication-workflow-repair-v1
+  CARRIER_SCRIPT_PATH: .github/scripts/temp-qualify-stage-ssc-rd04-postpromotion-five-route-adjudication-artifact-tail-repair-v1.sh
+  CARRIER_WORKFLOW_PATH: .github/workflows/temp-qualify-stage-ssc-rd04-postpromotion-five-route-adjudication-artifact-tail-repair-v1.yml
+  WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.yml
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/product-manifest.json
+  BUILDER_PATH: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+  SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.schema.json
+  SOURCE_WORKFLOW_BLOB: a4b13efd1813c914f8ed9e7f32e0b76c0f2c400f
+  SOURCE_MANIFEST_BLOB: fbb9bd7f5b8e33371eac6b84832001ce7f1e51e9
+  SOURCE_BUILDER_BLOB: 4de87352d853cd7de72ebcbee97a5a7d74c95a51
+  SOURCE_SCHEMA_BLOB: e4dbeca29761ba286937ef48808c3c213d0c4bfa
+  STAGING_BRANCH: staging/ssc-rd04-postpromotion-five-route-adjudication-artifact-tail-repair-v1
+  WORKFLOW_SHADOW_PATH: exchange/rd04-postpromotion-five-route-adjudication-artifact-tail-repair/final-workflow.yml
+
+jobs:
+  qualify-and-stage:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-five-route-adjudication-artifact-tail-repair-carrier-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Execute exact artifact-tail repair transaction
+        id: transaction
+        continue-on-error: true
+        shell: bash
+        run: bash "$CARRIER_SCRIPT_PATH"
+
+      - name: Upload exact artifact-tail repair custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-five-route-adjudication-artifact-tail-repair-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-five-route-adjudication-artifact-tail-repair-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Report bounded artifact-tail repair result
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R="${RUNNER_TEMP}/ssc-rd04-postpromotion-five-route-adjudication-artifact-tail-repair-v1/receipt.json"
+          test -s "$R"
+          state="$(jq -r .state "$R")"
+          stage="$(jq -r .failed_or_final_stage "$R")"
+          candidate="$(jq -r '.qualified_candidate_commit // "none"' "$R")"
+          tree="$(jq -r '.qualified_candidate_tree // "none"' "$R")"
+          workflow_blob="$(jq -r '.final_workflow_blob // "none"' "$R")"
+          manifest_blob="$(jq -r '.final_manifest_blob // "none"' "$R")"
+          staging="$(jq -r '.staging_commit // "none"' "$R")"
+          {
+            printf '%s\n\n' 'RD-04 five-route adjudication artifact-tail repair reached a typed result.'
+            printf '%s\n' '```text'
+            printf 'state: %s\n' "$state"
+            printf 'stage: %s\n' "$stage"
+            printf 'canonical_parent: %s\n' "$CURRENT_MAIN"
+            printf 'source_repair: %s\n' "$SOURCE_REPAIR"
+            printf 'qualified_candidate: %s\n' "$candidate"
+            printf 'qualified_tree: %s\n' "$tree"
+            printf 'final_workflow_blob: %s\n' "$workflow_blob"
+            printf 'final_manifest_blob: %s\n' "$manifest_blob"
+            printf 'staging_commit: %s\n' "$staging"
+            printf 'repair_paths: 2\n'
+            printf 'artifact_tail_changes: 1\n'
+            printf 'semantic_product_paths_changed: 0\n'
+            printf 'receipt_preservation_replay: pass\n'
+            printf 'matrix_updates: 0\n'
+            printf 'field_terminalizations: 0\n'
+            printf 'row_state_mutations: 0\n'
+            printf 'class_closed: false\n'
+            printf '%s\n\n' '```'
+            printf '%s\n' 'This transaction grants artifact-tail repair candidate and staging custody only. The control question is whether the connected Git object API can replace the standing workflow, remove the staging-only shadow path, and reproduce the qualified candidate tree exactly.'
+          } > /tmp/rd04-artifact-tail-repair-result.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/rd04-artifact-tail-repair-result.md
+
+      - name: Preserve fail-closed conclusion
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-five-route-adjudication-artifact-tail-repair-v1"
+          test "${{ steps.transaction.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          jq -e \
+            --arg parent "$CURRENT_MAIN" \
+            --arg source "$SOURCE_REPAIR" \
+            --arg source_tree "$SOURCE_REPAIR_TREE" \
+            --arg staging "$STAGING_BRANCH" \
+            --arg shadow "$WORKFLOW_SHADOW_PATH" \
+            '.state=="qualified_and_staged" and
+             .exit_code==0 and
+             .canonical_parent==$parent and
+             .source_repair_commit==$source and
+             .source_repair_tree==$source_tree and
+             .qualified_candidate_commit!=null and
+             .qualified_candidate_tree!=null and
+             .final_workflow_blob!=null and
+             .final_manifest_blob!=null and
+             .repair_path_count==2 and
+             .artifact_tail_change_count==1 and
+             .semantic_product_paths_changed==0 and
+             .receipt_preservation_replay=="pass" and
+             .staging_branch==$staging and
+             .staging_commit!=null and
+             .staging_tree!=null and
+             .workflow_shadow_path==$shadow and
+             .staging_path_count==2 and
+             .permanent_workflow_updated_by_actions==false and
+             .permanent_repair_ref_updated_by_actions==false and
+             .connector_publication_required==true and
+             .source_requests_executed==0 and
+             .route_executions==0 and
+             .source_admissions_created==0 and
+             .reviewed_source_admissions_preserved==4 and
+             .promotion_candidates_preserved==4 and
+             .held_open_cells_preserved==2 and
+             .matrix_updates==0 and
+             .field_terminalizations==0 and
+             .row_state_mutations==0 and
+             .class_closed==false and
+             .cumulative_ledger_effect=="none" and
+             .outside_human_dependency==false and
+             .publication_effect=="none" and
+             .adoption_effect=="none" and
+             .graph_effect=="none"' \
+            "$OUT/receipt.json" > /dev/null
