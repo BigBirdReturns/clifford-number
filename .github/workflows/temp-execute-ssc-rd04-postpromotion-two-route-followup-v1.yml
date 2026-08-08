@@ -27,7 +27,6 @@ jobs:
       CARRIER_BRANCH: agent/ssc-rd04-postpromotion-two-route-followup-execution-v1
       SCRIPT: .github/scripts/temp-execute-ssc-rd04-postpromotion-two-route-followup-v1.py
       WORKFLOW: .github/workflows/temp-execute-ssc-rd04-postpromotion-two-route-followup-v1.yml
-      OUT: ${{ runner.temp }}/ssc-rd04-postpromotion-two-route-followup-execution-v1
 
     steps:
       - uses: actions/checkout@v4
@@ -43,6 +42,10 @@ jobs:
         with:
           python-version: '3.13'
 
+      - name: Set bounded artifact directory
+        shell: bash
+        run: echo "OUT=$RUNNER_TEMP/ssc-rd04-postpromotion-two-route-followup-execution-v1" >>"$GITHUB_ENV"
+
       - name: Bind exact carrier, canonical parent, and frozen authority
         shell: bash
         run: |
@@ -54,8 +57,8 @@ jobs:
           EOF
           LC_ALL=C sort -o "$RUNNER_TEMP/expected-carrier-paths" "$RUNNER_TEMP/expected-carrier-paths"
 
-          test "$(git rev-parse HEAD~2)" = "$CANONICAL_PARENT"
-          test "$(git rev-list --count "$CANONICAL_PARENT"..HEAD)" -eq 2
+          test "$(git rev-parse HEAD~3)" = "$CANONICAL_PARENT"
+          test "$(git rev-list --count "$CANONICAL_PARENT"..HEAD)" -eq 3
           git diff --name-only --diff-filter=ACDMRTUXB "$CANONICAL_PARENT" HEAD | LC_ALL=C sort >"$RUNNER_TEMP/actual-carrier-paths"
           git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD | LC_ALL=C sort >"$RUNNER_TEMP/added-carrier-paths"
           diff -u "$RUNNER_TEMP/expected-carrier-paths" "$RUNNER_TEMP/actual-carrier-paths"
@@ -157,7 +160,7 @@ jobs:
           mkdir -p "$OUT"
           printf '%s\n' "$code" >"$OUT/workflow-exit-code.txt"
           git rev-parse HEAD >"$OUT/workflow-carrier-head.txt"
-          git rev-parse HEAD~2 >"$OUT/workflow-canonical-parent.txt"
+          git rev-parse HEAD~3 >"$OUT/workflow-canonical-parent.txt"
           cp "$RUNNER_TEMP/execution-plan.json" "$OUT/preexecution-plan.json"
 
           rm -f "$OUT/SHA256SUMS"
