@@ -1,0 +1,55 @@
+name: TEMP clean RD-04 postpromotion adjudication carrier after merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-cleanup-ssc-rd04-postpromotion-adjudication-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: temp-clean-rd04-postpromotion-adjudication
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-next-adjudication-v2-stager-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Close and retire transport only after canonical merge
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          PRODUCT_PR=1508
+          CARRIER_PR=1533
+          STALE_PR=1532
+          PRODUCT_PATH='data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/product-manifest.json'
+          for attempt in $(seq 1 180); do
+            merged=$(gh api "repos/$REPO/pulls/$PRODUCT_PR" --jq .merged)
+            main_sha=$(gh api "repos/$REPO/git/ref/heads/main" --jq .object.sha)
+            if test "$merged" = true && gh api "repos/$REPO/contents/$PRODUCT_PATH?ref=$main_sha" >/dev/null 2>&1; then
+              gh api --method PATCH "repos/$REPO/pulls/$STALE_PR" -f state=closed >/dev/null 2>&1 || true
+              gh api --method PATCH "repos/$REPO/pulls/$CARRIER_PR" -f state=closed >/dev/null 2>&1 || true
+              gh api --method DELETE "repos/$REPO/git/refs/heads/staging/ssc-rd04-postpromotion-next-adjudication-v2-ordinary-v1" >/dev/null 2>&1 || true
+              gh api --method DELETE "repos/$REPO/git/refs/heads/agent/ssc-rd04-postpromotion-next-adjudication-product-v2" >/dev/null 2>&1 || true
+              printf 'outcome=canonical_merge_confirmed_transport_retired\nmain=%s\n' "$main_sha"
+              exit 0
+            fi
+            sleep 15
+          done
+          printf 'outcome=no_canonical_merge_no_cleanup\n'
