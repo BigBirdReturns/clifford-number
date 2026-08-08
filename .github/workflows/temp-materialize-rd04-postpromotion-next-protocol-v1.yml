@@ -1,0 +1,160 @@
+name: TEMP materialize RD-04 postpromotion next protocol v1
+
+on:
+  push:
+    branches:
+      - agent/ssc-rd04-postpromotion-next-protocol-materializer-v1
+    paths:
+      - '.github/workflows/temp-materialize-rd04-postpromotion-next-protocol-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: temp-materialize-rd04-postpromotion-next-protocol-v1
+  cancel-in-progress: false
+
+env:
+  PUBLICATION_PARENT: d99146fe88617e002463481732a54626aafe3924
+  PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-protocol-product-v1
+  STAGING_BRANCH: staging/ssc-rd04-postpromotion-next-protocol-ordinary-v1
+  ARCHIVE_BLOB: 7b8c8e010c6907cffae21fdc1b1328f9a594dd9c
+  ARCHIVE_BYTES: '13504'
+  ARCHIVE_SHA256: 11218de071827d880effe691d85f1fe5b85f76bb460fc54eb03d6c5d6700973a
+  CONTROLLER_BLOB: 671cba82fd0bb5e6a3258eb46bac556f2646c1bf
+  CONTROLLER_XZ_BYTES: '3256'
+  CONTROLLER_XZ_SHA256: 1c5ee2feaf6a5d0c51d5ad040bb92c40e6297568d3b0794e9fec7552a3b98220
+  CONTROLLER_SOURCE_BYTES: '12418'
+  CONTROLLER_SOURCE_SHA256: 69ad92eeaa81ec603274cc75bcd9c2f7b7d907b736c7d41a87f28bf896047c7d
+
+jobs:
+  materialize:
+    if: github.event_name == 'workflow_dispatch' || github.ref_name == 'agent/ssc-rd04-postpromotion-next-protocol-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Recover and authenticate immutable materializer controller
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          ROOT=/tmp/rd04-postpromotion-next-protocol-controller-v1
+          rm -rf "$ROOT"
+          mkdir -p "$ROOT"
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/git/blobs/$CONTROLLER_BLOB" \
+            > "$ROOT/controller-blob.json"
+          test "$(jq -r .encoding "$ROOT/controller-blob.json")" = base64
+          jq -r .content "$ROOT/controller-blob.json" | tr -d '\n' | base64 -d > "$ROOT/controller.sh.xz"
+          test "$(stat -c %s "$ROOT/controller.sh.xz")" = "$CONTROLLER_XZ_BYTES"
+          test "$(sha256sum "$ROOT/controller.sh.xz" | cut -d' ' -f1)" = "$CONTROLLER_XZ_SHA256"
+          test "$(git hash-object "$ROOT/controller.sh.xz")" = "$CONTROLLER_BLOB"
+          xz -dc "$ROOT/controller.sh.xz" > "$ROOT/controller.sh"
+          test "$(stat -c %s "$ROOT/controller.sh")" = "$CONTROLLER_SOURCE_BYTES"
+          test "$(sha256sum "$ROOT/controller.sh" | cut -d' ' -f1)" = "$CONTROLLER_SOURCE_SHA256"
+          bash -n "$ROOT/controller.sh"
+          printf '%s\n' "$CONTROLLER_BLOB" > "$ROOT/controller-git-blob.txt"
+          printf '%s\n' "$CONTROLLER_XZ_SHA256" > "$ROOT/controller-xz-sha256.txt"
+          printf '%s\n' "$CONTROLLER_SOURCE_SHA256" > "$ROOT/controller-source-sha256.txt"
+
+      - name: Execute exact materialization controller
+        id: materialize
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          ROOT=/tmp/rd04-postpromotion-next-protocol-controller-v1
+          OUT=/tmp/rd04-postpromotion-next-protocol-materializer-v1
+          set +e
+          bash "$ROOT/controller.sh" 2>&1 | tee "$ROOT/controller.log"
+          code=${PIPESTATUS[0]}
+          set -e
+          mkdir -p "$OUT"
+          cp "$ROOT/controller.log" "$OUT/controller.log"
+          cp "$ROOT"/controller-*.txt "$OUT/" 2>/dev/null || true
+          if ! test -f "$OUT/receipt.json"; then
+            observed="$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')"
+            python - "$OUT/receipt.json" "$code" "$observed" <<'PY'
+          from pathlib import Path
+          import json,os,sys
+          output=Path(sys.argv[1])
+          value={
+            'schema_version':'ssc-rd04-postpromotion-next-protocol-materializer-failure@1',
+            'publication_parent':os.environ['PUBLICATION_PARENT'],
+            'product_branch':os.environ['PRODUCT_BRANCH'],
+            'staging_branch':os.environ['STAGING_BRANCH'],
+            'archive_blob':os.environ['ARCHIVE_BLOB'],
+            'archive_bytes':int(os.environ['ARCHIVE_BYTES']),
+            'archive_sha256':os.environ['ARCHIVE_SHA256'],
+            'controller_blob':os.environ['CONTROLLER_BLOB'],
+            'controller_xz_sha256':os.environ['CONTROLLER_XZ_SHA256'],
+            'controller_source_sha256':os.environ['CONTROLLER_SOURCE_SHA256'],
+            'exit_code':int(sys.argv[2]),
+            'observed_staging_ref':sys.argv[3] or None,
+            'source_requests_executed':0,
+            'matrix_updates':0,
+            'field_terminalizations':0,
+            'row_state_mutations':0,
+            'class_closed':False,
+            'cumulative_ledger_effect':'none',
+            'outside_human_dependency':False,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+            'authority':'failure_custody_only',
+          }
+          output.write_text(json.dumps(value,indent=2,sort_keys=True)+'\n')
+          PY
+          fi
+          exit "$code"
+
+      - name: Upload materialization evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-protocol-materializer-v1
+          path: /tmp/rd04-postpromotion-next-protocol-materializer-v1
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Report bounded materialization result
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R=/tmp/rd04-postpromotion-next-protocol-materializer-v1/receipt.json
+          if test -f "$R" && jq -e '.schema_version=="ssc-rd04-postpromotion-next-protocol-materializer@1"' "$R" >/dev/null; then
+            jq -r '"RD-04 postpromotion next protocol ordinary staging completed.\n\n```text\npublication_parent: \(.publication_parent)\npublication_parent_tree: \(.publication_parent_tree)\npermanent_paths: \(.permanent_path_count)\nordinary_paths: \(.ordinary_path_count)\nstaging_commit: \(.staging_commit)\nstaging_tree: \(.staging_tree)\nworkflow_sha256: \(.permanent_workflow_sha256)\nsource_requests: \(.source_requests_executed)\nmatrix_updates: \(.matrix_updates)\nclass_closed: \(.class_closed)\n```\n\nThis is staging custody only. The staging ref lacks the permanent workflow and is not a product candidate, execution authority, source admission, field classification, row terminalization, class closure, cumulative-ledger change, publication, adoption, or graph effect."' "$R" > /tmp/comment.md
+          else
+            jq -r '"RD-04 postpromotion next protocol materialization failed closed.\n\n```text\npublication_parent: \(.publication_parent)\narchive_blob: \(.archive_blob)\ncontroller_blob: \(.controller_blob)\nexit_code: \(.exit_code)\nobserved_staging_ref: \(.observed_staging_ref)\n```\n\nNo product candidate, route execution, source, field, row, class, cumulative-ledger, publication, adoption, or graph authority is represented."' "$R" > /tmp/comment.md
+          fi
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+
+      - name: Preserve fail-closed workflow conclusion
+        if: steps.materialize.outcome == 'failure'
+        shell: bash
+        run: exit 1
