@@ -1,0 +1,121 @@
+name: TEMP stage qualified RD-04 adjudication ordinary blobs v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/scripts/temp-stage-ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-v2.sh'
+      - '.github/workflows/temp-stage-ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+
+concurrency:
+  group: temp-stage-ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-v2
+  cancel-in-progress: false
+
+env:
+  CANONICAL_PARENT: c108c323d9c254d8e4a6bb4f3089a7fae7975009
+  CANONICAL_PARENT_TREE: 4f45286d92bc5ef7b533d13cdc134bdb8729259b
+  SOURCE_HEAD: 1a46d1c9a82a3699138eafc36eeab5dc7127ced8
+  SOURCE_RUN: '31265361572'
+  SOURCE_ARTIFACT_ID: '9023983498'
+  SOURCE_ARTIFACT_BYTES: '770687'
+  SOURCE_ARTIFACT_DIGEST: sha256:e3e3093db58676247a049a4cf74f766f576bd8f8a19b086e35c1f674b013fcfe
+  SOURCE_RECEIPT_SCHEMA: ssc-rd04-postpromotion-next-adjudication-current-main-rebind-receipt@4
+  SOURCE_QUALIFIED_COMMIT: ab236e072ea7e9d29df23a1f7d034d29735fc4ef
+  QUALIFIED_TREE: 40583441335ab70722ce2962987b5639369d8df6
+  PRODUCT_ARCHIVE_BYTES: '15992'
+  PRODUCT_ARCHIVE_SHA256: fa21fd8d407e257f24dbe9ea434155f2bb0ceb2b7079e983a39eae3ef47e63c8
+  PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-product-v1
+  OLD_PRODUCT_HEAD: 0e79772a84e99bce1a1ca9e78209c9ae5b55637a
+  STAGING_BRANCH: staging/ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-v2
+  PERMANENT_WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml
+
+jobs:
+  stage:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-stager-v2')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Syntax-check exact stager
+        shell: bash
+        run: bash -n .github/scripts/temp-stage-ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-v2.sh
+
+      - name: Execute exact ordinary-blob stager
+        id: stager
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash .github/scripts/temp-stage-ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-v2.sh
+
+      - name: Upload exact ordinary-staging receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-stager-v2
+          path: |
+            /tmp/ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-stager-v2/EXIT_CODE
+            /tmp/ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-stager-v2/STAGE
+            /tmp/ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-stager-v2/receipt.json
+            /tmp/ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-stager-v2/stager.log
+            /tmp/ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-stager-v2/SHA256SUMS
+            /tmp/ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-stager-v2/source-zip-test.log
+            /tmp/ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-stager-v2/source-internal-check.log
+            /tmp/ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-stager-v2/product-paths.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-stager-v2/ordinary-paths.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-stager-v2/actual-ordinary-paths.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-stager-v2/added-ordinary-paths.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-stager-v2/commit-ordinary-paths.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-stager-v2/commit-added-ordinary-paths.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-stager-v2/ordinary-commit.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-stager-v2/ordinary-tree.txt
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 9
+
+      - name: Report exact ordinary-staging outcome
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R=/tmp/ssc-rd04-postpromotion-next-adjudication-qualified-ordinary-stager-v2/receipt.json
+          test -s "$R"
+          state="$(jq -r .state "$R")"
+          gate="$(jq -r .failed_or_final_stage "$R")"
+          commit="$(jq -r '.ordinary_staging_commit // "none"' "$R")"
+          tree="$(jq -r '.ordinary_staging_tree // "none"' "$R")"
+          {
+            printf '%s\n\n' 'RD-04 qualified adjudication ordinary-blob staging V2 completed.'
+            printf '%s\n' '```text'
+            printf 'state: %s\n' "$state"
+            printf 'stage: %s\n' "$gate"
+            printf 'canonical_parent: %s\n' "$CANONICAL_PARENT"
+            printf 'qualified_full_tree: %s\n' "$QUALIFIED_TREE"
+            printf 'ordinary_staging_commit: %s\n' "$commit"
+            printf 'ordinary_staging_tree: %s\n' "$tree"
+            printf '%s\n' 'ordinary_paths: 12' 'permanent_workflow_omitted: true' 'matrix_updates: 0' 'row_state_mutations: 0' 'class_closed: false'
+            printf '%s\n\n' '```'
+            printf '%s\n' 'This is ordinary Git-blob custody only. It creates no product candidate, route execution, source admission, field terminalization, row transition, class closure, cumulative-ledger, publication, adoption, or graph authority. The control question is whether the connector can now assemble the exact qualified full tree by adding the separately authenticated permanent workflow blob.'
+          } > /tmp/comment.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+
+      - name: Preserve fail-closed conclusion
+        if: steps.stager.outcome == 'failure'
+        shell: bash
+        run: exit 1
