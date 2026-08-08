@@ -1,4 +1,4 @@
-name: TEMP qualify exact PC-57 product tree
+name: TEMP qualify exact repaired PC-57 product tree
 
 on:
   pull_request:
@@ -22,7 +22,10 @@ jobs:
       PARENT: bf48e7f424283232bae5060779d2d33e4d85bbcb
       PARENT_TREE: f764efc53e7eed82daa78950405389947795f9d0
       ARCHIVE_SHA256: a714b950dc0755b9e110b4d5e541175aea7cf1891ddaf5444cbe1c4a250ea03f
-      MANIFEST_SHA256: 997e7bc5c3679a90b39a933d1c858d9d4e9a9984683d1fcdc2f3479bdca80f44
+      ORIGINAL_MANIFEST_SHA256: 997e7bc5c3679a90b39a933d1c858d9d4e9a9984683d1fcdc2f3479bdca80f44
+      REPAIRED_MANIFEST_GIT_BLOB: 96a2f9ba25e9861264ac57ea428a27d116646496
+      REPAIR_PATCH_SHA256: 6fcad6dce9d42e69d17832967378d154feb9185e7a53bb6f331a7b2349f0459a
+      REPAIR_RECEIPT_GIT_BLOB: a1dbabcddfb8e118c9893d606f18f8af1865cc29
       WORK: /tmp/pc57-qualified-product
     steps:
       - uses: actions/checkout@v4
@@ -32,7 +35,7 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Authenticate and reconstruct exact product
+      - name: Authenticate, reconstruct, and repair exact product
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -40,7 +43,11 @@ jobs:
           mkdir -p "$WORK/receipt"
 
           test "$(git rev-parse "$PARENT^{tree}")" = "$PARENT_TREE"
-          test "$(sha256sum .tmp/pc57/product-manifest.json | awk '{print $1}')" = "$MANIFEST_SHA256"
+          test "$(sha256sum .tmp/pc57/product-manifest.json | awk '{print $1}')" = "$ORIGINAL_MANIFEST_SHA256"
+          test "$(git hash-object .tmp/pc57/repaired-product-manifest.json)" = "$REPAIRED_MANIFEST_GIT_BLOB"
+          test "$(sha256sum .tmp/pc57/clean-checkout-materialization.patch | awk '{print $1}')" = "$REPAIR_PATCH_SHA256"
+          test "$(git hash-object .tmp/pc57/clean-checkout-repair-receipt.json)" = "$REPAIR_RECEIPT_GIT_BLOB"
+
           sha256sum -c <<'SUMS'
           dd2b0dd8965713cf7eff06a91672a303a2904e416704e173ab7aa5d6fe223791  .tmp/pc57/product.b64.00
           988cc395b7c27f70964ef6512fc58cfb2bd33d38319e098c3e3cc66b3ab01380  .tmp/pc57/product.b64.01
@@ -52,12 +59,15 @@ jobs:
           04170d1b25d6337e8588c8e13db16db04ce936614b06834b37919225afe1bddf  .tmp/pc57/product.b64.07
           0b9dafbe899b7882e5b4705a48238d30b21df9ede6287153bcef8547f42d8190  .tmp/pc57/product.b64.08
           SUMS
-          cat .tmp/pc57/product.b64.* | tr -d '\n\r' | base64 -d > "$WORK/product.tar.gz"
+          for shard in .tmp/pc57/product.b64.0{0..8}; do tr -d '\r\n' < "$shard"; done | base64 -d > "$WORK/product.tar.gz"
           test "$(sha256sum "$WORK/product.tar.gz" | awk '{print $1}')" = "$ARCHIVE_SHA256"
 
           git worktree add --detach "$WORK/repo" "$PARENT"
           tar -xzf "$WORK/product.tar.gz" -C "$WORK/repo"
-          cp .tmp/pc57/product-manifest.json "$WORK/receipt/product-manifest.json"
+          cp .tmp/pc57/product-manifest.json "$WORK/receipt/original-product-manifest.json"
+          cp .tmp/pc57/repaired-product-manifest.json "$WORK/receipt/repaired-product-manifest.json"
+          cp .tmp/pc57/clean-checkout-materialization.patch "$WORK/receipt/clean-checkout-materialization.patch"
+          cp .tmp/pc57/clean-checkout-repair-receipt.json "$WORK/receipt/clean-checkout-repair-receipt.json"
 
           python - <<'PY'
           import hashlib
@@ -67,14 +77,50 @@ jobs:
 
           work = Path('/tmp/pc57-qualified-product')
           repo = work / 'repo'
-          manifest = json.loads((work / 'receipt/product-manifest.json').read_text())
-          assert manifest['schema_version'] == 'pc57-product-manifest@1'
-          assert manifest['parent_commit'] == 'bf48e7f424283232bae5060779d2d33e4d85bbcb'
-          assert manifest['parent_tree'] == 'f764efc53e7eed82daa78950405389947795f9d0'
-          assert manifest['permanent_paths'] == 14
-          paths = [entry['path'] for entry in manifest['files']]
-          assert len(paths) == len(set(paths)) == 14
-          for entry in manifest['files']:
+          receipt = work / 'receipt'
+          original = json.loads((receipt / 'original-product-manifest.json').read_text())
+          repaired = json.loads((receipt / 'repaired-product-manifest.json').read_text())
+          assert original['schema_version'] == 'pc57-product-manifest@1'
+          assert repaired['schema_version'] == 'pc57-repaired-product-manifest@1'
+          assert original['parent_commit'] == repaired['parent_commit'] == 'bf48e7f424283232bae5060779d2d33e4d85bbcb'
+          assert original['parent_tree'] == repaired['parent_tree'] == 'f764efc53e7eed82daa78950405389947795f9d0'
+          assert original['permanent_paths'] == repaired['permanent_paths'] == 14
+          assert repaired['repair']['repair_patch_sha256'] == '6fcad6dce9d42e69d17832967378d154feb9185e7a53bb6f331a7b2349f0459a'
+          assert repaired['repair']['original_archive_sha256'] == 'a714b950dc0755b9e110b4d5e541175aea7cf1891ddaf5444cbe1c4a250ea03f'
+          expected_changed = {
+              'test/preference-custody-manifest-v55.test.js',
+              'test/preference-linkage-repository-owner-immutable-owner-id-repository-id-transfer-lineage-assurance.test.js'
+          }
+          assert set(repaired['repair']['changed_paths']) == expected_changed
+          assert [entry['path'] for entry in original['files']] == [entry['path'] for entry in repaired['files']]
+          assert len({entry['path'] for entry in original['files']}) == 14
+          changed = set()
+          for before, after in zip(original['files'], repaired['files']):
+              path = repo / before['path']
+              payload = path.read_bytes()
+              assert len(payload) == before['bytes'], before['path']
+              assert hashlib.sha256(payload).hexdigest() == before['sha256'], before['path']
+              blob = subprocess.check_output(['git', '-C', str(repo), 'hash-object', str(path)], text=True).strip()
+              assert blob == before['git_blob'], before['path']
+              if before != after:
+                  changed.add(before['path'])
+          assert changed == expected_changed
+          (receipt / 'product-paths.txt').write_text('\n'.join(entry['path'] for entry in repaired['files']) + '\n')
+          PY
+
+          git -C "$WORK/repo" apply --check "$WORK/receipt/clean-checkout-materialization.patch"
+          git -C "$WORK/repo" apply "$WORK/receipt/clean-checkout-materialization.patch"
+
+          python - <<'PY'
+          import hashlib
+          import json
+          import subprocess
+          from pathlib import Path
+
+          work = Path('/tmp/pc57-qualified-product')
+          repo = work / 'repo'
+          repaired = json.loads((work / 'receipt/repaired-product-manifest.json').read_text())
+          for entry in repaired['files']:
               path = repo / entry['path']
               payload = path.read_bytes()
               assert len(payload) == entry['bytes'], entry['path']
@@ -82,7 +128,6 @@ jobs:
               blob = subprocess.check_output(['git', '-C', str(repo), 'hash-object', str(path)], text=True).strip()
               assert blob == entry['git_blob'], entry['path']
               assert entry['mode'] == '100644'
-          (work / 'receipt/product-paths.txt').write_text('\n'.join(paths) + '\n')
           PY
 
           cd "$WORK/repo"
@@ -149,7 +194,7 @@ jobs:
           work = Path('/tmp/pc57-qualified-product')
           repo = work / 'repo'
           receipt_dir = work / 'receipt'
-          manifest = json.loads((receipt_dir / 'product-manifest.json').read_text())
+          manifest = json.loads((receipt_dir / 'repaired-product-manifest.json').read_text())
           published = []
           for entry in manifest['files']:
               payload = (repo / entry['path']).read_bytes()
@@ -164,7 +209,7 @@ jobs:
               published.append({**entry, 'published_git_blob': blob})
 
           receipt = {
-              'schema_version': 'pc57-qualified-product-tree-receipt@1',
+              'schema_version': 'pc57-qualified-repaired-product-tree-receipt@1',
               'status': 'qualified',
               'parent_commit': manifest['parent_commit'],
               'parent_tree': manifest['parent_tree'],
@@ -172,6 +217,8 @@ jobs:
               'live_main': (receipt_dir / 'live-main.txt').read_text().strip(),
               'live_main_overlap_paths': [],
               'permanent_paths': len(published),
+              'repaired_permanent_paths': manifest['repair']['changed_paths'],
+              'repair_patch_sha256': manifest['repair']['repair_patch_sha256'],
               'files': published,
               'standalone_pc57': 'pass',
               'floor_v55': 'pass',
@@ -183,8 +230,7 @@ jobs:
               'outside_human_dependency': False,
               'graph_effect': 'none'
           }
-          receipt_path = receipt_dir / 'receipt.json'
-          receipt_path.write_text(json.dumps(receipt, indent=2) + '\n')
+          (receipt_dir / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
           sums = []
           for path in sorted(receipt_dir.iterdir()):
               if path.name == 'SHA256SUMS' or not path.is_file():
@@ -195,6 +241,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: pc57-qualified-product-tree
+          name: pc57-qualified-repaired-product-tree
           path: /tmp/pc57-qualified-product/receipt
           if-no-files-found: error
