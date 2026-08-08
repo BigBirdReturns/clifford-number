@@ -1,0 +1,163 @@
+name: TEMP stage exact RD-04 promotion without workflow v6
+
+on:
+  push:
+    branches:
+      - agent/ssc-rd04-five-state-promotion-materializer-v1
+    paths:
+      - '.github/workflows/temp-ssc-rd04-five-state-promotion-stage-v6.yml'
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: temp-ssc-rd04-five-state-promotion-stage-v6
+  cancel-in-progress: true
+
+env:
+  PRODUCT_PARENT: 86937ea02e7e10223d0854240cd4e0cc9b6716a4
+  PRODUCT_PLACEHOLDER: agent/ssc-rd04-five-state-promotion-product-v1
+  STAGING_BRANCH: staging/ssc-rd04-five-state-promotion-no-workflow-v1
+  ARCHIVE_BYTES: '45104'
+  ARCHIVE_SHA256: d7ee41597453a7c4eaa6a1de0bdb0808ae98ebc878d68e20fff7f5728a718b05
+
+jobs:
+  stage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Bind refs, carrier, chunks, and archive
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch origin main "$PRODUCT_PLACEHOLDER" --depth=1
+          test "$(git rev-parse origin/main)" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "origin/$PRODUCT_PLACEHOLDER")" = "$PRODUCT_PARENT"
+          test -z "$(git ls-remote --heads origin "$STAGING_BRANCH")"
+          cat >/tmp/carrier-paths <<'EOF'
+          .github/workflows/temp-ssc-rd04-five-state-promotion-constructor-v3.yml
+          .github/workflows/temp-ssc-rd04-five-state-promotion-materializer-v2.yml
+          .github/workflows/temp-ssc-rd04-five-state-promotion-materializer.yml
+          .github/workflows/temp-ssc-rd04-five-state-promotion-stage-v6.yml
+          .github/workflows/temp-ssc-rd04-five-state-promotion-tree-export-v4.yml
+          .tmp/ssc-rd04-five-state-promotion-materializer/payload-00.b64
+          .tmp/ssc-rd04-five-state-promotion-materializer/payload-01.b64
+          .tmp/ssc-rd04-five-state-promotion-materializer/payload-02.b64
+          .tmp/ssc-rd04-five-state-promotion-materializer/payload-03.b64
+          .tmp/ssc-rd04-five-state-promotion-materializer/payload-04.b64
+          EOF
+          sort -o /tmp/carrier-paths /tmp/carrier-paths
+          git diff --name-only "$PRODUCT_PARENT" HEAD | sort >/tmp/actual-carrier-paths
+          diff -u /tmp/carrier-paths /tmp/actual-carrier-paths
+          git diff --check "$PRODUCT_PARENT" HEAD
+          cat >/tmp/chunk-sums <<'EOF'
+          d3e7ee9c26dfe557ec08458a7b9fc284f07de0cb8bf5095aee6edc9e0bdc309b  .tmp/ssc-rd04-five-state-promotion-materializer/payload-00.b64
+          a80195e6feb31bee4202e6b1fa9cc45ab28d79061957a61ccfd5a5fedfe7a6a6  .tmp/ssc-rd04-five-state-promotion-materializer/payload-01.b64
+          949cc89ba9a35fff63283a5ebc010262b8cf36694a5effea02d59d221d4c9af1  .tmp/ssc-rd04-five-state-promotion-materializer/payload-02.b64
+          d9a450cc508cbe6eda74b078972d1b90e391bf1d592492668197f143a98087da  .tmp/ssc-rd04-five-state-promotion-materializer/payload-03.b64
+          a3d2630960e55c8f2f27114c22d1dd4be7ca70c02b44f4a36428e93b76f8a6a3  .tmp/ssc-rd04-five-state-promotion-materializer/payload-04.b64
+          EOF
+          sha256sum -c /tmp/chunk-sums
+          cat .tmp/ssc-rd04-five-state-promotion-materializer/payload-*.b64 | base64 -d >/tmp/product.tar.xz
+          test "$(stat -c %s /tmp/product.tar.xz)" = "$ARCHIVE_BYTES"
+          test "$(sha256sum /tmp/product.tar.xz | cut -d' ' -f1)" = "$ARCHIVE_SHA256"
+
+      - name: Reconstruct and replay complete product qualification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf /tmp/product-worktree
+          git worktree add --detach /tmp/product-worktree "$PRODUCT_PARENT"
+          tar -xJf /tmp/product.tar.xz -C /tmp/product-worktree
+          cd /tmp/product-worktree
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          python -m pip install --disable-pip-version-check jsonschema==4.25.1
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          schema=json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-five-state-promotion.schema.json').read_text())
+          validator=Draft202012Validator(schema)
+          root=Path('data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion')
+          for path in sorted(root.glob('*.json')):
+              errors=sorted(validator.iter_errors(json.loads(path.read_text())),key=lambda error:list(error.path))
+              if errors: raise SystemExit(f'{path}: {errors[0].message} at {list(errors[0].path)}')
+          print('recursive_schema_validation=pass')
+          PY
+          node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+      - name: Construct and publish thirteen-surface staging commit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd /tmp/product-worktree
+          git reset --hard "$PRODUCT_PARENT"
+          git clean -fdx
+          tar -xJf /tmp/product.tar.xz -C .
+          rm .github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml
+          cat >/tmp/staging-paths <<'EOF'
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/cell-promotion-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-decisions.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-input-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/remaining-open-field-census.json
+          docs/milestones/ssc-rd-wave03-rd04-five-state-promotion.md
+          schemas/status-sovereignty-rd-wave03-rd04-five-state-promotion.schema.json
+          test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          EOF
+          git add --pathspec-from-file=/tmp/staging-paths
+          test "$(git diff --cached --name-only | wc -l)" = 13
+          diff -u /tmp/staging-paths <(git diff --cached --name-only)
+          tree="$(git write-tree)"
+          candidate="$(printf '%s\n' 'Stage thirteen qualified RD-04 promotion surfaces' | git commit-tree "$tree" -p "$PRODUCT_PARENT")"
+          test "$(git rev-list --parents -n1 "$candidate" | wc -w)" = 2
+          git push origin "$candidate:refs/heads/$STAGING_BRANCH"
+          mkdir -p /tmp/staging-receipt
+          printf '%s\n' "$candidate" >/tmp/staging-receipt/candidate-sha.txt
+          printf '%s\n' "$tree" >/tmp/staging-receipt/candidate-tree.txt
+          printf '%s\n' "$PRODUCT_PARENT" >/tmp/staging-receipt/parent-sha.txt
+          cp /tmp/product.tar.xz /tmp/staging-receipt/product-archive.tar.xz
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          root=Path('/tmp/staging-receipt')
+          receipt={'schema_version':'ssc-rd04-five-state-promotion-staging@6','repository':os.environ['GITHUB_REPOSITORY'],'canonical_parent':os.environ['PRODUCT_PARENT'],'staging_branch':os.environ['STAGING_BRANCH'],'candidate_commit':root.joinpath('candidate-sha.txt').read_text().strip(),'candidate_tree':root.joinpath('candidate-tree.txt').read_text().strip(),'archive_bytes':int(os.environ['ARCHIVE_BYTES']),'archive_sha256':os.environ['ARCHIVE_SHA256'],'staged_paths':13,'permanent_workflow_excluded':True,'terminal_cells_before':218,'terminal_cells_after':222,'still_open_substantive_cells_before':192,'still_open_substantive_cells_after':188,'row_terminalizations':0,'class_closed':False,'cumulative_ledger_effect':'none','authority':'staging-tree-only'}
+          root.joinpath('receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          PY
+          (cd /tmp/staging-receipt && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum >SHA256SUMS && sha256sum -c SHA256SUMS)
+
+      - name: Upload staging evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-promotion-staging-v6
+          path: /tmp/staging-receipt
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Report staging outcome
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          jq -r '"RD-04 promotion staging v6 completed.\n\n```text\ncanonical_parent: \(.canonical_parent)\nstaging_branch: \(.staging_branch)\ncandidate_commit: \(.candidate_commit)\ncandidate_tree: \(.candidate_tree)\nstaged_paths: \(.staged_paths)\npermanent_workflow_excluded: \(.permanent_workflow_excluded)\n```\n\nThis is a durable staging tree only. It grants no product, merge, row, class, cumulative-ledger, protocol, execution, review, publication, adoption, or graph authority."' /tmp/staging-receipt/receipt.json >/tmp/comment.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
