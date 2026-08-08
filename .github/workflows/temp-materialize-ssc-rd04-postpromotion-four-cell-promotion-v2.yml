@@ -1,0 +1,165 @@
+name: TEMP materialize RD-04 postpromotion four-cell promotion v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-postpromotion-four-cell-promotion-v2.yml'
+      - '.github/scripts/temp-materialize-ssc-rd04-postpromotion-four-cell-promotion-v2.sh'
+      - '.tmp/rd04-postpromotion-four-cell-promotion-v2/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+  issues: write
+
+concurrency:
+  group: temp-materialize-rd04-postpromotion-four-cell-promotion-v2
+  cancel-in-progress: false
+
+env:
+  PRODUCT_PARENT: d35deab5ef1e255e5957f29e11fe53fcf74e1cfd
+  PRODUCT_PARENT_TREE: cb129c2c7297ef5aa2dc0076030f8d2eb5440860
+  CARRIER_BRANCH: agent/rd04-four-cell-promotion-materializer-v2
+  PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-four-cell-promotion-product-v1
+  STAGING_BRANCH: staging/ssc-rd04-postpromotion-four-cell-promotion-v2
+  OUTPUT_DIR: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion
+  SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.schema.json
+  BUILDER_PATH: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs
+  VALIDATOR_PATH: tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs
+  TEST_PATH: test/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.test.js
+  WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.yml
+  VALIDATION_RUN: 31271473675
+  VALIDATION_HEAD: 7980e6872ff4954e5e5e17d2b905bb8a9cf99db6
+  VALIDATION_ARTIFACT: 9025731830
+  VALIDATION_ARTIFACT_BYTES: 8693
+  VALIDATION_ARTIFACT_ZIP_SHA256: af8d61caf7f13e0c665b320cc38ded6b4f73b6be89da7624130a4d6793e148c1
+  VALIDATION_RECEIPT_SHA256: c1ea0e2d0ba38d1f913eecb3edd33c85413e2d97cf82364b5d49ed0821967586
+  VALIDATION_CANDIDATE_LEDGER_SHA256: 8b125d7037bed8d2a23e8a9e5ba66e735ec84aa39a568614b7fa6b35b11a45d4
+  VALIDATION_INPUT_INVENTORY_SHA256: 911c3d04ac06bbf0207572c1906a20075971caa13bd91e50a8c0d7722bafc9fe
+  GH_TOKEN: ${{ github.token }}
+  PYTHONDONTWRITEBYTECODE: '1'
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/rd04-four-cell-promotion-materializer-v2')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install deterministic validators
+        run: python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2' 'jsonschema==4.25.1'
+
+      - name: Materialize and qualify exact product
+        id: materialization
+        continue-on-error: true
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref || '' }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash .github/scripts/temp-materialize-ssc-rd04-postpromotion-four-cell-promotion-v2.sh
+
+      - name: Upload materialization custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-four-cell-promotion-materializer-v2
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-four-cell-promotion-materializer-v2
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Report materialization result
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          R="${RUNNER_TEMP}/ssc-rd04-postpromotion-four-cell-promotion-materializer-v2/materialization-receipt.json"
+          test -s "$R"
+          {
+            printf '%s\n\n' 'RD-04 postpromotion four-cell promotion materialization reached a typed result.'
+            printf '%s\n' '```text'
+            printf 'state: %s\n' "$(jq -r .state "$R")"
+            printf 'stage: %s\n' "$(jq -r .failed_or_final_stage "$R")"
+            printf 'product_parent: %s\n' "$(jq -r .product_parent "$R")"
+            printf 'candidate_commit: %s\n' "$(jq -r '.candidate_commit // "none"' "$R")"
+            printf 'candidate_tree: %s\n' "$(jq -r '.candidate_tree // "none"' "$R")"
+            printf 'staging_branch: %s\n' "$(jq -r '.staging_branch // "none"' "$R")"
+            printf 'permanent_path_count: %s\n' "$(jq -r .permanent_path_count "$R")"
+            printf 'promoted_cells: %s\n' "$(jq -r '.promoted_cells // 0' "$R")"
+            printf 'class_closed: %s\n' "$(jq -r .class_closed "$R")"
+            printf '%s\n\n' '```'
+            printf '%s\n' 'The staging object has no canonical authority. A separate connector transaction must create the permanent branch and native exact-head pull request.'
+          } > /tmp/rd04-postpromotion-materialization-v2-result.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/rd04-postpromotion-materialization-v2-result.md
+
+      - name: Preserve fail-closed conclusion
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-four-cell-promotion-materializer-v2"
+          R="$OUT/materialization-receipt.json"
+          test "${{ steps.materialization.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (
+            cd "$OUT"
+            sha256sum -c SHA256SUMS
+          )
+          jq -e \
+            --arg parent "$PRODUCT_PARENT" \
+            --arg parent_tree "$PRODUCT_PARENT_TREE" \
+            --arg staging "$STAGING_BRANCH" \
+            '.state=="qualified_staging_published" and
+             .failed_or_final_stage=="complete" and
+             .exit_code==0 and
+             .product_parent==$parent and
+             .product_parent_tree==$parent_tree and
+             .staging_branch==$staging and
+             (.candidate_commit|test("^[0-9a-f]{40}$")) and
+             (.candidate_tree|test("^[0-9a-f]{40}$")) and
+             .carrier_path_count==5 and
+             .permanent_path_count==14 and
+             .addition_only==true and
+             .modified_paths==0 and
+             .deleted_paths==0 and
+             .candidate_count==4 and
+             .promoted_cells==4 and
+             .held_decisions==2 and
+             .matrix_transition.terminal_cells_before==222 and
+             .matrix_transition.terminal_cells_after==226 and
+             .matrix_transition.still_open_cells_before==228 and
+             .matrix_transition.still_open_cells_after==224 and
+             .matrix_transition.substantive_fields_still_open_before==188 and
+             .matrix_transition.substantive_fields_still_open_after==184 and
+             .matrix_transition.terminal_units_before==10 and
+             .matrix_transition.terminal_units_after==10 and
+             .matrix_updates==4 and
+             .field_terminalizations==4 and
+             .row_state_mutations==0 and
+             .class_closed==false and
+             .cumulative_ledger_effect=="none" and
+             .outside_human_dependency==false and
+             .publication_effect=="none" and
+             .adoption_effect=="none" and
+             .graph_effect=="none"' \
+            "$R" > /dev/null
