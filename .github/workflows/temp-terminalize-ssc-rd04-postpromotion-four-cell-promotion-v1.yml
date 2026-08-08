@@ -1,0 +1,217 @@
+name: TEMP terminalize RD-04 four-cell promotion transaction
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-terminalize-ssc-rd04-postpromotion-four-cell-promotion-v1.yml'
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: temp-terminalize-rd04-four-cell-promotion-v1
+  cancel-in-progress: false
+
+env:
+  MERGE: 048e9d13a2555d8e6fabdbee5f45aea858f919b7
+  PRODUCT: ef8a9de8d7fba418cd1fb493bd7899f9db77f649
+  TREE: d354309d6b936b499c78f3d0ff47d20f69abda78
+  PROOF_BRANCH: observer/ssc-rd04-postpromotion-four-cell-promotion-postmerge-v3
+  PROOF_PATH: .github/workflows/temp-prove-ssc-rd04-postpromotion-four-cell-promotion-postmerge-v3.yml
+  PROOF_BLOB: 8b9a541c7e952ea234e235de3a9cab23e4a7a4b9
+  PROOF_WORKFLOW_NAME: TEMP prove RD-04 four-cell promotion postmerge v3
+  PROOF_ARTIFACT_NAME: ssc-rd04-postpromotion-four-cell-promotion-postmerge-proof-v3
+  SUPERVISOR_BRANCH: agent/ssc-rd04-postpromotion-four-cell-promotion-terminal-supervisor-v1
+  SUPERVISOR_PATH: .github/workflows/temp-terminalize-ssc-rd04-postpromotion-four-cell-promotion-v1.yml
+
+jobs:
+  terminalize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-four-cell-promotion-terminal-supervisor-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ github.event.pull_request.head.sha }}', fetch-depth: 0 }
+
+      - name: Bind canonical state and consume exact green postmerge proof
+        id: verify
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          OUT="${RUNNER_TEMP}/rd04-four-cell-terminal-supervisor-v1"
+          PROOF="$OUT/proof"
+          rm -rf "$OUT"; mkdir -p "$PROOF"
+          exec > >(tee "$OUT/supervisor.log") 2>&1
+          stage=bootstrap
+          fail() {
+            code=$?; trap - ERR; set +e
+            printf '%s\n' "$code" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            jq -n --arg stage "$stage" --argjson code "$code" --arg merge "$MERGE" \
+              '{schema_version:"ssc-rd04-four-cell-terminal-supervisor@1",state:"failed_closed",failed_or_final_stage:$stage,exit_code:$code,canonical_merge:$merge,cleanup_complete:false,terminal_cells:226,open_substantive_cells:184,terminal_units:10,row_state_mutations:0,class_closed:false,outside_human_dependency:false,source_requests:0}' > "$OUT/receipt.json"
+            exit "$code"
+          }
+          trap fail ERR
+          set -Eeuo pipefail
+
+          stage=bind_supervisor_and_live_main
+          test "${{ github.event.pull_request.head.ref }}" = "$SUPERVISOR_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$MERGE"
+          test "$(git rev-list --count "$MERGE"..HEAD)" -eq 1
+          test "$(git diff --name-only "$MERGE" HEAD)" = "$SUPERVISOR_PATH"
+          test "$(git diff --name-only --diff-filter=A "$MERGE" HEAD)" = "$SUPERVISOR_PATH"
+          git fetch --force --no-tags origin main "$PROOF_BRANCH:refs/remotes/origin/$PROOF_BRANCH"
+          test "$(git rev-parse origin/main)" = "$MERGE"
+          PROOF_HEAD="$(git rev-parse "origin/$PROOF_BRANCH")"
+          test "$(git rev-parse "$PROOF_HEAD^")" = "$MERGE"
+          test "$(git rev-list --count "$MERGE".."$PROOF_HEAD")" -eq 1
+          test "$(git diff --name-only "$MERGE" "$PROOF_HEAD")" = "$PROOF_PATH"
+          test "$(git rev-parse "$PROOF_HEAD:$PROOF_PATH")" = "$PROOF_BLOB"
+
+          stage=wait_for_green_exact_head_proof
+          RUN_ID=
+          for attempt in $(seq 1 60); do
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs?branch=$PROOF_BRANCH&event=pull_request&per_page=100" > "$OUT/proof-runs.json"
+            jq --arg name "$PROOF_WORKFLOW_NAME" --arg path "$PROOF_PATH" --arg head "$PROOF_HEAD" \
+              '[.workflow_runs[]|select(.name==$name and .path==$path and .head_sha==$head)]|sort_by(.run_started_at)|reverse|.[0]' \
+              "$OUT/proof-runs.json" > "$OUT/proof-run.json"
+            RUN_ID="$(jq -r '.id // empty' "$OUT/proof-run.json")"
+            status="$(jq -r '.status // empty' "$OUT/proof-run.json")"
+            if test -n "$RUN_ID" && test "$status" = completed; then break; fi
+            sleep 15
+          done
+          test -n "$RUN_ID"
+          jq -e --arg head "$PROOF_HEAD" '.status=="completed" and .conclusion=="success" and .head_sha==$head and .event=="pull_request"' "$OUT/proof-run.json" >/dev/null
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs?per_page=100" > "$OUT/proof-jobs.json"
+          jq -e '[.jobs[]|select(.name=="prove" and .status=="completed" and .conclusion=="success")]|length==1' "$OUT/proof-jobs.json" >/dev/null
+
+          stage=authenticate_proof_artifact_and_receipt
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/artifacts?per_page=100" > "$OUT/proof-artifacts.json"
+          jq --arg name "$PROOF_ARTIFACT_NAME" '[.artifacts[]|select(.name==$name and .expired==false)]|.[0]' "$OUT/proof-artifacts.json" > "$OUT/proof-artifact.json"
+          ARTIFACT_ID="$(jq -r '.id // empty' "$OUT/proof-artifact.json")"
+          DIGEST="$(jq -r '.digest // empty' "$OUT/proof-artifact.json")"
+          test -n "$ARTIFACT_ID"; test -n "$DIGEST"; test "${DIGEST#sha256:}" != "$DIGEST"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$OUT/proof.zip"
+          ZIP_SHA="$(sha256sum "$OUT/proof.zip"|cut -d' ' -f1)"
+          test "$ZIP_SHA" = "${DIGEST#sha256:}"
+          unzip -t "$OUT/proof.zip" > "$OUT/proof-zip-test.log"
+          unzip -q "$OUT/proof.zip" -d "$PROOF"
+          test -s "$PROOF/SHA256SUMS"; test -s "$PROOF/receipt.json"; test -s "$PROOF/EXIT_CODE"; test -s "$PROOF/STAGE"
+          (cd "$PROOF" && sha256sum -c SHA256SUMS)
+          test "$(cat "$PROOF/EXIT_CODE")" = 0; test "$(cat "$PROOF/STAGE")" = complete
+          jq -e --arg merge "$MERGE" --arg product "$PRODUCT" --arg tree "$TREE" '
+            .state=="canonical_postmerge_proved" and .failed_or_final_stage=="complete" and .exit_code==0 and
+            .canonical_merge==$merge and .product_commit==$product and .canonical_tree==$tree and
+            .permanent_paths==14 and .addition_only==true and .temporary_paths==0 and
+            (.native_push_run_id|type)=="number" and .native_push_conclusion=="success" and
+            (.native_artifact_id|type)=="number" and (.native_artifact_digest|startswith("sha256:")) and
+            .native_artifact_zip_sha256==(.native_artifact_digest|sub("^sha256:";"")) and
+            .native_steps_authenticated==6 and .native_files_authenticated==9 and
+            .terminal_cells_after==226 and .still_open_cells_after==224 and .open_substantive_cells_after==184 and
+            .terminal_units_after==10 and .candidate_findings_promoted==4 and .held_north_dakota_cells==2 and
+            .row_state_mutations==0 and .class_closed==false and .cumulative_ledger_effect=="none" and
+            .outside_human_dependency==false and .publication_effect=="none" and .adoption_effect=="none" and .graph_effect=="none" and
+            .source_requests==0 and .route_executions==0' "$PROOF/receipt.json" >/dev/null
+
+          stage=cleanup_all_temporary_refs_and_pull_requests
+          cat > "$OUT/cleanup-branches.txt" <<EOF
+          agent/ssc-rd04-postpromotion-four-cell-promotion-stager-v1
+          staging/ssc-rd04-postpromotion-four-cell-promotion-ordinary-v1
+          agent/ssc-rd04-postpromotion-four-cell-promotion-validation-v2
+          agent/ssc-rd04-postpromotion-four-cell-promotion-product-v1
+          observer/ssc-rd04-postpromotion-four-cell-promotion-postmerge-v1
+          observer/ssc-rd04-postpromotion-four-cell-promotion-postmerge-v2
+          observer/ssc-rd04-postpromotion-four-cell-promotion-postmerge-v3
+          $SUPERVISOR_BRANCH
+          EOF
+          sed -i 's/^          //' "$OUT/cleanup-branches.txt"
+          while IFS= read -r branch; do
+            while IFS= read -r number; do
+              test -z "$number" || gh pr close "$number" --repo "$GITHUB_REPOSITORY" --comment 'Closed unmerged after canonical RD-04 four-cell promotion postmerge proof and terminal cleanup.'
+            done < <(gh pr list --repo "$GITHUB_REPOSITORY" --state open --head "$branch" --json number --jq '.[].number')
+          done < "$OUT/cleanup-branches.txt"
+          while IFS= read -r branch; do
+            if test -n "$(git ls-remote --heads origin "refs/heads/$branch")"; then
+              git push origin --delete "$branch"
+            fi
+          done < "$OUT/cleanup-branches.txt"
+
+          stage=prove_zero_residual_and_unchanged_main
+          test "$(git ls-remote --heads origin refs/heads/main|awk '{print $1}')" = "$MERGE"
+          : > "$OUT/residual-refs.txt"
+          while IFS= read -r branch; do
+            git ls-remote --heads origin "refs/heads/$branch" >> "$OUT/residual-refs.txt"
+          done < "$OUT/cleanup-branches.txt"
+          test ! -s "$OUT/residual-refs.txt"
+          : > "$OUT/residual-open-prs.txt"
+          while IFS= read -r branch; do
+            gh pr list --repo "$GITHUB_REPOSITORY" --state open --head "$branch" --json number,headRefName --jq '.[]|[.number,.headRefName]|@tsv' >> "$OUT/residual-open-prs.txt"
+          done < "$OUT/cleanup-branches.txt"
+          test ! -s "$OUT/residual-open-prs.txt"
+
+          stage=complete; trap - ERR
+          printf '0\n' > "$OUT/EXIT_CODE"; printf 'complete\n' > "$OUT/STAGE"
+          jq -n --arg merge "$MERGE" --arg product "$PRODUCT" --arg tree "$TREE" --arg proof_head "$PROOF_HEAD" \
+            --argjson proof_run "$RUN_ID" --argjson proof_artifact "$ARTIFACT_ID" --arg proof_digest "$DIGEST" --arg proof_zip "$ZIP_SHA" \
+            '{schema_version:"ssc-rd04-four-cell-terminal-supervisor@1",state:"canonical_transaction_terminalized",failed_or_final_stage:"complete",exit_code:0,canonical_merge:$merge,product_commit:$product,canonical_tree:$tree,postmerge_proof_head:$proof_head,postmerge_proof_run_id:$proof_run,postmerge_proof_artifact_id:$proof_artifact,postmerge_proof_artifact_digest:$proof_digest,postmerge_proof_artifact_zip_sha256:$proof_zip,temporary_branches_deleted:8,residual_temporary_refs:0,residual_open_temporary_prs:0,permanent_paths:14,terminal_cells:226,still_open_cells:224,open_substantive_cells:184,terminal_units:10,candidate_findings_promoted:4,held_north_dakota_cells:2,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none",source_requests:0,route_executions:0,next_bounded_operation:"execute or otherwise adjudicate the already-selected two-route North Dakota follow-up protocol only in a separate request-bounded transaction"}' > "$OUT/receipt.json"
+
+      - name: Seal terminal cleanup custody
+        id: seal
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/rd04-four-cell-terminal-supervisor-v1"
+          test -s "$OUT/receipt.json"; test -s "$OUT/EXIT_CODE"; test -s "$OUT/STAGE"
+          (cd "$OUT" && find . -maxdepth 1 -type f ! -name SHA256SUMS -print0|LC_ALL=C sort -z|xargs -0 sha256sum > SHA256SUMS)
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+
+      - name: Upload terminal transaction receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-four-cell-promotion-terminal-v1
+          path: ${{ runner.temp }}/rd04-four-cell-terminal-supervisor-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Publish terminal issue receipt
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R="${RUNNER_TEMP}/rd04-four-cell-terminal-supervisor-v1/receipt.json"; test -s "$R"
+          jq -r '"RD-04 four-cell promotion terminal receipt: state=\(.state), canonical_merge=\(.canonical_merge), postmerge_proof_run=\(.postmerge_proof_run_id // "none"), postmerge_proof_artifact=\(.postmerge_proof_artifact_id // "none"), temporary_branches_deleted=\(.temporary_branches_deleted // 0), residual_refs=\(.residual_temporary_refs // -1), residual_open_prs=\(.residual_open_temporary_prs // -1), terminal_cells=\(.terminal_cells), open_substantive=\(.open_substantive_cells), held_ND=\(.held_north_dakota_cells), class_closed=\(.class_closed). The next bounded operation is the already-selected two-route North Dakota follow-up protocol in a separate request-bounded transaction."' "$R" > /tmp/rd04-terminal-result.txt
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/rd04-terminal-result.txt
+
+      - name: Preserve fail-closed terminal conclusion
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/rd04-four-cell-terminal-supervisor-v1"; R="$OUT/receipt.json"
+          test "${{ steps.verify.outcome }}" = success; test "${{ steps.seal.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0; test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e --arg merge "$MERGE" --arg product "$PRODUCT" --arg tree "$TREE" '
+            .state=="canonical_transaction_terminalized" and .failed_or_final_stage=="complete" and .exit_code==0 and
+            .canonical_merge==$merge and .product_commit==$product and .canonical_tree==$tree and
+            .temporary_branches_deleted==8 and .residual_temporary_refs==0 and .residual_open_temporary_prs==0 and
+            .permanent_paths==14 and .terminal_cells==226 and .still_open_cells==224 and .open_substantive_cells==184 and .terminal_units==10 and
+            .candidate_findings_promoted==4 and .held_north_dakota_cells==2 and .row_state_mutations==0 and .class_closed==false and
+            .cumulative_ledger_effect=="none" and .outside_human_dependency==false and .publication_effect=="none" and
+            .adoption_effect=="none" and .graph_effect=="none" and .source_requests==0 and .route_executions==0' "$R" >/dev/null
