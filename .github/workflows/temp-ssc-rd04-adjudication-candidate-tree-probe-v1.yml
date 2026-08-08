@@ -1,0 +1,85 @@
+name: TEMP probe RD-04 adjudication candidate tree v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-rd04-adjudication-candidate-tree-probe-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'observer/ssc-rd04-adjudication-candidate-tree-probe-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PARENT: 91b386df809079884825b19a6b5d864b6e739172
+      CARRIER_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-materializer-v1
+      CARRIER_HEAD: ff898add6d8680272543d0cbe3dacc513319f66a
+      PAYLOAD_ROOT: .tmp/ssc-rd04-postpromotion-next-adjudication-materializer-v1
+      EXPECTED_TREE: 3f6723dfecb611da2dff3f15f6de728da2307792
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Reconstruct exact index and emit per-path Git blobs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/rd04-adjudication-candidate-tree-probe"
+          WORK="$RUNNER_TEMP/rd04-adjudication-candidate-tree-worktree"
+          rm -rf "$OUT" "$WORK"
+          mkdir -p "$OUT/product"
+          printf 'source_requests=0\nroute_executions=0\nsource_admissions=0\nfield_classifications=0\nmatrix_updates=0\nrow_state_mutations=0\nclass_closed=false\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' > "$OUT/BOUNDARY"
+
+          git fetch --no-tags origin "$CARRIER_BRANCH"
+          test "$(git rev-parse FETCH_HEAD)" = "$CARRIER_HEAD"
+          for n in 00 01 02 03; do
+            git show "$CARRIER_HEAD:$PAYLOAD_ROOT/payload-$n.b64" > "$OUT/payload-$n.b64"
+          done
+          cat "$OUT"/payload-{00,01,02,03}.b64 | base64 --decode > "$OUT/product.tar.xz"
+          test "$(stat -c%s "$OUT/product.tar.xz")" -eq 16172
+          test "$(sha256sum "$OUT/product.tar.xz" | cut -d' ' -f1)" = aef5ea47788a2a4bdd327be8004b9062728b15b6b93dd818962a4c15f78a5d1a
+          tar -xJf "$OUT/product.tar.xz" -C "$OUT/product"
+
+          cat > "$OUT/paths.txt" <<'EOF_PATHS'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/adjudication-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/capture-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/field-adjudications.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/promotion-candidate-protocol.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/source-adjudications.json
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-next-adjudication.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          EOF_PATHS
+          sort -o "$OUT/paths.txt" "$OUT/paths.txt"
+          git worktree add --detach "$WORK" "$PARENT"
+          cp -a "$OUT/product"/. "$WORK"/
+          cd "$WORK"
+          while IFS= read -r path; do git add -- "$path"; done < "$OUT/paths.txt"
+          git ls-files --stage -- $(cat "$OUT/paths.txt") | sort -k4 > "$OUT/index-ledger.tsv"
+          TREE="$(git write-tree)"
+          printf '%s\n' "$TREE" > "$OUT/candidate-tree.txt"
+          printf 'candidate_tree=%s\n' "$TREE"
+          cat "$OUT/index-ledger.tsv"
+          test "$TREE" = "$EXPECTED_TREE"
+          test "$(wc -l < "$OUT/index-ledger.tsv")" -eq 13
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ssc-rd04-adjudication-candidate-tree-probe-v1
+          path: ${{ runner.temp }}/rd04-adjudication-candidate-tree-probe
+          if-no-files-found: error
+          retention-days: 30
