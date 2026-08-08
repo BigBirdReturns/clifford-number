@@ -1,0 +1,101 @@
+name: TEMP export exact RD-04 promotion parent tree v4
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temp-ssc-rd04-five-state-promotion-tree-export-v4.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: temp-ssc-rd04-five-state-promotion-tree-export-v4
+  cancel-in-progress: true
+
+env:
+  PRODUCT_PARENT: 86937ea02e7e10223d0854240cd4e0cc9b6716a4
+  PRODUCT_BRANCH: agent/ssc-rd04-five-state-promotion-product-v1
+
+jobs:
+  export-tree:
+    if: >-
+      (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/ssc-rd04-five-state-promotion-materializer-v1' && github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'workflow_dispatch' && github.ref_name == 'agent/ssc-rd04-five-state-promotion-materializer-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Export exact canonical parent tree and carrier census
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch origin main --depth=1
+          test "$(git rev-parse FETCH_HEAD)" = "$PRODUCT_PARENT"
+          git fetch origin "$PRODUCT_BRANCH" --depth=1
+          test "$(git rev-parse FETCH_HEAD)" = "$PRODUCT_PARENT"
+          test "$(git merge-base HEAD "$PRODUCT_PARENT")" = "$PRODUCT_PARENT"
+          root=/tmp/rd04-tree-export
+          mkdir -p "$root"
+          git diff --name-only "$PRODUCT_PARENT" HEAD | sort > "$root/carrier-paths.txt"
+          git rev-parse "$PRODUCT_PARENT^{tree}" > "$root/base-tree.txt"
+          git rev-parse HEAD > "$root/carrier-head.txt"
+          printf '%s\n' "$PRODUCT_PARENT" > "$root/parent-sha.txt"
+          printf '%s\n' "$PRODUCT_PARENT" > "$root/product-placeholder-sha.txt"
+          export TREE_EXPORT_ROOT="$root"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['TREE_EXPORT_ROOT'])
+          paths = root.joinpath('carrier-paths.txt').read_text().splitlines()
+          receipt = {
+              'schema_version': 'ssc-rd04-five-state-promotion-tree-export@4',
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'workflow_run': int(os.environ['GITHUB_RUN_ID']),
+              'canonical_parent': os.environ['PRODUCT_PARENT'],
+              'base_tree': root.joinpath('base-tree.txt').read_text().strip(),
+              'carrier_head': root.joinpath('carrier-head.txt').read_text().strip(),
+              'product_branch': os.environ['PRODUCT_BRANCH'],
+              'product_placeholder_sha': root.joinpath('product-placeholder-sha.txt').read_text().strip(),
+              'carrier_path_count': len(paths),
+              'carrier_paths': paths,
+              'candidate_created': False,
+              'ref_updated': False,
+              'authority': 'tree-reference-only',
+              'row_terminalizations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          root.joinpath('receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          PY
+          rm -f "$root/SHA256SUMS"
+          (cd "$root" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          (cd "$root" && sha256sum -c SHA256SUMS)
+
+      - name: Upload exact parent-tree receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-promotion-tree-export-v4
+          path: /tmp/rd04-tree-export
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Report tree export
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          jq -r '"RD-04 four-cell promotion parent-tree export v4 completed.\n\n```text\ncanonical_parent: \(.canonical_parent)\nbase_tree: \(.base_tree)\ncarrier_head: \(.carrier_head)\nproduct_placeholder_sha: \(.product_placeholder_sha)\ncarrier_path_count: \(.carrier_path_count)\n```\n\nThis is tree-reference evidence only. It creates no candidate, ref movement, matrix change, row state, class closure, cumulative-ledger, protocol, execution, review, publication, adoption, or graph authority."' /tmp/rd04-tree-export/receipt.json > /tmp/comment.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
