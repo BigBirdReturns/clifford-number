@@ -1,0 +1,155 @@
+name: TEMP native-Git School.House current-frontier regenerator v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-legal-identity-current-frontier-regenerator-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: schoolhouse-current-frontier-regenerator-v2-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  regenerate:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-legal-identity-current-frontier-regenerator-v2')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Recover exact transport through native Git and execute regenerator
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PAYLOAD_BRANCH='agent/schoolhouse-current-frontier-regenerator-payload-v2'
+          PAYLOAD_COMMIT='5e943106566afeaa118e36ca98696b766341aa89'
+          PAYLOAD_TREE='f88d33f747d1eaf7909c0fa50bed24f5de29f1e2'
+          PAYLOAD_PARENT='987f1b2574eeddaba49d67c1c1498a81d40f7c69'
+          ROOT='.tmp/schoolhouse-current-frontier-regenerator-v2'
+          WRAP="$RUNNER_TEMP/schoolhouse-current-frontier-regenerator-v2-wrapper"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-regenerator-v2-receipt"
+          RUNNER_B64="$WRAP/runner.xz.b64"
+          RUNNER_XZ="$WRAP/runner.xz"
+          SCRIPT="$WRAP/materialize.sh"
+          BUNDLE="$WRAP/regenerator-bundle.tar.xz"
+          rm -rf "$WRAP"
+          mkdir -p "$WRAP" "$RECEIPT"
+          printf 'initializing-native-git-transport\n' > "$WRAP/STAGE"
+          printf 'source_requests=0\nregistry_queries=0\nform_submissions=0\ncontacts=0\npayments=0\nuploads=0\noutside_human_dependency=false\n' > "$WRAP/BOUNDARY"
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            printf '%s\n' "$rc" > "$WRAP/WRAPPER_EXIT_CODE"
+            mkdir -p "$RECEIPT/wrapper"
+            cp -a "$WRAP"/. "$RECEIPT/wrapper/" 2>/dev/null || true
+            (
+              cd "$RECEIPT"
+              find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          printf 'authenticating-payload-commit\n' > "$WRAP/STAGE"
+          git fetch --no-tags origin "$PAYLOAD_BRANCH"
+          test "$(git rev-parse "origin/$PAYLOAD_BRANCH")" = "$PAYLOAD_COMMIT"
+          test "$(git rev-parse "$PAYLOAD_COMMIT^{tree}")" = "$PAYLOAD_TREE"
+          test "$(git rev-parse "$PAYLOAD_COMMIT^")" = "$PAYLOAD_PARENT"
+          git merge-base --is-ancestor "$PAYLOAD_PARENT" "$(git rev-parse HEAD^)"
+          git ls-tree -r --name-only "$PAYLOAD_COMMIT" | sort > "$WRAP/actual-payload-paths"
+          cat > "$WRAP/expected-payload-paths" <<'EOF_PATHS'
+          .tmp/schoolhouse-current-frontier-regenerator-v2/bundle-00
+          .tmp/schoolhouse-current-frontier-regenerator-v2/bundle-01
+          .tmp/schoolhouse-current-frontier-regenerator-v2/bundle-02
+          .tmp/schoolhouse-current-frontier-regenerator-v2/bundle-03
+          .tmp/schoolhouse-current-frontier-regenerator-v2/runner.xz.b64
+          EOF_PATHS
+          diff -u "$WRAP/expected-payload-paths" "$WRAP/actual-payload-paths"
+
+          printf 'recovering-runner\n' > "$WRAP/STAGE"
+          test "$(git rev-parse "$PAYLOAD_COMMIT:$ROOT/runner.xz.b64")" = \
+            'd02dbd4b28dcc0663745606239d75e243c178680'
+          git show "$PAYLOAD_COMMIT:$ROOT/runner.xz.b64" > "$RUNNER_B64"
+          test "$(stat -c%s "$RUNNER_B64")" = '5642'
+          test "$(sha256sum "$RUNNER_B64" | cut -d' ' -f1)" = \
+            '13016a2f38db45d6f984747c163f2c5d30aa25d8998391fffb77bb02d8c0bd37'
+          base64 --decode "$RUNNER_B64" > "$RUNNER_XZ"
+          test "$(stat -c%s "$RUNNER_XZ")" = '4176'
+          test "$(sha256sum "$RUNNER_XZ" | cut -d' ' -f1)" = \
+            '0f197f128ff1a95c0b542df439b5e2a40121083bf0f37900d38e3c941f3c8474'
+          xz --decompress --stdout "$RUNNER_XZ" > "$SCRIPT"
+          test "$(stat -c%s "$SCRIPT")" = '13946'
+          test "$(sha256sum "$SCRIPT" | cut -d' ' -f1)" = \
+            'bd92de73e19da0e525a380acab8a2d9521e2fad39e8f63f1e2bf167259b774d5'
+          chmod 0755 "$SCRIPT"
+          bash -n "$SCRIPT"
+
+          printf 'recovering-regeneration-bundle\n' > "$WRAP/STAGE"
+          BLOBS=(
+            '48b226ba325b14362c285bffed2da5e1b4545a7a'
+            '344e1375f07ccb28d3b8c7de1539f779eb4524be'
+            '2fc71dd95438d35dea6bfa566d53a606e16a4679'
+            '5ce8cbd62babb96f2be6df51cc9596bf64195872'
+          )
+          BYTES=(10000 10000 10000 6304)
+          DIGESTS=(
+            '119795baa73810e986a2624cdfcd28bb59f2e3b53dea4689fb417bbbab6c2fa3'
+            'c03394dec522b2467e6116e39d35d0e2e90b795e1c3a56a2f7bb6125d610ab6c'
+            '5df46e0a92e139bf63dbc76b5b7f2f494e0f22b954df224c260ae7a5a2774857'
+            '409da1ac4fdcbf93f0b26d47aa2a031bf11b6df73db9d8b8ba6e57d9981ed442'
+          )
+          for index in "${!BLOBS[@]}"; do
+            printf -v suffix '%02d' "$index"
+            path="$ROOT/bundle-$suffix"
+            chunk="$WRAP/bundle-$suffix"
+            test "$(git rev-parse "$PAYLOAD_COMMIT:$path")" = "${BLOBS[$index]}"
+            git show "$PAYLOAD_COMMIT:$path" > "$chunk"
+            test "$(stat -c%s "$chunk")" = "${BYTES[$index]}"
+            test "$(sha256sum "$chunk" | cut -d' ' -f1)" = "${DIGESTS[$index]}"
+            test "$(git hash-object "$chunk")" = "${BLOBS[$index]}"
+          done
+          cat "$WRAP"/bundle-{00,01,02,03} > "$BUNDLE"
+          test "$(stat -c%s "$BUNDLE")" = '36304'
+          test "$(sha256sum "$BUNDLE" | cut -d' ' -f1)" = \
+            'f48a146eed3fe9d2025a46dd25e9da6f3b4ab901f4a4bf58b6d4fb09d451016c'
+          xz --test "$BUNDLE"
+
+          printf 'executing-parent-agnostic-regenerator\n' > "$WRAP/STAGE"
+          SCHOOLHOUSE_REGENERATOR_BUNDLE_PATH="$BUNDLE" bash "$SCRIPT"
+          printf 'complete\n' > "$WRAP/STAGE"
+
+      - name: Upload exact v2 regeneration receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-legal-identity-current-frontier-regenerator-v2
+          path: ${{ runner.temp }}/schoolhouse-current-frontier-regenerator-v2-receipt
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
