@@ -1,0 +1,173 @@
+name: TEMP recover RD-04 postpromotion adjudication materializer v4
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-recover-ssc-rd04-postpromotion-five-route-adjudication-materializer-v4.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+concurrency:
+  group: temp-recover-ssc-rd04-postpromotion-five-route-adjudication-materializer-v4
+  cancel-in-progress: true
+
+env:
+  CANONICAL_PARENT: 91b386df809079884825b19a6b5d864b6e739172
+  SOURCE_HEAD: f8db094498ddc71928dd4c5e49a98678a5e680f5
+  SOURCE_WORKFLOW_NAME: TEMP materialize RD-04 postpromotion five-route adjudication v3
+  SOURCE_ARTIFACT_NAME: ssc-rd04-postpromotion-five-route-adjudication-materializer-v3
+  STAGING_BRANCH: staging/ssc-rd04-postpromotion-five-route-adjudication-ordinary-v1
+
+jobs:
+  recover:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'observer/ssc-rd04-postpromotion-five-route-adjudication-materializer-v4')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Bind exact observer
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OBSERVER='.github/workflows/temp-recover-ssc-rd04-postpromotion-five-route-adjudication-materializer-v4.yml'
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"
+          test "$(git rev-list --count "$CANONICAL_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CANONICAL_PARENT" HEAD)" = "$OBSERVER"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD)" = "$OBSERVER"
+          git diff --check "$CANONICAL_PARENT" HEAD
+
+      - name: Recover exact push transaction
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-postpromotion-five-route-adjudication-materializer-v4-recovery
+          rm -rf "$OUT"
+          mkdir -p "$OUT/artifact"
+
+          run_id=''
+          run_status='absent'
+          run_conclusion='absent'
+          for attempt in $(seq 1 24); do
+            curl -fsSL \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$SOURCE_HEAD&event=push&per_page=100" \
+              > "$OUT/runs.json"
+            run_id="$(jq -r --arg name "$SOURCE_WORKFLOW_NAME" --arg sha "$SOURCE_HEAD" '[.workflow_runs[] | select(.name==$name and .head_sha==$sha and .event=="push")] | sort_by(.created_at) | last | .id // empty' "$OUT/runs.json")"
+            if test -n "$run_id"; then
+              run_status="$(jq -r --argjson id "$run_id" '.workflow_runs[] | select(.id==$id) | .status' "$OUT/runs.json")"
+              run_conclusion="$(jq -r --argjson id "$run_id" '.workflow_runs[] | select(.id==$id) | .conclusion // ""' "$OUT/runs.json")"
+              if test "$run_status" = completed; then break; fi
+            fi
+            sleep 5
+          done
+
+          artifact_id=''
+          artifact_digest=''
+          materializer_state='unavailable'
+          materializer_gate='unavailable'
+          full_head=''
+          full_tree=''
+          receipt_staging_head=''
+
+          if test -n "$run_id"; then
+            curl -fsSL \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$run_id" > "$OUT/run.json"
+            curl -fsSL \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?filter=latest&per_page=100" > "$OUT/jobs.json"
+            curl -fsSL \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?per_page=100" > "$OUT/artifacts.json"
+
+            artifact_id="$(jq -r --arg name "$SOURCE_ARTIFACT_NAME" '[.artifacts[] | select(.name==$name and .expired==false)] | sort_by(.created_at) | last | .id // empty' "$OUT/artifacts.json")"
+            artifact_digest="$(jq -r --arg name "$SOURCE_ARTIFACT_NAME" '[.artifacts[] | select(.name==$name and .expired==false)] | sort_by(.created_at) | last | .digest // empty' "$OUT/artifacts.json")"
+            if test -n "$artifact_id"; then
+              curl -fsSL -L \
+                -H "Authorization: Bearer $GH_TOKEN" \
+                -H 'Accept: application/vnd.github+json' \
+                -H 'X-GitHub-Api-Version: 2022-11-28' \
+                "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > "$OUT/source-artifact.zip"
+              test "sha256:$(sha256sum "$OUT/source-artifact.zip" | cut -d' ' -f1)" = "$artifact_digest"
+              unzip -t "$OUT/source-artifact.zip" > "$OUT/zip-test.log"
+              unzip -q "$OUT/source-artifact.zip" -d "$OUT/artifact"
+              if test -f "$OUT/artifact/SHA256SUMS"; then
+                (cd "$OUT/artifact" && sha256sum -c SHA256SUMS) > "$OUT/internal-check.log"
+              fi
+              if test -f "$OUT/artifact/status.json"; then
+                materializer_state="$(jq -r '.qualification_state // "unavailable"' "$OUT/artifact/status.json")"
+                materializer_gate="$(jq -r '.failed_or_final_gate // "unavailable"' "$OUT/artifact/status.json")"
+                full_head="$(jq -r '.full_head // empty' "$OUT/artifact/status.json")"
+                full_tree="$(jq -r '.full_tree // empty' "$OUT/artifact/status.json")"
+                receipt_staging_head="$(jq -r '.staging_head // empty' "$OUT/artifact/status.json")"
+              fi
+            fi
+          fi
+
+          live_staging_head="$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')"
+          jq -n \
+            --arg schema_version 'ssc-rd04-postpromotion-five-route-adjudication-materializer-recovery@4' \
+            --arg source_head "$SOURCE_HEAD" \
+            --arg source_workflow_name "$SOURCE_WORKFLOW_NAME" \
+            --arg run_id "$run_id" \
+            --arg run_status "$run_status" \
+            --arg run_conclusion "$run_conclusion" \
+            --arg artifact_id "$artifact_id" \
+            --arg artifact_digest "$artifact_digest" \
+            --arg materializer_state "$materializer_state" \
+            --arg materializer_gate "$materializer_gate" \
+            --arg full_head "$full_head" \
+            --arg full_tree "$full_tree" \
+            --arg receipt_staging_head "$receipt_staging_head" \
+            --arg staging_branch "$STAGING_BRANCH" \
+            --arg live_staging_head "$live_staging_head" \
+            '{schema_version:$schema_version,source_head:$source_head,source_workflow_name:$source_workflow_name,run_id:($run_id|select(length>0)|tonumber),run_status:$run_status,run_conclusion:$run_conclusion,artifact_id:($artifact_id|select(length>0)|tonumber),artifact_digest:($artifact_digest|select(length>0)),materializer_state:$materializer_state,materializer_gate:$materializer_gate,full_head:($full_head|select(length>0)),full_tree:($full_tree|select(length>0)),receipt_staging_head:($receipt_staging_head|select(length>0)),staging_branch:$staging_branch,live_staging_head:($live_staging_head|select(length>0)),source_requests_executed_by_adjudication:0,matrix_updates:0,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",authority:"run_recovery_only"}' \
+            > "$OUT/recovery-receipt.json"
+
+          (
+            cd "$OUT"
+            find . -type f ! -path './artifact/*' ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+          )
+
+      - name: Upload exact recovery evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-five-route-adjudication-materializer-v4-recovery
+          path: /tmp/ssc-rd04-postpromotion-five-route-adjudication-materializer-v4-recovery
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Report exact recovered outcome
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R=/tmp/ssc-rd04-postpromotion-five-route-adjudication-materializer-v4-recovery/recovery-receipt.json
+          jq -r '"RD-04 adjudication materializer V3 exact-head recovery completed.\n\n```text\nsource_head: \(.source_head)\nsource_workflow: \(.source_workflow_name)\nrun_id: \(.run_id // "absent")\nrun_status: \(.run_status)\nrun_conclusion: \(.run_conclusion)\nartifact_id: \(.artifact_id // "absent")\nartifact_digest: \(.artifact_digest // "absent")\nmaterializer_state: \(.materializer_state)\nmaterializer_gate: \(.materializer_gate)\nfull_head: \(.full_head // "none")\nfull_tree: \(.full_tree // "none")\nreceipt_staging_head: \(.receipt_staging_head // "none")\nlive_staging_head: \(.live_staging_head // "none")\n```\n\nThis observer grants only exact run and artifact custody. It executes no source request and creates no field, matrix, row, class, cumulative-ledger, publication, adoption, or graph authority. The control question is whether the corrected V3 head produced a terminal materializer artifact and exact ordinary staging ref, or whether GitHub recorded no matching push run at all."' "$R" > /tmp/comment.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
