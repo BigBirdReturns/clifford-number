@@ -1,0 +1,208 @@
+name: TEMP qualify exact PC-55 product tree
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc55-qualified-tree-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      QUALIFIED_SOURCE_PARENT: 86937ea02e7e10223d0854240cd4e0cc9b6716a4
+      QUALIFIED_SOURCE_TREE: fe040cbd808254fdb341cbf59f1335f6c6bc8e65
+      ARCHIVE_BYTES: '23040'
+      ARCHIVE_SHA256: 7561a35eebfea5b39e888c8b08d7032ad525114ba5c7121f5b06a5ab75e1ef36
+      PATH_COUNT: '14'
+      PATH_LIST_SHA256: 4c41ae1564b19e5a44f88550318cd97d0d6dd2498e6ea8388f612a5e21335d5d
+      RECEIPT_DIR: /tmp/pc55-qualified-product-tree
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct and authenticate the exact fourteen-file package
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CARRIER_HEAD=$(git rev-parse HEAD)
+          git fetch --no-tags origin main
+          CURRENT_MAIN=$(git rev-parse origin/main)
+          CARRIER_BASE=$(git merge-base "$CARRIER_HEAD" "$CURRENT_MAIN")
+          git merge-base --is-ancestor "$QUALIFIED_SOURCE_PARENT" "$CURRENT_MAIN"
+          test "$(git rev-parse "$QUALIFIED_SOURCE_PARENT^{tree}")" = "$QUALIFIED_SOURCE_TREE"
+
+          mkdir -p /tmp/pc55-carrier "$RECEIPT_DIR"
+          cp .pc55-carrier/manifest.json /tmp/pc55-carrier/manifest.json
+          for ordinal in 00 01 02 03; do cp ".pc55-carrier/part-${ordinal}.b64" "/tmp/pc55-carrier/part-${ordinal}.b64"; done
+          cat > /tmp/pc55-carrier/expected-carrier-paths.txt <<'EOF'
+          .github/workflows/temp-pc55-materializer.yml
+          .pc55-carrier/manifest.json
+          .pc55-carrier/part-00.b64
+          .pc55-carrier/part-01.b64
+          .pc55-carrier/part-02.b64
+          .pc55-carrier/part-03.b64
+          EOF
+          sed -i 's/^          //' /tmp/pc55-carrier/expected-carrier-paths.txt
+          git diff --name-only "$CARRIER_BASE" "$CARRIER_HEAD" | sort > /tmp/pc55-carrier/observed-carrier-paths.txt
+          diff -u /tmp/pc55-carrier/expected-carrier-paths.txt /tmp/pc55-carrier/observed-carrier-paths.txt
+
+          cat /tmp/pc55-carrier/part-*.b64 | tr -d '\n' | base64 --decode > /tmp/pc55-carrier/product.tar.xz
+          test "$(wc -c < /tmp/pc55-carrier/product.tar.xz | tr -d ' ')" = "$ARCHIVE_BYTES"
+          test "$(sha256sum /tmp/pc55-carrier/product.tar.xz | awk '{print $1}')" = "$ARCHIVE_SHA256"
+
+          python - <<'PY'
+          import hashlib, json, os, tarfile
+          from pathlib import Path, PurePosixPath
+          manifest=json.loads(Path('/tmp/pc55-carrier/manifest.json').read_text())
+          expected={'schema_version','qualified_source_parent','source_parent_tree','path_count','path_list_sha256','archive_bytes','archive_sha256','files','outside_human_dependency','graph_effect'}
+          if set(manifest)!=expected: raise SystemExit('manifest keys mismatch')
+          if manifest['schema_version']!='pc55-product-manifest@1': raise SystemExit('manifest schema mismatch')
+          if manifest['qualified_source_parent']!=os.environ['QUALIFIED_SOURCE_PARENT']: raise SystemExit('source parent mismatch')
+          if manifest['source_parent_tree']!=os.environ['QUALIFIED_SOURCE_TREE']: raise SystemExit('source tree mismatch')
+          if manifest['path_count']!=int(os.environ['PATH_COUNT']): raise SystemExit('path count mismatch')
+          if manifest['archive_bytes']!=int(os.environ['ARCHIVE_BYTES']) or manifest['archive_sha256']!=os.environ['ARCHIVE_SHA256']: raise SystemExit('archive identity mismatch')
+          if manifest['path_list_sha256']!=os.environ['PATH_LIST_SHA256']: raise SystemExit('path list identity mismatch')
+          if manifest['outside_human_dependency'] is not False or manifest['graph_effect']!='none': raise SystemExit('authority mismatch')
+          files=manifest['files']; paths=[entry['path'] for entry in files]
+          if len(files)!=manifest['path_count'] or paths!=sorted(paths) or len(set(paths))!=len(paths): raise SystemExit('file denominator/order mismatch')
+          path_bytes=''.join(path+'\n' for path in paths).encode()
+          if hashlib.sha256(path_bytes).hexdigest()!=manifest['path_list_sha256']: raise SystemExit('path list reconstruction mismatch')
+          for entry in files:
+              if set(entry)!= {'path','mode','bytes','sha256','git_blob_sha1'}: raise SystemExit(f'file ledger keys mismatch: {entry}')
+              pure=PurePosixPath(entry['path'])
+              if pure.is_absolute() or '..' in pure.parts or entry['mode']!='100644': raise SystemExit(f'unsafe product path: {entry["path"]}')
+          Path('/tmp/pc55-carrier/product-paths.txt').write_bytes(path_bytes)
+          with tarfile.open('/tmp/pc55-carrier/product.tar.xz','r:xz') as archive:
+              members=archive.getmembers(); names=[member.name for member in members]
+              if names!=paths or any(not member.isfile() for member in members): raise SystemExit('archive members mismatch')
+          PY
+
+          git diff --name-only "$QUALIFIED_SOURCE_PARENT" "$CURRENT_MAIN" | sort > /tmp/pc55-carrier/main-successor-paths.txt
+          comm -12 /tmp/pc55-carrier/product-paths.txt /tmp/pc55-carrier/main-successor-paths.txt > /tmp/pc55-carrier/overlap.txt
+          test ! -s /tmp/pc55-carrier/overlap.txt
+          while IFS= read -r path; do
+            if git cat-file -e "$CURRENT_MAIN:$path" 2>/dev/null; then echo "product path already exists: $path" >&2; exit 1; fi
+          done < /tmp/pc55-carrier/product-paths.txt
+          printf '%s\n' "$CARRIER_HEAD" > /tmp/pc55-carrier/carrier-head.txt
+          printf '%s\n' "$CARRIER_BASE" > /tmp/pc55-carrier/carrier-base.txt
+          printf '%s\n' "$CURRENT_MAIN" > /tmp/pc55-carrier/current-main.txt
+
+      - name: Materialize and verify exact product over live main
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CURRENT_MAIN=$(cat /tmp/pc55-carrier/current-main.txt)
+          git reset --hard "$CURRENT_MAIN"
+          git clean -fdx
+          tar -xJf /tmp/pc55-carrier/product.tar.xz
+          python - <<'PY'
+          import hashlib, json, subprocess
+          from pathlib import Path
+          manifest=json.loads(Path('/tmp/pc55-carrier/manifest.json').read_text())
+          for entry in manifest['files']:
+              raw=Path(entry['path']).read_bytes()
+              if len(raw)!=entry['bytes'] or hashlib.sha256(raw).hexdigest()!=entry['sha256']: raise SystemExit(f'content mismatch: {entry["path"]}')
+              blob=subprocess.check_output(['git','hash-object','--stdin'],input=raw).decode().strip()
+              if blob!=entry['git_blob_sha1']: raise SystemExit(f'blob mismatch: {entry["path"]}')
+          PY
+          git add --pathspec-from-file=/tmp/pc55-carrier/product-paths.txt
+          git diff --cached --name-status "$CURRENT_MAIN" > /tmp/pc55-carrier/product-delta.tsv
+          test "$(wc -l < /tmp/pc55-carrier/product-delta.tsv | tr -d ' ')" = "$PATH_COUNT"
+          awk '$1 != "A" { exit 1 }' /tmp/pc55-carrier/product-delta.tsv
+          cut -f2 /tmp/pc55-carrier/product-delta.tsv | sort > /tmp/pc55-carrier/staged-paths.txt
+          diff -u /tmp/pc55-carrier/product-paths.txt /tmp/pc55-carrier/staged-paths.txt
+          git diff --cached --check
+          git write-tree > /tmp/pc55-carrier/local-product-tree.txt
+
+      - name: Prove direct clean-checkout construction
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf build/research
+          node test/preference-custody-manifest-v53.test.js
+
+      - name: Run focused PC-55 and floor-v53 gates
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node tools/compile-preference-linkage-repository-owner-immutable-identity-canonical-location-branch-tag-release-review-time-commit-assurance.mjs
+          node tools/validate-preference-linkage-repository-owner-immutable-identity-canonical-location-branch-tag-release-review-time-commit-assurance.mjs
+          node test/preference-linkage-repository-owner-immutable-identity-canonical-location-branch-tag-release-review-time-commit-assurance.test.js
+          node tools/compile-preference-custody-manifest-v53.mjs
+          node tools/validate-preference-custody-manifest-v53.mjs
+          node test/preference-custody-manifest-v53.test.js
+
+      - name: Reconstruct every Preference Custody floor and repository gate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do node "$test_file"; done
+          node test/preference-custody-manifest.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+      - name: Create immutable non-workflow blobs and exact product tree
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import base64, json, os, subprocess, urllib.request
+          from pathlib import Path
+          token=os.environ['GH_TOKEN']; repo=os.environ['GH_REPOSITORY']
+          manifest=json.loads(Path('/tmp/pc55-carrier/manifest.json').read_text())
+          current_main=Path('/tmp/pc55-carrier/current-main.txt').read_text().strip()
+          parent_tree=subprocess.check_output(['git','rev-parse',f'{current_main}^{{tree}}'],text=True).strip()
+          def request(method,url,payload=None):
+              data=None if payload is None else json.dumps(payload).encode()
+              req=urllib.request.Request(url,data=data,method=method,headers={'Authorization':f'Bearer {token}','Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json','User-Agent':'pc55-qualified-tree'})
+              with urllib.request.urlopen(req,timeout=180) as response:return json.load(response)
+          files=[]; tree=[]
+          for entry in manifest['files']:
+              raw=Path(entry['path']).read_bytes()
+              if entry['path'].startswith('.github/workflows/'):
+                  observed=subprocess.check_output(['git','hash-object','--stdin'],input=raw).decode().strip()
+                  if observed!=entry['git_blob_sha1']: raise SystemExit(f'workflow blob mismatch: {entry["path"]}')
+                  request('GET',f'https://api.github.com/repos/{repo}/git/blobs/{observed}')
+                  remote=observed
+              else:
+                  result=request('POST',f'https://api.github.com/repos/{repo}/git/blobs',{'content':base64.b64encode(raw).decode(),'encoding':'base64'})
+                  remote=result.get('sha')
+                  if remote!=entry['git_blob_sha1']: raise SystemExit(f'remote blob mismatch: {entry["path"]}')
+              files.append({**entry,'remote_git_blob_sha1':remote})
+              tree.append({'path':entry['path'],'mode':entry['mode'],'type':'blob','sha':remote})
+          tree_result=request('POST',f'https://api.github.com/repos/{repo}/git/trees',{'base_tree':parent_tree,'tree':tree})
+          remote_tree=tree_result.get('sha'); local_tree=Path('/tmp/pc55-carrier/local-product-tree.txt').read_text().strip()
+          if remote_tree!=local_tree: raise SystemExit(f'local/remote tree mismatch: {local_tree} != {remote_tree}')
+          receipt={'schema_version':'pc55-qualified-product-tree-receipt@1','qualified_source_parent':os.environ['QUALIFIED_SOURCE_PARENT'],'qualified_source_tree':os.environ['QUALIFIED_SOURCE_TREE'],'publication_parent':current_main,'publication_parent_tree':parent_tree,'carrier_head':Path('/tmp/pc55-carrier/carrier-head.txt').read_text().strip(),'carrier_base':Path('/tmp/pc55-carrier/carrier-base.txt').read_text().strip(),'product_tree':remote_tree,'path_count':manifest['path_count'],'archive_bytes':manifest['archive_bytes'],'archive_sha256':manifest['archive_sha256'],'path_list_sha256':manifest['path_list_sha256'],'files':files,'direct_clean_checkout':'pass','standalone_pc55':'pass','floor_v53':'pass','historical_floor_reconstruction':'pass','base_preference_custody':'pass','no_magic_human':'pass','release_check':'pass','ref_updates':0,'outside_human_dependency':False,'graph_effect':'none'}
+          out=Path(os.environ['RECEIPT_DIR']);out.mkdir(parents=True,exist_ok=True)
+          (out/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          (out/'product-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
+          Path('/tmp/pc55-carrier/product.tar.xz').replace(out/'product.tar.xz')
+          Path('/tmp/pc55-carrier/product-paths.txt').replace(out/'product-paths.txt')
+          print(json.dumps(receipt,indent=2))
+          PY
+          sha256sum "$RECEIPT_DIR"/* > "$RECEIPT_DIR/SHA256SUMS"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc55-qualified-product-tree
+          path: /tmp/pc55-qualified-product-tree
+          if-no-files-found: error
+          retention-days: 90
