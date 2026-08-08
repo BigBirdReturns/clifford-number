@@ -1,0 +1,260 @@
+name: TEMP repair RD-04 postpromotion adjudication workflow v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-rd04-postpromotion-next-adjudication-workflow-repair-v1.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-ssc-rd04-postpromotion-next-adjudication-workflow-repair-v1
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-next-adjudication-workflow-repair-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      PRODUCT_PARENT: 91b386df809079884825b19a6b5d864b6e739172
+      SOURCE_PRODUCT: 0e79772a84e99bce1a1ca9e78209c9ae5b55637a
+      SOURCE_TREE: f3031844264107b0b329e7dd9af175eea8dd2456
+      SOURCE_WORKFLOW_BLOB: 5c71528988eea6b9b0b07171015edf4143bcd234
+      SOURCE_MANIFEST_BLOB: a139a22455ff3970d095299a98863976b591c625
+      SOURCE_SCHEMA_BLOB: d938023d15950a4f78cb06eddd74a8fb43f862f0
+      REPAIRED_WORKFLOW_BLOB: 4099df5c71ea26cda54bcfa2dbc4b5528c82e7b7
+      REPAIRED_WORKFLOW_BYTES: '10912'
+      REPAIRED_WORKFLOW_SHA256: 9077132b5bbc18349bc96cb42bd08982a099541b2424f6499c2bc9b7ae4a7f21
+      REPAIRED_MANIFEST_BLOB: d98146f793c7aba3d2212404ea887306f59cc13b
+      REPAIRED_SCHEMA_BLOB: 81c4857e67cb1eeb84980eb3845af48a5fdb3b17
+      REPAIRED_SCHEMA_BYTES: '57221'
+      REPAIRED_SCHEMA_SHA256: 6b197f44617599db9f7f155dad00ced800f531255eaa5fd46788b9a689b80126
+      PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-product-v1
+      WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml
+      MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/product-manifest.json
+      SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json
+      PYTHONDONTWRITEBYTECODE: '1'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Repair and qualify exact product
+        id: repair_product
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-next-adjudication-workflow-repair-v1"
+          WT="$RUNNER_TEMP/ssc-rd04-postpromotion-next-adjudication-workflow-repair-v1-wt"
+          rm -rf "$OUT" "$WT"
+          mkdir -p "$OUT/repaired"
+          printf 'initializing\n' > "$OUT/STAGE"
+          printf 'source_requests=0\nroute_executions=0\nreviewed_source_admissions=4\npromotion_candidates=4\nheld_open_cells=2\nmatrix_updates=0\nfield_terminalizations=0\nrow_state_mutations=0\nclass_closed=false\ncumulative_ledger_effect=none\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' > "$OUT/BOUNDARY"
+          exec > >(tee "$OUT/repair.log") 2>&1
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            if test -d "$WT"; then
+              git -C "$WT" status --porcelain=v1 --untracked-files=all > "$OUT/worktree-status.txt" 2>/dev/null || true
+            fi
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          printf 'bind-exact-carrier-and-source\n' > "$OUT/STAGE"
+          test "$(git rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          test "$(git rev-list --count "$PRODUCT_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$PRODUCT_PARENT" HEAD)" = '.github/workflows/temp-ssc-rd04-postpromotion-next-adjudication-workflow-repair-v1.yml'
+          test "$(git diff --name-only --diff-filter=A "$PRODUCT_PARENT" HEAD)" = '.github/workflows/temp-ssc-rd04-postpromotion-next-adjudication-workflow-repair-v1.yml'
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$PRODUCT_PARENT"
+          git cat-file -e "$SOURCE_PRODUCT^{commit}"
+          test "$(git rev-parse "$SOURCE_PRODUCT^")" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "$SOURCE_PRODUCT^{tree}")" = "$SOURCE_TREE"
+          git worktree add --detach "$WT" "$SOURCE_PRODUCT"
+          cd "$WT"
+          test "$(git hash-object "$WORKFLOW_PATH")" = "$SOURCE_WORKFLOW_BLOB"
+          test "$(git hash-object "$MANIFEST_PATH")" = "$SOURCE_MANIFEST_BLOB"
+          test "$(git hash-object "$SCHEMA_PATH")" = "$SOURCE_SCHEMA_BLOB"
+
+          printf 'repair-workflow-and-schema-identity\n' > "$OUT/STAGE"
+          python - <<'PYREPAIR'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          workflow = Path(os.environ['WORKFLOW_PATH'])
+          lines = workflow.read_text().splitlines()
+          repaired = []
+          replacements = 0
+          i = 0
+          while i < len(lines):
+              if i + 1 < len(lines) and lines[i] == "          printf '%s" and lines[i + 1] == "' \"$PRODUCT_PARENT\" >\"$OUT/product-parent.txt\"":
+                  repaired.append("          printf '%s\\n' \"$PRODUCT_PARENT\" >\"$OUT/product-parent.txt\"")
+                  replacements += 1
+                  i += 2
+              else:
+                  repaired.append(lines[i])
+                  i += 1
+          if replacements != 1:
+              raise SystemExit(f'workflow repair denominator={replacements}')
+          workflow.write_text('\n'.join(repaired) + '\n')
+          workflow_bytes = workflow.read_bytes()
+          workflow_sha = hashlib.sha256(workflow_bytes).hexdigest()
+          if len(workflow_bytes) != int(os.environ['REPAIRED_WORKFLOW_BYTES']):
+              raise SystemExit('workflow byte mismatch')
+          if workflow_sha != os.environ['REPAIRED_WORKFLOW_SHA256']:
+              raise SystemExit('workflow digest mismatch')
+
+          schema_path = Path(os.environ['SCHEMA_PATH'])
+          schema = json.loads(schema_path.read_text())
+          changes = {'bytes': 0, 'sha256': 0}
+          def walk(value):
+              if isinstance(value, dict):
+                  if value.get('path') == os.environ['WORKFLOW_PATH']:
+                      if value.get('bytes') == 10911:
+                          value['bytes'] = len(workflow_bytes)
+                          changes['bytes'] += 1
+                      if value.get('sha256') == '1a01f19e09fe500c2bf450379147c77aff08643dd132c95d42efa6941eaf612b':
+                          value['sha256'] = workflow_sha
+                          changes['sha256'] += 1
+                  for child in value.values():
+                      walk(child)
+              elif isinstance(value, list):
+                  for child in value:
+                      walk(child)
+          walk(schema)
+          if changes != {'bytes': 1, 'sha256': 1}:
+              raise SystemExit(f'schema repair denominator={changes}')
+          schema_path.write_text(json.dumps(schema, indent=2, sort_keys=True) + '\n')
+          schema_bytes = schema_path.read_bytes()
+          if len(schema_bytes) != int(os.environ['REPAIRED_SCHEMA_BYTES']):
+              raise SystemExit('schema byte mismatch')
+          if hashlib.sha256(schema_bytes).hexdigest() != os.environ['REPAIRED_SCHEMA_SHA256']:
+              raise SystemExit('schema digest mismatch')
+          print(json.dumps({'workflow_bytes': len(workflow_bytes), 'workflow_sha256': workflow_sha, 'schema_changes': changes}, sort_keys=True))
+          PYREPAIR
+          test "$(git hash-object "$WORKFLOW_PATH")" = "$REPAIRED_WORKFLOW_BLOB"
+          test "$(git hash-object "$SCHEMA_PATH")" = "$REPAIRED_SCHEMA_BLOB"
+          python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2' 'jsonschema==4.25.1'
+          python -c "import yaml; yaml.safe_load(open('$WORKFLOW_PATH'))"
+
+          printf 'regenerate-manifest-and-run-focused-gates\n' > "$OUT/STAGE"
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs --write
+          test "$(git hash-object "$MANIFEST_PATH")" = "$REPAIRED_MANIFEST_BLOB"
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          python - <<'PYSCHEMA'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          schema=json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json').read_text())
+          Draft202012Validator.check_schema(schema)
+          validator=Draft202012Validator(schema)
+          root=Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication')
+          names=['capture-custody.json','source-adjudications.json','field-adjudications.json','promotion-candidate-protocol.json','adjudication-summary.json','index.json','product-manifest.json']
+          for name in names:
+              value=json.loads((root/name).read_text())
+              errors=sorted(validator.iter_errors(value),key=lambda e:list(e.path))
+              if errors:
+                  raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
+          print(f'recursive_schema_validation=pass objects={len(names)}')
+          PYSCHEMA
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+
+          printf 'run-complete-release-gate\n' > "$OUT/STAGE"
+          cp "$WORKFLOW_PATH" "$OUT/repaired/workflow.yml"
+          cp "$MANIFEST_PATH" "$OUT/repaired/product-manifest.json"
+          cp "$SCHEMA_PATH" "$OUT/repaired/schema.json"
+          npm run release:check
+
+          printf 'restore-release-products-and-replay\n' > "$OUT/STAGE"
+          git restore --staged --worktree .
+          git clean -fdx
+          cp "$OUT/repaired/workflow.yml" "$WORKFLOW_PATH"
+          cp "$OUT/repaired/product-manifest.json" "$MANIFEST_PATH"
+          cp "$OUT/repaired/schema.json" "$SCHEMA_PATH"
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          python -c "import yaml; yaml.safe_load(open('$WORKFLOW_PATH'))"
+          test "$(git hash-object "$WORKFLOW_PATH")" = "$REPAIRED_WORKFLOW_BLOB"
+          test "$(git hash-object "$MANIFEST_PATH")" = "$REPAIRED_MANIFEST_BLOB"
+          test "$(git hash-object "$SCHEMA_PATH")" = "$REPAIRED_SCHEMA_BLOB"
+          git diff --check
+          git diff --name-only | LC_ALL=C sort > "$OUT/repaired-paths.txt"
+          printf '%s\n' "$WORKFLOW_PATH" "$MANIFEST_PATH" "$SCHEMA_PATH" | LC_ALL=C sort > "$OUT/expected-repaired-paths.txt"
+          diff -u "$OUT/expected-repaired-paths.txt" "$OUT/repaired-paths.txt"
+          test -z "$(git status --porcelain=v1 --untracked-files=all | grep -v -F " M $WORKFLOW_PATH" | grep -v -F " M $MANIFEST_PATH" | grep -v -F " M $SCHEMA_PATH" || true)"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$PRODUCT_PARENT"
+
+          printf 'compose-detached-repaired-candidate\n' > "$OUT/STAGE"
+          git diff --name-only "$PRODUCT_PARENT" "$SOURCE_PRODUCT" | LC_ALL=C sort > "$OUT/product-paths.txt"
+          test "$(wc -l < "$OUT/product-paths.txt")" -eq 13
+          INDEX="$OUT/candidate.index"
+          rm -f "$INDEX"
+          GIT_INDEX_FILE="$INDEX" git read-tree "$PRODUCT_PARENT"
+          : > "$OUT/product-blob-ledger.tsv"
+          while IFS= read -r path; do
+              blob="$(git hash-object -w "$path")"
+              GIT_INDEX_FILE="$INDEX" git update-index --add --cacheinfo "100644,$blob,$path"
+              printf '%s\t%s\n' "$path" "$blob" >> "$OUT/product-blob-ledger.tsv"
+          done < "$OUT/product-paths.txt"
+          CANDIDATE_TREE="$(GIT_INDEX_FILE="$INDEX" git write-tree)"
+          export GIT_AUTHOR_NAME='github-actions[bot]'
+          export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+          export GIT_AUTHOR_DATE='2026-08-08T08:00:00Z'
+          export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"
+          CANDIDATE_COMMIT="$(printf '%s\n' 'Adjudicate RD-04 postpromotion Montana and North Dakota captures' | git commit-tree "$CANDIDATE_TREE" -p "$PRODUCT_PARENT")"
+          printf '%s\n' "$CANDIDATE_TREE" > "$OUT/candidate-tree.txt"
+          printf '%s\n' "$CANDIDATE_COMMIT" > "$OUT/candidate-commit.txt"
+          git worktree add --detach "$OUT/candidate-worktree" "$CANDIDATE_COMMIT"
+          test "$(git -C "$OUT/candidate-worktree" rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          test "$(git -C "$OUT/candidate-worktree" rev-parse 'HEAD^{tree}')" = "$CANDIDATE_TREE"
+          test "$(git -C "$OUT/candidate-worktree" diff --name-only --diff-filter=A "$PRODUCT_PARENT" HEAD | wc -l)" -eq 13
+          test -z "$(git -C "$OUT/candidate-worktree" status --porcelain=v1 --untracked-files=all)"
+          printf 'complete\n' > "$OUT/STAGE"
+
+      - name: Upload repair qualification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-adjudication-workflow-repair-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-next-adjudication-workflow-repair-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce repair result
+        if: always()
+        shell: bash
+        run: test '${{ steps.repair_product.outcome }}' = success
