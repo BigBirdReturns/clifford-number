@@ -1,0 +1,10 @@
+schema_version=ssc-rd04-postpromotion-nd-followup-two-route-execution-trigger@1
+canonical_main=048e9d13a2555d8e6fabdbee5f45aea858f919b7
+base_head=a1a7a98878bed0cb3b55181eb6145d05ec724a84
+protocol_blob=7bbafd8f8c6c915442770ebbeca85b37afba8047
+promotion_summary_blob=5e0adc541a22c9b0bf4cd8a059bf083e08831a15
+fixed_route_count=2
+maximum_total_requests=2
+maximum_attempts_per_route=1
+result_spawned_requests=0
+outside_human_dependency=false
