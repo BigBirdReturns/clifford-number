@@ -1,0 +1,155 @@
+name: TEMP materialize RD-04 North Dakota one-cell promotion
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-postpromotion-nd-followup-one-cell-promotion-materializer-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-postpromotion-nd-followup-one-cell-promotion-v1.yml'
+      - '.tmp/ssc-rd04-postpromotion-nd-followup-one-cell-promotion-materializer-v1/**'
+      - '.trigger/ssc-rd04-postpromotion-nd-followup-one-cell-promotion-materializer-v1'
+  push:
+    branches:
+      - agent/ssc-rd04-postpromotion-nd-followup-one-cell-promotion-materializer-trigger-v1
+    paths:
+      - '.trigger/ssc-rd04-postpromotion-nd-followup-one-cell-promotion-materializer-v1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      CURRENT_MAIN: 79a7e18bfd45f1b1d893fa8b9683710891d4bbca
+      CURRENT_MAIN_TREE: de7b86fbc9caa247bfa2a960f190626e22f1c4b6
+      CARRIER_BRANCH: agent/ssc-rd04-postpromotion-nd-followup-one-cell-promotion-materializer-v1
+      TRIGGER_BRANCH: agent/ssc-rd04-postpromotion-nd-followup-one-cell-promotion-materializer-trigger-v1
+      TRIGGER_PATH: .trigger/ssc-rd04-postpromotion-nd-followup-one-cell-promotion-materializer-v1
+      PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-nd-followup-one-cell-promotion-v1
+      CARRIER_PATH: .github/workflows/temp-materialize-ssc-rd04-postpromotion-nd-followup-one-cell-promotion-v1.yml
+      CARRIER_PAYLOAD_ROOT: .tmp/ssc-rd04-postpromotion-nd-followup-one-cell-promotion-materializer-v1
+      CARRIER_PATH_COUNT: '12'
+      PRODUCT_ARCHIVE_B64_SHA256: 809750ad6a42eca70ce4c6f49286fa681c035eb2c508067436f1c949b72d4b2b
+      PRODUCT_ARCHIVE_B64_BYTES: '82236'
+      PRODUCT_ARCHIVE_SHA256: 8a8d963ff2fa319ee262f81034dc7fcc7f7b8bbd109adce049c331b9eeb15cea
+      PRODUCT_ARCHIVE_BYTES: '61676'
+      PRODUCT_PATHS_SHA256: 2218fbdfad620c219032db6a70a546b376c53ea9b5daeacd3afa72c414c0ca53
+      PRODUCT_PATH_COUNT: '14'
+      OUTPUT_DIR: ${{ runner.temp }}/ssc-rd04-postpromotion-nd-followup-one-cell-promotion-materializer-v1
+      WORKTREE_DIR: ${{ runner.temp }}/ssc-rd04-postpromotion-nd-followup-one-cell-promotion-worktree-v1
+      QUALIFIER_DIR: ${{ runner.temp }}/ssc-rd04-postpromotion-nd-followup-one-cell-promotion-qualifier-v1
+      QUALIFIER_B64_BYTES: '5340'
+      QUALIFIER_B64_SHA256: e33ff8589d6e5b489d7b43a1000d63e21643546870c328836c38faa390a017f2
+      QUALIFIER_XZ_BYTES: '4004'
+      QUALIFIER_XZ_SHA256: 11bf6892dbb18aaeed46d27347b139de773f2b92e0119c7399f968b57c5ed525
+      QUALIFIER_BYTES: '17431'
+      QUALIFIER_SHA256: 747f0bbd3b3503a60e8812a559e3d241b186b7200d56e168eece32bb8eadc075
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned schema and workflow parsers
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+
+      - name: Reconstruct checksum-bound qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$GITHUB_WORKSPACE/$CARRIER_PAYLOAD_ROOT/qualify"
+          rm -rf "$QUALIFIER_DIR"
+          mkdir -p "$QUALIFIER_DIR"
+          test "$(stat -c %s "$ROOT/qualify-000")" = 2672
+          test "$(sha256sum "$ROOT/qualify-000" | awk '{print $1}')" = bdabb8e78d4825bf2e7d7284106417d63bf940b6f7b8b6caf2a90347bdfdc7cd
+          test "$(stat -c %s "$ROOT/qualify-001")" = 2668
+          test "$(sha256sum "$ROOT/qualify-001" | awk '{print $1}')" = f66c6be8955078c6d11081a819ce2101fbeed5041151430099d9be53b262d95a
+          cat "$ROOT/qualify-000" "$ROOT/qualify-001" > "$QUALIFIER_DIR/qualify.sh.xz.b64"
+          test "$(stat -c %s "$QUALIFIER_DIR/qualify.sh.xz.b64")" = "$QUALIFIER_B64_BYTES"
+          test "$(sha256sum "$QUALIFIER_DIR/qualify.sh.xz.b64" | awk '{print $1}')" = "$QUALIFIER_B64_SHA256"
+          base64 --decode "$QUALIFIER_DIR/qualify.sh.xz.b64" > "$QUALIFIER_DIR/qualify.sh.xz"
+          test "$(stat -c %s "$QUALIFIER_DIR/qualify.sh.xz")" = "$QUALIFIER_XZ_BYTES"
+          test "$(sha256sum "$QUALIFIER_DIR/qualify.sh.xz" | awk '{print $1}')" = "$QUALIFIER_XZ_SHA256"
+          xz -t "$QUALIFIER_DIR/qualify.sh.xz"
+          xz --decompress --stdout "$QUALIFIER_DIR/qualify.sh.xz" > "$QUALIFIER_DIR/qualify.sh"
+          test "$(stat -c %s "$QUALIFIER_DIR/qualify.sh")" = "$QUALIFIER_BYTES"
+          test "$(sha256sum "$QUALIFIER_DIR/qualify.sh" | awk '{print $1}')" = "$QUALIFIER_SHA256"
+          bash -n "$QUALIFIER_DIR/qualify.sh"
+          chmod 700 "$QUALIFIER_DIR/qualify.sh"
+
+      - name: Qualify exact sole-parent product candidate
+        id: qualify
+        shell: bash
+        run: bash "$QUALIFIER_DIR/qualify.sh"
+
+      - name: Upload qualification artifact before publication
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-nd-followup-one-cell-promotion-materializer-qualification-v1
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Publish exact qualified product branch
+        if: steps.qualify.outcome == 'success'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$OUTPUT_DIR"
+          CANDIDATE="$(cat "$OUT/product-candidate-commit.txt")"
+          CANDIDATE_TREE="$(cat "$OUT/product-candidate-tree.txt")"
+          test "$(jq -r .state "$OUT/qualification-receipt.json")" = qualified_not_published
+          test "$(git rev-parse "$CANDIDATE^")" = "$CURRENT_MAIN"
+          test "$(git rev-parse "$CANDIDATE^{tree}")" = "$CANDIDATE_TREE"
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$CURRENT_MAIN"
+          test "$(git rev-parse "$CURRENT_MAIN^{tree}")" = "$CURRENT_MAIN_TREE"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CURRENT_MAIN"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+          git push origin "$CANDIDATE:refs/heads/$PRODUCT_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$CANDIDATE"
+          jq -n --arg parent "$CURRENT_MAIN" --arg parent_tree "$CURRENT_MAIN_TREE" --arg branch "$PRODUCT_BRANCH" --arg candidate "$CANDIDATE" --arg candidate_tree "$CANDIDATE_TREE" '{schema_version:"ssc-rd04-postpromotion-nd-followup-one-cell-promotion-publication@1",state:"product_branch_published",canonical_parent:$parent,canonical_parent_tree:$parent_tree,product_branch:$branch,product_candidate:$candidate,product_tree:$candidate_tree,permanent_path_count:14,additions:14,modifications:0,deletions:0,matrix_updates:1,field_terminalizations:1,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none",next_authorized_operation:"open a permanent pull request at this exact head and require all native hosted gates and review before merge"}' > "$OUT/publication-receipt.json"
+          printf '%s  %s\n' "$(sha256sum "$OUT/publication-receipt.json" | awk '{print $1}')" publication-receipt.json > "$OUT/PUBLICATION_SHA256SUMS"
+
+      - name: Upload publication receipt
+        if: steps.qualify.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-nd-followup-one-cell-promotion-materializer-publication-v1
+          path: |
+            ${{ env.OUTPUT_DIR }}/publication-receipt.json
+            ${{ env.OUTPUT_DIR }}/PUBLICATION_SHA256SUMS
+            ${{ env.OUTPUT_DIR }}/product-candidate-commit.txt
+            ${{ env.OUTPUT_DIR }}/product-candidate-tree.txt
+            ${{ env.OUTPUT_DIR }}/product-git-inventory.tsv
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal publication state
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.qualify.outcome }}" = success
+          test "$(cat "$OUTPUT_DIR/EXIT_CODE")" = 0
+          test "$(cat "$OUTPUT_DIR/STAGE")" = complete
+          (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
+          (cd "$OUTPUT_DIR" && sha256sum -c PUBLICATION_SHA256SUMS)
+          test "$(jq -r .state "$OUTPUT_DIR/qualification-receipt.json")" = qualified_not_published
+          test "$(jq -r .state "$OUTPUT_DIR/publication-receipt.json")" = product_branch_published
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$(cat "$OUTPUT_DIR/product-candidate-commit.txt")"
