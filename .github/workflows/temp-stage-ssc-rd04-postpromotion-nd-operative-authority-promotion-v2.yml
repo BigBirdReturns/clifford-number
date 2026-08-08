@@ -1,0 +1,138 @@
+name: TEMP stage RD-04 North Dakota operative-authority promotion v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-stage-ssc-rd04-postpromotion-nd-operative-authority-promotion-v2.yml'
+      - '.tmp/ssc-rd04-postpromotion-nd-operative-authority-promotion-v2/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-stage-rd04-nd-operative-authority-promotion-v2
+  cancel-in-progress: false
+
+env:
+  PRODUCT_PARENT: 79a7e18bfd45f1b1d893fa8b9683710891d4bbca
+  PRODUCT_PARENT_TREE: de7b86fbc9caa247bfa2a960f190626e22f1c4b6
+  PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-nd-operative-authority-promotion-product-v1
+  STAGING_BRANCH: staging/ssc-rd04-postpromotion-nd-operative-authority-promotion-ordinary-v2
+  CARRIER_BRANCH: agent/ssc-rd04-postpromotion-nd-operative-authority-promotion-stager-v2
+  CARRIER_WORKFLOW_PATH: .github/workflows/temp-stage-ssc-rd04-postpromotion-nd-operative-authority-promotion-v2.yml
+  SCRIPT_CHUNK_DIR: .tmp/ssc-rd04-postpromotion-nd-operative-authority-promotion-v2
+  PAYLOAD_CHUNK_DIR: .tmp/ssc-rd04-postpromotion-nd-operative-authority-promotion-v2
+  PRODUCT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-operative-authority-promotion.yml
+  SHADOW_WORKFLOW: exchange/rd04-postpromotion-nd-operative-authority-promotion/final-workflow.yml
+  PRODUCT_BUILDER: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-operative-authority-promotion.mjs
+  PRODUCT_VALIDATOR: tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-operative-authority-promotion.mjs
+  PRODUCT_TEST: test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-operative-authority-promotion.test.js
+  SOURCE_VALIDATOR: tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs
+  SOURCE_TEST: test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.test.js
+
+jobs:
+  stage:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-nd-operative-authority-promotion-stager-v2')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with: {node-version: '24'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.13'}
+      - name: Install pinned schema tools
+        run: python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2' 'jsonschema==4.25.1'
+      - name: Authenticate source stager and construct exact repair
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE="$RUNNER_TEMP/rd04-nd-operative-authority-promotion-stager-v1-source.sh"
+          REPAIRED="$RUNNER_TEMP/rd04-nd-operative-authority-promotion-stager-v2.sh"
+          B64="$RUNNER_TEMP/rd04-nd-operative-authority-promotion-stager-v1-source.sh.b64"
+          : > "$B64"
+          cat > "$RUNNER_TEMP/stager-source-chunks.tsv" <<'EOF'
+          script-00.b64 12000 ebd35be90a4a3cd9934d1aac6dc6ba250b3754436de0c4ef5e084c3f4c6dd3b4
+          script-01.b64 10696 df4941c5c4865a33dad8f02e0a9ef363a5943eaeed44a9706563ebcae6b21aef
+          EOF
+          while read -r name bytes digest; do
+            test "$(stat -c %s "$SCRIPT_CHUNK_DIR/$name")" -eq "$bytes"
+            test "$(sha256sum "$SCRIPT_CHUNK_DIR/$name" | cut -d' ' -f1)" = "$digest"
+            cat "$SCRIPT_CHUNK_DIR/$name" >> "$B64"
+          done < "$RUNNER_TEMP/stager-source-chunks.tsv"
+          test "$(stat -c %s "$B64")" -eq 22696
+          test "$(sha256sum "$B64" | cut -d' ' -f1)" = 342a469770e6f1695faa08362bb8bdb11c32b8ca6bc621045d8bba1e351bef0c
+          base64 -d "$B64" > "$SOURCE"
+          test "$(stat -c %s "$SOURCE")" -eq 17021
+          test "$(sha256sum "$SOURCE" | cut -d' ' -f1)" = c2ced6ef79a8fc609aa1cc3f06f541675d34d0503510f4574f28974a1af2caa2
+          test "$(git hash-object "$SOURCE")" = 6359d8153356e4e95c39feb539a5628e1e54c60e
+          export SOURCE REPAIRED
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          source = Path(os.environ['SOURCE']).read_text()
+          malformed = '''$CARRIER_SCRIPT_PATH
+          $CARRIER_WORKFLOW_PATH
+          $PAYLOAD_PATH
+          EOF_PATHS
+          '''
+          if source.count(malformed) != 1:
+              raise SystemExit(f'malformed block denominator={source.count(malformed)}')
+          Path(os.environ['REPAIRED']).write_text(source.replace(malformed, '', 1))
+          PY
+          test "$(stat -c %s "$REPAIRED")" -eq 16953
+          test "$(sha256sum "$REPAIRED" | cut -d' ' -f1)" = 714ba5fb990083e964445cd7ba9ff0d31323be628c67757d5c1058402f327694
+          test "$(git hash-object "$REPAIRED")" = adf9c56e8d63c2ea1237e517ae7204d7d085bd8b
+          bash -n "$REPAIRED"
+      - name: Reconstruct, qualify, and stage exact product
+        id: stager
+        continue-on-error: true
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref || '' }}
+        run: bash "$RUNNER_TEMP/rd04-nd-operative-authority-promotion-stager-v2.sh"
+      - name: Upload exact repaired-stager custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-nd-operative-authority-promotion-stager-v2
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-nd-operative-authority-promotion-stager-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+      - name: Preserve fail-closed conclusion
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-nd-operative-authority-promotion-stager-v1"
+          test "${{ steps.stager.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e --arg parent "$PRODUCT_PARENT" --arg branch "$STAGING_BRANCH" '
+            .state=="qualified_staging_published" and
+            .failed_or_final_stage=="complete" and
+            .exit_code==0 and
+            .product_parent==$parent and
+            .ordinary_staging_branch==$branch and
+            .product_archive_sha256=="77066f035c611a9364a73b3ff40a3aa57028c5e7bb4b636606b4657f05755bad" and
+            .permanent_product_paths==14 and
+            .ordinary_staging_paths==14 and
+            .terminal_cells_before==226 and
+            .terminal_cells_after==227 and
+            .field_terminalizations==1 and
+            .row_state_mutations==0 and
+            .class_closed==false and
+            .product_authority_created==false and
+            .connector_publication_required==true' "$OUT/receipt.json" >/dev/null
