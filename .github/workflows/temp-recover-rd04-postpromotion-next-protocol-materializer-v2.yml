@@ -1,0 +1,202 @@
+name: TEMP recover RD-04 postpromotion protocol materializer v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-recover-rd04-postpromotion-next-protocol-materializer-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+concurrency:
+  group: temp-recover-rd04-postpromotion-next-protocol-materializer-v2
+  cancel-in-progress: true
+
+env:
+  SOURCE_HEAD: df3b4fed2b2a2ef24fb64e9f6b2695dc7b940544
+  SOURCE_WORKFLOW_NAME: TEMP materialize RD-04 postpromotion next protocol v2
+  SOURCE_ARTIFACT_NAME: ssc-rd04-postpromotion-next-protocol-materializer-v1
+  PUBLICATION_PARENT: d99146fe88617e002463481732a54626aafe3924
+  PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-protocol-product-v1
+  STAGING_BRANCH: staging/ssc-rd04-postpromotion-next-protocol-ordinary-v1
+  ARCHIVE_BLOB: 7b8c8e010c6907cffae21fdc1b1328f9a594dd9c
+  CONTROLLER_BLOB: 671cba82fd0bb5e6a3258eb46bac556f2646c1bf
+
+jobs:
+  recover:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'observer/ssc-rd04-postpromotion-next-protocol-materializer-recovery-v2')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Bind exact recovery surface and leases
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OBSERVER='.github/workflows/temp-recover-rd04-postpromotion-next-protocol-materializer-v2.yml'
+          test "$(git rev-parse HEAD^)" = "$PUBLICATION_PARENT"
+          test "$(git rev-list --count "$PUBLICATION_PARENT"..HEAD)" = 1
+          test "$(git diff --name-only "$PUBLICATION_PARENT" HEAD)" = "$OBSERVER"
+          git diff --check "$PUBLICATION_PARENT" HEAD
+          git fetch --no-tags origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse origin/main)" = "$PUBLICATION_PARENT"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$PUBLICATION_PARENT"
+
+      - name: Recover exact run, artifact, and typed receipt
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/rd04-postpromotion-next-protocol-materializer-recovery-v2
+          rm -rf "$OUT"
+          mkdir -p "$OUT/artifact"
+
+          run_id=''
+          for attempt in $(seq 1 120); do
+            curl -fsSL \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$SOURCE_HEAD&event=push&per_page=100" \
+              > "$OUT/runs.json"
+            run_id="$(jq -r --arg name "$SOURCE_WORKFLOW_NAME" --arg sha "$SOURCE_HEAD" \
+              '[.workflow_runs[] | select(.name==$name and .head_sha==$sha and .event=="push")] | sort_by(.created_at) | last | .id // empty' \
+              "$OUT/runs.json")"
+            if test -n "$run_id"; then
+              status="$(jq -r --argjson id "$run_id" '.workflow_runs[] | select(.id==$id) | .status' "$OUT/runs.json")"
+              if test "$status" = completed; then break; fi
+            fi
+            sleep 10
+          done
+          test -n "$run_id"
+
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$run_id" > "$OUT/run.json"
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?filter=latest&per_page=100" > "$OUT/jobs.json"
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?per_page=100" > "$OUT/artifacts.json"
+
+          artifact_id="$(jq -r --arg name "$SOURCE_ARTIFACT_NAME" '[.artifacts[] | select(.name==$name and .expired==false)] | sort_by(.created_at) | last | .id // empty' "$OUT/artifacts.json")"
+          artifact_digest="$(jq -r --arg name "$SOURCE_ARTIFACT_NAME" '[.artifacts[] | select(.name==$name and .expired==false)] | sort_by(.created_at) | last | .digest // empty' "$OUT/artifacts.json")"
+          test -n "$artifact_id"
+          test -n "$artifact_digest"
+          curl -fsSL -L \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > "$OUT/source-artifact.zip"
+          test "sha256:$(sha256sum "$OUT/source-artifact.zip" | cut -d' ' -f1)" = "$artifact_digest"
+          unzip -t "$OUT/source-artifact.zip" > "$OUT/zip-test.log"
+          unzip -q "$OUT/source-artifact.zip" -d "$OUT/artifact"
+          test -f "$OUT/artifact/receipt.json"
+          if test -f "$OUT/artifact/SHA256SUMS"; then
+            (cd "$OUT/artifact" && sha256sum -c SHA256SUMS) > "$OUT/internal-check.log"
+          fi
+
+          run_conclusion="$(jq -r .conclusion "$OUT/run.json")"
+          schema="$(jq -r .schema_version "$OUT/artifact/receipt.json")"
+          case "$schema" in
+            ssc-rd04-postpromotion-next-protocol-materializer@1)
+              outcome=success
+              test "$run_conclusion" = success
+              jq -e --arg parent "$PUBLICATION_PARENT" --arg archive "$ARCHIVE_BLOB" --arg controller "$CONTROLLER_BLOB" \
+                '.publication_parent==$parent and .archive_blob==$archive and .controller_blob==$controller and .permanent_path_count==14 and .ordinary_path_count==13 and .source_requests_executed==0 and .matrix_updates==0 and .class_closed==false' \
+                "$OUT/artifact/receipt.json" >/dev/null
+              staging_commit="$(jq -r .staging_commit "$OUT/artifact/receipt.json")"
+              git fetch --no-tags origin "+refs/heads/$STAGING_BRANCH:refs/remotes/origin/$STAGING_BRANCH"
+              test "$(git rev-parse "origin/$STAGING_BRANCH")" = "$staging_commit"
+              ;;
+            ssc-rd04-postpromotion-next-protocol-materializer-failure@1)
+              outcome=failure
+              test "$run_conclusion" = failure
+              jq -e --arg parent "$PUBLICATION_PARENT" --arg archive "$ARCHIVE_BLOB" --arg controller "$CONTROLLER_BLOB" \
+                '.publication_parent==$parent and .archive_blob==$archive and .controller_blob==$controller and .source_requests_executed==0 and .matrix_updates==0 and .class_closed==false and .authority=="failure_custody_only"' \
+                "$OUT/artifact/receipt.json" >/dev/null
+              staging_commit=''
+              ;;
+            *) exit 1 ;;
+          esac
+
+          python - "$OUT/recovery-receipt.json" "$outcome" "$artifact_id" "$artifact_digest" "$staging_commit" <<'PY'
+          from pathlib import Path
+          import json,os,sys
+          run=json.loads(Path('/tmp/rd04-postpromotion-next-protocol-materializer-recovery-v2/run.json').read_text())
+          source=json.loads(Path('/tmp/rd04-postpromotion-next-protocol-materializer-recovery-v2/artifact/receipt.json').read_text())
+          value={
+            'schema_version':'ssc-rd04-postpromotion-next-protocol-materializer-recovery@2',
+            'source_head':os.environ['SOURCE_HEAD'],
+            'source_run_id':run['id'],
+            'source_run_conclusion':run['conclusion'],
+            'source_outcome':sys.argv[2],
+            'source_artifact_id':int(sys.argv[3]),
+            'source_artifact_digest':sys.argv[4],
+            'source_receipt_schema':source['schema_version'],
+            'publication_parent':os.environ['PUBLICATION_PARENT'],
+            'archive_blob':os.environ['ARCHIVE_BLOB'],
+            'controller_blob':os.environ['CONTROLLER_BLOB'],
+            'staging_branch':os.environ['STAGING_BRANCH'],
+            'staging_commit':sys.argv[5] or None,
+            'candidate_created':False,
+            'product_ref_updated':False,
+            'source_requests_executed':0,
+            'matrix_updates':0,
+            'field_terminalizations':0,
+            'row_state_mutations':0,
+            'class_closed':False,
+            'cumulative_ledger_effect':'none',
+            'outside_human_dependency':False,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+            'authority':'materializer_recovery_only',
+          }
+          Path(sys.argv[1]).write_text(json.dumps(value,indent=2,sort_keys=True)+'\n')
+          PY
+
+      - name: Upload exact recovery evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-protocol-materializer-recovery-v2
+          path: /tmp/rd04-postpromotion-next-protocol-materializer-recovery-v2
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Report exact recovered outcome
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          C=/tmp/rd04-postpromotion-next-protocol-materializer-recovery-v2/recovery-receipt.json
+          R=/tmp/rd04-postpromotion-next-protocol-materializer-recovery-v2/artifact/receipt.json
+          jq -rn --slurpfile c "$C" --slurpfile r "$R" '
+            "RD-04 repaired postpromotion protocol materializer run was independently recovered.\n\n```text\nsource_run: \($c[0].source_run_id)\nsource_conclusion: \($c[0].source_run_conclusion)\nsource_outcome: \($c[0].source_outcome)\nsource_artifact: \($c[0].source_artifact_id)\nsource_artifact_digest: \($c[0].source_artifact_digest)\nreceipt_schema: \($c[0].source_receipt_schema)\npublication_parent: \($c[0].publication_parent)\nstaging_commit: \($c[0].staging_commit)\nfailed_or_final_gate: \($r[0].failed_or_final_gate // "not recorded")\nexit_code: \($r[0].exit_code // 0)\n```\n\nThis receipt grants only run and staging custody. It creates no route execution, source admission, field classification, row terminalization, class closure, cumulative-ledger change, publication, adoption, or graph authority."
+          ' > /tmp/comment.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
