@@ -1,0 +1,170 @@
+name: TEMP controller-custody repaired School.House current-frontier materializer v6
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-legal-identity-current-frontier-materializer-v5.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: schoolhouse-legal-identity-current-frontier-materializer-v6-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-legal-identity-current-frontier-materializer-v6')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct and execute exact v6 controller-custody repair
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BOOTSTRAP="$RUNNER_TEMP/schoolhouse-current-frontier-v6-bootstrap"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-materialization-v5"
+          B64="$BOOTSTRAP/materializer-v6.sh.xz.b64"
+          XZ="$BOOTSTRAP/materializer-v6.sh.xz"
+          SCRIPT="$BOOTSTRAP/materializer-v6.sh"
+          rm -rf "$BOOTSTRAP"
+          mkdir -p "$BOOTSTRAP" "$RECEIPT"
+          printf 'initializing-v6-compressed-controller\n' > "$BOOTSTRAP/STAGE"
+          printf 'source_requests=0\nregistry_queries=0\nform_submissions=0\ncontacts=0\npayments=0\nuploads=0\n' > "$BOOTSTRAP/BOUNDARY"
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            mkdir -p "$RECEIPT/v6-wrapper"
+            cp -a "$BOOTSTRAP"/. "$RECEIPT/v6-wrapper/"
+            printf '%s\n' "$rc" > "$RECEIPT/V6_WRAPPER_EXIT_CODE"
+            (
+              cd "$RECEIPT"
+              find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          cat > "$B64" <<'EOF_V6_B64'
+          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
+          EOF_V6_B64
+          test "$(stat -c%s "$B64")" = '6786'
+          test "$(sha256sum "$B64" | cut -d' ' -f1)" = \
+            '962b7e5344b3a9d0346580c5f9a6bdf2c70d656ccf31f733935c773cb0cc00de'
+          base64 --decode "$B64" > "$XZ"
+          test "$(stat -c%s "$XZ")" = '5036'
+          test "$(sha256sum "$XZ" | cut -d' ' -f1)" = \
+            '9cd48c1ee792adaa665a70c565377c31feb677f7453144dc3763ff94c25ce3b6'
+          xz --decompress --stdout "$XZ" > "$SCRIPT"
+          test "$(stat -c%s "$SCRIPT")" = '18908'
+          test "$(sha256sum "$SCRIPT" | cut -d' ' -f1)" = \
+            '82a540e69fb9df0be35f7f4ce0eb9ccdd062f3be6fc87ba6cfd0eb05f96ec7ea'
+          chmod 0755 "$SCRIPT"
+          bash -n "$SCRIPT"
+          printf 'executing-exact-v6-controller\n' > "$BOOTSTRAP/STAGE"
+          bash "$SCRIPT"
+          printf 'complete\n' > "$BOOTSTRAP/STAGE"
+
+      - name: Upload exact v6 materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-legal-identity-current-frontier-materialization-v6
+          path: ${{ runner.temp }}/schoolhouse-current-frontier-materialization-v5
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
