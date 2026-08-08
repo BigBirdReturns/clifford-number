@@ -1,0 +1,432 @@
+name: TEMP materialize exact RD-04 four-cell promotion v2
+
+on:
+  push:
+    branches:
+      - agent/ssc-rd04-five-state-promotion-materializer-v1
+    paths:
+      - '.github/workflows/temp-ssc-rd04-five-state-promotion-materializer-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: temp-ssc-rd04-five-state-promotion-materializer-v2
+  cancel-in-progress: true
+
+env:
+  PRODUCT_PARENT: 86937ea02e7e10223d0854240cd4e0cc9b6716a4
+  PRODUCT_BRANCH: agent/ssc-rd04-five-state-promotion-product-v1
+  ARCHIVE_BYTES: '45104'
+  ARCHIVE_SHA256: d7ee41597453a7c4eaa6a1de0bdb0808ae98ebc878d68e20fff7f5728a718b05
+
+jobs:
+  materialize:
+    if: github.ref_name == 'agent/ssc-rd04-five-state-promotion-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Initialize fail-closed ledger
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/materialization
+          printf '%s\n' initialize > /tmp/materialization/current-gate.txt
+          python - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          Path('/tmp/materialization/status.json').write_text(json.dumps({
+              'schema_version': 'ssc-rd04-five-state-promotion-materialization-status@2',
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'canonical_parent': os.environ['PRODUCT_PARENT'],
+              'product_branch': os.environ['PRODUCT_BRANCH'],
+              'workflow_run': int(os.environ['GITHUB_RUN_ID']),
+              'materializer_head': head,
+              'qualification_state': 'pending',
+              'candidate_created': False,
+              'ref_updated': False,
+              'authority': 'none',
+          }, indent=2, sort_keys=True) + '\n')
+          PY
+
+      - name: Bind exact canonical parent and carrier denominator
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '%s\n' bind-carrier > /tmp/materialization/current-gate.txt
+          {
+            git fetch origin main --depth=1
+            test "$(git rev-parse FETCH_HEAD)" = "$PRODUCT_PARENT"
+            test "$(git merge-base HEAD "$PRODUCT_PARENT")" = "$PRODUCT_PARENT"
+            cat > /tmp/carrier-paths <<'EOF'
+          .github/workflows/temp-ssc-rd04-five-state-promotion-materializer-v2.yml
+          .github/workflows/temp-ssc-rd04-five-state-promotion-materializer.yml
+          .tmp/ssc-rd04-five-state-promotion-materializer/payload-00.b64
+          .tmp/ssc-rd04-five-state-promotion-materializer/payload-01.b64
+          .tmp/ssc-rd04-five-state-promotion-materializer/payload-02.b64
+          .tmp/ssc-rd04-five-state-promotion-materializer/payload-03.b64
+          .tmp/ssc-rd04-five-state-promotion-materializer/payload-04.b64
+          EOF
+            sort -o /tmp/carrier-paths /tmp/carrier-paths
+            git diff --name-only "$PRODUCT_PARENT" HEAD | sort > /tmp/actual-carrier-paths
+            diff -u /tmp/carrier-paths /tmp/actual-carrier-paths
+            git diff --check "$PRODUCT_PARENT" HEAD
+          } 2>&1 | tee /tmp/materialization/bind-carrier.log
+
+      - name: Authenticate payload and reconstruct product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '%s\n' reconstruct-product > /tmp/materialization/current-gate.txt
+          {
+            cat > /tmp/chunk-sums <<'EOF'
+          d3e7ee9c26dfe557ec08458a7b9fc284f07de0cb8bf5095aee6edc9e0bdc309b  .tmp/ssc-rd04-five-state-promotion-materializer/payload-00.b64
+          a80195e6feb31bee4202e6b1fa9cc45ab28d79061957a61ccfd5a5fedfe7a6a6  .tmp/ssc-rd04-five-state-promotion-materializer/payload-01.b64
+          949cc89ba9a35fff63283a5ebc010262b8cf36694a5effea02d59d221d4c9af1  .tmp/ssc-rd04-five-state-promotion-materializer/payload-02.b64
+          d9a450cc508cbe6eda74b078972d1b90e391bf1d592492668197f143a98087da  .tmp/ssc-rd04-five-state-promotion-materializer/payload-03.b64
+          a3d2630960e55c8f2f27114c22d1dd4be7ca70c02b44f4a36428e93b76f8a6a3  .tmp/ssc-rd04-five-state-promotion-materializer/payload-04.b64
+          EOF
+            sha256sum -c /tmp/chunk-sums
+            cat .tmp/ssc-rd04-five-state-promotion-materializer/payload-*.b64 | base64 -d > /tmp/product.tar.xz
+            test "$(stat -c %s /tmp/product.tar.xz)" = "$ARCHIVE_BYTES"
+            test "$(sha256sum /tmp/product.tar.xz | cut -d' ' -f1)" = "$ARCHIVE_SHA256"
+            rm -rf /tmp/product
+            mkdir -p /tmp/product
+            tar -xJf /tmp/product.tar.xz -C /tmp/product
+          } 2>&1 | tee /tmp/materialization/reconstruct-product.log
+
+      - name: Verify exact addition-only product bytes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '%s\n' verify-product-bytes > /tmp/materialization/current-gate.txt
+          {
+            cat > /tmp/product-paths <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/cell-promotion-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-decisions.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-input-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/remaining-open-field-census.json
+          docs/milestones/ssc-rd-wave03-rd04-five-state-promotion.md
+          schemas/status-sovereignty-rd-wave03-rd04-five-state-promotion.schema.json
+          test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          EOF
+            (cd /tmp/product && find . -type f -printf '%P\n' | sort) > /tmp/actual-product-paths
+            diff -u /tmp/product-paths /tmp/actual-product-paths
+            while IFS= read -r path; do
+              ! git cat-file -e "$PRODUCT_PARENT:$path" 2>/dev/null
+            done < /tmp/product-paths
+            cat > /tmp/product-sums <<'EOF'
+          4313cd204c0159a1fbbee09829a88621908f0a517f7472aea9a72924e572fd77  .github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml
+          9c8785b51a3c753d593fa07ea9aef49de7534fbec305c2b785e53ec1e97303b0  data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/cell-promotion-ledger.json
+          7c76c7782dc118f8e94500a5eeca08c95d411c467dd2e251b6024e21baf1f33d  data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/index.json
+          516806153ddca774b695a85f162bd18134e5f5d722a7b34a23384141ae25fe27  data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/product-manifest.json
+          46885a3fedfabb0fb6154500982d8234dc4fa67834f8d000f5749ec15914705c  data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json
+          df55121a68fe602488be77b87359533749e3ccefc20c20802081f3b60eb3a107  data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-decisions.json
+          bef82827ba54e4edcc5c3676abf32fa2ef91171bd02e23c8dcfa16b556e5f5db  data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-input-custody.json
+          89cef0ab5aeafdcf12fa12fce00c4e819be0ba9e1f6b1f1a6a26ad56c50c34c9  data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-summary.json
+          ce1581ad8d8e7f0f9fbdb02b4e7510d6b7505825d91c4d97c08b60d9c8ac7ad0  data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/remaining-open-field-census.json
+          f51043a4d647e8575b3e841da64fdd37866ea8407b24662c8d7555267031f43f  docs/milestones/ssc-rd-wave03-rd04-five-state-promotion.md
+          ab80ff2eae1d283c089743d977712d78907f9104b557b5ce72dc43f355ac8809  schemas/status-sovereignty-rd-wave03-rd04-five-state-promotion.schema.json
+          8bf490d4cf6cef3379e48919ceb62f7b0a0994d1de031d7c106078172b1d4d23  test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          db53d0ca1b5bcba07eccd5b0979a38d87e81a0e307d3fd62259f41da617749ff  tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          d5d7f573cf3a14c505b30b73cd2664b0e2db235213c0a137e90b6af8a8817ba8  tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          EOF
+            (cd /tmp/product && sha256sum -c /tmp/product-sums)
+          } 2>&1 | tee /tmp/materialization/verify-product-bytes.log
+
+      - name: Create detached exact-parent qualification worktree
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '%s\n' create-worktree > /tmp/materialization/current-gate.txt
+          {
+            rm -rf /tmp/product-worktree
+            git worktree add --detach /tmp/product-worktree "$PRODUCT_PARENT"
+            cp -a /tmp/product/. /tmp/product-worktree/
+            (cd /tmp/product-worktree && git status --short)
+          } 2>&1 | tee /tmp/materialization/create-worktree.log
+
+      - name: Verify deterministic product build and syntax
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '%s\n' deterministic-build > /tmp/materialization/current-gate.txt
+          {
+            cd /tmp/product-worktree
+            node --check tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+            node --check tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+            node --check test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+            node tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+            sha256sum -c /tmp/product-sums
+          } 2>&1 | tee /tmp/materialization/deterministic-build.log
+
+      - name: Validate recursive product schema
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '%s\n' recursive-schema > /tmp/materialization/current-gate.txt
+          {
+            python -m pip install --disable-pip-version-check jsonschema==4.25.1
+            cd /tmp/product-worktree
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          schema = json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-five-state-promotion.schema.json').read_text())
+          validator = Draft202012Validator(schema)
+          root = Path('data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion')
+          for path in sorted(root.glob('*.json')):
+              errors = sorted(validator.iter_errors(json.loads(path.read_text())), key=lambda error: list(error.path))
+              if errors:
+                  raise SystemExit(f'{path}: {errors[0].message} at {list(errors[0].path)}')
+          print('recursive_schema_validation=pass')
+          PY
+          } 2>&1 | tee /tmp/materialization/recursive-schema.log
+
+      - name: Run product validator and adversarial replay
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '%s\n' product-tests > /tmp/materialization/current-gate.txt
+          {
+            cd /tmp/product-worktree
+            node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+            node test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          } 2>&1 | tee /tmp/materialization/product-tests.log
+
+      - name: Preserve no-magic-human floor
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '%s\n' no-magic-human > /tmp/materialization/current-gate.txt
+          {
+            cd /tmp/product-worktree
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          } 2>&1 | tee /tmp/materialization/no-magic-human.log
+
+      - name: Run complete repository release check
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '%s\n' release-check > /tmp/materialization/current-gate.txt
+          {
+            cd /tmp/product-worktree
+            npm run release:check
+          } 2>&1 | tee /tmp/materialization/release-check.log
+
+      - name: Create exact Git candidate and attempt ref publication
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          printf '%s\n' create-candidate > /tmp/materialization/current-gate.txt
+          python - <<'PY' 2>&1 | tee /tmp/materialization/create-candidate.log
+          import base64
+          import hashlib
+          import json
+          import os
+          import subprocess
+          import urllib.error
+          import urllib.request
+          from pathlib import Path
+
+          repository = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GH_TOKEN']
+          parent = os.environ['PRODUCT_PARENT']
+          branch = os.environ['PRODUCT_BRANCH']
+          paths = Path('/tmp/product-paths').read_text().splitlines()
+          root = Path('/tmp/product-worktree')
+
+          def api(method, path, payload=None, allow_error=False):
+              request = urllib.request.Request(
+                  f'https://api.github.com/repos/{repository}{path}',
+                  data=None if payload is None else json.dumps(payload).encode(),
+                  method=method,
+              )
+              for key, value in {
+                  'Accept': 'application/vnd.github+json',
+                  'Authorization': f'Bearer {token}',
+                  'X-GitHub-Api-Version': '2022-11-28',
+                  'Content-Type': 'application/json',
+              }.items():
+                  request.add_header(key, value)
+              try:
+                  with urllib.request.urlopen(request) as response:
+                      return response.status, json.loads(response.read() or b'{}')
+              except urllib.error.HTTPError as error:
+                  body = error.read().decode(errors='replace')
+                  if allow_error:
+                      try:
+                          body = json.loads(body)
+                      except Exception:
+                          body = {'raw': body}
+                      return error.code, body
+                  raise SystemExit(f'{method} {path}: {error.code} {body}')
+
+          _, main_ref = api('GET', '/git/ref/heads/main')
+          if main_ref['object']['sha'] != parent:
+              raise SystemExit('canonical main moved before candidate construction')
+          _, parent_commit = api('GET', f'/git/commits/{parent}')
+          base_tree = parent_commit['tree']['sha']
+
+          tree_entries = []
+          file_receipts = []
+          for path in paths:
+              data = (root / path).read_bytes()
+              _, blob = api('POST', '/git/blobs', {
+                  'content': base64.b64encode(data).decode(),
+                  'encoding': 'base64',
+              })
+              tree_entries.append({'path': path, 'mode': '100644', 'type': 'blob', 'sha': blob['sha']})
+              file_receipts.append({
+                  'path': path,
+                  'bytes': len(data),
+                  'sha256': hashlib.sha256(data).hexdigest(),
+                  'git_blob': blob['sha'],
+              })
+
+          _, tree = api('POST', '/git/trees', {'base_tree': base_tree, 'tree': tree_entries})
+          _, commit = api('POST', '/git/commits', {
+              'message': 'Promote four validated RD-04 state-field cells',
+              'tree': tree['sha'],
+              'parents': [parent],
+          })
+          candidate = commit['sha']
+          ref_status, ref_response = api('POST', '/git/refs', {
+              'ref': f'refs/heads/{branch}',
+              'sha': candidate,
+          }, allow_error=True)
+
+          receipt = {
+              'schema_version': 'ssc-rd04-five-state-promotion-materialization@2',
+              'repository': repository,
+              'canonical_parent': parent,
+              'base_tree': base_tree,
+              'candidate_commit': candidate,
+              'candidate_tree': tree['sha'],
+              'product_branch': branch,
+              'ref_update_status': ref_status,
+              'ref_updated': 200 <= ref_status < 300,
+              'ref_response': ref_response,
+              'workflow_run': int(os.environ['GITHUB_RUN_ID']),
+              'materializer_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'archive_bytes': int(os.environ['ARCHIVE_BYTES']),
+              'archive_sha256': os.environ['ARCHIVE_SHA256'],
+              'permanent_paths': len(paths),
+              'files': file_receipts,
+              'terminal_cells_before': 218,
+              'terminal_cells_after': 222,
+              'still_open_substantive_cells_before': 192,
+              'still_open_substantive_cells_after': 188,
+              'row_terminalizations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          output = Path('/tmp/materialization')
+          (output / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          (output / 'candidate-sha.txt').write_text(candidate + '\n')
+          (output / 'candidate-tree.txt').write_text(tree['sha'] + '\n')
+          (output / 'parent-sha.txt').write_text(parent + '\n')
+          (output / 'product-archive.tar.xz').write_bytes(Path('/tmp/product.tar.xz').read_bytes())
+          (output / 'status.json').write_text(json.dumps({
+              'schema_version': 'ssc-rd04-five-state-promotion-materialization-status@2',
+              'repository': repository,
+              'canonical_parent': parent,
+              'product_branch': branch,
+              'workflow_run': int(os.environ['GITHUB_RUN_ID']),
+              'materializer_head': receipt['materializer_head'],
+              'qualification_state': 'passed',
+              'candidate_created': True,
+              'candidate_commit': candidate,
+              'ref_updated': receipt['ref_updated'],
+              'authority': 'candidate-construction-only',
+          }, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          PY
+
+      - name: Seal fail-closed status
+        if: failure()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/materialization
+          python - <<'PY'
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+          status_path = Path('/tmp/materialization/status.json')
+          status = json.loads(status_path.read_text()) if status_path.exists() else {}
+          current_gate = Path('/tmp/materialization/current-gate.txt').read_text().strip() if Path('/tmp/materialization/current-gate.txt').exists() else 'unknown'
+          status.update({
+              'schema_version': 'ssc-rd04-five-state-promotion-materialization-status@2',
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'canonical_parent': os.environ['PRODUCT_PARENT'],
+              'product_branch': os.environ['PRODUCT_BRANCH'],
+              'workflow_run': int(os.environ['GITHUB_RUN_ID']),
+              'materializer_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'qualification_state': 'failed',
+              'failed_gate': current_gate,
+              'candidate_created': False,
+              'ref_updated': False,
+              'authority': 'none',
+          })
+          status_path.write_text(json.dumps(status, indent=2, sort_keys=True) + '\n')
+          PY
+
+      - name: Seal checksum ledger
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/materialization
+          rm -f /tmp/materialization/SHA256SUMS
+          (cd /tmp/materialization && find . -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+
+      - name: Upload materialization evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-promotion-materialization-v2
+          path: /tmp/materialization
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Report outcome to RD-04 ledger
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          if test -f /tmp/materialization/receipt.json; then
+            jq -r '"RD-04 four-cell promotion materialization v2 completed.\n\n```text\ncanonical_parent: \(.canonical_parent)\ncandidate_commit: \(.candidate_commit)\ncandidate_tree: \(.candidate_tree)\npermanent_paths: \(.permanent_paths)\nterminal_cells: \(.terminal_cells_before) -> \(.terminal_cells_after)\nopen_substantive_cells: \(.still_open_substantive_cells_before) -> \(.still_open_substantive_cells_after)\nref_updated: \(.ref_updated)\n```\n\nThis receipt creates one separate candidate only. It grants no row, class, cumulative-ledger, protocol, execution, review, publication, adoption, or graph authority."' /tmp/materialization/receipt.json > /tmp/comment.md
+          else
+            jq -r '"RD-04 four-cell promotion materialization v2 failed closed.\n\n```text\nfailed_gate: \(.failed_gate // \"unknown\")\ncandidate_created: \(.candidate_created)\nref_updated: \(.ref_updated)\nauthority: \(.authority)\n```\n\nNo product candidate or additional authority is represented."' /tmp/materialization/status.json > /tmp/comment.md
+          fi
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
