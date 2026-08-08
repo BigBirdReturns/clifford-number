@@ -113,7 +113,8 @@ jobs:
           }
           for old, new in replacements.items():
               script = script.replace(old, new)
-          if "${{" in script:
+          unresolved = "$" + "{{"
+          if unresolved in script:
               raise SystemExit("unresolved GitHub expression remains in extracted proof script")
           destination.write_text(script)
           print(f"v6_proof_script_extracted=pass bytes={len(script.encode())}")
