@@ -1,0 +1,189 @@
+name: TEMP qualify exact PC-57 product tree
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc57-materializer-carrier
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPOSITORY: ${{ github.repository }}
+      PARENT: bf48e7f424283232bae5060779d2d33e4d85bbcb
+      PARENT_TREE: f764efc53e7eed82daa78950405389947795f9d0
+      ARCHIVE_SHA256: a714b950dc0755b9e110b4d5e541175aea7cf1891ddaf5444cbe1c4a250ea03f
+      MANIFEST_SHA256: 997e7bc5c3679a90b39a933d1c858d9d4e9a9984683d1fcdc2f3479bdca80f44
+      WORK: /tmp/pc57-qualified-product
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Authenticate and reconstruct exact product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$WORK"
+          mkdir -p "$WORK/receipt"
+
+          test "$(git rev-parse "$PARENT^{tree}")" = "$PARENT_TREE"
+          test "$(sha256sum .tmp/pc57/product-manifest.json | awk '{print $1}')" = "$MANIFEST_SHA256"
+          base64 -d .tmp/pc57/product.tar.gz.b64 > "$WORK/product.tar.gz"
+          test "$(sha256sum "$WORK/product.tar.gz" | awk '{print $1}')" = "$ARCHIVE_SHA256"
+
+          git worktree add --detach "$WORK/repo" "$PARENT"
+          tar -xzf "$WORK/product.tar.gz" -C "$WORK/repo"
+          cp .tmp/pc57/product-manifest.json "$WORK/receipt/product-manifest.json"
+
+          python - <<'PY'
+          import hashlib
+          import json
+          import subprocess
+          from pathlib import Path
+
+          work = Path('/tmp/pc57-qualified-product')
+          repo = work / 'repo'
+          manifest = json.loads((work / 'receipt/product-manifest.json').read_text())
+          assert manifest['schema_version'] == 'pc57-product-manifest@1'
+          assert manifest['parent_commit'] == 'bf48e7f424283232bae5060779d2d33e4d85bbcb'
+          assert manifest['parent_tree'] == 'f764efc53e7eed82daa78950405389947795f9d0'
+          assert manifest['permanent_paths'] == 14
+          paths = [entry['path'] for entry in manifest['files']]
+          assert len(paths) == len(set(paths)) == 14
+          for entry in manifest['files']:
+              path = repo / entry['path']
+              payload = path.read_bytes()
+              assert len(payload) == entry['bytes'], entry['path']
+              assert hashlib.sha256(payload).hexdigest() == entry['sha256'], entry['path']
+              blob = subprocess.check_output(['git', '-C', str(repo), 'hash-object', str(path)], text=True).strip()
+              assert blob == entry['git_blob'], entry['path']
+              assert entry['mode'] == '100644'
+          (work / 'receipt/product-paths.txt').write_text('\n'.join(paths) + '\n')
+          PY
+
+          cd "$WORK/repo"
+          git add -- $(cat "$WORK/receipt/product-paths.txt")
+          git diff --cached --name-status "$PARENT" > "$WORK/receipt/product-delta.tsv"
+          test "$(wc -l < "$WORK/receipt/product-delta.tsv" | tr -d ' ')" = 14
+          awk '$1 != "A" { exit 1 }' "$WORK/receipt/product-delta.tsv"
+          git diff --cached --check
+          git write-tree > "$WORK/receipt/product-tree.txt"
+
+          git fetch origin main
+          git diff --name-only "$PARENT" origin/main | sort -u > "$WORK/receipt/live-main-changed-paths.txt"
+          sort -u "$WORK/receipt/product-paths.txt" > "$WORK/receipt/product-paths.sorted"
+          comm -12 "$WORK/receipt/product-paths.sorted" "$WORK/receipt/live-main-changed-paths.txt" > "$WORK/receipt/live-main-overlap.txt"
+          test ! -s "$WORK/receipt/live-main-overlap.txt"
+          git rev-parse origin/main > "$WORK/receipt/live-main.txt"
+
+      - name: Run focused and complete qualification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd "$WORK/repo"
+          rm -rf build/research
+
+          run_gate() {
+            local name="$1"
+            shift
+            echo "==> $name"
+            "$@" 2>&1 | tee "$WORK/receipt/${name}.log"
+          }
+
+          run_gate standalone-pc57 node test/preference-linkage-repository-owner-immutable-owner-id-repository-id-transfer-lineage-assurance.test.js
+          run_gate floor-v55 node test/preference-custody-manifest-v55.test.js
+
+          : > "$WORK/receipt/historical-floors.log"
+          for test_file in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do
+            echo "==> $test_file" | tee -a "$WORK/receipt/historical-floors.log"
+            node "$test_file" 2>&1 | tee -a "$WORK/receipt/historical-floors.log"
+          done
+          node test/preference-custody-manifest.test.js 2>&1 | tee -a "$WORK/receipt/historical-floors.log"
+
+          run_gate no-magic-human node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js 2>&1 | tee -a "$WORK/receipt/no-magic-human.log"
+          run_gate release-check npm run release:check
+
+          git diff --cached --name-status "$PARENT" > "$WORK/receipt/final-product-delta.tsv"
+          cmp "$WORK/receipt/product-delta.tsv" "$WORK/receipt/final-product-delta.tsv"
+          git diff --cached --check
+          test "$(git write-tree)" = "$(cat "$WORK/receipt/product-tree.txt")"
+
+      - name: Publish immutable blobs and seal receipt
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd "$WORK/repo"
+          python - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          work = Path('/tmp/pc57-qualified-product')
+          repo = work / 'repo'
+          receipt_dir = work / 'receipt'
+          manifest = json.loads((receipt_dir / 'product-manifest.json').read_text())
+          published = []
+          for entry in manifest['files']:
+              payload = (repo / entry['path']).read_bytes()
+              response = subprocess.check_output([
+                  'gh', 'api', '--method', 'POST',
+                  f"repos/{os.environ['GH_REPOSITORY']}/git/blobs",
+                  '-f', 'encoding=base64',
+                  '-f', f"content={base64.b64encode(payload).decode()}"
+              ], text=True)
+              blob = json.loads(response)['sha']
+              assert blob == entry['git_blob'], (entry['path'], blob, entry['git_blob'])
+              published.append({**entry, 'published_git_blob': blob})
+
+          receipt = {
+              'schema_version': 'pc57-qualified-product-tree-receipt@1',
+              'status': 'qualified',
+              'parent_commit': manifest['parent_commit'],
+              'parent_tree': manifest['parent_tree'],
+              'product_tree': (receipt_dir / 'product-tree.txt').read_text().strip(),
+              'live_main': (receipt_dir / 'live-main.txt').read_text().strip(),
+              'live_main_overlap_paths': [],
+              'permanent_paths': len(published),
+              'files': published,
+              'standalone_pc57': 'pass',
+              'floor_v55': 'pass',
+              'historical_preference_custody': 'pass',
+              'base_preference_custody': 'pass',
+              'no_magic_human': 'pass',
+              'release_check': 'pass',
+              'ref_updates': 0,
+              'outside_human_dependency': False,
+              'graph_effect': 'none'
+          }
+          receipt_path = receipt_dir / 'receipt.json'
+          receipt_path.write_text(json.dumps(receipt, indent=2) + '\n')
+          sums = []
+          for path in sorted(receipt_dir.iterdir()):
+              if path.name == 'SHA256SUMS' or not path.is_file():
+                  continue
+              sums.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}")
+          (receipt_dir / 'SHA256SUMS').write_text('\n'.join(sums) + '\n')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc57-qualified-product-tree
+          path: /tmp/pc57-qualified-product/receipt
+          if-no-files-found: error
