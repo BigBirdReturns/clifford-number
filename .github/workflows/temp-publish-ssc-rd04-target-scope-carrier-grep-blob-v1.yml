@@ -1,0 +1,172 @@
+name: TEMP publish corrected RD-04 target-scope carrier grep blob
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-publish-ssc-rd04-target-scope-carrier-grep-blob-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-target-scope-carrier-grep-blob-publisher-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      OBSERVED_MAIN: 8d05486534829671fff7a73e72e0df4f0c6a6efd
+      PUBLISHER_BRANCH: agent/ssc-rd04-target-scope-carrier-grep-blob-publisher-v1
+      PUBLISHER_WORKFLOW: .github/workflows/temp-publish-ssc-rd04-target-scope-carrier-grep-blob-v1.yml
+      OLD_CARRIER_BRANCH: agent/ssc-rd04-postpromotion-target-scope-current-main-carrier-v2
+      OLD_CARRIER_HEAD: f6061be0710e099ec86f8d438f463f5552fc3c5f
+      CARRIER_WORKFLOW: .github/workflows/temp-ssc-rd04-postpromotion-target-scope-current-main-v2.yml
+      BLOB_TAG: staging/ssc-rd04-target-scope-current-main-v2-grep-repair-blob-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned YAML parser
+        run: python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2'
+
+      - name: Publish exact two-assertion carrier repair blob
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-target-scope-carrier-grep-blob-v1
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          printf 'initializing\n' >"$OUT/STAGE"
+          printf 'source_requests=0\nroute_executions=0\nnew_transport_captures=0\nsource_admissions=0\nfield_classifications=0\nfield_terminalizations=0\nmatrix_updates=0\nrow_state_mutations=0\nclass_closed=false\ncumulative_ledger_effect=none\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' >"$OUT/BOUNDARY"
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            printf '%s\n' "$rc" >"$OUT/EXIT_CODE"
+            (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum >SHA256SUMS)
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          printf 'binding-one-path-publisher\n' >"$OUT/STAGE"
+          git rev-parse HEAD >"$OUT/publisher-head.txt"
+          test "${{ github.event_name }}" != pull_request || test "${{ github.event.pull_request.head.ref }}" = "$PUBLISHER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$OBSERVED_MAIN"
+          test "$(git rev-list --count "$OBSERVED_MAIN"..HEAD)" -eq 1
+          printf '%s\n' "$PUBLISHER_WORKFLOW" >"$OUT/expected-publisher-paths.txt"
+          git diff --name-only --diff-filter=ACDMRTUXB "$OBSERVED_MAIN" HEAD | LC_ALL=C sort >"$OUT/actual-publisher-paths.txt"
+          git diff --name-only --diff-filter=A "$OBSERVED_MAIN" HEAD | LC_ALL=C sort >"$OUT/added-publisher-paths.txt"
+          diff -u "$OUT/expected-publisher-paths.txt" "$OUT/actual-publisher-paths.txt"
+          diff -u "$OUT/expected-publisher-paths.txt" "$OUT/added-publisher-paths.txt"
+          git diff --check "$OBSERVED_MAIN" HEAD
+
+          printf 'recovering-exact-failed-carrier\n' >"$OUT/STAGE"
+          git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main" "+refs/heads/$OLD_CARRIER_BRANCH:refs/remotes/origin/$OLD_CARRIER_BRANCH"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$OBSERVED_MAIN"
+          test "$(git rev-parse refs/remotes/origin/$OLD_CARRIER_BRANCH)" = "$OLD_CARRIER_HEAD"
+          git show "$OLD_CARRIER_HEAD:$CARRIER_WORKFLOW" >"$OUT/original.yml"
+          git rev-parse "$OLD_CARRIER_HEAD:$CARRIER_WORKFLOW" >"$OUT/original-blob.txt"
+
+          printf 'replacing-two-json-receipt-assertions\n' >"$OUT/STAGE"
+          python - "$OUT/original.yml" "$OUT/corrected.yml" "$OUT/repair.diff" <<'PYREPAIR'
+          import difflib
+          import sys
+          from pathlib import Path
+
+          source = Path(sys.argv[1])
+          target = Path(sys.argv[2])
+          diff_path = Path(sys.argv[3])
+          text = source.read_text()
+          replacements = {
+              "          grep -Eq '64 (adversarial )?refusals( PASS)?' \"$OUT/adversarial.json\"\n":
+                  "          grep -Eq '\"adversarial_refusals\":64([,}])' \"$OUT/adversarial.json\"\n",
+              "          grep -Eq '64 (adversarial )?refusals( PASS)?' \"$OUT/adversarial-replay.json\"\n":
+                  "          grep -Eq '\"adversarial_refusals\":64([,}])' \"$OUT/adversarial-replay.json\"\n",
+          }
+          for old, new in replacements.items():
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'replacement denominator mismatch: {count} for {old!r}')
+              text = text.replace(old, new)
+          target.write_text(text)
+          before = source.read_text().splitlines(keepends=True)
+          after = target.read_text().splitlines(keepends=True)
+          diff = ''.join(difflib.unified_diff(before, after, fromfile='original.yml', tofile='corrected.yml'))
+          diff_path.write_text(diff)
+          removed = [line for line in diff.splitlines() if line.startswith('-') and not line.startswith('---')]
+          added = [line for line in diff.splitlines() if line.startswith('+') and not line.startswith('+++')]
+          if len(removed) != 2 or len(added) != 2:
+              raise SystemExit(f'diff denominator mismatch: removed={len(removed)} added={len(added)}')
+          if any('64 (adversarial )?refusals( PASS)?' not in line for line in removed):
+              raise SystemExit('unexpected removed line')
+          if any('"adversarial_refusals":64([,}])' not in line for line in added):
+              raise SystemExit('unexpected added line')
+          print('exact_two_assertion_repair=pass')
+          PYREPAIR
+
+          python - "$OUT/corrected.yml" <<'PYYAML'
+          import sys
+          from pathlib import Path
+          import yaml
+          value = yaml.safe_load(Path(sys.argv[1]).read_text())
+          if not isinstance(value, dict):
+              raise SystemExit('corrected carrier did not parse as a YAML object')
+          print('carrier_yaml_parse=pass')
+          PYYAML
+
+          printf 'publishing-corrected-carrier-blob\n' >"$OUT/STAGE"
+          BLOB="$(git hash-object -w "$OUT/corrected.yml")"
+          BYTES="$(wc -c <"$OUT/corrected.yml")"
+          SHA256="$(sha256sum "$OUT/corrected.yml" | cut -d' ' -f1)"
+          printf '%s\n' "$BLOB" >"$OUT/corrected-blob.txt"
+          printf '%s\n' "$BYTES" >"$OUT/corrected-bytes.txt"
+          printf '%s\n' "$SHA256" >"$OUT/corrected-sha256.txt"
+          git cat-file blob "$BLOB" >"$OUT/recovered-from-blob.yml"
+          cmp "$OUT/corrected.yml" "$OUT/recovered-from-blob.yml"
+          test -z "$(git ls-remote --tags origin "refs/tags/$BLOB_TAG")"
+          git update-ref "refs/tags/$BLOB_TAG" "$BLOB"
+          git push origin "refs/tags/$BLOB_TAG:refs/tags/$BLOB_TAG"
+          test "$(git ls-remote --tags origin "refs/tags/$BLOB_TAG" | cut -f1)" = "$BLOB"
+
+          python - "$OUT" <<'PYRECEIPT'
+          import json
+          import sys
+          from pathlib import Path
+          out = Path(sys.argv[1])
+          receipt = {
+              'schema_version': 'ssc-rd04-target-scope-carrier-grep-blob-publication@1',
+              'observed_main': '8d05486534829671fff7a73e72e0df4f0c6a6efd',
+              'publisher_head': (out / 'publisher-head.txt').read_text().strip(),
+              'original_carrier_head': 'f6061be0710e099ec86f8d438f463f5552fc3c5f',
+              'original_carrier_blob': (out / 'original-blob.txt').read_text().strip(),
+              'corrected_carrier_blob': (out / 'corrected-blob.txt').read_text().strip(),
+              'corrected_carrier_bytes': int((out / 'corrected-bytes.txt').read_text()),
+              'corrected_carrier_sha256': (out / 'corrected-sha256.txt').read_text().strip(),
+              'changed_assertions': 2,
+              'semantic_effect': 'none',
+              'source_requests': 0,
+              'route_executions': 0,
+              'outside_human_dependency': False,
+          }
+          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          PYRECEIPT
+          printf 'complete\n' >"$OUT/STAGE"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ssc-rd04-target-scope-carrier-grep-blob-publisher-v1
+          path: /tmp/ssc-rd04-target-scope-carrier-grep-blob-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
