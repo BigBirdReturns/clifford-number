@@ -1,0 +1,51 @@
+name: TEMP diagnose exact PC-57 shard transport
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pc57-shard-diagnostic
+  cancel-in-progress: true
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect shard transport
+        shell: bash
+        run: |
+          set -uo pipefail
+          out=/tmp/pc57-shard-diagnostic
+          mkdir -p "$out"
+          : > "$out/shards.tsv"
+          for shard in .tmp/pc57/product.b64.0{0..8}; do
+            raw_bytes=$(wc -c < "$shard" | tr -d ' ')
+            raw_sha=$(sha256sum "$shard" | awk '{print $1}')
+            normalized_bytes=$(tr -d '\r\n' < "$shard" | wc -c | tr -d ' ')
+            normalized_sha=$(tr -d '\r\n' < "$shard" | sha256sum | awk '{print $1}')
+            printf '%s\t%s\t%s\t%s\t%s\n' "$shard" "$raw_bytes" "$raw_sha" "$normalized_bytes" "$normalized_sha" | tee -a "$out/shards.tsv"
+          done
+          for shard in .tmp/pc57/product.b64.0{0..8}; do tr -d '\r\n' < "$shard"; done > "$out/combined.b64"
+          wc -c "$out/combined.b64" > "$out/combined-size.txt"
+          sha256sum "$out/combined.b64" > "$out/combined-sha256.txt"
+          if base64 -d "$out/combined.b64" > "$out/product.tar.gz" 2> "$out/base64.stderr"; then
+            echo success > "$out/base64-status.txt"
+            wc -c "$out/product.tar.gz" > "$out/archive-size.txt"
+            sha256sum "$out/product.tar.gz" > "$out/archive-sha256.txt"
+            tar -tzf "$out/product.tar.gz" > "$out/archive-members.txt" 2> "$out/tar.stderr" || true
+          else
+            echo failure > "$out/base64-status.txt"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pc57-shard-diagnostic
+          path: /tmp/pc57-shard-diagnostic
+          if-no-files-found: error
