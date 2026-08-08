@@ -1,0 +1,210 @@
+name: TEMP run RD-04 North Dakota one-cell materializer v4 with observable custody
+
+on:
+  push:
+    branches:
+      - agent/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v4
+    paths:
+      - '.github/workflows/temp-run-ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v4.yml'
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+
+concurrency:
+  group: temp-run-rd04-postpromotion-nd-one-cell-promotion-materializer-v4
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.ref_name == 'agent/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v4'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned schema and workflow parsers
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+
+      - name: Authenticate and execute exact materializer program
+        id: materialize
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE_BRANCH='agent/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v1'
+          SOURCE_COMMIT='7cbcd96697c3f4396c658d96d92abb30c4e7ac06'
+          SOURCE_PATH='.github/workflows/temp-materialize-ssc-rd04-postpromotion-nd-one-cell-promotion-v1.yml'
+          SOURCE_BLOB='ff5609d3540a18385242160ecaa54dfb002e5fdc'
+          SOURCE_SHA256='37ec03f49a5098a16bf30c9a75f1bb848d153475e3ca13100515893a6f3aaa16'
+          TARGET_BRANCH='agent/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v4'
+          TARGET_PATH='.github/workflows/temp-run-ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v4.yml'
+          OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v1"
+          SOURCE_YAML="${RUNNER_TEMP}/ssc-rd04-postpromotion-nd-one-cell-source.yml"
+          SCRIPT="${RUNNER_TEMP}/ssc-rd04-postpromotion-nd-one-cell-materializer.sh"
+          mkdir -p "$OUT"
+          exec > >(tee "$OUT/compact-runner.log") 2>&1
+
+          test "$GITHUB_REF_NAME" = "$TARGET_BRANCH"
+          test "$GITHUB_SHA" = "$(git rev-parse HEAD)"
+          git fetch --no-tags origin "refs/heads/${SOURCE_BRANCH}"
+          test "$(git rev-parse FETCH_HEAD)" = "$SOURCE_COMMIT"
+          test "$(git rev-parse "${SOURCE_COMMIT}:${SOURCE_PATH}")" = "$SOURCE_BLOB"
+          git show "${SOURCE_COMMIT}:${SOURCE_PATH}" > "$SOURCE_YAML"
+          test "$(sha256sum "$SOURCE_YAML" | awk '{print $1}')" = "$SOURCE_SHA256"
+
+          python - "$SOURCE_YAML" "$SCRIPT" "$TARGET_BRANCH" "$TARGET_PATH" <<'PY'
+          import sys
+          from pathlib import Path
+          import yaml
+
+          source, target, branch, path = sys.argv[1:]
+          workflow = yaml.safe_load(Path(source).read_text())
+          steps = workflow['jobs']['materialize']['steps']
+          matches = [step for step in steps if step.get('id') == 'materialize']
+          if len(matches) != 1:
+              raise SystemExit(f'expected one materialize step, found {len(matches)}')
+          script = matches[0]['run']
+          replacements = {
+              'CARRIER_BRANCH=agent/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v1': f'CARRIER_BRANCH={branch}',
+              'CARRIER_PATH=.github/workflows/temp-materialize-ssc-rd04-postpromotion-nd-one-cell-promotion-v1.yml': f'CARRIER_PATH={path}',
+              '${{ github.event.pull_request.head.repo.full_name }}': '$GITHUB_REPOSITORY',
+              '${{ github.event.pull_request.head.ref }}': branch,
+              '${{ github.event.pull_request.head.sha }}': '$GITHUB_SHA',
+          }
+          for old, new in replacements.items():
+              count = script.count(old)
+              if count != 1:
+                  raise SystemExit(f'unexpected replacement count {count} for {old!r}')
+              script = script.replace(old, new)
+          if '${{' in script:
+              raise SystemExit('unresolved GitHub expression remains in extracted program')
+          Path(target).write_text(script)
+          PY
+
+          bash -n "$SCRIPT"
+          bash "$SCRIPT"
+
+      - name: Preserve exact materialization and staging artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v4
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Publish diagnostic-only Git custody
+        id: diagnostics
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PARENT='79a7e18bfd45f1b1d893fa8b9683710891d4bbca'
+          DIAGNOSTIC_BRANCH='diagnostic/ssc-rd04-postpromotion-nd-one-cell-materializer-v4'
+          OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v1"
+          WT="${RUNNER_TEMP}/ssc-rd04-postpromotion-nd-one-cell-materializer-v4-diagnostic"
+          DEST='.tmp/ssc-rd04-postpromotion-nd-one-cell-materializer-v4'
+          mkdir -p "$OUT"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$DIAGNOSTIC_BRANCH" | awk '{print $1}')"
+          rm -rf "$WT"
+          git worktree add --detach "$WT" "$PARENT"
+          mkdir -p "$WT/$DEST"
+          cp -a "$OUT/." "$WT/$DEST/"
+          jq -n \
+            --arg carrier_head "$GITHUB_SHA" \
+            --arg materialize_outcome '${{ steps.materialize.outcome }}' \
+            --arg diagnostic_branch "$DIAGNOSTIC_BRANCH" \
+            --arg product_parent "$PARENT" \
+            '{
+              schema_version:"ssc-rd04-postpromotion-nd-one-cell-materializer-diagnostic@1",
+              object_type:"diagnostic_only_execution_custody",
+              carrier_head:$carrier_head,
+              materialize_outcome:$materialize_outcome,
+              diagnostic_branch:$diagnostic_branch,
+              product_parent:$product_parent,
+              product_authority:false,
+              matrix_authority:false,
+              merge_authority:false,
+              source_requests_authorized:0,
+              route_executions_authorized:0,
+              row_state_mutations_authorized:0,
+              class_closure_authorized:false,
+              publication_effect:"none",
+              adoption_effect:"none",
+              graph_effect:"none"
+            }' > "$WT/$DEST/runner-outcome.json"
+          (
+            cd "$WT/$DEST"
+            find . -type f ! -name DIAGNOSTIC-SHA256SUMS -print0 |
+              LC_ALL=C sort -z |
+              xargs -0 sha256sum > DIAGNOSTIC-SHA256SUMS
+            sha256sum -c DIAGNOSTIC-SHA256SUMS
+          )
+          git -C "$WT" config user.name 'RD-04 diagnostic custodian'
+          git -C "$WT" config user.email 'rd04-diagnostic@users.noreply.github.com'
+          git -C "$WT" add -- "$DEST"
+          git -C "$WT" commit -m 'Record RD-04 North Dakota one-cell materializer v4 execution custody'
+          diagnostic_commit="$(git -C "$WT" rev-parse HEAD)"
+          test "$(git -C "$WT" rev-parse HEAD^)" = "$PARENT"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$DIAGNOSTIC_BRANCH" | awk '{print $1}')"
+          git -C "$WT" push origin "HEAD:refs/heads/$DIAGNOSTIC_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$DIAGNOSTIC_BRANCH" | awk '{print $1}')" = "$diagnostic_commit"
+
+      - name: Enforce qualified terminal result
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v1"
+          test "${{ steps.diagnostics.outcome }}" = success
+          test "${{ steps.materialize.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          jq -e '
+            .state=="qualified_staging_published" and
+            .failed_or_final_stage=="complete" and
+            .exit_code==0 and
+            .product_parent=="79a7e18bfd45f1b1d893fa8b9683710891d4bbca" and
+            .permanent_path_count==14 and
+            .staging_path_count==14 and
+            .terminal_cells_before==226 and
+            .terminal_cells_after==227 and
+            .still_open_cells_before==224 and
+            .still_open_cells_after==223 and
+            .open_substantive_cells_before==184 and
+            .open_substantive_cells_after==183 and
+            .terminal_units_before==10 and
+            .terminal_units_after==10 and
+            .source_requests==0 and
+            .route_executions==0 and
+            .new_source_admissions==0 and
+            .matrix_updates==1 and
+            .field_terminalizations==1 and
+            .row_state_mutations==0 and
+            .class_closed==false and
+            .cumulative_ledger_effect=="none" and
+            .outside_human_dependency==false and
+            .publication_effect=="none" and
+            .adoption_effect=="none" and
+            .graph_effect=="none"
+          ' "$OUT/materializer-receipt.json" > /dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
