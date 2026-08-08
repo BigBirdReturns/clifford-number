@@ -1,0 +1,367 @@
+name: TEMP route RD-04 North Dakota one-cell promotion materializer v3
+
+on:
+  pull_request:
+    branches:
+      - 'agent/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-base-v3'
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-postpromotion-nd-one-cell-promotion-materializer-v3.trigger.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-route-rd04-postpromotion-nd-one-cell-promotion-materializer-v3
+  cancel-in-progress: false
+
+jobs:
+  route:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-base-v3' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-trigger-v3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install sealed workflow parsers
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+
+      - name: Authenticate and execute local sealed one-cell materializer
+        id: route
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          PARENT=79a7e18bfd45f1b1d893fa8b9683710891d4bbca
+          PARENT_TREE=de7b86fbc9caa247bfa2a960f190626e22f1c4b6
+          BASE_BRANCH=agent/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-base-v3
+          TRIGGER_BRANCH=agent/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-trigger-v3
+          BASE_PATH=.github/workflows/temp-route-ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v3.yml
+          TRIGGER_PATH=.tmp/rd04-postpromotion-nd-one-cell-promotion-materializer-v3.trigger.json
+          TRIGGER_BYTES=707
+          TRIGGER_SHA256=e12bbe912c494238d7e9d1bb8dbca060fe0d0dc194e0643d2a13c34ddd31800d
+          SEALED_PATH=exchange/rd04-postpromotion-nd-one-cell-promotion/sealed-materializer-v1.yml
+          SEALED_BLOB=ff5609d3540a18385242160ecaa54dfb002e5fdc
+          SEALED_NAME='TEMP materialize RD-04 North Dakota one-cell promotion v1'
+          SEALED_STEP='Materialize, qualify, and stage exact one-cell product'
+          STAGING_BRANCH=staging/ssc-rd04-postpromotion-nd-one-cell-promotion-v1
+          OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v1"
+          ROUTER_OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-nd-one-cell-promotion-router-v3"
+          rm -rf "$OUT" "$ROUTER_OUT"
+          mkdir -p "$ROUTER_OUT"
+          exec > >(tee "$ROUTER_OUT/router.log") 2>&1
+          stage=bootstrap
+          BASE_COMMIT=
+          TRIGGER_HEAD=
+          inner_code=
+
+          finalize_router() {
+            set +e
+            (
+              cd "$ROUTER_OUT"
+              find . -maxdepth 1 -type f ! -name SHA256SUMS -print0 |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+            )
+          }
+
+          on_error() {
+            local code=$?
+            trap - ERR
+            set +e
+            printf '%s\n' "$code" > "$ROUTER_OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$ROUTER_OUT/STAGE"
+            jq -n \
+              --arg stage "$stage" \
+              --argjson exit_code "$code" \
+              --arg parent "$PARENT" \
+              --arg base_commit "$BASE_COMMIT" \
+              --arg trigger_head "$TRIGGER_HEAD" \
+              --arg sealed_blob "$SEALED_BLOB" \
+              --arg inner_code "$inner_code" \
+              '{
+                schema_version:"ssc-rd04-postpromotion-nd-one-cell-materializer-router@3",
+                state:"failed_closed",
+                failed_or_final_stage:$stage,
+                exit_code:$exit_code,
+                product_parent:$parent,
+                base_commit:(if $base_commit=="" then null else $base_commit end),
+                trigger_head:(if $trigger_head=="" then null else $trigger_head end),
+                sealed_source_blob:$sealed_blob,
+                inner_exit_code:(if $inner_code=="" then null else ($inner_code|tonumber) end),
+                staging_branch_published:false,
+                source_requests:0,
+                route_executions:0,
+                new_source_admissions:0,
+                canonical_matrix_updates:0,
+                canonical_field_terminalizations:0,
+                row_state_mutations:0,
+                class_closed:false,
+                cumulative_ledger_effect:"none",
+                outside_human_dependency:false,
+                publication_effect:"none",
+                adoption_effect:"none",
+                graph_effect:"none"
+              }' > "$ROUTER_OUT/router-receipt.json"
+            finalize_router
+            exit "$code"
+          }
+
+          trap on_error ERR
+          set -Eeuo pipefail
+
+          stage=bind_exact_base_trigger_local_seal_and_live_main
+          BASE_COMMIT="${{ github.event.pull_request.base.sha }}"
+          TRIGGER_HEAD="${{ github.event.pull_request.head.sha }}"
+          test "${{ github.event.pull_request.head.repo.full_name }}" = "$GITHUB_REPOSITORY"
+          test "${{ github.event.pull_request.base.ref }}" = "$BASE_BRANCH"
+          test "${{ github.event.pull_request.head.ref }}" = "$TRIGGER_BRANCH"
+          test "$TRIGGER_HEAD" = "$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$BASE_COMMIT"
+          test "$(git rev-parse "$BASE_COMMIT^")" = "$PARENT"
+          test "$(git rev-parse "$PARENT^{tree}")" = "$PARENT_TREE"
+          test "$(git rev-list --count "$PARENT".."$BASE_COMMIT")" -eq 1
+          { printf '%s\n' "$BASE_PATH"; printf '%s\n' "$SEALED_PATH"; } | sort > "$ROUTER_OUT/expected-base-paths.txt"
+          git diff --name-only "$PARENT" "$BASE_COMMIT" | sort > "$ROUTER_OUT/actual-base-paths.txt"
+          diff -u "$ROUTER_OUT/expected-base-paths.txt" "$ROUTER_OUT/actual-base-paths.txt"
+          git diff --name-only --diff-filter=A "$PARENT" "$BASE_COMMIT" | sort > "$ROUTER_OUT/added-base-paths.txt"
+          diff -u "$ROUTER_OUT/expected-base-paths.txt" "$ROUTER_OUT/added-base-paths.txt"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$PARENT" "$BASE_COMMIT")"
+          test "$(git rev-list --count "$BASE_COMMIT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$BASE_COMMIT" HEAD)" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE_COMMIT" HEAD)" = "$TRIGGER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$BASE_COMMIT" HEAD)"
+          git diff --check "$PARENT" "$BASE_COMMIT"
+          git diff --check "$BASE_COMMIT" HEAD
+          test "$(wc -c < "$TRIGGER_PATH" | tr -d ' ')" -eq "$TRIGGER_BYTES"
+          test "$(sha256sum "$TRIGGER_PATH" | awk '{print $1}')" = "$TRIGGER_SHA256"
+          jq -e \
+            --arg parent "$PARENT" \
+            --arg base "$BASE_BRANCH" \
+            --arg trigger "$TRIGGER_BRANCH" \
+            '.schema_version=="ssc-rd04-postpromotion-nd-one-cell-materializer-trigger@1" and
+             .issue==1017 and .canonical_parent==$parent and
+             .base_branch==$base and .trigger_branch==$trigger and
+             .materialization_authorized==true and
+             .source_requests_authorized==0 and
+             .route_executions_authorized==0 and
+             .new_source_admissions_authorized==0 and
+             .row_state_mutations_authorized==0 and
+             .class_closure_authorized==false and
+             .outside_human_dependency==false and
+             .publication_effect=="none" and
+             .adoption_effect=="none" and
+             .graph_effect=="none"' "$TRIGGER_PATH" > /dev/null
+          test "$(git ls-tree "$BASE_COMMIT" "$SEALED_PATH" | awk '{print $3}')" = "$SEALED_BLOB"
+          git show "$BASE_COMMIT:$SEALED_PATH" > "$ROUTER_OUT/sealed-materializer.yml"
+          test "$(git hash-object "$ROUTER_OUT/sealed-materializer.yml")" = "$SEALED_BLOB"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$PARENT"
+          test "$(git ls-remote --heads origin "refs/heads/$BASE_BRANCH" | awk '{print $1}')" = "$BASE_COMMIT"
+          test "$(git ls-remote --heads origin "refs/heads/$TRIGGER_BRANCH" | awk '{print $1}')" = "$TRIGGER_HEAD"
+          test -z "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')"
+
+          stage=extract_and_rebind_local_sealed_materializer
+          export ROUTER_OUT SEALED_NAME SEALED_STEP PARENT BASE_COMMIT TRIGGER_HEAD
+          export TRIGGER_BRANCH TRIGGER_PATH STAGING_BRANCH GITHUB_REPOSITORY
+          python - <<'PY'
+          import os, shlex
+          from pathlib import Path
+          import yaml
+
+          out=Path(os.environ['ROUTER_OUT'])
+          source=yaml.safe_load((out/'sealed-materializer.yml').read_text())
+          if not isinstance(source,dict) or source.get('name')!=os.environ['SEALED_NAME']:
+              raise SystemExit('sealed workflow identity mismatch')
+          job=source.get('jobs',{}).get('materialize')
+          if not isinstance(job,dict):
+              raise SystemExit('sealed materialize job missing')
+          selected=[step.get('run') for step in job.get('steps',[])
+                    if isinstance(step,dict) and step.get('name')==os.environ['SEALED_STEP']]
+          if len(selected)!=1 or not isinstance(selected[0],str):
+              raise SystemExit('sealed materializer run block missing or non-unique')
+          run=selected[0]
+          old_branch='CARRIER_BRANCH=agent/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v1'
+          old_path='CARRIER_PATH=.github/workflows/temp-materialize-ssc-rd04-postpromotion-nd-one-cell-promotion-v1.yml'
+          if run.count(old_branch)!=1 or run.count(old_path)!=1:
+              raise SystemExit('sealed carrier variables changed')
+          run=run.replace(old_branch,'CARRIER_BRANCH='+os.environ['TRIGGER_BRANCH'])
+          run=run.replace(old_path,'CARRIER_PATH='+os.environ['TRIGGER_PATH'])
+          start='stage=bind_exact_carrier_and_live_main\n'
+          end='stage=reconstruct_and_authenticate_static_package\n'
+          if run.count(start)!=1 or run.count(end)!=1:
+              raise SystemExit('sealed topology markers changed')
+          before, tail=run.split(start,1)
+          _, after=tail.split(end,1)
+          replacement='\n'.join([
+              'stage=bind_exact_routed_carrier_and_live_main',
+              'test "$(git rev-parse HEAD)" = "$TRIGGER_HEAD"',
+              'test "$(git rev-parse HEAD^)" = "$BASE_COMMIT"',
+              'test "$(git rev-parse "$PARENT^{tree}")" = "$PARENT_TREE"',
+              'test "$(git ls-remote --heads origin refs/heads/main | awk \'{print $1}\')" = "$PARENT"',
+              'test -z "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk \'{print $1}\')"',
+              '',
+              end.rstrip('\n'),
+              '',
+          ])
+          run=before+replacement+after
+          marker='$'+'{{'
+          if marker in run:
+              raise SystemExit('unresolved GitHub expression remains in materializer')
+          script='\n'.join([
+              '#!/usr/bin/env bash',
+              'set -Eeuo pipefail',
+              'export BASE_COMMIT='+shlex.quote(os.environ['BASE_COMMIT']),
+              'export TRIGGER_HEAD='+shlex.quote(os.environ['TRIGGER_HEAD']),
+              'export GITHUB_REPOSITORY='+shlex.quote(os.environ['GITHUB_REPOSITORY']),
+              run,
+              '',
+          ])
+          (out/'transaction.sh').write_text(script)
+          PY
+          chmod 700 "$ROUTER_OUT/transaction.sh"
+          bash -n "$ROUTER_OUT/transaction.sh"
+          test "$(grep -c '^stage=bind_exact_routed_carrier_and_live_main$' "$ROUTER_OUT/transaction.sh")" -eq 1
+          test "$(grep -c '^stage=reconstruct_and_authenticate_static_package$' "$ROUTER_OUT/transaction.sh")" -eq 1
+
+          stage=execute_local_sealed_materializer
+          set +e
+          bash "$ROUTER_OUT/transaction.sh"
+          inner_code=$?
+          set -e
+          printf '%s\n' "$inner_code" > "$ROUTER_OUT/INNER_EXIT_CODE"
+          test "$inner_code" -eq 0
+
+          stage=verify_terminal_materialization_and_staging
+          test -f "$OUT/materializer-receipt.json"
+          test -f "$OUT/candidate-product-inventory.json"
+          test -f "$OUT/staging-inventory.json"
+          test -f "$OUT/product.tar.xz"
+          test -f "$OUT/SHA256SUMS"
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e \
+            --arg parent "$PARENT" \
+            --arg trigger "$TRIGGER_HEAD" \
+            --arg trigger_path "$TRIGGER_PATH" \
+            '.state=="qualified_staging_published" and
+             .failed_or_final_stage=="complete" and .exit_code==0 and
+             .product_parent==$parent and .carrier_head==$trigger and
+             .carrier_path==$trigger_path and
+             .permanent_path_count==14 and .staging_path_count==14 and
+             .terminal_cells_before==226 and .terminal_cells_after==227 and
+             .still_open_cells_before==224 and .still_open_cells_after==223 and
+             .open_substantive_cells_before==184 and .open_substantive_cells_after==183 and
+             .terminal_units_before==10 and .terminal_units_after==10 and
+             .source_requests==0 and .route_executions==0 and
+             .new_source_admissions==0 and .matrix_updates==1 and
+             .field_terminalizations==1 and .row_state_mutations==0 and
+             .class_closed==false and .cumulative_ledger_effect=="none" and
+             .outside_human_dependency==false and
+             .publication_effect=="none" and .adoption_effect=="none" and
+             .graph_effect=="none"' "$OUT/materializer-receipt.json" > /dev/null
+          staging_commit="$(jq -r '.staging_commit' "$OUT/materializer-receipt.json")"
+          candidate_commit="$(jq -r '.candidate_commit' "$OUT/materializer-receipt.json")"
+          candidate_tree="$(jq -r '.candidate_tree' "$OUT/materializer-receipt.json")"
+          staging_tree="$(jq -r '.staging_tree' "$OUT/materializer-receipt.json")"
+          test -n "$staging_commit"; test -n "$candidate_commit"
+          test "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')" = "$staging_commit"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$PARENT"
+
+          stage=complete
+          printf '0\n' > "$ROUTER_OUT/EXIT_CODE"
+          printf '%s\n' "$stage" > "$ROUTER_OUT/STAGE"
+          jq -n \
+            --arg parent "$PARENT" \
+            --arg base_commit "$BASE_COMMIT" \
+            --arg trigger_head "$TRIGGER_HEAD" \
+            --arg sealed_blob "$SEALED_BLOB" \
+            --arg candidate_commit "$candidate_commit" \
+            --arg candidate_tree "$candidate_tree" \
+            --arg staging_branch "$STAGING_BRANCH" \
+            --arg staging_commit "$staging_commit" \
+            --arg staging_tree "$staging_tree" \
+            '{
+              schema_version:"ssc-rd04-postpromotion-nd-one-cell-materializer-router@3",
+              state:"complete",
+              failed_or_final_stage:"complete",
+              exit_code:0,
+              product_parent:$parent,
+              base_commit:$base_commit,
+              trigger_head:$trigger_head,
+              sealed_source_blob:$sealed_blob,
+              inner_exit_code:0,
+              candidate_commit:$candidate_commit,
+              candidate_tree:$candidate_tree,
+              staging_branch:$staging_branch,
+              staging_commit:$staging_commit,
+              staging_tree:$staging_tree,
+              staging_branch_published:true,
+              permanent_path_count:14,
+              source_requests:0,
+              route_executions:0,
+              new_source_admissions:0,
+              canonical_matrix_updates:0,
+              canonical_field_terminalizations:0,
+              candidate_matrix_updates:1,
+              candidate_field_terminalizations:1,
+              row_state_mutations:0,
+              class_closed:false,
+              cumulative_ledger_effect:"none",
+              outside_human_dependency:false,
+              publication_effect:"none",
+              adoption_effect:"none",
+              graph_effect:"none"
+            }' > "$ROUTER_OUT/router-receipt.json"
+          finalize_router
+          (cd "$ROUTER_OUT" && sha256sum -c SHA256SUMS)
+
+      - name: Preserve exact local-seal materialization custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-nd-one-cell-promotion-router-v3
+          path: |
+            ${{ runner.temp }}/ssc-rd04-postpromotion-nd-one-cell-promotion-router-v3
+            ${{ runner.temp }}/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v1
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce terminal routed result
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROUTER_OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-nd-one-cell-promotion-router-v3"
+          test "${{ steps.route.outcome }}" = success
+          test "$(cat "$ROUTER_OUT/EXIT_CODE")" = 0
+          test "$(cat "$ROUTER_OUT/STAGE")" = complete
+          jq -e '
+            .state=="complete" and .failed_or_final_stage=="complete" and
+            .exit_code==0 and .inner_exit_code==0 and
+            .staging_branch_published==true and .permanent_path_count==14 and
+            .source_requests==0 and .route_executions==0 and
+            .new_source_admissions==0 and
+            .canonical_matrix_updates==0 and .canonical_field_terminalizations==0 and
+            .candidate_matrix_updates==1 and .candidate_field_terminalizations==1 and
+            .row_state_mutations==0 and .class_closed==false and
+            .cumulative_ledger_effect=="none" and
+            .outside_human_dependency==false and
+            .publication_effect=="none" and .adoption_effect=="none" and
+            .graph_effect=="none"
+          ' "$ROUTER_OUT/router-receipt.json" > /dev/null
+          (cd "$ROUTER_OUT" && sha256sum -c SHA256SUMS)

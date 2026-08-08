@@ -1,0 +1,433 @@
+name: TEMP materialize RD-04 North Dakota one-cell promotion v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-postpromotion-nd-one-cell-promotion-v1.yml'
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+
+concurrency:
+  group: temp-materialize-rd04-postpromotion-nd-one-cell-promotion-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned schema and workflow parsers
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+
+      - name: Materialize, qualify, and stage exact one-cell product
+        id: materialize
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          PARENT=79a7e18bfd45f1b1d893fa8b9683710891d4bbca
+          PARENT_TREE=de7b86fbc9caa247bfa2a960f190626e22f1c4b6
+          CARRIER_BRANCH=agent/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v1
+          CARRIER_PATH=.github/workflows/temp-materialize-ssc-rd04-postpromotion-nd-one-cell-promotion-v1.yml
+          STAGING_BRANCH=staging/ssc-rd04-postpromotion-nd-one-cell-promotion-v1
+          SHADOW_WORKFLOW=exchange/rd04-postpromotion-nd-one-cell-promotion/final-workflow.yml
+          STANDING_WORKFLOW=.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.yml
+          OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v1"
+          WORK="${RUNNER_TEMP}/ssc-rd04-postpromotion-nd-one-cell-product"
+          STAGE_WT="${RUNNER_TEMP}/ssc-rd04-postpromotion-nd-one-cell-staging"
+          rm -rf "$OUT" "$WORK" "$STAGE_WT"
+          mkdir -p "$OUT"
+          exec > >(tee "$OUT/materializer.log") 2>&1
+          stage=bootstrap
+          candidate_commit=
+          candidate_tree=
+          staging_commit=
+          staging_tree=
+
+          finalize_sums() {
+            set +e
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+            )
+          }
+
+          on_error() {
+            local code=$?
+            trap - ERR
+            set +e
+            printf '%s\n' "$code" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            jq -n \
+              --arg stage "$stage" \
+              --argjson exit_code "$code" \
+              --arg parent "$PARENT" \
+              --arg carrier_head "$(git rev-parse HEAD 2>/dev/null || true)" \
+              --arg candidate_commit "$candidate_commit" \
+              --arg candidate_tree "$candidate_tree" \
+              --arg staging_commit "$staging_commit" \
+              --arg staging_tree "$staging_tree" \
+              '{
+                schema_version:"ssc-rd04-postpromotion-nd-one-cell-materializer@1",
+                state:"failed_closed",
+                failed_or_final_stage:$stage,
+                exit_code:$exit_code,
+                product_parent:$parent,
+                carrier_head:(if $carrier_head=="" then null else $carrier_head end),
+                candidate_commit:(if $candidate_commit=="" then null else $candidate_commit end),
+                candidate_tree:(if $candidate_tree=="" then null else $candidate_tree end),
+                staging_commit:(if $staging_commit=="" then null else $staging_commit end),
+                staging_tree:(if $staging_tree=="" then null else $staging_tree end),
+                source_requests:0,
+                route_executions:0,
+                new_source_admissions:0,
+                matrix_updates:(if $candidate_commit=="" then 0 else 1 end),
+                field_terminalizations:(if $candidate_commit=="" then 0 else 1 end),
+                row_state_mutations:0,
+                class_closed:false,
+                cumulative_ledger_effect:"none",
+                outside_human_dependency:false,
+                publication_effect:"none",
+                adoption_effect:"none",
+                graph_effect:"none"
+              }' > "$OUT/materializer-receipt.json"
+            finalize_sums
+            exit "$code"
+          }
+
+          trap on_error ERR
+          set -Eeuo pipefail
+
+          stage=bind_exact_carrier_and_live_main
+          test "${{ github.event.pull_request.head.repo.full_name }}" = "$GITHUB_REPOSITORY"
+          test "${{ github.event.pull_request.head.ref }}" = "$CARRIER_BRANCH"
+          test "${{ github.event.pull_request.head.sha }}" = "$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$PARENT"
+          test "$(git rev-parse "$PARENT^{tree}")" = "$PARENT_TREE"
+          test "$(git rev-list --count "$PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$PARENT" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$PARENT" HEAD)" = "$CARRIER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$PARENT" HEAD)"
+          git diff --check "$PARENT" HEAD
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')"
+
+          stage=reconstruct_and_authenticate_static_package
+          cat > "$OUT/static-package.b64" <<'B64'
+          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
+          B64
+          test "$(wc -c < "$OUT/static-package.b64" | tr -d ' ')" -eq 20577
+          tr -d '\n' < "$OUT/static-package.b64" | base64 -d > "$OUT/static-package.tar.xz"
+          test "$(wc -c < "$OUT/static-package.tar.xz" | tr -d ' ')" -eq 15432
+          test "$(sha256sum "$OUT/static-package.tar.xz" | awk '{print $1}')" = 20209c25776c3f69a6c8159780953749b9fd3da6c1c6ce42122f17115a1ffc15
+          tar -tJf "$OUT/static-package.tar.xz" | sed 's#^\./##' | sort > "$OUT/static-package-paths.txt"
+          cat > "$OUT/expected-static-paths.txt" <<'PATHS'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.yml
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.mjs
+          PATHS
+          diff -u "$OUT/expected-static-paths.txt" "$OUT/static-package-paths.txt"
+          cat > "$OUT/static-sha256s.txt" <<'SUMS'
+          7177b0bd661d0d01af2d5902e0ded673debdf630a46867ab78482dd9180e9d50  ./.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.yml
+          173372c8a474f788010732585c9d8c38c50d91f65b5ae33d49815d24248d3ef6  ./docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.md
+          3c5b1279e200327ca0036ae31abbaed558620fc09245d6a3d7855feb4d92dc18  ./schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.schema.json
+          c3e32b971f6736c1f5aa57eaefbfb48b01d300154db00782df89bdc605b8aaac  ./test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.test.js
+          8c233bc1ef409a45d1443c32d2b1508de2c9acb06be9ef2100cdb780d69d76bb  ./tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.mjs
+          fceecffdd959b00a4dc3d48b1672d0e5faa67a9ccf61223f4fa091a1de7534b0  ./tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.mjs
+          SUMS
+
+          stage=construct_exact_candidate
+          git worktree add --detach "$WORK" "$PARENT"
+          tar -xJf "$OUT/static-package.tar.xz" -C "$WORK"
+          (cd "$WORK" && sha256sum -c "$OUT/static-sha256s.txt")
+          node --check "$WORK/tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.mjs"
+          node --check "$WORK/tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.mjs"
+          node --check "$WORK/test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.test.js"
+          python - "$WORK" <<'PY'
+          import json, sys
+          from pathlib import Path
+          import yaml
+          from jsonschema import Draft202012Validator
+          root=Path(sys.argv[1])
+          yaml.safe_load((root/'.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.yml').read_text())
+          schema=json.loads((root/'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.schema.json').read_text())
+          Draft202012Validator.check_schema(schema)
+          print('static_workflow_and_schema=pass')
+          PY
+          (
+            cd "$WORK"
+            node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.mjs
+            node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.mjs
+            node test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.test.js
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          )
+          python - "$WORK" <<'PY'
+          import json, sys
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          root=Path(sys.argv[1])
+          schema=json.loads((root/'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.schema.json').read_text())
+          validator=Draft202012Validator(schema)
+          data=root/'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion'
+          names=[
+            'promotion-input-custody.json','promotion-decisions.json','cell-promotion-ledger.json',
+            'promoted-partial-field-matrix.json','remaining-open-field-census.json','promotion-summary.json',
+            'index.json','product-manifest.json'
+          ]
+          for name in names:
+              errors=sorted(validator.iter_errors(json.loads((data/name).read_text())),key=lambda e:list(e.path))
+              if errors: raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
+          print('schema_validation=pass objects=8')
+          PY
+
+          mapfile -t PERMANENT_PATHS <<'PATHS'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion/cell-promotion-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion/promoted-partial-field-matrix.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion/promotion-decisions.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion/promotion-input-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion/promotion-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion/remaining-open-field-census.json
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.mjs
+          PATHS
+          printf '%s\n' "${PERMANENT_PATHS[@]}" | sort > "$OUT/expected-product-paths.txt"
+          git -C "$WORK" diff --name-only "$PARENT" | sort > "$OUT/actual-product-paths.txt"
+          diff -u "$OUT/expected-product-paths.txt" "$OUT/actual-product-paths.txt"
+          git -C "$WORK" diff --name-only --diff-filter=A "$PARENT" | sort > "$OUT/added-product-paths.txt"
+          diff -u "$OUT/expected-product-paths.txt" "$OUT/added-product-paths.txt"
+          test -z "$(git -C "$WORK" diff --name-only --diff-filter=MDTCRUXB "$PARENT")"
+          git -C "$WORK" diff --check "$PARENT"
+          git -C "$WORK" config user.name 'RD-04 bounded materializer'
+          git -C "$WORK" config user.email 'rd04-materializer@users.noreply.github.com'
+          git -C "$WORK" add -- "${PERMANENT_PATHS[@]}"
+          git -C "$WORK" commit -m 'Promote one RD-04 North Dakota operative-authority cell'
+          candidate_commit="$(git -C "$WORK" rev-parse HEAD)"
+          candidate_tree="$(git -C "$WORK" rev-parse HEAD^{tree})"
+          test "$(git -C "$WORK" rev-parse HEAD^)" = "$PARENT"
+          test "$(git -C "$WORK" rev-list --count "$PARENT"..HEAD)" -eq 1
+          test "$(git -C "$WORK" diff-tree --no-commit-id --name-only -r HEAD | sort | wc -l)" -eq 14
+          printf '%s\n' "$candidate_commit" > "$OUT/candidate-commit.txt"
+          printf '%s\n' "$candidate_tree" > "$OUT/candidate-tree.txt"
+
+          stage=run_complete_release_gate
+          (cd "$WORK" && npm run release:check)
+
+          stage=restore_and_clean_replay
+          git -C "$WORK" restore --staged --worktree .
+          git -C "$WORK" clean -fdx
+          (
+            cd "$WORK"
+            node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.mjs
+            node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.mjs
+            node test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-one-cell-promotion.test.js
+            test -z "$(git status --porcelain)"
+          )
+
+          stage=construct_and_publish_staging_custody
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')"
+          git worktree add --detach "$STAGE_WT" "$PARENT"
+          for relative in "${PERMANENT_PATHS[@]}"; do
+            if test "$relative" = "$STANDING_WORKFLOW"; then
+              continue
+            fi
+            mkdir -p "$STAGE_WT/$(dirname "$relative")"
+            cp "$WORK/$relative" "$STAGE_WT/$relative"
+          done
+          mkdir -p "$STAGE_WT/$(dirname "$SHADOW_WORKFLOW")"
+          cp "$WORK/$STANDING_WORKFLOW" "$STAGE_WT/$SHADOW_WORKFLOW"
+          git -C "$STAGE_WT" config user.name 'RD-04 bounded materializer'
+          git -C "$STAGE_WT" config user.email 'rd04-materializer@users.noreply.github.com'
+          git -C "$STAGE_WT" add -- "${PERMANENT_PATHS[@]:1}" "$SHADOW_WORKFLOW"
+          git -C "$STAGE_WT" commit -m 'Stage exact RD-04 North Dakota one-cell promotion product'
+          staging_commit="$(git -C "$STAGE_WT" rev-parse HEAD)"
+          staging_tree="$(git -C "$STAGE_WT" rev-parse HEAD^{tree})"
+          test "$(git -C "$STAGE_WT" rev-parse HEAD^)" = "$PARENT"
+          test "$(git -C "$STAGE_WT" rev-list --count "$PARENT"..HEAD)" -eq 1
+          { printf '%s\n' "${PERMANENT_PATHS[@]:1}"; printf '%s\n' "$SHADOW_WORKFLOW"; } | sort > "$OUT/expected-staging-paths.txt"
+          git -C "$STAGE_WT" diff-tree --no-commit-id --name-only -r HEAD | sort > "$OUT/actual-staging-paths.txt"
+          diff -u "$OUT/expected-staging-paths.txt" "$OUT/actual-staging-paths.txt"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')"
+          git -C "$STAGE_WT" push origin "HEAD:refs/heads/$STAGING_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')" = "$staging_commit"
+          printf '%s\n' "$staging_commit" > "$OUT/staging-commit.txt"
+          printf '%s\n' "$staging_tree" > "$OUT/staging-tree.txt"
+
+          stage=seal_product_and_staging_artifact
+          (
+            cd "$WORK"
+            tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner \
+              -cJf "$OUT/product.tar.xz" "${PERMANENT_PATHS[@]}"
+          )
+          python - "$WORK" "$STAGE_WT" "$OUT" "$candidate_commit" "$staging_commit" "$SHADOW_WORKFLOW" <<'PY'
+          import hashlib, json, subprocess, sys
+          from pathlib import Path
+          work, stage, out = map(Path, sys.argv[1:4])
+          candidate, staging, shadow = sys.argv[4:7]
+          permanent = [line for line in (out/'expected-product-paths.txt').read_text().splitlines() if line]
+          staging_paths = [line for line in (out/'expected-staging-paths.txt').read_text().splitlines() if line]
+          def inventory(root, commit, paths):
+              rows=[]
+              for rel in paths:
+                  line=subprocess.check_output(['git','-C',str(root),'ls-tree',commit,'--',rel],text=True).strip()
+                  mode, typ, blob, actual = line.split(None,3)
+                  data=(root/rel).read_bytes()
+                  rows.append({
+                    'path':actual,'mode':mode,'type':typ,'git_blob':blob,'bytes':len(data),
+                    'sha256':hashlib.sha256(data).hexdigest()
+                  })
+              return rows
+          (out/'candidate-product-inventory.json').write_text(json.dumps(inventory(work,candidate,permanent),indent=2,sort_keys=True)+'\n')
+          (out/'staging-inventory.json').write_text(json.dumps(inventory(stage,staging,staging_paths),indent=2,sort_keys=True)+'\n')
+          PY
+          product_archive_sha="$(sha256sum "$OUT/product.tar.xz" | awk '{print $1}')"
+          product_archive_bytes="$(wc -c < "$OUT/product.tar.xz" | tr -d ' ')"
+          test "$(tar -tJf "$OUT/product.tar.xz" | wc -l)" -eq 14
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$PARENT"
+          jq -n \
+            --arg parent "$PARENT" \
+            --arg parent_tree "$PARENT_TREE" \
+            --arg carrier_head "$(git rev-parse HEAD)" \
+            --arg carrier_path "$CARRIER_PATH" \
+            --arg candidate_commit "$candidate_commit" \
+            --arg candidate_tree "$candidate_tree" \
+            --arg staging_branch "$STAGING_BRANCH" \
+            --arg staging_commit "$staging_commit" \
+            --arg staging_tree "$staging_tree" \
+            --arg shadow_workflow "$SHADOW_WORKFLOW" \
+            --arg product_archive_sha256 "$product_archive_sha" \
+            --argjson product_archive_bytes "$product_archive_bytes" \
+            '{
+              schema_version:"ssc-rd04-postpromotion-nd-one-cell-materializer@1",
+              state:"qualified_staging_published",
+              failed_or_final_stage:"complete",
+              exit_code:0,
+              product_parent:$parent,
+              product_parent_tree:$parent_tree,
+              carrier_head:$carrier_head,
+              carrier_path:$carrier_path,
+              candidate_commit:$candidate_commit,
+              candidate_tree:$candidate_tree,
+              permanent_path_count:14,
+              staging_branch:$staging_branch,
+              staging_commit:$staging_commit,
+              staging_tree:$staging_tree,
+              staging_path_count:14,
+              shadow_workflow_path:$shadow_workflow,
+              product_archive_sha256:$product_archive_sha256,
+              product_archive_bytes:$product_archive_bytes,
+              validation_pull_request:1585,
+              validation_workflow_run:31277994050,
+              validation_artifact_id:9027574937,
+              validation_artifact_zip_sha256:"c12b2bb95dcedb9b02aee4282835548d72a08a72f3488568c4966adb0b2aedfb",
+              validation_receipt_sha256:"7b6fd6a65c9592445054379c0f1142bad02141a620e0855f6100ad49d486c5dc",
+              terminal_cells_before:226,
+              terminal_cells_after:227,
+              still_open_cells_before:224,
+              still_open_cells_after:223,
+              open_substantive_cells_before:184,
+              open_substantive_cells_after:183,
+              terminal_units_before:10,
+              terminal_units_after:10,
+              source_requests:0,
+              route_executions:0,
+              new_source_admissions:0,
+              matrix_updates:1,
+              field_terminalizations:1,
+              row_state_mutations:0,
+              class_closed:false,
+              cumulative_ledger_effect:"none",
+              outside_human_dependency:false,
+              publication_effect:"none",
+              adoption_effect:"none",
+              graph_effect:"none"
+            }' > "$OUT/materializer-receipt.json"
+          stage=complete
+          printf '0\n' > "$OUT/EXIT_CODE"
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          finalize_sums
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+
+      - name: Preserve exact materialization and staging custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce qualified terminal result
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-nd-one-cell-promotion-materializer-v1"
+          test "${{ steps.materialize.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          jq -e '
+            .state=="qualified_staging_published" and
+            .failed_or_final_stage=="complete" and
+            .exit_code==0 and
+            .permanent_path_count==14 and
+            .staging_path_count==14 and
+            .terminal_cells_before==226 and
+            .terminal_cells_after==227 and
+            .still_open_cells_before==224 and
+            .still_open_cells_after==223 and
+            .open_substantive_cells_before==184 and
+            .open_substantive_cells_after==183 and
+            .terminal_units_before==10 and
+            .terminal_units_after==10 and
+            .source_requests==0 and
+            .route_executions==0 and
+            .new_source_admissions==0 and
+            .matrix_updates==1 and
+            .field_terminalizations==1 and
+            .row_state_mutations==0 and
+            .class_closed==false and
+            .cumulative_ledger_effect=="none" and
+            .outside_human_dependency==false and
+            .publication_effect=="none" and
+            .adoption_effect=="none" and
+            .graph_effect=="none"
+          ' "$OUT/materializer-receipt.json" > /dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
