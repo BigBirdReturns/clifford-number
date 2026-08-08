@@ -1,0 +1,322 @@
+name: TEMP materialize RD-04 postpromotion four-cell promotion v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-postpromotion-four-cell-promotion-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-materialize-rd04-postpromotion-four-cell-promotion-v2
+  cancel-in-progress: false
+
+env:
+  PRODUCT_PARENT: d35deab5ef1e255e5957f29e11fe53fcf74e1cfd
+  PRODUCT_PARENT_TREE: cb129c2c7297ef5aa2dc0076030f8d2eb5440860
+  CARRIER_BRANCH: agent/ssc-rd04-postpromotion-four-cell-promotion-materializer-v2
+  CARRIER_PATH: .github/workflows/temp-materialize-ssc-rd04-postpromotion-four-cell-promotion-v2.yml
+  PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-four-cell-promotion-product-v1
+  STAGING_BRANCH: staging/ssc-rd04-postpromotion-four-cell-promotion-v2
+  OUTPUT_DIR: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion
+  SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.schema.json
+  BUILDER_PATH: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs
+  VALIDATOR_PATH: tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs
+  TEST_PATH: test/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.test.js
+  WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.yml
+  VALIDATION_RUN: '31271574125'
+  VALIDATION_HEAD: ab045a446edf1078e87460e24af83fb5b8f4cd27
+  VALIDATION_ARTIFACT: '9025762366'
+  VALIDATION_ARTIFACT_BYTES: '10036'
+  VALIDATION_ARTIFACT_ZIP_SHA256: 83796ff8344ee3c638a27aea41f129f76004160fedb6d64954855f3a737cc819
+  VALIDATION_RECEIPT_SHA256: 42186deaef7bc5e687ce6cf9fa0e1c93f17ad8064d88e1680471824dcda6ff2a
+  VALIDATION_CANDIDATE_LEDGER_SHA256: c4b1be65c744e3df71296ee9fd9433f03f530dbf39fd45b77b77ce2cd141f6d2
+  VALIDATION_INPUT_INVENTORY_SHA256: f8ab2bc84c7cec7521c3095b32e58b2dc6901eb292f492208f6c77abf7567114
+  SOURCE_MATERIALIZER_BRANCH: agent/rd04-four-cell-promotion-materializer-v1
+  SOURCE_MATERIALIZER_HEAD: f1c508ecc347300073552717843a59bcac0ea250
+  SOURCE_MATERIALIZER_PATH: .github/workflows/temp-materialize-ssc-rd04-postpromotion-four-cell-promotion-v1.yml
+  SOURCE_MATERIALIZER_BLOB: 1a3edc22e73f887047b1e40e583bffaafcf73a0e
+  GH_TOKEN: ${{ github.token }}
+  PYTHONDONTWRITEBYTECODE: '1'
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-four-cell-promotion-materializer-v2')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install deterministic validators
+        run: python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2' 'jsonschema==4.25.1'
+
+      - name: Rebind and execute the sealed V1 product constructor
+        id: materialization
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          WRAPPER_OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-four-cell-promotion-wrapper-v2"
+          MATERIALIZER_OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-four-cell-promotion-materializer-v2"
+          REPLAY_SCRIPT="${RUNNER_TEMP}/ssc-rd04-postpromotion-four-cell-promotion-materializer-v2.sh"
+          rm -rf "$WRAPPER_OUT" "$MATERIALIZER_OUT" "$REPLAY_SCRIPT"
+          mkdir -p "$WRAPPER_OUT"
+          exec > >(tee "$WRAPPER_OUT/wrapper.log") 2>&1
+          wrapper_stage=bootstrap
+
+          wrapper_finalize() {
+            set +e
+            printf '%s\n' "$wrapper_stage" > "$WRAPPER_OUT/STAGE"
+            (
+              cd "$WRAPPER_OUT"
+              find . -maxdepth 1 -type f ! -name SHA256SUMS -print0 |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+            )
+          }
+          wrapper_error() {
+            local code=$?
+            trap - ERR
+            set +e
+            printf '%s\n' "$code" > "$WRAPPER_OUT/EXIT_CODE"
+            wrapper_finalize
+            exit "$code"
+          }
+          trap wrapper_error ERR
+
+          wrapper_stage=bind_wrapper_and_live_main
+          test "$(git rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "$PRODUCT_PARENT^{tree}")" = "$PRODUCT_PARENT_TREE"
+          test "$(git rev-list --count "$PRODUCT_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$PRODUCT_PARENT" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$PRODUCT_PARENT" HEAD)" = "$CARRIER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MD "$PRODUCT_PARENT" HEAD)"
+          git diff --check "$PRODUCT_PARENT" HEAD
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$PRODUCT_PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')"
+          test -z "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')"
+
+          wrapper_stage=authenticate_sealed_v1_constructor
+          git fetch --no-tags origin "+refs/heads/$SOURCE_MATERIALIZER_BRANCH:refs/remotes/origin/$SOURCE_MATERIALIZER_BRANCH"
+          test "$(git rev-parse "refs/remotes/origin/$SOURCE_MATERIALIZER_BRANCH")" = "$SOURCE_MATERIALIZER_HEAD"
+          test "$(git rev-parse "$SOURCE_MATERIALIZER_HEAD^")" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "$SOURCE_MATERIALIZER_HEAD:$SOURCE_MATERIALIZER_PATH")" = "$SOURCE_MATERIALIZER_BLOB"
+          git show "$SOURCE_MATERIALIZER_HEAD:$SOURCE_MATERIALIZER_PATH" > "$WRAPPER_OUT/source-materializer-v1.yml"
+          test "$(git hash-object "$WRAPPER_OUT/source-materializer-v1.yml")" = "$SOURCE_MATERIALIZER_BLOB"
+
+          wrapper_stage=extract_patch_and_seal_replay
+          python - "$WRAPPER_OUT/source-materializer-v1.yml" "$REPLAY_SCRIPT" "$WRAPPER_OUT/static-rebind-ledger.json" <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import re
+          import subprocess
+          import sys
+          import yaml
+
+          source_path = pathlib.Path(sys.argv[1])
+          replay_path = pathlib.Path(sys.argv[2])
+          ledger_path = pathlib.Path(sys.argv[3])
+          document = yaml.safe_load(source_path.read_text())
+          steps = document['jobs']['materialize']['steps']
+          matches = [step for step in steps if step.get('name') == 'Materialize and qualify exact product']
+          if len(matches) != 1 or not isinstance(matches[0].get('run'), str):
+              raise SystemExit('sealed materialization run block not found exactly once')
+          run = matches[0]['run']
+
+          static_match = re.search(r"(?m)^export STATIC_PAYLOADS_JSON='([^']+)'$", run)
+          if static_match is None:
+              raise SystemExit('static payload ledger not found')
+          payloads = json.loads(static_match.group(1))
+          if len(payloads) != 5:
+              raise SystemExit(f'static payload denominator mismatch: {len(payloads)}')
+
+          replacements = [
+              ('31271473675', '31271574125'),
+              ('7980e6872ff4954e5e5e17d2b905bb8a9cf99db6', 'ab045a446edf1078e87460e24af83fb5b8f4cd27'),
+              ('9025731830', '9025762366'),
+              ('af8d61caf7f13e0c665b320cc38ded6b4f73b6be89da7624130a4d6793e148c1', '83796ff8344ee3c638a27aea41f129f76004160fedb6d64954855f3a737cc819'),
+              ('c1ea0e2d0ba38d1f913eecb3edd33c85413e2d97cf82364b5d49ed0821967586', '42186deaef7bc5e687ce6cf9fa0e1c93f17ad8064d88e1680471824dcda6ff2a'),
+              ('8b125d7037bed8d2a23e8a9e5ba66e735ec84aa39a568614b7fa6b35b11a45d4', 'c4b1be65c744e3df71296ee9fd9433f03f530dbf39fd45b77b77ce2cd141f6d2'),
+              ('911c3d04ac06bbf0207572c1906a20075971caa13bd91e50a8c0d7722bafc9fe', 'f8ab2bc84c7cec7521c3095b32e58b2dc6901eb292f492208f6c77abf7567114'),
+              ('PR #1551', 'PR #1552'),
+              ('#1551', '#1552'),
+              ('8,693', '10,036'),
+          ]
+          old_must_disappear = [old for old, _ in replacements[:7]]
+          new_must_appear = [new for _, new in replacements[:5]]
+          rows = []
+          patched_payloads = {}
+          aggregate = ''
+          for relative, encoded in sorted(payloads.items()):
+              raw = base64.b64decode(encoded, validate=True)
+              text = raw.decode('utf-8')
+              before_sha = hashlib.sha256(raw).hexdigest()
+              counts = {}
+              for old, new in replacements:
+                  count = text.count(old)
+                  if count:
+                      text = text.replace(old, new)
+                  counts[old] = count
+              # Update machine-readable artifact byte scalars without touching hashes.
+              text, byte_scalar_count = re.subn(r'(?m)(validation_artifact_bytes\s*[:=]\s*)8693\b', r'\g<1>10036', text)
+              text, byte_json_count = re.subn(r'("validation_artifact_bytes"\s*:\s*)8693\b', r'\g<1>10036', text)
+              counts['validation_artifact_bytes_scalar'] = byte_scalar_count + byte_json_count
+              for old in old_must_disappear:
+                  if old in text:
+                      raise SystemExit(f'old controlling identity survived in {relative}: {old}')
+              patched = text.encode('utf-8')
+              patched_payloads[relative] = base64.b64encode(patched).decode('ascii')
+              aggregate += text
+              rows.append({
+                  'path': relative,
+                  'bytes_before': len(raw),
+                  'sha256_before': before_sha,
+                  'bytes_after': len(patched),
+                  'sha256_after': hashlib.sha256(patched).hexdigest(),
+                  'replacement_counts': counts,
+              })
+          for value in new_must_appear:
+              if value not in aggregate:
+                  raise SystemExit(f'new controlling identity absent from patched static payloads: {value}')
+
+          compact = json.dumps(patched_payloads, sort_keys=True, separators=(',', ':'))
+          run = run[:static_match.start(1)] + compact + run[static_match.end(1):]
+          dollar = '$'
+          expression_map = {
+              dollar + '{{ github.event_name }}': 'pull_request',
+              dollar + '{{ github.event.pull_request.head.ref }}': os.environ['CARRIER_BRANCH'],
+              dollar + '{{ github.event.pull_request.head.sha }}': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+          }
+          for old, new in expression_map.items():
+              count = run.count(old)
+              if count != 1:
+                  raise SystemExit(f'GitHub expression denominator mismatch for {old}: {count}')
+              run = run.replace(old, new)
+          if dollar + '{{' in run:
+              raise SystemExit('unresolved GitHub expression survived replay extraction')
+          run = run.replace(
+              'ssc-rd04-postpromotion-four-cell-promotion-materializer-v1',
+              'ssc-rd04-postpromotion-four-cell-promotion-materializer-v2',
+          )
+          replay_path.write_text('#!/usr/bin/env bash\n' + run)
+          replay_path.chmod(0o755)
+          ledger = {
+              'schema_version': 'ssc-rd04-postpromotion-four-cell-promotion-static-rebind@1',
+              'source_materializer_head': os.environ['SOURCE_MATERIALIZER_HEAD'],
+              'source_materializer_blob': os.environ['SOURCE_MATERIALIZER_BLOB'],
+              'controlling_validation': {
+                  'run': int(os.environ['VALIDATION_RUN']),
+                  'head': os.environ['VALIDATION_HEAD'],
+                  'artifact': int(os.environ['VALIDATION_ARTIFACT']),
+                  'artifact_bytes': int(os.environ['VALIDATION_ARTIFACT_BYTES']),
+                  'artifact_zip_sha256': os.environ['VALIDATION_ARTIFACT_ZIP_SHA256'],
+                  'receipt_sha256': os.environ['VALIDATION_RECEIPT_SHA256'],
+                  'candidate_ledger_sha256': os.environ['VALIDATION_CANDIDATE_LEDGER_SHA256'],
+                  'input_inventory_sha256': os.environ['VALIDATION_INPUT_INVENTORY_SHA256'],
+              },
+              'static_payload_count': len(rows),
+              'static_payloads': rows,
+              'replay_script_bytes': replay_path.stat().st_size,
+              'replay_script_sha256': hashlib.sha256(replay_path.read_bytes()).hexdigest(),
+          }
+          ledger_path.write_text(json.dumps(ledger, indent=2, sort_keys=True) + '\n')
+          print(json.dumps({
+              'static_payload_count': len(rows),
+              'replay_script_bytes': ledger['replay_script_bytes'],
+              'replay_script_sha256': ledger['replay_script_sha256'],
+          }, sort_keys=True))
+          PY
+          bash -n "$REPLAY_SCRIPT"
+          sha256sum "$REPLAY_SCRIPT" > "$WRAPPER_OUT/replay-script.sha256"
+
+          wrapper_stage=execute_rebound_materializer
+          bash "$REPLAY_SCRIPT"
+
+          wrapper_stage=verify_materializer_receipt
+          test -s "$MATERIALIZER_OUT/materialization-receipt.json"
+          test "$(cat "$MATERIALIZER_OUT/EXIT_CODE")" = 0
+          test "$(cat "$MATERIALIZER_OUT/STAGE")" = complete
+          (cd "$MATERIALIZER_OUT" && sha256sum -c SHA256SUMS)
+          jq -e \
+            --arg parent "$PRODUCT_PARENT" \
+            --arg staging "$STAGING_BRANCH" \
+            '.exit_code==0 and
+             .product_parent==$parent and
+             .candidate_commit!=null and
+             .candidate_tree!=null and
+             .staging_branch==$staging and
+             .permanent_path_count==14 and
+             .matrix_updates==4 and
+             .field_terminalizations==4 and
+             .row_state_mutations==0 and
+             .class_closed==false and
+             .cumulative_ledger_effect=="none" and
+             .outside_human_dependency==false and
+             .publication_effect=="none" and
+             .adoption_effect=="none" and
+             .graph_effect=="none"' \
+            "$MATERIALIZER_OUT/materialization-receipt.json" > /dev/null
+          cp "$MATERIALIZER_OUT/materialization-receipt.json" "$WRAPPER_OUT/materialization-receipt.json"
+          jq -r .candidate_commit "$MATERIALIZER_OUT/materialization-receipt.json" > "$WRAPPER_OUT/candidate-commit.txt"
+          jq -r .candidate_tree "$MATERIALIZER_OUT/materialization-receipt.json" > "$WRAPPER_OUT/candidate-tree.txt"
+          cp "$MATERIALIZER_OUT/EXIT_CODE" "$WRAPPER_OUT/MATERIALIZER_EXIT_CODE"
+          cp "$MATERIALIZER_OUT/STAGE" "$WRAPPER_OUT/MATERIALIZER_STAGE"
+
+          wrapper_stage=complete
+          trap - ERR
+          printf '%s\n' 0 > "$WRAPPER_OUT/EXIT_CODE"
+          wrapper_finalize
+
+      - name: Upload materialization and wrapper custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-four-cell-promotion-materializer-v2
+          path: |
+            ${{ runner.temp }}/ssc-rd04-postpromotion-four-cell-promotion-wrapper-v2
+            ${{ runner.temp }}/ssc-rd04-postpromotion-four-cell-promotion-materializer-v2
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+          include-hidden-files: true
+
+      - name: Preserve fail-closed conclusion
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          WRAPPER_OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-four-cell-promotion-wrapper-v2"
+          MATERIALIZER_OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-four-cell-promotion-materializer-v2"
+          test "${{ steps.materialization.outcome }}" = success
+          test "$(cat "$WRAPPER_OUT/EXIT_CODE")" = 0
+          test "$(cat "$WRAPPER_OUT/STAGE")" = complete
+          test "$(cat "$MATERIALIZER_OUT/EXIT_CODE")" = 0
+          test "$(cat "$MATERIALIZER_OUT/STAGE")" = complete
+          (cd "$WRAPPER_OUT" && sha256sum -c SHA256SUMS)
+          (cd "$MATERIALIZER_OUT" && sha256sum -c SHA256SUMS)
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$PRODUCT_PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')"
+          test "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')" = "$(jq -r .candidate_commit "$MATERIALIZER_OUT/materialization-receipt.json")"
