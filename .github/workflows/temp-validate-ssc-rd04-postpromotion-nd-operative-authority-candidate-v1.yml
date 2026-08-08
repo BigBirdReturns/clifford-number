@@ -1,0 +1,629 @@
+name: TEMP validate RD-04 ND operative-authority candidate v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-postpromotion-nd-operative-authority-validation-base-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.trigger/ssc-rd04-postpromotion-nd-operative-authority-validation-v1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: temp-validate-ssc-rd04-postpromotion-nd-operative-authority-candidate-v1
+  cancel-in-progress: false
+
+env:
+  CURRENT_MAIN: 30e151b3ff4aeb5e6353d443fab1c535bc6d7b69
+  VALIDATION_BASE_BRANCH: agent/ssc-rd04-postpromotion-nd-operative-authority-validation-base-v1
+  VALIDATION_TRIGGER_BRANCH: agent/ssc-rd04-postpromotion-nd-operative-authority-validation-trigger-v1
+  VALIDATION_WORKFLOW_PATH: .github/workflows/temp-validate-ssc-rd04-postpromotion-nd-operative-authority-candidate-v1.yml
+  VALIDATION_TRIGGER_PATH: .trigger/ssc-rd04-postpromotion-nd-operative-authority-validation-v1
+
+  POSTMERGE_ARTIFACT_ID: '9027338594'
+  POSTMERGE_ARTIFACT_BYTES: '51555'
+  POSTMERGE_ARTIFACT_DIGEST: sha256:3727782495ebf414ad5c34ed8d2b6af61388899266860567cee4ef513c9edf5d
+  POSTMERGE_RECEIPT_SHA256: ed0b527729c89c14700f7151efd6048f08c7af2c9127c7d3219f48b96f6d2d48
+  POSTMERGE_SCHEMA: ssc-rd04-postpromotion-nd-followup-adjudication-postmerge-proof@1
+
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 66896190dd575f9867f1e121d845acfb4d27f56f
+  CANDIDATE_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/promotion-candidate-protocol.json
+  CANDIDATE_BLOB: a93c685b47f2678e39bba8fb395fc5fdfdbee7ff
+  FIELD_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/field-adjudications.json
+  FIELD_BLOB: 11875231a4b074ea2ec4125cfbf0d27fcde44222
+  CAPTURE_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/capture-custody.json
+  CAPTURE_BLOB: c53688f9540033383594863cfec2dc932a515146
+  SOURCE_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/source-adjudications.json
+  SOURCE_BLOB: c46480e360d4302ec3e1846e43097d163c7d3c88
+  HTML_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/html-review-receipts.json
+  HTML_BLOB: a9e82f717fe9293aaa588940b0974ffc095e7cfd
+  DUPLICATION_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/transport-duplication-ledger.json
+  DUPLICATION_BLOB: 6d3efcbd5137e6e94229cebd57a79f5a80c95467
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/product-manifest.json
+  MANIFEST_BLOB: 4378b0f723a5705f80476af8dad3c197fc597bff
+  PRODUCT_VALIDATOR_PATH: tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs
+  PRODUCT_VALIDATOR_BLOB: fce38f5d25d8a69673f1c7144c6cb0cbf5c9df1f
+  PRODUCT_TEST_PATH: test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.test.js
+  PRODUCT_TEST_BLOB: 5511a1c17ca6d010df1b568e7ccfcf258895e9cb
+
+jobs:
+  validate:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-nd-operative-authority-validation-trigger-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Validate exact current cell and candidate custody
+        id: validation
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-nd-operative-authority-validation-v1"
+          PROOF="$OUT/postmerge-proof"
+          rm -rf "$OUT"
+          mkdir -p "$OUT" "$PROOF"
+          exec > >(tee "$OUT/validation.log") 2>&1
+          stage=bootstrap
+
+          finalize() {
+            local rc=$?
+            trap - EXIT
+            set +e
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          fail_receipt() {
+            local rc=$1
+            jq -n \
+              --arg stage "$stage" \
+              --argjson exit_code "$rc" \
+              --arg parent "$CURRENT_MAIN" \
+              --arg head "$(git rev-parse HEAD 2>/dev/null || true)" \
+              '{
+                schema_version:"ssc-rd04-postpromotion-nd-operative-authority-validation@1",
+                state:"failed_closed",
+                failed_or_final_stage:$stage,
+                exit_code:$exit_code,
+                execution_parent:$parent,
+                execution_head:(if $head=="" then null else $head end),
+                candidate_count:0,
+                admissible_candidate_count:0,
+                validated_open_cell_count:0,
+                excluded_held_cell_count:0,
+                matrix_updates:0,
+                field_terminalizations:0,
+                row_state_mutations:0,
+                class_closed:false,
+                cumulative_ledger_effect:"none",
+                outside_human_dependency:false,
+                publication_effect:"none",
+                adoption_effect:"none",
+                graph_effect:"none",
+                promotion_authority_created:false
+              }' > "$OUT/validation-receipt.json"
+          }
+
+          on_error() {
+            local rc=$?
+            trap - ERR
+            set +e
+            fail_receipt "$rc"
+            exit "$rc"
+          }
+          trap on_error ERR
+          set -Eeuo pipefail
+
+          stage=bind_validation_topology
+          VALIDATION_BASE_COMMIT="$(git rev-parse HEAD^)"
+          test "$(git rev-parse "$VALIDATION_BASE_COMMIT^")" = "$CURRENT_MAIN"
+          test "$(git rev-list --count "$CURRENT_MAIN".."$VALIDATION_BASE_COMMIT")" -eq 1
+          test "$(git rev-list --count "$VALIDATION_BASE_COMMIT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CURRENT_MAIN" "$VALIDATION_BASE_COMMIT")" = "$VALIDATION_WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" "$VALIDATION_BASE_COMMIT")" = "$VALIDATION_WORKFLOW_PATH"
+          test "$(git diff --name-only "$VALIDATION_BASE_COMMIT" HEAD)" = "$VALIDATION_TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$VALIDATION_BASE_COMMIT" HEAD)" = "$VALIDATION_TRIGGER_PATH"
+          git diff --check "$CURRENT_MAIN" HEAD
+          printf '%s\n' "$VALIDATION_BASE_COMMIT" > "$OUT/validation-base-commit.txt"
+          printf '%s\n' "$(git rev-parse HEAD)" > "$OUT/validation-trigger-head.txt"
+
+          stage=bind_live_main_and_inputs
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$CURRENT_MAIN"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CURRENT_MAIN"
+          while IFS='|' read -r path blob; do
+            test "$(git rev-parse "HEAD:$path")" = "$blob"
+          done <<EOF_INPUTS
+          $MATRIX_PATH|$MATRIX_BLOB
+          $CANDIDATE_PATH|$CANDIDATE_BLOB
+          $FIELD_PATH|$FIELD_BLOB
+          $CAPTURE_PATH|$CAPTURE_BLOB
+          $SOURCE_PATH|$SOURCE_BLOB
+          $HTML_PATH|$HTML_BLOB
+          $DUPLICATION_PATH|$DUPLICATION_BLOB
+          $MANIFEST_PATH|$MANIFEST_BLOB
+          $PRODUCT_VALIDATOR_PATH|$PRODUCT_VALIDATOR_BLOB
+          $PRODUCT_TEST_PATH|$PRODUCT_TEST_BLOB
+          EOF_INPUTS
+          printf '%s\n' "$(git rev-parse "$CURRENT_MAIN^{tree}")" > "$OUT/current-main-tree.txt"
+
+          stage=authenticate_postmerge_proof
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$POSTMERGE_ARTIFACT_ID" > "$OUT/postmerge-artifact-metadata.json"
+          jq -e \
+            --argjson id "$POSTMERGE_ARTIFACT_ID" \
+            --argjson bytes "$POSTMERGE_ARTIFACT_BYTES" \
+            --arg digest "$POSTMERGE_ARTIFACT_DIGEST" \
+            '.id==$id and .size_in_bytes==$bytes and .digest==$digest and .expired==false' \
+            "$OUT/postmerge-artifact-metadata.json" > /dev/null
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$POSTMERGE_ARTIFACT_ID/zip" > "$OUT/postmerge-proof.zip"
+          test "$(stat -c %s "$OUT/postmerge-proof.zip")" = "$POSTMERGE_ARTIFACT_BYTES"
+          test "sha256:$(sha256sum "$OUT/postmerge-proof.zip" | awk '{print $1}')" = "$POSTMERGE_ARTIFACT_DIGEST"
+          unzip -t "$OUT/postmerge-proof.zip" > "$OUT/postmerge-proof-zip-test.txt"
+          unzip -q "$OUT/postmerge-proof.zip" -d "$PROOF"
+          (cd "$PROOF" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$PROOF/postmerge-receipt.json" | awk '{print $1}')" = "$POSTMERGE_RECEIPT_SHA256"
+          jq -e \
+            --arg schema "$POSTMERGE_SCHEMA" \
+            --arg merge "$CURRENT_MAIN" \
+            '.schema_version==$schema and
+             .state=="canonical_postmerge_proved" and
+             .failed_or_final_stage=="complete" and
+             .exit_code==0 and
+             .canonical_merge==$merge and
+             .product_head=="9ac648d062d6a1ec5a19fec849be29bf76c69bad" and
+             .product_tree=="9d5b15d4b78e3027a316f507e46692e215f7e5a8" and
+             .permanent_path_count==14 and
+             .addition_only==true and
+             .promotion_candidates==1 and
+             .held_open_cells==1 and
+             .matrix_updates==0 and
+             .field_terminalizations==0 and
+             .row_state_mutations==0 and
+             .class_closed==false' \
+            "$PROOF/postmerge-receipt.json" > /dev/null
+
+          stage=replay_canonical_adjudication_gates
+          node "$PRODUCT_VALIDATOR_PATH"
+          node "$PRODUCT_TEST_PATH"
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          stage=validate_candidate_cell_and_hold
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import subprocess
+
+          root = pathlib.Path('.')
+          out = pathlib.Path(os.environ['RUNNER_TEMP']) / 'ssc-rd04-postpromotion-nd-operative-authority-validation-v1'
+
+          specs = {
+              'matrix': (os.environ['MATRIX_PATH'], os.environ['MATRIX_BLOB']),
+              'candidate_protocol': (os.environ['CANDIDATE_PATH'], os.environ['CANDIDATE_BLOB']),
+              'field_adjudications': (os.environ['FIELD_PATH'], os.environ['FIELD_BLOB']),
+              'capture_custody': (os.environ['CAPTURE_PATH'], os.environ['CAPTURE_BLOB']),
+              'source_adjudications': (os.environ['SOURCE_PATH'], os.environ['SOURCE_BLOB']),
+              'html_review_receipts': (os.environ['HTML_PATH'], os.environ['HTML_BLOB']),
+              'transport_duplication_ledger': (os.environ['DUPLICATION_PATH'], os.environ['DUPLICATION_BLOB']),
+              'product_manifest': (os.environ['MANIFEST_PATH'], os.environ['MANIFEST_BLOB']),
+              'product_validator': (os.environ['PRODUCT_VALIDATOR_PATH'], os.environ['PRODUCT_VALIDATOR_BLOB']),
+              'product_test': (os.environ['PRODUCT_TEST_PATH'], os.environ['PRODUCT_TEST_BLOB']),
+          }
+
+          def canonical_sha(value):
+              payload = json.dumps(value, sort_keys=True, separators=(',', ':')).encode()
+              return hashlib.sha256(payload).hexdigest()
+
+          def load_json(name):
+              relative, expected_blob = specs[name]
+              path = root / relative
+              data = path.read_bytes()
+              observed_blob = subprocess.check_output(['git', 'hash-object', str(path)], text=True).strip()
+              assert observed_blob == expected_blob, (name, observed_blob, expected_blob)
+              return json.loads(data), {
+                  'path': relative,
+                  'bytes': len(data),
+                  'sha256': hashlib.sha256(data).hexdigest(),
+                  'git_blob': observed_blob,
+              }
+
+          loaded = {}
+          inventory = {}
+          for name in specs:
+              if name in {'product_validator', 'product_test'}:
+                  relative, expected_blob = specs[name]
+                  path = root / relative
+                  data = path.read_bytes()
+                  observed_blob = subprocess.check_output(['git', 'hash-object', str(path)], text=True).strip()
+                  assert observed_blob == expected_blob
+                  inventory[name] = {
+                      'path': relative,
+                      'bytes': len(data),
+                      'sha256': hashlib.sha256(data).hexdigest(),
+                      'git_blob': observed_blob,
+                  }
+              else:
+                  loaded[name], inventory[name] = load_json(name)
+
+          matrix = loaded['matrix']
+          protocol = loaded['candidate_protocol']
+          fields = loaded['field_adjudications']
+          capture = loaded['capture_custody']
+          sources = loaded['source_adjudications']
+          html = loaded['html_review_receipts']
+          duplication = loaded['transport_duplication_ledger']
+          manifest = loaded['product_manifest']
+
+          counts = matrix['counts']
+          assert (
+              counts['materialized_cells'],
+              counts['terminal_cells'],
+              counts['still_open_cells'],
+              counts['still_open_substantive_cells'],
+              counts['terminal_units'],
+          ) == (450, 226, 224, 184, 10)
+          assert matrix['current_result']['class_closed'] is False
+          assert protocol['candidate_count'] == 1
+          assert protocol['unique_candidate_cell_count'] == 1
+          assert protocol['held_cell_count'] == 1
+          assert protocol['matrix_updates'] == 0
+          assert protocol['field_terminalizations'] == 0
+          assert protocol['row_state_mutations'] == 0
+          assert protocol['class_closed'] is False
+
+          candidate = protocol['candidates'][0]
+          assert candidate['candidate_id'] == 'RD04-PPN-ND-FU-CANDIDATE-OPERATIVE-STATE-IMPLEMENTATION-AUTHORITY-AND-VERSION'
+          assert candidate['decision_id'] == 'RD04-PPN-ND-FU-OPERATIVE-STATE-IMPLEMENTATION-AUTHORITY-AND-VERSION'
+          assert candidate['unit_id'] == 'US-STATE-ND'
+          assert candidate['postal_code'] == 'ND'
+          assert candidate['field_id'] == 'operative_state_implementation_authority_and_version'
+          assert candidate['source_route_ids'] == ['RD04-W03-PPN-ND-FU-001']
+          assert candidate['current_cell_requirement'] == 'must_remain_still_open_on_exact_promotion_parent'
+          assert candidate['promotion_effect_authorized_here'] == 'none'
+          assert candidate['row_state_effect'] == 'none'
+          assert candidate['class_closed'] is False
+          assert candidate['cumulative_ledger_effect'] == 'none'
+
+          row = next(row for row in matrix['rows'] if row['unit_id'] == 'US-STATE-ND')
+          cell = next(cell for cell in row['cells'] if cell['field_id'] == candidate['field_id'])
+          waiver_cell = next(
+              cell for cell in row['cells']
+              if cell['field_id'] == 'abawd_or_work_requirement_waiver_state_and_governing_period'
+          )
+          row_state_cell = next(cell for cell in row['cells'] if cell['field_id'] == 'field_and_row_terminal_state')
+          candidate_cell_sha = canonical_sha(cell)
+          waiver_cell_sha = canonical_sha(waiver_cell)
+          assert cell['state'] == 'still_open' and cell['terminal'] is False
+          assert candidate_cell_sha == candidate['current_cell_canonical_sha256']
+          assert candidate_cell_sha == '1e857cb90de38207a82ca2f844083ea56ef8d616c0aa229d135b0bb53f0cc382'
+          assert waiver_cell['state'] == 'still_open' and waiver_cell['terminal'] is False
+          assert waiver_cell_sha == 'cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe'
+          assert row_state_cell['terminal'] is False
+          assert row['row_state'] == 'still_open'
+          assert (row['terminal_fields'], row['open_fields']) == (6, 3)
+
+          decisions = {decision['decision_id']: decision for decision in fields['decisions']}
+          decision = decisions[candidate['decision_id']]
+          held_id = 'RD04-PPN-ND-FU-ABAWD-OR-WORK-REQUIREMENT-WAIVER-STATE-AND-GOVERNING-PERIOD'
+          held = decisions[held_id]
+          assert decision['unit_id'] == candidate['unit_id']
+          assert decision['field_id'] == candidate['field_id']
+          assert decision['disposition'] == 'evidence_complete_bounded_finding'
+          assert decision['promotion_candidate'] is True
+          assert decision['bounded_finding'] == candidate['bounded_finding']
+          assert decision['source_route_ids'] == candidate['source_route_ids']
+          assert decision['evidence_locators'] == candidate['evidence_locators']
+          assert decision['substantive_field_terminalizations'] == 0
+          assert decision['row_state_effect'] == 'none'
+          assert held['field_id'] == 'abawd_or_work_requirement_waiver_state_and_governing_period'
+          assert held['disposition'] == 'temporal_or_scope_ambiguity_hold_open'
+          assert held['promotion_candidate'] is False
+          assert held['bounded_finding']['current_post_2025_10_31_state'] == 'not_expressly_stated_in_captured_history_log'
+          assert held['source_route_ids'] == ['RD04-W03-PPN-ND-FU-002']
+          assert held['substantive_field_terminalizations'] == 0
+          assert fields['summary']['evidence_complete_candidates'] == 1
+          assert fields['summary']['held_open_fields'] == 1
+
+          source_by_route = {source['route_id']: source for source in sources['decisions']}
+          source = source_by_route['RD04-W03-PPN-ND-FU-001']
+          held_source = source_by_route['RD04-W03-PPN-ND-FU-002']
+          assert source['source_admitted_for_narrow_scope'] is True
+          assert source['candidate_fields_for_offline_review'] == [candidate['field_id']]
+          assert source['substantive_weight_count'] == 1
+          assert source['duplicate_transport_observations'] == 2
+          assert source['body_bytes'] == 54545
+          assert source['body_sha256'] == 'b67637ce96affea164d2a467bae37327eeb9141e15d824ab092e017364595d8d'
+          assert len(source['transport_observations']) == 3
+          assert len({row['body_sha256'] for row in source['transport_observations']}) == 1
+          assert held_source['candidate_fields_for_offline_review'] == ['abawd_or_work_requirement_waiver_state_and_governing_period']
+          assert held_source['body_sha256'] == '30268733f0aa5e2f1e3d7ce4aa0b3c748c0394afc5a0b860327ad64c19bdb81a'
+
+          html_by_route = {receipt['route_id']: receipt for receipt in html['receipts']}
+          html_receipt = html_by_route['RD04-W03-PPN-ND-FU-001']
+          held_html_receipt = html_by_route['RD04-W03-PPN-ND-FU-002']
+          assert html_receipt['all_visible_text_reviewed'] is True
+          assert html_receipt['body_bytes'] == source['body_bytes']
+          assert html_receipt['body_sha256'] == source['body_sha256']
+          assert html_receipt['visible_text_sha256'] == '0db5be97b1050b9ee8e96d3384d4b37a44ce113681d4a6b651c83666561713cb'
+          assert html_receipt['result_spawned_requests'] == 0
+          assert held_html_receipt['all_visible_text_reviewed'] is True
+          assert held_html_receipt['body_sha256'] == held_source['body_sha256']
+          assert html['summary']['all_visible_text_reviewed'] is True
+          assert html['summary']['result_spawned_requests'] == 0
+
+          route_identity = {row['route_id']: row for row in duplication['route_body_identity']}
+          candidate_identity = route_identity['RD04-W03-PPN-ND-FU-001']
+          held_identity = route_identity['RD04-W03-PPN-ND-FU-002']
+          for identity in (candidate_identity, held_identity):
+              assert identity['artifact_body_identity_count'] == 3
+              assert identity['duplicate_transport_observations'] == 2
+              assert identity['substantive_weight_count'] == 1
+          assert candidate_identity['body_sha256'] == source['body_sha256']
+          assert held_identity['body_sha256'] == held_source['body_sha256']
+          assert duplication['summary']['body_changes'] == 0
+          assert duplication['summary']['duplicate_artifacts'] == 2
+          assert duplication['summary']['unique_body_identities'] == 2
+          assert duplication['additional_execution_authorized'] is False
+
+          assert capture['additional_execution_authorized'] is False
+          assert manifest['permanent_path_count'] == 14
+          assert manifest['hashed_file_count'] == 13
+          assert manifest['authority_boundary']['matrix_updates'] == 0
+          assert manifest['authority_boundary']['field_terminalizations_created'] == 0
+          assert manifest['authority_boundary']['row_state_mutations'] == 0
+          assert manifest['authority_boundary']['class_closed'] is False
+
+          projected = {
+              'terminal_cells_before': 226,
+              'terminal_cells_after': 227,
+              'still_open_cells_before': 224,
+              'still_open_cells_after': 223,
+              'open_substantive_cells_before': 184,
+              'open_substantive_cells_after': 183,
+              'terminal_units_before': 10,
+              'terminal_units_after': 10,
+              'nd_terminal_fields_before': 6,
+              'nd_terminal_fields_after': 7,
+              'nd_open_fields_before': 3,
+              'nd_open_fields_after': 2,
+              'nd_row_state_after': 'still_open',
+          }
+
+          validation = {
+              'candidate_id': candidate['candidate_id'],
+              'decision_id': candidate['decision_id'],
+              'unit_id': candidate['unit_id'],
+              'postal_code': candidate['postal_code'],
+              'state_name': candidate['state_name'],
+              'field_id': candidate['field_id'],
+              'current_cell_state': cell['state'],
+              'current_cell_terminal': cell['terminal'],
+              'current_cell_canonical_sha256': candidate_cell_sha,
+              'current_row_canonical_sha256': canonical_sha(row),
+              'bounded_finding': candidate['bounded_finding'],
+              'source_route_ids': candidate['source_route_ids'],
+              'evidence_locators': candidate['evidence_locators'],
+              'source_custody': {
+                  'source_decision_id': source['source_decision_id'],
+                  'requested_url': source['requested_url'],
+                  'final_url': source['final_url'],
+                  'body_bytes': source['body_bytes'],
+                  'body_sha256': source['body_sha256'],
+                  'html_review_receipt_id': source['html_review_receipt_id'],
+                  'all_visible_text_reviewed': html_receipt['all_visible_text_reviewed'],
+                  'visible_text_sha256': html_receipt['visible_text_sha256'],
+                  'transport_observations': len(source['transport_observations']),
+                  'duplicate_transport_observations': source['duplicate_transport_observations'],
+                  'substantive_weight_count': source['substantive_weight_count'],
+              },
+              'exact_current_cell_validation': 'pass',
+              'candidate_decision_identity_validation': 'pass',
+              'route_target_validation': 'pass',
+              'source_field_scope_validation': 'pass',
+              'html_review_validation': 'pass',
+              'duplicate_weight_validation': 'pass',
+              'promotion_authority_created': False,
+          }
+
+          receipt = {
+              'schema_version': 'ssc-rd04-postpromotion-nd-operative-authority-validation@1',
+              'state': 'validated',
+              'failed_or_final_stage': 'complete',
+              'exit_code': 0,
+              'issue': 1017,
+              'wave_id': 'SSC-RD-W03',
+              'lane_id': 'RD-04',
+              'class_id': 'RD-04-C02',
+              'workflow_run': int(os.environ['GITHUB_RUN_ID']),
+              'execution_parent': os.environ['CURRENT_MAIN'],
+              'execution_parent_tree': subprocess.check_output(['git', 'rev-parse', f"{os.environ['CURRENT_MAIN']}^{{tree}}"], text=True).strip(),
+              'execution_head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'postmerge_proof': {
+                  'artifact_id': int(os.environ['POSTMERGE_ARTIFACT_ID']),
+                  'artifact_bytes': int(os.environ['POSTMERGE_ARTIFACT_BYTES']),
+                  'artifact_digest': os.environ['POSTMERGE_ARTIFACT_DIGEST'],
+                  'receipt_sha256': os.environ['POSTMERGE_RECEIPT_SHA256'],
+              },
+              'input_inventory': inventory,
+              'candidate_count': 1,
+              'admissible_candidate_count': 1,
+              'validated_open_cell_count': 1,
+              'excluded_held_cell_count': 1,
+              'candidate_validation': validation,
+              'excluded_held_decision': {
+                  'decision_id': held['decision_id'],
+                  'field_id': held['field_id'],
+                  'disposition': held['disposition'],
+                  'current_cell_state': waiver_cell['state'],
+                  'current_cell_terminal': waiver_cell['terminal'],
+                  'current_cell_canonical_sha256': waiver_cell_sha,
+                  'promotion_candidate': held['promotion_candidate'],
+              },
+              'matrix_transition_if_separately_promoted': projected,
+              'source_requests': 0,
+              'route_executions': 0,
+              'source_admissions_created': 0,
+              'matrix_updates': 0,
+              'field_terminalizations': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'promotion_authority_created': False,
+              'next_authorized_operation': 'construct a separate permanent one-cell promotion product over this exact parent, candidate, source, and validation receipt; exclude the waiver-period hold',
+          }
+
+          payload = json.dumps(receipt, indent=2, sort_keys=True) + '\n'
+          (out / 'validation-receipt.json').write_text(payload)
+          (out / 'validation-receipt-sha256.txt').write_text(hashlib.sha256(payload.encode()).hexdigest() + '\n')
+          (out / 'input-inventory.json').write_text(json.dumps(inventory, indent=2, sort_keys=True) + '\n')
+          (out / 'candidate-validation.json').write_text(json.dumps(validation, indent=2, sort_keys=True) + '\n')
+          print('rd04_nd_operative_authority_validation=pass candidates=1 held=1 matrix=226/450')
+          PY
+
+          stage=reconfirm_live_main
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CURRENT_MAIN"
+          stage=complete
+          trap - ERR
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          printf '%s\n' complete > "$OUT/STAGE"
+
+      - name: Upload exact validation custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-nd-operative-authority-validation-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-nd-operative-authority-validation-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Report typed validation result
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R="$RUNNER_TEMP/ssc-rd04-postpromotion-nd-operative-authority-validation-v1/validation-receipt.json"
+          test -s "$R"
+          {
+            printf '%s\n\n' 'RD-04 North Dakota operative-authority candidate reached a typed exact-current-cell validation result.'
+            printf '%s\n' '```text'
+            printf 'state: %s\n' "$(jq -r .state "$R")"
+            printf 'stage: %s\n' "$(jq -r .failed_or_final_stage "$R")"
+            printf 'execution_parent: %s\n' "$(jq -r .execution_parent "$R")"
+            printf 'candidate_count: %s\n' "$(jq -r .candidate_count "$R")"
+            printf 'admissible_candidate_count: %s\n' "$(jq -r .admissible_candidate_count "$R")"
+            printf 'validated_open_cell_count: %s\n' "$(jq -r .validated_open_cell_count "$R")"
+            printf 'excluded_held_cell_count: %s\n' "$(jq -r .excluded_held_cell_count "$R")"
+            printf 'terminal_cells_before: %s\n' "$(jq -r '.matrix_transition_if_separately_promoted.terminal_cells_before // "none"' "$R")"
+            printf 'terminal_cells_after_if_promoted: %s\n' "$(jq -r '.matrix_transition_if_separately_promoted.terminal_cells_after // "none"' "$R")"
+            printf 'open_substantive_cells_after_if_promoted: %s\n' "$(jq -r '.matrix_transition_if_separately_promoted.open_substantive_cells_after // "none"' "$R")"
+            printf 'matrix_updates: %s\n' "$(jq -r .matrix_updates "$R")"
+            printf 'field_terminalizations: %s\n' "$(jq -r .field_terminalizations "$R")"
+            printf 'row_state_mutations: %s\n' "$(jq -r .row_state_mutations "$R")"
+            printf 'class_closed: %s\n' "$(jq -r .class_closed "$R")"
+            printf '%s\n\n' '```'
+            printf '%s\n' 'This lane creates validation custody only. A separate permanent one-cell product remains required, and the waiver-period hold remains outside its denominator.'
+          } > /tmp/rd04-nd-operative-authority-validation-result.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/rd04-nd-operative-authority-validation-result.md
+
+      - name: Preserve fail-closed conclusion
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-nd-operative-authority-validation-v1"
+          R="$OUT/validation-receipt.json"
+          test "${{ steps.validation.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e \
+            --arg parent "$CURRENT_MAIN" \
+            --arg matrix "$MATRIX_BLOB" \
+            --arg candidate "$CANDIDATE_BLOB" \
+            --arg fields "$FIELD_BLOB" \
+            --arg capture "$CAPTURE_BLOB" \
+            --arg sources "$SOURCE_BLOB" \
+            --arg html "$HTML_BLOB" \
+            --arg duplication "$DUPLICATION_BLOB" \
+            --arg manifest "$MANIFEST_BLOB" \
+            --arg proof_digest "$POSTMERGE_ARTIFACT_DIGEST" \
+            --arg proof_receipt "$POSTMERGE_RECEIPT_SHA256" \
+            '.state=="validated" and
+             .failed_or_final_stage=="complete" and
+             .exit_code==0 and
+             .execution_parent==$parent and
+             .postmerge_proof.artifact_digest==$proof_digest and
+             .postmerge_proof.receipt_sha256==$proof_receipt and
+             .input_inventory.matrix.git_blob==$matrix and
+             .input_inventory.candidate_protocol.git_blob==$candidate and
+             .input_inventory.field_adjudications.git_blob==$fields and
+             .input_inventory.capture_custody.git_blob==$capture and
+             .input_inventory.source_adjudications.git_blob==$sources and
+             .input_inventory.html_review_receipts.git_blob==$html and
+             .input_inventory.transport_duplication_ledger.git_blob==$duplication and
+             .input_inventory.product_manifest.git_blob==$manifest and
+             .candidate_count==1 and
+             .admissible_candidate_count==1 and
+             .validated_open_cell_count==1 and
+             .excluded_held_cell_count==1 and
+             .candidate_validation.current_cell_canonical_sha256=="1e857cb90de38207a82ca2f844083ea56ef8d616c0aa229d135b0bb53f0cc382" and
+             .excluded_held_decision.current_cell_canonical_sha256=="cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe" and
+             .excluded_held_decision.disposition=="temporal_or_scope_ambiguity_hold_open" and
+             .matrix_transition_if_separately_promoted.terminal_cells_before==226 and
+             .matrix_transition_if_separately_promoted.terminal_cells_after==227 and
+             .matrix_transition_if_separately_promoted.open_substantive_cells_before==184 and
+             .matrix_transition_if_separately_promoted.open_substantive_cells_after==183 and
+             .matrix_transition_if_separately_promoted.terminal_units_after==10 and
+             .matrix_transition_if_separately_promoted.nd_row_state_after=="still_open" and
+             .source_requests==0 and
+             .route_executions==0 and
+             .source_admissions_created==0 and
+             .matrix_updates==0 and
+             .field_terminalizations==0 and
+             .row_state_mutations==0 and
+             .class_closed==false and
+             .cumulative_ledger_effect=="none" and
+             .outside_human_dependency==false and
+             .publication_effect=="none" and
+             .adoption_effect=="none" and
+             .graph_effect=="none" and
+             .promotion_authority_created==false' \
+            "$R" > /dev/null
