@@ -1,0 +1,32 @@
+name: TEMP probe RD-04 adjudication parent tree 91b386 v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-rd04-adjudication-parent-tree-probe-91b386-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'observer/ssc-rd04-adjudication-parent-tree-probe-91b386-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 91b386df809079884825b19a6b5d864b6e739172
+          fetch-depth: 1
+      - name: Emit exact parent tree
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = '91b386df809079884825b19a6b5d864b6e739172'
+          printf 'parent_commit=%s\n' "$(git rev-parse HEAD)"
+          printf 'parent_tree=%s\n' "$(git rev-parse 'HEAD^{tree}')"
+          printf 'source_requests=0\nroute_executions=0\nsource_admissions=0\nfield_classifications=0\nmatrix_updates=0\nrow_state_mutations=0\nclass_closed=false\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n'
