@@ -1,0 +1,354 @@
+name: TEMP qualify corrected School.House frontier integration v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-legal-identity-current-frontier-corrected-integration-qualifier-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: schoolhouse-current-frontier-corrected-integration-qualifier-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-legal-identity-current-frontier-corrected-integration-qualifier-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Independently qualify exact corrected integration
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='3918c799f8b8dcdac49c33cec5c7bbd01ac428e4'
+          BASE_TREE='53efada1f97e68a392299b771d12a68e36d972b5'
+          WORKFLOW='.github/workflows/temp-schoolhouse-legal-identity-current-frontier-corrected-integration-qualifier-v1.yml'
+          INTEGRATION_BRANCH='agent/schoolhouse-legal-identity-current-frontier-corrected-integration-v1'
+          INTEGRATION_PR='1486'
+          INTEGRATION='0eb095c64b4ae59e5b3beb4ec71e9f1fa2021134'
+          INTEGRATION_TREE='5b8404c9b4412a6f4de2578b73f51f7ca63db73e'
+          CORRECTED_PRODUCT='9416543ed482b4a7a9e354df3bc6ee2393e18bef'
+          CORRECTED_PRODUCT_TREE='5b8404c9b4412a6f4de2578b73f51f7ca63db73e'
+          PRODUCT_PARENT='2aaadb3b87c83a8cf79ded7046a3856101bf943b'
+          PRODUCT_PARENT_TREE='1a6690047ea1919fe4b63b1a4eb287b78459241b'
+          OLD_PARENT='987f1b2574eeddaba49d67c1c1498a81d40f7c69'
+          OLD_PARENT_TREE='f805cde651c5236e0918baba558e0da1be77b556'
+          INTEGRATION_RUN='31240070491'
+          INTEGRATION_ARTIFACT='9016727544'
+          INTEGRATION_ARTIFACT_BYTES='18916'
+          INTEGRATION_ARTIFACT_DIGEST='sha256:624cb3219beb3346b525f762018ba4d76cddee999f3c311c6e6b28ac9c4ef632'
+          PRODUCT_QUALIFIER_RUN='31239869418'
+          PRODUCT_QUALIFIER_ARTIFACT='9016666735'
+          PRODUCT_QUALIFIER_ARTIFACT_BYTES='48222'
+          PRODUCT_QUALIFIER_ARTIFACT_DIGEST='sha256:3018e49a67c48673c7f021c81e2864d7d60ab981cefb0c0dd97c1f384dcefe16'
+          RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-corrected-integration-qualification-v1"
+          WORKTREE="$RUNNER_TEMP/schoolhouse-current-frontier-corrected-integration-qualification-v1-worktree"
+          rm -rf "$RECEIPT" "$WORKTREE"
+          mkdir -p "$RECEIPT"
+          printf 'initializing-integration-qualification\n' > "$RECEIPT/STAGE"
+          printf 'source_requests=0\nregistry_queries=0\nform_submissions=0\ncontacts=0\npayments=0\nuploads=0\n' > "$RECEIPT/BOUNDARY"
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            printf '%s\n' "$rc" > "$RECEIPT/SCRIPT_EXIT_CODE"
+            (
+              cd "$RECEIPT"
+              find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          cat > "$RECEIPT/product-paths.txt" <<'EOF_PATHS'
+          data/intake/bvvc-defense-capital/acquisition-frontier.json
+          data/intake/bvvc-defense-capital/manifest.json
+          data/intake/bvvc-defense-capital/schoolhouse.json
+          data/intake/schoolhouse-legal-identity-current-frontier-v1/canonical-slice-manifest.jsonl
+          data/intake/schoolhouse-legal-identity-current-frontier-v1/frontier-reconciliation.json
+          data/intake/schoolhouse-legal-identity-current-frontier-v1/next-source-gate.json
+          data/intake/schoolhouse-legal-identity-current-frontier-v1/product-manifest.json
+          data/intake/schoolhouse-legal-identity-current-frontier-v1/source-custody.json
+          data/intake/schoolhouse-legal-identity-current-frontier-v1/source-lanes.json
+          docs/milestones/schoolhouse-legal-identity-current-frontier-v1.md
+          tools/validate-schoolhouse-legal-identity-current-frontier.py
+          EOF_PATHS
+          sed -i 's/^          //' "$RECEIPT/product-paths.txt"
+          sort -o "$RECEIPT/product-paths.txt" "$RECEIPT/product-paths.txt"
+          cat > "$RECEIPT/repair-paths.txt" <<'EOF_REPAIR'
+          data/intake/schoolhouse-legal-identity-current-frontier-v1/frontier-reconciliation.json
+          data/intake/schoolhouse-legal-identity-current-frontier-v1/product-manifest.json
+          tools/validate-schoolhouse-legal-identity-current-frontier.py
+          EOF_REPAIR
+          sed -i 's/^          //' "$RECEIPT/repair-paths.txt"
+          sort -o "$RECEIPT/repair-paths.txt" "$RECEIPT/repair-paths.txt"
+          cat > "$RECEIPT/expected-status.txt" <<'EOF_STATUS'
+          M	data/intake/schoolhouse-legal-identity-current-frontier-v1/frontier-reconciliation.json
+          M	data/intake/schoolhouse-legal-identity-current-frontier-v1/product-manifest.json
+          M	tools/validate-schoolhouse-legal-identity-current-frontier.py
+          EOF_STATUS
+          sed -i 's/^          //' "$RECEIPT/expected-status.txt"
+          sort -k2,2 -o "$RECEIPT/expected-status.txt" "$RECEIPT/expected-status.txt"
+
+          printf 'proving-carrier-integration-pr-and-trees\n' > "$RECEIPT/STAGE"
+          git fetch --no-tags origin main "$INTEGRATION_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+          test "$(git diff --name-only "$BASE"..HEAD)" = "$WORKFLOW"
+          git diff --check "$BASE"..HEAD
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test "$(git rev-parse "$BASE^{tree}")" = "$BASE_TREE"
+          test "$(git rev-parse "origin/$INTEGRATION_BRANCH")" = "$INTEGRATION"
+          test "$(git rev-parse "$INTEGRATION^")" = "$BASE"
+          test "$(git rev-parse "$INTEGRATION^{tree}")" = "$INTEGRATION_TREE"
+          test "$INTEGRATION_TREE" = "$CORRECTED_PRODUCT_TREE"
+          test "$(git rev-parse "$CORRECTED_PRODUCT^")" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "$PRODUCT_PARENT^{tree}")" = "$PRODUCT_PARENT_TREE"
+          test "$(git rev-parse "$CORRECTED_PRODUCT^{tree}")" = "$CORRECTED_PRODUCT_TREE"
+          test "$(git rev-list --count "$BASE".."$INTEGRATION")" = '1'
+          git diff --name-only "$BASE".."$INTEGRATION" | sort > "$RECEIPT/observed-integration-paths.txt"
+          diff -u "$RECEIPT/repair-paths.txt" "$RECEIPT/observed-integration-paths.txt"
+          git diff --name-status "$BASE".."$INTEGRATION" | sort -k2,2 > "$RECEIPT/observed-integration-status.txt"
+          diff -u "$RECEIPT/expected-status.txt" "$RECEIPT/observed-integration-status.txt"
+          test -z "$(git diff --name-only "$BASE".."$INTEGRATION" | grep '^\.github/workflows/' || true)"
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$INTEGRATION_PR" > "$RECEIPT/integration-pr.json"
+          test "$(jq -r .state "$RECEIPT/integration-pr.json")" = 'open'
+          test "$(jq -r .draft "$RECEIPT/integration-pr.json")" = 'false'
+          test "$(jq -r .head.sha "$RECEIPT/integration-pr.json")" = "$INTEGRATION"
+          test "$(jq -r .base.sha "$RECEIPT/integration-pr.json")" = "$BASE"
+          test "$(jq -r .commits "$RECEIPT/integration-pr.json")" = '1'
+          test "$(jq -r .changed_files "$RECEIPT/integration-pr.json")" = '3'
+
+          mapfile -t PRODUCT_PATHS < "$RECEIPT/product-paths.txt"
+          printf 'path\tcorrected_product_blob\tintegration_blob\n' > "$RECEIPT/blob-equivalence.tsv"
+          for path in "${PRODUCT_PATHS[@]}"; do
+            product_blob="$(git rev-parse "$CORRECTED_PRODUCT:$path")"
+            integration_blob="$(git rev-parse "$INTEGRATION:$path")"
+            printf '%s\t%s\t%s\n' "$path" "$product_blob" "$integration_blob" >> "$RECEIPT/blob-equivalence.tsv"
+            test "$product_blob" = "$integration_blob"
+          done
+
+          authenticate_artifact() {
+            label="$1"
+            run="$2"
+            artifact="$3"
+            bytes="$4"
+            digest="$5"
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run" > "$RECEIPT/$label-run.json"
+            test "$(jq -r .status "$RECEIPT/$label-run.json")" = 'completed'
+            test "$(jq -r .conclusion "$RECEIPT/$label-run.json")" = 'success'
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact" > "$RECEIPT/$label-artifact-metadata.json"
+            test "$(jq -r .size_in_bytes "$RECEIPT/$label-artifact-metadata.json")" = "$bytes"
+            test "$(jq -r .digest "$RECEIPT/$label-artifact-metadata.json")" = "$digest"
+            test "$(jq -r .workflow_run.id "$RECEIPT/$label-artifact-metadata.json")" = "$run"
+            test "$(jq -r .expired "$RECEIPT/$label-artifact-metadata.json")" = 'false'
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact/zip" > "$RECEIPT/$label-artifact.zip"
+            test "$(stat -c%s "$RECEIPT/$label-artifact.zip")" = "$bytes"
+            test "sha256:$(sha256sum "$RECEIPT/$label-artifact.zip" | cut -d' ' -f1)" = "$digest"
+            unzip -tq "$RECEIPT/$label-artifact.zip"
+            mkdir -p "$RECEIPT/$label-artifact"
+            unzip -q "$RECEIPT/$label-artifact.zip" -d "$RECEIPT/$label-artifact"
+          }
+
+          printf 'authenticating-materialization-and-product-qualification\n' > "$RECEIPT/STAGE"
+          authenticate_artifact integration "$INTEGRATION_RUN" "$INTEGRATION_ARTIFACT" "$INTEGRATION_ARTIFACT_BYTES" "$INTEGRATION_ARTIFACT_DIGEST"
+          authenticate_artifact product-qualifier "$PRODUCT_QUALIFIER_RUN" "$PRODUCT_QUALIFIER_ARTIFACT" "$PRODUCT_QUALIFIER_ARTIFACT_BYTES" "$PRODUCT_QUALIFIER_ARTIFACT_DIGEST"
+          test "$(cat "$RECEIPT/integration-artifact/SCRIPT_EXIT_CODE")" = '0'
+          test "$(cat "$RECEIPT/integration-artifact/STAGE")" = 'complete'
+          test "$(cat "$RECEIPT/product-qualifier-artifact/SCRIPT_EXIT_CODE")" = '0'
+          test "$(cat "$RECEIPT/product-qualifier-artifact/STAGE")" = 'complete'
+          jq -e --arg integration "$INTEGRATION" --arg tree "$INTEGRATION_TREE" '
+            .status == "complete" and
+            .integration_commit == $integration and
+            .integration_tree == $tree and
+            .corrected_product_tree == $tree and
+            .integration_commit_count == 1 and
+            .changed_path_count == 3 and
+            .workflow_paths == 0 and
+            .integration_tree_equals_corrected_product_tree == true and
+            .eleven_product_blobs_equal == true and
+            .focused_validation == "pass" and
+            .adversarial_refusals == 15 and
+            .bvvc_validation == "pass" and
+            .no_magic_human_gate == "pass" and
+            .complete_release_gate == "pass" and
+            .clean_replay == "pass" and
+            .post_restore_clean == true
+          ' "$RECEIPT/integration-artifact/integration.json" > /dev/null
+          jq -e --arg product "$CORRECTED_PRODUCT" --arg tree "$CORRECTED_PRODUCT_TREE" '
+            .qualification == "pass" and
+            .product_commit == $product and
+            .product_tree == $tree and
+            .embedded_parent_congruence == "pass" and
+            .stale_parent_occurrences == 0 and
+            .stale_parent_tree_occurrences == 0 and
+            .repair_files == 3 and
+            .unchanged_product_blobs == 8 and
+            .focused_validation == "pass" and
+            .adversarial_refusals == 15 and
+            .bvvc_validation == "pass" and
+            .no_magic_human_gate == "pass" and
+            .complete_release_gate == "pass" and
+            .clean_replay == "pass" and
+            .post_restore_clean == true
+          ' "$RECEIPT/product-qualifier-artifact/qualification.json" > /dev/null
+
+          printf 'qualifying-exact-integration-head\n' > "$RECEIPT/STAGE"
+          git worktree add --detach "$WORKTREE" "$INTEGRATION"
+          python - "$WORKTREE" "$RECEIPT/parent-congruence.json" <<'PY'
+          from pathlib import Path
+          import json, sys
+          root = Path(sys.argv[1])
+          out = Path(sys.argv[2])
+          parent = '2aaadb3b87c83a8cf79ded7046a3856101bf943b'
+          tree = '1a6690047ea1919fe4b63b1a4eb287b78459241b'
+          old_parent = '987f1b2574eeddaba49d67c1c1498a81d40f7c69'
+          old_tree = 'f805cde651c5236e0918baba558e0da1be77b556'
+          expected = {
+              'data/intake/schoolhouse-legal-identity-current-frontier-v1/frontier-reconciliation.json',
+              'data/intake/schoolhouse-legal-identity-current-frontier-v1/product-manifest.json',
+              'tools/validate-schoolhouse-legal-identity-current-frontier.py',
+          }
+          paths = [line for line in (out.parent / 'product-paths.txt').read_text().splitlines() if line]
+          parent_files = set()
+          tree_files = set()
+          parent_count = tree_count = 0
+          for relative in paths:
+              data = (root / relative).read_bytes()
+              assert old_parent.encode() not in data, relative
+              assert old_tree.encode() not in data, relative
+              pc = data.count(parent.encode())
+              tc = data.count(tree.encode())
+              if pc:
+                  parent_files.add(relative)
+                  parent_count += pc
+              if tc:
+                  tree_files.add(relative)
+                  tree_count += tc
+          assert parent_files == expected, parent_files
+          assert tree_files == expected, tree_files
+          assert parent_count == 3, parent_count
+          assert tree_count == 3, tree_count
+          manifest = json.loads((root / 'data/intake/schoolhouse-legal-identity-current-frontier-v1/product-manifest.json').read_text())
+          reconciliation = json.loads((root / 'data/intake/schoolhouse-legal-identity-current-frontier-v1/frontier-reconciliation.json').read_text())
+          validator = (root / 'tools/validate-schoolhouse-legal-identity-current-frontier.py').read_text()
+          assert manifest['canonical_parent'] == parent
+          assert manifest['canonical_parent_tree'] == tree
+          assert reconciliation['product_parent'] == parent
+          assert reconciliation['product_parent_tree'] == tree
+          assert f"EXPECTED_PARENT = '{parent}'" in validator
+          assert f"EXPECTED_PARENT_TREE = '{tree}'" in validator
+          out.write_text(json.dumps({
+              'state': 'pass',
+              'embedded_parent_occurrences': parent_count,
+              'embedded_parent_tree_occurrences': tree_count,
+              'stale_parent_occurrences': 0,
+              'stale_parent_tree_occurrences': 0,
+              'embedded_parent_files': sorted(parent_files),
+          }, indent=2, sort_keys=True) + '\n')
+          PY
+          (
+            cd "$WORKTREE"
+            python tools/validate-schoolhouse-legal-identity-current-frontier.py --self-test | tee "$RECEIPT/focused-validator.log"
+            node tools/validate-bvvc-defense-capital.mjs | tee "$RECEIPT/bvvc-validator.log"
+            node tools/validate-no-magic-human-gate.mjs | tee "$RECEIPT/no-magic-human.log"
+            node test/no-magic-human-gate.test.js | tee -a "$RECEIPT/no-magic-human.log"
+            npm run release:check | tee "$RECEIPT/release-check.log"
+            git restore --staged --worktree .
+            git clean -fdx
+            python tools/validate-schoolhouse-legal-identity-current-frontier.py --self-test | tee "$RECEIPT/focused-validator-replay.log"
+            node tools/validate-bvvc-defense-capital.mjs | tee "$RECEIPT/bvvc-validator-replay.log"
+            node tools/validate-no-magic-human-gate.mjs | tee "$RECEIPT/no-magic-human-replay.log"
+            git diff --check
+            git diff --exit-code
+            test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          )
+          git -C "$WORKTREE" ls-tree -r HEAD -- "${PRODUCT_PATHS[@]}" > "$RECEIPT/integration-ls-tree.txt"
+          diff -u "$RECEIPT/integration-artifact/integration-ls-tree.txt" "$RECEIPT/integration-ls-tree.txt"
+          git fetch --no-tags origin main "$INTEGRATION_BRANCH"
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test "$(git rev-parse "origin/$INTEGRATION_BRANCH")" = "$INTEGRATION"
+
+          python - "$RECEIPT/qualification.json" <<'PY'
+          from pathlib import Path
+          import json, sys
+          Path(sys.argv[1]).write_text(json.dumps({
+              'schema_version': 'schoolhouse-legal-identity-current-frontier-corrected-integration-qualification@1',
+              'qualification': 'pass',
+              'integration_pr': 1486,
+              'integration_parent': '3918c799f8b8dcdac49c33cec5c7bbd01ac428e4',
+              'integration_parent_tree': '53efada1f97e68a392299b771d12a68e36d972b5',
+              'integration_commit': '0eb095c64b4ae59e5b3beb4ec71e9f1fa2021134',
+              'integration_tree': '5b8404c9b4412a6f4de2578b73f51f7ca63db73e',
+              'corrected_product_commit': '9416543ed482b4a7a9e354df3bc6ee2393e18bef',
+              'corrected_product_tree': '5b8404c9b4412a6f4de2578b73f51f7ca63db73e',
+              'integration_commit_count': 1,
+              'changed_path_count': 3,
+              'workflow_paths': 0,
+              'integration_tree_equals_corrected_product_tree': True,
+              'eleven_product_blobs_equal': True,
+              'embedded_parent_congruence': 'pass',
+              'stale_parent_occurrences': 0,
+              'stale_parent_tree_occurrences': 0,
+              'focused_validation': 'pass',
+              'adversarial_refusals': 15,
+              'bvvc_validation': 'pass',
+              'no_magic_human_gate': 'pass',
+              'complete_release_gate': 'pass',
+              'clean_replay': 'pass',
+              'post_restore_clean': True,
+              'source_slice_files': 233,
+              'source_lanes': 23,
+              'active_source_leases': 0,
+              'candidate_successors': 0,
+              'source_requests': 0,
+              'registry_queries': 0,
+              'form_submissions': 0,
+              'identity_admissions': 0,
+              'relationship_admissions': 0,
+              'negative_existence_claims': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'public_schoolhouse_legal_identity': 'unresolved',
+          }, indent=2, sort_keys=True) + '\n')
+          PY
+          printf 'complete\n' > "$RECEIPT/STAGE"
+
+      - name: Upload exact integration qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-legal-identity-current-frontier-corrected-integration-qualification-v1
+          path: ${{ runner.temp }}/schoolhouse-current-frontier-corrected-integration-qualification-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
