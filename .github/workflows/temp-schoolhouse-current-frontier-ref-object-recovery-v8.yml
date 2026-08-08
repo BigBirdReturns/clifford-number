@@ -1,0 +1,161 @@
+name: TEMP recover School.House current-frontier package across all refs
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-current-frontier-ref-object-recovery-v8.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-current-frontier-ref-object-recovery-v8-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  recover:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-current-frontier-ref-object-recovery-v8')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Fetch all refs and scan every plausible carrier object
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='1e52a58be874538509d6c0d3c06adc12fc53cad7'
+          WORKFLOW='.github/workflows/temp-schoolhouse-current-frontier-ref-object-recovery-v8.yml'
+          OUT="$RUNNER_TEMP/schoolhouse-current-frontier-ref-object-recovery-v8"
+          B64="$OUT/recovery.py.xz.b64"
+          XZ="$OUT/recovery.py.xz"
+          SCRIPT="$OUT/recovery.py"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          printf 'initializing-ref-object-recovery-v8\n' > "$OUT/STAGE"
+          printf 'source_requests=0\nregistry_queries=0\nform_submissions=0\ncontacts=0\npayments=0\nuploads=0\n' > "$OUT/BOUNDARY"
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            printf '%s\n' "$rc" > "$OUT/RECOVERY_EXIT_CODE"
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          printf 'proving-one-workflow-and-fetching-all-refs\n' > "$OUT/STAGE"
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+          mapfile -t paths < <(git diff --name-only "$BASE"..HEAD)
+          test "${#paths[@]}" -eq 1
+          test "${paths[0]}" = "$WORKFLOW"
+          git diff --check "$BASE"..HEAD
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$BASE" "$(git rev-parse origin/main)"
+          git fetch --force --no-tags origin '+refs/heads/*:refs/remotes/origin/*' '+refs/pull/*/head:refs/remotes/pull/*/head'
+          git fetch --force --tags origin '+refs/tags/*:refs/tags/*'
+          git show-ref > "$OUT/all-refs.txt"
+
+          printf 'reconstructing-recovery-program\n' > "$OUT/STAGE"
+          cat > "$B64" <<'EOF_RECOVERY_B64'
+          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
+          EOF_RECOVERY_B64
+          sed -i 's/^          //' "$B64"
+          test "$(stat -c%s "$B64")" = '5489'
+          test "$(sha256sum "$B64" | cut -d' ' -f1)" = 'a068e6d899e3c4559b0d9e2ec5366b779fd4fd4cbda8f13390e1c5339bb9c762'
+          base64 --decode "$B64" > "$XZ"
+          test "$(stat -c%s "$XZ")" = '4072'
+          test "$(sha256sum "$XZ" | cut -d' ' -f1)" = '058bd1779ea54648b0fb1643009b6ee36ed9ec8c17c34226f34e9a7cfc07ba14'
+          xz --decompress --stdout "$XZ" > "$SCRIPT"
+          test "$(stat -c%s "$SCRIPT")" = '13526'
+          test "$(sha256sum "$SCRIPT" | cut -d' ' -f1)" = '9562ecd8cb3b53848d95dcb50cb94d9354932787c78f885ba0734d7db16be489'
+          python -m py_compile "$SCRIPT"
+
+          printf 'scanning-all-ref-and-dangling-objects\n' > "$OUT/STAGE"
+          python "$SCRIPT" "$OUT"
+          printf 'complete\n' > "$OUT/STAGE"
+
+      - name: Upload exact ref/object recovery receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-current-frontier-ref-object-recovery-v8
+          path: ${{ runner.temp }}/schoolhouse-current-frontier-ref-object-recovery-v8
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
