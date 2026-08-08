@@ -1,0 +1,185 @@
+name: TEMP execute RD-04 North Dakota two-route follow-up base v1
+
+on:
+  pull_request:
+    branches: [agent/ssc-rd04-postpromotion-nd-followup-two-route-execution-base-v1]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/ssc-rd04-postpromotion-nd-followup-two-route-execution-v1.trigger'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rd04-nd-followup-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+jobs:
+  execute:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-postpromotion-nd-followup-two-route-execution-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-nd-followup-two-route-execution-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CANONICAL_MAIN: 048e9d13a2555d8e6fabdbee5f45aea858f919b7
+      BASE_BRANCH: agent/ssc-rd04-postpromotion-nd-followup-two-route-execution-base-v1
+      TRIGGER_BRANCH: agent/ssc-rd04-postpromotion-nd-followup-two-route-execution-trigger-v1
+      WORKFLOW_PATH: .github/workflows/temp-ssc-rd04-postpromotion-nd-followup-two-route-execution-base-v1.yml
+      TRIGGER_PATH: .tmp/ssc-rd04-postpromotion-nd-followup-two-route-execution-v1.trigger
+      BASE_HEAD: ${{ github.event.pull_request.base.sha }}
+      PROTOCOL_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/selected-followup-protocol.json
+      PROTOCOL_BLOB: 7bbafd8f8c6c915442770ebbeca85b37afba8047
+      PROMOTION_SUMMARY_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promotion-summary.json
+      PROMOTION_SUMMARY_BLOB: 5e0adc541a22c9b0bf4cd8a059bf083e08831a15
+      OUT: /tmp/ssc-rd04-postpromotion-nd-followup-two-route-execution-v1
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Bind exact current frontier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ github.event.pull_request.base.ref }}" = "$BASE_BRANCH"
+          test "${{ github.event.pull_request.head.ref }}" = "$TRIGGER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$BASE_HEAD"
+          test "$(git rev-list --count "$BASE_HEAD"..HEAD)" -eq 1
+          test "$(git diff --name-only "$BASE_HEAD" HEAD)" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE_HEAD" HEAD)" = "$TRIGGER_PATH"
+          test "$(git rev-parse "$BASE_HEAD^")" = "$CANONICAL_MAIN"
+          test "$(git rev-list --count "$CANONICAL_MAIN".."$BASE_HEAD")" -eq 1
+          test "$(git diff --name-only "$CANONICAL_MAIN" "$BASE_HEAD")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_MAIN" "$BASE_HEAD")" = "$WORKFLOW_PATH"
+          git diff --check "$CANONICAL_MAIN" "$BASE_HEAD"
+          git diff --check "$BASE_HEAD" HEAD
+          git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main" "+refs/heads/$BASE_BRANCH:refs/remotes/origin/$BASE_BRANCH" "+refs/heads/$TRIGGER_BRANCH:refs/remotes/origin/$TRIGGER_BRANCH"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$CANONICAL_MAIN"
+          test "$(git rev-parse "refs/remotes/origin/$BASE_BRANCH")" = "$BASE_HEAD"
+          test "$(git rev-parse "refs/remotes/origin/$TRIGGER_BRANCH")" = "$(git rev-parse HEAD)"
+          test "$(git hash-object "$PROTOCOL_PATH")" = "$PROTOCOL_BLOB"
+          test "$(git hash-object "$PROMOTION_SUMMARY_PATH")" = "$PROMOTION_SUMMARY_BLOB"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+
+      - name: Execute and verify exactly two frozen GET requests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"; mkdir -p "$OUT/routes"
+          cp "$PROTOCOL_PATH" "$OUT/selected-followup-protocol.json"
+          cp "$PROMOTION_SUMMARY_PATH" "$OUT/promotion-summary.json"
+          git rev-parse HEAD > "$OUT/trigger-head.txt"
+          printf '%s\n' "$TRIGGER_BRANCH" > "$OUT/trigger-branch.txt"
+          printf '%s\n' "$BASE_HEAD" > "$OUT/base-head.txt"
+          printf '%s\n' "$BASE_BRANCH" > "$OUT/base-branch.txt"
+          printf '%s\n' "$CANONICAL_MAIN" > "$OUT/canonical-main.txt"
+          python - "$PROTOCOL_PATH" "$PROMOTION_SUMMARY_PATH" "$OUT" <<'PY'
+          import hashlib,json,socket,sys,urllib.error,urllib.parse,urllib.request
+          from collections import Counter
+          from pathlib import Path
+
+          protocol=json.loads(Path(sys.argv[1]).read_text())
+          summary=json.loads(Path(sys.argv[2]).read_text())
+          out=Path(sys.argv[3])
+          expected=['RD04-W03-PPN-ND-FU-001','RD04-W03-PPN-ND-FU-002']
+          assert protocol['object_type']=='selected_followup_protocol'
+          assert protocol['fixed_route_count']==2
+          assert protocol['maximum_total_requests_in_later_separate_execution']==2
+          assert protocol['maximum_attempts_per_route']==1
+          assert protocol['parallel_workers']==1
+          assert protocol['result_spawned_requests']==0
+          assert [r['route_id'] for r in protocol['routes']]==expected
+          assert summary['current_result']['held_north_dakota_cells_remaining']==2
+          assert summary['current_result']['class_closed'] is False
+          assert summary['next_bounded_operation'].startswith('execute or otherwise adjudicate the already-selected two-route North Dakota follow-up protocol')
+
+          class CrossHost(Exception): pass
+          class RedirectLimit(Exception): pass
+          class Redirects(urllib.request.HTTPRedirectHandler):
+              def __init__(self,host,limit): super().__init__(); self.host=host; self.limit=limit; self.count=0
+              def redirect_request(self,req,fp,code,msg,headers,newurl):
+                  self.count+=1
+                  if self.count>self.limit: raise RedirectLimit(f'{self.count}>{self.limit}')
+                  if (urllib.parse.urlsplit(newurl).hostname or '').lower()!=self.host.lower(): raise CrossHost(newurl)
+                  return super().redirect_request(req,fp,code,msg,headers,newurl)
+          def bounded(resp,limit):
+              parts=[]; total=0
+              while True:
+                  chunk=resp.read(65536)
+                  if not chunk: return b''.join(parts)
+                  total+=len(chunk)
+                  if total>limit: raise OverflowError(f'{total}>{limit}')
+                  parts.append(chunk)
+
+          results=[]
+          for route in protocol['routes']:
+              assert route['request_method']=='GET' and route['maximum_attempts']==1
+              assert route['expected_host']=='www.nd.gov' and route['cross_host_redirects_allowed'] is False
+              assert route['automatic_source_admission'] is False and route['automatic_field_classification'] is False
+              assert route['automatic_row_terminalization'] is False and route['automatic_class_closure'] is False
+              rid=route['route_id']; rdir=out/'routes'/rid; rdir.mkdir(parents=True)
+              handler=Redirects(route['expected_host'],route['maximum_redirects'])
+              opener=urllib.request.build_opener(handler)
+              req=urllib.request.Request(route['requested_url'],method='GET',headers={'User-Agent':'Clifford-Number bounded public-source transport/1.0','Accept':'*/*','Accept-Encoding':'identity'})
+              state=status=final=None; headers={}; body=b''; error_class=error_message=None
+              try:
+                  with opener.open(req,timeout=45) as resp:
+                      status=resp.getcode(); final=resp.geturl(); headers=dict(resp.headers.items()); body=bounded(resp,route['maximum_body_bytes'])
+                      state='terminal_http_success_body_captured' if body else 'terminal_http_success_no_body'
+              except urllib.error.HTTPError as exc:
+                  status=exc.code; final=exc.geturl(); headers=dict(exc.headers.items()) if exc.headers else {}
+                  try: body=bounded(exc,route['maximum_body_bytes']); state='terminal_http_non_success'
+                  except OverflowError as over: state='terminal_body_limit_exceeded'; error_class=type(over).__name__; error_message=str(over); body=b''
+                  if error_class is None: error_class=type(exc).__name__; error_message=str(exc)
+              except CrossHost as exc: state='terminal_cross_host_redirect_refused'; error_class=type(exc).__name__; error_message=str(exc)
+              except RedirectLimit as exc: state='terminal_redirect_limit_exceeded'; error_class=type(exc).__name__; error_message=str(exc)
+              except OverflowError as exc: state='terminal_body_limit_exceeded'; error_class=type(exc).__name__; error_message=str(exc)
+              except (urllib.error.URLError,TimeoutError,socket.timeout,OSError) as exc: state='terminal_transport_error'; error_class=type(exc).__name__; error_message=str(exc)
+              if final is not None: assert (urllib.parse.urlsplit(final).hostname or '').lower()==route['expected_host'].lower()
+              hfile=rdir/'headers.json'; hfile.write_text(json.dumps(headers,indent=2,sort_keys=True)+'\n')
+              bpath=bsha=None
+              if body:
+                  bfile=rdir/'body.bin'; bfile.write_bytes(body); bpath=str(bfile.relative_to(out)); bsha=hashlib.sha256(body).hexdigest()
+              rec={'schema_version':'ssc-rd04-postpromotion-nd-followup-route-receipt@1','route_ordinal':route['route_ordinal'],'route_id':rid,'postal_code':'ND','route_category':route['route_category'],'target_decision_id':route['target_decision_id'],'target_field_ids':route['target_field_ids'],'requested_url':route['requested_url'],'final_url':final,'expected_host':route['expected_host'],'attempts':1,'redirects_followed':handler.count,'terminal_state':state,'http_status':status,'content_type':headers.get('Content-Type'),'body_bytes':len(body),'body_sha256':bsha,'body_path':bpath,'headers_path':str(hfile.relative_to(out)),'headers_sha256':hashlib.sha256(hfile.read_bytes()).hexdigest(),'error_class':error_class,'error_message':error_message,'result_spawned_requests':0,'source_admission_effect':'none','field_classification_effect':'none','field_terminalization_effect':'none','row_state_effect':'none','class_effect':'none','outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none'}
+              (rdir/'receipt.json').write_text(json.dumps(rec,indent=2,sort_keys=True)+'\n'); results.append(rec)
+
+          allowed={'terminal_http_success_body_captured','terminal_http_success_no_body','terminal_http_non_success','terminal_cross_host_redirect_refused','terminal_redirect_limit_exceeded','terminal_body_limit_exceeded','terminal_transport_error'}
+          assert [r['route_id'] for r in results]==expected and all(r['attempts']==1 and r['terminal_state'] in allowed for r in results)
+          states=Counter(r['terminal_state'] for r in results)
+          receipt={'schema_version':'ssc-rd04-postpromotion-nd-followup-execution-receipt@1','canonical_main':'048e9d13a2555d8e6fabdbee5f45aea858f919b7','protocol_blob':'7bbafd8f8c6c915442770ebbeca85b37afba8047','fixed_route_count':2,'source_requests_executed':2,'maximum_total_requests':2,'captured_route_ids':expected,'terminal_route_ids':expected,'results':results,'result_spawned_requests':0,'automatic_source_admissions':0,'automatic_field_classifications':0,'automatic_field_terminalizations':0,'automatic_row_terminalizations':0,'automatic_class_closures':0,'outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none'}
+          (out/'route-results.json').write_text(json.dumps(results,indent=2,sort_keys=True)+'\n')
+          (out/'execution-receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          transport={'schema_version':'ssc-rd04-postpromotion-nd-followup-transport-summary@1','canonical_main':'048e9d13a2555d8e6fabdbee5f45aea858f919b7','fixed_routes':2,"source_requests_executed":2,'terminal_routes':2,'terminal_state_counts':dict(sorted(states.items())),'captured_body_bytes':sum(r['body_bytes'] for r in results),'result_spawned_requests':0,'source_admissions':0,'field_classifications':0,'field_terminalizations':0,'row_state_mutations':0,'class_closed':False,'cumulative_ledger_effect':'none','outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none'}
+          (out/'transport-summary.json').write_text(json.dumps(transport,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(transport,sort_keys=True))
+          PY
+          printf 'source_requests_executed=2\nterminal_routes=2\nresult_spawned_requests=0\nsource_admissions=0\nfield_classifications=0\nfield_terminalizations=0\nrow_state_mutations=0\nclass_closed=false\ncumulative_ledger_effect=none\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' > "$OUT/BOUNDARY"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CANONICAL_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$BASE_BRANCH" | awk '{print $1}')" = "$BASE_HEAD"
+          test "$(git ls-remote --heads origin "refs/heads/$TRIGGER_BRANCH" | awk '{print $1}')" = "$(git rev-parse HEAD)"
+
+      - name: Preserve exact two-route execution custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-nd-followup-two-route-execution-v1
+          path: /tmp/ssc-rd04-postpromotion-nd-followup-two-route-execution-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
