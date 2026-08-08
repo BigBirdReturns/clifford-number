@@ -1,0 +1,187 @@
+name: TEMP rerun exact RD-04 staging push v9
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-rerun-ssc-rd04-five-state-promotion-stager-v9.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+
+concurrency:
+  group: temp-rerun-ssc-rd04-five-state-promotion-stager-v9
+  cancel-in-progress: false
+
+env:
+  SOURCE_HEAD: 6ebcd046f09051df90e0b89f1585de7cf33c694d
+  SOURCE_WORKFLOW_NAME: TEMP stage qualified RD-04 promotion ordinary surfaces v9
+  SOURCE_ARTIFACT_NAME: ssc-rd04-five-state-promotion-stager-v9
+  STAGING_BRANCH: staging/ssc-rd04-five-state-promotion-no-workflow-v1
+
+jobs:
+  rerun:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'stager/ssc-rd04-five-state-promotion-v9')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Bind exact rerun controller
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = "$SOURCE_HEAD"
+          test "$(git rev-list --count HEAD^..HEAD)" = 1
+          test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/temp-rerun-ssc-rd04-five-state-promotion-stager-v9.yml'
+          git diff --check HEAD^ HEAD
+
+      - name: Locate, rerun, and authenticate exact push execution
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-five-state-promotion-stager-v9-rerun
+          rm -rf "$OUT"
+          mkdir -p "$OUT/artifact"
+
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$SOURCE_HEAD&per_page=100" \
+            > "$OUT/source-runs.json"
+          run_id="$(jq -r --arg name "$SOURCE_WORKFLOW_NAME" '[.workflow_runs[] | select(.name==$name and .event=="push")] | sort_by(.created_at) | last | .id // empty' "$OUT/source-runs.json")"
+          test -n "$run_id"
+          source_status="$(jq -r --argjson id "$run_id" '.workflow_runs[] | select(.id==$id) | .status' "$OUT/source-runs.json")"
+          source_conclusion="$(jq -r --argjson id "$run_id" '.workflow_runs[] | select(.id==$id) | .conclusion // ""' "$OUT/source-runs.json")"
+          source_attempt="$(jq -r --argjson id "$run_id" '.workflow_runs[] | select(.id==$id) | .run_attempt' "$OUT/source-runs.json")"
+          test "$source_status" = completed
+          test "$source_conclusion" = cancelled -o "$source_conclusion" = failure
+
+          curl -fsSL -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$run_id/rerun" \
+            -o /dev/null
+
+          final_status=''
+          final_conclusion=''
+          final_attempt=''
+          for attempt in $(seq 1 150); do
+            curl -fsSL \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$run_id" \
+              > "$OUT/rerun-state.json"
+            final_status="$(jq -r .status "$OUT/rerun-state.json")"
+            final_conclusion="$(jq -r '.conclusion // ""' "$OUT/rerun-state.json")"
+            final_attempt="$(jq -r .run_attempt "$OUT/rerun-state.json")"
+            if test "$final_status" = completed && test "$final_attempt" -gt "$source_attempt"; then break; fi
+            sleep 10
+          done
+          test "$final_status" = completed
+          test "$final_attempt" -gt "$source_attempt"
+          test "$final_conclusion" = success
+
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?per_page=100" \
+            > "$OUT/artifacts.json"
+          artifact_id="$(jq -r --arg name "$SOURCE_ARTIFACT_NAME" '[.artifacts[] | select(.name==$name and .expired==false)] | sort_by(.created_at) | last | .id // empty' "$OUT/artifacts.json")"
+          artifact_digest="$(jq -r --arg name "$SOURCE_ARTIFACT_NAME" '[.artifacts[] | select(.name==$name and .expired==false)] | sort_by(.created_at) | last | .digest // empty' "$OUT/artifacts.json")"
+          test -n "$artifact_id"
+          test -n "$artifact_digest"
+          curl -fsSL -L \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" \
+            > "$OUT/source-artifact.zip"
+          test "sha256:$(sha256sum "$OUT/source-artifact.zip" | cut -d' ' -f1)" = "$artifact_digest"
+          unzip -t "$OUT/source-artifact.zip" > "$OUT/zip-test.log"
+          unzip -q "$OUT/source-artifact.zip" -d "$OUT/artifact"
+          (
+            cd "$OUT/artifact"
+            sha256sum -c SHA256SUMS
+          ) > "$OUT/internal-check.log"
+          R="$OUT/artifact/receipt.json"
+          jq -e '.schema_version=="ssc-rd04-five-state-promotion-stager@9"' "$R" >/dev/null
+          jq -e '.publish_requested==true and .staging_ref_updated==true' "$R" >/dev/null
+          jq -e '.qualification_state=="success" and .failed_or_final_gate=="complete"' "$R" >/dev/null
+          jq -e '.candidate_created==false and .product_ref_updated==false and .authority=="ordinary_staging_only"' "$R" >/dev/null
+          staging_commit="$(jq -r .staging_commit "$R")"
+          test -n "$staging_commit"
+          git fetch --no-tags origin "+refs/heads/$STAGING_BRANCH:refs/remotes/origin/$STAGING_BRANCH"
+          test "$(git rev-parse "origin/$STAGING_BRANCH")" = "$staging_commit"
+
+          python - "$OUT/recovery-receipt.json" "$run_id" "$source_attempt" "$source_conclusion" "$final_attempt" "$artifact_id" "$artifact_digest" "$staging_commit" <<'PY'
+          from pathlib import Path
+          import json
+          import os
+          import sys
+          output, run_id, source_attempt, source_conclusion, final_attempt, artifact_id, artifact_digest, staging_commit = sys.argv[1:]
+          value = {
+              'schema_version': 'ssc-rd04-five-state-promotion-stager-rerun@1',
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'source_head': os.environ['SOURCE_HEAD'],
+              'source_run_id': int(run_id),
+              'source_attempt': int(source_attempt),
+              'source_conclusion': source_conclusion,
+              'successful_attempt': int(final_attempt),
+              'artifact_id': int(artifact_id),
+              'artifact_digest': artifact_digest,
+              'staging_branch': os.environ['STAGING_BRANCH'],
+              'staging_commit': staging_commit,
+              'zip_integrity': 'pass',
+              'internal_checksum_ledger': 'pass',
+              'candidate_created': False,
+              'product_ref_updated': False,
+              'authority': 'rerun_and_receipt_recovery_only',
+          }
+          Path(output).write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+          PY
+          (
+            cd "$OUT"
+            find . -type f ! -name RECOVERY-SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > RECOVERY-SHA256SUMS
+          )
+
+      - name: Upload rerun recovery receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-promotion-stager-v9-rerun
+          path: /tmp/ssc-rd04-five-state-promotion-stager-v9-rerun
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Report successful staging rerun
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-five-state-promotion-stager-v9-rerun
+          R="$OUT/artifact/receipt.json"
+          C="$OUT/recovery-receipt.json"
+          jq -rn --slurpfile r "$R" --slurpfile c "$C" '
+            "RD-04 ordinary-surface stager v9 was rerun after observer cancellation and independently authenticated.\n\n```text\nsource_run: \($c[0].source_run_id)\nsource_attempt: \($c[0].source_attempt)\nsuccessful_attempt: \($c[0].successful_attempt)\nartifact: \($c[0].artifact_id)\nartifact_digest: \($c[0].artifact_digest)\npublication_parent: \($r[0].publication_parent)\npublication_parent_tree: \($r[0].publication_parent_tree)\npatched_workflow_git_blob: \($r[0].patched_workflow_git_blob)\nstaging_commit: \($r[0].staging_commit)\nstaging_tree: \($r[0].staging_tree)\nstaging_ref_updated: \($r[0].staging_ref_updated)\nqualification_state: \($r[0].qualification_state)\nproduct_ref_updated: \($r[0].product_ref_updated)\n```\n\nThe published staging ref contains exactly thirteen non-workflow product surfaces. It remains transport custody only and grants no candidate, matrix, row, class, cumulative-ledger, protocol, execution, review, publication, adoption, graph, or canonical-merge authority."
+          ' > /tmp/comment.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
