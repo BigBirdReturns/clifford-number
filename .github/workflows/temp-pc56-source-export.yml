@@ -27,22 +27,33 @@ jobs:
           set -Eeuo pipefail
           mkdir -p "$OUT"
           git fetch --no-tags origin main "$EXPECTED_PARENT"
-          test "$(git rev-parse "$EXPECTED_PARENT")" = "$EXPECTED_PARENT"
-          git merge-base --is-ancestor "$EXPECTED_PARENT" HEAD
+
+          git rev-parse HEAD > "$OUT/carrier-head.txt"
+          git show -s --format='%P' HEAD > "$OUT/carrier-head-parents.txt"
+          git merge-base "$EXPECTED_PARENT" HEAD > "$OUT/merge-base.txt"
+          test "$(cat "$OUT/merge-base.txt")" = "$EXPECTED_PARENT"
 
           git diff --name-status "$EXPECTED_PARENT" HEAD > "$OUT/carrier-delta.tsv"
-          cut -f2 "$OUT/carrier-delta.tsv" | sort -u > "$OUT/carrier-paths.txt"
-          test "$(wc -l < "$OUT/carrier-paths.txt" | tr -d ' ')" = 1
-          test "$(cat "$OUT/carrier-paths.txt")" = "$CARRIER_PATH"
-          test "$(git rev-parse "$EXPECTED_PARENT^{tree}")" = "$(git show -s --format='%T' "$EXPECTED_PARENT")"
+          git diff --name-only "$EXPECTED_PARENT" HEAD | sort -u > "$OUT/carrier-paths.txt"
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          out = Path(os.environ['OUT'])
+          paths = [line for line in (out / 'carrier-paths.txt').read_text().splitlines() if line]
+          expected = [os.environ['CARRIER_PATH']]
+          if paths != expected:
+              raise SystemExit(f'carrier path mismatch: observed={paths!r} expected={expected!r}')
+          PY
 
+          parent_tree=$(git rev-parse "$EXPECTED_PARENT^{tree}")
+          shown_tree=$(git show -s --format='%T' "$EXPECTED_PARENT")
+          printf '%s\n' "$parent_tree" > "$OUT/tree.txt"
+          test "$parent_tree" = "$shown_tree"
           printf '%s\n' "$EXPECTED_PARENT" > "$OUT/commit.txt"
-          git rev-parse "$EXPECTED_PARENT^{tree}" > "$OUT/tree.txt"
           git ls-tree -r --full-tree "$EXPECTED_PARENT" > "$OUT/tree.tsv"
           git archive --format=tar "$EXPECTED_PARENT" | gzip -n -9 > "$OUT/source.tar.gz"
           sha256sum "$OUT/source.tar.gz" > "$OUT/source.tar.gz.sha256"
-          sha256sum "$OUT"/commit.txt "$OUT"/tree.txt "$OUT"/tree.tsv "$OUT"/carrier-delta.tsv "$OUT"/carrier-paths.txt > "$OUT/SHA256SUMS"
-          test "$(git status --porcelain | wc -l | tr -d ' ')" = 0
+          sha256sum "$OUT"/commit.txt "$OUT"/tree.txt "$OUT"/tree.tsv "$OUT"/carrier-head.txt "$OUT"/carrier-head-parents.txt "$OUT"/merge-base.txt "$OUT"/carrier-delta.tsv "$OUT"/carrier-paths.txt > "$OUT/SHA256SUMS"
       - uses: actions/upload-artifact@v4
         with:
           name: pc56-exact-current-main-source
