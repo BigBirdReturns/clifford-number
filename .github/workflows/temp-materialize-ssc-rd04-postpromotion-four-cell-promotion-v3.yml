@@ -1,0 +1,329 @@
+name: TEMP materialize RD-04 postpromotion four-cell promotion v3
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-postpromotion-four-cell-promotion-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+  issues: write
+
+concurrency:
+  group: temp-materialize-rd04-postpromotion-four-cell-promotion-v3
+  cancel-in-progress: false
+
+env:
+  PRODUCT_PARENT: d35deab5ef1e255e5957f29e11fe53fcf74e1cfd
+  PRODUCT_PARENT_TREE: cb129c2c7297ef5aa2dc0076030f8d2eb5440860
+  CARRIER_BRANCH: agent/rd04-four-cell-promotion-materializer-v3
+  PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-four-cell-promotion-product-v1
+  STAGING_BRANCH: staging/ssc-rd04-postpromotion-four-cell-promotion-v3
+  OUTPUT_DIR: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion
+  SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.schema.json
+  BUILDER_PATH: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs
+  VALIDATOR_PATH: tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs
+  TEST_PATH: test/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.test.js
+  WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.yml
+  VALIDATION_RUN: 31271473675
+  VALIDATION_HEAD: 7980e6872ff4954e5e5e17d2b905bb8a9cf99db6
+  VALIDATION_ARTIFACT: 9025731830
+  VALIDATION_ARTIFACT_BYTES: 8693
+  VALIDATION_ARTIFACT_ZIP_SHA256: af8d61caf7f13e0c665b320cc38ded6b4f73b6be89da7624130a4d6793e148c1
+  VALIDATION_RECEIPT_SHA256: c1ea0e2d0ba38d1f913eecb3edd33c85413e2d97cf82364b5d49ed0821967586
+  VALIDATION_CANDIDATE_LEDGER_SHA256: 8b125d7037bed8d2a23e8a9e5ba66e735ec84aa39a568614b7fa6b35b11a45d4
+  VALIDATION_INPUT_INVENTORY_SHA256: 911c3d04ac06bbf0207572c1906a20075971caa13bd91e50a8c0d7722bafc9fe
+  SOURCE_MATERIALIZER_COMMIT: f85489ff3ef5e5bd338344c10aa27ccbc0fbb36c
+  SOURCE_MATERIALIZER_PARENT: d35deab5ef1e255e5957f29e11fe53fcf74e1cfd
+  SOURCE_RUNNER_GIT_BLOB: f50297fee18685928107e8aca1d871bd926c6e07
+  SOURCE_RUNNER_BYTES: 17653
+  SOURCE_RUNNER_SHA256: 87cc75551119a8aa20992c7a59cccbdd27b1c9ed23f43b5129085c5bc6aa95d9
+  REPAIRED_RUNNER_BYTES: 21787
+  REPAIRED_RUNNER_SHA256: 012a05443473bc3f097afaf2ef29ee17a0f742b2f33237bc4088f8d3c715b4cb
+  GH_TOKEN: ${{ github.token }}
+  PYTHONDONTWRITEBYTECODE: '1'
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/rd04-four-cell-promotion-materializer-v3')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install deterministic validators
+        run: python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2' 'jsonschema==4.25.1'
+
+      - name: Reconstruct exact repaired runner and source transport
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          test "$(git rev-list --count "$PRODUCT_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$PRODUCT_PARENT" HEAD)" = '.github/workflows/temp-materialize-ssc-rd04-postpromotion-four-cell-promotion-v3.yml'
+          test "$(git diff --name-only --diff-filter=A "$PRODUCT_PARENT" HEAD)" = '.github/workflows/temp-materialize-ssc-rd04-postpromotion-four-cell-promotion-v3.yml'
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$PRODUCT_PARENT"
+          git fetch --no-tags origin \
+            '+refs/heads/agent/rd04-four-cell-promotion-materializer-v2:refs/remotes/origin/agent/rd04-four-cell-promotion-materializer-v2'
+          test "$(git rev-parse "$SOURCE_MATERIALIZER_COMMIT^")" = "$SOURCE_MATERIALIZER_PARENT"
+
+          mkdir -p .tmp/rd04-postpromotion-four-cell-promotion-v3
+          for part in 00 01 02; do
+            git show "$SOURCE_MATERIALIZER_COMMIT:.tmp/rd04-postpromotion-four-cell-promotion-v2/product-static.part-${part}.b64" \
+              > ".tmp/rd04-postpromotion-four-cell-promotion-v3/product-static.part-${part}.b64"
+          done
+          test "$(wc -c < .tmp/rd04-postpromotion-four-cell-promotion-v3/product-static.part-00.b64)" -eq 8000
+          test "$(sha256sum .tmp/rd04-postpromotion-four-cell-promotion-v3/product-static.part-00.b64 | awk '{print $1}')" = 31a8c44f27a15e17e63447c6613161bf9ad9f3d5d67907ff1a7f4fbd6bc1619e
+          test "$(wc -c < .tmp/rd04-postpromotion-four-cell-promotion-v3/product-static.part-01.b64)" -eq 8000
+          test "$(sha256sum .tmp/rd04-postpromotion-four-cell-promotion-v3/product-static.part-01.b64 | awk '{print $1}')" = 63a1ac48481bb5d254701048c7879f8fb5d547a530fd05326a78ca18f4e884d6
+          test "$(wc -c < .tmp/rd04-postpromotion-four-cell-promotion-v3/product-static.part-02.b64)" -eq 7356
+          test "$(sha256sum .tmp/rd04-postpromotion-four-cell-promotion-v3/product-static.part-02.b64 | awk '{print $1}')" = d36de246ec7fce99144dc07418ffcc7fb5ef746437d16ff40fa08324b4fd413a
+
+          SOURCE_RUNNER="$RUNNER_TEMP/source-materializer-v2.sh"
+          REPAIRED_RUNNER="$RUNNER_TEMP/materializer-v3.sh"
+          git show "$SOURCE_MATERIALIZER_COMMIT:.github/scripts/temp-materialize-ssc-rd04-postpromotion-four-cell-promotion-v2.sh" > "$SOURCE_RUNNER"
+          test "$(wc -c < "$SOURCE_RUNNER")" -eq "$SOURCE_RUNNER_BYTES"
+          test "$(sha256sum "$SOURCE_RUNNER" | awk '{print $1}')" = "$SOURCE_RUNNER_SHA256"
+          test "$(git hash-object "$SOURCE_RUNNER")" = "$SOURCE_RUNNER_GIT_BLOB"
+
+          export SOURCE_RUNNER REPAIRED_RUNNER
+          python - <<'PYREPAIR'
+          import os
+          from pathlib import Path
+
+          runner = Path(os.environ['SOURCE_RUNNER']).read_text().replace('v2', 'v3')
+          old_block = """cat > "$OUT/expected-carrier-paths.txt" <<'EOF_CARRIER'
+          .github/scripts/temp-materialize-ssc-rd04-postpromotion-four-cell-promotion-v3.sh
+          .github/workflows/temp-materialize-ssc-rd04-postpromotion-four-cell-promotion-v3.yml
+          .tmp/rd04-postpromotion-four-cell-promotion-v3/product-static.part-00.b64
+          .tmp/rd04-postpromotion-four-cell-promotion-v3/product-static.part-01.b64
+          .tmp/rd04-postpromotion-four-cell-promotion-v3/product-static.part-02.b64
+          EOF_CARRIER
+          """
+          new_block = """cat > "$OUT/expected-carrier-paths.txt" <<'EOF_CARRIER'
+          .github/workflows/temp-materialize-ssc-rd04-postpromotion-four-cell-promotion-v3.yml
+          EOF_CARRIER
+          """
+          if runner.count(old_block) != 1:
+              raise SystemExit(f'carrier block denominator={runner.count(old_block)}')
+          runner = runner.replace(old_block, new_block, 1)
+
+          anchor = 'sha256sum -c "$OUT/static-SHA256SUMS"\n'
+          repair = r'''sha256sum -c "$OUT/static-SHA256SUMS"
+
+          stage=repair_same_row_replay
+          python - <<'PYROW'
+          from pathlib import Path
+          root = Path('.')
+          builder = root / 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs'
+          text = builder.read_text()
+          old = """  const fieldById = new Map(fieldAdjudications.decisions.map((decision) => [decision.decision_id, decision]));
+            const sourceByRoute = new Map(sourceAdjudications.decisions.map((decision) => [decision.route_id, decision]));
+            const bodyByRoute = new Map(captureCustody.unique_bodies.map((body) => [body.route_id, body]));
+            const matrix = structuredClone(predecessor);
+            matrix.schema_version = 'ssc-rd04-wave03-postpromotion-four-cell-promoted-partial-field-matrix@1';
+            matrix.object_type = 'promoted_partial_field_matrix';
+
+            const decisions = [];
+          """
+          new = """  const fieldById = new Map(fieldAdjudications.decisions.map((decision) => [decision.decision_id, decision]));
+            const sourceByRoute = new Map(sourceAdjudications.decisions.map((decision) => [decision.route_id, decision]));
+            const bodyByRoute = new Map(captureCustody.unique_bodies.map((body) => [body.route_id, body]));
+
+            const validatedUnitIds = [...new Set(protocol.candidates.map((candidate) => candidate.unit_id))].sort();
+            deepEqual(validatedUnitIds, Object.keys(VALIDATED_ROW_SHA256).sort(), 'validated row denominator differs');
+            for (const unitId of validatedUnitIds) {
+              const originalRow = findRow(predecessor, unitId);
+              assert(canonicalSha(originalRow) === VALIDATED_ROW_SHA256[unitId], `validated row identity differs: ${unitId}`);
+            }
+
+            const matrix = structuredClone(predecessor);
+            matrix.schema_version = 'ssc-rd04-wave03-postpromotion-four-cell-promoted-partial-field-matrix@1';
+            matrix.object_type = 'promoted_partial_field_matrix';
+
+            const decisions = [];
+          """
+          if text.count(old) != 1:
+              raise SystemExit(f'builder insertion denominator={text.count(old)}')
+          text = text.replace(old, new, 1)
+          old_line = "    assert(canonicalSha(row) === VALIDATED_ROW_SHA256[candidate.unit_id], `validated row identity differs: ${candidate.unit_id}`);\n"
+          if text.count(old_line) != 1:
+              raise SystemExit(f'builder loop assertion denominator={text.count(old_line)}')
+          builder.write_text(text.replace(old_line, '', 1))
+
+          test = root / 'test/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.test.js'
+          value = test.read_text()
+          needle = "  ['validated cell hash drift', (value) => { value.custody.exact_validated_cell_sha256[Object.keys(value.custody.exact_validated_cell_sha256)[0]] = '4'.repeat(64); }],\n"
+          addition = needle + "  ['validated row hash drift', (value) => { value.custody.exact_validated_row_sha256[Object.keys(value.custody.exact_validated_row_sha256)[0]] = '5'.repeat(64); }],\n"
+          if value.count(needle) != 1:
+              raise SystemExit(f'test repair denominator={value.count(needle)}')
+          test.write_text(value.replace(needle, addition, 1))
+
+          milestone = root / 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-four-cell-promotion.md'
+          value = milestone.read_text()
+          needle = "The product promotes three Montana cells and one North Dakota cell:\n"
+          addition = "The builder authenticates each unique predecessor row exactly once before any candidate mutation. This permits multiple independently validated cells in the same state row without ever treating an already-mutated row as the frozen predecessor.\n\n" + needle
+          if value.count(needle) != 1:
+              raise SystemExit(f'milestone repair denominator={value.count(needle)}')
+          milestone.write_text(value.replace(needle, addition, 1))
+          PYROW
+          node --check "$BUILDER_PATH"
+          node --check "$TEST_PATH"
+          test "$(sha256sum "$BUILDER_PATH" | awk '{print $1}')" = cad8c9cebf62ba745ce51f12d86d319f931a4abeab0ecad7e3f370b29086ab98
+          test "$(sha256sum "$TEST_PATH" | awk '{print $1}')" = cc07eb54fbd729a49762feddb195da283ac44846ece7370bd9f7de218c98a708
+          test "$(sha256sum docs/milestones/ssc-rd-wave03-rd04-postpromotion-four-cell-promotion.md | awk '{print $1}')" = 0bfdbedddae6733523aad401d85a700b650357af841c5582194fd45512d77588
+          '''
+          if runner.count(anchor) != 1:
+              raise SystemExit(f'archive verification anchor={runner.count(anchor)}')
+          runner = runner.replace(anchor, repair, 1)
+          runner = runner.replace('2026-08-08T19:00:00Z', '2026-08-08T19:45:00Z', 1)
+          runner = runner.replace(
+              "'schema_version':'ssc-rd04-postpromotion-four-cell-promotion-materializer@2'",
+              "'schema_version':'ssc-rd04-postpromotion-four-cell-promotion-materializer@3'",
+              1,
+          )
+          runner = runner.replace("'carrier_path_count':5", "'carrier_path_count':1", 1)
+          receipt_anchor = """    'static_archive_sha256':'a1328fff267ee0a083c997d10ca864f25b535a2afe73a75948670624666a48cf',
+              'product_manifest_combined_sha256':manifest['combined_sha256'],
+          """
+          receipt_new = """    'static_archive_sha256':'a1328fff267ee0a083c997d10ca864f25b535a2afe73a75948670624666a48cf',
+              'source_repair':{
+                  'repair_code':'validate_unique_original_rows_before_candidate_mutation',
+                  'validated_row_count':2,
+                  'candidate_count':4,
+                  'builder_sha256':'cad8c9cebf62ba745ce51f12d86d319f931a4abeab0ecad7e3f370b29086ab98',
+                  'test_sha256':'cc07eb54fbd729a49762feddb195da283ac44846ece7370bd9f7de218c98a708',
+                  'milestone_sha256':'0bfdbedddae6733523aad401d85a700b650357af841c5582194fd45512d77588',
+              },
+              'product_manifest_combined_sha256':manifest['combined_sha256'],
+          """
+          if runner.count(receipt_anchor) != 1:
+              raise SystemExit(f'receipt anchor denominator={runner.count(receipt_anchor)}')
+          runner = runner.replace(receipt_anchor, receipt_new, 1)
+          Path(os.environ['REPAIRED_RUNNER']).write_text(runner)
+          PYREPAIR
+
+          test "$(wc -c < "$REPAIRED_RUNNER")" -eq "$REPAIRED_RUNNER_BYTES"
+          test "$(sha256sum "$REPAIRED_RUNNER" | awk '{print $1}')" = "$REPAIRED_RUNNER_SHA256"
+          bash -n "$REPAIRED_RUNNER"
+          chmod +x "$REPAIRED_RUNNER"
+
+      - name: Materialize and qualify exact product
+        id: materialization
+        continue-on-error: true
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref || '' }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash "$RUNNER_TEMP/materializer-v3.sh"
+
+      - name: Upload materialization custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-four-cell-promotion-materializer-v3
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-four-cell-promotion-materializer-v3
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Report materialization result
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          R="${RUNNER_TEMP}/ssc-rd04-postpromotion-four-cell-promotion-materializer-v3/materialization-receipt.json"
+          test -s "$R"
+          {
+            printf '%s\n\n' 'RD-04 postpromotion four-cell promotion materialization reached a typed v3 result.'
+            printf '%s\n' '```text'
+            printf 'state: %s\n' "$(jq -r .state "$R")"
+            printf 'stage: %s\n' "$(jq -r .failed_or_final_stage "$R")"
+            printf 'product_parent: %s\n' "$(jq -r .product_parent "$R")"
+            printf 'candidate_commit: %s\n' "$(jq -r '.candidate_commit // "none"' "$R")"
+            printf 'candidate_tree: %s\n' "$(jq -r '.candidate_tree // "none"' "$R")"
+            printf 'staging_branch: %s\n' "$(jq -r '.staging_branch // "none"' "$R")"
+            printf 'repair_code: %s\n' "$(jq -r '.source_repair.repair_code // "none"' "$R")"
+            printf 'permanent_path_count: %s\n' "$(jq -r .permanent_path_count "$R")"
+            printf 'promoted_cells: %s\n' "$(jq -r '.promoted_cells // 0' "$R")"
+            printf 'class_closed: %s\n' "$(jq -r .class_closed "$R")"
+            printf '%s\n\n' '```'
+            printf '%s\n' 'The staging object has no canonical authority. A separate connector transaction must create the permanent branch and native exact-head pull request.'
+          } > /tmp/rd04-postpromotion-materialization-v3-result.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/rd04-postpromotion-materialization-v3-result.md
+
+      - name: Preserve fail-closed conclusion
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-four-cell-promotion-materializer-v3"
+          R="$OUT/materialization-receipt.json"
+          test "${{ steps.materialization.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (
+            cd "$OUT"
+            sha256sum -c SHA256SUMS
+          )
+          jq -e \
+            --arg parent "$PRODUCT_PARENT" \
+            --arg parent_tree "$PRODUCT_PARENT_TREE" \
+            --arg staging "$STAGING_BRANCH" \
+            '.state=="qualified_staging_published" and
+             .failed_or_final_stage=="complete" and
+             .exit_code==0 and
+             .product_parent==$parent and
+             .product_parent_tree==$parent_tree and
+             .staging_branch==$staging and
+             (.candidate_commit|test("^[0-9a-f]{40}$")) and
+             (.candidate_tree|test("^[0-9a-f]{40}$")) and
+             .carrier_path_count==1 and
+             .permanent_path_count==14 and
+             .addition_only==true and
+             .modified_paths==0 and
+             .deleted_paths==0 and
+             .source_repair.repair_code=="validate_unique_original_rows_before_candidate_mutation" and
+             .source_repair.validated_row_count==2 and
+             .source_repair.candidate_count==4 and
+             .source_repair.builder_sha256=="cad8c9cebf62ba745ce51f12d86d319f931a4abeab0ecad7e3f370b29086ab98" and
+             .candidate_count==4 and
+             .promoted_cells==4 and
+             .held_decisions==2 and
+             .matrix_transition.terminal_cells_before==222 and
+             .matrix_transition.terminal_cells_after==226 and
+             .matrix_transition.still_open_cells_before==228 and
+             .matrix_transition.still_open_cells_after==224 and
+             .matrix_transition.substantive_fields_still_open_before==188 and
+             .matrix_transition.substantive_fields_still_open_after==184 and
+             .matrix_transition.terminal_units_before==10 and
+             .matrix_transition.terminal_units_after==10 and
+             .matrix_updates==4 and
+             .field_terminalizations==4 and
+             .row_state_mutations==0 and
+             .class_closed==false and
+             .cumulative_ledger_effect=="none" and
+             .outside_human_dependency==false and
+             .publication_effect=="none" and
+             .adoption_effect=="none" and
+             .graph_effect=="none"' \
+            "$R" > /dev/null
