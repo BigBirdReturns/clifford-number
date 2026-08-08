@@ -1,0 +1,35 @@
+name: TEMP probe live main tree for RD-04 one-cell promotion
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-probe-ssc-rd04-nd-onecell-live-main-tree-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Emit exact live-parent tree receipt
+        run: |
+          set -Eeuo pipefail
+          test "${{ github.event_name }}" = pull_request
+          test "${{ github.head_ref }}" = diagnostic/ssc-rd04-nd-onecell-live-main-tree-v1
+          PARENT="$(git rev-parse HEAD^)"
+          TREE="$(git rev-parse "${PARENT}^{tree}")"
+          test "$(git diff --name-only "$PARENT" HEAD)" = '.github/workflows/temp-probe-ssc-rd04-nd-onecell-live-main-tree-v1.yml'
+          printf 'live_parent=%s\nlive_parent_tree=%s\n' "$PARENT" "$TREE"
+          mkdir -p "${RUNNER_TEMP}/rd04-nd-onecell-live-main-tree-v1"
+          jq -n --arg parent "$PARENT" --arg tree "$TREE" '{state:"live_main_tree_observed",live_parent:$parent,live_parent_tree:$tree,permanent_paths:0,source_requests:0,matrix_updates:0,row_state_mutations:0,class_closed:false,outside_human_dependency:false}' > "${RUNNER_TEMP}/rd04-nd-onecell-live-main-tree-v1/receipt.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rd04-nd-onecell-live-main-tree-v1
+          path: ${{ runner.temp }}/rd04-nd-onecell-live-main-tree-v1
+          if-no-files-found: error
+          retention-days: 7
