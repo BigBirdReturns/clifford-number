@@ -10,8 +10,8 @@ import stat
 import sys
 from typing import Any
 
-EXPECTED_PARENT = '987f1b2574eeddaba49d67c1c1498a81d40f7c69'
-EXPECTED_PARENT_TREE = 'f805cde651c5236e0918baba558e0da1be77b556'
+EXPECTED_PARENT = '2aaadb3b87c83a8cf79ded7046a3856101bf943b'
+EXPECTED_PARENT_TREE = '1a6690047ea1919fe4b63b1a4eb287b78459241b'
 SOURCE_CANONICAL = '46036c01eaba31bdb18045307fe3ebcb67d576a6'
 SOURCE_TREE = '0ffec7018bcfc038a73cd280970f783d12a5c222'
 DATA_ROOT = Path('data/intake/schoolhouse-legal-identity-current-frontier-v1')
