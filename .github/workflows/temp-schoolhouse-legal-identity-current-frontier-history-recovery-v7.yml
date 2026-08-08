@@ -1,0 +1,294 @@
+name: TEMP recover School.House current-frontier historical payload objects
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-legal-identity-current-frontier-history-recovery-v7.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schoolhouse-current-frontier-history-recovery-v7-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  diagnose:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-legal-identity-current-frontier-history-recovery-v7')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Census all historical carrier objects and recover pinned chunks
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='1e52a58be874538509d6c0d3c06adc12fc53cad7'
+          WORKFLOW='.github/workflows/temp-schoolhouse-legal-identity-current-frontier-history-recovery-v7.yml'
+          SOURCE_BRANCH='agent/schoolhouse-legal-identity-current-frontier-materializer-v1'
+          SOURCE_HEAD='901c16b0a8f32bfe2a83c4e0d619d3168cd668ff'
+          SOURCE_ROOT='.github/materializers/schoolhouse-current-frontier-v1'
+          OUT="$RUNNER_TEMP/schoolhouse-current-frontier-history-recovery-v7"
+          RECOVERED="$OUT/recovered"
+          rm -rf "$OUT"
+          mkdir -p "$OUT" "$RECOVERED"
+          printf 'initializing-history-recovery-v7\n' > "$OUT/STAGE"
+          printf 'source_requests=0\nregistry_queries=0\nform_submissions=0\ncontacts=0\npayments=0\nuploads=0\n' > "$OUT/BOUNDARY"
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            printf '%s\n' "$rc" > "$OUT/DIAGNOSTIC_EXIT_CODE"
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          printf 'proving-one-workflow-and-source-history\n' > "$OUT/STAGE"
+          git fetch --no-tags origin main "$SOURCE_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+          mapfile -t carrier_paths < <(git diff --name-only "$BASE"..HEAD)
+          test "${#carrier_paths[@]}" -eq 1
+          test "${carrier_paths[0]}" = "$WORKFLOW"
+          git diff --check "$BASE"..HEAD
+          git merge-base --is-ancestor "$BASE" "$(git rev-parse origin/main)"
+          test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$SOURCE_HEAD"
+          test "$(git rev-list --count "$BASE".."$SOURCE_HEAD")" = '13'
+          git rev-list --reverse "$BASE".."$SOURCE_HEAD" > "$OUT/source-commits.txt"
+          test "$(wc -l < "$OUT/source-commits.txt")" = '13'
+
+          printf 'censusing-historical-git-objects\n' > "$OUT/STAGE"
+          python - "$BASE" "$SOURCE_HEAD" "$SOURCE_ROOT" "$OUT" "$RECOVERED" <<'PY_RECOVER'
+          from __future__ import annotations
+
+          from pathlib import Path
+          import hashlib
+          import json
+          import subprocess
+          import sys
+
+          base, head, root, out_raw, recovered_raw = sys.argv[1:]
+          out = Path(out_raw)
+          recovered = Path(recovered_raw)
+
+          expected = [
+              ('controller', 0, 'controller-00', 'c38b28b1598f126d2727a4d9228f494e4c1079d5', 5000, 'ec8b175c1473fd9f7f7c893a495269df2dfd440e4960f9d74487d706c14060f9'),
+              ('controller', 1, 'controller-01', '4b80357e74d23fe7edb0e7ce25052e1929f81db0', 5000, '8e69b377c4a4208bded118d4b8477a9ceac6ef35e66931455816ce786a1e54e2'),
+              ('controller', 2, 'controller-02', '9ceb01ab8c0f5efd09e26d66672a6dc9ceaf248d', 5000, 'f764d261b300f0062345e7df8c5a6d530455560896094b405df87520f7be618f'),
+              ('controller', 3, 'controller-03', '9175ec1ad24346b9db9ab88722bb02ae1020414b', 5000, '79b2e68a76dc3ff0d13ec8c30cbedc8c41cbb8c5fc01cd95d94c2dbd513af2ee'),
+              ('controller', 4, 'controller-04', '22d3e5b938499d0b56df11ac1a9211e05712dc30', 456, '0bdb8068c48e536d5d6698be2bc58031af338bedd7cb2231148e959af4170f68'),
+              ('payload', 0, 'part-00', '417dab959423065d8cbfbe9af183cde4b7c5fd25', 10000, 'e932c87c3204e01fc208e6c2e3e46b86e255d42d57dadd1360e65f80269ae12b'),
+              ('payload', 1, 'part-01', '35607251fbb7fcf7370b710a0baf1e99f196577b', 10000, 'f814e46666d96edaf076c6d8b992310e66baa62cc58622083955e38b7752e6d2'),
+              ('payload', 2, 'part-02', 'ebd9841e850cef407c4d35191e234ec86a9da407', 10000, 'a2c3a61652bde254bb66dd7e27546bfd2c3bc078220aae89aa7ebbca482fda89'),
+              ('payload', 3, 'part-03', '21971133a07421db3e3c219473c717d54e3479fb', 10000, '55b32a2d8c045e8cb2f2eebb565b70a5a3155b84746b05ac4895438487887f2f'),
+              ('payload', 4, 'part-04', 'fc8dc1c4bb1cf991ae4a7f74f723569fa7307bf6', 10000, 'ce1a3e3f3c19cd97215580d8f0fd1f7548c633828f468d0f0949a891fc8639c8'),
+              ('payload', 5, 'part-05', '5fb94d345a19f9b7df3fdc778ca2a89c03d18b57', 10000, '116a5d7864e3557b40ee4a4f35c466c6e0e82b13fc14d4326841dd86e2772a04'),
+              ('payload', 6, 'part-06', '70c0d173f6b887ebc5f488ac407b504ee2a95835', 5880, '22a59c63b9aeea9f8a27febcaf5a0b12d34a07fc7c5340c1142825e0ec53339d'),
+          ]
+
+          def run(*args: str, check: bool = True) -> subprocess.CompletedProcess[bytes]:
+              return subprocess.run(['git', *args], check=check, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+          def blob_id(data: bytes) -> str:
+              return hashlib.sha1(f'blob {len(data)}\0'.encode() + data).hexdigest()
+
+          commits = run('rev-list', '--reverse', f'{base}..{head}').stdout.decode().splitlines()
+          assert len(commits) == 13
+          versions: dict[str, dict] = {}
+          commit_rows = []
+          for sequence, commit in enumerate(commits, 1):
+              parent = run('rev-parse', f'{commit}^').stdout.decode().strip()
+              changed = run('diff-tree', '--no-commit-id', '--name-status', '-r', commit).stdout.decode().splitlines()
+              tree_raw = run('ls-tree', '-r', '-z', commit, root).stdout
+              entries = []
+              for record in tree_raw.split(b'\0'):
+                  if not record:
+                      continue
+                  meta, path_raw = record.split(b'\t', 1)
+                  mode, obj_type, obj = meta.decode().split()
+                  path = path_raw.decode()
+                  data = run('cat-file', 'blob', obj).stdout
+                  versions.setdefault(obj, {
+                      'blob': obj,
+                      'bytes': len(data),
+                      'sha256': hashlib.sha256(data).hexdigest(),
+                      'paths': [],
+                  })['paths'].append({'commit': commit, 'path': path})
+                  entries.append({'path': path, 'blob': obj, 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()})
+              commit_rows.append({
+                  'sequence': sequence,
+                  'commit': commit,
+                  'parent': parent,
+                  'changed': changed,
+                  'tree_entries': entries,
+              })
+
+          recovery_rows = []
+          complete = True
+          for kind, ordinal, name, historical_blob, size, digest in expected:
+              matches = []
+              direct = run('cat-file', '-e', f'{historical_blob}^{{blob}}', check=False)
+              if direct.returncode == 0:
+                  data = run('cat-file', 'blob', historical_blob).stdout
+                  matches.append({
+                      'method': 'historical_blob_object',
+                      'source_blob': historical_blob,
+                      'source_bytes': len(data),
+                      'source_sha256': hashlib.sha256(data).hexdigest(),
+                      'offset': 0,
+                      'derived_bytes': len(data),
+                      'derived_sha256': hashlib.sha256(data).hexdigest(),
+                      'derived_blob': blob_id(data),
+                      'data': data,
+                  })
+
+              for obj, value in versions.items():
+                  data = run('cat-file', 'blob', obj).stdout
+                  if len(data) == size and hashlib.sha256(data).hexdigest() == digest:
+                      matches.append({
+                          'method': 'exact_historical_tree_blob',
+                          'source_blob': obj,
+                          'source_bytes': len(data),
+                          'source_sha256': hashlib.sha256(data).hexdigest(),
+                          'offset': 0,
+                          'derived_bytes': len(data),
+                          'derived_sha256': digest,
+                          'derived_blob': blob_id(data),
+                          'data': data,
+                          'locations': value['paths'],
+                      })
+                  if name == 'controller-00' and len(data) >= size:
+                      candidate = data[:size]
+                      if hashlib.sha256(candidate).hexdigest() == digest:
+                          matches.append({
+                              'method': 'head_window', 'source_blob': obj,
+                              'source_bytes': len(data), 'source_sha256': hashlib.sha256(data).hexdigest(),
+                              'offset': 0, 'derived_bytes': size, 'derived_sha256': digest,
+                              'derived_blob': blob_id(candidate), 'data': candidate,
+                              'locations': value['paths'],
+                          })
+                  if name == 'controller-04' and len(data) + 1 == size:
+                      candidate = data + b'\n'
+                      if hashlib.sha256(candidate).hexdigest() == digest:
+                          matches.append({
+                              'method': 'append_lf', 'source_blob': obj,
+                              'source_bytes': len(data), 'source_sha256': hashlib.sha256(data).hexdigest(),
+                              'offset': 0, 'derived_bytes': size, 'derived_sha256': digest,
+                              'derived_blob': blob_id(candidate), 'data': candidate,
+                              'locations': value['paths'],
+                          })
+
+              dedup = {}
+              for match in matches:
+                  key = (match['method'], match['source_blob'], match['offset'], match['derived_sha256'])
+                  dedup[key] = match
+              matches = list(dedup.values())
+              valid = [m for m in matches if m['derived_bytes'] == size and m['derived_sha256'] == digest and m['derived_blob'] == historical_blob]
+              chosen = valid[0] if valid else None
+              if chosen is None:
+                  complete = False
+              else:
+                  (recovered / name).write_bytes(chosen['data'])
+              public_matches = []
+              for match in matches:
+                  public_matches.append({k: v for k, v in match.items() if k != 'data'})
+              recovery_rows.append({
+                  'kind': kind,
+                  'ordinal': ordinal,
+                  'name': name,
+                  'historical_blob': historical_blob,
+                  'expected_bytes': size,
+                  'expected_sha256': digest,
+                  'match_count': len(public_matches),
+                  'valid_match_count': len(valid),
+                  'chosen_method': chosen['method'] if chosen else None,
+                  'matches': public_matches,
+              })
+
+          controller = b''
+          payload = b''
+          aggregate = None
+          if complete:
+              controller = b''.join((recovered / f'controller-{i:02d}').read_bytes() for i in range(5))
+              payload = b''.join((recovered / f'part-{i:02d}').read_bytes() for i in range(7))
+              aggregate = {
+                  'controller_bytes': len(controller),
+                  'controller_sha256': hashlib.sha256(controller).hexdigest(),
+                  'payload_b64_bytes': len(payload),
+                  'payload_b64_sha256': hashlib.sha256(payload).hexdigest(),
+              }
+              assert aggregate == {
+                  'controller_bytes': 20456,
+                  'controller_sha256': '7f0cd764206a434841307110ff72d555580fea79215159786bdf96e1afe216bd',
+                  'payload_b64_bytes': 65880,
+                  'payload_b64_sha256': '2ef3e418be0d06986d9825f7810e69e700884fc70a437c93bb381c40dd627aaa',
+              }
+
+          receipt = {
+              'schema_version': 'schoolhouse-current-frontier-history-recovery@7',
+              'state': 'complete' if complete else 'incomplete',
+              'base': base,
+              'source_head': head,
+              'source_commit_count': len(commits),
+              'unique_historical_blob_count': len(versions),
+              'expected_chunk_count': len(expected),
+              'recovered_chunk_count': sum(row['chosen_method'] is not None for row in recovery_rows),
+              'aggregate': aggregate,
+              'recovery': recovery_rows,
+              'commits': commit_rows,
+              'source_requests': 0,
+              'registry_queries': 0,
+              'form_submissions': 0,
+              'identity_admissions': 0,
+              'relationship_admissions': 0,
+              'negative_existence_claims': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          (out / 'history-recovery.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          with (out / 'history-recovery.tsv').open('w') as handle:
+              handle.write('kind\tordinal\tname\thistorical_blob\texpected_bytes\texpected_sha256\tvalid_match_count\tchosen_method\n')
+              for row in recovery_rows:
+                  handle.write(
+                      f"{row['kind']}\t{row['ordinal']}\t{row['name']}\t{row['historical_blob']}\t"
+                      f"{row['expected_bytes']}\t{row['expected_sha256']}\t{row['valid_match_count']}\t"
+                      f"{row['chosen_method'] or ''}\n"
+                  )
+          print(f"history_recovery state={receipt['state']} recovered={receipt['recovered_chunk_count']}/{len(expected)} historical_blobs={len(versions)}")
+          if not complete:
+              raise SystemExit(42)
+          PY_RECOVER
+
+          printf 'complete\n' > "$OUT/STAGE"
+
+      - name: Upload exact history-recovery receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-current-frontier-history-recovery-v7
+          path: ${{ runner.temp }}/schoolhouse-current-frontier-history-recovery-v7
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
