@@ -1,0 +1,264 @@
+name: TEMP prove canonical RD-04 North Dakota follow-up adjudication v9
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-prove-ssc-rd04-postpromotion-nd-followup-adjudication-v9.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      CANONICAL_MERGE: 30e151b3ff4aeb5e6353d443fab1c535bc6d7b69
+      PRODUCT: 9ac648d062d6a1ec5a19fec849be29bf76c69bad
+      PRODUCT_PARENT: 048e9d13a2555d8e6fabdbee5f45aea858f919b7
+      PRODUCT_TREE: 9d5b15d4b78e3027a316f507e46692e215f7e5a8
+      CARRIER_PARENT: 79a7e18bfd45f1b1d893fa8b9683710891d4bbca
+      CARRIER_BRANCH: observer/ssc-rd04-postpromotion-nd-followup-adjudication-postmerge-v9-terminal
+      CARRIER_PATH: .github/workflows/temp-prove-ssc-rd04-postpromotion-nd-followup-adjudication-v9.yml
+      PRODUCT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.yml
+      PRODUCT_MANIFEST: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/product-manifest.json
+      PRODUCT_MANIFEST_SHA256: 6323bd5270be9b56f38639b8c8b5ccadbd986ee585f7f73ec7871a119134a98a
+      V2_ARTIFACT_ID: '9027553925'
+      V2_ARTIFACT_DIGEST: sha256:c2ee72f21c0c3c6cd97a3f27d37123e93c85484ae7a3b7617eecd9df6a18bf87
+      V2_HEAD: cc95b1ccbe523b82543a505439f51db7b82c4fab
+      V2_RUN: '31277875777'
+      NATIVE_PUSH_RUN: '31276965024'
+      NATIVE_PRODUCT_ARTIFACT_ID: '9027286884'
+      NATIVE_PRODUCT_ARTIFACT_DIGEST: sha256:b75d5c8227315ff943bab82e82b1f67476647bac7b70fa6ce37d1e4c52ac7233
+      V5_ARTIFACT_ID: '9027755105'
+      V5_ARTIFACT_DIGEST: sha256:f77bd7b4f1f43da55009f367cf038b001e7ae9f9f001d91690e0ab1c3f9fb5f5
+      V5_HEAD: 8d25725fd12bcb34028fa5a08d5801e47025667a
+      V5_RUN: '31278642582'
+      V6_SOURCE_BRANCH: observer/ssc-rd04-postpromotion-nd-followup-adjudication-postmerge-v6-terminal
+      V6_SOURCE_HEAD: 151e81085774c6e8fce9f028e8676aef566650b3
+      V6_SOURCE_PATH: .github/workflows/temp-prove-ssc-rd04-postpromotion-nd-followup-adjudication-v6.yml
+      V6_SOURCE_BLOB: 04f8b30bd77c33fcefe43a482044f003b917c5f7
+      V7_SOURCE_BRANCH: observer/ssc-rd04-postpromotion-nd-followup-adjudication-postmerge-v7-terminal
+      V7_SOURCE_HEAD: a78409c8a5c62e27c564468a65f6852e757a6f35
+      V7_SOURCE_PATH: .github/workflows/temp-prove-ssc-rd04-postpromotion-nd-followup-adjudication-v7.yml
+      V7_SOURCE_BLOB: 15185ec4f875f1a94237db0be75529efa9297ec2
+      ARTIFACT_DIR: .tmp/ssc-rd04-postpromotion-nd-followup-terminal-proof-v9
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve and check out the exact pull-request head
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$GITHUB_EVENT_NAME" = pull_request
+          jq -e '
+            .pull_request.head.repo.full_name == env.GITHUB_REPOSITORY and
+            .pull_request.head.ref == "observer/ssc-rd04-postpromotion-nd-followup-adjudication-postmerge-v9-terminal" and
+            .pull_request.base.ref == "main"
+          ' "$GITHUB_EVENT_PATH" > /dev/null
+          HEAD_REF="$(jq -r '.pull_request.head.ref' "$GITHUB_EVENT_PATH")"
+          HEAD_SHA="$(jq -r '.pull_request.head.sha' "$GITHUB_EVENT_PATH")"
+          git fetch --no-tags origin "+refs/heads/${HEAD_REF}:refs/remotes/origin/rd04-v9-head"
+          test "$(git rev-parse refs/remotes/origin/rd04-v9-head)" = "$HEAD_SHA"
+          git checkout --detach "$HEAD_SHA"
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test "$(git rev-parse HEAD^)" = "$CARRIER_PARENT"
+          test "$(git rev-list --count "$CARRIER_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CARRIER_PARENT" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --diff-filter=A --name-only "$CARRIER_PARENT" HEAD)" = "$CARRIER_PATH"
+          test -z "$(git diff --diff-filter=MDTCRUXB --name-only "$CARRIER_PARENT" HEAD)"
+          git diff --check "$CARRIER_PARENT" HEAD
+          {
+            printf 'EVENT_NAME=%q\n' "$GITHUB_EVENT_NAME"
+            printf 'HEAD_REF=%q\n' "$HEAD_REF"
+            printf 'HEAD_SHA=%q\n' "$HEAD_SHA"
+          } > "$RUNNER_TEMP/rd04-v9-event.env"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Execute the exact corrected terminal proof chain
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source "$RUNNER_TEMP/rd04-v9-event.env"
+          export EVENT_NAME HEAD_REF HEAD_SHA
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-nd-followup-terminal-proof-v6"
+          rm -rf "$OUT" "$ARTIFACT_DIR"
+
+          proof_body() {
+            git fetch --no-tags origin \
+              "+refs/heads/${V7_SOURCE_BRANCH}:refs/remotes/origin/rd04-v7-source"
+            test "$(git rev-parse refs/remotes/origin/rd04-v7-source)" = "$V7_SOURCE_HEAD"
+            test "$(git rev-parse "refs/remotes/origin/rd04-v7-source:$V7_SOURCE_PATH")" = "$V7_SOURCE_BLOB"
+            git show "refs/remotes/origin/rd04-v7-source:$V7_SOURCE_PATH" > "$RUNNER_TEMP/v7-source.yml"
+
+            python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2'
+            python - "$RUNNER_TEMP/v7-source.yml" "$RUNNER_TEMP/v7-proof-step.sh" <<'PY'
+          import sys
+          from pathlib import Path
+          import yaml
+
+          source = Path(sys.argv[1])
+          destination = Path(sys.argv[2])
+          value = yaml.safe_load(source.read_text())
+          steps = value["jobs"]["prove"]["steps"]
+          matches = [
+              step for step in steps
+              if step.get("name") == "Extract and execute exact v6 proof script with corrected digest"
+          ]
+          if len(matches) != 1:
+              raise SystemExit(f"corrected v7 proof-step denominator differs: {len(matches)}")
+          script = matches[0]["run"]
+          invalid = 'if "' + "$" + '{{" in script:'
+          if invalid in script:
+              raise SystemExit("v7 source retains the invalid incomplete-expression sentinel")
+          destination.write_text(script)
+          print(f"corrected_v7_proof_step_extracted=pass bytes={len(script.encode())}")
+          PY
+            chmod 700 "$RUNNER_TEMP/v7-proof-step.sh"
+            bash "$RUNNER_TEMP/v7-proof-step.sh"
+          }
+
+          set +e
+          proof_body
+          PROOF_CODE=$?
+          set -e
+
+          mkdir -p "$OUT"
+          printf '%s\n' "$PROOF_CODE" > "$OUT/v9-proof-exit-code.txt"
+          PROOF_OUTCOME=failure
+          if test "$PROOF_CODE" -eq 0; then
+            PROOF_OUTCOME=success
+          fi
+
+          jq -n \
+            --arg wrapper_head "$(git rev-parse HEAD)" \
+            --arg wrapper_parent "$CARRIER_PARENT" \
+            --arg wrapper_path "$CARRIER_PATH" \
+            --arg v7_head "$V7_SOURCE_HEAD" \
+            --arg v7_path "$V7_SOURCE_PATH" \
+            --arg v7_blob "$V7_SOURCE_BLOB" \
+            --arg v6_head "$V6_SOURCE_HEAD" \
+            --arg v6_path "$V6_SOURCE_PATH" \
+            --arg v6_blob "$V6_SOURCE_BLOB" \
+            --arg corrected_digest "$V2_ARTIFACT_DIGEST" \
+            --arg proof_outcome "$PROOF_OUTCOME" \
+            --argjson proof_exit_code "$PROOF_CODE" \
+            '{
+              schema_version:"ssc-rd04-postpromotion-nd-followup-terminal-proof-wrapper@9",
+              wrapper_head:$wrapper_head,
+              wrapper_parent:$wrapper_parent,
+              wrapper_path:$wrapper_path,
+              extracted_v7_source_head:$v7_head,
+              extracted_v7_source_path:$v7_path,
+              extracted_v7_source_blob:$v7_blob,
+              nested_v6_source_head:$v6_head,
+              nested_v6_source_path:$v6_path,
+              nested_v6_source_blob:$v6_blob,
+              corrected_v2_artifact_digest:$corrected_digest,
+              proof_outcome:$proof_outcome,
+              proof_exit_code:$proof_exit_code,
+              permanent_product_effect:"none"
+            }' > "$OUT/v9-wrapper-receipt.json"
+
+          rm -f "$OUT/SHA256SUMS"
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 |
+              LC_ALL=C sort -z |
+              xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+          mkdir -p "$ARTIFACT_DIR"
+          cp -a "$OUT/." "$ARTIFACT_DIR/"
+          exit 0
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-nd-followup-adjudication-postmerge-proof-v9
+          path: .tmp/ssc-rd04-postpromotion-nd-followup-terminal-proof-v9
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal canonical proof
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$ARTIFACT_DIR"
+          test "$(cat "$OUT/v9-proof-exit-code.txt")" = 0
+          test "$(cat "$OUT/stage.txt")" = 'stage=complete'
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e \
+            --arg head "$(git rev-parse HEAD)" \
+            --arg parent "$CARRIER_PARENT" \
+            --arg path "$CARRIER_PATH" \
+            --arg v7_head "$V7_SOURCE_HEAD" \
+            --arg v7_path "$V7_SOURCE_PATH" \
+            --arg v7_blob "$V7_SOURCE_BLOB" \
+            --arg v6_head "$V6_SOURCE_HEAD" \
+            --arg v6_path "$V6_SOURCE_PATH" \
+            --arg v6_blob "$V6_SOURCE_BLOB" \
+            --arg digest "$V2_ARTIFACT_DIGEST" \
+            '.schema_version=="ssc-rd04-postpromotion-nd-followup-terminal-proof-wrapper@9" and
+             .wrapper_head==$head and
+             .wrapper_parent==$parent and
+             .wrapper_path==$path and
+             .extracted_v7_source_head==$v7_head and
+             .extracted_v7_source_path==$v7_path and
+             .extracted_v7_source_blob==$v7_blob and
+             .nested_v6_source_head==$v6_head and
+             .nested_v6_source_path==$v6_path and
+             .nested_v6_source_blob==$v6_blob and
+             .corrected_v2_artifact_digest==$digest and
+             .proof_outcome=="success" and
+             .proof_exit_code==0 and
+             .permanent_product_effect=="none"' \
+            "$OUT/v9-wrapper-receipt.json" > /dev/null
+          jq -e '
+            .schema_version=="ssc-rd04-postpromotion-nd-followup-adjudication-postmerge-proof@6" and
+            .state=="canonical_postmerge_verified" and
+            .canonical_merge=="30e151b3ff4aeb5e6353d443fab1c535bc6d7b69" and
+            .product_commit=="9ac648d062d6a1ec5a19fec849be29bf76c69bad" and
+            .product_parent=="048e9d13a2555d8e6fabdbee5f45aea858f919b7" and
+            .shared_tree=="9d5b15d4b78e3027a316f507e46692e215f7e5a8" and
+            .protected_path_overlap_count==0 and
+            .native_push_workflow_run==31276965024 and
+            .native_product_artifact==9027286884 and
+            .release_check=="pass" and
+            .release_residue_class=="exact_known_generated_outputs" and
+            .tracked_generated_outputs==10 and
+            .ignored_generated_directories==3 and
+            .restoration=="git_restore_and_git_clean_fdx" and
+            .clean_deterministic_replay=="pass" and
+            .permanent_paths==14 and
+            .source_admissions==2 and
+            .promotion_candidates==1 and
+            .held_open_cells==1 and
+            .source_requests==0 and
+            .matrix_updates==0 and
+            .field_terminalizations==0 and
+            .row_state_mutations==0 and
+            .class_closed==false and
+            .cumulative_ledger_effect=="none" and
+            .outside_human_dependency==false and
+            .publication_effect=="none" and
+            .adoption_effect=="none" and
+            .graph_effect=="none"' \
+            "$OUT/receipt.json" > /dev/null
