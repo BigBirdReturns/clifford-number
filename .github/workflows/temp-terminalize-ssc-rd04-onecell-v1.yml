@@ -1,0 +1,103 @@
+name: TEMP terminalize RD-04 North Dakota one-cell transaction v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-onecell-terminal-cleanup-base-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.trigger/ssc-rd04-onecell-terminal-cleanup-v1'
+
+permissions:
+  contents: write
+  actions: read
+  pull-requests: write
+
+concurrency:
+  group: temp-terminalize-rd04-onecell-v1
+  cancel-in-progress: false
+
+env:
+  CANONICAL_MAIN: b1d1d8afb6c957401a762bf9d0b2abc464bd5e07
+  CANONICAL_TREE: 64f5b5e9e9d72bdf86ef6cf14d728b2ae996f834
+  REPAIR_COMMIT: c91c1abd3beadd73e80424e6a9f0286a64a2b6bb
+  ORIGINAL_PRODUCT_COMMIT: 6cb07f5d4f136d39d0c1cba6ce627397caa3cc9e
+  CONTROLLING_PROOF_PR: '1618'
+  CONTROLLING_PROOF_RUN: '31282446400'
+  CONTROLLING_PROOF_JOB: '93165839288'
+  CONTROLLING_PROOF_ARTIFACT: '9028829335'
+  CONTROLLING_PROOF_ARTIFACT_BYTES: '219565'
+  CONTROLLING_PROOF_ARTIFACT_SHA256: 1a9c24c18dc6bbcb68404b357737eed8bc6f006ed54100c47a940e076a865773
+  CONTROLLING_PROOF_RECEIPT_SHA256: 0590d787a3639ed8f7a11b49b4498da1aa8da5ffc2822892bcee84b13d3f772d
+  DURABLE_LOCK: lock/ssc-rd04-postpromotion-nd-followup-two-route-execution-v2
+  CLEANUP_BASE: agent/ssc-rd04-onecell-terminal-cleanup-base-v1
+  CLEANUP_TRIGGER: agent/ssc-rd04-onecell-terminal-cleanup-trigger-v1
+  SCRIPT_PATH: .github/scripts/temp-terminalize-ssc-rd04-onecell-v1.sh
+  WORKFLOW_PATH: .github/workflows/temp-terminalize-ssc-rd04-onecell-v1.yml
+  TRIGGER_PATH: .trigger/ssc-rd04-onecell-terminal-cleanup-v1
+
+jobs:
+  terminalize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-onecell-terminal-cleanup-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Authenticate proof and retire exact temporary estate
+        id: cleanup
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash "$SCRIPT_PATH"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ssc-rd04-onecell-terminal-cleanup-v1
+          path: ${{ runner.temp }}/ssc-rd04-onecell-terminal-cleanup-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal cleanup receipt
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-onecell-terminal-cleanup-v1"
+          test "${{ steps.cleanup.outcome }}" = success
+          test "$(cat "$OUT/STAGE")" = complete
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .schema_version=="ssc-rd04-onecell-terminal-cleanup@1" and
+            .state=="canonical_transaction_terminalized" and
+            .failed_or_final_stage=="complete" and .exit_code==0 and
+            .canonical_main=="b1d1d8afb6c957401a762bf9d0b2abc464bd5e07" and
+            .canonical_tree=="64f5b5e9e9d72bdf86ef6cf14d728b2ae996f834" and
+            .target_ref_count==53 and
+            .present_before + .absent_before == 53 and
+            .deleted_ref_count==.present_before and
+            .zero_residual_target_refs==true and
+            .zero_residual_open_pull_requests==true and
+            .retained_durable_lock=="lock/ssc-rd04-postpromotion-nd-followup-two-route-execution-v2" and
+            .terminal_cells==227 and .still_open_cells==223 and
+            .open_substantive_cells==183 and .terminal_units==10 and
+            .north_dakota_terminal_fields==7 and .north_dakota_open_fields==2 and
+            .north_dakota_row_state=="still_open" and
+            .waiver_period_field_state=="still_open" and .waiver_period_field_excluded==true and
+            .source_requests==0 and .route_executions==0 and .source_admissions==0 and
+            .matrix_updates==0 and .field_terminalizations==0 and .row_state_mutations==0 and
+            .class_closed==false and .cumulative_ledger_effect=="none" and
+            .outside_human_dependency==false and
+            .publication_effect=="none" and .adoption_effect=="none" and .graph_effect=="none"
+          ' "$OUT/receipt.json" > /dev/null
