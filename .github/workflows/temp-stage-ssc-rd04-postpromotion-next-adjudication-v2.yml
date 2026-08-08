@@ -1,0 +1,211 @@
+name: TEMP stage RD-04 postpromotion adjudication v2 ordinary blobs
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-stage-ssc-rd04-postpromotion-next-adjudication-v2.yml'
+      - '.tmp/ssc-rd04-postpromotion-adjudication-v2-stager/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-stage-rd04-postpromotion-adjudication-v2
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-next-adjudication-v2-stager-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      PRODUCT_PARENT: c108c323d9c254d8e4a6bb4f3089a7fae7975009
+      PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-product-v2
+      STAGING_BRANCH: staging/ssc-rd04-postpromotion-next-adjudication-v2-ordinary-v1
+      CARRIER_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-v2-stager-v1
+      CARRIER_WORKFLOW: .github/workflows/temp-stage-ssc-rd04-postpromotion-next-adjudication-v2.yml
+      CHUNK_DIR: .tmp/ssc-rd04-postpromotion-adjudication-v2-stager
+      STAGED_WORKFLOW: .tmp/ssc-rd04-postpromotion-adjudication-v2-staged/permanent-workflow.yml
+      PRODUCT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Reconstruct, qualify, and stage exact ordinary product blobs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/rd04-adjudication-v2-stager"
+          PRODUCT="$OUT/product"
+          WT="$OUT/worktree"
+          rm -rf "$OUT"; mkdir -p "$PRODUCT"
+
+          test "${{ github.event_name }}" != pull_request || test "${{ github.event.pull_request.head.ref }}" = "$CARRIER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          test "$(git rev-list --count "$PRODUCT_PARENT"..HEAD)" -eq 1
+          cat >"$OUT/carrier-paths" <<EOF
+          $CARRIER_WORKFLOW
+          $CHUNK_DIR/part-00.b64
+          $CHUNK_DIR/part-01.b64
+          $CHUNK_DIR/part-02.b64
+          $CHUNK_DIR/part-03.b64
+          $CHUNK_DIR/part-04.b64
+          EOF
+          sort -o "$OUT/carrier-paths" "$OUT/carrier-paths"
+          git diff --name-only --diff-filter=ACDMRTUXB "$PRODUCT_PARENT" HEAD | sort >"$OUT/actual-carrier-paths"
+          git diff --name-only --diff-filter=A "$PRODUCT_PARENT" HEAD | sort >"$OUT/added-carrier-paths"
+          diff -u "$OUT/carrier-paths" "$OUT/actual-carrier-paths"
+          diff -u "$OUT/carrier-paths" "$OUT/added-carrier-paths"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$PRODUCT_PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+          test -z "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH")"
+
+          cat >"$OUT/chunks" <<'EOF'
+          part-00.b64 5000 a85dca7b62b5df2a50bca127604d8064996dd2985fa8de6c82cb81a23a5c31f0
+          part-01.b64 5000 078d98114188bf163262332a220238f7b17e391988d897d3db440f3b5d754bf6
+          part-02.b64 5000 fcbdcbbaa45f508e44b045e784b2f61bef55f87a51022e38e06bb07bd65a56b0
+          part-03.b64 5000 5c15e9bb27949198975c79d282ff48fbe596b44f47d54bfd5035f669e59c0582
+          part-04.b64 1800 893d5e966f8de7682c53609362796032779c6f1f8b64ba40cb93ed1053827b0a
+          EOF
+          : >"$OUT/product.tar.xz.b64"
+          while read -r name bytes digest; do
+            test "$(stat -c %s "$CHUNK_DIR/$name")" -eq "$bytes"
+            test "$(sha256sum "$CHUNK_DIR/$name" | cut -d' ' -f1)" = "$digest"
+            cat "$CHUNK_DIR/$name" >>"$OUT/product.tar.xz.b64"
+          done <"$OUT/chunks"
+          test "$(stat -c %s "$OUT/product.tar.xz.b64")" -eq 21800
+          test "$(sha256sum "$OUT/product.tar.xz.b64" | cut -d' ' -f1)" = 69c871ce676a0a16d3f35c3b69a025b6fb62ba783eaf0c7fbe89c6aa550396a4
+          base64 -d "$OUT/product.tar.xz.b64" >"$OUT/product.tar.xz"
+          test "$(stat -c %s "$OUT/product.tar.xz")" -eq 16348
+          test "$(sha256sum "$OUT/product.tar.xz" | cut -d' ' -f1)" = e0ebcf32c0049bd77af608f3f717cc6979db051eac3326c389bd490824bab1c9
+
+          cat >"$OUT/product-paths" <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/adjudication-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/capture-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/field-adjudications.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/promotion-candidate-protocol.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/source-adjudications.json
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-next-adjudication.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          EOF
+          python - "$OUT/product.tar.xz" "$PRODUCT" "$OUT/product-paths" <<'PY'
+          import pathlib, sys, tarfile
+          archive, root, paths = map(pathlib.Path, sys.argv[1:])
+          expected = paths.read_text().splitlines()
+          with tarfile.open(archive, 'r:xz') as tf:
+              members = tf.getmembers()
+              actual = []
+              for m in members:
+                  name = m.name.removeprefix('./')
+                  if not name: continue
+                  if not m.isfile() or name.startswith('/') or '..' in pathlib.PurePosixPath(name).parts:
+                      raise SystemExit(f'unsafe member: {m.name}')
+                  actual.append(name)
+              if sorted(actual) != sorted(expected):
+                  raise SystemExit(f'archive denominator mismatch: {actual}')
+              tf.extractall(root, filter='data')
+          PY
+
+          cat >"$OUT/file-ledger" <<'EOF'
+          6f4e399dd3786832f018e2b017ad14c1351c2e44fd507b0c0bf2aa959ab73ea0  .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml
+          b50246a4136bae36a41ed3f9f038e847c19ca56aa7b69d2b813de299eee5671a  data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/adjudication-summary.json
+          ad6eba184d139fd757b25afed7159ff25f422a91b6626fee915be862d987b1eb  data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/capture-custody.json
+          9c5acba7f87af58cf4caf1887e0a25ba874fce5f9ff1146da21756a05d1142f0  data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/field-adjudications.json
+          49633c89cc13c55c318a9f9182c9417ae3a7db9884a68bb1ebba9fa45297f4c0  data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/index.json
+          48bd812d968165d76ac102c7c3155b1378fc7adf5aa26b14608e9058aa7c436c  data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/product-manifest.json
+          e47b85826593db6241d3e4ff259858770b12db52860795afe30d6b303b0add1e  data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/promotion-candidate-protocol.json
+          957189895be09a0f5a8cdbeeb58c6e939133f9322c3bbe49c1362bb625c07af0  data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/source-adjudications.json
+          1000f99e913b0cb948bad717406a8c9259b88fb06269f855b9df724edef7c94e  docs/milestones/ssc-rd-wave03-rd04-postpromotion-next-adjudication.md
+          38569da4b51c4307463d597e3de5f75710d854fc54439ad231c866154ecc368f  schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json
+          1bb272e20ccb8ce91732753ddb3f37b6ed7d3003ef2d2ef397d95320ec4cdf51  test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          5e5607e3ebeb1367e1399cda9608b35dc301749feb232deb45835c079fe8d6b9  tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          653100798c8a5d82d4c2c65075f78a4a31fac4452a7b89f5e7e94876692c188f  tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          EOF
+          (cd "$PRODUCT" && sha256sum -c "$OUT/file-ledger")
+
+          git worktree add --detach "$WT" "$PRODUCT_PARENT"
+          (cd "$PRODUCT" && tar -cf - .) | (cd "$WT" && tar -xf -)
+          cd "$WT"
+          git add -A
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Qualify RD-04 postpromotion adjudication v2' >/dev/null
+          test "$(git rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          test "$(git diff --name-only --diff-filter=A "$PRODUCT_PARENT" HEAD | wc -l)" -eq 13
+
+          python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2' 'jsonschema==4.25.1'
+          python -c "import yaml; yaml.safe_load(open('$PRODUCT_WORKFLOW'))"
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          schema=json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json').read_text())
+          Draft202012Validator.check_schema(schema)
+          validator=Draft202012Validator(schema)
+          root=Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication')
+          for name in ['capture-custody.json','source-adjudications.json','field-adjudications.json','promotion-candidate-protocol.json','adjudication-summary.json','index.json','product-manifest.json']:
+              errors=sorted(validator.iter_errors(json.loads((root/name).read_text())),key=lambda e:list(e.path))
+              if errors: raise SystemExit(f'{name}: {errors[0].message}')
+          PY
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+          git restore --staged --worktree .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$PRODUCT_PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+          test -z "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH")"
+          git reset --hard "$PRODUCT_PARENT"
+          (cd "$PRODUCT" && tar -cf - .) | tar -xf -
+          mkdir -p "$(dirname "$STAGED_WORKFLOW")"
+          mv "$PRODUCT_WORKFLOW" "$STAGED_WORKFLOW"
+          git add -A
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Stage exact RD-04 adjudication v2 ordinary blobs' >/dev/null
+          test "$(git rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          test "$(git diff --name-only --diff-filter=A "$PRODUCT_PARENT" HEAD | wc -l)" -eq 13
+          git rev-parse HEAD >"$OUT/staging-head.txt"
+          git rev-parse 'HEAD^{tree}' >"$OUT/staging-tree.txt"
+          git ls-tree -r HEAD >"$OUT/staging-tree-ledger.txt"
+          git push origin "HEAD:refs/heads/$STAGING_BRANCH"
+          printf 'source_requests=0\nroute_executions=0\nreviewed_source_admissions=4\npromotion_candidates=4\nheld_open_cells=2\nmatrix_updates=0\nfield_terminalizations=0\nrow_state_mutations=0\nclass_closed=false\ncumulative_ledger_effect=none\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' >"$OUT/BOUNDARY"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum >SHA256SUMS)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-adjudication-v2-stager
+          path: ${{ runner.temp }}/rd04-adjudication-v2-stager
+          if-no-files-found: error
+          retention-days: 90
