@@ -1,0 +1,242 @@
+name: Temporary SSC RD-04 five-state field-promotion materializer v2
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/tmp-ssc-rd04-five-state-promotion-materializer-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      EXPECTED_PARENT: 86937ea02e7e10223d0854240cd4e0cc9b6716a4
+      CARRIER_BRANCH: agent/ssc-rd04-five-state-promotion-materializer-v2
+      PRODUCT_BRANCH: agent/ssc-rd04-five-state-promotion-product-v1
+      PAYLOAD_BRANCH: agent/ssc-rd04-five-state-promotion-payload-v1
+      PAYLOAD_COMMIT: 391131601e639e7cb2bc95ed18222d8cfa094fb4
+      PAYLOAD_PART1: .tmp/rd04-five-state-promotion-payload/archive.b64.part01
+      PAYLOAD_PART2: .tmp/rd04-five-state-promotion-payload/archive.b64.part02
+      TEMP_WORKFLOW_PATH: .github/workflows/tmp-ssc-rd04-five-state-promotion-materializer-v2.yml
+      STANDING_WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-five-state-field-promotion.yml
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Materialize and publish exact ordinary product
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/rd04-materializer
+          CARRIER_HEAD="$(git rev-parse HEAD)"
+          export CARRIER_HEAD
+
+          test "$BASE_SHA" = "$EXPECTED_PARENT"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_PARENT"
+          test "$(git rev-list --count "$EXPECTED_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-status "$EXPECTED_PARENT" HEAD)" = "$(printf 'A\t%s' "$TEMP_WORKFLOW_PATH")"
+
+          git fetch --no-tags origin             "+refs/heads/main:refs/remotes/origin/main"             "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"             "+refs/heads/$PAYLOAD_BRANCH:refs/remotes/origin/$PAYLOAD_BRANCH"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$EXPECTED_PARENT"
+          test "$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)" = "$EXPECTED_PARENT"
+          test "$(git rev-parse refs/remotes/origin/$PAYLOAD_BRANCH)" = "$PAYLOAD_COMMIT"
+
+          git checkout --detach "$EXPECTED_PARENT"
+          cat > /tmp/permanent-paths <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-five-state-field-promotion.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-field-promotion/promotion-input-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-field-promotion/promotion-decisions.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-field-promotion/cell-promotion-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-field-promotion/promoted-partial-field-matrix.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-field-promotion/remaining-open-field-census.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-field-promotion/promotion-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-field-promotion/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-field-promotion/product-manifest.json
+          docs/milestones/ssc-rd-wave03-rd04-five-state-field-promotion.md
+          schemas/status-sovereignty-rd-wave03-rd04-five-state-field-promotion.schema.json
+          test/status-sovereignty-rd-wave03-rd04-five-state-field-promotion.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-five-state-field-promotion.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-five-state-field-promotion.mjs
+          EOF
+          cat > /tmp/ordinary-paths <<'EOF'
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-field-promotion/promotion-input-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-field-promotion/promotion-decisions.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-field-promotion/cell-promotion-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-field-promotion/promoted-partial-field-matrix.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-field-promotion/remaining-open-field-census.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-field-promotion/promotion-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-field-promotion/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-field-promotion/product-manifest.json
+          docs/milestones/ssc-rd-wave03-rd04-five-state-field-promotion.md
+          schemas/status-sovereignty-rd-wave03-rd04-five-state-field-promotion.schema.json
+          test/status-sovereignty-rd-wave03-rd04-five-state-field-promotion.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-five-state-field-promotion.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-five-state-field-promotion.mjs
+          EOF
+          test "$(wc -l < /tmp/permanent-paths)" -eq 14
+          test "$(wc -l < /tmp/ordinary-paths)" -eq 13
+          while IFS= read -r p; do test ! -e "$p"; done < /tmp/permanent-paths
+
+          extract_authored() {
+            test "$(git rev-parse "$PAYLOAD_COMMIT:$PAYLOAD_PART1")" = "5ad92bb87850811f9a05db22b33460f345bb289d"
+            test "$(git rev-parse "$PAYLOAD_COMMIT:$PAYLOAD_PART2")" = "736263f6e74c9372ed312506c5eba4daf67805c7"
+            git show "$PAYLOAD_COMMIT:$PAYLOAD_PART1" > /tmp/payload.01
+            git show "$PAYLOAD_COMMIT:$PAYLOAD_PART2" > /tmp/payload.02
+            test "$(wc -c < /tmp/payload.01)" -eq 12776
+            test "$(wc -c < /tmp/payload.02)" -eq 12776
+            test "$(sha256sum /tmp/payload.01 | cut -d' ' -f1)" = "8f96faf025efabb9837a2768152cbce5614fca0a7beaa9102fb8cf34e7271b60"
+            test "$(sha256sum /tmp/payload.02 | cut -d' ' -f1)" = "e7372991096664de404878fefacc463ffc521bef156ae80d1e83adeb97267fce"
+            cat /tmp/payload.01 /tmp/payload.02 | base64 -d > /tmp/authored.tar.gz
+            test "$(wc -c < /tmp/authored.tar.gz)" -eq 19164
+            test "$(sha256sum /tmp/authored.tar.gz | cut -d' ' -f1)" = "3710602b84be0321b58532814d4ca45e2dc11b73104701ef03e0ba197218d398"
+            python - <<'PY'
+          import io
+          import tarfile
+          from pathlib import Path, PurePosixPath
+
+          expected = ['.github/workflows/status-sovereignty-rd-wave03-rd04-five-state-field-promotion.yml', 'docs/milestones/ssc-rd-wave03-rd04-five-state-field-promotion.md', 'schemas/status-sovereignty-rd-wave03-rd04-five-state-field-promotion.schema.json', 'test/status-sovereignty-rd-wave03-rd04-five-state-field-promotion.test.js', 'tools/build-status-sovereignty-rd-wave03-rd04-five-state-field-promotion.mjs', 'tools/validate-status-sovereignty-rd-wave03-rd04-five-state-field-promotion.mjs']
+          with tarfile.open('/tmp/authored.tar.gz', 'r:gz') as tf:
+              members = [m for m in tf.getmembers() if m.isfile()]
+              if sorted(m.name for m in members) != expected:
+                  raise SystemExit('authored archive path mismatch')
+              for member in members:
+                  pure = PurePosixPath(member.name)
+                  if pure.is_absolute() or '..' in pure.parts:
+                      raise SystemExit('unsafe authored archive path')
+                  source = tf.extractfile(member)
+                  if source is None:
+                      raise SystemExit('authored archive member missing')
+                  target = Path(member.name)
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(source.read())
+          PY
+          }
+
+          validate_product() {
+            node --check tools/build-status-sovereignty-rd-wave03-rd04-five-state-field-promotion.mjs
+            node --check tools/validate-status-sovereignty-rd-wave03-rd04-five-state-field-promotion.mjs
+            node --check test/status-sovereignty-rd-wave03-rd04-five-state-field-promotion.test.js
+            node tools/build-status-sovereignty-rd-wave03-rd04-five-state-field-promotion.mjs --check
+            node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-field-promotion.mjs
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          import jsonschema
+
+          schema = json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-five-state-field-promotion.schema.json').read_text())
+          files = sorted(Path('data/intake/status-sovereignty-rd-wave03-rd04-five-state-field-promotion').glob('*.json'))
+          if len(files) != 8:
+              raise SystemExit('data object denominator mismatch')
+          validator = jsonschema.Draft202012Validator(schema)
+          for path in files:
+              validator.validate(json.loads(path.read_text()))
+          print('closed_schema_validation=pass')
+          PY
+            node test/status-sovereignty-rd-wave03-rd04-five-state-field-promotion.test.js | tee /tmp/rd04-materializer/test.log
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          }
+
+          extract_authored
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-field-promotion.mjs --write
+          python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+          validate_product
+          npm run release:check
+          git diff --check
+
+          while IFS= read -r p; do sha256sum "$p"; done < /tmp/permanent-paths             > /tmp/rd04-materializer/replay.before
+          cp "$STANDING_WORKFLOW_PATH" /tmp/rd04-materializer/standing-workflow.yml
+          while IFS= read -r p; do rm -f "$p"; done < /tmp/permanent-paths
+          extract_authored
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-field-promotion.mjs --write
+          while IFS= read -r p; do sha256sum "$p"; done < /tmp/permanent-paths             > /tmp/rd04-materializer/replay.after
+          diff -u /tmp/rd04-materializer/replay.before /tmp/rd04-materializer/replay.after
+          validate_product
+          git diff --check
+
+          ADVERSARIAL_REFUSALS="$(sed -n 's/.*adversarial_refusals=\([0-9][0-9]*\).*/\1/p'             /tmp/rd04-materializer/test.log | tail -n 1)"
+          test "$ADVERSARIAL_REFUSALS" -ge 200
+          export ADVERSARIAL_REFUSALS
+
+          while IFS= read -r p; do git add -- "$p"; done < /tmp/ordinary-paths
+          sort /tmp/ordinary-paths -o /tmp/ordinary-paths
+          git diff --cached --name-only | sort > /tmp/rd04-materializer/staged
+          diff -u /tmp/ordinary-paths /tmp/rd04-materializer/staged
+          test "$(git diff --cached --name-status | wc -l)" -eq 13
+          test -z "$(git diff --cached --name-status | awk '$1 != "A" {print}')"
+          test -f "$STANDING_WORKFLOW_PATH"
+          test -z "$(git diff --cached --name-only -- "$STANDING_WORKFLOW_PATH")"
+
+          git config user.name 'RD-04 bounded materializer'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m 'Promote four validated RD-04 five-state field findings'
+          PRODUCT_HEAD="$(git rev-parse HEAD)"
+          PRODUCT_TREE="$(git rev-parse 'HEAD^{tree}')"
+          export PRODUCT_HEAD PRODUCT_TREE
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_PARENT"
+          test "$(git rev-list --count "$EXPECTED_PARENT"..HEAD)" -eq 1
+          git diff-tree --no-commit-id --name-only -r HEAD | sort > /tmp/rd04-materializer/committed
+          diff -u /tmp/ordinary-paths /tmp/rd04-materializer/committed
+          test -z "$(git diff-tree --no-commit-id --name-status -r HEAD | awk '$1 != "A" {print}')"
+
+          git fetch --no-tags origin             "+refs/heads/main:refs/remotes/origin/main"             "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$EXPECTED_PARENT"
+          test "$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)" = "$EXPECTED_PARENT"
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"             "--force-with-lease=refs/heads/$PRODUCT_BRANCH:$EXPECTED_PARENT"
+          test "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | cut -f1)" = "$PRODUCT_HEAD"
+
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          standing = Path(os.environ['STANDING_WORKFLOW_PATH']).read_bytes()
+          receipt = {
+              'schema_version': 'ssc-rd04-five-state-field-promotion-materialization-receipt@1',
+              'canonical_parent': os.environ['EXPECTED_PARENT'],
+              'carrier_head': os.environ['CARRIER_HEAD'],
+              'payload_commit': os.environ['PAYLOAD_COMMIT'],
+              'payload_archive_bytes': 19164,
+              'payload_archive_sha256': '3710602b84be0321b58532814d4ca45e2dc11b73104701ef03e0ba197218d398',
+              'ordinary_product_commit': os.environ['PRODUCT_HEAD'],
+              'ordinary_product_tree': os.environ['PRODUCT_TREE'],
+              'ordinary_permanent_paths': 13,
+              'final_permanent_paths': 14,
+              'standing_workflow_sha256': hashlib.sha256(standing).hexdigest(),
+              'adversarial_refusals': int(os.environ['ADVERSARIAL_REFUSALS']),
+              'terminal_cells_after': 222,
+              'still_open_substantive_cells_after': 188,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+          }
+          Path('/tmp/rd04-materializer/receipt.json').write_text(
+              json.dumps(receipt, indent=2) + '\n'
+          )
+          print(json.dumps(receipt, sort_keys=True))
+          PY
+
+      - name: Preserve materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-field-promotion-materialization
+          path: /tmp/rd04-materializer
+          if-no-files-found: warn
+          retention-days: 30
