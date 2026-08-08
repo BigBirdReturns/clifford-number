@@ -152,7 +152,12 @@ export function validateObjects(product, { compareExpected = true, checkManifest
   validateAuthority(ledger.authority_boundary, 'route ledger');
 
   assert(contract.fixed_route_count === 5, 'contract route count');
+  assert(contract.maximum_logical_route_attempts === 5, 'contract logical attempts');
   assert(contract.maximum_total_requests === 5, 'contract request maximum');
+  assert(contract.maximum_physical_requests === 5, 'contract physical maximum');
+  assert(contract.maximum_total_request_semantics === 'physical_http_requests_including_redirects', 'contract request semantics');
+  assert(contract.redirects_consume_total_request_budget === true, 'contract redirect accounting');
+  assert(contract.redirect_target_scheme === 'https', 'contract redirect scheme');
   assert(contract.maximum_attempts_per_route === 1, 'contract attempts');
   assert(contract.parallel_workers === 1, 'contract workers');
   assert(contract.cross_host_redirects_allowed === false, 'contract cross-host');
@@ -160,7 +165,13 @@ export function validateObjects(product, { compareExpected = true, checkManifest
   assert(contract.cookies_allowed === false, 'contract cookies');
   assert(contract.browser_state_allowed === false, 'contract browser state');
   assert(contract.form_submissions_allowed === false, 'contract forms');
+  assert(contract.runner_root_override_allowed === false, 'contract root override');
+  assert(contract.protocol_input_sha256_binding === true, 'contract input binding');
   assert(contract.result_spawned_requests === 0, 'contract spawned requests');
+  assert(contract.receipt_preimage_field === 'receipt_preimage_sha256', 'contract receipt preimage');
+  assert(contract.final_receipt_ledger_path === 'receipt-file-ledger.json', 'contract receipt ledger');
+  assert(contract.final_receipt_sha256_embedded === false, 'contract final receipt embedding');
+  assert(contract.additional_execution_authorized === false, 'contract execution authority');
   assert(contract.source_admission_effect === 'none', 'contract source effect');
   assert(contract.field_classification_effect === 'none', 'contract field effect');
   assert(contract.row_state_effect === 'none', 'contract row effect');
@@ -177,12 +188,17 @@ export function validateObjects(product, { compareExpected = true, checkManifest
   assert(summary.open_substantive_cells_before === 188, 'summary open fields');
   assert(summary.class_closed === false, 'summary class');
   assert(summary.cumulative_ledger_effect === 'none', 'summary cumulative');
+  assert(summary.captured_transport_logical_attempts === 5, 'summary captured logical attempts');
+  assert(summary.captured_transport_physical_requests === 5, 'summary captured physical requests');
+  assert(summary.captured_transport_artifact_id === 9018149945, 'summary artifact ID');
+  assert(summary.captured_transport_artifact_sha256 === '9b828cef364b156cc995409e445d5a1250c981127d21b841d56b05ef14b036e3', 'summary artifact SHA-256');
+  assert(summary.additional_execution_authorized === false, 'summary execution authority');
 
-  assert(manifest.canonical_parent === PRODUCT_PARENT, 'manifest parent');
+  assert(manifest.canonical_parent === 'a18f19ddc923e553848a5165cdf29fb1b9add97a', 'manifest repair parent');
   assert(manifest.permanent_path_count === 14, 'manifest path count');
   assert(canonicalJSON(manifest.permanent_paths) === canonicalJSON(PERMANENT_PATHS), 'manifest paths');
-  assert(manifest.addition_only === true, 'manifest addition only');
-  assert(manifest.modified_paths === 0 && manifest.deleted_paths === 0, 'manifest modifications');
+  assert(manifest.addition_only === false, 'manifest repair topology');
+  assert(manifest.modified_paths === 10 && manifest.deleted_paths === 0, 'manifest modifications');
   assert(manifest.workflow_paths === 1, 'manifest workflow count');
   assert(manifest.write_capable_permanent_workflows === 0, 'manifest workflow authority');
   assert(manifest.transport_paths === 0, 'manifest transport');

@@ -1,4 +1,5 @@
 {
+  "additional_execution_authorized": false,
   "adoption_effect": "none",
   "allowed_initial_hosts": [
     "dphhs.mt.gov",
@@ -12,6 +13,8 @@
   "cross_host_redirects_allowed": false,
   "cumulative_ledger_effect": "none",
   "field_classification_effect": "none",
+  "final_receipt_ledger_path": "receipt-file-ledger.json",
+  "final_receipt_sha256_embedded": false,
   "fixed_route_count": 5,
   "form_submissions_allowed": false,
   "graph_effect": "none",
@@ -19,12 +22,19 @@
   "lane_id": "RD-04",
   "maximum_attempts_per_route": 1,
   "maximum_body_bytes_per_route": 33554432,
+  "maximum_logical_route_attempts": 5,
+  "maximum_physical_requests": 5,
   "maximum_redirects_per_route": 4,
+  "maximum_total_request_semantics": "physical_http_requests_including_redirects",
   "maximum_total_requests": 5,
   "object_type": "route_query_contract",
   "outside_human_dependency": false,
   "parallel_workers": 1,
+  "protocol_input_sha256_binding": true,
   "publication_effect": "none",
+  "receipt_preimage_field": "receipt_preimage_sha256",
+  "redirect_target_scheme": "https",
+  "redirects_consume_total_request_budget": true,
   "request_methods": [
     "GET"
   ],
@@ -38,9 +48,12 @@
     "content_type",
     "body_bytes",
     "body_sha256",
-    "response_receipt_sha256"
+    "physical_request_count",
+    "receipt_path",
+    "receipt_preimage_sha256"
   ],
   "row_state_effect": "none",
+  "runner_root_override_allowed": false,
   "schema_version": "ssc-rd04-wave03-postpromotion-next-protocol@1",
   "source_admission_effect": "none",
   "terminal_states": [
@@ -48,6 +61,8 @@
     "terminal_http_success_no_body",
     "terminal_http_non_success",
     "terminal_cross_host_redirect_refused",
+    "terminal_non_https_redirect_refused",
+    "terminal_request_budget_exhausted",
     "terminal_body_limit_exceeded",
     "terminal_transport_error"
   ],

@@ -18,6 +18,12 @@ on:
       - 'tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py'
       - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs'
       - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/remaining-open-field-census.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-summary.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-next-minimum-frontier-route-discovery-protocol/route-discovery-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/selected-followup-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/source-adjudications.json'
   push:
     branches: [main]
     paths:
@@ -35,6 +41,12 @@ on:
       - 'tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py'
       - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs'
       - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/remaining-open-field-census.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-summary.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-next-minimum-frontier-route-discovery-protocol/route-discovery-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/selected-followup-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/source-adjudications.json'
   workflow_dispatch:
 
 permissions:
@@ -44,8 +56,7 @@ jobs:
   validate:
     if: >-
       github.event_name != 'pull_request' ||
-      github.event.pull_request.head.ref == 'staging/ssc-rd04-postpromotion-next-protocol-v2' ||
-      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-next-protocol-product-v2'
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     env:
@@ -67,7 +78,10 @@ jobs:
           python-version: '3.13'
 
       - name: Bind exact product surface and parent
-        if: github.event_name == 'pull_request'
+        if: >-
+          github.event_name == 'pull_request' &&
+          (github.event.pull_request.head.ref == env.STAGING_BRANCH ||
+          github.event.pull_request.head.ref == env.PRODUCT_BRANCH)
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -152,6 +166,7 @@ jobs:
           PYSCHEMA
           node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
           node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py --self-test
           python tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py --dry-run
 
       - name: Enforce authority and repository gates
@@ -170,6 +185,7 @@ jobs:
           node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
           node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
           node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py --self-test
           python tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py --dry-run >/tmp/execution-plan.json
           node tools/validate-no-magic-human-gate.mjs
           git diff --check
