@@ -1,0 +1,90 @@
+name: TEMP materialize exact RD-04 four-cell promotion on current main v2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  actions: read
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: rd04-five-state-promotion-current-main-materializer-v2-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+env:
+  CURRENT_PARENT: fdcbfbcd7e5a373444b25d3132d058669f8b3a71
+  OLD_PRODUCT_PARENT: 86937ea02e7e10223d0854240cd4e0cc9b6716a4
+  SOURCE_BRANCH: agent/ssc-rd04-five-state-promotion-materializer-v1
+  SOURCE_COMMIT: a0e0d9c15e68eec01938ec486942875f1b9caff0
+  PRODUCT_BRANCH: agent/ssc-rd04-five-state-promotion-current-main-product-v2
+  CARRIER_PATH: .github/workflows/temp-ssc-rd04-five-state-promotion-current-main-materializer-v2.yml
+  CARRIER_HEAD: ${{ github.event.pull_request.head.sha }}
+  ARCHIVE_BYTES: '45104'
+  ARCHIVE_SHA256: d7ee41597453a7c4eaa6a1de0bdb0808ae98ebc878d68e20fff7f5728a718b05
+  RUNNER_BLOB: 8c118b1c9296e5637d5b65aa3ccbc9336ffd9de8
+  RUNNER_XZ_BYTES: '3624'
+  RUNNER_XZ_SHA256: 3cbf619a9cb990ef539ebe2d0a0da3a92caacb9f607a00f43bf3197ab64a8ff4
+  RUNNER_SOURCE_BYTES: '11903'
+  RUNNER_SOURCE_SHA256: 80e6b059a8bc9f5f660ad4c44330ca2c6b0ee15811798c8b57d185ca1bcbd01f
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-five-state-promotion-current-main-materializer-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Recover immutable runner
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/rd04-five-state-promotion-runner-v2
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          gh api "repos/$GITHUB_REPOSITORY/git/blobs/$RUNNER_BLOB" > "$OUT/blob.json"
+          test "$(jq -r .encoding "$OUT/blob.json")" = base64
+          jq -r .content "$OUT/blob.json" | tr -d '\n' | base64 -d > "$OUT/runner.sh.xz"
+          test "$(stat -c %s "$OUT/runner.sh.xz")" = "$RUNNER_XZ_BYTES"
+          test "$(sha256sum "$OUT/runner.sh.xz" | awk '{print $1}')" = "$RUNNER_XZ_SHA256"
+          test "$(git hash-object "$OUT/runner.sh.xz")" = "$RUNNER_BLOB"
+          xz -t "$OUT/runner.sh.xz"
+          xz -dc "$OUT/runner.sh.xz" > "$OUT/runner.sh"
+          test "$(stat -c %s "$OUT/runner.sh")" = "$RUNNER_SOURCE_BYTES"
+          test "$(sha256sum "$OUT/runner.sh" | awk '{print $1}')" = "$RUNNER_SOURCE_SHA256"
+          bash -n "$OUT/runner.sh"
+
+      - name: Rebind, qualify, and publish exact product candidate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          bash /tmp/rd04-five-state-promotion-runner-v2/runner.sh
+
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-promotion-current-main-materialization-v2
+          path: |
+            /tmp/ssc-rd04-five-state-promotion-current-main-materializer-v2
+            /tmp/rd04-five-state-promotion-runner-v2
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
