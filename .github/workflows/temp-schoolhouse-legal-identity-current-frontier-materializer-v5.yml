@@ -1,0 +1,228 @@
+name: TEMP corrected-topology School.House current-frontier materializer v5
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-legal-identity-current-frontier-materializer-v5.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: schoolhouse-legal-identity-current-frontier-materializer-v5-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-legal-identity-current-frontier-materializer-v5-clean')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Authenticate v4, correct source-chain topology, and execute
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='1e52a58be874538509d6c0d3c06adc12fc53cad7'
+          WORKFLOW='.github/workflows/temp-schoolhouse-legal-identity-current-frontier-materializer-v5.yml'
+          V4_BRANCH='agent/schoolhouse-legal-identity-current-frontier-materializer-v4'
+          V4_HEAD='0d7a6bbfdf85e2f51f67a580a7a671da37614343'
+          V4_WORKFLOW='.github/workflows/temp-schoolhouse-legal-identity-current-frontier-materializer-v4.yml'
+          V4_WORKFLOW_BLOB='939c62ab9696b43c8560794e80e8d5e4219f6fef'
+          V4_WORKFLOW_BYTES='19719'
+          V4_WORKFLOW_SHA256='691d90dc0eb9cd73ff2d2f327e2bdd7f08abc5883cb23328154bf8c15b035462'
+          V4_RUN='31228084089'
+          V4_ARTIFACT='9012797247'
+          V4_ARTIFACT_BYTES='841'
+          V4_ARTIFACT_DIGEST='sha256:34aecb3526ca0eb50ba4d82d394cdebffc000ea2ae2758d34c92dbc7f713315e'
+          SOURCE_RUN_BYTES='14841'
+          SOURCE_RUN_SHA256='0de4cab804b1513e0116248deb5bcb4fc0eed8c249b679bea5b19a6d1203afd8'
+          PATCHED_RUN_BYTES='14971'
+          PATCHED_RUN_SHA256='9b4048574c5f34d9935fa93aa9020be52f81deb3c4bbbd9dc2b68e36b9c120c3'
+          WORK="$RUNNER_TEMP/schoolhouse-current-frontier-v5-wrapper"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-materialization-v5"
+          SOURCE_YAML="$WORK/source-v4-workflow.yml"
+          SOURCE_RUN_SCRIPT="$WORK/source-v4-run.sh"
+          PATCHED_RUN_SCRIPT="$WORK/patched-v5-run.sh"
+          PATCH_RECEIPT="$WORK/v5-wrapper-repair.json"
+          rm -rf "$WORK" "$RECEIPT"
+          mkdir -p "$WORK" "$RECEIPT"
+          printf 'initializing-v5-wrapper\n' > "$WORK/STAGE"
+          printf 'source_requests=0\nregistry_queries=0\nform_submissions=0\ncontacts=0\npayments=0\nuploads=0\n' > "$WORK/BOUNDARY"
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            mkdir -p "$RECEIPT/wrapper"
+            cp -a "$WORK"/. "$RECEIPT/wrapper/"
+            printf '%s\n' "$rc" > "$RECEIPT/V5_WRAPPER_EXIT_CODE"
+            (
+              cd "$RECEIPT"
+              find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          printf 'proving-one-workflow-v5-and-exact-v4-failure\n' > "$WORK/STAGE"
+          git fetch --no-tags origin main "$V4_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+          mapfile -t V5_PATHS < <(git diff --name-only "$BASE"..HEAD)
+          test "${#V5_PATHS[@]}" -eq 1
+          test "${V5_PATHS[0]}" = "$WORKFLOW"
+          git diff --check "$BASE"..HEAD
+          git merge-base --is-ancestor "$BASE" "$(git rev-parse origin/main)"
+          test "$(git rev-parse "origin/$V4_BRANCH")" = "$V4_HEAD"
+          test "$(git rev-parse "$V4_HEAD^")" = "$BASE"
+          test "$(git rev-parse "$V4_HEAD:$V4_WORKFLOW")" = "$V4_WORKFLOW_BLOB"
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$V4_RUN" > "$WORK/v4-run.json"
+          test "$(jq -r .head_sha "$WORK/v4-run.json")" = "$V4_HEAD"
+          test "$(jq -r .status "$WORK/v4-run.json")" = 'completed'
+          test "$(jq -r .conclusion "$WORK/v4-run.json")" = 'failure'
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$V4_ARTIFACT" > "$WORK/v4-artifact-metadata.json"
+          test "$(jq -r .size_in_bytes "$WORK/v4-artifact-metadata.json")" = "$V4_ARTIFACT_BYTES"
+          test "$(jq -r .digest "$WORK/v4-artifact-metadata.json")" = "$V4_ARTIFACT_DIGEST"
+          test "$(jq -r .workflow_run.id "$WORK/v4-artifact-metadata.json")" = "$V4_RUN"
+          test "$(jq -r .expired "$WORK/v4-artifact-metadata.json")" = 'false'
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$V4_ARTIFACT/zip" > "$WORK/v4-artifact.zip"
+          test "$(stat -c%s "$WORK/v4-artifact.zip")" = "$V4_ARTIFACT_BYTES"
+          test "sha256:$(sha256sum "$WORK/v4-artifact.zip" | cut -d' ' -f1)" = "$V4_ARTIFACT_DIGEST"
+
+          printf 'extracting-and-patching-exact-v4-run-block\n' > "$WORK/STAGE"
+          git show "$V4_HEAD:$V4_WORKFLOW" > "$SOURCE_YAML"
+          test "$(stat -c%s "$SOURCE_YAML")" = "$V4_WORKFLOW_BYTES"
+          test "$(sha256sum "$SOURCE_YAML" | cut -d' ' -f1)" = "$V4_WORKFLOW_SHA256"
+
+          python - "$SOURCE_YAML" "$SOURCE_RUN_SCRIPT" "$PATCHED_RUN_SCRIPT" "$PATCH_RECEIPT" <<'PY'
+          from __future__ import annotations
+
+          from pathlib import Path
+          import hashlib
+          import json
+          import sys
+
+          source_yaml_path, source_run_path, patched_run_path, receipt_path = sys.argv[1:]
+          workflow = Path(source_yaml_path).read_text(encoding='utf-8')
+          lines = workflow.splitlines()
+          step = '      - name: Recover immutable blobs, repair exact controller, and execute'
+          start = lines.index(step)
+          run_line = lines.index('        run: |', start)
+          body = []
+          for line in lines[run_line + 1:]:
+              if line.startswith('      - name:'):
+                  break
+              assert not line or line.startswith('          '), line
+              body.append(line[10:] if line else '')
+          source = '\n'.join(body) + '\n'
+          assert len(source.encode()) == 14841
+          assert hashlib.sha256(source.encode()).hexdigest() == (
+              '0de4cab804b1513e0116248deb5bcb4fc0eed8c249b679bea5b19a6d1203afd8'
+          )
+          Path(source_run_path).write_text(source, encoding='utf-8')
+
+          bad_parent = 'test "$(git rev-parse "$SOURCE_HEAD^")" = "$CARRIER_BASE"'
+          correct_parent = '''FIRST_SOURCE_COMMIT="$(git rev-list --reverse "$CARRIER_BASE".."$SOURCE_HEAD" | head -n1)"
+          test -n "$FIRST_SOURCE_COMMIT"
+          test "$(git rev-parse "$FIRST_SOURCE_COMMIT^")" = "$CARRIER_BASE"'''
+          replacements = [
+              (bad_parent, correct_parent, 'first_carrier_commit_parent_topology'),
+              ('.github/workflows/temp-schoolhouse-legal-identity-current-frontier-materializer-v4.yml', '.github/workflows/temp-schoolhouse-legal-identity-current-frontier-materializer-v5.yml', 'workflow_namespace'),
+              ('schoolhouse-current-frontier-recovered-payload-v4', 'schoolhouse-current-frontier-recovered-payload-v5', 'payload_namespace'),
+              ('schoolhouse-current-frontier-source-controller-v4.sh', 'schoolhouse-current-frontier-source-controller-v5.sh', 'source_controller_namespace'),
+              ('schoolhouse-current-frontier-materializer-v4.sh', 'schoolhouse-current-frontier-materializer-v5.sh', 'patched_controller_namespace'),
+              ('schoolhouse-current-frontier-controller-repair-v4.json', 'schoolhouse-current-frontier-controller-repair-v5.json', 'repair_receipt_namespace'),
+              ('schoolhouse-current-frontier-bootstrap-v4', 'schoolhouse-current-frontier-bootstrap-v5', 'bootstrap_namespace'),
+              ('schoolhouse-current-frontier-materialization-v4', 'schoolhouse-current-frontier-materialization-v5', 'materialization_namespace'),
+              ('afacca79e3a1e6ba37081e352f3ceb762c1da9d84521f9b83a5968fff24336e3', 'c3efd228f296c4d6cde7a17048da3df70812a2a8a122e2a7d96034f9d73624ae', 'expected_inner_controller_sha256'),
+              ('schoolhouse-current-frontier-controller-repair@4', 'schoolhouse-current-frontier-controller-repair@5', 'inner_repair_schema'),
+              ('direct_v4_controller_repair=pass', 'direct_v5_controller_repair=pass', 'inner_repair_message'),
+              ('initializing-direct-v4', 'initializing-direct-v5', 'initial_stage'),
+              ('applying-seven-exact-v4-controller-repairs', 'applying-seven-exact-v5-controller-repairs', 'repair_stage'),
+              ('executing-exact-direct-v4-controller', 'executing-exact-direct-v5-controller', 'execution_stage'),
+          ]
+
+          repaired = source
+          applied = []
+          for old, new, name in replacements:
+              count = repaired.count(old)
+              assert count >= 1, (name, count)
+              repaired = repaired.replace(old, new)
+              applied.append({'name': name, 'occurrences': count})
+
+          assert bad_parent not in repaired
+          assert repaired.count('FIRST_SOURCE_COMMIT') == 3
+          assert len(repaired.encode()) == 14971
+          repaired_sha256 = hashlib.sha256(repaired.encode()).hexdigest()
+          assert repaired_sha256 == '9b4048574c5f34d9935fa93aa9020be52f81deb3c4bbbd9dc2b68e36b9c120c3'
+          Path(patched_run_path).write_text(repaired, encoding='utf-8')
+          Path(patched_run_path).chmod(0o755)
+
+          value = {
+              'schema_version': 'schoolhouse-current-frontier-v5-wrapper-repair@1',
+              'state': 'complete',
+              'v4_run_bytes': len(source.encode()),
+              'v4_run_sha256': hashlib.sha256(source.encode()).hexdigest(),
+              'v5_run_bytes': len(repaired.encode()),
+              'v5_run_sha256': repaired_sha256,
+              'repairs': applied,
+              'repair_classes': len(applied),
+              'product_payload_changes': 0,
+              'source_requests': 0,
+              'registry_queries': 0,
+              'form_submissions': 0,
+              'identity_admissions': 0,
+              'relationship_admissions': 0,
+              'negative_existence_claims': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          Path(receipt_path).write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+          print('v5_wrapper_repair=pass topology=first_carrier_commit_parent product_payload_changes=0')
+          PY
+
+          test "$(stat -c%s "$SOURCE_RUN_SCRIPT")" = "$SOURCE_RUN_BYTES"
+          test "$(sha256sum "$SOURCE_RUN_SCRIPT" | cut -d' ' -f1)" = "$SOURCE_RUN_SHA256"
+          test "$(stat -c%s "$PATCHED_RUN_SCRIPT")" = "$PATCHED_RUN_BYTES"
+          test "$(sha256sum "$PATCHED_RUN_SCRIPT" | cut -d' ' -f1)" = "$PATCHED_RUN_SHA256"
+          bash -n "$PATCHED_RUN_SCRIPT"
+
+          printf 'executing-corrected-v5-run-block\n' > "$WORK/STAGE"
+          bash "$PATCHED_RUN_SCRIPT"
+          printf 'complete\n' > "$WORK/STAGE"
+
+      - name: Upload exact v5 materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-legal-identity-current-frontier-materialization-v5
+          path: ${{ runner.temp }}/schoolhouse-current-frontier-materialization-v5
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
