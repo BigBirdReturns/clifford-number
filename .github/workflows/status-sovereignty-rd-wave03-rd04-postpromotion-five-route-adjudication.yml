@@ -1,0 +1,241 @@
+name: Status sovereignty RD Wave 03 RD-04 postpromotion five-route adjudication
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/capture-custody.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/index.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/pdf-review-receipts.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/product-manifest.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/promotion-candidate-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/selected-followup-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/source-adjudications.json'
+      - 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-five-route-adjudication.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.schema.json'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-ledger.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-query-contract.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/previously-frozen-url-exclusion.json'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/capture-custody.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/index.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/pdf-review-receipts.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/product-manifest.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/promotion-candidate-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/selected-followup-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/source-adjudications.json'
+      - 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-five-route-adjudication.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.schema.json'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-ledger.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-query-contract.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/previously-frozen-url-exclusion.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      PRODUCT_PARENT: 91b386df809079884825b19a6b5d864b6e739172
+      PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-five-route-adjudication-product-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Bind product denominator and immutable inputs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cat >/tmp/expected-paths <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/capture-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/pdf-review-receipts.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/promotion-candidate-protocol.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/selected-followup-protocol.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/source-adjudications.json
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-five-route-adjudication.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+          EOF
+          LC_ALL=C sort -o /tmp/expected-paths /tmp/expected-paths
+          test "$(wc -l </tmp/expected-paths)" -eq 14
+          test -z "$(grep -E '(^|/)(\.tmp|.*\.trigger)(/|$)' /tmp/expected-paths || true)"
+
+          if test "${{ github.event_name }}" = pull_request && test "${{ github.event.pull_request.head.ref }}" = "$PRODUCT_BRANCH"; then
+            test "$(git rev-parse HEAD^)" = "$PRODUCT_PARENT"
+            test "$(git rev-list --count "$PRODUCT_PARENT"..HEAD)" -eq 1
+            git diff --name-only --diff-filter=ACDMRTUXB "$PRODUCT_PARENT" HEAD | LC_ALL=C sort >/tmp/actual-paths
+            git diff --name-only --diff-filter=A "$PRODUCT_PARENT" HEAD | LC_ALL=C sort >/tmp/added-paths
+            diff -u /tmp/expected-paths /tmp/actual-paths
+            diff -u /tmp/expected-paths /tmp/added-paths
+            git diff --check "$PRODUCT_PARENT" HEAD
+          fi
+
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json)" = 42361e559db90777e1d60aea5530df5694c86dc6
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-ledger.json)" = ad4a82bc1a23e0957137468dfc0a4c3333d84394
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-query-contract.json)" = d5c445435dd74bea61e7e50887a27a3ffb1edcf1
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/previously-frozen-url-exclusion.json)" = 5d5890f4bc84d943d3a0ac6a3042321448c63959
+
+      - name: Parse workflow and install pinned schema validator
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+          python - <<'PYYAML'
+          from pathlib import Path
+          import yaml
+          value = yaml.safe_load(Path('.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.yml').read_text())
+          if not isinstance(value, dict):
+              raise SystemExit('workflow YAML did not parse as an object')
+          print('workflow_yaml_parse=pass')
+          PYYAML
+
+      - name: Deterministic build and recursively exact schema validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+          git diff --exit-code -- data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication
+
+          python - <<'PYSCHEMA'
+          import copy
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          schema = json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.schema.json').read_text())
+          validator = Draft202012Validator(schema)
+          root = Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication')
+          names = [
+              'capture-custody.json',
+              'source-adjudications.json',
+              'field-adjudications.json',
+              'pdf-review-receipts.json',
+              'promotion-candidate-protocol.json',
+              'selected-followup-protocol.json',
+              'index.json',
+              'product-manifest.json',
+          ]
+          refusals = 0
+          for name in names:
+              value = json.loads((root / name).read_text())
+              errors = sorted(validator.iter_errors(value), key=lambda error: list(error.path))
+              if errors:
+                  raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
+
+              top = copy.deepcopy(value)
+              top['unreviewed_authority'] = True
+              if not list(validator.iter_errors(top)):
+                  raise SystemExit(f'{name} accepted top-level unknown key')
+              refusals += 1
+
+              nested = copy.deepcopy(value)
+              target = None
+              stack = [nested]
+              while stack and target is None:
+                  current = stack.pop()
+                  if isinstance(current, dict):
+                      for child in current.values():
+                          if isinstance(child, dict):
+                              target = child
+                              break
+                          if isinstance(child, (dict, list)):
+                              stack.append(child)
+                  elif isinstance(current, list):
+                      stack.extend(current)
+              if target is None:
+                  raise SystemExit(f'{name} lacks nested object for mutation')
+              target['unreviewed_authority'] = True
+              if not list(validator.iter_errors(nested)):
+                  raise SystemExit(f'{name} accepted nested unknown key')
+              refusals += 1
+          print(f'recursively_exact_schema_validation=pass objects={len(names)} mutation_refusals={refusals}')
+          PYSCHEMA
+
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs | tee /tmp/adjudication-validation.json
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js | tee /tmp/adjudication-adversarial.json
+
+      - name: Enforce authority and complete repository gates
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+      - name: Prove clean deterministic replay
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git restore --staged --worktree .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs >/tmp/adjudication-validation-replay.json
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js >/tmp/adjudication-adversarial-replay.json
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Preserve exact-head qualification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-postpromotion-five-route-adjudication-qualification
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          tar -cJf "$OUT/product.tar.xz" -T /tmp/expected-paths
+          cp /tmp/adjudication-validation.json "$OUT/validation.json"
+          cp /tmp/adjudication-adversarial.json "$OUT/adversarial.json"
+          git rev-parse HEAD >"$OUT/head-sha.txt"
+          git rev-parse 'HEAD^{tree}' >"$OUT/head-tree.txt"
+          if test "${{ github.event_name }}" = pull_request && test "${{ github.event.pull_request.head.ref }}" = "$PRODUCT_BRANCH"; then
+            printf '%s\n' "$PRODUCT_PARENT" >"$OUT/product-parent.txt"
+          fi
+          git ls-tree -r HEAD -- $(cat /tmp/expected-paths) >"$OUT/product-tree-rows.txt"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum >SHA256SUMS)
+          sha256sum -c "$OUT/SHA256SUMS"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-five-route-adjudication-qualification
+          path: /tmp/ssc-rd04-postpromotion-five-route-adjudication-qualification
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
