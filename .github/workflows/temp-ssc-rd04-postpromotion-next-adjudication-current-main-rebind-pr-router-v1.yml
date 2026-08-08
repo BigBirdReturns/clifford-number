@@ -1,0 +1,158 @@
+name: TEMP route sealed RD-04 current-main rebind through PR v1
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-ssc-rd04-postpromotion-next-adjudication-current-main-rebind-pr-router-v1.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  route:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-pr-router-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      SEALED_HEAD: e2a87c7f1fda9dcfee0d6bee80016eacbd46405e
+      SEALED_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v1
+      SEALED_PATH: .github/workflows/temp-ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v1.yml
+      EXPECTED_MAIN: a18f19ddc923e553848a5165cdf29fb1b9add97a
+      WRAPPER_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-pr-router-v1
+      WRAPPER_PATH: .github/workflows/temp-ssc-rd04-postpromotion-next-adjudication-current-main-rebind-pr-router-v1.yml
+      ORIGINAL_OUT: ${{ runner.temp }}/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v1
+      ROUTER_OUT: ${{ runner.temp }}/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-pr-router-v1
+      GITHUB_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Bind one-path wrapper and sealed carrier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$ROUTER_OUT" "$ORIGINAL_OUT"
+          mkdir -p "$ROUTER_OUT"
+          printf 'binding\n' > "$ROUTER_OUT/STAGE"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          test "$(git rev-list --count "$EXPECTED_MAIN"..HEAD)" -eq 1
+          test "$(git diff --name-only "$EXPECTED_MAIN" HEAD)" = "$WRAPPER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$EXPECTED_MAIN" HEAD)" = "$WRAPPER_PATH"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$EXPECTED_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$SEALED_BRANCH" | awk '{print $1}')" = "$SEALED_HEAD"
+          git fetch --no-tags origin "+refs/heads/$SEALED_BRANCH:refs/remotes/origin/$SEALED_BRANCH"
+          test "$(git rev-parse "refs/remotes/origin/$SEALED_BRANCH")" = "$SEALED_HEAD"
+          test "$(git rev-parse "$SEALED_HEAD^")" = "$EXPECTED_MAIN"
+          test "$(git diff --name-only "$EXPECTED_MAIN" "$SEALED_HEAD")" = "$SEALED_PATH"
+          printf '%s\n' "$SEALED_HEAD" > "$ROUTER_OUT/sealed-head.txt"
+          printf '%s\n' "$EXPECTED_MAIN" > "$ROUTER_OUT/expected-main.txt"
+
+      - name: Extract sealed materialization step
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf 'extracting-sealed-step\n' > "$ROUTER_OUT/STAGE"
+          python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2'
+          git show "$SEALED_HEAD:$SEALED_PATH" > "$ROUTER_OUT/sealed-workflow.yml"
+          python - "$ROUTER_OUT/sealed-workflow.yml" "$ROUTER_OUT/sealed-step.sh" "$ROUTER_OUT/sealed-env.sh" <<'PY'
+          import os
+          import shlex
+          import sys
+          from pathlib import Path
+          import yaml
+
+          source = Path(sys.argv[1])
+          script_path = Path(sys.argv[2])
+          env_path = Path(sys.argv[3])
+          doc = yaml.safe_load(source.read_text())
+          job = doc['jobs']['materialize']
+          step = next(s for s in job['steps'] if s.get('name') == 'Materialize exact current-main candidate')
+          script = step['run']
+          replacements = {
+              '${{ github.ref_name }}': os.environ['SEALED_BRANCH'],
+              '${{ github.sha }}': os.environ['SEALED_HEAD'],
+              '${{ github.repository }}': os.environ['GITHUB_REPOSITORY'],
+              '${{ github.token }}': os.environ['GITHUB_TOKEN'],
+          }
+          for old, new in replacements.items():
+              script = script.replace(old, new)
+          if '${{' in script:
+              raise SystemExit('unresolved GitHub expression in sealed run block')
+          script_path.write_text(script)
+          script_path.chmod(0o700)
+          env = job.get('env', {}) | step.get('env', {})
+          env_path.write_text(''.join(f'export {key}={shlex.quote(str(value))}\n' for key, value in env.items()))
+          print(f'sealed_step_bytes={script_path.stat().st_size}')
+          print(f'sealed_env_keys={len(env)}')
+          PY
+          grep -q '^export CURRENT_MAIN=' "$ROUTER_OUT/sealed-env.sh"
+          grep -q '^export STAGING_BRANCH=' "$ROUTER_OUT/sealed-env.sh"
+          grep -q '^export CARRIER_BRANCH=' "$ROUTER_OUT/sealed-env.sh"
+
+      - name: Execute exact sealed rebind in its own detached worktree
+        id: execute
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          printf 'executing-sealed-step\n' > "$ROUTER_OUT/STAGE"
+          WT="$RUNNER_TEMP/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-pr-router-wt"
+          rm -rf "$WT"
+          git worktree add --detach "$WT" "$SEALED_HEAD"
+          cd "$WT"
+          source "$ROUTER_OUT/sealed-env.sh"
+          export GITHUB_SHA="$SEALED_HEAD"
+          export GITHUB_REF_NAME="$SEALED_BRANCH"
+          set +e
+          bash "$ROUTER_OUT/sealed-step.sh"
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > "$ROUTER_OUT/sealed-exit-code.txt"
+          if [[ -d "$ORIGINAL_OUT" ]]; then
+            cp -a "$ORIGINAL_OUT" "$ROUTER_OUT/original-transaction"
+          fi
+          exit "$rc"
+
+      - name: Verify exact staging result
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf 'verifying-result\n' > "$ROUTER_OUT/STAGE"
+          test -f "$ROUTER_OUT/sealed-exit-code.txt"
+          test "$(cat "$ROUTER_OUT/sealed-exit-code.txt")" = 0
+          test -f "$ORIGINAL_OUT/EXIT_CODE"
+          test "$(cat "$ORIGINAL_OUT/EXIT_CODE")" = 0
+          test -f "$ORIGINAL_OUT/STAGE"
+          test "$(cat "$ORIGINAL_OUT/STAGE")" = complete
+          test -f "$ORIGINAL_OUT/receipt.json"
+          STAGING_BRANCH=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["staging_branch"])' "$ORIGINAL_OUT/receipt.json")
+          STAGING_COMMIT=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["candidate_commit"])' "$ORIGINAL_OUT/receipt.json")
+          test -n "$STAGING_BRANCH"
+          test -n "$STAGING_COMMIT"
+          test "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')" = "$STAGING_COMMIT"
+          printf '%s\n' "$STAGING_BRANCH" > "$ROUTER_OUT/staging-branch.txt"
+          printf '%s\n' "$STAGING_COMMIT" > "$ROUTER_OUT/staging-commit.txt"
+          printf 'complete\n' > "$ROUTER_OUT/STAGE"
+          (cd "$ROUTER_OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ssc-rd04-postpromotion-next-adjudication-current-main-rebind-pr-router-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-pr-router-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
