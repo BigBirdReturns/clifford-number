@@ -1,0 +1,377 @@
+name: TEMP materialize RD-04 postpromotion five-route adjudication v1
+
+on:
+  push:
+    branches:
+      - agent/ssc-rd04-postpromotion-five-route-adjudication-materializer-v1
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-postpromotion-five-route-adjudication-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: temp-materialize-ssc-rd04-postpromotion-five-route-adjudication-v1
+  cancel-in-progress: false
+
+env:
+  CHUNK_PARENT: c1f1e9c0289bf8aa7ad4dd407ee63148cc19edfa
+  MATERIALIZER_BRANCH: agent/ssc-rd04-postpromotion-five-route-adjudication-materializer-v1
+  PRODUCT_PARENT: 91b386df809079884825b19a6b5d864b6e739172
+  PRODUCT_PARENT_TREE: 7825098153b33c15418c973d1d04ff22eb50e015
+  STAGING_BRANCH: staging/ssc-rd04-postpromotion-five-route-adjudication-ordinary-v1
+  PRODUCT_ARCHIVE_BYTES: '24972'
+  PRODUCT_ARCHIVE_SHA256: 376ddae3369833e11c64aa6a6aacbeab91300c0162c72301cbf1d387ac3548e0
+  PERMANENT_WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.yml
+  PERMANENT_WORKFLOW_BLOB: 6e85ed36416821131bbd5ddc9ee3b579a25859d6
+  PRODUCT_MANIFEST_BLOB: 35b45ee0946fa0fe344d2ec8b3fffbb0e0607d1b
+
+jobs:
+  materialize:
+    if: github.event_name == 'workflow_dispatch' || github.ref_name == 'agent/ssc-rd04-postpromotion-five-route-adjudication-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Reconstruct, qualify, and stage exact adjudication product
+        id: materialize
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-postpromotion-five-route-adjudication-materializer-v1
+          PRODUCT="$OUT/product"
+          FULL_WT=/tmp/ssc-rd04-postpromotion-five-route-adjudication-full-v1
+          STAGING_WT=/tmp/ssc-rd04-postpromotion-five-route-adjudication-staging-v1
+          rm -rf "$OUT" "$FULL_WT" "$STAGING_WT"
+          mkdir -p "$OUT" "$PRODUCT"
+          printf '%s\n' bootstrap > "$OUT/current-gate.txt"
+          exec > >(tee "$OUT/materializer.log") 2>&1
+
+          finalize() {
+            code=$?
+            set +e
+            gate="$(cat "$OUT/current-gate.txt" 2>/dev/null || printf unknown)"
+            full_head="$(cat "$OUT/full-head.txt" 2>/dev/null || true)"
+            full_tree="$(cat "$OUT/full-tree.txt" 2>/dev/null || true)"
+            staging_head="$(cat "$OUT/staging-head.txt" 2>/dev/null || true)"
+            staging_tree="$(cat "$OUT/staging-tree.txt" 2>/dev/null || true)"
+            live_main="$(cat "$OUT/live-main.txt" 2>/dev/null || true)"
+            remote_staging="$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" 2>/dev/null | awk '{print $1}')"
+            if test "$code" -eq 0; then state=success; authority=ordinary_staging_custody_only; else state=failure; authority=none; fi
+            jq -n \
+              --arg schema_version 'ssc-rd04-postpromotion-five-route-adjudication-materializer-status@1' \
+              --arg qualification_state "$state" \
+              --arg authority "$authority" \
+              --arg failed_or_final_gate "$gate" \
+              --argjson exit_code "$code" \
+              --arg product_parent "$PRODUCT_PARENT" \
+              --arg product_parent_tree "$PRODUCT_PARENT_TREE" \
+              --arg live_main "$live_main" \
+              --arg full_head "$full_head" \
+              --arg full_tree "$full_tree" \
+              --arg staging_branch "$STAGING_BRANCH" \
+              --arg staging_head "$staging_head" \
+              --arg staging_tree "$staging_tree" \
+              --arg remote_staging_head "$remote_staging" \
+              --arg archive_sha256 "$PRODUCT_ARCHIVE_SHA256" \
+              '{schema_version:$schema_version,qualification_state:$qualification_state,authority:$authority,failed_or_final_gate:$failed_or_final_gate,exit_code:$exit_code,product_parent:$product_parent,product_parent_tree:$product_parent_tree,live_main:($live_main|select(length>0)),full_head:($full_head|select(length>0)),full_tree:($full_tree|select(length>0)),staging_branch:$staging_branch,staging_head:($staging_head|select(length>0)),staging_tree:($staging_tree|select(length>0)),remote_staging_head:($remote_staging_head|select(length>0)),product_archive_sha256:$archive_sha256,permanent_path_count:14,ordinary_path_count:13,transport_attempts_observed:10,unique_body_identities:5,narrow_source_admissions:4,field_decisions:6,promotion_candidates:4,held_fields:2,followup_routes:2,source_requests_executed_by_adjudication:0,field_classifications_created:0,field_terminalizations_created:0,matrix_updates:0,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+              > "$OUT/status.json"
+            sync
+            (
+              cd "$OUT"
+              find . -type f ! -path './product/*' ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            return "$code"
+          }
+          trap finalize EXIT
+
+          printf '%s\n' bind-final-carrier-commit > "$OUT/current-gate.txt"
+          OBSERVER_PATH='.github/workflows/temp-materialize-ssc-rd04-postpromotion-five-route-adjudication-v1.yml'
+          test "$(git rev-parse HEAD^)" = "$CHUNK_PARENT"
+          test "$(git rev-list --count "$CHUNK_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CHUNK_PARENT" HEAD)" = "$OBSERVER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CHUNK_PARENT" HEAD)" = "$OBSERVER_PATH"
+          git diff --check "$CHUNK_PARENT" HEAD
+
+          printf '%s\n' authenticate-seven-archive-chunks > "$OUT/current-gate.txt"
+          CHUNK_DIR=.tmp/ssc-rd04-postpromotion-five-route-adjudication-v1
+          cat > "$OUT/chunk-ledger.txt" <<'EOF'
+          chunk-00.b64 5000 160e09448b4b9320c43f51d6f5e253f4d49ac7120eeca865082e251847bb7304
+          chunk-01.b64 5000 c4c29e127cedd6bdbb62259f20ef9a4d5f1f651d7c372522439751b9353eda0c
+          chunk-02.b64 5000 ab2e21989347ab0af2d3195384e5f50dd92c183165ace8b7570ea126d869c5c1
+          chunk-03.b64 5000 366a1c6554e1ad3c51c96cd65ec1af867a5e20eb87a40c997fa08612ffc25ec0
+          chunk-04.b64 5000 7b8761d0801b15c1e5445fe6940078ed1437361a8dc30277a82fd1f240ef2ec9
+          chunk-05.b64 5000 5c9433351969f979f5597cb38163f66f76d6d08df515fa9b0aa55875fb39f1d5
+          chunk-06.b64 3296 adc4ccd38c71c481b1d31add83401b216b781e2e5e8ab9e5ccc81718e9454da7
+          EOF
+          mapfile -t actual_chunks < <(find "$CHUNK_DIR" -maxdepth 1 -type f -name 'chunk-*.b64' -printf '%f\n' | LC_ALL=C sort)
+          mapfile -t expected_chunks < <(awk '{print $1}' "$OUT/chunk-ledger.txt")
+          test "${#actual_chunks[@]}" -eq 7
+          diff -u <(printf '%s\n' "${expected_chunks[@]}") <(printf '%s\n' "${actual_chunks[@]}")
+          : > "$OUT/product-archive.b64"
+          while read -r name bytes digest; do
+            test "$(stat -c %s "$CHUNK_DIR/$name")" -eq "$bytes"
+            test "$(sha256sum "$CHUNK_DIR/$name" | cut -d' ' -f1)" = "$digest"
+            cat "$CHUNK_DIR/$name" >> "$OUT/product-archive.b64"
+          done < "$OUT/chunk-ledger.txt"
+          base64 -d "$OUT/product-archive.b64" > "$OUT/product.tar.xz"
+          test "$(stat -c %s "$OUT/product.tar.xz")" -eq "$PRODUCT_ARCHIVE_BYTES"
+          test "$(sha256sum "$OUT/product.tar.xz" | cut -d' ' -f1)" = "$PRODUCT_ARCHIVE_SHA256"
+          xz -t "$OUT/product.tar.xz"
+          tar -tJf "$OUT/product.tar.xz" > "$OUT/archive-paths-raw.txt"
+          python - "$OUT/archive-paths-raw.txt" <<'PYARCHIVE'
+          from pathlib import PurePosixPath
+          import sys
+          rows = [line.strip() for line in open(sys.argv[1], encoding='utf-8') if line.strip()]
+          if len(rows) != 14:
+              raise SystemExit(f'archive path count mismatch: {len(rows)}')
+          normalized = []
+          for row in rows:
+              if not row.startswith('./'):
+                  raise SystemExit(f'non-relative archive path: {row}')
+              path = row[2:]
+              pure = PurePosixPath(path)
+              if pure.is_absolute() or '..' in pure.parts or path.startswith('.tmp/') or '.trigger' in pure.parts:
+                  raise SystemExit(f'unsafe archive path: {path}')
+              normalized.append(path)
+          if len(set(normalized)) != 14:
+              raise SystemExit('duplicate archive path')
+          open('/tmp/ssc-rd04-postpromotion-five-route-adjudication-materializer-v1/archive-paths.txt','w',encoding='utf-8').write('\n'.join(sorted(normalized))+'\n')
+          PYARCHIVE
+          tar -xJf "$OUT/product.tar.xz" -C "$PRODUCT"
+
+          printf '%s\n' verify-product-manifest-and-path-denominator > "$OUT/current-gate.txt"
+          MANIFEST="$PRODUCT/data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/product-manifest.json"
+          test "$(git hash-object "$MANIFEST")" = "$PRODUCT_MANIFEST_BLOB"
+          python - "$PRODUCT" "$OUT/expected-paths.txt" "$OUT/ordinary-paths.txt" <<'PYMANIFEST'
+          from pathlib import Path
+          import hashlib
+          import json
+          import subprocess
+          import sys
+          root = Path(sys.argv[1])
+          expected_path = Path(sys.argv[2])
+          ordinary_path = Path(sys.argv[3])
+          manifest_path = root / 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/product-manifest.json'
+          manifest = json.loads(manifest_path.read_text())
+          paths = sorted(manifest['permanent_paths'])
+          if manifest['permanent_path_count'] != 14 or len(paths) != 14 or len(set(paths)) != 14:
+              raise SystemExit('manifest path denominator mismatch')
+          actual = sorted(str(path.relative_to(root)) for path in root.rglob('*') if path.is_file())
+          if actual != paths:
+              raise SystemExit('archive and manifest path sets differ')
+          rows = manifest['hashed_files']
+          if manifest['hashed_file_count'] != 13 or len(rows) != 13:
+              raise SystemExit('hashed file denominator mismatch')
+          for row in rows:
+              path = root / row['path']
+              data = path.read_bytes()
+              sha256 = hashlib.sha256(data).hexdigest()
+              blob = subprocess.check_output(['git','hash-object',str(path)], text=True).strip()
+              if len(data) != row['bytes'] or sha256 != row['sha256'] or blob != row['git_blob']:
+                  raise SystemExit(f'manifest identity mismatch: {row["path"]}')
+          workflow = '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.yml'
+          if workflow not in paths:
+              raise SystemExit('permanent workflow missing')
+          expected_path.write_text('\n'.join(paths)+'\n')
+          ordinary = [path for path in paths if path != workflow]
+          if len(ordinary) != 13:
+              raise SystemExit('ordinary path denominator mismatch')
+          ordinary_path.write_text('\n'.join(ordinary)+'\n')
+          PYMANIFEST
+          diff -u "$OUT/expected-paths.txt" "$OUT/archive-paths.txt"
+          test "$(git hash-object "$PRODUCT/$PERMANENT_WORKFLOW_PATH")" = "$PERMANENT_WORKFLOW_BLOB"
+          test -z "$(grep -E '(^|/)(\.tmp|.*\.trigger)(/|$)' "$OUT/expected-paths.txt" || true)"
+
+          printf '%s\n' install-pinned-validation-dependencies > "$OUT/current-gate.txt"
+          python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+
+          printf '%s\n' bind-canonical-parent-and-main-lease > "$OUT/current-gate.txt"
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          printf '%s\n' "$LIVE_MAIN" > "$OUT/live-main.txt"
+          test "$LIVE_MAIN" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "$PRODUCT_PARENT^{tree}")" = "$PRODUCT_PARENT_TREE"
+          test -z "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH")"
+
+          printf '%s\n' construct-full-fourteen-path-candidate > "$OUT/current-gate.txt"
+          git worktree add --detach "$FULL_WT" "$PRODUCT_PARENT"
+          tar -C "$PRODUCT" -cf - -T "$OUT/expected-paths.txt" | tar -C "$FULL_WT" -xf -
+          git -C "$FULL_WT" add --all
+          git -C "$FULL_WT" diff --cached --name-only --diff-filter=ACDMRTUXB | LC_ALL=C sort > "$OUT/full-paths.txt"
+          git -C "$FULL_WT" diff --cached --name-only --diff-filter=A | LC_ALL=C sort > "$OUT/full-added-paths.txt"
+          diff -u "$OUT/expected-paths.txt" "$OUT/full-paths.txt"
+          diff -u "$OUT/expected-paths.txt" "$OUT/full-added-paths.txt"
+          git -C "$FULL_WT" diff --cached --check
+          git -C "$FULL_WT" config user.name 'BigBirdReturns'
+          git -C "$FULL_WT" config user.email 'actions@users.noreply.github.com'
+          git -C "$FULL_WT" commit -m 'Adjudicate RD-04 postpromotion five-route capture'
+          FULL_HEAD="$(git -C "$FULL_WT" rev-parse HEAD)"
+          FULL_TREE="$(git -C "$FULL_WT" rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$FULL_HEAD" > "$OUT/full-head.txt"
+          printf '%s\n' "$FULL_TREE" > "$OUT/full-tree.txt"
+          test "$(git -C "$FULL_WT" rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          test "$(git -C "$FULL_WT" rev-list --count "$PRODUCT_PARENT"..HEAD)" -eq 1
+          test "$(git -C "$FULL_WT" rev-parse "HEAD:$PERMANENT_WORKFLOW_PATH")" = "$PERMANENT_WORKFLOW_BLOB"
+          test "$(git -C "$FULL_WT" rev-parse "HEAD:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/product-manifest.json")" = "$PRODUCT_MANIFEST_BLOB"
+
+          printf '%s\n' qualify-full-fourteen-path-candidate > "$OUT/current-gate.txt"
+          (
+            cd "$FULL_WT"
+            python - <<'PYYAML'
+          from pathlib import Path
+          import yaml
+          value = yaml.safe_load(Path('.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.yml').read_text())
+          if not isinstance(value, dict):
+              raise SystemExit('workflow YAML parse failure')
+          print('workflow_yaml_parse=pass')
+          PYYAML
+            node --check tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+            node --check tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+            node --check test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js
+            node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+            git diff --exit-code -- data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication
+            python - <<'PYSCHEMA'
+          import copy
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          schema = json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.schema.json').read_text())
+          validator = Draft202012Validator(schema)
+          root = Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication')
+          names = ['capture-custody.json','source-adjudications.json','field-adjudications.json','pdf-review-receipts.json','promotion-candidate-protocol.json','selected-followup-protocol.json','index.json','product-manifest.json']
+          refusals = 0
+          for name in names:
+              value = json.loads((root / name).read_text())
+              errors = sorted(validator.iter_errors(value), key=lambda error: list(error.path))
+              if errors:
+                  raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
+              top = copy.deepcopy(value)
+              top['unreviewed_authority'] = True
+              if not list(validator.iter_errors(top)):
+                  raise SystemExit(f'{name} accepted top-level unknown key')
+              refusals += 1
+              nested = copy.deepcopy(value)
+              target = None
+              stack = [nested]
+              while stack and target is None:
+                  current = stack.pop()
+                  if isinstance(current, dict):
+                      for child in current.values():
+                          if isinstance(child, dict):
+                              target = child
+                              break
+                          if isinstance(child, (dict, list)):
+                              stack.append(child)
+                  elif isinstance(current, list):
+                      stack.extend(current)
+              if target is None:
+                  raise SystemExit(f'{name} lacks nested object for mutation')
+              target['unreviewed_authority'] = True
+              if not list(validator.iter_errors(nested)):
+                  raise SystemExit(f'{name} accepted nested unknown key')
+              refusals += 1
+          print(f'recursively_exact_schema_validation=pass objects={len(names)} mutation_refusals={refusals}')
+          PYSCHEMA
+            node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs | tee "$OUT/validation.json"
+            node test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js | tee "$OUT/adversarial.json"
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+            npm run release:check
+            git reset --hard HEAD
+            git clean -fdx
+            node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs --write
+            node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs
+            node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs > "$OUT/validation-replay.json"
+            node test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js > "$OUT/adversarial-replay.json"
+            node tools/validate-no-magic-human-gate.mjs
+            git diff --check
+            git diff --exit-code
+            test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          )
+
+          printf '%s\n' construct-thirteen-path-ordinary-staging > "$OUT/current-gate.txt"
+          git worktree add --detach "$STAGING_WT" "$PRODUCT_PARENT"
+          tar -C "$PRODUCT" -cf - -T "$OUT/ordinary-paths.txt" | tar -C "$STAGING_WT" -xf -
+          git -C "$STAGING_WT" add --all
+          git -C "$STAGING_WT" diff --cached --name-only --diff-filter=ACDMRTUXB | LC_ALL=C sort > "$OUT/staging-paths.txt"
+          git -C "$STAGING_WT" diff --cached --name-only --diff-filter=A | LC_ALL=C sort > "$OUT/staging-added-paths.txt"
+          diff -u "$OUT/ordinary-paths.txt" "$OUT/staging-paths.txt"
+          diff -u "$OUT/ordinary-paths.txt" "$OUT/staging-added-paths.txt"
+          test "$(wc -l < "$OUT/staging-paths.txt")" -eq 13
+          git -C "$STAGING_WT" diff --cached --check
+          git -C "$STAGING_WT" config user.name 'BigBirdReturns'
+          git -C "$STAGING_WT" config user.email 'actions@users.noreply.github.com'
+          git -C "$STAGING_WT" commit -m 'Stage ordinary RD-04 postpromotion five-route adjudication blobs'
+          STAGING_HEAD="$(git -C "$STAGING_WT" rev-parse HEAD)"
+          STAGING_TREE="$(git -C "$STAGING_WT" rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$STAGING_HEAD" > "$OUT/staging-head.txt"
+          printf '%s\n' "$STAGING_TREE" > "$OUT/staging-tree.txt"
+          test "$(git -C "$STAGING_WT" rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          test "$(git -C "$STAGING_WT" rev-list --count "$PRODUCT_PARENT"..HEAD)" -eq 1
+          while IFS= read -r path; do
+            test "$(git -C "$FULL_WT" rev-parse "HEAD:$path")" = "$(git -C "$STAGING_WT" rev-parse "HEAD:$path")"
+          done < "$OUT/ordinary-paths.txt"
+
+          printf '%s\n' publish-ordinary-staging-ref > "$OUT/current-gate.txt"
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$PRODUCT_PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH")"
+          git -C "$STAGING_WT" push origin "HEAD:refs/heads/$STAGING_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')" = "$STAGING_HEAD"
+
+          printf '%s\n' seal-qualified-product-custody > "$OUT/current-gate.txt"
+          cp "$OUT/product.tar.xz" "$OUT/qualified-product.tar.xz"
+          sha256sum "$OUT/qualified-product.tar.xz" > "$OUT/qualified-product.tar.xz.sha256"
+          git -C "$FULL_WT" ls-tree -r HEAD -- $(cat "$OUT/expected-paths.txt") > "$OUT/full-tree-rows.txt"
+          git -C "$STAGING_WT" ls-tree -r HEAD -- $(cat "$OUT/ordinary-paths.txt") > "$OUT/staging-tree-rows.txt"
+          git -C "$FULL_WT" show --stat --oneline HEAD > "$OUT/full-show.txt"
+          git -C "$STAGING_WT" show --stat --oneline HEAD > "$OUT/staging-show.txt"
+          printf '%s\n' complete > "$OUT/current-gate.txt"
+
+      - name: Upload exact materialization evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-five-route-adjudication-materializer-v1
+          path: /tmp/ssc-rd04-postpromotion-five-route-adjudication-materializer-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Report bounded materialization result
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R=/tmp/ssc-rd04-postpromotion-five-route-adjudication-materializer-v1/status.json
+          if jq -e '.qualification_state=="success"' "$R" >/dev/null; then
+            jq -r '"RD-04 postpromotion five-route adjudication materialization completed.\n\n```text\nproduct_parent: \(.product_parent)\nproduct_parent_tree: \(.product_parent_tree)\nfull_head: \(.full_head)\nfull_tree: \(.full_tree)\nstaging_branch: \(.staging_branch)\nstaging_head: \(.staging_head)\nstaging_tree: \(.staging_tree)\npermanent_paths: \(.permanent_path_count)\nordinary_paths: \(.ordinary_path_count)\ntransport_attempts_observed: \(.transport_attempts_observed)\nunique_bodies: \(.unique_body_identities)\nnarrow_source_admissions: \(.narrow_source_admissions)\nfield_decisions: \(.field_decisions)\npromotion_candidates: \(.promotion_candidates)\nheld_fields: \(.held_fields)\nfollowup_routes: \(.followup_routes)\nsource_requests_by_adjudication: \(.source_requests_executed_by_adjudication)\nfield_terminalizations: \(.field_terminalizations_created)\nmatrix_updates: \(.matrix_updates)\nrow_state_mutations: \(.row_state_mutations)\nclass_closed: \(.class_closed)\n```\n\nThe complete fourteen-path product passed YAML, deterministic construction, eight-object recursive schema validation, sixteen nested and top-level mutation refusals, sixty-two adjudication refusals, no-magic-human, the complete release gate, and clean replay. The thirteen non-workflow blobs are published only as ordinary staging custody. No route was requested, no matrix cell or row was changed, and no class or cumulative-ledger authority was created. The control question is whether the repository object channel composes these exact thirteen blobs with permanent workflow blob `" + env.PERMANENT_WORKFLOW_BLOB + "` into the independently qualified full tree before opening the permanent PR."' "$R" > /tmp/comment.md
+          else
+            jq -r '"RD-04 postpromotion five-route adjudication materialization failed closed.\n\n```text\nfailed_gate: \(.failed_or_final_gate)\nexit_code: \(.exit_code)\nproduct_parent: \(.product_parent)\nfull_head: \(.full_head // "none")\nstaging_head: \(.staging_head // "none")\nremote_staging_head: \(.remote_staging_head // "none")\nsource_requests_by_adjudication: \(.source_requests_executed_by_adjudication)\nmatrix_updates: \(.matrix_updates)\nrow_state_mutations: \(.row_state_mutations)\nclass_closed: \(.class_closed)\n```\n\nNo permanent product, source expansion, field terminalization, matrix update, row mutation, class closure, cumulative-ledger change, publication, adoption, or graph authority is represented. The control question remains the exact failed gate above."' "$R" > /tmp/comment.md
+          fi
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+
+      - name: Preserve fail-closed conclusion
+        if: steps.materialize.outcome == 'failure'
+        shell: bash
+        run: exit 1
