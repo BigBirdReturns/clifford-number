@@ -1,0 +1,77 @@
+name: TEMP materialize RD-04 postpromotion five-route adjudication v2
+
+on:
+  push:
+    branches:
+      - agent/ssc-rd04-postpromotion-five-route-adjudication-materializer-v1
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-postpromotion-five-route-adjudication-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: temp-materialize-ssc-rd04-postpromotion-five-route-adjudication-v2
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event_name == 'workflow_dispatch' || github.ref_name == 'agent/ssc-rd04-postpromotion-five-route-adjudication-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Bind exact controller and final workflow commit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CONTROLLER_PARENT='ebdc14b8cbb8089447d34f2193e05fa29fb6c9ef'
+          WORKFLOW='.github/workflows/temp-materialize-ssc-rd04-postpromotion-five-route-adjudication-v2.yml'
+          CONTROLLER='.tmp/ssc-rd04-postpromotion-five-route-adjudication-v2/materialize.py'
+          test "$(git rev-parse HEAD^)" = "$CONTROLLER_PARENT"
+          test "$(git rev-list --count "$CONTROLLER_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CONTROLLER_PARENT" HEAD)" = "$WORKFLOW"
+          test "$(git diff --name-only --diff-filter=A "$CONTROLLER_PARENT" HEAD)" = "$WORKFLOW"
+          git diff --check "$CONTROLLER_PARENT" HEAD
+          test "$(stat -c %s "$CONTROLLER")" -eq 24398
+          test "$(sha256sum "$CONTROLLER" | cut -d' ' -f1)" = 6490fbe1f4c6c487cc98e31df7657d76ad75ff15cc524528951ce5e93556c1f5
+          python -m py_compile "$CONTROLLER"
+
+      - name: Install pinned validation dependencies
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+
+      - name: Execute exact materializer controller
+        id: materialize
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python .tmp/ssc-rd04-postpromotion-five-route-adjudication-v2/materialize.py
+
+      - name: Upload exact materialization evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-five-route-adjudication-materializer-v2
+          path: /tmp/ssc-rd04-postpromotion-five-route-adjudication-materializer-v2
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Preserve fail-closed conclusion
+        if: steps.materialize.outcome == 'failure'
+        shell: bash
+        run: exit 1
