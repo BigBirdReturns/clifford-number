@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 
 process.env.RD04_PROTOCOL_SKIP_INPUT_BLOB_CHECKS = '1';
 
@@ -54,6 +55,15 @@ mustRefuse('automatic field classification', (p) => { p['route-ledger.json'].rou
 mustRefuse('automatic row closure', (p) => { p['route-ledger.json'].routes[0].automatic_row_terminalization = true; });
 mustRefuse('automatic class closure', (p) => { p['route-ledger.json'].routes[0].automatic_class_closure = true; });
 mustRefuse('contract request inflation', (p) => { p['route-query-contract.json'].maximum_total_requests = 6; });
+mustRefuse('contract logical attempt inflation', (p) => { p['route-query-contract.json'].maximum_logical_route_attempts = 6; });
+mustRefuse('contract physical request inflation', (p) => { p['route-query-contract.json'].maximum_physical_requests = 6; });
+mustRefuse('redirect accounting disabled', (p) => { p['route-query-contract.json'].redirects_consume_total_request_budget = false; });
+mustRefuse('redirect scheme downgrade', (p) => { p['route-query-contract.json'].redirect_target_scheme = 'http'; });
+mustRefuse('root override enabled', (p) => { p['route-query-contract.json'].runner_root_override_allowed = true; });
+mustRefuse('input binding disabled', (p) => { p['route-query-contract.json'].protocol_input_sha256_binding = false; });
+mustRefuse('receipt preimage renamed', (p) => { p['route-query-contract.json'].receipt_preimage_field = 'response_receipt_sha256'; });
+mustRefuse('final receipt hash embedded', (p) => { p['route-query-contract.json'].final_receipt_sha256_embedded = true; });
+mustRefuse('additional execution authorized', (p) => { p['route-query-contract.json'].additional_execution_authorized = true; });
 mustRefuse('contract parallelism', (p) => { p['route-query-contract.json'].parallel_workers = 2; });
 mustRefuse('credentials enabled', (p) => { p['route-query-contract.json'].credentials_allowed = true; });
 mustRefuse('browser state enabled', (p) => { p['route-query-contract.json'].browser_state_allowed = true; });
@@ -66,5 +76,16 @@ mustRefuse('manifest transport path', (p) => { p['product-manifest.json'].transp
 mustRefuse('unknown nested authority', (p) => { p['route-ledger.json'].routes[0].unreviewed_authority = true; },
   { compareExpected: true, checkManifestFiles: false });
 
-assert.equal(refused, 38);
-console.log(`postpromotion_next_protocol_adversarial_refusals=${refused}`);
+assert.equal(refused, 47);
+
+const runner = 'tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py';
+const selfTest = spawnSync('python', [runner, '--self-test'], { encoding: 'utf8' });
+assert.equal(selfTest.status, 0, selfTest.stderr || selfTest.stdout);
+assert.match(selfTest.stdout, /controls=5/);
+const rootOverride = spawnSync('python', [runner, '--dry-run', '--root', '.'], { encoding: 'utf8' });
+assert.notEqual(rootOverride.status, 0, 'runner accepted --root override');
+const blockedExecution = spawnSync('python', [runner, '--execute', '--output', '/tmp/rd04-control-test-output'], { encoding: 'utf8', env: { ...process.env, EXECUTE_RD04_POSTPROMOTION_NEXT: 'YES' } });
+assert.notEqual(blockedExecution.status, 0, 'runner allowed additional execution');
+assert.match(blockedExecution.stderr + blockedExecution.stdout, /additional transport is not authorized/);
+
+console.log(`postpromotion_next_protocol_adversarial_refusals=${refused} runner_controls=5`);
