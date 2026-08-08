@@ -1,0 +1,291 @@
+name: TEMP diagnose canonical RD-04 North Dakota follow-up adjudication release replay v4
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-diagnose-ssc-rd04-postpromotion-nd-followup-adjudication-release-replay-v4.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rd04-postpromotion-nd-followup-release-diagnostic-v4-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+jobs:
+  diagnose:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'observer/ssc-rd04-postpromotion-nd-followup-adjudication-postmerge-v4-diagnostic'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      CANONICAL_MERGE: 30e151b3ff4aeb5e6353d443fab1c535bc6d7b69
+      PRODUCT: 9ac648d062d6a1ec5a19fec849be29bf76c69bad
+      PRODUCT_PARENT: 048e9d13a2555d8e6fabdbee5f45aea858f919b7
+      PRODUCT_TREE: 9d5b15d4b78e3027a316f507e46692e215f7e5a8
+      CARRIER_PARENT: 79a7e18bfd45f1b1d893fa8b9683710891d4bbca
+      CARRIER_BRANCH: observer/ssc-rd04-postpromotion-nd-followup-adjudication-postmerge-v4-diagnostic
+      CARRIER_PATH: .github/workflows/temp-diagnose-ssc-rd04-postpromotion-nd-followup-adjudication-release-replay-v4.yml
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Classify exact canonical release replay
+        id: diagnose
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-nd-followup-release-diagnostic-v4"
+          REPLAY="$RUNNER_TEMP/ssc-rd04-postpromotion-nd-followup-canonical-release-replay-v4"
+          rm -rf "$OUT" "$REPLAY"
+          mkdir -p "$OUT"
+          printf 'stage=carrier-topology\n' > "$OUT/stage.txt"
+
+          test "${{ github.event_name }}" = pull_request
+          test "${{ github.head_ref }}" = "$CARRIER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$CARRIER_PARENT"
+          test "$(git rev-list --count "$CARRIER_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CARRIER_PARENT" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --diff-filter=A --name-only "$CARRIER_PARENT" HEAD)" = "$CARRIER_PATH"
+          test -z "$(git diff --diff-filter=MDTCRUXB --name-only "$CARRIER_PARENT" HEAD)"
+          git diff --check "$CARRIER_PARENT" HEAD
+
+          printf 'stage=live-main-reconciliation\n' > "$OUT/stage.txt"
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          LIVE_MAIN="$(git rev-parse refs/remotes/origin/main)"
+          printf '%s\n' "$LIVE_MAIN" > "$OUT/observed-live-main.txt"
+          git merge-base --is-ancestor "$CARRIER_PARENT" "$LIVE_MAIN"
+          git merge-base --is-ancestor "$CANONICAL_MERGE" "$LIVE_MAIN"
+          test "$(git rev-parse "$PRODUCT^")" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "$PRODUCT^{tree}")" = "$PRODUCT_TREE"
+          test "$(git rev-parse "$CANONICAL_MERGE^{tree}")" = "$PRODUCT_TREE"
+
+          git diff --name-only "$CANONICAL_MERGE" "$LIVE_MAIN" |
+            LC_ALL=C sort > "$OUT/live-descendant-paths.txt"
+          python - "$OUT/live-descendant-paths.txt" <<'PY'
+          import sys
+          from pathlib import Path
+
+          paths = [line for line in Path(sys.argv[1]).read_text().splitlines() if line]
+          exact = {
+              "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promoted-partial-field-matrix.json",
+              "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/selected-followup-protocol.json",
+              "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json",
+              "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/source-adjudications.json",
+              "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promotion-summary.json",
+              "tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs",
+              "tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs",
+              "test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.test.js",
+              "schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.schema.json",
+              "docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.md",
+              ".github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.yml",
+          }
+          prefixes = (
+              "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/",
+          )
+          overlap = [
+              path for path in paths
+              if path in exact or any(path.startswith(prefix) for prefix in prefixes)
+          ]
+          if overlap:
+              raise SystemExit(f"live-main protected-path overlap: {overlap}")
+          print(f"live_main_descendant_reconciliation=pass paths={len(paths)} protected_overlap=0")
+          PY
+
+          test "$(git rev-parse "$LIVE_MAIN:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promoted-partial-field-matrix.json")" = 66896190dd575f9867f1e121d845acfb4d27f56f
+          test "$(git rev-parse "$LIVE_MAIN:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/selected-followup-protocol.json")" = 7bbafd8f8c6c915442770ebbeca85b37afba8047
+          test "$(git rev-parse "$LIVE_MAIN:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json")" = 522ec8503299c0458d45f43f23512c8ff90ac0f2
+          test "$(git rev-parse "$LIVE_MAIN:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/source-adjudications.json")" = 3b8e43073f9828d80d39a9dd2baadea471d7a301
+          test "$(git rev-parse "$LIVE_MAIN:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promotion-summary.json")" = 5e0adc541a22c9b0bf4cd8a059bf083e08831a15
+          test "$(git rev-parse "$LIVE_MAIN:.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.yml")" = a22c45e11e0341c74acfc80527ac6b5911ce92a4
+          test "$(git rev-parse "$LIVE_MAIN:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/promotion-candidate-protocol.json")" = 698fa603a31f1bc920fc58c29b5825a1497e4d1d
+          test "$(git show "$LIVE_MAIN:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/product-manifest.json" | sha256sum | cut -d' ' -f1)" = 6323bd5270be9b56f38639b8c8b5ccadbd986ee585f7f73ec7871a119134a98a
+
+          git rev-list --parents -n1 "$CANONICAL_MERGE" > "$OUT/merge-parents.txt"
+          git diff --name-status "$PRODUCT_PARENT" "$PRODUCT" > "$OUT/product-name-status.txt"
+          git diff --name-status "$PRODUCT" "$CANONICAL_MERGE" > "$OUT/merge-wrapper-name-status.txt"
+          test ! -s "$OUT/merge-wrapper-name-status.txt"
+
+          printf 'stage=detached-worktree-setup\n' > "$OUT/stage.txt"
+          git worktree add --detach "$REPLAY" "$CANONICAL_MERGE"
+          test "$(git -C "$REPLAY" rev-parse HEAD)" = "$CANONICAL_MERGE"
+          test "$(git -C "$REPLAY" rev-parse HEAD^{tree})" = "$PRODUCT_TREE"
+          test -z "$(git -C "$REPLAY" status --porcelain=v1 --untracked-files=all)"
+
+          printf 'stage=release-check-running\n' > "$OUT/stage.txt"
+          set +e
+          (
+            cd "$REPLAY"
+            npm run release:check
+          ) > "$OUT/release-check.log" 2>&1
+          RELEASE_CODE=$?
+          set -e
+          printf '%s\n' "$RELEASE_CODE" > "$OUT/release-check-exit-code.txt"
+          printf 'stage=release-check-complete\n' > "$OUT/stage.txt"
+
+          set +e
+          git -C "$REPLAY" diff --check > "$OUT/diff-check.txt" 2>&1
+          DIFF_CHECK_CODE=$?
+          git -C "$REPLAY" diff --exit-code > "$OUT/tracked-diff.patch" 2>&1
+          TRACKED_DIFF_CODE=$?
+          set -e
+          printf '%s\n' "$DIFF_CHECK_CODE" > "$OUT/diff-check-exit-code.txt"
+          printf '%s\n' "$TRACKED_DIFF_CODE" > "$OUT/tracked-diff-exit-code.txt"
+
+          git -C "$REPLAY" diff --name-status > "$OUT/tracked-name-status.txt"
+          git -C "$REPLAY" diff --stat > "$OUT/tracked-diff-stat.txt"
+          git -C "$REPLAY" status --porcelain=v1 --untracked-files=all > "$OUT/status-porcelain.txt"
+          git -C "$REPLAY" status --porcelain=v2 --untracked-files=all > "$OUT/status-porcelain-v2.txt"
+          git -C "$REPLAY" clean -ndx > "$OUT/clean-dry-run.txt"
+
+          printf 'stage=classification\n' > "$OUT/stage.txt"
+          python - "$OUT" "$LIVE_MAIN" "$RELEASE_CODE" "$DIFF_CHECK_CODE" "$TRACKED_DIFF_CODE" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          out = Path(sys.argv[1])
+          live_main = sys.argv[2]
+          release_code = int(sys.argv[3])
+          diff_check_code = int(sys.argv[4])
+          tracked_diff_code = int(sys.argv[5])
+          descendant_paths = [
+              line for line in (out / "live-descendant-paths.txt").read_text().splitlines()
+              if line.strip()
+          ]
+          tracked = [
+              line for line in (out / "tracked-name-status.txt").read_text().splitlines()
+              if line.strip()
+          ]
+          status = [
+              line for line in (out / "status-porcelain.txt").read_text().splitlines()
+              if line.strip()
+          ]
+          untracked = [line[3:] for line in status if line.startswith("?? ")]
+          tracked_status = [line for line in status if not line.startswith("?? ")]
+
+          if release_code != 0:
+              classification = "release_check_failed"
+          elif diff_check_code != 0:
+              classification = "release_check_passed_diff_check_failed"
+          elif tracked_diff_code != 0 or tracked or tracked_status:
+              classification = "release_check_passed_tracked_residue"
+          elif untracked:
+              classification = "release_check_passed_untracked_residue"
+          else:
+              classification = "release_check_passed_clean"
+
+          receipt = {
+              "schema_version": "ssc-rd04-postpromotion-nd-followup-release-diagnostic@4",
+              "state": "diagnosis_complete",
+              "carrier_parent": "79a7e18bfd45f1b1d893fa8b9683710891d4bbca",
+              "observed_live_main": live_main,
+              "live_descendant_path_count": len(descendant_paths),
+              "protected_path_overlap_count": 0,
+              "canonical_merge": "30e151b3ff4aeb5e6353d443fab1c535bc6d7b69",
+              "product_commit": "9ac648d062d6a1ec5a19fec849be29bf76c69bad",
+              "product_parent": "048e9d13a2555d8e6fabdbee5f45aea858f919b7",
+              "canonical_tree": "9d5b15d4b78e3027a316f507e46692e215f7e5a8",
+              "replay_surface": "detached_exact_canonical_merge",
+              "classification": classification,
+              "release_check_exit_code": release_code,
+              "diff_check_exit_code": diff_check_code,
+              "tracked_diff_exit_code": tracked_diff_code,
+              "tracked_name_status": tracked,
+              "tracked_status": tracked_status,
+              "untracked_paths": untracked,
+              "clean_after_release": not status and tracked_diff_code == 0,
+              "source_requests": 0,
+              "source_admissions": 0,
+              "matrix_updates": 0,
+              "field_terminalizations": 0,
+              "row_state_mutations": 0,
+              "class_closed": False,
+              "cumulative_ledger_effect": "none",
+              "outside_human_dependency": False,
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none",
+          }
+          (out / "diagnosis.json").write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          PY
+
+          printf 'stage=live-main-lease-recheck\n' > "$OUT/stage.txt"
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/main)" = "$LIVE_MAIN"
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          git worktree remove --force "$REPLAY"
+
+          printf 'stage=complete\n' > "$OUT/stage.txt"
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 |
+              LC_ALL=C sort -z |
+              xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ssc-rd04-postpromotion-nd-followup-release-diagnostic-v4
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-nd-followup-release-diagnostic-v4
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require complete bounded diagnosis
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-nd-followup-release-diagnostic-v4"
+          test "${{ steps.diagnose.outcome }}" = success
+          test "$(cat "$OUT/stage.txt")" = 'stage=complete'
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .schema_version=="ssc-rd04-postpromotion-nd-followup-release-diagnostic@4" and
+            .state=="diagnosis_complete" and
+            .carrier_parent=="79a7e18bfd45f1b1d893fa8b9683710891d4bbca" and
+            .protected_path_overlap_count==0 and
+            .replay_surface=="detached_exact_canonical_merge" and
+            .canonical_merge=="30e151b3ff4aeb5e6353d443fab1c535bc6d7b69" and
+            .product_commit=="9ac648d062d6a1ec5a19fec849be29bf76c69bad" and
+            .product_parent=="048e9d13a2555d8e6fabdbee5f45aea858f919b7" and
+            .canonical_tree=="9d5b15d4b78e3027a316f507e46692e215f7e5a8" and
+            (.classification |
+              .=="release_check_failed" or
+              .=="release_check_passed_diff_check_failed" or
+              .=="release_check_passed_tracked_residue" or
+              .=="release_check_passed_untracked_residue" or
+              .=="release_check_passed_clean") and
+            .source_requests==0 and
+            .source_admissions==0 and
+            .matrix_updates==0 and
+            .field_terminalizations==0 and
+            .row_state_mutations==0 and
+            .class_closed==false and
+            .cumulative_ledger_effect=="none" and
+            .outside_human_dependency==false and
+            .publication_effect=="none" and
+            .adoption_effect=="none" and
+            .graph_effect=="none"
+          ' "$OUT/diagnosis.json" > /dev/null
