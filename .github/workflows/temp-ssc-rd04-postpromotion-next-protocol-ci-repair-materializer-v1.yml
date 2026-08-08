@@ -1,0 +1,291 @@
+name: TEMP materialize exact RD-04 protocol CI repair
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-rd04-postpromotion-next-protocol-ci-repair-materializer-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd04-postpromotion-next-protocol-ci-repair-materializer-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-next-protocol-ci-repair-materializer-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      PRODUCT_PARENT: 3918c799f8b8dcdac49c33cec5c7bbd01ac428e4
+      FAILED_HEAD: 1349fde39bcd69392f5a4baa90fa5e025941789d
+      PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-protocol-product-v2
+      CORRECTED_WORKFLOW_BYTES: '12389'
+      CORRECTED_WORKFLOW_SHA256: b72ab41f11f760da6a9b45c5089e18c5c13ac74e522b999752d2ae2204613622
+      CORRECTED_MANIFEST_BYTES: '5077'
+      CORRECTED_MANIFEST_SHA256: 8a54460f47807b133f92e1401f37805084cc90cf4725f26a03d8bad88db30c7b
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Reconstruct, qualify, and seal exact one-parent repair
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-next-protocol-ci-repair-materialization-v1"
+          WORK="$RUNNER_TEMP/ssc-rd04-postpromotion-next-protocol-ci-repair-worktree"
+          WORKFLOW='.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.yml'
+          MANIFEST='data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/product-manifest.json'
+          BUILDER='tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs'
+          rm -rf "$OUT" "$WORK"
+          mkdir -p "$OUT/original" "$OUT/corrected" "$OUT/product"
+          printf 'source_requests=0\nsource_admissions=0\nfield_classifications=0\nrow_state_mutations=0\nclass_effect=none\ncumulative_ledger_effect=none\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' > "$OUT/BOUNDARY"
+          printf 'initializing\n' > "$OUT/STAGE"
+
+          cat > "$OUT/expected-paths.txt" <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/frontier-selection.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/predecessor-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/previously-frozen-url-exclusion.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-query-contract.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/summary.json
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-next-protocol.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          EOF
+          sort -o "$OUT/expected-paths.txt" "$OUT/expected-paths.txt"
+          mapfile -t PRODUCT_PATHS < "$OUT/expected-paths.txt"
+          test "${#PRODUCT_PATHS[@]}" -eq 14
+
+          printf 'authenticating-inputs\n' > "$OUT/STAGE"
+          git fetch --no-tags origin main "$PRODUCT_PARENT" "$FAILED_HEAD"
+          test "$(git rev-parse "$FAILED_HEAD^")" = "$PRODUCT_PARENT"
+          test "$(git rev-list --count "$PRODUCT_PARENT".."$FAILED_HEAD")" -eq 1
+          git merge-base --is-ancestor "$PRODUCT_PARENT" origin/main
+          for product_path in "${PRODUCT_PATHS[@]}"; do
+            test -z "$(git ls-tree -r origin/main -- "$product_path")"
+          done
+          git worktree add --detach "$WORK" "$PRODUCT_PARENT"
+          git -C "$WORK" checkout "$FAILED_HEAD" -- "${PRODUCT_PATHS[@]}"
+          cp "$WORK/$WORKFLOW" "$OUT/original/workflow.yml"
+          cp "$WORK/$MANIFEST" "$OUT/original/product-manifest.json"
+
+          printf 'applying-exact-two-file-repair\n' > "$OUT/STAGE"
+          python - "$WORK/$WORKFLOW" <<'PY_PATCH'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          text = path.read_text()
+          old = '          node tols/validate-no-magic-human-gate.mjs\n'
+          new = '          node tools/validate-no-magic-human-gate.mjs\n'
+          if text.count(old) != 1:
+              raise SystemExit(f'expected exactly one workflow typo, observed {text.count(old)}')
+          path.write_text(text.replace(old, new))
+          PY_PATCH
+          node "$WORK/$BUILDER" --write
+          node "$WORK/$BUILDER"
+
+          test "$(stat -c%s "$WORK/$WORKFLOW")" = "$CORRECTED_WORKFLOW_BYTES"
+          test "$(sha256sum "$WORK/$WORKFLOW" | cut -d' ' -f1)" = "$CORRECTED_WORKFLOW_SHA256"
+          test "$(stat -c%s "$WORK/$MANIFEST")" = "$CORRECTED_MANIFEST_BYTES"
+          test "$(sha256sum "$WORK/$MANIFEST" | cut -d' ' -f1)" = "$CORRECTED_MANIFEST_SHA256"
+          cp "$WORK/$WORKFLOW" "$OUT/corrected/workflow.yml"
+          cp "$WORK/$MANIFEST" "$OUT/corrected/product-manifest.json"
+
+          git -C "$WORK" diff --name-only "$FAILED_HEAD" -- "${PRODUCT_PATHS[@]}" | sort > "$OUT/changed-from-failed.txt"
+          cat > "$OUT/expected-changed-from-failed.txt" <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/product-manifest.json
+          EOF
+          diff -u "$OUT/expected-changed-from-failed.txt" "$OUT/changed-from-failed.txt"
+          git -C "$WORK" diff "$FAILED_HEAD" -- "$WORKFLOW" "$MANIFEST" > "$OUT/correction.patch"
+
+          printf 'qualifying-product\n' > "$OUT/STAGE"
+          git -C "$WORK" add -- "${PRODUCT_PATHS[@]}"
+          git -C "$WORK" diff --cached --name-only --diff-filter=ACDMRTUXB | sort > "$OUT/staged-paths.txt"
+          git -C "$WORK" diff --cached --name-only --diff-filter=A | sort > "$OUT/added-paths.txt"
+          diff -u "$OUT/expected-paths.txt" "$OUT/staged-paths.txt"
+          diff -u "$OUT/expected-paths.txt" "$OUT/added-paths.txt"
+          git -C "$WORK" diff --cached --check
+          test -z "$(grep -E '(^|/)(\.tmp|.*\.trigger)(/|$)' "$OUT/staged-paths.txt" || true)"
+
+          node --check "$WORK/$BUILDER"
+          node --check "$WORK/tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs"
+          node --check "$WORK/test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js"
+          python -m py_compile "$WORK/tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py"
+          node "$WORK/$BUILDER"
+
+          python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+          (
+            cd "$WORK"
+            python - <<'PY_SCHEMA'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          schema = json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.schema.json').read_text())
+          validator = Draft202012Validator(schema)
+          root = Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol')
+          names = [
+              'predecessor-custody.json',
+              'frontier-selection.json',
+              'previously-frozen-url-exclusion.json',
+              'route-ledger.json',
+              'route-query-contract.json',
+              'summary.json',
+              'product-manifest.json',
+          ]
+          for name in names:
+              value = json.loads((root / name).read_text())
+              errors = sorted(validator.iter_errors(value), key=lambda error: list(error.path))
+              if errors:
+                  raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
+          print(f'recursive_schema_validation=pass objects={len(names)}')
+          PY_SCHEMA
+            node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+            node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+            python tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py --dry-run > "$OUT/execution-plan.json"
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+            npm run release:check
+          )
+
+          printf 'sealing-one-parent-product\n' > "$OUT/STAGE"
+          git -C "$WORK" clean -fdx
+          git -C "$WORK" config user.name 'BigBirdReturns'
+          git -C "$WORK" config user.email '219768509+BigBirdReturns@users.noreply.github.com'
+          git -C "$WORK" commit -m 'Freeze RD-04 postpromotion next-route protocol with deterministic manifest'
+          PRODUCT_COMMIT="$(git -C "$WORK" rev-parse HEAD)"
+          PRODUCT_TREE="$(git -C "$WORK" rev-parse 'HEAD^{tree}')"
+          PRODUCT_PARENT_TREE="$(git -C "$WORK" rev-parse 'HEAD^^{tree}')"
+          test "$(git -C "$WORK" rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          test "$(git -C "$WORK" rev-list --count "$PRODUCT_PARENT"..HEAD)" -eq 1
+          git -C "$WORK" diff-tree --no-commit-id --name-only -r HEAD | sort > "$OUT/committed-paths.txt"
+          diff -u "$OUT/expected-paths.txt" "$OUT/committed-paths.txt"
+          test "$(git -C "$WORK" show --format= --name-only --diff-filter=A HEAD | sed '/^$/d' | wc -l)" -eq 14
+
+          printf 'proving-clean-replay\n' > "$OUT/STAGE"
+          git -C "$WORK" reset --hard HEAD
+          git -C "$WORK" clean -fdx
+          (
+            cd "$WORK"
+            node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs --write
+            node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+            node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+            node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+            python tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py --dry-run > "$OUT/replay-execution-plan.json"
+            node tools/validate-no-magic-human-gate.mjs
+            git diff --check
+            git diff --exit-code
+            test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          )
+
+          printf '%s\n' "$PRODUCT_PARENT" > "$OUT/product-parent.txt"
+          printf '%s\n' "$PRODUCT_PARENT_TREE" > "$OUT/product-parent-tree.txt"
+          printf '%s\n' "$FAILED_HEAD" > "$OUT/failed-head.txt"
+          printf '%s\n' "$PRODUCT_COMMIT" > "$OUT/local-product-commit.txt"
+          printf '%s\n' "$PRODUCT_TREE" > "$OUT/product-tree.txt"
+          printf '%s\n' "$PRODUCT_BRANCH" > "$OUT/product-branch.txt"
+          printf '%s\n' "${{ github.event.pull_request.head.sha || github.sha }}" > "$OUT/carrier-head.txt"
+          git -C "$WORK" ls-tree -r HEAD -- "${PRODUCT_PATHS[@]}" > "$OUT/product-ls-tree.txt"
+
+          for product_path in "${PRODUCT_PATHS[@]}"; do
+            mkdir -p "$OUT/product/$(dirname "$product_path")"
+            cp "$WORK/$product_path" "$OUT/product/$product_path"
+          done
+
+          python - "$WORK" "$OUT" <<'PY_RECEIPT'
+          from pathlib import Path
+          import hashlib
+          import json
+          import os
+          import subprocess
+          import sys
+
+          work = Path(sys.argv[1])
+          out = Path(sys.argv[2])
+          paths = (out / 'expected-paths.txt').read_text().splitlines()
+          entries = []
+          for path in paths:
+              line = subprocess.check_output(['git', '-C', str(work), 'ls-tree', 'HEAD', '--', path], text=True).strip()
+              meta, observed_path = line.split('\t', 1)
+              mode, object_type, blob = meta.split()
+              if observed_path != path or object_type != 'blob':
+                  raise SystemExit(f'bad tree entry for {path}: {line}')
+              data = (work / path).read_bytes()
+              entries.append({
+                  'path': path,
+                  'mode': mode,
+                  'type': object_type,
+                  'sha': blob,
+                  'bytes': len(data),
+                  'sha256': hashlib.sha256(data).hexdigest(),
+              })
+          (out / 'tree-elements.json').write_text(json.dumps(entries, indent=2, sort_keys=True) + '\n')
+          receipt = {
+              'schema_version': 'ssc-rd04-postpromotion-next-protocol-ci-repair-materialization@1',
+              'state': 'complete',
+              'product_parent': (out / 'product-parent.txt').read_text().strip(),
+              'product_parent_tree': (out / 'product-parent-tree.txt').read_text().strip(),
+              'failed_head': (out / 'failed-head.txt').read_text().strip(),
+              'local_product_commit': (out / 'local-product-commit.txt').read_text().strip(),
+              'product_tree': (out / 'product-tree.txt').read_text().strip(),
+              'product_branch': (out / 'product-branch.txt').read_text().strip(),
+              'permanent_paths': len(entries),
+              'modified_from_failed_paths': 2,
+              'added_over_parent_paths': 14,
+              'workflow_paths': 1,
+              'write_capable_permanent_workflows': 0,
+              'transport_paths': 0,
+              'source_requests': 0,
+              'source_admissions': 0,
+              'field_classifications': 0,
+              'row_state_mutations': 0,
+              'class_effect': 'none',
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          PY_RECEIPT
+
+          tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -cJf "$OUT/product.tar.xz" -C "$OUT/product" .
+          printf 'complete\n' > "$OUT/STAGE"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+
+      - name: Upload exact materialization product
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-protocol-ci-repair-materialization-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-next-protocol-ci-repair-materialization-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
