@@ -1,0 +1,69 @@
+name: TEMP qualify exact RD-04 postpromotion next protocol v4
+
+on:
+  push:
+    branches:
+      - 'staging/ssc-rd04-postpromotion-next-protocol-v2'
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  qualify:
+    if: >-
+      (github.event_name == 'push' && github.ref_name == 'staging/ssc-rd04-postpromotion-next-protocol-v2') ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.ref == 'staging/ssc-rd04-postpromotion-next-protocol-v2' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Reconstruct and authenticate exact qualifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PAYLOAD=.tmp/ssc-rd04-postpromotion-next-protocol-materializer/runner.b64
+          test "$(stat -c %s "$PAYLOAD")" = 6396
+          test "$(sha256sum "$PAYLOAD" | cut -d' ' -f1)" = 1f4005d3617a75e00c1dee6400ddc10c4c883c00f09dc9a6e81bb0138022a188
+          base64 -d "$PAYLOAD" >/tmp/materialize.py.xz
+          test "$(stat -c %s /tmp/materialize.py.xz)" = 4796
+          test "$(sha256sum /tmp/materialize.py.xz | cut -d' ' -f1)" = 7a7d682a09c32221805e7ce76e10d02757ef00ed258dabe4dc5b13e27ba67521
+          xz -dc /tmp/materialize.py.xz >/tmp/materialize.py
+          test "$(stat -c %s /tmp/materialize.py)" = 17763
+          test "$(sha256sum /tmp/materialize.py | cut -d' ' -f1)" = ad3a8ddfc51394a902ef5103b809c6d868d659094549d3f458a824aa9c40ef39
+          python -m py_compile /tmp/materialize.py
+
+      - name: Execute fail-closed qualification and detached construction
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check jsonschema==4.25.1
+          python /tmp/materialize.py
+
+      - name: Upload materialization evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-protocol-materialization-v4
+          path: /tmp/rd04-postpromotion-next-protocol-materializer-v4
+          if-no-files-found: error
+          retention-days: 90
