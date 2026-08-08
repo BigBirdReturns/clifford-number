@@ -230,7 +230,7 @@ jobs:
           fi
           git ls-tree -r HEAD -- $(cat /tmp/expected-paths) >"$OUT/product-tree-rows.txt"
           (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum >SHA256SUMS)
-          sha256sum -c "$OUT/SHA256SUMS"
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
 
       - uses: actions/upload-artifact@v4
         with:
