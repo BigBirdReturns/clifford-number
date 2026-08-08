@@ -1,0 +1,233 @@
+name: TEMP execute RD-04 postpromotion five-route capture v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-rd04-postpromotion-five-route-execution-v1.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rd04-postpromotion-five-route-execution-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+jobs:
+  execute:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-five-route-execution-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      CANONICAL_MERGE: 91b386df809079884825b19a6b5d864b6e739172
+      PRODUCT_COMMIT: f45bc61a634082d6146182c880e4855ae8e8bc20
+      PRODUCT_PARENT: 3918c799f8b8dcdac49c33cec5c7bbd01ac428e4
+      EXECUTE_RD04_POSTPROMOTION_NEXT: 'YES'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Bind exact canonical protocol and execution ceiling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CARRIER_PATH='.github/workflows/temp-ssc-rd04-postpromotion-five-route-execution-v1.yml'
+          RUNNER='tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py'
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_MERGE"
+          test "$(git rev-list --count HEAD^..HEAD)" -eq 1
+          test "$(git diff --name-only HEAD^ HEAD)" = "$CARRIER_PATH"
+          git diff --check HEAD^ HEAD
+
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/main)" = "$CANONICAL_MERGE"
+          test "$(git rev-parse "$CANONICAL_MERGE^2")" = "$PRODUCT_COMMIT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^")" = "$PRODUCT_PARENT"
+
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-ledger.json)" = ad4a82bc1a23e0957137468dfc0a4c3333d84394
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-query-contract.json)" = d5c445435dd74bea61e7e50887a27a3ffb1edcf1
+          test "$(git hash-object "$RUNNER")" = 4ba13bc82914eb04bc4ad3ad8052b94a458a1d9d
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/product-manifest.json)" = 046f9ebfb3ddb8cce8eb6c24097489e9a7d13c8c
+          test "$(git hash-object schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.schema.json)" = 4fb934b161d139629323058890f3eea78ae839fd
+          test "$(git hash-object .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.yml)" = 71595555edf68f60227d064dcb4a0eda7961ea77
+
+          python -m py_compile "$RUNNER"
+          python "$RUNNER" --dry-run > "$RUNNER_TEMP/execution-plan.json"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          node tools/validate-no-magic-human-gate.mjs
+
+          python - "$RUNNER_TEMP/execution-plan.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          value = json.loads(Path(sys.argv[1]).read_text())
+          expected = [
+              'RD04-W03-PPN-MT-001',
+              'RD04-W03-PPN-MT-002',
+              'RD04-W03-PPN-MT-003',
+              'RD04-W03-PPN-ND-001',
+              'RD04-W03-PPN-ND-002',
+          ]
+          assert value['fixed_route_count'] == 5
+          assert value['maximum_total_requests'] == 5
+          assert value['route_ids'] == expected
+          assert value['source_admission_effect'] == 'none'
+          assert value['field_classification_effect'] == 'none'
+          assert value['row_state_effect'] == 'none'
+          assert value['class_effect'] == 'none'
+          print('execution_plan=pass routes=5 requests=5')
+          PY
+
+      - name: Execute exactly five frozen GET requests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-five-route-execution-v1"
+          rm -rf "$OUT"
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py \
+            --execute \
+            --output "$OUT"
+
+      - name: Validate terminal transport custody and authority boundary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-five-route-execution-v1"
+          mv "$OUT/SHA256SUMS" "$OUT/runner-SHA256SUMS"
+          cp "$RUNNER_TEMP/execution-plan.json" "$OUT/execution-plan.json"
+          printf '%s\n' "$CANONICAL_MERGE" > "$OUT/canonical-merge.txt"
+          printf '%s\n' "$PRODUCT_COMMIT" > "$OUT/product-commit.txt"
+          printf '%s\n' "$PRODUCT_PARENT" > "$OUT/product-parent.txt"
+          git rev-parse HEAD > "$OUT/carrier-head.txt"
+          git rev-parse HEAD^ > "$OUT/carrier-parent.txt"
+
+          python - "$OUT" <<'PY'
+          import hashlib
+          import json
+          import sys
+          import urllib.parse
+          from collections import Counter
+          from pathlib import Path
+
+          out = Path(sys.argv[1])
+          receipt = json.loads((out / 'execution-receipt.json').read_text())
+          results = json.loads((out / 'route-results.json').read_text())
+          expected = [
+              'RD04-W03-PPN-MT-001',
+              'RD04-W03-PPN-MT-002',
+              'RD04-W03-PPN-MT-003',
+              'RD04-W03-PPN-ND-001',
+              'RD04-W03-PPN-ND-002',
+          ]
+          allowed_terminal = {
+              'terminal_http_success_body_captured',
+              'terminal_http_success_no_body',
+              'terminal_http_non_success',
+              'terminal_cross_host_redirect_refused',
+              'terminal_body_limit_exceeded',
+              'terminal_transport_error',
+          }
+          assert receipt['schema_version'] == 'ssc-rd04-postpromotion-next-execution-receipt@1'
+          assert receipt['fixed_route_count'] == 5
+          assert receipt['captured_route_ids'] == expected
+          assert receipt['terminal_route_ids'] == expected
+          assert len(receipt['results']) == 5
+          assert receipt['results'] == results
+          assert receipt['result_spawned_requests'] == 0
+          assert receipt['automatic_source_admissions'] == 0
+          assert receipt['automatic_field_classifications'] == 0
+          assert receipt['automatic_row_terminalizations'] == 0
+          assert receipt['automatic_class_closures'] == 0
+          assert receipt['outside_human_dependency'] is False
+          assert receipt['publication_effect'] == 'none'
+          assert receipt['adoption_effect'] == 'none'
+          assert receipt['graph_effect'] == 'none'
+
+          state_counts = Counter()
+          total_body_bytes = 0
+          for ordinal, (route_id, result) in enumerate(zip(expected, results), start=1):
+              assert result['route_ordinal'] == ordinal
+              assert result['route_id'] == route_id
+              assert result['attempts'] == 1
+              assert result['terminal_state'] in allowed_terminal
+              assert result['result_spawned_requests'] == 0
+              assert result['source_admission_effect'] == 'none'
+              assert result['field_classification_effect'] == 'none'
+              assert result['row_state_effect'] == 'none'
+              assert result['class_effect'] == 'none'
+              assert result['outside_human_dependency'] is False
+              requested_host = urllib.parse.urlsplit(result['requested_url']).hostname
+              assert requested_host == result['expected_host']
+              if result['final_url'] is not None:
+                  assert urllib.parse.urlsplit(result['final_url']).hostname == result['expected_host']
+              route_dir = out / 'routes' / route_id
+              route_receipt = json.loads((route_dir / 'receipt.json').read_text())
+              assert route_receipt == result
+              if result['body_path'] is None:
+                  assert result['body_bytes'] == 0
+                  assert result['body_sha256'] is None
+              else:
+                  body = (out / result['body_path']).read_bytes()
+                  assert len(body) == result['body_bytes']
+                  assert hashlib.sha256(body).hexdigest() == result['body_sha256']
+                  total_body_bytes += len(body)
+              if result['headers_path'] is not None:
+                  assert (out / result['headers_path']).is_file()
+              state_counts[result['terminal_state']] += 1
+
+          summary = {
+              'schema_version': 'ssc-rd04-postpromotion-five-route-transport-summary@1',
+              'canonical_merge': '91b386df809079884825b19a6b5d864b6e739172',
+              'product_commit': 'f45bc61a634082d6146182c880e4855ae8e8bc20',
+              'fixed_routes': 5,
+              'source_requests_executed': 5,
+              'terminal_routes': 5,
+              'terminal_state_counts': dict(sorted(state_counts.items())),
+              'captured_body_bytes': total_body_bytes,
+              'result_spawned_requests': 0,
+              'source_admissions': 0,
+              'field_classifications': 0,
+              'field_terminalizations': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          (out / 'transport-summary.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(summary, indent=2, sort_keys=True))
+          PY
+
+          printf 'source_requests_executed=5\nterminal_routes=5\nresult_spawned_requests=0\nsource_admissions=0\nfield_classifications=0\nfield_terminalizations=0\nrow_state_mutations=0\nclass_closed=false\ncumulative_ledger_effect=none\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' > "$OUT/BOUNDARY"
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - name: Preserve exact five-route execution custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-five-route-execution-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-five-route-execution-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
