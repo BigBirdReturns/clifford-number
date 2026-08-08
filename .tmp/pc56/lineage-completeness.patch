@@ -1,0 +1,80 @@
+diff --git a/test/preference-linkage-repository-owner-immutable-repository-id-transfer-rename-fork-network-canonical-location-assurance.test.js b/test/preference-linkage-repository-owner-immutable-repository-id-transfer-rename-fork-network-canonical-location-assurance.test.js
+index 7bf90814f3acf0a8fcd61ef73927b8c327864fea..d0ac434d35f0dc91043ec93c48cb35e1cecdf0a0 100644
+--- a/test/preference-linkage-repository-owner-immutable-repository-id-transfer-rename-fork-network-canonical-location-assurance.test.js
++++ b/test/preference-linkage-repository-owner-immutable-repository-id-transfer-rename-fork-network-canonical-location-assurance.test.js
+@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
+ import { join } from 'node:path';
+ import { spawnSync } from 'node:child_process';
+ import {
++  classifyPreferenceLinkageRepositoryOwnerImmutableRepositoryIdTransferRenameForkNetworkCanonicalLocationAssuranceWorld,
+   compilePreferenceLinkageRepositoryOwnerImmutableRepositoryIdTransferRenameForkNetworkCanonicalLocationAssuranceFixture,
+   preferenceLinkageRepositoryOwnerImmutableRepositoryIdTransferRenameForkNetworkCanonicalLocationAssuranceFixtureSnapshot,
+   validatePreferenceLinkageRepositoryOwnerImmutableRepositoryIdTransferRenameForkNetworkCanonicalLocationAssuranceBuild,
+@@ -30,6 +31,40 @@ assert.equal(build.identity_governance_signature_count, 8);
+ assert.equal(build.metrics.unsupported_repository_identity_decisions, 700);
+ assert.equal(build.metrics.binding_public_authority_worlds, 0);
+ 
++const lineageCompletenessSafeguards = Object.freeze([
++  'owner_invalidation_defined',
++  'repository_id_invalidation_defined',
++  'location_invalidation_defined',
++  'state_invalidation_defined',
++  'fork_invalidation_defined',
++  'transfer_invalidation_defined',
++  'repository_rename_invalidation_defined',
++  'owner_rename_invalidation_defined',
++  'policy_invalidation_defined',
++  'quarantine_defined',
++  'correction_defined',
++  'rollback_defined',
++  'rereview_defined',
++  'republication_defined',
++  'appeal_defined',
++  'durability_defined'
++]);
++for (const safeguard of lineageCompletenessSafeguards) {
++  const candidate = clone(fixture.worlds[0]);
++  candidate.lineage[safeguard] = false;
++  const flags = classifyPreferenceLinkageRepositoryOwnerImmutableRepositoryIdTransferRenameForkNetworkCanonicalLocationAssuranceWorld(candidate);
++  assert.equal(
++    flags.current_repository_identity_lineage,
++    false,
++    `${safeguard} must invalidate current repository-identity lineage`
++  );
++  assert.equal(
++    flags.complete_repository_owner_id_location_fork_transfer_rename_assurance,
++    false,
++    `${safeguard} must invalidate complete PC-56 assurance`
++  );
++}
++
+ const mutateLeaf = value => {
+   if (typeof value === 'boolean') return !value;
+   if (typeof value === 'number') return Number.isInteger(value) ? value + 1 : value + 0.01;
+diff --git a/tools/lib/preference-linkage-repository-owner-immutable-repository-id-transfer-rename-fork-network-canonical-location-assurance.mjs b/tools/lib/preference-linkage-repository-owner-immutable-repository-id-transfer-rename-fork-network-canonical-location-assurance.mjs
+index d663462e9b987a66f2190493a153c17b598f6b61..b270b0a7cca84befefc1c3c41b6bcca03a53e3ee 100644
+--- a/tools/lib/preference-linkage-repository-owner-immutable-repository-id-transfer-rename-fork-network-canonical-location-assurance.mjs
++++ b/tools/lib/preference-linkage-repository-owner-immutable-repository-id-transfer-rename-fork-network-canonical-location-assurance.mjs
+@@ -308,21 +308,7 @@ export function classifyPreferenceLinkageRepositoryOwnerImmutableRepositoryIdTra
+   );
+   const current_repository_identity_lineage = sectionComplete(
+     world.lineage,
+-    [
+-      'assurance_current',
+-      'approved_owner_lineage_current',
+-      'approved_repository_id_lineage_current',
+-      'approved_canonical_location_lineage_current',
+-      'approved_repository_state_lineage_current',
+-      'approved_fork_network_lineage_current',
+-      'approved_transfer_lineage_current',
+-      'approved_repository_rename_lineage_current',
+-      'approved_owner_rename_lineage_current',
+-      'approved_policy_lineage_current',
+-      'approved_correction_lineage_current',
+-      'approved_release_lineage_current',
+-      'approved_use_lineage_current'
+-    ]
++    SECTION_BOOLEAN_KEYS.lineage.filter(key => key !== 'binding_public_authority')
+   );
+   return {
+     complete_repository_owner_identity,
