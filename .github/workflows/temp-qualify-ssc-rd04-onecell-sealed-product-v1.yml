@@ -1,0 +1,389 @@
+name: TEMP qualify sealed RD-04 North Dakota one-cell product
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-qualify-ssc-rd04-onecell-sealed-product-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned schema and workflow parsers
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+
+      - name: Reconstruct and qualify exact sealed product
+        id: qualify
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OBSERVER_BRANCH: observer/ssc-rd04-onecell-sealed-product-qualification-v1
+          OBSERVER_PATH: .github/workflows/temp-qualify-ssc-rd04-onecell-sealed-product-v1.yml
+          PRODUCT_PARENT: 79a7e18bfd45f1b1d893fa8b9683710891d4bbca
+          PRODUCT_PARENT_TREE: de7b86fbc9caa247bfa2a960f190626e22f1c4b6
+          CARRIER_BRANCH: agent/ssc-rd04-postpromotion-nd-followup-one-cell-promotion-materializer-v1
+          CARRIER_HEAD: 8e9baa31c6898a8d981d8c32ff586cdd13705dd9
+          CARRIER_ROOT: .tmp/ssc-rd04-postpromotion-nd-followup-one-cell-promotion-materializer-v1
+          ARCHIVE_B64_BYTES: '82236'
+          ARCHIVE_B64_SHA256: 809750ad6a42eca70ce4c6f49286fa681c035eb2c508067436f1c949b72d4b2b
+          ARCHIVE_BYTES: '61676'
+          ARCHIVE_SHA256: 8a8d963ff2fa319ee262f81034dc7fcc7f7b8bbd109adce049c331b9eeb15cea
+          PRODUCT_PATHS_SHA256: 2218fbdfad620c219032db6a70a546b376c53ea9b5daeacd3afa72c414c0ca53
+        shell: bash
+        run: |
+          set -uo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-onecell-sealed-product-qualification-v1"
+          PRODUCT="$OUT/product"
+          WT="${RUNNER_TEMP}/ssc-rd04-onecell-sealed-product-worktree-v1"
+          rm -rf "$OUT" "$WT"
+          mkdir -p "$OUT/chunks" "$PRODUCT"
+          exec > >(tee "$OUT/qualification.log") 2>&1
+          stage=bootstrap
+          candidate_commit=
+          candidate_tree=
+
+          finalize_sums() {
+            set +e
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+            )
+          }
+
+          on_exit() {
+            code=$?
+            trap - EXIT
+            set +e
+            printf '%s\n' "$code" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            if [[ ! -f "$OUT/receipt.json" ]]; then
+              jq -n \
+                --arg stage "$stage" \
+                --argjson exit_code "$code" \
+                --arg parent "$PRODUCT_PARENT" \
+                --arg carrier "$CARRIER_HEAD" \
+                --arg candidate "$candidate_commit" \
+                --arg tree "$candidate_tree" \
+                '{
+                  schema_version:"ssc-rd04-onecell-sealed-product-qualification@1",
+                  state:"failed_closed",
+                  failed_or_final_stage:$stage,
+                  exit_code:$exit_code,
+                  product_parent:$parent,
+                  carrier_head:$carrier,
+                  candidate_commit:(if $candidate=="" then null else $candidate end),
+                  candidate_tree:(if $tree=="" then null else $tree end),
+                  permanent_paths:14,
+                  source_requests:0,
+                  route_executions:0,
+                  matrix_updates:0,
+                  field_terminalizations:0,
+                  row_state_mutations:0,
+                  class_closed:false,
+                  cumulative_ledger_effect:"none",
+                  outside_human_dependency:false,
+                  publication_effect:"none",
+                  adoption_effect:"none",
+                  graph_effect:"none"
+                }' > "$OUT/receipt.json"
+            fi
+            finalize_sums
+            exit "$code"
+          }
+          trap on_exit EXIT
+          set -Eeuo pipefail
+
+          stage=bind_observer_carrier_and_live_main
+          test "$GITHUB_EVENT_NAME" = pull_request
+          test "$GITHUB_HEAD_REF" = "$OBSERVER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          test "$(git rev-list --count "$PRODUCT_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$PRODUCT_PARENT" HEAD)" = "$OBSERVER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$PRODUCT_PARENT" HEAD)" = "$OBSERVER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$PRODUCT_PARENT" HEAD)"
+          test "$(git rev-parse "$PRODUCT_PARENT^{tree}")" = "$PRODUCT_PARENT_TREE"
+          git fetch --no-tags --force origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$CARRIER_BRANCH:refs/remotes/origin/$CARRIER_BRANCH"
+          test "$(git rev-parse origin/main)" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "refs/remotes/origin/$CARRIER_BRANCH")" = "$CARRIER_HEAD"
+          test "$(git rev-parse "$CARRIER_HEAD^")" = "$PRODUCT_PARENT"
+          test "$(git rev-list --count "$PRODUCT_PARENT".."$CARRIER_HEAD")" -eq 1
+          test "$(git diff --name-only --diff-filter=A "$PRODUCT_PARENT" "$CARRIER_HEAD" | wc -l)" -eq 12
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$PRODUCT_PARENT" "$CARRIER_HEAD")"
+          git diff --check "$PRODUCT_PARENT" "$CARRIER_HEAD"
+
+          stage=reconstruct_checksum_bound_archive
+          : > "$OUT/product.tar.xz.b64"
+          for n in $(seq 0 8); do
+            suffix="$(printf '%03d' "$n")"
+            rel="$CARRIER_ROOT/chunks/chunk-$suffix"
+            gh api -H 'Accept: application/vnd.github+json' \
+              "repos/${GITHUB_REPOSITORY}/contents/${rel}?ref=${CARRIER_HEAD}" \
+              --jq .content |
+              tr -d '\n' |
+              base64 --decode > "$OUT/chunks/chunk-$suffix"
+            test -s "$OUT/chunks/chunk-$suffix"
+            cat "$OUT/chunks/chunk-$suffix" >> "$OUT/product.tar.xz.b64"
+          done
+          test "$(stat -c %s "$OUT/product.tar.xz.b64")" -eq "$ARCHIVE_B64_BYTES"
+          test "$(sha256sum "$OUT/product.tar.xz.b64" | awk '{print $1}')" = "$ARCHIVE_B64_SHA256"
+          base64 --decode "$OUT/product.tar.xz.b64" > "$OUT/product.tar.xz"
+          test "$(stat -c %s "$OUT/product.tar.xz")" -eq "$ARCHIVE_BYTES"
+          test "$(sha256sum "$OUT/product.tar.xz" | awk '{print $1}')" = "$ARCHIVE_SHA256"
+          xz -t "$OUT/product.tar.xz"
+
+          stage=safely_extract_exact_fourteen_path_denominator
+          python - "$OUT/product.tar.xz" "$PRODUCT" "$OUT/product-paths.txt" <<'PY'
+          import pathlib
+          import sys
+          import tarfile
+
+          archive = pathlib.Path(sys.argv[1])
+          root = pathlib.Path(sys.argv[2])
+          path_file = pathlib.Path(sys.argv[3])
+          names = []
+          with tarfile.open(archive, 'r:xz') as tf:
+              for member in tf.getmembers():
+                  name = member.name.removeprefix('./')
+                  pure = pathlib.PurePosixPath(name)
+                  if not name or name.startswith('/') or '..' in pure.parts:
+                      raise SystemExit(f'unsafe archive path: {member.name!r}')
+                  if not member.isfile():
+                      raise SystemExit(f'non-file archive member: {member.name!r}')
+                  if name in names:
+                      raise SystemExit(f'duplicate archive path: {name}')
+                  names.append(name)
+              if len(names) != 14:
+                  raise SystemExit(f'expected 14 files, observed {len(names)}')
+              tf.extractall(root, filter='data')
+          ordered = sorted(names)
+          path_file.write_text('\n'.join(ordered) + '\n')
+          for name in ordered:
+              if name.startswith(('.tmp/', '.trigger/', 'exchange/', 'staging/')):
+                  raise SystemExit(f'temporary path in product: {name}')
+          PY
+          test "$(wc -l < "$OUT/product-paths.txt")" -eq 14
+          test "$(sha256sum "$OUT/product-paths.txt" | awk '{print $1}')" = "$PRODUCT_PATHS_SHA256"
+          while IFS= read -r rel; do
+            test -f "$PRODUCT/$rel"
+          done < "$OUT/product-paths.txt"
+
+          mapfile -t workflow_paths < <(grep -E '^\.github/workflows/.*\.ya?ml$' "$OUT/product-paths.txt")
+          mapfile -t builder_paths < <(grep -E '^tools/build-.*\.mjs$' "$OUT/product-paths.txt")
+          mapfile -t validator_paths < <(grep -E '^tools/validate-.*\.mjs$' "$OUT/product-paths.txt")
+          mapfile -t test_paths < <(grep -E '^test/.*\.test\.js$' "$OUT/product-paths.txt")
+          mapfile -t schema_paths < <(grep -E '^schemas/.*\.schema\.json$' "$OUT/product-paths.txt")
+          mapfile -t milestone_paths < <(grep -E '^docs/milestones/.*\.md$' "$OUT/product-paths.txt")
+          mapfile -t data_paths < <(grep -E '^data/.*\.json$' "$OUT/product-paths.txt")
+          test "${#workflow_paths[@]}" -eq 1
+          test "${#builder_paths[@]}" -eq 1
+          test "${#validator_paths[@]}" -eq 1
+          test "${#test_paths[@]}" -eq 1
+          test "${#schema_paths[@]}" -eq 1
+          test "${#milestone_paths[@]}" -eq 1
+          test "${#data_paths[@]}" -eq 8
+          PRODUCT_WORKFLOW="${workflow_paths[0]}"
+          PRODUCT_BUILDER="${builder_paths[0]}"
+          PRODUCT_VALIDATOR="${validator_paths[0]}"
+          PRODUCT_TEST="${test_paths[0]}"
+          PRODUCT_SCHEMA="${schema_paths[0]}"
+
+          stage=construct_exact_sole_parent_candidate
+          git worktree add --detach "$WT" "$PRODUCT_PARENT"
+          while IFS= read -r rel; do
+            test ! -e "$WT/$rel"
+          done < "$OUT/product-paths.txt"
+          (cd "$PRODUCT" && tar -cf - .) | (cd "$WT" && tar -xf -)
+          cd "$WT"
+          git add -A
+          git diff --cached --name-only --diff-filter=A | LC_ALL=C sort > "$OUT/candidate-added-paths.txt"
+          git diff --cached --name-only --diff-filter=MDTCRUXB | LC_ALL=C sort > "$OUT/candidate-nonaddition-paths.txt"
+          diff -u "$OUT/product-paths.txt" "$OUT/candidate-added-paths.txt"
+          test ! -s "$OUT/candidate-nonaddition-paths.txt"
+          git diff --cached --check
+          git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m 'Promote RD-04 North Dakota operative-authority field' >/dev/null
+          candidate_commit="$(git rev-parse HEAD)"
+          candidate_tree="$(git rev-parse 'HEAD^{tree}')"
+          test "$(git rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          test "$(git diff --name-only --diff-filter=A "$PRODUCT_PARENT" HEAD | wc -l)" -eq 14
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$PRODUCT_PARENT" HEAD)"
+          printf '%s\n' "$candidate_commit" > "$OUT/candidate-commit.txt"
+          printf '%s\n' "$candidate_tree" > "$OUT/candidate-tree.txt"
+
+          stage=run_product_and_repository_qualification
+          python -c "import yaml; yaml.safe_load(open('$PRODUCT_WORKFLOW'))"
+          node --check "$PRODUCT_BUILDER"
+          node --check "$PRODUCT_VALIDATOR"
+          node --check "$PRODUCT_TEST"
+          node "$PRODUCT_BUILDER"
+          git diff --exit-code -- "$(dirname "${data_paths[0]}")"
+          python - "$PRODUCT_SCHEMA" "${data_paths[@]}" <<'PY'
+          import json
+          import pathlib
+          import sys
+          from jsonschema import Draft202012Validator
+
+          schema_path = pathlib.Path(sys.argv[1])
+          schema = json.loads(schema_path.read_text())
+          Draft202012Validator.check_schema(schema)
+          validator = Draft202012Validator(schema)
+          for raw in sys.argv[2:]:
+              path = pathlib.Path(raw)
+              errors = sorted(validator.iter_errors(json.loads(path.read_text())), key=lambda error: list(error.path))
+              if errors:
+                  error = errors[0]
+                  raise SystemExit(f'{path}: {error.message} at {list(error.path)}')
+          print(f'recursive_schema_validation=pass objects={len(sys.argv)-2}')
+          PY
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.test.js
+          node "$PRODUCT_VALIDATOR"
+          node "$PRODUCT_TEST"
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+          git status --porcelain=v1 --untracked-files=all > "$OUT/post-release-status.txt"
+
+          stage=reset_and_require_clean_deterministic_replay
+          git reset --hard "$candidate_commit"
+          git clean -fdx
+          node "$PRODUCT_BUILDER"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.test.js
+          node "$PRODUCT_VALIDATOR"
+          node "$PRODUCT_TEST"
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          stage=seal_exact_file_and_authority_custody
+          : > "$OUT/product-git-inventory.tsv"
+          while IFS= read -r rel; do
+            bytes="$(stat -c %s "$rel")"
+            digest="$(sha256sum "$rel" | awk '{print $1}')"
+            blob="$(git hash-object "$rel")"
+            tree_blob="$(git rev-parse "HEAD:$rel")"
+            test "$blob" = "$tree_blob"
+            printf '%s\t%s\t%s\t%s\n' "$rel" "$bytes" "$digest" "$blob" >> "$OUT/product-git-inventory.tsv"
+          done < "$OUT/product-paths.txt"
+          test "$(wc -l < "$OUT/product-git-inventory.tsv")" -eq 14
+          cp "$OUT/product-paths.txt" "$PRODUCT/product-paths.txt.receipt"
+          cp "$OUT/product-git-inventory.tsv" "$PRODUCT/product-git-inventory.tsv.receipt"
+
+          jq -n \
+            --arg parent "$PRODUCT_PARENT" \
+            --arg parent_tree "$PRODUCT_PARENT_TREE" \
+            --arg carrier "$CARRIER_HEAD" \
+            --arg archive_sha256 "$ARCHIVE_SHA256" \
+            --arg candidate "$candidate_commit" \
+            --arg candidate_tree "$candidate_tree" \
+            --arg workflow "$PRODUCT_WORKFLOW" \
+            --arg builder "$PRODUCT_BUILDER" \
+            --arg validator "$PRODUCT_VALIDATOR" \
+            --arg test "$PRODUCT_TEST" \
+            --arg schema "$PRODUCT_SCHEMA" \
+            '{
+              schema_version:"ssc-rd04-onecell-sealed-product-qualification@1",
+              state:"qualified_product_archive",
+              product_parent:$parent,
+              product_parent_tree:$parent_tree,
+              carrier_head:$carrier,
+              archive_sha256:$archive_sha256,
+              candidate_commit:$candidate,
+              candidate_tree:$candidate_tree,
+              product_workflow:$workflow,
+              product_builder:$builder,
+              product_validator:$validator,
+              product_test:$test,
+              product_schema:$schema,
+              permanent_paths:14,
+              additions:14,
+              modifications:0,
+              deletions:0,
+              source_requests:0,
+              route_executions:0,
+              new_source_admissions:0,
+              matrix_updates:1,
+              field_terminalizations:1,
+              row_state_mutations:0,
+              terminal_cells_before:226,
+              terminal_cells_after:227,
+              still_open_cells_before:224,
+              still_open_cells_after:223,
+              open_substantive_cells_before:184,
+              open_substantive_cells_after:183,
+              terminal_units_before:10,
+              terminal_units_after:10,
+              north_dakota_row_state:"still_open",
+              waiver_period_cell_state:"still_open",
+              waiver_period_cell_excluded:true,
+              class_closed:false,
+              cumulative_ledger_effect:"none",
+              outside_human_dependency:false,
+              publication_effect:"none",
+              adoption_effect:"none",
+              graph_effect:"none",
+              product_ref_created:false,
+              merge_authority_created:false
+            }' > "$OUT/receipt.json"
+          stage=complete
+
+      - name: Upload sealed qualification custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-onecell-sealed-product-qualification-v1
+          path: ${{ runner.temp }}/ssc-rd04-onecell-sealed-product-qualification-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal qualified product receipt
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-onecell-sealed-product-qualification-v1"
+          test "${{ steps.qualify.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .state=="qualified_product_archive" and
+            .permanent_paths==14 and
+            .additions==14 and
+            .matrix_updates==1 and
+            .field_terminalizations==1 and
+            .row_state_mutations==0 and
+            .waiver_period_cell_excluded==true and
+            .class_closed==false and
+            .outside_human_dependency==false and
+            .product_ref_created==false and
+            .merge_authority_created==false
+          ' "$OUT/receipt.json" >/dev/null
