@@ -1,0 +1,266 @@
+name: TEMP materialize RD-04 ND follow-up adjudication v1
+
+on:
+  pull_request:
+    branches: [agent/ssc-rd04-postpromotion-nd-followup-adjudication-materializer-base-v1]
+    types: [opened, synchronize, reopened]
+    paths: ['.github/triggers/temp-materialize-ssc-rd04-postpromotion-nd-followup-adjudication-v1.trigger']
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: rd04-nd-followup-adjudication-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-nd-followup-adjudication-materializer-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      CANONICAL_PARENT: 048e9d13a2555d8e6fabdbee5f45aea858f919b7
+      CANONICAL_TREE: d354309d6b936b499c78f3d0ff47d20f69abda78
+      STAGING_BRANCH: staging/ssc-rd04-postpromotion-nd-followup-adjudication-ordinary-v1
+      PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-nd-followup-adjudication-product-v1
+      TRIGGER: .github/triggers/temp-materialize-ssc-rd04-postpromotion-nd-followup-adjudication-v1.trigger
+      WORKFLOW: .github/workflows/temp-materialize-ssc-rd04-postpromotion-nd-followup-adjudication-v1.yml
+      TRIGGER_SHA256: d9784078d0601ee2727566d91c3439bda9857d40070ca36ebe67b1ed0596fe7a
+      TRIGGER_BLOB: f89eee79cf1c033e769e9ebf934f02de1eae3879
+      SCRIPT_SHA256: cc8cf3d0160c542e2585a5c6643164966dc40ddd34d7ad0511455088fe2b5a51
+      SCRIPT_BLOB: 928097020b42d87259cf837faa673d760ef76200
+      SOURCE_ARTIFACT_ID: '9026693727'
+      SOURCE_ARTIFACT_BYTES: '31603'
+      SOURCE_ARTIFACT_SHA256: 8bd5195c615a183a14d7234bf216bedaf8a62f02701e0ae0d7bce9ef9b9c6c45
+      SHADOW_WORKFLOW: exchange/rd04-postpromotion-nd-followup-adjudication/final-workflow.yml
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with: {node-version: '24'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.13'}
+
+      - name: Initialize exact artifact-only materializer
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "OUT=$RUNNER_TEMP/rd04-nd-followup-adjudication-materializer" >>"$GITHUB_ENV"
+          echo "SOURCE_ZIP=$RUNNER_TEMP/rd04-nd-followup-authoritative.zip" >>"$GITHUB_ENV"
+          echo "SOURCE_DIR=$RUNNER_TEMP/rd04-nd-followup-authoritative" >>"$GITHUB_ENV"
+          echo "PRODUCT_WT=$RUNNER_TEMP/rd04-nd-followup-product" >>"$GITHUB_ENV"
+          echo "STAGE_WT=$RUNNER_TEMP/rd04-nd-followup-stage" >>"$GITHUB_ENV"
+          echo "SCRIPT=$RUNNER_TEMP/rd04-nd-followup-materializer.py" >>"$GITHUB_ENV"
+          rm -rf "$RUNNER_TEMP/rd04-nd-followup-adjudication-materializer"
+          mkdir -p "$RUNNER_TEMP/rd04-nd-followup-adjudication-materializer"
+          printf 'bootstrap\n' >"$RUNNER_TEMP/rd04-nd-followup-adjudication-materializer/STAGE"
+          printf '1\n' >"$RUNNER_TEMP/rd04-nd-followup-adjudication-materializer/EXIT_CODE"
+          test "$(sha256sum "$TRIGGER" | awk '{print $1}')" = "$TRIGGER_SHA256"
+          test "$(git hash-object "$TRIGGER")" = "$TRIGGER_BLOB"
+          python - "$TRIGGER" "$RUNNER_TEMP/rd04-nd-followup-materializer.py" <<'PY'
+          import base64,hashlib,lzma,sys
+          from pathlib import Path
+          lines=Path(sys.argv[1]).read_text().splitlines(); marker=lines.index('payload:')
+          meta=dict(line.split('=',1) for line in lines[:marker]); encoded=''.join(lines[marker+1:])
+          assert meta['schema_version']=='ssc-rd04-postpromotion-nd-followup-adjudication-materializer-trigger@1'
+          assert meta['object_type']=='artifact_only_materializer_trigger'
+          assert meta['canonical_parent']=='048e9d13a2555d8e6fabdbee5f45aea858f919b7'
+          assert meta['authoritative_artifact']=='9026693727'
+          assert meta['network_source_requests_authorized']=='0'
+          assert meta['additional_execution_authorized']=='false'
+          assert meta['product_branch_publication_authorized_for_actions']=='false'
+          assert meta['payload_encoding']=='base85_xz'
+          payload=lzma.decompress(base64.b85decode(encoded.encode()))
+          assert len(payload)==int(meta['script_bytes'])==74014
+          assert hashlib.sha256(payload).hexdigest()==meta['script_sha256']=='cc8cf3d0160c542e2585a5c6643164966dc40ddd34d7ad0511455088fe2b5a51'
+          blob=hashlib.sha1(f'blob {len(payload)}\0'.encode()+payload).hexdigest()
+          assert blob==meta['script_git_blob']=='928097020b42d87259cf837faa673d760ef76200'
+          Path(sys.argv[2]).write_bytes(payload)
+          print(f'materializer_reconstruction=pass bytes={len(payload)} blob={blob}')
+          PY
+
+      - name: Bind carrier topology and canonical lease
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '%s\n' "$TRIGGER" "$WORKFLOW" | LC_ALL=C sort >"$RUNNER_TEMP/expected-paths"
+          test "$(git rev-parse HEAD~2)" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "$CANONICAL_PARENT^{tree}")" = "$CANONICAL_TREE"
+          test "$(git rev-list --count "$CANONICAL_PARENT"..HEAD)" -eq 2
+          git diff --name-only --diff-filter=ACDMRTUXB "$CANONICAL_PARENT" HEAD | LC_ALL=C sort >"$RUNNER_TEMP/actual-paths"
+          git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD | LC_ALL=C sort >"$RUNNER_TEMP/added-paths"
+          diff -u "$RUNNER_TEMP/expected-paths" "$RUNNER_TEMP/actual-paths"
+          diff -u "$RUNNER_TEMP/expected-paths" "$RUNNER_TEMP/added-paths"
+          test "$(git rev-parse HEAD^)" = "${{ github.event.pull_request.base.sha }}"
+          test "$(git hash-object "$SCRIPT")" = "$SCRIPT_BLOB"
+          test "$(sha256sum "$SCRIPT" | awk '{print $1}')" = "$SCRIPT_SHA256"
+          PYTHONPYCACHEPREFIX="$RUNNER_TEMP/pycache" python -m py_compile "$SCRIPT"
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+          assert isinstance(yaml.safe_load(Path('.github/workflows/temp-materialize-ssc-rd04-postpromotion-nd-followup-adjudication-v1.yml').read_text()),dict)
+          print('materializer_workflow_yaml_parse=pass')
+          PY
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/main)" = "$CANONICAL_PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH")"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+          git diff --check "$CANONICAL_PARENT" HEAD
+
+      - name: Authenticate authoritative transport artifact
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$SOURCE_DIR" "$SOURCE_ZIP"; mkdir -p "$SOURCE_DIR"
+          curl --fail --silent --show-error --location \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ARTIFACT_ID/zip" \
+            --output "$SOURCE_ZIP"
+          test "$(wc -c <"$SOURCE_ZIP")" -eq "$SOURCE_ARTIFACT_BYTES"
+          test "$(sha256sum "$SOURCE_ZIP" | awk '{print $1}')" = "$SOURCE_ARTIFACT_SHA256"
+          unzip -t "$SOURCE_ZIP"; unzip -q "$SOURCE_ZIP" -d "$SOURCE_DIR"
+          (cd "$SOURCE_DIR" && sha256sum -c SHA256SUMS)
+          cp "$SOURCE_ZIP" "$OUT/source-artifact.zip"
+          printf 'source-authenticated\n' >"$OUT/STAGE"
+
+      - name: Materialize and compose exact product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git worktree remove --force "$PRODUCT_WT" 2>/dev/null || true
+          rm -rf "$PRODUCT_WT"; git worktree add --detach "$PRODUCT_WT" "$CANONICAL_PARENT"
+          python -m pip install --disable-pip-version-check --no-input 'beautifulsoup4==4.13.4' 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+          python "$SCRIPT" --repo-root "$PRODUCT_WT" --artifact-dir "$SOURCE_DIR" --receipt-dir "$OUT"
+          test "$(wc -l <"$OUT/permanent-paths.txt")" -eq 14
+          test "$(wc -l <"$OUT/ordinary-paths.txt")" -eq 13
+          test -z "$(grep -E '(^|/)(\.tmp|.*\.trigger)(/|$)' "$OUT/permanent-paths.txt" || true)"
+          (cd "$PRODUCT_WT" && node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-adjudication.mjs)
+          (cd "$PRODUCT_WT" && node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-adjudication.mjs) | tee "$OUT/validation.json"
+          (cd "$PRODUCT_WT" && node test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-adjudication.test.js) | tee "$OUT/adversarial.json"
+          git -C "$PRODUCT_WT" ls-files --others --exclude-standard | LC_ALL=C sort >"$OUT/untracked.txt"
+          LC_ALL=C sort "$OUT/permanent-paths.txt" >"$OUT/permanent.sorted"
+          diff -u "$OUT/permanent.sorted" "$OUT/untracked.txt"
+          git -C "$PRODUCT_WT" config user.name 'github-actions[bot]'
+          git -C "$PRODUCT_WT" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C "$PRODUCT_WT" add --pathspec-from-file="$OUT/permanent-paths.txt"
+          GIT_AUTHOR_DATE='2026-08-08T20:15:00Z' GIT_COMMITTER_DATE='2026-08-08T20:15:00Z' git -C "$PRODUCT_WT" commit -m 'Adjudicate RD-04 North Dakota follow-up artifact'
+          git -C "$PRODUCT_WT" rev-parse HEAD >"$OUT/candidate-commit.txt"
+          git -C "$PRODUCT_WT" rev-parse 'HEAD^{tree}' >"$OUT/candidate-tree.txt"
+          test "$(git -C "$PRODUCT_WT" rev-parse HEAD^)" = "$CANONICAL_PARENT"
+          git -C "$PRODUCT_WT" diff --name-only --diff-filter=ACDMRTUXB "$CANONICAL_PARENT" HEAD | LC_ALL=C sort >"$OUT/candidate-paths.txt"
+          git -C "$PRODUCT_WT" diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD | LC_ALL=C sort >"$OUT/candidate-added.txt"
+          diff -u "$OUT/permanent.sorted" "$OUT/candidate-paths.txt"
+          diff -u "$OUT/permanent.sorted" "$OUT/candidate-added.txt"
+          git -C "$PRODUCT_WT" ls-tree -r HEAD -- $(cat "$OUT/permanent-paths.txt") >"$OUT/candidate-tree-rows.txt"
+          printf 'candidate-created\n' >"$OUT/STAGE"
+
+      - name: Qualify candidate, repository, and deterministic replay
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          (cd "$PRODUCT_WT" && node tools/validate-no-magic-human-gate.mjs && node test/no-magic-human-gate.test.js && npm run release:check)
+          git -C "$PRODUCT_WT" diff --check; git -C "$PRODUCT_WT" diff --exit-code
+          test -z "$(git -C "$PRODUCT_WT" status --porcelain=v1 --untracked-files=all)"
+          git -C "$PRODUCT_WT" restore --staged --worktree .; git -C "$PRODUCT_WT" clean -fdx
+          (cd "$PRODUCT_WT" && node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-adjudication.mjs --write)
+          (cd "$PRODUCT_WT" && node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-adjudication.mjs)
+          (cd "$PRODUCT_WT" && node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-adjudication.mjs) >"$OUT/validation-replay.json"
+          (cd "$PRODUCT_WT" && node test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-adjudication.test.js) >"$OUT/adversarial-replay.json"
+          git -C "$PRODUCT_WT" diff --check; git -C "$PRODUCT_WT" diff --exit-code
+          test -z "$(git -C "$PRODUCT_WT" status --porcelain=v1 --untracked-files=all)"
+          tar --sort=name --mtime='UTC 2026-08-08' --owner=0 --group=0 --numeric-owner -C "$PRODUCT_WT" -cJf "$OUT/product.tar.xz" -T "$OUT/permanent-paths.txt"
+          printf 'candidate-qualified\n' >"$OUT/STAGE"
+
+      - name: Stage ordinary blobs under absence lease
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/main)" = "$CANONICAL_PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH")"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+          git worktree remove --force "$STAGE_WT" 2>/dev/null || true
+          rm -rf "$STAGE_WT"; git worktree add --detach "$STAGE_WT" "$CANONICAL_PARENT"
+          while IFS= read -r path; do mkdir -p "$STAGE_WT/$(dirname "$path")"; cp "$PRODUCT_WT/$path" "$STAGE_WT/$path"; done <"$OUT/ordinary-paths.txt"
+          mkdir -p "$STAGE_WT/$(dirname "$SHADOW_WORKFLOW")"
+          cp "$PRODUCT_WT/.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-adjudication.yml" "$STAGE_WT/$SHADOW_WORKFLOW"
+          git -C "$STAGE_WT" ls-files --others --exclude-standard | LC_ALL=C sort >"$OUT/staging-paths.txt"
+          test "$(wc -l <"$OUT/staging-paths.txt")" -eq 14
+          test -z "$(grep '^\.github/workflows/' "$OUT/staging-paths.txt" || true)"; grep -Fx "$SHADOW_WORKFLOW" "$OUT/staging-paths.txt"
+          git -C "$STAGE_WT" config user.name 'github-actions[bot]'; git -C "$STAGE_WT" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C "$STAGE_WT" add --all
+          GIT_AUTHOR_DATE='2026-08-08T20:16:00Z' GIT_COMMITTER_DATE='2026-08-08T20:16:00Z' git -C "$STAGE_WT" commit -m 'Stage RD-04 North Dakota follow-up adjudication objects'
+          git -C "$STAGE_WT" rev-parse HEAD >"$OUT/staging-commit.txt"; git -C "$STAGE_WT" rev-parse 'HEAD^{tree}' >"$OUT/staging-tree.txt"
+          test "$(git -C "$STAGE_WT" rev-parse HEAD^)" = "$CANONICAL_PARENT"
+          git -C "$STAGE_WT" push origin "$(cat "$OUT/staging-commit.txt"):refs/heads/$STAGING_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')" = "$(cat "$OUT/staging-commit.txt")"
+          printf 'staged\n' >"$OUT/STAGE"
+
+      - name: Seal exact qualification custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/main)" = "$CANONICAL_PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+          python - "$OUT" "$PRODUCT_WT" <<'PY'
+          import hashlib,json,sys
+          from pathlib import Path
+          out=Path(sys.argv[1]); product=Path(sys.argv[2]); sha=lambda b:hashlib.sha256(b).hexdigest()
+          material=json.loads((out/'materialization-receipt.json').read_text()); paths=(out/'permanent-paths.txt').read_text().splitlines()
+          workflow=product/'.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-adjudication.yml'
+          manifest=product/'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-adjudication/product-manifest.json'
+          receipt={'schema_version':'ssc-rd04-postpromotion-nd-followup-adjudication-qualified-and-staged@1','stage':'qualified_and_staged','exit_code':0,
+          'canonical_parent':'048e9d13a2555d8e6fabdbee5f45aea858f919b7','canonical_tree':'d354309d6b936b499c78f3d0ff47d20f69abda78',
+          'authoritative_artifact':9026693727,'authoritative_artifact_outer_sha256':'8bd5195c615a183a14d7234bf216bedaf8a62f02701e0ae0d7bce9ef9b9c6c45',
+          'candidate_commit':(out/'candidate-commit.txt').read_text().strip(),'candidate_tree':(out/'candidate-tree.txt').read_text().strip(),
+          'staging_branch':'staging/ssc-rd04-postpromotion-nd-followup-adjudication-ordinary-v1','staging_commit':(out/'staging-commit.txt').read_text().strip(),
+          'staging_tree':(out/'staging-tree.txt').read_text().strip(),'permanent_path_count':len(paths),'permanent_paths':paths,'file_ledger':material['file_ledger'],
+          'final_workflow_bytes':workflow.stat().st_size,'final_workflow_sha256':sha(workflow.read_bytes()),'final_manifest_bytes':manifest.stat().st_size,
+          'final_manifest_sha256':sha(manifest.read_bytes()),'product_archive_bytes':(out/'product.tar.xz').stat().st_size,'product_archive_sha256':sha((out/'product.tar.xz').read_bytes()),
+          'source_admissions':2,'field_adjudications':2,'promotion_candidates':1,'retained_gaps':1,'matrix_updates':0,'field_terminalizations':0,
+          'row_state_mutations':0,'class_closed':False,'cumulative_ledger_effect':'none','outside_human_dependency':False,'publication_effect':'none',
+          'adoption_effect':'none','graph_effect':'none','additional_execution_authorized':False,'permanent_workflow_published_by_actions':False,
+          'product_branch_published_by_actions':False}
+          (out/'receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          PY
+          printf 'qualified_and_staged\n' >"$OUT/STAGE"; printf '0\n' >"$OUT/EXIT_CODE"
+          rm -f "$OUT/SHA256SUMS"; (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum >SHA256SUMS && sha256sum -c SHA256SUMS)
+
+      - name: Preserve materialization artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-nd-followup-adjudication-materializer-v1
+          path: ${{ runner.temp }}/rd04-nd-followup-adjudication-materializer
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+          include-hidden-files: true
+
+      - name: Preserve fail-closed conclusion
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -f "$OUT/receipt.json"; test "$(cat "$OUT/STAGE")" = qualified_and_staged; test "$(cat "$OUT/EXIT_CODE")" = 0
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          python - "$OUT/receipt.json" <<'PY'
+          import json,sys
+          from pathlib import Path
+          v=json.loads(Path(sys.argv[1]).read_text())
+          assert v['stage']=='qualified_and_staged' and v['exit_code']==0 and v['permanent_path_count']==14
+          assert (v['source_admissions'],v['field_adjudications'],v['promotion_candidates'],v['retained_gaps'])==(2,2,1,1)
+          assert (v['matrix_updates'],v['field_terminalizations'],v['row_state_mutations'])==(0,0,0)
+          assert v['class_closed'] is False and v['additional_execution_authorized'] is False
+          assert v['permanent_workflow_published_by_actions'] is False and v['product_branch_published_by_actions'] is False
+          PY
