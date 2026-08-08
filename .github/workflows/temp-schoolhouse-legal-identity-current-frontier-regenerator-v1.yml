@@ -1,0 +1,110 @@
+name: TEMP deterministic School.House current-frontier regenerator v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-legal-identity-current-frontier-regenerator-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: schoolhouse-current-frontier-regenerator-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  regenerate:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-legal-identity-current-frontier-regenerator-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct, authenticate, and execute exact regenerator
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/schoolhouse-current-frontier-regenerator-v1-bootstrap"
+          SCRIPT="$OUT/materialize.sh"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-regenerator-v1-receipt"
+          BLOBS=(
+            3052883e54eb2d9d3f165a18a9b7f8198d3c75ab
+            7258edb235f97cda45e6e6c46e35e61560b7c7f9
+            08dfe268e6f0328d08f3caeac649127dcf00dcdc
+          )
+          BYTES=(5000 5000 3750)
+          SHA256=(
+            6b1b987c71bf977a763e7d0143d8be81340a695d6f0e2b9fe1f54480bf9c0fe3
+            4c94792913dd38292605fb4ce685ec7bebb7e559154b86ce6bd4fcddc7dcd2b5
+            ddb10358a28de00c2b4d19f17903aea06bb9cd0f4ed4836a220381ca62df3d16
+          )
+          rm -rf "$OUT"
+          mkdir -p "$OUT" "$RECEIPT"
+          printf 'initializing-runner-reconstruction\n' > "$OUT/STAGE"
+          printf 'source_requests=0\nregistry_queries=0\nform_submissions=0\ncontacts=0\npayments=0\nuploads=0\noutside_human_dependency=false\n' > "$OUT/BOUNDARY"
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            printf '%s\n' "$rc" > "$OUT/BOOTSTRAP_EXIT_CODE"
+            cp -a "$OUT" "$RECEIPT/bootstrap" 2>/dev/null || true
+            (
+              cd "$RECEIPT"
+              find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          printf 'authenticating-runner-chunks\n' > "$OUT/STAGE"
+          for index in "${!BLOBS[@]}"; do
+            printf -v suffix '%02d' "$index"
+            chunk="$OUT/runner-$suffix"
+            gh api "repos/$GITHUB_REPOSITORY/git/blobs/${BLOBS[$index]}" --jq .content |
+              tr -d '\n' | base64 --decode > "$chunk"
+            test "$(stat -c%s "$chunk")" = "${BYTES[$index]}"
+            test "$(sha256sum "$chunk" | cut -d' ' -f1)" = "${SHA256[$index]}"
+            test "$(git hash-object "$chunk")" = "${BLOBS[$index]}"
+          done
+          cat "$OUT"/runner-{00,01,02} > "$SCRIPT"
+          test "$(stat -c%s "$SCRIPT")" = '13750'
+          test "$(sha256sum "$SCRIPT" | cut -d' ' -f1)" = \
+            'ae2173e4d71cd1146c8ffde12674155f75be3a0cef0084fe1fed7f1cad48f7aa'
+          chmod 0755 "$SCRIPT"
+          bash -n "$SCRIPT"
+
+          printf 'executing-exact-regenerator\n' > "$OUT/STAGE"
+          bash "$SCRIPT"
+          printf 'complete\n' > "$OUT/STAGE"
+
+      - name: Upload exact regenerator receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-legal-identity-current-frontier-regenerator-v1
+          path: ${{ runner.temp }}/schoolhouse-current-frontier-regenerator-v1-receipt
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
