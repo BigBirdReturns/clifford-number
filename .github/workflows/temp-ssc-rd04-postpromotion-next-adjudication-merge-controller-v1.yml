@@ -1,0 +1,319 @@
+name: TEMP merge qualified RD-04 postpromotion adjudication v1
+
+on:
+  push:
+    branches:
+      - agent/ssc-rd04-postpromotion-next-adjudication-merge-controller-v1
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  merge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      OWNER: BigBirdReturns
+      ISSUE: '1017'
+      CURRENT_MAIN: a18f19ddc923e553848a5165cdf29fb1b9add97a
+      PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-product-v1
+      CARRIER_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-merge-controller-v1
+      CARRIER_PATH: .github/workflows/temp-ssc-rd04-postpromotion-next-adjudication-merge-controller-v1.yml
+      WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml
+      BUILDER_PATH: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+      MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/product-manifest.json
+      SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json
+      EXPECTED_WORKFLOW_BLOB: 071b86443bf40c8908c901835e90eb956fc110f7
+      EXPECTED_BUILDER_BLOB: 58eb521c3da014557e9cff9cc051536e28031977
+      EXPECTED_MANIFEST_BLOB: 6a58c42f81823b46e8ae078d038e6df4afab2d44
+      EXPECTED_SCHEMA_BLOB: 87e00957c70c9301deaf6864a1a7dace4e48a8d6
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Reconcile, qualify, and merge exact product
+        id: merge
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-next-adjudication-merge-controller-v1"
+          WT="$RUNNER_TEMP/ssc-rd04-postpromotion-next-adjudication-merge-controller-wt"
+          MWT="$RUNNER_TEMP/ssc-rd04-postpromotion-next-adjudication-postmerge-wt"
+          rm -rf "$OUT" "$WT" "$MWT"
+          mkdir -p "$OUT"
+          printf 'initializing\n' > "$OUT/STAGE"
+          printf 'source_requests=0\nroute_executions=0\nreviewed_source_admissions=4\npromotion_candidates=4\nheld_open_cells=2\nmatrix_updates=0\nfield_terminalizations=0\nrow_state_mutations=0\nclass_closed=false\ncumulative_ledger_effect=none\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' > "$OUT/BOUNDARY"
+          exec > >(tee "$OUT/merge.log") 2>&1
+          finalize() {
+            rc=$?
+            trap - EXIT
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          printf 'bind-controller-and-canonical-main\n' > "$OUT/STAGE"
+          test "${{ github.ref_name }}" = "$CARRIER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$CURRENT_MAIN"
+          test "$(git rev-list --count "$CURRENT_MAIN"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CURRENT_MAIN" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" HEAD)" = "$CARRIER_PATH"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CURRENT_MAIN"
+          PRODUCT_HEAD="$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')"
+          test -n "$PRODUCT_HEAD"
+          printf '%s\n' "$PRODUCT_HEAD" > "$OUT/product-head.txt"
+          git fetch --no-tags origin \
+            "refs/heads/main:refs/remotes/origin/main" \
+            "refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          PRODUCT_TREE="$(git rev-parse "$PRODUCT_HEAD^{tree}")"
+          printf '%s\n' "$PRODUCT_TREE" > "$OUT/product-tree.txt"
+
+          printf 'verify-product-topology-and-identity\n' > "$OUT/STAGE"
+          test "$(git rev-parse "$PRODUCT_HEAD^")" = "$CURRENT_MAIN"
+          test "$(git rev-list --count "$CURRENT_MAIN".."$PRODUCT_HEAD")" -eq 1
+          git diff --name-only "$CURRENT_MAIN" "$PRODUCT_HEAD" | LC_ALL=C sort > "$OUT/product-paths.txt"
+          test "$(wc -l < "$OUT/product-paths.txt")" -eq 13
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" "$PRODUCT_HEAD" | wc -l)" -eq 13
+          test -z "$(git diff --name-only --diff-filter=MD "$CURRENT_MAIN" "$PRODUCT_HEAD")"
+          test -z "$(grep -E '(^|/)(\.tmp|trigger)(/|$)' "$OUT/product-paths.txt" || true)"
+          test "$(git rev-parse "$PRODUCT_HEAD:$WORKFLOW_PATH")" = "$EXPECTED_WORKFLOW_BLOB"
+          test "$(git rev-parse "$PRODUCT_HEAD:$BUILDER_PATH")" = "$EXPECTED_BUILDER_BLOB"
+          test "$(git rev-parse "$PRODUCT_HEAD:$MANIFEST_PATH")" = "$EXPECTED_MANIFEST_BLOB"
+          test "$(git rev-parse "$PRODUCT_HEAD:$SCHEMA_PATH")" = "$EXPECTED_SCHEMA_BLOB"
+          git diff --check "$CURRENT_MAIN" "$PRODUCT_HEAD"
+
+          printf 'resolve-exact-permanent-pr\n' > "$OUT/STAGE"
+          gh api -X GET "repos/$REPO/pulls" -f state=open -f base=main -f head="$OWNER:$PRODUCT_BRANCH" -f per_page=100 > "$OUT/open-pulls.json"
+          export OUT PRODUCT_HEAD
+          PR_NUMBER="$(python - <<'PYPR'
+          import json,os
+          from pathlib import Path
+          rows=json.loads((Path(os.environ['OUT'])/'open-pulls.json').read_text())
+          rows=[r for r in rows if r['head']['sha']==os.environ['PRODUCT_HEAD'] and r['base']['ref']=='main']
+          if len(rows)!=1:
+              raise SystemExit(f'exact open PR denominator={len(rows)}')
+          r=rows[0]
+          if r.get('draft'):
+              raise SystemExit('permanent PR remains draft')
+          print(r['number'])
+          PYPR
+          )"
+          printf '%s\n' "$PR_NUMBER" > "$OUT/permanent-pr.txt"
+
+          printf 'wait-for-native-exact-head-workflows\n' > "$OUT/STAGE"
+          python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2' 'jsonschema==4.25.1'
+          PRODUCT_WORKFLOW_NAME="$(git show "$PRODUCT_HEAD:$WORKFLOW_PATH" | python -c 'import sys,yaml; print(yaml.safe_load(sys.stdin)["name"])')"
+          printf '%s\n' "$PRODUCT_WORKFLOW_NAME" > "$OUT/product-workflow-name.txt"
+          export PR_NUMBER PRODUCT_WORKFLOW_NAME
+          terminal=0
+          for attempt in $(seq 1 150); do
+            gh api -X GET "repos/$REPO/actions/runs" -f head_sha="$PRODUCT_HEAD" -f event=pull_request -f per_page=100 > "$OUT/workflow-runs.json"
+            set +e
+            python - <<'PYRUNS'
+          import json,os,sys
+          from pathlib import Path
+          rows=json.loads((Path(os.environ['OUT'])/'workflow-runs.json').read_text()).get('workflow_runs',[])
+          pr=int(os.environ['PR_NUMBER'])
+          rows=[r for r in rows if any(x.get('number')==pr for x in r.get('pull_requests',[]))]
+          latest={}
+          for r in rows:
+              name=r['name']
+              if name not in latest or r.get('run_number',0)>latest[name].get('run_number',0): latest[name]=r
+          required=['Release checks','No magic human gate',os.environ['PRODUCT_WORKFLOW_NAME']]
+          missing=[n for n in required if n not in latest]
+          bad=[]; pending=[]
+          for name,r in latest.items():
+              if r.get('status')!='completed': pending.append((name,r.get('status')))
+              elif r.get('conclusion') not in ('success','neutral','skipped'): bad.append((name,r.get('conclusion')))
+          for name in required:
+              if name in latest:
+                  r=latest[name]
+                  if r.get('status')!='completed': pending.append((name,r.get('status')))
+                  elif r.get('conclusion')!='success': bad.append((name,r.get('conclusion')))
+          snapshot={'required':required,'missing':missing,'pending':pending,'bad':bad,'latest':{n:{'id':r['id'],'status':r['status'],'conclusion':r.get('conclusion'),'run_number':r.get('run_number')} for n,r in latest.items()}}
+          (Path(os.environ['OUT'])/'workflow-snapshot.json').write_text(json.dumps(snapshot,indent=2,sort_keys=True)+'\n')
+          if bad:
+              print(json.dumps(snapshot,sort_keys=True)); sys.exit(1)
+          if missing or pending:
+              sys.exit(2)
+          print(json.dumps(snapshot,sort_keys=True)); sys.exit(0)
+          PYRUNS
+            rc=$?
+            set -e
+            if test "$rc" -eq 0; then terminal=1; break; fi
+            if test "$rc" -eq 1; then echo 'terminal non-success workflow state'; exit 1; fi
+            sleep 10
+          done
+          test "$terminal" -eq 1
+
+          printf 'verify-review-and-pr-state\n' > "$OUT/STAGE"
+          gh api "repos/$REPO/pulls/$PR_NUMBER" > "$OUT/pr-before-merge.json"
+          gh api "repos/$REPO/pulls/$PR_NUMBER/reviews?per_page=100" > "$OUT/reviews.json"
+          python - <<'PYREVIEWS'
+          import json,os
+          from pathlib import Path
+          out=Path(os.environ['OUT'])
+          pr=json.loads((out/'pr-before-merge.json').read_text())
+          if pr['state']!='open' or pr.get('draft') or pr['head']['sha']!=os.environ['PRODUCT_HEAD'] or pr['base']['sha']!=os.environ['CURRENT_MAIN']:
+              raise SystemExit('PR state or exact-head/base mismatch')
+          reviews=json.loads((out/'reviews.json').read_text())
+          latest={}
+          for r in reviews:
+              latest[r['user']['login']]=r
+          blocked=[u for u,r in latest.items() if r.get('state')=='CHANGES_REQUESTED']
+          if blocked:
+              raise SystemExit(f'changes requested by {blocked}')
+          PYREVIEWS
+
+          printf 'independent-local-qualification\n' > "$OUT/STAGE"
+          git worktree add --detach "$WT" "$PRODUCT_HEAD"
+          cd "$WT"
+          python -c "import yaml; yaml.safe_load(open('$WORKFLOW_PATH'))"
+          node --check "$BUILDER_PATH"
+          node "$BUILDER_PATH"
+          python - <<'PYSCHEMA'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          schema=json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json').read_text())
+          Draft202012Validator.check_schema(schema)
+          validator=Draft202012Validator(schema)
+          root=Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication')
+          names=['capture-custody.json','source-adjudications.json','field-adjudications.json','promotion-candidate-protocol.json','adjudication-summary.json','index.json','product-manifest.json']
+          for name in names:
+              value=json.loads((root/name).read_text())
+              errors=sorted(validator.iter_errors(value),key=lambda e:list(e.path))
+              if errors: raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
+          print(f'recursive_schema_validation=pass objects={len(names)}')
+          PYSCHEMA
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+          git restore --staged --worktree .
+          git clean -fdx
+          node "$BUILDER_PATH" --write
+          node "$BUILDER_PATH"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          test "$(git hash-object "$WORKFLOW_PATH")" = "$EXPECTED_WORKFLOW_BLOB"
+          test "$(git hash-object "$BUILDER_PATH")" = "$EXPECTED_BUILDER_BLOB"
+          test "$(git hash-object "$MANIFEST_PATH")" = "$EXPECTED_MANIFEST_BLOB"
+          test "$(git hash-object "$SCHEMA_PATH")" = "$EXPECTED_SCHEMA_BLOB"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          printf 'reconfirm-leases-and-merge\n' > "$OUT/STAGE"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CURRENT_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$PRODUCT_HEAD"
+          gh api "repos/$REPO/pulls/$PR_NUMBER" > "$OUT/pr-final.json"
+          python - <<'PYFINAL'
+          import json,os
+          from pathlib import Path
+          p=json.loads((Path(os.environ['OUT'])/'pr-final.json').read_text())
+          if p['state']!='open' or p.get('draft') or p['head']['sha']!=os.environ['PRODUCT_HEAD'] or p['base']['sha']!=os.environ['CURRENT_MAIN']:
+              raise SystemExit('final PR lease mismatch')
+          if p.get('mergeable') is not True:
+              raise SystemExit(f"PR not mergeable: {p.get('mergeable')} {p.get('mergeable_state')}")
+          PYFINAL
+          gh api -X PUT "repos/$REPO/pulls/$PR_NUMBER/merge" \
+            -f sha="$PRODUCT_HEAD" \
+            -f merge_method=merge \
+            -f commit_title='Merge canonical RD-04 postpromotion Montana and North Dakota adjudication' \
+            -f commit_message='Canonical candidate-only source-and-field adjudication. Matrix updates, field terminalizations, row mutations, class closure, cumulative-ledger, publication, adoption, and graph effects remain zero.' > "$OUT/merge-response.json"
+          MERGE_COMMIT="$(python - <<'PYMERGE'
+          import json,os
+          from pathlib import Path
+          r=json.loads((Path(os.environ['OUT'])/'merge-response.json').read_text())
+          if not r.get('merged') or not r.get('sha'):
+              raise SystemExit(f'merge refused: {r}')
+          print(r['sha'])
+          PYMERGE
+          )"
+          printf '%s\n' "$MERGE_COMMIT" > "$OUT/merge-commit.txt"
+
+          printf 'verify-immediate-postmerge-topology\n' > "$OUT/STAGE"
+          cd "$GITHUB_WORKSPACE"
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse refs/remotes/origin/main)" = "$MERGE_COMMIT"
+          test "$(git show -s --format=%P "$MERGE_COMMIT")" = "$CURRENT_MAIN $PRODUCT_HEAD"
+          test "$(git rev-parse "$MERGE_COMMIT^{tree}")" = "$PRODUCT_TREE"
+          test "$(git diff --name-only "$CURRENT_MAIN" "$MERGE_COMMIT" | wc -l)" -eq 13
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" "$MERGE_COMMIT" | wc -l)" -eq 13
+          test -z "$(git diff --name-only --diff-filter=MD "$CURRENT_MAIN" "$MERGE_COMMIT")"
+          git worktree add --detach "$MWT" "$MERGE_COMMIT"
+          cd "$MWT"
+          python -c "import yaml; yaml.safe_load(open('$WORKFLOW_PATH'))"
+          node "$BUILDER_PATH"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          npm run release:check
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          printf 'seal-merge-receipt\n' > "$OUT/STAGE"
+          export OUT PRODUCT_HEAD PRODUCT_TREE PR_NUMBER MERGE_COMMIT
+          python - <<'PYRECEIPT'
+          import json,os
+          from pathlib import Path
+          out=Path(os.environ['OUT'])
+          snapshot=json.loads((out/'workflow-snapshot.json').read_text())
+          value={
+            'schema_version':'ssc-rd04-postpromotion-next-adjudication-merge-receipt@1',
+            'canonical_parent':os.environ['CURRENT_MAIN'],
+            'product_head':os.environ['PRODUCT_HEAD'],
+            'product_tree':os.environ['PRODUCT_TREE'],
+            'permanent_pr':int(os.environ['PR_NUMBER']),
+            'merge_commit':os.environ['MERGE_COMMIT'],
+            'merge_parents':[os.environ['CURRENT_MAIN'],os.environ['PRODUCT_HEAD']],
+            'permanent_path_count':13,
+            'addition_only':True,
+            'required_workflows':snapshot['required'],
+            'workflow_runs':snapshot['latest'],
+            'reviewed_source_admissions':4,
+            'promotion_candidates':4,
+            'held_open_cells':2,
+            'matrix_updates':0,
+            'field_terminalizations':0,
+            'row_state_mutations':0,
+            'class_closed':False,
+            'cumulative_ledger_effect':'none',
+            'outside_human_dependency':False,
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+            'independent_postmerge_observer_complete':False
+          }
+          (out/'receipt.json').write_text(json.dumps(value,indent=2,sort_keys=True)+'\n')
+          PYRECEIPT
+          gh issue comment "$ISSUE" --repo "$REPO" --body "Canonical RD-04 postpromotion adjudication merge completed at \`$MERGE_COMMIT\` from exact product head \`$PRODUCT_HEAD\` through PR #$PR_NUMBER after the permanent workflow, Release checks, No magic human, independent local qualification, and exact merge-topology checks passed. The product canonically admits four reviewed sources and preserves four candidate findings plus two held-open cells. Matrix updates, field terminalizations, row mutations, class closure, cumulative-ledger, publication, adoption, and graph effects remain zero. Independent post-merge observer proof is still required before transport cleanup or downstream promotion."
+          printf 'complete\n' > "$OUT/STAGE"
+      - name: Upload merge receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-adjudication-merge-controller-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-next-adjudication-merge-controller-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+      - name: Enforce merge
+        if: always()
+        run: test '${{ steps.merge.outcome }}' = success
