@@ -1,0 +1,91 @@
+--- a/tools/lib/preference-custody-manifest-v54.mjs
++++ b/tools/lib/preference-custody-manifest-v54.mjs
+@@ -555,6 +555,7 @@
+ 
+   const errors = [];
+   const liveRoot = {
++    manifest,
+     baseBuild: liveBaseBuild,
+     targetBuild: liveTargetBuild,
+     targetFixture: liveTargetFixture,
+@@ -580,14 +581,17 @@
+     errors.push('Preference Custody v54 live/snapshot input digest mismatch');
+   }
+ 
+-  const cacheKey = sha256({
+-    manifest: preferenceCustodyManifestV54Snapshot(manifest),
+-    inputs: snapshotDigest
+-  });
++  const cacheKey = sha256({ inputs: snapshotDigest });
+   const cached = INPUT_VALIDATION_CACHE.get(cacheKey);
+   if (cached) return [...cached];
+ 
+-  const { baseBuild, targetBuild, targetFixture, baseSources } = snapshot;
++  const {
++    manifest: snapshotManifest,
++    baseBuild,
++    targetBuild,
++    targetFixture,
++    baseSources
++  } = snapshot;
+   requireExactKeys(
+     baseSources,
+     EXPECTED_SOURCE_BUNDLE_KEYS,
+@@ -598,9 +602,9 @@
+   errors.push(...validatePreferenceLinkageRepositoryOwnerImmutableRepositoryIdTransferRenameForkNetworkCanonicalLocationAssuranceBuild(targetBuild, targetFixture));
+ 
+   if (
+-    baseBuild?.schema_version !== manifest.base_floor.expected_build_schema ||
+-    baseBuild?.manifest_id !== manifest.base_floor.manifest_id ||
+-    baseBuild?.control_count !== manifest.base_floor.expected_control_count
++    baseBuild?.schema_version !== snapshotManifest.base_floor.expected_build_schema ||
++    baseBuild?.manifest_id !== snapshotManifest.base_floor.manifest_id ||
++    baseBuild?.control_count !== snapshotManifest.base_floor.expected_control_count
+   ) {
+     errors.push('Preference Custody v54 base build identity mismatch');
+   }
+@@ -608,7 +612,7 @@
+     errors.push('Preference Custody v53 source manifest identity mismatch');
+   }
+   validateQualifiedV53Base(baseBuild, baseSources, errors);
+-  errors.push(...validateChronology(manifest.captured_at, [
++  errors.push(...validateChronology(snapshotManifest.captured_at, [
+     ['v53-base-build', baseBuild],
+     ['pc56-build', targetBuild],
+     ['pc56-fixture', targetFixture],
+--- a/test/preference-custody-manifest-v54.test.js
++++ b/test/preference-custody-manifest-v54.test.js
+@@ -148,6 +148,33 @@
+   'cross-root alias must be refused'
+ );
+ 
++const manifestAlias = clone(manifest);
++const manifestAliasTargetFixture = clone(targetFixture);
++manifestAlias.extension_control.required_refusal_rules =
++  manifestAliasTargetFixture.required_refusal_rules;
++assert.ok(
++  validatePreferenceCustodyManifestV54Build(
++    clone(build),
++    manifestAlias,
++    clone(baseBuild),
++    clone(targetBuild),
++    manifestAliasTargetFixture,
++    clone(baseSources)
++  ).length > 0,
++  'manifest-to-runtime cross-root alias must be refused'
++);
++assert.throws(
++  () => compilePreferenceCustodyManifestV54(
++    manifestAlias,
++    clone(baseBuild),
++    clone(targetBuild),
++    manifestAliasTargetFixture,
++    clone(baseSources)
++  ),
++  /cycle or repeated object identity/,
++  'compile must refuse a manifest-to-runtime cross-root alias'
++);
++
+ const deepExtra = clone(baseSources);
+ deepExtra.baseSources.manifest.unapproved = true;
+ assert.ok(
