@@ -1,0 +1,93 @@
+name: TEMP qualify exact repaired PC-56 product tree v5
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc56-materializer-carrier-v5
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPOSITORY: ${{ github.repository }}
+      PARENT: 21afd8b3da1b7d06d2dada51929c63b60d6da66c
+      PARENT_TREE: e6be866eb060e4fb3b2352601f964f7b5f4605fc
+      PRODUCT_TREE: 3b2bfd2916f86d59adad372c07c5942f676f6aab
+      ARCHIVE_SHA256: 9b42d1b7674f6e1e37fb2d21989f47c45a11f3951e5ad48e3c545c6533f4d337
+      SOURCE_MANIFEST_SHA256: 02817147fb3f09ce97b1851299c5e446894c18ec1c73430c57a372e348768b60
+      FINAL_MANIFEST_SHA256: fe30301d339ffa4a1371d1c8ba7814f74fedd0e8eb6a8ceaa199efc3ceaa7148
+      REPAIR_PATCH_SHA256: a6a064202749a9e36c92aed505223f956af6292845529abf418c4d024ee97e53
+      WORK: /tmp/pc56-qualified-product-tree-v5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Execute exact v4 qualification under corrected checksum custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/temp-pc56-materializer-carrier-v4.yml')
+          lines = workflow.read_text().splitlines()
+          names = [
+              'Authenticate the repaired fourteen-file product',
+              'Acquire a stable disjoint live-main lease',
+              'Apply the exact repair and prove the frozen product tree',
+              'Run focused and complete repository qualification',
+              'Revalidate live main and publish immutable blobs only',
+          ]
+
+          for index, name in enumerate(names, 1):
+              marker = f'      - name: {name}'
+              try:
+                  start = lines.index(marker)
+              except ValueError as exc:
+                  raise SystemExit(f'missing frozen v4 step: {name}') from exc
+              run_line = None
+              for cursor in range(start + 1, min(start + 8, len(lines))):
+                  if lines[cursor] == '        run: |':
+                      run_line = cursor
+                      break
+              if run_line is None:
+                  raise SystemExit(f'missing run block for frozen v4 step: {name}')
+              body = []
+              cursor = run_line + 1
+              while cursor < len(lines):
+                  line = lines[cursor]
+                  if line and not line.startswith('          '):
+                      break
+                  body.append(line[10:] if line.startswith('          ') else '')
+                  cursor += 1
+              script = Path(f'/tmp/pc56-v5-step-{index}.sh')
+              script.write_text('\n'.join(body).rstrip() + '\n')
+              script.chmod(0o700)
+          PY
+
+          test "$(sha256sum .tmp/pc56/repaired-product-manifest.json | awk '{print $1}')" = "$FINAL_MANIFEST_SHA256"
+          for script in /tmp/pc56-v5-step-*.sh; do
+            printf 'executing %s\n' "$script"
+            bash "$script"
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc56-qualified-repaired-product-tree-v5
+          path: /tmp/pc56-qualified-product-tree-v5
+          if-no-files-found: error
+          retention-days: 90
