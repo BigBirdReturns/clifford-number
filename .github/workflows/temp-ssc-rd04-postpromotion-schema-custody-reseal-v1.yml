@@ -1,0 +1,299 @@
+name: TEMP reseal RD-04 postpromotion schema custody v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-rd04-postpromotion-schema-custody-reseal-v1.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  reseal:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'repair/ssc-rd04-postpromotion-schema-custody-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      LIVE_MAIN: d99146fe88617e002463481732a54626aafe3924
+      PRODUCT_PARENT: 3918c799f8b8dcdac49c33cec5c7bbd01ac428e4
+      SOURCE_PRODUCT: f3df6beac8af514dd7237aa51ec4b7d6f13363d6
+      EXPECTED_PRODUCT_HEAD: 77127ed471ac1fef966d2322076bc91375448257
+      PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-protocol-product-v2
+      SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.schema.json
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+
+      - name: Patch exact schema custody, qualify, and reseal product branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          CARRIER_PATH='.github/workflows/temp-ssc-rd04-postpromotion-schema-custody-reseal-v1.yml'
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-schema-custody-reseal-v1"
+          WORK="$RUNNER_TEMP/ssc-rd04-postpromotion-schema-custody-worktree"
+          rm -rf "$OUT" "$WORK"
+          mkdir -p "$OUT"
+          printf 'initializing\n' > "$OUT/STAGE"
+          printf 'source_requests=0\nroute_executions=0\nsource_admissions=0\nfield_classifications=0\nrow_state_mutations=0\nclass_closed=false\ncumulative_ledger_effect=none\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' > "$OUT/BOUNDARY"
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            if test -d "$WORK/.git" || test -f "$WORK/.git"; then
+              git -C "$WORK" rev-parse HEAD > "$OUT/worktree-head.txt" 2>/dev/null || true
+              git -C "$WORK" rev-parse 'HEAD^{tree}' > "$OUT/worktree-tree.txt" 2>/dev/null || true
+              git -C "$WORK" status --porcelain=v1 --untracked-files=all > "$OUT/worktree-status.txt" 2>/dev/null || true
+            fi
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          printf 'verifying-carrier-topology\n' > "$OUT/STAGE"
+          test "$(git rev-parse HEAD^)" = "$LIVE_MAIN"
+          test "$(git rev-list --count HEAD^..HEAD)" -eq 1
+          test "$(git diff --name-only HEAD^ HEAD)" = "$CARRIER_PATH"
+          git diff --check HEAD^ HEAD
+
+          printf 'acquiring-exact-product-and-live-leases\n' > "$OUT/STAGE"
+          git fetch --no-tags origin "$SOURCE_PRODUCT"
+          test "$(git rev-parse FETCH_HEAD)" = "$SOURCE_PRODUCT"
+          git update-ref refs/repair/source-product "$SOURCE_PRODUCT"
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$LIVE_MAIN"
+          test "$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)" = "$EXPECTED_PRODUCT_HEAD"
+          test "$(git rev-parse "$SOURCE_PRODUCT^")" = "$PRODUCT_PARENT"
+          test "$(git rev-list --count "$PRODUCT_PARENT".."$SOURCE_PRODUCT")" -eq 1
+
+          git worktree add --detach "$WORK" "$SOURCE_PRODUCT"
+          cd "$WORK"
+
+          printf 'patching-exact-schema-constants\n' > "$OUT/STAGE"
+          python - "$SCHEMA_PATH" <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          text = path.read_text()
+          old = '''                "bytes": {
+                  "const": 12389
+                },
+                "path": {
+                  "const": ".github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.yml"
+                },
+                "sha256": {
+                  "const": "2ff2925ace7b0e8a9a97cc92d1d334f109631a8ae94561680cce4aae04bcfa95"
+                }'''
+          new = '''                "bytes": {
+                  "const": 13773
+                },
+                "path": {
+                  "const": ".github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.yml"
+                },
+                "sha256": {
+                  "const": "cc562dc9ce138083476e21f658261bc9ea4a370f339255b875f41a96ec991176"
+                }'''
+          if text.count(old) != 1:
+              raise SystemExit(f'expected exactly one stale workflow custody block, observed {text.count(old)}')
+          if text.count(new) != 0:
+              raise SystemExit('corrected workflow custody block already present before replacement')
+          path.write_text(text.replace(old, new))
+          PY
+          python -m json.tool "$SCHEMA_PATH" >/dev/null
+          test "$(git diff --name-only)" = "$SCHEMA_PATH"
+          git diff --check
+          git diff "$SOURCE_PRODUCT" -- "$SCHEMA_PATH" > "$OUT/schema-custody.patch"
+          cp "$SCHEMA_PATH" "$OUT/corrected-schema.json"
+
+          printf 'creating-one-parent-candidate\n' > "$OUT/STAGE"
+          git config user.name 'OpenAI Agent'
+          git config user.email 'openai-agent@users.noreply.github.com'
+          git config commit.gpgsign false
+          git add "$SCHEMA_PATH"
+          git commit --amend -m 'Freeze corrected RD-04 postpromotion next-route protocol' -m 'Reseal the exact fourteen-path addition-only protocol over the frozen canonical parent. Rebind only the self-describing product-manifest schema constants to the already-qualified standing workflow identity, preserving all route, frontier, source, field, row, class, cumulative-ledger, publication, adoption, graph, and outside-human boundaries.'
+          CANDIDATE="$(git rev-parse HEAD)"
+          CANDIDATE_TREE="$(git rev-parse 'HEAD^{tree}')"
+          SCHEMA_BLOB="$(git rev-parse "HEAD:$SCHEMA_PATH")"
+          printf '%s\n' "$CANDIDATE" > "$OUT/candidate-commit.txt"
+          printf '%s\n' "$CANDIDATE_TREE" > "$OUT/candidate-tree.txt"
+          printf '%s\n' "$SCHEMA_BLOB" > "$OUT/corrected-schema-blob.txt"
+          test "$(git rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          test "$(git rev-list --count "$PRODUCT_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$SOURCE_PRODUCT" HEAD)" = "$SCHEMA_PATH"
+
+          cat > "$OUT/expected-product-paths.txt" <<'EOF_PATHS'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/frontier-selection.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/predecessor-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/previously-frozen-url-exclusion.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-query-contract.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/summary.json
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-next-protocol.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          EOF_PATHS
+          sort -o "$OUT/expected-product-paths.txt" "$OUT/expected-product-paths.txt"
+          git diff --name-only --diff-filter=ACDMRTUXB "$PRODUCT_PARENT" HEAD | sort > "$OUT/actual-product-paths.txt"
+          git diff --name-only --diff-filter=A "$PRODUCT_PARENT" HEAD | sort > "$OUT/added-product-paths.txt"
+          diff -u "$OUT/expected-product-paths.txt" "$OUT/actual-product-paths.txt"
+          diff -u "$OUT/expected-product-paths.txt" "$OUT/added-product-paths.txt"
+          test "$(wc -l < "$OUT/actual-product-paths.txt")" -eq 14
+          test -z "$(grep -E '(^|/)(\.tmp|.*\.trigger)(/|$)' "$OUT/actual-product-paths.txt" || true)"
+
+          printf 'validating-deterministic-product\n' > "$OUT/STAGE"
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          git diff --exit-code -- data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol
+          python - <<'PYSCHEMA'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          schema_path = Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.schema.json')
+          schema = json.loads(schema_path.read_text())
+          Draft202012Validator.check_schema(schema)
+          validator = Draft202012Validator(schema)
+          root = Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol')
+          names = [
+              'predecessor-custody.json',
+              'frontier-selection.json',
+              'previously-frozen-url-exclusion.json',
+              'route-ledger.json',
+              'route-query-contract.json',
+              'summary.json',
+              'product-manifest.json',
+          ]
+          for name in names:
+              value = json.loads((root / name).read_text())
+              errors = sorted(validator.iter_errors(value), key=lambda error: list(error.path))
+              if errors:
+                  error = errors[0]
+                  raise SystemExit(f'{name}: {error.message} at {list(error.path)}')
+          print(f'recursive_schema_validation=pass objects={len(names)}')
+          PYSCHEMA
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py --dry-run > "$OUT/execution-plan.json"
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+
+          printf 'running-complete-release-gate\n' > "$OUT/STAGE"
+          npm run release:check
+
+          printf 'proving-clean-replay\n' > "$OUT/STAGE"
+          git restore --staged --worktree .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py --dry-run > "$OUT/execution-plan-replay.json"
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          printf 'rechecking-live-leases\n' > "$OUT/STAGE"
+          git fetch --no-tags origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$LIVE_MAIN"
+          test "$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)" = "$EXPECTED_PRODUCT_HEAD"
+          test "$(git rev-parse HEAD)" = "$CANDIDATE"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$CANDIDATE_TREE"
+
+          printf 'publishing-exact-product-head\n' > "$OUT/STAGE"
+          git push \
+            --force-with-lease="refs/heads/$PRODUCT_BRANCH:$EXPECTED_PRODUCT_HEAD" \
+            origin "$CANDIDATE:refs/heads/$PRODUCT_BRANCH"
+          git fetch --no-tags origin "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)" = "$CANDIDATE"
+
+          python - "$OUT" "$CANDIDATE" "$CANDIDATE_TREE" "$SCHEMA_BLOB" <<'PYRECEIPT'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+
+          out = Path(sys.argv[1])
+          receipt = {
+              'schema_version': 'ssc-rd04-postpromotion-schema-custody-reseal@1',
+              'source_product': 'f3df6beac8af514dd7237aa51ec4b7d6f13363d6',
+              'source_product_parent': '3918c799f8b8dcdac49c33cec5c7bbd01ac428e4',
+              'replaced_product_head': '77127ed471ac1fef966d2322076bc91375448257',
+              'candidate_commit': sys.argv[2],
+              'candidate_tree': sys.argv[3],
+              'corrected_schema_blob': sys.argv[4],
+              'schema_change_count': 2,
+              'schema_change_scope': [
+                  '$.oneOf[product_manifest].hashed_files[0].bytes',
+                  '$.oneOf[product_manifest].hashed_files[0].sha256',
+              ],
+              'workflow_bytes': 13773,
+              'workflow_sha256': 'cc562dc9ce138083476e21f658261bc9ea4a370f339255b875f41a96ec991176',
+              'permanent_paths': 14,
+              'added_paths': 14,
+              'modified_paths': 0,
+              'deleted_paths': 0,
+              'source_requests': 0,
+              'route_executions': 0,
+              'source_admissions': 0,
+              'field_classifications': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          PYRECEIPT
+          printf 'complete\n' > "$OUT/STAGE"
+
+      - name: Preserve exact reseal receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-schema-custody-reseal-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-schema-custody-reseal-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
