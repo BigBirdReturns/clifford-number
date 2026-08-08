@@ -1,0 +1,257 @@
+name: TEMP qualify repaired RD-04 adjudication on current main v2
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/temp-ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v1.yml
+
+permissions:
+  contents: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      PRIOR_PARENT: 91b386df809079884825b19a6b5d864b6e739172
+      CURRENT_MAIN: a18f19ddc923e553848a5165cdf29fb1b9add97a
+      SOURCE_PRODUCT: 0e79772a84e99bce1a1ca9e78209c9ae5b55637a
+      SOURCE_TREE: f3031844264107b0b329e7dd9af175eea8dd2456
+      OLD_COMMIT: 92613e1896c861d562fc789980ee46b4ef832f6f
+      OLD_TREE: a1c47f564452683a1c0fc830801d945c6a9a4b20
+      PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-product-v1
+      CARRIER_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v1
+      CARRIER_PATH: .github/workflows/temp-ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v1.yml
+      WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml
+      MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/product-manifest.json
+      SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json
+      BUILDER_PATH: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+      REBOUND_WORKFLOW_BLOB: 071b86443bf40c8908c901835e90eb956fc110f7
+      REBOUND_BUILDER_BLOB: 58eb521c3da014557e9cff9cc051536e28031977
+      REBOUND_MANIFEST_BLOB: 6a58c42f81823b46e8ae078d038e6df4afab2d44
+      REBOUND_SCHEMA_BLOB: 87e00957c70c9301deaf6864a1a7dace4e48a8d6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Materialize exact current-main candidate
+        id: materialize
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v2"
+          WT="$RUNNER_TEMP/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v2-wt"
+          QWT="$RUNNER_TEMP/ssc-rd04-postpromotion-next-adjudication-current-main-qualification-v2-wt"
+          rm -rf "$OUT" "$WT" "$QWT"; mkdir -p "$OUT"
+          printf 'initializing\n' >"$OUT/STAGE"
+          printf 'source_requests=0\nroute_executions=0\nreviewed_source_admissions=4\npromotion_candidates=4\nheld_open_cells=2\nmatrix_updates=0\nfield_terminalizations=0\nrow_state_mutations=0\nclass_closed=false\ncumulative_ledger_effect=none\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' >"$OUT/BOUNDARY"
+          exec > >(tee "$OUT/materialize.log") 2>&1
+          finish(){ rc=$?; trap - EXIT; printf '%s\n' "$rc" >"$OUT/EXIT_CODE"; (cd "$OUT"; find . -type f ! -name SHA256SUMS -print0|sort -z|xargs -0 sha256sum >SHA256SUMS); exit "$rc"; }
+          trap finish EXIT
+
+          printf 'bind-live-refs\n' >"$OUT/STAGE"
+          test "${{ github.event.pull_request.head.ref }}" = "$CARRIER_BRANCH"
+          test "${{ github.event.pull_request.head.sha }}" = "$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$CURRENT_MAIN"
+          test "$(git rev-list --count "$CURRENT_MAIN"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CURRENT_MAIN" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" HEAD)" = "$CARRIER_PATH"
+          test "$(git ls-remote --heads origin refs/heads/main|awk '{print $1}')" = "$CURRENT_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH"|awk '{print $1}')" = "$SOURCE_PRODUCT"
+          git fetch --no-tags origin "refs/heads/main:refs/remotes/origin/main" "refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse "$SOURCE_PRODUCT^")" = "$PRIOR_PARENT"
+          test "$(git rev-parse "$SOURCE_PRODUCT^{tree}")" = "$SOURCE_TREE"
+          git rev-parse "$CURRENT_MAIN^{tree}" >"$OUT/current-main-tree.txt"
+          git diff --name-only "$PRIOR_PARENT" "$CURRENT_MAIN"|sort >"$OUT/main-delta.txt"
+          git diff --name-only "$PRIOR_PARENT" "$SOURCE_PRODUCT"|sort >"$OUT/product-paths.txt"
+          test "$(wc -l <"$OUT/product-paths.txt")" -eq 13
+          comm -12 "$OUT/main-delta.txt" "$OUT/product-paths.txt" >"$OUT/overlap.txt"
+          test ! -s "$OUT/overlap.txt"
+
+          printf 'repair-and-rebind\n' >"$OUT/STAGE"
+          git worktree add --detach "$WT" "$SOURCE_PRODUCT"
+          cd "$WT"
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          old=os.environ['PRIOR_PARENT']; new=os.environ['CURRENT_MAIN']
+          wf=Path(os.environ['WORKFLOW_PATH']); lines=wf.read_text().splitlines(); out=[]; n=0; i=0
+          while i<len(lines):
+              if i+1<len(lines) and lines[i]=="          printf '%s" and lines[i+1]=="' \"$PRODUCT_PARENT\" >\"$OUT/product-parent.txt\"":
+                  out.append("          printf '%s\\n' \"$PRODUCT_PARENT\" >\"$OUT/product-parent.txt\""); n+=1; i+=2
+              else: out.append(lines[i]); i+=1
+          if n!=1: raise SystemExit(f'workflow repair denominator={n}')
+          text='\n'.join(out)+'\n'
+          line=f'      PRODUCT_PARENT: {old}'
+          if text.count(line)!=1: raise SystemExit('workflow parent denominator')
+          text=text.replace(line,f'      PRODUCT_PARENT: {new}',1)
+          anchor='          test "${{ github.event.pull_request.head.ref }}" = "$PRODUCT_BRANCH"\n'
+          lease='          test "$(git ls-remote --heads origin refs/heads/main | awk \'{print $1}\')" = "$PRODUCT_PARENT"\n'
+          if text.count(anchor)!=1: raise SystemExit('opening lease denominator')
+          text=text.replace(anchor,anchor+lease,1)
+          anchor2='      - name: Preserve exact-head qualification\n'
+          step="      - name: Reconfirm live canonical parent\n        if: github.event_name == 'pull_request'\n        shell: bash\n        run: |\n          set -Eeuo pipefail\n          test \"$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')\" = \"$PRODUCT_PARENT\"\n"
+          if text.count(anchor2)!=1: raise SystemExit('closing lease denominator')
+          wf.write_text(text.replace(anchor2,step+anchor2,1))
+          builder=Path(os.environ['BUILDER_PATH']); b=builder.read_text(); needle=f'canonical_parent:"{old}",product_branch:'
+          if b.count(needle)!=1: raise SystemExit('builder parent denominator')
+          builder.write_text(b.replace(needle,f'canonical_parent:"{new}",product_branch:',1))
+          sha=lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+          schema_path=Path(os.environ['SCHEMA_PATH']); schema=json.loads(schema_path.read_text()); c={'m':0,'w':0,'b':0}
+          def walk(v):
+              if isinstance(v,dict):
+                  x=v.get('const')
+                  if isinstance(x,dict) and x.get('object_type')=='product_manifest':
+                      if x.get('canonical_parent')!=old: raise SystemExit('schema parent mismatch')
+                      x['canonical_parent']=new; c['m']+=1
+                      for item in x.get('hashed_files',[]):
+                          if item.get('path')==os.environ['WORKFLOW_PATH']:
+                              item['bytes']=wf.stat().st_size; item['sha256']=sha(wf); c['w']+=1
+                          if item.get('path')==os.environ['BUILDER_PATH']:
+                              item['bytes']=builder.stat().st_size; item['sha256']=sha(builder); c['b']+=1
+                  for z in v.values(): walk(z)
+              elif isinstance(v,list):
+                  for z in v: walk(z)
+          walk(schema)
+          if c!={'m':1,'w':1,'b':1}: raise SystemExit(f'schema denominator={c}')
+          schema_path.write_text(json.dumps(schema,indent=2,sort_keys=True)+'\n')
+          PY
+          node "$BUILDER_PATH" --write
+          test "$(git hash-object -w "$WORKFLOW_PATH")" = "$REBOUND_WORKFLOW_BLOB"
+          test "$(git hash-object -w "$BUILDER_PATH")" = "$REBOUND_BUILDER_BLOB"
+          test "$(git hash-object -w "$MANIFEST_PATH")" = "$REBOUND_MANIFEST_BLOB"
+          test "$(git hash-object -w "$SCHEMA_PATH")" = "$REBOUND_SCHEMA_BLOB"
+          python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2' 'jsonschema==4.25.1'
+          cat >"$OUT/recursive-schema.py" <<'PYSCHEMA'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          schema=json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json').read_text())
+          Draft202012Validator.check_schema(schema)
+          validator=Draft202012Validator(schema)
+          root=Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication')
+          names=['capture-custody.json','source-adjudications.json','field-adjudications.json','promotion-candidate-protocol.json','adjudication-summary.json','index.json','product-manifest.json']
+          for name in names:
+              value=json.loads((root/name).read_text())
+              errors=sorted(validator.iter_errors(value),key=lambda e:list(e.path))
+              if errors: raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
+          print(f'recursive_schema_validation=pass objects={len(names)}')
+          PYSCHEMA
+          python -c "import yaml; yaml.safe_load(open('$WORKFLOW_PATH'))"
+          node --check "$BUILDER_PATH"
+          node "$BUILDER_PATH"
+          python "$OUT/recursive-schema.py"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+
+          printf 'prove-old-repair-and-compose-current\n' >"$OUT/STAGE"
+          make_candidate(){ local base=$1 date=$2 index=$3 ledger=$4 p blob tree commit; rm -f "$index"; GIT_INDEX_FILE="$index" git read-tree "$base"; : >"$ledger"; while IFS= read -r p; do blob=$(git hash-object -w "$p"); GIT_INDEX_FILE="$index" git update-index --add --cacheinfo "100644,$blob,$p"; printf '%s\t%s\n' "$p" "$blob" >>"$ledger"; done <"$OUT/product-paths.txt"; tree=$(GIT_INDEX_FILE="$index" git write-tree); export GIT_AUTHOR_NAME='github-actions[bot]' GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com' GIT_COMMITTER_NAME='github-actions[bot]' GIT_COMMITTER_EMAIL='41898282+github-actions[bot]@users.noreply.github.com' GIT_AUTHOR_DATE="$date" GIT_COMMITTER_DATE="$date"; commit=$(printf '%s\n' 'Adjudicate RD-04 postpromotion Montana and North Dakota captures'|git commit-tree "$tree" -p "$base"); printf '%s\n%s\n' "$tree" "$commit"; }
+          mapfile -t old_pair < <(make_candidate "$PRIOR_PARENT" '2026-08-08T10:15:00Z' "$OUT/old.index" "$OUT/rebound-blob-ledger.tsv")
+          # The rebound files intentionally differ from the artifact's old-parent candidate. Reconstruct the artifact identity separately from the source commit.
+          git restore --staged --worktree .
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          wf=Path(os.environ['WORKFLOW_PATH']); lines=wf.read_text().splitlines(); out=[]; n=0; i=0
+          while i<len(lines):
+              if i+1<len(lines) and lines[i]=="          printf '%s" and lines[i+1]=="' \"$PRODUCT_PARENT\" >\"$OUT/product-parent.txt\"": out.append("          printf '%s\\n' \"$PRODUCT_PARENT\" >\"$OUT/product-parent.txt\""); n+=1; i+=2
+              else: out.append(lines[i]); i+=1
+          if n!=1: raise SystemExit(n)
+          wf.write_text('\n'.join(out)+'\n')
+          s=Path(os.environ['SCHEMA_PATH']); v=json.loads(s.read_text()); c={'bytes':0,'sha':0}
+          def walk(x):
+              if isinstance(x,dict):
+                  if x.get('path')==os.environ['WORKFLOW_PATH']:
+                      if x.get('bytes')==10911: x['bytes']=10912; c['bytes']+=1
+                      if x.get('sha256')=='1a01f19e09fe500c2bf450379147c77aff08643dd132c95d42efa6941eaf612b': x['sha256']='9077132b5bbc18349bc96cb42bd08982a099541b2424f6499c2bc9b7ae4a7f21'; c['sha']+=1
+                  for z in x.values(): walk(z)
+              elif isinstance(x,list):
+                  for z in x: walk(z)
+          walk(v)
+          if c!={'bytes':1,'sha':1}: raise SystemExit(c)
+          s.write_text(json.dumps(v,indent=2,sort_keys=True)+'\n')
+          PY
+          node "$BUILDER_PATH" --write
+          mapfile -t exact_old < <(make_candidate "$PRIOR_PARENT" '2026-08-08T08:00:00Z' "$OUT/exact-old.index" "$OUT/exact-old-blob-ledger.tsv")
+          test "${exact_old[0]}" = "$OLD_TREE"; test "${exact_old[1]}" = "$OLD_COMMIT"
+          printf '%s\n' "${exact_old[0]}" >"$OUT/exact-old-tree.txt"; printf '%s\n' "${exact_old[1]}" >"$OUT/exact-old-commit.txt"
+          git restore --staged --worktree .
+          # Reapply the already authenticated rebound files from their Git objects.
+          git show "$REBOUND_WORKFLOW_BLOB" >"$WORKFLOW_PATH"
+          git show "$REBOUND_BUILDER_BLOB" >"$BUILDER_PATH"
+          git show "$REBOUND_MANIFEST_BLOB" >"$MANIFEST_PATH"
+          git show "$REBOUND_SCHEMA_BLOB" >"$SCHEMA_PATH"
+          mapfile -t current_pair < <(make_candidate "$CURRENT_MAIN" '2026-08-08T10:15:00Z' "$OUT/current.index" "$OUT/current-blob-ledger.tsv")
+          CURRENT_TREE=${current_pair[0]}; CURRENT_COMMIT=${current_pair[1]}; export CURRENT_TREE CURRENT_COMMIT
+          printf '%s\n' "$CURRENT_TREE" >"$OUT/current-tree.txt"; printf '%s\n' "$CURRENT_COMMIT" >"$OUT/current-commit.txt"
+          test "$(git diff-tree --no-commit-id --name-only -r "$CURRENT_COMMIT"|sort|wc -l)" -eq 13
+
+          printf 'qualify-current-main-candidate\n' >"$OUT/STAGE"
+          git worktree add --detach "$QWT" "$CURRENT_COMMIT"
+          cd "$QWT"
+          test "$(git rev-parse HEAD^)" = "$CURRENT_MAIN"
+          test "$(git rev-list --count "$CURRENT_MAIN"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CURRENT_MAIN" HEAD|sort|wc -l)" -eq 13
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" HEAD|sort|wc -l)" -eq 13
+          test -z "$(git diff --name-only --diff-filter=MD "$CURRENT_MAIN" HEAD)"
+          test -z "$(git diff --name-only "$CURRENT_MAIN" HEAD|grep -E '(^|/)(\.tmp|trigger)(/|$)' || true)"
+          git diff --check "$CURRENT_MAIN" HEAD
+          test "$(git hash-object "$WORKFLOW_PATH")" = "$REBOUND_WORKFLOW_BLOB"
+          test "$(git hash-object "$BUILDER_PATH")" = "$REBOUND_BUILDER_BLOB"
+          test "$(git hash-object "$MANIFEST_PATH")" = "$REBOUND_MANIFEST_BLOB"
+          test "$(git hash-object "$SCHEMA_PATH")" = "$REBOUND_SCHEMA_BLOB"
+          python -c "import yaml; yaml.safe_load(open('$WORKFLOW_PATH'))"
+          node "$BUILDER_PATH"
+          python "$OUT/recursive-schema.py"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+          git restore --staged --worktree .
+          git clean -fdx
+          node "$BUILDER_PATH" --write
+          node "$BUILDER_PATH"
+          python "$OUT/recursive-schema.py"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          test "$(git hash-object "$WORKFLOW_PATH")" = "$REBOUND_WORKFLOW_BLOB"
+          test "$(git hash-object "$BUILDER_PATH")" = "$REBOUND_BUILDER_BLOB"
+          test "$(git hash-object "$MANIFEST_PATH")" = "$REBOUND_MANIFEST_BLOB"
+          test "$(git hash-object "$SCHEMA_PATH")" = "$REBOUND_SCHEMA_BLOB"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          printf 'seal-candidate-receipt\n' >"$OUT/STAGE"
+          test "$(git ls-remote --heads origin refs/heads/main|awk '{print $1}')" = "$CURRENT_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH"|awk '{print $1}')" = "$SOURCE_PRODUCT"
+          git archive --format=tar "$CURRENT_COMMIT" $(cat "$OUT/product-paths.txt")|xz -9e >"$OUT/product.tar.xz"
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          out=Path(os.environ['RUNNER_TEMP'])/'ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v2'; a=out/'product.tar.xz'
+          main_tree=(out/'current-main-tree.txt').read_text().strip()
+          r={'schema_version':'ssc-rd04-postpromotion-next-adjudication-current-main-rebind-receipt@2','current_main':os.environ['CURRENT_MAIN'],'current_main_tree':main_tree,'source_product':os.environ['SOURCE_PRODUCT'],'exact_old_commit':os.environ['OLD_COMMIT'],'exact_old_tree':os.environ['OLD_TREE'],'qualified_local_candidate_commit':os.environ['CURRENT_COMMIT'],'qualified_candidate_tree':os.environ['CURRENT_TREE'],'product_branch':os.environ['PRODUCT_BRANCH'],'permanent_path_count':13,'addition_only':True,'main_delta_overlap':0,'ref_mutations':0,'connector_publication_required':True,'reviewed_source_admissions':4,'promotion_candidates':4,'held_open_cells':2,'matrix_updates':0,'field_terminalizations':0,'row_state_mutations':0,'class_closed':False,'cumulative_ledger_effect':'none','outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none','product_archive_bytes':a.stat().st_size,'product_archive_sha256':hashlib.sha256(a.read_bytes()).hexdigest()}
+          (out/'receipt.json').write_text(json.dumps(r,indent=2,sort_keys=True)+'\n')
+          PY
+          printf 'complete\n' >"$OUT/STAGE"
+      - name: Upload materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v2
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v2
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+      - name: Enforce materialization
+        if: always()
+        run: test '${{ steps.materialize.outcome }}' = success
