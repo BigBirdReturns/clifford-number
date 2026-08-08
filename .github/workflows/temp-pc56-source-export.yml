@@ -15,26 +15,33 @@ jobs:
     env:
       EXPECTED_PARENT: 21afd8b3da1b7d06d2dada51929c63b60d6da66c
       OUT: /tmp/pc56-exact-current-main-source
+      CARRIER_PATH: .github/workflows/temp-pc56-source-export.yml
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
-      - name: Verify exact source parent and archive tracked tree
+      - name: Verify bounded carrier and archive exact source parent
         shell: bash
         run: |
           set -Eeuo pipefail
           mkdir -p "$OUT"
-          test "$(git show -s --format='%P' HEAD)" = "$EXPECTED_PARENT"
           git fetch --no-tags origin main "$EXPECTED_PARENT"
           test "$(git rev-parse "$EXPECTED_PARENT")" = "$EXPECTED_PARENT"
+          git merge-base --is-ancestor "$EXPECTED_PARENT" HEAD
+
+          git diff --name-status "$EXPECTED_PARENT" HEAD > "$OUT/carrier-delta.tsv"
+          cut -f2 "$OUT/carrier-delta.tsv" | sort -u > "$OUT/carrier-paths.txt"
+          test "$(wc -l < "$OUT/carrier-paths.txt" | tr -d ' ')" = 1
+          test "$(cat "$OUT/carrier-paths.txt")" = "$CARRIER_PATH"
           test "$(git rev-parse "$EXPECTED_PARENT^{tree}")" = "$(git show -s --format='%T' "$EXPECTED_PARENT")"
+
           printf '%s\n' "$EXPECTED_PARENT" > "$OUT/commit.txt"
           git rev-parse "$EXPECTED_PARENT^{tree}" > "$OUT/tree.txt"
           git ls-tree -r --full-tree "$EXPECTED_PARENT" > "$OUT/tree.tsv"
           git archive --format=tar "$EXPECTED_PARENT" | gzip -n -9 > "$OUT/source.tar.gz"
           sha256sum "$OUT/source.tar.gz" > "$OUT/source.tar.gz.sha256"
-          sha256sum "$OUT"/commit.txt "$OUT"/tree.txt "$OUT"/tree.tsv > "$OUT/SHA256SUMS"
+          sha256sum "$OUT"/commit.txt "$OUT"/tree.txt "$OUT"/tree.tsv "$OUT"/carrier-delta.tsv "$OUT"/carrier-paths.txt > "$OUT/SHA256SUMS"
           test "$(git status --porcelain | wc -l | tr -d ' ')" = 0
       - uses: actions/upload-artifact@v4
         with:
