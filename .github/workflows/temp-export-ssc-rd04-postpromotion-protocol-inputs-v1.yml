@@ -1,0 +1,294 @@
+name: TEMP export exact RD-04 postpromotion protocol inputs v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-export-ssc-rd04-postpromotion-protocol-inputs-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-export-ssc-rd04-postpromotion-protocol-inputs-v1
+  cancel-in-progress: true
+
+env:
+  CANONICAL_INPUT_PARENT: 3918c799f8b8dcdac49c33cec5c7bbd01ac428e4
+  OBSERVER_BRANCH: observer/ssc-rd04-postpromotion-protocol-input-export-v1
+  OBSERVER_PATH: .github/workflows/temp-export-ssc-rd04-postpromotion-protocol-inputs-v1.yml
+
+jobs:
+  export:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'observer/ssc-rd04-postpromotion-protocol-input-export-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Export exact canonical RD-04 corpus and URL denominator
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-postpromotion-protocol-input-export-v1
+          SLICE="$OUT/repository-slice"
+          rm -rf "$OUT"
+          mkdir -p "$SLICE"
+
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_INPUT_PARENT"
+          test "$(git rev-list --count "$CANONICAL_INPUT_PARENT"..HEAD)" = 1
+          test "$(git diff --name-only "$CANONICAL_INPUT_PARENT" HEAD)" = "$OBSERVER_PATH"
+          git diff --check "$CANONICAL_INPUT_PARENT" HEAD
+
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          git merge-base --is-ancestor "$CANONICAL_INPUT_PARENT" "$LIVE_MAIN"
+          INPUT_TREE="$(git rev-parse "$CANONICAL_INPUT_PARENT^{tree}")"
+          LIVE_TREE="$(git rev-parse "$LIVE_MAIN^{tree}")"
+          printf '%s\n' "$CANONICAL_INPUT_PARENT" > "$OUT/canonical-input-parent.txt"
+          printf '%s\n' "$INPUT_TREE" > "$OUT/canonical-input-tree.txt"
+          printf '%s\n' "$LIVE_MAIN" > "$OUT/live-main.txt"
+          printf '%s\n' "$LIVE_TREE" > "$OUT/live-main-tree.txt"
+
+          python - "$CANONICAL_INPUT_PARENT" "$OUT" "$SLICE" <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import os
+          import re
+          import subprocess
+          import sys
+          from pathlib import Path, PurePosixPath
+          from urllib.parse import urlsplit, urlunsplit
+
+          base = sys.argv[1]
+          out = Path(sys.argv[2])
+          slice_root = Path(sys.argv[3])
+
+          def run(*args: str, text: bool = True) -> str | bytes:
+              return subprocess.check_output(args, text=text)
+
+          all_paths = run('git', 'ls-tree', '-r', '--name-only', base).splitlines()
+          allowed_suffixes = {
+              '.json', '.jsonl', '.md', '.mjs', '.js', '.py', '.yml', '.yaml', '.txt', '.csv'
+          }
+          selected = []
+          for path in all_paths:
+              lower = path.lower()
+              suffix = PurePosixPath(path).suffix.lower()
+              if 'rd04' not in lower:
+                  continue
+              if suffix not in allowed_suffixes:
+                  continue
+              if path.startswith('build/') or '/build/' in path:
+                  continue
+              if '/.tmp/' in path or path.startswith('.tmp/'):
+                  continue
+              selected.append(path)
+          selected = sorted(set(selected))
+          if not selected:
+              raise SystemExit('no RD-04 files selected')
+
+          (out / 'selected-paths.txt').write_text('\n'.join(selected) + '\n', encoding='utf-8')
+          manifest = []
+          for path in selected:
+              data = run('git', 'show', f'{base}:{path}', text=False)
+              destination = slice_root / path
+              destination.parent.mkdir(parents=True, exist_ok=True)
+              destination.write_bytes(data)
+              tree_row = run('git', 'ls-tree', base, '--', path).strip()
+              fields = tree_row.split(None, 3)
+              if len(fields) < 4:
+                  raise SystemExit(f'missing tree row for {path}')
+              mode, kind, blob, _ = fields
+              observed_blob = run('git', 'hash-object', str(destination)).strip()
+              if observed_blob != blob:
+                  raise SystemExit(f'blob mismatch for {path}: {observed_blob} != {blob}')
+              manifest.append({
+                  'path': path,
+                  'mode': mode,
+                  'type': kind,
+                  'git_blob': blob,
+                  'bytes': len(data),
+                  'sha256': hashlib.sha256(data).hexdigest(),
+              })
+          (out / 'file-manifest.json').write_text(
+              json.dumps(manifest, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          (out / 'git-tree-rows.txt').write_text(
+              ''.join(run('git', 'ls-tree', base, '--', row['path']) for row in manifest),
+              encoding='utf-8',
+          )
+
+          exact_occurrences: list[dict] = []
+          json_occurrences: list[dict] = []
+          url_pattern = re.compile(r'https?://[^\s<>"\'`]+')
+          trailing = '),.;]}>'
+
+          def clean_url(value: str) -> str:
+              return value.rstrip(trailing)
+
+          def walk_json(value, pointer: str, source: str) -> None:
+              if isinstance(value, dict):
+                  for key, child in value.items():
+                      escaped = str(key).replace('~', '~0').replace('/', '~1')
+                      walk_json(child, f'{pointer}/{escaped}', source)
+              elif isinstance(value, list):
+                  for index, child in enumerate(value):
+                      walk_json(child, f'{pointer}/{index}', source)
+              elif isinstance(value, str):
+                  for match in url_pattern.findall(value):
+                      json_occurrences.append({
+                          'source_path': source,
+                          'json_pointer': pointer or '/',
+                          'url': clean_url(match),
+                      })
+
+          for row in manifest:
+              path = row['path']
+              file_path = slice_root / path
+              try:
+                  text = file_path.read_text(encoding='utf-8')
+              except UnicodeDecodeError:
+                  continue
+              for line_number, line in enumerate(text.splitlines(), 1):
+                  for match in url_pattern.findall(line):
+                      exact_occurrences.append({
+                          'source_path': path,
+                          'line': line_number,
+                          'url': clean_url(match),
+                      })
+              suffix = file_path.suffix.lower()
+              if suffix == '.json':
+                  try:
+                      walk_json(json.loads(text), '', path)
+                  except json.JSONDecodeError:
+                      pass
+              elif suffix == '.jsonl':
+                  for line_number, line in enumerate(text.splitlines(), 1):
+                      if not line.strip():
+                          continue
+                      try:
+                          walk_json(json.loads(line), f'/line/{line_number}', path)
+                      except json.JSONDecodeError:
+                          continue
+
+          def write_jsonl(path: Path, rows: list[dict]) -> None:
+              with path.open('w', encoding='utf-8') as handle:
+                  for row in rows:
+                      handle.write(json.dumps(row, sort_keys=True, ensure_ascii=False) + '\n')
+
+          exact_occurrences.sort(key=lambda row: (row['url'], row['source_path'], row['line']))
+          json_occurrences.sort(key=lambda row: (row['url'], row['source_path'], row['json_pointer']))
+          write_jsonl(out / 'text-url-occurrences.jsonl', exact_occurrences)
+          write_jsonl(out / 'json-url-occurrences.jsonl', json_occurrences)
+
+          exact_urls = sorted({row['url'] for row in exact_occurrences} | {row['url'] for row in json_occurrences})
+
+          def normalize_url(value: str) -> str:
+              parts = urlsplit(value)
+              scheme = parts.scheme.lower()
+              host = (parts.hostname or '').lower()
+              port = parts.port
+              if port and not ((scheme == 'http' and port == 80) or (scheme == 'https' and port == 443)):
+                  host = f'{host}:{port}'
+              path = parts.path or '/'
+              return urlunsplit((scheme, host, path, parts.query, ''))
+
+          normalized_urls = sorted({normalize_url(url) for url in exact_urls})
+          exact_payload = ''.join(f'{url}\n' for url in exact_urls).encode('utf-8')
+          normalized_payload = ''.join(f'{url}\n' for url in normalized_urls).encode('utf-8')
+          (out / 'unique-exact-urls.txt').write_bytes(exact_payload)
+          (out / 'unique-normalized-urls.txt').write_bytes(normalized_payload)
+          (out / 'unique-exact-urls.sha256').write_text(
+              hashlib.sha256(exact_payload).hexdigest() + '\n', encoding='utf-8'
+          )
+          (out / 'unique-normalized-urls.sha256').write_text(
+              hashlib.sha256(normalized_payload).hexdigest() + '\n', encoding='utf-8'
+          )
+
+          receipt = {
+              'schema_version': 'ssc-rd04-postpromotion-protocol-input-export@1',
+              'canonical_input_parent': base,
+              'canonical_input_tree': run('git', 'rev-parse', f'{base}^{{tree}}').strip(),
+              'selected_file_count': len(manifest),
+              'selected_file_bytes': sum(row['bytes'] for row in manifest),
+              'text_url_occurrence_count': len(exact_occurrences),
+              'json_url_occurrence_count': len(json_occurrences),
+              'unique_exact_url_count': len(exact_urls),
+              'unique_normalized_url_count': len(normalized_urls),
+              'unique_exact_url_set_sha256': hashlib.sha256(exact_payload).hexdigest(),
+              'unique_normalized_url_set_sha256': hashlib.sha256(normalized_payload).hexdigest(),
+              'matrix_path': 'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json',
+              'remaining_open_census_path': 'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/remaining-open-field-census.json',
+              'source_requests': 0,
+              'matrix_updates': 0,
+              'field_terminalizations': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'authority': 'read_only_protocol_input_export',
+          }
+          (out / 'receipt.json').write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          print(json.dumps(receipt, sort_keys=True))
+          PY
+
+          git diff --name-only "$CANONICAL_INPUT_PARENT" "$LIVE_MAIN" | LC_ALL=C sort > "$OUT/intervening-paths.txt"
+          comm -12 "$OUT/selected-paths.txt" "$OUT/intervening-paths.txt" > "$OUT/intervening-rd04-overlap.txt"
+          test ! -s "$OUT/intervening-rd04-overlap.txt"
+
+          tar -C "$SLICE" -cJf "$OUT/rd04-repository-slice.tar.xz" .
+          python - "$OUT/receipt.json" "$LIVE_MAIN" "$LIVE_TREE" "$OUT/rd04-repository-slice.tar.xz" <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import sys
+          receipt_path = Path(sys.argv[1])
+          live_main = sys.argv[2]
+          live_tree = sys.argv[3]
+          archive = Path(sys.argv[4])
+          value = json.loads(receipt_path.read_text())
+          data = archive.read_bytes()
+          value.update({
+              'live_main_at_export': live_main,
+              'live_main_tree_at_export': live_tree,
+              'intervening_rd04_path_overlap': 0,
+              'repository_slice_archive_bytes': len(data),
+              'repository_slice_archive_sha256': hashlib.sha256(data).hexdigest(),
+          })
+          receipt_path.write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+          PY
+
+          (
+            cd "$OUT"
+            find . -type f ! -path './repository-slice/*' ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS > SHA256-CHECK.log
+          )
+
+      - name: Upload exact RD-04 protocol-input export
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-protocol-input-export-v1
+          path: /tmp/ssc-rd04-postpromotion-protocol-input-export-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
