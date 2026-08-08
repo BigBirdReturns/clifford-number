@@ -1,0 +1,94 @@
+name: TEMP export canonical RD-04 Montana row-state source v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-export-ssc-rd04-mt-row-state-current-main-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-export-ssc-rd04-mt-row-state-current-main-v1
+  cancel-in-progress: false
+
+env:
+  SOURCE_MAIN: b1d1d8afb6c957401a762bf9d0b2abc464bd5e07
+  SOURCE_TREE: 64f5b5e9e9d72bdf86ef6cf14d728b2ae996f834
+  CARRIER_BRANCH: agent/ssc-rd04-mt-row-state-current-main-export-v1
+  CARRIER_PATH: .github/workflows/temp-export-ssc-rd04-mt-row-state-current-main-v1.yml
+  OUTPUT_DIR: /tmp/ssc-rd04-mt-row-state-current-main-export-v1
+
+jobs:
+  export:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd04-mt-row-state-current-main-export-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Export exact canonical parent tree
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUTPUT_DIR"
+          mkdir -p "$OUTPUT_DIR"
+          exec > >(tee "$OUTPUT_DIR/export.log") 2>&1
+          test "$(git rev-parse HEAD^)" = "$SOURCE_MAIN"
+          test "$(git rev-list --count "$SOURCE_MAIN"..HEAD)" -eq 1
+          test "$(git diff --name-only "$SOURCE_MAIN" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$SOURCE_MAIN" HEAD)" = "$CARRIER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$SOURCE_MAIN" HEAD)"
+          test "$(git rev-parse "$SOURCE_MAIN^{tree}")" = "$SOURCE_TREE"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$SOURCE_MAIN"
+          git ls-tree -r --name-only "$SOURCE_MAIN" | LC_ALL=C sort > "$OUTPUT_DIR/tracked-paths.txt"
+          git archive --format=tar "$SOURCE_MAIN" | gzip -9 > "$OUTPUT_DIR/source.tar.gz"
+          tar -tzf "$OUTPUT_DIR/source.tar.gz" | sed 's:/$::' | grep -v '^$' | LC_ALL=C sort > "$OUTPUT_DIR/archive-paths.txt"
+          diff -u "$OUTPUT_DIR/tracked-paths.txt" "$OUTPUT_DIR/archive-paths.txt"
+          printf '%s\n' "$SOURCE_MAIN" > "$OUTPUT_DIR/source-main.txt"
+          printf '%s\n' "$SOURCE_TREE" > "$OUTPUT_DIR/source-tree.txt"
+          printf '%s\n' 0 > "$OUTPUT_DIR/EXIT_CODE"
+          printf '%s\n' complete > "$OUTPUT_DIR/STAGE"
+          printf '%s\n' \
+            'source_requests=0' \
+            'route_executions=0' \
+            'matrix_updates=0' \
+            'field_terminalizations=0' \
+            'row_state_mutations=0' \
+            'class_closed=false' \
+            'outside_human_dependency=false' > "$OUTPUT_DIR/BOUNDARY"
+          (
+            cd "$OUTPUT_DIR"
+            find . -maxdepth 1 -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+          )
+
+      - name: Upload exact source custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-current-main-source-v1
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Require terminal export
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(cat "$OUTPUT_DIR/EXIT_CODE")" = 0
+          test "$(cat "$OUTPUT_DIR/STAGE")" = complete
+          (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
+          test "$(cat "$OUTPUT_DIR/source-main.txt")" = "$SOURCE_MAIN"
+          test "$(cat "$OUTPUT_DIR/source-tree.txt")" = "$SOURCE_TREE"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$SOURCE_MAIN"
