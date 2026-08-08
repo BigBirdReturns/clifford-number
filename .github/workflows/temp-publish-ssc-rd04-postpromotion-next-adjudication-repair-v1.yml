@@ -1,0 +1,450 @@
+name: TEMP publish repaired RD-04 postpromotion adjudication candidate v1
+
+on:
+  push:
+    branches:
+      - agent/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1
+    paths:
+      - '.github/workflows/temp-publish-ssc-rd04-postpromotion-next-adjudication-repair-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+
+concurrency:
+  group: temp-publish-ssc-rd04-postpromotion-next-adjudication-repair-v1
+  cancel-in-progress: false
+
+env:
+  LIVE_MAIN_LEASE: a18f19ddc923e553848a5165cdf29fb1b9add97a
+  CANONICAL_PARENT: 91b386df809079884825b19a6b5d864b6e739172
+  PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-product-v1
+  OLD_PRODUCT_HEAD: 0e79772a84e99bce1a1ca9e78209c9ae5b55637a
+  OLD_PRODUCT_TREE: f3031844264107b0b329e7dd9af175eea8dd2456
+  SOURCE_REPAIR_RUN: '31246302728'
+  SOURCE_ARTIFACT_ID: '9018606331'
+  SOURCE_ARTIFACT_NAME: ssc-rd04-postpromotion-next-adjudication-workflow-repair-v1
+  SOURCE_ARTIFACT_BYTES: '297520724'
+  SOURCE_ARTIFACT_DIGEST: sha256:b7ab5b8ee55ba0a9d8d00fe7ce5b41e89b3109bbe0c717b407813e529dae1ab2
+  EPHEMERAL_CANDIDATE: 92613e1896c861d562fc789980ee46b4ef832f6f
+  EXPECTED_REPAIRED_TREE: a1c47f564452683a1c0fc830801d945c6a9a4b20
+  REPAIRED_WORKFLOW_BLOB: 4099df5c71ea26cda54bcfa2dbc4b5528c82e7b7
+  REPAIRED_WORKFLOW_SHA256: 9077132b5bbc18349bc96cb42bd08982a099541b2424f6499c2bc9b7ae4a7f21
+  REPAIRED_MANIFEST_BLOB: d98146f793c7aba3d2212404ea887306f59cc13b
+  REPAIRED_MANIFEST_SHA256: 2eb34993c661e88879b8acefea3a2e112a52ef54083984cf2f5b761f8db69a38
+  REPAIRED_SCHEMA_BLOB: 81c4857e67cb1eeb84980eb3845af48a5fdb3b17
+  REPAIRED_SCHEMA_SHA256: 6b197f44617599db9f7f155dad00ced800f531255eaa5fd46788b9a689b80126
+
+jobs:
+  publish:
+    if: github.event_name == 'workflow_dispatch' || github.ref_name == 'agent/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Reconstruct, qualify, and publish exact repaired candidate
+        id: publisher
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          OUT=/tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1
+          SRC="$OUT/source-artifact"
+          WT="$OUT/candidate-worktree"
+          rm -rf "$OUT"
+          mkdir -p "$OUT" "$SRC"
+          exec > >(tee "$OUT/publisher.log") 2>&1
+          stage=bootstrap
+
+          on_error() {
+            code=$?
+            set +e
+            printf '%s\n' "$code" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            python - "$OUT/receipt.json" "$code" "$stage" <<'PYFAIL'
+          from pathlib import Path
+          import json
+          import os
+          import sys
+
+          output = Path(sys.argv[1])
+          value = {
+              'schema_version': 'ssc-rd04-postpromotion-next-adjudication-repair-publisher@1',
+              'state': 'failed_closed',
+              'exit_code': int(sys.argv[2]),
+              'failed_or_final_stage': sys.argv[3],
+              'live_main_lease': os.environ['LIVE_MAIN_LEASE'],
+              'canonical_parent': os.environ['CANONICAL_PARENT'],
+              'product_branch': os.environ['PRODUCT_BRANCH'],
+              'old_product_head': os.environ['OLD_PRODUCT_HEAD'],
+              'source_repair_run': int(os.environ['SOURCE_REPAIR_RUN']),
+              'source_artifact_id': int(os.environ['SOURCE_ARTIFACT_ID']),
+              'source_artifact_digest': os.environ['SOURCE_ARTIFACT_DIGEST'],
+              'expected_repaired_tree': os.environ['EXPECTED_REPAIRED_TREE'],
+              'published_candidate': None,
+              'published_tree': None,
+              'product_ref_updated': False,
+              'source_requests_executed': 0,
+              'route_executions': 0,
+              'reviewed_source_admissions': 4,
+              'promotion_candidates': 4,
+              'held_open_cells': 2,
+              'matrix_updates': 0,
+              'field_terminalizations': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'authority': 'failure_custody_only',
+          }
+          output.write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+          PYFAIL
+            exit "$code"
+          }
+          trap on_error ERR
+          set -Eeuo pipefail
+
+          stage=bind_publisher
+          SELF_PATH='.github/workflows/temp-publish-ssc-rd04-postpromotion-next-adjudication-repair-v1.yml'
+          test "$(git rev-parse HEAD^)" = "$LIVE_MAIN_LEASE"
+          test "$(git rev-list --count "$LIVE_MAIN_LEASE"..HEAD)" -eq 1
+          test "$(git diff --name-only "$LIVE_MAIN_LEASE" HEAD)" = "$SELF_PATH"
+          test "$(git diff --name-only --diff-filter=A "$LIVE_MAIN_LEASE" HEAD)" = "$SELF_PATH"
+          git diff --check "$LIVE_MAIN_LEASE" HEAD
+
+          git fetch --no-tags origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse origin/main)" = "$LIVE_MAIN_LEASE"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH")" = "$OLD_PRODUCT_HEAD"
+          test "$(git rev-parse "$OLD_PRODUCT_HEAD^{tree}")" = "$OLD_PRODUCT_TREE"
+          test "$(git rev-parse "$OLD_PRODUCT_HEAD^")" = "$CANONICAL_PARENT"
+          test "$(git rev-list --count "$CANONICAL_PARENT".."$OLD_PRODUCT_HEAD")" -eq 1
+          git merge-base --is-ancestor "$CANONICAL_PARENT" "$LIVE_MAIN_LEASE"
+
+          cat > "$OUT/product-paths.txt" <<'EOF_PATHS'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/adjudication-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/capture-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/field-adjudications.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/promotion-candidate-protocol.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/source-adjudications.json
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-next-adjudication.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          EOF_PATHS
+          sort -o "$OUT/product-paths.txt" "$OUT/product-paths.txt"
+          git diff --name-only "$CANONICAL_PARENT" "$LIVE_MAIN_LEASE" | sort > "$OUT/intervening-main-paths.txt"
+          comm -12 "$OUT/product-paths.txt" "$OUT/intervening-main-paths.txt" > "$OUT/intervening-product-overlap.txt"
+          test ! -s "$OUT/intervening-product-overlap.txt"
+
+          stage=download_repair_artifact
+          curl -fsSL -L \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ARTIFACT_ID/zip" \
+            > "$OUT/source-artifact.zip"
+          test "$(stat -c %s "$OUT/source-artifact.zip")" = "$SOURCE_ARTIFACT_BYTES"
+          test "sha256:$(sha256sum "$OUT/source-artifact.zip" | cut -d' ' -f1)" = "$SOURCE_ARTIFACT_DIGEST"
+          unzip -t "$OUT/source-artifact.zip" > "$OUT/source-zip-test.log"
+          unzip -q "$OUT/source-artifact.zip" -d "$SRC"
+          test "$(cat "$SRC/EXIT_CODE")" = 0
+          test "$(cat "$SRC/STAGE")" = complete
+          test "$(cat "$SRC/candidate-commit.txt")" = "$EPHEMERAL_CANDIDATE"
+          test "$(cat "$SRC/candidate-tree.txt")" = "$EXPECTED_REPAIRED_TREE"
+          (
+            cd "$SRC"
+            sha256sum -c SHA256SUMS
+          ) > "$OUT/source-internal-check.log"
+
+          cat > "$OUT/repaired-paths.txt" <<'EOF_REPAIRED'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/product-manifest.json
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json
+          EOF_REPAIRED
+          sort -o "$OUT/repaired-paths.txt" "$OUT/repaired-paths.txt"
+          diff -u "$OUT/repaired-paths.txt" "$SRC/expected-repaired-paths.txt"
+          diff -u "$OUT/repaired-paths.txt" "$SRC/repaired-paths.txt"
+
+          test "$(stat -c %s "$SRC/repaired/workflow.yml")" = 10912
+          test "$(sha256sum "$SRC/repaired/workflow.yml" | cut -d' ' -f1)" = "$REPAIRED_WORKFLOW_SHA256"
+          test "$(git hash-object --no-filters "$SRC/repaired/workflow.yml")" = "$REPAIRED_WORKFLOW_BLOB"
+          test "$(stat -c %s "$SRC/repaired/product-manifest.json")" = 4885
+          test "$(sha256sum "$SRC/repaired/product-manifest.json" | cut -d' ' -f1)" = "$REPAIRED_MANIFEST_SHA256"
+          test "$(git hash-object --no-filters "$SRC/repaired/product-manifest.json")" = "$REPAIRED_MANIFEST_BLOB"
+          test "$(stat -c %s "$SRC/repaired/schema.json")" = 57221
+          test "$(sha256sum "$SRC/repaired/schema.json" | cut -d' ' -f1)" = "$REPAIRED_SCHEMA_SHA256"
+          test "$(git hash-object --no-filters "$SRC/repaired/schema.json")" = "$REPAIRED_SCHEMA_BLOB"
+
+          stage=reconstruct_candidate
+          git worktree add --detach "$WT" "$OLD_PRODUCT_HEAD"
+          install -m 0644 "$SRC/repaired/workflow.yml" "$WT/.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml"
+          install -m 0644 "$SRC/repaired/product-manifest.json" "$WT/data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/product-manifest.json"
+          install -m 0644 "$SRC/repaired/schema.json" "$WT/schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json"
+          git -C "$WT" add \
+            .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml \
+            data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/product-manifest.json \
+            schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json
+          git -C "$WT" diff --cached --name-only | sort > "$OUT/actual-repaired-paths.txt"
+          diff -u "$OUT/repaired-paths.txt" "$OUT/actual-repaired-paths.txt"
+          git -C "$WT" diff --cached --check
+
+          repaired_tree="$(git -C "$WT" write-tree)"
+          test "$repaired_tree" = "$EXPECTED_REPAIRED_TREE"
+          export GIT_AUTHOR_NAME='BigBirdReturns'
+          export GIT_AUTHOR_EMAIL='219768509+BigBirdReturns@users.noreply.github.com'
+          export GIT_AUTHOR_DATE='2026-08-08T07:31:20Z'
+          export GIT_COMMITTER_NAME='BigBirdReturns'
+          export GIT_COMMITTER_EMAIL='219768509+BigBirdReturns@users.noreply.github.com'
+          export GIT_COMMITTER_DATE='2026-08-08T07:31:20Z'
+          repaired_commit="$(printf '%s\n\n%s\n' \
+            'Repair RD-04 postpromotion adjudication workflow identity' \
+            'Replace only the invalid workflow, self-describing product manifest, and recursively closed schema while preserving all ten substantive product blobs and every authority ceiling.' \
+            | git -C "$WT" commit-tree "$repaired_tree" -p "$CANONICAL_PARENT")"
+          test "$(git -C "$WT" rev-parse "$repaired_commit^{tree}")" = "$EXPECTED_REPAIRED_TREE"
+          test "$(git -C "$WT" rev-parse "$repaired_commit^")" = "$CANONICAL_PARENT"
+          git -C "$WT" reset --hard "$repaired_commit"
+
+          git -C "$WT" diff --name-only --diff-filter=ACDMRTUXB "$CANONICAL_PARENT" "$repaired_commit" | sort > "$OUT/actual-product-paths.txt"
+          git -C "$WT" diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$repaired_commit" | sort > "$OUT/added-product-paths.txt"
+          diff -u "$OUT/product-paths.txt" "$OUT/actual-product-paths.txt"
+          diff -u "$OUT/product-paths.txt" "$OUT/added-product-paths.txt"
+          test "$(wc -l < "$OUT/actual-product-paths.txt")" -eq 13
+          test -z "$(grep -E '(^|/)(\.tmp|.*\.trigger)(/|$)' "$OUT/actual-product-paths.txt" || true)"
+          git -C "$WT" diff --check "$CANONICAL_PARENT" "$repaired_commit"
+          while IFS=$'\t' read -r path expected_blob; do
+            test "$(git -C "$WT" rev-parse "$repaired_commit:$path")" = "$expected_blob"
+          done < "$SRC/product-blob-ledger.tsv"
+
+          stage=qualify_candidate
+          cd "$WT"
+          python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+          python - <<'PYYAML'
+          from pathlib import Path
+          import yaml
+          path = Path('.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml')
+          value = yaml.safe_load(path.read_text())
+          if not isinstance(value, dict) or 'jobs' not in value:
+              raise SystemExit('workflow did not parse to a jobs-bearing mapping')
+          print('workflow_yaml_parse=pass')
+          PYYAML
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          git diff --exit-code -- data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication
+          python - <<'PYSCHEMA'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          schema = json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json').read_text())
+          Draft202012Validator.check_schema(schema)
+          validator = Draft202012Validator(schema)
+          root = Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication')
+          names = ['capture-custody.json','source-adjudications.json','field-adjudications.json','promotion-candidate-protocol.json','adjudication-summary.json','index.json','product-manifest.json']
+          for name in names:
+              value = json.loads((root / name).read_text())
+              errors = sorted(validator.iter_errors(value), key=lambda error: list(error.path))
+              if errors:
+                  raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
+          print(f'recursive_schema_validation=pass objects={len(names)}')
+          PYSCHEMA
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+          git restore --staged --worktree .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          cd "$GITHUB_WORKSPACE"
+
+          stage=publish_product_ref
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$OLD_PRODUCT_HEAD"
+          git push origin "$repaired_commit:refs/heads/$PRODUCT_BRANCH" \
+            --force-with-lease="refs/heads/$PRODUCT_BRANCH:$OLD_PRODUCT_HEAD"
+          published_head="$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')"
+          test "$published_head" = "$repaired_commit"
+
+          stage=complete
+          trap - ERR
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          printf '%s\n' complete > "$OUT/STAGE"
+          printf '%s\n' "$repaired_commit" > "$OUT/published-candidate.txt"
+          printf '%s\n' "$EXPECTED_REPAIRED_TREE" > "$OUT/published-tree.txt"
+          python - "$OUT/receipt.json" "$repaired_commit" <<'PYSUCCESS'
+          from pathlib import Path
+          import json
+          import os
+          import sys
+
+          value = {
+              'schema_version': 'ssc-rd04-postpromotion-next-adjudication-repair-publisher@1',
+              'state': 'published',
+              'exit_code': 0,
+              'failed_or_final_stage': 'complete',
+              'live_main_lease': os.environ['LIVE_MAIN_LEASE'],
+              'canonical_parent': os.environ['CANONICAL_PARENT'],
+              'product_branch': os.environ['PRODUCT_BRANCH'],
+              'old_product_head': os.environ['OLD_PRODUCT_HEAD'],
+              'old_product_tree': os.environ['OLD_PRODUCT_TREE'],
+              'source_repair_run': int(os.environ['SOURCE_REPAIR_RUN']),
+              'source_artifact_id': int(os.environ['SOURCE_ARTIFACT_ID']),
+              'source_artifact_name': os.environ['SOURCE_ARTIFACT_NAME'],
+              'source_artifact_bytes': int(os.environ['SOURCE_ARTIFACT_BYTES']),
+              'source_artifact_digest': os.environ['SOURCE_ARTIFACT_DIGEST'],
+              'ephemeral_candidate': os.environ['EPHEMERAL_CANDIDATE'],
+              'published_candidate': sys.argv[2],
+              'published_tree': os.environ['EXPECTED_REPAIRED_TREE'],
+              'product_ref_updated': True,
+              'permanent_path_count': 13,
+              'repaired_path_count': 3,
+              'unchanged_product_blob_count': 10,
+              'intervening_current_main_product_path_overlap': 0,
+              'workflow_sha256': os.environ['REPAIRED_WORKFLOW_SHA256'],
+              'workflow_git_blob': os.environ['REPAIRED_WORKFLOW_BLOB'],
+              'manifest_sha256': os.environ['REPAIRED_MANIFEST_SHA256'],
+              'manifest_git_blob': os.environ['REPAIRED_MANIFEST_BLOB'],
+              'schema_sha256': os.environ['REPAIRED_SCHEMA_SHA256'],
+              'schema_git_blob': os.environ['REPAIRED_SCHEMA_BLOB'],
+              'workflow_yaml_parse': 'pass',
+              'recursive_schema_validation': 'pass',
+              'focused_product_test': 'pass',
+              'no_magic_human_gate': 'pass',
+              'repository_release_gate': 'pass',
+              'clean_deterministic_replay': 'pass',
+              'source_requests_executed': 0,
+              'route_executions': 0,
+              'reviewed_source_admissions': 4,
+              'promotion_candidates': 4,
+              'held_open_cells': 2,
+              'matrix_updates': 0,
+              'field_terminalizations': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'authority': 'product_ref_publication_only',
+          }
+          Path(sys.argv[1]).write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+          PYSUCCESS
+          (
+            cd "$OUT"
+            find . -maxdepth 1 -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS > SHA256-CHECK.log
+          )
+
+      - name: Upload exact publisher evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1
+          path: |
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1/BOUNDARY
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1/EXIT_CODE
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1/STAGE
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1/SHA256SUMS
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1/SHA256-CHECK.log
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1/receipt.json
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1/publisher.log
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1/product-paths.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1/repaired-paths.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1/actual-product-paths.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1/actual-repaired-paths.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1/added-product-paths.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1/intervening-main-paths.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1/intervening-product-overlap.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1/source-zip-test.log
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1/source-internal-check.log
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1/published-candidate.txt
+            /tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1/published-tree.txt
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 9
+
+      - name: Report exact publisher outcome
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R=/tmp/ssc-rd04-postpromotion-next-adjudication-repair-publisher-v1/receipt.json
+          test -s "$R"
+          python - "$R" /tmp/comment.md <<'PYCOMMENT'
+          from pathlib import Path
+          import json
+          import sys
+
+          value = json.loads(Path(sys.argv[1]).read_text())
+          def shown(key, default='none'):
+              item = value.get(key)
+              return default if item is None or item == '' else str(item)
+
+          lines = [
+              'RD-04 postpromotion adjudication repaired-candidate publisher completed.',
+              '',
+              '```text',
+              f"state: {shown('state')}",
+              f"stage: {shown('failed_or_final_stage')}",
+              f"live_main_lease: {shown('live_main_lease')}",
+              f"canonical_parent: {shown('canonical_parent')}",
+              f"old_product_head: {shown('old_product_head')}",
+              f"published_candidate: {shown('published_candidate')}",
+              f"published_tree: {shown('published_tree')}",
+              f"product_ref_updated: {str(value.get('product_ref_updated', False)).lower()}",
+              f"source_artifact: {shown('source_artifact_id')}",
+              f"source_artifact_digest: {shown('source_artifact_digest')}",
+              f"permanent_paths: {shown('permanent_path_count', '0')}",
+              f"repaired_paths: {shown('repaired_path_count', '0')}",
+              f"unchanged_product_blobs: {shown('unchanged_product_blob_count', '0')}",
+              f"matrix_updates: {shown('matrix_updates', '0')}",
+              f"row_state_mutations: {shown('row_state_mutations', '0')}",
+              f"class_closed: {str(value.get('class_closed', False)).lower()}",
+              '```',
+              '',
+              'The object is a product-ref publication receipt, not a matrix promotion or source-acquisition result. It grants no route execution, field terminalization, row transition, class closure, cumulative-ledger, publication, adoption, or graph authority. The control question is whether the exact published head now receives all native PR gates while current main remains path-disjoint.',
+          ]
+          Path(sys.argv[2]).write_text('\n'.join(lines) + '\n')
+          PYCOMMENT
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+
+      - name: Preserve fail-closed conclusion
+        if: steps.publisher.outcome == 'failure'
+        shell: bash
+        run: exit 1
