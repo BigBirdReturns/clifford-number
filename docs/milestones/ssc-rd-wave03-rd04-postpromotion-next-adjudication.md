@@ -1,0 +1,7 @@
+# RD-04 postpromotion five-route source and field adjudication
+
+This product converts the exact five-route transport artifact into reviewed source decisions and six bounded field decisions without modifying the RD-04 matrix. Four first-party bodies are admitted for their frozen target fields, one North Dakota runtime shell is rejected for substantive use, four findings become promotion candidates, and two North Dakota cells remain open.
+
+The complete candidates are Montana authority/version, Montana section-specific effective dates, Montana geographic-waiver state at the November 1, 2025 effective boundary, and the North Dakota section 403 effective date. North Dakota authority/version remains open because its targeted manual-home body contains no visible release content. North Dakota waiver state remains open because the captured “None” period ends October 31, 2025 while the section is effective November 1, 2025.
+
+The capture artifact remains the raw-body authority. Repository files retain exact body, header, receipt, extracted-text, workflow, and artifact digests. This product performs no source request, makes no matrix update, terminalizes no field, mutates no row, closes no class, changes no cumulative ledger, and creates no publication, adoption, graph, national-prevalence, discrimination, racial-order, coordination, common-purpose, complete-compact, or outside-human effect.
