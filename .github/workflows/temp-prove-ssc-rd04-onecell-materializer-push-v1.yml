@@ -1,0 +1,157 @@
+name: TEMP prove RD-04 one-cell materializer push
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-prove-ssc-rd04-onecell-materializer-push-v1.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Observe exact materializer push run and publication
+        id: proof
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_HEAD: 8e240c1b743b8b9b25830b676288584dd1c725fb
+          TARGET_BRANCH: agent/ssc-rd04-postpromotion-nd-followup-one-cell-promotion-materializer-trigger-v1
+          TARGET_WORKFLOW_NAME: TEMP materialize RD-04 North Dakota one-cell promotion
+          PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-nd-followup-one-cell-promotion-v1
+          CANONICAL_MAIN: 79a7e18bfd45f1b1d893fa8b9683710891d4bbca
+          OBSERVER_BRANCH: observer/ssc-rd04-onecell-materializer-push-proof-v1
+          OBSERVER_PATH: .github/workflows/temp-prove-ssc-rd04-onecell-materializer-push-v1.yml
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-onecell-materializer-push-proof-v1"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          stage=bootstrap
+
+          finalize() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            if [[ ! -f "$OUT/receipt.json" ]]; then
+              jq -n \
+                --arg stage "$stage" \
+                --argjson exit_code "$rc" \
+                --arg target_head "$TARGET_HEAD" \
+                --arg target_branch "$TARGET_BRANCH" \
+                --arg product_branch "$PRODUCT_BRANCH" \
+                '{schema_version:"ssc-rd04-onecell-materializer-push-proof@1",state:"failed_closed",failed_or_final_stage:$stage,exit_code:$exit_code,target_head:$target_head,target_branch:$target_branch,product_branch:$product_branch,source_requests:0,matrix_updates:0,row_state_mutations:0,class_closed:false,outside_human_dependency:false}' > "$OUT/receipt.json"
+            fi
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          stage=bind_observer_topology
+          test "$GITHUB_EVENT_NAME" = pull_request
+          test "$GITHUB_HEAD_REF" = "$OBSERVER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_MAIN"
+          test "$(git rev-list --count "$CANONICAL_MAIN"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CANONICAL_MAIN" HEAD)" = "$OBSERVER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_MAIN" HEAD)" = "$OBSERVER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDRTUXB "$CANONICAL_MAIN" HEAD)"
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$CANONICAL_MAIN"
+
+          stage=locate_exact_push_run
+          RUN_ID=''
+          for attempt in $(seq 1 90); do
+            gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${TARGET_HEAD}&event=push&per_page=100" > "$OUT/runs.json"
+            RUN_ID="$(python - "$OUT/runs.json" "$TARGET_WORKFLOW_NAME" "$TARGET_HEAD" "$TARGET_BRANCH" <<'PY'
+          import json, sys
+          path, expected_name, expected_sha, expected_branch = sys.argv[1:]
+          runs = json.load(open(path)).get('workflow_runs', [])
+          matches = [
+              run for run in runs
+              if run.get('name') == expected_name
+              and run.get('event') == 'push'
+              and run.get('head_sha') == expected_sha
+              and run.get('head_branch') == expected_branch
+          ]
+          if len(matches) > 1:
+              raise SystemExit(f'ambiguous exact push runs: {[run.get("id") for run in matches]}')
+          if matches:
+              print(matches[0]['id'])
+          PY
+            )"
+            if [[ -n "$RUN_ID" ]]; then
+              gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}" > "$OUT/run.json"
+              STATUS="$(jq -r .status "$OUT/run.json")"
+              [[ "$STATUS" = completed ]] && break
+            fi
+            sleep 5
+          done
+          test -n "$RUN_ID"
+
+          stage=bind_run_job_and_artifacts
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}" > "$OUT/run.json"
+          jq -e \
+            --arg name "$TARGET_WORKFLOW_NAME" \
+            --arg sha "$TARGET_HEAD" \
+            --arg branch "$TARGET_BRANCH" \
+            '.name==$name and .event=="push" and .head_sha==$sha and .head_branch==$branch and .status=="completed"' \
+            "$OUT/run.json" >/dev/null
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/jobs?per_page=100" > "$OUT/jobs.json"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts?per_page=100" > "$OUT/artifacts.json"
+          PRODUCT_SHA="$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')"
+          RUN_CONCLUSION="$(jq -r .conclusion "$OUT/run.json")"
+          JOB_COUNT="$(jq '.jobs | length' "$OUT/jobs.json")"
+          ARTIFACT_COUNT="$(jq '.artifacts | length' "$OUT/artifacts.json")"
+          jq -n \
+            --argjson run_id "$RUN_ID" \
+            --arg conclusion "$RUN_CONCLUSION" \
+            --arg target_head "$TARGET_HEAD" \
+            --arg target_branch "$TARGET_BRANCH" \
+            --arg product_branch "$PRODUCT_BRANCH" \
+            --arg product_sha "$PRODUCT_SHA" \
+            --argjson job_count "$JOB_COUNT" \
+            --argjson artifact_count "$ARTIFACT_COUNT" \
+            '{schema_version:"ssc-rd04-onecell-materializer-push-proof@1",state:(if $conclusion=="success" and $product_sha!="" then "push_run_and_product_ref_verified" else "push_run_terminal_without_verified_product_ref" end),native_push_run:$run_id,native_push_conclusion:$conclusion,target_head:$target_head,target_branch:$target_branch,product_branch:$product_branch,product_sha:(if $product_sha=="" then null else $product_sha end),job_count:$job_count,artifact_count:$artifact_count,source_requests:0,matrix_updates:0,row_state_mutations:0,class_closed:false,outside_human_dependency:false}' > "$OUT/receipt.json"
+
+          stage=complete
+          test "$RUN_CONCLUSION" = success
+          test -n "$PRODUCT_SHA"
+
+      - name: Upload observer custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-onecell-materializer-push-proof-v1
+          path: ${{ runner.temp }}/ssc-rd04-onecell-materializer-push-proof-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Require verified terminal state
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-onecell-materializer-push-proof-v1"
+          test "${{ steps.proof.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '.state=="push_run_and_product_ref_verified" and .native_push_conclusion=="success" and .product_sha!=null' "$OUT/receipt.json" >/dev/null
