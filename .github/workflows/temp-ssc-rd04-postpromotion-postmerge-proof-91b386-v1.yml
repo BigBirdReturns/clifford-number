@@ -1,0 +1,253 @@
+name: TEMP prove RD-04 postpromotion merge 91b386 v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-ssc-rd04-postpromotion-postmerge-proof-91b386-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'observer/ssc-rd04-postpromotion-postmerge-proof-91b386-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      MERGE_COMMIT: 91b386df809079884825b19a6b5d864b6e739172
+      FIRST_PARENT: d99146fe88617e002463481732a54626aafe3924
+      PRODUCT_COMMIT: f45bc61a634082d6146182c880e4855ae8e8bc20
+      PRODUCT_PARENT: 3918c799f8b8dcdac49c33cec5c7bbd01ac428e4
+      PRODUCT_TREE: 0b209b311baf7de54bfd638fcbf042f08bc3bfc1
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+
+      - name: Prove exact merge topology, permanent blobs, gates, and replay
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CARRIER_PATH='.github/workflows/temp-ssc-rd04-postpromotion-postmerge-proof-91b386-v1.yml'
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-postmerge-proof-91b386-v1"
+          WORK="$RUNNER_TEMP/ssc-rd04-postpromotion-postmerge-worktree"
+          rm -rf "$OUT" "$WORK"
+          mkdir -p "$OUT"
+          printf 'initializing\n' > "$OUT/STAGE"
+          printf 'source_requests=0\nroute_executions=0\nsource_admissions=0\nfield_classifications=0\nfield_terminalizations=0\nrow_state_mutations=0\nclass_closed=false\ncumulative_ledger_effect=none\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' > "$OUT/BOUNDARY"
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            if test -d "$WORK/.git" || test -f "$WORK/.git"; then
+              git -C "$WORK" rev-parse HEAD > "$OUT/worktree-head.txt" 2>/dev/null || true
+              git -C "$WORK" rev-parse 'HEAD^{tree}' > "$OUT/worktree-tree.txt" 2>/dev/null || true
+              git -C "$WORK" status --porcelain=v1 --untracked-files=all > "$OUT/worktree-status.txt" 2>/dev/null || true
+            fi
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          printf 'verifying-carrier-and-merge-topology\n' > "$OUT/STAGE"
+          test "$(git rev-parse HEAD^)" = "$MERGE_COMMIT"
+          test "$(git rev-list --count HEAD^..HEAD)" -eq 1
+          test "$(git diff --name-only HEAD^ HEAD)" = "$CARRIER_PATH"
+          git diff --check HEAD^ HEAD
+          test "$(git rev-parse "$MERGE_COMMIT^1")" = "$FIRST_PARENT"
+          test "$(git rev-parse "$MERGE_COMMIT^2")" = "$PRODUCT_COMMIT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^")" = "$PRODUCT_PARENT"
+          test "$(git rev-list --count "$PRODUCT_PARENT".."$PRODUCT_COMMIT")" -eq 1
+          test "$(git rev-parse "$PRODUCT_COMMIT^{tree}")" = "$PRODUCT_TREE"
+
+          cat > "$OUT/expected-product-paths.txt" <<'EOF_PRODUCT_PATHS'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/frontier-selection.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/predecessor-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/previously-frozen-url-exclusion.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-query-contract.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/summary.json
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-next-protocol.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          EOF_PRODUCT_PATHS
+          sort -o "$OUT/expected-product-paths.txt" "$OUT/expected-product-paths.txt"
+
+          git diff --name-only --diff-filter=ACDMRTUXB "$PRODUCT_PARENT" "$PRODUCT_COMMIT" | sort > "$OUT/product-paths.txt"
+          git diff --name-only --diff-filter=A "$PRODUCT_PARENT" "$PRODUCT_COMMIT" | sort > "$OUT/product-added-paths.txt"
+          git diff --name-only --diff-filter=ACDMRTUXB "$FIRST_PARENT" "$MERGE_COMMIT" | sort > "$OUT/merge-added-surface.txt"
+          git diff --name-only --diff-filter=A "$FIRST_PARENT" "$MERGE_COMMIT" | sort > "$OUT/merge-added-paths.txt"
+          diff -u "$OUT/expected-product-paths.txt" "$OUT/product-paths.txt"
+          diff -u "$OUT/expected-product-paths.txt" "$OUT/product-added-paths.txt"
+          diff -u "$OUT/expected-product-paths.txt" "$OUT/merge-added-surface.txt"
+          diff -u "$OUT/expected-product-paths.txt" "$OUT/merge-added-paths.txt"
+          test "$(wc -l < "$OUT/product-paths.txt")" -eq 14
+
+          cat > "$OUT/expected-descendant-only-paths.txt" <<'EOF_DESCENDANT_PATHS'
+          data/intake/schoolhouse-legal-identity-current-frontier-v1/frontier-reconciliation.json
+          data/intake/schoolhouse-legal-identity-current-frontier-v1/product-manifest.json
+          tools/validate-schoolhouse-legal-identity-current-frontier.py
+          EOF_DESCENDANT_PATHS
+          sort -o "$OUT/expected-descendant-only-paths.txt" "$OUT/expected-descendant-only-paths.txt"
+          git diff --name-only --diff-filter=ACDMRTUXB "$PRODUCT_COMMIT" "$MERGE_COMMIT" | sort > "$OUT/actual-descendant-only-paths.txt"
+          diff -u "$OUT/expected-descendant-only-paths.txt" "$OUT/actual-descendant-only-paths.txt"
+          comm -12 "$OUT/expected-product-paths.txt" "$OUT/actual-descendant-only-paths.txt" > "$OUT/product-descendant-overlap.txt"
+          test ! -s "$OUT/product-descendant-overlap.txt"
+
+          printf 'verifying-permanent-blob-and-mode-congruence\n' > "$OUT/STAGE"
+          : > "$OUT/permanent-blob-ledger.tsv"
+          while IFS= read -r path; do
+            product_entry="$(git ls-tree "$PRODUCT_COMMIT" -- "$path")"
+            merge_entry="$(git ls-tree "$MERGE_COMMIT" -- "$path")"
+            test -n "$product_entry"
+            test "$product_entry" = "$merge_entry"
+            printf '%s\t%s\n' "$path" "$product_entry" >> "$OUT/permanent-blob-ledger.tsv"
+          done < "$OUT/expected-product-paths.txt"
+          test "$(wc -l < "$OUT/permanent-blob-ledger.tsv")" -eq 14
+
+          printf 'checking-out-exact-canonical-merge\n' > "$OUT/STAGE"
+          git worktree add --detach "$WORK" "$MERGE_COMMIT"
+          cd "$WORK"
+          test "$(git rev-parse HEAD)" = "$MERGE_COMMIT"
+
+          printf 'verifying-immutable-inputs\n' > "$OUT/STAGE"
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json)" = 42361e559db90777e1d60aea5530df5694c86dc6
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/remaining-open-field-census.json)" = e6ea2bb2722d084d0bb601864d4de5d9db4c7b47
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-summary.json)" = e774a9ed555364e4c6616c407a24001dd39f8f51
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-next-minimum-frontier-route-discovery-protocol/route-discovery-protocol.json)" = 35e09035659d54060547e84ab29d5ba440402b2c
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/selected-followup-protocol.json)" = 88cb73c7bae87a4031d1571d7dd5ebdcb58aa2f4
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/source-adjudications.json)" = 53f378c9c4a56ca4aab0312bba38150b071786af
+
+          printf 'validating-merged-product\n' > "$OUT/STAGE"
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          python -m py_compile tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          git diff --exit-code -- data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol
+          python - <<'PYSCHEMA'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          schema_path = Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.schema.json')
+          schema = json.loads(schema_path.read_text())
+          Draft202012Validator.check_schema(schema)
+          validator = Draft202012Validator(schema)
+          root = Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol')
+          names = [
+              'predecessor-custody.json',
+              'frontier-selection.json',
+              'previously-frozen-url-exclusion.json',
+              'route-ledger.json',
+              'route-query-contract.json',
+              'summary.json',
+              'product-manifest.json',
+          ]
+          for name in names:
+              value = json.loads((root / name).read_text())
+              errors = sorted(validator.iter_errors(value), key=lambda error: list(error.path))
+              if errors:
+                  error = errors[0]
+                  raise SystemExit(f'{name}: {error.message} at {list(error.path)}')
+          print(f'recursive_schema_validation=pass objects={len(names)}')
+          PYSCHEMA
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py --dry-run > "$OUT/execution-plan.json"
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+
+          printf 'running-complete-release-gate\n' > "$OUT/STAGE"
+          npm run release:check
+
+          printf 'proving-clean-replay\n' > "$OUT/STAGE"
+          git restore --staged --worktree .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          python tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py --dry-run > "$OUT/execution-plan-replay.json"
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          printf 'writing-receipt\n' > "$OUT/STAGE"
+          MERGE_TREE="$(git rev-parse 'HEAD^{tree}')"
+          printf '%s\n' "$MERGE_TREE" > "$OUT/merge-tree.txt"
+          python - "$OUT" "$MERGE_TREE" <<'PYRECEIPT'
+          import json
+          import sys
+          from pathlib import Path
+
+          out = Path(sys.argv[1])
+          receipt = {
+              'schema_version': 'ssc-rd04-postpromotion-postmerge-proof@1',
+              'merge_commit': '91b386df809079884825b19a6b5d864b6e739172',
+              'merge_tree': sys.argv[2],
+              'first_parent': 'd99146fe88617e002463481732a54626aafe3924',
+              'product_commit': 'f45bc61a634082d6146182c880e4855ae8e8bc20',
+              'product_parent': '3918c799f8b8dcdac49c33cec5c7bbd01ac428e4',
+              'product_tree': '0b209b311baf7de54bfd638fcbf042f08bc3bfc1',
+              'permanent_paths': 14,
+              'permanent_blob_mode_matches': 14,
+              'descendant_only_paths': 3,
+              'product_path_overlap': 0,
+              'closed_schema_objects': 7,
+              'adversarial_refusals': 38,
+              'dry_run_routes': 5,
+              'source_requests': 0,
+              'route_executions': 0,
+              'source_admissions': 0,
+              'field_classifications': 0,
+              'field_terminalizations': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          PYRECEIPT
+          printf 'complete\n' > "$OUT/STAGE"
+
+      - name: Preserve exact postmerge proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-postmerge-proof-91b386-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-postmerge-proof-91b386-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
