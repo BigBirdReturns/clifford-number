@@ -1,0 +1,263 @@
+name: TEMP qualify RD-04 postpromotion adjudication on current main
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-ssc-rd04-postpromotion-adjudication-current-main-qual-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.ref == 'observer/ssc-rd04-postpromotion-adjudication-current-main-qual-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      OBSERVED_MAIN: a18f19ddc923e553848a5165cdf29fb1b9add97a
+      PRODUCT_PARENT: 91b386df809079884825b19a6b5d864b6e739172
+      PRODUCT_HEAD: 0e79772a84e99bce1a1ca9e78209c9ae5b55637a
+      PRODUCT_TREE: f3031844264107b0b329e7dd9af175eea8dd2456
+      PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-product-v1
+      QUALIFIER_BRANCH: observer/ssc-rd04-postpromotion-adjudication-current-main-qual-v1
+      QUALIFIER_WORKFLOW: .github/workflows/temp-ssc-rd04-postpromotion-adjudication-current-main-qual-v1.yml
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install closed-schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+
+      - name: Qualify exact product and current-main integration
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-adjudication-current-main-qual-v1"
+          PRODUCT_WORK="$RUNNER_TEMP/ssc-rd04-postpromotion-adjudication-product-worktree"
+          MERGE_WORK="$RUNNER_TEMP/ssc-rd04-postpromotion-adjudication-merge-worktree"
+          rm -rf "$OUT" "$PRODUCT_WORK" "$MERGE_WORK"
+          mkdir -p "$OUT"
+          printf 'initializing\n' > "$OUT/STAGE"
+          printf 'source_requests=0\nroute_executions=0\nnew_transport_captures=0\nreviewed_source_admissions=0\npromotion_candidates=0\nmatrix_updates=0\nfield_terminalizations=0\nrow_state_mutations=0\nclass_closed=false\ncumulative_ledger_effect=none\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' > "$OUT/BOUNDARY"
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          focused_validate() {
+            node --check tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+            node --check tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+            node --check test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+            node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+            python - <<'PYSCHEMA'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          schema = json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json').read_text())
+          Draft202012Validator.check_schema(schema)
+          validator = Draft202012Validator(schema)
+          root = Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication')
+          names = [
+              'capture-custody.json',
+              'source-adjudications.json',
+              'field-adjudications.json',
+              'promotion-candidate-protocol.json',
+              'adjudication-summary.json',
+              'index.json',
+              'product-manifest.json',
+          ]
+          for name in names:
+              value = json.loads((root / name).read_text())
+              errors = sorted(validator.iter_errors(value), key=lambda error: list(error.path))
+              if errors:
+                  error = errors[0]
+                  raise SystemExit(f'{name}: {error.message} at {list(error.path)}')
+          print(f'recursive_schema_validation=pass objects={len(names)}')
+          PYSCHEMA
+            node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+            node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          }
+
+          printf 'binding-one-path-qualifier\n' > "$OUT/STAGE"
+          git rev-parse HEAD > "$OUT/qualifier-head.txt"
+          git rev-parse 'HEAD^{tree}' > "$OUT/qualifier-tree.txt"
+          test "${{ github.event_name }}" != pull_request || test "${{ github.event.pull_request.head.ref }}" = "$QUALIFIER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$OBSERVED_MAIN"
+          test "$(git rev-list --count "$OBSERVED_MAIN"..HEAD)" -eq 1
+          printf '%s\n' "$QUALIFIER_WORKFLOW" > "$OUT/expected-qualifier-paths.txt"
+          git diff --name-only --diff-filter=ACDMRTUXB "$OBSERVED_MAIN" HEAD | sort > "$OUT/actual-qualifier-paths.txt"
+          git diff --name-only --diff-filter=A "$OBSERVED_MAIN" HEAD | sort > "$OUT/added-qualifier-paths.txt"
+          diff -u "$OUT/expected-qualifier-paths.txt" "$OUT/actual-qualifier-paths.txt"
+          diff -u "$OUT/expected-qualifier-paths.txt" "$OUT/added-qualifier-paths.txt"
+          git diff --check "$OBSERVED_MAIN" HEAD
+
+          printf 'binding-live-main-and-product\n' > "$OUT/STAGE"
+          git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main" "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          PRODUCT_REF="refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$OBSERVED_MAIN"
+          test "$(git rev-parse "$PRODUCT_REF")" = "$PRODUCT_HEAD"
+          test "$(git rev-parse "$PRODUCT_REF^")" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "$PRODUCT_REF^{tree}")" = "$PRODUCT_TREE"
+          test "$(git merge-base "$PRODUCT_PARENT" "$OBSERVED_MAIN")" = "$PRODUCT_PARENT"
+          test "$(git rev-list --count "$PRODUCT_PARENT".."$OBSERVED_MAIN")" -eq 1
+
+          cat > "$OUT/expected-product-paths.txt" <<'EOF_PRODUCT_PATHS'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/adjudication-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/capture-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/field-adjudications.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/promotion-candidate-protocol.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/source-adjudications.json
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-next-adjudication.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          EOF_PRODUCT_PATHS
+          sort -o "$OUT/expected-product-paths.txt" "$OUT/expected-product-paths.txt"
+          git diff --name-only --diff-filter=ACDMRTUXB "$PRODUCT_PARENT" "$PRODUCT_HEAD" | sort > "$OUT/actual-product-paths.txt"
+          git diff --name-only --diff-filter=A "$PRODUCT_PARENT" "$PRODUCT_HEAD" | sort > "$OUT/added-product-paths.txt"
+          diff -u "$OUT/expected-product-paths.txt" "$OUT/actual-product-paths.txt"
+          diff -u "$OUT/expected-product-paths.txt" "$OUT/added-product-paths.txt"
+          test "$(wc -l < "$OUT/actual-product-paths.txt")" -eq 13
+          test -z "$(grep -E '(^|/)(\.tmp|.*\.trigger)(/|$)' "$OUT/actual-product-paths.txt" || true)"
+          git diff --check "$PRODUCT_PARENT" "$PRODUCT_HEAD"
+
+          cat > "$OUT/expected-current-main-paths.txt" <<'EOF_MAIN_PATHS'
+          data/crawl/candidates.jsonl
+          data/crawl/rejections.jsonl
+          data/crawl/state.json
+          EOF_MAIN_PATHS
+          sort -o "$OUT/expected-current-main-paths.txt" "$OUT/expected-current-main-paths.txt"
+          git diff --name-only --diff-filter=ACDMRTUXB "$PRODUCT_PARENT" "$OBSERVED_MAIN" | sort > "$OUT/actual-current-main-paths.txt"
+          diff -u "$OUT/expected-current-main-paths.txt" "$OUT/actual-current-main-paths.txt"
+          comm -12 "$OUT/expected-product-paths.txt" "$OUT/actual-current-main-paths.txt" > "$OUT/path-overlap.txt"
+          test ! -s "$OUT/path-overlap.txt"
+
+          printf 'qualifying-exact-product-head\n' > "$OUT/STAGE"
+          git worktree add --detach "$PRODUCT_WORK" "$PRODUCT_HEAD"
+          (
+            cd "$PRODUCT_WORK"
+            focused_validate
+            npm run release:check
+            git restore --staged --worktree .
+            git clean -fdx
+            node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs --write
+            focused_validate
+            git diff --check
+            git diff --exit-code
+            test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          )
+
+          printf 'constructing-current-main-integration\n' > "$OUT/STAGE"
+          git worktree add --detach "$MERGE_WORK" "$OBSERVED_MAIN"
+          (
+            cd "$MERGE_WORK"
+            git config user.name 'OpenAI Observer'
+            git config user.email 'openai-observer@users.noreply.github.com'
+            git config commit.gpgsign false
+            git merge --no-ff --no-edit "$PRODUCT_HEAD" | tee "$OUT/merge.log"
+            git rev-parse HEAD > "$OUT/integration-commit.txt"
+            git rev-parse 'HEAD^{tree}' > "$OUT/integration-tree.txt"
+            test "$(git rev-parse HEAD^1)" = "$OBSERVED_MAIN"
+            test "$(git rev-parse HEAD^2)" = "$PRODUCT_HEAD"
+            git diff --name-only --diff-filter=ACDMRTUXB "$OBSERVED_MAIN" HEAD | sort > "$OUT/integration-product-paths.txt"
+            git diff --name-only --diff-filter=A "$OBSERVED_MAIN" HEAD | sort > "$OUT/integration-added-product-paths.txt"
+            diff -u "$OUT/expected-product-paths.txt" "$OUT/integration-product-paths.txt"
+            diff -u "$OUT/expected-product-paths.txt" "$OUT/integration-added-product-paths.txt"
+            git diff --name-only --diff-filter=ACDMRTUXB "$PRODUCT_HEAD" HEAD | sort > "$OUT/integration-current-main-paths.txt"
+            diff -u "$OUT/expected-current-main-paths.txt" "$OUT/integration-current-main-paths.txt"
+            while IFS= read -r path; do
+              test "$(git rev-parse "$PRODUCT_HEAD:$path")" = "$(git rev-parse "HEAD:$path")"
+            done < "$OUT/expected-product-paths.txt"
+            focused_validate
+            npm run release:check
+            git diff --check
+            git diff --exit-code
+            git clean -fdx
+            focused_validate
+            git diff --check
+            git diff --exit-code
+            test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          )
+
+          printf 'writing-qualification-receipt\n' > "$OUT/STAGE"
+          python - "$OUT" <<'PYRECEIPT'
+          import json
+          import sys
+          from pathlib import Path
+
+          out = Path(sys.argv[1])
+          receipt = {
+              'schema_version': 'ssc-rd04-postpromotion-adjudication-current-main-qualification@1',
+              'qualifier_head': (out / 'qualifier-head.txt').read_text().strip(),
+              'observed_main': 'a18f19ddc923e553848a5165cdf29fb1b9add97a',
+              'product_parent': '91b386df809079884825b19a6b5d864b6e739172',
+              'product_head': '0e79772a84e99bce1a1ca9e78209c9ae5b55637a',
+              'product_tree': 'f3031844264107b0b329e7dd9af175eea8dd2456',
+              'integration_commit': (out / 'integration-commit.txt').read_text().strip(),
+              'integration_tree': (out / 'integration-tree.txt').read_text().strip(),
+              'product_paths': (out / 'actual-product-paths.txt').read_text().splitlines(),
+              'current_main_paths': (out / 'actual-current-main-paths.txt').read_text().splitlines(),
+              'path_overlap': (out / 'path-overlap.txt').read_text().splitlines(),
+              'permanent_path_count': 13,
+              'added_paths': 13,
+              'modified_paths': 0,
+              'deleted_paths': 0,
+              'reviewed_source_admissions': 4,
+              'promotion_candidates': 4,
+              'held_open_cells': 2,
+              'matrix_updates': 0,
+              'field_terminalizations': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'exact_product_gate': 'pass',
+              'current_main_integration_gate': 'pass',
+              'complete_release_gate_product': 'pass',
+              'complete_release_gate_integration': 'pass',
+          }
+          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          PYRECEIPT
+          printf 'complete\n' > "$OUT/STAGE"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ssc-rd04-postpromotion-adjudication-current-main-qual-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-adjudication-current-main-qual-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
