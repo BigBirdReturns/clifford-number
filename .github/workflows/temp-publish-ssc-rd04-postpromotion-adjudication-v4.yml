@@ -1,0 +1,356 @@
+name: TEMP qualify publish and merge RD-04 postpromotion adjudication over bf48
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-publish-ssc-rd04-postpromotion-adjudication-v4.yml'
+      - '.tmp/ssc-rd04-postpromotion-adjudication-v2-stager/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: read
+
+concurrency:
+  group: temp-publish-merge-rd04-postpromotion-adjudication-bf48
+  cancel-in-progress: false
+
+env:
+  PRODUCT_PARENT: bf48e7f424283232bae5060779d2d33e4d85bbcb
+  CARRIER_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-v2-stager-v1
+  PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-product-v1
+  EXPECTED_PRODUCT_OLD: e6a5e2065839abf9c4538a315aa08884453907b8
+  STAGING_BRANCH: staging/ssc-rd04-postpromotion-next-adjudication-v2-ordinary-v1
+  PLACEHOLDER_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-product-v2
+  CHUNK_DIR: .tmp/ssc-rd04-postpromotion-adjudication-v2-stager
+  PRODUCT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml
+  STAGED_WORKFLOW: .tmp/ssc-rd04-postpromotion-adjudication-v2-staged/permanent-workflow.yml
+  PRODUCT_B64_BYTES: '21376'
+  PRODUCT_B64_SHA256: c163c27ed38b16b359c69bb5b01582fe97540a7194667f6aa57c54077c845972
+  PRODUCT_ARCHIVE_BYTES: '16032'
+  PRODUCT_ARCHIVE_SHA256: 4affba18144a48b3b8e29e5e106dd9124975cb93aaef8a98c2ea4df2f56cbd18
+
+jobs:
+  publish:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-next-adjudication-v2-stager-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned validation dependencies
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+
+      - name: Reconstruct qualify publish and merge exact product
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/rd04-adjudication-bf48-publisher"
+          PRODUCT="$OUT/product"
+          QUAL="$OUT/qual"
+          REPLAY="$OUT/replay"
+          STAGE_WT="$OUT/stage-worktree"
+          FINAL_WT="$OUT/final-worktree"
+          rm -rf "$OUT"
+          mkdir -p "$PRODUCT"
+          exec > >(tee "$OUT/publisher.log") 2>&1
+          trap 'status=$?; printf "exit_code=%s\nfailure_line=%s\nfailure_command=%s\n" "$status" "${BASH_LINENO[0]:-unknown}" "${BASH_COMMAND:-unknown}" > "$OUT/failure.txt"; exit "$status"' ERR
+
+          test "${{ github.event_name }}" != pull_request || test "${{ github.event.pull_request.head.ref }}" = "$CARRIER_BRANCH"
+          git fetch --force --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$PRODUCT_PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PLACEHOLDER_BRANCH")"
+
+          cat "$CHUNK_DIR"/part-*.b64 > "$OUT/product.b64"
+          test "$(wc -c < "$OUT/product.b64" | tr -d ' ')" = "$PRODUCT_B64_BYTES"
+          test "$(sha256sum "$OUT/product.b64" | cut -d' ' -f1)" = "$PRODUCT_B64_SHA256"
+          base64 -d "$OUT/product.b64" > "$OUT/product.tar.xz"
+          test "$(wc -c < "$OUT/product.tar.xz" | tr -d ' ')" = "$PRODUCT_ARCHIVE_BYTES"
+          test "$(sha256sum "$OUT/product.tar.xz" | cut -d' ' -f1)" = "$PRODUCT_ARCHIVE_SHA256"
+          tar -xJf "$OUT/product.tar.xz" -C "$PRODUCT"
+
+          cat > "$OUT/expected-product-paths" <<'EOF_PATHS'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/adjudication-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/capture-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/field-adjudications.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/promotion-candidate-protocol.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/source-adjudications.json
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-next-adjudication.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          EOF_PATHS
+          sed -i 's/^          //' "$OUT/expected-product-paths"
+          find "$PRODUCT" -type f -printf '%P\n' | LC_ALL=C sort > "$OUT/actual-product-paths"
+          diff -u "$OUT/expected-product-paths" "$OUT/actual-product-paths"
+          test "$(wc -l < "$OUT/actual-product-paths" | tr -d ' ')" = 13
+          test -z "$(grep -E '(^|/)(\.tmp|.*\.trigger)(/|$)' "$OUT/actual-product-paths" || true)"
+
+          python - "$PRODUCT/$PRODUCT_WORKFLOW" <<'PY'
+          from pathlib import Path
+          import sys, yaml
+          yaml.safe_load(Path(sys.argv[1]).read_text())
+          print('permanent_workflow_yaml=pass')
+          PY
+
+          git worktree add --detach "$QUAL" "$PRODUCT_PARENT"
+          while IFS= read -r path; do
+            mkdir -p "$QUAL/$(dirname "$path")"
+            cp "$PRODUCT/$path" "$QUAL/$path"
+          done < "$OUT/expected-product-paths"
+          cd "$QUAL"
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          schema = json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json').read_text())
+          Draft202012Validator.check_schema(schema)
+          validator = Draft202012Validator(schema)
+          root = Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication')
+          names = ['capture-custody.json','source-adjudications.json','field-adjudications.json','promotion-candidate-protocol.json','adjudication-summary.json','index.json','product-manifest.json']
+          for name in names:
+              errors = sorted(validator.iter_errors(json.loads((root/name).read_text())), key=lambda e: list(e.path))
+              if errors:
+                  raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
+          print(f'recursive_schema_validation=pass objects={len(names)}')
+          PY
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          git diff --check
+          npm run release:check
+          cd - >/dev/null
+
+          git worktree add --detach "$REPLAY" "$PRODUCT_PARENT"
+          cd "$REPLAY"
+          while IFS= read -r path; do
+            mkdir -p "$(dirname "$path")"
+            cp "$PRODUCT/$path" "$path"
+          done < "$OUT/expected-product-paths"
+          git add --pathspec-from-file="$OUT/expected-product-paths"
+          git -c user.name=replay -c user.email=replay@example.invalid commit -m 'TEMP replay product'
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          cd - >/dev/null
+
+          git fetch --force --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$PRODUCT_PARENT"
+          stage_remote=$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')
+          if test -z "$stage_remote"; then
+            git worktree add --detach "$STAGE_WT" "$PRODUCT_PARENT"
+            while IFS= read -r path; do
+              if test "$path" = "$PRODUCT_WORKFLOW"; then
+                mkdir -p "$STAGE_WT/$(dirname "$STAGED_WORKFLOW")"
+                cp "$PRODUCT/$path" "$STAGE_WT/$STAGED_WORKFLOW"
+              else
+                mkdir -p "$STAGE_WT/$(dirname "$path")"
+                cp "$PRODUCT/$path" "$STAGE_WT/$path"
+              fi
+            done < "$OUT/expected-product-paths"
+            cd "$STAGE_WT"
+            git add .
+            test "$(git diff --cached --name-only --diff-filter=A | wc -l | tr -d ' ')" = 13
+            test -z "$(git diff --cached --name-only --diff-filter=CDMRTUXB)"
+            GIT_AUTHOR_DATE='2026-08-08T12:00:00Z' GIT_COMMITTER_DATE='2026-08-08T12:00:00Z' git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'TEMP stage RD-04 postpromotion adjudication ordinary blobs'
+            stage_remote=$(git rev-parse HEAD)
+            git push origin "HEAD:refs/heads/$STAGING_BRANCH"
+            cd - >/dev/null
+          fi
+          git fetch --force --no-tags origin "refs/heads/$STAGING_BRANCH:refs/remotes/origin/$STAGING_BRANCH"
+          test "$(git rev-parse "$stage_remote^")" = "$PRODUCT_PARENT"
+          test "$(git rev-list --count "$PRODUCT_PARENT".."$stage_remote")" = 1
+          test "$(git diff --name-only --diff-filter=A "$PRODUCT_PARENT" "$stage_remote" | wc -l | tr -d ' ')" = 13
+          while IFS= read -r path; do
+            if test "$path" = "$PRODUCT_WORKFLOW"; then
+              cmp <(git show "$stage_remote:$STAGED_WORKFLOW") "$PRODUCT/$path"
+            else
+              cmp <(git show "$stage_remote:$path") "$PRODUCT/$path"
+            fi
+          done < "$OUT/expected-product-paths"
+
+          git worktree add --detach "$FINAL_WT" "$PRODUCT_PARENT"
+          while IFS= read -r path; do
+            mkdir -p "$FINAL_WT/$(dirname "$path")"
+            cp "$PRODUCT/$path" "$FINAL_WT/$path"
+          done < "$OUT/expected-product-paths"
+          cd "$FINAL_WT"
+          git add --pathspec-from-file="$OUT/expected-product-paths"
+          test "$(git diff --cached --name-only --diff-filter=A | wc -l | tr -d ' ')" = 13
+          test -z "$(git diff --cached --name-only --diff-filter=CDMRTUXB)"
+          git diff --cached --check
+          GIT_AUTHOR_DATE='2026-08-08T12:01:00Z' GIT_COMMITTER_DATE='2026-08-08T12:01:00Z' git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Adjudicate RD-04 postpromotion five-route capture'
+          candidate=$(git rev-parse HEAD)
+          tree=$(git rev-parse 'HEAD^{tree}')
+          test "$(git rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          existing=$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')
+          if test "$existing" = "$EXPECTED_PRODUCT_OLD"; then
+            git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$EXPECTED_PRODUCT_OLD" origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+            product_head="$candidate"
+          else
+            product_head="$existing"
+            test -n "$product_head"
+            git fetch --force --no-tags origin "refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+            test "$(git rev-parse "$product_head^")" = "$PRODUCT_PARENT"
+            test "$(git rev-parse "$product_head^{tree}")" = "$tree"
+          fi
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$product_head"
+          cd - >/dev/null
+
+          pr_body=$(cat <<EOF_PR
+          This is the permanent thirteen-path offline source-and-field adjudication product for RD-04 Issue #1017. The object classifies the retained five-route transport capture and records candidate findings without changing the matrix or terminalizing a field.
+
+          The actors are canonical parent `$PRODUCT_PARENT`, permanent product commit `$product_head`, permanent tree `$tree`, product branch `$PRODUCT_BRANCH`, hosted publisher carrier PR #1533, execution PR #1501, and protocol PR #1490. Capture custody remains pinned to protocol merge `91b386df809079884825b19a6b5d864b6e739172` and execution artifact `9018149945` with SHA-256 `9b828cef364b156cc995409e445d5a1250c981127d21b841d56b05ef14b036e3`.
+
+          The mechanism authenticates the retained response bodies and external receipt ledger, applies each object only to frozen route-to-field targets, and carries deterministic construction, recursive Draft 2020-12 schema validation over seven objects, focused semantic assertions, 29 adversarial refusals, no-magic-human and its mutation suite, the complete repository release gate, and clean replay. Montana's dated manual table of contents, work-registration section, and geographic-waiver section are admitted for bounded scopes and produce three candidates. North Dakota section 403 is admitted for effective-date and waiver-period scopes and produces one effective-date candidate. The runtime shell is held, the waiver cell remains open because its period ends before the section becomes effective, and Release 25.7 is not repurposed into an untargeted authority/version field.
+
+          ```text
+          canonical parent:                         $PRODUCT_PARENT
+          permanent product commit:                 $product_head
+          permanent product tree:                   $tree
+          permanent paths:                          13
+          reviewed source admissions:               4
+          source holds or rejections:               1
+          field decisions:                          6
+          promotion candidates:                     4
+          held-open cells:                          2
+          matrix updates:                           0
+          field terminalizations:                   0
+          row-state mutations:                      0
+          class closed:                             false
+          terminal cells after:                     222
+          open substantive cells after:             188
+          source requests executed:                 0
+          cumulative-ledger effect:                 none
+          outside-human dependency:                 false
+          publication / adoption / graph:           none / none / none
+          ```
+
+          Evidence tier: exact sole-parent Git ancestry, immutable capture and predecessor Git objects, authenticated hosted publication, archive and per-file SHA-256 custody, recursive schema validation, focused semantic assertions, 29 adversarial refusals, complete release gates, and clean replay. Venue: permanent PR #1508, this carrier PR, execution PR #1501, protocol PR #1490, and Issue #1017. Target: offline adjudication custody only. Upside: four bounded candidates become reviewable without another network pass. Downside: two North Dakota cells remain open and require materially better evidence. Failure mode: treating a candidate as a matrix update, repurposing evidence outside a frozen target, admitting the runtime shell, merging against a moved canonical parent, or preserving temporary carrier paths. The control question is whether this exact thirteen-addition head can merge while every request, matrix, row, class, cumulative-ledger, publication, adoption, graph, and outside-human effect remains zero.
+          EOF_PR
+          )
+          pr_body=$(sed 's/^          //' <<<"$pr_body")
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/pulls/1508" -f title='Adjudicate RD-04 postpromotion five-route capture' -f body="$pr_body" >/dev/null
+          gh pr ready 1508 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || true
+
+          expected_workflow='Status sovereignty RD Wave 03 RD-04 postpromotion next adjudication'
+          checks='[]'
+          for attempt in $(seq 1 160); do
+            test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$PRODUCT_PARENT"
+            pr_meta=$(gh pr view 1508 --repo "$GITHUB_REPOSITORY" --json headRefOid,baseRefName,state,isDraft,mergeable)
+            test "$(jq -r .headRefOid <<<"$pr_meta")" = "$product_head"
+            test "$(jq -r .baseRefName <<<"$pr_meta")" = main
+            test "$(jq -r .state <<<"$pr_meta")" = OPEN
+            runs=$(gh run list --repo "$GITHUB_REPOSITORY" --commit "$product_head" --event pull_request --limit 100 --json databaseId,name,status,conclusion,headSha,url 2>/dev/null || printf '[]')
+            names=$(jq -r '.[].name' <<<"$runs")
+            have_release=false; have_human=false; have_product=false
+            grep -qxF 'Release checks' <<<"$names" && have_release=true || true
+            grep -qxF 'No magic human gate' <<<"$names" && have_human=true || true
+            grep -qxF "$expected_workflow" <<<"$names" && have_product=true || true
+            active=$(jq '[.[] | select(.status != "completed")] | length' <<<"$runs")
+            bad=$(jq '[.[] | select(.status == "completed" and (.conclusion != "success" and .conclusion != "neutral" and .conclusion != "skipped"))] | length' <<<"$runs")
+            if test "$have_release" = true && test "$have_human" = true && test "$have_product" = true && test "$active" -eq 0; then
+              test "$bad" -eq 0
+              checks="$runs"
+              break
+            fi
+            sleep 15
+          done
+          test "$checks" != '[]'
+
+          reviews=$(gh api "repos/$GITHUB_REPOSITORY/pulls/1508/reviews?per_page=100")
+          test "$(jq '[.[] | select(.state == "CHANGES_REQUESTED")] | length' <<<"$reviews")" -eq 0
+          threads=$(gh api graphql -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100){nodes{id,isResolved,comments(first:20){nodes{body,path,author{login}}}}}}}}' -F owner="$GITHUB_REPOSITORY_OWNER" -F name="${GITHUB_REPOSITORY#*/}" -F number=1508 --jq '.data.repository.pullRequest.reviewThreads.nodes')
+          test "$(jq '[.[] | select(.isResolved == false)] | length' <<<"$threads")" -eq 0
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$PRODUCT_PARENT"
+
+          merge_result=$(gh api --method PUT "repos/$GITHUB_REPOSITORY/pulls/1508/merge" -f sha="$product_head" -f merge_method=merge -f commit_title='Adjudicate RD-04 postpromotion five-route capture (#1508)' -f commit_message='Merge the exact thirteen-path offline adjudication product after hosted exact-head gates and zero-effect controls.')
+          test "$(jq -r .merged <<<"$merge_result")" = true
+          merge_sha=$(jq -r .sha <<<"$merge_result")
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$merge_sha"
+
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/pulls/1532" -f state=closed >/dev/null 2>&1 || true
+          gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$STAGING_BRANCH" >/dev/null 2>&1 || true
+          issue_body=$(cat <<EOF_ISSUE
+          The RD-04 postpromotion five-route capture is canonically admitted as a permanent offline adjudication product.
+
+          ```text
+          canonical parent:                  $PRODUCT_PARENT
+          permanent product commit:          $product_head
+          canonical merge:                   $merge_sha
+          permanent paths:                   13
+          source admissions / holds:         4 / 1
+          field decisions:                   6
+          promotion candidates / held open:  4 / 2
+          matrix updates:                    0
+          field terminalizations:            0
+          source requests executed:          0
+          outside-human dependency:          false
+          publication / adoption / graph:    none / none / none
+          ```
+
+          The control question was whether the exact thirteen-addition head could pass hosted validation and merge without changing any matrix, row, class, cumulative-ledger, publication, adoption, graph, or outside-human state. The canonical result is yes; the two North Dakota cells remain explicitly open.
+          EOF_ISSUE
+          )
+          issue_body=$(sed 's/^          //' <<<"$issue_body")
+          gh api --method POST "repos/$GITHUB_REPOSITORY/issues/1017/comments" -f body="$issue_body" >/dev/null
+
+          jq -n \
+            --arg schema_version 'ssc-rd04-postpromotion-adjudication-publisher@1' \
+            --arg outcome 'qualified_published_checked_reviewed_and_merged' \
+            --arg parent "$PRODUCT_PARENT" \
+            --arg staging "$stage_remote" \
+            --arg product "$product_head" \
+            --arg tree "$tree" \
+            --arg merge "$merge_sha" \
+            --argjson checks "$checks" \
+            --arg archive_sha256 "$PRODUCT_ARCHIVE_SHA256" \
+            '{schema_version:$schema_version,outcome:$outcome,parent:$parent,staging_commit:$staging,product_commit:$product,product_tree:$tree,canonical_merge:$merge,checks:$checks,archive_sha256:$archive_sha256,permanent_paths:13,source_requests_executed:0,source_admissions:4,source_holds:1,field_decisions:6,promotion_candidates:4,held_open_cells:2,matrix_updates:0,field_terminalizations:0,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' > "$OUT/receipt.json"
+          printf '%s\n' "$stage_remote" > "$OUT/staging-sha.txt"
+          printf '%s\n' "$product_head" > "$OUT/product-sha.txt"
+          printf '%s\n' "$tree" > "$OUT/product-tree.txt"
+          printf '%s\n' "$merge_sha" > "$OUT/merge-sha.txt"
+          (cd "$OUT" && find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%f\n' | LC_ALL=C sort | while IFS= read -r name; do sha256sum "$name"; done > SHA256SUMS)
+
+      - name: Preserve publisher custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-adjudication-bf48-publisher
+          path: ${{ runner.temp }}/rd04-adjudication-bf48-publisher
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
