@@ -1,0 +1,261 @@
+name: TEMP materialize corrected School.House frontier integration v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-legal-identity-current-frontier-corrected-integration-materializer-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: schoolhouse-current-frontier-corrected-integration-materializer-v1-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-legal-identity-current-frontier-corrected-integration-materializer-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Apply exact qualified repair blobs and publish integration
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='3918c799f8b8dcdac49c33cec5c7bbd01ac428e4'
+          BASE_TREE='53efada1f97e68a392299b771d12a68e36d972b5'
+          WORKFLOW='.github/workflows/temp-schoolhouse-legal-identity-current-frontier-corrected-integration-materializer-v1.yml'
+          PRODUCT='9416543ed482b4a7a9e354df3bc6ee2393e18bef'
+          PRODUCT_TREE='5b8404c9b4412a6f4de2578b73f51f7ca63db73e'
+          PRODUCT_PARENT='2aaadb3b87c83a8cf79ded7046a3856101bf943b'
+          TARGET='agent/schoolhouse-legal-identity-current-frontier-corrected-integration-v1'
+          REPAIR_RUN='31239693505'
+          REPAIR_ARTIFACT='9016608377'
+          REPAIR_ARTIFACT_BYTES='14803'
+          REPAIR_ARTIFACT_DIGEST='sha256:287edd94a40c17647dd6eabcb48aa6a95d4ffb2f4e5f89385bcc42d0dc45bf84'
+          QUALIFIER_RUN='31239869418'
+          QUALIFIER_ARTIFACT='9016666735'
+          QUALIFIER_ARTIFACT_BYTES='48222'
+          QUALIFIER_ARTIFACT_DIGEST='sha256:3018e49a67c48673c7f021c81e2864d7d60ab981cefb0c0dd97c1f384dcefe16'
+          RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-corrected-integration-v1"
+          WORKTREE="$RUNNER_TEMP/schoolhouse-current-frontier-corrected-integration-v1-worktree"
+          rm -rf "$RECEIPT" "$WORKTREE"
+          mkdir -p "$RECEIPT"
+          printf 'initializing-corrected-integration-v1\n' > "$RECEIPT/STAGE"
+          printf 'source_requests=0\nregistry_queries=0\nform_submissions=0\ncontacts=0\npayments=0\nuploads=0\n' > "$RECEIPT/BOUNDARY"
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            printf '%s\n' "$rc" > "$RECEIPT/SCRIPT_EXIT_CODE"
+            (
+              cd "$RECEIPT"
+              find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          cat > "$RECEIPT/product-paths.txt" <<'EOF_PATHS'
+          data/intake/bvvc-defense-capital/acquisition-frontier.json
+          data/intake/bvvc-defense-capital/manifest.json
+          data/intake/bvvc-defense-capital/schoolhouse.json
+          data/intake/schoolhouse-legal-identity-current-frontier-v1/canonical-slice-manifest.jsonl
+          data/intake/schoolhouse-legal-identity-current-frontier-v1/frontier-reconciliation.json
+          data/intake/schoolhouse-legal-identity-current-frontier-v1/next-source-gate.json
+          data/intake/schoolhouse-legal-identity-current-frontier-v1/product-manifest.json
+          data/intake/schoolhouse-legal-identity-current-frontier-v1/source-custody.json
+          data/intake/schoolhouse-legal-identity-current-frontier-v1/source-lanes.json
+          docs/milestones/schoolhouse-legal-identity-current-frontier-v1.md
+          tools/validate-schoolhouse-legal-identity-current-frontier.py
+          EOF_PATHS
+          sed -i 's/^          //' "$RECEIPT/product-paths.txt"
+          sort -o "$RECEIPT/product-paths.txt" "$RECEIPT/product-paths.txt"
+          cat > "$RECEIPT/repair-paths.txt" <<'EOF_REPAIR'
+          data/intake/schoolhouse-legal-identity-current-frontier-v1/frontier-reconciliation.json
+          data/intake/schoolhouse-legal-identity-current-frontier-v1/product-manifest.json
+          tools/validate-schoolhouse-legal-identity-current-frontier.py
+          EOF_REPAIR
+          sed -i 's/^          //' "$RECEIPT/repair-paths.txt"
+          sort -o "$RECEIPT/repair-paths.txt" "$RECEIPT/repair-paths.txt"
+          cat > "$RECEIPT/expected-status.txt" <<'EOF_STATUS'
+          M	data/intake/schoolhouse-legal-identity-current-frontier-v1/frontier-reconciliation.json
+          M	data/intake/schoolhouse-legal-identity-current-frontier-v1/product-manifest.json
+          M	tools/validate-schoolhouse-legal-identity-current-frontier.py
+          EOF_STATUS
+          sed -i 's/^          //' "$RECEIPT/expected-status.txt"
+          sort -k2,2 -o "$RECEIPT/expected-status.txt" "$RECEIPT/expected-status.txt"
+
+          printf 'proving-carrier-base-product-and-leases\n' > "$RECEIPT/STAGE"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE"
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+          test "$(git diff --name-only "$BASE"..HEAD)" = "$WORKFLOW"
+          git diff --check "$BASE"..HEAD
+          test "$(git rev-parse "$BASE^{tree}")" = "$BASE_TREE"
+          test "$(git rev-parse "$PRODUCT^")" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "$PRODUCT^{tree}")" = "$PRODUCT_TREE"
+          test "$(git rev-list --count "$PRODUCT_PARENT".."$PRODUCT")" = '1'
+          git diff --name-only "$BASE".."$PRODUCT" | sort > "$RECEIPT/base-to-product-paths.txt"
+          diff -u "$RECEIPT/repair-paths.txt" "$RECEIPT/base-to-product-paths.txt"
+          set +e
+          git ls-remote --exit-code --heads origin "refs/heads/$TARGET" > "$RECEIPT/preexisting-target-ref.txt"
+          TARGET_RC="$?"
+          set -e
+          test "$TARGET_RC" -eq 2
+
+          authenticate_artifact() {
+            label="$1"
+            run="$2"
+            artifact="$3"
+            bytes="$4"
+            digest="$5"
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run" > "$RECEIPT/$label-run.json"
+            test "$(jq -r .status "$RECEIPT/$label-run.json")" = 'completed'
+            test "$(jq -r .conclusion "$RECEIPT/$label-run.json")" = 'success'
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact" > "$RECEIPT/$label-artifact-metadata.json"
+            test "$(jq -r .size_in_bytes "$RECEIPT/$label-artifact-metadata.json")" = "$bytes"
+            test "$(jq -r .digest "$RECEIPT/$label-artifact-metadata.json")" = "$digest"
+            test "$(jq -r .workflow_run.id "$RECEIPT/$label-artifact-metadata.json")" = "$run"
+            test "$(jq -r .expired "$RECEIPT/$label-artifact-metadata.json")" = 'false'
+          }
+
+          printf 'authenticating-corrected-product-custody\n' > "$RECEIPT/STAGE"
+          authenticate_artifact repair "$REPAIR_RUN" "$REPAIR_ARTIFACT" "$REPAIR_ARTIFACT_BYTES" "$REPAIR_ARTIFACT_DIGEST"
+          authenticate_artifact qualifier "$QUALIFIER_RUN" "$QUALIFIER_ARTIFACT" "$QUALIFIER_ARTIFACT_BYTES" "$QUALIFIER_ARTIFACT_DIGEST"
+
+          printf 'constructing-exact-three-file-integration\n' > "$RECEIPT/STAGE"
+          mapfile -t PRODUCT_PATHS < "$RECEIPT/product-paths.txt"
+          mapfile -t REPAIR_PATHS < "$RECEIPT/repair-paths.txt"
+          git worktree add --detach "$WORKTREE" "$BASE"
+          git -C "$WORKTREE" checkout "$PRODUCT" -- "${REPAIR_PATHS[@]}"
+          git -C "$WORKTREE" add -- "${REPAIR_PATHS[@]}"
+          git -C "$WORKTREE" diff --cached --name-status | sort -k2,2 > "$RECEIPT/integration-status.txt"
+          diff -u "$RECEIPT/expected-status.txt" "$RECEIPT/integration-status.txt"
+          git -C "$WORKTREE" diff --cached --check
+          git -C "$WORKTREE" config user.name 'School.House custody integrator'
+          git -C "$WORKTREE" config user.email 'schoolhouse-custody@users.noreply.github.com'
+          git -C "$WORKTREE" commit -m 'Apply corrected School.House frontier parent custody'
+          INTEGRATION="$(git -C "$WORKTREE" rev-parse HEAD)"
+          INTEGRATION_TREE="$(git -C "$WORKTREE" rev-parse HEAD^{tree})"
+          test "$(git -C "$WORKTREE" rev-parse HEAD^)" = "$BASE"
+          test "$(git -C "$WORKTREE" rev-list --count "$BASE"..HEAD)" = '1'
+          test "$INTEGRATION_TREE" = "$PRODUCT_TREE"
+          git -C "$WORKTREE" diff --name-only "$BASE"..HEAD | sort > "$RECEIPT/integration-paths.txt"
+          diff -u "$RECEIPT/repair-paths.txt" "$RECEIPT/integration-paths.txt"
+          printf 'path\tproduct_blob\tintegration_blob\n' > "$RECEIPT/blob-equivalence.tsv"
+          for path in "${PRODUCT_PATHS[@]}"; do
+            product_blob="$(git rev-parse "$PRODUCT:$path")"
+            integration_blob="$(git -C "$WORKTREE" rev-parse "HEAD:$path")"
+            printf '%s\t%s\t%s\n' "$path" "$product_blob" "$integration_blob" >> "$RECEIPT/blob-equivalence.tsv"
+            test "$product_blob" = "$integration_blob"
+          done
+          git -C "$WORKTREE" ls-tree -r HEAD -- "${PRODUCT_PATHS[@]}" > "$RECEIPT/integration-ls-tree.txt"
+
+          printf 'qualifying-integration-head\n' > "$RECEIPT/STAGE"
+          (
+            cd "$WORKTREE"
+            python tools/validate-schoolhouse-legal-identity-current-frontier.py --self-test | tee "$RECEIPT/focused-validator.log"
+            node tools/validate-bvvc-defense-capital.mjs | tee "$RECEIPT/bvvc-validator.log"
+            node tools/validate-no-magic-human-gate.mjs | tee "$RECEIPT/no-magic-human.log"
+            node test/no-magic-human-gate.test.js | tee -a "$RECEIPT/no-magic-human.log"
+            npm run release:check | tee "$RECEIPT/release-check.log"
+            git restore --staged --worktree .
+            git clean -fdx
+            python tools/validate-schoolhouse-legal-identity-current-frontier.py --self-test | tee "$RECEIPT/focused-validator-replay.log"
+            node tools/validate-bvvc-defense-capital.mjs | tee "$RECEIPT/bvvc-validator-replay.log"
+            node tools/validate-no-magic-human-gate.mjs | tee "$RECEIPT/no-magic-human-replay.log"
+            git diff --check
+            git diff --exit-code
+            test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          )
+
+          printf 'rechecking-leases-and-publishing-integration\n' > "$RECEIPT/STAGE"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE"
+          set +e
+          git ls-remote --exit-code --heads origin "refs/heads/$TARGET" > "$RECEIPT/final-target-ref.txt"
+          TARGET_RC="$?"
+          set -e
+          test "$TARGET_RC" -eq 2
+          git -C "$WORKTREE" push origin "HEAD:refs/heads/$TARGET" |& tee "$RECEIPT/push.log"
+          test "$(git ls-remote origin "refs/heads/$TARGET" | cut -f1)" = "$INTEGRATION"
+
+          python - "$RECEIPT/integration.json" "$INTEGRATION" "$INTEGRATION_TREE" <<'PY'
+          from pathlib import Path
+          import json, sys
+          output, integration, tree = sys.argv[1:]
+          Path(output).write_text(json.dumps({
+              'schema_version': 'schoolhouse-legal-identity-current-frontier-corrected-integration@1',
+              'status': 'complete',
+              'integration_parent': '3918c799f8b8dcdac49c33cec5c7bbd01ac428e4',
+              'integration_parent_tree': '53efada1f97e68a392299b771d12a68e36d972b5',
+              'corrected_product_commit': '9416543ed482b4a7a9e354df3bc6ee2393e18bef',
+              'corrected_product_tree': '5b8404c9b4412a6f4de2578b73f51f7ca63db73e',
+              'integration_commit': integration,
+              'integration_tree': tree,
+              'integration_commit_count': 1,
+              'changed_path_count': 3,
+              'workflow_paths': 0,
+              'integration_tree_equals_corrected_product_tree': True,
+              'eleven_product_blobs_equal': True,
+              'focused_validation': 'pass',
+              'adversarial_refusals': 15,
+              'bvvc_validation': 'pass',
+              'no_magic_human_gate': 'pass',
+              'complete_release_gate': 'pass',
+              'clean_replay': 'pass',
+              'post_restore_clean': True,
+              'source_slice_files': 233,
+              'source_lanes': 23,
+              'active_source_leases': 0,
+              'candidate_successors': 0,
+              'source_requests': 0,
+              'registry_queries': 0,
+              'form_submissions': 0,
+              'identity_admissions': 0,
+              'relationship_admissions': 0,
+              'negative_existence_claims': 0,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'public_schoolhouse_legal_identity': 'unresolved',
+          }, indent=2, sort_keys=True) + '\n')
+          PY
+          printf 'complete\n' > "$RECEIPT/STAGE"
+
+      - name: Upload exact integration materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-legal-identity-current-frontier-corrected-integration-v1
+          path: ${{ runner.temp }}/schoolhouse-current-frontier-corrected-integration-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
