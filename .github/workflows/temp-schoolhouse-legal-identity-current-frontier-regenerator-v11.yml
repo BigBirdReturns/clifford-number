@@ -1,0 +1,114 @@
+name: TEMP deterministic School.House current-frontier regenerator v11
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-legal-identity-current-frontier-regenerator-v11.yml'
+      - '.github/materializers/schoolhouse-current-frontier-regenerator-v11/**'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: schoolhouse-current-frontier-regenerator-v11-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  regenerate:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-legal-identity-current-frontier-regenerator-v11')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct authenticated regenerator and execute
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT='.github/materializers/schoolhouse-current-frontier-regenerator-v11'
+          BOOTSTRAP="$RUNNER_TEMP/schoolhouse-current-frontier-regenerator-v11-bootstrap"
+          RECEIPT="$RUNNER_TEMP/schoolhouse-current-frontier-materialization-v11"
+          B64="$RUNNER_TEMP/schoolhouse-current-frontier-regenerator-v11.sh.xz.b64"
+          XZ="$RUNNER_TEMP/schoolhouse-current-frontier-regenerator-v11.sh.xz"
+          CONTROLLER="$RUNNER_TEMP/schoolhouse-current-frontier-regenerator-v11.sh"
+          rm -rf "$BOOTSTRAP" "$RECEIPT"
+          mkdir -p "$BOOTSTRAP"
+          printf 'initializing-bootstrap-v11\n' > "$BOOTSTRAP/STAGE"
+          printf 'source_requests=0\nregistry_queries=0\nform_submissions=0\ncontacts=0\npayments=0\nuploads=0\n' > "$BOOTSTRAP/BOUNDARY"
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            printf '%s\n' "$rc" > "$BOOTSTRAP/BOOTSTRAP_EXIT_CODE"
+            (
+              cd "$BOOTSTRAP"
+              find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          CHUNK_SIZES=(6000 6000 4600)
+          CHUNK_SHA256=(
+            1dbf8aac82325a1a8a1493203b6cb1edb4fbbe6aae7fe6347cf604fbe498f71b
+            7d57fe39b2b9afa721bb36e225e0bcf6e4b468996e320ded2366a78bfaa3824c
+            b07004877e0251f4394ea0d2211c5c400fb49e2a7f7b5e522b0b3ef6858ddc19
+          )
+          for index in "${!CHUNK_SIZES[@]}"; do
+            printf -v suffix '%02d' "$index"
+            chunk="$ROOT/controller-$suffix"
+            test "$(stat -c%s "$chunk")" = "${CHUNK_SIZES[$index]}"
+            test "$(sha256sum "$chunk" | cut -d' ' -f1)" = "${CHUNK_SHA256[$index]}"
+          done
+
+          printf 'reconstructing-controller-v11\n' > "$BOOTSTRAP/STAGE"
+          cat "$ROOT"/controller-{00,01,02} > "$B64"
+          test "$(stat -c%s "$B64")" = '16600'
+          test "$(sha256sum "$B64" | cut -d' ' -f1)" = '0185fc319bcc0a8d8582ba69f7b2ce95fdfd638fe2b659d1d3876379e0d7b658'
+          base64 --decode "$B64" > "$XZ"
+          test "$(stat -c%s "$XZ")" = '12448'
+          test "$(sha256sum "$XZ" | cut -d' ' -f1)" = 'db0af52cb5b094635b53e70e11bf0f0badc55a89e38621b775b9b4c994cd3762'
+          xz --decompress --stdout "$XZ" > "$CONTROLLER"
+          test "$(stat -c%s "$CONTROLLER")" = '23789'
+          test "$(sha256sum "$CONTROLLER" | cut -d' ' -f1)" = 'a9dbac2df1db277b274662dc7276316a2ecb04fe32c61b5e2695f4a99c561c94'
+          chmod 0755 "$CONTROLLER"
+          bash -n "$CONTROLLER"
+          cp "$CONTROLLER" "$BOOTSTRAP/controller-v11.sh"
+
+          printf 'executing-controller-v11\n' > "$BOOTSTRAP/STAGE"
+          bash "$CONTROLLER"
+          printf 'complete\n' > "$BOOTSTRAP/STAGE"
+
+      - name: Upload exact v11 materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-legal-identity-current-frontier-materialization-v11
+          path: |
+            ${{ runner.temp }}/schoolhouse-current-frontier-materialization-v11
+            ${{ runner.temp }}/schoolhouse-current-frontier-regenerator-v11-bootstrap
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
