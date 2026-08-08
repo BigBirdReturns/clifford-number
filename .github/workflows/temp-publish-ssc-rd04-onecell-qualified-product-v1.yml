@@ -1,0 +1,283 @@
+name: TEMP publish qualified RD-04 North Dakota one-cell product
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-publish-ssc-rd04-onecell-qualified-product-v1.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct exact qualified tree and publish absence-leased product ref
+        id: publish
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLISHER_BRANCH: agent/ssc-rd04-onecell-qualified-product-publisher-v1
+          PUBLISHER_PATH: .github/workflows/temp-publish-ssc-rd04-onecell-qualified-product-v1.yml
+          PRODUCT_PARENT: 79a7e18bfd45f1b1d893fa8b9683710891d4bbca
+          PRODUCT_PARENT_TREE: de7b86fbc9caa247bfa2a960f190626e22f1c4b6
+          QUALIFIER_HEAD: ca30eca1917adf91505edfffb9f09c4d5b6ee2df
+          QUALIFIER_RUN: '31281592718'
+          QUALIFIER_JOB: '93163722311'
+          QUALIFIER_ARTIFACT: '9028586787'
+          QUALIFIER_ARTIFACT_NAME: ssc-rd04-onecell-sealed-product-qualification-v1
+          QUALIFIER_ARTIFACT_BYTES: '329225'
+          QUALIFIER_ARTIFACT_SHA256: 39c23e96e854b5339c16e1249ee091362b3b898e7aecdbe624e8798ca1be8890
+          QUALIFIED_LOCAL_COMMIT: a2ae3aefea27a0a6098f71e581b084165621648e
+          QUALIFIED_TREE: 4f71effd9a0b9f3f8becd2c2a664136a2097cbd5
+          PRODUCT_PATHS_SHA256: 2218fbdfad620c219032db6a70a546b376c53ea9b5daeacd3afa72c414c0ca53
+          PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-nd-followup-one-cell-promotion-v1
+        shell: bash
+        run: |
+          set -uo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-onecell-qualified-product-publisher-v1"
+          QUAL="$OUT/qualification"
+          WT="${RUNNER_TEMP}/ssc-rd04-onecell-qualified-product-publisher-worktree-v1"
+          rm -rf "$OUT" "$WT"
+          mkdir -p "$OUT" "$QUAL"
+          exec > >(tee "$OUT/publisher.log") 2>&1
+          stage=bootstrap
+          product_commit=
+          product_tree=
+
+          finalize_sums() {
+            set +e
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+            )
+          }
+
+          on_exit() {
+            code=$?
+            trap - EXIT
+            set +e
+            printf '%s\n' "$code" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            if [[ ! -f "$OUT/publication-receipt.json" ]]; then
+              jq -n \
+                --arg stage "$stage" \
+                --argjson exit_code "$code" \
+                --arg parent "$PRODUCT_PARENT" \
+                --arg branch "$PRODUCT_BRANCH" \
+                --arg commit "$product_commit" \
+                --arg tree "$product_tree" \
+                '{
+                  schema_version:"ssc-rd04-onecell-qualified-product-publication@1",
+                  state:"failed_closed",
+                  failed_or_final_stage:$stage,
+                  exit_code:$exit_code,
+                  product_parent:$parent,
+                  product_branch:$branch,
+                  product_commit:(if $commit=="" then null else $commit end),
+                  product_tree:(if $tree=="" then null else $tree end),
+                  permanent_paths:14,
+                  matrix_updates:0,
+                  field_terminalizations:0,
+                  row_state_mutations:0,
+                  class_closed:false,
+                  outside_human_dependency:false,
+                  publication_effect:"none",
+                  adoption_effect:"none",
+                  graph_effect:"none"
+                }' > "$OUT/publication-receipt.json"
+            fi
+            finalize_sums
+            exit "$code"
+          }
+          trap on_exit EXIT
+          set -Eeuo pipefail
+
+          stage=bind_publisher_topology_and_absence_lease
+          test "$GITHUB_EVENT_NAME" = pull_request
+          test "$GITHUB_HEAD_REF" = "$PUBLISHER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          test "$(git rev-list --count "$PRODUCT_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$PRODUCT_PARENT" HEAD)" = "$PUBLISHER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$PRODUCT_PARENT" HEAD)" = "$PUBLISHER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$PRODUCT_PARENT" HEAD)"
+          test "$(git rev-parse "$PRODUCT_PARENT^{tree}")" = "$PRODUCT_PARENT_TREE"
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$PRODUCT_PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+
+          stage=authenticate_qualified_run_job_and_artifact
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${QUALIFIER_RUN}" > "$OUT/qualifier-run.json"
+          jq -e \
+            --arg head "$QUALIFIER_HEAD" \
+            '.head_sha==$head and .event=="pull_request" and .status=="completed" and .conclusion=="success"' \
+            "$OUT/qualifier-run.json" >/dev/null
+          gh api "repos/${GITHUB_REPOSITORY}/actions/jobs/${QUALIFIER_JOB}" > "$OUT/qualifier-job.json"
+          jq -e \
+            --argjson run "$QUALIFIER_RUN" \
+            '.run_id==$run and .name=="qualify" and .status=="completed" and .conclusion=="success"' \
+            "$OUT/qualifier-job.json" >/dev/null
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${QUALIFIER_ARTIFACT}" > "$OUT/qualifier-artifact.json"
+          jq -e \
+            --arg name "$QUALIFIER_ARTIFACT_NAME" \
+            --arg digest "sha256:$QUALIFIER_ARTIFACT_SHA256" \
+            --arg head "$QUALIFIER_HEAD" \
+            --argjson bytes "$QUALIFIER_ARTIFACT_BYTES" \
+            '.name==$name and .size_in_bytes==$bytes and .digest==$digest and .expired==false and .workflow_run.head_sha==$head' \
+            "$OUT/qualifier-artifact.json" >/dev/null
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${QUALIFIER_ARTIFACT}/zip" > "$OUT/qualification.zip"
+          test "$(stat -c %s "$OUT/qualification.zip")" -eq "$QUALIFIER_ARTIFACT_BYTES"
+          test "$(sha256sum "$OUT/qualification.zip" | awk '{print $1}')" = "$QUALIFIER_ARTIFACT_SHA256"
+          unzip -t "$OUT/qualification.zip" > "$OUT/zip-test.txt"
+          unzip -q "$OUT/qualification.zip" -d "$QUAL"
+          (cd "$QUAL" && sha256sum -c SHA256SUMS)
+          test "$(cat "$QUAL/EXIT_CODE")" = 0
+          test "$(cat "$QUAL/STAGE")" = complete
+          test "$(cat "$QUAL/candidate-commit.txt")" = "$QUALIFIED_LOCAL_COMMIT"
+          test "$(cat "$QUAL/candidate-tree.txt")" = "$QUALIFIED_TREE"
+          test "$(sha256sum "$QUAL/product-paths.txt" | awk '{print $1}')" = "$PRODUCT_PATHS_SHA256"
+          test "$(wc -l < "$QUAL/product-paths.txt")" -eq 14
+          jq -e \
+            --arg parent "$PRODUCT_PARENT" \
+            --arg tree "$QUALIFIED_TREE" \
+            '.state=="qualified_product_archive" and .product_parent==$parent and .candidate_tree==$tree and .permanent_paths==14 and .additions==14 and .matrix_updates==1 and .field_terminalizations==1 and .row_state_mutations==0 and .waiver_period_cell_excluded==true and .class_closed==false and .outside_human_dependency==false and .product_ref_created==false and .merge_authority_created==false' \
+            "$QUAL/receipt.json" >/dev/null
+
+          stage=reconstruct_exact_qualified_product_tree
+          git worktree add --detach "$WT" "$PRODUCT_PARENT"
+          while IFS= read -r rel; do
+            test -f "$QUAL/product/$rel"
+            test ! -e "$WT/$rel"
+            mkdir -p "$WT/$(dirname "$rel")"
+            cp "$QUAL/product/$rel" "$WT/$rel"
+          done < "$QUAL/product-paths.txt"
+          cd "$WT"
+          git add -A
+          git diff --cached --name-only --diff-filter=A | LC_ALL=C sort > "$OUT/product-added-paths.txt"
+          git diff --cached --name-only --diff-filter=MDTCRUXB | LC_ALL=C sort > "$OUT/product-nonaddition-paths.txt"
+          diff -u "$QUAL/product-paths.txt" "$OUT/product-added-paths.txt"
+          test ! -s "$OUT/product-nonaddition-paths.txt"
+          git diff --cached --check
+          git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m 'Promote RD-04 North Dakota operative-authority field' >/dev/null
+          product_commit="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse 'HEAD^{tree}')"
+          test "$(git rev-parse HEAD^)" = "$PRODUCT_PARENT"
+          test "$product_tree" = "$QUALIFIED_TREE"
+          test "$(git diff --name-only --diff-filter=A "$PRODUCT_PARENT" HEAD | wc -l)" -eq 14
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$PRODUCT_PARENT" HEAD)"
+          printf '%s\n' "$product_commit" > "$OUT/product-commit.txt"
+          printf '%s\n' "$product_tree" > "$OUT/product-tree.txt"
+          cp "$QUAL/product-paths.txt" "$OUT/product-paths.txt"
+          cp "$QUAL/product-git-inventory.tsv" "$OUT/product-git-inventory.tsv"
+
+          stage=replay_focused_product_controls
+          PRODUCT_WORKFLOW="$(grep -E '^\.github/workflows/.*\.ya?ml$' "$OUT/product-paths.txt")"
+          PRODUCT_BUILDER="$(grep -E '^tools/build-.*\.mjs$' "$OUT/product-paths.txt")"
+          PRODUCT_VALIDATOR="$(grep -E '^tools/validate-.*\.mjs$' "$OUT/product-paths.txt")"
+          PRODUCT_TEST="$(grep -E '^test/.*\.test\.js$' "$OUT/product-paths.txt")"
+          python -c "import yaml; yaml.safe_load(open('$PRODUCT_WORKFLOW'))"
+          node "$PRODUCT_BUILDER"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.test.js
+          node "$PRODUCT_VALIDATOR"
+          node "$PRODUCT_TEST"
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          stage=publish_absence_leased_product_ref
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$PRODUCT_PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+          git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:" origin "$product_commit:refs/heads/$PRODUCT_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$product_commit"
+
+          jq -n \
+            --arg parent "$PRODUCT_PARENT" \
+            --arg parent_tree "$PRODUCT_PARENT_TREE" \
+            --arg qualifier_head "$QUALIFIER_HEAD" \
+            --argjson qualifier_run "$QUALIFIER_RUN" \
+            --argjson qualifier_job "$QUALIFIER_JOB" \
+            --argjson qualifier_artifact "$QUALIFIER_ARTIFACT" \
+            --arg qualifier_artifact_sha256 "$QUALIFIER_ARTIFACT_SHA256" \
+            --arg branch "$PRODUCT_BRANCH" \
+            --arg commit "$product_commit" \
+            --arg tree "$product_tree" \
+            '{
+              schema_version:"ssc-rd04-onecell-qualified-product-publication@1",
+              state:"product_branch_published",
+              product_parent:$parent,
+              product_parent_tree:$parent_tree,
+              qualifier_head:$qualifier_head,
+              qualifier_run:$qualifier_run,
+              qualifier_job:$qualifier_job,
+              qualifier_artifact:$qualifier_artifact,
+              qualifier_artifact_sha256:$qualifier_artifact_sha256,
+              product_branch:$branch,
+              product_commit:$commit,
+              product_tree:$tree,
+              permanent_paths:14,
+              additions:14,
+              modifications:0,
+              deletions:0,
+              source_requests:0,
+              route_executions:0,
+              new_source_admissions:0,
+              matrix_updates:1,
+              field_terminalizations:1,
+              row_state_mutations:0,
+              waiver_period_cell_excluded:true,
+              class_closed:false,
+              cumulative_ledger_effect:"none",
+              outside_human_dependency:false,
+              publication_effect:"none",
+              adoption_effect:"none",
+              graph_effect:"none",
+              next_authorized_operation:"open a permanent pull request at this exact head and require native exact-head gates and an empty review ledger before merge"
+            }' > "$OUT/publication-receipt.json"
+          stage=complete
+
+      - name: Upload publication custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-onecell-qualified-product-publication-v1
+          path: ${{ runner.temp }}/ssc-rd04-onecell-qualified-product-publisher-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal product publication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-onecell-qualified-product-publisher-v1"
+          test "${{ steps.publish.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e \
+            --arg branch 'agent/ssc-rd04-postpromotion-nd-followup-one-cell-promotion-v1' \
+            '.state=="product_branch_published" and .product_branch==$branch and .permanent_paths==14 and .additions==14 and .matrix_updates==1 and .field_terminalizations==1 and .row_state_mutations==0 and .waiver_period_cell_excluded==true and .class_closed==false and .outside_human_dependency==false' \
+            "$OUT/publication-receipt.json" >/dev/null
+          test "$(git ls-remote --heads origin "refs/heads/$branch" | awk '{print $1}')" = "$(cat "$OUT/product-commit.txt")"
