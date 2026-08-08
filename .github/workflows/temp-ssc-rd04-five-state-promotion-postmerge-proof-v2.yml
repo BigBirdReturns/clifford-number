@@ -1,0 +1,289 @@
+name: TEMP prove canonical RD-04 five-state promotion v2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: rd04-five-state-promotion-postmerge-proof-v2-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+env:
+  CANONICAL_MAIN: 987f1b2574eeddaba49d67c1c1498a81d40f7c69
+  PRODUCT_PARENT: fdcbfbcd7e5a373444b25d3132d058669f8b3a71
+  PRODUCT_COMMIT: feadf9f13d87d714eca4b5d142538a4a73d684aa
+  PRODUCT_MERGE: 120c3b51b696a002a06ff82a0599216b84247882
+  REPAIR_COMMIT: 93ad86dcd16cae56ac330cfc12236659a7952a1b
+  REPAIRED_WORKFLOW_BLOB: 11e58adffabd25fc8efdfda0f48ae134cfb29021
+  V1_PROOF_ARTIFACT: '9016241405'
+  V1_PROOF_BYTES: '15518'
+  V1_PROOF_SHA256: 460d8feaaf3bf566b5f6ba61348088164263d5b646cf3151e2dd46bb8a78fcb5
+  V1_FINAL_LOG_SHA256: a0186f3377a3d766b832693274e2b72e5edab8e03939bba81d82892f56014e8f
+  V1_FAILURE_SHA256: 1d80afb6ef75bfcd7b31c6b893624ddb0fafaa4f7a4929df24bb64c3e8d1ba3c
+  V1_PROOF_JSON_SHA256: faf3b07d70110adc194e1940d8680bb8de4cba1a37899a0ca5017da9811aa930
+  CARRIER_PATH: .github/workflows/temp-ssc-rd04-five-state-promotion-postmerge-proof-v2.yml
+
+jobs:
+  prove:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-five-state-promotion-postmerge-proof-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+
+      - name: Authenticate v1 proof custody and independently replay canonical product
+        id: prove
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-five-state-promotion-postmerge-proof-v2
+          V1="$OUT/v1"
+          CANON="$OUT/canonical"
+          rm -rf "$OUT"
+          mkdir -p "$V1"
+          trap 'status=$?; printf "exit_code=%s\nfailure_line=%s\nfailure_command=%s\n" "$status" "${BASH_LINENO[0]:-unknown}" "${BASH_COMMAND:-unknown}" > "$OUT/failure.txt"; exit "$status"' ERR
+          exec > >(tee "$OUT/proof-v2.log") 2>&1
+
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_MAIN"
+          test "$(git rev-list --count "$CANONICAL_MAIN"..HEAD)" = 1
+          test "$(git diff --name-only "$CANONICAL_MAIN" HEAD)" = "$CARRIER_PATH"
+          test "$(git rev-parse HEAD)" = '${{ github.event.pull_request.head.sha }}'
+
+          git fetch --force --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$CANONICAL_MAIN"
+          git merge-base --is-ancestor "$PRODUCT_COMMIT" origin/main
+          git merge-base --is-ancestor "$PRODUCT_MERGE" origin/main
+          git merge-base --is-ancestor "$REPAIR_COMMIT" origin/main
+          test "$(git rev-list --count "$PRODUCT_PARENT".."$PRODUCT_COMMIT")" = 1
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$V1_PROOF_ARTIFACT/zip" > "$OUT/v1-proof.zip"
+          test "$(stat -c %s "$OUT/v1-proof.zip")" = "$V1_PROOF_BYTES"
+          test "$(sha256sum "$OUT/v1-proof.zip" | awk '{print $1}')" = "$V1_PROOF_SHA256"
+          unzip -q "$OUT/v1-proof.zip" -d "$V1"
+          test -f "$V1/proof.json"
+          test -f "$V1/proof.log"
+          test -f "$V1/failure.txt"
+          test -f "$V1/SHA256SUMS"
+          test "$(sha256sum "$V1/proof.json" | awk '{print $1}')" = "$V1_PROOF_JSON_SHA256"
+          test "$(sha256sum "$V1/proof.log" | awk '{print $1}')" = "$V1_FINAL_LOG_SHA256"
+          test "$(sha256sum "$V1/failure.txt" | awk '{print $1}')" = "$V1_FAILURE_SHA256"
+          grep -v '  proof.log$' "$V1/SHA256SUMS" > "$OUT/v1-checksums-without-live-log.txt"
+          (cd "$V1" && sha256sum -c "$OUT/v1-checksums-without-live-log.txt")
+          grep -Fx 'failure_command=( cd "$OUT" && sha256sum -c SHA256SUMS )' "$V1/failure.txt"
+          grep -F 'proof.log: FAILED' "$V1/proof.log"
+          (cd "$V1" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum) > "$OUT/v1-final-files.sha256"
+
+          jq -e \
+            --arg main "$CANONICAL_MAIN" \
+            --arg parent "$PRODUCT_PARENT" \
+            --arg product "$PRODUCT_COMMIT" \
+            --arg merge "$PRODUCT_MERGE" \
+            --arg repair "$REPAIR_COMMIT" \
+            --arg workflow "$REPAIRED_WORKFLOW_BLOB" '
+              .schema_version == "ssc-rd04-five-state-promotion-canonical-postmerge-proof@1" and
+              .proof == "pass" and
+              .canonical_main == $main and
+              .product_parent == $parent and
+              .product_commit == $product and
+              .product_merge == $merge and
+              .repair_commit == $repair and
+              .repaired_workflow_blob == $workflow and
+              .permanent_product_paths == 14 and
+              .unchanged_product_blobs == 13 and
+              .repaired_workflow_blobs == 1 and
+              .native_push_workflow_run == 31238388076 and
+              .native_push_workflow_conclusion == "success" and
+              .recursively_closed_schema_objects == 8 and
+              .terminal_cells == 222 and
+              .still_open_cells == 228 and
+              .terminal_substantive_cells == 112 and
+              .still_open_substantive_cells == 188 and
+              .terminal_units == 10 and
+              .open_units == 40 and
+              .row_state_mutations == 0 and
+              .class_closed == false and
+              .cumulative_ledger_effect == "none" and
+              .source_requests == 0 and
+              .outside_human_dependency == false and
+              .publication_effect == "none" and
+              .adoption_effect == "none" and
+              .graph_effect == "none" and
+              .complete_release_gate == "pass" and
+              .clean_replay == "pass"
+            ' "$V1/proof.json" >/dev/null
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/31238388076" > "$OUT/native-push-run.json"
+          jq -e --arg main "$CANONICAL_MAIN" '
+            .head_sha == $main and
+            .event == "push" and
+            .status == "completed" and
+            .conclusion == "success" and
+            .name == "Status sovereignty RD Wave 03 RD-04 five-state promotion"
+          ' "$OUT/native-push-run.json" >/dev/null
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/31238388076/jobs?per_page=100" > "$OUT/native-push-jobs.json"
+          jq -e '
+            .jobs | length == 1 and
+            .[0].name == "validate" and
+            .[0].status == "completed" and
+            .[0].conclusion == "success"
+          ' "$OUT/native-push-jobs.json" >/dev/null
+
+          git diff --name-only --diff-filter=A "$PRODUCT_PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort > "$OUT/product-added-paths.txt"
+          test "$(wc -l < "$OUT/product-added-paths.txt" | tr -d ' ')" = 14
+          test -z "$(git diff --name-only --diff-filter=DMRTUXB "$PRODUCT_PARENT" "$PRODUCT_COMMIT")"
+          : > "$OUT/canonical-blob-census.tsv"
+          UNCHANGED=0
+          REPAIRED=0
+          while IFS= read -r path; do
+            MAIN_BLOB=$(git rev-parse "origin/main:$path")
+            if test "$path" = '.github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml'; then
+              test "$MAIN_BLOB" = "$REPAIRED_WORKFLOW_BLOB"
+              printf '%s\trepaired\t%s\n' "$path" "$MAIN_BLOB" >> "$OUT/canonical-blob-census.tsv"
+              REPAIRED=$((REPAIRED + 1))
+            else
+              PRODUCT_BLOB=$(git rev-parse "$PRODUCT_COMMIT:$path")
+              test "$MAIN_BLOB" = "$PRODUCT_BLOB"
+              printf '%s\tunchanged\t%s\n' "$path" "$MAIN_BLOB" >> "$OUT/canonical-blob-census.tsv"
+              UNCHANGED=$((UNCHANGED + 1))
+            fi
+          done < "$OUT/product-added-paths.txt"
+          test "$UNCHANGED" = 13
+          test "$REPAIRED" = 1
+
+          git worktree add --detach "$CANON" origin/main
+          cd "$CANON"
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          git diff --exit-code -- data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion
+          python - <<'PYSCHEMA'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          root = Path('.')
+          schema = json.loads((root / 'schemas/status-sovereignty-rd-wave03-rd04-five-state-promotion.schema.json').read_text())
+          validator = Draft202012Validator(schema)
+          product = root / 'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion'
+          names = [
+              'promotion-input-custody.json',
+              'promotion-decisions.json',
+              'cell-promotion-ledger.json',
+              'promoted-partial-field-matrix.json',
+              'remaining-open-field-census.json',
+              'promotion-summary.json',
+              'index.json',
+              'product-manifest.json',
+          ]
+          for name in names:
+              validator.validate(json.loads((product / name).read_text()))
+          print(f'canonical_recursive_schema_validation=pass objects={len(names)}')
+          PYSCHEMA
+          node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+          git restore --staged --worktree .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          cd - >/dev/null
+          git worktree remove --force "$CANON"
+
+          jq -n \
+            --arg schema_version 'ssc-rd04-five-state-promotion-canonical-postmerge-proof-v2@1' \
+            --arg proof 'pass' \
+            --arg canonical_main "$CANONICAL_MAIN" \
+            --arg product_parent "$PRODUCT_PARENT" \
+            --arg product_commit "$PRODUCT_COMMIT" \
+            --arg product_merge "$PRODUCT_MERGE" \
+            --arg repair_commit "$REPAIR_COMMIT" \
+            --arg repaired_workflow_blob "$REPAIRED_WORKFLOW_BLOB" \
+            --arg v1_artifact_sha256 "$V1_PROOF_SHA256" \
+            --argjson v1_artifact "$V1_PROOF_ARTIFACT" \
+            '{
+              schema_version:$schema_version,
+              proof:$proof,
+              canonical_main:$canonical_main,
+              product_parent:$product_parent,
+              product_commit:$product_commit,
+              product_merge:$product_merge,
+              repair_commit:$repair_commit,
+              repaired_workflow_blob:$repaired_workflow_blob,
+              predecessor_proof_artifact:$v1_artifact,
+              predecessor_proof_artifact_sha256:$v1_artifact_sha256,
+              predecessor_proof_substantive_assertions:"pass",
+              predecessor_proof_failure:"live_log_self_checksum_only",
+              permanent_product_paths:14,
+              unchanged_product_blobs:13,
+              repaired_workflow_blobs:1,
+              native_push_workflow_run:31238388076,
+              native_push_workflow_conclusion:"success",
+              recursively_closed_schema_objects:8,
+              terminal_cells:222,
+              still_open_cells:228,
+              terminal_substantive_cells:112,
+              still_open_substantive_cells:188,
+              terminal_units:10,
+              open_units:40,
+              row_state_mutations:0,
+              class_closed:false,
+              cumulative_ledger_effect:"none",
+              source_requests:0,
+              outside_human_dependency:false,
+              publication_effect:"none",
+              adoption_effect:"none",
+              graph_effect:"none",
+              complete_release_gate:"pass",
+              clean_replay:"pass"
+            }' > "$OUT/proof-v2.json"
+
+          find "$OUT" -maxdepth 1 -type f \
+            ! -name SHA256SUMS \
+            ! -name proof-v2.log \
+            -printf '%f\n' | LC_ALL=C sort | while IFS= read -r name; do
+              sha256sum "$OUT/$name"
+          done | sed "s#  $OUT/#  #" > "$OUT/SHA256SUMS"
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+
+      - name: Preserve terminal canonical proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-promotion-postmerge-proof-v2
+          path: /tmp/ssc-rd04-five-state-promotion-postmerge-proof-v2
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
