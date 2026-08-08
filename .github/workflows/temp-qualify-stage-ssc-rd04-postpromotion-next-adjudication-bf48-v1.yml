@@ -1,0 +1,161 @@
+name: TEMP qualify and stage RD-04 adjudication over bf48 v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/scripts/temp-qualify-stage-ssc-rd04-postpromotion-next-adjudication-bf48-v1.sh'
+      - '.github/workflows/temp-qualify-stage-ssc-rd04-postpromotion-next-adjudication-bf48-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: temp-qualify-stage-ssc-rd04-postpromotion-next-adjudication-bf48-v1
+  cancel-in-progress: false
+
+env:
+  CURRENT_MAIN: bf48e7f424283232bae5060779d2d33e4d85bbcb
+  SOURCE_PARENT: c108c323d9c254d8e4a6bb4f3089a7fae7975009
+  SOURCE_PRODUCT: e6a5e2065839abf9c4538a315aa08884453907b8
+  PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-product-v1
+  STAGING_BRANCH: staging/ssc-rd04-postpromotion-next-adjudication-bf48-ordinary-v1
+  CARRIER_SCRIPT_PATH: .github/scripts/temp-qualify-stage-ssc-rd04-postpromotion-next-adjudication-bf48-v1.sh
+  CARRIER_WORKFLOW_PATH: .github/workflows/temp-qualify-stage-ssc-rd04-postpromotion-next-adjudication-bf48-v1.yml
+  WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.yml
+  BUILDER_PATH: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.mjs
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication/product-manifest.json
+  SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-adjudication.schema.json
+  SOURCE_WORKFLOW_BLOB: 16e02da43ed39af80589a9bdc1f31a698a007235
+  SOURCE_BUILDER_BLOB: 32e2bb7bdf7abd694792adfe2f355fa9dfb611fb
+  SOURCE_MANIFEST_BLOB: 9e7da9145f3869adf2d8f9d9218a994cf0127e43
+  SOURCE_SCHEMA_BLOB: e9bc3a996c70e7f48872f647e126a8c49c8c2d68
+  OLD_ROUTE_CONTRACT_BLOB: d5c445435dd74bea61e7e50887a27a3ffb1edcf1
+  ROUTE_LEDGER_BLOB: ad4a82bc1a23e0957137468dfc0a4c3333d84394
+  ROUTE_CONTRACT_BLOB: 6e3d9eb55ebcc029151144ce9965754ac4e35e1a
+  MATRIX_BLOB: 42361e559db90777e1d60aea5530df5694c86dc6
+  CENSUS_BLOB: e6ea2bb2722d084d0bb601864d4de5d9db4c7b47
+  PREDECESSOR_ADJUDICATION_BLOB: ca0be819a522532ecc7b0ee07909382ece6a8329
+
+jobs:
+  qualify-and-stage:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-next-adjudication-bf48-rebind-stager-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Execute exact current-main repair, qualification, and ordinary staging
+        id: transaction
+        continue-on-error: true
+        shell: bash
+        run: bash "$CARRIER_SCRIPT_PATH"
+
+      - name: Upload exact transaction custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-adjudication-bf48-rebind-stager-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-next-adjudication-bf48-rebind-stager-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Report bounded transaction result
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R="${RUNNER_TEMP}/ssc-rd04-postpromotion-next-adjudication-bf48-rebind-stager-v1/receipt.json"
+          test -s "$R"
+          state="$(jq -r .state "$R")"
+          stage="$(jq -r .failed_or_final_stage "$R")"
+          candidate="$(jq -r '.qualified_candidate_commit // "none"' "$R")"
+          tree="$(jq -r '.qualified_candidate_tree // "none"' "$R")"
+          ordinary="$(jq -r '.ordinary_staging_commit // "none"' "$R")"
+          {
+            printf '%s\n\n' 'RD-04 postpromotion adjudication current-main transaction reached a typed result.'
+            printf '%s\n' '```text'
+            printf 'state: %s\n' "$state"
+            printf 'stage: %s\n' "$stage"
+            printf 'canonical_parent: %s\n' "$CURRENT_MAIN"
+            printf 'source_product: %s\n' "$SOURCE_PRODUCT"
+            printf 'route_contract_blob: %s\n' "$ROUTE_CONTRACT_BLOB"
+            printf 'qualified_candidate: %s\n' "$candidate"
+            printf 'qualified_tree: %s\n' "$tree"
+            printf 'ordinary_staging_commit: %s\n' "$ordinary"
+            printf 'permanent_paths: 13\n'
+            printf 'ordinary_staging_paths: 12\n'
+            printf 'matrix_updates: 0\n'
+            printf 'field_terminalizations: 0\n'
+            printf 'row_state_mutations: 0\n'
+            printf 'class_closed: false\n'
+            printf '%s\n\n' '```'
+            printf '%s\n' 'This transaction grants qualified-tree and ordinary-blob custody only. The control question is whether the connected Git object API can add the separately authenticated workflow blob, reproduce the qualified tree exactly, and move PR #1508 under the recorded old-head lease.'
+          } > /tmp/rd04-bf48-result.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/rd04-bf48-result.md
+
+      - name: Preserve fail-closed conclusion
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-next-adjudication-bf48-rebind-stager-v1"
+          test "${{ steps.transaction.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          jq -e \
+            --arg parent "$CURRENT_MAIN" \
+            --arg source "$SOURCE_PRODUCT" \
+            --arg staging "$STAGING_BRANCH" \
+            --arg route_contract "$ROUTE_CONTRACT_BLOB" \
+            '.state=="qualified_and_staged" and
+             .exit_code==0 and
+             .canonical_parent==$parent and
+             .source_product_head==$source and
+             .immutable_inputs.route_query_contract==$route_contract and
+             .qualified_candidate_commit!=null and
+             .qualified_candidate_tree!=null and
+             .permanent_path_count==13 and
+             .repair_path_count==4 and
+             .semantic_unchanged_path_count==9 and
+             .main_delta_overlap==0 and
+             .ordinary_staging_branch==$staging and
+             .ordinary_staging_commit!=null and
+             .ordinary_staging_tree!=null and
+             .ordinary_staging_path_count==12 and
+             .permanent_workflow_omitted_from_staging==true and
+             .product_candidate_created_by_actions==false and
+             .product_ref_updated_by_actions==false and
+             .connector_publication_required==true and
+             .source_requests_executed==0 and
+             .route_executions==0 and
+             .matrix_updates==0 and
+             .field_terminalizations==0 and
+             .row_state_mutations==0 and
+             .class_closed==false and
+             .cumulative_ledger_effect=="none" and
+             .outside_human_dependency==false and
+             .publication_effect=="none" and
+             .adoption_effect=="none" and
+             .graph_effect=="none"' \
+            "$OUT/receipt.json" > /dev/null
