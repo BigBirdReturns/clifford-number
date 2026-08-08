@@ -1,0 +1,123 @@
+name: TEMP recover exact School.House package across refs and artifacts v9
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-schoolhouse-current-frontier-ref-artifact-recovery-v9.yml'
+      - '.github/materializers/schoolhouse-current-frontier-ref-artifact-recovery-v9/**'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: schoolhouse-current-frontier-ref-artifact-recovery-v9-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  recover:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/schoolhouse-current-frontier-ref-artifact-recovery-v9')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Authenticate carrier, fetch all refs, and scan Git plus Actions artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE='1e52a58be874538509d6c0d3c06adc12fc53cad7'
+          WORKFLOW='.github/workflows/temp-schoolhouse-current-frontier-ref-artifact-recovery-v9.yml'
+          ROOT='.github/materializers/schoolhouse-current-frontier-ref-artifact-recovery-v9'
+          OUT="$RUNNER_TEMP/schoolhouse-current-frontier-ref-artifact-recovery-v9"
+          B64="$RUNNER_TEMP/schoolhouse-current-frontier-ref-artifact-recovery-v9.py.b64"
+          PROGRAM="$RUNNER_TEMP/schoolhouse-current-frontier-ref-artifact-recovery-v9.py"
+          rm -rf "$OUT" "$B64" "$PROGRAM"
+          mkdir -p "$OUT"
+          printf 'initializing-ref-artifact-recovery-v9\n' > "$OUT/STAGE"
+          printf 'source_requests=0\nregistry_queries=0\nform_submissions=0\ncontacts=0\npayments=0\nuploads=0\n' > "$OUT/BOUNDARY"
+
+          finalize() {
+            rc="$?"
+            trap - EXIT
+            printf '%s\n' "$rc" > "$OUT/RECOVERY_EXIT_CODE"
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          printf 'proving-clean-eight-path-carrier\n' > "$OUT/STAGE"
+          git fetch --no-tags origin main
+          test "$(git rev-parse HEAD^)" = "$BASE"
+          test "$(git rev-list --count "$BASE"..HEAD)" = '1'
+          cat > "$OUT/expected-carrier-paths.txt" <<'EOF_PATHS'
+          .github/materializers/schoolhouse-current-frontier-ref-artifact-recovery-v9/part-00-0
+          .github/materializers/schoolhouse-current-frontier-ref-artifact-recovery-v9/part-00-1
+          .github/materializers/schoolhouse-current-frontier-ref-artifact-recovery-v9/part-01
+          .github/materializers/schoolhouse-current-frontier-ref-artifact-recovery-v9/part-02
+          .github/materializers/schoolhouse-current-frontier-ref-artifact-recovery-v9/part-03
+          .github/materializers/schoolhouse-current-frontier-ref-artifact-recovery-v9/part-04
+          .github/materializers/schoolhouse-current-frontier-ref-artifact-recovery-v9/part-05
+          .github/workflows/temp-schoolhouse-current-frontier-ref-artifact-recovery-v9.yml
+          EOF_PATHS
+          git diff --name-only "$BASE"..HEAD | sort > "$OUT/carrier-paths.txt"
+          diff -u "$OUT/expected-carrier-paths.txt" "$OUT/carrier-paths.txt"
+          git diff --check "$BASE"..HEAD
+          git merge-base --is-ancestor "$BASE" "$(git rev-parse origin/main)"
+
+          test "$(stat -c%s "$ROOT/part-00-0")" = '2160'
+          test "$(stat -c%s "$ROOT/part-00-1")" = '2160'
+          for suffix in 01 02 03 04 05; do
+            test "$(stat -c%s "$ROOT/part-$suffix")" = '4320'
+          done
+          cat "$ROOT/part-00-0" "$ROOT/part-00-1" "$ROOT"/part-{01,02,03,04,05} > "$B64"
+          test "$(stat -c%s "$B64")" = '25920'
+          test "$(sha256sum "$B64" | cut -d' ' -f1)" = \
+            'e810923bac965d215ac1f42706584a5b657a06c2502926dc2cf55ca807a904b3'
+          base64 --decode "$B64" > "$PROGRAM"
+          test "$(stat -c%s "$PROGRAM")" = '19438'
+          test "$(sha256sum "$PROGRAM" | cut -d' ' -f1)" = \
+            '75e92fa91048d65fb64cacecbbe7e0f5e4417b0b5918b457ef4a27d37b5cc7d8'
+          python -m py_compile "$PROGRAM"
+
+          printf 'fetching-all-branches-tags-and-pull-heads\n' > "$OUT/STAGE"
+          git fetch --force --no-tags origin \
+            '+refs/heads/*:refs/remotes/origin/*' \
+            '+refs/pull/*/head:refs/remotes/pull/*/head'
+          git fetch --force --tags origin '+refs/tags/*:refs/tags/*'
+          git show-ref > "$OUT/all-refs.txt"
+          git fsck --full --unreachable --no-reflogs > "$OUT/git-fsck.txt" 2>&1 || true
+
+          printf 'scanning-git-objects-and-actions-artifacts\n' > "$OUT/STAGE"
+          python "$PROGRAM" "$OUT" --repo "$GITHUB_REPOSITORY"
+          printf 'complete\n' > "$OUT/STAGE"
+
+      - name: Upload exact ref/artifact recovery receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-current-frontier-ref-artifact-recovery-v9
+          path: ${{ runner.temp }}/schoolhouse-current-frontier-ref-artifact-recovery-v9
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
