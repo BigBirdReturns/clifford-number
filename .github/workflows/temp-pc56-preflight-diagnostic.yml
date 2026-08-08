@@ -1,0 +1,148 @@
+name: TEMP diagnose repaired PC-56 preflight
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      PARENT: 21afd8b3da1b7d06d2dada51929c63b60d6da66c
+      PARENT_TREE: e6be866eb060e4fb3b2352601f964f7b5f4605fc
+      ARCHIVE_SHA256: 9b42d1b7674f6e1e37fb2d21989f47c45a11f3951e5ad48e3c545c6533f4d337
+      SOURCE_MANIFEST_SHA256: 02817147fb3f09ce97b1851299c5e446894c18ec1c73430c57a372e348768b60
+      FINAL_MANIFEST_SHA256: 10c4ceca4314f8a80f3899cfa3b6fc49a951729dad77579a314aaeb69230329d
+      PATH_LIST_SHA256: 31185dc2bc61d56c4e038764bba0d6f7bfb62b07056835e765ecf48f418dae4d
+      REPAIR_PATCH_SHA256: a6a064202749a9e36c92aed505223f956af6292845529abf418c4d024ee97e53
+      REPAIR_RECEIPT_SHA256: cdd0c50ec553938dacaf4db43936bbcf5ef141b5e8ac7355e6d08adb009cf098
+      WORK: /tmp/pc56-preflight-diagnostic
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Execute instrumented preflight
+        id: preflight
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$WORK"
+          phase=bootstrap
+          trap 'rc=$?; printf "%s\n" "$phase" > "$WORK/failing-phase.txt"; printf "%s\n" "$rc" > "$WORK/exit-code.txt"; exit "$rc"' ERR
+          mark() { phase="$1"; printf "%s\n" "$phase" | tee -a "$WORK/phases.log"; }
+
+          mark reconstruct_archive
+          cat .tmp/pc56/product.b64.* | tr -d '\n\r ' | base64 --decode > "$WORK/source-product.tar.gz"
+          sha256sum "$WORK/source-product.tar.gz" | tee "$WORK/archive-observed.sha256"
+          test "$(sha256sum "$WORK/source-product.tar.gz" | awk '{print $1}')" = "$ARCHIVE_SHA256"
+
+          mark copy_and_hash_ledgers
+          cp .tmp/pc56/product-manifest.json "$WORK/source-manifest.json"
+          cp .tmp/pc56/repaired-product-manifest.json "$WORK/product-manifest.json"
+          cp .tmp/pc56/manifest-runtime-alias-repair.patch "$WORK/repair.patch"
+          cp .tmp/pc56/manifest-runtime-alias-repair-receipt.json "$WORK/repair-receipt.json"
+          sha256sum "$WORK/source-manifest.json" "$WORK/product-manifest.json" "$WORK/repair.patch" "$WORK/repair-receipt.json" | tee "$WORK/ledger-observed.sha256"
+          test "$(sha256sum "$WORK/source-manifest.json" | awk '{print $1}')" = "$SOURCE_MANIFEST_SHA256"
+          test "$(sha256sum "$WORK/product-manifest.json" | awk '{print $1}')" = "$FINAL_MANIFEST_SHA256"
+          test "$(sha256sum "$WORK/repair.patch" | awk '{print $1}')" = "$REPAIR_PATCH_SHA256"
+          test "$(sha256sum "$WORK/repair-receipt.json" | awk '{print $1}')" = "$REPAIR_RECEIPT_SHA256"
+
+          mark validate_manifests_and_archive
+          python - <<'PY'
+          import hashlib, json, os, tarfile
+          from pathlib import Path
+          root = Path(os.environ['WORK'])
+          source = json.loads((root/'source-manifest.json').read_text())
+          final = json.loads((root/'product-manifest.json').read_text())
+          repair = json.loads((root/'repair-receipt.json').read_text())
+          source_paths=[entry['path'] for entry in source['entries']]
+          final_paths=[entry['path'] for entry in final['entries']]
+          changed=sorted(path for path in final_paths if next(e for e in source['entries'] if e['path']==path)!=next(e for e in final['entries'] if e['path']==path))
+          repair_paths=sorted(entry['path'] for entry in repair['files'])
+          observations={'source_paths':source_paths,'final_paths':final_paths,'changed':changed,'repair_paths':repair_paths}
+          (root/'manifest-observations.json').write_text(json.dumps(observations,indent=2)+'\n')
+          if source_paths!=final_paths or final_paths!=sorted(final_paths) or len(set(final_paths))!=14: raise SystemExit('path ledger mismatch')
+          (root/'product-paths.txt').write_text('\n'.join(final_paths)+'\n')
+          observed=hashlib.sha256((root/'product-paths.txt').read_bytes()).hexdigest()
+          (root/'path-list-observed.txt').write_text(observed+'\n')
+          if observed!=os.environ['PATH_LIST_SHA256']: raise SystemExit('path-list digest mismatch')
+          expected=sorted(['test/preference-custody-manifest-v54.test.js','tools/lib/preference-custody-manifest-v54.mjs'])
+          if changed!=repair_paths or changed!=expected: raise SystemExit(f'repair denominator mismatch: {changed!r} {repair_paths!r}')
+          with tarfile.open(root/'source-product.tar.gz','r:gz') as archive:
+              members=archive.getmembers()
+              (root/'archive-members.txt').write_text('\n'.join(member.name for member in members)+'\n')
+              if [member.name for member in members]!=source_paths: raise SystemExit('archive member mismatch')
+              for member,entry in zip(members,source['entries']):
+                  data=archive.extractfile(member).read()
+                  blob=hashlib.sha1(f'blob {len(data)}\0'.encode()+data).hexdigest()
+                  if not member.isfile() or member.mode!=0o644 or len(data)!=entry['bytes'] or hashlib.sha256(data).hexdigest()!=entry['sha256'] or blob!=entry['git_blob']:
+                      raise SystemExit(f'archive identity mismatch: {member.name}')
+          PY
+
+          mark reconcile_current_main
+          git fetch --no-tags origin main "$PARENT"
+          printf '%s\n' "$(git rev-parse "$PARENT^{tree}")" > "$WORK/parent-tree-observed.txt"
+          test "$(cat "$WORK/parent-tree-observed.txt")" = "$PARENT_TREE"
+          CURRENT_MAIN=$(git rev-parse origin/main)
+          printf '%s\n' "$CURRENT_MAIN" > "$WORK/current-main.txt"
+          git merge-base --is-ancestor "$PARENT" "$CURRENT_MAIN"
+          git diff --name-only "$PARENT" "$CURRENT_MAIN" | sort -u > "$WORK/main-successor-paths.txt"
+          comm -12 "$WORK/product-paths.txt" "$WORK/main-successor-paths.txt" > "$WORK/main-overlap.txt"
+          test ! -s "$WORK/main-overlap.txt"
+          : > "$WORK/existing-product-paths.txt"
+          while IFS= read -r path; do
+            if git cat-file -e "$CURRENT_MAIN:$path" 2>/dev/null; then printf '%s\n' "$path" >> "$WORK/existing-product-paths.txt"; fi
+          done < "$WORK/product-paths.txt"
+          test ! -s "$WORK/existing-product-paths.txt"
+
+          mark apply_repair
+          git checkout --detach "$PARENT"
+          tar -xzf "$WORK/source-product.tar.gz"
+          git apply --check "$WORK/repair.patch"
+          git apply "$WORK/repair.patch"
+
+          mark verify_final_files
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          root=Path(os.environ['WORK'])
+          manifest=json.loads((root/'product-manifest.json').read_text())
+          observed=[]
+          for entry in manifest['entries']:
+              data=Path(entry['path']).read_bytes()
+              sha=hashlib.sha256(data).hexdigest()
+              blob=hashlib.sha1(f'blob {len(data)}\0'.encode()+data).hexdigest()
+              observed.append({'path':entry['path'],'bytes':len(data),'sha256':sha,'git_blob':blob})
+              if len(data)!=entry['bytes'] or sha!=entry['sha256'] or blob!=entry['git_blob']:
+                  raise SystemExit(f'final identity mismatch: {entry["path"]}')
+          (root/'final-observations.json').write_text(json.dumps(observed,indent=2)+'\n')
+          PY
+
+          mark construct_tree
+          git add --pathspec-from-file="$WORK/product-paths.txt"
+          git diff --cached --name-status "$PARENT" > "$WORK/product-delta.tsv"
+          test "$(wc -l < "$WORK/product-delta.tsv" | tr -d ' ')" = 14
+          awk '$1 != "A" { exit 1 }' "$WORK/product-delta.tsv"
+          git write-tree > "$WORK/product-tree.txt"
+          : > "$WORK/product-blobs.tsv"
+          while IFS= read -r path; do printf '%s\t%s\n' "$path" "$(git rev-parse ":$path")" >> "$WORK/product-blobs.tsv"; done < "$WORK/product-paths.txt"
+
+          mark complete
+          printf '%s\n' complete > "$WORK/status.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pc56-preflight-diagnostic
+          path: /tmp/pc56-preflight-diagnostic
+          if-no-files-found: error
+          retention-days: 30
+      - name: Preserve fail-closed result
+        if: steps.preflight.outcome != 'success'
+        run: exit 1
