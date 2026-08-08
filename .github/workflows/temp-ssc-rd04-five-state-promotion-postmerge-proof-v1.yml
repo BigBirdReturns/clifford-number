@@ -1,0 +1,222 @@
+name: TEMP prove canonical RD-04 five-state promotion
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: rd04-five-state-promotion-postmerge-proof-v1-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+env:
+  CANONICAL_MAIN: 987f1b2574eeddaba49d67c1c1498a81d40f7c69
+  PRODUCT_PARENT: fdcbfbcd7e5a373444b25d3132d058669f8b3a71
+  PRODUCT_COMMIT: feadf9f13d87d714eca4b5d142538a4a73d684aa
+  PRODUCT_MERGE: 120c3b51b696a002a06ff82a0599216b84247882
+  REPAIR_COMMIT: 93ad86dcd16cae56ac330cfc12236659a7952a1b
+  REPAIRED_WORKFLOW_BLOB: 11e58adffabd25fc8efdfda0f48ae134cfb29021
+  CARRIER_PATH: .github/workflows/temp-ssc-rd04-five-state-promotion-postmerge-proof-v1.yml
+
+jobs:
+  prove:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-five-state-promotion-postmerge-proof-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+      - name: Authenticate canonical ancestry, native push proof, and deterministic product
+        id: prove
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-five-state-promotion-postmerge-proof-v1
+          CANON="$OUT/canonical"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          trap 'status=$?; printf "exit_code=%s\nfailure_line=%s\nfailure_command=%s\n" "$status" "${BASH_LINENO[0]:-unknown}" "${BASH_COMMAND:-unknown}" > "$OUT/failure.txt"; exit "$status"' ERR
+          exec > >(tee "$OUT/proof.log") 2>&1
+
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_MAIN"
+          test "$(git rev-list --count "$CANONICAL_MAIN"..HEAD)" = 1
+          test "$(git diff --name-only "$CANONICAL_MAIN" HEAD)" = "$CARRIER_PATH"
+          test "$(git rev-parse HEAD)" = '${{ github.event.pull_request.head.sha }}'
+
+          git fetch --force --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$CANONICAL_MAIN"
+          git merge-base --is-ancestor "$PRODUCT_COMMIT" origin/main
+          git merge-base --is-ancestor "$PRODUCT_MERGE" origin/main
+          git merge-base --is-ancestor "$REPAIR_COMMIT" origin/main
+          test "$(git rev-list --count "$PRODUCT_PARENT".."$PRODUCT_COMMIT")" = 1
+
+          cat > "$OUT/product-paths.txt" <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/cell-promotion-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-decisions.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-input-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/remaining-open-field-census.json
+          docs/milestones/ssc-rd-wave03-rd04-five-state-promotion.md
+          schemas/status-sovereignty-rd-wave03-rd04-five-state-promotion.schema.json
+          test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          EOF
+          sed -i 's/^          //' "$OUT/product-paths.txt"
+          git diff --name-only --diff-filter=A "$PRODUCT_PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort > "$OUT/product-added-paths.txt"
+          diff -u "$OUT/product-paths.txt" "$OUT/product-added-paths.txt"
+          test "$(wc -l < "$OUT/product-paths.txt" | tr -d ' ')" = 14
+
+          : > "$OUT/canonical-blob-census.tsv"
+          while IFS= read -r path; do
+            MAIN_BLOB=$(git rev-parse "origin/main:$path")
+            if test "$path" = '.github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml'; then
+              test "$MAIN_BLOB" = "$REPAIRED_WORKFLOW_BLOB"
+              printf '%s\trepaired\t%s\n' "$path" "$MAIN_BLOB" >> "$OUT/canonical-blob-census.tsv"
+            else
+              PRODUCT_BLOB=$(git rev-parse "$PRODUCT_COMMIT:$path")
+              test "$MAIN_BLOB" = "$PRODUCT_BLOB"
+              printf '%s\tunchanged\t%s\n' "$path" "$MAIN_BLOB" >> "$OUT/canonical-blob-census.tsv"
+            fi
+          done < "$OUT/product-paths.txt"
+          test "$(grep -c $'\tunchanged\t' "$OUT/canonical-blob-census.tsv")" = 13
+          test "$(grep -c $'\trepaired\t' "$OUT/canonical-blob-census.tsv")" = 1
+
+          WORKFLOW='status-sovereignty-rd-wave03-rd04-five-state-promotion.yml'
+          : > "$OUT/native-push-run.json"
+          for attempt in $(seq 1 36); do
+            gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$WORKFLOW/runs?branch=main&event=push&per_page=100" > "$OUT/native-push-runs.json"
+            RUN_ID=$(jq -r --arg sha "$CANONICAL_MAIN" '[.workflow_runs[] | select(.head_sha == $sha and .event == "push")] | sort_by(.run_number) | last | .id // empty' "$OUT/native-push-runs.json")
+            if test -n "$RUN_ID"; then
+              gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" > "$OUT/native-push-run.json"
+              STATUS=$(jq -r .status "$OUT/native-push-run.json")
+              if test "$STATUS" = completed; then
+                break
+              fi
+            fi
+            sleep 10
+          done
+          test -s "$OUT/native-push-run.json"
+          RUN_ID=$(jq -r .id "$OUT/native-push-run.json")
+          jq -e --arg sha "$CANONICAL_MAIN" '.head_sha == $sha and .event == "push" and .status == "completed" and .conclusion == "success"' "$OUT/native-push-run.json" >/dev/null
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs?per_page=100" > "$OUT/native-push-jobs.json"
+          jq -e '.jobs | length == 1 and .[0].name == "validate" and .[0].status == "completed" and .[0].conclusion == "success"' "$OUT/native-push-jobs.json" >/dev/null
+
+          git worktree add --detach "$CANON" origin/main
+          cd "$CANON"
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          git diff --exit-code -- data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion
+          python - <<'PYSCHEMA'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          root=Path('.')
+          schema=json.loads((root/'schemas/status-sovereignty-rd-wave03-rd04-five-state-promotion.schema.json').read_text())
+          validator=Draft202012Validator(schema)
+          product=root/'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion'
+          names=['promotion-input-custody.json','promotion-decisions.json','cell-promotion-ledger.json','promoted-partial-field-matrix.json','remaining-open-field-census.json','promotion-summary.json','index.json','product-manifest.json']
+          for name in names:
+              validator.validate(json.loads((product/name).read_text()))
+          print(f'canonical_recursive_schema_validation=pass objects={len(names)}')
+          PYSCHEMA
+          node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+
+          git restore --staged --worktree .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          cd - >/dev/null
+
+          jq -n \
+            --arg schema_version 'ssc-rd04-five-state-promotion-canonical-postmerge-proof@1' \
+            --arg proof 'pass' \
+            --arg canonical_main "$CANONICAL_MAIN" \
+            --arg product_parent "$PRODUCT_PARENT" \
+            --arg product_commit "$PRODUCT_COMMIT" \
+            --arg product_merge "$PRODUCT_MERGE" \
+            --arg repair_commit "$REPAIR_COMMIT" \
+            --arg repaired_workflow_blob "$REPAIRED_WORKFLOW_BLOB" \
+            --argjson native_push_run "$RUN_ID" \
+            '{
+              schema_version:$schema_version,
+              proof:$proof,
+              canonical_main:$canonical_main,
+              product_parent:$product_parent,
+              product_commit:$product_commit,
+              product_merge:$product_merge,
+              repair_commit:$repair_commit,
+              repaired_workflow_blob:$repaired_workflow_blob,
+              permanent_product_paths:14,
+              unchanged_product_blobs:13,
+              repaired_workflow_blobs:1,
+              native_push_workflow_run:$native_push_run,
+              native_push_workflow_conclusion:"success",
+              recursively_closed_schema_objects:8,
+              terminal_cells:222,
+              still_open_cells:228,
+              terminal_substantive_cells:112,
+              still_open_substantive_cells:188,
+              terminal_units:10,
+              open_units:40,
+              row_state_mutations:0,
+              class_closed:false,
+              cumulative_ledger_effect:"none",
+              source_requests:0,
+              outside_human_dependency:false,
+              publication_effect:"none",
+              adoption_effect:"none",
+              graph_effect:"none",
+              complete_release_gate:"pass",
+              clean_replay:"pass"
+            }' > "$OUT/proof.json"
+
+          rm -rf "$CANON"
+          find "$OUT" -maxdepth 1 -type f ! -name SHA256SUMS -printf '%f\n' | LC_ALL=C sort | while IFS= read -r name; do
+            sha256sum "$OUT/$name"
+          done | sed "s#  $OUT/#  #" > "$OUT/SHA256SUMS"
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+
+      - name: Preserve canonical proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-promotion-postmerge-proof-v1
+          path: /tmp/ssc-rd04-five-state-promotion-postmerge-proof-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
