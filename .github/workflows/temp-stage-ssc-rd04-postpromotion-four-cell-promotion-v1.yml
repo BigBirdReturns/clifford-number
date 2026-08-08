@@ -1,0 +1,164 @@
+name: TEMP stage exact RD-04 postpromotion four-cell promotion blobs
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/scripts/temp-stage-ssc-rd04-postpromotion-four-cell-promotion-v1.sh'
+      - '.github/workflows/temp-stage-ssc-rd04-postpromotion-four-cell-promotion-v1.yml'
+      - '.tmp/ssc-rd04-postpromotion-four-cell-promotion-v1/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: temp-stage-ssc-rd04-postpromotion-four-cell-promotion-v1
+  cancel-in-progress: false
+
+env:
+  PRODUCT_PARENT: d35deab5ef1e255e5957f29e11fe53fcf74e1cfd
+  PRODUCT_PARENT_TREE: cb129c2c7297ef5aa2dc0076030f8d2eb5440860
+  CARRIER_BRANCH: agent/ssc-rd04-postpromotion-four-cell-promotion-stager-v1
+  CARRIER_SCRIPT_PATH: .github/scripts/temp-stage-ssc-rd04-postpromotion-four-cell-promotion-v1.sh
+  CARRIER_WORKFLOW_PATH: .github/workflows/temp-stage-ssc-rd04-postpromotion-four-cell-promotion-v1.yml
+  CHUNK_DIR: .tmp/ssc-rd04-postpromotion-four-cell-promotion-v1
+  PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-four-cell-promotion-product-v1
+  STAGING_BRANCH: staging/ssc-rd04-postpromotion-four-cell-promotion-ordinary-v1
+  PRODUCT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.yml
+  STAGED_WORKFLOW: .tmp/ssc-rd04-postpromotion-four-cell-promotion-staged/permanent-workflow.yml
+  PRODUCT_BUILDER: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs
+  PRODUCT_VALIDATOR: tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs
+  PRODUCT_TEST: test/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.test.js
+
+jobs:
+  stage:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-four-cell-promotion-stager-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Authenticate and syntax-check exact stager
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(stat -c %s "$CARRIER_SCRIPT_PATH")" -eq 15574
+          test "$(sha256sum "$CARRIER_SCRIPT_PATH" | cut -d' ' -f1)" = 856336d6795a98186c523be0435be9a70719894208a3ab5ee13f702aadd6c48d
+          bash -n "$CARRIER_SCRIPT_PATH"
+
+      - name: Reconstruct, qualify, and stage exact ordinary product blobs
+        id: staging
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref || '' }}
+        run: bash "$CARRIER_SCRIPT_PATH"
+
+      - name: Upload exact staging custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-four-cell-promotion-stager-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-four-cell-promotion-stager-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Report exact staging outcome
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R="${RUNNER_TEMP}/ssc-rd04-postpromotion-four-cell-promotion-stager-v1/receipt.json"
+          test -s "$R"
+          {
+            printf '%s\n\n' 'RD-04 postpromotion four-cell promotion staging reached a typed result.'
+            printf '%s\n' '```text'
+            printf 'state: %s\n' "$(jq -r .state "$R")"
+            printf 'stage: %s\n' "$(jq -r .failed_or_final_stage "$R")"
+            printf 'product_parent: %s\n' "$(jq -r .product_parent "$R")"
+            printf 'qualified_full_candidate_commit: %s\n' "$(jq -r '.qualified_full_candidate_commit // "none"' "$R")"
+            printf 'qualified_full_candidate_tree: %s\n' "$(jq -r '.qualified_full_candidate_tree // "none"' "$R")"
+            printf 'staging_commit: %s\n' "$(jq -r '.staging_commit // "none"' "$R")"
+            printf 'staging_tree: %s\n' "$(jq -r '.staging_tree // "none"' "$R")"
+            printf 'permanent_product_paths: %s\n' "$(jq -r .permanent_product_paths "$R")"
+            printf 'candidate_findings_promoted: %s\n' "$(jq -r '.candidate_findings_promoted // 0' "$R")"
+            printf 'terminal_cells_after: %s\n' "$(jq -r '.terminal_cells_after // 222' "$R")"
+            printf 'open_substantive_cells_after: %s\n' "$(jq -r '.open_substantive_cells_after // 188' "$R")"
+            printf 'source_requests_executed: %s\n' "$(jq -r .source_requests_executed "$R")"
+            printf 'class_closed: %s\n' "$(jq -r .class_closed "$R")"
+            printf '%s\n\n' '```'
+            printf '%s\n' 'This is ordinary Git-object custody only. The permanent workflow remains outside the staging ref, the carrier has no merge authority, and connector-owned final tree assembly remains required before any product PR can exist.'
+          } > /tmp/rd04-four-cell-staging-result.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/rd04-four-cell-staging-result.md
+
+      - name: Preserve fail-closed conclusion
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-postpromotion-four-cell-promotion-stager-v1"
+          R="$OUT/receipt.json"
+          test "${{ steps.staging.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e \
+            --arg parent "$PRODUCT_PARENT" \
+            --arg parent_tree "$PRODUCT_PARENT_TREE" \
+            --arg staging_branch "$STAGING_BRANCH" \
+            '.state=="qualified_staging_published" and
+             .failed_or_final_stage=="complete" and
+             .exit_code==0 and
+             .product_parent==$parent and
+             .product_parent_tree==$parent_tree and
+             .product_archive_sha256=="8f9399a250db7e36fcea25f0c33f3762e1e85afe1d0f2af40d789a0c2721e433" and
+             .permanent_product_paths==14 and
+             .staging_branch==$staging_branch and
+             .staging_paths==14 and
+             .permanent_workflow_omitted_from_staging==true and
+             .permanent_workflow_git_blob=="963682f980f2725669dcb66e87100a6b45b9139e" and
+             .candidate_findings_promoted==4 and
+             .unique_cells_terminalized==4 and
+             .terminal_cells_before==222 and
+             .terminal_cells_after==226 and
+             .open_substantive_cells_before==188 and
+             .open_substantive_cells_after==184 and
+             .terminal_units_before==10 and
+             .terminal_units_after==10 and
+             .held_north_dakota_cells==2 and
+             .source_requests_executed==0 and
+             .route_executions==0 and
+             .matrix_updates_created_by_stager==0 and
+             .field_terminalizations_created_by_stager==0 and
+             .row_state_mutations==0 and
+             .class_closed==false and
+             .cumulative_ledger_effect=="none" and
+             .outside_human_dependency==false and
+             .publication_effect=="none" and
+             .adoption_effect=="none" and
+             .graph_effect=="none" and
+             .product_authority_created==false and
+             .connector_final_assembly_required==true' "$R" > /dev/null
