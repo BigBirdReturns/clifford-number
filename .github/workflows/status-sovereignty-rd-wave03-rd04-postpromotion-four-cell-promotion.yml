@@ -1,0 +1,115 @@
+name: Status sovereignty RD Wave 03 RD-04 postpromotion four-cell promotion
+
+on:
+  pull_request:
+    paths:
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/promotion-candidate-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/capture-custody.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/source-adjudications.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/pdf-review-receipts.json'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/**'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.test.js'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.schema.json'
+      - 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-four-cell-promotion.md'
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/promotion-candidate-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/field-adjudications.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/capture-custody.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/source-adjudications.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication/pdf-review-receipts.json'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication.test.js'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/**'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.test.js'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.schema.json'
+      - 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-four-cell-promotion.md'
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned schema and workflow parsers
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+
+      - name: Parse the standing workflow
+        run: python -c "import yaml; yaml.safe_load(open('.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.yml'))"
+
+      - name: Rebuild exact permanent data product
+        run: |
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs
+          git diff --exit-code -- data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion
+
+      - name: Enforce recursively closed product schemas
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          schema = json.loads(Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.schema.json').read_text())
+          Draft202012Validator.check_schema(schema)
+          validator = Draft202012Validator(schema)
+          root = Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion')
+          for name in [
+              'promotion-input-custody.json',
+              'promotion-decisions.json',
+              'cell-promotion-ledger.json',
+              'promoted-partial-field-matrix.json',
+              'remaining-open-field-census.json',
+              'promotion-summary.json',
+              'index.json',
+              'product-manifest.json',
+          ]:
+              errors = sorted(validator.iter_errors(json.loads((root / name).read_text())), key=lambda error: list(error.path))
+              if errors:
+                  raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
+          print('recursive_schema_validation=pass objects=8')
+          PY
+
+      - name: Validate focused and adversarial promotion controls
+        run: |
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion
+          path: |
+            data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion
+            docs/milestones/ssc-rd-wave03-rd04-postpromotion-four-cell-promotion.md
+          if-no-files-found: error
+          retention-days: 90
