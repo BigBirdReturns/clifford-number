@@ -1,0 +1,259 @@
+name: TEMP prove RD-04 promotion trigger postmerge v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-prove-ssc-rd04-five-state-promotion-trigger-postmerge-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+concurrency:
+  group: temp-prove-ssc-rd04-five-state-promotion-trigger-postmerge-v2
+  cancel-in-progress: true
+
+env:
+  CANONICAL_BASE: 987f1b2574eeddaba49d67c1c1498a81d40f7c69
+  PRODUCT_HEAD: 1929fca960292cadd6a2b0c98ccf5317a70b6a5f
+  CANONICAL_MERGE: 2aaadb3b87c83a8cf79ded7046a3856101bf943b
+  WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml
+  WORKFLOW_BLOB: 95283ea8ab97e79b81fa7faaf1526c27725a1398
+  WORKFLOW_NAME: Status sovereignty RD Wave 03 RD-04 five-state promotion
+
+jobs:
+  prove:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'observer/ssc-rd04-five-state-promotion-trigger-postmerge-v2')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Bind exact observer and canonical merge topology
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OBSERVER_PATH='.github/workflows/temp-prove-ssc-rd04-five-state-promotion-trigger-postmerge-v2.yml'
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_MERGE"
+          test "$(git rev-list --count "$CANONICAL_MERGE"..HEAD)" = 1
+          test "$(git diff --name-only "$CANONICAL_MERGE" HEAD)" = "$OBSERVER_PATH"
+          git diff --check "$CANONICAL_MERGE" HEAD
+
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          printf '%s\n' "$LIVE_MAIN" > /tmp/live-main.txt
+          git merge-base --is-ancestor "$CANONICAL_MERGE" "$LIVE_MAIN"
+
+          test "$(git rev-parse "$PRODUCT_HEAD^")" = "$CANONICAL_BASE"
+          test "$(git rev-list --count "$CANONICAL_BASE".."$PRODUCT_HEAD")" = 1
+          test "$(git rev-parse "$CANONICAL_MERGE^1")" = "$CANONICAL_BASE"
+          test "$(git rev-parse "$CANONICAL_MERGE^2")" = "$PRODUCT_HEAD"
+          test "$(git rev-parse "$CANONICAL_MERGE^{tree}")" = "$(git rev-parse "$PRODUCT_HEAD^{tree}")"
+
+          test "$(git diff --name-only "$CANONICAL_BASE" "$CANONICAL_MERGE")" = "$WORKFLOW_PATH"
+          test "$(git diff --numstat "$CANONICAL_BASE" "$CANONICAL_MERGE")" = $'10\t0\t'"$WORKFLOW_PATH"
+          test "$(git rev-parse "$PRODUCT_HEAD:$WORKFLOW_PATH")" = "$WORKFLOW_BLOB"
+          test "$(git rev-parse "$CANONICAL_MERGE:$WORKFLOW_PATH")" = "$WORKFLOW_BLOB"
+          test "$(git rev-parse "$LIVE_MAIN:$WORKFLOW_PATH")" = "$WORKFLOW_BLOB"
+
+      - name: Prove symmetric subscription, verification, and live blob custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git show "$CANONICAL_MERGE:$WORKFLOW_PATH" > /tmp/repaired-workflow.yml
+          cat > /tmp/input-blobs.txt <<'EOF'
+          ab5f136d887aa6f21edc793e7394fee38b8ad6f6 data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-row-state-adjudication/promoted-partial-field-matrix.json
+          30705b3d0f74d1b75f81175c2e9ca3fa9bf76c4a data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/promotion-candidate-protocol.json
+          ca0be819a522532ecc7b0ee07909382ece6a8329 data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/field-adjudications.json
+          863ab334d4f5a4a77003a9d39383ded489ab412e data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/capture-custody.json
+          53f378c9c4a56ca4aab0312bba38150b071786af data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/source-adjudications.json
+          EOF
+          LIVE_MAIN="$(cat /tmp/live-main.txt)"
+          while read -r expected path; do
+            test "$(git rev-parse "$CANONICAL_MERGE:$path")" = "$expected"
+            test "$(git rev-parse "$LIVE_MAIN:$path")" = "$expected"
+          done < /tmp/input-blobs.txt
+
+          python - <<'PY'
+          from pathlib import Path
+
+          text = Path('/tmp/repaired-workflow.yml').read_text(encoding='utf-8')
+          inputs = [line.split(' ', 1)[1] for line in Path('/tmp/input-blobs.txt').read_text().splitlines() if line.strip()]
+          pull = text.split('  pull_request:', 1)[1].split('  push:', 1)[0]
+          push = text.split('  push:', 1)[1].split('  workflow_dispatch:', 1)[0]
+          verify = text.split('      - name: Verify immutable promotion inputs', 1)[1].split('      - name:', 1)[0]
+          for path in inputs:
+              assert pull.count(path) == 1, (path, 'pull_request', pull.count(path))
+              assert push.count(path) == 1, (path, 'push', push.count(path))
+              assert verify.count(path) == 1, (path, 'verification', verify.count(path))
+              assert text.count(path) == 3, (path, 'complete_workflow', text.count(path))
+          print('symmetric_input_subscription=pass inputs=5 pull_entries=5 push_entries=5 verification_entries=5')
+          PY
+
+      - name: Recover and authenticate native canonical push run
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-five-state-promotion-trigger-postmerge-v2
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+
+          run_id=''
+          run_status=''
+          run_conclusion=''
+          for attempt in $(seq 1 120); do
+            curl -fsSL \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$CANONICAL_MERGE&event=push&per_page=100" \
+              > "$OUT/runs.json"
+            run_id="$(jq -r --arg name "$WORKFLOW_NAME" --arg sha "$CANONICAL_MERGE" \
+              '[.workflow_runs[] | select(.name==$name and .head_sha==$sha and .event=="push")] | sort_by(.created_at) | last | .id // empty' \
+              "$OUT/runs.json")"
+            if test -n "$run_id"; then
+              run_status="$(jq -r --argjson id "$run_id" '.workflow_runs[] | select(.id==$id) | .status' "$OUT/runs.json")"
+              run_conclusion="$(jq -r --argjson id "$run_id" '.workflow_runs[] | select(.id==$id) | .conclusion // ""' "$OUT/runs.json")"
+              if test "$run_status" = completed; then break; fi
+            fi
+            sleep 10
+          done
+          test -n "$run_id"
+          test "$run_status" = completed
+          test "$run_conclusion" = success
+
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$run_id" \
+            > "$OUT/run.json"
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?filter=latest&per_page=100" \
+            > "$OUT/jobs.json"
+
+          jq -e --arg sha "$CANONICAL_MERGE" --arg name "$WORKFLOW_NAME" \
+            '.head_sha==$sha and .name==$name and .event=="push" and .status=="completed" and .conclusion=="success"' \
+            "$OUT/run.json" >/dev/null
+          jq -e '.total_count==1 and (.jobs|length)==1 and .jobs[0].name=="validate" and .jobs[0].status=="completed" and .jobs[0].conclusion=="success"' \
+            "$OUT/jobs.json" >/dev/null
+          for step in \
+            'Verify immutable promotion inputs' \
+            'Validate deterministic product and recursively closed schema family' \
+            'Run complete repository release gate' \
+            'Prove clean deterministic replay'; do
+            jq -e --arg step "$step" \
+              '.jobs[0].steps | any(.name==$step and .status=="completed" and .conclusion=="success")' \
+              "$OUT/jobs.json" >/dev/null
+          done
+          jq -e '[.jobs[0].steps[] | select(.conclusion!="success" and .conclusion!="skipped")] | length==0' \
+            "$OUT/jobs.json" >/dev/null
+          printf '%s\n' "$run_id" > "$OUT/run-id.txt"
+          jq -r '.jobs[0].id' "$OUT/jobs.json" > "$OUT/job-id.txt"
+
+      - name: Seal exact postmerge receipt
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-five-state-promotion-trigger-postmerge-v2
+          LIVE_MAIN="$(cat /tmp/live-main.txt)"
+          cp /tmp/repaired-workflow.yml "$OUT/repaired-workflow.yml"
+          cp /tmp/input-blobs.txt "$OUT/input-blobs.txt"
+          git ls-tree "$CANONICAL_MERGE" -- "$WORKFLOW_PATH" > "$OUT/workflow-tree-row.txt"
+          git diff --numstat "$CANONICAL_BASE" "$CANONICAL_MERGE" > "$OUT/merge-numstat.txt"
+
+          python - "$OUT/receipt.json" "$LIVE_MAIN" <<'PY'
+          from pathlib import Path
+          import json
+          import os
+          import sys
+
+          output = Path(sys.argv[1])
+          live_main = sys.argv[2]
+          out = output.parent
+          run = json.loads((out / 'run.json').read_text())
+          jobs = json.loads((out / 'jobs.json').read_text())
+          job = jobs['jobs'][0]
+          receipt = {
+              'schema_version': 'ssc-rd04-five-state-promotion-trigger-postmerge@2',
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'canonical_base': os.environ['CANONICAL_BASE'],
+              'product_head': os.environ['PRODUCT_HEAD'],
+              'canonical_merge': os.environ['CANONICAL_MERGE'],
+              'live_main': live_main,
+              'canonical_merge_ancestral_to_live_main': True,
+              'workflow_path': os.environ['WORKFLOW_PATH'],
+              'workflow_git_blob': os.environ['WORKFLOW_BLOB'],
+              'changed_paths': 1,
+              'workflow_additions': 10,
+              'workflow_deletions': 0,
+              'immutable_input_count': 5,
+              'pull_request_trigger_entries': 5,
+              'push_trigger_entries': 5,
+              'verification_entries': 5,
+              'symmetric_input_subscription': True,
+              'push_run_id': run['id'],
+              'push_run_attempt': run['run_attempt'],
+              'push_run_status': run['status'],
+              'push_run_conclusion': run['conclusion'],
+              'push_run_head_sha': run['head_sha'],
+              'push_job_id': job['id'],
+              'push_job_name': job['name'],
+              'push_job_conclusion': job['conclusion'],
+              'push_job_steps': [
+                  {'number': step['number'], 'name': step['name'], 'status': step['status'], 'conclusion': step['conclusion']}
+                  for step in job.get('steps', [])
+              ],
+              'matrix_cells_changed_by_observer': 0,
+              'row_state_changes': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'authority': 'postmerge_workflow_trigger_custody_only',
+          }
+          output.write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          PY
+
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS > SHA256-CHECK.log
+          )
+
+      - name: Upload exact postmerge proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-promotion-trigger-postmerge-v2
+          path: /tmp/ssc-rd04-five-state-promotion-trigger-postmerge-v2
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Report exact terminal receipt
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R=/tmp/ssc-rd04-five-state-promotion-trigger-postmerge-v2/receipt.json
+          jq -r '"RD-04 immutable-input trigger custody is canonically proved.\n\n```text\ncanonical_merge: \(.canonical_merge)\nlive_main: \(.live_main)\nworkflow_git_blob: \(.workflow_git_blob)\nchanged_paths: \(.changed_paths)\nworkflow_additions / deletions: \(.workflow_additions) / \(.workflow_deletions)\nimmutable_inputs: \(.immutable_input_count)\npull_request / push / verification entries: \(.pull_request_trigger_entries) / \(.push_trigger_entries) / \(.verification_entries)\nsymmetric_subscription: \(.symmetric_input_subscription)\npush_run: \(.push_run_id)\npush_attempt: \(.push_run_attempt)\npush_conclusion: \(.push_run_conclusion)\npush_job: \(.push_job_id)\npush_job_conclusion: \(.push_job_conclusion)\nmatrix_changes: \(.matrix_cells_changed_by_observer)\nrow_state_changes: \(.row_state_changes)\nclass_closed: \(.class_closed)\ncumulative_ledger_effect: \(.cumulative_ledger_effect)\n```\n\nThis receipt closes only the workflow event-routing defect. It creates no new source, field, matrix, row, class, cumulative-ledger, publication, adoption, graph, prevalence, discrimination, racial-order, coordination, common-purpose, or complete-compact finding."' "$R" > /tmp/comment.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
