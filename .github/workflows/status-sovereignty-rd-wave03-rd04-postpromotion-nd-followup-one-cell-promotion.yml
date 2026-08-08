@@ -1,0 +1,138 @@
+name: Status sovereignty RD Wave 03 RD-04 North Dakota follow-up one-cell promotion
+
+on:
+  pull_request:
+    paths:
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promoted-partial-field-matrix.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/**'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.test.js'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/**'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.test.js'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.schema.json'
+      - 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.md'
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-four-cell-promotion/promoted-partial-field-matrix.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication/**'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.test.js'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/**'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.mjs'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.test.js'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.schema.json'
+      - 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.md'
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion
+      PRODUCT_SCHEMA: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.schema.json
+      RELEASE_STATUS: ${{ runner.temp }}/rd04-nd-followup-one-cell-post-release-status.txt
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned schema and workflow parsers
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+
+      - name: Bind exact head and parse standing workflow
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          python -c "import yaml; yaml.safe_load(open('.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.yml'))"
+
+      - name: Rebuild exact permanent product and schema
+        run: |
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.mjs
+          git diff --exit-code -- "$PRODUCT_ROOT" "$PRODUCT_SCHEMA"
+
+      - name: Enforce recursively closed Draft 2020-12 schemas
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          schema_path = Path('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.schema.json')
+          schema = json.loads(schema_path.read_text())
+          Draft202012Validator.check_schema(schema)
+          validator = Draft202012Validator(schema)
+          root = Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion')
+          names = [
+              'promotion-input-custody.json',
+              'promotion-decisions.json',
+              'cell-promotion-ledger.json',
+              'promoted-partial-field-matrix.json',
+              'remaining-open-field-census.json',
+              'promotion-summary.json',
+              'index.json',
+              'product-manifest.json',
+          ]
+          for name in names:
+              value = json.loads((root / name).read_text())
+              errors = sorted(validator.iter_errors(value), key=lambda error: list(error.path))
+              if errors:
+                  raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
+          print('recursive_schema_validation=pass objects=8')
+          PY
+
+      - name: Validate canonical adjudication and one-cell promotion controls
+        run: |
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.test.js
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+
+      - name: Run complete repository release gate
+        run: |
+          npm run release:check
+          git status --porcelain=v1 --untracked-files=all > "$RELEASE_STATUS"
+
+      - name: Reset and replay exact permanent product cleanly
+        run: |
+          git reset --hard "$EXACT_HEAD"
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.mjs
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.test.js
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion
+          path: |
+            data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion
+            docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.md
+            schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.schema.json
+            ${{ runner.temp }}/rd04-nd-followup-one-cell-post-release-status.txt
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
