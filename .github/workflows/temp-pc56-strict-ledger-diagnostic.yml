@@ -1,0 +1,129 @@
+name: TEMP diagnose strict repaired PC-56 ledgers
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      PARENT: 21afd8b3da1b7d06d2dada51929c63b60d6da66c
+      PARENT_TREE: e6be866eb060e4fb3b2352601f964f7b5f4605fc
+      WORK: /tmp/pc56-strict-ledger-diagnostic
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Run strict ledger diagnostics
+        id: diagnose
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$WORK"
+          cat .tmp/pc56/product.b64.* | tr -d '\n\r ' | base64 --decode > "$WORK/source-product.tar.gz"
+          cp .tmp/pc56/product-manifest.json "$WORK/source-manifest.json"
+          cp .tmp/pc56/repaired-product-manifest.json "$WORK/product-manifest.json"
+          cp .tmp/pc56/manifest-runtime-alias-repair.patch "$WORK/repair.patch"
+
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root=Path(os.environ['WORK'])
+          source=json.loads((root/'source-manifest.json').read_text())
+          final=json.loads((root/'product-manifest.json').read_text())
+          expected_top=sorted({
+            'schema_version','issue','qualified_parent','qualified_parent_tree',
+            'permanent_path_count','transport_path_count','outside_human_dependency',
+            'graph_effect','entries'
+          })
+          paths=[e['path'] for e in final['entries']]
+          blocked=('.tmp','carrier','materializer','controller','diagnostic','receipt','marker','pulse','trigger','shard')
+          matches=[{'path':path,'token':token} for path in paths for token in blocked if token in path.lower()]
+          report={
+            'expected_top_keys':expected_top,
+            'source_top_keys':sorted(source),
+            'final_top_keys':sorted(final),
+            'source_identity':{
+              'schema_version':source.get('schema_version'),'issue':source.get('issue'),
+              'qualified_parent':source.get('qualified_parent'),
+              'qualified_parent_tree':source.get('qualified_parent_tree'),
+              'permanent_path_count':source.get('permanent_path_count'),
+              'transport_path_count':source.get('transport_path_count'),
+              'outside_human_dependency':source.get('outside_human_dependency'),
+              'graph_effect':source.get('graph_effect')},
+            'final_identity':{
+              'schema_version':final.get('schema_version'),'issue':final.get('issue'),
+              'qualified_parent':final.get('qualified_parent'),
+              'qualified_parent_tree':final.get('qualified_parent_tree'),
+              'permanent_path_count':final.get('permanent_path_count'),
+              'transport_path_count':final.get('transport_path_count'),
+              'outside_human_dependency':final.get('outside_human_dependency'),
+              'graph_effect':final.get('graph_effect')},
+            'path_count':len(paths),'unique_path_count':len(set(paths)),
+            'paths_sorted':paths==sorted(paths),'blocked_matches':matches,
+          }
+          (root/'strict-manifest-report.json').write_text(json.dumps(report,indent=2)+'\n')
+          failures=[]
+          for label,manifest in [('source',source),('final',final)]:
+            if sorted(manifest)!=expected_top: failures.append(f'{label}:top_keys')
+            if manifest.get('schema_version')!='pc56-product-manifest@1': failures.append(f'{label}:schema')
+            if manifest.get('issue')!=1450: failures.append(f'{label}:issue')
+            if manifest.get('qualified_parent')!=os.environ['PARENT']: failures.append(f'{label}:parent')
+            if manifest.get('qualified_parent_tree')!=os.environ['PARENT_TREE']: failures.append(f'{label}:parent_tree')
+            if manifest.get('permanent_path_count')!=14: failures.append(f'{label}:permanent_count')
+            if manifest.get('transport_path_count')!=0: failures.append(f'{label}:transport_count')
+            if manifest.get('outside_human_dependency') is not False: failures.append(f'{label}:human')
+            if manifest.get('graph_effect')!='none': failures.append(f'{label}:graph')
+          if len(paths)!=14 or len(set(paths))!=14 or paths!=sorted(paths): failures.append('path_ledger')
+          if matches: failures.append('blocked_token_match')
+          (root/'strict-manifest-failures.json').write_text(json.dumps(failures,indent=2)+'\n')
+          if failures: raise SystemExit('strict manifest failures: '+','.join(failures))
+          (root/'product-paths.txt').write_text('\n'.join(paths)+'\n')
+          PY
+
+          git fetch --no-tags origin "$PARENT"
+          git checkout --detach "$PARENT"
+          tar -xzf "$WORK/source-product.tar.gz"
+          git apply --check "$WORK/repair.patch"
+          git apply "$WORK/repair.patch"
+          git add --pathspec-from-file="$WORK/product-paths.txt"
+          git write-tree > "$WORK/product-tree.txt"
+          : > "$WORK/product-blobs.tsv"
+          while IFS= read -r path; do
+            printf '%s\t%s\n' "$path" "$(git rev-parse ":$path")" >> "$WORK/product-blobs.tsv"
+          done < "$WORK/product-paths.txt"
+
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root=Path(os.environ['WORK'])
+          final=json.loads((root/'product-manifest.json').read_text())
+          expected={e['path']:e['git_blob'] for e in final['entries']}
+          observed=dict(line.split('\t',1) for line in (root/'product-blobs.tsv').read_text().splitlines() if line)
+          mismatches=[]
+          for path in sorted(set(expected)|set(observed)):
+            if expected.get(path)!=observed.get(path):
+              mismatches.append({'path':path,'expected':expected.get(path),'observed':observed.get(path)})
+          report={'expected':expected,'observed':observed,'mismatches':mismatches,'equal':observed==expected}
+          (root/'strict-blob-report.json').write_text(json.dumps(report,indent=2)+'\n')
+          if mismatches or observed!=expected: raise SystemExit('strict blob ledger mismatch')
+          (root/'status.txt').write_text('complete\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pc56-strict-ledger-diagnostic
+          path: /tmp/pc56-strict-ledger-diagnostic
+          if-no-files-found: error
+          retention-days: 30
+      - name: Preserve fail-closed result
+        if: steps.diagnose.outcome != 'success'
+        run: exit 1
