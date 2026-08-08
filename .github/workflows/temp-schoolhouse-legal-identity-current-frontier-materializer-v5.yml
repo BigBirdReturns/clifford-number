@@ -1,0 +1,56 @@
+name: TEMP School.House object census
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/temp-schoolhouse-legal-identity-current-frontier-materializer-v5.yml']
+permissions:
+  actions: read
+  contents: read
+jobs:
+  census:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/schoolhouse-legal-identity-current-frontier-materializer-v5-custody-repair'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: '${{ github.event.pull_request.head.sha }}', fetch-depth: 0}
+      - name: Run exact read-only census
+        env:
+          GH_TOKEN: '${{ github.token }}'
+          CHUNKS: |
+            da6e23bebd56b8f074527f092df425c7c77517b2
+            c1aaa4a6527689e9911ae61ad06c91de333d4e1d
+            7978730d54f723772d4cbb6d8d8f4d903986b529
+            444c4cf56bfad6f3ab8a1b40ab5c940222a32296
+            7f21e9d224b02b795e5ac7ea895d7e50da09e3c4
+        run: |
+          set -Eeuo pipefail
+          d="$RUNNER_TEMP/schoolhouse-current-frontier-object-census-bootstrap"
+          s="$d/object-census.sh"
+          rm -rf "$d"; mkdir -p "$d/chunks"; : > "$s"
+          printf 'source_requests=0\nproduct_execution=0\nproduct_writes=0\n' > "$d/BOUNDARY"
+          trap 'r=$?; trap - EXIT; printf "%s\n" "$r" > "$d/EXIT_CODE"; (cd "$d"; find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS); exit "$r"' EXIT
+          n=0
+          while IFS= read -r h; do
+            [ -n "$h" ] || continue
+            m="$d/chunks/$n-$h.json"; b="$d/chunks/$n-$h.raw"
+            gh api "repos/$GITHUB_REPOSITORY/git/blobs/$h" > "$m"
+            test "$(jq -r .sha "$m")" = "$h"
+            jq -r .content "$m" | tr -d '\n' | base64 -d > "$b"
+            test "$(git hash-object "$b")" = "$h"
+            cat "$b" >> "$s"; n=$((n+1))
+          done <<< "$CHUNKS"
+          test "$n" = 5
+          test "$(stat -c%s "$s")" = 14176
+          test "$(sha256sum "$s" | cut -d' ' -f1)" = 1677fff2ee96aec93320a9c8327f25da7dd9ef98f010f47066142299361d6adf
+          chmod 755 "$s"; bash -n "$s"; bash "$s"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schoolhouse-current-frontier-object-census
+          path: |
+            ${{ runner.temp }}/schoolhouse-current-frontier-object-census-bootstrap
+            ${{ runner.temp }}/schoolhouse-current-frontier-object-census
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
