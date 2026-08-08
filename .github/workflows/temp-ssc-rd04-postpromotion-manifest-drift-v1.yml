@@ -1,0 +1,128 @@
+name: TEMP diagnose RD-04 postpromotion manifest drift v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'observer/ssc-rd04-postpromotion-manifest-drift-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 1349fde39bcd69392f5a4baa90fa5e025941789d
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Rebuild and expose the exact manifest delta
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PRODUCT='1349fde39bcd69392f5a4baa90fa5e025941789d'
+          PARENT='3918c799f8b8dcdac49c33cec5c7bbd01ac428e4'
+          MANIFEST='data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/product-manifest.json'
+          OUT="$RUNNER_TEMP/ssc-rd04-postpromotion-manifest-drift-v1"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+
+          test "$(git rev-parse HEAD)" = "$PRODUCT"
+          test "$(git rev-parse HEAD^)" = "$PARENT"
+          test "$(git rev-list --count "$PARENT"..HEAD)" -eq 1
+          cp "$MANIFEST" "$OUT/committed-product-manifest.json"
+
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs --write
+          cp "$MANIFEST" "$OUT/generated-product-manifest.json"
+
+          set +e
+          diff -u "$OUT/committed-product-manifest.json" "$OUT/generated-product-manifest.json" \
+            | tee "$OUT/product-manifest.diff"
+          rc="${PIPESTATUS[0]}"
+          set -e
+          test "$rc" -eq 1
+          test -s "$OUT/product-manifest.diff"
+
+          python - "$OUT" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          out = Path(sys.argv[1])
+          committed = json.loads((out / 'committed-product-manifest.json').read_text())
+          generated = json.loads((out / 'generated-product-manifest.json').read_text())
+
+          def walk(left, right, path='$'):
+              rows = []
+              if type(left) is not type(right):
+                  return [{'path': path, 'committed': left, 'generated': right}]
+              if isinstance(left, dict):
+                  for key in sorted(set(left) | set(right)):
+                      child = f'{path}.{key}'
+                      if key not in left:
+                          rows.append({'path': child, 'committed': '<missing>', 'generated': right[key]})
+                      elif key not in right:
+                          rows.append({'path': child, 'committed': left[key], 'generated': '<missing>'})
+                      else:
+                          rows.extend(walk(left[key], right[key], child))
+                  return rows
+              if isinstance(left, list):
+                  for index in range(max(len(left), len(right))):
+                      child = f'{path}[{index}]'
+                      if index >= len(left):
+                          rows.append({'path': child, 'committed': '<missing>', 'generated': right[index]})
+                      elif index >= len(right):
+                          rows.append({'path': child, 'committed': left[index], 'generated': '<missing>'})
+                      else:
+                          rows.extend(walk(left[index], right[index], child))
+                  return rows
+              if left != right:
+                  rows.append({'path': path, 'committed': left, 'generated': right})
+              return rows
+
+          differences = walk(committed, generated)
+          if not differences:
+              raise SystemExit('expected at least one deterministic manifest difference')
+          receipt = {
+              'schema_version': 'ssc-rd04-postpromotion-manifest-drift-diagnostic@1',
+              'product_commit': '1349fde39bcd69392f5a4baa90fa5e025941789d',
+              'product_parent': '3918c799f8b8dcdac49c33cec5c7bbd01ac428e4',
+              'difference_count': len(differences),
+              'differences': differences,
+              'source_requests': 0,
+              'route_executions': 0,
+              'source_admissions': 0,
+              'field_classifications': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+          }
+          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          PY
+
+          printf 'source_requests=0\nroute_executions=0\nsource_admissions=0\nfield_classifications=0\nrow_state_mutations=0\nclass_closed=false\noutside_human_dependency=false\npublication_effect=none\nadoption_effect=none\ngraph_effect=none\n' > "$OUT/BOUNDARY"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+
+      - name: Preserve exact diagnostic receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-manifest-drift-v1
+          path: ${{ runner.temp }}/ssc-rd04-postpromotion-manifest-drift-v1
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
