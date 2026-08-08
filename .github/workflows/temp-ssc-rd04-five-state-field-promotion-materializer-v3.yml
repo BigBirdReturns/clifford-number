@@ -1,0 +1,67 @@
+name: TEMP materialize exact RD-04 five-state field promotion v3
+
+on:
+  push:
+    branches:
+      - 'agent/ssc-rd04-five-state-field-promotion-materializer-v3'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: ssc-rd04-five-state-field-promotion-materializer-v3
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: >-
+      (github.event_name == 'push' && github.ref_name == 'agent/ssc-rd04-five-state-field-promotion-materializer-v3') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/ssc-rd04-five-state-field-promotion-materializer-v3' && github.event.pull_request.head.repo.full_name == github.repository) ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+      - name: Reconstruct, authenticate, and execute controller
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          D='.tmp/ssc-rd04-five-state-field-promotion-materializer-v1'
+          O="$RUNNER_TEMP/ssc-rd04-five-state-field-promotion-materializer-v1"
+          mkdir -p "$O"
+          printf 'stage=controller_bootstrap\n' > "$O/stage.txt"
+          cat "$D"/controller.b64.part-* > "$O/controller.b64"
+          test "$(wc -c < "$O/controller.b64" | tr -d ' ')" = '5816'
+          test "$(sha256sum "$O/controller.b64" | awk '{print $1}')" = '50fab3c3f07658ebee16d2e725cb324feaeaa5b1f54e337415e45bb61be4de0a'
+          base64 -d "$O/controller.b64" > "$O/controller.sh.xz"
+          test "$(wc -c < "$O/controller.sh.xz" | tr -d ' ')" = '4360'
+          test "$(sha256sum "$O/controller.sh.xz" | awk '{print $1}')" = '14bda3749b7749fe36fefc58dcd538357fd45cdaa26f04333338036afa6691e5'
+          xz -t "$O/controller.sh.xz"
+          xz -dc "$O/controller.sh.xz" > "$O/controller.sh"
+          test "$(wc -c < "$O/controller.sh" | tr -d ' ')" = '13607'
+          test "$(sha256sum "$O/controller.sh" | awk '{print $1}')" = '85d5bef3b384fbb24d37198c3916c2c5fc6baf38de628888515810c04adedae6'
+          bash -n "$O/controller.sh"
+          bash "$O/controller.sh"
+      - name: Preserve materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-field-promotion-materializer-v3
+          path: ${{ runner.temp }}/ssc-rd04-five-state-field-promotion-materializer-v1
+          if-no-files-found: error
+          retention-days: 90
