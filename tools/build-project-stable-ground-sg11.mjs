@@ -1,2 +1,0 @@
-#!/usr/bin/env node
-console.log('build-project-stable-ground-sg11: historical checkpoint; no rebuild');
