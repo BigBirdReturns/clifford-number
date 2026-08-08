@@ -11,35 +11,38 @@ on:
       - 'test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js'
       - 'tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs'
       - 'tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/**'
+      - 'docs/milestones/ssc-rd-wave03-rd04-five-state-promotion.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-five-state-promotion.schema.json'
+      - 'test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  qualify:
-    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.ref == 'agent/ssc-rd04-five-state-promotion-product-v1' && github.event.pull_request.head.repo.full_name == github.repository)
+  validate:
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
-        with: { node-version: '24' }
-      - name: Bind exact parent and fourteen addition-only paths
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          test "$(git rev-parse HEAD^)" = '86937ea02e7e10223d0854240cd4e0cc9b6716a4'
-          test "$(git rev-list --count HEAD^..HEAD)" = 1
-          mapfile -t actual < <(git diff --name-only --diff-filter=ACDMRTUXB HEAD^ HEAD | sort)
-          mapfile -t added < <(git diff --name-only --diff-filter=A HEAD^ HEAD | sort)
-          test "${#actual[@]}" -eq 14
-          test "${#added[@]}" -eq 14
-          diff -u <(printf '%s\n' "${actual[@]}") <(printf '%s\n'             '.github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml'             'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/cell-promotion-ledger.json'             'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/index.json'             'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/product-manifest.json'             'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json'             'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-decisions.json'             'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-input-custody.json'             'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-summary.json'             'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/remaining-open-field-census.json'             'docs/milestones/ssc-rd-wave03-rd04-five-state-promotion.md'             'schemas/status-sovereignty-rd-wave03-rd04-five-state-promotion.schema.json'             'test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js'             'tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs'             'tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs' | sort)
-          test -z "$(git diff --name-only HEAD^ HEAD | grep -E '(^|/)(\.tmp|.*\.trigger)(/|$)' || true)"
-          git diff --check HEAD^ HEAD
-      - name: Verify exact input Git blobs
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+      - name: Verify immutable promotion inputs
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -48,46 +51,58 @@ jobs:
           test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/field-adjudications.json)" = ca0be819a522532ecc7b0ee07909382ece6a8329
           test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/capture-custody.json)" = 863ab334d4f5a4a77003a9d39383ded489ab412e
           test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/source-adjudications.json)" = 53f378c9c4a56ca4aab0312bba38150b071786af
-      - name: Deterministic build, recursively closed schema validation, and adversarial test
-        run: |
-          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
-          git diff --exit-code -- data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion
-          python -m pip install --disable-pip-version-check jsonschema==4.25.1
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          from jsonschema import Draft202012Validator
-          root=Path('.')
-          schema=json.loads((root/'schemas/status-sovereignty-rd-wave03-rd04-five-state-promotion.schema.json').read_text())
-          validator=Draft202012Validator(schema)
-          product=root/'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion'
-          names=['promotion-input-custody.json','promotion-decisions.json','cell-promotion-ledger.json','promoted-partial-field-matrix.json','remaining-open-field-census.json','promotion-summary.json','index.json','product-manifest.json']
-          for name in names:
-              value=json.loads((product/name).read_text())
-              errors=sorted(validator.iter_errors(value),key=lambda e:list(e.path))
-              if errors:
-                  raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
-          print('recursive_schema_validation=pass objects=8')
-          PY
-          node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
-          node test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
-      - name: Repository gates
-        run: |
-          node tools/validate-no-magic-human-gate.mjs
-          node test/no-magic-human-gate.test.js
-          npm run release:check
-      - name: Preserve qualification receipt
+      - name: Validate deterministic product and recursively closed schema family
         shell: bash
         run: |
           set -Eeuo pipefail
-          mkdir -p /tmp/rd04-five-state-promotion-qualification
-          cp -R data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion /tmp/rd04-five-state-promotion-qualification/product
-          git rev-parse HEAD > /tmp/rd04-five-state-promotion-qualification/candidate-sha.txt
-          git rev-parse HEAD^ > /tmp/rd04-five-state-promotion-qualification/parent-sha.txt
-          (cd /tmp/rd04-five-state-promotion-qualification && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ssc-rd04-five-state-promotion-qualification
-          path: /tmp/rd04-five-state-promotion-qualification
-          if-no-files-found: error
-          retention-days: 90
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          git diff --exit-code -- data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion
+          python - <<'PYSCHEMA'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          root = Path('.')
+          schema = json.loads((root / 'schemas/status-sovereignty-rd-wave03-rd04-five-state-promotion.schema.json').read_text())
+          validator = Draft202012Validator(schema)
+          product = root / 'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion'
+          names = [
+              'promotion-input-custody.json',
+              'promotion-decisions.json',
+              'cell-promotion-ledger.json',
+              'promoted-partial-field-matrix.json',
+              'remaining-open-field-census.json',
+              'promotion-summary.json',
+              'index.json',
+              'product-manifest.json',
+          ]
+          for name in names:
+              value = json.loads((product / name).read_text())
+              errors = sorted(validator.iter_errors(value), key=lambda error: list(error.path))
+              if errors:
+                  raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
+          print(f'recursive_schema_validation=pass objects={len(names)}')
+          PYSCHEMA
+          node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove clean deterministic replay
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git restore --staged --worktree .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
