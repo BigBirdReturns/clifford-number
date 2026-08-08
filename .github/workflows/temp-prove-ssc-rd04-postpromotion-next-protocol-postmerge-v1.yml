@@ -1,0 +1,390 @@
+name: TEMP prove RD-04 postpromotion next protocol postmerge v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-prove-ssc-rd04-postpromotion-next-protocol-postmerge-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+concurrency:
+  group: temp-prove-ssc-rd04-postpromotion-next-protocol-postmerge-v1
+  cancel-in-progress: true
+
+env:
+  PRODUCT_PARENT: 3918c799f8b8dcdac49c33cec5c7bbd01ac428e4
+  PRODUCT_HEAD: f45bc61a634082d6146182c880e4855ae8e8bc20
+  PRODUCT_TREE: 0b209b311baf7de54bfd638fcbf042f08bc3bfc1
+  CANONICAL_BASE: d99146fe88617e002463481732a54626aafe3924
+  CANONICAL_MERGE: 91b386df809079884825b19a6b5d864b6e739172
+  PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-next-protocol-product-v2
+  WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.yml
+  WORKFLOW_BLOB: 71595555edf68f60227d064dcb4a0eda7961ea77
+  WORKFLOW_SHA256: c34dd991abe1b0629df13a41da33d0ba0f41eceea877262234c6950839d596d8
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/product-manifest.json
+  MANIFEST_BLOB: 046f9ebfb3ddb8cce8eb6c24097489e9a7d13c8c
+  SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.schema.json
+  SCHEMA_BLOB: 4fb934b161d139629323058890f3eea78ae839fd
+  WORKFLOW_NAME: Status sovereignty RD Wave 03 RD-04 postpromotion next protocol
+  QUALIFICATION_ARTIFACT_NAME: ssc-rd04-postpromotion-next-protocol-qualification
+
+jobs:
+  prove:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'observer/ssc-rd04-postpromotion-next-protocol-postmerge-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Bind exact observer and canonical merge topology
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-postpromotion-next-protocol-postmerge-v1
+          OBSERVER_PATH='.github/workflows/temp-prove-ssc-rd04-postpromotion-next-protocol-postmerge-v1.yml'
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_MERGE"
+          test "$(git rev-list --count "$CANONICAL_MERGE"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CANONICAL_MERGE" HEAD)" = "$OBSERVER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_MERGE" HEAD)" = "$OBSERVER_PATH"
+          git diff --check "$CANONICAL_MERGE" HEAD
+
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          printf '%s\n' "$LIVE_MAIN" > "$OUT/live-main.txt"
+          git merge-base --is-ancestor "$CANONICAL_MERGE" "$LIVE_MAIN"
+
+          test "$(git rev-parse "$CANONICAL_MERGE^1")" = "$CANONICAL_BASE"
+          test "$(git rev-parse "$CANONICAL_MERGE^2")" = "$PRODUCT_HEAD"
+          test "$(git rev-parse "$PRODUCT_HEAD^")" = "$PRODUCT_PARENT"
+          test "$(git rev-list --count "$PRODUCT_PARENT".."$PRODUCT_HEAD")" -eq 1
+          test "$(git rev-parse "$PRODUCT_HEAD^{tree}")" = "$PRODUCT_TREE"
+
+          cat > "$OUT/expected-product-paths.txt" <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/frontier-selection.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/predecessor-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/previously-frozen-url-exclusion.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/route-query-contract.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol/summary.json
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-next-protocol.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.test.js
+          tools/acquisition/status-sovereignty-rd-wave03-rd04-postpromotion-next/execute-fixed-routes.py
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.mjs
+          EOF
+          LC_ALL=C sort -o "$OUT/expected-product-paths.txt" "$OUT/expected-product-paths.txt"
+
+          git diff --name-only --diff-filter=ACDMRTUXB "$PRODUCT_PARENT" "$PRODUCT_HEAD" | LC_ALL=C sort > "$OUT/product-head-paths.txt"
+          git diff --name-only --diff-filter=A "$PRODUCT_PARENT" "$PRODUCT_HEAD" | LC_ALL=C sort > "$OUT/product-head-added-paths.txt"
+          git diff --name-only --diff-filter=ACDMRTUXB "$CANONICAL_BASE" "$CANONICAL_MERGE" | LC_ALL=C sort > "$OUT/canonical-merge-paths.txt"
+          git diff --name-only --diff-filter=A "$CANONICAL_BASE" "$CANONICAL_MERGE" | LC_ALL=C sort > "$OUT/canonical-merge-added-paths.txt"
+          diff -u "$OUT/expected-product-paths.txt" "$OUT/product-head-paths.txt"
+          diff -u "$OUT/expected-product-paths.txt" "$OUT/product-head-added-paths.txt"
+          diff -u "$OUT/expected-product-paths.txt" "$OUT/canonical-merge-paths.txt"
+          diff -u "$OUT/expected-product-paths.txt" "$OUT/canonical-merge-added-paths.txt"
+          test "$(wc -l < "$OUT/expected-product-paths.txt")" -eq 14
+          test -z "$(grep -E '(^|/)(\.tmp|.*\.trigger)(/|$)' "$OUT/expected-product-paths.txt" || true)"
+
+          : > "$OUT/product-blob-ledger.txt"
+          while IFS= read -r path; do
+            product_blob="$(git rev-parse "$PRODUCT_HEAD:$path")"
+            merge_blob="$(git rev-parse "$CANONICAL_MERGE:$path")"
+            live_blob="$(git rev-parse "$LIVE_MAIN:$path")"
+            test "$product_blob" = "$merge_blob"
+            test "$product_blob" = "$live_blob"
+            printf '%s %s\n' "$product_blob" "$path" >> "$OUT/product-blob-ledger.txt"
+          done < "$OUT/expected-product-paths.txt"
+
+          test "$(git rev-parse "$PRODUCT_HEAD:$WORKFLOW_PATH")" = "$WORKFLOW_BLOB"
+          test "$(git rev-parse "$CANONICAL_MERGE:$WORKFLOW_PATH")" = "$WORKFLOW_BLOB"
+          test "$(git rev-parse "$LIVE_MAIN:$WORKFLOW_PATH")" = "$WORKFLOW_BLOB"
+          test "$(git rev-parse "$PRODUCT_HEAD:$MANIFEST_PATH")" = "$MANIFEST_BLOB"
+          test "$(git rev-parse "$CANONICAL_MERGE:$MANIFEST_PATH")" = "$MANIFEST_BLOB"
+          test "$(git rev-parse "$LIVE_MAIN:$MANIFEST_PATH")" = "$MANIFEST_BLOB"
+          test "$(git rev-parse "$PRODUCT_HEAD:$SCHEMA_PATH")" = "$SCHEMA_BLOB"
+          test "$(git rev-parse "$CANONICAL_MERGE:$SCHEMA_PATH")" = "$SCHEMA_BLOB"
+          test "$(git rev-parse "$LIVE_MAIN:$SCHEMA_PATH")" = "$SCHEMA_BLOB"
+
+          cat > "$OUT/immutable-input-blobs.txt" <<'EOF'
+          42361e559db90777e1d60aea5530df5694c86dc6 data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json
+          e6ea2bb2722d084d0bb601864d4de5d9db4c7b47 data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/remaining-open-field-census.json
+          e774a9ed555364e4c6616c407a24001dd39f8f51 data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-summary.json
+          35e09035659d54060547e84ab29d5ba440402b2c data/intake/status-sovereignty-rd-wave03-rd04-next-minimum-frontier-route-discovery-protocol/route-discovery-protocol.json
+          88cb73c7bae87a4031d1571d7dd5ebdcb58aa2f4 data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/selected-followup-protocol.json
+          53f378c9c4a56ca4aab0312bba38150b071786af data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/source-adjudications.json
+          EOF
+          while read -r expected path; do
+            test "$(git rev-parse "$CANONICAL_MERGE:$path")" = "$expected"
+            test "$(git rev-parse "$LIVE_MAIN:$path")" = "$expected"
+          done < "$OUT/immutable-input-blobs.txt"
+
+          git show "$CANONICAL_MERGE:$WORKFLOW_PATH" > "$OUT/permanent-workflow.yml"
+          test "$(stat -c %s "$OUT/permanent-workflow.yml")" -eq 12390
+          test "$(sha256sum "$OUT/permanent-workflow.yml" | cut -d' ' -f1)" = "$WORKFLOW_SHA256"
+          git diff --numstat "$CANONICAL_BASE" "$CANONICAL_MERGE" > "$OUT/canonical-merge-numstat.txt"
+          git show --no-patch --format=raw "$CANONICAL_MERGE" > "$OUT/canonical-merge-commit.txt"
+          git show --no-patch --format=raw "$PRODUCT_HEAD" > "$OUT/product-head-commit.txt"
+
+      - name: Recover exact canonical push run and artifact
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-postpromotion-next-protocol-postmerge-v1
+          mkdir -p "$OUT/push-artifact"
+
+          run_id=''
+          run_status=''
+          run_conclusion=''
+          for attempt in $(seq 1 180); do
+            curl -fsSL \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$CANONICAL_MERGE&event=push&per_page=100" \
+              > "$OUT/push-runs.json"
+            run_id="$(jq -r --arg name "$WORKFLOW_NAME" --arg sha "$CANONICAL_MERGE" '[.workflow_runs[] | select(.name==$name and .head_sha==$sha and .event=="push")] | sort_by(.created_at) | last | .id // empty' "$OUT/push-runs.json")"
+            if test -n "$run_id"; then
+              run_status="$(jq -r --argjson id "$run_id" '.workflow_runs[] | select(.id==$id) | .status' "$OUT/push-runs.json")"
+              run_conclusion="$(jq -r --argjson id "$run_id" '.workflow_runs[] | select(.id==$id) | .conclusion // ""' "$OUT/push-runs.json")"
+              if test "$run_status" = completed; then break; fi
+            fi
+            sleep 10
+          done
+          test -n "$run_id"
+          test "$run_status" = completed
+          test "$run_conclusion" = success
+
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$run_id" > "$OUT/push-run.json"
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?filter=latest&per_page=100" > "$OUT/push-jobs.json"
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?per_page=100" > "$OUT/push-artifacts.json"
+
+          jq -e --arg sha "$CANONICAL_MERGE" --arg name "$WORKFLOW_NAME" '.head_sha==$sha and .name==$name and .event=="push" and .status=="completed" and .conclusion=="success"' "$OUT/push-run.json" >/dev/null
+          jq -e '.total_count==1 and (.jobs|length)==1 and .jobs[0].name=="validate" and .jobs[0].status=="completed" and .jobs[0].conclusion=="success"' "$OUT/push-jobs.json" >/dev/null
+          for step in \
+            'Verify immutable postpromotion inputs' \
+            'Deterministic build and recursively closed schema validation' \
+            'Enforce authority and repository gates' \
+            'Prove clean deterministic replay' \
+            'Preserve exact-head qualification' \
+            'Run actions/upload-artifact@v4'; do
+            jq -e --arg step "$step" '.jobs[0].steps | any(.name==$step and .status=="completed" and .conclusion=="success")' "$OUT/push-jobs.json" >/dev/null
+          done
+          jq -e '[.jobs[0].steps[] | select(.conclusion!="success" and .conclusion!="skipped")] | length==0' "$OUT/push-jobs.json" >/dev/null
+
+          artifact_id="$(jq -r --arg name "$QUALIFICATION_ARTIFACT_NAME" '[.artifacts[] | select(.name==$name and .expired==false)] | sort_by(.created_at) | last | .id // empty' "$OUT/push-artifacts.json")"
+          artifact_digest="$(jq -r --arg name "$QUALIFICATION_ARTIFACT_NAME" '[.artifacts[] | select(.name==$name and .expired==false)] | sort_by(.created_at) | last | .digest // empty' "$OUT/push-artifacts.json")"
+          test -n "$artifact_id"
+          test -n "$artifact_digest"
+          curl -fsSL -L \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > "$OUT/push-artifact.zip"
+          test "sha256:$(sha256sum "$OUT/push-artifact.zip" | cut -d' ' -f1)" = "$artifact_digest"
+          unzip -t "$OUT/push-artifact.zip" > "$OUT/push-artifact-zip-test.log"
+          unzip -q "$OUT/push-artifact.zip" -d "$OUT/push-artifact"
+          test -f "$OUT/push-artifact/SHA256SUMS"
+          (
+            cd "$OUT/push-artifact"
+            sha256sum -c SHA256SUMS
+          ) > "$OUT/push-artifact-internal-check.log"
+
+          test "$(cat "$OUT/push-artifact/head-sha.txt")" = "$CANONICAL_MERGE"
+          test "$(cat "$OUT/push-artifact/head-tree.txt")" = "$(git rev-parse "$CANONICAL_MERGE^{tree}")"
+          test ! -e "$OUT/push-artifact/product-parent.txt"
+          jq -e '.schema_version=="ssc-rd04-postpromotion-next-execution-plan@1" and .fixed_route_count==5 and .maximum_total_requests==5 and (.route_ids|length)==5 and .source_admission_effect=="none" and .field_classification_effect=="none" and .row_state_effect=="none" and .class_effect=="none"' "$OUT/push-artifact/execution-plan.json" >/dev/null
+          test "$(git hash-object "$OUT/push-artifact/product/data/product-manifest.json")" = "$MANIFEST_BLOB"
+          test "$(git hash-object "$OUT/push-artifact/product/status-sovereignty-rd-wave03-rd04-postpromotion-next-protocol.schema.json")" = "$SCHEMA_BLOB"
+          jq -e --arg path "$WORKFLOW_PATH" --arg sha "$WORKFLOW_SHA256" '(.permanent_paths|length)==14 and (.hashed_files|any(.path==$path and .bytes==12390 and .sha256==$sha))' "$OUT/push-artifact/product/data/product-manifest.json" >/dev/null
+          jq -e '.fixed_route_count==5 and (.routes|length)==5 and ([.routes[].maximum_attempts]|all(.==1)) and ([.routes[].allow_cross_host_redirects]|all(.==false)) and .automatic_source_admissions==0 and .automatic_field_classifications==0 and .automatic_row_terminalizations==0 and .automatic_class_closures==0' "$OUT/push-artifact/product/data/route-ledger.json" >/dev/null
+          jq -e '.fixed_route_count==5 and .selected_substantive_cell_count==6 and .source_requests_executed==0 and .source_admissions==0 and .field_classifications==0 and .row_state_mutations==0 and .class_closed==false and .cumulative_ledger_effect=="none" and .outside_human_dependency==false and .publication_effect=="none" and .adoption_effect=="none" and .graph_effect=="none"' "$OUT/push-artifact/product/data/summary.json" >/dev/null
+
+          printf '%s\n' "$run_id" > "$OUT/push-run-id.txt"
+          jq -r '.jobs[0].id' "$OUT/push-jobs.json" > "$OUT/push-job-id.txt"
+          printf '%s\n' "$artifact_id" > "$OUT/push-artifact-id.txt"
+          printf '%s\n' "$artifact_digest" > "$OUT/push-artifact-digest.txt"
+
+      - name: Recover merged PR review ledger
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-postpromotion-next-protocol-postmerge-v1
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/pulls/1490" > "$OUT/pr-1490.json"
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/pulls/1490/reviews?per_page=100" > "$OUT/pr-1490-reviews.json"
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/pulls/1490/comments?per_page=100" > "$OUT/pr-1490-inline-comments.json"
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/issues/1490/comments?per_page=100" > "$OUT/pr-1490-issue-comments.json"
+          jq -e --arg merge "$CANONICAL_MERGE" --arg head "$PRODUCT_HEAD" '.merged==true and .state=="closed" and .merge_commit_sha==$merge and .head.sha==$head' "$OUT/pr-1490.json" >/dev/null
+
+      - name: Seal exact postmerge receipt
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-postpromotion-next-protocol-postmerge-v1
+          LIVE_MAIN="$(cat "$OUT/live-main.txt")"
+          python - "$OUT/receipt.json" "$LIVE_MAIN" <<'PY'
+          from pathlib import Path
+          import json
+          import os
+          import sys
+
+          out = Path('/tmp/ssc-rd04-postpromotion-next-protocol-postmerge-v1')
+          output = Path(sys.argv[1])
+          live_main = sys.argv[2]
+          run = json.loads((out / 'push-run.json').read_text())
+          jobs = json.loads((out / 'push-jobs.json').read_text())
+          artifacts = json.loads((out / 'push-artifacts.json').read_text())
+          pr = json.loads((out / 'pr-1490.json').read_text())
+          reviews = json.loads((out / 'pr-1490-reviews.json').read_text())
+          inline_comments = json.loads((out / 'pr-1490-inline-comments.json').read_text())
+          issue_comments = json.loads((out / 'pr-1490-issue-comments.json').read_text())
+          job = jobs['jobs'][0]
+          artifact_id = int((out / 'push-artifact-id.txt').read_text().strip())
+          artifact_digest = (out / 'push-artifact-digest.txt').read_text().strip()
+          artifact = next(item for item in artifacts['artifacts'] if item['id'] == artifact_id)
+          merged_at = pr.get('merged_at')
+          submitted_before_merge = [review for review in reviews if review.get('submitted_at') and merged_at and review['submitted_at'] <= merged_at]
+          review_request_comments = [comment for comment in issue_comments if '@codex review' in (comment.get('body') or '')]
+          codex_reviews = [review for review in reviews if 'codex' in ((review.get('user') or {}).get('login') or '').lower()]
+          receipt = {
+              'schema_version': 'ssc-rd04-postpromotion-next-protocol-postmerge@1',
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'pull_request': 1490,
+              'product_parent': os.environ['PRODUCT_PARENT'],
+              'product_head': os.environ['PRODUCT_HEAD'],
+              'product_tree': os.environ['PRODUCT_TREE'],
+              'canonical_base': os.environ['CANONICAL_BASE'],
+              'canonical_merge': os.environ['CANONICAL_MERGE'],
+              'canonical_merge_parent_1': os.environ['CANONICAL_BASE'],
+              'canonical_merge_parent_2': os.environ['PRODUCT_HEAD'],
+              'live_main': live_main,
+              'canonical_merge_ancestral_to_live_main': True,
+              'permanent_path_count': 14,
+              'addition_only': True,
+              'product_blobs_equal_across_head_merge_and_live_main': True,
+              'immutable_input_count': 6,
+              'workflow_path': os.environ['WORKFLOW_PATH'],
+              'workflow_git_blob': os.environ['WORKFLOW_BLOB'],
+              'workflow_sha256': os.environ['WORKFLOW_SHA256'],
+              'manifest_git_blob': os.environ['MANIFEST_BLOB'],
+              'schema_git_blob': os.environ['SCHEMA_BLOB'],
+              'push_run_id': run['id'],
+              'push_run_attempt': run['run_attempt'],
+              'push_run_status': run['status'],
+              'push_run_conclusion': run['conclusion'],
+              'push_run_head_sha': run['head_sha'],
+              'push_job_id': job['id'],
+              'push_job_name': job['name'],
+              'push_job_conclusion': job['conclusion'],
+              'push_job_steps': [
+                  {'number': step['number'], 'name': step['name'], 'status': step['status'], 'conclusion': step['conclusion']}
+                  for step in job.get('steps', [])
+              ],
+              'push_artifact_id': artifact_id,
+              'push_artifact_name': artifact['name'],
+              'push_artifact_digest': artifact_digest,
+              'push_artifact_size_bytes': artifact['size_in_bytes'],
+              'push_artifact_zip_integrity': 'pass',
+              'push_artifact_internal_checksums': 'pass',
+              'fixed_route_count': 5,
+              'maximum_total_requests': 5,
+              'source_requests_executed': 0,
+              'source_admissions': 0,
+              'field_classifications': 0,
+              'field_terminalizations': 0,
+              'matrix_updates': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'submitted_review_count_observed': len(reviews),
+              'submitted_reviews_before_merge': len(submitted_before_merge),
+              'inline_review_comment_count_observed': len(inline_comments),
+              'codex_review_request_comment_count': len(review_request_comments),
+              'codex_submitted_review_count_observed': len(codex_reviews),
+              'authority': 'canonical_protocol_and_postmerge_workflow_custody_only',
+          }
+          output.write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          PY
+
+          (
+            cd "$OUT"
+            find . -type f ! -path './push-artifact/*' ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS > SHA256-CHECK.log
+          )
+
+      - name: Upload exact postmerge proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-next-protocol-postmerge-v1
+          path: /tmp/ssc-rd04-postpromotion-next-protocol-postmerge-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Report exact terminal receipt
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R=/tmp/ssc-rd04-postpromotion-next-protocol-postmerge-v1/receipt.json
+          jq -r '"RD-04 postpromotion next-route protocol is canonically merged and push-qualified.\n\n```text\nproduct_parent: \(.product_parent)\nproduct_head: \(.product_head)\nproduct_tree: \(.product_tree)\ncanonical_base: \(.canonical_base)\ncanonical_merge: \(.canonical_merge)\nlive_main: \(.live_main)\npermanent_paths: \(.permanent_path_count)\naddition_only: \(.addition_only)\nproduct_blobs_equal: \(.product_blobs_equal_across_head_merge_and_live_main)\nimmutable_inputs: \(.immutable_input_count)\nworkflow_git_blob: \(.workflow_git_blob)\npush_run: \(.push_run_id)\npush_attempt: \(.push_run_attempt)\npush_conclusion: \(.push_run_conclusion)\npush_job: \(.push_job_id)\npush_job_conclusion: \(.push_job_conclusion)\npush_artifact: \(.push_artifact_id)\npush_artifact_digest: \(.push_artifact_digest)\nfixed_routes: \(.fixed_route_count)\nmaximum_requests_in_later_execution: \(.maximum_total_requests)\nsource_requests_executed: \(.source_requests_executed)\nsource_admissions: \(.source_admissions)\nfield_classifications: \(.field_classifications)\nrow_state_mutations: \(.row_state_mutations)\nclass_closed: \(.class_closed)\ncumulative_ledger_effect: \(.cumulative_ledger_effect)\nsubmitted_reviews_before_merge: \(.submitted_reviews_before_merge)\ncodex_review_requests: \(.codex_review_request_comment_count)\ncodex_submitted_reviews_observed: \(.codex_submitted_review_count_observed)\n```\n\nThe permanent object freezes five official routes across six still-open Montana and North Dakota substantive cells. The canonical push run rebuilt and validated the protocol, executed the route runner only in dry-run mode, passed the complete repository and authority gates, and reproduced a checksum-bound artifact. No route was requested, no source was admitted, no field or row was terminalized, and RD-04-C02 remains open. The review ledger is reported exactly rather than inferred. The control question is whether the next transaction executes only these five frozen routes once in a separate never-merge carrier and preserves every capture as transport custody pending offline adjudication."' "$R" > /tmp/comment.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
