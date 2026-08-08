@@ -7,6 +7,13 @@ import { PERMANENT_PATHS, deriveCandidateProtocol, deriveIndex } from './build-s
 const ROOT = process.cwd();
 const DATA_REL = 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-five-route-adjudication';
 const DATA = path.join(ROOT, DATA_REL);
+const ROUTE_TARGET_FIELDS = new Map([
+  ['RD04-W03-PPN-MT-001', ['operative_state_implementation_authority_and_version', 'implementation_effective_date_or_typed_gap']],
+  ['RD04-W03-PPN-MT-002', ['operative_state_implementation_authority_and_version', 'implementation_effective_date_or_typed_gap']],
+  ['RD04-W03-PPN-MT-003', ['abawd_or_work_requirement_waiver_state_and_governing_period', 'implementation_effective_date_or_typed_gap']],
+  ['RD04-W03-PPN-ND-001', ['operative_state_implementation_authority_and_version', 'implementation_effective_date_or_typed_gap']],
+  ['RD04-W03-PPN-ND-002', ['abawd_or_work_requirement_waiver_state_and_governing_period', 'implementation_effective_date_or_typed_gap']],
+]);
 
 function fail(message) {
   throw new Error(message);
@@ -91,6 +98,9 @@ export function validateProduct(product, options = {}) {
     equal(first.response_receipt_sha256, decision.response_receipt_sha256, `${decision.route_id} first receipt`);
     equal(second.response_receipt_sha256, decision.response_receipt_sha256, `${decision.route_id} second receipt`);
     equal(decision.substantive_weight_count, decision.source_admitted_for_narrow_scope ? 1 : 0, `${decision.route_id} weight`);
+    const allowedFields = ROUTE_TARGET_FIELDS.get(decision.route_id);
+    truth(Array.isArray(allowedFields), `${decision.route_id} frozen target fields`);
+    truth(decision.candidate_fields_for_offline_review.every((fieldId) => allowedFields.includes(fieldId)), `${decision.route_id} candidate fields stay within frozen targets`);
     bodySet.add(decision.body_sha256);
   }
   equal(bodySet.size, 5, 'source unique bodies');
@@ -135,6 +145,18 @@ export function validateProduct(product, options = {}) {
   equal(ndWaiver.promotion_candidate, false, 'ND waiver candidate');
   truth(field.decisions.every((decision) => decision.field_classification_effect === 'none'), 'field product does not classify matrix');
   truth(field.decisions.every((decision) => decision.substantive_field_terminalizations === 0), 'field product does not terminalize');
+  for (const decision of field.decisions) {
+    for (const routeId of decision.source_route_ids) {
+      const allowedFields = ROUTE_TARGET_FIELDS.get(routeId);
+      truth(Array.isArray(allowedFields), `${decision.decision_id} known source route ${routeId}`);
+      truth(allowedFields.includes(decision.field_id), `${decision.decision_id} source route ${routeId} stays within frozen target fields`);
+    }
+    for (const locator of decision.evidence_locators) {
+      const allowedFields = ROUTE_TARGET_FIELDS.get(locator.route_id);
+      truth(Array.isArray(allowedFields), `${decision.decision_id} known evidence route ${locator.route_id}`);
+      truth(allowedFields.includes(decision.field_id), `${decision.decision_id} evidence route ${locator.route_id} stays within frozen target fields`);
+    }
+  }
   assertAuthority(field.authority_boundary, 'field authority');
 
   equal(candidate.candidate_count, 4, 'candidate protocol count');
