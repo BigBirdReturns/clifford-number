@@ -1,0 +1,398 @@
+name: TEMP prove canonical RD-04 one-cell workflow repair
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-prove-ssc-rd04-onecell-workflow-repair-postmerge-v1.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Prove canonical repair and native push execution
+        id: proof
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OBSERVER_BRANCH: observer/ssc-rd04-onecell-workflow-repair-postmerge-v1
+          OBSERVER_PATH: .github/workflows/temp-prove-ssc-rd04-onecell-workflow-repair-postmerge-v1.yml
+          MERGE: b1d1d8afb6c957401a762bf9d0b2abc464bd5e07
+          REPAIR: c91c1abd3beadd73e80424e6a9f0286a64a2b6bb
+          PARENT: 35d06fac55be0fa957c46d26130f394d1546140a
+          TREE: 64f5b5e9e9d72bdf86ef6cf14d728b2ae996f834
+          PRODUCT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.yml
+          PRODUCT_WORKFLOW_BLOB: 8f9171f1a8253fa4241a29d5a8095759eee55839
+          PRODUCT_WORKFLOW_SHA256: 40425308554a770024212adc57c841f07227606a30552fb469017ac819dfd209
+          PRODUCT_WORKFLOW_BYTES: '7775'
+          PRODUCT_MANIFEST: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/product-manifest.json
+          PRODUCT_MANIFEST_BLOB: 2da873d0083c0551b859aef8ad71b83b9bc7006e
+          PRODUCT_MANIFEST_SHA256: b00b76166794e02238c9fb0ebe47ce8e897e278706e1c81ff8ad47c89ecc789b
+          PRODUCT_MANIFEST_BYTES: '6157'
+          PRODUCT_WORKFLOW_NAME: Status sovereignty RD Wave 03 RD-04 North Dakota follow-up one-cell promotion
+          PRODUCT_ARTIFACT_NAME: status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion
+          PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion
+          PRODUCT_BUILDER: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.mjs
+          PRODUCT_VALIDATOR: tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.mjs
+          PRODUCT_TEST: test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion.test.js
+        shell: bash
+        run: |
+          set -uo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-onecell-workflow-repair-postmerge-v1"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          exec > >(tee "$OUT/proof.log") 2>&1
+          stage=bootstrap
+
+          finalize_sums() {
+            set +e
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+            )
+          }
+
+          on_exit() {
+            code=$?
+            trap - EXIT
+            set +e
+            printf '%s\n' "$code" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            if [[ ! -f "$OUT/receipt.json" ]]; then
+              jq -n \
+                --arg stage "$stage" \
+                --argjson exit_code "$code" \
+                --arg merge "$MERGE" \
+                --arg repair "$REPAIR" \
+                --arg parent "$PARENT" \
+                --arg tree "$TREE" \
+                '{
+                  schema_version:"ssc-rd04-onecell-workflow-repair-postmerge-proof@1",
+                  state:"failed_closed",
+                  failed_or_final_stage:$stage,
+                  exit_code:$exit_code,
+                  canonical_merge:$merge,
+                  repair_commit:$repair,
+                  repair_parent:$parent,
+                  shared_tree:$tree,
+                  source_requests:0,
+                  route_executions:0,
+                  repair_matrix_updates:0,
+                  repair_field_terminalizations:0,
+                  row_state_mutations:0,
+                  class_closed:false,
+                  cumulative_ledger_effect:"none",
+                  outside_human_dependency:false,
+                  publication_effect:"none",
+                  adoption_effect:"none",
+                  graph_effect:"none"
+                }' > "$OUT/receipt.json"
+            fi
+            finalize_sums
+            exit "$code"
+          }
+          trap on_exit EXIT
+          set -Eeuo pipefail
+
+          stage=bind_observer_and_canonical_topology
+          test "$GITHUB_EVENT_NAME" = pull_request
+          test "$GITHUB_HEAD_REF" = "$OBSERVER_BRANCH"
+          test "$(git rev-parse HEAD^)" = "$MERGE"
+          test "$(git rev-list --count "$MERGE"..HEAD)" -eq 1
+          test "$(git diff --name-only "$MERGE" HEAD)" = "$OBSERVER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$MERGE" HEAD)" = "$OBSERVER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$MERGE" HEAD)"
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$MERGE"
+
+          read -r observed_merge observed_parent observed_repair < <(git rev-list --parents -n1 "$MERGE")
+          test "$observed_merge" = "$MERGE"
+          test "$observed_parent" = "$PARENT"
+          test "$observed_repair" = "$REPAIR"
+          test "$(git rev-parse "$REPAIR^")" = "$PARENT"
+          test "$(git rev-parse "$REPAIR^{tree}")" = "$TREE"
+          test "$(git rev-parse "$MERGE^{tree}")" = "$TREE"
+          git diff --name-status "$PARENT" "$REPAIR" > "$OUT/repair-name-status.txt"
+          git diff --name-status "$REPAIR" "$MERGE" > "$OUT/merge-wrapper-name-status.txt"
+          test "$(wc -l < "$OUT/repair-name-status.txt")" -eq 2
+          test ! -s "$OUT/merge-wrapper-name-status.txt"
+          test "$(git rev-parse "$MERGE:$PRODUCT_WORKFLOW")" = "$PRODUCT_WORKFLOW_BLOB"
+          test "$(git rev-parse "$MERGE:$PRODUCT_MANIFEST")" = "$PRODUCT_MANIFEST_BLOB"
+          test "$(git show "$MERGE:$PRODUCT_WORKFLOW" | wc -c)" -eq "$PRODUCT_WORKFLOW_BYTES"
+          test "$(git show "$MERGE:$PRODUCT_WORKFLOW" | sha256sum | awk '{print $1}')" = "$PRODUCT_WORKFLOW_SHA256"
+          test "$(git show "$MERGE:$PRODUCT_MANIFEST" | wc -c)" -eq "$PRODUCT_MANIFEST_BYTES"
+          test "$(git show "$MERGE:$PRODUCT_MANIFEST" | sha256sum | awk '{print $1}')" = "$PRODUCT_MANIFEST_SHA256"
+          printf '%s\n' "$observed_merge $observed_parent $observed_repair" > "$OUT/merge-parents.txt"
+
+          stage=locate_exact_native_push_run
+          RUN_ID=''
+          for attempt in $(seq 1 120); do
+            gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${MERGE}&event=push&per_page=100" > "$OUT/runs.json"
+            RUN_ID="$(
+              python - "$OUT/runs.json" "$PRODUCT_WORKFLOW_NAME" "$MERGE" <<'PY'
+          import json
+          import sys
+
+          path, expected_name, expected_sha = sys.argv[1:]
+          runs = json.load(open(path)).get("workflow_runs", [])
+          matches = [
+              run for run in runs
+              if run.get("name") == expected_name
+              and run.get("event") == "push"
+              and run.get("head_sha") == expected_sha
+              and run.get("head_branch") == "main"
+          ]
+          if len(matches) > 1:
+              raise SystemExit(f"ambiguous exact push runs: {[run.get('id') for run in matches]}")
+          if matches:
+              print(matches[0]["id"])
+          PY
+            )"
+            if [[ -n "$RUN_ID" ]]; then
+              gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}" > "$OUT/run.json"
+              STATUS="$(jq -r .status "$OUT/run.json")"
+              [[ "$STATUS" = completed ]] && break
+            fi
+            sleep 5
+          done
+          test -n "$RUN_ID"
+
+          stage=bind_native_run_job_steps_and_artifact
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}" > "$OUT/run.json"
+          jq -e \
+            --arg name "$PRODUCT_WORKFLOW_NAME" \
+            --arg sha "$MERGE" \
+            '.name==$name and .event=="push" and .head_sha==$sha and .head_branch=="main" and .status=="completed" and .conclusion=="success"' \
+            "$OUT/run.json" >/dev/null
+
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/jobs?per_page=100" > "$OUT/jobs.json"
+          JOB_ID="$(
+            python - "$OUT/jobs.json" <<'PY'
+          import json
+          import sys
+
+          jobs = json.load(open(sys.argv[1])).get("jobs", [])
+          assert len(jobs) == 1, jobs
+          job = jobs[0]
+          assert job["name"] == "validate", job
+          assert job["status"] == "completed", job
+          assert job["conclusion"] == "success", job
+          required = {
+              "Install pinned schema and workflow parsers",
+              "Bind exact head and parse standing workflow",
+              "Rebuild exact permanent product and schema",
+              "Enforce recursively closed Draft 2020-12 schemas",
+              "Validate canonical adjudication and one-cell promotion controls",
+              "Run complete repository release gate",
+              "Reset and replay exact permanent product cleanly",
+              "Run actions/upload-artifact@v4",
+          }
+          steps = {step["name"]: step for step in job.get("steps", [])}
+          missing = required - steps.keys()
+          assert not missing, missing
+          for name in required:
+              assert steps[name]["status"] == "completed", (name, steps[name])
+              assert steps[name]["conclusion"] == "success", (name, steps[name])
+          print(job["id"])
+          PY
+          )"
+
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts?per_page=100" > "$OUT/artifacts.json"
+          ARTIFACT_ID="$(
+            python - "$OUT/artifacts.json" "$PRODUCT_ARTIFACT_NAME" <<'PY'
+          import json
+          import sys
+
+          artifacts = json.load(open(sys.argv[1])).get("artifacts", [])
+          name = sys.argv[2]
+          matches = [a for a in artifacts if a.get("name") == name and not a.get("expired")]
+          assert len(matches) == 1, matches
+          print(matches[0]["id"])
+          PY
+          )"
+          ARTIFACT_DIGEST="$(
+            python - "$OUT/artifacts.json" "$ARTIFACT_ID" <<'PY'
+          import json
+          import sys
+
+          artifacts = json.load(open(sys.argv[1])).get("artifacts", [])
+          artifact_id = int(sys.argv[2])
+          match = [a for a in artifacts if a.get("id") == artifact_id]
+          assert len(match) == 1, match
+          print(match[0].get("digest", ""))
+          PY
+          )"
+          test -n "$ARTIFACT_DIGEST"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" > "$OUT/product-artifact.zip"
+          unzip -t "$OUT/product-artifact.zip" > "$OUT/zip-test.txt"
+          ARTIFACT_ZIP_SHA256="$(sha256sum "$OUT/product-artifact.zip" | awk '{print $1}')"
+          test "$ARTIFACT_DIGEST" = "sha256:$ARTIFACT_ZIP_SHA256"
+          mkdir -p "$OUT/product-artifact"
+          unzip -q "$OUT/product-artifact.zip" -d "$OUT/product-artifact"
+
+          mapfile -t manifests < <(find "$OUT/product-artifact" -type f -path "*/$PRODUCT_MANIFEST")
+          mapfile -t status_files < <(find "$OUT/product-artifact" -type f -name 'rd04-nd-followup-one-cell-post-release-status.txt')
+          test "${#manifests[@]}" -eq 1
+          test "${#status_files[@]}" -eq 1
+          ARTIFACT_MANIFEST="${manifests[0]}"
+          ARTIFACT_STATUS="${status_files[0]}"
+          test "$(stat -c %s "$ARTIFACT_MANIFEST")" -eq "$PRODUCT_MANIFEST_BYTES"
+          test "$(sha256sum "$ARTIFACT_MANIFEST" | awk '{print $1}')" = "$PRODUCT_MANIFEST_SHA256"
+          jq -e \
+            --arg workflow "$PRODUCT_WORKFLOW" \
+            --arg workflow_sha "$PRODUCT_WORKFLOW_SHA256" \
+            --arg workflow_blob "$PRODUCT_WORKFLOW_BLOB" \
+            --arg combined "af3e5e0b7d4f96f0657914de7b0a4e008fb65082ea6c88c5730a8fd325ddf13c" \
+            '.permanent_path_count==14 and
+             .hashed_file_count==13 and
+             .combined_sha256==$combined and
+             ([.hashed_files[] | select(.path==$workflow and .bytes==7775 and .sha256==$workflow_sha and .git_blob==$workflow_blob)] | length)==1 and
+             .authority_boundary.matrix_updates==1 and
+             .authority_boundary.field_terminalizations==1 and
+             .authority_boundary.row_state_mutations==0 and
+             .authority_boundary.class_closed==false and
+             .authority_boundary.cumulative_ledger_effect=="none" and
+             .authority_boundary.outside_human_dependency==false and
+             .authority_boundary.publication_effect=="none" and
+             .authority_boundary.adoption_effect=="none" and
+             .authority_boundary.graph_effect=="none"' \
+            "$ARTIFACT_MANIFEST" >/dev/null
+
+          cat > "$OUT/expected-release-status.txt" <<'EOF'
+           M build/axm-identity.json
+           M build/build-hop-report.json
+           M build/hop-graph.json
+           M build/migration-review.md
+           M build/migration-summary.json
+           M build/receipt-graph.json
+           M build/scores.json
+           M build/scout-report.json
+           M build/scout-report.md
+           M build/surface-graph.json
+          EOF
+          diff -u "$OUT/expected-release-status.txt" "$ARTIFACT_STATUS"
+
+          stage=independently_replay_canonical_product
+          node "$PRODUCT_BUILDER"
+          git diff --exit-code -- "$PRODUCT_ROOT" "$PRODUCT_MANIFEST"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.test.js
+          node "$PRODUCT_VALIDATOR"
+          node "$PRODUCT_TEST"
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+          git status --porcelain=v1 --untracked-files=all > "$OUT/observer-post-release-status.txt"
+
+          stage=reset_and_require_clean_replay
+          git reset --hard HEAD
+          git clean -fdx
+          node "$PRODUCT_BUILDER"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-two-route-adjudication.test.js
+          node "$PRODUCT_VALIDATOR"
+          node "$PRODUCT_TEST"
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          stage=emit_terminal_receipt
+          jq -n \
+            --arg merge "$MERGE" \
+            --arg repair "$REPAIR" \
+            --arg parent "$PARENT" \
+            --arg tree "$TREE" \
+            --argjson run_id "$RUN_ID" \
+            --argjson job_id "$JOB_ID" \
+            --argjson artifact_id "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" \
+            --arg artifact_zip_sha256 "$ARTIFACT_ZIP_SHA256" \
+            '{
+              schema_version:"ssc-rd04-onecell-workflow-repair-postmerge-proof@1",
+              state:"canonical_repair_and_native_push_verified",
+              canonical_merge:$merge,
+              repair_commit:$repair,
+              repair_parent:$parent,
+              shared_tree:$tree,
+              native_push_run:$run_id,
+              native_push_job:$job_id,
+              native_product_artifact:$artifact_id,
+              native_artifact_digest:$artifact_digest,
+              native_artifact_zip_sha256:$artifact_zip_sha256,
+              repair_paths:2,
+              canonical_product_paths:14,
+              canonical_product_matrix_updates:1,
+              canonical_product_field_terminalizations:1,
+              repair_matrix_updates:0,
+              repair_field_terminalizations:0,
+              row_state_mutations:0,
+              north_dakota_row_state:"still_open",
+              waiver_period_cell_state:"still_open",
+              waiver_period_cell_excluded:true,
+              class_closed:false,
+              cumulative_ledger_effect:"none",
+              outside_human_dependency:false,
+              publication_effect:"none",
+              adoption_effect:"none",
+              graph_effect:"none"
+            }' > "$OUT/receipt.json"
+          stage=complete
+
+      - name: Upload postmerge proof custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-onecell-workflow-repair-postmerge-proof-v1
+          path: ${{ runner.temp }}/ssc-rd04-onecell-workflow-repair-postmerge-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal canonical repair proof
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-onecell-workflow-repair-postmerge-v1"
+          test "${{ steps.proof.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e \
+            '.state=="canonical_repair_and_native_push_verified" and
+             .canonical_merge=="b1d1d8afb6c957401a762bf9d0b2abc464bd5e07" and
+             .repair_commit=="c91c1abd3beadd73e80424e6a9f0286a64a2b6bb" and
+             .repair_paths==2 and
+             .canonical_product_paths==14 and
+             .canonical_product_matrix_updates==1 and
+             .canonical_product_field_terminalizations==1 and
+             .repair_matrix_updates==0 and
+             .repair_field_terminalizations==0 and
+             .row_state_mutations==0 and
+             .waiver_period_cell_excluded==true and
+             .class_closed==false and
+             .outside_human_dependency==false' \
+            "$OUT/receipt.json" >/dev/null
