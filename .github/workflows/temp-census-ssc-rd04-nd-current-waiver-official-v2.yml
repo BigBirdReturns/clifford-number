@@ -1,0 +1,205 @@
+name: TEMP census official North Dakota current SNAP waiver status v2
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-current-waiver-official-census-base-v2
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.trigger/ssc-rd04-nd-current-waiver-official-census-v2'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-census-ssc-rd04-nd-current-waiver-official-v2
+  cancel-in-progress: false
+
+env:
+  CANONICAL_PARENT: b1d1d8afb6c957401a762bf9d0b2abc464bd5e07
+  CANONICAL_TREE: 64f5b5e9e9d72bdf86ef6cf14d728b2ae996f834
+  BASE_BRANCH: agent/ssc-rd04-nd-current-waiver-official-census-base-v2
+  TRIGGER_BRANCH: agent/ssc-rd04-nd-current-waiver-official-census-trigger-v2
+  SCRIPT_PATH: .github/scripts/temp-census-ssc-rd04-nd-current-waiver-official-v2.py
+  WORKFLOW_PATH: .github/workflows/temp-census-ssc-rd04-nd-current-waiver-official-v2.yml
+  TRIGGER_PATH: .trigger/ssc-rd04-nd-current-waiver-official-census-v2
+  OUTPUT_DIR: /tmp/ssc-rd04-nd-current-waiver-official-census-v2
+
+jobs:
+  census:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-current-waiver-official-census-trigger-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned public-source parsers
+        run: python -m pip install --disable-pip-version-check --no-input 'requests==2.32.5' 'beautifulsoup4==4.13.5' 'lxml==6.0.0' 'pypdf==6.0.0'
+
+      - name: Execute bounded official-route census
+        id: census
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$OUTPUT_DIR"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          stage=bootstrap
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          exec > >(tee "$OUT/census.log") 2>&1
+
+          finalize() {
+            local rc=$?
+            trap - EXIT
+            set +e
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            if [ ! -f "$OUT/receipt.json" ]; then
+              jq -n \
+                --arg state failed_closed \
+                --arg failed_stage "$stage" \
+                --argjson exit_code "$rc" \
+                --arg canonical_parent "$CANONICAL_PARENT" \
+                '{schema_version:"ssc-rd04-nd-current-waiver-official-census-receipt@2",
+                  state:$state,failed_stage:$failed_stage,exit_code:$exit_code,
+                  canonical_parent:$canonical_parent,
+                  source_admissions:0,field_terminalizations:0,matrix_updates:0,
+                  row_state_mutations:0,class_closed:false,
+                  cumulative_ledger_effect:"none",outside_human_dependency:false,
+                  publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' > "$OUT/receipt.json"
+            fi
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          stage=bind_carrier_topology
+          BASE_COMMIT="$(git rev-parse HEAD^)"
+          test "$(git rev-parse HEAD~3)" = "$CANONICAL_PARENT"
+          test "$(git rev-list --count "$CANONICAL_PARENT".."$BASE_COMMIT")" -eq 2
+          test "$(git rev-list --count "$BASE_COMMIT"..HEAD)" -eq 1
+          printf '%s\n' "$SCRIPT_PATH" "$WORKFLOW_PATH" | LC_ALL=C sort > "$OUT/expected-base-paths.txt"
+          git diff --name-only "$CANONICAL_PARENT" "$BASE_COMMIT" | LC_ALL=C sort > "$OUT/actual-base-paths.txt"
+          git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$BASE_COMMIT" | LC_ALL=C sort > "$OUT/added-base-paths.txt"
+          diff -u "$OUT/expected-base-paths.txt" "$OUT/actual-base-paths.txt"
+          diff -u "$OUT/expected-base-paths.txt" "$OUT/added-base-paths.txt"
+          test "$(git diff --name-only "$BASE_COMMIT" HEAD)" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE_COMMIT" HEAD)" = "$TRIGGER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" HEAD)"
+          git diff --check "$CANONICAL_PARENT" HEAD
+          PYTHONPYCACHEPREFIX=/tmp/rd04-nd-waiver-pycache python -m py_compile "$SCRIPT_PATH"
+
+          stage=bind_live_main
+          test "$(git rev-parse "$CANONICAL_PARENT^{tree}")" = "$CANONICAL_TREE"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CANONICAL_PARENT"
+
+          stage=execute_bounded_census
+          python "$SCRIPT_PATH" "$OUT"
+          jq -e '
+            .schema_version=="ssc-rd04-nd-current-waiver-official-census@2" and
+            .state=="bounded_official_route_census_complete" and
+            .fixed_seed_count==15 and
+            .selected_expansion_count<=60 and
+            .total_route_count>=15 and
+            .physical_request_count>=15 and
+            .external_redirect_targets_contacted==0 and
+            .external_contacts==0 and
+            .outside_human_dependency==false and
+            .source_admissions==0 and .field_terminalizations==0 and
+            .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and
+            .cumulative_ledger_effect=="none" and
+            .publication_effect=="none" and .adoption_effect=="none" and .graph_effect=="none"
+          ' "$OUT/summary.json" > /dev/null
+          jq -e '
+            .schema_version=="ssc-rd04-nd-current-waiver-route-policy@2" and
+            .maximum_same_host_expansion==60 and .maximum_redirects_per_route==5 and
+            .redirect_policy=="inspect_each_location_without_following; refuse_external_target_before_contact" and
+            .maximum_body_bytes==12000000 and .authentication=="none" and
+            .outside_human_dependency==false
+          ' "$OUT/route-policy.json" > /dev/null
+
+          stage=final_live_main_reconciliation
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CANONICAL_PARENT"
+
+          stage=seal_terminal_receipt
+          jq -n \
+            --arg canonical_parent "$CANONICAL_PARENT" \
+            --arg canonical_tree "$CANONICAL_TREE" \
+            --argjson fixed_seed_count "$(jq '.fixed_seed_count' "$OUT/summary.json")" \
+            --argjson selected_expansion_count "$(jq '.selected_expansion_count' "$OUT/summary.json")" \
+            --argjson total_route_count "$(jq '.total_route_count' "$OUT/summary.json")" \
+            --argjson physical_request_count "$(jq '.physical_request_count' "$OUT/summary.json")" \
+            --argjson refused_redirect_count "$(jq '.refused_redirect_count' "$OUT/summary.json")" \
+            --argjson observation_count "$(jq '.observation_count' "$OUT/summary.json")" \
+            '{schema_version:"ssc-rd04-nd-current-waiver-official-census-receipt@2",
+              state:"bounded_census_complete",failed_or_final_stage:"complete",exit_code:0,
+              canonical_parent:$canonical_parent,canonical_tree:$canonical_tree,
+              fixed_seed_count:$fixed_seed_count,
+              selected_expansion_count:$selected_expansion_count,
+              total_route_count:$total_route_count,
+              physical_request_count:$physical_request_count,
+              refused_redirect_count:$refused_redirect_count,
+              observation_count:$observation_count,
+              external_redirect_targets_contacted:0,external_contacts:0,
+              source_admissions:0,field_terminalizations:0,matrix_updates:0,
+              row_state_mutations:0,class_closed:false,
+              cumulative_ledger_effect:"none",outside_human_dependency:false,
+              publication_effect:"none",adoption_effect:"none",graph_effect:"none",
+              next_authorized_operation:"offline source and field adjudication over this exact artifact; no route re-execution is authorized by this receipt"}' > "$OUT/receipt.json"
+          stage=complete
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+
+      - name: Upload terminal census custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-current-waiver-official-census-v2
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal census receipt
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$OUTPUT_DIR"
+          test "${{ steps.census.outcome }}" = success
+          test "$(cat "$OUT/STAGE")" = complete
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .schema_version=="ssc-rd04-nd-current-waiver-official-census-receipt@2" and
+            .state=="bounded_census_complete" and
+            .failed_or_final_stage=="complete" and .exit_code==0 and
+            .canonical_parent=="b1d1d8afb6c957401a762bf9d0b2abc464bd5e07" and
+            .canonical_tree=="64f5b5e9e9d72bdf86ef6cf14d728b2ae996f834" and
+            .fixed_seed_count==15 and .selected_expansion_count<=60 and
+            .total_route_count>=15 and .physical_request_count>=15 and
+            .external_redirect_targets_contacted==0 and .external_contacts==0 and
+            .source_admissions==0 and .field_terminalizations==0 and .matrix_updates==0 and
+            .row_state_mutations==0 and .class_closed==false and
+            .cumulative_ledger_effect=="none" and .outside_human_dependency==false and
+            .publication_effect=="none" and .adoption_effect=="none" and .graph_effect=="none"
+          ' "$OUT/receipt.json" > /dev/null
