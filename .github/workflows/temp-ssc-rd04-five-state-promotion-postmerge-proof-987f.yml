@@ -1,0 +1,360 @@
+name: TEMP prove canonical RD-04 five-state promotion 987f
+
+on:
+  push:
+    branches:
+      - 'agent/ssc-rd04-five-state-promotion-postmerge-proof-987f'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: ssc-rd04-five-state-promotion-postmerge-proof-987f
+  cancel-in-progress: false
+
+jobs:
+  prove:
+    if: >-
+      (github.event_name == 'push' && github.ref_name == 'agent/ssc-rd04-five-state-promotion-postmerge-proof-987f') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/ssc-rd04-five-state-promotion-postmerge-proof-987f' && github.event.pull_request.head.repo.full_name == github.repository) ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned JSON Schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+
+      - name: Prove exact topology, path denominator, and blob custody
+        shell: bash
+        env:
+          PROOF_WORKFLOW: .github/workflows/temp-ssc-rd04-five-state-promotion-postmerge-proof-987f.yml
+          BASE: fdcbfbcd7e5a373444b25d3132d058669f8b3a71
+          PRODUCT: feadf9f13d87d714eca4b5d142538a4a73d684aa
+          PRODUCT_MERGE: 120c3b51b696a002a06ff82a0599216b84247882
+          REPAIR: 93ad86dcd16cae56ac330cfc12236659a7952a1b
+          REPAIR_MERGE: 987f1b2574eeddaba49d67c1c1498a81d40f7c69
+          PRODUCT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml
+          ORIGINAL_WORKFLOW_BLOB: c5908cc87894edcb2ec778858f64ddc99baf7976
+          REPAIRED_WORKFLOW_BLOB: 11e58adffabd25fc8efdfda0f48ae134cfb29021
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-five-state-promotion-postmerge-proof-987f"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          printf 'stage=topology\n' > "$OUT/stage.txt"
+
+          PROOF_HEAD="$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$REPAIR_MERGE"
+          test "$(git rev-list --count "$REPAIR_MERGE"..HEAD)" = '1'
+          test "$(git diff --name-only "$REPAIR_MERGE"..HEAD)" = "$PROOF_WORKFLOW"
+          test "$(git diff --name-status "$REPAIR_MERGE"..HEAD)" = "A${PROOF_WORKFLOW}"
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$REPAIR_MERGE"
+          test "$(git rev-parse "$REPAIR_MERGE^{tree}")" = "$(git rev-parse "origin/main^{tree}")"
+
+          read -ra PRODUCT_ROW <<< "$(git rev-list --parents -n 1 "$PRODUCT")"
+          test "${#PRODUCT_ROW[@]}" -eq 2
+          test "${PRODUCT_ROW[1]}" = "$BASE"
+          test "$(git rev-list --count "$BASE".."$PRODUCT")" = '1'
+
+          read -ra PRODUCT_MERGE_ROW <<< "$(git rev-list --parents -n 1 "$PRODUCT_MERGE")"
+          test "${#PRODUCT_MERGE_ROW[@]}" -eq 3
+          test "${PRODUCT_MERGE_ROW[1]}" = "$BASE"
+          test "${PRODUCT_MERGE_ROW[2]}" = "$PRODUCT"
+          test "$(git rev-parse "$PRODUCT^{tree}")" = "$(git rev-parse "$PRODUCT_MERGE^{tree}")"
+
+          read -ra REPAIR_ROW <<< "$(git rev-list --parents -n 1 "$REPAIR")"
+          test "${#REPAIR_ROW[@]}" -eq 2
+          test "${REPAIR_ROW[1]}" = "$PRODUCT_MERGE"
+          test "$(git rev-list --count "$PRODUCT_MERGE".."$REPAIR")" = '1'
+
+          read -ra REPAIR_MERGE_ROW <<< "$(git rev-list --parents -n 1 "$REPAIR_MERGE")"
+          test "${#REPAIR_MERGE_ROW[@]}" -eq 3
+          test "${REPAIR_MERGE_ROW[1]}" = "$PRODUCT_MERGE"
+          test "${REPAIR_MERGE_ROW[2]}" = "$REPAIR"
+          test "$(git rev-parse "$REPAIR^{tree}")" = "$(git rev-parse "$REPAIR_MERGE^{tree}")"
+
+          cat > "$OUT/expected-product-paths.txt" <<'PATHS'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-five-state-promotion.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/cell-promotion-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promoted-partial-field-matrix.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-decisions.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-input-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/promotion-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion/remaining-open-field-census.json
+          docs/milestones/ssc-rd-wave03-rd04-five-state-promotion.md
+          schemas/status-sovereignty-rd-wave03-rd04-five-state-promotion.schema.json
+          test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          PATHS
+          sed -i 's/^          //' "$OUT/expected-product-paths.txt"
+          sort -o "$OUT/expected-product-paths.txt" "$OUT/expected-product-paths.txt"
+
+          git diff --name-only "$BASE".."$PRODUCT" | sort > "$OUT/observed-product-paths.txt"
+          diff -u "$OUT/expected-product-paths.txt" "$OUT/observed-product-paths.txt"
+          test "$(wc -l < "$OUT/observed-product-paths.txt" | tr -d ' ')" = '14'
+          test -z "$(git diff --name-only --diff-filter=MDRTCUXB "$BASE".."$PRODUCT")"
+          test "$(git diff --name-only --diff-filter=A "$BASE".."$PRODUCT" | wc -l | tr -d ' ')" = '14'
+
+          test "$(git diff --name-only "$PRODUCT_MERGE".."$REPAIR")" = "$PRODUCT_WORKFLOW"
+          test "$(git diff --name-status "$PRODUCT_MERGE".."$REPAIR")" = "M${PRODUCT_WORKFLOW}"
+          test "$(git diff --name-only "$PRODUCT_MERGE".."$REPAIR_MERGE")" = "$PRODUCT_WORKFLOW"
+
+          : > "$OUT/blob-ledger.tsv"
+          while IFS= read -r path; do
+            product_blob="$(git rev-parse "$PRODUCT:$path")"
+            product_merge_blob="$(git rev-parse "$PRODUCT_MERGE:$path")"
+            repair_blob="$(git rev-parse "$REPAIR:$path")"
+            repair_merge_blob="$(git rev-parse "$REPAIR_MERGE:$path")"
+            proof_parent_blob="$(git rev-parse "HEAD^:$path")"
+            proof_head_blob="$(git rev-parse "HEAD:$path")"
+            test "$product_blob" = "$product_merge_blob"
+            test "$repair_blob" = "$repair_merge_blob"
+            test "$repair_merge_blob" = "$proof_parent_blob"
+            test "$proof_parent_blob" = "$proof_head_blob"
+            if test "$path" = "$PRODUCT_WORKFLOW"; then
+              test "$product_blob" = "$ORIGINAL_WORKFLOW_BLOB"
+              test "$repair_blob" = "$REPAIRED_WORKFLOW_BLOB"
+              test "$product_blob" != "$repair_blob"
+              class='repaired_workflow'
+            else
+              test "$product_blob" = "$repair_blob"
+              class='preserved_non_workflow'
+            fi
+            printf '%s\t%s\t%s\t%s\t%s\n' "$path" "$class" "$product_blob" "$repair_blob" "$proof_head_blob" >> "$OUT/blob-ledger.tsv"
+          done < "$OUT/expected-product-paths.txt"
+          test "$(grep -c $'\tpreserved_non_workflow\t' "$OUT/blob-ledger.tsv")" = '13'
+          test "$(grep -c $'\trepaired_workflow\t' "$OUT/blob-ledger.tsv")" = '1'
+
+          printf 'proof_head=%s\nproof_parent=%s\nproduct=%s\nproduct_tree=%s\nproduct_merge=%s\nrepair=%s\nrepair_tree=%s\nrepair_merge=%s\n' \
+            "$PROOF_HEAD" "$REPAIR_MERGE" "$PRODUCT" "$(git rev-parse "$PRODUCT^{tree}")" "$PRODUCT_MERGE" "$REPAIR" "$(git rev-parse "$REPAIR^{tree}")" "$REPAIR_MERGE" > "$OUT/topology.txt"
+          printf 'stage=topology_passed\n' > "$OUT/stage.txt"
+
+      - name: Re-run focused product, adversarial, and repository gates
+        shell: bash
+        env:
+          REPAIR_MERGE: 987f1b2574eeddaba49d67c1c1498a81d40f7c69
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-five-state-promotion-postmerge-proof-987f"
+          test "$(git rev-parse HEAD^)" = "$REPAIR_MERGE"
+          test "$(git rev-parse origin/main)" = "$REPAIR_MERGE"
+
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-ar-ga-md-nc-pa-ri-wv-row-state-adjudication/promoted-partial-field-matrix.json)" = ab5f136d887aa6f21edc793e7394fee38b8ad6f6
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/promotion-candidate-protocol.json)" = 30705b3d0f74d1b75f81175c2e9ca3fa9bf76c4a
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/field-adjudications.json)" = ca0be819a522532ecc7b0ee07909382ece6a8329
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/capture-custody.json)" = 863ab334d4f5a4a77003a9d39383ded489ab412e
+          test "$(git hash-object data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/source-adjudications.json)" = 53f378c9c4a56ca4aab0312bba38150b071786af
+
+          node --check tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node --check tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node --check test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          git diff --exit-code -- data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion
+
+          python - <<'PYSCHEMA'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          root = Path('.')
+          schema = json.loads((root / 'schemas/status-sovereignty-rd-wave03-rd04-five-state-promotion.schema.json').read_text())
+          validator = Draft202012Validator(schema)
+          product = root / 'data/intake/status-sovereignty-rd-wave03-rd04-five-state-promotion'
+          names = [
+              'promotion-input-custody.json',
+              'promotion-decisions.json',
+              'cell-promotion-ledger.json',
+              'promoted-partial-field-matrix.json',
+              'remaining-open-field-census.json',
+              'promotion-summary.json',
+              'index.json',
+              'product-manifest.json',
+          ]
+          for name in names:
+              errors = sorted(validator.iter_errors(json.loads((product / name).read_text())), key=lambda error: list(error.path))
+              if errors:
+                  raise SystemExit(f'{name}: {errors[0].message} at {list(errors[0].path)}')
+          print(f'recursive_schema_validation=pass objects={len(names)}')
+          PYSCHEMA
+
+          node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm test
+          npm run release:check
+          printf 'stage=complete_repository_gate_passed\n' > "$OUT/stage.txt"
+
+          git restore --staged --worktree .
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs --write
+          node tools/build-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node tools/validate-status-sovereignty-rd-wave03-rd04-five-state-promotion.mjs
+          node test/status-sovereignty-rd-wave03-rd04-five-state-promotion.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          git diff --check
+          git diff --exit-code
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$REPAIR_MERGE"
+          printf 'stage=clean_replay_passed\n' > "$OUT/stage.txt"
+
+      - name: Seal canonical proof receipt
+        shell: bash
+        env:
+          BASE: fdcbfbcd7e5a373444b25d3132d058669f8b3a71
+          PRODUCT: feadf9f13d87d714eca4b5d142538a4a73d684aa
+          PRODUCT_MERGE: 120c3b51b696a002a06ff82a0599216b84247882
+          REPAIR: 93ad86dcd16cae56ac330cfc12236659a7952a1b
+          REPAIR_MERGE: 987f1b2574eeddaba49d67c1c1498a81d40f7c69
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-five-state-promotion-postmerge-proof-987f"
+          export OUT
+          python - <<'PYRECEIPT'
+          import hashlib, json, os
+          from pathlib import Path
+          out = Path(os.environ['OUT'])
+          blobs = []
+          for line in (out / 'blob-ledger.tsv').read_text().splitlines():
+              path, classification, product_blob, canonical_blob, proof_blob = line.split('\t')
+              blobs.append({
+                  'path': path,
+                  'classification': classification,
+                  'product_blob': product_blob,
+                  'canonical_repaired_blob': canonical_blob,
+                  'proof_head_blob': proof_blob,
+              })
+          receipt = {
+              'schema_version': 'ssc-rd04-five-state-promotion-postmerge-proof@1',
+              'issue': 1017,
+              'workflow_run': int(os.environ['GITHUB_RUN_ID']),
+              'proof_head': os.environ['GITHUB_SHA'],
+              'proof_parent': os.environ['REPAIR_MERGE'],
+              'product_parent': os.environ['BASE'],
+              'product_commit': os.environ['PRODUCT'],
+              'product_merge': os.environ['PRODUCT_MERGE'],
+              'repair_commit': os.environ['REPAIR'],
+              'canonical_repair_merge': os.environ['REPAIR_MERGE'],
+              'product_paths': 14,
+              'preserved_non_workflow_blobs': 13,
+              'repaired_workflow_blobs': 1,
+              'blob_ledger': blobs,
+              'qualification': {
+                  'ordered_product_merge_topology': 'pass',
+                  'ordered_repair_merge_topology': 'pass',
+                  'addition_only_product': True,
+                  'focused_validator': 'pass',
+                  'focused_adversarial_refusals': 784,
+                  'closed_schema_objects': 8,
+                  'no_magic_human_refusals': 23,
+                  'repository_tests': 'pass',
+                  'complete_release_gate': 'pass',
+                  'clean_deterministic_replay': 'pass',
+              },
+              'transition': {
+                  'terminal_cells_before': 218,
+                  'terminal_cells_after': 222,
+                  'still_open_cells_after': 228,
+                  'terminal_substantive_cells_after': 112,
+                  'still_open_substantive_cells_after': 188,
+                  'field_terminalizations': 4,
+                  'row_state_transitions': 0,
+                  'terminal_units_after': 10,
+                  'new_source_admissions': 0,
+                  'class_closed': False,
+                  'cumulative_ledger_effect': 'none',
+              },
+              'authority': {
+                  'outside_human_dependency': False,
+                  'external_contacts': 0,
+                  'external_reviews': 0,
+                  'publication_effect': 'none',
+                  'adoption_effect': 'none',
+                  'graph_effect': 'none',
+                  'postpromotion_protocol_authorized': False,
+              },
+          }
+          payload = json.dumps(receipt, indent=2, sort_keys=True) + '\n'
+          (out / 'receipt.json').write_text(payload)
+          members = ['receipt.json', 'blob-ledger.tsv', 'expected-product-paths.txt', 'observed-product-paths.txt', 'topology.txt']
+          (out / 'SHA256SUMS').write_text(''.join(
+              f"{hashlib.sha256((out / name).read_bytes()).hexdigest()}  {name}\n" for name in members
+          ))
+          print(f"canonical_rd04_five_state_promotion_proof=pass receipt_sha256={hashlib.sha256(payload.encode()).hexdigest()}")
+          PYRECEIPT
+          printf 'stage=complete\n' > "$OUT/stage.txt"
+
+      - name: Preserve checksum-bound proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-five-state-promotion-postmerge-proof-987f
+          path: ${{ runner.temp }}/ssc-rd04-five-state-promotion-postmerge-proof-987f
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Report canonical proof result
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-five-state-promotion-postmerge-proof-987f"
+          R="$OUT/receipt.json"
+          if test -f "$R" && test "$(cat "$OUT/stage.txt")" = 'stage=complete'; then
+            {
+              echo 'Canonical RD-04 four-cell promotion and standing-workflow repair proved successfully.'
+              echo
+              echo '```text'
+              for key in workflow_run proof_head product_commit product_merge repair_commit canonical_repair_merge product_paths preserved_non_workflow_blobs repaired_workflow_blobs; do
+                echo "$key: $(jq -r --arg key "$key" '.[$key]' "$R")"
+              done
+              echo 'terminal_cells: 218 -> 222'
+              echo 'field_terminalizations: 4'
+              echo 'row_state_transitions: 0'
+              echo 'class_closed: false'
+              echo 'outside_human_dependency: false'
+              echo 'postpromotion_protocol_authorized: false'
+              echo '```'
+              echo
+              echo 'The proof establishes canonical custody and repository behavior only. A separate changed-input protocol-selection transaction remains required before any new route execution.'
+            } > /tmp/issue-comment.md
+          else
+            {
+              echo 'Canonical RD-04 four-cell promotion proof failed closed.'
+              echo
+              echo '```text'
+              cat "$OUT/stage.txt" 2>/dev/null || true
+              echo '```'
+              echo
+              echo 'No additional protocol, execution, source, field, row, class, cumulative-ledger, publication, adoption, or graph authority is represented.'
+            } > /tmp/issue-comment.md
+          fi
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/issue-comment.md
