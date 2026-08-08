@@ -1,0 +1,257 @@
+name: TEMP adjudicate RD-04 North Dakota current-waiver census v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-current-waiver-census-adjudication-base-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.trigger/ssc-rd04-nd-current-waiver-census-adjudication-v1'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: temp-adjudicate-ssc-rd04-nd-current-waiver-census-v1
+  cancel-in-progress: false
+
+env:
+  CANONICAL_PARENT: b1d1d8afb6c957401a762bf9d0b2abc464bd5e07
+  CANONICAL_TREE: 64f5b5e9e9d72bdf86ef6cf14d728b2ae996f834
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  CENSUS_ARTIFACT: '9029291669'
+  CENSUS_ARTIFACT_BYTES: '3123344'
+  CENSUS_ARTIFACT_SHA256: 25611111d906ef93eaead5d9a148ade86dcf0b132167f774c90089c51c68c98d
+  CENSUS_RECEIPT_SHA256: f166cc84f744e83713718c43783d89fd538770d876c0c4806da24871f580fbdb
+  CENSUS_SUMMARY_SHA256: 079955a92ebff70789d90f0a540f7e760c635fc6446b43fd4dc9ef392312a114
+  CENSUS_QUERY_RECEIPTS_SHA256: 51ec9b7e9ef7f38e727b84cd7702e111662451fdd89e2d0c1b8cbd5d25815dc2
+  STAY_ENROLLED_BODY_SHA256: 9b4f8b939f2bfd21284f00aa569299e6aa3aba360a4e081af3a3c867c59298bf
+  STAY_ENROLLED_TEXT_SHA256: a666512bb6f1a97b32614701b32b18243391539e7712920fbc1aa4af724b59b6
+  WAIVER_CELL_SHA256: cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe
+  ND_ROW_SHA256: aec9f1e8dd82055c73f7e27506a884b6724118e1f4b61d0b9d53b5b2b5ab2c40
+  BASE_BRANCH: agent/ssc-rd04-nd-current-waiver-census-adjudication-base-v1
+  TRIGGER_BRANCH: agent/ssc-rd04-nd-current-waiver-census-adjudication-trigger-v1
+  WORKFLOW_PATH: .github/workflows/temp-adjudicate-ssc-rd04-nd-current-waiver-census-v1.yml
+  TRIGGER_PATH: .trigger/ssc-rd04-nd-current-waiver-census-adjudication-v1
+  OUTPUT_DIR: /tmp/ssc-rd04-nd-current-waiver-census-adjudication-v1
+
+jobs:
+  adjudicate:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-current-waiver-census-adjudication-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Adjudicate captured objects offline
+        id: adjudicate
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT="$OUTPUT_DIR"
+          CENSUS="$OUT/census"
+          rm -rf "$OUT"
+          mkdir -p "$OUT" "$CENSUS"
+          stage=bootstrap
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          exec > >(tee "$OUT/adjudication.log") 2>&1
+
+          finalize() {
+            local rc=$?
+            trap - EXIT
+            set +e
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            if [ ! -f "$OUT/receipt.json" ]; then
+              jq -n --arg state failed_closed --arg failed_stage "$stage" --argjson exit_code "$rc" \
+                --arg canonical_parent "$CANONICAL_PARENT" \
+                '{schema_version:"ssc-rd04-nd-current-waiver-census-adjudication@1",state:$state,
+                  failed_stage:$failed_stage,exit_code:$exit_code,canonical_parent:$canonical_parent,
+                  source_requests:0,route_executions:0,source_admissions:0,field_terminalizations:0,
+                  matrix_updates:0,row_state_mutations:0,class_closed:false,
+                  cumulative_ledger_effect:"none",outside_human_dependency:false,
+                  publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' > "$OUT/receipt.json"
+            fi
+            (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          stage=bind_topology_and_live_main
+          BASE_COMMIT="$(git rev-parse HEAD^)"
+          test "$(git rev-parse "$BASE_COMMIT^")" = "$CANONICAL_PARENT"
+          test "$(git rev-list --count "$CANONICAL_PARENT".."$BASE_COMMIT")" -eq 1
+          test "$(git rev-list --count "$BASE_COMMIT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CANONICAL_PARENT" "$BASE_COMMIT")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only "$BASE_COMMIT" HEAD)" = "$TRIGGER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" HEAD)"
+          git diff --check "$CANONICAL_PARENT" HEAD
+          test "$(git rev-parse "$CANONICAL_PARENT^{tree}")" = "$CANONICAL_TREE"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+
+          stage=authenticate_census_artifact
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$CENSUS_ARTIFACT" > "$OUT/census-artifact.json"
+          jq -e --argjson id "$CENSUS_ARTIFACT" --argjson bytes "$CENSUS_ARTIFACT_BYTES" --arg digest "sha256:$CENSUS_ARTIFACT_SHA256" \
+            '.id==$id and .expired==false and .size_in_bytes==$bytes and .digest==$digest' "$OUT/census-artifact.json" > /dev/null
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$CENSUS_ARTIFACT/zip" > "$OUT/census.zip"
+          test "$(stat -c %s "$OUT/census.zip")" -eq "$CENSUS_ARTIFACT_BYTES"
+          test "$(sha256sum "$OUT/census.zip" | awk '{print $1}')" = "$CENSUS_ARTIFACT_SHA256"
+          unzip -t "$OUT/census.zip" > "$OUT/census-zip-test.txt"
+          unzip -q "$OUT/census.zip" -d "$CENSUS"
+          (cd "$CENSUS" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$CENSUS/receipt.json" | awk '{print $1}')" = "$CENSUS_RECEIPT_SHA256"
+          test "$(sha256sum "$CENSUS/summary.json" | awk '{print $1}')" = "$CENSUS_SUMMARY_SHA256"
+          test "$(sha256sum "$CENSUS/query-receipts.jsonl" | awk '{print $1}')" = "$CENSUS_QUERY_RECEIPTS_SHA256"
+          test "$(cat "$CENSUS/STAGE")" = complete
+          test "$(cat "$CENSUS/EXIT_CODE")" = 0
+
+          stage=adjudicate_exact_current_cell
+          python - "$CENSUS" "$OUT" <<'PY'
+          import hashlib,json,os,sys
+          from pathlib import Path
+          census=Path(sys.argv[1]); out=Path(sys.argv[2])
+          rows=[json.loads(line) for line in (census/'query-receipts.jsonl').read_text().splitlines() if line]
+          assert len(rows)==75
+          summary=json.loads((census/'summary.json').read_text())
+          assert summary['physical_request_count']==76 and summary['refused_redirect_count']==8
+          assert summary['external_redirect_targets_contacted']==0 and summary['external_contacts']==0
+          stay=rows[0]
+          assert stay['requested_url']=='https://www.hhs.nd.gov/stay-enrolled'
+          assert stay['final_url']=='https://www.hhs.nd.gov/stayenrolled'
+          assert stay['status_code']==200 and stay['outcome']=='http_success'
+          assert stay['body_sha256']==os.environ['STAY_ENROLLED_BODY_SHA256']
+          text_path=census/stay['text_path']; text=text_path.read_text()
+          assert hashlib.sha256(text_path.read_bytes()).hexdigest()==os.environ['STAY_ENROLLED_TEXT_SHA256']
+          anchors=[
+            'Information updated June 22, 2026',
+            'Starting Oct. 1, 2025',
+            'Residents of Rolette County or the Turtle Mountain Reservation',
+            'only receive three months of SNAP benefits in a 36 month period',
+          ]
+          for anchor in anchors: assert anchor in text, anchor
+          refused=[r for r in rows if r['outcome']=='refused_redirect_before_external_contact']
+          assert len(refused)==8
+          assert all(r['redirect_chain'][0]['target_host']=='www.fna.usda.gov' for r in refused)
+          assert all(r['physical_request_count']==1 for r in refused)
+
+          def stable(value):
+            if isinstance(value,dict): return {k:stable(value[k]) for k in sorted(value)}
+            if isinstance(value,list): return [stable(v) for v in value]
+            return value
+          matrix=json.loads(Path(os.environ['MATRIX_PATH']).read_text())
+          nd=next(row for row in matrix['rows'] if row['unit_id']=='US-STATE-ND')
+          cell=next(cell for cell in nd['cells'] if cell['field_id']=='abawd_or_work_requirement_waiver_state_and_governing_period')
+          digest=lambda value:hashlib.sha256(json.dumps(stable(value),separators=(',',':')).encode()).hexdigest()
+          assert (nd['row_state'],nd['terminal_fields'],nd['open_fields'])==('still_open',7,2)
+          assert digest(nd)==os.environ['ND_ROW_SHA256']
+          assert cell['state']=='still_open' and cell['terminal'] is False
+          assert digest(cell)==os.environ['WAIVER_CELL_SHA256']
+
+          authority={'outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none'}
+          source={
+            'schema_version':'ssc-rd04-nd-current-waiver-source-adjudication@1',
+            'object_type':'source_adjudication','issue':1017,'class_id':'RD-04-C02',
+            'artifact_id':int(os.environ['CENSUS_ARTIFACT']),
+            'decisions':[
+              {'route_ordinal':1,'route_id':'RD04-ND-CURRENT-WAIVER-HHS-STAY-ENROLLED',
+               'requested_url':stay['requested_url'],'final_url':stay['final_url'],
+               'body_sha256':stay['body_sha256'],'visible_text_sha256':os.environ['STAY_ENROLLED_TEXT_SHA256'],
+               'document_updated':'2026-06-22','source_admitted_for_narrow_scope':True,
+               'admitted_for':['current_public_snap_work_rule_implementation_surface'],
+               'not_admitted_for':['complete_current_waiver_geography_and_governing_period','uniform_frontline_practice','person_level_outcome'],
+               'finding':'The current HHS page states that Rolette County and Turtle Mountain residents are work-proof groups starting October 1, 2025 and that affected noncompliance is limited to three months in 36 months.',
+               'limitations':['the page does not expressly label the current condition as a waiver approval, waiver expiration, or complete no-waiver period'],
+               'substantive_weight_count':1},
+            ],
+            'other_hhs_captures':'locator_only_not_individually_admitted',
+            'fna_redirects':'not_contacted_not_sources',
+            'source_admissions':1,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,
+            'class_closed':False,'cumulative_ledger_effect':'none','authority_boundary':authority,
+          }
+          field={
+            'schema_version':'ssc-rd04-nd-current-waiver-field-adjudication@1',
+            'object_type':'field_adjudication','issue':1017,'class_id':'RD-04-C02','unit_id':'US-STATE-ND',
+            'field_id':'abawd_or_work_requirement_waiver_state_and_governing_period',
+            'current_cell_canonical_sha256':os.environ['WAIVER_CELL_SHA256'],
+            'disposition':'material_current_implementation_support_but_waiver_geography_or_governing_period_not_expressly_stated_hold_open',
+            'promotion_candidate':False,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,
+            'class_closed':False,'cumulative_ledger_effect':'none',
+            'rationale':'The HHS page is current and responsive to work-rule implementation, but it does not expressly state the complete waiver geography and governing period required by this field.',
+            'prohibited_inferences':['do_not_convert_current_work_rule_language_into_complete_waiver_history','do_not_infer_no_waiver_from_absent_waiver_label','do_not_close_north_dakota_row','do_not_close_rd04_c02'],
+            'authority_boundary':authority,
+          }
+          routes=[
+            ('RD04-ND-CURRENT-WAIVER-FNA-001','https://www.fna.usda.gov/snap/abawd/waivers','current_federal_abawd_waiver_index'),
+            ('RD04-ND-CURRENT-WAIVER-FNA-002','https://www.fna.usda.gov/snap/statewide-able-bodied-adults-without-dependent-waivers-effective-immediately-eligible-states','current_statewide_waiver_eligible_states'),
+            ('RD04-ND-CURRENT-WAIVER-FNA-003','https://www.fna.usda.gov/snap/abawd','current_federal_abawd_policy_surface'),
+            ('RD04-ND-CURRENT-WAIVER-FNA-004','https://www.fna.usda.gov/snap/obbb-implementation','current_federal_obbb_implementation_surface'),
+          ]
+          protocol={
+            'schema_version':'ssc-rd04-nd-current-waiver-fna-followup-protocol@1','object_type':'selected_followup_protocol',
+            'issue':1017,'class_id':'RD-04-C02','unit_id':'US-STATE-ND',
+            'target_field_id':'abawd_or_work_requirement_waiver_state_and_governing_period',
+            'selection_basis':'direct 301 targets observed from frozen official FNS routes and refused before contact in census v2',
+            'routes':[{'ordinal':i+1,'route_id':rid,'url':url,'route_category':category,'allowed_hosts':['fna.usda.gov','www.fna.usda.gov'],'attempts':1,'redirects':'manual_same_host_only','maximum_body_bytes':12000000} for i,(rid,url,category) in enumerate(routes)],
+            'route_count':4,'same_host_expansion':0,'result_spawned_requests':0,
+            'source_requests_executed_here':0,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,
+            'class_closed':False,'cumulative_ledger_effect':'none','outside_human_dependency':False,
+            'next_authorized_operation':'execute exactly these four routes once in a never-merge transport lane',
+          }
+          summary_out={
+            'schema_version':'ssc-rd04-nd-current-waiver-census-adjudication-summary@1','state':'complete',
+            'artifact_id':int(os.environ['CENSUS_ARTIFACT']),'source_admissions':1,'field_decisions':1,
+            'promotion_candidates':0,'held_open_fields':1,'selected_followup_routes':4,
+            'source_requests':0,'route_executions':0,'field_terminalizations':0,'matrix_updates':0,
+            'row_state_mutations':0,'class_closed':False,'cumulative_ledger_effect':'none',
+            'outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none',
+          }
+          for name,value in [('source-adjudication.json',source),('field-adjudication.json',field),('selected-followup-protocol.json',protocol),('summary.json',summary_out)]:
+            (out/name).write_text(json.dumps(value,indent=2,sort_keys=True)+'\n')
+          PY
+
+          stage=seal_terminal_receipt
+          jq -n --arg canonical_parent "$CANONICAL_PARENT" --arg canonical_tree "$CANONICAL_TREE" \
+            '{schema_version:"ssc-rd04-nd-current-waiver-census-adjudication@1",state:"complete",
+              failed_or_final_stage:"complete",exit_code:0,canonical_parent:$canonical_parent,canonical_tree:$canonical_tree,
+              census_artifact:9029291669,source_admissions:1,field_decisions:1,promotion_candidates:0,
+              held_open_fields:1,selected_followup_routes:4,source_requests:0,route_executions:0,
+              field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,
+              cumulative_ledger_effect:"none",outside_human_dependency:false,
+              publication_effect:"none",adoption_effect:"none",graph_effect:"none",
+              next_authorized_operation:"execute the four exact FNA routes once; do not re-run the seventy-five-route census"}' > "$OUT/receipt.json"
+          stage=complete
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ssc-rd04-nd-current-waiver-census-adjudication-v1
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal offline adjudication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$OUTPUT_DIR"
+          test "${{ steps.adjudicate.outcome }}" = success
+          test "$(cat "$OUT/STAGE")" = complete
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '.state=="complete" and .source_admissions==1 and .field_decisions==1 and .promotion_candidates==0 and .held_open_fields==1 and .selected_followup_routes==4 and .source_requests==0 and .route_executions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and .outside_human_dependency==false' "$OUT/receipt.json" > /dev/null
