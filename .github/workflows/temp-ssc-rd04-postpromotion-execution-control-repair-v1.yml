@@ -1,0 +1,81 @@
+name: TEMP qualify RD-04 postpromotion execution-control repair bundle v5
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-ssc-rd04-postpromotion-execution-control-repair-v1.yml'
+      - '.tmp/ssc-rd04-postpromotion-execution-control-repair-v1/**'
+
+permissions:
+  contents: read
+
+env:
+  CANONICAL_PARENT: a18f19ddc923e553848a5165cdf29fb1b9add97a
+  CARRIER_BRANCH: agent/ssc-rd04-postpromotion-execution-control-repair-materializer-v1
+  TARGET_BRANCH: agent/ssc-rd04-postpromotion-execution-control-repair-v1
+  SOURCE_PAYLOAD_SHA256: e2d72dc7306d091d768341aa1474beb0167d3a6e51302d1c6d7cff513854b66c
+  SOURCE_PAYLOAD_BYTES: '22224'
+  SOURCE_BASE64_BYTES: '29632'
+  RUNNER_BASE64_BYTES: '5344'
+  RUNNER_ARCHIVE_BYTES: '4008'
+  RUNNER_ARCHIVE_SHA256: 2c1cfa3321801c048e71c790e2e3820e9490d59c1f4ba56caaf83778ea79bb5a
+  RUNNER_BYTES: '14950'
+  RUNNER_SHA256: 866f00453da0afc58e9839bbd3f147780fac058e0094de040a018eb0c5ad8107
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-execution-control-repair-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned validation dependencies
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+
+      - name: Authenticate and execute read-only qualification runner
+        shell: bash
+        env:
+          REPAIR_ROOT: /tmp/ssc-rd04-postpromotion-execution-control-repair-v5/repair
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/ssc-rd04-postpromotion-execution-control-repair-v5
+          BOOT=/tmp/ssc-rd04-postpromotion-execution-control-repair-bootstrap-v5
+          rm -rf "$OUT" "$BOOT"
+          mkdir -p "$OUT" "$BOOT"
+          trap 'status=$?; printf "exit_code=%s\nfailure_line=%s\nfailure_command=%s\n" "$status" "${BASH_LINENO[0]:-unknown}" "${BASH_COMMAND:-unknown}" > "$OUT/bootstrap-failure.txt"; exit "$status"' ERR
+          cat .tmp/ssc-rd04-postpromotion-execution-control-repair-v1/runner-part-* > "$BOOT/runner.b64"
+          test "$(wc -c < "$BOOT/runner.b64" | tr -d ' ')" = "$RUNNER_BASE64_BYTES"
+          base64 -d "$BOOT/runner.b64" > "$BOOT/runner.sh.xz"
+          test "$(wc -c < "$BOOT/runner.sh.xz" | tr -d ' ')" = "$RUNNER_ARCHIVE_BYTES"
+          test "$(sha256sum "$BOOT/runner.sh.xz" | cut -d' ' -f1)" = "$RUNNER_ARCHIVE_SHA256"
+          xz -dc "$BOOT/runner.sh.xz" > "$BOOT/runner.sh"
+          test "$(wc -c < "$BOOT/runner.sh" | tr -d ' ')" = "$RUNNER_BYTES"
+          test "$(sha256sum "$BOOT/runner.sh" | cut -d' ' -f1)" = "$RUNNER_SHA256"
+          bash -n "$BOOT/runner.sh"
+          bash "$BOOT/runner.sh"
+
+      - name: Preserve qualification custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-postpromotion-execution-control-repair-v5
+          path: /tmp/ssc-rd04-postpromotion-execution-control-repair-v5
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
