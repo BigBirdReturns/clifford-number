@@ -1,0 +1,159 @@
+name: TEMP route raw RD-04 current-main rebind v4
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v4-router.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  route:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v4-router'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      CURRENT_MAIN: c108c323d9c254d8e4a6bb4f3089a7fae7975009
+      SEALED_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v2
+      SEALED_HEAD: fc8e62343836f67dc9c56a871640cde2a0d83252
+      SEALED_PATH: .github/workflows/temp-ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v2.yml
+      WRAPPER_BRANCH: agent/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v4-router
+      WRAPPER_PATH: .github/workflows/temp-ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v4-router.yml
+      ORIGINAL_OUT: /tmp/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v2
+      ROUTER_OUT: /tmp/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v4-router
+      GITHUB_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Bind one-path router and exact V2 transaction
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$ROUTER_OUT" "$ORIGINAL_OUT"
+          mkdir -p "$ROUTER_OUT"
+          printf 'binding\n' > "$ROUTER_OUT/STAGE"
+          test "$(git rev-parse HEAD^)" = "$CURRENT_MAIN"
+          test "$(git rev-list --count "$CURRENT_MAIN"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CURRENT_MAIN" HEAD)" = "$WRAPPER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" HEAD)" = "$WRAPPER_PATH"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CURRENT_MAIN"
+          test "$(git ls-remote --heads origin "refs/heads/$SEALED_BRANCH" | awk '{print $1}')" = "$SEALED_HEAD"
+          git fetch --no-tags origin "+refs/heads/$SEALED_BRANCH:refs/remotes/origin/$SEALED_BRANCH"
+          test "$(git rev-parse "refs/remotes/origin/$SEALED_BRANCH")" = "$SEALED_HEAD"
+          test "$(git rev-parse "$SEALED_HEAD^")" = "$CURRENT_MAIN"
+          test "$(git diff --name-only "$CURRENT_MAIN" "$SEALED_HEAD")" = "$SEALED_PATH"
+          printf '%s\n' "$SEALED_HEAD" > "$ROUTER_OUT/sealed-head.txt"
+          printf '%s\n' "$CURRENT_MAIN" > "$ROUTER_OUT/current-main.txt"
+
+      - name: Extract raw stored V2 run block without GitHub preprocessing
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf 'extracting-raw-run-block\n' > "$ROUTER_OUT/STAGE"
+          python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2'
+          git show "$SEALED_HEAD:$SEALED_PATH" > "$ROUTER_OUT/sealed-workflow.yml"
+          python - "$ROUTER_OUT/sealed-workflow.yml" "$ROUTER_OUT/sealed-step.sh" "$ROUTER_OUT/sealed-env.sh" <<'PY'
+          import shlex
+          import sys
+          from pathlib import Path
+          import yaml
+
+          workflow = Path(sys.argv[1])
+          script_path = Path(sys.argv[2])
+          env_path = Path(sys.argv[3])
+          document = yaml.safe_load(workflow.read_text())
+          job = document['jobs']['materialize']
+          step = next(item for item in job['steps'] if item.get('name') == 'Reconstruct, qualify, and stage exact candidate')
+          script = step['run']
+          expression = '$' + '{{ github.event.pull_request.head.ref }}'
+          if script.count(expression) != 1:
+              raise SystemExit(f'raw expression denominator={script.count(expression)}')
+          if script.count('$' + '{{') != 1:
+              raise SystemExit('unexpected additional raw GitHub expression')
+          script_path.write_text(script)
+          script_path.chmod(0o700)
+          environment = job.get('env', {}) | step.get('env', {})
+          lines = []
+          for key, value in environment.items():
+              value = str(value)
+              if '$' + '{{' in value:
+                  if key not in {'GITHUB_TOKEN', 'GH_TOKEN'}:
+                      raise SystemExit(f'unresolved environment expression: {key}')
+                  continue
+              lines.append(f'export {key}={shlex.quote(value)}\n')
+          env_path.write_text(''.join(lines))
+          print(f'raw_run_bytes={script_path.stat().st_size}')
+          print(f'exported_env_keys={len(lines)}')
+          PY
+          grep -q '^export SOURCE_PARENT=' "$ROUTER_OUT/sealed-env.sh"
+          grep -q '^export CURRENT_MAIN=' "$ROUTER_OUT/sealed-env.sh"
+          grep -q '^export STAGING_BRANCH=' "$ROUTER_OUT/sealed-env.sh"
+
+      - name: Execute raw V2 transaction in exact detached worktree
+        id: execute
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          printf 'executing-raw-v2-transaction\n' > "$ROUTER_OUT/STAGE"
+          WT=/tmp/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v4-router-wt
+          rm -rf "$WT"
+          git worktree add --detach "$WT" "$SEALED_HEAD"
+          cd "$WT"
+          source "$ROUTER_OUT/sealed-env.sh"
+          export GITHUB_SHA="$SEALED_HEAD"
+          export GITHUB_REF_NAME="$SEALED_BRANCH"
+          set +e
+          bash "$ROUTER_OUT/sealed-step.sh"
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > "$ROUTER_OUT/sealed-exit-code.txt"
+          if [[ -d "$ORIGINAL_OUT" ]]; then
+            cp -a "$ORIGINAL_OUT" "$ROUTER_OUT/original-transaction"
+          fi
+          exit "$rc"
+
+      - name: Require exact staged candidate
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf 'verifying-staged-candidate\n' > "$ROUTER_OUT/STAGE"
+          test "${{ steps.execute.outcome }}" = success
+          test -f "$ROUTER_OUT/sealed-exit-code.txt"
+          test "$(cat "$ROUTER_OUT/sealed-exit-code.txt")" = 0
+          test -f "$ORIGINAL_OUT/EXIT_CODE"
+          test "$(cat "$ORIGINAL_OUT/EXIT_CODE")" = 0
+          test -f "$ORIGINAL_OUT/STAGE"
+          test "$(cat "$ORIGINAL_OUT/STAGE")" = complete
+          test -f "$ORIGINAL_OUT/receipt.json"
+          STAGING_BRANCH=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["staging_branch"])' "$ORIGINAL_OUT/receipt.json")
+          STAGING_COMMIT=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["candidate_commit"])' "$ORIGINAL_OUT/receipt.json")
+          test "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')" = "$STAGING_COMMIT"
+          printf '%s\n' "$STAGING_BRANCH" > "$ROUTER_OUT/staging-branch.txt"
+          printf '%s\n' "$STAGING_COMMIT" > "$ROUTER_OUT/staging-commit.txt"
+          printf 'complete\n' > "$ROUTER_OUT/STAGE"
+          (cd "$ROUTER_OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v4-router
+          path: /tmp/ssc-rd04-postpromotion-next-adjudication-current-main-rebind-v4-router
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
