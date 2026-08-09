@@ -1,0 +1,32 @@
+IX_BLOB" ]] || fail topology matrix_blob_moved
+python - "$MATRIX_PATH" "$EXPECTED_CELL_SHA" > "$OUT/current-cell-proof.json" <<'PY'
+import hashlib,json,sys
+p,e=sys.argv[1:]; d=json.load(open(p)); r=[x for x in d['rows'] if x.get('unit_id')=='US-STATE-ND']; assert len(r)==1; r=r[0]
+c=[x for x in r['cells'] if x.get('field_id')=='abawd_or_work_requirement_waiver_state_and_governing_period']; assert len(c)==1; c=c[0]
+h=hashlib.sha256(json.dumps(c,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest(); assert h==e
+assert r['row_state']=='still_open' and r['terminal_fields']==7 and r['open_fields']==2 and c['state']=='still_open' and c['terminal'] is False and c['value'] is None
+print(json.dumps({'row_state':r['row_state'],'terminal_fields':7,'open_fields':2,'field_state':c['state'],'field_terminal':False,'field_value':None,'cell_sha256':h},indent=2,sort_keys=True))
+PY
+printf '%s\n' "$EXPECTED_PARENT" > "$OUT/live-main.txt"
+printf '%s\n' "$EXPECTED_MATRIX_BLOB" > "$OUT/live-matrix-blob.txt"
+
+printf '%s\n' artifact_authentication > "$OUT/STAGE"
+META="$TMP/meta.json"; ZIP="$TMP/source.zip"
+gh api "repos/${REPO}/actions/artifacts/${ARTIFACT_ID}" > "$META"
+[[ "$(jq -r .id "$META")" == "$ARTIFACT_ID" && "$(jq -r .size_in_bytes "$META")" == "$ARTIFACT_BYTES" && "$(jq -r .digest "$META")" == "sha256:${ARTIFACT_SHA}" && "$(jq -r .expired "$META")" == false ]] || fail artifact_authentication artifact_metadata_mismatch
+gh api "repos/${REPO}/actions/artifacts/${ARTIFACT_ID}/zip" > "$ZIP"
+[[ "$(stat -c %s "$ZIP")" == "$ARTIFACT_BYTES" && "$(sha256sum "$ZIP"|awk '{print $1}')" == "$ARTIFACT_SHA" ]] || fail artifact_authentication artifact_download_mismatch
+unzip -tq "$ZIP" > "$OUT/source-zip-test.txt" || fail artifact_authentication artifact_zip_invalid
+unzip -q "$ZIP" -d "$TMP/source"
+[[ "$(wc -l < "$TMP/source/SHA256SUMS")" == 31 ]] || fail artifact_authentication top_checksum_count_mismatch
+(cd "$TMP/source" && sha256sum -c SHA256SUMS > "$OUT/source-checksums.txt") || fail artifact_authentication top_checksum_failure
+[[ "$(wc -l < "$TMP/source/range/SHA256SUMS")" == 17 ]] || fail artifact_authentication nested_checksum_count_mismatch
+(cd "$TMP/source/range" && sha256sum -c SHA256SUMS > "$OUT/range-checksums.txt") || fail artifact_authentication nested_checksum_failure
+cp "$META" "$OUT/source-artifact-metadata.json"
+
+printf '%s\n' adjudicate > "$OUT/STAGE"
+python - "$TMP/source" "$OUT" "$EXPECTED_PARENT" "$EXPECTED_MATRIX_BLOB" "$EXPECTED_CELL_SHA" "$ARTIFACT_ID" "$ARTIFACT_SHA" "$ORIGIN_ROUTE" "$ORIGIN_URL" "$AZURE_ROUTE" "$AZURE_URL" "$AZURE_HOST" <<'PY'
+import hashlib,json,sys
+from pathlib import Path
+from urllib.parse import urlparse
+sr
