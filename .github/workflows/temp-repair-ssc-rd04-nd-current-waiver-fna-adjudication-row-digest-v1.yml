@@ -1,0 +1,346 @@
+name: TEMP repair RD-04 North Dakota FNA adjudication row digest v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-repair-ssc-rd04-nd-current-waiver-fna-adjudication-row-digest-v1.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+  CARRIER_PARENT: a592acea22c69a979f2a90c24a2bafb8c9445759
+  TARGET_BRANCH: agent/ssc-rd04-nd-current-waiver-fna-adjudication-row-digest-repair-v1
+  WORKFLOW_PATH: .github/workflows/temp-repair-ssc-rd04-nd-current-waiver-fna-adjudication-row-digest-v1.yml
+  MATRIX_PATH_REPO: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  FAILED_ARTIFACT_ID: '9030484504'
+  FAILED_ARTIFACT_BYTES: '12488147'
+  FAILED_ARTIFACT_SHA256: 605eed1e0d1ff2708ee8b6326775f182a78bbace1f7337969c6ed3771a1621af
+  FAILED_RECEIPT_SHA256: 5d9f8f8f663f0097d8e474e82c2a5d61a0c7f8100ebb5f22f2e9cceb2263d876
+  FAILED_PROGRAM_SHA256: 5a4b35e04b11ca875c1ee08a7f1822f0603bffc668f2fd6904fadefcef9b8e26
+  PRIOR_INCORRECT_ROW_SHA256: aec9f1e8dd82055c73f7e27506a884b6724118e1f4b61d0b9d53b5b2b5ab2c40
+  DIGEST_ARTIFACT_ID: '9030563952'
+  DIGEST_ARTIFACT_BYTES: '5218'
+  DIGEST_ARTIFACT_SHA256: 8c126ee5b4b9dc614c1b19ad19d5e9ec427a7607f051ac661b867be412fcd229
+  DIGEST_RECEIPT_SHA256: e0a5efcc296c589d9e7b2483e868bbb8583fb5d8db4644ef90c2ed42392a6276
+  CORRECT_ROW_SHA256: 18f9b127b61e45edafb64c78bc8c387175fffdb351156ccf9154158ca467d2dd
+  WAIVER_CELL_SHA256: cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe
+  TRANSPORT_CANONICAL_PARENT: b1d1d8afb6c957401a762bf9d0b2abc464bd5e07
+  TRANSPORT_CANONICAL_TREE: 64f5b5e9e9d72bdf86ef6cf14d728b2ae996f834
+  TRANSPORT_HEAD: 58ca14c494a05cbe84ea44e5940a72f04050fdfb
+  TRANSPORT_ARTIFACT_ID: '9030196488'
+  TRANSPORT_ARTIFACT_SHA256: 80a23c45563929330c61213aacb88d92fa8edd3ba30afb728a523b3014f98827
+  TRANSPORT_RECEIPT_SHA256: 5ad24c52977c9fef7b41aadbc963da6c44427fca9c5cc59c11d06952345abc35
+  ROUTE_RECEIPTS_SHA256: b2440b68b650c9190fc44e69b995cfdf49bd2cc807e8e3010772bb9b141108d4
+  PHYSICAL_REQUESTS_SHA256: fa084cfd9860df593443e2ad7ca872917536f4f6717bd158d063baf5966adaa7
+  REQUEST_PLAN_SHA256: 8556ebfc3794bbcca814f551ddb17fc7eacc62fac06cf91ab2747fedbf9dabaa
+  TRANSPORT_AUTHORITY_SHA256: 4bb48df4003ce66d8752d588c177b0f3830e3c1bde60888a1845a5ee50d6af63
+  OUTPUT_DIR: /tmp/ssc-rd04-nd-current-waiver-fna-adjudication-row-digest-repair-v1
+  WORK_DIR: /tmp/ssc-rd04-nd-current-waiver-fna-adjudication-row-digest-repair-work
+
+concurrency:
+  group: temp-repair-rd04-nd-fna-adjudication-row-digest-v1
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-current-waiver-fna-adjudication-row-digest-repair-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Authenticate failed custody and rerun exact adjudicator
+        id: repair
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$OUTPUT_DIR"
+          WORK="$WORK_DIR"
+          FAILED="$WORK/failed"
+          DIGEST="$WORK/digest"
+          RESULT="$OUT/result"
+          rm -rf "$OUT" "$WORK"
+          mkdir -p "$OUT" "$FAILED" "$DIGEST" "$RESULT"
+          stage=bootstrap
+          exec > >(tee "$OUT/repair.log") 2>&1
+
+          finalize() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            if [ ! -f "$OUT/repair-receipt.json" ]; then
+              jq -n \
+                --arg stage "$stage" \
+                --argjson exit_code "$rc" \
+                --arg failed_artifact "$FAILED_ARTIFACT_ID" \
+                --arg digest_artifact "$DIGEST_ARTIFACT_ID" \
+                '{
+                  schema_version:"ssc-rd04-nd-current-waiver-fna-adjudication-row-digest-repair@1",
+                  state:"failed_closed",failed_or_final_stage:$stage,exit_code:$exit_code,
+                  failed_adjudication_artifact_id:($failed_artifact|tonumber),
+                  canonical_row_digest_artifact_id:($digest_artifact|tonumber),
+                  source_requests:0,route_executions:0,field_terminalizations:0,matrix_updates:0,
+                  row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",
+                  outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"
+                }' > "$OUT/repair-receipt.json"
+            fi
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          stage=bind_exact_carrier_and_unchanged_live_matrix
+          test "$HEAD_REPO" = "$GITHUB_REPOSITORY"
+          test "$HEAD_REF" = "$TARGET_BRANCH"
+          test "$HEAD_SHA" = "$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$CARRIER_PARENT"
+          test "$(git rev-list --count "$CARRIER_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CARRIER_PARENT" HEAD)" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CARRIER_PARENT" HEAD)" = "$WORKFLOW_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CARRIER_PARENT" HEAD)"
+          git diff --check "$CARRIER_PARENT" HEAD
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          git merge-base --is-ancestor "$CARRIER_PARENT" origin/main
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          LIVE_TREE="$(git rev-parse 'origin/main^{tree}')"
+          test "$(git rev-parse "origin/main:$MATRIX_PATH_REPO")" = "$MATRIX_BLOB"
+          git show "origin/main:$MATRIX_PATH_REPO" > "$WORK/live-matrix.json"
+          printf '%s\n' "$LIVE_MAIN" > "$OUT/live-main.txt"
+          printf '%s\n' "$LIVE_TREE" > "$OUT/live-main-tree.txt"
+
+          stage=authenticate_failed_adjudication_artifact
+          gh api -H 'Accept: application/vnd.github+json' \
+            "/repos/$GITHUB_REPOSITORY/actions/artifacts/$FAILED_ARTIFACT_ID" \
+            > "$OUT/failed-artifact.json"
+          jq -e \
+            --argjson id "$FAILED_ARTIFACT_ID" \
+            --argjson bytes "$FAILED_ARTIFACT_BYTES" \
+            --arg digest "sha256:$FAILED_ARTIFACT_SHA256" \
+            '.id==$id and .expired==false and .size_in_bytes==$bytes and .digest==$digest' \
+            "$OUT/failed-artifact.json" > /dev/null
+          gh api -H 'Accept: application/vnd.github+json' \
+            "/repos/$GITHUB_REPOSITORY/actions/artifacts/$FAILED_ARTIFACT_ID/zip" \
+            > "$WORK/failed.zip"
+          test "$(stat -c %s "$WORK/failed.zip")" -eq "$FAILED_ARTIFACT_BYTES"
+          test "$(sha256sum "$WORK/failed.zip" | awk '{print $1}')" = "$FAILED_ARTIFACT_SHA256"
+          unzip -t "$WORK/failed.zip" > "$OUT/failed-zip-test.txt"
+          unzip -q "$WORK/failed.zip" -d "$FAILED"
+          (cd "$FAILED" && sha256sum -c SHA256SUMS)
+          test "$(cat "$FAILED/STAGE")" = adjudicate_transport_offline
+          test "$(cat "$FAILED/EXIT_CODE")" = 1
+          test "$(sha256sum "$FAILED/receipt.json" | awk '{print $1}')" = "$FAILED_RECEIPT_SHA256"
+          test "$(sha256sum "$FAILED/adjudication-program.py" | awk '{print $1}')" = "$FAILED_PROGRAM_SHA256"
+          grep -F 'AssertionError: North Dakota row digest mismatch' "$FAILED/adjudication.log" > /dev/null
+          jq -e '
+            .state=="failed_closed" and .failed_or_final_stage=="adjudicate_transport_offline" and .exit_code==1 and
+            .source_admissions==0 and .source_rejections==0 and .field_decisions==0 and
+            .promotion_candidates==0 and .selected_followup_routes==0 and .source_requests==0 and
+            .route_executions==0 and .field_terminalizations==0 and .matrix_updates==0 and
+            .row_state_mutations==0 and .class_closed==false
+          ' "$FAILED/receipt.json" > /dev/null
+          cp "$FAILED/receipt.json" "$OUT/source-failed-receipt.json"
+          cp "$FAILED/adjudication-program.py" "$OUT/adjudication-program.py"
+
+          stage=authenticate_canonical_row_digest_artifact
+          gh api -H 'Accept: application/vnd.github+json' \
+            "/repos/$GITHUB_REPOSITORY/actions/artifacts/$DIGEST_ARTIFACT_ID" \
+            > "$OUT/row-digest-artifact.json"
+          jq -e \
+            --argjson id "$DIGEST_ARTIFACT_ID" \
+            --argjson bytes "$DIGEST_ARTIFACT_BYTES" \
+            --arg digest "sha256:$DIGEST_ARTIFACT_SHA256" \
+            '.id==$id and .expired==false and .size_in_bytes==$bytes and .digest==$digest' \
+            "$OUT/row-digest-artifact.json" > /dev/null
+          gh api -H 'Accept: application/vnd.github+json' \
+            "/repos/$GITHUB_REPOSITORY/actions/artifacts/$DIGEST_ARTIFACT_ID/zip" \
+            > "$WORK/digest.zip"
+          test "$(stat -c %s "$WORK/digest.zip")" -eq "$DIGEST_ARTIFACT_BYTES"
+          test "$(sha256sum "$WORK/digest.zip" | awk '{print $1}')" = "$DIGEST_ARTIFACT_SHA256"
+          unzip -t "$WORK/digest.zip" > "$OUT/row-digest-zip-test.txt"
+          unzip -q "$WORK/digest.zip" -d "$DIGEST"
+          (cd "$DIGEST" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$DIGEST/receipt.json" | awk '{print $1}')" = "$DIGEST_RECEIPT_SHA256"
+          jq -e \
+            --arg row "$CORRECT_ROW_SHA256" \
+            --arg cell "$WAIVER_CELL_SHA256" \
+            --arg blob "$MATRIX_BLOB" \
+            '.state=="complete" and .matrix_git_blob==$blob and .unit_id=="US-STATE-ND" and
+             .row_state=="still_open" and .terminal_fields==7 and .open_fields==2 and .cell_count==9 and
+             .canonical_row_sha256==$row and .canonical_waiver_cell_sha256==$cell' \
+            "$DIGEST/receipt.json" > /dev/null
+          CORRECT_ROW="$(jq -r '.canonical_row_sha256' "$DIGEST/receipt.json")"
+          test "$CORRECT_ROW" = "$CORRECT_ROW_SHA256"
+          cp "$DIGEST/receipt.json" "$OUT/source-row-digest-receipt.json"
+
+          stage=rerun_exact_preserved_adjudicator
+          export MATRIX_PATH="$WORK/live-matrix.json"
+          export TRANSPORT_CANONICAL_PARENT TRANSPORT_CANONICAL_TREE TRANSPORT_HEAD
+          export TRANSPORT_RECEIPT_SHA256 ROUTE_RECEIPTS_SHA256 PHYSICAL_REQUESTS_SHA256
+          export REQUEST_PLAN_SHA256 TRANSPORT_AUTHORITY_SHA256 TRANSPORT_ARTIFACT_ID
+          export TRANSPORT_ARTIFACT_SHA256 WAIVER_CELL_SHA256
+          export ND_ROW_SHA256="$CORRECT_ROW"
+          export CANONICAL_PARENT="$LIVE_MAIN"
+          export CURRENT_CANONICAL_TREE="$LIVE_TREE"
+          python "$OUT/adjudication-program.py" "$FAILED/transport" "$RESULT"
+
+          stage=verify_repaired_semantic_output
+          jq -e \
+            --arg live "$LIVE_MAIN" \
+            --arg tree "$LIVE_TREE" \
+            '.state=="complete" and .failed_or_final_stage=="complete" and .exit_code==0 and
+             .canonical_parent==$live and .canonical_tree==$tree and .source_admissions==3 and
+             .source_rejections==1 and .field_decisions==1 and .promotion_candidates==0 and
+             .held_open_fields==1 and .selected_followup_routes==3 and .source_requests==0 and
+             .route_executions==0 and .field_terminalizations==0 and .matrix_updates==0 and
+             .row_state_mutations==0 and .class_closed==false and .cumulative_ledger_effect=="none" and
+             .outside_human_dependency==false and .publication_effect=="none" and
+             .adoption_effect=="none" and .graph_effect=="none"' \
+            "$RESULT/receipt.json" > /dev/null
+          jq -e '
+            .route_count==3 and .source_requests_executed_here==0 and .same_host_expansion==0 and
+            .result_spawned_requests==0 and .field_terminalizations==0 and .matrix_updates==0 and
+            .row_state_mutations==0 and .class_closed==false and
+            ([.routes[].route_id]==[
+              "RD04-ND-CURRENT-WAIVER-FY26-Q1-STATUS-PDF",
+              "RD04-ND-CURRENT-WAIVER-FY26-Q2-STATUS-PDF",
+              "RD04-ND-CURRENT-WAIVER-FY26-Q3-STATUS-PDF"
+            ])
+          ' "$RESULT/selected-followup-protocol.json" > /dev/null
+          jq -e '
+            .promotion_candidate==false and
+            .disposition=="current_federal_status_index_and_exact_fy26_quarter_documents_located_but_state_documents_uncaptured_hold_open" and
+            .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false
+          ' "$RESULT/field-adjudication.json" > /dev/null
+
+          stage=seal_repair_receipt
+          python - "$OUT" "$LIVE_MAIN" "$LIVE_TREE" <<'PY'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+
+          out = Path(sys.argv[1])
+          result = out / "result"
+          live_main = sys.argv[2]
+          live_tree = sys.argv[3]
+
+          def digest(path: Path) -> str:
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+
+          semantic = json.loads((result / "receipt.json").read_text())
+          repair = {
+              "schema_version": "ssc-rd04-nd-current-waiver-fna-adjudication-row-digest-repair@1",
+              "state": "complete",
+              "failed_or_final_stage": "complete",
+              "exit_code": 0,
+              "live_main": live_main,
+              "live_main_tree": live_tree,
+              "matrix_git_blob": "19357f8214ab2710bc5e75b3fae8c7fb09ff1654",
+              "failed_adjudication_artifact_id": 9030484504,
+              "failed_adjudication_artifact_sha256": "605eed1e0d1ff2708ee8b6326775f182a78bbace1f7337969c6ed3771a1621af",
+              "failed_adjudication_receipt_sha256": "5d9f8f8f663f0097d8e474e82c2a5d61a0c7f8100ebb5f22f2e9cceb2263d876",
+              "failed_stage": "adjudicate_transport_offline",
+              "failed_exception": "North Dakota row digest mismatch",
+              "canonical_row_digest_artifact_id": 9030563952,
+              "canonical_row_digest_artifact_sha256": "8c126ee5b4b9dc614c1b19ad19d5e9ec427a7607f051ac661b867be412fcd229",
+              "canonical_row_digest_receipt_sha256": "e0a5efcc296c589d9e7b2483e868bbb8583fb5d8db4644ef90c2ed42392a6276",
+              "adjudication_program_sha256": "5a4b35e04b11ca875c1ee08a7f1822f0603bffc668f2fd6904fadefcef9b8e26",
+              "repair_scope": "replace_only_the_incorrect_expected_canonical_north_dakota_row_digest",
+              "prior_incorrect_row_sha256": "aec9f1e8dd82055c73f7e27506a884b6724118e1f4b61d0b9d53b5b2b5ab2c40",
+              "corrected_row_sha256": "18f9b127b61e45edafb64c78bc8c387175fffdb351156ccf9154158ca467d2dd",
+              "waiver_cell_sha256": "cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe",
+              "result_receipt_sha256": digest(result / "receipt.json"),
+              "source_adjudication_sha256": digest(result / "source-adjudication.json"),
+              "field_adjudication_sha256": digest(result / "field-adjudication.json"),
+              "locator_inventory_sha256": digest(result / "locator-inventory.json"),
+              "selected_followup_protocol_sha256": digest(result / "selected-followup-protocol.json"),
+              "summary_sha256": digest(result / "summary.json"),
+              "source_admissions": semantic["source_admissions"],
+              "source_rejections": semantic["source_rejections"],
+              "field_decisions": semantic["field_decisions"],
+              "promotion_candidates": semantic["promotion_candidates"],
+              "held_open_fields": semantic["held_open_fields"],
+              "selected_followup_routes": semantic["selected_followup_routes"],
+              "source_requests": 0,
+              "route_executions": 0,
+              "field_terminalizations": 0,
+              "matrix_updates": 0,
+              "row_state_mutations": 0,
+              "class_closed": False,
+              "cumulative_ledger_effect": "none",
+              "outside_human_dependency": False,
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none",
+              "next_authorized_operation": "execute exactly the three FY 2026 quarter status PDF routes once; do not rerun the four FNA page routes",
+          }
+          (out / "repair-receipt.json").write_text(json.dumps(repair, indent=2, sort_keys=True) + "\n")
+          PY
+          stage=complete
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 |
+              LC_ALL=C sort -z |
+              xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - name: Preserve repaired artifact adjudication
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-current-waiver-fna-adjudication-row-digest-repair-v1
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce terminal request-free repair
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$OUTPUT_DIR"
+          test "${{ steps.repair.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          jq -e '
+            .state=="complete" and .failed_or_final_stage=="complete" and .exit_code==0 and
+            .matrix_git_blob=="19357f8214ab2710bc5e75b3fae8c7fb09ff1654" and
+            .adjudication_program_sha256=="5a4b35e04b11ca875c1ee08a7f1822f0603bffc668f2fd6904fadefcef9b8e26" and
+            .repair_scope=="replace_only_the_incorrect_expected_canonical_north_dakota_row_digest" and
+            .corrected_row_sha256=="18f9b127b61e45edafb64c78bc8c387175fffdb351156ccf9154158ca467d2dd" and
+            .waiver_cell_sha256=="cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe" and
+            .source_admissions==3 and .source_rejections==1 and .field_decisions==1 and
+            .promotion_candidates==0 and .held_open_fields==1 and .selected_followup_routes==3 and
+            .source_requests==0 and .route_executions==0 and .field_terminalizations==0 and
+            .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and
+            .cumulative_ledger_effect=="none" and .outside_human_dependency==false and
+            .publication_effect=="none" and .adoption_effect=="none" and .graph_effect=="none"
+          ' "$OUT/repair-receipt.json" > /dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
