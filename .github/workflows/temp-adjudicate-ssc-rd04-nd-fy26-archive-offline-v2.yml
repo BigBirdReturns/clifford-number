@@ -1,0 +1,110 @@
+name: TEMP adjudicate RD-04 North Dakota FY2026 archive offline v2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-fy26-archive-offline-adjudication-v2/trigger.json'
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+  CARRIER_PARENT: 8482b941aa0b1ecac685ab6ca98bba80ed80c5ee
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  WAIVER_CELL_SHA256: cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe
+  ROW_STATE_CELL_SHA256: 6a4c7d204c6c99a89f3c121065860806668c5da850f44c67fe42b4dc84b1b5c3
+  BASE_BRANCH: agent/ssc-rd04-nd-fy26-archive-offline-adjudication-base-v2
+  HEAD_BRANCH: agent/ssc-rd04-nd-fy26-archive-offline-adjudication-trigger-v2
+  WORKFLOW_PATH: .github/workflows/temp-adjudicate-ssc-rd04-nd-fy26-archive-offline-v2.yml
+  RUNNER_PART_PREFIX: .tmp/rd04-nd-fy26-archive-offline-adjudication-v2/adjudicator.py.b64.part-
+  RUNNER_PART_COUNT: '9'
+  RUNNER_BASE64_FILE: /tmp/rd04-nd-fy26-archive-offline-adjudicator-v2.py.b64
+  RUNNER_BASE64_BYTES: '32084'
+  RUNNER_BASE64_SHA256: 8d35a2cd1ef0ad6865c5cce8ebc7289f0d854ed8e9c76055aa52e087607da010
+  RUNNER_FILE: /tmp/rd04-nd-fy26-archive-offline-adjudicator-v2.py
+  RUNNER_BYTES: '24063'
+  RUNNER_SHA256: da6664317bd6a410bd3394a1576510cfd74433fc51457bb6e982b64941119d48
+  TRIGGER_PATH: .tmp/rd04-nd-fy26-archive-offline-adjudication-v2/trigger.json
+  SOURCE_ARTIFACT_ID: '9033042970'
+  SOURCE_ARTIFACT_BYTES: '11695093'
+  SOURCE_ARTIFACT_SHA256: d95177ff3bd7c5eea4510c8c5498c304534d09bc6523b4a60012be2a161658c9
+  EXECUTION_RECEIPT_SHA256: 1eb54523ff4e4ebaccc1e398500f701187e6002ea53c7681e94d28c2b829366d
+  ROUTE_RECEIPT_SHA256: 49fb0a7bd39af07ae82bca24fafa4243e5fb0a858e4164ed693e95df37bdc193
+  RESPONSE_HEADERS_SHA256: 02cd29ba326c8f977f8087e0c2f6496341a2d80745ea5dbbd02bbc492a88655b
+  ARCHIVE_BYTES: '18003072'
+  ARCHIVE_SHA256: b74eccfba90bfd69dcd35567b714020de63cb80b0898323973b822f9813153b1
+  ROUTE_ID: RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-NV-WI-AZURE-001
+  ARCHIVE_URL: https://fna-bwbufwdzbabpezgc.z01.azurefd.us/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-NV-WI-7-2026.zip
+  OUTPUT_DIR: /tmp/rd04-nd-fy26-archive-offline-adjudication-v2
+  WORK_DIR: /tmp/rd04-nd-fy26-archive-offline-adjudication-v2-work
+
+concurrency:
+  group: temp-rd04-nd-fy26-archive-offline-adjudication-v2
+  cancel-in-progress: false
+
+jobs:
+  adjudicate:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-fy26-archive-offline-adjudication-base-v2' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy26-archive-offline-adjudication-trigger-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Execute checksum-bound offline adjudicator
+        id: adjudicate
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -f "$RUNNER_BASE64_FILE" "$RUNNER_FILE"
+          : > "$RUNNER_BASE64_FILE"
+          for ((i=0; i<RUNNER_PART_COUNT; i++)); do
+            part="$(printf '%s%02d' "$RUNNER_PART_PREFIX" "$i")"
+            test -f "$part"
+            cat "$part" >> "$RUNNER_BASE64_FILE"
+          done
+          test "$(stat -c%s "$RUNNER_BASE64_FILE")" = "$RUNNER_BASE64_BYTES"
+          test "$(sha256sum "$RUNNER_BASE64_FILE" | cut -d' ' -f1)" = "$RUNNER_BASE64_SHA256"
+          base64 -d "$RUNNER_BASE64_FILE" > "$RUNNER_FILE"
+          test "$(stat -c%s "$RUNNER_FILE")" = "$RUNNER_BYTES"
+          test "$(sha256sum "$RUNNER_FILE" | cut -d' ' -f1)" = "$RUNNER_SHA256"
+          python -m py_compile "$RUNNER_FILE"
+          python "$RUNNER_FILE"
+      - name: Preserve checksum-bound request-free adjudication
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy26-archive-offline-adjudication-v2
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - name: Enforce terminal zero-effect adjudication
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test '${{ steps.adjudicate.outcome }}' = success
+          test "$(cat "$OUTPUT_DIR/EXIT_CODE")" = 0
+          test "$(cat "$OUTPUT_DIR/STAGE")" = complete
+          jq -e '.schema_version=="ssc-rd04-nd-fy26-archive-offline-adjudication-receipt@1" and .state=="complete" and .failed_or_final_stage=="complete" and .exit_code==0 and .archive_entries_reviewed==16 and .unique_bodies==15 and .duplicate_body_groups==1 and .north_dakota_named_entries==0 and .source_admissions==1 and .field_decisions==1 and .promotion_candidates==0 and .selected_followup_routes==0 and .additional_execution_authorized==false and .source_requests==0 and .route_executions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and .outside_human_dependency==false' "$OUTPUT_DIR/receipt.json" >/dev/null
+          jq -e '.state=="complete" and .entry_count==16 and .total_uncompressed_bytes==17998114 and .unique_body_count==15 and .duplicate_body_group_count==1 and .observed_state_directories==["NV","NY","OR","WI"] and .north_dakota_named_entries==0' "$OUTPUT_DIR/archive-inventory.json" >/dev/null
+          jq -e '.state=="complete" and .current_state=="still_open" and .current_terminal==false and .promotion_candidate==false and .matrix_updated==false and .disposition=="exact_current_fy2026_request_archive_contains_no_north_dakota_member_but_request_archive_absence_is_not_current_waiver_status"' "$OUTPUT_DIR/field-adjudication.json" >/dev/null
+          (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
