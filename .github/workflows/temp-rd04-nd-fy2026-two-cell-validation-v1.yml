@@ -1,0 +1,248 @@
+name: TEMP validate RD-04 North Dakota FY2026 two-cell candidates v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - agent/ssc-rd04-nd-fy2026-two-cell-validation-base-v1
+    paths:
+      - '.tmp/rd04-nd-fy2026-two-cell-validation-v1/trigger.json'
+
+permissions:
+  actions: read
+  contents: read
+  issues: read
+
+concurrency:
+  group: temp-rd04-nd-fy2026-two-cell-validation-v1
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-fy2026-two-cell-validation-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy2026-two-cell-validation-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      CURRENT_PARENT: 5be5fc4d15391b99bb29226fdd16e408be559507
+      CANDIDATE_PARENT: cffe670fef5c006c7e963421d9fd18c29ed40fba
+      MANIFEST_REPAIR_HEAD: 892cdff34ade4ce6a9bb1d9ba30e8e81b41acea7
+      MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+      MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+      TARGET_CELL_SHA256: cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe
+      ROW_STATE_CELL_SHA256: 6a4c7d204c6c99a89f3c121065860806668c5da850f44c67fe42b4dc84b1b5c3
+      ARCHIVE_PREFIX: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2026-mi-nm-request-archive-adjudication
+      ARCHIVE_MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2026-mi-nm-request-archive-adjudication/product-manifest.json
+      ARCHIVE_MANIFEST_BLOB: a5036ec6ca07399d3ae67ad6849fe887c804502a
+      ARCHIVE_PAYLOAD_SHA256: 69a49733a9c20fc3b87c4b45ebbe1f1d2137e9e3de97b48fd68c4442de471032
+      ARCHIVE_DISPOSITION_BLOB: 942ac9fd34ee0857aa66b941c579487b01dd9d70
+      ARCHIVE_CELL_CUSTODY_BLOB: 04e405425082714c5f6b4ac83de9351a41a27b38
+      WORKFLOW_PATH: .github/workflows/temp-rd04-nd-fy2026-two-cell-validation-v1.yml
+      TRIGGER_PATH: .tmp/rd04-nd-fy2026-two-cell-validation-v1/trigger.json
+      BASE_BRANCH: agent/ssc-rd04-nd-fy2026-two-cell-validation-base-v1
+      HEAD_BRANCH: agent/ssc-rd04-nd-fy2026-two-cell-validation-trigger-v1
+      CANDIDATE_ARTIFACT_ID: '9043309756'
+      CANDIDATE_ARTIFACT_BYTES: '14782'
+      CANDIDATE_ARTIFACT_SHA256: ef3346192ce13eade5b4f66b90c1eb560290a1d6a74edae6a29a4823555f336e
+      CANDIDATE_RECEIPT_SHA256: ee228a61eae704a65fd8e3c2fc9fb0de91158123cf721a1841bee98b927bf186
+      SOURCE_ADJUDICATION_SHA256: b386fe3acee2e0c4ae441c987b05105fbc7e9ea33130f7ad8fbf9064ce443048
+      FIELD_CANDIDATE_SHA256: d456cafab44e26cc4660b955a7041f6722616d746633858a3f17bbde3340d19a
+      ROW_CANDIDATE_SHA256: 02f9fceaec25649f4a160fa97ccf8e328274413fd43fde1fe1465fe5d50fd69f
+      CANDIDATE_CELL_PROOF_SHA256: 4b9ab6dee1795defb63e55c4bf9a8616a11c33413264684aaaa7467848323af8
+      TARGET_CANDIDATE_ID: RD04-ND-FY2026-FIXED-PROTOCOL-TARGET-CELL-CANDIDATE-V2
+      ROW_CANDIDATE_ID: RD04-ND-FY2026-FIXED-PROTOCOL-ROW-STATE-CANDIDATE-V2
+      ARCHIVE_SOURCE_ID: RD04-SOURCE-ND-FY2026-MI-NM-ARCHIVE-CENSUS-V1
+      REFRESH_SOURCE_ID: RD04-SOURCE-ND-FY2026-CURRENT-INDEX-REFRESH-2026-08-09-V1
+      ROW_SOURCE_ID: RD04-ND-FY2026-FIXED-PROTOCOL-ROW-STATE-V1
+      CONTROLLER_ISSUE: '1743'
+      CONTROLLER_COMMENT_PREFIX: RD04_ND_TWO_CELL_VALIDATOR_CHUNK_
+      CONTROLLER_CHUNK_COUNT: '5'
+      CONTROLLER_BASE64_BYTES: '37020'
+      CONTROLLER_BASE64_SHA256: 3c975ae706ae193a877a318debb7910946fbd132c257d5b02971684cad4c4fed
+      CONTROLLER_BYTES: '27763'
+      CONTROLLER_SHA256: c51f8166deb4485f053a19717f8a7d21356c01f9e095d0283dca8dd7f03139bd
+      CONTROLLER_DIR: /tmp/ssc-rd04-nd-fy2026-two-cell-validation-v1-controller
+      OUT: /tmp/ssc-rd04-nd-fy2026-two-cell-validation-v1
+      WORK: /tmp/ssc-rd04-nd-fy2026-two-cell-validation-v1-work
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Reconstruct exact validator and execute request-free validation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$CONTROLLER_DIR"
+          mkdir -p "$CONTROLLER_DIR"
+          COMMENTS="$CONTROLLER_DIR/comments.json"
+          PAYLOAD="$CONTROLLER_DIR/controller.b64"
+          CONTROLLER="$CONTROLLER_DIR/controller.sh"
+          CUSTODY="$CONTROLLER_DIR/controller-custody.json"
+
+          gh api -H 'Accept: application/vnd.github+json' \
+            "repos/${GITHUB_REPOSITORY}/issues/${CONTROLLER_ISSUE}/comments?per_page=100" > "$COMMENTS"
+
+          python - "$COMMENTS" "$PAYLOAD" "$CONTROLLER" "$CUSTODY" <<'PY'
+          import base64, hashlib, json, re, sys
+          from pathlib import Path
+
+          comments_path, payload_path, controller_path, custody_path = map(Path, sys.argv[1:])
+          comments = json.loads(comments_path.read_text(encoding='utf-8'))
+          pattern = re.compile(r'^RD04_ND_TWO_CELL_VALIDATOR_CHUNK_(\d\d)_OF_05 sha256=([0-9a-f]{64})\n([A-Za-z0-9+/=]+)$')
+          expected = {
+              0: ('aa71d28e7e8cd482fab3944e89eae6d080473011f50e1f1aa1adabee5a8524b6', 7800),
+              1: ('2f95d472daf0d703258f9d53096e19546da3ae222360876544769a7c262925b7', 7800),
+              2: ('fee1e17592c6df0446a6c44e33154abf522df662bf5969c3a46c7d030fdd2561', 7800),
+              3: ('2f22ffd9df62bd541dc05c33a7aad56ee7d58e8a25c5dd35d4ec79c90d7ff6f8', 7800),
+              4: ('370ad4ab2d469dcf01ed4fb208a03156a3be4afc5d846ee8fe0d66ac27e113a0', 5820),
+          }
+          found = {}
+          comment_ids = {}
+          for comment in comments:
+              match = pattern.fullmatch(comment.get('body') or '')
+              if not match:
+                  continue
+              ordinal = int(match.group(1))
+              declared = match.group(2)
+              payload = match.group(3)
+              assert ordinal in expected and ordinal not in found
+              expected_hash, expected_bytes = expected[ordinal]
+              assert declared == expected_hash
+              assert len(payload.encode()) == expected_bytes
+              assert hashlib.sha256(payload.encode()).hexdigest() == expected_hash
+              found[ordinal] = payload
+              comment_ids[ordinal] = comment['id']
+          assert sorted(found) == list(range(5))
+          joined = ''.join(found[i] for i in range(5))
+          assert len(joined.encode()) == 37020
+          assert hashlib.sha256(joined.encode()).hexdigest() == '3c975ae706ae193a877a318debb7910946fbd132c257d5b02971684cad4c4fed'
+          decoded = base64.b64decode(joined, validate=True)
+          assert len(decoded) == 27763
+          assert hashlib.sha256(decoded).hexdigest() == 'c51f8166deb4485f053a19717f8a7d21356c01f9e095d0283dca8dd7f03139bd'
+          payload_path.write_text(joined, encoding='ascii')
+          controller_path.write_bytes(decoded)
+          custody = {
+              'schema_version': 'ssc-rd04-nd-fy2026-two-cell-validator-controller-custody@1',
+              'issue': 1743,
+              'comment_ids': [comment_ids[i] for i in range(5)],
+              'chunk_count': 5,
+              'chunk_sha256s': [expected[i][0] for i in range(5)],
+              'base64_bytes': 37020,
+              'base64_sha256': '3c975ae706ae193a877a318debb7910946fbd132c257d5b02971684cad4c4fed',
+              'controller_bytes': 27763,
+              'controller_sha256': 'c51f8166deb4485f053a19717f8a7d21356c01f9e095d0283dca8dd7f03139bd',
+              'source_requests': 0,
+              'route_executions': 0,
+              'authority_effect': 'controller_transport_custody_only',
+          }
+          custody_path.write_text(json.dumps(custody, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          PY
+
+          chmod 700 "$CONTROLLER"
+          bash -n "$CONTROLLER"
+          test "$(stat -c %s "$CONTROLLER")" = "$CONTROLLER_BYTES"
+          test "$(sha256sum "$CONTROLLER" | awk '{print $1}')" = "$CONTROLLER_SHA256"
+
+          set +e
+          bash "$CONTROLLER"
+          rc=$?
+          set -e
+          if test -d "$OUT"; then
+            cp "$CUSTODY" "$OUT/controller-custody.json"
+            (
+              cd "$OUT"
+              find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+              sha256sum -c SHA256SUMS
+            )
+          fi
+          exit "$rc"
+
+      - name: Preserve exact two-cell validation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy2026-two-cell-validation-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce validated candidates and zero mutation
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          jq -e '
+            .schema_version=="ssc-rd04-nd-fy2026-two-cell-validation-receipt@1" and
+            .state=="validated_candidates_complete" and .failed_or_final_stage=="complete" and .exit_code==0 and
+            .current_parent=="5be5fc4d15391b99bb29226fdd16e408be559507" and
+            .candidate_parent=="cffe670fef5c006c7e963421d9fd18c29ed40fba" and
+            .matrix_blob=="19357f8214ab2710bc5e75b3fae8c7fb09ff1654" and
+            .validated_candidates==2 and .rejected_candidates==0 and
+            .source_requests==0 and .route_executions==0 and .new_source_admissions==0 and
+            .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and
+            .class_closed==false and .cumulative_ledger_effect=="none" and
+            .outside_human_dependency==false and .publication_effect=="none" and
+            .adoption_effect=="none" and .graph_effect=="none" and
+            .separate_promotion_product_authorized==true and .additional_source_execution_authorized==false and
+            .projected_terminal_cells==229 and .projected_still_open_cells==221 and
+            .projected_terminal_substantive_cells==118 and .projected_still_open_substantive_cells==182 and
+            .projected_terminal_units==11
+          ' "$OUT/receipt.json" > /dev/null
+          jq -e '
+            .state=="validated" and .validated_candidates==2 and .rejected_candidates==0 and
+            .exact_current_matrix=="pass" and .exact_current_cells=="pass" and
+            .candidate_identity=="pass" and .source_identity_normalization=="pass" and
+            .candidate_dependency=="pass" and .projected_transition_arithmetic=="pass" and
+            .unchanged_cell_denominator=="pass" and .manifest_only_rebind=="pass" and
+            .promotion_applied==false and .separate_promotion_product_authorized==true
+          ' "$OUT/candidate-validation.json" > /dev/null
+          jq -e '
+            .state=="validated_unexecuted" and .candidate_count==2 and
+            .application_order==[
+              "RD04-ND-FY2026-FIXED-PROTOCOL-TARGET-CELL-CANDIDATE-V2",
+              "RD04-ND-FY2026-FIXED-PROTOCOL-ROW-STATE-CANDIDATE-V2"
+            ] and .separate_promotion_product_authorized==true and .promotion_executed==false and
+            .promotion_product_requirements.field_terminalizations==1 and
+            .promotion_product_requirements.row_terminalizations==1 and
+            .promotion_product_requirements.matrix_cell_updates==2 and
+            .promotion_product_requirements.terminal_cells_after==229 and
+            .promotion_product_requirements.still_open_cells_after==221 and
+            .promotion_product_requirements.terminal_substantive_cells_after==118 and
+            .promotion_product_requirements.still_open_substantive_cells_after==182 and
+            .promotion_product_requirements.terminal_units_after==11 and
+            .promotion_product_requirements.class_closed==false and
+            .promotion_product_requirements.cumulative_ledger_effect=="none" and
+            .source_requests==0 and .route_executions==0 and
+            .additional_source_execution_authorized==false
+          ' "$OUT/validated-candidate-protocol.json" > /dev/null
+          jq -e '
+            .unchanged_evidence_cells==7 and .unchanged_other_rows==49 and
+            .substantive_field_terminalizations==1 and .row_terminalizations==1 and .matrix_cell_updates==2 and
+            .counts_after.terminal_cells==229 and .counts_after.still_open_cells==221 and
+            .counts_after.terminal_substantive_cells==118 and .counts_after.still_open_substantive_cells==182 and
+            .counts_after.not_publicly_recovered_cells==14 and
+            .counts_after.row_terminal_state_cells_terminal==11 and
+            .counts_after.row_terminal_state_cells_open==39 and .counts_after.terminal_units==11 and
+            .class_closed==false and .cumulative_ledger_effect=="none"
+          ' "$OUT/projected-transition.json" > /dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
