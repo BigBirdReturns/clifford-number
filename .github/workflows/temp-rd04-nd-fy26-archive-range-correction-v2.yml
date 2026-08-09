@@ -1,0 +1,102 @@
+name: TEMP adjudicate RD-04 North Dakota FY2026 archive range correction v2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-fy26-archive-range-correction-v2/trigger.json'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  adjudicate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      CONTROLLER_PATH: .tmp/rd04-nd-fy26-archive-range-correction-v2/controller.sh
+      CONTROLLER_BLOB: a13973b0924199ecaf53ffb789e5c6ccacfa4685
+      CONTROLLER_BYTES: '15861'
+      CONTROLLER_SHA256: 032b41116dae296bb4e1ebca3fba093d329ac88da6d8a1718fe41a72ad05fa7e
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Authenticate exact ordinary Git controller source
+        run: |
+          set -Eeuo pipefail
+          test -f "$CONTROLLER_PATH"
+          test "$(stat -c %s "$CONTROLLER_PATH")" = "$CONTROLLER_BYTES"
+          test "$(sha256sum "$CONTROLLER_PATH" | awk '{print $1}')" = "$CONTROLLER_SHA256"
+          test "$(git hash-object "$CONTROLLER_PATH")" = "$CONTROLLER_BLOB"
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          CONTROLLER_COMMIT="$(git rev-parse "$BASE_SHA^")"
+          test "$(git rev-parse "$CONTROLLER_COMMIT:$CONTROLLER_PATH")" = "$CONTROLLER_BLOB"
+          bash -n "$CONTROLLER_PATH"
+
+      - name: Adjudicate exact archive denominator and correct postal range
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: bash "$CONTROLLER_PATH"
+
+      - name: Preserve request-free range correction
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy26-archive-range-correction-v2
+          path: ${{ runner.temp }}/ssc-rd04-nd-fy26-archive-range-correction-v2
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce terminal request-free result
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-nd-fy26-archive-range-correction-v2"
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          jq -e '
+            .state=="complete" and
+            .failed_or_final_stage=="complete" and
+            .exit_code==0 and
+            .source_requests==0 and
+            .route_executions==0 and
+            .source_admissions==0 and
+            .archive_members_reviewed==16 and
+            .north_dakota_members==0 and
+            .field_decisions==1 and
+            .promotion_candidates==0 and
+            .held_open_fields==1 and
+            .selected_followup_routes==1 and
+            .field_terminalizations==0 and
+            .matrix_updates==0 and
+            .row_state_mutations==0 and
+            .class_closed==false and
+            .cumulative_ledger_effect=="none" and
+            .outside_human_dependency==false and
+            .publication_effect=="none" and
+            .adoption_effect=="none" and
+            .graph_effect=="none" and
+            .additional_execution_authorized==true and
+            .additional_execution_scope=="RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-MI-NM-ORIGIN-001"
+          ' "$OUT/receipt.json" > /dev/null
+          jq -e '
+            .selected_correct_range.lower=="MI" and
+            .selected_correct_range.upper=="NM" and
+            .selected_correct_range.url=="https://www.fna.usda.gov/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-MI-NM-7-2026.zip" and
+            .consumed_wrong_range.lower=="NV" and
+            .consumed_wrong_range.upper=="WI" and
+            .consumed_wrong_range.north_dakota_members==0 and
+            .selection_proof.result==true and
+            .selection_proof.unique_matching_ranges==1
+          ' "$OUT/range-correction.json" > /dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
