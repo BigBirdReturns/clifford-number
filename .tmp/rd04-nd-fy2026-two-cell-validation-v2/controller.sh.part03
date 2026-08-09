@@ -1,0 +1,16 @@
+026-mi-nm-request-archive-adjudication-product-manifest@1" and
+  .payload_combined_sha256==$payload and .permanent_path_count==6 and
+  (.payload_files|length)==5 and .semantic_counts.archive_inventory_source_admissions==1 and
+  .semantic_counts.member_document_source_admissions==0 and
+  .semantic_counts.north_dakota_scoped_members==0 and
+  .semantic_counts.promotion_candidates==0 and
+  .semantic_counts.selected_followup_routes_from_this_product==0 and
+  .authority_boundary.new_source_requests==0 and .authority_boundary.new_route_executions==0 and
+  .authority_boundary.field_terminalizations==0 and .authority_boundary.matrix_updates==0 and
+  .authority_boundary.row_state_mutations==0 and .authority_boundary.class_closed==false
+' "$ARCHIVE_MANIFEST_PATH" > /dev/null || fail topology archive_manifest_semantics_mismatch
+cp "$ARCHIVE_MANIFEST_PATH" "$OUT/current-archive-manifest.json"
+printf '%s\n' "$CURRENT_PARENT" > "$OUT/live-main.txt"
+printf '%s\n' "$MATRIX_BLOB" > "$OUT/live-matrix-blob.txt"
+
+jq -e --arg parent "$CURRENT_PARENT" --arg candidate_parent "$CANDIDATE_PARENT" --arg repair "$MANIFEST_REPAIR_HEAD" --arg controller "$CONTROLLER_COMMIT" --arg base "$BASE_SHA" --arg matrix "$MATRIX_BLOB" --arg target "$TARGET_CELL_SHA256" --arg row "$ROW_STATE_CELL_SHA256" --arg manifest "$ARCHIVE_MANIFEST_BLOB" --arg payload "$ARCHIVE_PAYLOAD_SHA256" --arg artifact "$CANDIDATE_ARTIFACT_SHA256" --arg receipt "$CANDIDATE_RECEIPT_SHA256" --arg source "$SOURCE_ADJUDICATION_SHA256" --arg f

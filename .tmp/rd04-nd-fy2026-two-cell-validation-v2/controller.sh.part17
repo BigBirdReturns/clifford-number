@@ -1,0 +1,23 @@
+idate_id':target_id,'row_candidate_id':row_id,
+  'application_order':[target_id,row_id],
+  'current_parent':parent,'current_matrix_blob':matrix_blob,
+  'current_target_cell_sha256':target_expected,'current_row_state_cell_sha256':row_expected,
+  'projected_target_cell_sha256':after_target_sha,'projected_row_state_cell_sha256':after_rowcell_sha,
+  'projected_matrix_sha256':projected_sha,
+  'source_ids':[archive_source,refresh_source,row_source],
+  'separate_promotion_product_authorized':True,
+  'promotion_product_requirements':{
+    'exact_parent':parent,'field_terminalizations':1,'row_terminalizations':1,
+    'matrix_cell_updates':2,'terminal_cells_after':229,'still_open_cells_after':221,
+    'terminal_substantive_cells_after':118,'still_open_substantive_cells_after':182,
+    'terminal_units_after':11,'class_closed':False,'cumulative_ledger_effect':'none'
+  },
+  'source_requests':0,'route_executions':0,'promotion_executed':False,
+  'additional_source_execution_authorized':False
+}
+(out/'validated-candidate-protocol.json').write_text(json.dumps(protocol,indent=2,sort_keys=True)+'\n')
+hashes={n:hashlib.sha256((out/n).read_bytes()).hexdigest() for n in ['projected-matrix.json','projected-transition.json','candidate-validation.json','validated-candidate-protocol.json']}
+receipt={
+  'schema_version':'ssc-rd04-nd-fy2026-two-cell-validation-receipt@2',
+  'state':'validated_candidates_complete','failed_or_final_stage':'complete','exit_code':0,
+  'current_parent':parent,'candidate_paren

@@ -1,0 +1,23 @@
+blicly_recovered',0),
+  'still_open_cells':still_open_cells,'terminal_cells':terminal_cells,
+  'terminal_substantive_cells':terminal_substantive,
+  'still_open_substantive_cells':still_open_substantive,
+  'row_terminal_state_cells_terminal':row_terminal,
+  'row_terminal_state_cells_open':50-row_terminal,
+  'terminal_units':terminal_units,'class_closed':False
+})
+projected['counts']=counts
+expected={'evidence_complete_cells':198,'observed_cells':17,'not_publicly_recovered_cells':14,
+          'still_open_cells':221,'terminal_cells':229,'terminal_substantive_cells':118,
+          'still_open_substantive_cells':182,'row_terminal_state_cells_terminal':11,
+          'row_terminal_state_cells_open':39,'terminal_units':11,'class_closed':False}
+assert all(counts[k]==v for k,v in expected.items())
+historical=['inherited_terminal_cells','row_state_target_cells','newly_terminalized_row_state_cells',
+            'source_rows_promoted','reported_use_rows','reported_no_use_rows','promotion_candidate_cells',
+            'newly_terminalized_promotion_cells','postpromotion_candidate_cells',
+            'newly_terminalized_postpromotion_cells','postpromotion_nd_followup_candidate_cells',
+            'newly_terminalized_postpromotion_nd_followup_cells']
+assert all(counts[k]==matrix['counts'][k] for k in historical)
+projected_bytes=(json.dumps(projected,indent=2,ensure_ascii=False)+'\n').encode()
+(out/'projected-matrix.json').write_bytes(projected_bytes)
+projected_sha=hashlib.sha256(projected_byt

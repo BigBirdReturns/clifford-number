@@ -1,0 +1,24 @@
+h
+test "$(git rev-parse HEAD)" = "$HEAD_SHA" || fail topology checkout_head_mismatch
+test "$(git rev-parse HEAD^)" = "$BASE_SHA" || fail topology head_parent_mismatch
+CONTROLLER_COMMIT="$(git rev-parse "$BASE_SHA^")"
+test "$(git rev-parse "$CONTROLLER_COMMIT^")" = "$CURRENT_PARENT" || fail topology controller_parent_mismatch
+mapfile -t controller_paths < <(git diff --name-only "$CURRENT_PARENT" "$CONTROLLER_COMMIT")
+mapfile -t base_paths < <(git diff --name-only "$CONTROLLER_COMMIT" "$BASE_SHA")
+mapfile -t trigger_paths < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+mapfile -t expected_controller_paths < <(python - "$CONTROLLER_PREFIX" "$CONTROLLER_FRAGMENT_COUNT" <<'PYCONTROLLER'
+import sys
+prefix,count=sys.argv[1],int(sys.argv[2])
+for i in range(count): print(f'{prefix}.part{i:02d}')
+PYCONTROLLER
+)
+test "${#controller_paths[@]}" = "$CONTROLLER_FRAGMENT_COUNT" || fail topology controller_path_count_mismatch
+test "$(printf '%s\n' "${controller_paths[@]}" | LC_ALL=C sort)" = "$(printf '%s\n' "${expected_controller_paths[@]}" | LC_ALL=C sort)" || fail topology controller_path_set_mismatch
+test "${#base_paths[@]}" = 1 || fail topology base_path_count_mismatch
+test "${base_paths[0]}" = "$WORKFLOW_PATH" || fail topology base_path_mismatch
+test "${#trigger_paths[@]}" = 1 || fail topology trigger_path_count_mismatch
+test "${trigger_paths[0]}" = "$TRIGGER_PATH" || fail topology trigger_path_mismatch
+git diff --check "$CURRENT_PARENT" "$HEAD_SHA"
+
+git fetch --quiet origin main
+test

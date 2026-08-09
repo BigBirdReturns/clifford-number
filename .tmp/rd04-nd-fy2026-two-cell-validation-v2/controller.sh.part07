@@ -1,0 +1,18 @@
+execution_authorized==false
+' "$WORK/candidates/receipt.json" > /dev/null || fail authenticate_candidates receipt_semantics_mismatch
+jq -e '
+  .schema_version=="ssc-rd04-nd-fy2026-fixed-public-protocol-source-adjudication@2" and
+  .unit_id=="US-STATE-ND" and .field_id=="abawd_or_work_requirement_waiver_state_and_governing_period" and
+  .fixed_protocol_complete==true and .current_public_instrument_recovered==false and
+  .classification=="source_unavailable_after_fixed_protocol" and .adjudicated_source_roles==2 and
+  .terminal_evidence.correct_range_archive.member_count==19 and
+  .terminal_evidence.correct_range_archive.north_dakota_scoped_member_count==0 and
+  .terminal_evidence.current_index_refresh.baseline_byte_identical==true and
+  .terminal_evidence.current_index_refresh.body_sha256=="dcab625aeeebc30b1cf38dd32f67f0cb766a8e33735694b00f041e03d446476f" and
+  .terminal_evidence.current_index_refresh.north_dakota_fy2026_response_anchor_count==0 and
+  .source_requests_here==0 and .route_executions_here==0 and
+  .authority_effect=="bounded_fixed_protocol_public_record_gap_only"
+' "$WORK/candidates/source-adjudication.json" > /dev/null || fail authenticate_candidates source_semantics_mismatch
+jq -e --arg target "$TARGET_CELL_SHA256" --arg candidate "$TARGET_CANDIDATE_ID" --arg source "$SOURCE_ADJUDICATION_SHA256" '
+  .schema_version=="ssc-rd04-nd-fy2026-fixed-public-protocol-field-adjudication@2" and
+  .unit_id=="US-STATE-ND" and .field_id=="abawd_or_work_requirement_waiver_state

@@ -1,0 +1,18 @@
+_and_governing_period" and
+  .current_cell_sha256==$target and .current_state=="still_open" and
+  .candidate_state=="not_publicly_recovered" and .candidate_terminal==true and
+  .candidate_typed_gap=="current_fy2026_north_dakota_waiver_geography_and_governing_period_not_publicly_recovered_after_fixed_protocol" and
+  .candidate_authority_effect=="bounded_fixed_protocol_public_record_gap_only" and
+  .candidate_value.terminal_classification=="not_publicly_recovered" and
+  .candidate_value.fixed_protocol_complete==true and
+  .candidate_value.current_instrument_publicly_recovered==false and
+  .candidate_value.policy_or_event_absence_inferred==false and
+  .promotion_candidate_id==$candidate and .source_adjudication_sha256==$source and
+  .selected_followup_routes==0
+' "$WORK/candidates/field-adjudication.json" > /dev/null || fail authenticate_candidates field_semantics_mismatch
+jq -e --arg target "$TARGET_CELL_SHA256" --arg row "$ROW_STATE_CELL_SHA256" --arg target_id "$TARGET_CANDIDATE_ID" --arg row_id "$ROW_CANDIDATE_ID" '
+  .schema_version=="ssc-rd04-nd-fy2026-fixed-public-protocol-row-closure-candidate@2" and
+  .unit_id=="US-STATE-ND" and .current_target_cell_sha256==$target and .current_row_state_cell_sha256==$row and
+  .current_row_state=="still_open" and .current_terminal_fields==7 and .current_open_fields==2 and
+  .prerequisite_target_candidate_id==$target_id and .promotion_candidate_id==$row_id and
+  .candidate_row_state=="terminal" and .candidate_terminal_fields==9 and .can

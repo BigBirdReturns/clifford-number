@@ -1,0 +1,22 @@
+es).hexdigest()
+transition={
+  'schema_version':'ssc-rd04-nd-fy2026-two-cell-projected-transition@2',
+  'unit_id':'US-STATE-ND','current_parent':parent,'candidate_parent':candidate_parent,
+  'current_matrix_blob':matrix_blob,'current_matrix_sha256':hashlib.sha256(matrix_path.read_bytes()).hexdigest(),
+  'target_candidate_id':target_id,'row_candidate_id':row_id,
+  'application_order':[target_id,row_id],
+  'source_identity_normalization':[
+    {'source_id':archive_source,'role':'bounded_current_fy2026_archive_membership_census_only',
+     'custody_path':'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2026-mi-nm-request-archive-adjudication/north-dakota-disposition.json'},
+    {'source_id':refresh_source,'role':'exact_current_federal_index_observation_only',
+     'artifact_id':9041971925,'body_sha256':'dcab625aeeebc30b1cf38dd32f67f0cb766a8e33735694b00f041e03d446476f'},
+    {'source_id':row_source,'role':'dependent_row_state_terminalization_custody_only'}
+  ],
+  'current_row_sha256':before_row_sha,'projected_row_sha256':after_row_sha,
+  'current_target_cell_sha256':target_expected,'projected_target_cell_sha256':after_target_sha,
+  'current_row_state_cell_sha256':row_expected,'projected_row_state_cell_sha256':after_rowcell_sha,
+  'unchanged_evidence_cells':7,'unchanged_other_rows':49,
+  'counts_before':{k:matrix['counts'][k] for k in expected},
+  'counts_after':expected,
+  'substantive_field_terminalizations':1,'row_terminalizations':1,'matrix_cell_updates':2,
+  

@@ -1,0 +1,6 @@
+printf '%s\n' "$CURRENT_PARENT" > "$OUT/main-at-finish.txt"
+printf '%s\n' complete > "$OUT/STAGE"
+printf '%s\n' 0 > "$OUT/EXIT_CODE"
+seal
+(cd "$OUT" && sha256sum -c SHA256SUMS)
+jq -c . "$OUT/receipt.json"

@@ -1,0 +1,26 @@
+te_terminal'],
+  'value':copy.deepcopy(field['candidate_value']),
+  'evidence_source_ids':[archive_source,refresh_source],
+  'typed_gap':field['candidate_typed_gap'],
+  'authority_effect':field['candidate_authority_effect']
+})
+after_target_sha=digest(projected_target)
+terminal_evidence=[c for c in projected_row['cells'] if c['field_ordinal']<=8 and c['terminal']]
+assert len(terminal_evidence)==8
+state_counts={}
+for cell in terminal_evidence: state_counts[cell['state']]=state_counts.get(cell['state'],0)+1
+assert state_counts=={'evidence_complete':7,'not_publicly_recovered':1}
+projected_rowcell=next(c for c in projected_row['cells'] if c['field_id']=='field_and_row_terminal_state')
+evidence_fields=[c['field_id'] for c in sorted(terminal_evidence,key=lambda c:c['field_ordinal'])]
+row_value={
+  'terminal_classification':'terminal_fixed_public_record_obligation_complete',
+  'row_scope':'fixed_public_record_obligation_for_one_state',
+  'completed_evidence_fields':8,
+  'terminal_evidence_field_ids':evidence_fields,
+  'terminal_evidence_state_counts':state_counts,
+  'predecessor_row_canonical_sha256':before_row_sha,
+  'completion_rule':'all_eight_declared_state_evidence_fields_are_terminal_under_exact_source_or_typed_gap_custody',
+  'class_effect':'none','cumulative_ledger_effect':'none',
+  'limitations':[
+    'row completion closes only the declared fixed public-record obligation for North Dakota',
+    'the typed public-record gap remains distinct from event, policy, practice, waive

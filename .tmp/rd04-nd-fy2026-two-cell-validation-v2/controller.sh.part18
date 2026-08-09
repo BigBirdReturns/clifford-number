@@ -1,0 +1,20 @@
+t':candidate_parent,'matrix_blob':matrix_blob,
+  'validated_candidates':2,'rejected_candidates':0,'source_requests':0,'route_executions':0,
+  'new_source_admissions':0,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,
+  'class_closed':False,'cumulative_ledger_effect':'none','outside_human_dependency':False,
+  'publication_effect':'none','adoption_effect':'none','graph_effect':'none',
+  'separate_promotion_product_authorized':True,'additional_source_execution_authorized':False,
+  'projected_terminal_cells':229,'projected_still_open_cells':221,
+  'projected_terminal_substantive_cells':118,'projected_still_open_substantive_cells':182,
+  'projected_terminal_units':11,'output_sha256':hashes,
+  'next_authorized_operation':'construct and qualify one exact-parent permanent two-cell promotion product; no additional source request'
+}
+(out/'receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+(out/'summary.md').write_text(
+  '# RD-04 North Dakota two-cell candidate validation\n\n'
+  'Both v2 candidates remain exact-current, source-bound, dependent in the required order, and arithmetically valid. A separate permanent promotion product may terminalize exactly one substantive typed-gap cell and its dependent row-state cell. This validation applies no change and authorizes no further source request.\n'
+)
+PY
+
+git fetch --quiet origin main
+test "$(git rev-parse origin/main)" = "$CURRENT_PARENT" || fail finalization live_main_moved_during_validation

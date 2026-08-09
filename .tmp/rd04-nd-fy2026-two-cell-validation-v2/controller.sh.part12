@@ -1,0 +1,24 @@
+r, or implementation absence',
+    'row completion does not establish uniform frontline practice or person-level outcome',
+    'eleven terminal rows do not establish national prevalence or close RD-04-C02'
+  ],
+  'prohibited_inferences':[
+    'do_not_infer_complete_state_implementation_truth_beyond_terminal_field_custody',
+    'do_not_convert_not_publicly_recovered_fields_into_event_policy_request_or_waiver_absence',
+    'do_not_infer_uniform_frontline_practice','do_not_infer_person_level_outcome',
+    'do_not_infer_national_prevalence','do_not_infer_discrimination_or_racial_order',
+    'do_not_infer_coordination_or_common_purpose','do_not_infer_complete_compact',
+    'do_not_close_rd04_c02_or_wave03_from_eleven_terminal_rows'
+  ]
+}
+assert row_candidate['candidate_row_state_value']['terminal_classification']==row_value['terminal_classification']
+assert row_candidate['candidate_row_state_value']['row_scope']==row_value['row_scope']
+assert row_candidate['candidate_row_state_value']['completed_evidence_fields']==8
+assert row_candidate['candidate_row_state_value']['completion_rule']==row_value['completion_rule']
+projected_rowcell.update({
+  'state':'evidence_complete','terminal':True,'value':row_value,
+  'evidence_source_ids':[row_source],'typed_gap':None,
+  'authority_effect':'row_level_fixed_public_record_obligation_terminal_only'
+})
+after_rowcell_sha=digest(projected_rowcell)
+projected_row['row_state']='terminal'; projected_row['terminal_fields']=9; projected_row['open_fields'

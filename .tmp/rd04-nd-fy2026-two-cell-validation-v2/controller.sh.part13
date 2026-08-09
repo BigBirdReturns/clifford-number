@@ -1,0 +1,24 @@
+]=0
+after_row_sha=digest(projected_row)
+unchanged_rows_after={r['unit_id']:digest(r) for r in projected['rows'] if r['unit_id']!='US-STATE-ND'}
+assert unchanged_rows_before==unchanged_rows_after and len(unchanged_rows_after)==49
+for before,after in zip(matrix['rows'],projected['rows']):
+    if before['unit_id']=='US-STATE-ND':
+        unchanged=[(a,b) for a,b in zip(before['cells'],after['cells']) if a['field_id'] not in {field['field_id'],'field_and_row_terminal_state'}]
+        assert len(unchanged)==7 and all(digest(a)==digest(b) for a,b in unchanged)
+    else: assert digest(before)==digest(after)
+counts=copy.deepcopy(matrix['counts'])
+all_cells=[c for r in projected['rows'] for c in r['cells']]
+terminal_cells=sum(c['terminal'] for c in all_cells)
+still_open_cells=sum(not c['terminal'] for c in all_cells)
+substantive=[c for c in all_cells if 2<=c['field_ordinal']<=7]
+state_total={}
+for c in all_cells: state_total[c['state']]=state_total.get(c['state'],0)+1
+terminal_substantive=sum(c['terminal'] for c in substantive)
+still_open_substantive=sum(not c['terminal'] for c in substantive)
+row_terminal=sum(next(c for c in r['cells'] if c['field_id']=='field_and_row_terminal_state')['terminal'] for r in projected['rows'])
+terminal_units=sum(r['row_state']=='terminal' for r in projected['rows'])
+counts.update({
+  'evidence_complete_cells':state_total.get('evidence_complete',0),
+  'observed_cells':state_total.get('observed',0),
+  'not_publicly_recovered_cells':state_total.get('not_pu

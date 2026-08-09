@@ -1,0 +1,25 @@
+ted,row_expected,archive_source,refresh_source,row_source,target_id,row_id=sys.argv[5:]
+matrix=json.loads(matrix_path.read_text())
+field=json.loads(field_path.read_text())
+row_candidate=json.loads(row_path.read_text())
+out=out_path
+canon=lambda x: json.dumps(x,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()
+digest=lambda x: hashlib.sha256(canon(x)).hexdigest()
+rows=[r for r in matrix['rows'] if r.get('unit_id')=='US-STATE-ND']
+assert len(rows)==1
+current_row=rows[0]
+target=[c for c in current_row['cells'] if c.get('field_id')=='abawd_or_work_requirement_waiver_state_and_governing_period']
+rowcell=[c for c in current_row['cells'] if c.get('field_id')=='field_and_row_terminal_state']
+assert len(target)==len(rowcell)==1
+target,rowcell=target[0],rowcell[0]
+assert digest(target)==target_expected and digest(rowcell)==row_expected
+assert current_row['row_state']=='still_open' and current_row['terminal_fields']==7 and current_row['open_fields']==2
+before_row_sha=digest(current_row)
+unchanged_rows_before={r['unit_id']:digest(r) for r in matrix['rows'] if r['unit_id']!='US-STATE-ND'}
+projected=copy.deepcopy(matrix)
+projected['schema_version']='ssc-rd04-wave03-nd-fy2026-two-cell-projected-partial-field-matrix@1'
+projected_row=next(r for r in projected['rows'] if r['unit_id']=='US-STATE-ND')
+projected_target=next(c for c in projected_row['cells'] if c['field_id']==field['field_id'])
+projected_target.update({
+  'state':field['candidate_state'],
+  'terminal':field['candida

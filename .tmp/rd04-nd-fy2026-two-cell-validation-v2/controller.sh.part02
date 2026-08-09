@@ -1,0 +1,16 @@
+ "$(git rev-parse origin/main)" = "$CURRENT_PARENT" || fail topology live_main_moved
+read -r merge_parent_1 merge_parent_2 merge_parent_extra <<< "$(git show -s --format='%P' "$CURRENT_PARENT")"
+test "$merge_parent_1" = "$CANDIDATE_PARENT" || fail topology manifest_repair_first_parent_mismatch
+test "$merge_parent_2" = "$MANIFEST_REPAIR_HEAD" || fail topology manifest_repair_second_parent_mismatch
+test -z "${merge_parent_extra:-}" || fail topology manifest_repair_parent_count_mismatch
+mapfile -t repair_status < <(git diff --name-status "$CANDIDATE_PARENT" "$CURRENT_PARENT")
+test "${#repair_status[@]}" = 1 || fail topology manifest_repair_path_count_mismatch
+test "${repair_status[0]}" = $'M\t'"$ARCHIVE_MANIFEST_PATH" || fail topology manifest_repair_path_mismatch
+printf '%s\n' "${repair_status[@]}" > "$OUT/intervening-manifest-repair.txt"
+
+test "$(git rev-parse "origin/main:$MATRIX_PATH")" = "$MATRIX_BLOB" || fail topology matrix_blob_moved
+test "$(git rev-parse "origin/main:$ARCHIVE_MANIFEST_PATH")" = "$ARCHIVE_MANIFEST_BLOB" || fail topology archive_manifest_blob_mismatch
+test "$(git rev-parse "origin/main:$ARCHIVE_PREFIX/north-dakota-disposition.json")" = "$ARCHIVE_DISPOSITION_BLOB" || fail topology archive_disposition_blob_mismatch
+test "$(git rev-parse "origin/main:$ARCHIVE_PREFIX/current-cell-custody.json")" = "$ARCHIVE_CELL_CUSTODY_BLOB" || fail topology archive_cell_custody_blob_mismatch
+jq -e --arg payload "$ARCHIVE_PAYLOAD_SHA256" '
+  .schema_version=="ssc-rd04-nd-fy2

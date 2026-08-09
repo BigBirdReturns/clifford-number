@@ -1,0 +1,22 @@
+didate_open_fields==0 and
+  .candidate_row_state_cell_state=="evidence_complete" and .candidate_row_state_cell_terminal==true and
+  .candidate_row_state_value.completed_evidence_fields==8 and
+  .candidate_row_state_value.class_effect=="none" and
+  .candidate_row_state_value.cumulative_ledger_effect=="none" and
+  .class_closed==false and .cumulative_ledger_effect=="none"
+' "$WORK/candidates/row-closure-candidate.json" > /dev/null || fail authenticate_candidates row_semantics_mismatch
+
+cp "$META" "$OUT/candidate-artifact-metadata.json"
+cp "$WORK/candidates/receipt.json" "$OUT/candidate-receipt.json"
+cp "$WORK/candidates/source-adjudication.json" "$OUT/source-adjudication.json"
+cp "$WORK/candidates/field-adjudication.json" "$OUT/field-candidate.json"
+cp "$WORK/candidates/row-closure-candidate.json" "$OUT/row-candidate.json"
+cp "$WORK/candidates/current-cell-proof.json" "$OUT/candidate-current-cell-proof.json"
+
+printf '%s\n' project_transition > "$OUT/STAGE"
+python - "$MATRIX_PATH" "$WORK/candidates/field-adjudication.json" "$WORK/candidates/row-closure-candidate.json" "$OUT" "$CURRENT_PARENT" "$CANDIDATE_PARENT" "$MATRIX_BLOB" "$TARGET_CELL_SHA256" "$ROW_STATE_CELL_SHA256" "$ARCHIVE_SOURCE_ID" "$REFRESH_SOURCE_ID" "$ROW_SOURCE_ID" "$TARGET_CANDIDATE_ID" "$ROW_CANDIDATE_ID" <<'PY'
+from __future__ import annotations
+import copy,hashlib,json,sys
+from pathlib import Path
+matrix_path,field_path,row_path,out_path=map(Path,sys.argv[1:5])
+parent,candidate_parent,matrix_blob,target_expec

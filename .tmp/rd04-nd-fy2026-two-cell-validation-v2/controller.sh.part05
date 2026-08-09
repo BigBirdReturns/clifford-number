@@ -1,0 +1,14 @@
+_REPOSITORY}/actions/artifacts/${CANDIDATE_ARTIFACT_ID}" > "$META"
+test "$(jq -r .id "$META")" = "$CANDIDATE_ARTIFACT_ID" || fail authenticate_candidates artifact_id_mismatch
+test "$(jq -r .size_in_bytes "$META")" = "$CANDIDATE_ARTIFACT_BYTES" || fail authenticate_candidates artifact_size_mismatch
+test "$(jq -r .digest "$META")" = "sha256:${CANDIDATE_ARTIFACT_SHA256}" || fail authenticate_candidates artifact_metadata_digest_mismatch
+test "$(jq -r .expired "$META")" = false || fail authenticate_candidates artifact_expired
+gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${CANDIDATE_ARTIFACT_ID}/zip" > "$ZIP"
+test "$(stat -c %s "$ZIP")" = "$CANDIDATE_ARTIFACT_BYTES" || fail authenticate_candidates artifact_download_size_mismatch
+test "$(sha256sum "$ZIP" | awk '{print $1}')" = "$CANDIDATE_ARTIFACT_SHA256" || fail authenticate_candidates artifact_download_digest_mismatch
+unzip -tq "$ZIP" > "$OUT/candidate-zip-test.txt" || fail authenticate_candidates artifact_zip_invalid
+unzip -q "$ZIP" -d "$WORK/candidates"
+test "$(wc -l < "$WORK/candidates/SHA256SUMS")" = 22 || fail authenticate_candidates checksum_row_count_mismatch
+(cd "$WORK/candidates" && sha256sum -c SHA256SUMS > "$OUT/candidate-internal-check.txt") || fail authenticate_candidates artifact_internal_checksum_failure
+test "$(sha256sum "$WORK/candidates/receipt.json" | awk '{print $1}')" = "$CANDIDATE_RECEIPT_SHA256" || fail authenticate_candidates receipt_digest_mismatch
+test "$(sha256sum "$WORK/candidates/source-adjudic

@@ -1,0 +1,21 @@
+ield "$FIELD_CANDIDATE_SHA256" --arg row_candidate "$ROW_CANDIDATE_SHA256" --arg proof "$CANDIDATE_CELL_PROOF_SHA256" --arg controller_sha "$CONTROLLER_SHA256" --argjson fragments "$CONTROLLER_FRAGMENT_COUNT" '
+  .schema_version=="ssc-rd04-nd-fy2026-two-cell-validation-trigger@2" and
+  .issue==1017 and .expected_parent==$parent and .candidate_parent==$candidate_parent and
+  .manifest_repair_head==$repair and .controller_commit==$controller and .controller_fragment_count==$fragments and
+  .controller_sha256==$controller_sha and .workflow_base==$base and .matrix_blob==$matrix and
+  .target_cell_sha256==$target and .row_state_cell_sha256==$row and
+  .archive_manifest_blob==$manifest and .archive_payload_sha256==$payload and
+  .candidate_artifact_id==9043309756 and .candidate_artifact_bytes==14782 and
+  .candidate_artifact_sha256==$artifact and .candidate_receipt_sha256==$receipt and
+  .source_adjudication_sha256==$source and .field_candidate_sha256==$field and
+  .row_candidate_sha256==$row_candidate and .candidate_cell_proof_sha256==$proof and
+  .source_requests==0 and .route_executions==0 and .field_terminalizations==0 and
+  .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and
+  .outside_human_dependency==false
+' "$TRIGGER_PATH" > /dev/null || fail topology trigger_contract_mismatch
+cp "$TRIGGER_PATH" "$OUT/trigger.json"
+
+printf '%s\n' authenticate_candidates > "$OUT/STAGE"
+META="$WORK/candidate-meta.json"
+ZIP="$WORK/candidates.zip"
+gh api "repos/${GITHUB
