@@ -1,0 +1,26 @@
+c,out,parent,matrix,cell,aid,asha,oroute,ourl,aroute,aurl,ahost=sys.argv[1:]
+src=Path(src); out=Path(out)
+def read(p): return json.loads((src/p).read_text())
+def h(p): return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+def write(name,obj):
+ p=out/name; p.write_text(json.dumps(obj,indent=2,sort_keys=True)+'\n'); return h(p)
+# Exact stable object identities.
+expected={
+ 'execution-receipt.json':'5d9c5fd39eff254a588585d2d967e6d553693a32b6253c931e3f4c0e2c59860a',
+ 'route-receipt.json':'e13193e39e0279597edc8a97f41e6cf3bdcd503edf38a727e9a51665c90a9989',
+ 'physical-request-ledger.json':'35ca454f01af0a13941c674d2d068ac817337960a43fa7a33d1013a9f55b5e5f',
+ 'transport/response-headers.json':'0315b2bc8dec1c6c2550c9bf0f9edbb45a87abc709b489e25bcc398a4d185622',
+ 'request-plan.json':'3110bf43b37ae4a6aa28c64693a1ce1f33277062e718b0fc91113e7107b51dd6',
+ 'trigger.json':'2fe5d05f68e7e151351d672fd35cdf9138d9bf3eeb09e717f38f635cda0138b4',
+ 'execution.log':'631ba0abbbb448a6632103ab120a4de974cc1d7e98cbcc3c62ffcd5a9642c772',
+ 'transport/response-body.bin':'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+ 'range/receipt.json':'b7576800378936d9cda7a4f177683c0ce40862b048a65c200a992d3a5706da31',
+ 'range/range-correction.json':'9b92e38f38af1c381fb45637f42c4a76d2d073766e7ffc2bf033d9d3dc61f9e0',
+ 'range/field-adjudication.json':'639b1e6ca558ec64ff4c7270e71b8a15a7be4eff599763a91bfc1531acdc03bb',
+ 'range/selected-protocol.json':'3110bf43b37ae4a6aa28c64693a1ce1f33277062e718b0fc91113e7107b51dd6',
+ 'range/archive-member-inventory.json':'fb3ceefb8a04e1f2aec56b55d77f7feb492b9ffcf84450ab36f936d7f7681fe0'}
+for p,d in expected.items(): assert h(src/p)==d,(p,h(src/p),d)
+assert (src/'EXIT_CODE').read_text().strip()=='1' and (src/'STAGE').read_text().strip()=='complete'
+e=read('execution-receipt.json'); r=read('route-receipt.json'); l=read('physical-request-ledger.json'); hd=read('transport/response-headers.json'); plan=read('request-plan.json'); tr=read('trigger.json'); rr=read('range/receipt.json'); rc=read('range/range-correction.json'); rf=read('range/field-adjudication.json'); rp=read('range/selected-protocol.json')
+assert e['state']=='complete' and e['failed_or_final_stage']=='complete' and e['exit_code']==0 and e['fixed_route_count']==e['terminal_route_count']==e['physical_requests']==1 and e['route_terminal_state']=='redirect_refused_terminal' and e['http_status']==302 and e['body_bytes']==0 and e['body_sha256']==expected['transport/response-body.bin'] and e['source_admissions']==e['field_terminalizations']==e['matrix_updates']==e['row_state_mutations']==0 and e['class_closed'] is False and e['additional_execution_authorized'] is False
+assert r['route_id']==oro
