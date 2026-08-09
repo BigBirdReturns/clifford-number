@@ -1,0 +1,83 @@
+name: TEMP adjudicate RD-04 North Dakota FY2026 archive members v1
+on:
+  pull_request:
+    branches: [agent/ssc-rd04-nd-fy26-archive-member-adjudication-base-v1]
+    types: [opened, synchronize, reopened]
+    paths: [.trigger/ssc-rd04-nd-fy26-archive-member-adjudication-v1.json]
+permissions: {contents: read, actions: read}
+concurrency: {group: temp-adjudicate-ssc-rd04-nd-fy26-archive-members-v1, cancel-in-progress: false}
+env:
+  MAIN: 4edc3f4f65851cf2643e889d93df3b6372a2f468
+  MATRIX: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  BASE: agent/ssc-rd04-nd-fy26-archive-member-adjudication-base-v1
+  HEAD: agent/ssc-rd04-nd-fy26-archive-member-adjudication-trigger-v1
+  WF: .github/workflows/temp-adjudicate-ssc-rd04-nd-fy26-archive-members-v1.yml
+  TRIGGER: .trigger/ssc-rd04-nd-fy26-archive-member-adjudication-v1.json
+  OUT: /tmp/ssc-rd04-nd-fy26-archive-member-adjudication-v1
+jobs:
+  adjudicate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy26-archive-member-adjudication-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: '${{ github.event.pull_request.head.sha }}', fetch-depth: 0}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.13'}
+      - name: Adjudicate archive member denominator offline
+        id: run
+        continue-on-error: true
+        shell: bash
+        env: {GH_TOKEN: '${{ github.token }}'}
+        run: |
+          set -uo pipefail; O="$OUT"; A="$O/archive"; I="$O/index"; rm -rf "$O"; mkdir -p "$A" "$I"; stage=bootstrap
+          sums(){ (cd "$O" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS); }
+          fail(){ rc=$?; set +e; jq -n --arg s "$stage" --argjson c "$rc" '{schema_version:"ssc-rd04-nd-fy26-archive-member-adjudication-receipt@1",state:"failed_closed",stage:$s,exit_code:$c,source_requests:0,route_executions:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,additional_execution_authorized:false}' > "$O/receipt.json"; echo "$stage" > "$O/STAGE"; echo "$rc" > "$O/EXIT_CODE"; sums; exit "$rc"; }; trap fail ERR; set -Eeuo pipefail
+          stage=topology; B='${{ github.event.pull_request.base.sha }}'; H='${{ github.event.pull_request.head.sha }}'
+          test '${{ github.event.pull_request.base.ref }}' = "$BASE"; test '${{ github.event.pull_request.head.ref }}' = "$HEAD"; test "$(git rev-parse "$B^")" = "$MAIN"; test "$(git rev-parse "$H^")" = "$B"
+          test "$(git diff --name-only "$MAIN" "$B")" = "$WF"; test "$(git diff --name-only "$B" "$H")" = "$TRIGGER"; git diff --check "$MAIN" "$H"
+          git fetch --no-tags --force origin +refs/heads/main:refs/remotes/origin/main; test "$(git rev-parse origin/main)" = "$MAIN"; test "$(git rev-parse "origin/main:$MATRIX")" = "$MATRIX_BLOB"; cp "$TRIGGER" "$O/trigger.json"
+          jq -e --arg p "$MAIN" --arg m "$MATRIX_BLOB" '.schema_version=="ssc-rd04-nd-fy26-archive-member-adjudication-trigger@1" and .canonical_parent==$p and .matrix_blob==$m and .archive_artifact_id==9033042970 and .index_artifact_id==9032851171 and .source_requests==0 and .route_executions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false' "$O/trigger.json" >/dev/null
+          get(){ id=$1; bytes=$2; digest=$3; z=$4; d=$5; gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$id" > "$O/$id.meta.json"; jq -e --argjson i "$id" --argjson b "$bytes" --arg x "sha256:$digest" '.id==$i and .size_in_bytes==$b and .digest==$x and .expired==false' "$O/$id.meta.json" >/dev/null; gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip" > "$z"; test "$(stat -c%s "$z")" = "$bytes"; test "$(sha256sum "$z"|cut -d' ' -f1)" = "$digest"; unzip -t "$z" > "$O/$id.zip-test.txt"; unzip -q "$z" -d "$d"; (cd "$d" && sha256sum -c SHA256SUMS); }
+          stage=artifacts; get 9033042970 11695093 d95177ff3bd7c5eea4510c8c5498c304534d09bc6523b4a60012be2a161658c9 "$O/archive.zip" "$A"; get 9032851171 16421 f6c158e57f9cc99d48b1c86048d1084f89f0be33bd490f5ab10a3f9cdd0109a1 "$O/index.zip" "$I"
+          test "$(sha256sum "$A/execution-receipt.json"|cut -d' ' -f1)" = 1eb54523ff4e4ebaccc1e398500f701187e6002ea53c7681e94d28c2b829366d; test "$(sha256sum "$A/source.zip"|cut -d' ' -f1)" = b74eccfba90bfd69dcd35567b714020de63cb80b0898323973b822f9813153b1; cmp "$A/source.zip" "$A/response-body.bin"
+          test "$(sha256sum "$I/execution-receipt.json"|cut -d' ' -f1)" = 75200bdaf78c455dabac7891b2fc2726fee1e6b52c72fe7e22fc3242569456b3; test "$(sha256sum "$I/response-body.html"|cut -d' ' -f1)" = dcab625aeeebc30b1cf38dd32f67f0cb766a8e33735694b00f041e03d446476f
+          stage=adjudicate; python - "$A/source.zip" "$I/response-body.html" "$O" <<'PY'
+          import hashlib,json,pathlib,sys,zipfile
+          from html.parser import HTMLParser
+          from urllib.parse import urljoin
+          z=pathlib.Path(sys.argv[1]); h=pathlib.Path(sys.argv[2]); o=pathlib.Path(sys.argv[3])
+          with zipfile.ZipFile(z) as f:
+            assert f.testzip() is None; infos=[x for x in f.infolist() if not x.is_dir()]; assert len(infos)==16
+            rows=[]; counts={}
+            for x in infos:
+              p=x.filename; parts=p.split('/'); s=parts[1]; assert s in {'NV','NY','OR','WI'}; counts[s]=counts.get(s,0)+1; b=f.read(x); rows.append({'member_path':p,'state_directory':s,'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest(),'north_dakota_role':'none'})
+          assert counts=={'NV':3,'NY':8,'OR':4,'WI':1}; assert all('/ND/' not in '/'+r['member_path']+'/' and 'north dakota' not in r['member_path'].lower() for r in rows)
+          class P(HTMLParser):
+            def __init__(self): super().__init__(); self.x=[]
+            def handle_starttag(self,t,a):
+              d=dict(a)
+              if t=='a' and d.get('href') and 'FY2026-ABAWD-State-Requests-and-Data-' in d['href'] and d['href'].endswith('.zip'): self.x.append(d['href'])
+          p=P(); p.feed(h.read_text()); links=sorted(set(p.x)); exp=['/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-AK-KY-7-2026.zip','/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-MI-NM-7-2026.zip','/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-NV-WI-7-2026.zip']; assert links==exp
+          routes=[]
+          for i,u in enumerate(exp[:2],1):
+            k='AK-KY' if 'AK-KY' in u else 'MI-NM'; routes.append({'ordinal':i,'route_id':f'RD04-ND-FY2026-ARCHIVE-MISPLACEMENT-{k}-ORIGIN-001','url':urljoin('https://www.fna.usda.gov/',u),'method':'GET','attempts':1,'exact_host':'www.fna.usda.gov','maximum_followed_redirects':0,'maximum_body_bytes':100000000,'required_magic':'PK\\x03\\x04','result_spawned_requests':0,'purpose':'test only whether a North Dakota member was misplaced into another exact FY2026 archive range'})
+          objs={
+          'archive-member-adjudication.json':{'schema_version':'ssc-rd04-nd-fy26-archive-member-adjudication@1','state':'complete','member_count':16,'state_directory_counts':counts,'north_dakota_members':0,'members':rows,'classification':'complete_expected_range_member_denominator_contains_no_north_dakota_object','interpretation_boundary':'Archive omission is not evidence that North Dakota submitted no request, had no waiver, or lacked a separately published instrument.'},
+          'field-adjudication.json':{'schema_version':'ssc-rd04-nd-current-waiver-field-adjudication@1','state':'complete','unit_id':'US-STATE-ND','field_id':'abawd_or_work_requirement_waiver_state_and_governing_period','decision':'expected_range_archive_contains_no_north_dakota_member_but_omission_is_not_status_evidence_hold_open','promotion_candidate':None,'held_open':True,'prohibited_inferences':['do_not_treat_archive_omission_as_no_request','do_not_treat_archive_omission_as_no_waiver','do_not_terminalize_field_or_row']},
+          'selected-followup-protocol.json':{'schema_version':'ssc-rd04-nd-fy26-archive-misplacement-census-protocol@1','state':'selected_unexecuted','route_count':2,'routes':routes,'already_consumed_archive':urljoin('https://www.fna.usda.gov/',exp[2]),'source_requests':0,'route_executions':0,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,'additional_execution_authorized':True},
+          'summary.json':{'schema_version':'ssc-rd04-nd-fy26-archive-member-summary@1','state':'complete','member_count':16,'north_dakota_members':0,'promotion_candidates':0,'held_open_fields':1,'selected_followup_routes':2},
+          'receipt.json':{'schema_version':'ssc-rd04-nd-fy26-archive-member-adjudication-receipt@1','state':'complete','stage':'complete','exit_code':0,'archive_member_count':16,'north_dakota_members':0,'field_decision':'expected_range_archive_contains_no_north_dakota_member_but_omission_is_not_status_evidence_hold_open','promotion_candidates':0,'held_open_fields':1,'selected_followup_routes':2,'source_requests':0,'route_executions':0,'source_admissions':0,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,'additional_execution_authorized':True,'outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none','next_authorized_operation':'execute the two exact remaining FY2026 archive origins once each, refuse redirects, and preserve only terminal transport custody'}}
+          for n,v in objs.items(): (o/n).write_text(json.dumps(v,indent=2,sort_keys=True)+'\n')
+          PY
+          stage=complete; echo complete > "$O/STAGE"; echo 0 > "$O/EXIT_CODE"; sums; (cd "$O" && sha256sum -c SHA256SUMS); jq -e '.state=="complete" and .archive_member_count==16 and .north_dakota_members==0 and .selected_followup_routes==2 and .additional_execution_authorized==true' "$O/receipt.json" >/dev/null
+      - name: Upload terminal archive adjudication
+        if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: ssc-rd04-nd-fy26-archive-member-adjudication-v1, path: '${{ env.OUT }}', if-no-files-found: error, include-hidden-files: true, retention-days: 90, compression-level: 9}
+      - name: Require terminal request-free adjudication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail; test "$(cat "$OUT/EXIT_CODE")" = 0; test "$(cat "$OUT/STAGE")" = complete; (cd "$OUT" && sha256sum -c SHA256SUMS); jq -e '.state=="complete" and .additional_execution_authorized==true and .source_requests==0 and .route_executions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false' "$OUT/receipt.json" >/dev/null
