@@ -1,0 +1,139 @@
+name: TEMP execute RD-04 North Dakota FY2026 MI-NM archive origin v1
+
+on:
+  pull_request:
+    branches: [agent/ssc-rd04-nd-fy26-mi-nm-origin-execution-base-v1]
+    types: [opened, synchronize, reopened]
+    paths: [.trigger/ssc-rd04-nd-fy26-mi-nm-origin-execution-v1.json]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: temp-execute-ssc-rd04-nd-fy26-mi-nm-origin-v1
+  cancel-in-progress: false
+
+env:
+  CURRENT_MAIN: 8482b941aa0b1ecac685ab6ca98bba80ed80c5ee
+  PRIOR_MAIN: 4edc3f4f65851cf2643e889d93df3b6372a2f468
+  INTERVENING_PATH: data/research/clifford-cross-corpus-public-interest-map.json
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  BASE_BRANCH: agent/ssc-rd04-nd-fy26-mi-nm-origin-execution-base-v1
+  HEAD_BRANCH: agent/ssc-rd04-nd-fy26-mi-nm-origin-execution-trigger-v1
+  LOCK_BRANCH: lock/ssc-rd04-nd-fy26-mi-nm-origin-execution-v1
+  WF_PATH: .github/workflows/temp-execute-ssc-rd04-nd-fy26-mi-nm-origin-v1.yml
+  TRIGGER_PATH: .trigger/ssc-rd04-nd-fy26-mi-nm-origin-execution-v1.json
+  RANGE_ARTIFACT_ID: '9041062191'
+  RANGE_ARTIFACT_BYTES: '9655'
+  RANGE_ARTIFACT_DIGEST: sha256:a7e5652f8526b125732ef32ef0ce0c4fb975c3275b24b0f30d675b03c07462d3
+  RANGE_RECEIPT_SHA256: b7576800378936d9cda7a4f177683c0ce40862b048a65c200a992d3a5706da31
+  RANGE_PROTOCOL_SHA256: 3110bf43b37ae4a6aa28c64693a1ce1f33277062e718b0fc91113e7107b51dd6
+  OUT: /tmp/ssc-rd04-nd-fy26-mi-nm-origin-execution-v1
+
+jobs:
+  execute:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy26-mi-nm-origin-execution-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: '${{ github.event.pull_request.head.sha }}', fetch-depth: 0}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.13'}
+      - name: Execute exact MI-NM origin route once
+        id: run
+        continue-on-error: true
+        shell: bash
+        env: {GH_TOKEN: '${{ github.token }}'}
+        run: |
+          set -uo pipefail
+          O="$OUT"; A="$O/range"; rm -rf "$O"; mkdir -p "$A" "$O/transport"; exec > >(tee "$O/execution.log") 2>&1; stage=bootstrap
+          sums(){ (cd "$O" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS); }
+          fail(){ rc=$?; set +e; test -s "$O/execution-receipt.json" || jq -n --arg s "$stage" --argjson c "$rc" --arg p "$CURRENT_MAIN" '{schema_version:"ssc-rd04-nd-fy26-mi-nm-origin-execution@1",state:"failed_closed",failed_or_final_stage:$s,exit_code:$c,execution_parent:$p,fixed_route_count:1,terminal_route_count:0,physical_requests:0,source_admissions:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,additional_execution_authorized:false,outside_human_dependency:false}' > "$O/execution-receipt.json"; echo "$stage" > "$O/STAGE"; echo "$rc" > "$O/EXIT_CODE"; sums; exit "$rc"; }
+          trap fail ERR; set -Eeuo pipefail
+
+          stage=topology
+          B='${{ github.event.pull_request.base.sha }}'; H='${{ github.event.pull_request.head.sha }}'
+          test '${{ github.event.pull_request.base.ref }}' = "$BASE_BRANCH"
+          test '${{ github.event.pull_request.head.ref }}' = "$HEAD_BRANCH"
+          test "$(git rev-parse "$B^")" = "$CURRENT_MAIN"
+          test "$(git rev-parse "$H^")" = "$B"
+          test "$(git diff --name-only "$CURRENT_MAIN" "$B")" = "$WF_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" "$B")" = "$WF_PATH"
+          test "$(git diff --name-only "$B" "$H")" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$B" "$H")" = "$TRIGGER_PATH"
+          git diff --check "$CURRENT_MAIN" "$H"
+          cp "$TRIGGER_PATH" "$O/trigger.json"
+          jq -e --arg p "$CURRENT_MAIN" --arg m "$MATRIX_BLOB" --arg d "$RANGE_ARTIFACT_DIGEST" --arg r "$RANGE_RECEIPT_SHA256" --arg s "$RANGE_PROTOCOL_SHA256" '.schema_version=="ssc-rd04-nd-fy26-mi-nm-origin-execution-trigger@1" and .issue==1017 and .canonical_parent==$p and .matrix_blob==$m and .range_artifact_id==9041062191 and .range_artifact_digest==$d and .range_receipt_sha256==$r and .selected_protocol_sha256==$s and .route_id=="RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-MI-NM-ORIGIN-001" and .url=="https://www.fna.usda.gov/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-MI-NM-7-2026.zip" and .execute_once==true and .maximum_followed_redirects==0 and .maximum_body_bytes==100000000 and .result_spawned_requests==0 and .automatic_source_admissions==0 and .automatic_field_terminalizations==0 and .automatic_matrix_updates==0 and .automatic_row_state_mutations==0 and .automatic_class_closures==0 and .outside_human_dependency==false' "$O/trigger.json" >/dev/null
+
+          stage=live_main_and_lock
+          git fetch --no-tags --force origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse origin/main)" = "$CURRENT_MAIN"
+          test "$(git rev-parse "origin/main:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          git merge-base --is-ancestor "$PRIOR_MAIN" "$CURRENT_MAIN"
+          test "$(git diff --name-only "$PRIOR_MAIN" "$CURRENT_MAIN")" = "$INTERVENING_PATH"
+          test "$(git ls-remote --heads origin "refs/heads/$LOCK_BRANCH"|awk '{print $1}')" = "$H"
+          echo "$CURRENT_MAIN" > "$O/main-at-start.txt"
+
+          stage=authenticate_range_artifact
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$RANGE_ARTIFACT_ID" > "$O/range-artifact.json"
+          jq -e --argjson i "$RANGE_ARTIFACT_ID" --argjson b "$RANGE_ARTIFACT_BYTES" --arg d "$RANGE_ARTIFACT_DIGEST" '.id==$i and .size_in_bytes==$b and .digest==$d and .expired==false' "$O/range-artifact.json" >/dev/null
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$RANGE_ARTIFACT_ID/zip" > "$O/range.zip"
+          test "$(stat -c%s "$O/range.zip")" = "$RANGE_ARTIFACT_BYTES"
+          test "sha256:$(sha256sum "$O/range.zip"|cut -d' ' -f1)" = "$RANGE_ARTIFACT_DIGEST"
+          unzip -t "$O/range.zip" > "$O/range-zip-test.txt"
+          unzip -q "$O/range.zip" -d "$A"
+          (cd "$A" && sha256sum -c SHA256SUMS)
+          test "$(cat "$A/live-main.txt")" = "$PRIOR_MAIN"
+          test "$(cat "$A/live-matrix-blob.txt")" = "$MATRIX_BLOB"
+          test "$(sha256sum "$A/receipt.json"|cut -d' ' -f1)" = "$RANGE_RECEIPT_SHA256"
+          test "$(sha256sum "$A/selected-protocol.json"|cut -d' ' -f1)" = "$RANGE_PROTOCOL_SHA256"
+          jq -e '.state=="complete" and .additional_execution_authorized==true and .additional_execution_scope=="RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-MI-NM-ORIGIN-001" and .selected_followup_routes==1 and .source_requests==0 and .route_executions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false' "$A/receipt.json" >/dev/null
+          jq -e '.schema_version=="ssc-rd04-nd-fy26-mi-nm-archive-origin-protocol@1" and .route_id=="RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-MI-NM-ORIGIN-001" and .url=="https://www.fna.usda.gov/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-MI-NM-7-2026.zip" and .attempts==1 and .exact_host=="www.fna.usda.gov" and .maximum_followed_redirects==0 and .maximum_body_bytes==100000000 and .require_zip_magic_on_http_200==true and .result_spawned_requests==0 and .same_host_expansion==0 and .sibling_path_expansion==0 and .source_admissions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false' "$A/selected-protocol.json" >/dev/null
+          cp "$A/selected-protocol.json" "$O/request-plan.json"
+
+          stage=execute_route
+          python - "$A/selected-protocol.json" "$O" <<'PY'
+          from __future__ import annotations
+          import hashlib,json,pathlib,ssl,sys,time,urllib.error,urllib.request
+          p=pathlib.Path(sys.argv[1]); o=pathlib.Path(sys.argv[2]); protocol=json.loads(p.read_text()); url=protocol['url']; limit=protocol['maximum_body_bytes']
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self,req,fp,code,msg,headers,newurl): return None
+          opener=urllib.request.build_opener(urllib.request.HTTPSHandler(context=ssl.create_default_context()),NoRedirect())
+          req=urllib.request.Request(url,method='GET',headers={'User-Agent':'BigBirdReturns-RD04-bounded-archive-capture/1.0','Accept':'application/zip,application/octet-stream;q=0.9,*/*;q=0.1','Accept-Encoding':'identity','Cache-Control':'no-cache'})
+          started=time.time(); status=None; headers=None; body=b''; effective=url; err=None
+          try:
+            r=opener.open(req,timeout=90); status=int(r.status); headers=r.headers; effective=r.geturl(); body=r.read(limit+1)
+          except urllib.error.HTTPError as e:
+            status=int(e.code); headers=e.headers; effective=e.geturl(); body=e.read(limit+1)
+          except Exception as e: err=f'{type(e).__name__}: {e}'
+          assert len(body)<=limit
+          hs=[{'name':str(k).lower(),'value':str(v)} for k,v in sorted((headers.items() if headers else []),key=lambda x:(str(x[0]).lower(),str(x[1])))]
+          hm={x['name']:x['value'] for x in hs}; location=hm.get('location'); ctype=(hm.get('content-type') or '').split(';',1)[0].strip().lower() or None
+          if err: terminal='transport_error_terminal'
+          elif status in {301,302,303,307,308}: terminal='redirect_refused_terminal'
+          elif status==200 and body.startswith(b'PK\x03\x04'): terminal='http_success_zip_captured'
+          elif status==200: terminal='http_success_non_zip_terminal'
+          else: terminal='http_non_success_terminal'
+          (o/'transport/response-body.bin').write_bytes(body)
+          (o/'transport/response-headers.json').write_text(json.dumps(hs,indent=2,sort_keys=True)+'\n')
+          receipt={'schema_version':'ssc-rd04-nd-fy26-mi-nm-origin-route-receipt@1','route_id':protocol['route_id'],'requested_url':url,'effective_url':effective,'physical_requests':1,'http_status':status,'content_type':ctype,'location':location,'body_bytes':len(body),'body_sha256':hashlib.sha256(body).hexdigest(),'zip_magic':body.startswith(b'PK\x03\x04'),'followed_redirects':0,'transport_error':err,'elapsed_ms':int((time.time()-started)*1000),'terminal_state':terminal,'source_admissions':0,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,'additional_execution_authorized':False}
+          (o/'route-receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          (o/'physical-request-ledger.json').write_text(json.dumps({'schema_version':'ssc-rd04-physical-request-ledger@1','physical_requests':1,'requests':[{'ordinal':1,'method':'GET','url':url,'status':status,'terminal_state':terminal}]},indent=2,sort_keys=True)+'\n')
+          PY
+
+          stage=seal_terminal_receipt
+          main_finish="$(git ls-remote --heads origin refs/heads/main|awk '{print $1}')"
+          route_state="$(jq -r .terminal_state "$O/route-receipt.json")"
+          jq -n --arg p "$CURRENT_MAIN" --arg h "$H" --arg f "$main_finish" --arg r "$route_state" --argjson status "$(jq '.http_status' "$O/route-receipt.json")" --argjson bytes "$(jq '.body_bytes' "$O/route-receipt.json")" --arg body_sha "$(jq -r .body_sha256 "$O/route-receipt.json")" '{schema_version:"ssc-rd04-nd-fy26-mi-nm-origin-execution@1",state:"complete",failed_or_final_stage:"complete",exit_code:0,execution_parent:$p,execution_head:$h,main_at_finish:$f,main_moved_during_execution:($f!=$p),fixed_route_count:1,terminal_route_count:1,physical_requests:1,route_terminal_state:$r,http_status:$status,body_bytes:$bytes,body_sha256:$body_sha,result_spawned_requests:0,source_admissions:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none",additional_execution_authorized:false,next_authorized_operation:"request-free adjudication of this exact terminal response only"}' > "$O/execution-receipt.json"
+          stage=complete; echo complete > "$O/STAGE"; echo 0 > "$O/EXIT_CODE"; sums; (cd "$O" && sha256sum -c SHA256SUMS)
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: ssc-rd04-nd-fy26-mi-nm-origin-execution-v1, path: '${{ env.OUT }}', if-no-files-found: error, include-hidden-files: true, retention-days: 90, compression-level: 9}
+      - name: Require terminal route custody
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail; test "$(cat "$OUT/EXIT_CODE")" = 0; test "$(cat "$OUT/STAGE")" = complete; (cd "$OUT" && sha256sum -c SHA256SUMS); jq -e '.state=="complete" and .fixed_route_count==1 and .terminal_route_count==1 and .physical_requests==1 and .result_spawned_requests==0 and .source_admissions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and .additional_execution_authorized==false' "$OUT/execution-receipt.json" >/dev/null
