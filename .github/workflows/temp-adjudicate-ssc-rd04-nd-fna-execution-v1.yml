@@ -1,0 +1,149 @@
+name: TEMP adjudicate RD-04 North Dakota FNA execution v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-fna-execution-adjudication-base-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.trigger/ssc-rd04-nd-fna-execution-adjudication-v1'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: temp-adjudicate-ssc-rd04-nd-fna-execution-v1
+  cancel-in-progress: false
+
+env:
+  CANONICAL_PARENT: b1d1d8afb6c957401a762bf9d0b2abc464bd5e07
+  CANONICAL_TREE: 64f5b5e9e9d72bdf86ef6cf14d728b2ae996f834
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  WAIVER_CELL_SHA256: cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe
+  ND_ROW_SHA256: aec9f1e8dd82055c73f7e27506a884b6724118e1f4b61d0b9d53b5b2b5ab2c40
+  EXECUTION_HEAD: fafc3fd8a3096725730ce6d347c7860634de8b98
+  EXECUTION_ARTIFACT: '9030165959'
+  EXECUTION_ARTIFACT_BYTES: '12451198'
+  EXECUTION_ARTIFACT_SHA256: 471bf617c14e4a0a5ce29598b1b55fd08c86a6e42a56cec14158c1cbb7dd2a42
+  EXECUTION_RECEIPT_SHA256: d61b705ef137573f93d3398c0fedab10ed2eb40da4a7581db7f10efa6c3f1b74
+  EXECUTION_SUMMARY_SHA256: 36a511251e468f68a89b90992a47f7b842b6d3c1b7392902e8412c13d0d17378
+  ROUTE_RECEIPTS_SHA256: e7466cb4beb777d2b74fff1f7381dcae5d37afb5ae4f66329d5df9d9d6c68b14
+  EXECUTION_SUMS_SHA256: 1e51e7eb653268f45b69a42a6b69faf5df2924e6bc68e285367799d160ede91f
+  BLOCKED_HEAD: e85f55072598d8e89c3761301a14de528442f95d
+  BLOCKED_ARTIFACT: '9030170238'
+  BLOCKED_ARTIFACT_BYTES: '148'
+  BLOCKED_ARTIFACT_SHA256: c42675ba92db8e5b754c077725f0d868b9b2fe7ede2a176a6309b5681c41e44f
+  BLOCKED_STAGE_SHA256: 41ef23b9e75232fcbd37d0254914665e90f4ded52876e39ccfa6b89ff24a2b2c
+  LOCK_BRANCH: lock/ssc-rd04-nd-current-waiver-fna-execution-v1
+  PAYLOAD_PATH: .tmp/ssc-rd04-nd-fna-execution-adjudication-v1/adjudicate.py.xz.b64
+  PAYLOAD_B64_BYTES: '9004'
+  PAYLOAD_B64_SHA256: e53ba992791cb8f56d8d3d0617fcbe27b24b7ce6cda50f6472b70be574ebcc0f
+  PAYLOAD_XZ_BYTES: '6752'
+  PAYLOAD_XZ_SHA256: 5ecf191ba0191e421e172ca38030e4f4de1af298af76f710b80944fc6383dc78
+  PAYLOAD_PY_BYTES: '26916'
+  PAYLOAD_PY_SHA256: d5c78ffb5a6e734553f70aed2523f6a2b78f063cc62976ad444fe5372fd7c354
+  WORKFLOW_PATH: .github/workflows/temp-adjudicate-ssc-rd04-nd-fna-execution-v1.yml
+  TRIGGER_PATH: .trigger/ssc-rd04-nd-fna-execution-adjudication-v1
+  TRIGGER_SHA256: 7de9691f6e48003b6ba392dee43ceec285adc51bfc949808819c47d64e3da3d9
+  OUTPUT_DIR: /tmp/ssc-rd04-nd-fna-execution-adjudication-v1
+
+jobs:
+  adjudicate:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fna-execution-adjudication-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Reconstruct and run exact offline adjudicator
+        id: adjudicate
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          OUT="$OUTPUT_DIR"
+          RUNNER_XZ="$RUNNER_TEMP/ssc-rd04-nd-fna-adjudicate.py.xz"
+          RUNNER_PY="$RUNNER_TEMP/ssc-rd04-nd-fna-adjudicate.py"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          stage=wrapper_bootstrap
+          exec > >(tee "$OUT/adjudication.log") 2>&1
+
+          finalize() {
+            local rc=$?
+            trap - EXIT
+            set +e
+            if [[ ! -s "$OUT/receipt.json" ]]; then
+              jq -n --arg stage "$stage" --argjson exit_code "$rc" --arg parent "$CANONICAL_PARENT" \
+                '{schema_version:"ssc-rd04-nd-fna-execution-adjudication@1",state:"failed_closed",
+                  failed_or_final_stage:$stage,exit_code:$exit_code,canonical_parent:$parent,
+                  source_requests:0,route_executions:0,source_admissions:0,field_terminalizations:0,
+                  matrix_updates:0,row_state_mutations:0,class_closed:false,
+                  cumulative_ledger_effect:"none",outside_human_dependency:false,
+                  publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' > "$OUT/receipt.json"
+            fi
+            [[ -s "$OUT/EXIT_CODE" ]] || printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            [[ -s "$OUT/STAGE" ]] || printf '%s\n' "$stage" > "$OUT/STAGE"
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+          set -Eeuo pipefail
+
+          stage=reconstruct_exact_adjudicator
+          test "$(stat -c %s "$PAYLOAD_PATH")" -eq "$PAYLOAD_B64_BYTES"
+          test "$(sha256sum "$PAYLOAD_PATH" | awk '{print $1}')" = "$PAYLOAD_B64_SHA256"
+          base64 -d "$PAYLOAD_PATH" > "$RUNNER_XZ"
+          test "$(stat -c %s "$RUNNER_XZ")" -eq "$PAYLOAD_XZ_BYTES"
+          test "$(sha256sum "$RUNNER_XZ" | awk '{print $1}')" = "$PAYLOAD_XZ_SHA256"
+          xz -t "$RUNNER_XZ"
+          xz -dc "$RUNNER_XZ" > "$RUNNER_PY"
+          test "$(stat -c %s "$RUNNER_PY")" -eq "$PAYLOAD_PY_BYTES"
+          test "$(sha256sum "$RUNNER_PY" | awk '{print $1}')" = "$PAYLOAD_PY_SHA256"
+          python -m py_compile "$RUNNER_PY"
+          jq -n --arg b64 "$PAYLOAD_B64_SHA256" --arg xz "$PAYLOAD_XZ_SHA256" --arg py "$PAYLOAD_PY_SHA256" \
+            --argjson b64_bytes "$PAYLOAD_B64_BYTES" --argjson xz_bytes "$PAYLOAD_XZ_BYTES" --argjson py_bytes "$PAYLOAD_PY_BYTES" \
+            '{payload_base64_sha256:$b64,payload_base64_bytes:$b64_bytes,payload_xz_sha256:$xz,
+              payload_xz_bytes:$xz_bytes,adjudicator_sha256:$py,adjudicator_bytes:$py_bytes}' > "$OUT/reconstruction.json"
+
+          stage=execute_exact_adjudicator
+          python "$RUNNER_PY"
+
+      - name: Upload offline adjudication custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fna-execution-adjudication-v1
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal offline adjudication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(cat "$OUTPUT_DIR/EXIT_CODE")" = 0
+          test "$(cat "$OUTPUT_DIR/STAGE")" = complete
+          (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
+          jq -e '.state=="complete" and .fixed_routes_adjudicated==4 and
+                 .source_admissions==2 and .held_open_fields==1 and
+                 .promotion_candidates==0 and .selected_followup_routes==3 and
+                 .source_requests==0 and .route_executions==0 and
+                 .field_terminalizations==0 and .matrix_updates==0 and
+                 .row_state_mutations==0 and .class_closed==false and
+                 .outside_human_dependency==false' "$OUTPUT_DIR/receipt.json" > /dev/null
