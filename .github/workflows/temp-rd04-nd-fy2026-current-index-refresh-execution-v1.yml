@@ -1,0 +1,248 @@
+name: TEMP execute RD-04 North Dakota FY2026 current-index refresh once v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-fy2026-current-index-refresh-execution-v1/trigger.json'
+
+permissions:
+  contents: read
+
+jobs:
+  execute:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      EXPECTED_PARENT: aa1c0c3f741bf2fb7aa923a4008e5bc927dca032
+      MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+      EXPECTED_MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+      EXPECTED_CELL_SHA256: cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe
+      PROTOCOL_PREFIX: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2026-current-index-refresh-protocol
+      MANIFEST_BLOB: b9b9a272c1fa64c48800dfd31de13eb1b1d0630c
+      CONTRACT_BLOB: 1f2d67177c34b2d222614a019696bf9ef154d8da
+      SELECTION_BLOB: ba16a371693eceeda9a2c4f95ec26639093d0470
+      WORKFLOW_PATH: .github/workflows/temp-rd04-nd-fy2026-current-index-refresh-execution-v1.yml
+      TRIGGER_PATH: .tmp/rd04-nd-fy2026-current-index-refresh-execution-v1/trigger.json
+      LOCK_BRANCH: lock/ssc-rd04-nd-fy2026-current-index-refresh-execution-v1
+      ROUTE_ID: RD04-ND-FNA-TIME-LIMIT-WAIVER-INDEX-CANONICAL-2025-2029-REFRESH-2026-08-09-001
+      ROUTE_URL: https://www.fna.usda.gov/snap/waivers/timelimit/2025-2029
+      BASELINE_BODY_BYTES: '63505'
+      BASELINE_BODY_SHA256: dcab625aeeebc30b1cf38dd32f67f0cb766a8e33735694b00f041e03d446476f
+      MAX_BODY_BYTES: '5000000'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Execute exact locked current-index route once
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-nd-fy2026-current-index-refresh-execution-v1"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          printf '%s\n' topology > "$OUT/STAGE"
+          printf '%s\n' 1 > "$OUT/EXIT_CODE"
+
+          seal() {
+            (cd "$OUT" && find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          }
+          fail() {
+            local stage="$1" reason="$2"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            printf '%s\n' 1 > "$OUT/EXIT_CODE"
+            python - "$OUT/execution-receipt.json" "$stage" "$reason" <<'PY'
+          import json,sys
+          path,stage,reason=sys.argv[1:]
+          obj={"schema_version":"ssc-rd04-nd-fy2026-current-index-refresh-execution-receipt@1","state":"failed_closed","failed_or_final_stage":stage,"exit_code":1,"reason":reason,"fixed_routes":1,"terminal_routes":0,"attempts":0,"physical_requests":0,"source_admissions":0,"field_classifications":0,"field_terminalizations":0,"matrix_updates":0,"row_state_mutations":0,"class_closed":False,"cumulative_ledger_effect":"none","outside_human_dependency":False,"publication_effect":"none","adoption_effect":"none","graph_effect":"none","additional_execution_authorized":False}
+          open(path,'w',encoding='utf-8').write(json.dumps(obj,indent=2,sort_keys=True)+'\n')
+          PY
+            cp "$OUT/execution-receipt.json" "$OUT/receipt.json"
+            seal
+            exit 1
+          }
+
+          test "$EVENT_NAME" = pull_request || fail topology event_not_pull_request
+          test "$HEAD_REPO" = "$GITHUB_REPOSITORY" || fail topology head_repository_mismatch
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA" || fail topology checkout_head_mismatch
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA" || fail topology head_parent_mismatch
+          test "$(git rev-parse "$BASE_SHA^")" = "$EXPECTED_PARENT" || fail topology base_parent_mismatch
+          mapfile -t base_paths < <(git diff --name-only "$EXPECTED_PARENT" "$BASE_SHA")
+          mapfile -t trigger_paths < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          test "${#base_paths[@]}" = 1 || fail topology base_path_count_mismatch
+          test "${base_paths[0]}" = "$WORKFLOW_PATH" || fail topology base_path_mismatch
+          test "${#trigger_paths[@]}" = 1 || fail topology trigger_path_count_mismatch
+          test "${trigger_paths[0]}" = "$TRIGGER_PATH" || fail topology trigger_path_mismatch
+          git fetch --quiet origin main "$LOCK_BRANCH"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_PARENT" || fail topology live_main_moved
+          test "$(git rev-parse "origin/$LOCK_BRANCH")" = "$HEAD_SHA" || fail topology execution_lock_mismatch
+          test "$(git rev-parse "origin/main:$MATRIX_PATH")" = "$EXPECTED_MATRIX_BLOB" || fail topology matrix_blob_moved
+
+          python - "$MATRIX_PATH" "$EXPECTED_CELL_SHA256" > "$OUT/current-cell-proof.json" <<'PY'
+          import hashlib,json,sys
+          path,expected=sys.argv[1:]
+          doc=json.load(open(path,encoding='utf-8'))
+          rows=[r for r in doc['rows'] if r.get('unit_id')=='US-STATE-ND']; assert len(rows)==1
+          row=rows[0]
+          cells=[c for c in row['cells'] if c.get('field_id')=='abawd_or_work_requirement_waiver_state_and_governing_period']; assert len(cells)==1
+          cell=cells[0]
+          digest=hashlib.sha256(json.dumps(cell,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest()
+          assert digest==expected
+          assert row['row_state']=='still_open' and row['terminal_fields']==7 and row['open_fields']==2
+          assert cell['state']=='still_open' and cell['terminal'] is False and cell['value'] is None
+          print(json.dumps({'unit_id':'US-STATE-ND','row_state':row['row_state'],'terminal_fields':7,'open_fields':2,'field_id':cell['field_id'],'field_state':cell['state'],'field_terminal':False,'field_value':None,'cell_sha256':digest},indent=2,sort_keys=True))
+          PY
+          printf '%s\n' "$EXPECTED_PARENT" > "$OUT/live-main.txt"
+          printf '%s\n' "$EXPECTED_MATRIX_BLOB" > "$OUT/live-matrix-blob.txt"
+
+          printf '%s\n' authenticate_protocol > "$OUT/STAGE"
+          MANIFEST="$PROTOCOL_PREFIX/product-manifest.json"
+          CONTRACT="$PROTOCOL_PREFIX/route-query-contract.json"
+          SELECTION="$PROTOCOL_PREFIX/selection-decision.json"
+          test "$(git rev-parse "origin/main:$MANIFEST")" = "$MANIFEST_BLOB" || fail authenticate_protocol manifest_blob_mismatch
+          test "$(git rev-parse "origin/main:$CONTRACT")" = "$CONTRACT_BLOB" || fail authenticate_protocol contract_blob_mismatch
+          test "$(git rev-parse "origin/main:$SELECTION")" = "$SELECTION_BLOB" || fail authenticate_protocol selection_blob_mismatch
+          jq -e '
+            .schema_version=="ssc-rd04-nd-fy2026-current-index-refresh-protocol-product-manifest@1" and
+            .permanent_path_count==6 and .addition_only==true and
+            .semantic_counts.fixed_routes==1 and .semantic_counts.source_requests_executed==0 and
+            .semantic_counts.route_executions==0 and .semantic_counts.source_admissions==0 and
+            .semantic_counts.field_classifications==0 and .semantic_counts.field_terminalizations==0 and
+            .semantic_counts.matrix_updates==0 and .semantic_counts.row_state_mutations==0 and
+            .semantic_counts.class_closed==false and .workflow_or_transport_paths==0
+          ' "$MANIFEST" > /dev/null || fail authenticate_protocol manifest_semantics_mismatch
+          jq -e --arg route "$ROUTE_ID" --arg url "$ROUTE_URL" '
+            .schema_version=="ssc-rd04-nd-fy2026-current-index-refresh-selection@1" and
+            .selected_route.route_id==$route and .selected_route.requested_url==$url and
+            .selected_route.normalized_url==$url and .selected_route.request_method=="GET" and
+            .selected_route.expected_scheme=="https" and .selected_route.expected_host=="www.fna.usda.gov" and
+            .selected_route.maximum_attempts==1 and .selected_route.maximum_redirects==0 and
+            .selected_route.maximum_body_bytes==5000000 and .selected_route.result_spawned_requests==0 and
+            .selection_result.execution_state=="frozen_unexecuted" and
+            .selection_result.fixed_routes==1 and .selection_result.new_route_executions==0 and
+            .selection_result.new_source_requests_executed==0 and
+            .selection_result.separate_never_merge_execution_carrier_required==true
+          ' "$SELECTION" > /dev/null || fail authenticate_protocol selection_semantics_mismatch
+          jq -e '
+            .schema_version=="ssc-rd04-nd-fy2026-current-index-refresh-query-contract@1" and
+            .fixed_route_count==1 and .maximum_attempts_per_route==1 and
+            .maximum_physical_requests==1 and .maximum_redirects_per_route==0 and
+            .maximum_body_bytes_per_route==5000000 and .request_methods==["GET"] and
+            .redirects_allowed==false and .cross_host_redirects_allowed==false and
+            .result_spawned_requests==0 and .source_admission_effect=="none" and
+            .field_classification_effect=="none" and .row_state_effect=="none" and
+            .class_effect=="none" and .cumulative_ledger_effect=="none" and
+            .outside_human_dependency==false and .publication_effect=="none" and
+            .adoption_effect=="none" and .graph_effect=="none"
+          ' "$CONTRACT" > /dev/null || fail authenticate_protocol contract_semantics_mismatch
+          cp "$MANIFEST" "$OUT/product-manifest.json"
+          cp "$CONTRACT" "$OUT/route-query-contract.json"
+          cp "$SELECTION" "$OUT/selection-decision.json"
+
+          printf '%s\n' execute_route > "$OUT/STAGE"
+          HEADERS="$OUT/response-headers.raw"
+          BODY="$OUT/response-body.bin"
+          set +e
+          curl --silent --show-error --connect-timeout 30 --max-time 600 --max-redirs 0 --max-filesize "$MAX_BODY_BYTES" \
+            --dump-header "$HEADERS" --output "$BODY" \
+            --write-out '%{http_code}\n%{url_effective}\n%{size_download}\n%{content_type}\n%{num_redirects}\n' \
+            "$ROUTE_URL" > "$OUT/curl-meta.txt" 2> "$OUT/curl-stderr.txt"
+          CURL_RC=$?
+          set -e
+          test -f "$HEADERS" || : > "$HEADERS"
+          test -f "$BODY" || : > "$BODY"
+          HTTP_STATUS="$(sed -n '1p' "$OUT/curl-meta.txt" 2>/dev/null || true)"
+          EFFECTIVE_URL="$(sed -n '2p' "$OUT/curl-meta.txt" 2>/dev/null || true)"
+          CONTENT_TYPE="$(sed -n '4p' "$OUT/curl-meta.txt" 2>/dev/null || true)"
+          NUM_REDIRECTS="$(sed -n '5p' "$OUT/curl-meta.txt" 2>/dev/null || true)"
+          [[ "$HTTP_STATUS" =~ ^[0-9]{3}$ ]] || HTTP_STATUS=0
+          [[ "$NUM_REDIRECTS" =~ ^[0-9]+$ ]] || NUM_REDIRECTS=0
+          test "$NUM_REDIRECTS" = 0 || fail execute_route redirect_followed
+          BODY_BYTES="$(stat -c %s "$BODY")"
+          test "$BODY_BYTES" -le "$MAX_BODY_BYTES" || fail execute_route body_size_exceeded
+          BODY_SHA256="$(sha256sum "$BODY" | awk '{print $1}')"
+          HEADERS_SHA256="$(sha256sum "$HEADERS" | awk '{print $1}')"
+          LOCATION="$(awk 'BEGIN{IGNORECASE=1} /^location:[[:space:]]*/ {sub(/^[^:]*:[[:space:]]*/,""); sub(/\r$/,""); print; exit}' "$HEADERS")"
+          TERMINAL_STATE=terminal_transport_error
+          if [[ "$CURL_RC" -eq 0 && "$HTTP_STATUS" -ge 200 && "$HTTP_STATUS" -lt 300 ]]; then
+            if [[ "$BODY_BYTES" -gt 0 ]]; then TERMINAL_STATE=terminal_http_success_body_captured; else TERMINAL_STATE=terminal_http_success_no_body; fi
+          elif [[ "$CURL_RC" -eq 0 && "$HTTP_STATUS" -ge 300 && "$HTTP_STATUS" -lt 400 ]]; then
+            TERMINAL_STATE=terminal_redirect_refused
+          elif [[ "$CURL_RC" -eq 0 && "$HTTP_STATUS" -gt 0 ]]; then
+            TERMINAL_STATE=terminal_http_non_success
+          fi
+          BASELINE_EQUAL=false
+          if [[ "$BODY_BYTES" == "$BASELINE_BODY_BYTES" && "$BODY_SHA256" == "$BASELINE_BODY_SHA256" ]]; then BASELINE_EQUAL=true; fi
+
+          python - "$OUT/route-receipt.json" "$ROUTE_ID" "$ROUTE_URL" "$EFFECTIVE_URL" "$HTTP_STATUS" "$CURL_RC" "$BODY_BYTES" "$BODY_SHA256" "$HEADERS_SHA256" "$CONTENT_TYPE" "$LOCATION" "$TERMINAL_STATE" "$BASELINE_EQUAL" <<'PY'
+          import json,sys
+          path,route,url,effective,status,curl_rc,body_bytes,body_sha,headers_sha,ctype,location,terminal,baseline_equal=sys.argv[1:]
+          obj={'schema_version':'ssc-rd04-nd-fy2026-current-index-refresh-route-receipt@1','route_id':route,'method':'GET','requested_url':url,'effective_url':effective or url,'attempts':1,'physical_requests':1,'curl_exit_code':int(curl_rc),'http_status':int(status),'redirects_followed':0,'location':location or None,'content_type':ctype or None,'body_bytes':int(body_bytes),'body_sha256':body_sha,'response_headers_sha256':headers_sha,'terminal_state':terminal,'terminal':True,'baseline_body_equal':baseline_equal=='true','source_admission_effect':'none','field_effect':'none','matrix_effect':'none'}
+          open(path,'w',encoding='utf-8').write(json.dumps(obj,indent=2,sort_keys=True)+'\n')
+          PY
+          python - "$OUT/physical-request-ledger.json" "$ROUTE_ID" "$ROUTE_URL" "$HTTP_STATUS" "$CURL_RC" "$TERMINAL_STATE" <<'PY'
+          import json,sys
+          path,route,url,status,curl_rc,terminal=sys.argv[1:]
+          obj={'schema_version':'ssc-rd04-physical-request-ledger@1','physical_requests':1,'requests':[{'ordinal':1,'route_id':route,'method':'GET','url':url,'status':int(status),'curl_exit_code':int(curl_rc),'terminal_state':terminal}]}
+          open(path,'w',encoding='utf-8').write(json.dumps(obj,indent=2,sort_keys=True)+'\n')
+          PY
+          ROUTE_SHA="$(sha256sum "$OUT/route-receipt.json" | awk '{print $1}')"
+          LEDGER_SHA="$(sha256sum "$OUT/physical-request-ledger.json" | awk '{print $1}')"
+          python - "$OUT/execution-receipt.json" "$EXPECTED_PARENT" "$HEAD_SHA" "$ROUTE_ID" "$ROUTE_URL" "$HTTP_STATUS" "$CURL_RC" "$BODY_BYTES" "$BODY_SHA256" "$HEADERS_SHA256" "$LOCATION" "$TERMINAL_STATE" "$BASELINE_EQUAL" "$ROUTE_SHA" "$LEDGER_SHA" <<'PY'
+          import json,sys
+          path,parent,head,route,url,status,curl_rc,body_bytes,body_sha,headers_sha,location,terminal,baseline_equal,route_sha,ledger_sha=sys.argv[1:]
+          obj={'schema_version':'ssc-rd04-nd-fy2026-current-index-refresh-execution-receipt@1','state':'transport_complete','failed_or_final_stage':'complete','exit_code':0,'canonical_parent':parent,'consuming_head':head,'route_id':route,'requested_url':url,'fixed_routes':1,'terminal_routes':1,'attempts':1,'physical_requests':1,'http_status':int(status),'curl_exit_code':int(curl_rc),'redirects_followed':0,'body_bytes':int(body_bytes),'body_sha256':body_sha,'response_headers_sha256':headers_sha,'location':location or None,'terminal_state':terminal,'baseline_body_bytes':63505,'baseline_body_sha256':'dcab625aeeebc30b1cf38dd32f67f0cb766a8e33735694b00f041e03d446476f','baseline_body_equal':baseline_equal=='true','source_admissions':0,'field_classifications':0,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,'cumulative_ledger_effect':'none','outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none','result_spawned_requests':0,'additional_execution_authorized':False,'route_receipt_sha256':route_sha,'physical_request_ledger_sha256':ledger_sha,'next_authorized_operation':'request-free complete-body index-delta adjudication'}
+          open(path,'w',encoding='utf-8').write(json.dumps(obj,indent=2,sort_keys=True)+'\n')
+          PY
+          cp "$OUT/execution-receipt.json" "$OUT/receipt.json"
+          cat > "$OUT/summary.md" <<EOF
+          # RD-04 North Dakota FY2026 current-index refresh transport
+
+          The exact locked route executed once with zero followed redirects. Terminal state: ${TERMINAL_STATE}. HTTP status: ${HTTP_STATUS}. Body bytes: ${BODY_BYTES}. Baseline byte identity: ${BASELINE_EQUAL}. No source, field, matrix, row, class, ledger, publication, adoption, or graph effect occurred.
+          EOF
+          printf '%s\n' complete > "$OUT/STAGE"
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          seal
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -c . "$OUT/execution-receipt.json"
+
+      - name: Preserve exact terminal refresh transport
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy2026-current-index-refresh-execution-v1
+          path: ${{ runner.temp }}/ssc-rd04-nd-fy2026-current-index-refresh-execution-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce one terminal request and zero semantic effect
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-nd-fy2026-current-index-refresh-execution-v1"
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          jq -e '
+            .state=="transport_complete" and .failed_or_final_stage=="complete" and .exit_code==0 and
+            .canonical_parent=="aa1c0c3f741bf2fb7aa923a4008e5bc927dca032" and
+            .fixed_routes==1 and .terminal_routes==1 and .attempts==1 and .physical_requests==1 and
+            .route_id=="RD04-ND-FNA-TIME-LIMIT-WAIVER-INDEX-CANONICAL-2025-2029-REFRESH-2026-08-09-001" and
+            .requested_url=="https://www.fna.usda.gov/snap/waivers/timelimit/2025-2029" and
+            .redirects_followed==0 and
+            (.terminal_state=="terminal_http_success_body_captured" or .terminal_state=="terminal_http_success_no_body" or .terminal_state=="terminal_http_non_success" or .terminal_state=="terminal_redirect_refused" or .terminal_state=="terminal_transport_error") and
+            .source_admissions==0 and .field_classifications==0 and .field_terminalizations==0 and
+            .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and
+            .cumulative_ledger_effect=="none" and .outside_human_dependency==false and
+            .publication_effect=="none" and .adoption_effect=="none" and .graph_effect=="none" and
+            .result_spawned_requests==0 and .additional_execution_authorized==false
+          ' "$OUT/execution-receipt.json" > /dev/null
+          jq -e '.physical_requests==1 and (.requests|length)==1' "$OUT/physical-request-ledger.json" > /dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
