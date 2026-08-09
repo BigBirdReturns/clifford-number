@@ -1,0 +1,281 @@
+name: TEMP repair RD-04 North Dakota MI-NM manifest v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-fy2026-mi-nm-manifest-repair-materializer-base-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-fy2026-mi-nm-manifest-repair-v1/trigger.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-rd04-nd-fy2026-mi-nm-manifest-repair-v1
+  cancel-in-progress: false
+
+env:
+  CANONICAL_PARENT: cffe670fef5c006c7e963421d9fd18c29ed40fba
+  BASE_BRANCH: agent/ssc-rd04-nd-fy2026-mi-nm-manifest-repair-materializer-base-v1
+  HEAD_BRANCH: agent/ssc-rd04-nd-fy2026-mi-nm-manifest-repair-materializer-trigger-v1
+  PRODUCT_BRANCH: agent/ssc-rd04-nd-fy2026-mi-nm-manifest-repair-v1
+  WORKFLOW_PATH: .github/workflows/temp-repair-ssc-rd04-nd-fy2026-mi-nm-manifest-v1.yml
+  TRIGGER_PATH: .tmp/rd04-nd-fy2026-mi-nm-manifest-repair-v1/trigger.json
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2026-mi-nm-request-archive-adjudication
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2026-mi-nm-request-archive-adjudication/product-manifest.json
+  CURRENT_MANIFEST_BLOB: cc48119435f1d0cd50e415b84dafe93dcbab05e8
+  STALE_COMBINED_SHA256: 680c326264eb0957a851984f13169ebeedd6567aa0bc3eea94e63544853718da
+  EXPECTED_REPAIRED_COMBINED_SHA256: 69a49733a9c20fc3b87c4b45ebbe1f1d2137e9e3de97b48fd68c4442de471032
+  OUT: /tmp/rd04-nd-fy2026-mi-nm-manifest-repair-v1
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-fy2026-mi-nm-manifest-repair-materializer-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy2026-mi-nm-manifest-repair-materializer-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Recompute, qualify, and publish exact one-file repair
+        id: materialize
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          stage=bootstrap
+
+          seal() {
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+            )
+          }
+
+          finalize() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            if [[ ! -s "$OUT/receipt.json" ]]; then
+              jq -n \
+                --arg stage "$stage" \
+                --argjson exit_code "$rc" \
+                --arg parent "$CANONICAL_PARENT" \
+                '{schema_version:"ssc-rd04-nd-fy2026-mi-nm-manifest-repair-materializer@1",
+                  state:"failed_closed",failed_or_final_stage:$stage,exit_code:$exit_code,
+                  canonical_parent:$parent,product_branch_moved:false,
+                  permanent_paths_modified:0,source_requests:0,route_executions:0,
+                  field_terminalizations:0,matrix_updates:0,row_state_mutations:0,
+                  class_closed:false,outside_human_dependency:false}' > "$OUT/receipt.json"
+            fi
+            seal
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          stage=bind_exact_two_level_carrier
+          B='${{ github.event.pull_request.base.sha }}'
+          H='${{ github.event.pull_request.head.sha }}'
+          test "$(git rev-parse HEAD)" = "$H"
+          test "$(git rev-parse "$B^")" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "$H^")" = "$B"
+          test "$(git rev-list --count "$CANONICAL_PARENT..$B")" -eq 1
+          test "$(git rev-list --count "$B..$H")" -eq 1
+          test "$(git diff --name-only "$CANONICAL_PARENT" "$B")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$B")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only "$B" "$H")" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$B" "$H")" = "$TRIGGER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" "$B")"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$B" "$H")"
+          git diff --check "$CANONICAL_PARENT" "$H"
+
+          stage=bind_live_main_and_unused_product_ref
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "origin/main:$MANIFEST_PATH")" = "$CURRENT_MANIFEST_BLOB"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+          cp "$TRIGGER_PATH" "$OUT/trigger.json"
+
+          stage=construct_exact_repair
+          WORK="$(mktemp -d)"
+          git worktree add --detach "$WORK" "$CANONICAL_PARENT"
+          python - "$WORK" "$PRODUCT_ROOT" "$MANIFEST_PATH" "$STALE_COMBINED_SHA256" "$EXPECTED_REPAIRED_COMBINED_SHA256" "$OUT/computed-ledger.json" <<'PY'
+          from __future__ import annotations
+          import hashlib, json, pathlib, sys
+
+          work = pathlib.Path(sys.argv[1])
+          product_root = sys.argv[2]
+          manifest_rel = sys.argv[3]
+          stale = sys.argv[4]
+          expected = sys.argv[5]
+          ledger_out = pathlib.Path(sys.argv[6])
+          manifest_path = work / manifest_rel
+          manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+
+          expected_names = [
+              'archive-custody.json',
+              'current-cell-custody.json',
+              'member-inventory.json',
+              'north-dakota-disposition.json',
+              'summary.json',
+          ]
+          expected_paths = [f'{product_root}/{name}' for name in expected_names]
+          assert manifest['payload_combined_sha256'] == stale
+          assert manifest['permanent_path_count'] == 6
+          assert manifest['workflow_or_transport_paths'] == 0
+          assert manifest['addition_only'] is True
+          assert sorted(row['path'] for row in manifest['payload_files']) == sorted(expected_paths)
+
+          rows = []
+          for rel in sorted(expected_paths):
+              data = (work / rel).read_bytes()
+              rows.append({
+                  'bytes': len(data),
+                  'path': rel,
+                  'sha256': hashlib.sha256(data).hexdigest(),
+              })
+          preimage = b''.join(
+              row['path'].encode('utf-8') + b'\0' +
+              row['sha256'].encode('ascii') + b'\0' +
+              str(row['bytes']).encode('ascii') + b'\n'
+              for row in rows
+          )
+          combined = hashlib.sha256(preimage).hexdigest()
+          assert combined == expected, (combined, expected)
+
+          manifest['payload_files'] = rows
+          manifest['payload_combined_sha256'] = combined
+          manifest_path.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
+
+          repaired = json.loads(manifest_path.read_text(encoding='utf-8'))
+          assert repaired['payload_files'] == rows
+          assert repaired['payload_combined_sha256'] == expected
+          ledger_out.write_text(json.dumps({
+              'schema_version': 'ssc-rd04-nd-fy2026-mi-nm-manifest-repair-ledger@1',
+              'stale_payload_combined_sha256': stale,
+              'repaired_payload_combined_sha256': combined,
+              'payload_files': rows,
+              'permanent_paths_modified': 1,
+              'semantic_effect': 'none',
+          }, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          PY
+
+          cd "$WORK"
+          test "$(git diff --name-only)" = "$MANIFEST_PATH"
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$MANIFEST_PATH"
+          git commit -m 'Repair MI-NM archive custody manifest checksums'
+          PRODUCT_COMMIT="$(git rev-parse HEAD)"
+          PRODUCT_TREE="$(git rev-parse 'HEAD^{tree}')"
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"
+          test "$(git rev-list --count "$CANONICAL_PARENT..HEAD")" -eq 1
+          test "$(git diff --name-only "$CANONICAL_PARENT" HEAD)" = "$MANIFEST_PATH"
+          test "$(git diff --name-only --diff-filter=M "$CANONICAL_PARENT" HEAD)" = "$MANIFEST_PATH"
+          test -z "$(git diff --name-only --diff-filter=ADTRCUXB "$CANONICAL_PARENT" HEAD)"
+          printf '%s\n' "$PRODUCT_COMMIT" > "$OUT/product-commit.txt"
+          printf '%s\n' "$PRODUCT_TREE" > "$OUT/product-tree.txt"
+          git show "HEAD:$MANIFEST_PATH" > "$OUT/product-manifest.json"
+
+          stage=qualify_exact_repair
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check > "$OUT/release-check.log" 2>&1
+          git reset --hard "$PRODUCT_COMMIT"
+          git clean -fdx
+          test -z "$(git status --porcelain)"
+          python - "$WORK" "$MANIFEST_PATH" "$EXPECTED_REPAIRED_COMBINED_SHA256" <<'PY'
+          import hashlib, json, pathlib, sys
+          work=pathlib.Path(sys.argv[1]); manifest_rel=sys.argv[2]; expected=sys.argv[3]
+          m=json.loads((work/manifest_rel).read_text())
+          rows=[]
+          for row in sorted(m['payload_files'], key=lambda x:x['path']):
+              data=(work/row['path']).read_bytes()
+              actual={'bytes':len(data),'path':row['path'],'sha256':hashlib.sha256(data).hexdigest()}
+              assert actual==row
+              rows.append(actual)
+          pre=b''.join(r['path'].encode()+b'\0'+r['sha256'].encode()+b'\0'+str(r['bytes']).encode()+b'\n' for r in rows)
+          assert hashlib.sha256(pre).hexdigest()==expected==m['payload_combined_sha256']
+          PY
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+
+          stage=publish_exact_repair
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+          git push origin "$PRODUCT_COMMIT:refs/heads/$PRODUCT_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$PRODUCT_COMMIT"
+
+          stage=complete
+          jq -n \
+            --arg parent "$CANONICAL_PARENT" \
+            --arg commit "$PRODUCT_COMMIT" \
+            --arg tree "$PRODUCT_TREE" \
+            --arg branch "$PRODUCT_BRANCH" \
+            --arg old "$STALE_COMBINED_SHA256" \
+            --arg repaired "$EXPECTED_REPAIRED_COMBINED_SHA256" \
+            '{schema_version:"ssc-rd04-nd-fy2026-mi-nm-manifest-repair-materializer@1",
+              state:"qualified_product_published",failed_or_final_stage:"complete",exit_code:0,
+              canonical_parent:$parent,product_commit:$commit,product_tree:$tree,
+              product_branch:$branch,product_branch_moved:true,
+              stale_payload_combined_sha256:$old,repaired_payload_combined_sha256:$repaired,
+              permanent_paths_modified:1,source_requests:0,route_executions:0,
+              field_terminalizations:0,matrix_updates:0,row_state_mutations:0,
+              class_closed:false,outside_human_dependency:false}' > "$OUT/receipt.json"
+          cd - >/dev/null
+          git worktree remove --force "$WORK"
+          seal
+          trap - EXIT
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          printf '%s\n' complete > "$OUT/STAGE"
+          seal
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+
+      - name: Preserve repair materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy2026-mi-nm-manifest-repair-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce successful one-file publication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.materialize.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .state=="qualified_product_published" and
+            .failed_or_final_stage=="complete" and .exit_code==0 and
+            .product_branch_moved==true and .permanent_paths_modified==1 and
+            .repaired_payload_combined_sha256=="69a49733a9c20fc3b87c4b45ebbe1f1d2137e9e3de97b48fd68c4442de471032" and
+            .source_requests==0 and .route_executions==0 and
+            .field_terminalizations==0 and .matrix_updates==0 and
+            .row_state_mutations==0 and .class_closed==false and
+            .outside_human_dependency==false
+          ' "$OUT/receipt.json" > /dev/null
