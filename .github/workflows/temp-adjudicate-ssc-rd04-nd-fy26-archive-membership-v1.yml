@@ -1,0 +1,302 @@
+name: TEMP adjudicate RD-04 North Dakota FY2026 archive membership v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-fy26-archive-member-adjudication-base-v1
+    paths:
+      - .trigger/ssc-rd04-nd-fy26-archive-membership-v1.json
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  adjudicate:
+    runs-on: ubuntu-latest
+    env:
+      EXPECTED_MAIN: 4edc3f4f65851cf2643e889d93df3b6372a2f468
+      HISTORICAL_MERGE: 4ba77ed1364a6e331d18d3e9307189b74eed7fb7
+      EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
+      EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+      WORKFLOW_PATH: .github/workflows/temp-adjudicate-ssc-rd04-nd-fy26-archive-membership-v1.yml
+      TRIGGER_PATH: .trigger/ssc-rd04-nd-fy26-archive-membership-v1.json
+      TRIGGER_SHA256: 9eea66535c86053db517efd18c88ca34826e8494b12a31033578e78989bbd6e6
+      MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+      MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+      SOURCE_ARTIFACT_ID: "9033042970"
+      SOURCE_ARTIFACT_BYTES: "11695093"
+      SOURCE_ARTIFACT_SHA256: d95177ff3bd7c5eea4510c8c5498c304534d09bc6523b4a60012be2a161658c9
+      SOURCE_BODY_BYTES: "18003072"
+      SOURCE_BODY_SHA256: b74eccfba90bfd69dcd35567b714020de63cb80b0898323973b822f9813153b1
+      OUT: /tmp/ssc-rd04-nd-fy26-archive-member-adjudication-v1
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Authenticate exact artifact and adjudicate archive membership offline
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT/source"
+
+          git fetch --force origin main "$EXPECTED_BASE" "$EXPECTED_HEAD"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          git merge-base --is-ancestor "$HISTORICAL_MERGE" "$EXPECTED_MAIN"
+          test "$(git rev-parse "$EXPECTED_BASE^")" = "$EXPECTED_MAIN"
+          test "$(git rev-list --count "$EXPECTED_MAIN..$EXPECTED_BASE")" = 1
+          test "$(git diff --name-only "$EXPECTED_MAIN" "$EXPECTED_BASE")" = "$WORKFLOW_PATH"
+          test "$(git rev-parse "$EXPECTED_HEAD^")" = "$EXPECTED_BASE"
+          test "$(git rev-list --count "$EXPECTED_BASE..$EXPECTED_HEAD")" = 1
+          test "$(git diff --name-only "$EXPECTED_BASE" "$EXPECTED_HEAD")" = "$TRIGGER_PATH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test "$(sha256sum "$TRIGGER_PATH" | cut -d' ' -f1)" = "$TRIGGER_SHA256"
+          test "$(git rev-parse "$EXPECTED_MAIN:$MATRIX_PATH")" = "$MATRIX_BLOB"
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ARTIFACT_ID" > "$OUT/source-artifact-api.json"
+          python - <<'PY'
+          import json, os
+          value=json.load(open(os.environ["OUT"]+"/source-artifact-api.json"))
+          assert value["id"] == int(os.environ["SOURCE_ARTIFACT_ID"])
+          assert value["expired"] is False
+          assert value["size_in_bytes"] == int(os.environ["SOURCE_ARTIFACT_BYTES"])
+          assert value["digest"] == "sha256:"+os.environ["SOURCE_ARTIFACT_SHA256"]
+          assert value["workflow_run"]["head_sha"] == "88a3e766084957b03982150c02e19c87220583aa"
+          PY
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ARTIFACT_ID/zip" > "$OUT/source-artifact.zip"
+          test "$(wc -c < "$OUT/source-artifact.zip" | tr -d ' ')" = "$SOURCE_ARTIFACT_BYTES"
+          test "$(sha256sum "$OUT/source-artifact.zip" | cut -d' ' -f1)" = "$SOURCE_ARTIFACT_SHA256"
+          unzip -t "$OUT/source-artifact.zip"
+          unzip -q "$OUT/source-artifact.zip" -d "$OUT/source"
+
+          python - <<'PY'
+          from pathlib import Path
+          import collections, hashlib, json, os, re, zipfile
+
+          out=Path(os.environ["OUT"])
+          root=out/"source"
+          trigger=json.loads(Path(os.environ["TRIGGER_PATH"]).read_text())
+
+          def digest(path):
+              h=hashlib.sha256()
+              with path.open("rb") as stream:
+                  for chunk in iter(lambda:stream.read(1024*1024),b""):
+                      h.update(chunk)
+              return h.hexdigest()
+
+          checksum_rows=0
+          for line in (root/"SHA256SUMS").read_text().splitlines():
+              if not line.strip():
+                  continue
+              expected, rel=line.split(None,1)
+              rel=rel.lstrip("*")
+              assert digest(root/rel)==expected, rel
+              checksum_rows += 1
+          assert checksum_rows==10
+          assert (root/"STAGE").read_text().strip()=="complete"
+          assert (root/"EXIT_CODE").read_text().strip()=="0"
+
+          execution=json.loads((root/"execution-receipt.json").read_text())
+          route=json.loads((root/"route-receipt.json").read_text())
+          assert execution["state"]=="transport_complete"
+          assert execution["physical_requests"]==1
+          assert execution["source_admissions"]==0
+          assert execution["field_terminalizations"]==0
+          assert execution["matrix_updates"]==0
+          assert execution["row_state_mutations"]==0
+          assert execution["class_closed"] is False
+          assert route["route_id"]==trigger["transport"]["route_id"]
+          assert route["requested_url"]==trigger["transport"]["url"]
+          assert route["physical_requests"]==1
+          assert route["http_status"]==200
+          assert route["followed_redirects"]==0
+          assert route["body_bytes"]==int(os.environ["SOURCE_BODY_BYTES"])
+          assert route["body_sha256"]==os.environ["SOURCE_BODY_SHA256"]
+          assert route["zip_magic"] is True
+          assert route["terminal_state"]=="http_success_zip_captured"
+
+          source_zip=root/"source.zip"
+          assert source_zip.stat().st_size==int(os.environ["SOURCE_BODY_BYTES"])
+          assert digest(source_zip)==os.environ["SOURCE_BODY_SHA256"]
+          assert (root/"response-body.bin").read_bytes()==source_zip.read_bytes()
+
+          members=[]
+          with zipfile.ZipFile(source_zip) as archive:
+              assert archive.testzip() is None
+              for info in archive.infolist():
+                  if info.is_dir():
+                      continue
+                  data=archive.read(info.filename)
+                  parts=info.filename.split("/")
+                  members.append({
+                      "path":info.filename,
+                      "bytes":info.file_size,
+                      "compressed_bytes":info.compress_size,
+                      "crc32":f"{info.CRC:08x}",
+                      "sha256":hashlib.sha256(data).hexdigest(),
+                      "state_directory":parts[1] if len(parts)>1 else None,
+                      "suffix":Path(info.filename).suffix.lower().lstrip("."),
+                  })
+          members.sort(key=lambda row:row["path"])
+          assert members==sorted(trigger["members"],key=lambda row:row["path"])
+
+          state_counts=dict(sorted(collections.Counter(row["state_directory"] for row in members).items()))
+          suffix_counts=dict(sorted(collections.Counter(row["suffix"] for row in members).items()))
+          nd=[row for row in members if re.search(r"north[ _-]*dakota|(^|/)nd(/|$)",row["path"],re.I)]
+          groups=collections.defaultdict(list)
+          for row in members:
+              groups[(row["bytes"],row["sha256"])].append(row["path"])
+          duplicate_groups=sorted(
+              [{"bytes":key[0],"sha256":key[1],"paths":sorted(paths)}
+               for key,paths in groups.items() if len(paths)>1],
+              key=lambda row:(row["sha256"],row["paths"])
+          )
+          assert len(members)==16
+          assert state_counts=={"NV":3,"NY":8,"OR":4,"WI":1}
+          assert suffix_counts=={"pdf":12,"png":1,"xlsx":3}
+          assert nd==[]
+          assert duplicate_groups==trigger["duplicate_body_groups"]
+
+          outputs={
+            "archive-inventory.json":{
+              "schema_version":"ssc-rd04-nd-fy26-archive-inventory@1",
+              "source_artifact":int(os.environ["SOURCE_ARTIFACT_ID"]),
+              "source_artifact_sha256":os.environ["SOURCE_ARTIFACT_SHA256"],
+              "source_body_bytes":int(os.environ["SOURCE_BODY_BYTES"]),
+              "source_body_sha256":os.environ["SOURCE_BODY_SHA256"],
+              "member_count":len(members),
+              "members":members,
+              "state_directory_counts":state_counts,
+              "suffix_counts":suffix_counts,
+              "north_dakota_member_count":0,
+              "duplicate_body_groups":duplicate_groups
+            },
+            "archive-adjudication.json":{
+              "schema_version":"ssc-rd04-nd-fy26-archive-adjudication@1",
+              "source_role":"official_fy2026_state_request_support_archive_member_census_only",
+              "source_admitted":True,
+              "admitted_weight":1,
+              "member_contents_interpreted":False,
+              "pdf_contents_interpreted":False,
+              "xlsx_contents_interpreted":False,
+              "png_contents_interpreted":False,
+              "observed_state_directories":["NV","NY","OR","WI"],
+              "north_dakota_member_count":0,
+              "north_dakota_nonmembership_effect":"bounded_archive_observation_only",
+              "negative_existence_claims":0,
+              "limitations":[
+                "archive membership does not prove complete federal filing coverage",
+                "zero North Dakota members does not prove no request, no waiver, no policy, or no current status",
+                "member names do not establish the contents of any enclosed document",
+                "the archive range and title do not make every state in the range a represented member"
+              ]
+            },
+            "field-adjudication.json":{
+              "schema_version":"ssc-rd04-nd-fy26-archive-field-adjudication@1",
+              "unit_id":"US-STATE-ND",
+              "field_id":"abawd_or_work_requirement_waiver_state_and_governing_period",
+              "predecessor_cell_sha256":"cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe",
+              "state_before":"still_open",
+              "state_after":"still_open",
+              "terminal_before":False,
+              "terminal_after":False,
+              "disposition":"captured_fy2026_nv_wi_request_archive_contains_no_north_dakota_member_but_archive_nonmembership_does_not_prove_no_request_no_waiver_or_current_status_hold_open",
+              "promotion_candidate":None,
+              "negative_existence_claims":0,
+              "matrix_update":False,
+              "row_state_mutation":False,
+              "class_closed":False
+            },
+            "selected-protocol.json":{
+              "schema_version":"ssc-rd04-nd-fy26-archive-successor-protocol@1",
+              "routes":[],
+              "route_count":0,
+              "explicit_successor_protocol":False,
+              "additional_execution_authorized":False,
+              "next_authorized_operation":"none_without_separately_authored_exact_official_route_protocol"
+            },
+            "summary.json":{
+              "schema_version":"ssc-rd04-nd-fy26-archive-adjudication-summary@1",
+              "state":"terminal_archive_member_hold",
+              "source_admissions":1,
+              "field_decisions":1,
+              "promotion_candidates":0,
+              "held_open_fields":1,
+              "selected_follow_up_routes":0,
+              "negative_existence_claims":0,
+              "source_requests":0,
+              "route_executions":0,
+              "field_terminalizations":0,
+              "matrix_updates":0,
+              "row_state_mutations":0,
+              "class_closed":False,
+              "cumulative_ledger_effect":"none",
+              "outside_human_dependency":False,
+              "publication_effect":"none",
+              "adoption_effect":"none",
+              "graph_effect":"none"
+            }
+          }
+          receipt={
+            "schema_version":"ssc-rd04-nd-fy26-archive-member-adjudication-receipt@1",
+            "state":"complete",
+            "failed_or_final_stage":"complete",
+            "exit_code":0,
+            "canonical_main":os.environ["EXPECTED_MAIN"],
+            "matrix_blob":os.environ["MATRIX_BLOB"],
+            "transport_artifact":int(os.environ["SOURCE_ARTIFACT_ID"]),
+            "transport_artifact_sha256":os.environ["SOURCE_ARTIFACT_SHA256"],
+            "internal_checksum_rows_verified":checksum_rows,
+            "archive_member_count":len(members),
+            "north_dakota_member_count":0,
+            "source_admissions":1,
+            "promotion_candidates":0,
+            "held_open_fields":1,
+            "selected_follow_up_routes":0,
+            "negative_existence_claims":0,
+            "source_requests":0,
+            "route_executions":0,
+            "field_terminalizations":0,
+            "matrix_updates":0,
+            "row_state_mutations":0,
+            "class_closed":False,
+            "outside_human_dependency":False
+          }
+          outputs["receipt.json"]=receipt
+          outputs["member-freeze.json"]=trigger
+          for name,value in outputs.items():
+              (out/name).write_text(json.dumps(value,indent=2,sort_keys=True)+"\n")
+          PY
+
+          (
+            cd "$OUT"
+            find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\n' | sort |
+              while read -r p; do sha256sum "$p"; done > SHA256SUMS
+          )
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy26-archive-member-adjudication-v1
+          path: /tmp/ssc-rd04-nd-fy26-archive-member-adjudication-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce terminal request-free archive adjudication
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(jq -r .state "$OUT/receipt.json")" = complete
+          test "$(jq -r .archive_member_count "$OUT/receipt.json")" = 16
+          test "$(jq -r .north_dakota_member_count "$OUT/receipt.json")" = 0
+          test "$(jq -r .promotion_candidates "$OUT/receipt.json")" = 0
+          test "$(jq -r .selected_follow_up_routes "$OUT/receipt.json")" = 0
+          test "$(jq -r .negative_existence_claims "$OUT/receipt.json")" = 0
+          test "$(jq -r .field_terminalizations "$OUT/receipt.json")" = 0
+          test "$(jq -r .matrix_updates "$OUT/receipt.json")" = 0
+          test "$(jq -r .explicit_successor_protocol "$OUT/selected-protocol.json")" = false
