@@ -1,0 +1,208 @@
+name: TEMP render RD-04 North Dakota FY2025 FNA response v1
+
+on:
+  pull_request:
+    branches: [agent/ssc-rd04-nd-fna-fy2025-response-render-packet-base-v1]
+    types: [opened, synchronize, reopened]
+    paths: [.trigger/ssc-rd04-nd-fna-fy2025-response-render-packet-v1.json]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: temp-render-ssc-rd04-nd-fna-fy2025-response-v1
+  cancel-in-progress: false
+
+env:
+  MAIN: a592acea22c69a979f2a90c24a2bafb8c9445759
+  MATRIX: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  WF: .github/workflows/temp-render-ssc-rd04-nd-fna-fy2025-response-v1.yml
+  TRIGGER: .trigger/ssc-rd04-nd-fna-fy2025-response-render-packet-v1.json
+  ARTIFACT_ID: '9032633537'
+  ARTIFACT_BYTES: '87729027'
+  ARTIFACT_DIGEST: sha256:7732de237805352a75d8a94000e2b48f8911314e9fe909fa12b4193e590879f6
+  EXECUTION_RECEIPT_SHA: 43c2326501c1b5dcf39591ad0adf5b40eb22fece46c89562d9c898597234e255
+  ROUTE_RECEIPT_SHA: a888362b2b8f15e160f8cc9ea902405b9cfe3f8d212f900bd628a5b5ebf94f0d
+  DOCUMENT_SHA: dc8f7a9e03c79ce52e39a28dfee4d36b9afe768181c15ec02c44b9ccb27f3428
+  DOCUMENT_BYTES: '306585'
+  OUT: /tmp/ssc-rd04-nd-fna-fy2025-response-render-packet-v1
+  INPUT: /tmp/ssc-rd04-nd-fna-fy2025-response-render-input-v1
+
+jobs:
+  render:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fna-fy2025-response-render-packet-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: "${{ github.event.pull_request.head.sha }}", fetch-depth: 0}
+
+      - name: Install pinned rendering utilities
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends poppler-utils
+          pdftoppm -v 2>&1 | head -1
+          pdftotext -v 2>&1 | head -1
+
+      - name: Build checksum-bound render packet
+        id: render
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -uo pipefail
+          rm -rf "$OUT" "$INPUT"
+          mkdir -p "$OUT/renders" "$OUT/page-text" "$INPUT"
+          exec > >(tee "$OUT/render.log") 2>&1
+          stage=bootstrap
+          fail_receipt(){ rc=$1; [[ -s "$OUT/receipt.json" ]] || jq -n --arg s "$stage" --argjson c "$rc" '{schema_version:"ssc-rd04-nd-fna-fy2025-response-render-packet-receipt@1",state:"failed_closed",stage:$s,exit_code:$c,pdf_pages_rendered:0,pdf_pages_reviewed:0,operator_review_complete:false,source_requests:0,route_executions:0,source_admissions:0,promotion_candidates:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,outside_human_dependency:false,additional_execution_authorized:false}' > "$OUT/receipt.json"; }
+          finish(){ rc=$?; trap - EXIT; set +e; fail_receipt "$rc"; printf '%s\n' "$rc" > "$OUT/EXIT_CODE"; printf '%s\n' "$stage" > "$OUT/STAGE"; (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS); exit "$rc"; }
+          trap finish EXIT
+          trap 'rc=$?; trap - ERR; set +e; fail_receipt "$rc"; exit "$rc"' ERR
+          set -Eeuo pipefail
+
+          stage=topology
+          B=$(git rev-parse HEAD^); H=$(git rev-parse HEAD)
+          test "$(git rev-parse "$B^")" = "$MAIN"
+          test "$(git rev-list --count "$MAIN".."$B")" -eq 1
+          test "$(git rev-list --count "$B".."$H")" -eq 1
+          test "$(git diff --name-only "$MAIN" "$B")" = "$WF"
+          test "$(git diff --name-only "$B" "$H")" = "$TRIGGER"
+          test "$(git diff --name-only --diff-filter=A "$MAIN" "$B")" = "$WF"
+          test "$(git diff --name-only --diff-filter=A "$B" "$H")" = "$TRIGGER"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$MAIN" "$H")"
+          git diff --check "$MAIN" "$H"
+          cp "$TRIGGER" "$OUT/trigger.json"
+          jq -e --arg p "$MAIN" --arg m "$MATRIX_BLOB" --arg d "$ARTIFACT_DIGEST" --arg e "$EXECUTION_RECEIPT_SHA" --arg r "$ROUTE_RECEIPT_SHA" --arg s "$DOCUMENT_SHA" --argjson n "$DOCUMENT_BYTES" '.schema_version=="ssc-rd04-nd-fna-fy2025-response-render-packet-trigger@1" and .issue==1017 and .canonical_parent==$p and .canonical_matrix_blob==$m and .execution_artifact_id==9032633537 and .execution_artifact_digest==$d and .execution_receipt_sha256==$e and .route_receipt_sha256==$r and .document_sha256==$s and .document_bytes==$n and .expected_page_count==5 and .render_dpi==200 and .operator_review_complete_here==false and .source_requests==0 and .route_executions==0 and .source_admissions==0 and .promotion_candidates==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and .outside_human_dependency==false' "$OUT/trigger.json" >/dev/null
+
+          stage=main_and_artifact
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$MAIN"
+          test "$(git rev-parse "origin/main:$MATRIX")" = "$MATRIX_BLOB"
+          gh api "/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" > "$OUT/input-artifact.json"
+          jq -e --argjson i "$ARTIFACT_ID" --argjson n "$ARTIFACT_BYTES" --arg d "$ARTIFACT_DIGEST" '.id==$i and .size_in_bytes==$n and .digest==$d and .expired==false' "$OUT/input-artifact.json" >/dev/null
+          gh api "/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$INPUT/execution.zip"
+          test "$(stat -c%s "$INPUT/execution.zip")" = "$ARTIFACT_BYTES"
+          test "sha256:$(sha256sum "$INPUT/execution.zip"|cut -d' ' -f1)" = "$ARTIFACT_DIGEST"
+          unzip -t "$INPUT/execution.zip" > "$OUT/input-zip-test.txt"
+          unzip -q "$INPUT/execution.zip" -d "$INPUT/execution"
+          (cd "$INPUT/execution" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$INPUT/execution/execution-receipt.json"|cut -d' ' -f1)" = "$EXECUTION_RECEIPT_SHA"
+          test "$(sha256sum "$INPUT/execution/transport/route-receipt.json"|cut -d' ' -f1)" = "$ROUTE_RECEIPT_SHA"
+          test "$(stat -c%s "$INPUT/execution/transport/response-document.pdf")" = "$DOCUMENT_BYTES"
+          test "$(sha256sum "$INPUT/execution/transport/response-document.pdf"|cut -d' ' -f1)" = "$DOCUMENT_SHA"
+          jq -e '.state=="complete" and .terminal_state=="http_success_pdf_captured" and .http_status==200 and .content_type=="application/pdf" and .body_bytes==306585 and .body_sha256=="dc8f7a9e03c79ce52e39a28dfee4d36b9afe768181c15ec02c44b9ccb27f3428" and .physical_requests==1 and .redirects_followed==0 and .source_admissions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false' "$INPUT/execution/execution-receipt.json" >/dev/null
+          cp "$INPUT/execution/transport/response-document.pdf" "$OUT/document.pdf"
+          cp "$INPUT/execution/transport/route-receipt.json" "$OUT/input-route-receipt.json"
+          cp "$INPUT/execution/transport/response-headers.json" "$OUT/input-response-headers.json"
+
+          stage=render_and_extract
+          pdfinfo "$OUT/document.pdf" > "$OUT/pdfinfo.txt"
+          PAGE_COUNT=$(awk '/^Pages:/ {print $2}' "$OUT/pdfinfo.txt")
+          test "$PAGE_COUNT" = 5
+          pdftotext -layout "$OUT/document.pdf" "$OUT/document.txt"
+          for i in 1 2 3 4 5; do
+            pdftotext -f "$i" -l "$i" -layout "$OUT/document.pdf" "$OUT/page-text/page-$i.txt"
+          done
+          pdftoppm -png -r 200 "$OUT/document.pdf" "$OUT/renders/page"
+          test "$(find "$OUT/renders" -maxdepth 1 -type f -name 'page-*.png' | wc -l)" = 5
+
+          python - "$OUT" <<'PY'
+          from __future__ import annotations
+          import hashlib, json, pathlib, re, sys
+          out=pathlib.Path(sys.argv[1])
+          pdf=out/'document.pdf'
+          text=(out/'document.txt').read_text(encoding='utf-8')
+          normalized=' '.join(text.split())
+          required=[
+            'North Dakota Request to Waive Able-Bodied Adults Without Dependents Time Limit',
+            'partial approval',
+            'Rolette County and Turtle Mountain Reservation and Off-Reservation Trust Land',
+            'Bottineau County and Towner County',
+            'from July 1, 2025, to June 30, 2026',
+            'Implementation Date: July 1, 2025',
+            'Expiration Date: June 30, 2026',
+          ]
+          for phrase in required:
+            assert phrase in normalized, phrase
+          render_rows=[]
+          text_rows=[]
+          for i in range(1,6):
+            image=out/'renders'/f'page-{i}.png'
+            page_text=out/'page-text'/f'page-{i}.txt'
+            assert image.is_file() and image.stat().st_size>0
+            assert page_text.is_file()
+            render_rows.append({'page':i,'path':f'renders/page-{i}.png','bytes':image.stat().st_size,'sha256':hashlib.sha256(image.read_bytes()).hexdigest(),'dpi':200,'renderer':'pdftoppm'})
+            text_rows.append({'page':i,'path':f'page-text/page-{i}.txt','bytes':page_text.stat().st_size,'sha256':hashlib.sha256(page_text.read_bytes()).hexdigest(),'extractor':'pdftotext -layout'})
+          def write(name,obj):
+            (out/name).write_text(json.dumps(obj,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+          write('document-custody.json',{
+            'schema_version':'ssc-rd04-nd-fna-fy2025-response-document-custody@1',
+            'state':'complete',
+            'document_title':'State ABAWD Waiver Response',
+            'document_subject':'ABAWD Waiver Response',
+            'document_date':'2025-06-18',
+            'request_date':'2025-06-04',
+            'state_name':'North Dakota',
+            'pdf_bytes':pdf.stat().st_size,
+            'pdf_sha256':hashlib.sha256(pdf.read_bytes()).hexdigest(),
+            'page_count':5,
+            'encrypted':False,
+            'source_url':'https://fna-bwbufwdzbabpezgc.z01.azurefd.us/sites/default/files/resource-files/nd-abawd-response-fy2025.pdf',
+            'official_origin_locator':'https://www.fna.usda.gov/sites/default/files/resource-files/nd-abawd-response-fy2025.pdf',
+          })
+          write('render-manifest.json',{'schema_version':'ssc-rd04-nd-fna-fy2025-response-render-manifest@1','state':'complete','page_count':5,'all_pages_rendered':True,'render_rows':render_rows})
+          write('text-manifest.json',{'schema_version':'ssc-rd04-nd-fna-fy2025-response-text-manifest@1','state':'complete','page_count':5,'full_text_path':'document.txt','full_text_bytes':(out/'document.txt').stat().st_size,'full_text_sha256':hashlib.sha256((out/'document.txt').read_bytes()).hexdigest(),'page_text_rows':text_rows,'required_phrase_checks':required})
+          write('review-boundary.json',{
+            'schema_version':'ssc-rd04-nd-fna-fy2025-response-review-boundary@1',
+            'state':'awaiting_bound_operator_review',
+            'pdf_pages_rendered':5,
+            'pdf_pages_reviewed':0,
+            'operator_review_complete':False,
+            'source_admission':False,
+            'promotion_candidate':None,
+            'field_decision':'hold_open_pending_bound_page_complete_operator_review',
+            'field_terminalizations':0,
+            'matrix_updates':0,
+            'row_state_mutations':0,
+            'class_closed':False,
+          })
+          PY
+
+          stage=seal
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          FINAL=$(git rev-parse origin/main); git merge-base --is-ancestor "$MAIN" "$FINAL"
+          test "$(git rev-parse "origin/main:$MATRIX")" = "$MATRIX_BLOB"
+          jq -e '.state=="complete" and .pdf_sha256=="dc8f7a9e03c79ce52e39a28dfee4d36b9afe768181c15ec02c44b9ccb27f3428" and .pdf_bytes==306585 and .page_count==5 and .encrypted==false' "$OUT/document-custody.json" >/dev/null
+          jq -e '.state=="complete" and .page_count==5 and .all_pages_rendered==true and (.render_rows|length)==5 and ([.render_rows[].page]==[1,2,3,4,5]) and ([.render_rows[].dpi]|unique)==[200] and ([.render_rows[].renderer]|unique)==["pdftoppm"]' "$OUT/render-manifest.json" >/dev/null
+          jq -e '.state=="complete" and .page_count==5 and (.page_text_rows|length)==5 and ([.page_text_rows[].page]==[1,2,3,4,5])' "$OUT/text-manifest.json" >/dev/null
+          jq -e '.state=="awaiting_bound_operator_review" and .pdf_pages_rendered==5 and .pdf_pages_reviewed==0 and .operator_review_complete==false and .source_admission==false and .promotion_candidate==null and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false' "$OUT/review-boundary.json" >/dev/null
+          jq -n --arg p "$MAIN" --arg h "$H" --arg f "$FINAL" --argjson a "$ARTIFACT_ID" --arg d "$(sha256sum "$OUT/document-custody.json"|cut -d' ' -f1)" --arg r "$(sha256sum "$OUT/render-manifest.json"|cut -d' ' -f1)" --arg t "$(sha256sum "$OUT/text-manifest.json"|cut -d' ' -f1)" --arg b "$(sha256sum "$OUT/review-boundary.json"|cut -d' ' -f1)" '{schema_version:"ssc-rd04-nd-fna-fy2025-response-render-packet-receipt@1",state:"complete",stage:"complete",exit_code:0,canonical_parent:$p,canonical_main_at_finish:$f,packet_head:$h,execution_artifact_id:$a,document_custody_sha256:$d,render_manifest_sha256:$r,text_manifest_sha256:$t,review_boundary_sha256:$b,pdf_pages_rendered:5,pdf_pages_reviewed:0,operator_review_complete:false,source_requests:0,route_executions:0,source_admissions:0,promotion_candidates:0,held_open_fields:1,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none",additional_execution_authorized:false,next_authorized_operation:"download this packet, visually inspect all five exact rendered pages, and publish a separate request-free operator-review adjudication bound to every render and text hash"}' > "$OUT/receipt.json"
+          stage=complete
+
+      - name: Upload terminal render packet
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fna-fy2025-response-render-packet-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal render packet
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test '${{ steps.render.outcome }}' = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '.state=="complete" and .stage=="complete" and .pdf_pages_rendered==5 and .pdf_pages_reviewed==0 and .operator_review_complete==false and .source_requests==0 and .route_executions==0 and .source_admissions==0 and .promotion_candidates==0 and .held_open_fields==1 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and .outside_human_dependency==false and .additional_execution_authorized==false' "$OUT/receipt.json" >/dev/null
