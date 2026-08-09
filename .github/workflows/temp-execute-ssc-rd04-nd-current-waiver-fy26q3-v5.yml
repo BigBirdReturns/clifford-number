@@ -1,0 +1,152 @@
+name: TEMP execute RD-04 North Dakota FY2026 Q3 waiver-status PDF v5
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-current-waiver-fy26q3-execution-base-v5
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.trigger/ssc-rd04-nd-current-waiver-fy26q3-execution-v5'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: temp-execute-ssc-rd04-nd-current-waiver-fy26q3-v5
+  cancel-in-progress: false
+
+env:
+  CURRENT_MAIN: a592acea22c69a979f2a90c24a2bafb8c9445759
+  ADJUDICATION_PARENT: b1d1d8afb6c957401a762bf9d0b2abc464bd5e07
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  EXECUTION_WORKFLOW_PATH: .github/workflows/temp-execute-ssc-rd04-nd-current-waiver-fy26q3-v5.yml
+  EXECUTION_TRIGGER_PATH: .trigger/ssc-rd04-nd-current-waiver-fy26q3-execution-v5
+  ADJUDICATION_ARTIFACT_ID: '9030293889'
+  ADJUDICATION_ARTIFACT_BYTES: '24896598'
+  ADJUDICATION_ARTIFACT_DIGEST: sha256:8164ce9c141e6aff47a7dcce9b4674213d91391a4a904f10512563248647cc07
+  ADJUDICATION_RECEIPT_SHA256: baf86ea4a91d0ade25d27080bfbdf4162875ebf9916659743d5188a5fc56042b
+  FOLLOWUP_PROTOCOL_SHA256: 1e134e5996b6754e7c74f4e15d47fd9276679fe7c5ceebdbd82696959416a9e7
+  CONTROLLER_BYTES: '13732'
+  CONTROLLER_SHA256: 2b5fef8862c4c7255d72ca6048552b01205edfd118718797d84c83a3f08097a0
+  CONTROLLER_BLOBS: >-
+    2383166bfb1a04443249f238ee9f29d597622aa1
+    c29388bf7223dd23f1091db39528fb1350774b2f
+    306f615491bf1bd3c4ff2c50a077932cca6979b9
+    c72ceaa8e50b39e3e97f7a41f08ced8d4516d477
+    5ddfe5aff58463089237e0d72dd7d71b1c246da0
+    8f8c9ecfbd9d30442927cfc6dd8e0fc702afa9b3
+  EXECUTOR_BYTES: '11850'
+  EXECUTOR_SHA256: b86b51e4f53ce7d1e5abad1c7fa4875b0012ec2edbcd1bcd1a9806305c75f119
+  EXECUTOR_BLOBS: >-
+    f6b2141399c97eadfb34f0482452ddd4b082e6fc
+    2d01a0354eda5c944530505e34d19e71e65fc578
+    cd90ef2ec1353876c380ddc17458ab2b63409a39
+    79401be41e5615e7f9bfe230d65ce8866a70db6c
+    0f211419d47ddf2081816898308f0b80e35bda22
+  ROUTE_ID: RD04-ND-CURRENT-WAIVER-FY26Q3-001
+  ROUTE_URL: https://www.fna.usda.gov/sites/default/files/resource-files/FY26-Quarter-3-ABAWD-Waiver-Status.pdf
+
+jobs:
+  execute:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-current-waiver-fy26q3-execution-trigger-v5')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Run immutable fail-closed PDF controller
+        id: execution
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-nd-current-waiver-fy26q3-execution-v5"
+          CONTROLLER="$OUT/controller.py"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          exec > >(tee "$OUT/workflow.log") 2>&1
+          shell_failure() {
+            rc=$?
+            trap - ERR
+            set +e
+            if [[ ! -s "$OUT/execution-receipt.json" ]]; then
+              jq -n --arg parent "$CURRENT_MAIN" --arg route "$ROUTE_ID" \
+                '{schema_version:"ssc-rd04-nd-current-waiver-fy26q3-execution@1",state:"failed_closed",failed_or_final_stage:"reconstruct_controller",exit_code:1,execution_parent:$parent,fixed_route_ids:[$route],fixed_route_count:1,terminal_route_count:0,physical_requests:0,source_admissions:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none",additional_execution_authorized:false}' > "$OUT/execution-receipt.json"
+            fi
+            printf '1\n' > "$OUT/EXIT_CODE"
+            printf 'reconstruct_controller\n' > "$OUT/STAGE"
+            (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+            exit "$rc"
+          }
+          trap shell_failure ERR
+          : > "$CONTROLLER"
+          for sha in $CONTROLLER_BLOBS; do
+            gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/git/blobs/$sha" > "$OUT/controller-blob-$sha.json"
+            jq -e --arg sha "$sha" '.sha==$sha and .encoding=="base64" and (.content|type)=="string"' "$OUT/controller-blob-$sha.json" >/dev/null
+            jq -r .content "$OUT/controller-blob-$sha.json" | tr -d '\n' | base64 -d >> "$CONTROLLER"
+          done
+          test "$(stat -c %s "$CONTROLLER")" = "$CONTROLLER_BYTES"
+          test "$(sha256sum "$CONTROLLER" | awk '{print $1}')" = "$CONTROLLER_SHA256"
+          python -m py_compile "$CONTROLLER"
+          trap - ERR
+          python "$CONTROLLER" "$OUT"
+
+      - name: Upload exact PDF execution artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-current-waiver-fy26q3-execution-v5
+          path: ${{ runner.temp }}/ssc-rd04-nd-current-waiver-fy26q3-execution-v5
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Record PDF execution result on RD-04
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R="$RUNNER_TEMP/ssc-rd04-nd-current-waiver-fy26q3-execution-v5/execution-receipt.json"
+          test -s "$R"
+          {
+            printf '%s\n\n' 'RD-04 FY2026 Quarter 3 waiver-status PDF route reached a terminal transport result.'
+            printf '%s\n' '```text'
+            for field in state failed_or_final_stage physical_requests matrix_updates class_closed; do printf '%s: %s\n' "$field" "$(jq -r ".$field" "$R")"; done
+            for field in terminal_state http_status pdf_magic body_bytes body_sha256; do printf '%s: %s\n' "$field" "$(jq -r ".route.$field // \"none\"" "$R")"; done
+            printf '%s\n\n' '```'
+            printf '%s\n' 'Any nonzero physical-request count exhausts this route. The next operation is offline page-complete PDF review only.'
+          } > /tmp/rd04-fy26q3-v5-result.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/rd04-fy26q3-v5-result.md
+
+      - name: Require typed terminal PDF receipt
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-nd-current-waiver-fy26q3-execution-v5"
+          R="$OUT/execution-receipt.json"
+          test "${{ steps.execution.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e --arg parent "$CURRENT_MAIN" --arg route "$ROUTE_ID" \
+            '.schema_version=="ssc-rd04-nd-current-waiver-fy26q3-execution@1" and .state=="complete" and .failed_or_final_stage=="complete" and .exit_code==0 and .execution_parent==$parent and .fixed_route_ids==[$route] and .fixed_route_count==1 and .terminal_route_count==1 and (.physical_requests>=1 and .physical_requests<=6) and .route.physical_request_count==.physical_requests and (.route.terminal_state|type)=="string" and (.route.terminal_state|length)>0 and .result_spawned_requests==0 and .automatic_source_admissions==0 and .automatic_field_classifications==0 and .automatic_row_terminalizations==0 and .automatic_class_closures==0 and .source_admissions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and .cumulative_ledger_effect=="none" and .outside_human_dependency==false and .publication_effect=="none" and .adoption_effect=="none" and .graph_effect=="none" and .additional_execution_authorized==false' "$R" >/dev/null
