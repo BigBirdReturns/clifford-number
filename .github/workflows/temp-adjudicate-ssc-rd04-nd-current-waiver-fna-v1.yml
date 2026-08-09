@@ -1,0 +1,208 @@
+name: TEMP adjudicate RD-04 North Dakota current-waiver FNA capture v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-current-waiver-fna-adjudication-base-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.trigger/ssc-rd04-nd-current-waiver-fna-adjudication-v1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: temp-adjudicate-ssc-rd04-nd-current-waiver-fna-v1
+  cancel-in-progress: false
+
+env:
+  CURRENT_MAIN: b1d1d8afb6c957401a762bf9d0b2abc464bd5e07
+  ADJUDICATION_WORKFLOW_PATH: .github/workflows/temp-adjudicate-ssc-rd04-nd-current-waiver-fna-v1.yml
+  ADJUDICATION_TRIGGER_PATH: .trigger/ssc-rd04-nd-current-waiver-fna-adjudication-v1
+  EXECUTION_ARTIFACT_ID: '9030165959'
+  EXECUTION_ARTIFACT_BYTES: '12451198'
+  EXECUTION_ARTIFACT_DIGEST: sha256:471bf617c14e4a0a5ce29598b1b55fd08c86a6e42a56cec14158c1cbb7dd2a42
+  EXECUTION_RECEIPT_SHA256: d61b705ef137573f93d3398c0fedab10ed2eb40da4a7581db7f10efa6c3f1b74
+  ROUTE_RECEIPTS_SHA256: e7466cb4beb777d2b74fff1f7381dcae5d37afb5ae4f66329d5df9d9d6c68b14
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  ADJUDICATOR_BYTES: '12942'
+  ADJUDICATOR_SHA256: 2e51b471a747789a3a789afc8d379a3a467e13d73d28dd6d83b729d47b86a708
+  ADJUDICATOR_BLOBS: >-
+    4c1094db8a9b56879d471ea644116d163334b491
+    f88415f05b9cc337152f0b5e38b740f25b2f6978
+    f41e11a0fb30036c2f26aa59aef3fff84673f201
+    cfcf8d9a874d649964c386faf85d0f23841dc961
+    12c4e31785de01a5f5caa295652a63490e429124
+    249ee874de746e5a781a379d396e2428daca64fb
+
+jobs:
+  adjudicate:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-current-waiver-fna-adjudication-trigger-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Adjudicate captured federal surfaces offline
+        id: adjudication
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-nd-current-waiver-fna-adjudication-v1"
+          EXEC="$OUT/execution"
+          SCRIPT="$OUT/adjudicator.py"
+          rm -rf "$OUT"
+          mkdir -p "$OUT" "$EXEC"
+          exec > >(tee "$OUT/adjudication.log") 2>&1
+          stage=bootstrap
+
+          write_failure_receipt() {
+            local rc=$1
+            if [[ ! -s "$OUT/receipt.json" ]]; then
+              jq -n --arg stage "$stage" --argjson exit_code "$rc" --arg parent "$CURRENT_MAIN" \
+                '{schema_version:"ssc-rd04-nd-current-waiver-fna-adjudication@1",state:"failed_closed",failed_or_final_stage:$stage,exit_code:$exit_code,canonical_parent:$parent,source_admissions:0,field_decisions:0,promotion_candidates:0,held_open_fields:1,selected_followup_routes:0,source_requests:0,route_executions:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' > "$OUT/receipt.json"
+            fi
+          }
+          finalize() {
+            local rc=$?
+            trap - EXIT
+            set +e
+            write_failure_receipt "$rc"
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+            exit "$rc"
+          }
+          trap finalize EXIT
+          on_error() {
+            local rc=$?
+            trap - ERR
+            set +e
+            write_failure_receipt "$rc"
+            exit "$rc"
+          }
+          trap on_error ERR
+          set -Eeuo pipefail
+
+          stage=bind_adjudication_topology
+          BASE="$(git rev-parse HEAD^)"
+          test "$(git rev-parse "$BASE^")" = "$CURRENT_MAIN"
+          test "$(git rev-list --count "$CURRENT_MAIN".."$BASE")" -eq 1
+          test "$(git rev-list --count "$BASE"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CURRENT_MAIN" "$BASE")" = "$ADJUDICATION_WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" "$BASE")" = "$ADJUDICATION_WORKFLOW_PATH"
+          test "$(git diff --name-only "$BASE" HEAD)" = "$ADJUDICATION_TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE" HEAD)" = "$ADJUDICATION_TRIGGER_PATH"
+          git diff --check "$CURRENT_MAIN" HEAD
+          printf '%s\n' "$BASE" > "$OUT/adjudication-base-commit.txt"
+          printf '%s\n' "$(git rev-parse HEAD)" > "$OUT/adjudication-trigger-head.txt"
+
+          stage=bind_live_main_and_matrix
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$CURRENT_MAIN"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CURRENT_MAIN"
+          test "$(git rev-parse "HEAD:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          printf '%s\n' "$(git rev-parse "$CURRENT_MAIN^{tree}")" > "$OUT/current-main-tree.txt"
+
+          stage=reconstruct_immutable_adjudicator
+          : > "$SCRIPT"
+          for sha in $ADJUDICATOR_BLOBS; do
+            gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/git/blobs/$sha" > "$OUT/blob-$sha.json"
+            jq -e --arg sha "$sha" '.sha==$sha and .encoding=="base64" and (.content|type)=="string"' "$OUT/blob-$sha.json" > /dev/null
+            jq -r .content "$OUT/blob-$sha.json" | tr -d '\n' | base64 -d >> "$SCRIPT"
+          done
+          test "$(stat -c %s "$SCRIPT")" = "$ADJUDICATOR_BYTES"
+          test "$(sha256sum "$SCRIPT" | awk '{print $1}')" = "$ADJUDICATOR_SHA256"
+          python -m py_compile "$SCRIPT"
+          printf '%s\n' "$ADJUDICATOR_BLOBS" | tr ' ' '\n' > "$OUT/adjudicator-blob-ledger.txt"
+
+          stage=authenticate_execution_artifact
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$EXECUTION_ARTIFACT_ID" > "$OUT/execution-artifact.json"
+          jq -e --argjson id "$EXECUTION_ARTIFACT_ID" --argjson bytes "$EXECUTION_ARTIFACT_BYTES" --arg digest "$EXECUTION_ARTIFACT_DIGEST" \
+            '.id==$id and .size_in_bytes==$bytes and .digest==$digest and .expired==false' "$OUT/execution-artifact.json" > /dev/null
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$EXECUTION_ARTIFACT_ID/zip" > "$OUT/execution.zip"
+          test "$(stat -c %s "$OUT/execution.zip")" = "$EXECUTION_ARTIFACT_BYTES"
+          test "sha256:$(sha256sum "$OUT/execution.zip" | awk '{print $1}')" = "$EXECUTION_ARTIFACT_DIGEST"
+          unzip -t "$OUT/execution.zip" > "$OUT/execution-zip-test.txt"
+          unzip -q "$OUT/execution.zip" -d "$EXEC"
+          (cd "$EXEC" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$EXEC/execution-receipt.json" | awk '{print $1}')" = "$EXECUTION_RECEIPT_SHA256"
+          test "$(sha256sum "$EXEC/route-receipts.json" | awk '{print $1}')" = "$ROUTE_RECEIPTS_SHA256"
+          jq -e --arg parent "$CURRENT_MAIN" \
+            '.schema_version=="ssc-rd04-nd-current-waiver-fna-execution@1" and .state=="complete" and .failed_or_final_stage=="complete" and .exit_code==0 and .execution_parent==$parent and .fixed_route_count==4 and .terminal_route_count==4 and .physical_requests==6 and .http_success_body_captured==3 and .source_admissions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and .additional_execution_authorized==false' \
+            "$EXEC/execution-receipt.json" > /dev/null
+
+          stage=adjudicate_offline
+          python "$SCRIPT" "$MATRIX_PATH" "$EXEC" "$OUT"
+
+          stage=reconfirm_live_main
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CURRENT_MAIN"
+          stage=complete
+          trap - ERR
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          printf '%s\n' complete > "$OUT/STAGE"
+
+      - name: Upload offline adjudication artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-current-waiver-fna-adjudication-v1
+          path: ${{ runner.temp }}/ssc-rd04-nd-current-waiver-fna-adjudication-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Record adjudication result on RD-04
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-nd-current-waiver-fna-adjudication-v1"
+          R="$OUT/receipt.json"
+          test -s "$R"
+          {
+            printf '%s\n\n' 'RD-04 North Dakota FNA capture reached a typed offline adjudication.'
+            printf '%s\n' '```text'
+            for field in state source_admissions field_decisions promotion_candidates held_open_fields selected_followup_routes field_terminalizations matrix_updates row_state_mutations class_closed; do
+              printf '%s: %s\n' "$field" "$(jq -r ".$field" "$R")"
+            done
+            printf '%s\n\n' '```'
+            printf '%s\n' 'The waiver-period field remains open. The sole next route is the exact FY2026 Quarter 3 status PDF linked by the current federal index; Q1 and Q2 remain historical context outside the minimum denominator.'
+          } > /tmp/rd04-fna-adjudication-result.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/rd04-fna-adjudication-result.md
+
+      - name: Require typed successful adjudication receipt
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-nd-current-waiver-fna-adjudication-v1"
+          R="$OUT/receipt.json"
+          test "${{ steps.adjudication.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e --arg parent "$CURRENT_MAIN" \
+            '.schema_version=="ssc-rd04-nd-current-waiver-fna-adjudication@1" and .state=="complete" and .failed_or_final_stage=="complete" and .exit_code==0 and .canonical_parent==$parent and .source_admissions==2 and .field_decisions==1 and .promotion_candidates==0 and .held_open_fields==1 and .selected_followup_routes==1 and .source_requests==0 and .route_executions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and .cumulative_ledger_effect=="none" and .outside_human_dependency==false and .publication_effect=="none" and .adoption_effect=="none" and .graph_effect=="none" and .next_authorized_operation=="execute the exact FY2026 Quarter 3 waiver-status PDF route once"' \
+            "$R" > /dev/null
