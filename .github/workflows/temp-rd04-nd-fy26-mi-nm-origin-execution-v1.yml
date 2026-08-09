@@ -1,0 +1,301 @@
+name: TEMP execute RD-04 North Dakota FY2026 MI-NM archive origin once v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-fy26-mi-nm-origin-execution-v1/trigger.json'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  execute:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      EXPECTED_PARENT: 8482b941aa0b1ecac685ab6ca98bba80ed80c5ee
+      MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+      EXPECTED_MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+      EXPECTED_CELL_SHA256: cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe
+      WORKFLOW_PATH: .github/workflows/temp-rd04-nd-fy26-mi-nm-origin-execution-v1.yml
+      TRIGGER_PATH: .tmp/rd04-nd-fy26-mi-nm-origin-execution-v1/trigger.json
+      LOCK_BRANCH: lock/ssc-rd04-nd-fy26-mi-nm-origin-execution-v1
+      PROTOCOL_ARTIFACT_ID: '9041292082'
+      PROTOCOL_ARTIFACT_BYTES: '9232'
+      PROTOCOL_ARTIFACT_SHA256: 5f1fb74d425dcd4d6b10598d84b080556f038c95adbf20d17c43222b248af1de
+      PROTOCOL_RECEIPT_SHA256: e61154fddd026478d11a21f72009ec288d66577892467ea6bb3f346c325fdd75
+      SELECTED_PROTOCOL_SHA256: 3110bf43b37ae4a6aa28c64693a1ce1f33277062e718b0fc91113e7107b51dd6
+      ROUTE_ID: RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-MI-NM-ORIGIN-001
+      ROUTE_URL: https://www.fna.usda.gov/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-MI-NM-7-2026.zip
+      MAX_BODY_BYTES: '100000000'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Execute exact locked origin route once
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-nd-fy26-mi-nm-origin-execution-v1"
+          TMP="${RUNNER_TEMP}/ssc-rd04-nd-fy26-mi-nm-origin-execution-v1-work"
+          rm -rf "$OUT" "$TMP"
+          mkdir -p "$OUT" "$TMP/protocol"
+          printf '%s\n' topology > "$OUT/STAGE"
+          printf '%s\n' 1 > "$OUT/EXIT_CODE"
+
+          seal_checksums() {
+            (cd "$OUT" && find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          }
+
+          fail() {
+            local stage="$1" reason="$2"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            printf '%s\n' 1 > "$OUT/EXIT_CODE"
+            python - "$OUT/execution-receipt.json" "$stage" "$reason" <<'PY'
+          import json,sys
+          path,stage,reason=sys.argv[1:]
+          obj={
+            'schema_version':'ssc-rd04-nd-fy26-mi-nm-origin-execution-receipt@1',
+            'state':'failed_closed','failed_or_final_stage':stage,'exit_code':1,'reason':reason,
+            'fixed_routes':1,'terminal_routes':0,'attempts':0,'physical_requests':0,
+            'source_admissions':0,'field_classifications':0,'field_terminalizations':0,
+            'matrix_updates':0,'row_state_mutations':0,'class_closed':False,
+            'cumulative_ledger_effect':'none','outside_human_dependency':False,
+            'publication_effect':'none','adoption_effect':'none','graph_effect':'none',
+            'additional_execution_authorized':False
+          }
+          open(path,'w',encoding='utf-8').write(json.dumps(obj,indent=2,sort_keys=True)+'\n')
+          PY
+            seal_checksums
+            exit 1
+          }
+
+          test "$EVENT_NAME" = pull_request || fail topology event_not_pull_request
+          test "$HEAD_REPO" = "$GITHUB_REPOSITORY" || fail topology head_repository_mismatch
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA" || fail topology checkout_head_mismatch
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA" || fail topology head_parent_mismatch
+          test "$(git rev-parse "$BASE_SHA^")" = "$EXPECTED_PARENT" || fail topology base_parent_mismatch
+          mapfile -t base_paths < <(git diff --name-only "$EXPECTED_PARENT" "$BASE_SHA")
+          mapfile -t trigger_paths < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          test "${#base_paths[@]}" = 1 || fail topology base_path_count_mismatch
+          test "${base_paths[0]}" = "$WORKFLOW_PATH" || fail topology base_path_mismatch
+          test "${#trigger_paths[@]}" = 1 || fail topology trigger_path_count_mismatch
+          test "${trigger_paths[0]}" = "$TRIGGER_PATH" || fail topology trigger_path_mismatch
+          git fetch --quiet origin main "$LOCK_BRANCH"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_PARENT" || fail topology live_main_moved
+          test "$(git rev-parse "origin/$LOCK_BRANCH")" = "$HEAD_SHA" || fail topology execution_lock_mismatch
+          test "$(git rev-parse "origin/main:$MATRIX_PATH")" = "$EXPECTED_MATRIX_BLOB" || fail topology live_matrix_blob_moved
+          python - "$MATRIX_PATH" "$EXPECTED_CELL_SHA256" > "$OUT/current-cell-proof.json" <<'PY'
+          import hashlib,json,sys
+          path,expected=sys.argv[1:]
+          doc=json.load(open(path,encoding='utf-8'))
+          row=[r for r in doc['rows'] if r.get('unit_id')=='US-STATE-ND']
+          assert len(row)==1
+          row=row[0]
+          cell=[c for c in row['cells'] if c.get('field_id')=='abawd_or_work_requirement_waiver_state_and_governing_period']
+          assert len(cell)==1
+          cell=cell[0]
+          raw=json.dumps(cell,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()
+          digest=hashlib.sha256(raw).hexdigest()
+          assert digest==expected
+          assert row['row_state']=='still_open' and row['terminal_fields']==7 and row['open_fields']==2
+          assert cell['state']=='still_open' and cell['terminal'] is False and cell['value'] is None
+          print(json.dumps({'unit_id':'US-STATE-ND','row_state':row['row_state'],'terminal_fields':7,'open_fields':2,'field_state':cell['state'],'field_terminal':False,'field_value':None,'cell_sha256':digest},indent=2,sort_keys=True))
+          PY
+          printf '%s\n' "$EXPECTED_PARENT" > "$OUT/live-main.txt"
+          printf '%s\n' "$EXPECTED_MATRIX_BLOB" > "$OUT/live-matrix-blob.txt"
+
+          printf '%s\n' authenticate_protocol > "$OUT/STAGE"
+          META="$TMP/protocol-artifact-metadata.json"
+          ZIP="$TMP/protocol-artifact.zip"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${PROTOCOL_ARTIFACT_ID}" > "$META"
+          test "$(jq -r .id "$META")" = "$PROTOCOL_ARTIFACT_ID" || fail authenticate_protocol artifact_id_mismatch
+          test "$(jq -r .size_in_bytes "$META")" = "$PROTOCOL_ARTIFACT_BYTES" || fail authenticate_protocol artifact_size_mismatch
+          test "$(jq -r .digest "$META")" = "sha256:${PROTOCOL_ARTIFACT_SHA256}" || fail authenticate_protocol artifact_metadata_digest_mismatch
+          test "$(jq -r .expired "$META")" = false || fail authenticate_protocol artifact_expired
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${PROTOCOL_ARTIFACT_ID}/zip" > "$ZIP"
+          test "$(stat -c %s "$ZIP")" = "$PROTOCOL_ARTIFACT_BYTES" || fail authenticate_protocol artifact_download_size_mismatch
+          test "$(sha256sum "$ZIP" | awk '{print $1}')" = "$PROTOCOL_ARTIFACT_SHA256" || fail authenticate_protocol artifact_download_digest_mismatch
+          unzip -tq "$ZIP" > "$OUT/protocol-artifact-zip-test.txt" || fail authenticate_protocol artifact_zip_invalid
+          unzip -q "$ZIP" -d "$TMP/protocol"
+          (cd "$TMP/protocol" && sha256sum -c SHA256SUMS > "$OUT/protocol-internal-check.txt") || fail authenticate_protocol artifact_internal_checksum_failure
+          test "$(sha256sum "$TMP/protocol/receipt.json" | awk '{print $1}')" = "$PROTOCOL_RECEIPT_SHA256" || fail authenticate_protocol receipt_digest_mismatch
+          test "$(sha256sum "$TMP/protocol/selected-protocol.json" | awk '{print $1}')" = "$SELECTED_PROTOCOL_SHA256" || fail authenticate_protocol protocol_digest_mismatch
+          jq -e --arg parent "$EXPECTED_PARENT" --arg route "$ROUTE_ID" '
+            .state=="complete" and .failed_or_final_stage=="complete" and .exit_code==0 and
+            .current_parent==$parent and .matrix_blob=="19357f8214ab2710bc5e75b3fae8c7fb09ff1654" and
+            .current_cell_sha256=="cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe" and
+            .source_requests==0 and .route_executions==0 and .source_admissions==0 and
+            .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and
+            .class_closed==false and .additional_execution_authorized==true and
+            .additional_execution_scope==$route
+          ' "$TMP/protocol/receipt.json" > /dev/null || fail authenticate_protocol receipt_semantics_mismatch
+          jq -e --arg route "$ROUTE_ID" --arg url "$ROUTE_URL" '
+            .route_id==$route and .url==$url and .method=="GET" and .attempts==1 and
+            .exact_host=="www.fna.usda.gov" and .maximum_followed_redirects==0 and
+            .maximum_body_bytes==100000000 and .require_zip_magic_on_http_200==true and
+            .same_host_expansion==0 and .sibling_path_expansion==0 and .result_spawned_requests==0
+          ' "$TMP/protocol/selected-protocol.json" > /dev/null || fail authenticate_protocol protocol_semantics_mismatch
+          cp "$META" "$OUT/protocol-artifact-metadata.json"
+          cp "$TMP/protocol/receipt.json" "$OUT/protocol-receipt.json"
+          cp "$TMP/protocol/selected-protocol.json" "$OUT/selected-protocol.json"
+
+          printf '%s\n' execute_route > "$OUT/STAGE"
+          HEADERS="$OUT/response-headers.raw"
+          BODY="$OUT/response-body.bin"
+          CURL_META="$OUT/curl-meta.txt"
+          set +e
+          curl --silent --show-error --connect-timeout 30 --max-time 600 --max-redirs 0 --max-filesize "$MAX_BODY_BYTES" \
+            --dump-header "$HEADERS" --output "$BODY" \
+            --write-out '%{http_code}\n%{url_effective}\n%{size_download}\n%{content_type}\n%{num_redirects}\n' \
+            "$ROUTE_URL" > "$CURL_META" 2> "$OUT/curl-stderr.txt"
+          CURL_RC=$?
+          set -e
+          test -f "$HEADERS" || : > "$HEADERS"
+          test -f "$BODY" || : > "$BODY"
+          HTTP_STATUS="$(sed -n '1p' "$CURL_META" 2>/dev/null || true)"
+          EFFECTIVE_URL="$(sed -n '2p' "$CURL_META" 2>/dev/null || true)"
+          REPORTED_BYTES="$(sed -n '3p' "$CURL_META" 2>/dev/null || true)"
+          CONTENT_TYPE="$(sed -n '4p' "$CURL_META" 2>/dev/null || true)"
+          NUM_REDIRECTS="$(sed -n '5p' "$CURL_META" 2>/dev/null || true)"
+          [[ "$HTTP_STATUS" =~ ^[0-9]{3}$ ]] || HTTP_STATUS=0
+          [[ "$NUM_REDIRECTS" =~ ^[0-9]+$ ]] || NUM_REDIRECTS=0
+          test "$NUM_REDIRECTS" = 0 || fail execute_route redirect_followed
+          BODY_BYTES="$(stat -c %s "$BODY")"
+          test "$BODY_BYTES" -le "$MAX_BODY_BYTES" || fail execute_route body_size_exceeded
+          BODY_SHA256="$(sha256sum "$BODY" | awk '{print $1}')"
+          HEADERS_SHA256="$(sha256sum "$HEADERS" | awk '{print $1}')"
+          LOCATION="$(awk 'BEGIN{IGNORECASE=1} /^location:[[:space:]]*/ {sub(/^[^:]*:[[:space:]]*/,""); sub(/\r$/,""); print; exit}' "$HEADERS")"
+          ZIP_MAGIC=false
+          if python - "$BODY" <<'PY'
+          import sys
+          b=open(sys.argv[1],'rb').read(4)
+          raise SystemExit(0 if b in (b'PK\x03\x04',b'PK\x05\x06',b'PK\x07\x08') else 1)
+          PY
+          then ZIP_MAGIC=true; fi
+          TERMINAL_STATE=transport_error_terminal
+          if [[ "$CURL_RC" -eq 0 && "$HTTP_STATUS" -ge 200 && "$HTTP_STATUS" -lt 300 ]]; then
+            if [[ "$ZIP_MAGIC" == true ]]; then
+              TERMINAL_STATE=http_success_zip_captured
+              cp "$BODY" "$OUT/source.zip"
+              unzip -tq "$OUT/source.zip" > "$OUT/source-zip-test.txt" || TERMINAL_STATE=http_success_invalid_zip_terminal
+            else
+              TERMINAL_STATE=http_success_non_zip_terminal
+            fi
+          elif [[ "$CURL_RC" -eq 0 && "$HTTP_STATUS" -ge 300 && "$HTTP_STATUS" -lt 400 ]]; then
+            TERMINAL_STATE=redirect_refused_terminal
+          elif [[ "$CURL_RC" -eq 0 && "$HTTP_STATUS" -gt 0 ]]; then
+            TERMINAL_STATE=http_non_success_body_captured
+          fi
+
+          python - "$OUT/route-receipt.json" "$ROUTE_ID" "$ROUTE_URL" "$EFFECTIVE_URL" "$HTTP_STATUS" "$CURL_RC" "$BODY_BYTES" "$BODY_SHA256" "$HEADERS_SHA256" "$CONTENT_TYPE" "$LOCATION" "$ZIP_MAGIC" "$TERMINAL_STATE" <<'PY'
+          import json,sys
+          (path,route,url,effective,status,curl_rc,body_bytes,body_sha,headers_sha,ctype,location,zip_magic,terminal)=sys.argv[1:]
+          obj={
+            'schema_version':'ssc-rd04-nd-fy26-mi-nm-origin-route-receipt@1',
+            'route_id':route,'method':'GET','requested_url':url,'effective_url':effective or url,
+            'attempts':1,'physical_requests':1,'curl_exit_code':int(curl_rc),'http_status':int(status),
+            'redirects_followed':0,'location':location or None,'content_type':ctype or None,
+            'body_bytes':int(body_bytes),'body_sha256':body_sha,'response_headers_sha256':headers_sha,
+            'zip_magic':zip_magic=='true','terminal_state':terminal,'terminal':True,
+            'source_admission_effect':'none','field_effect':'none','matrix_effect':'none'
+          }
+          open(path,'w',encoding='utf-8').write(json.dumps(obj,indent=2,sort_keys=True)+'\n')
+          PY
+          python - "$OUT/physical-request-ledger.json" "$ROUTE_ID" "$ROUTE_URL" "$HTTP_STATUS" "$CURL_RC" "$BODY_BYTES" "$BODY_SHA256" "$HEADERS_SHA256" "$LOCATION" "$TERMINAL_STATE" <<'PY'
+          import json,sys
+          path,route,url,status,curl_rc,body_bytes,body_sha,headers_sha,location,terminal=sys.argv[1:]
+          obj={'schema_version':'ssc-rd04-physical-request-ledger@1','request_count':1,'requests':[{
+            'ordinal':1,'route_id':route,'method':'GET','url':url,'http_status':int(status),
+            'curl_exit_code':int(curl_rc),'body_bytes':int(body_bytes),'body_sha256':body_sha,
+            'response_headers_sha256':headers_sha,'location':location or None,'terminal_state':terminal
+          }]}
+          open(path,'w',encoding='utf-8').write(json.dumps(obj,indent=2,sort_keys=True)+'\n')
+          PY
+          ROUTE_RECEIPT_SHA256="$(sha256sum "$OUT/route-receipt.json" | awk '{print $1}')"
+          REQUEST_LEDGER_SHA256="$(sha256sum "$OUT/physical-request-ledger.json" | awk '{print $1}')"
+          python - "$OUT/execution-receipt.json" "$EXPECTED_PARENT" "$HEAD_SHA" "$ROUTE_ID" "$ROUTE_URL" "$HTTP_STATUS" "$CURL_RC" "$BODY_BYTES" "$BODY_SHA256" "$HEADERS_SHA256" "$LOCATION" "$ZIP_MAGIC" "$TERMINAL_STATE" "$ROUTE_RECEIPT_SHA256" "$REQUEST_LEDGER_SHA256" <<'PY'
+          import json,sys
+          (path,parent,head,route,url,status,curl_rc,body_bytes,body_sha,headers_sha,location,zip_magic,terminal,route_sha,ledger_sha)=sys.argv[1:]
+          obj={
+            'schema_version':'ssc-rd04-nd-fy26-mi-nm-origin-execution-receipt@1',
+            'state':'transport_complete','failed_or_final_stage':'complete','exit_code':0,
+            'canonical_parent':parent,'consuming_head':head,'route_id':route,'requested_url':url,
+            'fixed_routes':1,'terminal_routes':1,'attempts':1,'physical_requests':1,
+            'http_status':int(status),'curl_exit_code':int(curl_rc),'redirects_followed':0,
+            'refused_redirects':1 if terminal=='redirect_refused_terminal' else 0,
+            'body_bytes':int(body_bytes),'body_sha256':body_sha,'response_headers_sha256':headers_sha,
+            'location':location or None,'zip_magic':zip_magic=='true','terminal_state':terminal,
+            'captured_zip_bodies':1 if terminal=='http_success_zip_captured' else 0,
+            'source_admissions':0,'field_classifications':0,'field_terminalizations':0,
+            'matrix_updates':0,'row_state_mutations':0,'class_closed':False,
+            'cumulative_ledger_effect':'none','outside_human_dependency':False,
+            'publication_effect':'none','adoption_effect':'none','graph_effect':'none',
+            'additional_execution_authorized':False,
+            'route_receipt_sha256':route_sha,'physical_request_ledger_sha256':ledger_sha,
+            'next_authorized_operation':'request-free archive member adjudication' if terminal=='http_success_zip_captured' else ('request-free redirect adjudication' if terminal=='redirect_refused_terminal' else 'request-free terminal transport adjudication')
+          }
+          open(path,'w',encoding='utf-8').write(json.dumps(obj,indent=2,sort_keys=True)+'\n')
+          PY
+          cp "$OUT/execution-receipt.json" "$OUT/receipt.json"
+          cat > "$OUT/summary.md" <<EOF
+          # RD-04 North Dakota FY2026 MI-NM archive origin transport
+
+          The exact locked origin route executed once with zero followed redirects. Terminal state: ${TERMINAL_STATE}. HTTP status: ${HTTP_STATUS}. Body bytes: ${BODY_BYTES}. No source, field, matrix, row, class, ledger, publication, adoption, or graph effect occurred.
+          EOF
+          printf '%s\n' complete > "$OUT/STAGE"
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          seal_checksums
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -c . "$OUT/execution-receipt.json"
+
+      - name: Preserve exact terminal transport
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy26-mi-nm-origin-execution-v1
+          path: ${{ runner.temp }}/ssc-rd04-nd-fy26-mi-nm-origin-execution-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce one terminal request and zero semantic effect
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-nd-fy26-mi-nm-origin-execution-v1"
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          jq -e '
+            .state=="transport_complete" and
+            .failed_or_final_stage=="complete" and
+            .exit_code==0 and
+            .canonical_parent=="8482b941aa0b1ecac685ab6ca98bba80ed80c5ee" and
+            .fixed_routes==1 and .terminal_routes==1 and .attempts==1 and .physical_requests==1 and
+            .route_id=="RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-MI-NM-ORIGIN-001" and
+            .requested_url=="https://www.fna.usda.gov/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-MI-NM-7-2026.zip" and
+            .redirects_followed==0 and
+            (.terminal_state=="http_success_zip_captured" or
+             .terminal_state=="http_success_invalid_zip_terminal" or
+             .terminal_state=="http_success_non_zip_terminal" or
+             .terminal_state=="redirect_refused_terminal" or
+             .terminal_state=="http_non_success_body_captured" or
+             .terminal_state=="transport_error_terminal") and
+            .source_admissions==0 and .field_classifications==0 and .field_terminalizations==0 and
+            .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and
+            .cumulative_ledger_effect=="none" and .outside_human_dependency==false and
+            .publication_effect=="none" and .adoption_effect=="none" and .graph_effect=="none" and
+            .additional_execution_authorized==false
+          ' "$OUT/execution-receipt.json" > /dev/null
+          jq -e '.request_count==1 and (.requests|length)==1' "$OUT/physical-request-ledger.json" > /dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
