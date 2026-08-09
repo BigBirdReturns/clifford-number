@@ -1,0 +1,138 @@
+name: TEMP validate RD-04 North Dakota FY2026 fixed-protocol candidates
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths: ['.github/workflows/temp-validate-ssc-rd04-nd-fy2026-fixed-protocol-candidates-v1.yml']
+permissions:
+  actions: read
+  contents: read
+concurrency:
+  group: temp-validate-rd04-nd-fy2026-fixed-protocol-candidates-v1
+  cancel-in-progress: false
+jobs:
+  validate:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy2026-fixed-protocol-candidate-validation-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      PARENT: 5be5fc4d15391b99bb29226fdd16e408be559507
+      CANDIDATE_PARENT: cffe670fef5c006c7e963421d9fd18c29ed40fba
+      REPAIR_PRODUCT: 892cdff34ade4ce6a9bb1d9ba30e8e81b41acea7
+      BRANCH: agent/ssc-rd04-nd-fy2026-fixed-protocol-candidate-validation-v1
+      ONLY_PATH: .github/workflows/temp-validate-ssc-rd04-nd-fy2026-fixed-protocol-candidates-v1.yml
+      MATRIX: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+      ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2026-mi-nm-request-archive-adjudication
+      ARTIFACT_ID: '9043309756'
+      ARTIFACT_BYTES: '14782'
+      ARTIFACT_SHA: ef3346192ce13eade5b4f66b90c1eb560290a1d6a74edae6a29a4823555f336e
+      ARTIFACT_HEAD: ef505d8a249eb4c7a03471cf8a07c5e42536c8a4
+      OUT: /tmp/ssc-rd04-nd-fy2026-fixed-protocol-candidate-validation-v1
+      WORK: /tmp/ssc-rd04-nd-fy2026-fixed-protocol-candidate-validation-v1-work
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Validate exact candidates without applying them
+        id: validation
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$WORK"; mkdir -p "$OUT" "$WORK/candidate"; STAGE=initializing
+          finish(){ rc=$?; trap - EXIT; printf '%s\n' "$rc">"$OUT/EXIT_CODE"; printf '%s\n' "$STAGE">"$OUT/STAGE"; if [[ ! -s "$OUT/receipt.json" ]]; then jq -n --arg stage "$STAGE" --argjson rc "$rc" '{schema_version:"ssc-rd04-nd-fy2026-fixed-protocol-candidate-validation-receipt@1",state:"failed_closed",failed_or_final_stage:$stage,exit_code:$rc,validated_candidate_count:0,rejected_candidate_count:0,source_requests:0,route_executions:0,new_source_admissions:0,field_terminalizations:0,row_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none",promotion_effect_authorized_here:false,separate_promotion_product_authorized:false}' > "$OUT/receipt.json"; fi; (cd "$OUT"&&find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0'|sort -z|xargs -0 sha256sum>SHA256SUMS); exit "$rc"; }
+          trap finish EXIT
+          STAGE=topology
+          test "$HEAD_REF" = "$BRANCH"; test "$BASE_SHA" = "$PARENT"; test "$(git rev-parse HEAD)" = "$HEAD_SHA"; test "$(git rev-parse HEAD^)" = "$PARENT"
+          test "$(git rev-list --count "$PARENT..$HEAD_SHA")" = 1
+          test "$(git diff --name-status "$PARENT" "$HEAD_SHA")" = $'A\t'"$ONLY_PATH"; git diff --check "$PARENT" "$HEAD_SHA"
+          git fetch --quiet --force origin main; test "$(git rev-parse origin/main)" = "$PARENT"
+          read -r p1 p2 extra <<<"$(git show -s --format='%P' "$PARENT")"; test "$p1" = "$CANDIDATE_PARENT"; test "$p2" = "$REPAIR_PRODUCT"; test -z "${extra:-}"
+          test "$(git rev-parse "$REPAIR_PRODUCT^")" = "$CANDIDATE_PARENT"; test "$(git rev-parse "$REPAIR_PRODUCT^{tree}")" = "$(git rev-parse "$PARENT^{tree}")"
+          test "$(git rev-list --count "$CANDIDATE_PARENT..$PARENT")" = 2
+          test "$(git diff --name-status "$CANDIDATE_PARENT" "$PARENT")" = $'M\t'"$ROOT/product-manifest.json"
+          test "$(git rev-parse "origin/main:$MATRIX")" = 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+          test "$(git rev-parse "origin/main:$ROOT/product-manifest.json")" = a5036ec6ca07399d3ae67ad6849fe887c804502a
+          test "$(git rev-parse "origin/main:$ROOT/north-dakota-disposition.json")" = 942ac9fd34ee0857aa66b941c579487b01dd9d70
+          test "$(git rev-parse "origin/main:$ROOT/current-cell-custody.json")" = 04e405425082714c5f6b4ac83de9351a41a27b38
+          printf '%s\n' "$PARENT">"$OUT/live-main.txt"; git diff --name-status "$CANDIDATE_PARENT" "$PARENT">"$OUT/intervening-repair.txt"
+          STAGE=artifact
+          gh api "/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID">"$OUT/artifact-metadata.json"
+          jq -e --argjson id "$ARTIFACT_ID" --argjson b "$ARTIFACT_BYTES" --arg d "sha256:$ARTIFACT_SHA" --arg h "$ARTIFACT_HEAD" '.id==$id and .size_in_bytes==$b and .digest==$d and .expired==false and .workflow_run.head_sha==$h' "$OUT/artifact-metadata.json">/dev/null
+          gh api "/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip">"$WORK/candidate.zip"
+          test "$(wc -c<"$WORK/candidate.zip"|tr -d ' ')" = "$ARTIFACT_BYTES"; test "$(sha256sum "$WORK/candidate.zip"|cut -d' ' -f1)" = "$ARTIFACT_SHA"
+          unzip -t "$WORK/candidate.zip">"$OUT/zip-test.txt"; unzip -q "$WORK/candidate.zip" -d "$WORK/candidate"; (cd "$WORK/candidate"&&sha256sum -c SHA256SUMS>"$OUT/internal-check.txt")
+          test "$(cat "$WORK/candidate/EXIT_CODE")" = 0; test "$(cat "$WORK/candidate/STAGE")" = complete
+          test "$(sha256sum "$WORK/candidate/receipt.json"|cut -d' ' -f1)" = ee228a61eae704a65fd8e3c2fc9fb0de91158123cf721a1841bee98b927bf186
+          test "$(sha256sum "$WORK/candidate/source-adjudication.json"|cut -d' ' -f1)" = b386fe3acee2e0c4ae441c987b05105fbc7e9ea33130f7ad8fbf9064ce443048
+          test "$(sha256sum "$WORK/candidate/field-adjudication.json"|cut -d' ' -f1)" = d456cafab44e26cc4660b955a7041f6722616d746633858a3f17bbde3340d19a
+          test "$(sha256sum "$WORK/candidate/row-closure-candidate.json"|cut -d' ' -f1)" = 02f9fceaec25649f4a160fa97ccf8e328274413fd43fde1fe1465fe5d50fd69f
+          test "$(sha256sum "$WORK/candidate/current-cell-proof.json"|cut -d' ' -f1)" = 4b9ab6dee1795defb63e55c4bf9a8616a11c33413264684aaaa7467848323af8
+          cmp -s "$WORK/candidate/archive-current-cell-custody.json" "$ROOT/current-cell-custody.json"; cmp -s "$WORK/candidate/archive-north-dakota-disposition.json" "$ROOT/north-dakota-disposition.json"
+          STAGE=validation
+          python - "$MATRIX" "$ROOT" "$WORK/candidate" "$OUT" <<'PY'
+          import hashlib,json,sys
+          from pathlib import Path
+          mp,root,src,out=sys.argv[1:]; root=Path(root); src=Path(src); out=Path(out)
+          L=lambda p:json.loads(Path(p).read_text()); H=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+          C=lambda x:hashlib.sha256(json.dumps(x,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest()
+          def A(x,m):
+            if not x: raise AssertionError(m)
+          m=L(mp); man=L(root/'product-manifest.json'); r=L(src/'receipt.json'); s=L(src/'source-adjudication.json'); f=L(src/'field-adjudication.json'); q=L(src/'row-closure-candidate.json'); cp=L(src/'current-cell-proof.json')
+          expected={'archive-custody.json':(4373,'1e007416517aeefd14ce5d6e81a47037534bf75daf3a039ec99165a6c8fa358c'),'current-cell-custody.json':(3656,'32ba56db600dc526e4b21d0dcbc720a7442192e0038378f45fc9d275fe709bc8'),'member-inventory.json':(11124,'126f278ae3b9d1bcff592fc89736e6272fe2c81c98c0f0eaa3e5e3f74882ea8b'),'north-dakota-disposition.json':(3233,'57864aadac5c4fd457ff639a018ea61b68639bb7315d37b903adc8c39ed1cc20'),'summary.json':(2498,'ef23fa92bee7621719df03b91b7b1f1052656c84194c623a6b3e7498a4d7cd3a')}
+          A(man['payload_combined_sha256']=='69a49733a9c20fc3b87c4b45ebbe1f1d2137e9e3de97b48fd68c4442de471032','manifest digest'); rows=[]
+          for x in man['payload_files']:
+            n=Path(x['path']).name; b,h=expected[n]; p=Path(x['path']); A(p.stat().st_size==x['bytes']==b and H(p)==x['sha256']==h,n); rows.append(x['path'].encode()+b'\0'+h.encode()+b'\0'+str(b).encode()+b'\n')
+          A(hashlib.sha256(b''.join(sorted(rows))).hexdigest()==man['payload_combined_sha256'],'manifest recompute')
+          A(H(mp)=='663f93d84f168bf6ccdd92eaee0deb47b109f4280e7b25613853c2c1a6be2b63','matrix sha')
+          cur={'materialized_cells':450,'terminal_cells':227,'still_open_cells':223,'terminal_substantive_cells':117,'still_open_substantive_cells':183,'terminal_units':10,'class_closed':False}
+          A(all(m['counts'][k]==v for k,v in cur.items()),'counts'); nd=[x for x in m['rows'] if x.get('unit_id')=='US-STATE-ND']; A(len(nd)==1,'row'); nd=nd[0]
+          A(nd['row_state']=='still_open' and nd['terminal_fields']==7 and nd['open_fields']==2 and C(nd)=='18f9b127b61e45edafb64c78bc8c387175fffdb351156ccf9154158ca467d2dd','row state')
+          t=[x for x in nd['cells'] if x['field_id']=='abawd_or_work_requirement_waiver_state_and_governing_period'][0]; z=[x for x in nd['cells'] if x['field_id']=='field_and_row_terminal_state'][0]
+          A(t['state']=='still_open' and not t['terminal'] and t.get('value') is None and C(t)=='cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe','target'); A(z['state']=='still_open' and not z['terminal'] and z.get('value') is None and C(z)=='6a4c7d204c6c99a89f3c121065860806668c5da850f44c67fe42b4dc84b1b5c3','rowcell')
+          A(r['state']=='terminal_gap_candidates_complete' and r['bounded_promotion_candidates']==2 and r['field_decisions']==2 and r['matrix_blob']=='19357f8214ab2710bc5e75b3fae8c7fb09ff1654','receipt')
+          A(r['source_requests']==r['route_executions']==r['field_terminalizations']==r['matrix_updates']==r['row_state_mutations']==0 and not r['class_closed'] and not r['additional_execution_authorized'],'receipt boundary')
+          prohibited={'do_not_infer_no_waiver','do_not_infer_no_request','do_not_infer_expiration_or_denial','do_not_infer_statewide_partial_or_no_waiver_status','do_not_infer_uniform_frontline_practice_or_person_level_outcome'}
+          A(s['classification']=='source_unavailable_after_fixed_protocol' and s['fixed_protocol_complete'] and not s['current_public_instrument_recovered'] and set(s['prohibited_inferences'])==prohibited,'source')
+          A(s['terminal_evidence']['correct_range_archive']['member_count']==19 and s['terminal_evidence']['correct_range_archive']['north_dakota_scoped_member_count']==0,'archive')
+          x=s['terminal_evidence']['current_index_refresh']; A(x['physical_requests']==1 and x['http_status']==200 and x['baseline_byte_identical'] and x['body_bytes']==63505 and x['body_sha256']=='dcab625aeeebc30b1cf38dd32f67f0cb766a8e33735694b00f041e03d446476f' and x['fy2026_archive_locator_count']==3 and x['north_dakota_fy2026_response_anchor_count']==0,'refresh')
+          A(f['promotion_candidate_id']=='RD04-ND-FY2026-FIXED-PROTOCOL-TARGET-CELL-CANDIDATE-V2' and f['current_cell_sha256']==C(t) and f['current_state']=='still_open','field current')
+          A(f['candidate_state']=='not_publicly_recovered' and f['candidate_terminal'] and f['candidate_typed_gap']=='current_fy2026_north_dakota_waiver_geography_and_governing_period_not_publicly_recovered_after_fixed_protocol' and not f['candidate_value']['policy_or_event_absence_inferred'] and set(f['prohibited_inferences'])==prohibited,'field candidate')
+          A(q['promotion_candidate_id']=='RD04-ND-FY2026-FIXED-PROTOCOL-ROW-STATE-CANDIDATE-V2' and q['prerequisite_target_candidate_id']==f['promotion_candidate_id'],'row candidate id')
+          A(q['current_target_cell_sha256']==C(t) and q['current_row_state_cell_sha256']==C(z) and q['current_row_state']=='still_open' and q['current_terminal_fields']==7 and q['current_open_fields']==2,'row current')
+          A(q['candidate_row_state']=='terminal' and q['candidate_row_state_cell_state']=='evidence_complete' and q['candidate_row_state_cell_terminal'] and q['candidate_terminal_fields']==9 and q['candidate_open_fields']==0,'row projected')
+          A(q['candidate_row_state_value']['completed_evidence_fields']==8 and q['candidate_row_state_value']['terminal_classification']=='terminal_fixed_public_record_obligation_complete' and q['candidate_row_state_value']['class_effect']=='none' and q['candidate_row_state_value']['cumulative_ledger_effect']=='none','row value')
+          A(cp['target_cell_sha256']==C(t) and cp['row_state_cell_sha256']==C(z) and cp['terminal_fields']==7 and cp['open_fields']==2,'proof')
+          effects={'field_terminalizations':1,'row_terminalizations':1,'matrix_updates':2,'row_state_mutations':1}; projected={'materialized_cells':450,'terminal_cells':229,'still_open_cells':221,'terminal_substantive_cells':118,'still_open_substantive_cells':182,'terminal_units':11,'class_closed':False}
+          ledger={'schema_version':'ssc-rd04-nd-fy2026-fixed-protocol-candidate-validation-ledger@1','validation_parent':'5be5fc4d15391b99bb29226fdd16e408be559507','validated_candidate_count':2,'rejected_candidate_count':0,'candidate_artifact':{'id':9043309756,'bytes':14782,'sha256':'ef3346192ce13eade5b4f66b90c1eb560290a1d6a74edae6a29a4823555f336e'},'current_matrix_counts':cur,'projected_separate_promotion_counts':projected,'projected_separate_promotion_effects':effects,'target_candidate':f,'row_candidate':q,'authority_boundary':{'source_requests':0,'route_executions':0,'new_source_admissions':0,'field_terminalizations_here':0,'row_terminalizations_here':0,'matrix_updates_here':0,'row_state_mutations_here':0,'class_closed':False,'cumulative_ledger_effect':'none','outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none'}}
+          protocol={'schema_version':'ssc-rd04-nd-fy2026-fixed-protocol-validated-candidate-protocol@1','validation_parent':'5be5fc4d15391b99bb29226fdd16e408be559507','matrix':{'path':mp,'git_blob_sha':'19357f8214ab2710bc5e75b3fae8c7fb09ff1654','sha256':'663f93d84f168bf6ccdd92eaee0deb47b109f4280e7b25613853c2c1a6be2b63'},'candidate_artifact_id':9043309756,'candidate_artifact_sha256':'ef3346192ce13eade5b4f66b90c1eb560290a1d6a74edae6a29a4823555f336e','validated_candidate_ids':[f['promotion_candidate_id'],q['promotion_candidate_id']],'application_order':[f['promotion_candidate_id'],q['promotion_candidate_id']],'required_current_cells':[{'unit_id':'US-STATE-ND','field_id':t['field_id'],'state':'still_open','terminal':False,'canonical_sha256':C(t)},{'unit_id':'US-STATE-ND','field_id':z['field_id'],'state':'still_open','terminal':False,'canonical_sha256':C(z)}],'required_transition_effects':effects,'required_projected_counts':projected,'required_row_after':{'unit_id':'US-STATE-ND','row_state':'terminal','terminal_fields':9,'open_fields':0},'class_closed':False,'cumulative_ledger_effect':'none','source_requests':0,'route_executions':0,'additional_execution_authorized':False,'separate_promotion_product_authorized':True,'promotion_effect_authorized_here':False,'prohibited_inferences':sorted(prohibited)}
+          receipt={'schema_version':'ssc-rd04-nd-fy2026-fixed-protocol-candidate-validation-receipt@1','state':'exact_current_two_candidate_validation_complete','failed_or_final_stage':'complete','exit_code':0,'validation_parent':'5be5fc4d15391b99bb29226fdd16e408be559507','matrix_blob':'19357f8214ab2710bc5e75b3fae8c7fb09ff1654','candidate_artifact_id':9043309756,'candidate_artifact_sha256':'ef3346192ce13eade5b4f66b90c1eb560290a1d6a74edae6a29a4823555f336e','validated_candidate_count':2,'rejected_candidate_count':0,'projected_separate_promotion':{'effects':effects,'counts':projected},'source_requests':0,'route_executions':0,'new_source_admissions':0,'field_terminalizations':0,'row_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,'cumulative_ledger_effect':'none','outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none','promotion_effect_authorized_here':False,'separate_promotion_product_authorized':True,'additional_execution_authorized':False,'next_authorized_operation':'materialize one exact two-cell promotion product over unchanged current main; issue no source request'}
+          for n,o in [('validation-ledger.json',ledger),('validated-candidate-protocol.json',protocol),('receipt.json',receipt)]: (out/n).write_text(json.dumps(o,indent=2,sort_keys=True)+'\n')
+          (out/'summary.md').write_text('# RD-04 North Dakota fixed-protocol candidate validation\n\nTwo exact candidates validate against the two still-open cells. The separate projected product performs one field terminalization, one row terminalization, two matrix updates, and one row-state mutation. This carrier applies none of them and authorizes no request.\n')
+          PY
+          cp "$WORK/candidate/field-adjudication.json" "$OUT/validated-target-candidate.json"; cp "$WORK/candidate/row-closure-candidate.json" "$OUT/validated-row-candidate.json"; printf '%s\n' 19357f8214ab2710bc5e75b3fae8c7fb09ff1654>"$OUT/matrix-blob.txt"
+          STAGE=complete; exit 0
+      - name: Upload validation artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy2026-fixed-protocol-candidate-validation-v1
+          path: /tmp/ssc-rd04-nd-fy2026-fixed-protocol-candidate-validation-v1
+          if-no-files-found: error
+          retention-days: 90
+      - name: Enforce terminal request-free validation
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test '${{ steps.validation.outcome }}' = success; test "$(cat "$OUT/EXIT_CODE")" = 0; test "$(cat "$OUT/STAGE")" = complete; (cd "$OUT"&&sha256sum -c SHA256SUMS)
+          jq -e '.state=="exact_current_two_candidate_validation_complete" and .exit_code==0 and .validation_parent=="5be5fc4d15391b99bb29226fdd16e408be559507" and .matrix_blob=="19357f8214ab2710bc5e75b3fae8c7fb09ff1654" and .candidate_artifact_id==9043309756 and .validated_candidate_count==2 and .rejected_candidate_count==0 and .projected_separate_promotion.effects=={"field_terminalizations":1,"matrix_updates":2,"row_state_mutations":1,"row_terminalizations":1} and .projected_separate_promotion.counts.terminal_cells==229 and .projected_separate_promotion.counts.still_open_cells==221 and .projected_separate_promotion.counts.terminal_substantive_cells==118 and .projected_separate_promotion.counts.still_open_substantive_cells==182 and .projected_separate_promotion.counts.terminal_units==11 and .source_requests==0 and .route_executions==0 and .new_source_admissions==0 and .field_terminalizations==0 and .row_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and .cumulative_ledger_effect=="none" and .outside_human_dependency==false and .publication_effect=="none" and .adoption_effect=="none" and .graph_effect=="none" and .promotion_effect_authorized_here==false and .separate_promotion_product_authorized==true and .additional_execution_authorized==false' "$OUT/receipt.json">/dev/null
