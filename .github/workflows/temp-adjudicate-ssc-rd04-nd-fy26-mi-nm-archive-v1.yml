@@ -1,0 +1,99 @@
+name: TEMP adjudicate RD-04 North Dakota FY2026 MI-NM archive v1
+
+on:
+  pull_request:
+    branches: [agent/ssc-rd04-nd-fy26-mi-nm-archive-adjudication-base-v1]
+    types: [opened, synchronize, reopened]
+    paths: [.trigger/ssc-rd04-nd-fy26-mi-nm-archive-adjudication-v1.json]
+
+permissions: {contents: read, actions: read}
+concurrency: {group: temp-adjudicate-ssc-rd04-nd-fy26-mi-nm-archive-v1, cancel-in-progress: false}
+
+env:
+  MAIN: 7d6f9895595a62b6a6cfb3205d03c3d9e50fce33
+  MATRIX: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  BASE: agent/ssc-rd04-nd-fy26-mi-nm-archive-adjudication-base-v1
+  HEAD: agent/ssc-rd04-nd-fy26-mi-nm-archive-adjudication-trigger-v1
+  WF: .github/workflows/temp-adjudicate-ssc-rd04-nd-fy26-mi-nm-archive-v1.yml
+  TRIGGER: .trigger/ssc-rd04-nd-fy26-mi-nm-archive-adjudication-v1.json
+  ARTIFACT_ID: '9041542656'
+  ARTIFACT_BYTES: '60092736'
+  ARTIFACT_DIGEST: sha256:a074e94b33e7f8d74a8fed31eb4a9ab7e7ae5b8c86a322d76c15cfda29d381dd
+  EXECUTION_RECEIPT_SHA: 256fa5b177a871e43ff75823cc103e5b7f8ba384c94e8a1a1b09bf1d602ee504
+  ROUTE_RECEIPT_SHA: 35fb1b2ad83331fae51c259cc980a84c79e3f2389f60769339bb1810f482c7af
+  MEMBER_LEDGER_SHA: 9e4ad41c4df44607be22251a78e6f17d8d83c95f02352705767407f7a31603d7
+  SOURCE_ZIP_SHA: 2f747d94865d83ff82c84b8c6e9afbba358f5b7f5cb9d2731dc1e962370ad78c
+  OUT: /tmp/ssc-rd04-nd-fy26-mi-nm-archive-adjudication-v1
+
+jobs:
+  adjudicate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy26-mi-nm-archive-adjudication-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: '${{ github.event.pull_request.head.sha }}', fetch-depth: 0}
+      - name: Adjudicate complete MI-NM archive member denominator offline
+        id: run
+        continue-on-error: true
+        shell: bash
+        env: {GH_TOKEN: '${{ github.token }}'}
+        run: |
+          set -Eeuo pipefail
+          O="$OUT"; A="$O/source"; rm -rf "$O"; mkdir -p "$A"; stage=bootstrap
+          sums(){ (cd "$O" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS); }
+          finalize(){ rc=$?; trap - EXIT; set +e; test -s "$O/receipt.json" || jq -n --arg s "$stage" --argjson c "$rc" '{schema_version:"ssc-rd04-nd-fy26-mi-nm-archive-adjudication-receipt@1",state:"failed_closed",stage:$s,exit_code:$c,source_requests:0,route_executions:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,additional_execution_authorized:false}' > "$O/receipt.json"; echo "$rc" > "$O/EXIT_CODE"; echo "$stage" > "$O/STAGE"; sums; exit "$rc"; }
+          trap finalize EXIT
+
+          stage=topology
+          B='${{ github.event.pull_request.base.sha }}'; H='${{ github.event.pull_request.head.sha }}'
+          test '${{ github.event.pull_request.base.ref }}' = "$BASE"; test '${{ github.event.pull_request.head.ref }}' = "$HEAD"
+          test "$(git rev-parse "$B^")" = "$MAIN"; test "$(git rev-parse "$H^")" = "$B"
+          test "$(git diff --name-only "$MAIN" "$B")" = "$WF"; test "$(git diff --name-only --diff-filter=A "$MAIN" "$B")" = "$WF"
+          test "$(git diff --name-only "$B" "$H")" = "$TRIGGER"; test "$(git diff --name-only --diff-filter=A "$B" "$H")" = "$TRIGGER"; git diff --check "$MAIN" "$H"
+          git fetch --no-tags --force origin +refs/heads/main:refs/remotes/origin/main; test "$(git rev-parse origin/main)" = "$MAIN"; test "$(git rev-parse "origin/main:$MATRIX")" = "$MATRIX_BLOB"
+          cp "$TRIGGER" "$O/trigger.json"
+          jq -e --arg p "$MAIN" --arg m "$MATRIX_BLOB" --arg d "$ARTIFACT_DIGEST" --arg e "$EXECUTION_RECEIPT_SHA" --arg r "$ROUTE_RECEIPT_SHA" --arg l "$MEMBER_LEDGER_SHA" --arg z "$SOURCE_ZIP_SHA" '.schema_version=="ssc-rd04-nd-fy26-mi-nm-archive-adjudication-trigger@1" and .canonical_parent==$p and .matrix_blob==$m and .execution_artifact_id==9041542656 and .execution_artifact_digest==$d and .execution_receipt_sha256==$e and .route_receipt_sha256==$r and .member_ledger_sha256==$l and .source_zip_sha256==$z and .source_requests==0 and .route_executions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false' "$O/trigger.json" >/dev/null
+
+          stage=authenticate_artifact
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" > "$O/artifact.json"
+          jq -e --argjson i "$ARTIFACT_ID" --argjson b "$ARTIFACT_BYTES" --arg d "$ARTIFACT_DIGEST" '.id==$i and .size_in_bytes==$b and .digest==$d and .expired==false' "$O/artifact.json" >/dev/null
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$O/source-artifact.zip"
+          test "$(stat -c%s "$O/source-artifact.zip")" = "$ARTIFACT_BYTES"; test "sha256:$(sha256sum "$O/source-artifact.zip"|cut -d' ' -f1)" = "$ARTIFACT_DIGEST"
+          unzip -t "$O/source-artifact.zip" > "$O/source-artifact-zip-test.txt"; unzip -q "$O/source-artifact.zip" -d "$A"; (cd "$A" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$A/execution-receipt.json"|cut -d' ' -f1)" = "$EXECUTION_RECEIPT_SHA"; test "$(sha256sum "$A/route-receipt.json"|cut -d' ' -f1)" = "$ROUTE_RECEIPT_SHA"; test "$(sha256sum "$A/archive-member-ledger.json"|cut -d' ' -f1)" = "$MEMBER_LEDGER_SHA"; test "$(sha256sum "$A/source.zip"|cut -d' ' -f1)" = "$SOURCE_ZIP_SHA"
+          jq -e '.state=="complete" and .route_terminal_state=="http_success_zip_captured" and .http_status==200 and .body_bytes==29964042 and .archive_member_count==19 and .north_dakota_path_matches==0 and .source_admissions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and .additional_execution_authorized==false' "$A/execution-receipt.json" >/dev/null
+
+          stage=adjudicate
+          python - "$A/archive-member-ledger.json" "$A/source.zip" "$O" <<'PY'
+          import hashlib,json,pathlib,sys,zipfile
+          ledger_path,zip_path,out=map(pathlib.Path,sys.argv[1:]); ledger=json.loads(ledger_path.read_text())
+          assert ledger['member_count']==19 and ledger['north_dakota_path_matches']==0 and ledger['semantic_reviews']==0 and ledger['source_admissions']==0
+          with zipfile.ZipFile(zip_path) as z:
+              assert z.testzip() is None
+              infos=[i for i in z.infolist() if not i.is_dir()]
+              assert len(infos)==19
+              by={r['path']:r for r in ledger['members']}; assert set(by)=={i.filename for i in infos}
+              counts={}
+              for i in infos:
+                  data=z.read(i); r=by[i.filename]
+                  assert r['bytes']==i.file_size and r['compressed_bytes']==i.compress_size and r['crc32']==f'{i.CRC:08x}' and r['sha256']==hashlib.sha256(data).hexdigest() and r['north_dakota_path_match'] is False
+                  parts=i.filename.split('/'); state=parts[1]; counts[state]=counts.get(state,0)+1
+          assert counts=={'MI':6,'MN':5,'NJ':3,'NM':5}
+          objs={
+          'archive-adjudication.json':{'schema_version':'ssc-rd04-nd-fy26-mi-nm-archive-adjudication@1','state':'complete','archive_sha256':'2f747d94865d83ff82c84b8c6e9afbba358f5b7f5cb9d2731dc1e962370ad78c','archive_bytes':29964042,'member_count':19,'state_directory_counts':counts,'north_dakota_path_matches':0,'classification':'correct_postal_range_archive_complete_without_north_dakota_member','source_role':'bounded_current_fy2026_archive_membership_census_only','member_document_semantic_reviews':0,'member_document_source_admissions':0,'interpretation_boundary':'Archive nonmembership does not prove no request, no waiver, no separately published instrument, expiration, denial, or current status.'},
+          'field-adjudication.json':{'schema_version':'ssc-rd04-nd-current-waiver-field-adjudication@1','state':'complete','unit_id':'US-STATE-ND','field_id':'abawd_or_work_requirement_waiver_state_and_governing_period','decision':'correct_fy2026_archive_contains_no_north_dakota_member_but_archive_nonmembership_is_not_current_status_evidence_hold_open','promotion_candidate':None,'held_open':True,'unresolved_elements':['current post-2026-06-30 waiver geography','current governing implementation-to-expiration period','official current disposition after the admitted FY2025 approval'],'prohibited_inferences':['do_not_treat_archive_nonmembership_as_no_request','do_not_treat_archive_nonmembership_as_no_waiver','do_not_treat_archive_nonmembership_as_expiration_or_denial','do_not_terminalize_field_or_row']},
+          'summary.json':{'schema_version':'ssc-rd04-nd-fy26-mi-nm-archive-summary@1','state':'complete','archive_members':19,'north_dakota_members':0,'promotion_candidates':0,'held_open_fields':1,'selected_followup_routes':0,'additional_execution_authorized':False},
+          'receipt.json':{'schema_version':'ssc-rd04-nd-fy26-mi-nm-archive-adjudication-receipt@1','state':'complete','stage':'complete','exit_code':0,'source_requests':0,'route_executions':0,'archive_source_admissions':1,'member_document_source_admissions':0,'member_document_semantic_reviews':0,'field_decisions':1,'promotion_candidates':0,'held_open_fields':1,'selected_followup_routes':0,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,'additional_execution_authorized':False,'outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none','next_authorized_operation':'no automatic source request; any later current-status route requires a separately authored protocol outside this exhausted archive chain'}}
+          for n,v in objs.items(): (out/n).write_text(json.dumps(v,indent=2,sort_keys=True)+'\n')
+          PY
+          stage=complete
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: ssc-rd04-nd-fy26-mi-nm-archive-adjudication-v1, path: '${{ env.OUT }}', if-no-files-found: error, include-hidden-files: true, retention-days: 90, compression-level: 9}
+      - name: Require terminal request-free archive adjudication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail; test "$(cat "$OUT/EXIT_CODE")" = 0; test "$(cat "$OUT/STAGE")" = complete; (cd "$OUT" && sha256sum -c SHA256SUMS); jq -e '.state=="complete" and .selected_followup_routes==0 and .additional_execution_authorized==false and .source_requests==0 and .route_executions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false' "$OUT/receipt.json" >/dev/null
