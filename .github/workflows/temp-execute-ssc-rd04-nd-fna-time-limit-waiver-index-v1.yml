@@ -1,0 +1,467 @@
+name: TEMP execute RD-04 North Dakota FNA waiver response index v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-fna-time-limit-waiver-index-execution-base-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.trigger/ssc-rd04-nd-fna-time-limit-waiver-index-execution-v1.json'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: temp-execute-ssc-rd04-nd-fna-time-limit-waiver-index-v1
+  cancel-in-progress: false
+
+env:
+  CURRENT_MAIN: a592acea22c69a979f2a90c24a2bafb8c9445759
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  EXECUTION_BASE_BRANCH: agent/ssc-rd04-nd-fna-time-limit-waiver-index-execution-base-v1
+  EXECUTION_TRIGGER_BRANCH: agent/ssc-rd04-nd-fna-time-limit-waiver-index-execution-trigger-v1
+  EXECUTION_WORKFLOW_PATH: .github/workflows/temp-execute-ssc-rd04-nd-fna-time-limit-waiver-index-v1.yml
+  EXECUTION_TRIGGER_PATH: .trigger/ssc-rd04-nd-fna-time-limit-waiver-index-execution-v1.json
+  EXECUTION_LOCK_BRANCH: lock/ssc-rd04-nd-fna-time-limit-waiver-index-execution-v1
+  ADJUDICATION_ARTIFACT_ID: '9031232448'
+  ADJUDICATION_ARTIFACT_BYTES: '673076'
+  ADJUDICATION_ARTIFACT_DIGEST: sha256:4097b47328c09791430121cce68481e0143bcfc7168e2e7145b5dec436c1db3d
+  ADJUDICATION_RECEIPT_SHA256: 2afadb199aee1f33803fa8392b21345e78b938eaee3d50e3a480e06f9f4bdb42
+  FOLLOWUP_PROTOCOL_SHA256: bb148ec18ed3f3d35274f5c65a1eb3ac7780ac7e32a721bba92d843d6cb5b07f
+  OUTPUT_DIR: /tmp/ssc-rd04-nd-fna-time-limit-waiver-index-execution-v1
+
+jobs:
+  execute:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fna-time-limit-waiver-index-execution-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Execute exact one-route response-index transport
+        id: execution
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          OUT="$OUTPUT_DIR"
+          ADJ="$OUT/adjudication"
+          rm -rf "$OUT"
+          mkdir -p "$OUT" "$ADJ" "$OUT/transport"
+          exec > >(tee "$OUT/execution.log") 2>&1
+          stage=bootstrap
+
+          write_failure_receipt() {
+            local rc=$1
+            if [[ ! -s "$OUT/execution-receipt.json" ]]; then
+              jq -n \
+                --arg stage "$stage" \
+                --argjson exit_code "$rc" \
+                --arg parent "$CURRENT_MAIN" \
+                --arg head "$(git rev-parse HEAD 2>/dev/null || true)" \
+                '{
+                  schema_version:"ssc-rd04-nd-fna-time-limit-waiver-index-execution@1",
+                  state:"failed_closed",
+                  failed_or_final_stage:$stage,
+                  exit_code:$exit_code,
+                  execution_parent:$parent,
+                  execution_head:(if $head=="" then null else $head end),
+                  fixed_route_count:1,
+                  terminal_route_count:0,
+                  physical_requests:0,
+                  source_admissions:0,
+                  field_terminalizations:0,
+                  matrix_updates:0,
+                  row_state_mutations:0,
+                  class_closed:false,
+                  cumulative_ledger_effect:"none",
+                  outside_human_dependency:false,
+                  publication_effect:"none",
+                  adoption_effect:"none",
+                  graph_effect:"none",
+                  additional_execution_authorized:false
+                }' > "$OUT/execution-receipt.json"
+            fi
+          }
+
+          finalize() {
+            local rc=$?
+            trap - EXIT
+            set +e
+            write_failure_receipt "$rc"
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          on_error() {
+            local rc=$?
+            trap - ERR
+            set +e
+            write_failure_receipt "$rc"
+            exit "$rc"
+          }
+          trap on_error ERR
+          set -Eeuo pipefail
+
+          stage=bind_execution_topology
+          BASE_COMMIT="$(git rev-parse HEAD^)"
+          test "$(git rev-parse "$BASE_COMMIT^")" = "$CURRENT_MAIN"
+          test "$(git rev-list --count "$CURRENT_MAIN".."$BASE_COMMIT")" -eq 1
+          test "$(git rev-list --count "$BASE_COMMIT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CURRENT_MAIN" "$BASE_COMMIT")" = "$EXECUTION_WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" "$BASE_COMMIT")" = "$EXECUTION_WORKFLOW_PATH"
+          test "$(git diff --name-only "$BASE_COMMIT" HEAD)" = "$EXECUTION_TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE_COMMIT" HEAD)" = "$EXECUTION_TRIGGER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CURRENT_MAIN" "$BASE_COMMIT")"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$BASE_COMMIT" HEAD)"
+          git diff --check "$CURRENT_MAIN" HEAD
+          cp "$EXECUTION_TRIGGER_PATH" "$OUT/trigger.json"
+          jq -e \
+            --arg parent "$CURRENT_MAIN" \
+            --arg matrix_blob "$MATRIX_BLOB" \
+            --arg artifact_digest "$ADJUDICATION_ARTIFACT_DIGEST" \
+            --arg receipt_sha "$ADJUDICATION_RECEIPT_SHA256" \
+            --arg protocol_sha "$FOLLOWUP_PROTOCOL_SHA256" \
+            '.schema_version=="ssc-rd04-nd-fna-time-limit-waiver-index-execution-trigger@1" and
+             .issue==1017 and .canonical_parent==$parent and .canonical_matrix_blob==$matrix_blob and
+             .adjudication_artifact_id==9031232448 and .adjudication_artifact_digest==$artifact_digest and
+             .adjudication_receipt_sha256==$receipt_sha and .selected_protocol_sha256==$protocol_sha and
+             .route_id=="RD04-ND-FNA-TIME-LIMIT-WAIVER-INDEX-2025-2029-001" and
+             .url=="https://www.fna.usda.gov/snap/abawd/waivers/2025-2029" and
+             .execute_once==true and .maximum_followed_redirects==0 and .maximum_body_bytes==5000000 and
+             .anchor_selection_performed_here==false and .href_followed_here==false and
+             .result_spawned_requests==0 and .automatic_source_admissions==0 and
+             .automatic_field_terminalizations==0 and .automatic_matrix_updates==0 and
+             .automatic_row_state_mutations==0 and .automatic_class_closures==0 and
+             .outside_human_dependency==false' \
+            "$OUT/trigger.json" > /dev/null
+          printf '%s\n' "$BASE_COMMIT" > "$OUT/execution-base-commit.txt"
+          printf '%s\n' "$(git rev-parse HEAD)" > "$OUT/execution-trigger-head.txt"
+
+          stage=bind_live_main_and_lock
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$CURRENT_MAIN"
+          test "$(git rev-parse "origin/main:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          test "$(git ls-remote --heads origin "refs/heads/$EXECUTION_LOCK_BRANCH" | awk '{print $1}')" = "$(git rev-parse HEAD)"
+          printf '%s\n' "$(git rev-parse origin/main)" > "$OUT/main-at-start.txt"
+          printf '%s\n' "$(git rev-parse "origin/main^{tree}")" > "$OUT/main-tree-at-start.txt"
+
+          stage=authenticate_adjudication_artifact
+          gh api -H 'Accept: application/vnd.github+json' \
+            "/repos/$GITHUB_REPOSITORY/actions/artifacts/$ADJUDICATION_ARTIFACT_ID" \
+            > "$OUT/adjudication-artifact.json"
+          jq -e \
+            --argjson id "$ADJUDICATION_ARTIFACT_ID" \
+            --argjson bytes "$ADJUDICATION_ARTIFACT_BYTES" \
+            --arg digest "$ADJUDICATION_ARTIFACT_DIGEST" \
+            '.id==$id and .size_in_bytes==$bytes and .digest==$digest and .expired==false' \
+            "$OUT/adjudication-artifact.json" > /dev/null
+          gh api -H 'Accept: application/vnd.github+json' \
+            "/repos/$GITHUB_REPOSITORY/actions/artifacts/$ADJUDICATION_ARTIFACT_ID/zip" \
+            > "$OUT/adjudication.zip"
+          test "$(stat -c %s "$OUT/adjudication.zip")" = "$ADJUDICATION_ARTIFACT_BYTES"
+          test "sha256:$(sha256sum "$OUT/adjudication.zip" | awk '{print $1}')" = "$ADJUDICATION_ARTIFACT_DIGEST"
+          unzip -t "$OUT/adjudication.zip" > "$OUT/adjudication-zip-test.txt"
+          unzip -q "$OUT/adjudication.zip" -d "$ADJ"
+          (cd "$ADJ" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$ADJ/receipt.json" | awk '{print $1}')" = "$ADJUDICATION_RECEIPT_SHA256"
+          test "$(sha256sum "$ADJ/selected-followup-protocol.json" | awk '{print $1}')" = "$FOLLOWUP_PROTOCOL_SHA256"
+          jq -e \
+            '.schema_version=="ssc-rd04-nd-fy26-quarter-snapshot-adjudication-receipt@2" and
+             .state=="complete" and .stage=="complete" and
+             .field_decision=="hold_open_exact_geography_and_governing_period_not_proved" and
+             .selected_followup_routes==1 and .additional_execution_authorized==true and
+             .source_requests==0 and .route_executions==0 and
+             .field_terminalizations==0 and .matrix_updates==0 and
+             .row_state_mutations==0 and .class_closed==false and
+             .next_authorized_operation=="execute the exact response-index route once, preserve its complete response, and adjudicate only the North Dakota FY 2025 response href without following it"' \
+            "$ADJ/receipt.json" > /dev/null
+          jq -e \
+            '.schema_version=="ssc-rd04-nd-fna-response-index-transport-protocol@1" and
+             .state=="selected_unexecuted" and .route_count==1 and
+             .additional_execution_authorized==true and
+             .source_requests==0 and .route_executions==0 and
+             .field_terminalizations==0 and .matrix_updates==0 and
+             .row_state_mutations==0 and .class_closed==false and
+             [.routes[].route_id]==["RD04-ND-FNA-TIME-LIMIT-WAIVER-INDEX-2025-2029-001"] and
+             [.routes[].url]==["https://www.fna.usda.gov/snap/abawd/waivers/2025-2029"] and
+             [.routes[].attempts]==[1] and
+             [.routes[].exact_host]==["www.fna.usda.gov"] and
+             [.routes[].maximum_followed_redirects]==[0] and
+             [.routes[].maximum_body_bytes]==[5000000] and
+             [.routes[].result_spawned_requests]==[0]' \
+            "$ADJ/selected-followup-protocol.json" > /dev/null
+          cp "$ADJ/selected-followup-protocol.json" "$OUT/request-plan.json"
+
+          stage=execute_exact_index_route
+          python - "$ADJ/selected-followup-protocol.json" "$OUT" <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import pathlib
+          import ssl
+          import sys
+          import time
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          protocol_path = pathlib.Path(sys.argv[1])
+          out = pathlib.Path(sys.argv[2])
+          transport = out / "transport"
+          transport.mkdir(parents=True, exist_ok=True)
+          protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
+          route = protocol["routes"][0]
+
+          assert route["route_id"] == "RD04-ND-FNA-TIME-LIMIT-WAIVER-INDEX-2025-2029-001"
+          assert route["url"] == "https://www.fna.usda.gov/snap/abawd/waivers/2025-2029"
+          assert route["method"] == "GET"
+          assert route["attempts"] == 1
+          assert route["exact_host"] == "www.fna.usda.gov"
+          assert route["maximum_followed_redirects"] == 0
+          assert route["maximum_body_bytes"] == 5_000_000
+          assert route["result_spawned_requests"] == 0
+
+          parsed = urllib.parse.urlsplit(route["url"])
+          assert parsed.scheme == "https"
+          assert parsed.hostname == route["exact_host"]
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+
+          opener = urllib.request.build_opener(
+              urllib.request.HTTPSHandler(context=ssl.create_default_context()),
+              NoRedirect(),
+          )
+          request = urllib.request.Request(
+              route["url"],
+              method="GET",
+              headers={
+                  "User-Agent": "BigBirdReturns-RD04-bounded-index-capture/1.0",
+                  "Accept": "text/html,application/xhtml+xml;q=0.9,text/plain;q=0.8,*/*;q=0.1",
+                  "Accept-Encoding": "identity",
+                  "Cache-Control": "no-cache",
+              },
+          )
+
+          started = time.time()
+          status = None
+          headers = None
+          body = b""
+          effective_url = route["url"]
+          transport_error = None
+          try:
+              response = opener.open(request, timeout=60)
+              status = int(response.status)
+              headers = response.headers
+              effective_url = response.geturl()
+              body = response.read(route["maximum_body_bytes"] + 1)
+          except urllib.error.HTTPError as exc:
+              status = int(exc.code)
+              headers = exc.headers
+              effective_url = exc.geturl()
+              body = exc.read(route["maximum_body_bytes"] + 1)
+          except Exception as exc:
+              transport_error = f"{type(exc).__name__}: {exc}"
+
+          elapsed_ms = int((time.time() - started) * 1000)
+          assert len(body) <= route["maximum_body_bytes"]
+
+          normalized_headers = []
+          if headers is not None:
+              normalized_headers = [
+                  {"name": str(name).lower(), "value": str(value)}
+                  for name, value in sorted(headers.items(), key=lambda item: (str(item[0]).lower(), str(item[1])))
+              ]
+          header_map = {row["name"]: row["value"] for row in normalized_headers}
+          location = header_map.get("location")
+          content_type = (header_map.get("content-type") or "").split(";", 1)[0].strip().lower() or None
+
+          if transport_error is not None:
+              terminal_state = "terminal_transport_error"
+          elif status is not None and 200 <= status < 300:
+              terminal_state = "http_success_body_captured"
+          elif status is not None and 300 <= status < 400:
+              terminal_state = "redirect_refused_terminal"
+          else:
+              terminal_state = "http_non_success_terminal"
+
+          if body:
+              (transport / "response-body.bin").write_bytes(body)
+          (transport / "response-headers.json").write_text(
+              json.dumps(normalized_headers, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+
+          route_receipt = {
+              "schema_version": "ssc-rd04-nd-fna-time-limit-waiver-index-route-receipt@1",
+              "route_id": route["route_id"],
+              "attempt": 1,
+              "requested_url": route["url"],
+              "effective_url": effective_url,
+              "requested_host": parsed.hostname,
+              "http_status": status,
+              "content_type": content_type,
+              "body_bytes": len(body),
+              "body_sha256": hashlib.sha256(body).hexdigest(),
+              "response_headers_sha256": hashlib.sha256((transport / "response-headers.json").read_bytes()).hexdigest(),
+              "redirect_location": location,
+              "redirects_followed": 0,
+              "physical_requests": 1,
+              "elapsed_ms": elapsed_ms,
+              "terminal_state": terminal_state,
+              "transport_error": transport_error,
+              "anchor_selection_performed": False,
+              "href_followed": False,
+              "result_spawned_requests": 0,
+              "source_admissions": 0,
+              "field_terminalizations": 0,
+              "matrix_updates": 0,
+              "row_state_mutations": 0,
+              "class_closed": False,
+              "outside_human_dependency": False,
+              "additional_execution_authorized": False,
+          }
+          (transport / "route-receipt.json").write_text(
+              json.dumps(route_receipt, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          with (transport / "physical-request-ledger.jsonl").open("w", encoding="utf-8") as handle:
+              handle.write(json.dumps({
+                  "ordinal": 1,
+                  "route_id": route["route_id"],
+                  "requested_url": route["url"],
+                  "http_status": status,
+                  "terminal_state": terminal_state,
+                  "body_bytes": len(body),
+                  "body_sha256": hashlib.sha256(body).hexdigest(),
+                  "redirect_location": location,
+                  "transport_error": transport_error,
+              }, sort_keys=True) + "\n")
+          PY
+
+          stage=reconcile_post_request_custody
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          FINAL_MAIN="$(git rev-parse origin/main)"
+          git merge-base --is-ancestor "$CURRENT_MAIN" "$FINAL_MAIN"
+          test "$(git rev-parse "origin/main:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          test "$(git ls-remote --heads origin "refs/heads/$EXECUTION_LOCK_BRANCH" | awk '{print $1}')" = "$(git rev-parse HEAD)"
+          printf '%s\n' "$FINAL_MAIN" > "$OUT/main-at-finish.txt"
+          printf '%s\n' "$(git rev-parse "origin/main^{tree}")" > "$OUT/main-tree-at-finish.txt"
+
+          stage=seal_terminal_execution
+          ROUTE_RECEIPT="$OUT/transport/route-receipt.json"
+          jq -e \
+            '.route_id=="RD04-ND-FNA-TIME-LIMIT-WAIVER-INDEX-2025-2029-001" and
+             .attempt==1 and .physical_requests==1 and .redirects_followed==0 and
+             .anchor_selection_performed==false and .href_followed==false and
+             .result_spawned_requests==0 and .source_admissions==0 and
+             .field_terminalizations==0 and .matrix_updates==0 and
+             .row_state_mutations==0 and .class_closed==false and
+             .outside_human_dependency==false and .additional_execution_authorized==false and
+             (.terminal_state=="http_success_body_captured" or
+              .terminal_state=="redirect_refused_terminal" or
+              .terminal_state=="http_non_success_terminal" or
+              .terminal_state=="terminal_transport_error")' \
+            "$ROUTE_RECEIPT" > /dev/null
+          jq -n \
+            --arg parent "$CURRENT_MAIN" \
+            --arg head "$(git rev-parse HEAD)" \
+            --arg main_start "$(cat "$OUT/main-at-start.txt")" \
+            --arg main_finish "$(cat "$OUT/main-at-finish.txt")" \
+            --arg artifact_id "$ADJUDICATION_ARTIFACT_ID" \
+            --arg route_receipt_sha256 "$(sha256sum "$ROUTE_RECEIPT" | awk '{print $1}')" \
+            --arg body_sha256 "$(jq -r '.body_sha256' "$ROUTE_RECEIPT")" \
+            --arg terminal_state "$(jq -r '.terminal_state' "$ROUTE_RECEIPT")" \
+            --argjson http_status "$(jq '.http_status' "$ROUTE_RECEIPT")" \
+            --argjson body_bytes "$(jq '.body_bytes' "$ROUTE_RECEIPT")" \
+            '{
+              schema_version:"ssc-rd04-nd-fna-time-limit-waiver-index-execution@1",
+              state:"complete",
+              failed_or_final_stage:"complete",
+              exit_code:0,
+              execution_parent:$parent,
+              execution_head:$head,
+              canonical_main_at_start:$main_start,
+              canonical_main_at_finish:$main_finish,
+              adjudication_artifact_id:($artifact_id|tonumber),
+              fixed_route_count:1,
+              terminal_route_count:1,
+              physical_requests:1,
+              route_id:"RD04-ND-FNA-TIME-LIMIT-WAIVER-INDEX-2025-2029-001",
+              terminal_state:$terminal_state,
+              http_status:$http_status,
+              body_bytes:$body_bytes,
+              body_sha256:$body_sha256,
+              route_receipt_sha256:$route_receipt_sha256,
+              redirects_followed:0,
+              anchor_selection_performed:false,
+              href_followed:false,
+              result_spawned_requests:0,
+              source_admissions:0,
+              field_terminalizations:0,
+              matrix_updates:0,
+              row_state_mutations:0,
+              class_closed:false,
+              cumulative_ledger_effect:"none",
+              outside_human_dependency:false,
+              publication_effect:"none",
+              adoption_effect:"none",
+              graph_effect:"none",
+              additional_execution_authorized:false,
+              next_authorized_operation:"request-free offline adjudication of the captured index response; locate only the North Dakota FY 2025 response anchor and exact href without following it"
+            }' > "$OUT/execution-receipt.json"
+          stage=complete
+
+      - name: Upload terminal index-route custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fna-time-limit-waiver-index-execution-v1
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal execution receipt
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test '${{ steps.execution.outcome }}' = success
+          test "$(cat "$OUTPUT_DIR/EXIT_CODE")" = 0
+          test "$(cat "$OUTPUT_DIR/STAGE")" = complete
+          (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
+          jq -e \
+            '.schema_version=="ssc-rd04-nd-fna-time-limit-waiver-index-execution@1" and
+             .state=="complete" and .failed_or_final_stage=="complete" and .exit_code==0 and
+             .fixed_route_count==1 and .terminal_route_count==1 and .physical_requests==1 and
+             .redirects_followed==0 and .anchor_selection_performed==false and
+             .href_followed==false and .result_spawned_requests==0 and
+             .source_admissions==0 and .field_terminalizations==0 and .matrix_updates==0 and
+             .row_state_mutations==0 and .class_closed==false and
+             .outside_human_dependency==false and .additional_execution_authorized==false' \
+            "$OUTPUT_DIR/execution-receipt.json" > /dev/null
