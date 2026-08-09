@@ -1,0 +1,173 @@
+name: RD-04 North Dakota FY2025 waiver approval terminalization
+
+on:
+  pull_request:
+    paths:
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization/**'
+      - 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.schema.json'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.test.js'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.mjs'
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization/**'
+      - 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.schema.json'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.test.js'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.mjs'
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned validation and PDF tools
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir jsonschema==4.25.1
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+      - name: Reconstruct and verify the embedded five-page source
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/rd04-nd-fy2025-waiver-evidence
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          python - <<'PY'
+          import base64, hashlib, json
+          from pathlib import Path
+          slug='status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization'
+          custody=json.loads((Path('data/intake')/slug/'terminalization-input-custody.json').read_text())
+          emb=custody['source_custody']['embedded_pdf']
+          body=base64.b64decode(emb['data_base64'],validate=True)
+          assert len(body)==emb['bytes']==306585
+          assert hashlib.sha256(body).hexdigest()==emb['sha256']=='dc8f7a9e03c79ce52e39a28dfee4d36b9afe768181c15ec02c44b9ccb27f3428'
+          Path('/tmp/rd04-nd-fy2025-waiver-evidence/source.pdf').write_bytes(body)
+          PY
+          test "$(pdfinfo "$OUT/source.pdf" | awk '/^Pages:/ {print $2}')" = 5
+          pdftotext -layout "$OUT/source.pdf" "$OUT/source-layout.txt"
+          grep -F 'Rolette County' "$OUT/source-layout.txt"
+          grep -F 'Turtle Mountain Reservation and Off-Reservation Trust' "$OUT/source-layout.txt"
+          grep -F 'Implementation Date: July 1, 2025' "$OUT/source-layout.txt"
+          grep -F 'Expiration Date: June 30, 2026' "$OUT/source-layout.txt"
+          pdftoppm -png -r 180 "$OUT/source.pdf" "$OUT/page" >/dev/null 2>&1
+          test "$(find "$OUT" -maxdepth 1 -name 'page-*.png' | wc -l)" = 5
+          echo 'embedded_source_verification=pass pages=5'
+      - name: Rebuild exact fourteen-path product
+        run: |
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.mjs
+          git diff --exit-code -- \
+            .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.yml \
+            data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization \
+            docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.md \
+            schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.schema.json \
+            test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.test.js \
+            tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.mjs \
+            tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.mjs
+      - name: Validate, adversarially mutate, and schema-check
+        run: |
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.test.js
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          root=Path('.')
+          slug='status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization'
+          out=root/'data'/'intake'/slug
+          schema=json.loads((root/'schemas'/f'{slug}.schema.json').read_text())
+          validator=Draft202012Validator(schema)
+          for name in ['terminalization-input-custody.json','terminalization-decisions.json','cell-transition-ledger.json','promoted-partial-field-matrix.json','remaining-open-field-census.json','terminalization-summary.json','index.json','product-manifest.json']:
+              obj=json.loads((out/name).read_text())
+              errors=list(validator.iter_errors(obj))
+              if errors:
+                  raise SystemExit(f'{name}: {errors[0].message}')
+          print('schema_validation=pass objects=8')
+          PY
+      - name: Enforce repository gates and clean replay
+        run: |
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+          git reset --hard HEAD
+          git clean -fdx
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.mjs
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.mjs
+          node test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+          git diff --exit-code
+      - name: Preserve exact-head product, receipt, and checksum tree
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/rd04-nd-fy2025-waiver-approval-terminalization
+          MANIFEST=data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization/product-manifest.json
+          rm -rf "$OUT"
+          mkdir -p "$OUT/product"
+          while IFS= read -r product_path; do
+            test -f "$product_path"
+            mkdir -p "$OUT/product/$(dirname "$product_path")"
+            cp "$product_path" "$OUT/product/$product_path"
+          done < <(jq -r '.permanent_paths[]' "$MANIFEST")
+          git rev-parse HEAD > "$OUT/head.txt"
+          git rev-parse HEAD^{tree} > "$OUT/tree.txt"
+          git status --short > "$OUT/status.txt"
+          python - "$OUT" "$MANIFEST" <<'PY'
+          import json, subprocess, sys
+          from pathlib import Path
+          out=Path(sys.argv[1])
+          manifest=json.loads(Path(sys.argv[2]).read_text())
+          receipt={
+            'schema_version':'rd04-nd-fy2025-waiver-approval-workflow-receipt@1',
+            'state':'exact_head_product_preserved',
+            'head':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+            'tree':subprocess.check_output(['git','rev-parse','HEAD^{tree}'],text=True).strip(),
+            'product_combined_sha256':manifest['combined_sha256'],
+            'permanent_path_count':manifest['permanent_path_count'],
+            'field_terminalizations':1,
+            'row_terminalizations':1,
+            'matrix_updates':2,
+            'terminal_cells_after':229,
+            'open_substantive_cells_after':182,
+            'terminal_units_after':11,
+            'class_closed':False,
+          }
+          (out/'workflow-receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          PY
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 |
+              LC_ALL=C sort -z |
+              xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rd04-nd-fy2025-waiver-approval-terminalization
+          path: /tmp/rd04-nd-fy2025-waiver-approval-terminalization
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
