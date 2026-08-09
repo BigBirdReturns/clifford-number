@@ -1,4 +1,4 @@
-name: TEMP publish exact qualified PC-59 product
+name: TEMP stage exact qualified PC-59 large blobs
 
 on:
   pull_request:
@@ -6,15 +6,15 @@ on:
   workflow_dispatch:
 
 permissions:
-  actions: write
+  actions: read
   contents: write
 
 concurrency:
-  group: pc59-product-publisher-v2
+  group: pc59-large-blob-stager
   cancel-in-progress: false
 
 jobs:
-  publish:
+  stage:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
@@ -26,24 +26,21 @@ jobs:
       QUALIFIER_HEAD: '5886d3c87bf3d083b6de6c376579067952018c0a'
       PARENT: a592acea22c69a979f2a90c24a2bafb8c9445759
       PARENT_TREE: c7dbb1df10b409caa7893846a9e4b3e8d1392be0
-      PRODUCT_TREE: 9057a3daca6e8420c83652d5ba2669c2f2ae34a5
-      STAGING_BRANCH: agent/pc59-staged-product
+      STAGING_BRANCH: agent/pc59-staged-large-blobs
       ARCHIVE_SHA256: 8a56d6209fba1a451cf733cf2d67b2e6dcc37e45209d70d340576773e5f7eef0
       MANIFEST_SHA256: e209ea8ba3d59849c24d4f217251b0053c71d559e838bc7f2968881f70942ee3
       CHUNK_BLOBS: '00afcc70c0f8c71fdf654960a0aee911f6539b85 1870b7c7a353ca21d06c991eb6c24026b5878871 f268960932f2e96c94d58594a282c9432a49b207 300266349434564928b5ecdc63cd16feb6c3b690 459172d20e965ab8b13873bbb8ce6cd0d8544a43 9b284c1f367abbd62c1b83083bc60c281d364a3c 8ddf1971794fda0ca047ee069e69a3515274030d e8487726a6f6beb0f39e87c072653fd575c6fa38 e5d5f4a14f12ed376466becddebcdb2b52425a04'
-      WORK: /tmp/pc59-publisher-v2
+      WORK: /tmp/pc59-large-blob-stager
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-
-      - name: Authenticate receipt, reconstruct bytes, and prove live disjointness
+      - name: Authenticate receipt and reconstruct exact product
         shell: bash
         run: |
           set -Eeuo pipefail
           mkdir -p "$WORK/product"
           test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/temp-pc59-materializer-carrier.yml'
           git merge-base --is-ancestor "$PARENT" HEAD^
-
           gh api "/repos/$GH_REPOSITORY/actions/runs/$QUALIFIER_RUN" > "$WORK/run.json"
           test "$(jq -r .head_sha "$WORK/run.json")" = "$QUALIFIER_HEAD"
           test "$(jq -r .status "$WORK/run.json")" = completed
@@ -51,86 +48,64 @@ jobs:
           gh api "/repos/$GH_REPOSITORY/actions/artifacts/$QUALIFIER_ARTIFACT" > "$WORK/artifact.json"
           test "$(jq -r .workflow_run.id "$WORK/artifact.json")" = "$QUALIFIER_RUN"
           test "$(jq -r .digest "$WORK/artifact.json")" = "$QUALIFIER_DIGEST"
-
           cp .tmp/pc59/product-manifest.json "$WORK/manifest.json"
           test "$(sha256sum "$WORK/manifest.json" | cut -d' ' -f1)" = "$MANIFEST_SHA256"
           : > "$WORK/product.b64"
-          for blob in $CHUNK_BLOBS; do
-            gh api "/repos/$GH_REPOSITORY/git/blobs/$blob" --jq .content | tr -d '\n' | base64 -d >> "$WORK/product.b64"
-          done
+          for blob in $CHUNK_BLOBS; do gh api "/repos/$GH_REPOSITORY/git/blobs/$blob" --jq .content | tr -d '\n' | base64 -d >> "$WORK/product.b64"; done
           base64 -d "$WORK/product.b64" > "$WORK/product.tar.gz"
           test "$(sha256sum "$WORK/product.tar.gz" | cut -d' ' -f1)" = "$ARCHIVE_SHA256"
           tar -xzf "$WORK/product.tar.gz" -C "$WORK/product"
-
           python - <<'PY'
-          import hashlib, json, os, pathlib
-          work=pathlib.Path(os.environ['WORK'])
-          manifest=json.loads((work/'manifest.json').read_text())
-          assert manifest['qualified_parent']==os.environ['PARENT']
-          assert manifest['qualified_parent_tree']==os.environ['PARENT_TREE']
-          assert len(manifest['files'])==14
-          for f in manifest['files']:
-              data=(work/'product'/f['path']).read_bytes()
-              assert len(data)==f['bytes']
-              assert hashlib.sha256(data).hexdigest()==f['sha256']
-              assert hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()==f['git_blob_sha']
+          import hashlib,json,os,pathlib
+          w=pathlib.Path(os.environ['WORK']); m=json.loads((w/'manifest.json').read_text())
+          assert m['qualified_parent']==os.environ['PARENT'] and m['qualified_parent_tree']==os.environ['PARENT_TREE'] and len(m['files'])==14
+          for f in m['files']:
+              b=(w/'product'/f['path']).read_bytes()
+              assert len(b)==f['bytes'] and hashlib.sha256(b).hexdigest()==f['sha256']
+              assert hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()==f['git_blob_sha']
           PY
-
-          git fetch --no-tags origin main
-          git merge-base --is-ancestor "$PARENT" origin/main
-          git diff --name-only "$PARENT" origin/main | sort > "$WORK/main-paths.txt"
-          jq -r '.files[].path' "$WORK/manifest.json" | sort > "$WORK/product-paths.txt"
-          comm -12 "$WORK/main-paths.txt" "$WORK/product-paths.txt" > "$WORK/overlap.txt"
-          test ! -s "$WORK/overlap.txt"
-          while IFS= read -r path; do ! git cat-file -e "origin/main:$path" 2>/dev/null; done < "$WORK/product-paths.txt"
-
-      - name: Create exact tree, commit, and staging ref atomically
+      - name: Publish only the three large non-workflow blobs and retain them on a staging ref
         shell: bash
         run: |
           set -Eeuo pipefail
           python - <<'PY'
-          import json, os, pathlib
-          work=pathlib.Path(os.environ['WORK'])
-          manifest=json.loads((work/'manifest.json').read_text())
-          payload={
-              'base_tree': os.environ['PARENT_TREE'],
-              'tree': [
-                  {
-                      'path': f['path'],
-                      'mode': '100644',
-                      'type': 'blob',
-                      'content': (work/'product'/f['path']).read_text()
-                  }
-                  for f in manifest['files']
-              ]
+          import base64,json,os,pathlib
+          w=pathlib.Path(os.environ['WORK']); m=json.loads((w/'manifest.json').read_text())
+          wanted={
+            'data/research/preference-custody/preference-linkage-repository-owner-login-canonical-profile-api-location-account-type-state-suspension-assurance.fixture.json',
+            'tools/lib/preference-linkage-repository-owner-login-canonical-profile-api-location-account-type-state-suspension-assurance.mjs',
+            'tools/lib/preference-custody-manifest-v57.mjs'
           }
-          (work/'tree-request.json').write_text(json.dumps(payload))
+          files=[f for f in m['files'] if f['path'] in wanted]
+          assert len(files)==3
+          for f in files:
+              data=(w/'product'/f['path']).read_bytes()
+              (w/('blob-'+f['git_blob_sha']+'.json')).write_text(json.dumps({'content':base64.b64encode(data).decode(),'encoding':'base64'}))
+          (w/'selected.json').write_text(json.dumps(files,indent=2))
           PY
+          jq -c '.[]' "$WORK/selected.json" | while IFS= read -r row; do
+            path=$(jq -r .path <<<"$row"); expected=$(jq -r .git_blob_sha <<<"$row")
+            actual=$(gh api --method POST "/repos/$GH_REPOSITORY/git/blobs" --input "$WORK/blob-$expected.json" --jq .sha)
+            test "$actual" = "$expected"
+            jq -n --arg path "$path" --arg sha "$actual" '{path:$path,mode:"100644",type:"blob",sha:$sha}' >> "$WORK/tree-elements.jsonl"
+          done
+          jq -s --arg base "$PARENT_TREE" '{base_tree:$base,tree:.}' "$WORK/tree-elements.jsonl" > "$WORK/tree-request.json"
           gh api --method POST "/repos/$GH_REPOSITORY/git/trees" --input "$WORK/tree-request.json" > "$WORK/tree-response.json"
-          tree=$(jq -r .sha "$WORK/tree-response.json")
-          test "$tree" = "$PRODUCT_TREE"
-
-          jq -n --arg message 'Complete PC-59 owner profile and account-state custody' --arg tree "$tree" --arg parent "$PARENT" \
-            '{message:$message,tree:$tree,parents:[$parent]}' > "$WORK/commit-request.json"
+          tree=$(jq -r .sha "$WORK/tree-response.json"); test -n "$tree"
+          jq -n --arg message 'TEMP retain exact PC-59 large blobs' --arg tree "$tree" --arg parent "$PARENT" '{message:$message,tree:$tree,parents:[$parent]}' > "$WORK/commit-request.json"
           gh api --method POST "/repos/$GH_REPOSITORY/git/commits" --input "$WORK/commit-request.json" > "$WORK/commit-response.json"
-          commit=$(jq -r .sha "$WORK/commit-response.json")
-          test -n "$commit"
-
+          commit=$(jq -r .sha "$WORK/commit-response.json"); test -n "$commit"
           if gh api "/repos/$GH_REPOSITORY/git/ref/heads/$STAGING_BRANCH" > "$WORK/existing-ref.json" 2>/dev/null; then
-            gh api --method PATCH "/repos/$GH_REPOSITORY/git/refs/heads/$STAGING_BRANCH" -f sha="$commit" -F force=true > "$WORK/staging-ref.json"
+            gh api --method PATCH "/repos/$GH_REPOSITORY/git/refs/heads/$STAGING_BRANCH" -f sha="$commit" -F force=true > "$WORK/ref.json"
           else
-            gh api --method POST "/repos/$GH_REPOSITORY/git/refs" -f ref="refs/heads/$STAGING_BRANCH" -f sha="$commit" > "$WORK/staging-ref.json"
+            gh api --method POST "/repos/$GH_REPOSITORY/git/refs" -f ref="refs/heads/$STAGING_BRANCH" -f sha="$commit" > "$WORK/ref.json"
           fi
-          test "$(jq -r .object.sha "$WORK/staging-ref.json")" = "$commit"
-
-          jq -n --arg status complete --arg product_commit "$commit" --arg product_tree "$tree" --arg staging_branch "$STAGING_BRANCH" \
-            '{status:$status,product_commit:$product_commit,product_tree:$product_tree,staging_branch:$staging_branch,permanent_paths:14,ref_updates:1,outside_human_dependency:false,graph_effect:"none"}' \
-            > "$WORK/publication-receipt.json"
+          test "$(jq -r .object.sha "$WORK/ref.json")" = "$commit"
+          jq -n --arg status complete --arg staging_commit "$commit" --arg staging_tree "$tree" --arg staging_branch "$STAGING_BRANCH" '{status:$status,staging_commit:$staging_commit,staging_tree:$staging_tree,staging_branch:$staging_branch,retained_blobs:3,product_authority:false,ref_updates:1,outside_human_dependency:false,graph_effect:"none"}' > "$WORK/receipt.json"
           find "$WORK" -maxdepth 1 -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > "$WORK/SHA256SUMS"
-
       - uses: actions/upload-artifact@v4
         with:
-          name: pc59-product-publication-receipt-v2
-          path: /tmp/pc59-publisher-v2
+          name: pc59-large-blob-staging-receipt
+          path: /tmp/pc59-large-blob-stager
           if-no-files-found: error
           retention-days: 90
