@@ -1,0 +1,171 @@
+name: TEMP materialize RD-04 North Dakota FY2025 waiver expiration adjudication v2
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-rd04-nd-fy2025-waiver-expiration-materializer-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+  issues: read
+
+jobs:
+  materialize:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      BASE_SHA: a592acea22c69a979f2a90c24a2bafb8c9445759
+      BASE_TREE: c7dbb1df10b409caa7893846a9e4b3e8d1392be0
+      CARRIER_WORKFLOW: .github/workflows/temp-rd04-nd-fy2025-waiver-expiration-materializer-v2.yml
+      ISSUE_NUMBER: '1697'
+      SOURCE_ARTIFACT_ID: '9032633537'
+      SOURCE_ARTIFACT_SHA256: 7732de237805352a75d8a94000e2b48f8911314e9fe909fa12b4193e590879f6
+      SOURCE_PDF_SHA256: dc8f7a9e03c79ce52e39a28dfee4d36b9afe768181c15ec02c44b9ccb27f3428
+      SOURCE_PDF_BYTES: '306585'
+      TEMPLATE_B64_SHA256: a4990f99d9afe9553d5051945c993c5cab179c6de37d155e527697d3e4c7391a
+      TEMPLATE_B64_BYTES: '30796'
+      TEMPLATE_ARCHIVE_SHA256: 61af5f56dbb23ce9c6271fe0e88e83166010a8a085f2d3381190e79554edd276
+      TEMPLATE_ARCHIVE_BYTES: '23096'
+      PRODUCT_COMBINED_SHA256: 4c2764d5ea7b1c4de7ce92e188f51d6dfc166a098b857f4c0e09443c4cf3fb27
+      PRODUCT_MANIFEST_SHA256: 4d4cc4b9294bdb114b0f9cdeb42f1bf2435c416f5fe935c67593b8cd9ab10982
+      PRODUCT_SLUG: status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-expiration-adjudication
+      STAGING_BRANCH: staging/ssc-rd04-nd-fy2025-waiver-expiration-ordinary-v1
+      FINAL_BRANCH: agent/ssc-rd04-postpromotion-nd-fy2025-waiver-expiration-adjudication-v1
+      CONTROLLER_B64_BYTES: '22536'
+      CONTROLLER_B64_SHA256: 5972542baacd296921c4f14e58de61eb2fb8c4114ae0221607edd13df4fc76fc
+      CONTROLLER_BYTES: '16902'
+      CONTROLLER_SHA256: 043e217bab840eb92d8c2c05cde5acbc2d491017b80cce6b2fd07147dbdf7ff4
+      RECEIPT_DIR: /tmp/rd04-nd-fy2025-waiver-expiration-materializer
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Initialize fail-closed receipt custody
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$RECEIPT_DIR"
+          mkdir -p "$RECEIPT_DIR"
+          printf '%s\n' reconstruct_controller_from_issue > "$RECEIPT_DIR/STAGE"
+          printf '%s\n' 1 > "$RECEIPT_DIR/EXIT_CODE"
+          printf '%s\n' failed_closed > "$RECEIPT_DIR/STATE"
+
+      - name: Install pinned schema parsers and bind runtime tools
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+          command -v git
+          command -v curl
+          command -v unzip
+          command -v xz
+          command -v node
+
+      - name: Reconstruct and execute the exact controller
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          import re
+          import urllib.request
+          from pathlib import Path
+
+          expected = {
+              0: (4000, 'b88845f6b2e17f4f8d2a72ba524a74931a4723546cf7057a2c78b92d0ab5b4e0'),
+              1: (4000, '650a4e6a3165f7ad949d4d3615ad5a39d65252a2d2c02e43b1803f6434163d97'),
+              2: (4000, 'da887b823dfa13bb652dcadd5791f1a6c376d89c2b40dee8b18fac021c871755'),
+              3: (4000, 'bf7bd9665ea30cc118fe7a26e69b75cbbf5f4d72fc7d6c3d4e1ec3a620a48a7d'),
+              4: (4000, '7e474353dc480328e01582bfb23493a9f8d2b466d25f41a0f151b3232b458fc0'),
+              5: (2536, '1b558657bfc66cfe659d5ad0c02ff30176be2e10588ab029294e2f72392717b3'),
+          }
+          repo = os.environ['GITHUB_REPOSITORY']
+          issue = os.environ['ISSUE_NUMBER']
+          token = os.environ['GH_TOKEN']
+          request = urllib.request.Request(
+              f'https://api.github.com/repos/{repo}/issues/{issue}/comments?per_page=100',
+              headers={
+                  'Authorization': f'Bearer {token}',
+                  'Accept': 'application/vnd.github+json',
+                  'X-GitHub-Api-Version': '2022-11-28',
+                  'User-Agent': 'rd04-expiration-materializer-v2',
+              },
+          )
+          with urllib.request.urlopen(request, timeout=60) as response:
+              comments = json.load(response)
+          pattern = re.compile(r'^RD04_CONTROLLER_CHUNK_(\d{2})_OF_06 sha256=([0-9a-f]{64})\n([A-Za-z0-9+/=]+)$')
+          found = {}
+          ids = {}
+          for comment in comments:
+              match = pattern.fullmatch(comment.get('body') or '')
+              if not match:
+                  continue
+              index = int(match.group(1))
+              if index not in expected or index in found:
+                  raise SystemExit(f'invalid controller chunk index {index}')
+              payload = match.group(3)
+              size, digest = expected[index]
+              if len(payload.encode()) != size:
+                  raise SystemExit(f'controller chunk {index} byte count differs')
+              actual = hashlib.sha256(payload.encode()).hexdigest()
+              if match.group(2) != digest or actual != digest:
+                  raise SystemExit(f'controller chunk {index} digest differs')
+              found[index] = payload
+              ids[index] = comment['id']
+          if set(found) != set(expected):
+              raise SystemExit(f'controller chunk denominator differs: {sorted(found)}')
+          encoded = ''.join(found[index] for index in range(6)).encode()
+          if len(encoded) != int(os.environ['CONTROLLER_B64_BYTES']):
+              raise SystemExit('controller base64 byte count differs')
+          if hashlib.sha256(encoded).hexdigest() != os.environ['CONTROLLER_B64_SHA256']:
+              raise SystemExit('controller base64 digest differs')
+          controller = base64.b64decode(encoded, validate=True)
+          if len(controller) != int(os.environ['CONTROLLER_BYTES']):
+              raise SystemExit('controller byte count differs')
+          if hashlib.sha256(controller).hexdigest() != os.environ['CONTROLLER_SHA256']:
+              raise SystemExit('controller digest differs')
+          path = Path('/tmp/rd04-materialize-controller-v2.sh')
+          path.write_bytes(controller)
+          receipt = {
+              'schema_version': 'rd04-controller-comment-custody@1',
+              'issue_number': int(issue),
+              'comment_ids': [ids[index] for index in range(6)],
+              'chunk_count': 6,
+              'base64_bytes': len(encoded),
+              'base64_sha256': hashlib.sha256(encoded).hexdigest(),
+              'controller_bytes': len(controller),
+              'controller_sha256': hashlib.sha256(controller).hexdigest(),
+          }
+          Path(os.environ['RECEIPT_DIR'], 'controller-custody.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          PY
+          bash -n /tmp/rd04-materialize-controller-v2.sh
+          chmod 700 /tmp/rd04-materialize-controller-v2.sh
+          /tmp/rd04-materialize-controller-v2.sh
+
+      - name: Preserve materializer custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy2025-waiver-expiration-materializer-v2
+          path: /tmp/rd04-nd-fy2025-waiver-expiration-materializer
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
