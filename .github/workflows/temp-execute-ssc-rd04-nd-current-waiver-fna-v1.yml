@@ -1,0 +1,164 @@
+name: TEMP execute RD-04 North Dakota current-waiver FNA follow-up v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-current-waiver-fna-execution-base-v1
+    types: [opened]
+    paths:
+      - '.trigger/ssc-rd04-nd-current-waiver-fna-execution-v1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd04-nd-current-waiver-fna-execution-v1
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      EXPECTED_MAIN: b1d1d8afb6c957401a762bf9d0b2abc464bd5e07
+      EXPECTED_MAIN_TREE: 64f5b5e9e9d72bdf86ef6cf14d728b2ae996f834
+      BASE_BRANCH: agent/ssc-rd04-nd-current-waiver-fna-execution-base-v1
+      TRIGGER_BRANCH: agent/ssc-rd04-nd-current-waiver-fna-execution-trigger-v1
+      LOCK_BRANCH: lock/ssc-rd04-nd-current-waiver-fna-execution-v1
+      WORKFLOW_PATH: .github/workflows/temp-execute-ssc-rd04-nd-current-waiver-fna-v1.yml
+      PAYLOAD_PATH: .tmp/ssc-rd04-nd-current-waiver-fna-execution-v1/execute.py.xz.b64
+      TRIGGER_PATH: .trigger/ssc-rd04-nd-current-waiver-fna-execution-v1
+      PAYLOAD_B64_BYTES: '5564'
+      PAYLOAD_B64_SHA256: a81cb16698dc5a205b5aa64533f4c8419a60441ae3497a894d63fd655d9a7084
+      PAYLOAD_XZ_BYTES: '4172'
+      PAYLOAD_XZ_SHA256: 560c1541be9c214797d6ac48c13ae4d5605963f04e34df68b5cf98cb5c996245
+      PAYLOAD_BYTES: '13948'
+      PAYLOAD_SHA256: f5fca319a0dc92b8a4fbb3260fe1a81ca6c9954708e2b7e87bc6f9b9206b2060
+      TRIGGER_SHA256: 2e87ac4af62a4ee52ae1037806c14cf053f184c28207d02d1f1dfa05ed1357b6
+      OUTPUT_DIR: /tmp/ssc-rd04-nd-current-waiver-fna-execution-v1
+      EXECUTOR: /tmp/ssc-rd04-nd-current-waiver-fna-execution-v1/execute.py
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Verify exact execution lease and topology
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUTPUT_DIR"
+          mkdir -p "$OUTPUT_DIR"
+          printf '%s\n' topology_verification > "$OUTPUT_DIR/STAGE"
+          EVENT_HEAD="$(jq -r '.pull_request.head.sha' "$GITHUB_EVENT_PATH")"
+          EVENT_BASE="$(jq -r '.pull_request.base.sha' "$GITHUB_EVENT_PATH")"
+          EVENT_HEAD_REF="$(jq -r '.pull_request.head.ref' "$GITHUB_EVENT_PATH")"
+          EVENT_BASE_REF="$(jq -r '.pull_request.base.ref' "$GITHUB_EVENT_PATH")"
+          test "$GITHUB_EVENT_NAME" = pull_request
+          test "$EVENT_HEAD_REF" = "$TRIGGER_BRANCH"
+          test "$EVENT_BASE_REF" = "$BASE_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EVENT_HEAD"
+          test "$(git rev-parse HEAD^)" = "$EVENT_BASE"
+          git fetch --no-tags --force origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$BASE_BRANCH:refs/remotes/origin/$BASE_BRANCH" \
+            "+refs/heads/$TRIGGER_BRANCH:refs/remotes/origin/$TRIGGER_BRANCH"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse "$EXPECTED_MAIN^{tree}")" = "$EXPECTED_MAIN_TREE"
+          test "$(git rev-parse "$EVENT_BASE^^")" = "$EXPECTED_MAIN"
+          test "$(git rev-list --count "$EXPECTED_MAIN..$EVENT_BASE")" = 2
+          test "$(git rev-list --count "$EVENT_BASE..$EVENT_HEAD")" = 1
+          mapfile -t BASE_PATHS < <(git diff --name-only "$EXPECTED_MAIN" "$EVENT_BASE" | sort)
+          test "${#BASE_PATHS[@]}" = 2
+          test "${BASE_PATHS[0]}" = "$WORKFLOW_PATH"
+          test "${BASE_PATHS[1]}" = "$PAYLOAD_PATH"
+          test "$(git diff --name-only "$EVENT_BASE" "$EVENT_HEAD")" = "$TRIGGER_PATH"
+          test "$(sha256sum "$PAYLOAD_PATH" | awk '{print $1}')" = "$PAYLOAD_B64_SHA256"
+          test "$(stat -c %s "$PAYLOAD_PATH")" = "$PAYLOAD_B64_BYTES"
+          test "$(sha256sum "$TRIGGER_PATH" | awk '{print $1}')" = "$TRIGGER_SHA256"
+          test "$(git ls-remote --heads origin "refs/heads/$LOCK_BRANCH" | awk '{print $1}')" = "$EVENT_HEAD"
+          jq -n \
+            --arg main "$EXPECTED_MAIN" \
+            --arg main_tree "$EXPECTED_MAIN_TREE" \
+            --arg base "$EVENT_BASE" \
+            --arg head "$EVENT_HEAD" \
+            --arg base_branch "$BASE_BRANCH" \
+            --arg trigger_branch "$TRIGGER_BRANCH" \
+            --arg lock_branch "$LOCK_BRANCH" \
+            '{schema_version:"ssc-rd04-nd-current-waiver-fna-execution-topology@1",state:"verified",canonical_main:$main,canonical_tree:$main_tree,workflow_base:$base,trigger_head:$head,base_branch:$base_branch,trigger_branch:$trigger_branch,lock_branch:$lock_branch,base_commits:2,base_paths:2,trigger_commits:1,trigger_paths:1}' \
+            > "$OUTPUT_DIR/topology-receipt.json"
+
+      - name: Reconstruct exact bounded executor
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          base64 --decode "$PAYLOAD_PATH" > "$EXECUTOR.xz"
+          test "$(stat -c %s "$EXECUTOR.xz")" = "$PAYLOAD_XZ_BYTES"
+          test "$(sha256sum "$EXECUTOR.xz" | awk '{print $1}')" = "$PAYLOAD_XZ_SHA256"
+          xz -t "$EXECUTOR.xz"
+          xz --decompress --stdout "$EXECUTOR.xz" > "$EXECUTOR"
+          test "$(stat -c %s "$EXECUTOR")" = "$PAYLOAD_BYTES"
+          test "$(sha256sum "$EXECUTOR" | awk '{print $1}')" = "$PAYLOAD_SHA256"
+          python -m py_compile "$EXECUTOR"
+
+      - name: Execute four exact FNA routes once
+        id: execute
+        shell: bash
+        run: |
+          set -uo pipefail
+          printf '%s\n' executing_routes > "$OUTPUT_DIR/STAGE"
+          set +e
+          python "$EXECUTOR" > "$OUTPUT_DIR/execution.log" 2>&1
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > "$OUTPUT_DIR/EXIT_CODE"
+          if [ "$rc" -eq 0 ]; then
+            printf '%s\n' complete > "$OUTPUT_DIR/STAGE"
+          else
+            printf '%s\n' execution_failed > "$OUTPUT_DIR/STAGE"
+          fi
+          (
+            cd "$OUTPUT_DIR"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | sort -z \
+              | xargs -0 sha256sum > SHA256SUMS
+          )
+          exit "$rc"
+
+      - name: Upload exact execution custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-current-waiver-fna-execution-v1
+          path: /tmp/ssc-rd04-nd-current-waiver-fna-execution-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal bounded execution
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.execute.outcome }}" = success
+          test "$(cat "$OUTPUT_DIR/EXIT_CODE")" = 0
+          test "$(cat "$OUTPUT_DIR/STAGE")" = complete
+          (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .state == "bounded_execution_complete" and
+            .failed_or_final_stage == "complete" and
+            .exit_code == 0 and
+            .route_count == 4 and
+            .terminal_route_observations == 4 and
+            .result_spawned_requests == 0 and
+            .source_admissions == 0 and
+            .field_terminalizations == 0 and
+            .matrix_updates == 0 and
+            .row_state_mutations == 0 and
+            .class_closed == false and
+            .outside_human_dependency == false and
+            .additional_execution_authorized_by_this_receipt == false
+          ' "$OUTPUT_DIR/receipt.json" >/dev/null
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse "$EXPECTED_MAIN^{tree}")" = "$EXPECTED_MAIN_TREE"
