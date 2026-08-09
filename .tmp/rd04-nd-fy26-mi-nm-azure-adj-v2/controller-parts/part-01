@@ -1,0 +1,40 @@
+t=2,sort_keys=True)+'\n')
+PY
+  seal; exit 1
+}
+
+[[ "${EVENT_NAME:-}" == pull_request ]] || fail topology event_not_pull_request
+[[ "${HEAD_REPO:-}" == "$REPO" ]] || fail topology head_repo_mismatch
+[[ "$(git rev-parse HEAD)" == "${HEAD_SHA:-}" ]] || fail topology checkout_head_mismatch
+[[ "$(git rev-parse HEAD^)" == "${BASE_SHA:-}" ]] || fail topology trigger_parent_mismatch
+CONTROLLER_HEAD="$(git rev-parse "${BASE_SHA}^")"
+mapfile -t controller_commits < <(git rev-list --reverse "$EXPECTED_PARENT..$CONTROLLER_HEAD")
+[[ ${#controller_commits[@]} -eq $CONTROLLER_PART_COUNT ]] || fail topology controller_commit_count_mismatch
+previous="$EXPECTED_PARENT"
+for i in $(seq 0 $((CONTROLLER_PART_COUNT-1))); do
+  commit="${controller_commits[$i]}"
+  [[ "$(git rev-parse "$commit^")" == "$previous" ]] || fail topology controller_commit_parent_mismatch
+  expected_part=$(printf '%s/part-%02d' "$CONTROLLER_DIR" "$i")
+  mapfile -t one_paths < <(git diff --name-only "$previous" "$commit")
+  [[ ${#one_paths[@]} -eq 1 && "${one_paths[0]}" == "$expected_part" ]] || fail topology controller_commit_path_mismatch
+  [[ "$(git rev-parse "$commit:$expected_part")" == "$(git hash-object "$expected_part")" ]] || fail topology controller_part_blob_mismatch
+  previous="$commit"
+done
+mapfile -t cpaths < <(git diff --name-only "$EXPECTED_PARENT" "$CONTROLLER_HEAD")
+mapfile -t wpaths < <(git diff --name-only "$CONTROLLER_HEAD" "$BASE_SHA")
+mapfile -t tpaths < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+[[ ${#cpaths[@]} -eq $CONTROLLER_PART_COUNT ]] || fail topology controller_part_count_mismatch
+[[ ${#wpaths[@]} -eq 1 && "${wpaths[0]}" == "$WORKFLOW_PATH" ]] || fail topology workflow_path_mismatch
+[[ ${#tpaths[@]} -eq 1 && "${tpaths[0]}" == "$TRIGGER_PATH" ]] || fail topology trigger_path_mismatch
+
+git fetch --quiet origin main
+[[ "$(git rev-parse origin/main)" == "$EXPECTED_PARENT" ]] || fail topology live_main_moved
+mapfile -t parents < <(git show -s --format='%P' "$EXPECTED_PARENT" | tr ' ' '\n')
+[[ ${#parents[@]} -eq 2 && "${parents[0]}" == "$PRE_REFRESH_PARENT" && "${parents[1]}" == "$REFRESH_PRODUCT" ]] || fail topology refresh_merge_parent_mismatch
+[[ "$(git rev-parse "$EXPECTED_PARENT^{tree}")" == "$(git rev-parse "$REFRESH_PRODUCT^{tree}")" ]] || fail topology refresh_merge_tree_mismatch
+mapfile -t refresh_status < <(git diff --name-status "$PRE_REFRESH_PARENT" "$EXPECTED_PARENT")
+[[ ${#refresh_status[@]} -eq 6 ]] || fail topology refresh_path_count_mismatch
+for row in "${refresh_status[@]}"; do
+  [[ "$row" == $'A\t'"$PRODUCT_PREFIX"/* ]] || fail topology refresh_not_addition_only_or_out_of_scope
+done
+[[ "$(git rev-parse "origin/main:$MATRIX_PATH")" == "$EXPECTED_MATR
