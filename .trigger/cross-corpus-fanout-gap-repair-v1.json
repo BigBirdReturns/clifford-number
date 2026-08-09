@@ -1,0 +1,37 @@
+{
+  "schema_version": "cross-corpus-fanout-gap-repair-trigger@1",
+  "canonical_parent": "4edc3f4f65851cf2643e889d93df3b6372a2f468",
+  "map_path": "data/research/clifford-cross-corpus-public-interest-map.json",
+  "map_git_blob": "3d09397a0d99c6f79c32d4a40f1d18d8fe1525ff",
+  "crawl_state_path": "data/crawl/state.json",
+  "crawl_state_git_blob": "471ec73fe029a7d96b29dc38e190255e6b8d5a74",
+  "crawl_sources_path": "data/crawl/sources.json",
+  "crawl_sources_git_blob": "8c7cde54c9193a4181ab748fbd0490301c4ba19e",
+  "expected_gap_count_before": 1,
+  "expected_gap_count_after": 2,
+  "expected_gap_states_after": [
+    {
+      "source_id": "federal-register",
+      "status": "partial",
+      "interpretation": "Acquisition completed only partially; failed query coverage remains open and is not a zero result or evidence of absence."
+    },
+    {
+      "source_id": "sam-opportunities",
+      "status": "skipped_missing_credential",
+      "interpretation": "Acquisition did not run because its configured credential was unavailable; this is not a zero result or evidence of absence."
+    }
+  ],
+  "permanent_paths": [
+    "data/research/clifford-cross-corpus-public-interest-map.json"
+  ],
+  "authority_boundary": {
+    "repository_baseline_repair_only": true,
+    "source_requests": 0,
+    "source_admissions": 0,
+    "field_terminalizations": 0,
+    "matrix_updates": 0,
+    "row_state_mutations": 0,
+    "graph_effect": "none",
+    "outside_human_dependency": false
+  }
+}
