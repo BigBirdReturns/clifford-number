@@ -1,0 +1,154 @@
+name: TEMP adjudicate RD-04 North Dakota FNA transport v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-adjudicate-ssc-rd04-nd-current-waiver-fna-transport-v2.yml'
+      - '.tmp/ssc-rd04-nd-current-waiver-fna-adjudicator-v2/**'
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+  CARRIER_PARENT: a592acea22c69a979f2a90c24a2bafb8c9445759
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  WAIVER_CELL_SHA256: cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe
+  ND_ROW_SHA256: aec9f1e8dd82055c73f7e27506a884b6724118e1f4b61d0b9d53b5b2b5ab2c40
+  TRANSPORT_CANONICAL_PARENT: b1d1d8afb6c957401a762bf9d0b2abc464bd5e07
+  TRANSPORT_CANONICAL_TREE: 64f5b5e9e9d72bdf86ef6cf14d728b2ae996f834
+  TRANSPORT_HEAD: 58ca14c494a05cbe84ea44e5940a72f04050fdfb
+  TRANSPORT_ARTIFACT_ID: '9030196488'
+  TRANSPORT_ARTIFACT_BYTES: '12484702'
+  TRANSPORT_ARTIFACT_SHA256: 80a23c45563929330c61213aacb88d92fa8edd3ba30afb728a523b3014f98827
+  TRANSPORT_RECEIPT_SHA256: 5ad24c52977c9fef7b41aadbc963da6c44427fca9c5cc59c11d06952345abc35
+  ROUTE_RECEIPTS_SHA256: b2440b68b650c9190fc44e69b995cfdf49bd2cc807e8e3010772bb9b141108d4
+  PHYSICAL_REQUESTS_SHA256: fa084cfd9860df593443e2ad7ca872917536f4f6717bd158d063baf5966adaa7
+  REQUEST_PLAN_SHA256: 8556ebfc3794bbcca814f551ddb17fc7eacc62fac06cf91ab2747fedbf9dabaa
+  TRANSPORT_AUTHORITY_SHA256: 4bb48df4003ce66d8752d588c177b0f3830e3c1bde60888a1845a5ee50d6af63
+  PART_00_SHA256: 7a2bdb5a5b24cc324a2eda21e9079f97792d84e9a955d81a8e7165a663e13371
+  PART_01_SHA256: 76e482d55307dc7681ca08aac3c4cd355e99571896ed0504e85c430a4e7df759
+  PART_02_SHA256: c3aa7f36427470d9aa48a5bc3b5d9bf31596f2f6be43e041954defbb82224be0
+  PART_03_SHA256: 54ad5c708bf633060c4f759fc6c4ea6261618d41bd60291b9ab30e21d3e481e9
+  PROGRAM_B64_SHA256: f6cdd75b9cbb71f6591c60d838c387593dea993c05dbcb01795729ea06d7f222
+  PROGRAM_XZ_BYTES: '4808'
+  PROGRAM_XZ_SHA256: a398dbf44c1feb072348bbe0d5d1ed9e604cc760f00912bbb1265ea7932f4d2d
+  PROGRAM_BYTES: '19489'
+  PROGRAM_SHA256: 5a4b35e04b11ca875c1ee08a7f1822f0603bffc668f2fd6904fadefcef9b8e26
+  TARGET_BRANCH: agent/ssc-rd04-nd-current-waiver-fna-transport-adjudication-v2
+  WORKFLOW_PATH: .github/workflows/temp-adjudicate-ssc-rd04-nd-current-waiver-fna-transport-v2.yml
+  PAYLOAD_ROOT: .tmp/ssc-rd04-nd-current-waiver-fna-adjudicator-v2
+  OUTPUT_DIR: /tmp/ssc-rd04-nd-current-waiver-fna-transport-adjudication-v2
+
+concurrency:
+  group: temp-adjudicate-rd04-nd-current-waiver-fna-transport-v2
+  cancel-in-progress: false
+
+jobs:
+  adjudicate:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-current-waiver-fna-transport-adjudication-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Adjudicate exact transport artifact offline
+        id: adjudicate
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$OUTPUT_DIR"; TRANSPORT="$OUT/transport"; PROGRAM="$OUT/adjudication-program.py"
+          rm -rf "$OUT"; mkdir -p "$OUT" "$TRANSPORT"; stage=bootstrap
+          exec > >(tee "$OUT/adjudication.log") 2>&1
+          finalize() {
+            rc=$?; trap - EXIT; set +e
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"; printf '%s\n' "$stage" > "$OUT/STAGE"
+            if [ ! -f "$OUT/receipt.json" ]; then
+              jq -n --arg stage "$stage" --argjson rc "$rc" --arg parent "$CARRIER_PARENT" --arg artifact "$TRANSPORT_ARTIFACT_ID" '{schema_version:"ssc-rd04-nd-current-waiver-fna-transport-adjudication@2",state:"failed_closed",failed_or_final_stage:$stage,exit_code:$rc,carrier_parent:$parent,transport_artifact_id:($artifact|tonumber),source_admissions:0,source_rejections:0,field_decisions:0,promotion_candidates:0,held_open_fields:1,selected_followup_routes:0,source_requests:0,route_executions:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' > "$OUT/receipt.json"
+            fi
+            (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+            exit "$rc"
+          }
+          trap finalize EXIT
+          stage=bind_carrier_and_unchanged_live_matrix
+          test "$HEAD_REPO" = "$GITHUB_REPOSITORY"; test "$HEAD_REF" = "$TARGET_BRANCH"; test "$HEAD_SHA" = "$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD~5)" = "$CARRIER_PARENT"; test "$(git rev-list --count "$CARRIER_PARENT"..HEAD)" -eq 5
+          { printf '%s\n' "$WORKFLOW_PATH"; find "$PAYLOAD_ROOT" -type f -print; } | LC_ALL=C sort > "$OUT/expected-carrier-paths.txt"
+          git diff --name-only "$CARRIER_PARENT" HEAD | LC_ALL=C sort > "$OUT/actual-carrier-paths.txt"
+          diff -u "$OUT/expected-carrier-paths.txt" "$OUT/actual-carrier-paths.txt"
+          git diff --name-only --diff-filter=A "$CARRIER_PARENT" HEAD | LC_ALL=C sort > "$OUT/added-carrier-paths.txt"
+          diff -u "$OUT/expected-carrier-paths.txt" "$OUT/added-carrier-paths.txt"
+          test "$(wc -l < "$OUT/actual-carrier-paths.txt")" -eq 5; test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CARRIER_PARENT" HEAD)"; git diff --check "$CARRIER_PARENT" HEAD
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          git merge-base --is-ancestor "$CARRIER_PARENT" origin/main
+          LIVE_MAIN="$(git rev-parse origin/main)"; LIVE_MAIN_TREE="$(git rev-parse 'origin/main^{tree}')"
+          test "$(git rev-parse "origin/main:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          export CANONICAL_PARENT="$LIVE_MAIN" CURRENT_CANONICAL_TREE="$LIVE_MAIN_TREE"
+          printf '%s\n' "$LIVE_MAIN" > "$OUT/live-main.txt"; printf '%s\n' "$LIVE_MAIN_TREE" > "$OUT/live-main-tree.txt"
+          stage=authenticate_exact_transport_artifact
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$TRANSPORT_ARTIFACT_ID" > "$OUT/transport-artifact.json"
+          jq -e --argjson id "$TRANSPORT_ARTIFACT_ID" --argjson bytes "$TRANSPORT_ARTIFACT_BYTES" --arg digest "sha256:$TRANSPORT_ARTIFACT_SHA256" '.id==$id and .expired==false and .size_in_bytes==$bytes and .digest==$digest' "$OUT/transport-artifact.json" >/dev/null
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$TRANSPORT_ARTIFACT_ID/zip" > "$OUT/transport.zip"
+          test "$(stat -c %s "$OUT/transport.zip")" -eq "$TRANSPORT_ARTIFACT_BYTES"; test "$(sha256sum "$OUT/transport.zip" | awk '{print $1}')" = "$TRANSPORT_ARTIFACT_SHA256"
+          unzip -t "$OUT/transport.zip" > "$OUT/transport-zip-test.txt"; unzip -q "$OUT/transport.zip" -d "$TRANSPORT"; (cd "$TRANSPORT" && sha256sum -c SHA256SUMS)
+          test "$(cat "$TRANSPORT/STAGE")" = complete; test "$(cat "$TRANSPORT/EXIT_CODE")" = 0
+          test "$(sha256sum "$TRANSPORT/execution-receipt.json" | awk '{print $1}')" = "$TRANSPORT_RECEIPT_SHA256"
+          test "$(sha256sum "$TRANSPORT/route-receipts.jsonl" | awk '{print $1}')" = "$ROUTE_RECEIPTS_SHA256"
+          test "$(sha256sum "$TRANSPORT/physical-requests.jsonl" | awk '{print $1}')" = "$PHYSICAL_REQUESTS_SHA256"
+          test "$(sha256sum "$TRANSPORT/request-plan.json" | awk '{print $1}')" = "$REQUEST_PLAN_SHA256"
+          test "$(sha256sum "$TRANSPORT/authority-boundary.json" | awk '{print $1}')" = "$TRANSPORT_AUTHORITY_SHA256"
+          jq -e '.state=="transport_complete" and .canonical_parent=="b1d1d8afb6c957401a762bf9d0b2abc464bd5e07" and .canonical_tree=="64f5b5e9e9d72bdf86ef6cf14d728b2ae996f834" and .carrier_head=="58ca14c494a05cbe84ea44e5940a72f04050fdfb" and .fixed_routes==4 and .initiated_route_attempts==4 and .physical_requests==6 and .terminal_routes==4 and .http_success_routes==3 and .http_non_success_routes==1 and .transport_error_routes==0 and .followed_redirects==2 and .refused_redirects==0 and .result_spawned_requests==0 and .source_admissions==0 and .field_classifications==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and .additional_execution_authorized==false' "$TRANSPORT/execution-receipt.json" >/dev/null
+          stage=reconstruct_exact_adjudication_program
+          cat > "$OUT/expected-part-sha256s.txt" <<SUMS
+          $PART_00_SHA256  $PAYLOAD_ROOT/part-00.b64
+          $PART_01_SHA256  $PAYLOAD_ROOT/part-01.b64
+          $PART_02_SHA256  $PAYLOAD_ROOT/part-02.b64
+          $PART_03_SHA256  $PAYLOAD_ROOT/part-03.b64
+          SUMS
+          sha256sum -c "$OUT/expected-part-sha256s.txt"
+          cat "$PAYLOAD_ROOT"/part-*.b64 | tr -d '\n' > "$OUT/adjudication-program.py.xz.b64"
+          test "$(sha256sum "$OUT/adjudication-program.py.xz.b64" | awk '{print $1}')" = "$PROGRAM_B64_SHA256"
+          base64 -d "$OUT/adjudication-program.py.xz.b64" > "$OUT/adjudication-program.py.xz"
+          test "$(stat -c %s "$OUT/adjudication-program.py.xz")" -eq "$PROGRAM_XZ_BYTES"; test "$(sha256sum "$OUT/adjudication-program.py.xz" | awk '{print $1}')" = "$PROGRAM_XZ_SHA256"
+          xz -dc "$OUT/adjudication-program.py.xz" > "$PROGRAM"; test "$(stat -c %s "$PROGRAM")" -eq "$PROGRAM_BYTES"; test "$(sha256sum "$PROGRAM" | awk '{print $1}')" = "$PROGRAM_SHA256"; python -m py_compile "$PROGRAM"
+          stage=adjudicate_transport_offline
+          python "$PROGRAM" "$TRANSPORT" "$OUT"
+          stage=complete
+          test "$(git rev-parse "origin/main:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          jq -e --arg live "$LIVE_MAIN" --arg tree "$LIVE_MAIN_TREE" '.state=="complete" and .failed_or_final_stage=="complete" and .exit_code==0 and .canonical_parent==$live and .canonical_tree==$tree and .source_admissions==3 and .source_rejections==1 and .field_decisions==1 and .promotion_candidates==0 and .held_open_fields==1 and .selected_followup_routes==3 and .source_requests==0 and .route_executions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and .cumulative_ledger_effect=="none" and .outside_human_dependency==false and .publication_effect=="none" and .adoption_effect=="none" and .graph_effect=="none"' "$OUT/receipt.json" >/dev/null
+          jq -e '.route_count==3 and .source_requests_executed_here==0 and .same_host_expansion==0 and .result_spawned_requests==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and ([.routes[].route_id]==["RD04-ND-CURRENT-WAIVER-FY26-Q1-STATUS-PDF","RD04-ND-CURRENT-WAIVER-FY26-Q2-STATUS-PDF","RD04-ND-CURRENT-WAIVER-FY26-Q3-STATUS-PDF"])' "$OUT/selected-followup-protocol.json" >/dev/null
+      - name: Preserve exact artifact-only adjudication
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-current-waiver-fna-transport-adjudication-v2
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - name: Enforce terminal artifact-only adjudication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$OUTPUT_DIR"; test "${{ steps.adjudicate.outcome }}" = success; test "$(cat "$OUT/EXIT_CODE")" = 0; test "$(cat "$OUT/STAGE")" = complete
+          jq -e '.state=="complete" and .source_admissions==3 and .source_rejections==1 and .field_decisions==1 and .promotion_candidates==0 and .held_open_fields==1 and .selected_followup_routes==3 and .source_requests==0 and .route_executions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false' "$OUT/receipt.json" >/dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
