@@ -1,0 +1,265 @@
+name: TEMP execute RD-04 North Dakota FY2026 archive Azure target v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-fy26-archive-azure-execution-v1/trigger.json'
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+  CARRIER_PARENT: a592acea22c69a979f2a90c24a2bafb8c9445759
+  CARRIER_TREE: c7dbb1df10b409caa7893846a9e4b3e8d1392be0
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  WAIVER_CELL_SHA256: cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe
+  BASE_BRANCH: agent/ssc-rd04-nd-fy26-archive-azure-execution-base-v1
+  HEAD_BRANCH: agent/ssc-rd04-nd-fy26-archive-azure-execution-trigger-v1
+  WORKFLOW_PATH: .github/workflows/temp-execute-ssc-rd04-nd-fy26-archive-azure-v1.yml
+  TRIGGER_PATH: .tmp/rd04-nd-fy26-archive-azure-execution-v1/trigger.json
+  LOCK_REF: refs/heads/lock/ssc-rd04-nd-fy26-archive-azure-execution-v1
+  PROTOCOL_ARTIFACT_ID: '9033007808'
+  PROTOCOL_ARTIFACT_BYTES: '5642'
+  PROTOCOL_ARTIFACT_SHA256: 6c97daf801a0eac73cc63b885ccde358af466305b6f36d225076096c9d413fab
+  ADJUDICATION_RECEIPT_SHA256: 9b9f41de30eb0fac09ee9587fae026648b53c25ceae8d2207da84cddd087372e
+  SELECTED_PROTOCOL_SHA256: d78d651656ef8d34d5141c34f699c2c50873146f8e55635db78b9e1c8d113ca6
+  ROUTE_ID: RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-NV-WI-AZURE-001
+  ROUTE_URL: https://fna-bwbufwdzbabpezgc.z01.azurefd.us/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-NV-WI-7-2026.zip
+  EXACT_HOST: fna-bwbufwdzbabpezgc.z01.azurefd.us
+  MAXIMUM_BODY_BYTES: '100000000'
+  OUTPUT_DIR: /tmp/rd04-nd-fy26-archive-azure-execution-v1
+  WORK_DIR: /tmp/rd04-nd-fy26-archive-azure-execution-v1-work
+
+concurrency:
+  group: temp-rd04-nd-fy26-archive-azure-execution-v1
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-fy26-archive-azure-execution-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy26-archive-azure-execution-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Authenticate protocol, consume exact lease, and execute one Azure GET
+        id: execute
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$OUTPUT_DIR"
+          WORK="$WORK_DIR"
+          PROTOCOL="$WORK/protocol"
+          rm -rf "$OUT" "$WORK"
+          mkdir -p "$OUT" "$PROTOCOL"
+          stage=bootstrap
+
+          finalize() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            if [ ! -f "$OUT/execution-receipt.json" ]; then
+              jq -n \
+                --arg stage "$stage" \
+                --argjson rc "$rc" \
+                --arg route_id "$ROUTE_ID" \
+                --arg route_url "$ROUTE_URL" \
+                --arg lock_ref "$LOCK_REF" \
+                '{
+                  schema_version:"ssc-rd04-nd-fy26-archive-azure-transport@1",
+                  state:"failed_closed",failed_or_final_stage:$stage,exit_code:$rc,
+                  route_id:$route_id,requested_url:$route_url,execution_lock_ref:$lock_ref,
+                  fixed_routes:1,initiated_route_attempts:0,terminal_routes:0,physical_requests:0,
+                  followed_redirects:0,result_spawned_requests:0,
+                  source_admissions:0,field_classifications:0,field_terminalizations:0,
+                  matrix_updates:0,row_state_mutations:0,class_closed:false,
+                  cumulative_ledger_effect:"none",outside_human_dependency:false,
+                  publication_effect:"none",adoption_effect:"none",graph_effect:"none",
+                  additional_execution_authorized:false
+                }' > "$OUT/execution-receipt.json"
+            fi
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+              sha256sum -c SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          stage=bind_exact_two_level_carrier_live_matrix_and_lease
+          test "$HEAD_REPO" = "$GITHUB_REPOSITORY"
+          test "$(git rev-parse HEAD)" = "$EVENT_HEAD_SHA"
+          BASE_SHA="$(git rev-parse HEAD^)"
+          test "$BASE_SHA" = "$EVENT_BASE_SHA"
+          test "$(git rev-parse "$BASE_SHA^")" = "$CARRIER_PARENT"
+          test "$(git rev-list --count "$CARRIER_PARENT..$BASE_SHA")" -eq 1
+          test "$(git rev-list --count "$BASE_SHA..HEAD")" -eq 1
+          test "$(git diff --name-only "$CARRIER_PARENT" "$BASE_SHA")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CARRIER_PARENT" "$BASE_SHA")" = "$WORKFLOW_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CARRIER_PARENT" "$BASE_SHA")"
+          test "$(git diff --name-only "$BASE_SHA" HEAD)" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE_SHA" HEAD)" = "$TRIGGER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$BASE_SHA" HEAD)"
+          git diff --check "$CARRIER_PARENT" HEAD
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CARRIER_PARENT"
+          test "$(git rev-parse 'origin/main^{tree}')" = "$CARRIER_TREE"
+          test "$(git rev-parse "origin/main:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          LOCK_SHA="$(git ls-remote origin "$LOCK_REF" | awk '{print $1}')"
+          test -n "$LOCK_SHA"
+          test "$LOCK_SHA" = "$EVENT_HEAD_SHA"
+          printf '%s\n' "$LOCK_SHA" > "$OUT/execution-lock-head.txt"
+          git show "origin/main:$MATRIX_PATH" > "$OUT/matrix.json"
+          python - "$OUT/matrix.json" <<'PY'
+          import hashlib, json, sys
+          from pathlib import Path
+          matrix=json.loads(Path(sys.argv[1]).read_text())
+          row=[r for r in matrix['rows'] if r.get('unit_id')=='US-STATE-ND']
+          assert len(row)==1 and row[0]['row_state']=='still_open'
+          cell=[c for c in row[0]['cells'] if c.get('field_id')=='abawd_or_work_requirement_waiver_state_and_governing_period']
+          assert len(cell)==1 and cell[0]['state']=='still_open' and cell[0]['terminal'] is False
+          raw=json.dumps(cell[0],sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()
+          assert hashlib.sha256(raw).hexdigest()=='cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe'
+          PY
+          rm "$OUT/matrix.json"
+
+          stage=authenticate_exact_azure_protocol
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$PROTOCOL_ARTIFACT_ID" > "$OUT/protocol-meta.json"
+          jq -e --argjson id "$PROTOCOL_ARTIFACT_ID" --argjson bytes "$PROTOCOL_ARTIFACT_BYTES" --arg digest "sha256:$PROTOCOL_ARTIFACT_SHA256" '.id==$id and .expired==false and .size_in_bytes==$bytes and .digest==$digest' "$OUT/protocol-meta.json" > /dev/null
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$PROTOCOL_ARTIFACT_ID/zip" > "$WORK/protocol.zip"
+          test "$(stat -c %s "$WORK/protocol.zip")" -eq "$PROTOCOL_ARTIFACT_BYTES"
+          test "$(sha256sum "$WORK/protocol.zip" | awk '{print $1}')" = "$PROTOCOL_ARTIFACT_SHA256"
+          unzip -t "$WORK/protocol.zip" > "$OUT/protocol-zip-test.txt"
+          unzip -q "$WORK/protocol.zip" -d "$PROTOCOL"
+          (cd "$PROTOCOL" && sha256sum -c SHA256SUMS)
+          test "$(cat "$PROTOCOL/STAGE")" = complete
+          test "$(cat "$PROTOCOL/EXIT_CODE")" = 0
+          test "$(sha256sum "$PROTOCOL/receipt.json" | awk '{print $1}')" = "$ADJUDICATION_RECEIPT_SHA256"
+          test "$(sha256sum "$PROTOCOL/selected-protocol.json" | awk '{print $1}')" = "$SELECTED_PROTOCOL_SHA256"
+          jq -e '.state=="adjudication_complete" and .source_requests==0 and .route_executions==0 and .redirect_targets_admitted==1 and .selected_followup_routes==1 and .promotion_candidates==0 and .matrix_updates==0' "$PROTOCOL/receipt.json" > /dev/null
+          jq -e --arg route "$ROUTE_ID" --arg url "$ROUTE_URL" --arg host "$EXACT_HOST" --argjson ceiling "$MAXIMUM_BODY_BYTES" '.route_id==$route and .url==$url and .exact_allowed_host==$host and .attempts==1 and .maximum_followed_redirects==0 and .maximum_body_bytes==$ceiling and .require_zip_magic_on_http_success==true and .same_host_expansion==0 and .sibling_path_expansion==0 and .result_spawned_requests==0' "$PROTOCOL/selected-protocol.json" > /dev/null
+
+          stage=execute_one_exact_azure_get
+          python - "$ROUTE_ID" "$ROUTE_URL" "$EXACT_HOST" "$MAXIMUM_BODY_BYTES" "$LOCK_REF" "$EVENT_HEAD_SHA" "$OUT" <<'PY'
+          import hashlib, json, ssl, sys, time
+          from pathlib import Path
+          from urllib.error import HTTPError
+          from urllib.parse import urlparse
+          from urllib.request import HTTPRedirectHandler, Request, build_opener, HTTPSHandler
+
+          route_id,url,host,ceiling,lock_ref,head,out=sys.argv[1],sys.argv[2],sys.argv[3],int(sys.argv[4]),sys.argv[5],sys.argv[6],Path(sys.argv[7])
+          parsed=urlparse(url)
+          assert parsed.scheme=='https' and parsed.netloc==host and parsed.query==''
+          class RefuseRedirect(HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+          opener=build_opener(HTTPSHandler(context=ssl.create_default_context()),RefuseRedirect())
+          req=Request(url,headers={'User-Agent':'RD04-evidence-custody/1.0','Accept':'application/zip,application/octet-stream;q=0.9,*/*;q=0.1'})
+          started=time.time()
+          try:
+              resp=opener.open(req,timeout=180)
+          except HTTPError as exc:
+              resp=exc
+          status=int(resp.status)
+          headers=list(resp.headers.items())
+          body=resp.read(ceiling+1)
+          elapsed_ms=round((time.time()-started)*1000)
+          if len(body)>ceiling:
+              raise RuntimeError(f'body exceeds {ceiling}-byte ceiling')
+          final_url=resp.geturl()
+          content_type=resp.headers.get('Content-Type','')
+          location=resp.headers.get('Location')
+          body_sha=hashlib.sha256(body).hexdigest()
+          zip_magic=body.startswith((b'PK\x03\x04',b'PK\x05\x06',b'PK\x07\x08'))
+          (out/'response-body.bin').write_bytes(body)
+          (out/'response-headers.json').write_text(json.dumps(headers,indent=2)+'\n')
+          if status==200:
+              if final_url!=url:
+                  raise RuntimeError(f'unexpected effective URL {final_url}')
+              if not zip_magic:
+                  raise RuntimeError('HTTP 200 body lacks ZIP magic')
+              terminal_state='http_success_zip_captured'
+              (out/'source.zip').write_bytes(body)
+          elif 300 <= status < 400:
+              if not location:
+                  raise RuntimeError('redirect response lacks Location')
+              terminal_state='redirect_refused_terminal'
+          else:
+              terminal_state='http_non_success_terminal'
+          route={
+              'schema_version':'ssc-rd04-nd-fy26-archive-azure-route-receipt@1',
+              'route_id':route_id,'requested_url':url,'effective_url':final_url,
+              'http_status':status,'content_type':content_type,'location':location,
+              'body_bytes':len(body),'body_sha256':body_sha,'zip_magic':zip_magic,
+              'elapsed_ms':elapsed_ms,'physical_requests':1,'followed_redirects':0,
+              'result_spawned_requests':0,'terminal_state':terminal_state,
+              'execution_lock_ref':lock_ref,'execution_lock_head':head
+          }
+          (out/'route-receipt.json').write_text(json.dumps(route,indent=2,sort_keys=True)+'\n')
+          receipt={
+              'schema_version':'ssc-rd04-nd-fy26-archive-azure-transport@1',
+              'state':'transport_complete','failed_or_final_stage':'complete','exit_code':0,
+              'route_id':route_id,'requested_url':url,'execution_lock_ref':lock_ref,'execution_lock_head':head,
+              'fixed_routes':1,'initiated_route_attempts':1,'terminal_routes':1,'physical_requests':1,
+              'followed_redirects':0,'result_spawned_requests':0,
+              'http_status':status,'content_type':content_type,'location':location,
+              'body_bytes':len(body),'body_sha256':body_sha,'zip_magic':zip_magic,
+              'terminal_state':terminal_state,
+              'source_admissions':0,'field_classifications':0,'field_terminalizations':0,
+              'matrix_updates':0,'row_state_mutations':0,'class_closed':False,
+              'cumulative_ledger_effect':'none','outside_human_dependency':False,
+              'publication_effect':'none','adoption_effect':'none','graph_effect':'none',
+              'additional_execution_authorized':False
+          }
+          (out/'execution-receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          PY
+
+          stage=complete
+      - name: Preserve terminal Azure archive transport
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy26-archive-azure-execution-v1
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - name: Enforce one terminal request and zero semantic effect
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.execute.outcome }}" = success
+          test "$(cat "$OUTPUT_DIR/STAGE")" = complete
+          test "$(cat "$OUTPUT_DIR/EXIT_CODE")" = 0
+          (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
+          jq -e --arg head "${{ github.event.pull_request.head.sha }}" --arg lock "$LOCK_REF" '
+            .state=="transport_complete" and .execution_lock_head==$head and .execution_lock_ref==$lock and
+            .fixed_routes==1 and .initiated_route_attempts==1 and .terminal_routes==1 and
+            .physical_requests==1 and .followed_redirects==0 and .result_spawned_requests==0 and
+            .source_admissions==0 and .field_terminalizations==0 and .matrix_updates==0 and
+            .row_state_mutations==0 and .class_closed==false and .additional_execution_authorized==false
+          ' "$OUTPUT_DIR/execution-receipt.json" > /dev/null
