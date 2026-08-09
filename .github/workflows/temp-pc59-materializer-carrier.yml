@@ -1,132 +1,110 @@
-name: TEMP qualify exact PC-59 product tree
+name: TEMP publish exact qualified PC-59 product
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [synchronize, reopened]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  actions: read
+  contents: write
+  pull-requests: write
+  issues: write
 
 concurrency:
-  group: pc59-materializer-carrier
-  cancel-in-progress: true
+  group: pc59-product-publisher
+  cancel-in-progress: false
 
 jobs:
-  qualify:
+  publish:
     runs-on: ubuntu-24.04
-    timeout-minutes: 360
+    timeout-minutes: 120
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPOSITORY: ${{ github.repository }}
-      CHUNK_BLOBS: '00afcc70c0f8c71fdf654960a0aee911f6539b85 1870b7c7a353ca21d06c991eb6c24026b5878871 f268960932f2e96c94d58594a282c9432a49b207 300266349434564928b5ecdc63cd16feb6c3b690 459172d20e965ab8b13873bbb8ce6cd0d8544a43 9b284c1f367abbd62c1b83083bc60c281d364a3c 8ddf1971794fda0ca047ee069e69a3515274030d e8487726a6f6beb0f39e87c072653fd575c6fa38 e5d5f4a14f12ed376466becddebcdb2b52425a04'
+      QUALIFIER_RUN: '31294560504'
+      QUALIFIER_ARTIFACT: '9032608869'
+      QUALIFIER_DIGEST: 'sha256:6882402385ebd8014c5cfc8a7c2a94cf77d1acc9b00b0198662f08f541452037'
+      QUALIFIER_HEAD: '5886d3c87bf3d083b6de6c376579067952018c0a'
       PARENT: a592acea22c69a979f2a90c24a2bafb8c9445759
       PARENT_TREE: c7dbb1df10b409caa7893846a9e4b3e8d1392be0
+      PRODUCT_TREE: 9057a3daca6e8420c83652d5ba2669c2f2ae34a5
+      PRODUCT_BRANCH: agent/pc59-materializer
       ARCHIVE_SHA256: 8a56d6209fba1a451cf733cf2d67b2e6dcc37e45209d70d340576773e5f7eef0
       MANIFEST_SHA256: e209ea8ba3d59849c24d4f217251b0053c71d559e838bc7f2968881f70942ee3
-      WORK: /tmp/pc59-qualified-product
-      RECEIPT: /tmp/pc59-qualified-product-receipt
+      CHUNK_BLOBS: '00afcc70c0f8c71fdf654960a0aee911f6539b85 1870b7c7a353ca21d06c991eb6c24026b5878871 f268960932f2e96c94d58594a282c9432a49b207 300266349434564928b5ecdc63cd16feb6c3b690 459172d20e965ab8b13873bbb8ce6cd0d8544a43 9b284c1f367abbd62c1b83083bc60c281d364a3c 8ddf1971794fda0ca047ee069e69a3515274030d e8487726a6f6beb0f39e87c072653fd575c6fa38 e5d5f4a14f12ed376466becddebcdb2b52425a04'
+      WORK: /tmp/pc59-publisher
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - name: Authenticate, reconstruct, and qualify exact product
+        with: { fetch-depth: 0 }
+      - name: Authenticate receipt and reconstruct frozen bytes
         shell: bash
         run: |
           set -Eeuo pipefail
-          mkdir -p "$WORK" "$RECEIPT"
-          head=$(git rev-parse HEAD); base=$(git rev-parse HEAD^^^)
-          test "$(git rev-list --count "$base..$head")" = 3
-          git merge-base --is-ancestor "$PARENT" "$base"
-          test "$(git rev-parse "$PARENT^{tree}")" = "$PARENT_TREE"
-          git diff --name-only "$base" "$head" | sort > "$RECEIPT/carrier-paths.txt"
-          printf '%s\n' \
-            .github/workflows/temp-pc59-materializer-carrier.yml \
-            .tmp/pc59/local-qualification-receipt.json \
-            .tmp/pc59/product-manifest.json > "$RECEIPT/expected-carrier-paths.txt"
-          cmp "$RECEIPT/expected-carrier-paths.txt" "$RECEIPT/carrier-paths.txt"
-
+          mkdir -p "$WORK/product"
+          test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/temp-pc59-materializer-carrier.yml'
+          git merge-base --is-ancestor "$PARENT" HEAD^
+          gh api "/repos/$GH_REPOSITORY/actions/runs/$QUALIFIER_RUN" > "$WORK/run.json"
+          test "$(jq -r .head_sha "$WORK/run.json")" = "$QUALIFIER_HEAD"
+          test "$(jq -r .status "$WORK/run.json")" = completed
+          test "$(jq -r .conclusion "$WORK/run.json")" = success
+          gh api "/repos/$GH_REPOSITORY/actions/artifacts/$QUALIFIER_ARTIFACT" > "$WORK/artifact.json"
+          test "$(jq -r .workflow_run.id "$WORK/artifact.json")" = "$QUALIFIER_RUN"
+          test "$(jq -r .digest "$WORK/artifact.json")" = "$QUALIFIER_DIGEST"
+          cp .tmp/pc59/product-manifest.json "$WORK/manifest.json"
+          test "$(sha256sum "$WORK/manifest.json" | cut -d' ' -f1)" = "$MANIFEST_SHA256"
           : > "$WORK/product.b64"
           for blob in $CHUNK_BLOBS; do
-            gh api "/repos/${GH_REPOSITORY}/git/blobs/${blob}" --jq .content \
-              | tr -d '\n' | base64 -d >> "$WORK/product.b64"
+            gh api "/repos/$GH_REPOSITORY/git/blobs/$blob" --jq .content | tr -d '\n' | base64 -d >> "$WORK/product.b64"
           done
           base64 -d "$WORK/product.b64" > "$WORK/product.tar.gz"
-          cp .tmp/pc59/product-manifest.json "$WORK/manifest.json"
           test "$(sha256sum "$WORK/product.tar.gz" | cut -d' ' -f1)" = "$ARCHIVE_SHA256"
-          test "$(sha256sum "$WORK/manifest.json" | cut -d' ' -f1)" = "$MANIFEST_SHA256"
-
-          python - <<'PY'
-          import hashlib,json,os,pathlib,tarfile
-          w=pathlib.Path(os.environ['WORK']); r=pathlib.Path(os.environ['RECEIPT'])
-          m=json.loads((w/'manifest.json').read_text())
-          assert m['qualified_parent']==os.environ['PARENT'] and m['qualified_parent_tree']==os.environ['PARENT_TREE']
-          assert m['permanent_paths']==14 and len(m['files'])==14 and len({x['path'] for x in m['files']})==14
-          expected=sorted(x['path'] for x in m['files']); root=(w/'product').resolve(); root.mkdir()
-          with tarfile.open(w/'product.tar.gz') as t:
-              members=t.getmembers(); assert sorted(x.name for x in members if x.isfile())==expected
-              for x in members: assert str((root/x.name).resolve()).startswith(str(root)+os.sep)
-              t.extractall(root)
-          for x in m['files']:
-              b=(root/x['path']).read_bytes(); assert len(b)==x['bytes']; assert hashlib.sha256(b).hexdigest()==x['sha256']
-              assert hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()==x['git_blob_sha']
-          (r/'product-paths.txt').write_text('\n'.join(expected)+'\n')
-          PY
-
+          tar -xzf "$WORK/product.tar.gz" -C "$WORK/product"
           git fetch --no-tags origin main
-          live=$(git rev-parse origin/main); printf '%s\n' "$live" > "$RECEIPT/live-main.txt"
-          git merge-base --is-ancestor "$PARENT" "$live"
-          git diff --name-only "$PARENT" "$live" | sort > "$RECEIPT/main-successor-paths.txt"
-          comm -12 "$RECEIPT/product-paths.txt" "$RECEIPT/main-successor-paths.txt" > "$RECEIPT/main-overlap.txt"
-          test ! -s "$RECEIPT/main-overlap.txt"
-          while IFS= read -r path; do ! git cat-file -e "$live:$path" 2>/dev/null; done < "$RECEIPT/product-paths.txt"
-
-          rm -f /tmp/pc59-index; GIT_INDEX_FILE=/tmp/pc59-index git read-tree "$PARENT"
-          python - <<'PY' > "$RECEIPT/index.sh"
-          import json,os,pathlib,shlex
-          w=pathlib.Path(os.environ['WORK']); m=json.loads((w/'manifest.json').read_text())
-          for x in m['files']:
-              p=w/'product'/x['path']; print(f"b=$(git hash-object -w -- {shlex.quote(str(p))})")
-              print(f"test \"$b\" = {x['git_blob_sha']}")
-              print(f"GIT_INDEX_FILE=/tmp/pc59-index git update-index --add --cacheinfo 100644,$b,{shlex.quote(x['path'])}")
-          PY
-          source "$RECEIPT/index.sh"
-          tree=$(GIT_INDEX_FILE=/tmp/pc59-index git write-tree); printf '%s\n' "$tree" > "$RECEIPT/product-tree.txt"
-          GIT_INDEX_FILE=/tmp/pc59-index git diff-index --cached --name-status "$PARENT" > "$RECEIPT/product-delta.tsv"
-          test "$(wc -l < "$RECEIPT/product-delta.tsv" | tr -d ' ')" = 14; awk '$1!="A"{exit 1}' "$RECEIPT/product-delta.tsv"
-          cut -f2 "$RECEIPT/product-delta.tsv" | sort | cmp "$RECEIPT/product-paths.txt" -
-
-          git worktree add --detach "$WORK/repo" "$live"
-          while IFS= read -r path; do mkdir -p "$WORK/repo/$(dirname "$path")"; cp "$WORK/product/$path" "$WORK/repo/$path"; done < "$RECEIPT/product-paths.txt"
-          cd "$WORK/repo"
-          node test/preference-linkage-repository-owner-login-canonical-profile-api-location-account-type-state-suspension-assurance.test.js 2>&1 | tee "$RECEIPT/standalone.log"
-          node test/preference-custody-manifest-v57.test.js 2>&1 | tee "$RECEIPT/floor-v57.log"
-          : > "$RECEIPT/historical-floors.log"
-          for f in $(find test -maxdepth 1 -type f -name 'preference-custody-manifest-v*.test.js' | sort -V); do echo "=== $f ===" | tee -a "$RECEIPT/historical-floors.log"; node "$f" 2>&1 | tee -a "$RECEIPT/historical-floors.log"; done
-          node test/preference-custody-manifest.test.js 2>&1 | tee -a "$RECEIPT/historical-floors.log"
-          node tools/validate-no-magic-human-gate.mjs 2>&1 | tee "$RECEIPT/no-magic-human.log"
-          node test/no-magic-human-gate.test.js 2>&1 | tee -a "$RECEIPT/no-magic-human.log"
-          npm run release:check 2>&1 | tee "$RECEIPT/release-check.log"
-
-          git fetch --no-tags origin main; final=$(git rev-parse origin/main)
-          git merge-base --is-ancestor "$PARENT" "$final"
-          git diff --name-only "$PARENT" "$final" | sort > "$RECEIPT/final-main-successor-paths.txt"
-          comm -12 "$RECEIPT/product-paths.txt" "$RECEIPT/final-main-successor-paths.txt" > "$RECEIPT/final-main-overlap.txt"; test ! -s "$RECEIPT/final-main-overlap.txt"
-          printf '%s\n' "$final" > "$RECEIPT/final-main.txt"
+          git merge-base --is-ancestor "$PARENT" origin/main
+          git diff --name-only "$PARENT" origin/main | sort > "$WORK/main-paths.txt"
+          jq -r '.files[].path' "$WORK/manifest.json" | sort > "$WORK/product-paths.txt"
+          comm -12 "$WORK/main-paths.txt" "$WORK/product-paths.txt" > "$WORK/overlap.txt"
+          test ! -s "$WORK/overlap.txt"
+      - name: Publish exact one-parent product and open review
+        shell: bash
+        run: |
+          set -Eeuo pipefail
           python - <<'PY'
-          import json,os,pathlib
-          r=pathlib.Path(os.environ['RECEIPT']); w=pathlib.Path(os.environ['WORK']); m=json.loads((w/'manifest.json').read_text())
-          receipt={'schema_version':'pc59-hosted-qualification@1','status':'complete','issue':1662,'qualified_parent':os.environ['PARENT'],'qualified_parent_tree':os.environ['PARENT_TREE'],'observed_live_main':(r/'final-main.txt').read_text().strip(),'product_tree':(r/'product-tree.txt').read_text().strip(),'permanent_paths':14,'product_blobs':{x['path']:x['git_blob_sha'] for x in m['files']},'standalone_pc59':'pass','floor_v57':'pass','historical_floor_reconstruction':'pass','base_preference_custody':'pass','no_magic_human':'pass','release_check':'pass','ref_updates':0,'outside_human_dependency':False,'graph_effect':'none'}
-          (r/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          import base64, hashlib, json, os, pathlib, urllib.error, urllib.request
+          repo=os.environ['GH_REPOSITORY']; token=os.environ['GH_TOKEN']; work=pathlib.Path(os.environ['WORK'])
+          manifest=json.loads((work/'manifest.json').read_text())
+          def api(method,path,payload=None):
+              data=None if payload is None else json.dumps(payload).encode()
+              req=urllib.request.Request('https://api.github.com/repos/'+repo+path,data=data,method=method,headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'})
+              try:
+                  with urllib.request.urlopen(req) as r: return json.load(r)
+              except urllib.error.HTTPError as e:
+                  if e.code==422: return {'_status':422,'body':e.read().decode()}
+                  raise
+          for f in manifest['files']:
+              b=(work/'product'/f['path']).read_bytes()
+              assert len(b)==f['bytes'] and hashlib.sha256(b).hexdigest()==f['sha256']
+              assert hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()==f['git_blob_sha']
+              assert api('POST','/git/blobs',{'content':base64.b64encode(b).decode(),'encoding':'base64'})['sha']==f['git_blob_sha']
+          tree=api('POST','/git/trees',{'base_tree':os.environ['PARENT_TREE'],'tree':[{'path':f['path'],'mode':'100644','type':'blob','sha':f['git_blob_sha']} for f in manifest['files']]})['sha']
+          assert tree==os.environ['PRODUCT_TREE']
+          commit=api('POST','/git/commits',{'message':'Complete PC-59 owner profile and account-state custody','tree':tree,'parents':[os.environ['PARENT']]})['sha']
+          created=api('POST','/git/refs',{'ref':'refs/heads/'+os.environ['PRODUCT_BRANCH'],'sha':commit})
+          if created.get('_status')==422:
+              assert api('GET','/git/ref/heads/'+os.environ['PRODUCT_BRANCH'])['object']['sha']==commit
+          owner=repo.split('/')[0]
+          pulls=api('GET','/pulls?state=open&head='+owner+':'+os.environ['PRODUCT_BRANCH'])
+          if pulls: pr=pulls[0]['number']
+          else:
+              pr=api('POST','/pulls',{'title':'Add PC-59 owner profile, API location, account-state, and suspension custody','head':os.environ['PRODUCT_BRANCH'],'base':'main','body':f"Advances #1662. Issue remains open until canonical proof and cleanup. Exact product `{commit}`; tree `{tree}`; one parent; fourteen permanent additions; zero transport paths."})['number']
+          api('POST',f'/issues/{pr}/comments',{'body':f"@codex review\n\nReview exact PC-59 product `{commit}` / tree `{tree}`. Recheck one-parent/fourteen-path topology, owner login/profile/API/account-state semantics, lifecycle safeguards, recursive floor-v56 source custody, canonical JSON and snapshot/cache refusal, frontier preservation, read-only workflows, and authority ceilings. Report actionable P0-P2 findings; otherwise record no major issue."})
+          receipt={'status':'complete','product_commit':commit,'product_tree':tree,'product_pr':pr,'ref_updates':1,'outside_human_dependency':False,'graph_effect':'none'}
+          (work/'publication-receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
           PY
-          find "$RECEIPT" -maxdepth 1 -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > "$RECEIPT/SHA256SUMS"
       - uses: actions/upload-artifact@v4
         with:
-          name: pc59-qualified-product-tree
-          path: /tmp/pc59-qualified-product-receipt
+          name: pc59-product-publication-receipt
+          path: /tmp/pc59-publisher
           if-no-files-found: error
           retention-days: 90
