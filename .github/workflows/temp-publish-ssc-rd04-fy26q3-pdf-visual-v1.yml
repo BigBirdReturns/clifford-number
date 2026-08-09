@@ -1,0 +1,97 @@
+name: TEMP publish exact RD-04 FY2026 Q3 PDF visual custody v1
+
+on:
+  pull_request:
+    branches:
+      - observer/ssc-rd04-fy26q3-pdf-visual-publish-base-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.trigger/ssc-rd04-fy26q3-pdf-visual-publish-v1'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: ssc-rd04-fy26q3-pdf-visual-publish-v1
+  cancel-in-progress: false
+
+env:
+  CANONICAL_MAIN: a592acea22c69a979f2a90c24a2bafb8c9445759
+  WORKFLOW_PATH: .github/workflows/temp-publish-ssc-rd04-fy26q3-pdf-visual-v1.yml
+  TRIGGER_PATH: .trigger/ssc-rd04-fy26q3-pdf-visual-publish-v1
+  OUTPUT_BRANCH: observer/ssc-rd04-fy26q3-pdf-visual-custody-v1
+  ARTIFACT_ID: '9030574383'
+  ARTIFACT_BYTES: '222813'
+  ARTIFACT_DIGEST: sha256:39477a4cb5ba89b03a3edf75c66148fed86ccd660493ded8d036724851fccfd0
+  PDF_BYTES: '114028'
+  PDF_SHA256: ab65b3bbc62f27a6d3aa2811991b257e0f226c08791f0bdf6ddf4024a4b0e8c1
+  PDF_PATH: review/rd04-fy26q3-waiver-status/source.pdf
+  MANIFEST_PATH: review/rd04-fy26q3-waiver-status/visual-custody.json
+
+jobs:
+  publish:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'observer/ssc-rd04-fy26q3-pdf-visual-publish-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Authenticate artifact and publish disposable PDF branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          HEAD_SHA="$(jq -r '.pull_request.head.sha' "$GITHUB_EVENT_PATH")"
+          BASE_SHA="$(jq -r '.pull_request.base.sha' "$GITHUB_EVENT_PATH")"
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          test "$(git rev-parse "$BASE_SHA^")" = "$CANONICAL_MAIN"
+          test "$(git diff --name-only "$CANONICAL_MAIN" "$BASE_SHA")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")" = "$TRIGGER_PATH"
+          test -z "$(git ls-remote --heads origin "refs/heads/$OUTPUT_BRANCH")"
+
+          ROOT="$RUNNER_TEMP/ssc-rd04-fy26q3-visual-v1"
+          SRC="$ROOT/source"
+          WT="$ROOT/worktree"
+          rm -rf "$ROOT"
+          mkdir -p "$SRC"
+
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" > "$ROOT/artifact.json"
+          jq -e --argjson id "$ARTIFACT_ID" --argjson bytes "$ARTIFACT_BYTES" --arg digest "$ARTIFACT_DIGEST" \
+            '.id==$id and .size_in_bytes==$bytes and .digest==$digest and .expired==false' "$ROOT/artifact.json" >/dev/null
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$ROOT/artifact.zip"
+          test "$(stat -c %s "$ROOT/artifact.zip")" = "$ARTIFACT_BYTES"
+          test "sha256:$(sha256sum "$ROOT/artifact.zip" | awk '{print $1}')" = "$ARTIFACT_DIGEST"
+          unzip -t "$ROOT/artifact.zip" >/dev/null
+          unzip -q "$ROOT/artifact.zip" -d "$SRC"
+          (cd "$SRC" && sha256sum -c SHA256SUMS)
+          test "$(stat -c %s "$SRC/source.pdf")" = "$PDF_BYTES"
+          test "$(sha256sum "$SRC/source.pdf" | awk '{print $1}')" = "$PDF_SHA256"
+
+          git worktree add --detach "$WT" "$CANONICAL_MAIN"
+          cd "$WT"
+          mkdir -p "$(dirname "$PDF_PATH")"
+          cp "$SRC/source.pdf" "$PDF_PATH"
+          jq -n \
+            --arg parent "$CANONICAL_MAIN" \
+            --argjson artifact "$ARTIFACT_ID" \
+            --arg digest "$ARTIFACT_DIGEST" \
+            --argjson bytes "$PDF_BYTES" \
+            --arg sha "$PDF_SHA256" \
+            --arg path "$PDF_PATH" \
+            '{schema_version:"ssc-rd04-fy26q3-pdf-visual-custody@1",authority:"visual_review_transport_only",canonical_parent:$parent,source_artifact:$artifact,source_artifact_digest:$digest,pdf_path:$path,pdf_bytes:$bytes,pdf_sha256:$sha,source_admission:false,field_decision:false,matrix_update:false,row_state_mutation:false,class_closed:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' > "$MANIFEST_PATH"
+          git add "$PDF_PATH" "$MANIFEST_PATH"
+          git diff --cached --check
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m 'Publish exact FY2026 Q3 PDF for disposable visual custody'
+          git push origin "HEAD:refs/heads/$OUTPUT_BRANCH"
+
+          test "$(git ls-remote --heads origin "refs/heads/$OUTPUT_BRANCH" | awk '{print $1}')" = "$(git rev-parse HEAD)"
