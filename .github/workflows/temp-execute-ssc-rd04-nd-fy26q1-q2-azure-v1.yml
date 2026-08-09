@@ -1,0 +1,146 @@
+name: TEMP execute RD-04 FY2026 Q1 Q2 Azure PDFs
+
+on:
+  pull_request:
+    branches: [agent/ssc-rd04-nd-fy26q1-q2-azure-execution-base-v1]
+    types: [opened]
+    paths: [.trigger/ssc-rd04-nd-fy26q1-q2-azure-execution-v1.json]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ssc-rd04-nd-fy26q1-q2-azure-execution-v1
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy26q1-q2-azure-execution-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      MAIN: a592acea22c69a979f2a90c24a2bafb8c9445759
+      BASE: agent/ssc-rd04-nd-fy26q1-q2-azure-execution-base-v1
+      HEAD: agent/ssc-rd04-nd-fy26q1-q2-azure-execution-trigger-v1
+      LOCK: lock/ssc-rd04-nd-fy26q1-q2-azure-execution-v1
+      WF: .github/workflows/temp-execute-ssc-rd04-nd-fy26q1-q2-azure-v1.yml
+      TRIGGER: .trigger/ssc-rd04-nd-fy26q1-q2-azure-execution-v1.json
+      PROTOCOL_ARTIFACT_ID: '9030949303'
+      PROTOCOL_ARTIFACT_BYTES: '6226'
+      PROTOCOL_ARTIFACT_SHA256: 6cb36d6919f96c339ea69d4787fea114859c5e29d75339c96f8d0c2440c44dfa
+      PROTOCOL_RECEIPT_SHA256: 96b98768ab5f38dc0807dbf4e45ff28b5d64b58f1c78415d85e849f529c62d4f
+      PROTOCOL_SHA256: 473073ab279853c9afbd277772fadc9bfae58f4c41dcf86f7c54cd2d6db6fb98
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - id: run
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          O="$RUNNER_TEMP/out"; P="$RUNNER_TEMP/protocol"; mkdir -p "$O" "$P" "$O/headers" "$O/bodies" "$O/stderr"
+          stage=topology
+          sums(){ python - "$O" <<'PY'
+          import hashlib,pathlib,sys
+          r=pathlib.Path(sys.argv[1]); rows=[]
+          for p in sorted(x for x in r.rglob('*') if x.is_file() and x.name!='SHA256SUMS'):
+              rows.append(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(r).as_posix()}\n')
+          (r/'SHA256SUMS').write_text(''.join(rows))
+          PY
+          }
+          fail(){ c=$?; set +e; printf '%s\n' "$stage" >"$O/STAGE"; printf '%s\n' "$c" >"$O/EXIT_CODE"; ST="$stage" C="$c" O="$O" python - <<'PY'
+          import json,os,pathlib
+          p=pathlib.Path(os.environ['O']); p.joinpath('failure-receipt.json').write_text(json.dumps({'schema_version':'ssc-rd04-nd-fy26q1-q2-azure-execution-failure@1','state':'failed_closed','stage':os.environ['ST'],'exit_code':int(os.environ['C']),'fixed_routes':2,'terminal_routes':0,'physical_requests':0,'source_admissions':0,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,'additional_execution_authorized':False},indent=2,sort_keys=True)+'\n')
+          PY
+          sums; exit "$c"; }
+          trap fail ERR
+          B='${{ github.event.pull_request.base.sha }}'; H='${{ github.event.pull_request.head.sha }}'
+          test '${{ github.event.pull_request.base.ref }}' = "$BASE"; test '${{ github.event.pull_request.head.ref }}' = "$HEAD"
+          test "$(git rev-parse "$B^")" = "$MAIN"; test "$(git rev-parse "$H^")" = "$B"
+          test "$(git diff --name-only "$MAIN" "$B")" = "$WF"; test "$(git diff --name-only "$B" "$H")" = "$TRIGGER"
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main" "+refs/heads/$LOCK:refs/remotes/origin/$LOCK"
+          test "$(git rev-parse origin/main)" = "$MAIN"; test "$(git rev-parse "origin/$LOCK")" = "$H"
+          cp "$TRIGGER" "$O/trigger.json"
+          python - "$O/trigger.json" "$H" <<'PY'
+          import json,pathlib,sys
+          got=json.loads(pathlib.Path(sys.argv[1]).read_text()); head=sys.argv[2]
+          exp={'schema_version':'ssc-rd04-nd-fy26q1-q2-azure-execution-trigger@1','canonical_parent':'a592acea22c69a979f2a90c24a2bafb8c9445759','carrier_head':head,'lock_branch':'lock/ssc-rd04-nd-fy26q1-q2-azure-execution-v1','protocol_artifact_id':9030949303,'protocol_artifact_sha256':'6cb36d6919f96c339ea69d4787fea114859c5e29d75339c96f8d0c2440c44dfa','protocol_sha256':'473073ab279853c9afbd277772fadc9bfae58f4c41dcf86f7c54cd2d6db6fb98','authorized_route_attempts':2,'maximum_followed_redirects':0,'maximum_body_bytes':12000000,'result_spawned_requests':0,'source_admissions':0,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False}
+          assert got==exp,(got,exp)
+          PY
+          stage=authenticate_protocol
+          gh api "repos/$REPO/actions/artifacts/$PROTOCOL_ARTIFACT_ID" >"$O/protocol-artifact.json"
+          jq -e --argjson i "$PROTOCOL_ARTIFACT_ID" --argjson b "$PROTOCOL_ARTIFACT_BYTES" --arg d "sha256:$PROTOCOL_ARTIFACT_SHA256" '.id==$i and .size_in_bytes==$b and .digest==$d and .expired==false' "$O/protocol-artifact.json" >/dev/null
+          gh api "repos/$REPO/actions/artifacts/$PROTOCOL_ARTIFACT_ID/zip" >"$O/protocol.zip"
+          test "$(stat -c%s "$O/protocol.zip")" = "$PROTOCOL_ARTIFACT_BYTES"; test "$(sha256sum "$O/protocol.zip"|cut -d' ' -f1)" = "$PROTOCOL_ARTIFACT_SHA256"
+          unzip -t "$O/protocol.zip" >"$O/protocol-zip-test.txt"; unzip -q "$O/protocol.zip" -d "$P"; (cd "$P" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$P/receipt.json"|cut -d' ' -f1)" = "$PROTOCOL_RECEIPT_SHA256"; test "$(sha256sum "$P/selected-followup-protocol.json"|cut -d' ' -f1)" = "$PROTOCOL_SHA256"
+          cp "$P/selected-followup-protocol.json" "$O/request-plan.json"
+          python - "$O/request-plan.json" <<'PY'
+          import json,pathlib,sys
+          p=json.loads(pathlib.Path(sys.argv[1]).read_text())
+          urls=['https://fna-bwbufwdzbabpezgc.z01.azurefd.us/sites/default/files/resource-files/FY26-Quarter-1-ABAWD-Waiver-Status.pdf','https://fna-bwbufwdzbabpezgc.z01.azurefd.us/sites/default/files/resource-files/FY26-Quarter-2-ABAWD-Waiver-Status.pdf']
+          assert p['state']=='selected_unexecuted' and p['fixed_route_count']==2 and len(p['routes'])==2 and p['additional_execution_authorized'] is True
+          assert [r['url'] for r in p['routes']]==urls
+          assert [r['route_id'] for r in p['routes']]==['RD04-ND-CURRENT-WAIVER-FY26Q1-AZURE-001','RD04-ND-CURRENT-WAIVER-FY26Q2-AZURE-001']
+          for r in p['routes']:
+              assert r['attempts']==1 and r['exact_host']=='fna-bwbufwdzbabpezgc.z01.azurefd.us' and r['maximum_followed_redirects']==0 and r['maximum_body_bytes']==12000000 and r['require_pdf_magic'] is True and r['same_host_expansion']==0 and r['result_spawned_requests']==0
+          assert len(p['excluded_routes'])==1 and p['excluded_routes'][0]['artifact_id']==9030574383
+          PY
+          stage=execute_two_exact_routes
+          python - "$O/request-plan.json" "$O" <<'PY'
+          import hashlib,json,pathlib,ssl,sys,time,urllib.error,urllib.parse,urllib.request
+          plan=json.loads(pathlib.Path(sys.argv[1]).read_text()); out=pathlib.Path(sys.argv[2]); limit=12_000_000
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self,req,fp,code,msg,headers,newurl): return None
+          opener=urllib.request.build_opener(urllib.request.HTTPSHandler(context=ssl.create_default_context()),NoRedirect())
+          results=[]
+          for i,r in enumerate(plan['routes'],1):
+              url=r['url']; rid=r['route_id']; parsed=urllib.parse.urlsplit(url)
+              assert parsed.scheme=='https' and parsed.hostname==r['exact_host'] and not parsed.query and not parsed.fragment
+              req=urllib.request.Request(url,method='GET',headers={'User-Agent':'BigBirdReturns-RD04-bounded-quarter-PDF-capture/1.0','Accept':'application/pdf,*/*;q=0.1','Accept-Encoding':'identity','Cache-Control':'no-cache'})
+              start=time.time(); error=None
+              try:
+                  resp=opener.open(req,timeout=90); status=int(resp.status); headers=resp.headers; body=resp.read(limit+1); effective=resp.geturl()
+              except urllib.error.HTTPError as e:
+                  status=int(e.code); headers=e.headers; body=e.read(limit+1); effective=e.geturl()
+              except Exception as e:
+                  status=None; headers=None; body=b''; effective=url; error=f'{type(e).__name__}: {e}'
+              hp=out/'headers'/f'{i:02d}-{rid}.json'; bp=out/'bodies'/f'{i:02d}-{rid}.bin'; ep=out/'stderr'/f'{i:02d}-{rid}.txt'
+              hrows=[] if headers is None else [{'name':k.lower(),'value':v} for k,v in headers.items()]
+              hp.write_text(json.dumps(hrows,indent=2,sort_keys=True)+'\n'); bp.write_bytes(body); ep.write_text((error or '')+'\n')
+              pdf=body.startswith(b'%PDF-'); over=len(body)>limit
+              if error: state='terminal_transport_error'
+              elif over: state='body_limit_exceeded_terminal'
+              elif status is not None and 200<=status<=299 and pdf: state='http_success_pdf_captured'
+              elif status is not None and 200<=status<=299: state='http_success_non_pdf_body_captured'
+              elif status is not None and 300<=status<=399: state='redirect_refused_terminal'
+              else: state='http_non_success_terminal'
+              item={'ordinal':i,'route_id':rid,'requested_url':url,'effective_url':effective,'physical_requests':1,'http_status':status,'transport_error':error,'elapsed_ms':round((time.time()-start)*1000),'headers_path':hp.relative_to(out).as_posix(),'body_path':bp.relative_to(out).as_posix(),'body_bytes':len(body),'body_sha256':hashlib.sha256(body).hexdigest(),'pdf_magic':pdf,'body_limit_exceeded':over,'terminal_state':state,'redirects_followed':0,'result_spawned_requests':0}
+              results.append(item)
+              if state=='http_success_pdf_captured': (out/f'source-Q{i}.pdf').write_bytes(body)
+          out.joinpath('route-receipts.jsonl').write_text(''.join(json.dumps(x,sort_keys=True)+'\n' for x in results))
+          out.joinpath('physical-requests.jsonl').write_text(''.join(json.dumps({'ordinal':x['ordinal'],'route_id':x['route_id'],'url':x['requested_url'],'physical_request':1},sort_keys=True)+'\n' for x in results))
+          receipt={'schema_version':'ssc-rd04-nd-fy26q1-q2-azure-execution@1','state':'bounded_execution_complete','stage':'complete','fixed_routes':2,'terminal_routes':len(results),'physical_requests':sum(x['physical_requests'] for x in results),'pdf_bodies_captured':sum(x['terminal_state']=='http_success_pdf_captured' for x in results),'route_states':[x['terminal_state'] for x in results],'source_admissions':0,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,'cumulative_ledger_effect':'none','outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none','additional_execution_authorized':False,'next_authorized_operation':'request-free page-complete adjudication of every captured PDF body'}
+          out.joinpath('execution-receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          out.joinpath('transport-summary.md').write_text('# RD-04 Q1 Q2 Azure transport\n\nExactly two authorized target attempts executed. Redirects were not followed. Transport outcomes are preserved without semantic admission.\n')
+          assert len(results)==2 and receipt['physical_requests']==2 and receipt['terminal_routes']==2
+          PY
+          printf 'complete\n' >"$O/STAGE"; printf '0\n' >"$O/EXIT_CODE"; sums; (cd "$O" && sha256sum -c SHA256SUMS); trap - ERR
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy26q1-q2-azure-execution-v1
+          path: ${{ runner.temp }}/out
+          if-no-files-found: error
+          retention-days: 90
+      - if: always()
+        shell: bash
+        run: |
+          test '${{ steps.run.outcome }}' = success
+          O="$RUNNER_TEMP/out"; test "$(cat "$O/STAGE")" = complete; test "$(cat "$O/EXIT_CODE")" = 0
+          jq -e '.state=="bounded_execution_complete" and .fixed_routes==2 and .terminal_routes==2 and .physical_requests==2 and .source_admissions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and .additional_execution_authorized==false' "$O/execution-receipt.json" >/dev/null
+          test "$(wc -l <"$O/route-receipts.jsonl")" = 2; test "$(wc -l <"$O/physical-requests.jsonl")" = 2
+          (cd "$O" && sha256sum -c SHA256SUMS)
