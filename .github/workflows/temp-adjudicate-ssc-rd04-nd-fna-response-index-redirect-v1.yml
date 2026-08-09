@@ -1,0 +1,88 @@
+name: TEMP adjudicate RD-04 North Dakota FNA response-index redirect v1
+on:
+  pull_request:
+    branches: [agent/ssc-rd04-nd-fna-response-index-redirect-adjudication-base-v1]
+    paths: [.trigger/ssc-rd04-nd-fna-response-index-redirect-adjudication-v1]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  adjudicate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PARENT: a592acea22c69a979f2a90c24a2bafb8c9445759
+      WF: .github/workflows/temp-adjudicate-ssc-rd04-nd-fna-response-index-redirect-v1.yml
+      TRIGGER: .trigger/ssc-rd04-nd-fna-response-index-redirect-adjudication-v1
+      SOURCE_ID: '9031887276'
+      SOURCE_BYTES: '1350968'
+      SOURCE_SHA: fd9dc707e9a331de6a2ead1761fe2892f32afa06ae628027d80c28720d40e7b2
+      ROUTE_RECEIPT_SHA: e2f1291aecc3a640168f50532e3be655ca045e33841757908e54119bfdf774ba
+      EXECUTION_RECEIPT_SHA: ac6d624f5bbde762295cb5fad9e38387bd2bf817b624fb7c0a9e388e57d185c6
+      HEADER_SHA: 8d680c0a7863f482261f62ad6d39925a6a6794f3590d6fa2f1789eeb620959d0
+      BODY_SHA: d9e5a50fca24303819557d37921a13824074ae80a2d2137290d048be57e162cf
+      ORIGIN_URL: https://www.fna.usda.gov/snap/abawd/waivers/2025-2029
+      TARGET_URL: https://www.fna.usda.gov/snap/waivers/timelimit/2025-2029
+      TARGET_PATH: /snap/waivers/timelimit/2025-2029
+      OUT: /tmp/rd04-nd-fna-response-index-redirect-adjudication-v1
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - id: run
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"; mkdir -p "$OUT/source"; : > "$OUT/workflow.log"
+          exec > >(tee -a "$OUT/workflow.log") 2>&1
+          echo topology > "$OUT/STAGE"; echo 1 > "$OUT/EXIT_CODE"
+          H=$(git rev-parse HEAD); B=$(git rev-parse HEAD^); P=$(git rev-parse HEAD^^)
+          test "$H" = '${{ github.event.pull_request.head.sha }}'
+          test "$P" = "$PARENT"
+          test "$(git diff --name-only "$P" "$B")" = "$WF"
+          test "$(git diff --name-only "$B" "$H")" = "$TRIGGER"
+          git fetch --no-tags --force origin main
+          test "$(git rev-parse origin/main)" = "$PARENT"
+
+          echo authenticate > "$OUT/STAGE"
+          api="https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ID"
+          auth=(-H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json')
+          curl -fsSL "${auth[@]}" "$api" -o "$OUT/source-meta.json"
+          jq -e --argjson id "$SOURCE_ID" --argjson size "$SOURCE_BYTES" --arg d "sha256:$SOURCE_SHA" '.id==$id and .size_in_bytes==$size and .digest==$d and .expired==false' "$OUT/source-meta.json" >/dev/null
+          curl -fsSL "${auth[@]}" "$api/zip" -o "$OUT/source.zip"
+          test "$(stat -c%s "$OUT/source.zip")" -eq "$SOURCE_BYTES"
+          test "$(sha256sum "$OUT/source.zip" | cut -d' ' -f1)" = "$SOURCE_SHA"
+          unzip -t "$OUT/source.zip" > "$OUT/source-zip-test.txt"
+          unzip -q "$OUT/source.zip" -d "$OUT/source"
+          (cd "$OUT/source" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$OUT/source/route-receipt.json" | cut -d' ' -f1)" = "$ROUTE_RECEIPT_SHA"
+          test "$(sha256sum "$OUT/source/execution-receipt.json" | cut -d' ' -f1)" = "$EXECUTION_RECEIPT_SHA"
+          test "$(sha256sum "$OUT/source/response-headers.raw" | cut -d' ' -f1)" = "$HEADER_SHA"
+          test "$(sha256sum "$OUT/source/response-body.bin" | cut -d' ' -f1)" = "$BODY_SHA"
+          jq -e --arg url "$ORIGIN_URL" --arg loc "$TARGET_PATH" '.state=="complete" and .requested_url==$url and .status_code==301 and .location==$loc and .redirects_followed==0 and .terminal_state=="redirect_refused_terminal" and .additional_execution_authorized==false' "$OUT/source/route-receipt.json" >/dev/null
+          grep -Fq "url='$TARGET_PATH'" "$OUT/source/response-body.bin"
+
+          echo adjudicate > "$OUT/STAGE"
+          jq -n --arg origin "$ORIGIN_URL" --arg path "$TARGET_PATH" --arg target "$TARGET_URL" '{schema_version:"ssc-rd04-nd-fna-response-index-redirect-adjudication@1",state:"complete",source_role:"official_same_host_redirect_locator_only",origin_url:$origin,status_code:301,observed_location:$path,selected_target_url:$target,target_contacted:false,source_admissions:0,field_decision:"hold_open_exact_geography_and_governing_period_not_proved",promotion_candidates:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' > "$OUT/redirect-adjudication.json"
+          jq -n --arg target "$TARGET_URL" '{schema_version:"ssc-rd04-nd-fna-response-index-canonical-route-protocol@1",state:"selected_unexecuted",route_count:1,routes:[{route_id:"RD04-ND-FNA-TIME-LIMIT-WAIVER-INDEX-CANONICAL-2025-2029-001",url:$target,method:"GET",attempts:1,exact_host:"www.fna.usda.gov",maximum_followed_redirects:0,maximum_body_bytes:5000000,selection_scope:"locate only the North Dakota FY 2025 FNA response anchor and exact href",same_host_expansion:0,result_spawned_requests:0}],source_admissions:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,outside_human_dependency:false}' > "$OUT/selected-followup-protocol.json"
+          jq -n '{schema_version:"ssc-rd04-nd-fna-response-index-redirect-adjudication-receipt@1",state:"complete",stage:"complete",source_requests:0,route_executions:0,source_admissions:0,field_decisions:1,promotion_candidates:0,held_open_fields:1,selected_followup_routes:1,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none",next_authorized_operation:"one exact locked GET to the selected canonical same-host index URL; no discovered href may be followed automatically"}' > "$OUT/receipt.json"
+          jq -e '.state=="complete" and .selected_followup_routes==1 and .promotion_candidates==0 and .matrix_updates==0' "$OUT/receipt.json" >/dev/null
+          echo complete > "$OUT/STAGE"; echo 0 > "$OUT/EXIT_CODE"
+          find "$OUT" -type f ! -name SHA256SUMS ! -name workflow.log -print0 | sort -z | xargs -0 sha256sum | sed "s#  $OUT/#  #" > "$OUT/SHA256SUMS"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fna-response-index-redirect-adjudication-v1
+          path: /tmp/rd04-nd-fna-response-index-redirect-adjudication-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+      - if: always()
+        shell: bash
+        run: |
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          test '${{ steps.run.outcome }}' = success
