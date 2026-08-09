@@ -1,0 +1,185 @@
+name: TEMP validate RD-04 North Dakota FY2025 FNA response candidate v1
+on:
+  pull_request:
+    branches: [agent/ssc-rd04-nd-fna-response-fy2025-candidate-validation-base-v1]
+    paths: [.trigger/ssc-rd04-nd-fna-response-fy2025-candidate-validation-v1.json]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PARENT: a592acea22c69a979f2a90c24a2bafb8c9445759
+      WF: .github/workflows/temp-validate-ssc-rd04-nd-fna-response-fy2025-candidate-v1.yml
+      TRIGGER: .trigger/ssc-rd04-nd-fna-response-fy2025-candidate-validation-v1.json
+      SOURCE_ID: '9032241598'
+      SOURCE_BYTES: '175929086'
+      SOURCE_SHA: 8ccc448ec66a4c92e245cc467f5ddf87c6fccd057430a5b741d688ceb30ee796
+      RECEIPT_SHA: 1f77fb7151e96e91c4640d19a1d2de7447f16fcf68af81d0ffccfd58fed3195d
+      SOURCE_ADJ_SHA: d9e34bdff5010b4c31042ca6961c2a4ae7d8d0aa259d5e43d73f6ff24a461516
+      FIELD_ADJ_SHA: 851fb904a8a9c788fef208cd23af7c16704b2fc0088a41d8059cd4d436d1cbbd
+      CANDIDATE_SHA: d82369891822af131c25c85723298dcb007e780c6ddc7415bad03f65c7791446
+      CELL_CUSTODY_SHA: 33090bf855b89e5517df58072bac75b2854391df7be76cddf8b24ffb7e1122fd
+      MATRIX: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+      MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+      ROW_SHA: 18f9b127b61e45edafb64c78bc8c387175fffdb351156ccf9154158ca467d2dd
+      CELL_SHA: cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe
+      CANDIDATE_ID: RD04-ND-FNA-RESPONSE-FY2025-CANDIDATE-WAIVER-STATE-AND-GOVERNING-PERIOD
+      DECISION_ID: RD04-ND-FNA-RESPONSE-FY2025-WAIVER-STATE-AND-GOVERNING-PERIOD
+      OUT: /tmp/rd04-nd-fna-response-fy2025-candidate-validation-v1
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - id: run
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"; mkdir -p "$OUT/source" "$OUT/inputs"; : > "$OUT/workflow.log"
+          exec > >(tee -a "$OUT/workflow.log") 2>&1
+          echo topology > "$OUT/STAGE"; echo 1 > "$OUT/EXIT_CODE"
+          H=$(git rev-parse HEAD); B=$(git rev-parse HEAD^); P=$(git rev-parse HEAD^^)
+          test "$H" = '${{ github.event.pull_request.head.sha }}'
+          test "$P" = "$PARENT"
+          test "$(git diff --name-only "$P" "$B")" = "$WF"
+          test "$(git diff --name-only "$B" "$H")" = "$TRIGGER"
+          git fetch --no-tags --force origin main
+          test "$(git rev-parse origin/main)" = "$PARENT"
+          test "$(git rev-parse "$PARENT:$MATRIX")" = "$MATRIX_BLOB"
+          jq -e --arg id "$CANDIDATE_ID" --arg decision "$DECISION_ID" --arg sha "$SOURCE_SHA" '.schema_version=="ssc-rd04-nd-fna-response-fy2025-candidate-validation-trigger@1" and .candidate_id==$id and .decision_id==$decision and .source_artifact_sha256==$sha and .source_requests==0 and .outside_human_dependency==false' "$TRIGGER" >/dev/null
+
+          echo authenticate > "$OUT/STAGE"
+          api="https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ID"
+          auth=(-H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json')
+          curl -fsSL "${auth[@]}" "$api" -o "$OUT/source-meta.json"
+          jq -e --argjson id "$SOURCE_ID" --argjson size "$SOURCE_BYTES" --arg d "sha256:$SOURCE_SHA" '.id==$id and .size_in_bytes==$size and .digest==$d and .expired==false' "$OUT/source-meta.json" >/dev/null
+          curl -fsSL "${auth[@]}" "$api/zip" -o "$OUT/source.zip"
+          test "$(stat -c%s "$OUT/source.zip")" -eq "$SOURCE_BYTES"
+          test "$(sha256sum "$OUT/source.zip" | cut -d' ' -f1)" = "$SOURCE_SHA"
+          unzip -t "$OUT/source.zip" > "$OUT/source-zip-test.txt"
+          unzip -q "$OUT/source.zip" -d "$OUT/source"
+          (cd "$OUT/source" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$OUT/source/receipt.json" | cut -d' ' -f1)" = "$RECEIPT_SHA"
+          test "$(sha256sum "$OUT/source/source-adjudication.json" | cut -d' ' -f1)" = "$SOURCE_ADJ_SHA"
+          test "$(sha256sum "$OUT/source/field-adjudication.json" | cut -d' ' -f1)" = "$FIELD_ADJ_SHA"
+          test "$(sha256sum "$OUT/source/promotion-candidate-protocol.json" | cut -d' ' -f1)" = "$CANDIDATE_SHA"
+          test "$(sha256sum "$OUT/source/current-cell-custody.json" | cut -d' ' -f1)" = "$CELL_CUSTODY_SHA"
+          cp "$OUT/source/receipt.json" "$OUT/inputs/adjudication-receipt.json"
+          cp "$OUT/source/source-adjudication.json" "$OUT/inputs/source-adjudication.json"
+          cp "$OUT/source/field-adjudication.json" "$OUT/inputs/field-adjudication.json"
+          cp "$OUT/source/promotion-candidate-protocol.json" "$OUT/inputs/promotion-candidate-protocol.json"
+          cp "$OUT/source/current-cell-custody.json" "$OUT/inputs/current-cell-custody.json"
+
+          echo validate > "$OUT/STAGE"
+          python - "$MATRIX" "$OUT/inputs" "$ROW_SHA" "$CELL_SHA" "$CANDIDATE_ID" "$DECISION_ID" "$SOURCE_ID" "$SOURCE_SHA" "$OUT" <<'PY'
+          import hashlib,json,sys
+          from pathlib import Path
+          matrix_path, inputs_dir, row_expected, cell_expected, candidate_id, decision_id, source_id, source_sha, out_dir = sys.argv[1:]
+          inputs=Path(inputs_dir); out=Path(out_dir)
+          load=lambda name: json.loads((inputs/name).read_text())
+          receipt=load('adjudication-receipt.json')
+          source=load('source-adjudication.json')
+          field=load('field-adjudication.json')
+          protocol=load('promotion-candidate-protocol.json')
+          prior_custody=load('current-cell-custody.json')
+          matrix=json.loads(Path(matrix_path).read_text())
+          canon=lambda v: hashlib.sha256(json.dumps(v,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest()
+
+          assert receipt['state']=='complete' and receipt['promotion_candidates']==1 and receipt['matrix_updates']==0 and receipt['field_terminalizations']==0
+          assert receipt['pages_reviewed']==5 and receipt['pdf_pages']==5 and receipt['outside_human_dependency'] is False
+          assert source['state']=='complete' and source['source_id']=='RD04-ND-FNA-RESPONSE-FY2025' and source['page_count']==5 and source['pages_reviewed']==[1,2,3,4,5]
+          assert source['fns_action']=='partial_approval' and source['implementation_date']=='2025-07-01' and source['expiration_date']=='2026-06-30'
+          assert source['approved_areas']==['Rolette County','Turtle Mountain Reservation and Off-Reservation Trust Land']
+          assert source['denied_areas']==['Bottineau County','Towner County']
+          assert field['decision_id']==decision_id and field['promotion_candidate'] is True and field['matrix_updated'] is False
+          assert field['field_id']=='abawd_or_work_requirement_waiver_state_and_governing_period'
+          assert field['disposition']=='promotion_candidate_exact_partial_waiver_geography_and_governing_period_recovered'
+          assert protocol['state']=='candidate_only' and protocol['candidate_count']==1
+          candidate=protocol['candidates'][0]
+          assert candidate['candidate_id']==candidate_id and candidate['decision_id']==decision_id
+          assert candidate['value']==field['value']
+          assert candidate['source_ids']==['RD04-ND-FNA-RESPONSE-FY2025']
+          assert candidate['current_cell_state']=='still_open' and candidate['target_state']=='evidence_complete'
+          assert candidate['terminal_classification']=='evidence_complete'
+
+          rows=matrix['rows']; assert len(rows)==50
+          assert all(len(r['cells'])==9 for r in rows)
+          row=next(r for r in rows if r['unit_id']=='US-STATE-ND')
+          cell=next(c for c in row['cells'] if c['field_id']=='abawd_or_work_requirement_waiver_state_and_governing_period')
+          row_sha=canon(row); cell_sha=canon(cell)
+          assert row_sha==row_expected==candidate['current_row_sha256']==prior_custody['row_sha256']
+          assert cell_sha==cell_expected==candidate['current_cell_sha256']==prior_custody['cell_sha256']
+          assert row['row_state']=='still_open' and row['terminal_fields']==7 and row['open_fields']==2
+          assert cell['state']=='still_open' and cell['terminal'] is False
+          assert prior_custody['cell_state']=='still_open' and prior_custody['cell_terminal'] is False
+
+          all_cells=[c for r in rows for c in r['cells']]
+          terminal=sum(1 for c in all_cells if c['terminal'])
+          open_cells=len(all_cells)-terminal
+          excluded={'canonical_state_identity','source_identities_and_exact_custody','field_and_row_terminal_state'}
+          substantive=[c for c in all_cells if c['field_id'] not in excluded]
+          open_sub=sum(1 for c in substantive if not c['terminal'])
+          terminal_units=sum(1 for r in rows if r['row_state']=='terminal_fixed_public_record_obligation_complete')
+          assert (len(all_cells),terminal,open_cells,len(substantive),open_sub,terminal_units)==(450,227,223,300,183,10)
+
+          value=field['value']
+          assert value=={
+            'waiver_state':'partial_approval',
+            'approved_areas':['Rolette County','Turtle Mountain Reservation and Off-Reservation Trust Land'],
+            'denied_areas':['Bottineau County','Towner County'],
+            'implementation_date':'2025-07-01',
+            'expiration_date':'2026-06-30',
+            'response_date':'2025-06-18',
+            'post_expiration_status':'not_determined_by_this_source'
+          }
+
+          validation={
+            'schema_version':'ssc-rd04-nd-fna-response-fy2025-candidate-validation@1',
+            'state':'complete','candidate_validated':True,'candidate_id':candidate_id,'decision_id':decision_id,
+            'unit_id':'US-STATE-ND','field_id':field['field_id'],'source_artifact_id':int(source_id),'source_artifact_sha256':source_sha,
+            'current_row_sha256':row_sha,'current_cell_sha256':cell_sha,'current_cell_state':'still_open','current_cell_terminal':False,
+            'candidate_value_equals_decision_value':True,'source_page_count':5,'source_pages_reviewed':5,
+            'counts_before':{'materialized_cells':450,'terminal_cells':227,'still_open_cells':223,'open_substantive_cells':183,'terminal_units':10,'north_dakota_terminal_fields':7,'north_dakota_open_fields':2},
+            'projected_separate_promotion':{'terminal_cells':228,'still_open_cells':222,'open_substantive_cells':182,'terminal_units':10,'north_dakota_terminal_fields':8,'north_dakota_open_fields':1,'north_dakota_row_state':'still_open','row_state_mutations':0,'class_closed':False},
+            'matrix_updates':0,'field_terminalizations':0,'row_state_mutations':0,'class_closed':False,'outside_human_dependency':False,
+            'publication_effect':'none','adoption_effect':'none','graph_effect':'none'
+          }
+          validated={
+            'schema_version':'ssc-rd04-nd-fna-response-fy2025-validated-candidate-protocol@1','state':'validated_candidate_only',
+            'candidate_count':1,'candidates':[candidate],'validation_sha256':canon(validation),
+            'promotion_product_authorized':True,'promotion_executed':False,'matrix_updates':0,'field_terminalizations':0,
+            'row_state_mutations':0,'class_closed':False,'outside_human_dependency':False
+          }
+          final={
+            'schema_version':'ssc-rd04-nd-fna-response-fy2025-candidate-validation-receipt@1','state':'complete','stage':'complete',
+            'validated_candidates':1,'rejected_candidates':0,'source_requests':0,'route_executions':0,'source_admissions_created':0,
+            'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,'cumulative_ledger_effect':'none',
+            'outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none',
+            'separate_promotion_product_authorized':True,
+            'next_authorized_operation':'construct and independently qualify one deterministic addition-only promotion product for the exact validated candidate; no row transition in that product'
+          }
+          for name,value_obj in [('candidate-validation.json',validation),('validated-candidate-protocol.json',validated),('receipt.json',final)]:
+            (out/name).write_text(json.dumps(value_obj,indent=2)+'\n')
+          PY
+          rm -rf "$OUT/source" "$OUT/source.zip"
+          echo complete > "$OUT/STAGE"; echo 0 > "$OUT/EXIT_CODE"
+          find "$OUT" -type f ! -name SHA256SUMS ! -name workflow.log -print0 | sort -z | xargs -0 sha256sum | sed "s#  $OUT/#  #" > "$OUT/SHA256SUMS"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fna-response-fy2025-candidate-validation-v1
+          path: /tmp/rd04-nd-fna-response-fy2025-candidate-validation-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+      - if: always()
+        shell: bash
+        run: |
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          test '${{ steps.run.outcome }}' = success
