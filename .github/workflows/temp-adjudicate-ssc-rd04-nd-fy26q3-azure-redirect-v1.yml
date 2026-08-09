@@ -1,0 +1,417 @@
+name: TEMP adjudicate RD-04 North Dakota FY2026 Q3 Azure redirect v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-fy26q3-azure-redirect-adjudication-base-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.trigger/ssc-rd04-nd-fy26q3-azure-redirect-adjudication-v1'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: temp-adjudicate-ssc-rd04-nd-fy26q3-azure-redirect-v1
+  cancel-in-progress: false
+
+env:
+  CURRENT_MAIN: a592acea22c69a979f2a90c24a2bafb8c9445759
+  HISTORICAL_ADJUDICATION_PARENT: b1d1d8afb6c957401a762bf9d0b2abc464bd5e07
+  BASE_BRANCH: agent/ssc-rd04-nd-fy26q3-azure-redirect-adjudication-base-v1
+  TRIGGER_BRANCH: agent/ssc-rd04-nd-fy26q3-azure-redirect-adjudication-trigger-v1
+  WORKFLOW_PATH: .github/workflows/temp-adjudicate-ssc-rd04-nd-fy26q3-azure-redirect-v1.yml
+  TRIGGER_PATH: .trigger/ssc-rd04-nd-fy26q3-azure-redirect-adjudication-v1
+  TRANSPORT_ARTIFACT_ID: '9030448799'
+  TRANSPORT_ARTIFACT_BYTES: '12730'
+  TRANSPORT_ARTIFACT_SHA256: b73072ddce40b3be81e02a00cb930c6b880c98154974cf9c6e1200558398b956
+  EXECUTION_RECEIPT_SHA256: 9a05b68d8b30578eb9e0fba0ab51c44b8281cdac1fc825c6f2caf897be946882
+  ROUTE_RECEIPT_SHA256: 43c1be0c53f6b635dff50608c7bcf13a21bb8b6ec3897e863d3741cc15df5e4b
+  HOP_RECEIPT_SHA256: 7aba67adb69330d2c7d6954df64f08dcdc08dd2f53888e97c5f195083e779c9d
+  ADJUDICATION_BINDING_SHA256: af5725b06f4789745baaa48b0312c954e3bca6f001562d447e44aa7e130fa534
+  PRIOR_ROUTE_ID: RD04-ND-CURRENT-WAIVER-FY26Q3-001
+  PRIOR_URL: https://www.fna.usda.gov/sites/default/files/resource-files/FY26-Quarter-3-ABAWD-Waiver-Status.pdf
+  REDIRECT_URL: https://fna-bwbufwdzbabpezgc.z01.azurefd.us/sites/default/files/resource-files/FY26-Quarter-3-ABAWD-Waiver-Status.pdf
+  REDIRECT_HOST: fna-bwbufwdzbabpezgc.z01.azurefd.us
+  FOLLOWUP_ROUTE_ID: RD04-ND-CURRENT-WAIVER-FY26Q3-AZURE-001
+  OUTPUT_DIR: /tmp/ssc-rd04-nd-fy26q3-azure-redirect-adjudication-v1
+
+jobs:
+  adjudicate:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy26q3-azure-redirect-adjudication-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Authenticate and adjudicate exact external redirect offline
+        id: adjudicate
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          OUT="$OUTPUT_DIR"
+          TRANSPORT="$OUT/transport"
+          rm -rf "$OUT"
+          mkdir -p "$OUT" "$TRANSPORT"
+          stage=bootstrap
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          exec > >(tee "$OUT/adjudication.log") 2>&1
+
+          finalize() {
+            local rc=$?
+            trap - EXIT
+            set +e
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            if [ ! -f "$OUT/receipt.json" ]; then
+              jq -n \
+                --arg state failed_closed \
+                --arg failed_stage "$stage" \
+                --argjson exit_code "$rc" \
+                --arg current_main "$CURRENT_MAIN" \
+                '{
+                  schema_version:"ssc-rd04-nd-fy26q3-azure-redirect-adjudication@1",
+                  state:$state,
+                  failed_or_final_stage:$failed_stage,
+                  exit_code:$exit_code,
+                  current_main:$current_main,
+                  source_requests:0,
+                  route_executions:0,
+                  source_admissions:0,
+                  field_decisions:0,
+                  promotion_candidates:0,
+                  held_open_fields:1,
+                  selected_followup_routes:0,
+                  field_terminalizations:0,
+                  matrix_updates:0,
+                  row_state_mutations:0,
+                  class_closed:false,
+                  cumulative_ledger_effect:"none",
+                  outside_human_dependency:false,
+                  publication_effect:"none",
+                  adoption_effect:"none",
+                  graph_effect:"none"
+                }' > "$OUT/receipt.json"
+            fi
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+          set -Eeuo pipefail
+
+          stage=bind_exact_topology_and_live_main
+          BASE_COMMIT="$(git rev-parse HEAD^)"
+          test "$(git rev-parse "$BASE_COMMIT^")" = "$CURRENT_MAIN"
+          test "$(git rev-list --count "$CURRENT_MAIN".."$BASE_COMMIT")" -eq 1
+          test "$(git rev-list --count "$BASE_COMMIT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CURRENT_MAIN" "$BASE_COMMIT")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only "$BASE_COMMIT" HEAD)" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" "$BASE_COMMIT")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE_COMMIT" HEAD)" = "$TRIGGER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CURRENT_MAIN" HEAD)"
+          git diff --check "$CURRENT_MAIN" HEAD
+          test "${{ github.event.pull_request.base.ref }}" = "$BASE_BRANCH"
+          test "${{ github.event.pull_request.head.ref }}" = "$TRIGGER_BRANCH"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CURRENT_MAIN"
+
+          stage=authenticate_terminal_transport_artifact
+          gh api -H 'Accept: application/vnd.github+json' \
+            "/repos/$GITHUB_REPOSITORY/actions/artifacts/$TRANSPORT_ARTIFACT_ID" > "$OUT/transport-artifact.json"
+          jq -e \
+            --argjson id "$TRANSPORT_ARTIFACT_ID" \
+            --argjson bytes "$TRANSPORT_ARTIFACT_BYTES" \
+            --arg digest "sha256:$TRANSPORT_ARTIFACT_SHA256" \
+            '.id==$id and .expired==false and .size_in_bytes==$bytes and .digest==$digest' \
+            "$OUT/transport-artifact.json" > /dev/null
+          gh api -H 'Accept: application/vnd.github+json' \
+            "/repos/$GITHUB_REPOSITORY/actions/artifacts/$TRANSPORT_ARTIFACT_ID/zip" > "$OUT/transport.zip"
+          test "$(stat -c %s "$OUT/transport.zip")" -eq "$TRANSPORT_ARTIFACT_BYTES"
+          test "$(sha256sum "$OUT/transport.zip" | awk '{print $1}')" = "$TRANSPORT_ARTIFACT_SHA256"
+          unzip -t "$OUT/transport.zip" > "$OUT/transport-zip-test.txt"
+          unzip -q "$OUT/transport.zip" -d "$TRANSPORT"
+          (cd "$TRANSPORT" && sha256sum -c SHA256SUMS)
+          test "$(cat "$TRANSPORT/EXIT_CODE")" = 0
+          test "$(cat "$TRANSPORT/STAGE")" = complete
+          test "$(sha256sum "$TRANSPORT/execution-receipt.json" | awk '{print $1}')" = "$EXECUTION_RECEIPT_SHA256"
+          test "$(sha256sum "$TRANSPORT/route-receipt.json" | awk '{print $1}')" = "$ROUTE_RECEIPT_SHA256"
+          test "$(sha256sum "$TRANSPORT/hop-00-receipt.json" | awk '{print $1}')" = "$HOP_RECEIPT_SHA256"
+          test "$(sha256sum "$TRANSPORT/adjudication-binding.json" | awk '{print $1}')" = "$ADJUDICATION_BINDING_SHA256"
+
+          stage=adjudicate_exact_redirect_and_select_one_followup
+          python - "$TRANSPORT" "$OUT" <<'PY'
+          import hashlib
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          transport = Path(sys.argv[1])
+          out = Path(sys.argv[2])
+
+          execution = json.loads((transport / "execution-receipt.json").read_text())
+          route = json.loads((transport / "route-receipt.json").read_text())
+          hop = json.loads((transport / "hop-00-receipt.json").read_text())
+          binding = json.loads((transport / "adjudication-binding.json").read_text())
+
+          current_main = os.environ["CURRENT_MAIN"]
+          historical_parent = os.environ["HISTORICAL_ADJUDICATION_PARENT"]
+          prior_route_id = os.environ["PRIOR_ROUTE_ID"]
+          prior_url = os.environ["PRIOR_URL"]
+          redirect_url = os.environ["REDIRECT_URL"]
+          redirect_host = os.environ["REDIRECT_HOST"]
+          followup_route_id = os.environ["FOLLOWUP_ROUTE_ID"]
+          artifact_id = int(os.environ["TRANSPORT_ARTIFACT_ID"])
+          artifact_sha = os.environ["TRANSPORT_ARTIFACT_SHA256"]
+
+          assert execution["state"] == "complete"
+          assert execution["failed_or_final_stage"] == "complete"
+          assert execution["exit_code"] == 0
+          assert execution["execution_parent"] == current_main
+          assert execution["historical_adjudication_parent"] == historical_parent
+          assert execution["fixed_route_count"] == 1
+          assert execution["fixed_route_ids"] == [prior_route_id]
+          assert execution["terminal_route_count"] == 1
+          assert execution["physical_requests"] == 1
+          assert execution["result_spawned_requests"] == 0
+          assert execution["additional_execution_authorized"] is False
+          assert execution["source_admissions"] == 0
+          assert execution["field_terminalizations"] == 0
+          assert execution["matrix_updates"] == 0
+          assert execution["row_state_mutations"] == 0
+          assert execution["class_closed"] is False
+          assert execution["route"] == route
+
+          assert route["route_id"] == prior_route_id
+          assert route["requested_url"] == prior_url
+          assert route["final_url"] == prior_url
+          assert route["http_status"] == 302
+          assert route["terminal_state"] == "redirect_refused_terminal"
+          assert route["reason"] == "redirect_target_outside_frozen_allowlist"
+          assert route["redirect_target"] == redirect_url
+          assert route["body_bytes"] == 0
+          assert route["body_sha256"] == hashlib.sha256(b"").hexdigest()
+          assert route["pdf_magic"] is False
+          assert len(route["hops"]) == 1
+          assert route["hops"][0] == hop
+          assert hop["requested_url"] == prior_url
+          assert hop["effective_url"] == prior_url
+          assert hop["http_status"] == 302
+          assert hop["location"] == redirect_url
+          assert hop["body_bytes"] == 0
+          assert hop["pdf_magic"] is False
+          assert (transport / hop["body_path"]).read_bytes() == b""
+
+          custody = {
+              "schema_version": "ssc-rd04-nd-fy26q3-redirect-custody@1",
+              "object_type": "transport_redirect_custody",
+              "transport_artifact_id": artifact_id,
+              "transport_artifact_sha256": artifact_sha,
+              "execution_receipt_sha256": os.environ["EXECUTION_RECEIPT_SHA256"],
+              "route_receipt_sha256": os.environ["ROUTE_RECEIPT_SHA256"],
+              "prior_route_id": prior_route_id,
+              "requested_url": prior_url,
+              "http_status": 302,
+              "response_body_bytes": 0,
+              "redirect_target": redirect_url,
+              "redirect_host": redirect_host,
+              "redirect_contacted": False,
+          }
+
+          adjudication = {
+              "schema_version": "ssc-rd04-nd-fy26q3-redirect-adjudication@1",
+              "object_type": "request_free_transport_redirect_adjudication",
+              "state": "followup_selected",
+              "transport_disposition": "official_fna_origin_emitted_exact_external_delivery_target",
+              "evidence_role": "result_visible_transport_locator_only",
+              "source_admission": None,
+              "field_id": "abawd_or_work_requirement_waiver_state_and_governing_period",
+              "field_state_before": "still_open",
+              "field_state_after": "still_open",
+              "field_disposition": "pdf_not_yet_captured_redirect_target_selected_hold_open",
+              "promotion_candidate": None,
+              "selected_followup_route_id": followup_route_id,
+              "selected_followup_url": redirect_url,
+              "selection_basis": "exact Location header emitted by the frozen official FNA URL",
+              "selection_does_not_assert": [
+                  "Azure host ownership independent of the captured redirect chain",
+                  "PDF existence or content",
+                  "North Dakota waiver geography",
+                  "North Dakota governing period",
+              ],
+          }
+
+          protocol = {
+              "schema_version": "ssc-rd04-nd-fy26q3-azure-followup-protocol@1",
+              "object_type": "single_route_transport_protocol",
+              "route_count": 1,
+              "routes": [
+                  {
+                      "route_id": followup_route_id,
+                      "predecessor_route_id": prior_route_id,
+                      "method": "GET",
+                      "url": redirect_url,
+                      "host": redirect_host,
+                      "attempts": 1,
+                      "redirect_policy": "refuse_and_record_any_redirect",
+                      "maximum_followed_redirects": 0,
+                      "maximum_body_bytes": 12_000_000,
+                      "expected_media_type": "application/pdf",
+                      "require_pdf_magic_for_pdf_classification": True,
+                      "result_spawned_requests": 0,
+                      "same_host_expansion": 0,
+                  }
+              ],
+              "automatic_source_admission": False,
+              "automatic_field_classification": False,
+              "automatic_row_terminalization": False,
+              "automatic_class_closure": False,
+          }
+
+          summary = {
+              "schema_version": "ssc-rd04-nd-fy26q3-azure-redirect-summary@1",
+              "object_type": "adjudication_summary",
+              "prior_route_attempt_consumed": True,
+              "pdf_bodies_captured": 0,
+              "redirect_candidates": 1,
+              "selected_followup_routes": 1,
+              "selected_route_id": followup_route_id,
+              "selected_url": redirect_url,
+              "north_dakota_waiver_field": "still_open",
+          }
+
+          receipt = {
+              "schema_version": "ssc-rd04-nd-fy26q3-azure-redirect-adjudication@1",
+              "state": "redirect_adjudication_complete_followup_selected",
+              "failed_or_final_stage": "complete",
+              "exit_code": 0,
+              "current_main": current_main,
+              "historical_adjudication_parent": historical_parent,
+              "transport_artifact_id": artifact_id,
+              "transport_artifact_sha256": artifact_sha,
+              "prior_route_id": prior_route_id,
+              "prior_physical_requests": 1,
+              "prior_terminal_routes": 1,
+              "prior_pdf_bodies": 0,
+              "redirect_candidates": 1,
+              "selected_followup_routes": 1,
+              "selected_followup_route_id": followup_route_id,
+              "selected_followup_url": redirect_url,
+              "source_requests": 0,
+              "route_executions": 0,
+              "source_admissions": 0,
+              "field_decisions": 1,
+              "promotion_candidates": 0,
+              "held_open_fields": 1,
+              "field_terminalizations": 0,
+              "matrix_updates": 0,
+              "row_state_mutations": 0,
+              "class_closed": False,
+              "cumulative_ledger_effect": "none",
+              "outside_human_dependency": False,
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none",
+              "additional_original_route_execution_authorized": False,
+              "selected_redirect_execution_authorized": True,
+          }
+
+          for name, value in (
+              ("redirect-custody.json", custody),
+              ("redirect-adjudication.json", adjudication),
+              ("selected-followup-protocol.json", protocol),
+              ("summary.json", summary),
+              ("receipt.json", receipt),
+          ):
+              (out / name).write_text(json.dumps(value, indent=2, sort_keys=True) + "\n")
+
+          ledger = []
+          for name in (
+              "redirect-custody.json",
+              "redirect-adjudication.json",
+              "selected-followup-protocol.json",
+              "summary.json",
+              "receipt.json",
+          ):
+              data = (out / name).read_bytes()
+              ledger.append({"path": name, "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()})
+          (out / "output-ledger.json").write_text(json.dumps(ledger, indent=2, sort_keys=True) + "\n")
+          PY
+
+          stage=verify_terminal_adjudication
+          jq -e \
+            --arg target "$REDIRECT_URL" \
+            --arg route "$FOLLOWUP_ROUTE_ID" \
+            '.state=="redirect_adjudication_complete_followup_selected" and
+             .failed_or_final_stage=="complete" and .exit_code==0 and
+             .redirect_candidates==1 and .selected_followup_routes==1 and
+             .selected_followup_route_id==$route and .selected_followup_url==$target and
+             .source_requests==0 and .route_executions==0 and .source_admissions==0 and
+             .field_decisions==1 and .promotion_candidates==0 and .held_open_fields==1 and
+             .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and
+             .class_closed==false and .cumulative_ledger_effect=="none" and
+             .outside_human_dependency==false and .publication_effect=="none" and
+             .adoption_effect=="none" and .graph_effect=="none" and
+             .additional_original_route_execution_authorized==false and
+             .selected_redirect_execution_authorized==true' \
+            "$OUT/receipt.json" > /dev/null
+          stage=complete
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+
+      - name: Preserve exact redirect adjudication artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy26q3-azure-redirect-adjudication-v1
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce request-free redirect adjudication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$OUTPUT_DIR"
+          test "${{ steps.adjudicate.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          jq -e '
+            .state=="redirect_adjudication_complete_followup_selected" and
+            .failed_or_final_stage=="complete" and .exit_code==0 and
+            .current_main=="a592acea22c69a979f2a90c24a2bafb8c9445759" and
+            .transport_artifact_id==9030448799 and
+            .prior_physical_requests==1 and .prior_terminal_routes==1 and .prior_pdf_bodies==0 and
+            .redirect_candidates==1 and .selected_followup_routes==1 and
+            .selected_followup_route_id=="RD04-ND-CURRENT-WAIVER-FY26Q3-AZURE-001" and
+            .source_requests==0 and .route_executions==0 and .source_admissions==0 and
+            .field_decisions==1 and .promotion_candidates==0 and .held_open_fields==1 and
+            .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and
+            .class_closed==false and .cumulative_ledger_effect=="none" and
+            .outside_human_dependency==false and .publication_effect=="none" and
+            .adoption_effect=="none" and .graph_effect=="none" and
+            .additional_original_route_execution_authorized==false and
+            .selected_redirect_execution_authorized==true
+          ' "$OUT/receipt.json" > /dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
