@@ -1,0 +1,94 @@
+name: TEMP adjudicate RD-04 North Dakota FY2026 archive offline v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-fy26-archive-offline-adjudication-v1/trigger.json'
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+  CARRIER_PARENT: 4edc3f4f65851cf2643e889d93df3b6372a2f468
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  WAIVER_CELL_SHA256: cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe
+  ROW_STATE_CELL_SHA256: 6a4c7d204c6c99a89f3c121065860806668c5da850f44c67fe42b4dc84b1b5c3
+  BASE_BRANCH: agent/ssc-rd04-nd-fy26-archive-offline-adjudication-base-v1
+  HEAD_BRANCH: agent/ssc-rd04-nd-fy26-archive-offline-adjudication-trigger-v1
+  WORKFLOW_PATH: .github/workflows/temp-adjudicate-ssc-rd04-nd-fy26-archive-offline-v1.yml
+  TRIGGER_PATH: .tmp/rd04-nd-fy26-archive-offline-adjudication-v1/trigger.json
+  SOURCE_ARTIFACT_ID: '9033042970'
+  SOURCE_ARTIFACT_BYTES: '11695093'
+  SOURCE_ARTIFACT_SHA256: d95177ff3bd7c5eea4510c8c5498c304534d09bc6523b4a60012be2a161658c9
+  EXECUTION_RECEIPT_SHA256: 1eb54523ff4e4ebaccc1e398500f701187e6002ea53c7681e94d28c2b829366d
+  ROUTE_RECEIPT_SHA256: 49fb0a7bd39af07ae82bca24fafa4243e5fb0a858e4164ed693e95df37bdc193
+  RESPONSE_HEADERS_SHA256: 02cd29ba326c8f977f8087e0c2f6496341a2d80745ea5dbbd02bbc492a88655b
+  ARCHIVE_BYTES: '18003072'
+  ARCHIVE_SHA256: b74eccfba90bfd69dcd35567b714020de63cb80b0898323973b822f9813153b1
+  ROUTE_ID: RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-NV-WI-AZURE-001
+  ARCHIVE_URL: https://fna-bwbufwdzbabpezgc.z01.azurefd.us/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-NV-WI-7-2026.zip
+  OUTPUT_DIR: /tmp/rd04-nd-fy26-archive-offline-adjudication-v1
+  WORK_DIR: /tmp/rd04-nd-fy26-archive-offline-adjudication-v1-work
+
+concurrency:
+  group: temp-rd04-nd-fy26-archive-offline-adjudication-v1
+  cancel-in-progress: false
+
+jobs:
+  adjudicate:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-fy26-archive-offline-adjudication-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy26-archive-offline-adjudication-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Reconstruct and execute checksum-bound offline adjudicator
+        id: adjudicate
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          RUNNER=/tmp/rd04-nd-fy26-archive-offline-adjudicator-v1.py
+          printf '%s' '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' | base64 -d | gzip -d > "$RUNNER"
+          test "$(stat -c %s "$RUNNER")" -eq 23626
+          test "$(sha256sum "$RUNNER" | awk '{print $1}')" = eb395c3d63c29ad1d3644136bde74436fbbef686a455f6edf20d1ca4ff188fe0
+          python -m py_compile "$RUNNER"
+          python "$RUNNER"
+      - name: Preserve checksum-bound request-free adjudication
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy26-archive-offline-adjudication-v1
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - name: Enforce terminal zero-effect adjudication
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test '${{ steps.adjudicate.outcome }}' = success
+          test "$(cat "$OUTPUT_DIR/EXIT_CODE")" = 0
+          test "$(cat "$OUTPUT_DIR/STAGE")" = complete
+          jq -e '.schema_version=="ssc-rd04-nd-fy26-archive-offline-adjudication-receipt@1" and .state=="complete" and .failed_or_final_stage=="complete" and .exit_code==0 and .archive_entries_reviewed==16 and .unique_bodies==15 and .duplicate_body_groups==1 and .north_dakota_named_entries==0 and .source_admissions==1 and .field_decisions==1 and .promotion_candidates==0 and .selected_followup_routes==0 and .additional_execution_authorized==false and .source_requests==0 and .route_executions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and .outside_human_dependency==false' "$OUTPUT_DIR/receipt.json" >/dev/null
+          jq -e '.state=="complete" and .entry_count==16 and .total_uncompressed_bytes==17998114 and .unique_body_count==15 and .duplicate_body_group_count==1 and .observed_state_directories==["NV","NY","OR","WI"] and .north_dakota_named_entries==0' "$OUTPUT_DIR/archive-inventory.json" >/dev/null
+          jq -e '.state=="complete" and .current_state=="still_open" and .current_terminal==false and .promotion_candidate==false and .matrix_updated==false and .disposition=="exact_current_fy2026_request_archive_contains_no_north_dakota_member_but_request_archive_absence_is_not_current_waiver_status"' "$OUTPUT_DIR/field-adjudication.json" >/dev/null
+          (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
