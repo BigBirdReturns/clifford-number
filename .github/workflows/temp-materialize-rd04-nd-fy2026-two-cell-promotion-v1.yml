@@ -1,0 +1,193 @@
+name: TEMP materialize RD-04 North Dakota FY2026 fixed-protocol two-cell promotion v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - agent/ssc-rd04-nd-fy2026-two-cell-promotion-base-v1
+    paths:
+      - '.tmp/rd04-nd-fy2026-two-cell-promotion-materializer-v1/trigger.json'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: temp-rd04-nd-fy2026-two-cell-promotion-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-fy2026-two-cell-promotion-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy2026-two-cell-promotion-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      CARRIER_PARENT: 5be5fc4d15391b99bb29226fdd16e408be559507
+      CONTROLLER_COMMIT: 7bf6b8f6efe8ee5f377713ef8c2df7b46542c218
+      CONTROLLER_PATH: .tmp/rd04-nd-fy2026-two-cell-promotion-materializer-v1/materialize.py
+      WORKFLOW_PATH: .github/workflows/temp-materialize-rd04-nd-fy2026-two-cell-promotion-v1.yml
+      TRIGGER_PATH: .tmp/rd04-nd-fy2026-two-cell-promotion-materializer-v1/trigger.json
+      CONTROLLER_BRANCH: agent/ssc-rd04-nd-fy2026-two-cell-promotion-controller-v1
+      BASE_BRANCH: agent/ssc-rd04-nd-fy2026-two-cell-promotion-base-v1
+      HEAD_BRANCH: agent/ssc-rd04-nd-fy2026-two-cell-promotion-trigger-v1
+      PRODUCT_BRANCH: agent/ssc-rd04-nd-fy2026-fixed-protocol-two-cell-promotion-v1
+      CANDIDATE_ARTIFACT_ID: '9043309756'
+      CANDIDATE_ARTIFACT_BYTES: '14782'
+      CANDIDATE_ARTIFACT_SHA256: ef3346192ce13eade5b4f66b90c1eb560290a1d6a74edae6a29a4823555f336e
+      CANDIDATE_ZIP: /tmp/rd04-nd-fy2026-fixed-protocol-terminal-adjudication-v2.zip
+      CONTROLLER_BYTES: '16654'
+      CONTROLLER_SHA256: 3e15846e6de5c7988a177b85966f70ba70a016147e2b9bd0a0e4abb31006c79a
+      OUT: /tmp/rd04-nd-fy2026-two-cell-promotion-materializer-v1
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Authenticate topology, recover candidate artifact, and materialize exact product
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        shell: bash
+        run: |
+          set -u -o pipefail
+          rm -rf "$OUT" "$CANDIDATE_ZIP"
+          mkdir -p "$OUT"
+
+          seal() {
+            (cd "$OUT" && find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' | LC_ALL=C sort -z | xargs -0 -r sha256sum > SHA256SUMS)
+          }
+
+          fail() {
+            local stage="$1" reason="$2"
+            python - "$OUT/receipt.json" "$stage" "$reason" <<'PY'
+          import json, sys
+          path, stage, reason = sys.argv[1:]
+          value = {
+            "schema_version": "ssc-rd04-nd-fy2026-fixed-protocol-two-cell-promotion-materializer-receipt@1",
+            "state": "failed_closed",
+            "failed_or_final_stage": stage,
+            "exit_code": 1,
+            "reason": reason,
+            "source_requests": 0,
+            "route_executions": 0,
+            "field_terminalizations": 0,
+            "matrix_updates": 0,
+            "row_state_mutations": 0,
+            "row_terminalizations": 0,
+            "class_closed": False,
+            "cumulative_ledger_effect": "none",
+            "publication_effect": "none",
+            "adoption_effect": "none",
+            "graph_effect": "none",
+            "outside_human_dependency": False
+          }
+          open(path, 'w', encoding='utf-8').write(json.dumps(value, indent=2, sort_keys=True) + '\n')
+          PY
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            printf '%s\n' 1 > "$OUT/EXIT_CODE"
+            seal
+            exit 0
+          }
+
+          test "$EVENT_NAME" = pull_request || fail topology event_not_pull_request
+          test "$HEAD_REPO" = "$GITHUB_REPOSITORY" || fail topology head_repository_mismatch
+          test "$BASE_REF" = "$BASE_BRANCH" || fail topology base_branch_mismatch
+          test "$HEAD_REF" = "$HEAD_BRANCH" || fail topology head_branch_mismatch
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA" || fail topology checkout_head_mismatch
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA" || fail topology head_parent_mismatch
+          test "$(git rev-parse "$BASE_SHA^")" = "$CONTROLLER_COMMIT" || fail topology workflow_parent_mismatch
+          test "$(git rev-parse "$CONTROLLER_COMMIT^")" = "$CARRIER_PARENT" || fail topology controller_parent_mismatch
+
+          mapfile -t controller_paths < <(git diff --name-only "$CARRIER_PARENT" "$CONTROLLER_COMMIT")
+          mapfile -t workflow_paths < <(git diff --name-only "$CONTROLLER_COMMIT" "$BASE_SHA")
+          mapfile -t trigger_paths < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          test "${#controller_paths[@]}" = 1 || fail topology controller_path_count_mismatch
+          test "${controller_paths[0]}" = "$CONTROLLER_PATH" || fail topology controller_path_mismatch
+          test "${#workflow_paths[@]}" = 1 || fail topology workflow_path_count_mismatch
+          test "${workflow_paths[0]}" = "$WORKFLOW_PATH" || fail topology workflow_path_mismatch
+          test "${#trigger_paths[@]}" = 1 || fail topology trigger_path_count_mismatch
+          test "${trigger_paths[0]}" = "$TRIGGER_PATH" || fail topology trigger_path_mismatch
+          git diff --check "$CARRIER_PARENT" "$HEAD_SHA" || fail topology git_diff_check_failed
+
+          test "$(stat -c %s "$CONTROLLER_PATH")" = "$CONTROLLER_BYTES" || fail controller controller_byte_count_mismatch
+          test "$(sha256sum "$CONTROLLER_PATH" | awk '{print $1}')" = "$CONTROLLER_SHA256" || fail controller controller_sha256_mismatch
+          python -m py_compile "$CONTROLLER_PATH" || fail controller controller_compile_failed
+
+          gh api "/repos/$GITHUB_REPOSITORY/actions/artifacts/$CANDIDATE_ARTIFACT_ID/zip" > "$CANDIDATE_ZIP" || fail artifact candidate_artifact_download_failed
+          test "$(stat -c %s "$CANDIDATE_ZIP")" = "$CANDIDATE_ARTIFACT_BYTES" || fail artifact candidate_artifact_byte_count_mismatch
+          test "$(sha256sum "$CANDIDATE_ZIP" | awk '{print $1}')" = "$CANDIDATE_ARTIFACT_SHA256" || fail artifact candidate_artifact_sha256_mismatch
+
+          set +e
+          python "$CONTROLLER_PATH" "$GITHUB_WORKSPACE" "$CANDIDATE_ZIP" "$OUT"
+          controller_status=$?
+          set -e
+          if [ "$controller_status" -ne 0 ]; then
+            test -f "$OUT/receipt.json" || fail materialization controller_failed_without_receipt
+            exit 0
+          fi
+          test -f "$OUT/receipt.json" || fail materialization successful_controller_missing_receipt
+
+      - name: Preserve checksum-bound materializer receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rd04-nd-fy2026-two-cell-promotion-materializer-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce qualified fourteen-path product publication
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -f "$OUT/receipt.json"
+          test -f "$OUT/SHA256SUMS"
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e --arg product_branch "$PRODUCT_BRANCH" '
+            .schema_version=="ssc-rd04-nd-fy2026-fixed-protocol-two-cell-promotion-materializer-receipt@1" and
+            .state=="complete" and .failed_or_final_stage=="complete" and .exit_code==0 and
+            .product_branch==$product_branch and .product_path_count==14 and .addition_only==true and
+            .terminal_cells_before==227 and .terminal_cells_after==229 and
+            .still_open_cells_before==223 and .still_open_cells_after==221 and
+            .terminal_units_before==10 and .terminal_units_after==11 and
+            .north_dakota_terminal_fields_before==7 and .north_dakota_terminal_fields_after==9 and
+            .north_dakota_open_fields_before==2 and .north_dakota_open_fields_after==0 and
+            .field_terminalizations==1 and .matrix_updates==1 and
+            .row_state_mutations==1 and .row_terminalizations==1 and
+            .source_requests==0 and .route_executions==0 and .class_closed==false and
+            .cumulative_ledger_effect=="none" and .publication_effect=="none" and
+            .adoption_effect=="none" and .graph_effect=="none" and .outside_human_dependency==false and
+            .release_gate=="pass" and .focused_validation=="pass" and .deterministic_replay=="pass"
+          ' "$OUT/receipt.json" > /dev/null
+          product_commit="$(jq -r .product_commit "$OUT/receipt.json")"
+          canonical_parent="$(jq -r .canonical_parent "$OUT/receipt.json")"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$product_commit"
+          git fetch --quiet origin "$PRODUCT_BRANCH"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH^")" = "$canonical_parent"
+          mapfile -t product_status < <(git diff --name-status "$canonical_parent" "origin/$PRODUCT_BRANCH")
+          test "${#product_status[@]}" = 14
+          test "$(printf '%s\n' "${product_status[@]}" | awk -F '\t' '$1=="A"{n++} END{print n+0}')" = 14
