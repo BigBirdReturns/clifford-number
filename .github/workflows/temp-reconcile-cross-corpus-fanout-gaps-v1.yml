@@ -1,0 +1,228 @@
+name: TEMP reconcile cross-corpus fanout source-gap denominator v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/cross-corpus-fanout-gap-reconciliation-v1/trigger.json'
+
+permissions:
+  contents: write
+  actions: read
+
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+  CARRIER_PARENT: 4edc3f4f65851cf2643e889d93df3b6372a2f468
+  MAP_PATH: data/research/clifford-cross-corpus-public-interest-map.json
+  MAP_BLOB: 3d09397a0d99c6f79c32d4a40f1d18d8fe1525ff
+  STATE_PATH: data/crawl/state.json
+  STATE_BLOB: 471ec73fe029a7d96b29dc38e190255e6b8d5a74
+  SOURCES_PATH: data/crawl/sources.json
+  SOURCES_BLOB: 8c7cde54c9193a4181ab748fbd0490301c4ba19e
+  BASE_BRANCH: agent/cross-corpus-fanout-gap-reconciliation-base-v1
+  HEAD_BRANCH: agent/cross-corpus-fanout-gap-reconciliation-trigger-v1
+  PRODUCT_BRANCH: agent/cross-corpus-fanout-gap-reconciliation-v1
+  WORKFLOW_PATH: .github/workflows/temp-reconcile-cross-corpus-fanout-gaps-v1.yml
+  PATCHER_PATH: .tmp/cross-corpus-fanout-gap-reconciliation-v1/repair.py
+  PATCHER_BYTES: '4901'
+  PATCHER_SHA256: 06ada85175ce0ca43193bee7ee66ae402dd5ffb9b255aea6f4e588d4b087cee3
+  TRIGGER_PATH: .tmp/cross-corpus-fanout-gap-reconciliation-v1/trigger.json
+  OUTPUT_DIR: /tmp/cross-corpus-fanout-gap-reconciliation-v1
+  PRODUCT_WORKTREE: /tmp/cross-corpus-fanout-gap-reconciliation-product-v1
+  REPLAY_WORKTREE: /tmp/cross-corpus-fanout-gap-reconciliation-replay-v1
+
+concurrency:
+  group: temp-cross-corpus-fanout-gap-reconciliation-v1
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/cross-corpus-fanout-gap-reconciliation-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/cross-corpus-fanout-gap-reconciliation-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Reconcile exact current source-gap denominator
+        id: reconcile
+        continue-on-error: true
+        env:
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUTPUT_DIR" "$PRODUCT_WORKTREE" "$REPLAY_WORKTREE"
+          mkdir -p "$OUTPUT_DIR"
+          stage=bind_exact_carrier
+          printf '%s\n' "$stage" > "$OUTPUT_DIR/STAGE"
+          printf '%s\n' 1 > "$OUTPUT_DIR/EXIT_CODE"
+          : > "$OUTPUT_DIR/workflow.log"
+          exec > >(tee -a "$OUTPUT_DIR/workflow.log") 2>&1
+          write_sums() {
+            python - "$OUTPUT_DIR" <<'PY'
+          import hashlib,pathlib,sys
+          root=pathlib.Path(sys.argv[1]); rows=[]
+          for p in sorted(x for x in root.rglob('*') if x.is_file() and x.name not in {'SHA256SUMS','workflow.log'}):
+              rows.append(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(root).as_posix()}\n')
+          root.joinpath('SHA256SUMS').write_text(''.join(rows))
+          PY
+          }
+          fail_closed() {
+            code=$?; set +e
+            printf '%s\n' "$stage" > "$OUTPUT_DIR/STAGE"
+            printf '%s\n' "$code" > "$OUTPUT_DIR/EXIT_CODE"
+            STAGE_VALUE="$stage" EXIT_VALUE="$code" OUTPUT_VALUE="$OUTPUT_DIR" python - <<'PY'
+          import json,os,pathlib
+          out=pathlib.Path(os.environ['OUTPUT_VALUE'])
+          out.joinpath('failure-receipt.json').write_text(json.dumps({
+            'schema_version':'cross-corpus-fanout-gap-reconciliation-failure@1',
+            'state':'failed_closed','stage':os.environ['STAGE_VALUE'],'exit_code':int(os.environ['EXIT_VALUE']),
+            'product_branch_moved':False,'source_requests':0,'graph_effect':'none','publication_effect':'none',
+            'outside_human_dependency':False
+          },indent=2,sort_keys=True)+'\n')
+          PY
+            write_sums
+            exit "$code"
+          }
+          trap fail_closed ERR
+
+          head="$(git rev-parse HEAD)"
+          base="$(git rev-parse HEAD^)"
+          test "$head" = "$EVENT_HEAD_SHA"
+          test "$base" = "$EVENT_BASE_SHA"
+          test "$(git rev-list --count "$CARRIER_PARENT..$base")" = 2
+          test "$(git rev-list --count "$base..$head")" = 1
+          python - "$CARRIER_PARENT" "$base" "$head" <<'PY'
+          import os,subprocess,sys
+          parent,base,head=sys.argv[1:]
+          out=lambda *args: subprocess.check_output(['git',*args],text=True).splitlines()
+          expected_base=sorted([os.environ['WORKFLOW_PATH'],os.environ['PATCHER_PATH']])
+          assert out('diff','--name-only',parent,base)==expected_base
+          assert out('diff','--name-only','--diff-filter=A',parent,base)==expected_base
+          assert out('diff','--name-only','--diff-filter=MDTCRUXB',parent,base)==[]
+          assert out('diff','--name-only',base,head)==[os.environ['TRIGGER_PATH']]
+          assert out('diff','--name-only','--diff-filter=A',base,head)==[os.environ['TRIGGER_PATH']]
+          assert out('diff','--name-only','--diff-filter=MDTCRUXB',base,head)==[]
+          PY
+          git diff --check "$CARRIER_PARENT" "$head"
+          git fetch --no-tags --force origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse origin/main)" = "$CARRIER_PARENT"
+          test "$(git rev-parse "$CARRIER_PARENT:$MAP_PATH")" = "$MAP_BLOB"
+          test "$(git rev-parse "$CARRIER_PARENT:$STATE_PATH")" = "$STATE_BLOB"
+          test "$(git rev-parse "$CARRIER_PARENT:$SOURCES_PATH")" = "$SOURCES_BLOB"
+          test "$(stat -c%s "$PATCHER_PATH")" = "$PATCHER_BYTES"
+          test "$(sha256sum "$PATCHER_PATH" | cut -d' ' -f1)" = "$PATCHER_SHA256"
+          python -m py_compile "$PATCHER_PATH"
+          jq -e '.schema_version=="cross-corpus-fanout-gap-reconciliation-trigger@1" and .canonical_parent==env.CARRIER_PARENT and .map_blob==env.MAP_BLOB and .state_blob==env.STATE_BLOB and .sources_blob==env.SOURCES_BLOB and .source_requests==0 and .outside_human_dependency==false' "$TRIGGER_PATH" >/dev/null
+          if git ls-remote --exit-code --heads origin "$PRODUCT_BRANCH" >/dev/null 2>&1; then
+            echo "product branch already exists" >&2
+            exit 1
+          fi
+
+          stage=construct_repaired_map
+          printf '%s\n' "$stage" > "$OUTPUT_DIR/STAGE"
+          git worktree add --detach "$PRODUCT_WORKTREE" "$CARRIER_PARENT"
+          python "$PATCHER_PATH" "$PRODUCT_WORKTREE" > "$OUTPUT_DIR/build-report.json"
+          git -C "$PRODUCT_WORKTREE" diff --check
+          test "$(git -C "$PRODUCT_WORKTREE" diff --name-only)" = "$MAP_PATH"
+
+          stage=complete_repository_release_gate
+          printf '%s\n' "$stage" > "$OUTPUT_DIR/STAGE"
+          (cd "$PRODUCT_WORKTREE" && npm run release:check) > "$OUTPUT_DIR/release-check.log" 2>&1
+          git -C "$PRODUCT_WORKTREE" status --porcelain=v1 > "$OUTPUT_DIR/release-status-before-clean.txt"
+
+          stage=restore_generated_outputs_and_validate_focus
+          printf '%s\n' "$stage" > "$OUTPUT_DIR/STAGE"
+          python - "$PRODUCT_WORKTREE" "$CARRIER_PARENT" "$MAP_PATH" <<'PY'
+          import pathlib,shutil,subprocess,sys
+          root=pathlib.Path(sys.argv[1]); parent=sys.argv[2]; keep=sys.argv[3]
+          def lines(*args):
+              return subprocess.check_output(['git','-C',str(root),*args],text=True).splitlines()
+          for path in lines('diff','--name-only'):
+              if path != keep:
+                  subprocess.run(['git','-C',str(root),'restore','--source',parent,'--staged','--worktree','--',path],check=True)
+          raw=subprocess.check_output(['git','-C',str(root),'ls-files','--others','--exclude-standard','-z'])
+          for item in raw.split(b'\0'):
+              if not item: continue
+              target=root/item.decode()
+              if target.is_dir(): shutil.rmtree(target)
+              elif target.exists(): target.unlink()
+          PY
+          test "$(git -C "$PRODUCT_WORKTREE" diff --name-only)" = "$MAP_PATH"
+          test -z "$(git -C "$PRODUCT_WORKTREE" ls-files --others --exclude-standard)"
+          (cd "$PRODUCT_WORKTREE" && node tools/validate-clifford-cross-corpus-public-interest-map.mjs) > "$OUTPUT_DIR/focused-validation.log" 2>&1
+
+          stage=clean_deterministic_replay
+          printf '%s\n' "$stage" > "$OUTPUT_DIR/STAGE"
+          git worktree add --detach "$REPLAY_WORKTREE" "$CARRIER_PARENT"
+          python "$PATCHER_PATH" "$REPLAY_WORKTREE" > "$OUTPUT_DIR/replay-build-report.json"
+          cmp "$PRODUCT_WORKTREE/$MAP_PATH" "$REPLAY_WORKTREE/$MAP_PATH"
+          test "$(git -C "$REPLAY_WORKTREE" diff --name-only)" = "$MAP_PATH"
+
+          stage=publish_exact_product_branch
+          printf '%s\n' "$stage" > "$OUTPUT_DIR/STAGE"
+          git -C "$PRODUCT_WORKTREE" config user.name github-actions[bot]
+          git -C "$PRODUCT_WORKTREE" config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git -C "$PRODUCT_WORKTREE" add "$MAP_PATH"
+          git -C "$PRODUCT_WORKTREE" commit -m 'Reconcile current cross-corpus crawl source gaps'
+          product_commit="$(git -C "$PRODUCT_WORKTREE" rev-parse HEAD)"
+          product_tree="$(git -C "$PRODUCT_WORKTREE" rev-parse HEAD^{tree})"
+          test "$(git -C "$PRODUCT_WORKTREE" rev-parse HEAD^)" = "$CARRIER_PARENT"
+          test "$(git -C "$PRODUCT_WORKTREE" diff-tree --no-commit-id --name-only -r HEAD)" = "$MAP_PATH"
+          git -C "$PRODUCT_WORKTREE" push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          git ls-remote --exit-code --heads origin "$PRODUCT_BRANCH" | awk '{print $1}' | grep -Fx "$product_commit"
+
+          PRODUCT_COMMIT="$product_commit" PRODUCT_TREE="$product_tree" python - "$OUTPUT_DIR" <<'PY'
+          import json,os,pathlib,sys
+          out=pathlib.Path(sys.argv[1])
+          build=json.loads(out.joinpath('build-report.json').read_text())
+          replay=json.loads(out.joinpath('replay-build-report.json').read_text())
+          assert build==replay
+          receipt={
+            'schema_version':'cross-corpus-fanout-gap-reconciliation-receipt@1','state':'complete','stage':'complete','exit_code':0,
+            'canonical_parent':os.environ['CARRIER_PARENT'],'product_branch':os.environ['PRODUCT_BRANCH'],
+            'product_commit':os.environ['PRODUCT_COMMIT'],'product_tree':os.environ['PRODUCT_TREE'],
+            'product_commits':1,'permanent_paths':1,'addition_only':False,'modified_paths':1,'deleted_paths':0,
+            'map_path':os.environ['MAP_PATH'],'map_before_git_blob':build['map_before_git_blob'],'map_after_git_blob':build['map_after_git_blob'],
+            'map_before_sha256':build['map_before_sha256'],'map_after_sha256':build['map_after_sha256'],
+            'crawl_source_gaps_before':1,'crawl_source_gaps_after':2,
+            'current_gap_states':build['current_gap_states'],'release_check':'pass','focused_validation':'pass','deterministic_replay':'pass',
+            'source_requests':0,'graph_effect':'none','publication_effect':'none','outside_human_dependency':False
+          }
+          out.joinpath('receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          PY
+          printf '%s\n' complete > "$OUTPUT_DIR/STAGE"
+          printf '%s\n' 0 > "$OUTPUT_DIR/EXIT_CODE"
+          write_sums
+          trap - ERR
+      - name: Preserve checksum-bound reconciliation receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cross-corpus-fanout-gap-reconciliation-v1
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - name: Enforce qualified one-path product publication
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test '${{ steps.reconcile.outcome }}' = success
+          test "$(cat "$OUTPUT_DIR/EXIT_CODE")" = 0
+          test "$(cat "$OUTPUT_DIR/STAGE")" = complete
+          jq -e '.schema_version=="cross-corpus-fanout-gap-reconciliation-receipt@1" and .state=="complete" and .stage=="complete" and .exit_code==0 and .canonical_parent==env.CARRIER_PARENT and .product_branch==env.PRODUCT_BRANCH and .product_commits==1 and .permanent_paths==1 and .modified_paths==1 and .deleted_paths==0 and .crawl_source_gaps_before==1 and .crawl_source_gaps_after==2 and .release_check=="pass" and .focused_validation=="pass" and .deterministic_replay=="pass" and .source_requests==0 and .graph_effect=="none" and .publication_effect=="none" and .outside_human_dependency==false' "$OUTPUT_DIR/receipt.json" >/dev/null
+          (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
