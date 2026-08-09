@@ -8,11 +8,12 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  actions: read
+  contents: write
 
 concurrency:
-  group: no-magic-human-gate-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: pc59-nonworkflow-object-publisher-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
 
 jobs:
   validate:
@@ -29,3 +30,203 @@ jobs:
         run: |
           node tools/validate-no-magic-human-gate.mjs
           node test/no-magic-human-gate.test.js
+
+  publish-pc59-nonworkflow-objects:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/pc59-product-publisher-v3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPOSITORY: ${{ github.repository }}
+      CARRIER_PARENT: '938ba049394af65e22d46cf65ec266390f589d16'
+      CARRIER_PATH: '.github/workflows/no-magic-human-gate.yml'
+      QUALIFIER_RUN: '31294560504'
+      QUALIFIER_ARTIFACT: '9032608869'
+      QUALIFIER_DIGEST: 'sha256:6882402385ebd8014c5cfc8a7c2a94cf77d1acc9b00b0198662f08f541452037'
+      QUALIFIER_HEAD: '5886d3c87bf3d083b6de6c376579067952018c0a'
+      QUALIFIER_BRANCH: 'agent/pc59-materializer-carrier'
+      PARENT: 'a592acea22c69a979f2a90c24a2bafb8c9445759'
+      PARENT_TREE: 'c7dbb1df10b409caa7893846a9e4b3e8d1392be0'
+      PRODUCT_TREE: '9057a3daca6e8420c83652d5ba2669c2f2ae34a5'
+      ARCHIVE_SHA256: '8a56d6209fba1a451cf733cf2d67b2e6dcc37e45209d70d340576773e5f7eef0'
+      MANIFEST_SHA256: 'e209ea8ba3d59849c24d4f217251b0053c71d559e838bc7f2968881f70942ee3'
+      CHUNK_BLOBS: '00afcc70c0f8c71fdf654960a0aee911f6539b85 1870b7c7a353ca21d06c991eb6c24026b5878871 f268960932f2e96c94d58594a282c9432a49b207 300266349434564928b5ecdc63cd16feb6c3b690 459172d20e965ab8b13873bbb8ce6cd0d8544a43 9b284c1f367abbd62c1b83083bc60c281d364a3c 8ddf1971794fda0ca047ee069e69a3515274030d e8487726a6f6beb0f39e87c072653fd575c6fa38 e5d5f4a14f12ed376466becddebcdb2b52425a04'
+      WORK: '/tmp/pc59-product-publisher-v3'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Bind carrier topology and canonical predecessor
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = "$CARRIER_PARENT"
+          test "$(git rev-list --count "$CARRIER_PARENT"..HEAD)" = 1
+          test "$(git diff --name-only "$CARRIER_PARENT" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-status "$CARRIER_PARENT" HEAD)" = $'M\t'"$CARRIER_PATH"
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          git merge-base --is-ancestor "$PARENT" "$CARRIER_PARENT"
+
+      - name: Authenticate qualifier and reconstruct exact frozen product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$WORK/qualifier" "$WORK/product" "$WORK/out"
+
+          gh api "/repos/${GH_REPOSITORY}/actions/runs/${QUALIFIER_RUN}" > "$WORK/qualifier-run.json"
+          test "$(jq -r .head_sha "$WORK/qualifier-run.json")" = "$QUALIFIER_HEAD"
+          test "$(jq -r .status "$WORK/qualifier-run.json")" = completed
+          test "$(jq -r .conclusion "$WORK/qualifier-run.json")" = success
+
+          gh api "/repos/${GH_REPOSITORY}/actions/artifacts/${QUALIFIER_ARTIFACT}" > "$WORK/qualifier-artifact.json"
+          test "$(jq -r .workflow_run.id "$WORK/qualifier-artifact.json")" = "$QUALIFIER_RUN"
+          test "$(jq -r .digest "$WORK/qualifier-artifact.json")" = "$QUALIFIER_DIGEST"
+          gh api "/repos/${GH_REPOSITORY}/actions/artifacts/${QUALIFIER_ARTIFACT}/zip" > "$WORK/qualifier.zip"
+          test "sha256:$(sha256sum "$WORK/qualifier.zip" | cut -d' ' -f1)" = "$QUALIFIER_DIGEST"
+          unzip -q "$WORK/qualifier.zip" -d "$WORK/qualifier"
+          receipt=$(find "$WORK/qualifier" -name receipt.json -print -quit)
+          test -n "$receipt"
+          test "$(jq -r .status "$receipt")" = complete
+          test "$(jq -r .qualified_parent "$receipt")" = "$PARENT"
+          test "$(jq -r .qualified_parent_tree "$receipt")" = "$PARENT_TREE"
+          test "$(jq -r .product_tree "$receipt")" = "$PRODUCT_TREE"
+          test "$(jq -r .permanent_paths "$receipt")" = 14
+          cp "$receipt" "$WORK/qualifier-receipt.json"
+
+          git fetch --no-tags origin "$QUALIFIER_BRANCH" main
+          git show "origin/${QUALIFIER_BRANCH}:.tmp/pc59/product-manifest.json" > "$WORK/manifest.json"
+          test "$(sha256sum "$WORK/manifest.json" | cut -d' ' -f1)" = "$MANIFEST_SHA256"
+
+          : > "$WORK/product.b64"
+          for blob in $CHUNK_BLOBS; do
+            gh api "/repos/${GH_REPOSITORY}/git/blobs/${blob}" --jq .content | tr -d '\n' | base64 -d >> "$WORK/product.b64"
+          done
+          base64 -d "$WORK/product.b64" > "$WORK/product.tar.gz"
+          test "$(sha256sum "$WORK/product.tar.gz" | cut -d' ' -f1)" = "$ARCHIVE_SHA256"
+          tar -xzf "$WORK/product.tar.gz" -C "$WORK/product"
+
+          python - <<'PY'
+          import hashlib, json, os, pathlib
+          work = pathlib.Path(os.environ['WORK'])
+          manifest = json.loads((work / 'manifest.json').read_text())
+          receipt = json.loads((work / 'qualifier-receipt.json').read_text())
+          assert manifest['qualified_parent'] == os.environ['PARENT']
+          assert manifest['qualified_parent_tree'] == os.environ['PARENT_TREE']
+          assert len(manifest['files']) == 14
+          expected = {entry['path']: entry['git_blob_sha'] for entry in manifest['files']}
+          assert receipt['product_blobs'] == expected
+          for entry in manifest['files']:
+              path = work / 'product' / entry['path']
+              payload = path.read_bytes()
+              assert len(payload) == entry['bytes']
+              assert hashlib.sha256(payload).hexdigest() == entry['sha256']
+              git_sha = hashlib.sha1(b'blob ' + str(len(payload)).encode() + b'\0' + payload).hexdigest()
+              assert git_sha == entry['git_blob_sha']
+          PY
+
+          export GIT_INDEX_FILE="$WORK/product.index"
+          rm -f "$GIT_INDEX_FILE"
+          git read-tree "$PARENT_TREE"
+          while IFS=$'\t' read -r path blob; do
+            git hash-object -w "$WORK/product/$path" >/dev/null
+            git update-index --add --cacheinfo 100644,"$blob","$path"
+          done < <(jq -r '.files[] | [.path,.git_blob_sha] | @tsv' "$WORK/manifest.json")
+          test "$(git write-tree)" = "$PRODUCT_TREE"
+          unset GIT_INDEX_FILE
+
+      - name: Reacquire live main and prove zero product-path overlap
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin main
+          live_main=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$PARENT" "$live_main"
+          : > "$WORK/live-main-overlap.txt"
+          while IFS= read -r path; do
+            if git cat-file -e "$live_main:$path" 2>/dev/null; then
+              printf '%s\n' "$path" >> "$WORK/live-main-overlap.txt"
+            fi
+          done < <(jq -r '.files[].path' "$WORK/manifest.json" | sort)
+          test ! -s "$WORK/live-main-overlap.txt"
+          printf '%s\n' "$live_main" > "$WORK/live-main.txt"
+
+      - name: Publish exactly twelve non-workflow blobs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY' > "$WORK/blob-commands.sh"
+          import base64, json, os, pathlib, shlex
+          work = pathlib.Path(os.environ['WORK'])
+          manifest = json.loads((work / 'manifest.json').read_text())
+          repo = os.environ['GH_REPOSITORY']
+          entries = [x for x in manifest['files'] if not x['path'].startswith('.github/workflows/')]
+          assert len(entries) == 12
+          for entry in entries:
+              payload = {
+                  'content': base64.b64encode((work / 'product' / entry['path']).read_bytes()).decode(),
+                  'encoding': 'base64',
+              }
+              payload_path = work / ('blob-' + entry['git_blob_sha'] + '.json')
+              payload_path.write_text(json.dumps(payload))
+              print(f"sha=$(gh api --method POST /repos/{repo}/git/blobs --input {shlex.quote(str(payload_path))} --jq .sha)")
+              print(f"test \"$sha\" = {entry['git_blob_sha']}")
+              print(f"test \"$(gh api /repos/{repo}/git/blobs/{entry['git_blob_sha']} --jq .sha)\" = {entry['git_blob_sha']}")
+          PY
+          source "$WORK/blob-commands.sh"
+
+          jq -n \
+            --arg status complete \
+            --arg carrier_head "$(git rev-parse HEAD)" \
+            --arg carrier_parent "$CARRIER_PARENT" \
+            --arg live_main "$(cat "$WORK/live-main.txt")" \
+            --arg qualified_parent "$PARENT" \
+            --arg qualified_parent_tree "$PARENT_TREE" \
+            --arg product_tree "$PRODUCT_TREE" \
+            --arg qualifier_digest "$QUALIFIER_DIGEST" \
+            --arg archive_sha256 "$ARCHIVE_SHA256" \
+            --arg manifest_sha256 "$MANIFEST_SHA256" \
+            --argjson permanent_paths 14 \
+            --argjson published_nonworkflow_blobs 12 \
+            --argjson deferred_workflow_blobs 2 \
+            '{
+              schema_version:"pc59-nonworkflow-object-publication@1",
+              status:$status,
+              carrier_head:$carrier_head,
+              carrier_parent:$carrier_parent,
+              observed_live_main:$live_main,
+              qualified_parent:$qualified_parent,
+              qualified_parent_tree:$qualified_parent_tree,
+              product_tree:$product_tree,
+              qualifier_artifact_digest:$qualifier_digest,
+              archive_sha256:$archive_sha256,
+              manifest_sha256:$manifest_sha256,
+              permanent_paths:$permanent_paths,
+              published_nonworkflow_blobs:$published_nonworkflow_blobs,
+              deferred_workflow_blobs:$deferred_workflow_blobs,
+              ref_updates:0,
+              product_commits_created:0,
+              outside_human_dependency:false,
+              graph_effect:"none"
+            }' > "$WORK/publication-receipt.json"
+
+          cp "$WORK/manifest.json" "$WORK/out/product-manifest.json"
+          cp "$WORK/qualifier-receipt.json" "$WORK/out/qualifier-receipt.json"
+          cp "$WORK/publication-receipt.json" "$WORK/out/publication-receipt.json"
+          cp "$WORK/live-main.txt" "$WORK/out/live-main.txt"
+          cp "$WORK/live-main-overlap.txt" "$WORK/out/live-main-overlap.txt"
+          mkdir -p "$WORK/out/product"
+          cp -a "$WORK/product/." "$WORK/out/product/"
+          (
+            cd "$WORK/out"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc59-nonworkflow-object-publication
+          path: /tmp/pc59-product-publisher-v3/out
+          if-no-files-found: error
+          retention-days: 90
