@@ -1,0 +1,115 @@
+name: TEMP adjudicate RD-04 North Dakota FNA response PDF anchor v1
+on:
+  pull_request:
+    branches: [agent/ssc-rd04-nd-fna-response-pdf-anchor-adjudication-base-v1]
+    paths: [.trigger/ssc-rd04-nd-fna-response-pdf-anchor-adjudication-v1]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  adjudicate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PARENT: a592acea22c69a979f2a90c24a2bafb8c9445759
+      WF: .github/workflows/temp-adjudicate-ssc-rd04-nd-fna-response-pdf-anchor-v1.yml
+      TRIGGER: .trigger/ssc-rd04-nd-fna-response-pdf-anchor-adjudication-v1
+      SOURCE_ID: '9031979165'
+      SOURCE_BYTES: '5429234'
+      SOURCE_SHA: 2668ef0456029fc8b8dbfdc6cc8966617c92a632aaed9c9216c6b355a83100f3
+      ROUTE_RECEIPT_SHA: 5072a3d24df5734c0242b6a62b8f9e0464fe013bdc7ae530ccbc1a17c1db3892
+      EXECUTION_RECEIPT_SHA: 31332095180bb293a3ad5054678d9cf765301b30268fb0a555c0534e7bbc92a4
+      HEADER_SHA: 6e9d5e8e73ba2eee9a90f308dd4e3f964b50678537d0ce93d446d68104337bd6
+      BODY_SHA: dcab625aeeebc30b1cf38dd32f67f0cb766a8e33735694b00f041e03d446476f
+      INDEX_URL: https://www.fna.usda.gov/snap/waivers/timelimit/2025-2029
+      PDF_HREF: /sites/default/files/resource-files/nd-abawd-response-fy2025.pdf
+      PDF_URL: https://www.fna.usda.gov/sites/default/files/resource-files/nd-abawd-response-fy2025.pdf
+      OUT: /tmp/rd04-nd-fna-response-pdf-anchor-adjudication-v1
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - id: run
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"; mkdir -p "$OUT/source"; : > "$OUT/workflow.log"
+          exec > >(tee -a "$OUT/workflow.log") 2>&1
+          echo topology > "$OUT/STAGE"; echo 1 > "$OUT/EXIT_CODE"
+          H=$(git rev-parse HEAD); B=$(git rev-parse HEAD^); P=$(git rev-parse HEAD^^)
+          test "$H" = '${{ github.event.pull_request.head.sha }}'
+          test "$P" = "$PARENT"
+          test "$(git diff --name-only "$P" "$B")" = "$WF"
+          test "$(git diff --name-only "$B" "$H")" = "$TRIGGER"
+          git fetch --no-tags --force origin main
+          test "$(git rev-parse origin/main)" = "$PARENT"
+
+          echo authenticate > "$OUT/STAGE"
+          api="https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ID"
+          auth=(-H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json')
+          curl -fsSL "${auth[@]}" "$api" -o "$OUT/source-meta.json"
+          jq -e --argjson id "$SOURCE_ID" --argjson size "$SOURCE_BYTES" --arg d "sha256:$SOURCE_SHA" '.id==$id and .size_in_bytes==$size and .digest==$d and .expired==false' "$OUT/source-meta.json" >/dev/null
+          curl -fsSL "${auth[@]}" "$api/zip" -o "$OUT/source.zip"
+          test "$(stat -c%s "$OUT/source.zip")" -eq "$SOURCE_BYTES"
+          test "$(sha256sum "$OUT/source.zip" | cut -d' ' -f1)" = "$SOURCE_SHA"
+          unzip -t "$OUT/source.zip" > "$OUT/source-zip-test.txt"
+          unzip -q "$OUT/source.zip" -d "$OUT/source"
+          (cd "$OUT/source" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$OUT/source/route-receipt.json" | cut -d' ' -f1)" = "$ROUTE_RECEIPT_SHA"
+          test "$(sha256sum "$OUT/source/execution-receipt.json" | cut -d' ' -f1)" = "$EXECUTION_RECEIPT_SHA"
+          test "$(sha256sum "$OUT/source/response-headers.raw" | cut -d' ' -f1)" = "$HEADER_SHA"
+          test "$(sha256sum "$OUT/source/response-body.bin" | cut -d' ' -f1)" = "$BODY_SHA"
+          jq -e --arg url "$INDEX_URL" '.state=="complete" and .requested_url==$url and .effective_url==$url and .status_code==200 and .redirects_followed==0 and .terminal_state=="http_success_body_captured"' "$OUT/source/route-receipt.json" >/dev/null
+
+          echo adjudicate > "$OUT/STAGE"
+          python - "$OUT/source/response-body.bin" "$OUT/anchor-observation.json" <<'PY'
+          import html, json, re, sys
+          from pathlib import Path
+          body = Path(sys.argv[1]).read_text(encoding='utf-8')
+          blocks = re.findall(r'<dt>\s*North Dakota\s*</dt>\s*<dd>(.*?)</dd>', body, flags=re.I|re.S)
+          assert len(blocks) == 1, len(blocks)
+          links = re.findall(r'<a\b[^>]*href="([^"]+)"[^>]*>(.*?)</a>', blocks[0], flags=re.I|re.S)
+          assert len(links) == 1, links
+          href, inner = links[0]
+          anchor = html.unescape(re.sub(r'<[^>]+>', '', inner)).strip()
+          text = html.unescape(re.sub(r'<[^>]+>', ' ', blocks[0]))
+          text = ' '.join(text.split())
+          assert href == '/sites/default/files/resource-files/nd-abawd-response-fy2025.pdf', href
+          assert anchor == 'FY 2025 Waiver - FNA Response (.pdf)', anchor
+          assert '(6/18/2025)' in text, text
+          value = {
+            'schema_version':'ssc-rd04-nd-fna-response-pdf-anchor-observation@1',
+            'state':'complete',
+            'state_heading':'North Dakota',
+            'anchor_text':anchor,
+            'displayed_date':'6/18/2025',
+            'href':href,
+            'absolute_url':'https://www.fna.usda.gov'+href,
+            'matching_state_sections':1,
+            'matching_anchors':1,
+            'target_contacted':False,
+          }
+          Path(sys.argv[2]).write_text(json.dumps(value,indent=2)+'\n')
+          PY
+          jq -n --arg index "$INDEX_URL" --arg href "$PDF_HREF" --arg url "$PDF_URL" '{schema_version:"ssc-rd04-nd-fna-response-pdf-anchor-adjudication@1",state:"complete",source_role:"official_response_document_locator_index",index_url:$index,state_heading:"North Dakota",anchor_text:"FY 2025 Waiver - FNA Response (.pdf)",displayed_date:"6/18/2025",observed_href:$href,selected_target_url:$url,target_contacted:false,source_admissions:1,source_scope:"locator_only",field_decision:"hold_open_exact_geography_and_governing_period_not_proved",promotion_candidates:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' > "$OUT/anchor-adjudication.json"
+          jq -n --arg url "$PDF_URL" '{schema_version:"ssc-rd04-nd-fna-response-pdf-route-protocol@1",state:"selected_unexecuted",route_count:1,routes:[{route_id:"RD04-ND-FNA-RESPONSE-FY2025-PDF-001",url:$url,method:"GET",attempts:1,exact_host:"www.fna.usda.gov",maximum_followed_redirects:0,maximum_body_bytes:12000000,expected_media_type:"application/pdf",require_pdf_magic:true,same_host_expansion:0,result_spawned_requests:0}],source_admissions:1,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,outside_human_dependency:false}' > "$OUT/selected-followup-protocol.json"
+          jq -n '{schema_version:"ssc-rd04-nd-fna-response-pdf-anchor-adjudication-receipt@1",state:"complete",stage:"complete",source_requests:0,route_executions:0,source_admissions:1,source_scope:"locator_only",field_decisions:1,promotion_candidates:0,held_open_fields:1,selected_followup_routes:1,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none",next_authorized_operation:"one exact locked GET to the selected North Dakota FY 2025 FNA response PDF origin URL; no redirect target may be contacted without separate adjudication"}' > "$OUT/receipt.json"
+          echo complete > "$OUT/STAGE"; echo 0 > "$OUT/EXIT_CODE"
+          find "$OUT" -type f ! -name SHA256SUMS ! -name workflow.log -print0 | sort -z | xargs -0 sha256sum | sed "s#  $OUT/#  #" > "$OUT/SHA256SUMS"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fna-response-pdf-anchor-adjudication-v1
+          path: /tmp/rd04-nd-fna-response-pdf-anchor-adjudication-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+      - if: always()
+        shell: bash
+        run: |
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          test '${{ steps.run.outcome }}' = success
