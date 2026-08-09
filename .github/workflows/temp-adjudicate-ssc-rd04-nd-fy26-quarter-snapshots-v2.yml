@@ -1,0 +1,372 @@
+name: TEMP adjudicate RD-04 North Dakota FY2026 quarter snapshots v2
+
+on:
+  pull_request:
+    branches: [agent/ssc-rd04-nd-fy26-quarter-snapshot-adjudication-base-v2]
+    types: [opened, synchronize, reopened]
+    paths: [.trigger/ssc-rd04-nd-fy26-quarter-snapshot-adjudication-v2.json]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  adjudicate:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy26-quarter-snapshot-adjudication-trigger-v2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      MAIN: a592acea22c69a979f2a90c24a2bafb8c9445759
+      MATRIX: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+      MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+      BASE: agent/ssc-rd04-nd-fy26-quarter-snapshot-adjudication-base-v2
+      HEAD: agent/ssc-rd04-nd-fy26-quarter-snapshot-adjudication-trigger-v2
+      WF: .github/workflows/temp-adjudicate-ssc-rd04-nd-fy26-quarter-snapshots-v2.yml
+      TRIGGER: .trigger/ssc-rd04-nd-fy26-quarter-snapshot-adjudication-v2.json
+      FAILED_ARTIFACT_ID: '9031135822'
+      FAILED_ARTIFACT_BYTES: '335405'
+      FAILED_ARTIFACT_SHA256: 36461577df6283d03322faf1ccf62e6185c629a047ce0a00f7d61fa8c6e83a5c
+      FAILED_RECEIPT_SHA256: 191b66410e95b293b400bc878feadc79a40d6b57df0b27761612b6807c6762b7
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - id: run
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          O="$RUNNER_TEMP/out"
+          F="$RUNNER_TEMP/failed"
+          mkdir -p "$O" "$F"
+          stage=initializing
+          set_stage() {
+            stage="$1"
+            printf '%s\n' "$stage" > "$O/STAGE.current"
+          }
+          sums() {
+            python - "$O" <<'PY'
+          import hashlib, pathlib, sys
+          root = pathlib.Path(sys.argv[1])
+          rows = []
+          for path in sorted(p for p in root.rglob('*') if p.is_file() and p.name != 'SHA256SUMS'):
+              rows.append(f'{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(root).as_posix()}\n')
+          (root / 'SHA256SUMS').write_text(''.join(rows))
+          PY
+          }
+          fail() {
+            c=$?
+            set +e
+            printf '%s\n' "$stage" > "$O/STAGE"
+            printf '%s\n' "$c" > "$O/EXIT_CODE"
+            ST="$stage" C="$c" O="$O" python - <<'PY'
+          import json, os, pathlib
+          out = pathlib.Path(os.environ['O'])
+          out.joinpath('failure-receipt.json').write_text(json.dumps({
+              'schema_version': 'ssc-rd04-nd-fy26-quarter-snapshot-adjudication-failure@2',
+              'state': 'failed_closed',
+              'stage': os.environ['ST'],
+              'exit_code': int(os.environ['C']),
+              'source_requests': 0,
+              'route_executions': 0,
+              'field_terminalizations': 0,
+              'matrix_updates': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'additional_execution_authorized': False,
+          }, indent=2, sort_keys=True) + '\n')
+          PY
+            sums
+            exit "$c"
+          }
+          trap fail ERR
+
+          set_stage topology
+          B='${{ github.event.pull_request.base.sha }}'
+          H='${{ github.event.pull_request.head.sha }}'
+          test '${{ github.event.pull_request.base.ref }}' = "$BASE"
+          test '${{ github.event.pull_request.head.ref }}' = "$HEAD"
+          test "$(git rev-parse "$B^")" = "$MAIN"
+          test "$(git rev-parse "$H^")" = "$B"
+          test "$(git diff --name-only "$MAIN" "$B")" = "$WF"
+          test "$(git diff --name-only "$B" "$H")" = "$TRIGGER"
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$MAIN"
+          test "$(git rev-parse "origin/main:$MATRIX")" = "$MATRIX_BLOB"
+          cp "$TRIGGER" "$O/operator-review-attestation.json"
+
+          set_stage authenticate_trigger
+          H="$H" O="$O" python - <<'PY'
+          import json, os, pathlib
+          got = json.loads(pathlib.Path(os.environ['O'], 'operator-review-attestation.json').read_text())
+          exp = {
+              'schema_version': 'ssc-rd04-nd-fy26-quarter-snapshot-adjudication-trigger@2',
+              'canonical_parent': 'a592acea22c69a979f2a90c24a2bafb8c9445759',
+              'failed_artifact_id': 9031135822,
+              'failed_artifact_sha256': '36461577df6283d03322faf1ccf62e6185c629a047ce0a00f7d61fa8c6e83a5c',
+              'failed_receipt_sha256': '191b66410e95b293b400bc878feadc79a40d6b57df0b27761612b6807c6762b7',
+              'q1_pdf_sha256': '935102ee97403bc5eaf7c929b931e5d4ff87efbe2d4654cac88d0e1a91069c77',
+              'q2_pdf_sha256': '6c8e8cda2068ceba7cf48b723f591e05bbc85fb1cc137174baddb7b543aad474',
+              'q3_pdf_sha256': 'ab65b3bbc62f27a6d3aa2811991b257e0f226c08791f0bdf6ddf4024a4b0e8c1',
+              'state_403_body_sha256': 'a4bd1f3911ecb5693494dcbbf2a18b0e2758895bcee8b7d7fbb2e7c71fc6486a',
+              'operator_review': {
+                  'reviewer_class': 'model_operator',
+                  'all_pages_reviewed': True,
+                  'page_count_each': 1,
+                  'outside_human_dependency': False,
+                  'q1_render_sha256': '499943429c4e1de7be7891493b59750f49237d3cba3384eb1022bc936dc0e60b',
+                  'q2_render_sha256': 'b965d18c943927ae3e1410b7c515553d3a601dcb538b16cb47392403b047bc17',
+                  'q3_render_sha256': '9e7bab1450de44dd381f7418f0f647e494b88a9d7496be4eb945ebcd9effc4ae',
+                  'q1_text_sha256': '621de56b1820bef3c95a8e72404dc110478bf8b3ef50860836b80ab4fa1d1866',
+                  'q2_text_sha256': '72d569a3c73acf2299eae43cabb3cac3e449fe3721e66bb53334642597972ce5',
+                  'q3_text_sha256': '1c3912af0ca7ab17bbcd92eb2cc49b039aa7a44f154698f523f62b8b4a577196',
+                  'snapshots': [
+                      {'quarter': 1, 'as_of': '2025-10-01', 'state': 'North Dakota', 'classification': 'partial_time_limit_waiver', 'statewide_count': 6, 'partial_count': 15, 'without_count': 32},
+                      {'quarter': 2, 'as_of': '2026-01-01', 'state': 'North Dakota', 'classification': 'partial_time_limit_waiver', 'statewide_count': 4, 'partial_count': 14, 'without_count': 35},
+                      {'quarter': 3, 'as_of': '2026-03-01', 'state': 'North Dakota', 'classification': 'partial_time_limit_waiver', 'statewide_count': 0, 'partial_count': 14, 'without_count': 39},
+                  ],
+                  'temporal_limitations': [
+                      'waivers_are_generally_approved_for_twelve_months',
+                      'implementation_and_expiration_need_not_concur_with_federal_quarter_or_fiscal_year',
+                      'state_agency_may_discontinue_before_expiration',
+                  ],
+              },
+              'source_requests': 0,
+              'route_executions': 0,
+              'field_terminalizations': 0,
+              'matrix_updates': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+          }
+          assert got == exp, (got, exp)
+          PY
+
+          set_stage authenticate_failed_packet
+          gh api "repos/$REPO/actions/artifacts/$FAILED_ARTIFACT_ID" > "$O/failed-artifact-metadata.json"
+          jq -e --argjson i "$FAILED_ARTIFACT_ID" --argjson b "$FAILED_ARTIFACT_BYTES" --arg d "sha256:$FAILED_ARTIFACT_SHA256" '.id==$i and .size_in_bytes==$b and .digest==$d and .expired==false' "$O/failed-artifact-metadata.json" >/dev/null
+          gh api "repos/$REPO/actions/artifacts/$FAILED_ARTIFACT_ID/zip" > "$O/failed-packet.zip"
+          test "$(stat -c%s "$O/failed-packet.zip")" = "$FAILED_ARTIFACT_BYTES"
+          test "$(sha256sum "$O/failed-packet.zip" | cut -d' ' -f1)" = "$FAILED_ARTIFACT_SHA256"
+          unzip -t "$O/failed-packet.zip" > "$O/failed-packet-zip-test.txt"
+          unzip -q "$O/failed-packet.zip" -d "$F"
+          (cd "$F" && sha256sum -c SHA256SUMS)
+
+          set_stage authenticate_source_bytes
+          F="$F" O="$O" python - <<'PY'
+          import hashlib, json, os, pathlib, shutil
+          source = pathlib.Path(os.environ['F'])
+          out = pathlib.Path(os.environ['O'])
+          expected = {
+              'source-Q1.pdf': '935102ee97403bc5eaf7c929b931e5d4ff87efbe2d4654cac88d0e1a91069c77',
+              'source-Q2.pdf': '6c8e8cda2068ceba7cf48b723f591e05bbc85fb1cc137174baddb7b543aad474',
+              'source-Q3.pdf': 'ab65b3bbc62f27a6d3aa2811991b257e0f226c08791f0bdf6ddf4024a4b0e8c1',
+              'state-403.html': 'a4bd1f3911ecb5693494dcbbf2a18b0e2758895bcee8b7d7fbb2e7c71fc6486a',
+              'failure-receipt.json': '191b66410e95b293b400bc878feadc79a40d6b57df0b27761612b6807c6762b7',
+          }
+          for name, digest in expected.items():
+              path = source / name
+              assert path.is_file(), name
+              assert hashlib.sha256(path.read_bytes()).hexdigest() == digest, name
+          failure = json.loads((source / 'failure-receipt.json').read_text())
+          assert failure == {
+              'additional_execution_authorized': False,
+              'class_closed': False,
+              'exit_code': 1,
+              'field_terminalizations': 0,
+              'matrix_updates': 0,
+              'route_executions': 0,
+              'row_state_mutations': 0,
+              'schema_version': 'ssc-rd04-nd-fy26-quarter-snapshot-adjudication-failure@1',
+              'source_requests': 0,
+              'stage': 'page_complete_review',
+              'state': 'failed_closed',
+          }
+          for name in ('source-Q1.pdf', 'source-Q2.pdf', 'source-Q3.pdf', 'state-403.html'):
+              shutil.copyfile(source / name, out / name)
+          for q in (1, 2, 3):
+              assert (out / f'source-Q{q}.pdf').read_bytes().startswith(b'%PDF-')
+          html = (out / 'state-403.html').read_text(errors='replace')
+          for needle in ('Waived Reservations 07/01/2025 through 10/31/2025', 'WAIVED COUNTIES 07/01/2025 through 10/31/2025', 'Effective:&#160;11/1/2025', 'Release 25.7'):
+              assert needle in html, needle
+          assert html.count('<p>None</p>') >= 2
+          PY
+
+          set_stage adjudicate_operator_review
+          O="$O" H="$H" python - <<'PY'
+          import hashlib, json, os, pathlib
+          out = pathlib.Path(os.environ['O'])
+          att = json.loads((out / 'operator-review-attestation.json').read_text())
+          review = att['operator_review']
+          snapshots = []
+          pdfs = {
+              1: '935102ee97403bc5eaf7c929b931e5d4ff87efbe2d4654cac88d0e1a91069c77',
+              2: '6c8e8cda2068ceba7cf48b723f591e05bbc85fb1cc137174baddb7b543aad474',
+              3: 'ab65b3bbc62f27a6d3aa2811991b257e0f226c08791f0bdf6ddf4024a4b0e8c1',
+          }
+          renders = {1: review['q1_render_sha256'], 2: review['q2_render_sha256'], 3: review['q3_render_sha256']}
+          texts = {1: review['q1_text_sha256'], 2: review['q2_text_sha256'], 3: review['q3_text_sha256']}
+          for item in review['snapshots']:
+              q = item['quarter']
+              assert hashlib.sha256((out / f'source-Q{q}.pdf').read_bytes()).hexdigest() == pdfs[q]
+              snapshots.append({
+                  **item,
+                  'source_pdf_sha256': pdfs[q],
+                  'page_count': 1,
+                  'all_visible_page_content_reviewed': True,
+                  'operator_render_sha256': renders[q],
+                  'operator_extracted_text_sha256': texts[q],
+              })
+          def write(name, value):
+              (out / name).write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+          source_adjudication = {
+              'schema_version': 'ssc-rd04-nd-fy26-quarter-snapshot-source-adjudication@2',
+              'state': 'complete',
+              'review_mechanism': 'checksum_bound_model_operator_page_complete_review',
+              'runtime_renderer_required': False,
+              'admitted_sources': [{
+                  'source_id': f'RD04-ND-FY26-Q{x["quarter"]}-STATUS-PDF',
+                  'source_class': 'official_federal_quarterly_status_snapshot',
+                  'role': 'bounded_point_in_time_waiver_classification',
+                  'pdf_sha256': x['source_pdf_sha256'],
+                  'page_count': 1,
+                  'operator_render_sha256': x['operator_render_sha256'],
+                  'operator_extracted_text_sha256': x['operator_extracted_text_sha256'],
+              } for x in snapshots],
+              'comparison_source': {
+                  'source_id': 'RD04-W03-PPN-ND-002',
+                  'source_class': 'official_state_policy_section',
+                  'body_sha256': 'a4bd1f3911ecb5693494dcbbf2a18b0e2758895bcee8b7d7fbb2e7c71fc6486a',
+                  'role': 'current_state_policy_comparison_only',
+              },
+              'source_requests': 0,
+              'route_executions': 0,
+              'outside_human_dependency': False,
+          }
+          write('source-adjudication.json', source_adjudication)
+          field = {
+              'schema_version': 'ssc-rd04-nd-waiver-state-governing-period-adjudication@2',
+              'state': 'complete',
+              'field_id': 'abawd_or_work_requirement_waiver_state_and_governing_period',
+              'decision': 'hold_open_exact_geography_and_governing_period_not_proved',
+              'bounded_finding': {
+                  'federal_status_snapshots': snapshots,
+                  'minimum_observed_snapshot_span': {'first': '2025-10-01', 'last': '2026-03-01', 'continuity_between_snapshots_inferred': False},
+                  'state_policy_comparison': {
+                      'effective_date': '2025-11-01',
+                      'release': '25.7',
+                      'displayed_reservation_period': '2025-07-01 through 2025-10-31',
+                      'displayed_reservations': 'None',
+                      'displayed_county_period': '2025-07-01 through 2025-10-31',
+                      'displayed_counties': 'None',
+                  },
+                  'reconciliation': 'official federal snapshots consistently classify North Dakota as partial at three dates, while the current state section does not identify the active waived geography or one approval start-to-expiration interval',
+              },
+              'promotion_candidate': None,
+              'held_open': True,
+              'unresolved_elements': [
+                  'exact waived reservation or county geography governing the federal partial classification',
+                  'approval implementation date and expiration date for that federal waiver',
+                  'resolution of the federal snapshot and state policy surface mismatch',
+              ],
+              'prohibited_inferences': [
+                  'do_not_infer_continuity_between_snapshot_dates',
+                  'do_not_infer_one_twelve_month_period_from_general_quarterly_note',
+                  'do_not_infer_geography_from_partial_classification_alone',
+                  'do_not_treat_state_page_none_labels_as_disproof_of_federal_snapshot_status',
+                  'do_not_terminalize_field_or_row',
+              ],
+          }
+          write('field-adjudication.json', field)
+          protocol = {
+              'schema_version': 'ssc-rd04-nd-fna-response-index-transport-protocol@1',
+              'state': 'selected_unexecuted',
+              'route_count': 1,
+              'routes': [{
+                  'ordinal': 1,
+                  'route_id': 'RD04-ND-FNA-TIME-LIMIT-WAIVER-INDEX-2025-2029-001',
+                  'url': 'https://www.fna.usda.gov/snap/abawd/waivers/2025-2029',
+                  'method': 'GET',
+                  'attempts': 1,
+                  'exact_host': 'www.fna.usda.gov',
+                  'maximum_followed_redirects': 0,
+                  'maximum_body_bytes': 5000000,
+                  'expected_media_type': 'text/html',
+                  'selection_scope': 'locate only the North Dakota FY 2025 FNA response anchor and exact href',
+                  'result_spawned_requests': 0,
+              }],
+              'source_requests': 0,
+              'route_executions': 0,
+              'field_terminalizations': 0,
+              'matrix_updates': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'additional_execution_authorized': True,
+              'next_authorized_operation': 'execute the exact response-index route once, preserve its complete response, and adjudicate only the North Dakota FY 2025 response href without following it',
+          }
+          write('selected-followup-protocol.json', protocol)
+          receipt = {
+              'schema_version': 'ssc-rd04-nd-fy26-quarter-snapshot-adjudication-receipt@2',
+              'state': 'complete',
+              'stage': 'complete',
+              'carrier_head': os.environ['H'],
+              'predecessor_failed_artifact_id': 9031135822,
+              'predecessor_failure_stage': 'page_complete_review',
+              'repair_scope': 'replace_unavailable_runtime_renderer_with_checksum_bound_operator_review_attestation',
+              'source_documents': 3,
+              'pages_reviewed': 3,
+              'north_dakota_partial_snapshots': 3,
+              'field_decision': field['decision'],
+              'promotion_candidates': 0,
+              'held_open_fields': 1,
+              'selected_followup_routes': 1,
+              'source_requests': 0,
+              'route_executions': 0,
+              'field_terminalizations': 0,
+              'matrix_updates': 0,
+              'row_state_mutations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'additional_execution_authorized': True,
+              'next_authorized_operation': protocol['next_authorized_operation'],
+          }
+          write('receipt.json', receipt)
+          write('summary.json', {
+              'state': 'complete',
+              'snapshots': [x['as_of'] for x in snapshots],
+              'classification_each': 'partial_time_limit_waiver',
+              'decision': field['decision'],
+              'selected_route': protocol['routes'][0]['route_id'],
+          })
+          (out / 'summary.md').write_text('# RD-04 North Dakota quarterly snapshot adjudication v2\n\nThree exact one-page federal PDFs were authenticated against terminal transport custody and adjudicated through the checksum-bound model-operator review packet. North Dakota is classified as partial as of 2025-10-01, 2026-01-01, and 2026-03-01. Exact geography and one governing approval period remain unproved. The field remains open, and one official FNA response-index route is selected.\n')
+          PY
+
+          set_stage complete
+          printf 'complete\n' > "$O/STAGE"
+          printf '0\n' > "$O/EXIT_CODE"
+          rm -f "$O/STAGE.current"
+          sums
+          (cd "$O" && sha256sum -c SHA256SUMS)
+          trap - ERR
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy26-quarter-snapshot-adjudication-v2
+          path: ${{ runner.temp }}/out
+          if-no-files-found: error
+          retention-days: 90
+      - if: always()
+        shell: bash
+        run: |
+          test '${{ steps.run.outcome }}' = success
+          O="$RUNNER_TEMP/out"
+          test "$(cat "$O/STAGE")" = complete
+          test "$(cat "$O/EXIT_CODE")" = 0
+          jq -e '.state=="complete" and .source_documents==3 and .pages_reviewed==3 and .north_dakota_partial_snapshots==3 and .promotion_candidates==0 and .held_open_fields==1 and .selected_followup_routes==1 and .source_requests==0 and .route_executions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and .additional_execution_authorized==true' "$O/receipt.json" >/dev/null
+          jq -e '.decision=="hold_open_exact_geography_and_governing_period_not_proved" and .promotion_candidate==null and .held_open==true' "$O/field-adjudication.json" >/dev/null
+          jq -e '.state=="selected_unexecuted" and .route_count==1 and .routes[0].route_id=="RD04-ND-FNA-TIME-LIMIT-WAIVER-INDEX-2025-2029-001" and .routes[0].attempts==1 and .routes[0].maximum_followed_redirects==0 and .additional_execution_authorized==true' "$O/selected-followup-protocol.json" >/dev/null
+          (cd "$O" && sha256sum -c SHA256SUMS)
