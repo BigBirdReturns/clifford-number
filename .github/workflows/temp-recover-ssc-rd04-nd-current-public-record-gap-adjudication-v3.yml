@@ -1,0 +1,138 @@
+name: TEMP recover RD-04 North Dakota current public-record-gap adjudication v3
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-current-public-record-gap-adjudication-materializer-base-v3
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-current-public-record-gap-adjudication-v3/trigger.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-rd04-nd-current-public-record-gap-adjudication-v3
+  cancel-in-progress: false
+
+env:
+  CANONICAL_PARENT: 5be5fc4d15391b99bb29226fdd16e408be559507
+  BASE_BRANCH: agent/ssc-rd04-nd-current-public-record-gap-adjudication-materializer-base-v3
+  HEAD_BRANCH: agent/ssc-rd04-nd-current-public-record-gap-adjudication-materializer-trigger-v3
+  PRODUCT_BRANCH: agent/ssc-rd04-nd-current-public-record-gap-adjudication-v1
+  WORKFLOW_PATH: .github/workflows/temp-recover-ssc-rd04-nd-current-public-record-gap-adjudication-v3.yml
+  PROGRAM_PATH: .tmp/rd04-nd-current-public-record-gap-adjudication-v3/recovery-program-v2.yml
+  TRIGGER_PATH: .tmp/rd04-nd-current-public-record-gap-adjudication-v3/trigger.json
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-adjudication
+  V1_ARTIFACT_ID: '9043546200'
+  V1_ARTIFACT_NAME: ssc-rd04-nd-current-public-record-gap-adjudication-materializer-v1
+  V1_ARTIFACT_BYTES: '1419415'
+  V1_ARTIFACT_SHA256: 00bdf0d24cd923934b811e96efc53e30011be0d8cb5a09562419bee139eb089c
+  SEALED_TAR_SHA256: c7f869112399a2bc452836451c282f406baecf103daa24992d03dd7d104bee73
+  PRODUCT_PAYLOAD_SHA256: 2f7e919f1295d1b1af253ad3acf251955e1abaac30ac32f34cc2d6bd9444cdf3
+  PROPOSED_CELL_SHA256: 20d23705f3fe41822c6cfd34832f1345a1c0c380924b06437b8ae9d4b9228ac0
+  OUT: /tmp/rd04-nd-current-public-record-gap-adjudication-v3
+
+jobs:
+  recover:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-current-public-record-gap-adjudication-materializer-base-v3' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-current-public-record-gap-adjudication-materializer-trigger-v3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Reconstruct authenticated V2 program with exact V3 bindings
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PROGRAM=/tmp/rd04-nd-current-public-record-gap-v3.sh
+          python - "$PROGRAM_PATH" "$PROGRAM" <<'PY'
+          from pathlib import Path
+          import sys
+
+          source=Path(sys.argv[1]).read_text().splitlines()
+          output=Path(sys.argv[2])
+          step='      - name: Authenticate V1 receipt, recover exact product, and publish'
+          preserve='      - name: Preserve V2 recovery receipt'
+          start=source.index(step)
+          run_index=next(i for i in range(start, len(source)) if source[i]=='        run: |')
+          end=source.index(preserve, run_index)
+          block=source[run_index+1:end]
+          assert block and all((not line) or line.startswith('          ') for line in block)
+          script='\n'.join(line[10:] if line else '' for line in block)+'\n'
+
+          old1='test "$(git diff --name-only "$CANONICAL_PARENT" "$EVENT_BASE_SHA")" = "$WORKFLOW_PATH"'
+          new1='test "$(git diff --name-only "$CANONICAL_PARENT" "$EVENT_BASE_SHA" | LC_ALL=C sort)" = "$(printf \'%s\\n\' "$PROGRAM_PATH" "$WORKFLOW_PATH" | LC_ALL=C sort)"'
+          old2='test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$EVENT_BASE_SHA")" = "$WORKFLOW_PATH"'
+          new2='test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$EVENT_BASE_SHA" | LC_ALL=C sort)" = "$(printf \'%s\\n\' "$PROGRAM_PATH" "$WORKFLOW_PATH" | LC_ALL=C sort)"'
+          assert script.count(old1)==1 and script.count(old2)==1
+          script=script.replace(old1,new1).replace(old2,new2)
+          output.write_text(script)
+          PY
+          bash -n "$PROGRAM"
+          test "$(sha256sum "$PROGRAM_PATH" | awk '{print $1}')" = dba30ab2faa16461d62d4fe0bbfd20f81f724bd06a8cb95a20277658b179ba88
+
+      - name: Execute authenticated V3 recovery
+        id: recover
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export CANONICAL_PARENT BASE_BRANCH HEAD_BRANCH PRODUCT_BRANCH
+          export WORKFLOW_PATH PROGRAM_PATH TRIGGER_PATH PRODUCT_ROOT
+          export V1_ARTIFACT_ID V1_ARTIFACT_NAME V1_ARTIFACT_BYTES V1_ARTIFACT_SHA256
+          export SEALED_TAR_SHA256 PRODUCT_PAYLOAD_SHA256 PROPOSED_CELL_SHA256 OUT
+          bash /tmp/rd04-nd-current-public-record-gap-v3.sh
+
+      - name: Preserve V3 recovery receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-current-public-record-gap-adjudication-recovery-v3
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce qualified candidate-only publication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.recover.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .state=="qualified_candidate_product_published" and
+            .failed_or_final_stage=="complete" and .exit_code==0 and
+            .product_branch_moved==true and .permanent_paths_added==8 and
+            .product_payload_sha256=="2f7e919f1295d1b1af253ad3acf251955e1abaac30ac32f34cc2d6bd9444cdf3" and
+            .proposed_cell_sha256=="20d23705f3fe41822c6cfd34832f1345a1c0c380924b06437b8ae9d4b9228ac0" and
+            .predecessor_failure_artifact_id==9043546200 and
+            .promotion_authorized==false and
+            .separate_exact_current_cell_validation_required==true and
+            .source_requests==0 and .route_executions==0 and .source_admissions==0 and
+            .field_terminalizations==0 and .matrix_updates==0 and
+            .row_state_mutations==0 and .row_terminalizations==0 and
+            .class_closed==false and .outside_human_dependency==false
+          ' "$OUT/receipt.json" > /dev/null
