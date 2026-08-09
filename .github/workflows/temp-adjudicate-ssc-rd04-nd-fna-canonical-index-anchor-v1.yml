@@ -1,0 +1,138 @@
+name: TEMP adjudicate RD-04 North Dakota canonical FNA index anchor v1
+
+on:
+  pull_request:
+    branches: [agent/ssc-rd04-nd-fna-canonical-index-anchor-adjudication-base-v1]
+    types: [opened, synchronize, reopened]
+    paths: [.trigger/ssc-rd04-nd-fna-canonical-index-anchor-adjudication-v1.json]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: temp-adjudicate-ssc-rd04-nd-fna-canonical-index-anchor-v1
+  cancel-in-progress: false
+
+env:
+  MAIN: a592acea22c69a979f2a90c24a2bafb8c9445759
+  MATRIX: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  WF: .github/workflows/temp-adjudicate-ssc-rd04-nd-fna-canonical-index-anchor-v1.yml
+  TRIGGER: .trigger/ssc-rd04-nd-fna-canonical-index-anchor-adjudication-v1.json
+  ARTIFACT_ID: '9032142178'
+  ARTIFACT_BYTES: '5456595'
+  ARTIFACT_DIGEST: sha256:683b4b49f756869fe14908bd1e50e6f70b00c481457dc3df73b211e03ad00dac
+  EXECUTION_RECEIPT_SHA: 90a27e67607977c9bac4104ebd975a6d0725024b8f6fcaeae034d49781261d8f
+  ROUTE_RECEIPT_SHA: ac02a48c19707062353c8c9ca1b47d5f31118736d08b59796b45d15cd1ea1b58
+  BODY_SHA: dcab625aeeebc30b1cf38dd32f67f0cb766a8e33735694b00f041e03d446476f
+  HEADERS_SHA: 7da9583bb136569a6084b333d93bd8d9fe55ad37d5b10b1d0bea47a920bd63af
+  OUT: /tmp/ssc-rd04-nd-fna-canonical-index-anchor-adjudication-v1
+
+jobs:
+  adjudicate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fna-canonical-index-anchor-adjudication-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: "${{ github.event.pull_request.head.sha }}", fetch-depth: 0}
+
+      - name: Adjudicate exact North Dakota index anchor offline
+        id: run
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -uo pipefail
+          SRC="$OUT/execution"
+          rm -rf "$OUT"; mkdir -p "$OUT" "$SRC"
+          exec > >(tee "$OUT/adjudication.log") 2>&1
+          stage=bootstrap
+          fail_receipt(){ rc=$1; [[ -s "$OUT/receipt.json" ]] || jq -n --arg s "$stage" --argjson c "$rc" '{schema_version:"ssc-rd04-nd-fna-canonical-index-anchor-adjudication-receipt@1",state:"failed_closed",stage:$s,exit_code:$c,source_requests:0,route_executions:0,source_admissions:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,outside_human_dependency:false,selected_followup_routes:0,additional_execution_authorized:false}' > "$OUT/receipt.json"; }
+          finish(){ rc=$?; trap - EXIT; set +e; fail_receipt "$rc"; printf '%s\n' "$rc" > "$OUT/EXIT_CODE"; printf '%s\n' "$stage" > "$OUT/STAGE"; (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS); exit "$rc"; }
+          trap finish EXIT
+          trap 'rc=$?; trap - ERR; set +e; fail_receipt "$rc"; exit "$rc"' ERR
+          set -Eeuo pipefail
+
+          stage=topology
+          B=$(git rev-parse HEAD^); H=$(git rev-parse HEAD)
+          test "$(git rev-parse "$B^")" = "$MAIN"
+          test "$(git rev-list --count "$MAIN".."$B")" -eq 1
+          test "$(git rev-list --count "$B".."$H")" -eq 1
+          test "$(git diff --name-only "$MAIN" "$B")" = "$WF"
+          test "$(git diff --name-only "$B" "$H")" = "$TRIGGER"
+          test "$(git diff --name-only --diff-filter=A "$MAIN" "$B")" = "$WF"
+          test "$(git diff --name-only --diff-filter=A "$B" "$H")" = "$TRIGGER"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$MAIN" "$H")"
+          git diff --check "$MAIN" "$H"
+          cp "$TRIGGER" "$OUT/trigger.json"
+          jq -e --arg p "$MAIN" --arg m "$MATRIX_BLOB" --arg d "$ARTIFACT_DIGEST" --arg e "$EXECUTION_RECEIPT_SHA" --arg r "$ROUTE_RECEIPT_SHA" --arg b "$BODY_SHA" --arg h "$HEADERS_SHA" '.schema_version=="ssc-rd04-nd-fna-canonical-index-anchor-adjudication-trigger@1" and .issue==1017 and .canonical_parent==$p and .canonical_matrix_blob==$m and .execution_artifact_id==9032142178 and .execution_artifact_digest==$d and .execution_receipt_sha256==$e and .route_receipt_sha256==$r and .response_body_sha256==$b and .response_headers_sha256==$h and .page_url=="https://www.fna.usda.gov/snap/waivers/timelimit/2025-2029" and .expected_state=="North Dakota" and .expected_anchor_text=="FY 2025 Waiver - FNA Response (.pdf)" and .expected_anchor_date=="6/18/2025" and .expected_href=="/sites/default/files/resource-files/nd-abawd-response-fy2025.pdf" and .href_contacted==false and .source_requests==0 and .route_executions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and .outside_human_dependency==false' "$OUT/trigger.json" >/dev/null
+
+          stage=main_and_artifact
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$MAIN"
+          test "$(git rev-parse "origin/main:$MATRIX")" = "$MATRIX_BLOB"
+          gh api "/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" > "$OUT/artifact.json"
+          jq -e --argjson i "$ARTIFACT_ID" --argjson n "$ARTIFACT_BYTES" --arg d "$ARTIFACT_DIGEST" '.id==$i and .size_in_bytes==$n and .digest==$d and .expired==false' "$OUT/artifact.json" >/dev/null
+          gh api "/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$OUT/execution.zip"
+          test "$(stat -c%s "$OUT/execution.zip")" = "$ARTIFACT_BYTES"
+          test "sha256:$(sha256sum "$OUT/execution.zip"|cut -d' ' -f1)" = "$ARTIFACT_DIGEST"
+          unzip -t "$OUT/execution.zip" > "$OUT/zip-test.txt"
+          unzip -q "$OUT/execution.zip" -d "$SRC"
+          (cd "$SRC" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$SRC/execution-receipt.json"|cut -d' ' -f1)" = "$EXECUTION_RECEIPT_SHA"
+          test "$(sha256sum "$SRC/transport/route-receipt.json"|cut -d' ' -f1)" = "$ROUTE_RECEIPT_SHA"
+          test "$(sha256sum "$SRC/transport/response-body.bin"|cut -d' ' -f1)" = "$BODY_SHA"
+          test "$(sha256sum "$SRC/transport/response-headers.json"|cut -d' ' -f1)" = "$HEADERS_SHA"
+          jq -e '.state=="complete" and .terminal_state=="http_success_body_captured" and .http_status==200 and .body_bytes==63505 and .body_sha256=="dcab625aeeebc30b1cf38dd32f67f0cb766a8e33735694b00f041e03d446476f" and .physical_requests==1 and .redirects_followed==0 and .anchor_selections==0 and .hrefs_followed==0 and .source_admissions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false' "$SRC/execution-receipt.json" >/dev/null
+          cp "$SRC/transport/response-body.bin" "$OUT/index.html"
+          cp "$SRC/transport/route-receipt.json" "$OUT/input-route-receipt.json"
+
+          stage=adjudicate_anchor
+          python - "$OUT/index.html" "$OUT" <<'PY'
+          import hashlib,html,json,pathlib,re,sys
+          body=pathlib.Path(sys.argv[1]).read_bytes(); out=pathlib.Path(sys.argv[2]); text=body.decode('utf-8')
+          assert '<title>Time Limit Waivers FY 2025-2029 | Food and Nutrition Administration</title>' in text
+          pattern=r'<dt>North Dakota</dt><dd><ul><li[^>]*><a href="([^"]+)">([^<]+)</a> \(([^)]+)\)</li></ul></dd>'
+          matches=re.findall(pattern,text)
+          assert matches==[('/sites/default/files/resource-files/nd-abawd-response-fy2025.pdf','FY 2025 Waiver - FNA Response (.pdf)','6/18/2025')],matches
+          href,label,date=matches[0]; absolute='https://www.fna.usda.gov'+href
+          def write(n,o): (out/n).write_text(json.dumps(o,indent=2,sort_keys=True)+'\n')
+          write('anchor-adjudication.json',{'schema_version':'ssc-rd04-nd-fna-canonical-index-anchor-adjudication@1','state':'complete','page_url':'https://www.fna.usda.gov/snap/waivers/timelimit/2025-2029','page_body_sha256':hashlib.sha256(body).hexdigest(),'state_name':'North Dakota','matching_anchor_count':1,'anchor_text':html.unescape(label),'anchor_date':date,'exact_href':href,'absolute_url':absolute,'href_contacted':False,'classification':'exact_official_fy2025_response_document_locator','source_admission':False,'field_decision':'hold_open_exact_geography_and_governing_period_not_proved'})
+          write('field-adjudication.json',{'schema_version':'ssc-rd04-nd-waiver-field-after-index-anchor-adjudication@1','state':'complete','field_id':'abawd_or_work_requirement_waiver_state_and_governing_period','decision':'hold_open_exact_geography_and_governing_period_not_proved','promotion_candidate':None,'held_open':True,'reason':'the exact official FY 2025 response document is located but uncontacted','field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False})
+          write('selected-followup-protocol.json',{'schema_version':'ssc-rd04-nd-fna-fy2025-response-document-transport-protocol@1','state':'selected_unexecuted','route_count':1,'routes':[{'ordinal':1,'route_id':'RD04-ND-FNA-TIME-LIMIT-WAIVER-RESPONSE-FY2025-001','url':absolute,'method':'GET','attempts':1,'exact_host':'www.fna.usda.gov','maximum_followed_redirects':0,'maximum_body_bytes':20000000,'expected_media_type':'application/pdf','result_spawned_requests':0}],'source_requests':0,'route_executions':0,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,'outside_human_dependency':False,'additional_execution_authorized':True})
+          PY
+
+          stage=seal
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          FINAL=$(git rev-parse origin/main); git merge-base --is-ancestor "$MAIN" "$FINAL"
+          test "$(git rev-parse "origin/main:$MATRIX")" = "$MATRIX_BLOB"
+          jq -e '.state=="complete" and .matching_anchor_count==1 and .state_name=="North Dakota" and .anchor_text=="FY 2025 Waiver - FNA Response (.pdf)" and .anchor_date=="6/18/2025" and .exact_href=="/sites/default/files/resource-files/nd-abawd-response-fy2025.pdf" and .absolute_url=="https://www.fna.usda.gov/sites/default/files/resource-files/nd-abawd-response-fy2025.pdf" and .href_contacted==false and .classification=="exact_official_fy2025_response_document_locator" and .source_admission==false and .field_decision=="hold_open_exact_geography_and_governing_period_not_proved"' "$OUT/anchor-adjudication.json" >/dev/null
+          jq -e '.decision=="hold_open_exact_geography_and_governing_period_not_proved" and .promotion_candidate==null and .held_open==true and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false' "$OUT/field-adjudication.json" >/dev/null
+          jq -e '.state=="selected_unexecuted" and .route_count==1 and [.routes[].route_id]==["RD04-ND-FNA-TIME-LIMIT-WAIVER-RESPONSE-FY2025-001"] and [.routes[].url]==["https://www.fna.usda.gov/sites/default/files/resource-files/nd-abawd-response-fy2025.pdf"] and [.routes[].attempts]==[1] and [.routes[].maximum_followed_redirects]==[0] and [.routes[].maximum_body_bytes]==[20000000] and [.routes[].expected_media_type]==["application/pdf"] and [.routes[].result_spawned_requests]==[0] and .additional_execution_authorized==true' "$OUT/selected-followup-protocol.json" >/dev/null
+          jq -n --arg p "$MAIN" --arg h "$H" --arg f "$FINAL" --argjson a "$ARTIFACT_ID" --arg x "$(sha256sum "$OUT/anchor-adjudication.json"|cut -d' ' -f1)" --arg d "$(sha256sum "$OUT/field-adjudication.json"|cut -d' ' -f1)" --arg s "$(sha256sum "$OUT/selected-followup-protocol.json"|cut -d' ' -f1)" '{schema_version:"ssc-rd04-nd-fna-canonical-index-anchor-adjudication-receipt@1",state:"complete",stage:"complete",exit_code:0,canonical_parent:$p,canonical_main_at_finish:$f,adjudication_head:$h,execution_artifact_id:$a,anchor_adjudication_sha256:$x,field_adjudication_sha256:$d,selected_protocol_sha256:$s,anchor_classification:"exact_official_fy2025_response_document_locator",matching_anchor_count:1,field_decision:"hold_open_exact_geography_and_governing_period_not_proved",promotion_candidates:0,held_open_fields:1,selected_followup_routes:1,source_requests:0,route_executions:0,source_admissions:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none",additional_execution_authorized:true,next_authorized_operation:"execute exact PDF route RD04-ND-FNA-TIME-LIMIT-WAIVER-RESPONSE-FY2025-001 once; preserve the complete response; do not infer field sufficiency before page-complete offline review"}' > "$OUT/receipt.json"
+          stage=complete
+
+      - name: Upload terminal anchor adjudication
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fna-canonical-index-anchor-adjudication-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal anchor adjudication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test '${{ steps.run.outcome }}' = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '.state=="complete" and .stage=="complete" and .anchor_classification=="exact_official_fy2025_response_document_locator" and .matching_anchor_count==1 and .field_decision=="hold_open_exact_geography_and_governing_period_not_proved" and .promotion_candidates==0 and .held_open_fields==1 and .selected_followup_routes==1 and .source_requests==0 and .route_executions==0 and .source_admissions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and .outside_human_dependency==false and .additional_execution_authorized==true' "$OUT/receipt.json" >/dev/null
