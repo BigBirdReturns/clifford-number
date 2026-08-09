@@ -1,0 +1,165 @@
+name: TEMP export exact RD-04 current matrix v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-current-matrix-export-v1/trigger.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-rd04-current-matrix-export-v1
+  cancel-in-progress: false
+
+env:
+  CANONICAL_PARENT: 5be5fc4d15391b99bb29226fdd16e408be559507
+  CANONICAL_TREE: 92192e45714336951d1bd8e9537a43decc766e89
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  MATRIX_BYTES: '485610'
+  MATRIX_SHA256: 663f93d84f168bf6ccdd92eaee0deb47b109f4280e7b25613853c2c1a6be2b63
+  WORKFLOW_PATH: .github/workflows/temp-export-ssc-rd04-current-matrix-v1.yml
+  TRIGGER_PATH: .tmp/rd04-current-matrix-export-v1/trigger.json
+  OUTPUT_DIR: /tmp/rd04-current-matrix-export-v1
+
+jobs:
+  export:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-current-matrix-export-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-current-matrix-export-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Export exact canonical matrix
+        id: export
+        continue-on-error: true
+        env:
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$OUTPUT_DIR"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          stage=bootstrap
+
+          finalize() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            if [ ! -f "$OUT/receipt.json" ]; then
+              jq -n \
+                --arg state failed_closed \
+                --arg stage "$stage" \
+                --argjson exit_code "$rc" \
+                --arg parent "$CANONICAL_PARENT" \
+                --arg tree "$CANONICAL_TREE" \
+                --arg path "$MATRIX_PATH" \
+                --arg blob "$MATRIX_BLOB" \
+                '{schema_version:"ssc-rd04-current-matrix-export-receipt@1",state:$state,stage:$stage,exit_code:$exit_code,canonical_parent:$parent,canonical_tree:$tree,matrix_path:$path,matrix_blob:$blob,source_requests:0,route_executions:0,matrix_updates:0,row_state_mutations:0,class_closed:false,outside_human_dependency:false}' \
+                > "$OUT/receipt.json"
+            fi
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+              sha256sum -c SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          stage=bind_exact_two_level_carrier
+          test "$HEAD_REPO" = "$GITHUB_REPOSITORY"
+          test "$(git rev-parse HEAD)" = "$EVENT_HEAD_SHA"
+          BASE_SHA="$(git rev-parse HEAD^)"
+          test "$BASE_SHA" = "$EVENT_BASE_SHA"
+          test "$(git rev-parse "$BASE_SHA^")" = "$CANONICAL_PARENT"
+          test "$(git rev-list --count "$CANONICAL_PARENT..$BASE_SHA")" -eq 1
+          test "$(git rev-list --count "$BASE_SHA..HEAD")" -eq 1
+          test "$(git diff --name-only "$CANONICAL_PARENT" "$BASE_SHA")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$BASE_SHA")" = "$WORKFLOW_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" "$BASE_SHA")"
+          test "$(git diff --name-only "$BASE_SHA" HEAD)" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE_SHA" HEAD)" = "$TRIGGER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$BASE_SHA" HEAD)"
+          git diff --check "$CANONICAL_PARENT" HEAD
+
+          stage=authenticate_live_canonical_matrix
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          test "$(git rev-parse 'origin/main^{tree}')" = "$CANONICAL_TREE"
+          test "$(git rev-parse "origin/main:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          git show "origin/main:$MATRIX_PATH" > "$OUT/promoted-partial-field-matrix.json"
+          test "$(stat -c %s "$OUT/promoted-partial-field-matrix.json")" -eq "$MATRIX_BYTES"
+          test "$(sha256sum "$OUT/promoted-partial-field-matrix.json" | awk '{print $1}')" = "$MATRIX_SHA256"
+
+          stage=validate_matrix_state
+          python - "$OUT/promoted-partial-field-matrix.json" <<'PY'
+          import hashlib, json, sys
+          from pathlib import Path
+          p=Path(sys.argv[1])
+          matrix=json.loads(p.read_text())
+          assert matrix['counts']['materialized_cells']==450
+          assert matrix['counts']['terminal_cells']==227
+          assert matrix['counts']['still_open_cells']==223
+          assert matrix['counts']['terminal_substantive_cells']==117
+          assert matrix['counts']['still_open_substantive_cells']==183
+          assert matrix['counts']['terminal_units']==10
+          rows=[r for r in matrix['rows'] if r.get('unit_id')=='US-STATE-ND']
+          assert len(rows)==1
+          row=rows[0]
+          assert row['row_state']=='still_open'
+          assert row['terminal_fields']==7 and row['open_fields']==2
+          cells={c['field_id']:c for c in row['cells']}
+          target=cells['abawd_or_work_requirement_waiver_state_and_governing_period']
+          dependent=cells['field_and_row_terminal_state']
+          for cell, expected in [
+              (target,'cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe'),
+              (dependent,'6a4c7d204c6c99a89f3c121065860806668c5da850f44c67fe42b4dc84b1b5c3')]:
+              assert cell['state']=='still_open' and cell['terminal'] is False
+              raw=json.dumps(cell,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()
+              assert hashlib.sha256(raw).hexdigest()==expected
+          PY
+
+          stage=complete
+          jq -n \
+            --arg state complete \
+            --arg parent "$CANONICAL_PARENT" \
+            --arg tree "$CANONICAL_TREE" \
+            --arg path "$MATRIX_PATH" \
+            --arg blob "$MATRIX_BLOB" \
+            --arg sha256 "$MATRIX_SHA256" \
+            --argjson bytes "$MATRIX_BYTES" \
+            --arg head "$EVENT_HEAD_SHA" \
+            '{schema_version:"ssc-rd04-current-matrix-export-receipt@1",state:$state,stage:"complete",exit_code:0,canonical_parent:$parent,canonical_tree:$tree,carrier_head:$head,matrix_path:$path,matrix_blob:$blob,matrix_bytes:$bytes,matrix_sha256:$sha256,source_requests:0,route_executions:0,matrix_updates:0,row_state_mutations:0,class_closed:false,outside_human_dependency:false}' \
+            > "$OUT/receipt.json"
+
+      - name: Preserve exact current matrix export
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-current-matrix-export-v1
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Require successful export
+        shell: bash
+        run: |
+          test "${{ steps.export.outcome }}" = success
+          test "$(cat "$OUTPUT_DIR/EXIT_CODE")" = 0
+          test "$(cat "$OUTPUT_DIR/STAGE")" = complete
+          jq -e '.state=="complete" and .exit_code==0 and .matrix_updates==0 and .row_state_mutations==0' "$OUTPUT_DIR/receipt.json" >/dev/null
+          (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
