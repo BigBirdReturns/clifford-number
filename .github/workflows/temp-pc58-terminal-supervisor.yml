@@ -1,0 +1,79 @@
+name: TEMP supervise and terminalize exact PC-58 transaction v2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: pc58-terminal-supervisor-v2
+  cancel-in-progress: false
+
+jobs:
+  terminalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPOSITORY: ${{ github.repository }}
+      CARRIER_PARENT: b1d1d8afb6c957401a762bf9d0b2abc464bd5e07
+      ISSUE: '1592'
+      PRODUCT_PR: '1624'
+      PRODUCT: 2536579f40f1ebd815adfd10a3258c737858aa65
+      PRODUCT_PARENT: 79a7e18bfd45f1b1d893fa8b9683710891d4bbca
+      PRODUCT_TREE: faade2f2232c55da296bc97a6a0977ed1f66d302
+      EXPECTED_MATRIX: '52'
+      CODEX_REQUEST_COMMENT: '5229046294'
+      CODEX_COMMIT_PREFIX: 2536579f40
+      PROOF_DIR: /tmp/pc58-exact-postmerge-proof
+      CENSUS_DIR: /tmp/pc58-terminal-census
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify, merge, and prove exact PC-58 product
+        id: terminal
+        shell: bash
+        run: bash .tmp/pc58/terminalize.sh verify_and_merge
+      - name: Upload exact post-merge proof
+        id: proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc58-exact-postmerge-proof
+          path: /tmp/pc58-exact-postmerge-proof
+          if-no-files-found: error
+          retention-days: 90
+      - name: Close execution PRs and retire all PC-58 refs
+        shell: bash
+        env:
+          MERGE: ${{ steps.terminal.outputs.merge }}
+          PROOF_ARTIFACT_ID: ${{ steps.proof.outputs.artifact-id }}
+          PROOF_ARTIFACT_DIGEST: ${{ steps.proof.outputs.artifact-digest }}
+        run: bash .tmp/pc58/terminalize.sh cleanup
+      - name: Upload terminal census
+        id: census
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc58-terminal-census
+          path: /tmp/pc58-terminal-census
+          if-no-files-found: error
+          retention-days: 90
+      - name: Write terminal receipt and close issue
+        shell: bash
+        env:
+          MERGE: ${{ steps.terminal.outputs.merge }}
+          PROOF_ARTIFACT_ID: ${{ steps.proof.outputs.artifact-id }}
+          PROOF_ARTIFACT_DIGEST: ${{ steps.proof.outputs.artifact-digest }}
+          CENSUS_ARTIFACT_ID: ${{ steps.census.outputs.artifact-id }}
+          CENSUS_ARTIFACT_DIGEST: ${{ steps.census.outputs.artifact-digest }}
+        run: bash .tmp/pc58/terminalize.sh receipt
