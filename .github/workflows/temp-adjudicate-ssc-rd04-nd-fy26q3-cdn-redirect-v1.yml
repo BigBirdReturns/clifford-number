@@ -1,0 +1,232 @@
+name: TEMP adjudicate RD-04 FY2026 Q3 CDN redirect v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-fy26q3-cdn-redirect-adjudication-base-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.trigger/ssc-rd04-nd-fy26q3-cdn-redirect-adjudication-v1'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: temp-adjudicate-ssc-rd04-nd-fy26q3-cdn-redirect-v1
+  cancel-in-progress: false
+
+env:
+  CURRENT_MAIN: a592acea22c69a979f2a90c24a2bafb8c9445759
+  WORKFLOW_PATH: .github/workflows/temp-adjudicate-ssc-rd04-nd-fy26q3-cdn-redirect-v1.yml
+  TRIGGER_PATH: .trigger/ssc-rd04-nd-fy26q3-cdn-redirect-adjudication-v1
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_SHA256: 663f93d84f168bf6ccdd92eaee0deb47b109f4280e7b25613853c2c1a6be2b63
+  CELL_SHA256: cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe
+  EXECUTION_ARTIFACT_ID: '9030448799'
+  EXECUTION_ARTIFACT_BYTES: '12730'
+  EXECUTION_ARTIFACT_DIGEST: sha256:b73072ddce40b3be81e02a00cb930c6b880c98154974cf9c6e1200558398b956
+  EXECUTION_HEAD: ddf4b754ca1925eb93abb37f93562a6920856b7e
+  EXECUTION_RECEIPT_SHA256: 9a05b68d8b30578eb9e0fba0ab51c44b8281cdac1fc825c6f2caf897be946882
+  ROUTE_RECEIPT_SHA256: 43c1be0c53f6b635dff50608c7bcf13a21bb8b6ec3897e863d3741cc15df5e4b
+  HOP_RECEIPT_SHA256: 7aba67adb69330d2c7d6954df64f08dcdc08dd2f53888e97c5f195083e779c9d
+  ORIGIN_ROUTE_ID: RD04-ND-CURRENT-WAIVER-FY26Q3-001
+  ORIGIN_URL: https://www.fna.usda.gov/sites/default/files/resource-files/FY26-Quarter-3-ABAWD-Waiver-Status.pdf
+  TARGET_ROUTE_ID: RD04-ND-CURRENT-WAIVER-FY26Q3-CDN-001
+  TARGET_URL: https://fna-bwbufwdzbabpezgc.z01.azurefd.us/sites/default/files/resource-files/FY26-Quarter-3-ABAWD-Waiver-Status.pdf
+  TARGET_HOST: fna-bwbufwdzbabpezgc.z01.azurefd.us
+  OUTPUT_DIR: /tmp/ssc-rd04-nd-fy26q3-cdn-redirect-adjudication-v1
+
+jobs:
+  adjudicate:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy26q3-cdn-redirect-adjudication-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Adjudicate exact redirect receipt offline
+        id: adjudication
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          OUT="$OUTPUT_DIR"
+          EXEC="$OUT/execution"
+          rm -rf "$OUT"
+          mkdir -p "$OUT" "$EXEC"
+          exec > >(tee "$OUT/adjudication.log") 2>&1
+          stage=bootstrap
+
+          fail_receipt() {
+            local rc=$1
+            if [[ ! -s "$OUT/receipt.json" ]]; then
+              jq -n --arg stage "$stage" --argjson code "$rc" --arg parent "$CURRENT_MAIN" \
+                '{schema_version:"ssc-rd04-nd-fy26q3-cdn-redirect-adjudication@1",state:"failed_closed",
+                  failed_or_final_stage:$stage,exit_code:$code,canonical_parent:$parent,source_requests:0,
+                  route_executions:0,source_admissions:0,field_terminalizations:0,matrix_updates:0,
+                  row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",
+                  outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+                > "$OUT/receipt.json"
+            fi
+          }
+          finish() {
+            local rc=$?
+            trap - EXIT
+            set +e
+            fail_receipt "$rc"
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+            exit "$rc"
+          }
+          trap finish EXIT
+          on_error() { local rc=$?; trap - ERR; set +e; fail_receipt "$rc"; exit "$rc"; }
+          trap on_error ERR
+          set -Eeuo pipefail
+
+          stage=bind_topology
+          BASE="$(git rev-parse HEAD^)"
+          test "$(git rev-parse "$BASE^")" = "$CURRENT_MAIN"
+          test "$(git rev-list --count "$CURRENT_MAIN".."$BASE")" -eq 1
+          test "$(git rev-list --count "$BASE"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CURRENT_MAIN" "$BASE")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" "$BASE")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only "$BASE" HEAD)" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE" HEAD)" = "$TRIGGER_PATH"
+          git diff --check "$CURRENT_MAIN" HEAD
+          printf '%s\n' "$BASE" > "$OUT/adjudication-base-commit.txt"
+          printf '%s\n' "$GITHUB_SHA" > "$OUT/adjudication-trigger-head.txt"
+
+          stage=bind_live_main
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$CURRENT_MAIN"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CURRENT_MAIN"
+          git rev-parse "$CURRENT_MAIN^{tree}" > "$OUT/current-main-tree.txt"
+
+          stage=authenticate_current_cell
+          test "$(sha256sum "$MATRIX_PATH" | awk '{print $1}')" = "$MATRIX_SHA256"
+          python - "$MATRIX_PATH" "$OUT/current-cell.json" <<'PY'
+          import hashlib, json, pathlib, sys
+          matrix=json.loads(pathlib.Path(sys.argv[1]).read_text())
+          row=next(row for row in matrix['rows'] if row['unit_id']=='US-STATE-ND')
+          cell=next(cell for cell in row['cells'] if cell['field_id']=='abawd_or_work_requirement_waiver_state_and_governing_period')
+          digest=hashlib.sha256(json.dumps(cell,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+          assert digest=='cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe'
+          assert row['row_state']=='still_open' and (row['terminal_fields'],row['open_fields'])==(7,2)
+          assert cell['state']=='still_open' and cell['terminal'] is False
+          pathlib.Path(sys.argv[2]).write_text(json.dumps({'unit_id':row['unit_id'],'row_state':row['row_state'],
+              'terminal_fields':row['terminal_fields'],'open_fields':row['open_fields'],'field_id':cell['field_id'],
+              'field_state':cell['state'],'field_terminal':cell['terminal'],'cell_canonical_sha256':digest},
+              indent=2,sort_keys=True)+'\n')
+          PY
+
+          stage=authenticate_execution_artifact
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$EXECUTION_ARTIFACT_ID" > "$OUT/execution-artifact.json"
+          jq -e --argjson id "$EXECUTION_ARTIFACT_ID" --argjson bytes "$EXECUTION_ARTIFACT_BYTES" --arg digest "$EXECUTION_ARTIFACT_DIGEST" --arg head "$EXECUTION_HEAD" \
+            '.id==$id and .size_in_bytes==$bytes and .digest==$digest and .expired==false and .workflow_run.head_sha==$head' "$OUT/execution-artifact.json" >/dev/null
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$EXECUTION_ARTIFACT_ID/zip" > "$OUT/execution.zip"
+          test "$(stat -c %s "$OUT/execution.zip")" = "$EXECUTION_ARTIFACT_BYTES"
+          test "sha256:$(sha256sum "$OUT/execution.zip" | awk '{print $1}')" = "$EXECUTION_ARTIFACT_DIGEST"
+          unzip -t "$OUT/execution.zip" > "$OUT/execution-zip-test.txt"
+          unzip -q "$OUT/execution.zip" -d "$EXEC"
+          (cd "$EXEC" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$EXEC/execution-receipt.json" | awk '{print $1}')" = "$EXECUTION_RECEIPT_SHA256"
+          test "$(sha256sum "$EXEC/route-receipt.json" | awk '{print $1}')" = "$ROUTE_RECEIPT_SHA256"
+          test "$(sha256sum "$EXEC/hop-00-receipt.json" | awk '{print $1}')" = "$HOP_RECEIPT_SHA256"
+          test "$(stat -c %s "$EXEC/hop-00-body.bin")" -eq 0
+          jq -e --arg parent "$CURRENT_MAIN" --arg head "$EXECUTION_HEAD" --arg origin "$ORIGIN_ROUTE_ID" --arg target "$TARGET_URL" \
+            '.schema_version=="ssc-rd04-nd-current-waiver-fy26q3-execution@2" and .state=="complete" and
+             .execution_parent==$parent and .execution_head==$head and .fixed_route_ids==[$origin] and
+             .fixed_route_count==1 and .terminal_route_count==1 and .physical_requests==1 and
+             .route.terminal_state=="redirect_refused_terminal" and .route.http_status==302 and
+             .route.body_bytes==0 and .route.pdf_magic==false and .route.redirect_target==$target and
+             .source_admissions==0 and .field_terminalizations==0 and .matrix_updates==0 and
+             .row_state_mutations==0 and .class_closed==false' "$EXEC/execution-receipt.json" >/dev/null
+          jq -e --arg origin_url "$ORIGIN_URL" --arg target "$TARGET_URL" \
+            '.requested_url==$origin_url and .terminal_state=="redirect_refused_terminal" and
+             .http_status==302 and .body_bytes==0 and .redirect_target==$target and (.hops|length)==1' \
+            "$EXEC/route-receipt.json" >/dev/null
+
+          stage=emit_offline_adjudication
+          jq -n --arg origin_id "$ORIGIN_ROUTE_ID" --arg origin_url "$ORIGIN_URL" --arg target "$TARGET_URL" --arg host "$TARGET_HOST" \
+            '{schema_version:"ssc-rd04-nd-fy26q3-cdn-redirect-source-adjudication@1",object_type:"source_adjudication",
+              issue:1017,class_id:"RD-04-C02",decision:{origin_route_id:$origin_id,origin_url:$origin_url,
+              origin_response_status:302,origin_body_bytes:0,redirect_target:$target,redirect_target_host:$host,
+              source_admitted:false,disposition:"official_origin_location_header_locator_only_target_uncontacted"},
+              source_admissions:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,
+              cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",
+              adoption_effect:"none",graph_effect:"none"}' > "$OUT/source-adjudication.json"
+
+          jq -n --arg route "$TARGET_ROUTE_ID" --arg url "$TARGET_URL" --arg host "$TARGET_HOST" \
+            '{schema_version:"ssc-rd04-nd-current-waiver-fy26q3-cdn-followup-protocol@1",object_type:"selected_followup_protocol",
+              issue:1017,class_id:"RD-04-C02",unit_id:"US-STATE-ND",
+              target_field_id:"abawd_or_work_requirement_waiver_state_and_governing_period",
+              selection_basis:"exact uncontacted Location target returned by the authenticated official FNA Q3 route",
+              route_count:1,routes:[{ordinal:1,route_id:$route,url:$url,allowed_hosts:[$host],attempts:1,
+              redirects:"manual_same_host_only",maximum_redirects:5,maximum_body_bytes:12000000,
+              expected_content_family:"application/pdf",route_category:"exact_official_origin_cdn_location_target"}],
+              source_requests_executed_here:0,result_spawned_requests:0,same_host_expansion:0,
+              field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,
+              cumulative_ledger_effect:"none",outside_human_dependency:false,
+              next_authorized_operation:"execute exactly the one CDN target route once in a separately locked transport lane"}' \
+            > "$OUT/selected-followup-protocol.json"
+
+          jq -n --arg parent "$CURRENT_MAIN" --arg target "$TARGET_URL" \
+            '{schema_version:"ssc-rd04-nd-fy26q3-cdn-redirect-adjudication@1",state:"complete",
+              failed_or_final_stage:"complete",exit_code:0,canonical_parent:$parent,execution_artifact:9030448799,
+              fixed_redirect_receipts_adjudicated:1,source_decisions:1,source_admissions:0,field_decisions:1,
+              held_open_fields:1,promotion_candidates:0,selected_followup_routes:1,selected_target:$target,
+              source_requests:0,route_executions:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,
+              class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,
+              publication_effect:"none",adoption_effect:"none",graph_effect:"none",
+              next_authorized_operation:"execute the exact uncontacted CDN target once"}' > "$OUT/receipt.json"
+
+          jq -n --arg target "$TARGET_URL" \
+            '{state:"complete",redirect_receipts_adjudicated:1,source_admissions:0,held_open_fields:1,
+              selected_followup_routes:1,selected_target:$target,source_requests:0,matrix_updates:0,
+              class_closed:false,outside_human_dependency:false}' > "$OUT/summary.json"
+
+          stage=reconfirm_live_main
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CURRENT_MAIN"
+          stage=complete
+          trap - ERR
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          printf '%s\n' complete > "$OUT/STAGE"
+
+      - name: Upload exact redirect adjudication
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy26q3-cdn-redirect-adjudication-v1
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal offline adjudication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$OUTPUT_DIR"
+          test "${{ steps.adjudication.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e --arg parent "$CURRENT_MAIN" --arg target "$TARGET_URL" \
+            '.schema_version=="ssc-rd04-nd-fy26q3-cdn-redirect-adjudication@1" and .state=="complete" and
+             .canonical_parent==$parent and .fixed_redirect_receipts_adjudicated==1 and .source_admissions==0 and
+             .held_open_fields==1 and .promotion_candidates==0 and .selected_followup_routes==1 and
+             .selected_target==$target and .source_requests==0 and .route_executions==0 and
+             .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and
+             .class_closed==false and .outside_human_dependency==false' "$OUT/receipt.json" >/dev/null
