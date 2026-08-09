@@ -1,0 +1,301 @@
+name: TEMP adjudicate RD-04 North Dakota FY2026 archive locator v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-fy26-archive-locator-adjudication-v1/trigger.json'
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+  CARRIER_PARENT: a592acea22c69a979f2a90c24a2bafb8c9445759
+  CARRIER_TREE: c7dbb1df10b409caa7893846a9e4b3e8d1392be0
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  WAIVER_CELL_SHA256: cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe
+  BASE_BRANCH: agent/ssc-rd04-nd-fy26-archive-locator-adjudication-base-v1
+  HEAD_BRANCH: agent/ssc-rd04-nd-fy26-archive-locator-adjudication-trigger-v1
+  WORKFLOW_PATH: .github/workflows/temp-adjudicate-ssc-rd04-nd-fy26-archive-locator-v1.yml
+  TRIGGER_PATH: .tmp/rd04-nd-fy26-archive-locator-adjudication-v1/trigger.json
+  CURRENT_ARTIFACT_ID: '9032851171'
+  CURRENT_ARTIFACT_BYTES: '16421'
+  CURRENT_ARTIFACT_SHA256: f6c158e57f9cc99d48b1c86048d1084f89f0be33bd490f5ab10a3f9cdd0109a1
+  CURRENT_EXECUTION_RECEIPT_SHA256: 75200bdaf78c455dabac7891b2fc2726fee1e6b52c72fe7e22fc3242569456b3
+  CURRENT_ROUTE_RECEIPT_SHA256: c83ec0bb9210d4a79edc5e90397dbcf468903af801a90569391d57f6101bb0c5
+  PRIOR_ARTIFACT_ID: '9031979165'
+  PRIOR_ARTIFACT_BYTES: '5429234'
+  PRIOR_ARTIFACT_SHA256: 2668ef0456029fc8b8dbfdc6cc8966617c92a632aaed9c9216c6b355a83100f3
+  PRIOR_EXECUTION_RECEIPT_SHA256: 31332095180bb293a3ad5054678d9cf765301b30268fb0a555c0534e7bbc92a4
+  PRIOR_ROUTE_RECEIPT_SHA256: 5072a3d24df5734c0242b6a62b8f9e0464fe013bdc7ae530ccbc1a17c1db3892
+  INDEX_BODY_SHA256: dcab625aeeebc30b1cf38dd32f67f0cb766a8e33735694b00f041e03d446476f
+  OUTPUT_DIR: /tmp/rd04-nd-fy26-archive-locator-adjudication-v1
+
+concurrency:
+  group: temp-rd04-nd-fy26-archive-locator-adjudication-v1
+  cancel-in-progress: false
+
+jobs:
+  adjudicate:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-fy26-archive-locator-adjudication-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy26-archive-locator-adjudication-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Authenticate artifacts and select exact archive route offline
+        id: adjudicate
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$OUTPUT_DIR"
+          CURRENT="$OUT/current"
+          PRIOR="$OUT/prior"
+          rm -rf "$OUT"
+          mkdir -p "$CURRENT" "$PRIOR"
+          stage=bootstrap
+
+          finalize() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            if [ ! -f "$OUT/receipt.json" ]; then
+              jq -n \
+                --arg stage "$stage" \
+                --argjson rc "$rc" \
+                '{
+                  schema_version:"ssc-rd04-nd-fy26-archive-locator-adjudication@1",
+                  state:"failed_closed",failed_or_final_stage:$stage,exit_code:$rc,
+                  source_requests:0,route_executions:0,source_admissions:0,
+                  field_decisions:0,promotion_candidates:0,held_open_fields:1,
+                  selected_followup_routes:0,field_terminalizations:0,matrix_updates:0,
+                  row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",
+                  outside_human_dependency:false,publication_effect:"none",
+                  adoption_effect:"none",graph_effect:"none"
+                }' > "$OUT/receipt.json"
+            fi
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+              sha256sum -c SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          stage=bind_exact_two_level_carrier_and_live_matrix
+          test "$HEAD_REPO" = "$GITHUB_REPOSITORY"
+          test "$(git rev-parse HEAD)" = "$EVENT_HEAD_SHA"
+          BASE_SHA="$(git rev-parse HEAD^)"
+          test "$BASE_SHA" = "$EVENT_BASE_SHA"
+          test "$(git rev-parse "$BASE_SHA^")" = "$CARRIER_PARENT"
+          test "$(git rev-list --count "$CARRIER_PARENT..$BASE_SHA")" -eq 1
+          test "$(git rev-list --count "$BASE_SHA..HEAD")" -eq 1
+          test "$(git diff --name-only "$CARRIER_PARENT" "$BASE_SHA")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CARRIER_PARENT" "$BASE_SHA")" = "$WORKFLOW_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CARRIER_PARENT" "$BASE_SHA")"
+          test "$(git diff --name-only "$BASE_SHA" HEAD)" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE_SHA" HEAD)" = "$TRIGGER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$BASE_SHA" HEAD)"
+          git diff --check "$CARRIER_PARENT" HEAD
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CARRIER_PARENT"
+          test "$(git rev-parse 'origin/main^{tree}')" = "$CARRIER_TREE"
+          test "$(git rev-parse "origin/main:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          git show "origin/main:$MATRIX_PATH" > "$OUT/matrix.json"
+          python - "$OUT/matrix.json" <<'PY'
+          import hashlib, json, sys
+          from pathlib import Path
+          matrix=json.loads(Path(sys.argv[1]).read_text())
+          row=[r for r in matrix['rows'] if r.get('unit_id')=='US-STATE-ND']
+          assert len(row)==1 and row[0]['row_state']=='still_open'
+          cell=[c for c in row[0]['cells'] if c.get('field_id')=='abawd_or_work_requirement_waiver_state_and_governing_period']
+          assert len(cell)==1 and cell[0]['state']=='still_open' and cell[0]['terminal'] is False
+          raw=json.dumps(cell[0],sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()
+          assert hashlib.sha256(raw).hexdigest()=='cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe'
+          PY
+          rm "$OUT/matrix.json"
+
+          stage=authenticate_current_and_prior_index_artifacts
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$CURRENT_ARTIFACT_ID" > "$OUT/current-meta.json"
+          jq -e --argjson id "$CURRENT_ARTIFACT_ID" --argjson bytes "$CURRENT_ARTIFACT_BYTES" --arg digest "sha256:$CURRENT_ARTIFACT_SHA256" '.id==$id and .expired==false and .size_in_bytes==$bytes and .digest==$digest' "$OUT/current-meta.json" > /dev/null
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$CURRENT_ARTIFACT_ID/zip" > "$OUT/current.zip"
+          test "$(stat -c %s "$OUT/current.zip")" -eq "$CURRENT_ARTIFACT_BYTES"
+          test "$(sha256sum "$OUT/current.zip" | awk '{print $1}')" = "$CURRENT_ARTIFACT_SHA256"
+          unzip -t "$OUT/current.zip" > "$OUT/current-zip-test.txt"
+          unzip -q "$OUT/current.zip" -d "$CURRENT"
+          (cd "$CURRENT" && sha256sum -c SHA256SUMS)
+          test "$(cat "$CURRENT/STAGE")" = complete
+          test "$(cat "$CURRENT/EXIT_CODE")" = 0
+          test "$(sha256sum "$CURRENT/execution-receipt.json" | awk '{print $1}')" = "$CURRENT_EXECUTION_RECEIPT_SHA256"
+          test "$(sha256sum "$CURRENT/route-receipt.json" | awk '{print $1}')" = "$CURRENT_ROUTE_RECEIPT_SHA256"
+          test "$(sha256sum "$CURRENT/response-body.html" | awk '{print $1}')" = "$INDEX_BODY_SHA256"
+          jq -e '.state=="transport_complete" and .physical_requests==1 and .http_status==200 and .body_sha256=="dcab625aeeebc30b1cf38dd32f67f0cb766a8e33735694b00f041e03d446476f" and .source_admissions==0 and .matrix_updates==0' "$CURRENT/execution-receipt.json" > /dev/null
+
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$PRIOR_ARTIFACT_ID" > "$OUT/prior-meta.json"
+          jq -e --argjson id "$PRIOR_ARTIFACT_ID" --argjson bytes "$PRIOR_ARTIFACT_BYTES" --arg digest "sha256:$PRIOR_ARTIFACT_SHA256" '.id==$id and .expired==false and .size_in_bytes==$bytes and .digest==$digest' "$OUT/prior-meta.json" > /dev/null
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$PRIOR_ARTIFACT_ID/zip" > "$OUT/prior.zip"
+          test "$(stat -c %s "$OUT/prior.zip")" -eq "$PRIOR_ARTIFACT_BYTES"
+          test "$(sha256sum "$OUT/prior.zip" | awk '{print $1}')" = "$PRIOR_ARTIFACT_SHA256"
+          unzip -t "$OUT/prior.zip" > "$OUT/prior-zip-test.txt"
+          unzip -q "$OUT/prior.zip" -d "$PRIOR"
+          (cd "$PRIOR" && sha256sum -c SHA256SUMS)
+          test "$(cat "$PRIOR/STAGE")" = complete
+          test "$(cat "$PRIOR/EXIT_CODE")" = 0
+          test "$(sha256sum "$PRIOR/execution-receipt.json" | awk '{print $1}')" = "$PRIOR_EXECUTION_RECEIPT_SHA256"
+          test "$(sha256sum "$PRIOR/route-receipt.json" | awk '{print $1}')" = "$PRIOR_ROUTE_RECEIPT_SHA256"
+          test "$(sha256sum "$PRIOR/response-body.bin" | awk '{print $1}')" = "$INDEX_BODY_SHA256"
+          cmp "$CURRENT/response-body.html" "$PRIOR/response-body.bin"
+
+          stage=adjudicate_exact_fy2026_archive_locator
+          python - "$CURRENT/response-body.html" "$OUT" "$CURRENT_ARTIFACT_ID" "$PRIOR_ARTIFACT_ID" <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          from urllib.parse import urljoin
+          import hashlib, json, sys
+
+          body_path=Path(sys.argv[1]); out=Path(sys.argv[2])
+          current_artifact=int(sys.argv[3]); prior_artifact=int(sys.argv[4])
+          body=body_path.read_bytes(); text=body.decode('utf-8')
+          assert hashlib.sha256(body).hexdigest()=='dcab625aeeebc30b1cf38dd32f67f0cb766a8e33735694b00f041e03d446476f'
+          assert 'Page updated: July 22, 2026' in text
+
+          class Parser(HTMLParser):
+              def __init__(self):
+                  super().__init__(); self.in_a=False; self.href=None; self.a_text=[]; self.in_li=False; self.li_text=[]; self.rows=[]
+              def handle_starttag(self,tag,attrs):
+                  if tag=='li': self.in_li=True; self.li_text=[]
+                  if tag=='a': self.in_a=True; self.href=dict(attrs).get('href'); self.a_text=[]
+              def handle_data(self,data):
+                  if self.in_li: self.li_text.append(data)
+                  if self.in_a: self.a_text.append(data)
+              def handle_endtag(self,tag):
+                  if tag=='a': self.in_a=False
+                  if tag=='li':
+                      self.rows.append({'text':' '.join(''.join(self.li_text).split()),'href':self.href})
+                      self.in_li=False; self.href=None; self.li_text=[]; self.a_text=[]
+          parser=Parser(); parser.feed(text)
+          fy26=[r for r in parser.rows if r['href'] and 'FY2026-ABAWD-State-Requests-and-Data-' in r['href']]
+          expected={
+            '/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-AK-KY-7-2026.zip':'FY 2026 (.zip) (Alaska through Kentucky)',
+            '/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-MI-NM-7-2026.zip':'FY 2026 (.zip) (Minnesota through New Mexico)',
+            '/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-NV-WI-7-2026.zip':'FY 2026 (.zip) (Nevada through Wisconsin)',
+          }
+          assert len(fy26)==3,fy26
+          for row in fy26:
+              assert row['href'] in expected,row
+              assert row['text']==expected[row['href']],row
+          selected_rel='/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-NV-WI-7-2026.zip'
+          selected=[r for r in fy26 if r['href']==selected_rel]
+          assert len(selected)==1 and 'Nevada through Wisconsin' in selected[0]['text']
+          assert text.count('/sites/default/files/resource-files/nd-abawd-response-fy2025.pdf')==1
+          assert 'nd-abawd-response-fy2026' not in text
+          selected_url=urljoin('https://www.fna.usda.gov/snap/waivers/timelimit/2025-2029',selected_rel)
+          assert selected_url=='https://www.fna.usda.gov/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-NV-WI-7-2026.zip'
+
+          source={
+            'schema_version':'ssc-rd04-nd-fy26-archive-locator-source-adjudication@1',
+            'source_role':'current_federal_waiver_index_and_exact_fy2026_archive_locator_only',
+            'page_updated':'2026-07-22','body_bytes':len(body),'body_sha256':hashlib.sha256(body).hexdigest(),
+            'transport_artifacts':[current_artifact,prior_artifact],
+            'transport_observations':2,'unique_body_count':1,'substantive_weight_count':1,
+            'fy2026_archive_links':fy26,
+            'north_dakota_response_anchors':{
+              'fy2025':1,'fy2026':0,
+              'inference':'absence_of_a_fy2026_response_anchor_is_not_waiver_status_or_request_absence'
+            },
+            'source_admitted_for_field_value':False,
+          }
+          field={
+            'schema_version':'ssc-rd04-nd-fy26-archive-locator-field-adjudication@1',
+            'unit_id':'US-STATE-ND','field_id':'abawd_or_work_requirement_waiver_state_and_governing_period',
+            'current_cell_sha256':'cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe',
+            'state':'still_open','terminal':False,
+            'disposition':'current_index_locates_exact_fy2026_state_request_archive_but_no_nd_fy2026_response_hold_open',
+            'promotion_candidate':False,
+            'limitations':['archive_content_not_yet_captured','no_current_waiver_status_inferred','no_geography_or_governing_period_inferred'],
+          }
+          protocol={
+            'schema_version':'ssc-rd04-nd-fy26-archive-origin-protocol@1',
+            'route_id':'RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-NV-WI-ORIGIN-001',
+            'url':selected_url,'method':'GET','attempts':1,
+            'maximum_followed_redirects':0,'maximum_body_bytes':100000000,
+            'expected_media_types':['application/zip','application/octet-stream'],
+            'require_zip_magic_on_http_success':True,
+            'same_host_expansion':0,'result_spawned_requests':0,
+          }
+          summary={
+            'schema_version':'ssc-rd04-nd-fy26-archive-locator-summary@1',
+            'duplicate_transport_observations':2,'unique_index_bodies':1,'substantive_weight_count':1,
+            'source_admissions':1,'field_decisions':1,'promotion_candidates':0,'held_open_fields':1,
+            'selected_followup_routes':1,'source_requests':0,'route_executions':0,
+            'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,
+          }
+          for name,obj in [('source-adjudication.json',source),('field-adjudication.json',field),('selected-protocol.json',protocol),('summary.json',summary)]:
+              (out/name).write_text(json.dumps(obj,indent=2,sort_keys=True)+'\n')
+          receipt={
+            'schema_version':'ssc-rd04-nd-fy26-archive-locator-adjudication@1',
+            'state':'adjudication_complete','failed_or_final_stage':'complete','exit_code':0,
+            'current_artifact_id':current_artifact,'prior_artifact_id':prior_artifact,
+            'duplicate_transport_observations':2,'unique_index_bodies':1,'substantive_weight_count':1,
+            'source_requests':0,'route_executions':0,'source_admissions':1,
+            'field_decisions':1,'promotion_candidates':0,'held_open_fields':1,
+            'selected_followup_routes':1,'field_terminalizations':0,'matrix_updates':0,
+            'row_state_mutations':0,'class_closed':False,'cumulative_ledger_effect':'none',
+            'outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none'
+          }
+          (out/'receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          PY
+
+          stage=complete
+      - name: Preserve request-free locator adjudication
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy26-archive-locator-adjudication-v1
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - name: Enforce zero-effect one-route selection
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.adjudicate.outcome }}" = success
+          test "$(cat "$OUTPUT_DIR/STAGE")" = complete
+          test "$(cat "$OUTPUT_DIR/EXIT_CODE")" = 0
+          (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .state=="adjudication_complete" and
+            .duplicate_transport_observations==2 and .unique_index_bodies==1 and
+            .substantive_weight_count==1 and .source_requests==0 and
+            .route_executions==0 and .promotion_candidates==0 and
+            .held_open_fields==1 and .selected_followup_routes==1 and
+            .field_terminalizations==0 and .matrix_updates==0 and
+            .row_state_mutations==0 and .class_closed==false
+          ' "$OUTPUT_DIR/receipt.json" > /dev/null
+          jq -e '
+            .route_id=="RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-NV-WI-ORIGIN-001" and
+            .url=="https://www.fna.usda.gov/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-NV-WI-7-2026.zip" and
+            .attempts==1 and .maximum_followed_redirects==0 and
+            .result_spawned_requests==0
+          ' "$OUTPUT_DIR/selected-protocol.json" > /dev/null
