@@ -1,0 +1,428 @@
+name: TEMP adjudicate RD-04 North Dakota FY2026 Q3 PDF v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-fy26q3-pdf-adjudication-base-v1
+    types: [opened]
+    paths:
+      - '.trigger/ssc-rd04-nd-fy26q3-pdf-adjudication-v1'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ssc-rd04-nd-fy26q3-pdf-adjudication-v1
+  cancel-in-progress: false
+
+jobs:
+  adjudicate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      CURRENT_MAIN: a592acea22c69a979f2a90c24a2bafb8c9445759
+      BASE_BRANCH: agent/ssc-rd04-nd-fy26q3-pdf-adjudication-base-v1
+      TRIGGER_BRANCH: agent/ssc-rd04-nd-fy26q3-pdf-adjudication-trigger-v1
+      WORKFLOW_PATH: .github/workflows/temp-adjudicate-ssc-rd04-nd-fy26q3-pdf-v1.yml
+      TRIGGER_PATH: .trigger/ssc-rd04-nd-fy26q3-pdf-adjudication-v1
+      TRIGGER_BYTES: '1999'
+      TRIGGER_SHA256: 971379464a9f6260ffd6c46626fa20ac41e8d6ac35fa91435471392c65b2b124
+      MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+      MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+      CURRENT_CELL_SHA256: cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe
+      PDF_ARTIFACT_ID: '9030574383'
+      PDF_ARTIFACT_BYTES: '222813'
+      PDF_ARTIFACT_DIGEST: sha256:39477a4cb5ba89b03a3edf75c66148fed86ccd660493ded8d036724851fccfd0
+      EXECUTION_RECEIPT_SHA256: ee107513b4c59fa140a04de00e8be3430c13b2f78f072e9d03f614b47dc101b1
+      ROUTE_RECEIPT_SHA256: b4bc69a3639c83af4aa76134b103e715d446e2c505de8014adc67d47bbe3f341
+      PDF_BYTES: '114028'
+      PDF_SHA256: ab65b3bbc62f27a6d3aa2811991b257e0f226c08791f0bdf6ddf4024a4b0e8c1
+      FNA_ARTIFACT_ID: '9030322465'
+      FNA_ARTIFACT_BYTES: '24896603'
+      FNA_ARTIFACT_DIGEST: sha256:b44e183c8e44f31cae5aee0c41f98915f3853c6d62fa65c256c5fb329f3b0b71
+      FNA_SOURCE_ADJUDICATION_SHA256: dc3d87802efb3a56fde09444e287263cc1f0d491769ba6d279fec43558da7db4
+      Q2_ROUTE_ID: RD04-ND-CURRENT-WAIVER-FY26Q2-001
+      Q2_URL: https://www.fna.usda.gov/sites/default/files/resource-files/FY26-Quarter-2-ABAWD-Waiver-Status.pdf
+      OUTPUT_DIR: /tmp/ssc-rd04-nd-fy26q3-pdf-adjudication-v1
+      PDF_INPUT_DIR: /tmp/ssc-rd04-nd-fy26q3-pdf-input-v1
+      FNA_INPUT_DIR: /tmp/ssc-rd04-nd-fy26q3-fna-input-v1
+      PDF_ZIP: /tmp/ssc-rd04-nd-fy26q3-pdf-input-v1.zip
+      FNA_ZIP: /tmp/ssc-rd04-nd-fy26q3-fna-input-v1.zip
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Verify exact request-free topology and review attestation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUTPUT_DIR" "$PDF_INPUT_DIR" "$FNA_INPUT_DIR" "$PDF_ZIP" "$FNA_ZIP"
+          mkdir -p "$OUTPUT_DIR" "$PDF_INPUT_DIR" "$FNA_INPUT_DIR"
+          printf '%s\n' topology_verification > "$OUTPUT_DIR/STAGE"
+          HEAD_SHA="$(jq -r '.pull_request.head.sha' "$GITHUB_EVENT_PATH")"
+          BASE_SHA="$(jq -r '.pull_request.base.sha' "$GITHUB_EVENT_PATH")"
+          test "$(jq -r '.pull_request.head.ref' "$GITHUB_EVENT_PATH")" = "$TRIGGER_BRANCH"
+          test "$(jq -r '.pull_request.base.ref' "$GITHUB_EVENT_PATH")" = "$BASE_BRANCH"
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          git fetch --no-tags --force origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$BASE_BRANCH:refs/remotes/origin/$BASE_BRANCH" \
+            "+refs/heads/$TRIGGER_BRANCH:refs/remotes/origin/$TRIGGER_BRANCH"
+          test "$(git rev-parse origin/main)" = "$CURRENT_MAIN"
+          test "$(git rev-parse "$BASE_SHA^")" = "$CURRENT_MAIN"
+          test "$(git rev-list --count "$CURRENT_MAIN..$BASE_SHA")" = 1
+          test "$(git rev-list --count "$BASE_SHA..$HEAD_SHA")" = 1
+          test "$(git diff --name-only "$CURRENT_MAIN" "$BASE_SHA")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" "$BASE_SHA")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA")" = "$TRIGGER_PATH"
+          test "$(stat -c %s "$TRIGGER_PATH")" = "$TRIGGER_BYTES"
+          test "$(sha256sum "$TRIGGER_PATH" | awk '{print $1}')" = "$TRIGGER_SHA256"
+          jq -e \
+            --arg parent "$CURRENT_MAIN" \
+            --arg matrix "$MATRIX_BLOB" \
+            --arg cell "$CURRENT_CELL_SHA256" \
+            --arg artifact "$PDF_ARTIFACT_DIGEST" \
+            --arg pdf "$PDF_SHA256" \
+            --arg fna "$FNA_ARTIFACT_DIGEST" \
+            --arg q2 "$Q2_URL" \
+            '.schema_version=="ssc-rd04-nd-fy26q3-pdf-adjudication-trigger@1" and
+             .canonical_parent==$parent and .matrix_blob==$matrix and
+             .current_waiver_cell_sha256==$cell and
+             .transport_artifact==9030574383 and
+             .transport_artifact_digest==$artifact and
+             .pdf_sha256==$pdf and .pdf_bytes==114028 and .pdf_pages==1 and
+             .model_review.all_pages_reviewed==true and
+             .model_review.pages_reviewed==[1] and
+             .model_review.outside_human_dependency==false and
+             .prior_fna_adjudication_artifact==9030322465 and
+             .prior_fna_adjudication_artifact_digest==$fna and
+             .selected_next_route_id=="RD04-ND-CURRENT-WAIVER-FY26Q2-001" and
+             .selected_next_url==$q2 and
+             .source_requests==0 and .route_executions==0 and
+             .field_terminalizations==0 and .matrix_updates==0 and
+             .row_state_mutations==0 and .class_closed==false and
+             .outside_human_dependency==false' "$TRIGGER_PATH" >/dev/null
+          cp "$TRIGGER_PATH" "$OUTPUT_DIR/model-review-attestation.json"
+          jq -n --arg parent "$CURRENT_MAIN" --arg base "$BASE_SHA" --arg head "$HEAD_SHA" \
+            '{schema_version:"ssc-rd04-nd-fy26q3-pdf-adjudication-topology@1",state:"verified",canonical_parent:$parent,workflow_base:$base,trigger_head:$head,base_commits:1,base_paths:1,trigger_commits:1,trigger_paths:1,permanent_paths:0}' \
+            > "$OUTPUT_DIR/topology-receipt.json"
+
+      - name: Authenticate exact PDF, prior index adjudication, and current cell
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          printf '%s\n' authenticating_inputs > "$OUTPUT_DIR/STAGE"
+          gh api -H 'Accept: application/vnd.github+json' \
+            "/repos/$GITHUB_REPOSITORY/actions/artifacts/$PDF_ARTIFACT_ID" \
+            > "$OUTPUT_DIR/pdf-artifact.json"
+          jq -e --argjson id "$PDF_ARTIFACT_ID" --argjson bytes "$PDF_ARTIFACT_BYTES" --arg digest "$PDF_ARTIFACT_DIGEST" \
+            '.id==$id and .size_in_bytes==$bytes and .digest==$digest and .expired==false' "$OUTPUT_DIR/pdf-artifact.json" >/dev/null
+          gh api -H 'Accept: application/vnd.github+json' \
+            "/repos/$GITHUB_REPOSITORY/actions/artifacts/$PDF_ARTIFACT_ID/zip" > "$PDF_ZIP"
+          test "$(stat -c %s "$PDF_ZIP")" = "$PDF_ARTIFACT_BYTES"
+          test "sha256:$(sha256sum "$PDF_ZIP" | awk '{print $1}')" = "$PDF_ARTIFACT_DIGEST"
+          unzip -t "$PDF_ZIP" > "$OUTPUT_DIR/pdf-zip-test.txt"
+          unzip -q "$PDF_ZIP" -d "$PDF_INPUT_DIR"
+          (cd "$PDF_INPUT_DIR" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$PDF_INPUT_DIR/execution-receipt.json" | awk '{print $1}')" = "$EXECUTION_RECEIPT_SHA256"
+          test "$(sha256sum "$PDF_INPUT_DIR/route-receipt.json" | awk '{print $1}')" = "$ROUTE_RECEIPT_SHA256"
+          test "$(stat -c %s "$PDF_INPUT_DIR/source.pdf")" = "$PDF_BYTES"
+          test "$(sha256sum "$PDF_INPUT_DIR/source.pdf" | awk '{print $1}')" = "$PDF_SHA256"
+          cmp "$PDF_INPUT_DIR/source.pdf" "$PDF_INPUT_DIR/response-body.bin"
+          jq -e --arg parent "$CURRENT_MAIN" --arg pdf "$PDF_SHA256" \
+            '.schema_version=="ssc-rd04-nd-fy26q3-azure-execution@1" and
+             .state=="bounded_execution_complete" and .failed_or_final_stage=="complete" and
+             .exit_code==0 and .canonical_parent==$parent and
+             .fixed_route_count==1 and .terminal_route_count==1 and .physical_requests==1 and
+             .pdf_body_captured==true and .route.terminal_state=="http_success_pdf_captured" and
+             .route.http_status==200 and .route.content_type=="application/pdf" and
+             .route.body_bytes==114028 and .route.body_sha256==$pdf and
+             .route.pdf_magic==true and .route.redirects_followed==0 and
+             .result_spawned_requests==0 and .source_admissions==0 and
+             .field_terminalizations==0 and .matrix_updates==0 and
+             .row_state_mutations==0 and .class_closed==false and
+             .outside_human_dependency==false and .additional_execution_authorized==false' \
+            "$PDF_INPUT_DIR/execution-receipt.json" >/dev/null
+
+          gh api -H 'Accept: application/vnd.github+json' \
+            "/repos/$GITHUB_REPOSITORY/actions/artifacts/$FNA_ARTIFACT_ID" \
+            > "$OUTPUT_DIR/fna-artifact.json"
+          jq -e --argjson id "$FNA_ARTIFACT_ID" --argjson bytes "$FNA_ARTIFACT_BYTES" --arg digest "$FNA_ARTIFACT_DIGEST" \
+            '.id==$id and .size_in_bytes==$bytes and .digest==$digest and .expired==false' "$OUTPUT_DIR/fna-artifact.json" >/dev/null
+          gh api -H 'Accept: application/vnd.github+json' \
+            "/repos/$GITHUB_REPOSITORY/actions/artifacts/$FNA_ARTIFACT_ID/zip" > "$FNA_ZIP"
+          test "$(stat -c %s "$FNA_ZIP")" = "$FNA_ARTIFACT_BYTES"
+          test "sha256:$(sha256sum "$FNA_ZIP" | awk '{print $1}')" = "$FNA_ARTIFACT_DIGEST"
+          unzip -t "$FNA_ZIP" > "$OUTPUT_DIR/fna-zip-test.txt"
+          unzip -q "$FNA_ZIP" -d "$FNA_INPUT_DIR"
+          (cd "$FNA_INPUT_DIR" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$FNA_INPUT_DIR/source-adjudication.json" | awk '{print $1}')" = "$FNA_SOURCE_ADJUDICATION_SHA256"
+          jq -e --arg q2 "$Q2_URL" \
+            '[.decisions[] | select(.route_id=="RD04-ND-CURRENT-WAIVER-FNA-001") | .exact_fy2026_quarter_links[]] | index($q2) != null' \
+            "$FNA_INPUT_DIR/source-adjudication.json" >/dev/null
+          cp "$FNA_INPUT_DIR/source-adjudication.json" "$OUTPUT_DIR/prior-fna-source-adjudication.json"
+
+          test "$(git rev-parse "$CURRENT_MAIN:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          git show "$CURRENT_MAIN:$MATRIX_PATH" > "$OUTPUT_DIR/current-matrix.json"
+          python - "$OUTPUT_DIR/current-matrix.json" "$OUTPUT_DIR/current-cell.json" <<'PY'
+          import json, sys
+          matrix=json.load(open(sys.argv[1]))
+          assert matrix["counts"]["terminal_cells"] == 227
+          assert matrix["counts"]["still_open_substantive_cells"] == 183
+          rows=[r for r in matrix["rows"] if r["unit_id"]=="US-STATE-ND"]
+          assert len(rows)==1
+          row=rows[0]
+          assert row["row_state"]=="still_open" and row["terminal_fields"]==7 and row["open_fields"]==2
+          cells=[c for c in row["cells"] if c["field_id"]=="abawd_or_work_requirement_waiver_state_and_governing_period"]
+          assert len(cells)==1
+          cell=cells[0]
+          assert cell["state"]=="still_open" and cell["terminal"] is False
+          json.dump(cell,open(sys.argv[2],"w"),indent=2,sort_keys=True)
+          open(sys.argv[2],"a").write("\n")
+          PY
+
+      - name: Render every page, review complete text, and adjudicate field
+        id: adjudicate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '%s\n' rendering_and_adjudicating > "$OUTPUT_DIR/STAGE"
+          command -v pdfinfo >/dev/null
+          command -v pdftotext >/dev/null
+          command -v pdftoppm >/dev/null
+          pdfinfo "$PDF_INPUT_DIR/source.pdf" > "$OUTPUT_DIR/pdfinfo.txt"
+          test "$(awk -F: '/^Pages:/ {gsub(/[[:space:]]/,"",$2); print $2}' "$OUTPUT_DIR/pdfinfo.txt")" = 1
+          test "$(awk -F: '/^Encrypted:/ {gsub(/^[[:space:]]+/,"",$2); print $2}' "$OUTPUT_DIR/pdfinfo.txt")" = no
+          pdftotext -layout -enc UTF-8 "$PDF_INPUT_DIR/source.pdf" "$OUTPUT_DIR/page-complete-text.txt"
+          pdftoppm -f 1 -l 1 -r 180 -png -singlefile "$PDF_INPUT_DIR/source.pdf" "$OUTPUT_DIR/page-1" >/dev/null 2>&1
+          test -s "$OUTPUT_DIR/page-1.png"
+          test "$(find "$OUTPUT_DIR" -maxdepth 1 -type f -name 'page-*.png' | wc -l)" = 1
+
+          python - "$OUTPUT_DIR" "$PDF_SHA256" "$Q2_ROUTE_ID" "$Q2_URL" "$CURRENT_CELL_SHA256" <<'PY'
+          import hashlib, json, pathlib, re, sys
+          out=pathlib.Path(sys.argv[1])
+          pdf_sha=sys.argv[2]
+          q2_route=sys.argv[3]
+          q2_url=sys.argv[4]
+          cell_sha=sys.argv[5]
+          raw=(out/'page-complete-text.txt').read_text(errors='strict')
+          normalized=' '.join(raw.replace('\u2013','-').replace('\u2014','-').split())
+          required=[
+            'Supplemental Nutrition Assistance Program (SNAP): Status of State Able-Bodied Adult without Dependents (ABAWD) Time Limit Waivers',
+            'Fiscal Year 2026 - 3rd Quarter',
+            'States and Territories approved for Statewide time limit waivers - (0)',
+            'States and Territories approved for partial time limit waivers - (14)',
+            'States and Territories without time limit waivers - (39)',
+            'Waivers are generally approved for a period of 12 months.',
+            'Implementation and expiration dates are not required to concur with the Federal fiscal year or quarter',
+            'State agencies have the authority to discontinue a time limit waiver prior to its expiration date.',
+            'Updated to show waivers in effect as of March 1, 2026.'
+          ]
+          for phrase in required:
+            assert phrase in normalized, phrase
+          partial_start=normalized.index('States and Territories approved for partial time limit waivers')
+          without_start=normalized.index('States and Territories without time limit waivers')
+          partial_section=normalized[partial_start:without_start]
+          assert 'North Dakota' in partial_section
+          assert normalized.count('North Dakota') == 1
+          assert 'county' not in partial_section.lower()
+          assert 'reservation' not in partial_section.lower()
+          assert 'approval date' not in normalized.lower()
+          assert 'expiration date:' not in normalized.lower()
+
+          text_sha=hashlib.sha256((out/'page-complete-text.txt').read_bytes()).hexdigest()
+          render_sha=hashlib.sha256((out/'page-1.png').read_bytes()).hexdigest()
+          review_att=json.load(open(out/'model-review-attestation.json'))
+          review={
+            'schema_version':'ssc-rd04-nd-fy26q3-pdf-review@1',
+            'source_pdf_sha256':pdf_sha,
+            'source_pdf_bytes':114028,
+            'pdf_pages':1,
+            'pages_rendered':[1],
+            'pages_reviewed':[1],
+            'all_pages_rendered':True,
+            'all_pages_reviewed':True,
+            'runtime_text_sha256':text_sha,
+            'runtime_render_sha256':render_sha,
+            'runtime_render_bytes':(out/'page-1.png').stat().st_size,
+            'model_review_attestation':review_att['model_review'],
+            'observed_page_facts':{
+              'document_quarter':'FY2026 Quarter 3',
+              'snapshot_date':'2026-03-01',
+              'statewide_waiver_jurisdictions':0,
+              'partial_waiver_jurisdictions':14,
+              'without_waiver_jurisdictions':39,
+              'north_dakota_listed_as':'partial_time_limit_waiver',
+              'north_dakota_specific_geography_stated':False,
+              'north_dakota_specific_approval_start_stated':False,
+              'north_dakota_specific_approval_expiration_stated':False
+            },
+            'outside_human_dependency':False
+          }
+          json.dump(review,open(out/'pdf-review-receipt.json','w'),indent=2,sort_keys=True); open(out/'pdf-review-receipt.json','a').write('\n')
+
+          source={
+            'schema_version':'ssc-rd04-nd-fy26q3-pdf-source-adjudication@1',
+            'source_id':'RD04-ND-FY26Q3-PDF-SOURCE-001',
+            'source_class':'exact_official_federal_quarterly_abawd_waiver_status_pdf',
+            'source_admitted_for_narrow_scope':True,
+            'admitted_for':['north_dakota_partial_time_limit_waiver_status_as_of_2026_03_01'],
+            'not_admitted_for':['north_dakota_covered_areas','north_dakota_approval_start_date','north_dakota_approval_expiration_date','north_dakota_exact_governing_period'],
+            'body_bytes':114028,
+            'body_sha256':pdf_sha,
+            'page_count':1,
+            'all_pages_reviewed':True,
+            'substantive_weight_count':1,
+            'source_admissions':1,
+            'field_terminalizations':0,
+            'matrix_updates':0,
+            'row_state_mutations':0,
+            'class_closed':False,
+            'outside_human_dependency':False
+          }
+          json.dump(source,open(out/'source-adjudication.json','w'),indent=2,sort_keys=True); open(out/'source-adjudication.json','a').write('\n')
+
+          field={
+            'schema_version':'ssc-rd04-nd-fy26q3-pdf-field-adjudication@1',
+            'unit_id':'US-STATE-ND',
+            'field_id':'abawd_or_work_requirement_waiver_state_and_governing_period',
+            'current_cell_canonical_sha256':cell_sha,
+            'current_cell_state':'still_open',
+            'observed_waiver_state':'partial_time_limit_waiver_in_effect',
+            'observed_as_of':'2026-03-01',
+            'geography':'certain_areas_not_identified_in_document',
+            'governing_period':'exact_approval_start_and_expiration_not_stated',
+            'generic_approval_period_statement':'waivers_generally_approved_for_12_months_not_assignable_to_north_dakota',
+            'disposition':'partial_waiver_in_effect_as_of_2026_03_01_but_geography_and_exact_approval_period_not_stated_hold_open',
+            'promotion_candidate':False,
+            'selected_next_route_id':q2_route,
+            'selected_next_url':q2_url,
+            'selection_basis':'immediately_preceding_available_federal_quarter_to_test_observed_status_continuity_after_q3_proved_insufficient_for_exact_period',
+            'q1_disposition':'not_selected_pending_q2_result',
+            'prohibited_inferences':[
+              'do_not_infer_statewide_waiver_from_partial_list',
+              'do_not_infer_covered_counties_or_areas',
+              'do_not_assign_generic_twelve_month_period_to_north_dakota',
+              'do_not_infer_approval_start_or_expiration_from_quarter_label',
+              'do_not_terminalize_the_field_from_one_snapshot',
+              'do_not_close_north_dakota_row',
+              'do_not_close_rd04_c02'
+            ],
+            'field_terminalizations':0,
+            'matrix_updates':0,
+            'row_state_mutations':0,
+            'class_closed':False,
+            'outside_human_dependency':False
+          }
+          json.dump(field,open(out/'field-adjudication.json','w'),indent=2,sort_keys=True); open(out/'field-adjudication.json','a').write('\n')
+
+          protocol={
+            'schema_version':'ssc-rd04-nd-current-waiver-fy26q2-followup-protocol@1',
+            'protocol_id':'RD04-ND-CURRENT-WAIVER-FY26Q2-PROTOCOL-001',
+            'target_field_id':'abawd_or_work_requirement_waiver_state_and_governing_period',
+            'route_count':1,
+            'source_requests_executed_here':0,
+            'route_executions_here':0,
+            'result_spawned_requests':0,
+            'same_host_expansion':0,
+            'routes':[{
+              'ordinal':1,
+              'route_id':q2_route,
+              'url':q2_url,
+              'allowed_hosts':['fna.usda.gov','www.fna.usda.gov'],
+              'attempts':1,
+              'redirects':'manual_same_host_only',
+              'maximum_redirect_hops':5,
+              'maximum_body_bytes':12000000,
+              'expected_content_family':'application/pdf',
+              'result_spawned_requests':0,
+              'same_host_expansion':0
+            }],
+            'q1_route_selected':False,
+            'authority_boundary':{
+              'source_admissions':0,'field_terminalizations':0,'matrix_updates':0,
+              'row_state_mutations':0,'class_closed':False,'cumulative_ledger_effect':'none',
+              'outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none'
+            }
+          }
+          json.dump(protocol,open(out/'selected-followup-protocol.json','w'),indent=2,sort_keys=True); open(out/'selected-followup-protocol.json','a').write('\n')
+
+          summary={
+            'schema_version':'ssc-rd04-nd-fy26q3-pdf-adjudication-summary@1',
+            'state':'complete','source_admissions':1,'field_decisions':1,'promotion_candidates':0,
+            'held_open_fields':1,'selected_followup_routes':1,'source_requests':0,'route_executions':0,
+            'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False
+          }
+          json.dump(summary,open(out/'summary.json','w'),indent=2,sort_keys=True); open(out/'summary.json','a').write('\n')
+
+          receipt={
+            'schema_version':'ssc-rd04-nd-fy26q3-pdf-adjudication@1',
+            'state':'complete','failed_or_final_stage':'complete','exit_code':0,
+            'canonical_parent':'a592acea22c69a979f2a90c24a2bafb8c9445759',
+            'transport_artifact':9030574383,
+            'transport_artifact_digest':'sha256:39477a4cb5ba89b03a3edf75c66148fed86ccd660493ded8d036724851fccfd0',
+            'pdf_sha256':pdf_sha,'pdf_pages':1,'pages_reviewed':1,
+            'source_admissions':1,'field_decisions':1,'promotion_candidates':0,'held_open_fields':1,
+            'selected_followup_routes':1,'selected_route_ids':[q2_route],
+            'source_requests':0,'route_executions':0,'result_spawned_requests':0,
+            'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,
+            'cumulative_ledger_effect':'none','outside_human_dependency':False,
+            'publication_effect':'none','adoption_effect':'none','graph_effect':'none',
+            'additional_q3_execution_authorized':False,
+            'q2_execution_authorized_by_this_receipt':True,
+            'next_authorized_operation':'one never-merge transport attempt against the exact FY2026 Quarter 2 FNA PDF route under a new immutable lock'
+          }
+          json.dump(receipt,open(out/'receipt.json','w'),indent=2,sort_keys=True); open(out/'receipt.json','a').write('\n')
+          PY
+
+          printf '%s\n' 0 > "$OUTPUT_DIR/EXIT_CODE"
+          printf '%s\n' complete > "$OUTPUT_DIR/STAGE"
+          (
+            cd "$OUTPUT_DIR"
+            find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+          )
+
+      - name: Upload exact page-complete adjudication custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy26q3-pdf-adjudication-v1
+          path: /tmp/ssc-rd04-nd-fy26q3-pdf-adjudication-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal request-free PDF adjudication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.adjudicate.outcome }}" = success
+          test "$(cat "$OUTPUT_DIR/EXIT_CODE")" = 0
+          test "$(cat "$OUTPUT_DIR/STAGE")" = complete
+          (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
+          jq -e --arg parent "$CURRENT_MAIN" --arg route "$Q2_ROUTE_ID" \
+            '.schema_version=="ssc-rd04-nd-fy26q3-pdf-adjudication@1" and
+             .state=="complete" and .failed_or_final_stage=="complete" and .exit_code==0 and
+             .canonical_parent==$parent and .transport_artifact==9030574383 and
+             .pdf_pages==1 and .pages_reviewed==1 and .source_admissions==1 and
+             .field_decisions==1 and .promotion_candidates==0 and .held_open_fields==1 and
+             .selected_followup_routes==1 and .selected_route_ids==[$route] and
+             .source_requests==0 and .route_executions==0 and .result_spawned_requests==0 and
+             .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and
+             .class_closed==false and .outside_human_dependency==false and
+             .additional_q3_execution_authorized==false and .q2_execution_authorized_by_this_receipt==true' \
+            "$OUTPUT_DIR/receipt.json" >/dev/null
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$CURRENT_MAIN"
