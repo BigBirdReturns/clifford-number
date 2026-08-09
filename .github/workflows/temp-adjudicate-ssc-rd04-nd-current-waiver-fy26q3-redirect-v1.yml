@@ -1,0 +1,142 @@
+name: TEMP adjudicate RD-04 FY2026 Q3 PDF redirect v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-current-waiver-fy26q3-redirect-adjudication-base-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.trigger/ssc-rd04-nd-current-waiver-fy26q3-redirect-adjudication-v1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: temp-adjudicate-ssc-rd04-nd-current-waiver-fy26q3-redirect-v1
+  cancel-in-progress: false
+
+env:
+  CURRENT_MAIN: a592acea22c69a979f2a90c24a2bafb8c9445759
+  ADJUDICATION_WORKFLOW_PATH: .github/workflows/temp-adjudicate-ssc-rd04-nd-current-waiver-fy26q3-redirect-v1.yml
+  ADJUDICATION_TRIGGER_PATH: .trigger/ssc-rd04-nd-current-waiver-fy26q3-redirect-adjudication-v1
+  EXECUTION_ARTIFACT_ID: '9030800350'
+  EXECUTION_ARTIFACT_BYTES: '49790420'
+  EXECUTION_ARTIFACT_DIGEST: sha256:4fdc30df076f766f4842bdd7e5bad39b5f40a99afd8db250bf20574b1fb7da40
+  EXECUTION_RECEIPT_SHA256: 5be0a463c73a829ea0734fffafb1bbb2f0fb1b769215bbfecca55c0594c56360
+  ROUTE_RECEIPT_SHA256: a8a5e29eb89aa76ba478d4c416855aad1037a809f55daad1419412a576cb3a11
+  HOP_RECEIPT_SHA256: 9c5b9b24d11d26d8560fb522f7f9bd3560d30c309f5c509f37a2a9b261cbe90d
+  EMPTY_BODY_SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  EXECUTION_HEAD: 77017d75f182001b9b2a798b4a9cd2470670d3ed
+  ADJUDICATOR_BLOB: 4e8a51daeeaa81aec187ae1ca34f07e71a5cbef1
+  ADJUDICATOR_BYTES: '8708'
+  ADJUDICATOR_SHA256: c1b7631f5741b252ce623ded3c563d61ed1ceb30d054484acc81b67a2abbae6f
+
+jobs:
+  adjudicate:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-current-waiver-fy26q3-redirect-adjudication-trigger-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Adjudicate exact refused redirect offline
+        id: adjudication
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-nd-current-waiver-fy26q3-redirect-adjudication-v1"
+          EXEC="$OUT/execution"
+          INPUT="$OUT/input"
+          SCRIPT="$OUT/adjudicator.py"
+          rm -rf "$OUT"
+          mkdir -p "$OUT" "$EXEC" "$INPUT"
+          stage=bootstrap
+          fail_receipt() {
+            rc=$1
+            if [[ ! -s "$OUT/receipt.json" ]]; then
+              jq -n --arg stage "$stage" --argjson code "$rc" --arg parent "$CURRENT_MAIN" \
+                '{schema_version:"ssc-rd04-nd-current-waiver-fy26q3-redirect-adjudication-receipt@1",state:"failed_closed",failed_or_final_stage:$stage,exit_code:$code,canonical_parent:$parent,source_route_physical_requests:1,source_route_authority_exhausted:true,selected_followup_routes:0,source_requests:0,route_executions:0,source_admissions:0,field_decisions:0,promotion_candidates:0,held_open_fields:1,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' > "$OUT/receipt.json"
+            fi
+          }
+          finish() {
+            rc=$?
+            trap - EXIT
+            set +e
+            fail_receipt "$rc"
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          stage=bind_adjudication_topology
+          BASE="$(git rev-parse HEAD^)"
+          test "$(git rev-parse "$BASE^")" = "$CURRENT_MAIN"
+          test "$(git rev-list --count "$CURRENT_MAIN".."$BASE")" -eq 1
+          test "$(git rev-list --count "$BASE"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CURRENT_MAIN" "$BASE")" = "$ADJUDICATION_WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" "$BASE")" = "$ADJUDICATION_WORKFLOW_PATH"
+          test "$(git diff --name-only "$BASE" HEAD)" = "$ADJUDICATION_TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE" HEAD)" = "$ADJUDICATION_TRIGGER_PATH"
+          git diff --check "$CURRENT_MAIN" HEAD
+          printf '%s\n' "$BASE" > "$OUT/adjudication-base-commit.txt"
+          printf '%s\n' "$(git rev-parse HEAD)" > "$OUT/adjudication-trigger-head.txt"
+
+          stage=bind_live_main
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$CURRENT_MAIN"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CURRENT_MAIN"
+          printf '%s\n' "$(git rev-parse "$CURRENT_MAIN^{tree}")" > "$OUT/current-main-tree.txt"
+
+          stage=reconstruct_immutable_adjudicator
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/git/blobs/$ADJUDICATOR_BLOB" > "$OUT/adjudicator-blob.json"
+          jq -e --arg sha "$ADJUDICATOR_BLOB" '.sha==$sha and .encoding=="base64" and (.content|type)=="string"' "$OUT/adjudicator-blob.json" >/dev/null
+          jq -r .content "$OUT/adjudicator-blob.json" | tr -d '\n' | base64 -d > "$SCRIPT"
+          test "$(stat -c %s "$SCRIPT")" = "$ADJUDICATOR_BYTES"
+          test "$(sha256sum "$SCRIPT" | awk '{print $1}')" = "$ADJUDICATOR_SHA256"
+          python -m py_compile "$SCRIPT"
+
+          stage=authenticate_execution_artifact
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$EXECUTION_ARTIFACT_ID" > "$OUT/execution-artifact.json"
+          jq -e --argjson id "$EXECUTION_ARTIFACT_ID" --argjson bytes "$EXECUTION_ARTIFACT_BYTES" --arg digest "$EXECUTION_ARTIFACT_DIGEST" \
+            '.id==$id and .size_in_bytes==$bytes and .digest==$digest and .expired==false' "$OUT/execution-artifact.json" >/dev/null
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$EXECUTION_ARTIFACT_ID/zip" > "$OUT/execution.zip"
+          test "$(stat -c %s "$OUT/execution.zip")" = "$EXECUTION_ARTIFACT_BYTES"
+          test "sha256:$(sha256sum "$OUT/execution.zip" | awk '{print $1}')" = "$EXECUTION_ARTIFACT_DIGEST"
+          unzip -t "$OUT/execution.zip" > "$OUT/execution-zip-test.txt"
+          unzip -q "$OUT/execution.zip" -d "$EXEC"
+          (cd "$EXEC" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$EXEC/execution-receipt.json" | awk '{print $1}')" = "$EXECUTION_RECEIPT_SHA256"
+          test "$(sha256sum "$EXEC/route-receipt.json" | awk '{print $1}')" = "$ROUTE_RECEIPT_SHA256"
+          test "$(sha256sum "$EXEC/hop-00-receipt.json" | awk '{print $1}')" = "$HOP_RECEIPT_SHA256"
+          test "$(sha256sum "$EXEC/hop-00-body.bin" | awk '{print $1}')" = "$EMPTY_BODY_SHA256"
+
+          stage=adjudicate_redirect_offline
+          python "$SCRIPT" "$EXEC" "$OUT"
+          cp "$EXEC/execution-receipt.json" "$INPUT/"
+         Ь‰VPЛЬ›Э]K\™XЩZ\љњЫЫ€€‰S”UИ‚€Ь‰VPЛЪЬL\™XЩZ\љњЫЫ€€‰S”UИ‚€Ь‰VPЛЪЬLX›ЩKљ[€€‰S”UИ‚€›H\™€‰VPИ€‰ХUЩ^XЭ][Ы‹ћљ\‚‚€ЭYЩO\™XЫЫ™љ\›WЫ]™WЫXZ[‚€\Э‰
+Ъ]Л\™[[ЭHKZXYИЬљYЪ[€™YњЛЪXYЛЫXZ[€]ЪИ	ЮЬљ[ќ	_IКH€H‰ХT”‘S•УPRS€‚€ЭYЩOXЫЫ\]B€љ[ќ€	Й\Ч‰И€‰ХUСVUРУСH‚€љ[ќ€	Й\Ч‰ИЫЫ\]H€‰ХUФХQСH‚‚€H[YN€\ШY™Y\™XЭYќYXШ][Ы€\ќYXЭ€YЋ€[Ш^\К
+B€\Щ\О€XЭ[ЫњЛЭ\ШYX\ќYXЭЌ€Ъ]‚€[YN€ЬШЛ\™[™XЭ\њ™[ќ]ШZ]™\‹YћLЌњLЛ\™Y\™XЭXYќYXШ][Ы‹]ЊB€]€	ЮИќ[›™\‹ќ[\_KЬЬШЛ\™[™XЭ\њ™[ќ]ШZ]™\‹YћLЌњLЛ\™Y\™XЭXYќYXШ][Ы‹]ЊB€Y‹[›ЛYљ[\ЛY›Э[™€\њ›Ь‚€[ЫYKZY[‹Yљ[\О€ќYB€™][ќ[Ы‹Y^\О€L€ЫЫ\™\ЬЪ[Ы‹[]™[€B‚€H[YN€™XЫЬ™™Y\™XЭYќYXШ][Ы€Ы€‘L€YЋ€[Ш^\К
+B€Ъ[€\Ъ€[ќЋ‚€ТХТСSЋ€	ЮИЪ]X‹ќЪЩ[€_B€ќ[Ћ€€Щ]QY][И\YZ[€ЏH‰•S“‘T—ХSTЬЬШЛ\™[™XЭ\њ™[ќ]ШZ]™\‹YћLЌњLЛ\™Y\™XЭXYќYXШ][Ы‹]ЊKЬ™XЩZ\љњЫЫ€‚€\Э\И‰€‚€В€љ[ќ€	Й\Ч—‰И	Ф‘L–LЊЌ€]X\ќ\€И€™Y\™XЭ™XXЪYH\YЩ™›[™HYќYXШ][Ы‹‰В€љ[ќ€	Й\Ч‰И	Ш^	В€›Ь€љY[[€Э]HЫЭ\ЩWЬ›Э]WЬ\ЪXШ[Ь™\]Y\ЭИЫЭ\ЩWЬ›Э]WШ]]Ьљ]WЩ^]\ЭYЩ[XЭYЩ›ЫЭЭ\Ь›Э]\ИЫЭ\ЩWШYZ\ЬЪ[ЫњИљY[ЩXЪ\Ъ[ЫњИ›Ы[Э[Ы—ШШ[™Y]\И[ЫЬ[—ЩљY[ИљY[Э\›Z[[^][ЫњИX]љ^Э\]\И›ЭЧЬЭ]WЫ]]][ЫњИЫ\ЬЧШЫЬЩYИИљ[ќ€	Й\О€	\Ч‰И‰љY[€‰
+њH\€‹‰љY[€‰€ЉHЋИЫ™B€љ[ќ€	Й\Ч—‰И	Ш	В€љ[ќ€	Й\Ч‰И	ХHЬљYЪ[[“ђH›Э]H\И^]\ЭY€HЫЫH™^›Э]H\ИH^XЭ^ќ\™Hњ›ЫќЫЬ€\™Щ][Z]YћH]ИМ€™\ЬЫњЩNИ›ИЫЭ\ЩHЬ€љY[]]Ьљ]HШ\ИЬ™X]Y‰В€H€Э\Ь™YћLЌњLЛ\™Y\™XЭXYќYXШ][Ы‹›Y€Ъ\ЬЭYHЫЫ[Y[ќLMИK\™\И‰ТUP—Ф‘TФТUФ–H€KX›ЩKYљ[HЭ\Ь™YћLЌњLЛ\™Y\™XЭXYќYXШ][Ы‹›Y‚€H[YN€™\]Z\™H\YЭXШЩ\ЬЩќ[™Y\™XЭYќYXШ][Ы‚€YЋ€[Ш^\К
+B€Ъ[€\Ъ€ќ[Ћ€€Щ]QY][И\YZ[€ХUH‰•S“‘T—ХSTЬЬШЛ\™[™XЭ\њ™[ќ]ШZ]™\‹YћLЌњLЛ\™Y\™XЭXYќYXШ][Ы‹]ЊH‚€ЏH‰ХUЬ™XЩZ\љњЫЫ€‚€\Э‰ЮИЭ\ЛYќYXШ][Ы‹›Э]ЫЫYH_H€HЭXШЩ\ЬВ€\Э‰
+Ш]‰ХUСVUРУСHЉH€H€\Э‰
+Ш]‰ХUФХQСHЉH€HЫЫ\]B€
+Щ‰ХU€	‰€ЪLЌMњЭ[HXИТLЌM”ХSTКB€њHYHKX\™И\™[ќ‰ХT”‘S•УPRS€€€	ЛњШЪ[XWЭ™\њЪ[ЫЏOHњЬШЛ\™[™XЭ\њ™[ќ]ШZ]™\‹YћLЌњLЛ\™Y\™XЭXYќYXШ][Ы‹\™XЩZ\H€[™њЭ]OOHЫЫ\]H€[™™Z[YЫЬ—Щљ[[ЬЭYЩOOHЫЫ\]H€[™™^]ШЫЩOOL[™Ш[›ЫљXШ[Ь\™[ќOI\™[ќ[™њЫЭ\ЩWЬ›Э]WЭ\›Z[[ЬЭ]OOHњ™Y\™XЭЬ™Yќ\ЩYЭ\›Z[[€[™њЫЭ\ЩWЬ›Э]WЬ\ЪXШ[Ь™\]Y\ЭПOLH[™њЫЭ\ЩWЬ›Э]WШ]]Ьљ]WЩ^]\ЭYO]ќYH[™њЩ[XЭYЩ›ЫЭЭ\Ь›Э]\ПOLH[™њЫЭ\ЩWЬ™\]Y\ЭПOL[™њ›Э]WЩ^XЭ][ЫњПOL[™њЫЭ\ЩWШYZ\ЬЪ[ЫњПOL[™™љY[ЩXЪ\Ъ[ЫњПOL[™њ›Ы[Э[Ы—ШШ[™Y]\ПOL[™љ[ЫЬ[—ЩљY[ПOLH[™™љY[Э\›Z[[^][ЫњПOL[™›X]љ^Э\]\ПOL[™њ›ЭЧЬЭ]WЫ]]][ЫњПOL[™Ы\ЬЧШЫЬЩYOY[ЩH[™Э[][]]™WЫYЩ\—ЩY™™XЭOH››Ы™H€[™›Э]ЪYWЪ[X[—Щ\[™[ЮOOY[ЩH[™њX›XШ][Ы—ЩY™™XЭOH››Ы™H€[™YЬ[Ы—ЩY™™XЭOH››Ы™H€[™™Ь\ЩY™™XЭOH››Ы™H‰И‰€€‹Щ]‹Ыќ[
