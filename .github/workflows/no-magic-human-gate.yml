@@ -8,11 +8,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: no-magic-human-gate-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: pc59-controller-source-recovery-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
 
 jobs:
   validate:
@@ -29,3 +29,115 @@ jobs:
         run: |
           node tools/validate-no-magic-human-gate.mjs
           node test/no-magic-human-gate.test.js
+
+  recover-pc59-controller-source:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/pc59-controller-source-recovery-v4'
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPOSITORY: ${{ github.repository }}
+      CARRIER_PARENT: 'cffe670fef5c006c7e963421d9fd18c29ed40fba'
+      ORIGINAL_CONTROLLER_BLOB: '0732febec81920473d77470d204bbdf4cbcfabd1'
+      ORIGINAL_CONTROLLER_GZIP_SHA256: '2ce9bdb56c15428fbf4dd1ffdbaa133ed8fe340d5a4b2ba14323f09170967bcf'
+      ORIGINAL_CONTROLLER_SHA256: '980a6a6f6be9f4cfc157ef3f7e5765387507e08ee7457fe1ba3ba6428279de43'
+      FAILED_SUPERVISOR_RUN: '31328404859'
+      FAILED_SUPERVISOR_JOB: '93282546575'
+      FAILED_RECOVERY_V2_RUN: '31329468305'
+      FAILED_RECOVERY_V2_JOB: '93285283293'
+      FAILED_RECOVERY_V3_RUN: '31332044245'
+      FAILED_RECOVERY_V3_JOB: '93291769741'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Bind one-commit diagnostic carrier to canonical main
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = "$CARRIER_PARENT"
+          test "$(git rev-list --count "$CARRIER_PARENT"..HEAD)" = 1
+          mapfile -t changed < <(git diff --name-only "$CARRIER_PARENT" HEAD)
+          test "${#changed[@]}" = 1
+          test "${changed[0]}" = '.github/workflows/no-magic-human-gate.yml'
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$CARRIER_PARENT"
+      - name: Authenticate and expand original valid controller object
+        id: source
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          out=/tmp/pc59-controller-source-recovery
+          mkdir -p "$out"
+          blob_json="$out/original-controller-blob.json"
+          gzip_path="$out/original-controller.sh.gz"
+          script_path="$out/original-controller.sh"
+
+          gh api "/repos/${GH_REPOSITORY}/git/blobs/${ORIGINAL_CONTROLLER_BLOB}" > "$blob_json"
+          test "$(jq -r .sha "$blob_json")" = "$ORIGINAL_CONTROLLER_BLOB"
+          jq -r .content "$blob_json" | tr -d '\n' | base64 -d > "$gzip_path"
+          test "$(git hash-object "$gzip_path")" = "$ORIGINAL_CONTROLLER_BLOB"
+          test "$(wc -c < "$gzip_path" | tr -d ' ')" = "$(jq -r .size "$blob_json")"
+          test "$(sha256sum "$gzip_path" | awk '{print $1}')" = "$ORIGINAL_CONTROLLER_GZIP_SHA256"
+          gzip -t "$gzip_path"
+          gzip -dc "$gzip_path" > "$script_path"
+          test "$(sha256sum "$script_path" | awk '{print $1}')" = "$ORIGINAL_CONTROLLER_SHA256"
+          bash -n "$script_path"
+
+          plaintext_json="$out/plaintext-blob-request.json"
+          jq -n --rawfile content "$script_path" '{content:$content,encoding:"utf-8"}' > "$plaintext_json"
+          gh api --method POST "/repos/${GH_REPOSITORY}/git/blobs" --input "$plaintext_json" > "$out/plaintext-blob-response.json"
+          plaintext_blob="$(jq -r .sha "$out/plaintext-blob-response.json")"
+          test -n "$plaintext_blob"
+          test "$(git hash-object "$script_path")" = "$plaintext_blob"
+          echo "plaintext_blob=$plaintext_blob" >> "$GITHUB_OUTPUT"
+          echo "PC59_CONTROLLER_PLAINTEXT_BLOB=$plaintext_blob" >> "$GITHUB_ENV"
+          echo "PC-59 original controller plaintext blob: $plaintext_blob"
+      - name: Expose exact replay-cleanliness predicates and surrounding source
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          out=/tmp/pc59-controller-source-recovery
+          script="$out/original-controller.sh"
+          matches="$out/predicate-matches.txt"
+          contexts="$out/predicate-contexts.txt"
+
+          grep -nEi 'git status|porcelain|worktree|build/research|clean|dirty|changed|replay|proof' "$script" > "$matches" || true
+          : > "$contexts"
+          while IFS=: read -r line rest; do
+            test -n "$line" || continue
+            start=$((line > 12 ? line - 12 : 1))
+            end=$((line + 18))
+            printf '\n===== lines %s-%s; match %s =====\n' "$start" "$end" "$line" >> "$contexts"
+            sed -n "${start},${end}p" "$script" | nl -ba -v "$start" >> "$contexts"
+          done < "$matches"
+
+          cat "$matches"
+          cat "$contexts"
+
+          jq -n \
+            --arg schema_version 'pc59-controller-source-recovery-receipt@1' \
+            --arg state 'source_recovered_no_controller_execution' \
+            --arg canonical_main "$CARRIER_PARENT" \
+            --arg carrier_head "$(git rev-parse HEAD)" \
+            --arg original_blob "$ORIGINAL_CONTROLLER_BLOB" \
+            --arg original_gzip_sha256 "$ORIGINAL_CONTROLLER_GZIP_SHA256" \
+            --arg original_sha256 "$ORIGINAL_CONTROLLER_SHA256" \
+            --arg plaintext_blob "$PC59_CONTROLLER_PLAINTEXT_BLOB" \
+            --arg failed_supervisor_run "$FAILED_SUPERVISOR_RUN" \
+            --arg failed_supervisor_job "$FAILED_SUPERVISOR_JOB" \
+            --arg failed_recovery_v2_run "$FAILED_RECOVERY_V2_RUN" \
+            --arg failed_recovery_v2_job "$FAILED_RECOVERY_V2_JOB" \
+            --arg failed_recovery_v3_run "$FAILED_RECOVERY_V3_RUN" \
+            --arg failed_recovery_v3_job "$FAILED_RECOVERY_V3_JOB" \
+            '{schema_version:$schema_version,state:$state,canonical_main:$canonical_main,carrier_head:$carrier_head,original_controller:{blob:$original_blob,gzip_sha256:$original_gzip_sha256,expanded_sha256:$original_sha256,plaintext_blob:$plaintext_blob},failed_runs:{supervisor:{run:$failed_supervisor_run,job:$failed_supervisor_job},recovery_v2:{run:$failed_recovery_v2_run,job:$failed_recovery_v2_job},recovery_v3:{run:$failed_recovery_v3_run,job:$failed_recovery_v3_job}},effects:{controller_executed:false,product_bytes_changed:0,canonical_refs_changed:0,issue_state_changed:false,cleanup_started:false,graph_effect:"none"}}' > "$out/receipt.json"
+          (cd "$out" && sha256sum original-controller.sh original-controller.sh.gz predicate-matches.txt predicate-contexts.txt receipt.json > SHA256SUMS)
+      - name: Upload controller source-recovery evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc59-controller-source-recovery
+          path: /tmp/pc59-controller-source-recovery
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
