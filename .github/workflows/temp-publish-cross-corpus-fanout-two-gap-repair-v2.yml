@@ -1,0 +1,115 @@
+name: TEMP publish cross-corpus fanout two-gap repair v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths: [.github/workflows/temp-publish-cross-corpus-fanout-two-gap-repair-v2.yml]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-publish-cross-corpus-fanout-two-gap-repair-v2
+  cancel-in-progress: false
+
+env:
+  MAIN: 4edc3f4f65851cf2643e889d93df3b6372a2f468
+  CARRIER: agent/cross-corpus-fanout-two-gap-repair-publisher-v2
+  WF: .github/workflows/temp-publish-cross-corpus-fanout-two-gap-repair-v2.yml
+  PRODUCT: agent/cross-corpus-fanout-two-gap-repair-v2
+  TARGET: data/research/clifford-cross-corpus-public-interest-map.json
+  OUT: /tmp/cross-corpus-fanout-two-gap-repair-publisher-v2
+
+jobs:
+  publish:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/cross-corpus-fanout-two-gap-repair-publisher-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: '${{ github.event.pull_request.head.sha }}', fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24'}
+      - name: Qualify and publish exact one-file repair
+        id: run
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          rm -rf "$OUT"; mkdir -p "$OUT"; exec > >(tee "$OUT/publish.log") 2>&1; stage=bootstrap
+          sums(){ (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS); }
+          fail(){ rc=$?; set +e; test -s "$OUT/receipt.json" || jq -n --arg s "$stage" --argjson c "$rc" --arg p "$MAIN" '{schema_version:"cross-corpus-fanout-two-gap-repair-publisher@2",state:"failed_closed",failed_or_final_stage:$s,exit_code:$c,canonical_parent:$p,permanent_branch_moved:false,permanent_paths:0,source_requests:0,graph_effect:"none",outside_human_dependency:false}' > "$OUT/receipt.json"; echo "$stage" > "$OUT/STAGE"; echo "$rc" > "$OUT/EXIT_CODE"; sums; exit "$rc"; }
+          trap fail ERR; set -Eeuo pipefail
+
+          stage=topology
+          test "$(git rev-parse HEAD^)" = "$MAIN"
+          test "$(git rev-list --count "$MAIN"..HEAD)" -eq 1
+          test "$(git diff --name-only "$MAIN" HEAD)" = "$WF"
+          test "$(git diff --name-only --diff-filter=A "$MAIN" HEAD)" = "$WF"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$MAIN" HEAD)"
+          git fetch --no-tags --force origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse origin/main)" = "$MAIN"
+
+          stage=patch
+          git checkout --detach "$MAIN"
+          python - "$TARGET" <<'PY'
+          import json,sys
+          from pathlib import Path
+          p=Path(sys.argv[1]); d=json.loads(p.read_text()); lane=next(x for x in d['lanes'] if x['lane_id']=='official-research-fanout')
+          assert lane['counts']['crawl_source_gaps']==1
+          assert lane['crawl_source_gap_states']==[{'source_id':'sam-opportunities','status':'skipped_missing_credential','interpretation':'Acquisition did not run; this is not a zero result.'}]
+          assert 'current committed crawl exposes one source gap' in lane['what_the_data_shows']
+          lane['counts']['crawl_source_gaps']=2
+          lane['crawl_source_gap_states']=[
+            {'source_id':'sam-opportunities','status':'skipped_missing_credential','interpretation':'Acquisition did not run; this is not a zero result.'},
+            {'source_id':'federal-register','status':'partial','records_seen':9,'failed_queries':1,'failure_class':'upstream_503','interpretation':'Coverage is incomplete; the failed query is not a negative result.'}
+          ]
+          lane['what_the_data_shows']='The repository generated at least 316 inspectable research tasks; the live target branch may contain more as official-record intake advances. Batch count varies with the configured batch size and is presentation geometry, not a research-data count. Rejections, failed routes, source gaps, and inferred scout findings remain part of the discovery map rather than disappearing from it. The current committed crawl exposes two source gaps: SAM.gov did not execute because its credential is unavailable, and the Federal Register scan completed partially after one upstream 503 response while preserving nine records seen. Neither state supports a zero-result interpretation or evidence-of-absence claim.'
+          p.write_text(json.dumps(d,indent=2,ensure_ascii=False)+'\n')
+          PY
+          test "$(git diff --name-only)" = "$TARGET"; git diff --check
+          cp "$TARGET" "$OUT/repaired.json"; repaired_sha="$(sha256sum "$TARGET"|cut -d' ' -f1)"
+
+          stage=release_gate
+          npm run release:check
+          cmp "$TARGET" "$OUT/repaired.json"
+
+          stage=clean_product
+          git reset --hard "$MAIN"
+          cp "$OUT/repaired.json" "$TARGET"
+          test "$(git diff --name-only)" = "$TARGET"
+          test "$(git diff --name-only --diff-filter=M)" = "$TARGET"
+          test -z "$(git diff --name-only --diff-filter=ADTCRUXB)"
+          test "$(sha256sum "$TARGET"|cut -d' ' -f1)" = "$repaired_sha"
+          git diff --check
+
+          stage=publish
+          git config user.name 'Cross-corpus control repair'
+          git config user.email 'cross-corpus-control@users.noreply.github.com'
+          git add "$TARGET"
+          git commit -m 'Repair current two-gap official-research fanout denominator' -m 'Record SAM missing-credential and Federal Register partial coverage as acquisition limitations, not zero results or evidence of absence.'
+          product="$(git rev-parse HEAD)"; tree="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$MAIN"
+          test "$(git diff --name-only "$MAIN" HEAD)" = "$TARGET"
+          before="$(git ls-remote --heads origin "refs/heads/$PRODUCT"|awk '{print $1}')"
+          test -z "$before" || test "$before" = "$product"
+          git push origin "$product:refs/heads/$PRODUCT"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT"|awk '{print $1}')" = "$product"
+          git fetch --no-tags --force origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse origin/main)" = "$MAIN"
+
+          jq -n --arg p "$MAIN" --arg h "${{ github.event.pull_request.head.sha }}" --arg b "$PRODUCT" --arg c "$product" --arg t "$tree" --arg s "$repaired_sha" '{schema_version:"cross-corpus-fanout-two-gap-repair-publisher@2",state:"complete",failed_or_final_stage:"complete",exit_code:0,canonical_parent:$p,carrier_head:$h,product_branch:$b,product_commit:$c,product_tree:$t,repaired_sha256:$s,permanent_branch_moved:true,permanent_paths:1,modified_paths:1,current_crawl_source_gaps:2,source_requests:0,graph_effect:"none",outside_human_dependency:false}' > "$OUT/receipt.json"
+          stage=complete; echo complete > "$OUT/STAGE"; echo 0 > "$OUT/EXIT_CODE"; sums; (cd "$OUT" && sha256sum -c SHA256SUMS)
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: cross-corpus-fanout-two-gap-repair-publisher-v2, path: '${{ env.OUT }}', if-no-files-found: error, retention-days: 90, compression-level: 9}
+      - name: Require terminal publication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '.state=="complete" and .permanent_branch_moved==true and .permanent_paths==1 and .modified_paths==1 and .current_crawl_source_gaps==2 and .source_requests==0 and .graph_effect=="none" and .outside_human_dependency==false' "$OUT/receipt.json" >/dev/null
