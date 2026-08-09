@@ -1,0 +1,293 @@
+name: TEMP adjudicate RD-04 North Dakota FY2026 fixed public protocol terminally v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-fy2026-fixed-protocol-terminal-adjudication-v1/trigger.json'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  adjudicate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      EXPECTED_PARENT: aa1c0c3f741bf2fb7aa923a4008e5bc927dca032
+      MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+      EXPECTED_MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+      EXPECTED_TARGET_CELL_SHA256: cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe
+      EXPECTED_ROW_STATE_CELL_SHA256: 6a4c7d204c6c99a89f3c121065860806668c5da850f44c67fe42b4dc84b1b5c3
+      ARCHIVE_PREFIX: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2026-mi-nm-request-archive-adjudication
+      ARCHIVE_DISPOSITION_BLOB: 942ac9fd34ee0857aa66b941c579487b01dd9d70
+      ARCHIVE_CELL_CUSTODY_BLOB: 04e405425082714c5f6b4ac83de9351a41a27b38
+      WORKFLOW_PATH: .github/workflows/temp-rd04-nd-fy2026-fixed-protocol-terminal-adjudication-v1.yml
+      TRIGGER_PATH: .tmp/rd04-nd-fy2026-fixed-protocol-terminal-adjudication-v1/trigger.json
+      REFRESH_ARTIFACT_ID: '9041971925'
+      REFRESH_ARTIFACT_BYTES: '22990'
+      REFRESH_ARTIFACT_SHA256: 764c617dd6e8510d4aacca46c06fb2275eaaffa54aebd5302b15ae54aa50c065
+      REFRESH_EXECUTION_RECEIPT_SHA256: a0babfb626b91a766c64132f211d6e156328cee663a5ed710bc063ecd69d4cb6
+      REFRESH_ROUTE_RECEIPT_SHA256: 5e543af1eb7ed95f1e37dad429cb3ef5a51b834cfb23511a358e71f3393afbbd
+      REFRESH_REQUEST_LEDGER_SHA256: dde96eb0ebe3b53dca7b82ed50c79f7733ec1f29e73fcc41cd4465905b0301c5
+      REFRESH_LOCATOR_INVENTORY_SHA256: bef7edec65c05ca3aa030f33afd2a403672d4199f056e7478f44d4dcd133c074
+      REFRESH_BODY_SHA256: dcab625aeeebc30b1cf38dd32f67f0cb766a8e33735694b00f041e03d446476f
+      REFRESH_CONSUMING_HEAD: 421d3f517d824a75f21eacb18c192f8bb7fe3d00
+      REFRESH_CONSUMED_LOCK: lock/ssc-rd04-nd-fy2026-current-index-refresh-execution-v1-consumed
+      REFRESH_EXECUTABLE_LOCK: lock/ssc-rd04-nd-fy2026-current-index-refresh-execution-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Adjudicate exact fixed public-record denominator without source contact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-nd-fy2026-fixed-protocol-terminal-adjudication-v1"
+          TMP="${RUNNER_TEMP}/ssc-rd04-nd-fy2026-fixed-protocol-terminal-adjudication-v1-work"
+          rm -rf "$OUT" "$TMP"
+          mkdir -p "$OUT" "$TMP/refresh"
+          printf '%s\n' topology > "$OUT/STAGE"
+          printf '%s\n' 1 > "$OUT/EXIT_CODE"
+
+          seal() { (cd "$OUT" && find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' | sort -z | xargs -0 sha256sum > SHA256SUMS); }
+          fail() {
+            local stage="$1" reason="$2"
+            printf '%s\n' "$stage" > "$OUT/STAGE"; printf '%s\n' 1 > "$OUT/EXIT_CODE"
+            python - "$OUT/receipt.json" "$stage" "$reason" <<'PY'
+          import json,sys
+          path,stage,reason=sys.argv[1:]
+          obj={"schema_version":"ssc-rd04-nd-fy2026-fixed-protocol-terminal-adjudication-receipt@1","state":"failed_closed","failed_or_final_stage":stage,"exit_code":1,"reason":reason,"source_requests":0,"route_executions":0,"source_admissions":0,"field_decisions":0,"bounded_promotion_candidates":0,"selected_followup_routes":0,"field_terminalizations":0,"matrix_updates":0,"row_state_mutations":0,"class_closed":False,"cumulative_ledger_effect":"none","outside_human_dependency":False,"publication_effect":"none","adoption_effect":"none","graph_effect":"none","additional_execution_authorized":False}
+          open(path,'w',encoding='utf-8').write(json.dumps(obj,indent=2,sort_keys=True)+'\n')
+          PY
+            seal; exit 1
+          }
+
+          test "$EVENT_NAME" = pull_request || fail topology event_not_pull_request
+          test "$HEAD_REPO" = "$GITHUB_REPOSITORY" || fail topology head_repository_mismatch
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA" || fail topology checkout_head_mismatch
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA" || fail topology head_parent_mismatch
+          test "$(git rev-parse "$BASE_SHA^")" = "$EXPECTED_PARENT" || fail topology base_parent_mismatch
+          mapfile -t base_paths < <(git diff --name-only "$EXPECTED_PARENT" "$BASE_SHA")
+          mapfile -t trigger_paths < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          test "${#base_paths[@]}" = 1 || fail topology base_path_count_mismatch
+          test "${base_paths[0]}" = "$WORKFLOW_PATH" || fail topology base_path_mismatch
+          test "${#trigger_paths[@]}" = 1 || fail topology trigger_path_count_mismatch
+          test "${trigger_paths[0]}" = "$TRIGGER_PATH" || fail topology trigger_path_mismatch
+          git fetch --quiet origin main "$REFRESH_CONSUMED_LOCK" "$REFRESH_EXECUTABLE_LOCK"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_PARENT" || fail topology live_main_moved
+          test "$(git rev-parse "origin/$REFRESH_CONSUMED_LOCK")" = "$REFRESH_CONSUMING_HEAD" || fail topology consumed_lock_mismatch
+          test "$(git rev-parse "origin/$REFRESH_EXECUTABLE_LOCK")" = "$EXPECTED_PARENT" || fail topology executable_lock_not_retired
+          test "$(git rev-parse "origin/main:$MATRIX_PATH")" = "$EXPECTED_MATRIX_BLOB" || fail topology matrix_blob_moved
+
+          ARCHIVE_DISPOSITION="$ARCHIVE_PREFIX/north-dakota-disposition.json"
+          ARCHIVE_CELL_CUSTODY="$ARCHIVE_PREFIX/current-cell-custody.json"
+          test "$(git rev-parse "origin/main:$ARCHIVE_DISPOSITION")" = "$ARCHIVE_DISPOSITION_BLOB" || fail topology archive_disposition_blob_mismatch
+          test "$(git rev-parse "origin/main:$ARCHIVE_CELL_CUSTODY")" = "$ARCHIVE_CELL_CUSTODY_BLOB" || fail topology archive_cell_custody_blob_mismatch
+          jq -e '
+            .schema_version=="ssc-rd04-nd-fy2026-mi-nm-request-archive-north-dakota-disposition@1" and
+            .archive_observation.member_count==19 and .archive_observation.north_dakota_scoped_member_count==0 and
+            .current_state_after.field_state=="still_open" and .current_state_after.field_terminal==false and
+            .effects.archive_inventory_source_admissions==1 and .effects.member_document_source_admissions==0 and
+            .effects.new_route_executions==0 and .effects.new_source_requests==0 and
+            .effects.field_classifications==0 and .effects.field_terminalizations==0 and
+            .effects.matrix_updates==0 and .effects.row_state_mutations==0 and .effects.class_closed==false and
+            .independent_current_index_protocol.fixed_routes==1 and
+            .independent_current_index_protocol.route_executions_authorized_by_this_product==0
+          ' "$ARCHIVE_DISPOSITION" > /dev/null || fail topology archive_disposition_semantics_mismatch
+          jq -e '
+            .schema_version=="ssc-rd04-nd-fy2026-mi-nm-request-archive-current-cell-custody@1" and
+            .matrix.git_blob_sha=="19357f8214ab2710bc5e75b3fae8c7fb09ff1654" and
+            .north_dakota.target_cell_sha256=="cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe" and
+            .north_dakota.row_state_cell_sha256=="6a4c7d204c6c99a89f3c121065860806668c5da850f44c67fe42b4dc84b1b5c3" and
+            .north_dakota.row_state=="still_open" and .north_dakota.terminal_fields==7 and .north_dakota.open_fields==2 and
+            .north_dakota.target_cell_state=="still_open" and .north_dakota.target_cell_terminal==false and
+            .north_dakota.row_state_cell_state=="still_open" and .north_dakota.row_state_cell_terminal==false
+          ' "$ARCHIVE_CELL_CUSTODY" > /dev/null || fail topology archive_cell_custody_semantics_mismatch
+          cp "$ARCHIVE_DISPOSITION" "$OUT/archive-north-dakota-disposition.json"
+          cp "$ARCHIVE_CELL_CUSTODY" "$OUT/archive-current-cell-custody.json"
+
+          python - "$MATRIX_PATH" "$EXPECTED_TARGET_CELL_SHA256" "$EXPECTED_ROW_STATE_CELL_SHA256" > "$OUT/current-cell-proof.json" <<'PY'
+          import hashlib,json,sys
+          path,target_expected,row_expected=sys.argv[1:]
+          doc=json.load(open(path,encoding='utf-8'))
+          rows=[r for r in doc['rows'] if r.get('unit_id')=='US-STATE-ND']; assert len(rows)==1
+          row=rows[0]
+          target=[c for c in row['cells'] if c.get('field_id')=='abawd_or_work_requirement_waiver_state_and_governing_period']; assert len(target)==1; target=target[0]
+          rowcell=[c for c in row['cells'] if c.get('field_id')=='field_and_row_terminal_state']; assert len(rowcell)==1; rowcell=rowcell[0]
+          canon=lambda x: json.dumps(x,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()
+          target_sha=hashlib.sha256(canon(target)).hexdigest(); row_sha=hashlib.sha256(canon(rowcell)).hexdigest()
+          assert target_sha==target_expected and row_sha==row_expected
+          assert row['row_state']=='still_open' and row['terminal_fields']==7 and row['open_fields']==2
+          assert target['state']=='still_open' and target['terminal'] is False and target['value'] is None
+          assert rowcell['state']=='still_open' and rowcell['terminal'] is False and rowcell['value'] is None
+          print(json.dumps({'unit_id':'US-STATE-ND','row_state':row['row_state'],'terminal_fields':7,'open_fields':2,'target_cell_sha256':target_sha,'target_cell_state':target['state'],'target_cell_terminal':False,'target_cell_value':None,'row_state_cell_sha256':row_sha,'row_state_cell_state':rowcell['state'],'row_state_cell_terminal':False,'row_state_cell_value':None},indent=2,sort_keys=True))
+          PY
+          printf '%s\n' "$EXPECTED_PARENT" > "$OUT/live-main.txt"
+          printf '%s\n' "$EXPECTED_MATRIX_BLOB" > "$OUT/live-matrix-blob.txt"
+
+          printf '%s\n' authenticate_refresh_artifact > "$OUT/STAGE"
+          META="$TMP/refresh-meta.json"; ZIP="$TMP/refresh.zip"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${REFRESH_ARTIFACT_ID}" > "$META"
+          test "$(jq -r .id "$META")" = "$REFRESH_ARTIFACT_ID" || fail authenticate_refresh_artifact artifact_id_mismatch
+          test "$(jq -r .size_in_bytes "$META")" = "$REFRESH_ARTIFACT_BYTES" || fail authenticate_refresh_artifact artifact_size_mismatch
+          test "$(jq -r .digest "$META")" = "sha256:${REFRESH_ARTIFACT_SHA256}" || fail authenticate_refresh_artifact artifact_metadata_digest_mismatch
+          test "$(jq -r .expired "$META")" = false || fail authenticate_refresh_artifact artifact_expired
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${REFRESH_ARTIFACT_ID}/zip" > "$ZIP"
+          test "$(stat -c %s "$ZIP")" = "$REFRESH_ARTIFACT_BYTES" || fail authenticate_refresh_artifact artifact_download_size_mismatch
+          test "$(sha256sum "$ZIP" | awk '{print $1}')" = "$REFRESH_ARTIFACT_SHA256" || fail authenticate_refresh_artifact artifact_download_digest_mismatch
+          unzip -tq "$ZIP" > "$OUT/refresh-zip-test.txt" || fail authenticate_refresh_artifact artifact_zip_invalid
+          unzip -q "$ZIP" -d "$TMP/refresh"
+          (cd "$TMP/refresh" && sha256sum -c SHA256SUMS > "$OUT/refresh-internal-check.txt") || fail authenticate_refresh_artifact artifact_internal_checksum_failure
+          test "$(sha256sum "$TMP/refresh/execution-receipt.json" | awk '{print $1}')" = "$REFRESH_EXECUTION_RECEIPT_SHA256" || fail authenticate_refresh_artifact execution_receipt_digest_mismatch
+          test "$(sha256sum "$TMP/refresh/route-receipt.json" | awk '{print $1}')" = "$REFRESH_ROUTE_RECEIPT_SHA256" || fail authenticate_refresh_artifact route_receipt_digest_mismatch
+          test "$(sha256sum "$TMP/refresh/physical-request-ledger.json" | awk '{print $1}')" = "$REFRESH_REQUEST_LEDGER_SHA256" || fail authenticate_refresh_artifact request_ledger_digest_mismatch
+          test "$(sha256sum "$TMP/refresh/locator-inventory.json" | awk '{print $1}')" = "$REFRESH_LOCATOR_INVENTORY_SHA256" || fail authenticate_refresh_artifact locator_inventory_digest_mismatch
+          test "$(sha256sum "$TMP/refresh/response-body.bin" | awk '{print $1}')" = "$REFRESH_BODY_SHA256" || fail authenticate_refresh_artifact body_digest_mismatch
+          jq -e '
+            .state=="transport_complete" and .failed_or_final_stage=="complete" and .exit_code==0 and
+            .route_id=="RD04-ND-FNA-TIME-LIMIT-WAIVER-INDEX-CANONICAL-2025-2029-REFRESH-2026-08-09-001" and
+            .fixed_routes==1 and .terminal_routes==1 and .physical_requests==1 and
+            .http_status==200 and .redirects_followed==0 and .body_bytes==63505 and
+            .body_sha256=="dcab625aeeebc30b1cf38dd32f67f0cb766a8e33735694b00f041e03d446476f" and
+            .baseline_body_equal==true and .source_admissions==0 and .field_classifications==0 and
+            .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and
+            .class_closed==false and .result_spawned_requests==0 and .additional_execution_authorized==false
+          ' "$TMP/refresh/execution-receipt.json" > /dev/null || fail authenticate_refresh_artifact execution_receipt_semantics_mismatch
+          jq -e '
+            .schema_version=="ssc-rd04-nd-fy2026-current-index-refresh-inventory@1" and
+            .anchor_count==146 and .fy2026_archive_locator_count==3 and
+            .north_dakota_fy2026_response_anchor_count==0 and
+            .baseline_comparison.body_sha256_equal==true and .baseline_comparison.body_bytes_equal==true and
+            .discovered_href_requests==0 and .source_admissions==0 and .field_classifications==0 and
+            .field_terminalizations==0 and .matrix_updates==0
+          ' "$TMP/refresh/locator-inventory.json" > /dev/null || fail authenticate_refresh_artifact locator_inventory_semantics_mismatch
+          cp "$META" "$OUT/refresh-artifact-metadata.json"
+          cp "$TMP/refresh/execution-receipt.json" "$OUT/refresh-execution-receipt.json"
+          cp "$TMP/refresh/route-receipt.json" "$OUT/refresh-route-receipt.json"
+          cp "$TMP/refresh/physical-request-ledger.json" "$OUT/refresh-physical-request-ledger.json"
+          cp "$TMP/refresh/locator-inventory.json" "$OUT/refresh-locator-inventory.json"
+
+          printf '%s\n' adjudicate_fixed_protocol > "$OUT/STAGE"
+          python - "$OUT" "$EXPECTED_PARENT" "$EXPECTED_MATRIX_BLOB" "$EXPECTED_TARGET_CELL_SHA256" "$EXPECTED_ROW_STATE_CELL_SHA256" <<'PY'
+          import hashlib,json,sys
+          from pathlib import Path
+          out=Path(sys.argv[1]); parent,matrix,target_sha,row_sha=sys.argv[2:]
+          def write(name,obj):
+              p=out/name; p.write_text(json.dumps(obj,indent=2,sort_keys=True,ensure_ascii=False)+'\n',encoding='utf-8'); return hashlib.sha256(p.read_bytes()).hexdigest()
+          source={
+            'schema_version':'ssc-rd04-nd-fy2026-fixed-public-protocol-source-adjudication@1',
+            'unit_id':'US-STATE-ND','field_id':'abawd_or_work_requirement_waiver_state_and_governing_period',
+            'evaluation_date':'2026-08-09','fixed_protocol_complete':True,
+            'terminal_evidence':{
+              'correct_range_archive':{'member_count':19,'north_dakota_scoped_member_count':0,'role':'bounded_current_fy2026_archive_membership_census_only'},
+              'current_index_refresh':{'physical_requests':1,'http_status':200,'body_bytes':63505,'body_sha256':'dcab625aeeebc30b1cf38dd32f67f0cb766a8e33735694b00f041e03d446476f','baseline_byte_identical':True,'fy2026_archive_locator_count':3,'north_dakota_fy2026_response_anchor_count':0,'role':'exact_current_federal_index_observation_only'}
+            },
+            'current_public_instrument_recovered':False,
+            'classification':'source_unavailable_after_fixed_protocol',
+            'interpretation':'The fixed public protocol did not recover a current post-2026-06-30 North Dakota waiver instrument stating complete geography and a governing implementation-to-expiration period.',
+            'prohibited_inferences':['do_not_infer_no_waiver','do_not_infer_no_request','do_not_infer_expiration_or_denial','do_not_infer_statewide_partial_or_no_waiver_status','do_not_infer_uniform_frontline_practice_or_person_level_outcome'],
+            'source_requests_here':0,'route_executions_here':0,'authority_effect':'bounded_fixed_protocol_public_record_gap_only'
+          }
+          source_hash=write('source-adjudication.json',source)
+          field={
+            'schema_version':'ssc-rd04-nd-fy2026-fixed-public-protocol-field-adjudication@1',
+            'unit_id':'US-STATE-ND','field_id':'abawd_or_work_requirement_waiver_state_and_governing_period',
+            'current_parent':parent,'matrix_blob':matrix,'current_cell_sha256':target_sha,
+            'current_state':'still_open','candidate_state':'not_publicly_recovered','candidate_terminal':True,
+            'candidate_value':{'terminal_classification':'not_publicly_recovered','finding_scope':'bounded_fixed_public_record_obligation','finding_code':'current_north_dakota_fy2026_waiver_geography_and_governing_period_not_publicly_recovered_after_fixed_protocol','finding_summary':'The complete fixed public protocol recovered historical and quarterly status custody, exhausted the correct FY2026 request archive and a live byte-identical federal index refresh, but did not recover a current post-June-30-2026 North Dakota instrument stating complete waiver geography and one governing implementation-to-expiration period.','evaluation_date':'2026-08-09','fixed_protocol_complete':True,'current_instrument_recovered':False,'policy_or_event_absence_inferred':False},
+            'candidate_typed_gap':'current_fy2026_north_dakota_waiver_geography_and_governing_period_not_publicly_recovered_after_fixed_protocol',
+            'candidate_authority_effect':'bounded_fixed_protocol_public_record_gap_only',
+            'promotion_candidate_id':'RD04-ND-FY2026-FIXED-PROTOCOL-TARGET-CELL-CANDIDATE-V1',
+            'source_adjudication_sha256':source_hash,'selected_followup_routes':0,
+            'prohibited_inferences':source['prohibited_inferences']
+          }
+          field_hash=write('field-adjudication.json',field)
+          row={
+            'schema_version':'ssc-rd04-nd-fy2026-fixed-public-protocol-row-closure-candidate@1',
+            'unit_id':'US-STATE-ND','current_row_state':'still_open','current_terminal_fields':7,'current_open_fields':2,
+            'current_target_cell_sha256':target_sha,'current_row_state_cell_sha256':row_sha,
+            'prerequisite_target_candidate_id':field['promotion_candidate_id'],
+            'candidate_row_state':'terminal','candidate_terminal_fields':9,'candidate_open_fields':0,
+            'candidate_row_state_cell_state':'evidence_complete','candidate_row_state_cell_terminal':True,
+            'candidate_row_state_value':{'terminal_classification':'terminal_fixed_public_record_obligation_complete','row_scope':'fixed_public_record_obligation_for_one_state','completed_evidence_fields':8,'completion_rule':'all_eight_declared_state_evidence_fields_are_terminal_under_exact_source_or_typed_gap_custody','class_effect':'none','cumulative_ledger_effect':'none'},
+            'promotion_candidate_id':'RD04-ND-FY2026-FIXED-PROTOCOL-ROW-STATE-CANDIDATE-V1',
+            'class_closed':False,'cumulative_ledger_effect':'none'
+          }
+          row_hash=write('row-closure-candidate.json',row)
+          receipt={
+            'schema_version':'ssc-rd04-nd-fy2026-fixed-protocol-terminal-adjudication-receipt@1',
+            'state':'terminal_gap_candidates_complete','failed_or_final_stage':'complete','exit_code':0,
+            'current_parent':parent,'matrix_blob':matrix,'current_target_cell_sha256':target_sha,'current_row_state_cell_sha256':row_sha,
+            'source_requests':0,'route_executions':0,'source_admissions':2,'field_decisions':2,
+            'bounded_promotion_candidates':2,'held_open_fields_after_candidate_application':0,'selected_followup_routes':0,
+            'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,
+            'cumulative_ledger_effect':'none','outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none',
+            'additional_execution_authorized':False,'source_adjudication_sha256':source_hash,'field_adjudication_sha256':field_hash,'row_closure_candidate_sha256':row_hash,
+            'next_authorized_operation':'exact-current-cell validation and two-cell promotion materialization; no additional source request'
+          }
+          write('receipt.json',receipt)
+          (out/'summary.md').write_text('# RD-04 North Dakota FY2026 fixed-protocol terminal adjudication\n\nThe complete fixed public protocol did not recover a current North Dakota instrument stating complete post-June-30-2026 waiver geography and a governing implementation-to-expiration period. This is a bounded public-record gap, not evidence that no waiver or request exists. Two unpromoted candidates are emitted: terminalize the target field as not_publicly_recovered and terminalize the North Dakota row-state cell after all eight evidence fields become terminal.\n',encoding='utf-8')
+          PY
+          printf '%s\n' complete > "$OUT/STAGE"; printf '%s\n' 0 > "$OUT/EXIT_CODE"; seal
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -c . "$OUT/receipt.json"
+
+      - name: Preserve exact request-free terminal adjudication
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy2026-fixed-protocol-terminal-adjudication-v1
+          path: ${{ runner.temp }}/ssc-rd04-nd-fy2026-fixed-protocol-terminal-adjudication-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce bounded candidates and zero mutation
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-nd-fy2026-fixed-protocol-terminal-adjudication-v1"
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          jq -e '
+            .state=="terminal_gap_candidates_complete" and .failed_or_final_stage=="complete" and .exit_code==0 and
+            .current_parent=="aa1c0c3f741bf2fb7aa923a4008e5bc927dca032" and
+            .matrix_blob=="19357f8214ab2710bc5e75b3fae8c7fb09ff1654" and
+            .source_requests==0 and .route_executions==0 and .source_admissions==2 and
+            .field_decisions==2 and .bounded_promotion_candidates==2 and
+            .held_open_fields_after_candidate_application==0 and .selected_followup_routes==0 and
+            .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and
+            .class_closed==false and .cumulative_ledger_effect=="none" and
+            .outside_human_dependency==false and .publication_effect=="none" and
+            .adoption_effect=="none" and .graph_effect=="none" and .additional_execution_authorized==false
+          ' "$OUT/receipt.json" > /dev/null
+          jq -e '
+            .classification=="source_unavailable_after_fixed_protocol" and
+            .fixed_protocol_complete==true and .current_public_instrument_recovered==false and
+            .source_requests_here==0 and .route_executions_here==0 and
+            .authority_effect=="bounded_fixed_protocol_public_record_gap_only"
+          ' "$OUT/source-adjudication.json" > /dev/null
+          jq -e '
+            .current_state=="still_open" and .candidate_state=="not_publicly_recovered" and
+            .candidate_terminal==true and .selected_followup_routes==0 and
+            .candidate_value.fixed_protocol_complete==true and
+            .candidate_value.current_instrument_recovered==false and
+            .candidate_value.policy_or_event_absence_inferred==false
+          ' "$OUT/field-adjudication.json" > /dev/null
+          jq -e '
+            .current_row_state=="still_open" and .current_terminal_fields==7 and .current_open_fields==2 and
+            .candidate_row_state=="terminal" and .candidate_terminal_fields==9 and .candidate_open_fields==0 and
+            .candidate_row_state_cell_state=="evidence_complete" and .candidate_row_state_cell_terminal==true and
+            .class_closed==false and .cumulative_ledger_effect=="none"
+          ' "$OUT/row-closure-candidate.json" > /dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
