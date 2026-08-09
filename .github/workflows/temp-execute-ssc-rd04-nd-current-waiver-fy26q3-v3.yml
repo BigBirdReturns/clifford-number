@@ -1,0 +1,171 @@
+name: TEMP execute RD-04 North Dakota FY2026 Q3 waiver-status PDF v3
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-current-waiver-fy26q3-execution-base-v3
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.trigger/ssc-rd04-nd-current-waiver-fy26q3-execution-v3'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: temp-execute-ssc-rd04-nd-current-waiver-fy26q3-v2
+  cancel-in-progress: false
+
+env:
+  CURRENT_MAIN: a592acea22c69a979f2a90c24a2bafb8c9445759
+  ADJUDICATION_PARENT: b1d1d8afb6c957401a762bf9d0b2abc464bd5e07
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  EXECUTION_WORKFLOW_PATH: .github/workflows/temp-execute-ssc-rd04-nd-current-waiver-fy26q3-v2.yml
+  EXECUTION_TRIGGER_PATH: .trigger/ssc-rd04-nd-current-waiver-fy26q3-execution-v3
+  ADJUDICATION_ARTIFACT_ID: '9030293889'
+  ADJUDICATION_ARTIFACT_BYTES: '24896598'
+  ADJUDICATION_ARTIFACT_DIGEST: sha256:8164ce9c141e6aff47a7dcce9b4674213d91391a4a904f10512563248647cc07
+  ADJUDICATION_RECEIPT_SHA256: baf86ea4a91d0ade25d27080bfbdf4162875ebf9916659743d5188a5fc56042b
+  FOLLOWUP_PROTOCOL_SHA256: 1e134e5996b6754e7c74f4e15d47fd9276679fe7c5ceebdbd82696959416a9e7
+  ROUTE_ID: RD04-ND-CURRENT-WAIVER-FY26Q3-001
+  ROUTE_URL: https://www.fna.usda.gov/sites/default/files/resource-files/FY26-Quarter-3-ABAWD-Waiver-Status.pdf
+
+jobs:
+  execute:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-current-waiver-fy26q3-execution-trigger-v3')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Execute exact FY2026 Quarter 3 PDF route once
+        id: execution
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          OUT="$RUNNER_TEMP/ssc-rd04-nd-current-waiver-fy26q3-execution-v3"
+          ADJ="$OUT/adjudication"
+          rm -rf "$OUT"
+          mkdir -p "$OUT" "$ADJ"
+          exec > >(tee "$OUT/execution.log") 2>&1
+          stage=bootstrap
+
+          fail_receipt() {
+            local rc=$1
+            if [[ ! -s "$OUT/execution-receipt.json" ]]; then
+              jq -n --arg stage "$stage" --argjson code "$rc" --arg parent "$CURRENT_MAIN" --arg route "$ROUTE_ID" \
+                '{schema_version:"ssc-rd04-nd-current-waiver-fy26q3-execution@1",state:"failed_closed",failed_or_final_stage:$stage,exit_code:$code,execution_parent:$parent,fixed_route_ids:[$route],fixed_route_count:1,terminal_route_count:0,physical_requests:0,source_admissions:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none",additional_execution_authorized:false}' > "$OUT/execution-receipt.json"
+            fi
+          }
+          finish() {
+            local rc=$?
+            trap - EXIT
+            set +e
+            fail_receipt "$rc"
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+            exit "$rc"
+          }
+          trap finish EXIT
+          on_error() { local rc=$?; trap - ERR; set +e; fail_receipt "$rc"; exit "$rc"; }
+          trap on_error ERR
+          set -Eeuo pipefail
+
+          stage=bind_execution_topology
+          BASE="$(git rev-parse HEAD^)"
+          test "$(git rev-parse "$BASE^")" = "$CURRENT_MAIN"
+          test "$(git rev-list --count "$CURRENT_MAIN".."$BASE")" -eq 1
+          test "$(git rev-list --count "$BASE"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CURRENT_MAIN" "$BASE")" = "$EXECUTION_WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" "$BASE")" = "$EXECUTION_WORKFLOW_PATH"
+          test "$(git diff --name-only "$BASE" HEAD)" = "$EXECUTION_TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE" HEAD)" = "$EXECUTION_TRIGGER_PATH"
+          git diff --check "$CURRENT_MAIN" HEAD
+          printf '%s\n' "$BASE" > "$OUT/execution-base-commit.txt"
+          printf '%s\n' "$(git rev-parse HEAD)" > "$OUT/execution-trigger-head.txt"
+
+          stage=bind_live_main
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$CURRENT_MAIN"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CURRENT_MAIN"
+          printf '%s\n' "$(git rev-parse "$CURRENT_MAIN^{tree}")" > "$OUT/current-main-tree.txt"
+          test "$(git merge-base "$ADJUDICATION_PARENT" "$CURRENT_MAIN")" = "$ADJUDICATION_PARENT"
+          test "$(git rev-parse "HEAD:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          git diff --name-only "$ADJUDICATION_PARENT" "$CURRENT_MAIN" | LC_ALL=C sort > "$OUT/main-delta.txt"
+          test -z "$(grep -E '^(data/intake/status-sovereignty-rd-wave03-rd04|schemas/status-sovereignty-rd-wave03-rd04|tools/.*status-sovereignty-rd-wave03-rd04|test/.*status-sovereignty-rd-wave03-rd04|docs/milestones/ssc-rd-wave03-rd04)' "$OUT/main-delta.txt" || true)"
+
+          stage=authenticate_adjudication_artifact
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$ADJUDICATION_ARTIFACT_ID" > "$OUT/adjudication-artifact.json"
+          jq -e --argjson id "$ADJUDICATION_ARTIFACT_ID" --argjson bytes "$ADJUDICATION_ARTIFACT_BYTES" --arg digest "$ADJUDICATION_ARTIFACT_DIGEST" \
+            '.id==$id and .size_in_bytes==$bytes and .digest==$digest and .expired==false' "$OUT/adjudication-artifact.json" >/dev/null
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$ADJUDICATION_ARTIFACT_ID/zip" > "$OUT/adjudication.zip"
+          test "$(stat -c %s "$OUT/adjudication.zip")" = "$ADJUDICATION_ARTIFACT_BYTES"
+          test "sha256:$(sha256sum "$OUT/adjudication.zip" | awk '{print $1}')" = "$ADJUDICATION_ARTIFACT_DIGEST"
+          unzip -t "$OUT/adjudication.zip" > "$OUT/adjudication-zip-test.txt"
+          unzip -q "$OUT/adjudication.zip" -d "$ADJ"
+          (cd "$ADJ" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$ADJ/receipt.json" | awk '{print $1}')" = "$ADJUDICATION_RECEIPT_SHA256"
+          test "$(sha256sum "$ADJ/selected-followup-protocol.json" | awk '{print $1}')" = "$FOLLOWUP_PROTOCOL_SHA256"
+          jq -e --arg parent "$ADJUDICATION_PARENT" \
+            '.schema_version=="ssc-rd04-nd-current-waiver-fna-adjudication@1" and .state=="complete" and .canonical_parent==$parent and .promotion_candidates==0 and .held_open_fields==1 and .selected_followup_routes==1 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false' "$ADJ/receipt.json" >/dev/null
+          jq -e --arg route "$ROUTE_ID" --arg url "$ROUTE_URL" \
+            '.schema_version=="ssc-rd04-nd-current-waiver-fy26q3-followup-protocol@1" and .route_count==1 and .source_requests_executed_here==0 and .result_spawned_requests==0 and .same_host_expansion==0 and .routes[0].route_id==$route and .routes[0].url==$url and .routes[0].attempts==1 and .routes[0].redirects=="manual_same_host_only" and .routes[0].maximum_body_bytes==12000000 and .routes[0].expected_content_family=="application/pdf'" "$ADJ/selected-followup-protocol.json" >/dev/null
+
+          stage=execute_exact_pdf_route
+          python - "$OUT" <<'PYEXEC'
+          import hashlib, json, os, pathlib, ssl, sys, time
+          import urllib.error, urllib.parse, urllib.request
+          out = pathlib.Path(sys.argv[1]); rid = os.environ['ROUTE_ID']; initial = os.environ['ROUTE_URL']
+          allowed = {'fna.usda.gov','www.fna.usda.gov'}; limit = 12_000_000
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl): return None
+          opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ssl.create_default_context()), NoRedirect())
+          current = initial; hops = []; physical = 0; terminal = None
+          for index in range(6):
+              p = urllib.parse.urlsplit(current)
+              if p.scheme != 'https' or (p.hostname or '').lower() not in allowed:
+                  terminal={'terminal_state':'refused_before_request','reason':'scheme_or_host_outside_frozen_allowlist','final_url':current,'http_status':None,'body_bytes':0,'body_sha256':None,'content_type':None,'pdf_magic':False}; break
+              request = urllib.request.Request(current,method='GET',headers={'User-Agent':'BigBirdReturns-RD04-bounded-pdf-capture/1.0','Accept':'application/pdf,*/*;q=0.1','Accept-Encoding':'pidentity','Cache-Control':'no-cache'})
+              physical += 1; started = time.time()
+              try:
+                  response=opener.open(request,timeout=90); status=int(response.status); headers=response.headers; body=response.read(limit+1); effective=response.geturl()
+              except urllib.error.HTTPError as exc:
+                  status=int(exc.code); headers=exc.headers; body=exc.read(limit+1); effective=exc.geturl()
+              except Exception as exc:
+                  hops.append({'hop':index,'requested_url':current,'transport_error':f'{type(exc).__name__}: {exc}','elapsed_ms':round((time.time()-started)*1000)})
+                  terminal={'terminal_state':'terminal_transport_without_http_status','reason':hops[-1]['transport_error'],'final_url':current,'http_status':None,'body_bytes':0,'body_sha256':None,'content_type':None,'pdf_magic':False}; break
+              sha=hashlib.sha256(body).hexdigest(); ctype=headers.get_content_type() if hasattr(headers,'get_content_type') else headers.get('Content-Type'); location=headers.get('Location'); magic=body.startswith(b'%PDF-')
+              body_path=out/f'hop-{index:02d}-body.bin'; body_path.write_bytes(body)
+              hop={'hop':index,'requested_url':current,'effective_url':effective,'http_status':status,'elapsed_ms':round((time.time()-started)*1000),'location',location,'headers':[{'name':k.lower(),'value':v} for k,v in sorted(headers.items(),key=lambda x:(x[0].lower(),x[1]))],'body_path':body_path.name,'body_bytes':len(body),'body_sha256':sha,'content_type':ctype,'body_limit_exceeded':len(body)>limit,'pdf_magic':magic}
+              hops.append(hop); (out/f'hop-{index:02d}-receipt.json').write_text(json.dumps(hop,indent=2,sort_keys=True)+'\n')
+              if len(body)>limit:
+                  terminal={'terminal_state':'body_limit_exceeded_terminal','reason':'maximum_body_bytes_exceeded','final_url':effective,'http_status':status,'body_bytes':len(body),'body_sha256':sha,'content_type':ctype,'pdf_magic':magic}; break
+              if 300<=status<=399:
+                  if not location:
+                      terminal={'terminal_state':'http_redirect_without_location_terminal','reason':'redirect_missing_location','final_url':effective,'http_status':status,'body_bytes':len(body),'body_sha256':sha,'content_type':ctype,'pdf_magic':magic}; break
+                  nxt=urllib.parse.urljoin(effective,location); np=urllib.parse.urlsplit(nxt)
+                  if np.scheme!='https' or (np.hostname or '').lower() not in allowed:
+                      terminal={'terminal_state':'redirect_refused_terminal','reason':'redirect_target_outside_frozen_allowlist','final_url':effective,'redirect_target':nxt,'http_status':status,'body_bytes':len(body),'body_sha256':sha,'content_type':ctype,'pdf_magic':magic}; break
+                  current=nxt; continue
+              state='http_success_pdf_captured' if 200<=status<=299 and magic else ('http_success_non_pdf_body_captured' if 200<=status<=299 else 'http_non_success_terminal')
+              terminal={'terminal_state':state,'reason':None,'final_url':effective,'http_status':status,'body_bytes':len(body),'body_sha256':sha,'content_type':ctype,'pdf_magic':magic}; break
+          assert terminal is not None
+          route={'route_id':rid,'requested_url':initial,'hops':hops,**terminal}
+          receipt={'schema_version':'ssc-rd04-nd-current-waiver-fy26q3-execution@1','state':'complete','failed_or_final_stage':'complete','exit_code':0,'issue':1017,'lane_id':'RD-04','class_id':'RD-04-C02','execution_parent':os.environ['CURRENT_MAIN'],'execution_head':os.popen('git rev-parse HEAD').read().strip(),'adjudication_artifact':int(os.environ['ADJUDICATION_ARTIFACT_ID']),'adjudication_artifact_digest':os.environ['ADJUDICATION_ARTIFACT_DIGEST'],'adjudication_receipt_sha256':os.environ['ADJUDICATION_RECEIPT_SHA256'],'followup_protocol_sha256':os.environ['FOLLOWU
