@@ -1,0 +1,209 @@
+name: TEMP seal PC-58 terminal cleanup
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: pc58-terminal-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPOSITORY: ${{ github.repository }}
+      API_URL: ${{ github.api_url }}
+      ISSUE: '1592'
+      PRODUCT_PR: '1624'
+      PRODUCT: 2536579f40f1ebd815adfd10a3258c737858aa65
+      PRODUCT_PARENT: 79a7e18bfd45f1b1d893fa8b9683710891d4bbca
+      PRODUCT_TREE: faade2f2232c55da296bc97a6a0977ed1f66d302
+      CANONICAL_MERGE: a592acea22c69a979f2a90c24a2bafb8c9445759
+      MERGE_FIRST_PARENT: b1d1d8afb6c957401a762bf9d0b2abc464bd5e07
+      PROOF_RUN: '31287624592'
+      PROOF_ARTIFACT_ID: '9030468581'
+      PROOF_ARTIFACT_DIGEST: sha256:6fb45a60f1e03cf2e043221c06074708d8567763b2c5dfa8a5d7804b721ef45c
+      PROOF_ZIP_SHA256: 6fb45a60f1e03cf2e043221c06074708d8567763b2c5dfa8a5d7804b721ef45c
+      CENSUS_DIR: /tmp/pc58-terminal-census
+      PROOF_DIR: /tmp/pc58-sealed-proof
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Authenticate canonical proof and live product custody
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$CENSUS_DIR" "$PROOF_DIR"
+
+          test "$(git show -s --format='%P' HEAD)" = "$CANONICAL_MERGE"
+          git diff --name-status "$CANONICAL_MERGE" HEAD > "$CENSUS_DIR/cleanup-carrier-delta.tsv"
+          test "$(cat "$CENSUS_DIR/cleanup-carrier-delta.tsv")" = $'A\t.github/workflows/temp-pc58-terminal-cleanup.yml'
+
+          gh api "/repos/${GH_REPOSITORY}/actions/artifacts/${PROOF_ARTIFACT_ID}" > "$CENSUS_DIR/proof-artifact-metadata.json"
+          test "$(jq -r .digest "$CENSUS_DIR/proof-artifact-metadata.json")" = "$PROOF_ARTIFACT_DIGEST"
+          test "$(jq -r .workflow_run.id "$CENSUS_DIR/proof-artifact-metadata.json")" = "$PROOF_RUN"
+          test "$(jq -r .expired "$CENSUS_DIR/proof-artifact-metadata.json")" = false
+
+          curl --fail --location --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            "$API_URL/repos/$GH_REPOSITORY/actions/artifacts/$PROOF_ARTIFACT_ID/zip" \
+            --output /tmp/pc58-proof.zip
+          test "$(sha256sum /tmp/pc58-proof.zip | awk '{print $1}')" = "$PROOF_ZIP_SHA256"
+          unzip -q /tmp/pc58-proof.zip -d "$PROOF_DIR"
+
+          python - <<'PY'
+          import json, os
+          root=os.environ['PROOF_DIR']
+          terminal=json.load(open(root+'/terminal.json'))
+          matrix=json.load(open(root+'/matrix.json'))
+          expected={
+              'status':'complete',
+              'issue':1592,
+              'product_pr':1624,
+              'product_commit':os.environ['PRODUCT'],
+              'product_parent':os.environ['PRODUCT_PARENT'],
+              'product_tree':os.environ['PRODUCT_TREE'],
+              'canonical_merge':os.environ['CANONICAL_MERGE'],
+              'merge_first_parent':os.environ['MERGE_FIRST_PARENT'],
+              'merge_second_parent':os.environ['PRODUCT'],
+              'permanent_paths':14,
+              'canonical_product_blob_matches':14,
+              'workflow_matrix':52,
+              'focused_pc58':'pass',
+              'floor_v56':'pass',
+              'historical_floor_reconstruction':'pass',
+              'base_preference_custody':'pass',
+              'no_magic_human':'pass',
+              'release_check':'pass',
+              'outside_human_dependency':False,
+              'graph_effect':'none',
+          }
+          for key,value in expected.items():
+              assert terminal.get(key)==value,(key,terminal.get(key),value)
+          assert matrix.get('count')==52,matrix
+          assert matrix.get('pending')==0,matrix
+          assert matrix.get('failed')==0,matrix
+          PY
+
+          test "$(wc -l < "$PROOF_DIR/product-paths.txt" | tr -d ' ')" = 14
+          test "$(wc -l < "$PROOF_DIR/canonical-product-blobs.tsv" | tr -d ' ')" = 14
+          cmp "$PROOF_DIR/canonical-product-blobs.tsv" "$PROOF_DIR/live-main-product-blobs.tsv"
+
+          git fetch --no-tags origin main "$CANONICAL_MERGE" "$PRODUCT" "$PRODUCT_PARENT"
+          test "$(git show -s --format='%P' "$PRODUCT")" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "$PRODUCT^{tree}")" = "$PRODUCT_TREE"
+          test "$(git show -s --format='%P' "$CANONICAL_MERGE")" = "$MERGE_FIRST_PARENT $PRODUCT"
+          LIVE_MAIN=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$CANONICAL_MERGE" "$LIVE_MAIN"
+          while IFS= read -r path; do
+            test "$(git rev-parse "$CANONICAL_MERGE:$path")" = "$(git rev-parse "$LIVE_MAIN:$path")"
+          done < "$PROOF_DIR/product-paths.txt"
+          printf '%s\n' "$LIVE_MAIN" > "$CENSUS_DIR/live-main.txt"
+
+          gh api "/repos/${GH_REPOSITORY}/pulls/${PRODUCT_PR}" > "$CENSUS_DIR/product-pr.json"
+          test "$(jq -r .merged "$CENSUS_DIR/product-pr.json")" = true
+          test "$(jq -r .merge_commit_sha "$CENSUS_DIR/product-pr.json")" = "$CANONICAL_MERGE"
+          test "$(jq -r .head.sha "$CENSUS_DIR/product-pr.json")" = "$PRODUCT"
+          gh api "/repos/${GH_REPOSITORY}/issues/${ISSUE}" > "$CENSUS_DIR/issue-before.json"
+          test "$(jq -r .state "$CENSUS_DIR/issue-before.json")" = open
+
+      - name: Close execution PRs and retire every PC-58 ref
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          gh api --paginate "/repos/${GH_REPOSITORY}/pulls?state=open&per_page=100" \
+            --jq '.[] | select(.head.ref | startswith("agent/pc58")) | [.number,.head.ref,.head.sha] | @tsv' \
+            | sort -n > "$CENSUS_DIR/open-prs-before.tsv"
+          while IFS=$'\t' read -r pr branch sha; do
+            [[ -z "$pr" ]] && continue
+            gh api --method PATCH "/repos/${GH_REPOSITORY}/pulls/${pr}" -f state=closed >/dev/null
+          done < "$CENSUS_DIR/open-prs-before.tsv"
+
+          gh api --paginate "/repos/${GH_REPOSITORY}/git/matching-refs/heads/agent/pc58" \
+            --jq '.[] | [.ref,.object.sha] | @tsv' | sed 's#^refs/heads/##' | sort > "$CENSUS_DIR/refs-before.tsv"
+          while IFS=$'\t' read -r branch sha; do
+            [[ -z "$branch" ]] && continue
+            gh api --method DELETE "/repos/${GH_REPOSITORY}/git/refs/heads/${branch}" >/dev/null 2>&1 || true
+          done < "$CENSUS_DIR/refs-before.tsv"
+
+          gh api --paginate "/repos/${GH_REPOSITORY}/git/matching-refs/heads/agent/pc58" \
+            --jq '.[] | [.ref,.object.sha] | @tsv' | sed 's#^refs/heads/##' | sort > "$CENSUS_DIR/refs-after.tsv"
+          test ! -s "$CENSUS_DIR/refs-after.tsv"
+          gh api --paginate "/repos/${GH_REPOSITORY}/pulls?state=open&per_page=100" \
+            --jq '.[] | select(.head.ref | startswith("agent/pc58")) | [.number,.head.ref,.head.sha] | @tsv' \
+            | sort -n > "$CENSUS_DIR/open-prs-after.tsv"
+          test ! -s "$CENSUS_DIR/open-prs-after.tsv"
+
+          LIVE_MAIN=$(cat "$CENSUS_DIR/live-main.txt")
+          jq -n \
+            --arg status complete \
+            --arg canonical_merge "$CANONICAL_MERGE" \
+            --arg product_commit "$PRODUCT" \
+            --arg product_tree "$PRODUCT_TREE" \
+            --arg live_main "$LIVE_MAIN" \
+            --arg proof_artifact_id "$PROOF_ARTIFACT_ID" \
+            --arg proof_artifact_digest "$PROOF_ARTIFACT_DIGEST" \
+            --argjson retired_refs "$(wc -l < "$CENSUS_DIR/refs-before.tsv" | tr -d ' ')" \
+            --argjson closed_prs "$(wc -l < "$CENSUS_DIR/open-prs-before.tsv" | tr -d ' ')" \
+            '{schema_version:"pc58-terminal-census@1",status:$status,canonical_merge:$canonical_merge,product_commit:$product_commit,product_tree:$product_tree,live_main:$live_main,proof_artifact_id:$proof_artifact_id,proof_artifact_digest:$proof_artifact_digest,retired_refs:$retired_refs,closed_execution_prs:$closed_prs,remaining_pc58_refs:0,remaining_open_pc58_prs:0,outside_human_dependency:false,graph_effect:"none"}' \
+            > "$CENSUS_DIR/census.json"
+          sha256sum "$CENSUS_DIR"/* > "$CENSUS_DIR/SHA256SUMS"
+
+      - name: Upload terminal census
+        id: census
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc58-terminal-census
+          path: /tmp/pc58-terminal-census
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Write terminal receipt and close issue
+        shell: bash
+        env:
+          CENSUS_ARTIFACT_ID: ${{ steps.census.outputs.artifact-id }}
+          CENSUS_ARTIFACT_DIGEST: ${{ steps.census.outputs.artifact-digest }}
+        run: |
+          set -Eeuo pipefail
+          gh issue comment "$ISSUE" --repo "$GH_REPOSITORY" --body "## PC-58 terminal receipt
+
+\`\`\`text
+status                                  complete
+product pull request                    #$PRODUCT_PR
+clean product commit
+$PRODUCT
+clean product tree
+$PRODUCT_TREE
+canonical merge
+$CANONICAL_MERGE
+
+permanent product paths                 14
+canonical/product blob matches       14 / 14
+hosted exact-head workflows          52 / 52
+failed or pending workflows               0
+remaining agent/pc58-* refs               0
+remaining open PC-58 transaction PRs      0
+outside-human dependency                false
+graph effect                              none
+\`\`\`
+
+Exact post-merge proof artifact: \`$PROOF_ARTIFACT_ID\` / \`$PROOF_ARTIFACT_DIGEST\`.
+
+Terminal census artifact: \`$CENSUS_ARTIFACT_ID\` / \`$CENSUS_ARTIFACT_DIGEST\`.
+
+PC-58 is merged, exact-head qualified, canonically replayed, transport-clean, ref-clean, and terminal."
+          gh issue close "$ISSUE" --repo "$GH_REPOSITORY" --reason completed
