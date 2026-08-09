@@ -1,0 +1,81 @@
+name: TEMP adjudicate RD-04 North Dakota FY2025 FNA response Azure target v1
+on:
+  pull_request:
+    branches: [agent/ssc-rd04-nd-fna-response-fy2025-azure-adjudication-base-v1]
+    paths: [.trigger/ssc-rd04-nd-fna-response-fy2025-azure-adjudication-v1]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  adjudicate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PARENT: a592acea22c69a979f2a90c24a2bafb8c9445759
+      WF: .github/workflows/temp-adjudicate-ssc-rd04-nd-fna-response-fy2025-azure-v1.yml
+      TRIGGER: .trigger/ssc-rd04-nd-fna-response-fy2025-azure-adjudication-v1
+      SOURCE_ID: '9032061585'
+      SOURCE_BYTES: '21730878'
+      SOURCE_SHA: 2a7b1d452e335648d0af5497035bf1d3ad03000a7ce4b18f8233d055baf8f4e0
+      ROUTE_RECEIPT_SHA: 7db3c8a1ec54b59701d6a881e0aa1219888ee3d9d89c1ccec788c57c4944a2d2
+      EXECUTION_RECEIPT_SHA: dde4bfcf73bf1399255c6d8630f773d0899494542ec9b7bcddf95222ee4eccd5
+      HEADER_SHA: 67960169e6d67e9557c3d205783e32bfb5b670b86aca227ec14b8d56b2ff6596
+      ORIGIN_URL: https://www.fna.usda.gov/sites/default/files/resource-files/nd-abawd-response-fy2025.pdf
+      TARGET_URL: https://fna-bwbufwdzbabpezgc.z01.azurefd.us/sites/default/files/resource-files/nd-abawd-response-fy2025.pdf
+      OUT: /tmp/rd04-nd-fna-response-fy2025-azure-adjudication-v1
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - id: run
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"; mkdir -p "$OUT/source"; : > "$OUT/workflow.log"
+          exec > >(tee -a "$OUT/workflow.log") 2>&1
+          echo topology > "$OUT/STAGE"; echo 1 > "$OUT/EXIT_CODE"
+          H=$(git rev-parse HEAD); B=$(git rev-parse HEAD^); P=$(git rev-parse HEAD^^)
+          test "$H" = '${{ github.event.pull_request.head.sha }}'
+          test "$P" = "$PARENT"
+          test "$(git diff --name-only "$P" "$B")" = "$WF"
+          test "$(git diff --name-only "$B" "$H")" = "$TRIGGER"
+          git fetch --no-tags --force origin main
+          test "$(git rev-parse origin/main)" = "$PARENT"
+          echo authenticate > "$OUT/STAGE"
+          api="https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ID"
+          auth=(-H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json')
+          curl -fsSL "${auth[@]}" "$api" -o "$OUT/source-meta.json"
+          jq -e --argjson id "$SOURCE_ID" --argjson size "$SOURCE_BYTES" --arg d "sha256:$SOURCE_SHA" '.id==$id and .size_in_bytes==$size and .digest==$d and .expired==false' "$OUT/source-meta.json" >/dev/null
+          curl -fsSL "${auth[@]}" "$api/zip" -o "$OUT/source.zip"
+          test "$(stat -c%s "$OUT/source.zip")" -eq "$SOURCE_BYTES"
+          test "$(sha256sum "$OUT/source.zip" | cut -d' ' -f1)" = "$SOURCE_SHA"
+          unzip -t "$OUT/source.zip" > "$OUT/source-zip-test.txt"
+          unzip -q "$OUT/source.zip" -d "$OUT/source"
+          (cd "$OUT/source" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$OUT/source/route-receipt.json" | cut -d' ' -f1)" = "$ROUTE_RECEIPT_SHA"
+          test "$(sha256sum "$OUT/source/execution-receipt.json" | cut -d' ' -f1)" = "$EXECUTION_RECEIPT_SHA"
+          test "$(sha256sum "$OUT/source/response-headers.raw" | cut -d' ' -f1)" = "$HEADER_SHA"
+          jq -e --arg origin "$ORIGIN_URL" --arg target "$TARGET_URL" '.state=="complete" and .requested_url==$origin and .status_code==302 and .location==$target and .body_bytes==0 and .redirects_followed==0 and .terminal_state=="redirect_refused_terminal"' "$OUT/source/route-receipt.json" >/dev/null
+          echo adjudicate > "$OUT/STAGE"
+          jq -n --arg origin "$ORIGIN_URL" --arg target "$TARGET_URL" '{schema_version:"ssc-rd04-nd-fna-response-fy2025-azure-adjudication@1",state:"complete",origin_url:$origin,status_code:302,source_role:"server_directed_transport_locator_only",selected_target_url:$target,target_contacted:false,source_admissions:0,field_decision:"hold_open_exact_geography_and_governing_period_not_proved",promotion_candidates:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' > "$OUT/redirect-adjudication.json"
+          jq -n --arg target "$TARGET_URL" '{schema_version:"ssc-rd04-nd-fna-response-fy2025-azure-route-protocol@1",state:"selected_unexecuted",route_count:1,routes:[{route_id:"RD04-ND-FNA-RESPONSE-FY2025-AZURE-001",url:$target,method:"GET",attempts:1,exact_host:"fna-bwbufwdzbabpezgc.z01.azurefd.us",maximum_followed_redirects:0,maximum_body_bytes:12000000,expected_media_type:"application/pdf",require_pdf_magic:true,same_host_expansion:0,result_spawned_requests:0}],source_admissions:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,outside_human_dependency:false}' > "$OUT/selected-followup-protocol.json"
+          jq -n '{schema_version:"ssc-rd04-nd-fna-response-fy2025-azure-adjudication-receipt@1",state:"complete",stage:"complete",source_requests:0,route_executions:0,source_admissions:0,field_decisions:1,promotion_candidates:0,held_open_fields:1,selected_followup_routes:1,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none",next_authorized_operation:"one exact locked GET to the selected Azure delivery URL with zero followed redirects; any captured PDF requires page-complete review before source or field authority"}' > "$OUT/receipt.json"
+          echo complete > "$OUT/STAGE"; echo 0 > "$OUT/EXIT_CODE"
+          find "$OUT" -type f ! -name SHA256SUMS ! -name workflow.log -print0 | sort -z | xargs -0 sha256sum | sed "s#  $OUT/#  #" > "$OUT/SHA256SUMS"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fna-response-fy2025-azure-adjudication-v1
+          path: /tmp/rd04-nd-fna-response-fy2025-azure-adjudication-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+      - if: always()
+        shell: bash
+        run: |
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          test '${{ steps.run.outcome }}' = success
