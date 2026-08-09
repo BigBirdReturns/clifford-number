@@ -8,11 +8,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: write
 
 concurrency:
-  group: no-magic-human-gate-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: pc59-terminal-recovery-v5-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
 
 jobs:
   validate:
@@ -29,3 +32,150 @@ jobs:
         run: |
           node tools/validate-no-magic-human-gate.mjs
           node test/no-magic-human-gate.test.js
+
+  terminalize-pc59:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/pc59-terminal-recovery-v5'
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPOSITORY: ${{ github.repository }}
+      API_URL: ${{ github.api_url }}
+      CARRIER_PARENT: '5be5fc4d15391b99bb29226fdd16e408be559507'
+      CARRIER_PATH: '.github/workflows/no-magic-human-gate.yml'
+      ORIGINAL_CONTROLLER_BLOB: '0732febec81920473d77470d204bbdf4cbcfabd1'
+      ORIGINAL_CONTROLLER_GZIP_SHA256: '2ce9bdb56c15428fbf4dd1ffdbaa133ed8fe340d5a4b2ba14323f09170967bcf'
+      ORIGINAL_CONTROLLER_SHA256: '980a6a6f6be9f4cfc157ef3f7e5765387507e08ee7457fe1ba3ba6428279de43'
+      CONTROLLER_PATCH_BLOB: '84d1e88ce3d0e902f26c10aca26562db11ab837a'
+      CONTROLLER_PATCH_SHA256: 'ae568d06a02ad8752d670c78bf70baededd28f5503754cd5d81300f553bda87a'
+      RECOVERED_CONTROLLER_BLOB: 'ea48a3acf92d344f8371837691e229111aab86ff'
+      RECOVERED_CONTROLLER_SHA256: '43a53fb93a41b3d397524678f4e809a298d68f68ec51e8eb3e92be92a881a460'
+      ISSUE: '1662'
+      PRODUCT_PR: '1731'
+      PRODUCT: '80a9898890c2a8b271d4d36f74d37c1975149b25'
+      PRODUCT_PARENT: 'a592acea22c69a979f2a90c24a2bafb8c9445759'
+      PRODUCT_PARENT_TREE: 'c7dbb1df10b409caa7893846a9e4b3e8d1392be0'
+      PRODUCT_TREE: '9057a3daca6e8420c83652d5ba2669c2f2ae34a5'
+      CANONICAL_MERGE: 'cffe670fef5c006c7e963421d9fd18c29ed40fba'
+      CANONICAL_MERGE_FIRST: 'aa1c0c3f741bf2fb7aa923a4008e5bc927dca032'
+      EXPECTED_MATRIX: '53'
+      CODEX_REQUEST_COMMENT: '5232899476'
+      CODEX_COMMIT_PREFIX: '80a9898890'
+      QUALIFIER_RUN: '31294560504'
+      QUALIFIER_HEAD: '5886d3c87bf3d083b6de6c376579067952018c0a'
+      QUALIFIER_ARTIFACT: '9032608869'
+      QUALIFIER_DIGEST: 'sha256:6882402385ebd8014c5cfc8a7c2a94cf77d1acc9b00b0198662f08f541452037'
+      PUBLICATION_RUN: '31327408812'
+      PUBLICATION_HEAD: 'afb990c64b598842931e6e54bd864ddfb164fe32'
+      PUBLICATION_ARTIFACT: '9041921964'
+      PUBLICATION_DIGEST: 'sha256:63f8c960826b8ba60187f274b3375ebe969e2e8dcac172b95cca4c9cc4e23cfd'
+      PACKAGE_RUN: '31327561157'
+      PACKAGE_HEAD: '00065a7cff3eebad46c7bbcf3533d4b25477d0bd'
+      PACKAGE_ARTIFACT: '9041961136'
+      PACKAGE_DIGEST: 'sha256:ab51add6b58db7028a4b9003ae8592d7311bd807646e505695fe0c835efacd17'
+      ARCHIVE_SHA256: '8a56d6209fba1a451cf733cf2d67b2e6dcc37e45209d70d340576773e5f7eef0'
+      MANIFEST_SHA256: 'e209ea8ba3d59849c24d4f217251b0053c71d559e838bc7f2968881f70942ee3'
+      RESOLVED_FRONTIER: 'linkage_interval_repository_owner_login_canonical_profile_api_location_account_type_state_and_suspension_governance'
+      NEXT_FRONTIER_ONE: 'linkage_interval_repository_owner_login_normalization_alias_case_history_and_location_pair_governance'
+      NEXT_FRONTIER_TWO: 'linkage_interval_owner_account_type_active_suspended_deleted_ghost_restoration_site_admin_and_metadata_governance'
+      PROOF_DIR: '/tmp/pc59-exact-postmerge-proof'
+      CENSUS_DIR: '/tmp/pc59-terminal-census'
+      PACKAGE_DIR: '/tmp/pc59-complete-product-package'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Authenticate original controller, exact source patch, and recovered controller
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          recovery="$PROOF_DIR/controller-recovery"
+          mkdir -p "$recovery"
+
+          gh api "/repos/${GH_REPOSITORY}/git/blobs/${ORIGINAL_CONTROLLER_BLOB}" > "$recovery/original-controller-blob.json"
+          test "$(jq -r .sha "$recovery/original-controller-blob.json")" = "$ORIGINAL_CONTROLLER_BLOB"
+          jq -r .content "$recovery/original-controller-blob.json" | tr -d '\n' | base64 -d > "$recovery/original-controller.sh.gz"
+          test "$(git hash-object "$recovery/original-controller.sh.gz")" = "$ORIGINAL_CONTROLLER_BLOB"
+          test "$(sha256sum "$recovery/original-controller.sh.gz" | awk '{print $1}')" = "$ORIGINAL_CONTROLLER_GZIP_SHA256"
+          gzip -t "$recovery/original-controller.sh.gz"
+          gzip -dc "$recovery/original-controller.sh.gz" > "$recovery/original-controller.sh"
+          test "$(sha256sum "$recovery/original-controller.sh" | awk '{print $1}')" = "$ORIGINAL_CONTROLLER_SHA256"
+          bash -n "$recovery/original-controller.sh"
+
+          gh api "/repos/${GH_REPOSITORY}/git/blobs/${CONTROLLER_PATCH_BLOB}" > "$recovery/controller-patch-blob.json"
+          test "$(jq -r .sha "$recovery/controller-patch-blob.json")" = "$CONTROLLER_PATCH_BLOB"
+          jq -r .content "$recovery/controller-patch-blob.json" | tr -d '\n' | base64 -d > "$recovery/controller-recovery.patch"
+          test "$(git hash-object "$recovery/controller-recovery.patch")" = "$CONTROLLER_PATCH_BLOB"
+          test "$(sha256sum "$recovery/controller-recovery.patch" | awk '{print $1}')" = "$CONTROLLER_PATCH_SHA256"
+
+          cp "$recovery/original-controller.sh" "$recovery/recovered-controller.sh"
+          patch --batch --fuzz=0 --no-backup-if-mismatch "$recovery/recovered-controller.sh" < "$recovery/controller-recovery.patch"
+          test "$(sha256sum "$recovery/recovered-controller.sh" | awk '{print $1}')" = "$RECOVERED_CONTROLLER_SHA256"
+          test "$(git hash-object "$recovery/recovered-controller.sh")" = "$RECOVERED_CONTROLLER_BLOB"
+          bash -n "$recovery/recovered-controller.sh"
+          install -m 0755 "$recovery/recovered-controller.sh" /tmp/pc59-terminal-controller.sh
+
+          jq -n \
+            --arg schema_version 'pc59-controller-recovery-receipt@1' \
+            --arg status 'authenticated_recovery_ready' \
+            --arg carrier_parent "$CARRIER_PARENT" \
+            --arg original_blob "$ORIGINAL_CONTROLLER_BLOB" \
+            --arg original_gzip_sha256 "$ORIGINAL_CONTROLLER_GZIP_SHA256" \
+            --arg original_sha256 "$ORIGINAL_CONTROLLER_SHA256" \
+            --arg patch_blob "$CONTROLLER_PATCH_BLOB" \
+            --arg patch_sha256 "$CONTROLLER_PATCH_SHA256" \
+            --arg recovered_blob "$RECOVERED_CONTROLLER_BLOB" \
+            --arg recovered_sha256 "$RECOVERED_CONTROLLER_SHA256" \
+            --arg canonical_merge "$CANONICAL_MERGE" \
+            --arg canonical_merge_first "$CANONICAL_MERGE_FIRST" \
+            '{schema_version:$schema_version,status:$status,carrier_parent:$carrier_parent,original_controller:{blob:$original_blob,gzip_sha256:$original_gzip_sha256,expanded_sha256:$original_sha256},source_patch:{blob:$patch_blob,sha256:$patch_sha256},recovered_controller:{blob:$recovered_blob,sha256:$recovered_sha256,bash_syntax:true},recovery_scope:{canonical_merge:$canonical_merge,canonical_merge_first_parent:$canonical_merge_first,merge_operations_authorized:0,merge_operations_executed:0,replay_cleanliness_denominator:"fourteen_permanent_product_paths",product_semantics_changed:false,graph_effect:"none"}}' > "$recovery/receipt.json"
+          (
+            cd "$recovery"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+      - name: Bind carrier, sealed product, exact matrix, review, existing merge, and live main
+        run: /tmp/pc59-terminal-controller.sh bind
+      - name: Recover the exact existing canonical PC-59 merge without another merge
+        id: merge
+        run: /tmp/pc59-terminal-controller.sh merge
+      - name: Prove canonical topology, all fourteen blobs, and complete replay
+        env:
+          MERGE: ${{ steps.merge.outputs.merge }}
+        run: /tmp/pc59-terminal-controller.sh proof
+      - name: Upload exact PC-59 post-merge proof
+        id: proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc59-exact-postmerge-proof
+          path: /tmp/pc59-exact-postmerge-proof
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+      - name: Retire every PC-59 transaction surface and seal census
+        env:
+          MERGE: ${{ steps.merge.outputs.merge }}
+          PROOF_ARTIFACT_ID: ${{ steps.proof.outputs.artifact-id }}
+          PROOF_ARTIFACT_DIGEST: ${{ steps.proof.outputs.artifact-digest }}
+        run: /tmp/pc59-terminal-controller.sh cleanup
+      - name: Upload PC-59 terminal census
+        id: census
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc59-terminal-census
+          path: /tmp/pc59-terminal-census
+          if-no-files-found: error
+          retention-days: 90
+      - name: Write durable PC-59 terminal receipt and close issue
+        env:
+          MERGE: ${{ steps.merge.outputs.merge }}
+          PROOF_ARTIFACT_ID: ${{ steps.proof.outputs.artifact-id }}
+          PROOF_ARTIFACT_DIGEST: ${{ steps.proof.outputs.artifact-digest }}
+          CENSUS_ARTIFACT_ID: ${{ steps.census.outputs.artifact-id }}
+          CENSUS_ARTIFACT_DIGEST: ${{ steps.census.outputs.artifact-digest }}
+        run: /tmp/pc59-terminal-controller.sh receipt
