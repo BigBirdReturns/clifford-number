@@ -1,0 +1,371 @@
+name: TEMP recover RD-04 North Dakota current public-record-gap adjudication v2
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-current-public-record-gap-adjudication-materializer-base-v2
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-current-public-record-gap-adjudication-v2/trigger.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-rd04-nd-current-public-record-gap-adjudication-v2
+  cancel-in-progress: false
+
+env:
+  CANONICAL_PARENT: 5be5fc4d15391b99bb29226fdd16e408be559507
+  BASE_BRANCH: agent/ssc-rd04-nd-current-public-record-gap-adjudication-materializer-base-v2
+  HEAD_BRANCH: agent/ssc-rd04-nd-current-public-record-gap-adjudication-materializer-trigger-v2
+  PRODUCT_BRANCH: agent/ssc-rd04-nd-current-public-record-gap-adjudication-v1
+  WORKFLOW_PATH: .github/workflows/temp-recover-ssc-rd04-nd-current-public-record-gap-adjudication-v2.yml
+  TRIGGER_PATH: .tmp/rd04-nd-current-public-record-gap-adjudication-v2/trigger.json
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-adjudication
+  V1_ARTIFACT_ID: '9043546200'
+  V1_ARTIFACT_NAME: ssc-rd04-nd-current-public-record-gap-adjudication-materializer-v1
+  V1_ARTIFACT_BYTES: '717661'
+  V1_ARTIFACT_SHA256: a3021ad9a0e60904063aa6ea8c675dcfd76d6c86756473af2943c6b90f46715e
+  SEALED_TAR_SHA256: c7f869112399a2bc452836451c282f406baecf103daa24992d03dd7d104bee73
+  PRODUCT_PAYLOAD_SHA256: 2f7e919f1295d1b1af253ad3acf251955e1abaac30ac32f34cc2d6bd9444cdf3
+  PROPOSED_CELL_SHA256: 20d23705f3fe41822c6cfd34832f1345a1c0c380924b06437b8ae9d4b9228ac0
+  OUT: /tmp/rd04-nd-current-public-record-gap-adjudication-v2
+
+jobs:
+  recover:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-current-public-record-gap-adjudication-materializer-base-v2' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-current-public-record-gap-adjudication-materializer-trigger-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Authenticate V1 receipt, recover exact product, and publish
+        id: recover
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          stage=bootstrap
+
+          seal() {
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+            )
+          }
+
+          finalize() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            if [[ ! -s "$OUT/receipt.json" ]]; then
+              jq -n \
+                --arg stage "$stage" \
+                --argjson exit_code "$rc" \
+                --arg parent "$CANONICAL_PARENT" \
+                '{schema_version:"ssc-rd04-nd-current-public-record-gap-adjudication-recovery@2",
+                  state:"failed_closed",failed_or_final_stage:$stage,exit_code:$exit_code,
+                  canonical_parent:$parent,product_branch_moved:false,
+                  permanent_paths_added:0,source_requests:0,route_executions:0,
+                  source_admissions:0,field_terminalizations:0,matrix_updates:0,
+                  row_state_mutations:0,row_terminalizations:0,class_closed:false,
+                  outside_human_dependency:false}' > "$OUT/receipt.json"
+            fi
+            seal
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          stage=bind_exact_two_level_carrier
+          test "$(git rev-parse HEAD)" = "$EVENT_HEAD_SHA"
+          test "$(git rev-parse "$EVENT_HEAD_SHA^")" = "$EVENT_BASE_SHA"
+          test "$(git rev-parse "$EVENT_BASE_SHA^")" = "$CANONICAL_PARENT"
+          test "$(git rev-list --count "$CANONICAL_PARENT..$EVENT_BASE_SHA")" -eq 1
+          test "$(git rev-list --count "$EVENT_BASE_SHA..$EVENT_HEAD_SHA")" -eq 1
+          test "$(git diff --name-only "$CANONICAL_PARENT" "$EVENT_BASE_SHA")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$EVENT_BASE_SHA")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA")" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA")" = "$TRIGGER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" "$EVENT_BASE_SHA")"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA")"
+          git diff --check "$CANONICAL_PARENT" "$EVENT_HEAD_SHA"
+          cp "$TRIGGER_PATH" "$OUT/trigger.json"
+
+          stage=bind_live_main_and_unused_product_ref
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+
+          stage=authenticate_v1_failure_artifact_and_qualified_candidate
+          curl -fsS \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/artifacts/$V1_ARTIFACT_ID" \
+            > "$OUT/v1-artifact-metadata.json"
+          jq -e \
+            --argjson id "$V1_ARTIFACT_ID" \
+            --arg name "$V1_ARTIFACT_NAME" \
+            --argjson bytes "$V1_ARTIFACT_BYTES" \
+            --arg digest "sha256:$V1_ARTIFACT_SHA256" \
+            '.id==$id and .name==$name and .size_in_bytes==$bytes and .expired==false and .digest==$digest' \
+            "$OUT/v1-artifact-metadata.json" > /dev/null
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/artifacts/$V1_ARTIFACT_ID/zip" \
+            -o "$OUT/v1-artifact.zip"
+          test "$(stat -c %s "$OUT/v1-artifact.zip")" -eq "$V1_ARTIFACT_BYTES"
+          test "$(sha256sum "$OUT/v1-artifact.zip" | awk '{print $1}')" = "$V1_ARTIFACT_SHA256"
+          unzip -t "$OUT/v1-artifact.zip" > "$OUT/v1-artifact-zip-test.txt"
+          mkdir "$OUT/v1"
+          unzip -q "$OUT/v1-artifact.zip" -d "$OUT/v1"
+          test -s "$OUT/v1/SHA256SUMS"
+          (cd "$OUT/v1" && sha256sum -c SHA256SUMS > "$OUT/v1-internal-checks.txt")
+          test "$(cat "$OUT/v1/STAGE")" = construct_exact_eight_file_product
+          test "$(cat "$OUT/v1/EXIT_CODE")" = 1
+          jq -e '
+            .state=="failed_closed" and
+            .failed_or_final_stage=="construct_exact_eight_file_product" and
+            .exit_code==1 and .canonical_parent=="5be5fc4d15391b99bb29226fdd16e408be559507" and
+            .product_branch_moved==false and .permanent_paths_added==0 and
+            .source_requests==0 and .route_executions==0 and .source_admissions==0 and
+            .field_terminalizations==0 and .matrix_updates==0 and
+            .row_state_mutations==0 and .row_terminalizations==0 and
+            .class_closed==false and .outside_human_dependency==false
+          ' "$OUT/v1/receipt.json" > /dev/null
+          jq -e '
+            .state=="qualified_candidate_only" and
+            .candidate_id=="RD04-ND-CURRENT-WAIVER-PUBLIC-RECORD-GAP-CANDIDATE" and
+            .decision_id=="RD04-ND-CURRENT-WAIVER-PUBLIC-RECORD-GAP-DECISION" and
+            .canonical_parent=="5be5fc4d15391b99bb29226fdd16e408be559507" and
+            .product_payload_sha256=="2f7e919f1295d1b1af253ad3acf251955e1abaac30ac32f34cc2d6bd9444cdf3" and
+            .proposed_cell_sha256=="20d23705f3fe41822c6cfd34832f1345a1c0c380924b06437b8ae9d4b9228ac0" and
+            .promotion_authorized==false and
+            .separate_exact_current_cell_validation_required==true and
+            .permanent_paths==8 and .source_requests==0 and .route_executions==0 and
+            .field_terminalizations==0 and .matrix_updates==0 and
+            .row_state_mutations==0 and .row_terminalizations==0 and
+            .class_closed==false and .outside_human_dependency==false
+          ' "$OUT/v1/validation-receipt.json" > /dev/null
+          test "$(sha256sum "$OUT/v1/product.tar.gz" | awk '{print $1}')" = "$SEALED_TAR_SHA256"
+
+          stage=revalidate_sealed_eight_file_product
+          PRODUCT_SRC="$OUT/v1/product-extract/rd04_gap_product"
+          python - "$PRODUCT_SRC" "$PRODUCT_PAYLOAD_SHA256" "$PROPOSED_CELL_SHA256" "$OUT/recovery-validation.json" <<'PY'
+          from __future__ import annotations
+          import hashlib, json, pathlib, sys
+
+          root=pathlib.Path(sys.argv[1])
+          expected_payload=sys.argv[2]
+          expected_cell=sys.argv[3]
+          receipt=pathlib.Path(sys.argv[4])
+          expected={
+            'current-cell-custody.json','current-index-adjudication.json','field-decision.json',
+            'product-manifest.json','promotion-candidate.json','protocol-custody.json',
+            'source-corpus.json','summary.json'
+          }
+          assert root.is_dir()
+          assert {p.name for p in root.iterdir() if p.is_file()}==expected
+          manifest=json.loads((root/'product-manifest.json').read_text())
+          assert manifest['canonical_parent']=='5be5fc4d15391b99bb29226fdd16e408be559507'
+          assert manifest['permanent_path_count']==8
+          assert manifest['addition_only'] is True
+          assert manifest['workflow_or_transport_paths']==0
+          rows=[]
+          for row in sorted(manifest['payload_files'], key=lambda x:x['path']):
+              data=(root/pathlib.PurePosixPath(row['path']).name).read_bytes()
+              actual={'bytes':len(data),'path':row['path'],'sha256':hashlib.sha256(data).hexdigest()}
+              assert actual==row, (actual,row)
+              rows.append(actual)
+          pre=b''.join(r['path'].encode()+b'\0'+r['sha256'].encode()+b'\0'+str(r['bytes']).encode()+b'\n' for r in rows)
+          assert hashlib.sha256(pre).hexdigest()==manifest['payload_combined_sha256']==expected_payload
+          candidate=json.loads((root/'promotion-candidate.json').read_text())
+          proposed=json.dumps(candidate['proposed_cell'],sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()
+          assert hashlib.sha256(proposed).hexdigest()==candidate['proposed_cell_sha256']==expected_cell
+          assert candidate['validation_state']=='unvalidated_exact_current_cell'
+          assert candidate['promotion_authorized'] is False
+          assert candidate['row_state_transition_in_candidate'] is False
+          decision=json.loads((root/'field-decision.json').read_text())
+          assert decision['typed_gap']=='complete_current_waiver_state_and_governing_period_not_publicly_recovered_after_fixed_protocol'
+          assert decision['field_terminalized_here'] is False
+          assert decision['separate_exact_current_cell_validation_required'] is True
+          assert decision['separate_promotion_product_required'] is True
+          summary=json.loads((root/'summary.json').read_text())
+          assert summary['promotion_authorized'] is False
+          assert summary['field_terminalizations']==0
+          assert summary['matrix_updates']==0
+          assert summary['row_state_mutations']==0
+          assert summary['class_closed'] is False
+          receipt.write_text(json.dumps({
+            'schema_version':'ssc-rd04-nd-current-public-record-gap-adjudication-recovery-validation@2',
+            'state':'qualified_candidate_only_reproduced',
+            'product_payload_sha256':expected_payload,
+            'proposed_cell_sha256':expected_cell,
+            'permanent_paths':8,
+            'promotion_authorized':False,
+            'separate_exact_current_cell_validation_required':True,
+            'semantic_effect':'none'
+          },indent=2,sort_keys=True)+'\n')
+          PY
+
+          stage=construct_exact_eight_file_product
+          WORK="$(mktemp -d)"
+          git worktree add --detach "$WORK" "$CANONICAL_PARENT"
+          test ! -e "$WORK/$PRODUCT_ROOT"
+          mkdir -p "$WORK/$PRODUCT_ROOT"
+          cp "$PRODUCT_SRC"/*.json "$WORK/$PRODUCT_ROOT/"
+          cd "$WORK"
+          EXPECTED_PATHS="$(printf '%s\n' \
+            "$PRODUCT_ROOT/current-cell-custody.json" \
+            "$PRODUCT_ROOT/current-index-adjudication.json" \
+            "$PRODUCT_ROOT/field-decision.json" \
+            "$PRODUCT_ROOT/product-manifest.json" \
+            "$PRODUCT_ROOT/promotion-candidate.json" \
+            "$PRODUCT_ROOT/protocol-custody.json" \
+            "$PRODUCT_ROOT/source-corpus.json" \
+            "$PRODUCT_ROOT/summary.json")"
+          ACTUAL_PATHS="$(find "$PRODUCT_ROOT" -maxdepth 1 -type f -printf '%p\n' | LC_ALL=C sort)"
+          test "$ACTUAL_PATHS" = "$(printf '%s\n' "$EXPECTED_PATHS" | LC_ALL=C sort)"
+          STATUS_PATHS="$(git status --short --untracked-files=all | sed 's/^?? //' | LC_ALL=C sort)"
+          test "$STATUS_PATHS" = "$(printf '%s\n' "$EXPECTED_PATHS" | LC_ALL=C sort)"
+          test "$(printf '%s\n' "$STATUS_PATHS" | wc -l)" -eq 8
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$PRODUCT_ROOT"
+          git commit -m 'Adjudicate North Dakota current waiver as bounded public-record gap candidate'
+          PRODUCT_COMMIT="$(git rev-parse HEAD)"
+          PRODUCT_TREE="$(git rev-parse 'HEAD^{tree}')"
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"
+          test "$(git rev-list --count "$CANONICAL_PARENT..HEAD")" -eq 1
+          test "$(git diff --name-only "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$(printf '%s\n' "$EXPECTED_PATHS" | LC_ALL=C sort)"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$(printf '%s\n' "$EXPECTED_PATHS" | LC_ALL=C sort)"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" HEAD)"
+          git diff --check "$CANONICAL_PARENT" HEAD
+          printf '%s\n' "$PRODUCT_COMMIT" > "$OUT/product-commit.txt"
+          printf '%s\n' "$PRODUCT_TREE" > "$OUT/product-tree.txt"
+          git diff --name-only "$CANONICAL_PARENT" HEAD > "$OUT/product-paths.txt"
+          git show "HEAD:$PRODUCT_ROOT/product-manifest.json" > "$OUT/product-manifest.json"
+
+          stage=run_complete_repository_qualification
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check > "$OUT/release-check.log" 2>&1
+          git reset --hard "$PRODUCT_COMMIT"
+          git clean -fdx
+          test -z "$(git status --porcelain)"
+          python - "$WORK/$PRODUCT_ROOT" "$PRODUCT_PAYLOAD_SHA256" "$PROPOSED_CELL_SHA256" <<'PY'
+          import hashlib,json,pathlib,sys
+          root=pathlib.Path(sys.argv[1]); expected_payload=sys.argv[2]; expected_cell=sys.argv[3]
+          m=json.loads((root/'product-manifest.json').read_text())
+          rows=[]
+          for row in sorted(m['payload_files'], key=lambda x:x['path']):
+              data=(root/pathlib.PurePosixPath(row['path']).name).read_bytes()
+              actual={'bytes':len(data),'path':row['path'],'sha256':hashlib.sha256(data).hexdigest()}
+              assert actual==row
+              rows.append(actual)
+          pre=b''.join(r['path'].encode()+b'\0'+r['sha256'].encode()+b'\0'+str(r['bytes']).encode()+b'\n' for r in rows)
+          assert hashlib.sha256(pre).hexdigest()==m['payload_combined_sha256']==expected_payload
+          c=json.loads((root/'promotion-candidate.json').read_text())
+          body=json.dumps(c['proposed_cell'],sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()
+          assert hashlib.sha256(body).hexdigest()==c['proposed_cell_sha256']==expected_cell
+          assert c['promotion_authorized'] is False and c['validation_state']=='unvalidated_exact_current_cell'
+          PY
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+
+          stage=publish_qualified_candidate_product
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+          git push origin "$PRODUCT_COMMIT:refs/heads/$PRODUCT_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$PRODUCT_COMMIT"
+
+          stage=complete
+          jq -n \
+            --arg parent "$CANONICAL_PARENT" \
+            --arg commit "$PRODUCT_COMMIT" \
+            --arg tree "$PRODUCT_TREE" \
+            --arg branch "$PRODUCT_BRANCH" \
+            --arg payload "$PRODUCT_PAYLOAD_SHA256" \
+            --arg cell "$PROPOSED_CELL_SHA256" \
+            --argjson v1_artifact "$V1_ARTIFACT_ID" \
+            '{schema_version:"ssc-rd04-nd-current-public-record-gap-adjudication-recovery@2",
+              state:"qualified_candidate_product_published",failed_or_final_stage:"complete",exit_code:0,
+              canonical_parent:$parent,product_commit:$commit,product_tree:$tree,product_branch:$branch,
+              product_branch_moved:true,product_payload_sha256:$payload,proposed_cell_sha256:$cell,
+              predecessor_failure_artifact_id:$v1_artifact,promotion_authorized:false,
+              separate_exact_current_cell_validation_required:true,
+              permanent_paths_added:8,source_requests:0,route_executions:0,source_admissions:0,
+              field_terminalizations:0,matrix_updates:0,row_state_mutations:0,row_terminalizations:0,
+              class_closed:false,outside_human_dependency:false}' > "$OUT/receipt.json"
+          cd - >/dev/null
+          git worktree remove --force "$WORK"
+          seal
+          trap - EXIT
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          printf '%s\n' complete > "$OUT/STAGE"
+          seal
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+
+      - name: Preserve V2 recovery receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-current-public-record-gap-adjudication-recovery-v2
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce qualified candidate-only publication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.recover.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .state=="qualified_candidate_product_published" and
+            .failed_or_final_stage=="complete" and .exit_code==0 and
+            .product_branch_moved==true and .permanent_paths_added==8 and
+            .product_payload_sha256=="2f7e919f1295d1b1af253ad3acf251955e1abaac30ac32f34cc2d6bd9444cdf3" and
+            .proposed_cell_sha256=="20d23705f3fe41822c6cfd34832f1345a1c0c380924b06437b8ae9d4b9228ac0" and
+            .predecessor_failure_artifact_id==9043546200 and
+            .promotion_authorized==false and
+            .separate_exact_current_cell_validation_required==true and
+            .source_requests==0 and .route_executions==0 and .source_admissions==0 and
+            .field_terminalizations==0 and .matrix_updates==0 and
+            .row_state_mutations==0 and .row_terminalizations==0 and
+            .class_closed==false and .outside_human_dependency==false
+          ' "$OUT/receipt.json" > /dev/null
