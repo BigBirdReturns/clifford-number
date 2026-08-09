@@ -1,0 +1,258 @@
+name: TEMP adjudicate RD-04 North Dakota FY2026 archive Azure redirect v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-fy26-archive-azure-redirect-adjudication-v1/trigger.json'
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+  CARRIER_PARENT: a592acea22c69a979f2a90c24a2bafb8c9445759
+  CARRIER_TREE: c7dbb1df10b409caa7893846a9e4b3e8d1392be0
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  WAIVER_CELL_SHA256: cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe
+  BASE_BRANCH: agent/ssc-rd04-nd-fy26-archive-azure-redirect-adjudication-base-v1
+  HEAD_BRANCH: agent/ssc-rd04-nd-fy26-archive-azure-redirect-adjudication-trigger-v1
+  WORKFLOW_PATH: .github/workflows/temp-adjudicate-ssc-rd04-nd-fy26-archive-azure-redirect-v1.yml
+  TRIGGER_PATH: .tmp/rd04-nd-fy26-archive-azure-redirect-adjudication-v1/trigger.json
+  SOURCE_ARTIFACT_ID: '9032951108'
+  SOURCE_ARTIFACT_BYTES: '21797922'
+  SOURCE_ARTIFACT_SHA256: e94b1ac9bf6ff3f0959a385519b64d0685d726f4b5b8c700b9e3e7e2ea234e14
+  EXECUTION_RECEIPT_SHA256: 6726eb8433e481db1f6bdcd22ae7943e455013e455d4ba21b2f5ca1776f74e17
+  ROUTE_RECEIPT_SHA256: 2ede7b4c060dd73d808ec78be144a70f0bc2494c26961a1beb34f659446be58a
+  RESPONSE_HEADERS_SHA256: c9e5759287124fe66926a2ed951bef6c0c8a32deeac49e452556755320a6db71
+  ORIGIN_ROUTE_ID: RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-NV-WI-ORIGIN-001
+  ORIGIN_URL: https://www.fna.usda.gov/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-NV-WI-7-2026.zip
+  TARGET_ROUTE_ID: RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-NV-WI-AZURE-001
+  TARGET_URL: https://fna-bwbufwdzbabpezgc.z01.azurefd.us/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-NV-WI-7-2026.zip
+  TARGET_HOST: fna-bwbufwdzbabpezgc.z01.azurefd.us
+  OUTPUT_DIR: /tmp/rd04-nd-fy26-archive-azure-redirect-adjudication-v1
+  WORK_DIR: /tmp/rd04-nd-fy26-archive-azure-redirect-adjudication-v1-work
+
+concurrency:
+  group: temp-rd04-nd-fy26-archive-azure-redirect-adjudication-v1
+  cancel-in-progress: false
+
+jobs:
+  adjudicate:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-fy26-archive-azure-redirect-adjudication-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy26-archive-azure-redirect-adjudication-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Authenticate exact redirect and freeze one successor route offline
+        id: adjudicate
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$OUTPUT_DIR"
+          WORK="$WORK_DIR"
+          SOURCE="$WORK/source"
+          rm -rf "$OUT" "$WORK"
+          mkdir -p "$OUT" "$SOURCE"
+          stage=bootstrap
+
+          finalize() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            if [ ! -f "$OUT/receipt.json" ]; then
+              jq -n \
+                --arg stage "$stage" \
+                --argjson rc "$rc" \
+                '{
+                  schema_version:"ssc-rd04-nd-fy26-archive-azure-redirect-adjudication@1",
+                  state:"failed_closed",failed_or_final_stage:$stage,exit_code:$rc,
+                  source_requests:0,route_executions:0,source_admissions:0,
+                  field_decisions:0,promotion_candidates:0,held_open_fields:1,
+                  selected_followup_routes:0,field_terminalizations:0,matrix_updates:0,
+                  row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",
+                  outside_human_dependency:false,publication_effect:"none",
+                  adoption_effect:"none",graph_effect:"none"
+                }' > "$OUT/receipt.json"
+            fi
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+              sha256sum -c SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          stage=bind_exact_two_level_carrier_and_live_matrix
+          test "$HEAD_REPO" = "$GITHUB_REPOSITORY"
+          test "$(git rev-parse HEAD)" = "$EVENT_HEAD_SHA"
+          BASE_SHA="$(git rev-parse HEAD^)"
+          test "$BASE_SHA" = "$EVENT_BASE_SHA"
+          test "$(git rev-parse "$BASE_SHA^")" = "$CARRIER_PARENT"
+          test "$(git rev-list --count "$CARRIER_PARENT..$BASE_SHA")" -eq 1
+          test "$(git rev-list --count "$BASE_SHA..HEAD")" -eq 1
+          test "$(git diff --name-only "$CARRIER_PARENT" "$BASE_SHA")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CARRIER_PARENT" "$BASE_SHA")" = "$WORKFLOW_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CARRIER_PARENT" "$BASE_SHA")"
+          test "$(git diff --name-only "$BASE_SHA" HEAD)" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE_SHA" HEAD)" = "$TRIGGER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$BASE_SHA" HEAD)"
+          git diff --check "$CARRIER_PARENT" HEAD
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CARRIER_PARENT"
+          test "$(git rev-parse 'origin/main^{tree}')" = "$CARRIER_TREE"
+          test "$(git rev-parse "origin/main:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          git show "origin/main:$MATRIX_PATH" > "$OUT/matrix.json"
+          python - "$OUT/matrix.json" <<'PY'
+          import hashlib, json, sys
+          from pathlib import Path
+          matrix=json.loads(Path(sys.argv[1]).read_text())
+          row=[r for r in matrix['rows'] if r.get('unit_id')=='US-STATE-ND']
+          assert len(row)==1 and row[0]['row_state']=='still_open'
+          cell=[c for c in row[0]['cells'] if c.get('field_id')=='abawd_or_work_requirement_waiver_state_and_governing_period']
+          assert len(cell)==1 and cell[0]['state']=='still_open' and cell[0]['terminal'] is False
+          raw=json.dumps(cell[0],sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()
+          assert hashlib.sha256(raw).hexdigest()=='cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe'
+          PY
+          rm "$OUT/matrix.json"
+
+          stage=authenticate_completed_origin_transport
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ARTIFACT_ID" > "$OUT/source-meta.json"
+          jq -e --argjson id "$SOURCE_ARTIFACT_ID" --argjson bytes "$SOURCE_ARTIFACT_BYTES" --arg digest "sha256:$SOURCE_ARTIFACT_SHA256" '.id==$id and .expired==false and .size_in_bytes==$bytes and .digest==$digest' "$OUT/source-meta.json" > /dev/null
+          gh api -H 'Accept: application/vnd.github+json' "/repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ARTIFACT_ID/zip" > "$WORK/source.zip"
+          test "$(stat -c %s "$WORK/source.zip")" -eq "$SOURCE_ARTIFACT_BYTES"
+          test "$(sha256sum "$WORK/source.zip" | awk '{print $1}')" = "$SOURCE_ARTIFACT_SHA256"
+          unzip -t "$WORK/source.zip" > "$OUT/source-zip-test.txt"
+          unzip -q "$WORK/source.zip" -d "$SOURCE"
+          (cd "$SOURCE" && sha256sum -c SHA256SUMS)
+          test "$(cat "$SOURCE/STAGE")" = complete
+          test "$(cat "$SOURCE/EXIT_CODE")" = 0
+          test "$(sha256sum "$SOURCE/execution-receipt.json" | awk '{print $1}')" = "$EXECUTION_RECEIPT_SHA256"
+          test "$(sha256sum "$SOURCE/route-receipt.json" | awk '{print $1}')" = "$ROUTE_RECEIPT_SHA256"
+          test "$(sha256sum "$SOURCE/response-headers.json" | awk '{print $1}')" = "$RESPONSE_HEADERS_SHA256"
+          test "$(stat -c %s "$SOURCE/response-body.bin")" -eq 0
+          jq -e --arg route "$ORIGIN_ROUTE_ID" --arg url "$ORIGIN_URL" --arg target "$TARGET_URL" '.state=="transport_complete" and .route_id==$route and .requested_url==$url and .http_status==302 and .location==$target and .body_bytes==0 and .body_sha256=="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" and .terminal_state=="redirect_refused_terminal" and .physical_requests==1 and .followed_redirects==0 and .result_spawned_requests==0 and .source_admissions==0 and .matrix_updates==0 and .additional_execution_authorized==false' "$SOURCE/execution-receipt.json" > /dev/null
+          jq -e --arg route "$ORIGIN_ROUTE_ID" --arg url "$ORIGIN_URL" --arg target "$TARGET_URL" '.route_id==$route and .requested_url==$url and .http_status==302 and .location==$target and .body_bytes==0 and .physical_requests==1 and .followed_redirects==0 and .terminal_state=="redirect_refused_terminal"' "$SOURCE/route-receipt.json" > /dev/null
+
+          stage=adjudicate_path_preserving_https_target
+          cp "$SOURCE/response-headers.json" "$OUT/origin-response-headers.json"
+          cp "$SOURCE/route-receipt.json" "$OUT/origin-route-receipt.json"
+          python - "$SOURCE/response-headers.json" "$OUT" "$ORIGIN_URL" "$TARGET_URL" "$TARGET_HOST" "$TARGET_ROUTE_ID" <<'PY'
+          import json, sys
+          from pathlib import Path
+          from urllib.parse import urlparse
+
+          headers_path,out,origin,target,host,route_id=Path(sys.argv[1]),Path(sys.argv[2]),sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6]
+          pairs=json.loads(headers_path.read_text())
+          headers={k.lower():v for k,v in pairs}
+          assert headers.get('server')=='AkamaiGHost'
+          assert headers.get('content-length')=='0'
+          assert headers.get('location')==target
+          source=urlparse(origin); successor=urlparse(target)
+          assert source.scheme=='https' and source.netloc=='www.fna.usda.gov'
+          assert successor.scheme=='https' and successor.netloc==host
+          assert successor.path==source.path and successor.query==source.query==''
+          assert successor.path.endswith('/FY2026-ABAWD-State-Requests-and-Data-NV-WI-7-2026.zip')
+          decision={
+            'schema_version':'ssc-rd04-nd-fy26-archive-azure-redirect-decision@1',
+            'origin_route_id':'RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-NV-WI-ORIGIN-001',
+            'origin_url':origin,'origin_http_status':302,'origin_body_bytes':0,
+            'observed_location':target,'source_role':'result_visible_transport_locator_only',
+            'target_contacted':False,'redirect_followed':False,
+            'path_preserved':True,'query_preserved':True,'exact_host':host,
+            'general_azurefd_trust_granted':False,'sibling_path_authority_granted':False,
+          }
+          field={
+            'schema_version':'ssc-rd04-nd-fy26-archive-azure-field-adjudication@1',
+            'unit_id':'US-STATE-ND','field_id':'abawd_or_work_requirement_waiver_state_and_governing_period',
+            'current_cell_sha256':'cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe',
+            'state':'still_open','terminal':False,
+            'disposition':'fy2026_archive_delivery_target_selected_but_archive_uncaptured_hold_open',
+            'promotion_candidate':False,
+          }
+          protocol={
+            'schema_version':'ssc-rd04-nd-fy26-archive-azure-protocol@1',
+            'route_id':route_id,'url':target,'method':'GET','attempts':1,
+            'exact_allowed_host':host,'maximum_followed_redirects':0,
+            'maximum_body_bytes':100000000,
+            'expected_media_types':['application/zip','application/octet-stream'],
+            'require_zip_magic_on_http_success':True,
+            'same_host_expansion':0,'sibling_path_expansion':0,'result_spawned_requests':0,
+          }
+          summary={
+            'schema_version':'ssc-rd04-nd-fy26-archive-azure-redirect-summary@1',
+            'redirect_targets_admitted':1,'selected_followup_routes':1,
+            'general_azurefd_trust_granted':False,'sibling_path_authority_granted':False,
+            'source_requests':0,'route_executions':0,'source_admissions':0,
+            'field_decisions':1,'promotion_candidates':0,'held_open_fields':1,
+            'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,
+          }
+          for name,obj in [('redirect-adjudication.json',decision),('field-adjudication.json',field),('selected-protocol.json',protocol),('summary.json',summary)]:
+              (out/name).write_text(json.dumps(obj,indent=2,sort_keys=True)+'\n')
+          receipt={
+            'schema_version':'ssc-rd04-nd-fy26-archive-azure-redirect-adjudication@1',
+            'state':'adjudication_complete','failed_or_final_stage':'complete','exit_code':0,
+            'source_transport_artifact_id':9032951108,'redirect_targets_admitted':1,
+            'selected_followup_routes':1,'source_requests':0,'route_executions':0,
+            'source_admissions':0,'field_decisions':1,'promotion_candidates':0,'held_open_fields':1,
+            'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,
+            'cumulative_ledger_effect':'none','outside_human_dependency':False,
+            'publication_effect':'none','adoption_effect':'none','graph_effect':'none'
+          }
+          (out/'receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          PY
+
+          stage=complete
+      - name: Preserve exact redirect adjudication
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy26-archive-azure-redirect-adjudication-v1
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - name: Enforce one exact successor and zero semantic effect
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.adjudicate.outcome }}" = success
+          test "$(cat "$OUTPUT_DIR/STAGE")" = complete
+          test "$(cat "$OUTPUT_DIR/EXIT_CODE")" = 0
+          (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .state=="adjudication_complete" and .redirect_targets_admitted==1 and
+            .selected_followup_routes==1 and .source_requests==0 and
+            .route_executions==0 and .promotion_candidates==0 and
+            .held_open_fields==1 and .field_terminalizations==0 and
+            .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false
+          ' "$OUTPUT_DIR/receipt.json" > /dev/null
+          jq -e --arg route "$TARGET_ROUTE_ID" --arg url "$TARGET_URL" --arg host "$TARGET_HOST" '
+            .route_id==$route and .url==$url and .exact_allowed_host==$host and
+            .attempts==1 and .maximum_followed_redirects==0 and
+            .maximum_body_bytes==100000000 and .require_zip_magic_on_http_success==true and
+            .same_host_expansion==0 and .sibling_path_expansion==0 and .result_spawned_requests==0
+          ' "$OUTPUT_DIR/selected-protocol.json" > /dev/null
