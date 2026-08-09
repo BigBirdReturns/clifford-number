@@ -1,0 +1,37 @@
+name: Preference linkage owner login, profile/API location, account type, state, and suspension assurance
+
+on:
+  pull_request:
+    paths:
+      - 'data/research/preference-custody/preference-linkage-repository-owner-login-canonical-profile-api-location-account-type-state-suspension-assurance.fixture.json'
+      - 'tools/lib/preference-linkage-repository-owner-login-canonical-profile-api-location-account-type-state-suspension-assurance.mjs'
+      - 'tools/compile-preference-linkage-repository-owner-login-canonical-profile-api-location-account-type-state-suspension-assurance.mjs'
+      - 'tools/validate-preference-linkage-repository-owner-login-canonical-profile-api-location-account-type-state-suspension-assurance.mjs'
+      - 'test/preference-linkage-repository-owner-login-canonical-profile-api-location-account-type-state-suspension-assurance.test.js'
+      - 'docs/preference-custody-repository-owner-login-canonical-profile-api-location-account-type-state-suspension-assurance.md'
+      - '.github/workflows/preference-linkage-repository-owner-login-canonical-profile-api-location-account-type-state-suspension-assurance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pc59:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - name: Compile, validate, and test PC-59
+        run: |
+          node tools/compile-preference-linkage-repository-owner-login-canonical-profile-api-location-account-type-state-suspension-assurance.mjs
+          node tools/validate-preference-linkage-repository-owner-login-canonical-profile-api-location-account-type-state-suspension-assurance.mjs
+          node test/preference-linkage-repository-owner-login-canonical-profile-api-location-account-type-state-suspension-assurance.test.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preference-linkage-repository-owner-login-canonical-profile-api-location-account-type-state-suspension-assurance
+          path: |
+            build/research/preference-linkage-repository-owner-login-canonical-profile-api-location-account-type-state-suspension-assurance.json
+            build/research/preference-linkage-repository-owner-login-canonical-profile-api-location-account-type-state-suspension-assurance.md
+          if-no-files-found: error
