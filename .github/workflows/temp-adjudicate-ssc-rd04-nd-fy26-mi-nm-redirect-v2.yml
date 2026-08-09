@@ -1,0 +1,102 @@
+name: TEMP adjudicate RD-04 North Dakota FY2026 MI-NM redirect v2
+
+on:
+  pull_request:
+    branches: [agent/ssc-rd04-nd-fy26-mi-nm-redirect-adjudication-base-v2]
+    types: [opened, synchronize, reopened]
+    paths: [.trigger/ssc-rd04-nd-fy26-mi-nm-redirect-adjudication-v2.json]
+
+permissions: {contents: read, actions: read}
+concurrency: {group: temp-adjudicate-ssc-rd04-nd-fy26-mi-nm-redirect-v2, cancel-in-progress: false}
+
+env:
+  MAIN: 7d6f9895595a62b6a6cfb3205d03c3d9e50fce33
+  PRIOR_MAIN: 8482b941aa0b1ecac685ab6ca98bba80ed80c5ee
+  INTERVENING_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2026-request-archive-adjudication
+  MATRIX: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  BASE: agent/ssc-rd04-nd-fy26-mi-nm-redirect-adjudication-base-v2
+  HEAD: agent/ssc-rd04-nd-fy26-mi-nm-redirect-adjudication-trigger-v2
+  WF: .github/workflows/temp-adjudicate-ssc-rd04-nd-fy26-mi-nm-redirect-v2.yml
+  TRIGGER: .trigger/ssc-rd04-nd-fy26-mi-nm-redirect-adjudication-v2.json
+  ARTIFACT_ID: '9041349436'
+  ARTIFACT_BYTES: '25304'
+  ARTIFACT_DIGEST: sha256:89b3dc1d4c8a3a246be1807089f32f6704342e7f5088b4515ade1a0889ddea20
+  EXECUTION_RECEIPT_SHA: 5d9c5fd39eff254a588585d2d967e6d553693a32b6253c931e3f4c0e2c59860a
+  ROUTE_RECEIPT_SHA: e13193e39e0279597edc8a97f41e6cf3bdcd503edf38a727e9a51665c90a9989
+  HEADERS_SHA: 0315b2bc8dec1c6c2550c9bf0f9edbb45a87abc709b489e25bcc398a4d185622
+  OUT: /tmp/ssc-rd04-nd-fy26-mi-nm-redirect-adjudication-v2
+
+jobs:
+  adjudicate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy26-mi-nm-redirect-adjudication-trigger-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: '${{ github.event.pull_request.head.sha }}', fetch-depth: 0}
+      - name: Adjudicate exact official CDN redirect offline
+        id: run
+        continue-on-error: true
+        shell: bash
+        env: {GH_TOKEN: '${{ github.token }}'}
+        run: |
+          set -uo pipefail
+          O="$OUT"; A="$O/source"; rm -rf "$O"; mkdir -p "$A"; stage=bootstrap
+          sums(){ (cd "$O" && find . -type f ! -name SHA256SUMS ! -name adjudication.log -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS); }
+          fail(){ rc=$?; set +e; test -s "$O/receipt.json" || jq -n --arg s "$stage" --argjson c "$rc" '{schema_version:"ssc-rd04-nd-fy26-mi-nm-redirect-adjudication-receipt@2",state:"failed_closed",stage:$s,exit_code:$c,source_requests:0,route_executions:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,additional_execution_authorized:false}' > "$O/receipt.json"; echo "$stage" > "$O/STAGE"; echo "$rc" > "$O/EXIT_CODE"; sums; exit "$rc"; }; trap fail ERR; set -Eeuo pipefail; exec > >(tee "$O/adjudication.log") 2>&1
+
+          stage=topology
+          B='${{ github.event.pull_request.base.sha }}'; H='${{ github.event.pull_request.head.sha }}'
+          test '${{ github.event.pull_request.base.ref }}' = "$BASE"; test '${{ github.event.pull_request.head.ref }}' = "$HEAD"
+          test "$(git rev-parse "$B^")" = "$MAIN"; test "$(git rev-parse "$H^")" = "$B"
+          test "$(git diff --name-only "$MAIN" "$B")" = "$WF"; test "$(git diff --name-only --diff-filter=A "$MAIN" "$B")" = "$WF"
+          test "$(git diff --name-only "$B" "$H")" = "$TRIGGER"; test "$(git diff --name-only --diff-filter=A "$B" "$H")" = "$TRIGGER"; git diff --check "$MAIN" "$H"
+          git fetch --no-tags --force origin +refs/heads/main:refs/remotes/origin/main; test "$(git rev-parse origin/main)" = "$MAIN"; test "$(git rev-parse "origin/main:$MATRIX")" = "$MATRIX_BLOB"
+          git merge-base --is-ancestor "$PRIOR_MAIN" "$MAIN"
+          printf '%s\n' \
+            "$INTERVENING_ROOT/archive-custody.json" \
+            "$INTERVENING_ROOT/current-cell-custody.json" \
+            "$INTERVENING_ROOT/member-inventory.json" \
+            "$INTERVENING_ROOT/north-dakota-disposition.json" \
+            "$INTERVENING_ROOT/product-manifest.json" \
+            "$INTERVENING_ROOT/summary.json" > "$O/expected-intervening-paths.txt"
+          git diff --name-only "$PRIOR_MAIN" "$MAIN" | LC_ALL=C sort > "$O/actual-intervening-paths.txt"
+          LC_ALL=C sort -o "$O/expected-intervening-paths.txt" "$O/expected-intervening-paths.txt"
+          diff -u "$O/expected-intervening-paths.txt" "$O/actual-intervening-paths.txt"
+          test -z "$(git diff --name-only "$PRIOR_MAIN" "$MAIN" -- "$MATRIX")"
+          cp "$TRIGGER" "$O/trigger.json"
+          jq -e --arg p "$MAIN" --arg m "$MATRIX_BLOB" --arg d "$ARTIFACT_DIGEST" --arg e "$EXECUTION_RECEIPT_SHA" --arg r "$ROUTE_RECEIPT_SHA" --arg h "$HEADERS_SHA" '.schema_version=="ssc-rd04-nd-fy26-mi-nm-redirect-adjudication-trigger@2" and .canonical_parent==$p and .matrix_blob==$m and .execution_artifact_id==9041349436 and .execution_artifact_digest==$d and .execution_receipt_sha256==$e and .route_receipt_sha256==$r and .response_headers_sha256==$h and .source_requests==0 and .route_executions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false' "$O/trigger.json" >/dev/null
+
+          stage=authenticate_artifact
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" > "$O/artifact.json"
+          jq -e --argjson i "$ARTIFACT_ID" --argjson b "$ARTIFACT_BYTES" --arg d "$ARTIFACT_DIGEST" '.id==$i and .size_in_bytes==$b and .digest==$d and .expired==false' "$O/artifact.json" >/dev/null
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$O/source.zip"
+          test "$(stat -c%s "$O/source.zip")" = "$ARTIFACT_BYTES"; test "sha256:$(sha256sum "$O/source.zip"|cut -d' ' -f1)" = "$ARTIFACT_DIGEST"
+          unzip -t "$O/source.zip" > "$O/source-zip-test.txt"; unzip -q "$O/source.zip" -d "$A"; (cd "$A" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$A/execution-receipt.json"|cut -d' ' -f1)" = "$EXECUTION_RECEIPT_SHA"
+          test "$(sha256sum "$A/route-receipt.json"|cut -d' ' -f1)" = "$ROUTE_RECEIPT_SHA"
+          test "$(sha256sum "$A/transport/response-headers.json"|cut -d' ' -f1)" = "$HEADERS_SHA"
+          jq -e '.state=="complete" and .execution_parent=="8482b941aa0b1ecac685ab6ca98bba80ed80c5ee" and .main_moved_during_execution==false and .fixed_route_count==1 and .terminal_route_count==1 and .physical_requests==1 and .route_terminal_state=="redirect_refused_terminal" and .http_status==302 and .body_bytes==0 and .source_admissions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and .additional_execution_authorized==false' "$A/execution-receipt.json" >/dev/null
+          jq -e '.route_id=="RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-MI-NM-ORIGIN-001" and .requested_url=="https://www.fna.usda.gov/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-MI-NM-7-2026.zip" and .http_status==302 and .body_bytes==0 and .body_sha256=="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" and .location=="https://fna-bwbufwdzbabpezgc.z01.azurefd.us/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-MI-NM-7-2026.zip" and .followed_redirects==0 and .terminal_state=="redirect_refused_terminal" and .source_admissions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false' "$A/route-receipt.json" >/dev/null
+
+          stage=adjudicate
+          python - "$O" <<'PY'
+          import json,pathlib,sys
+          o=pathlib.Path(sys.argv[1]); target='https://fna-bwbufwdzbabpezgc.z01.azurefd.us/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-MI-NM-7-2026.zip'
+          objs={
+          'redirect-adjudication.json':{'schema_version':'ssc-rd04-nd-fy26-mi-nm-redirect-adjudication@2','state':'complete','classification':'official_origin_disclosed_exact_cdn_locator_only','origin_url':'https://www.fna.usda.gov/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-MI-NM-7-2026.zip','http_status':302,'body_bytes':0,'followed_redirects':0,'target_url':target,'target_contacted':False,'source_admission':None,'interpretation_boundary':'The exact Location has official origin provenance but remains uncontacted locator custody.'},
+          'field-adjudication.json':{'schema_version':'ssc-rd04-nd-current-waiver-field-adjudication@1','state':'complete','unit_id':'US-STATE-ND','field_id':'abawd_or_work_requirement_waiver_state_and_governing_period','decision':'mi_nm_archive_cdn_target_selected_but_archive_uncaptured_hold_open','promotion_candidate':None,'held_open':True,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False},
+          'selected-protocol.json':{'schema_version':'ssc-rd04-nd-fy26-mi-nm-archive-cdn-protocol@1','state':'selected_unexecuted','route_id':'RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-MI-NM-AZURE-001','url':target,'method':'GET','attempts':1,'exact_host':'fna-bwbufwdzbabpezgc.z01.azurefd.us','maximum_followed_redirects':0,'maximum_body_bytes':100000000,'require_zip_magic_on_http_200':True,'same_host_expansion':0,'sibling_path_expansion':0,'result_spawned_requests':0,'source_admissions':0,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,'outside_human_dependency':False},
+          'receipt.json':{'schema_version':'ssc-rd04-nd-fy26-mi-nm-redirect-adjudication-receipt@2','state':'complete','stage':'complete','exit_code':0,'source_requests':0,'route_executions':0,'source_admissions':0,'field_decisions':1,'promotion_candidates':0,'held_open_fields':1,'selected_followup_routes':1,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,'additional_execution_authorized':True,'additional_execution_scope':'RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-MI-NM-AZURE-001','outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none','next_authorized_operation':'execute the exact Azure route once, refuse any redirect, require ZIP magic on HTTP 200, and preserve terminal transport custody only'}}
+          for n,v in objs.items(): (o/n).write_text(json.dumps(v,indent=2,sort_keys=True)+'\n')
+          PY
+          stage=complete; echo complete > "$O/STAGE"; echo 0 > "$O/EXIT_CODE"; sums; (cd "$O" && sha256sum -c SHA256SUMS); jq -e '.state=="complete" and .additional_execution_authorized==true and .selected_followup_routes==1 and .source_requests==0 and .route_executions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false' "$O/receipt.json" >/dev/null
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: ssc-rd04-nd-fy26-mi-nm-redirect-adjudication-v2, path: '${{ env.OUT }}', if-no-files-found: error, include-hidden-files: true, retention-days: 90, compression-level: 9}
+      - name: Require terminal request-free adjudication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail; test "$(cat "$OUT/EXIT_CODE")" = 0; test "$(cat "$OUT/STAGE")" = complete; (cd "$OUT" && sha256sum -c SHA256SUMS); jq -e '.state=="complete" and .additional_execution_authorized==true and .selected_followup_routes==1 and .source_requests==0 and .route_executions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false' "$OUT/receipt.json" >/dev/null
