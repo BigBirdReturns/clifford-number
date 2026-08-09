@@ -1,0 +1,145 @@
+name: TEMP adjudicate RD-04 North Dakota FY2026 MI-NM archive members v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-fy26-mi-nm-archive-member-adjudication-base-v1
+    paths:
+      - .trigger/ssc-rd04-nd-fy26-mi-nm-archive-member-adjudication-v1.json
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  adjudicate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      EXPECTED_MAIN: 7d6f9895595a62b6a6cfb3205d03c3d9e50fce33
+      EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
+      EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+      WORKFLOW_PATH: .github/workflows/temp-adjudicate-ssc-rd04-nd-fy26-mi-nm-archive-members-v1.yml
+      TRIGGER_PATH: .trigger/ssc-rd04-nd-fy26-mi-nm-archive-member-adjudication-v1.json
+      TRIGGER_SHA256: 0f47f1f926f05440fb159e88544818fce6d396399b1e51fb4482e7e279c71f99
+      MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+      MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+      SOURCE_ARTIFACT_ID: "9041542656"
+      SOURCE_ARTIFACT_BYTES: "60092736"
+      SOURCE_ARTIFACT_SHA256: a074e94b33e7f8d74a8fed31eb4a9ab7e7ae5b8c86a322d76c15cfda29d381dd
+      SOURCE_HEAD: 48c4124c92e9ab9515243abc79d87508d71e9549
+      SCRIPT_BLOB: 0bed70a8120db87a0246407e365000f859e714f5
+      SCRIPT_BYTES: "9567"
+      SCRIPT_SHA256: e4463ef43ab0151c1c1e49ccc05929df98842a90560e7b0ce48a175591ea8f2f
+      OUT: /tmp/ssc-rd04-nd-fy26-mi-nm-archive-member-adjudication-v1
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Bind exact temporary topology and canonical matrix
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT/source"
+
+          git fetch --force origin main "$EXPECTED_BASE" "$EXPECTED_HEAD"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse "$EXPECTED_BASE^")" = "$EXPECTED_MAIN"
+          test "$(git rev-list --count "$EXPECTED_MAIN..$EXPECTED_BASE")" = 1
+          test "$(git diff --name-only "$EXPECTED_MAIN" "$EXPECTED_BASE")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$EXPECTED_MAIN" "$EXPECTED_BASE")" = "$WORKFLOW_PATH"
+          test "$(git rev-parse "$EXPECTED_HEAD^")" = "$EXPECTED_BASE"
+          test "$(git rev-list --count "$EXPECTED_BASE..$EXPECTED_HEAD")" = 1
+          test "$(git diff --name-only "$EXPECTED_BASE" "$EXPECTED_HEAD")" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$EXPECTED_BASE" "$EXPECTED_HEAD")" = "$TRIGGER_PATH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test "$(sha256sum "$TRIGGER_PATH" | cut -d' ' -f1)" = "$TRIGGER_SHA256"
+          test "$(git rev-parse "$EXPECTED_MAIN:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          cp "$TRIGGER_PATH" "$OUT/trigger-contract.json"
+
+      - name: Authenticate exact terminal transport artifact
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ARTIFACT_ID" > "$OUT/source-artifact-api.json"
+          python - <<'PY'
+          import json, os
+          value=json.load(open(os.environ['OUT']+'/source-artifact-api.json'))
+          assert value['id'] == int(os.environ['SOURCE_ARTIFACT_ID'])
+          assert value['expired'] is False
+          assert value['size_in_bytes'] == int(os.environ['SOURCE_ARTIFACT_BYTES'])
+          assert value['digest'] == 'sha256:'+os.environ['SOURCE_ARTIFACT_SHA256']
+          assert value['workflow_run']['head_sha'] == os.environ['SOURCE_HEAD']
+          PY
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ARTIFACT_ID/zip" > "$OUT/source-artifact.zip"
+          test "$(wc -c < "$OUT/source-artifact.zip" | tr -d ' ')" = "$SOURCE_ARTIFACT_BYTES"
+          test "$(sha256sum "$OUT/source-artifact.zip" | cut -d' ' -f1)" = "$SOURCE_ARTIFACT_SHA256"
+          unzip -t "$OUT/source-artifact.zip" > "$OUT/source-artifact-zip-test.txt"
+          unzip -q "$OUT/source-artifact.zip" -d "$OUT/source"
+          (cd "$OUT/source" && sha256sum -c SHA256SUMS)
+
+      - name: Reconstruct immutable offline adjudicator
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/git/blobs/$SCRIPT_BLOB" --jq .content |
+            tr -d '\n' | base64 -d > "$OUT/adjudicate.py"
+          test "$(wc -c < "$OUT/adjudicate.py" | tr -d ' ')" = "$SCRIPT_BYTES"
+          test "$(sha256sum "$OUT/adjudicate.py" | cut -d' ' -f1)" = "$SCRIPT_SHA256"
+          python -m py_compile "$OUT/adjudicate.py"
+
+      - name: Adjudicate exact archive membership without requests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python "$OUT/adjudicate.py"
+          test "$(jq -r .state "$OUT/receipt.json")" = complete
+          test "$(jq -r .archive_member_count "$OUT/receipt.json")" = 19
+          test "$(jq -r .north_dakota_scoped_members "$OUT/receipt.json")" = 0
+          test "$(jq -r .archive_inventory_source_admissions "$OUT/receipt.json")" = 1
+          test "$(jq -r .member_document_source_admissions "$OUT/receipt.json")" = 0
+          test "$(jq -r .promotion_candidates "$OUT/receipt.json")" = 0
+          test "$(jq -r .held_open_fields "$OUT/receipt.json")" = 1
+          test "$(jq -r .selected_follow_up_routes "$OUT/receipt.json")" = 0
+          test "$(jq -r .negative_existence_claims "$OUT/receipt.json")" = 0
+          test "$(jq -r .field_terminalizations "$OUT/receipt.json")" = 0
+          test "$(jq -r .matrix_updates "$OUT/receipt.json")" = 0
+          test "$(jq -r .row_state_mutations "$OUT/receipt.json")" = 0
+          test "$(jq -r .class_closed "$OUT/receipt.json")" = false
+          test "$(jq -r .explicit_successor_protocol "$OUT/selected-protocol.json")" = false
+
+          cp "$OUT/source/execution-receipt.json" "$OUT/source-execution-receipt.json"
+          cp "$OUT/source/route-receipt.json" "$OUT/source-route-receipt.json"
+          cp "$OUT/source/archive-member-ledger.json" "$OUT/source-archive-member-ledger.json"
+          rm -rf "$OUT/source" "$OUT/__pycache__"
+
+          (
+            cd "$OUT"
+            find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\n' | sort |
+              while read -r p; do sha256sum "$p"; done > SHA256SUMS
+          )
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy26-mi-nm-archive-member-adjudication-v1
+          path: /tmp/ssc-rd04-nd-fy26-mi-nm-archive-member-adjudication-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce terminal candidate-free archive hold
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          test "$(jq -r .state "$OUT/receipt.json")" = complete
+          test "$(jq -r .selected_follow_up_routes "$OUT/receipt.json")" = 0
+          test "$(jq -r .negative_existence_claims "$OUT/receipt.json")" = 0
+          test "$(jq -r .matrix_updates "$OUT/receipt.json")" = 0
+          test "$(jq -r .next_authorized_operation "$OUT/selected-protocol.json")" = permanent_candidate_free_archive_inventory_hold_product_only
