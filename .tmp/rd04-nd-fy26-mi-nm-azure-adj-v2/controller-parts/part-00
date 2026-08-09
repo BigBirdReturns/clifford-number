@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+REPO="${GITHUB_REPOSITORY:?}"
+EXPECTED_PARENT="938ba049394af65e22d46cf65ec266390f589d16"
+PRE_REFRESH_PARENT="7d6f9895595a62b6a6cfb3205d03c3d9e50fce33"
+REFRESH_PRODUCT="8bbe4209a638b066533cfccc27e1c8b626713b87"
+PRODUCT_PREFIX="data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2026-current-index-refresh-protocol"
+MATRIX_PATH="data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json"
+EXPECTED_MATRIX_BLOB="19357f8214ab2710bc5e75b3fae8c7fb09ff1654"
+EXPECTED_CELL_SHA="cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe"
+CONTROLLER_DIR=".tmp/rd04-nd-fy26-mi-nm-azure-adj-v2/controller-parts"
+CONTROLLER_PART_COUNT=6
+WORKFLOW_PATH=".github/workflows/temp-rd04-nd-fy26-mi-nm-azure-adj-v2.yml"
+TRIGGER_PATH=".tmp/rd04-nd-fy26-mi-nm-azure-adj-v2/trigger.json"
+ARTIFACT_ID=9041349436
+ARTIFACT_BYTES=45591181
+ARTIFACT_SHA="f99ffd00090b199f78b409192cb4e27d4b8cc4196a76a5d78e850b6f5496db25"
+ORIGIN_ROUTE="RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-MI-NM-ORIGIN-001"
+ORIGIN_URL="https://www.fna.usda.gov/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-MI-NM-7-2026.zip"
+AZURE_ROUTE="RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-MI-NM-AZURE-001"
+AZURE_URL="https://fna-bwbufwdzbabpezgc.z01.azurefd.us/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-MI-NM-7-2026.zip"
+AZURE_HOST="fna-bwbufwdzbabpezgc.z01.azurefd.us"
+OUT="${RUNNER_TEMP}/ssc-rd04-nd-fy26-mi-nm-azure-adj-v2"
+TMP="${RUNNER_TEMP}/ssc-rd04-nd-fy26-mi-nm-azure-adj-v2-work"
+rm -rf "$OUT" "$TMP"
+mkdir -p "$OUT" "$TMP/source"
+printf '%s\n' topology > "$OUT/STAGE"
+printf '%s\n' 1 > "$OUT/EXIT_CODE"
+
+seal() { (cd "$OUT" && find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' | sort -z | xargs -0 sha256sum > SHA256SUMS); }
+fail() {
+  local stage="$1" reason="$2"
+  printf '%s\n' "$stage" > "$OUT/STAGE"; printf '%s\n' 1 > "$OUT/EXIT_CODE"
+  python - "$OUT/receipt.json" "$stage" "$reason" <<'PY'
+import json,sys
+path,stage,reason=sys.argv[1:]
+obj={"schema_version":"ssc-rd04-nd-fy26-mi-nm-azure-adj-v2-receipt@1","state":"failed_closed","failed_or_final_stage":stage,"exit_code":1,"reason":reason,"source_requests":0,"route_executions":0,"source_admissions":0,"field_decisions":0,"promotion_candidates":0,"held_open_fields":0,"selected_followup_routes":0,"field_terminalizations":0,"matrix_updates":0,"row_state_mutations":0,"class_closed":False,"cumulative_ledger_effect":"none","outside_human_dependency":False,"publication_effect":"none","adoption_effect":"none","graph_effect":"none","additional_execution_authorized":False}
+open(path,'w').write(json.dumps(obj,inden
