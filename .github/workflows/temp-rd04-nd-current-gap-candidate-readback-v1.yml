@@ -1,0 +1,135 @@
+name: TEMP read back canonical RD-04 North Dakota public-record-gap candidate v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - agent/ssc-rd04-nd-current-gap-candidate-readback-base-v1
+    paths:
+      - '.tmp/rd04-nd-current-gap-candidate-readback-v1/trigger.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-rd04-nd-current-gap-candidate-readback-v1
+  cancel-in-progress: false
+
+jobs:
+  readback:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-current-gap-candidate-readback-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-current-gap-candidate-readback-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CURRENT_MAIN: d94b5ecd4547c7f051593fe330600985afc5e41c
+      BASE_BRANCH: agent/ssc-rd04-nd-current-gap-candidate-readback-base-v1
+      HEAD_BRANCH: agent/ssc-rd04-nd-current-gap-candidate-readback-trigger-v1
+      WORKFLOW_PATH: .github/workflows/temp-rd04-nd-current-gap-candidate-readback-v1.yml
+      TRIGGER_PATH: .tmp/rd04-nd-current-gap-candidate-readback-v1/trigger.json
+      PREFIX: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-adjudication
+      OUT: /tmp/ssc-rd04-nd-current-gap-candidate-readback-v1
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Bind exact current product and preserve its eight files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT/product"
+          test '${{ github.event.pull_request.base.ref }}' = "$BASE_BRANCH"
+          test '${{ github.event.pull_request.head.ref }}' = "$HEAD_BRANCH"
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          test "$(git rev-parse "$BASE_SHA^")" = "$CURRENT_MAIN"
+          test "$(git diff --name-only "$CURRENT_MAIN" "$BASE_SHA")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" "$BASE_SHA")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA")" = "$TRIGGER_PATH"
+          git diff --check "$CURRENT_MAIN" "$HEAD_SHA"
+          git fetch --quiet origin main
+          test "$(git rev-parse origin/main)" = "$CURRENT_MAIN"
+          files=(
+            current-cell-custody.json
+            field-decision.json
+            index.json
+            product-manifest.json
+            promotion-candidate.json
+            source-corpus.json
+            source-records.json
+            summary.json
+          )
+          for name in "${files[@]}"; do
+            test -f "$PREFIX/$name"
+            cp "$PREFIX/$name" "$OUT/product/$name"
+          done
+          cp "$TRIGGER_PATH" "$OUT/trigger.json"
+          python - "$OUT" "$PREFIX" "$CURRENT_MAIN" <<'PY'
+          import hashlib,json,subprocess,sys
+          from pathlib import Path
+          out=Path(sys.argv[1]); prefix=sys.argv[2]; parent=sys.argv[3]
+          rows=[]
+          for p in sorted((out/'product').glob('*.json')):
+              repo_path=f'{prefix}/{p.name}'
+              rows.append({
+                  'path':repo_path,
+                  'bytes':p.stat().st_size,
+                  'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+                  'git_blob_sha':subprocess.check_output(['git','rev-parse',f'{parent}:{repo_path}'],text=True).strip(),
+              })
+          receipt={
+              'schema_version':'ssc-rd04-nd-current-public-record-gap-candidate-readback@1',
+              'state':'complete','current_main':parent,'file_count':len(rows),'files':rows,
+              'source_requests':0,'route_executions':0,'source_admissions':0,
+              'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,
+              'class_closed':False,'cumulative_ledger_effect':'none',
+              'outside_human_dependency':False,'publication_effect':'none',
+              'adoption_effect':'none','graph_effect':'none','promotion_authorized':False
+          }
+          (out/'receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          PY
+          printf '%s\n' complete > "$OUT/STAGE"
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-current-public-record-gap-candidate-readback-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require exact readback and zero authority
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          jq -e '
+            .state=="complete" and .current_main=="d94b5ecd4547c7f051593fe330600985afc5e41c" and
+            .file_count==8 and (.files|length)==8 and
+            .source_requests==0 and .route_executions==0 and .source_admissions==0 and
+            .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and
+            .class_closed==false and .cumulative_ledger_effect=="none" and
+            .outside_human_dependency==false and .publication_effect=="none" and
+            .adoption_effect=="none" and .graph_effect=="none" and .promotion_authorized==false
+          ' "$OUT/receipt.json" > /dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
