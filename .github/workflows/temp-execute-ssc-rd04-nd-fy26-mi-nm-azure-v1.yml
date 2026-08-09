@@ -1,0 +1,131 @@
+name: TEMP execute RD-04 North Dakota FY2026 MI-NM Azure archive v1
+
+on:
+  pull_request:
+    branches: [agent/ssc-rd04-nd-fy26-mi-nm-azure-execution-base-v1]
+    types: [opened, synchronize, reopened]
+    paths: [.trigger/ssc-rd04-nd-fy26-mi-nm-azure-execution-v1.json]
+
+permissions: {contents: read, actions: read}
+concurrency: {group: temp-execute-ssc-rd04-nd-fy26-mi-nm-azure-v1, cancel-in-progress: false}
+
+env:
+  CURRENT_MAIN: 7d6f9895595a62b6a6cfb3205d03c3d9e50fce33
+  MATRIX: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  BASE: agent/ssc-rd04-nd-fy26-mi-nm-azure-execution-base-v1
+  HEAD: agent/ssc-rd04-nd-fy26-mi-nm-azure-execution-trigger-v1
+  WF: .github/workflows/temp-execute-ssc-rd04-nd-fy26-mi-nm-azure-v1.yml
+  TRIGGER: .trigger/ssc-rd04-nd-fy26-mi-nm-azure-execution-v1.json
+  LOCK_BRANCH: lock/ssc-rd04-nd-fy26-mi-nm-azure-execution-v1
+  ADJ_ARTIFACT_ID: '9041453373'
+  ADJ_ARTIFACT_BYTES: '54977'
+  ADJ_ARTIFACT_DIGEST: sha256:92e3f7ad2612219da435e38613a1d52d294c802fd172637432b1d074c5636805
+  ADJ_RECEIPT_SHA: c0f9278ad09502ff61901af90f04d0375932a851bd595a7776338ee241817306
+  PROTOCOL_SHA: 92303bf0e30fd73e2ba1f3203ae87da39e346ff9a6fcaa72cba00c44cd7d4658
+  ROUTE_ID: RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-MI-NM-AZURE-001
+  ROUTE_URL: https://fna-bwbufwdzbabpezgc.z01.azurefd.us/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-MI-NM-7-2026.zip
+  EXACT_HOST: fna-bwbufwdzbabpezgc.z01.azurefd.us
+  MAX_BYTES: '100000000'
+  OUT: /tmp/ssc-rd04-nd-fy26-mi-nm-azure-execution-v1
+
+jobs:
+  execute:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy26-mi-nm-azure-execution-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: '${{ github.event.pull_request.head.sha }}', fetch-depth: 0}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.13'}
+      - name: Authenticate exact protocol and execute one Azure GET
+        id: run
+        continue-on-error: true
+        shell: bash
+        env: {GH_TOKEN: '${{ github.token }}'}
+        run: |
+          set -Eeuo pipefail
+          O="$OUT"; A="$O/adjudication"; rm -rf "$O"; mkdir -p "$A" "$O/transport"; stage=bootstrap
+          sums(){ (cd "$O" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS); }
+          finalize(){ rc=$?; trap - EXIT; set +e; test -s "$O/execution-receipt.json" || jq -n --arg s "$stage" --argjson c "$rc" --arg p "$CURRENT_MAIN" '{schema_version:"ssc-rd04-nd-fy26-mi-nm-azure-execution@1",state:"failed_closed",failed_or_final_stage:$s,exit_code:$c,execution_parent:$p,fixed_route_count:1,terminal_route_count:0,physical_requests:0,source_admissions:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,additional_execution_authorized:false,outside_human_dependency:false}' > "$O/execution-receipt.json"; echo "$rc" > "$O/EXIT_CODE"; echo "$stage" > "$O/STAGE"; sums; exit "$rc"; }
+          trap finalize EXIT
+
+          stage=topology_and_lock
+          B='${{ github.event.pull_request.base.sha }}'; H='${{ github.event.pull_request.head.sha }}'
+          test '${{ github.event.pull_request.base.ref }}' = "$BASE"; test '${{ github.event.pull_request.head.ref }}' = "$HEAD"
+          test "$(git rev-parse "$B^")" = "$CURRENT_MAIN"; test "$(git rev-parse "$H^")" = "$B"
+          test "$(git diff --name-only "$CURRENT_MAIN" "$B")" = "$WF"; test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" "$B")" = "$WF"
+          test "$(git diff --name-only "$B" "$H")" = "$TRIGGER"; test "$(git diff --name-only --diff-filter=A "$B" "$H")" = "$TRIGGER"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CURRENT_MAIN" "$B")"; test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$B" "$H")"; git diff --check "$CURRENT_MAIN" "$H"
+          git fetch --no-tags --force origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse origin/main)" = "$CURRENT_MAIN"; test "$(git rev-parse "origin/main:$MATRIX")" = "$MATRIX_BLOB"
+          test "$(git ls-remote --heads origin "refs/heads/$LOCK_BRANCH" | awk '{print $1}')" = "$H"
+          cp "$TRIGGER" "$O/trigger.json"
+          jq -e --arg p "$CURRENT_MAIN" --arg m "$MATRIX_BLOB" --arg d "$ADJ_ARTIFACT_DIGEST" --arg r "$ADJ_RECEIPT_SHA" --arg s "$PROTOCOL_SHA" --arg route "$ROUTE_ID" --arg url "$ROUTE_URL" '.schema_version=="ssc-rd04-nd-fy26-mi-nm-azure-execution-trigger@1" and .issue==1017 and .canonical_parent==$p and .matrix_blob==$m and .adjudication_artifact_id==9041453373 and .adjudication_artifact_digest==$d and .adjudication_receipt_sha256==$r and .selected_protocol_sha256==$s and .route_id==$route and .url==$url and .execute_once==true and .maximum_followed_redirects==0 and .maximum_body_bytes==100000000 and .result_spawned_requests==0 and .automatic_source_admissions==0 and .automatic_field_terminalizations==0 and .automatic_matrix_updates==0 and .automatic_row_state_mutations==0 and .automatic_class_closures==0 and .outside_human_dependency==false' "$O/trigger.json" >/dev/null
+          echo "$CURRENT_MAIN" > "$O/main-at-start.txt"; echo "$H" > "$O/execution-lock-head.txt"
+
+          stage=authenticate_adjudication
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ADJ_ARTIFACT_ID" > "$O/adjudication-artifact.json"
+          jq -e --argjson i "$ADJ_ARTIFACT_ID" --argjson b "$ADJ_ARTIFACT_BYTES" --arg d "$ADJ_ARTIFACT_DIGEST" '.id==$i and .size_in_bytes==$b and .digest==$d and .expired==false' "$O/adjudication-artifact.json" >/dev/null
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ADJ_ARTIFACT_ID/zip" > "$O/adjudication.zip"
+          test "$(stat -c%s "$O/adjudication.zip")" = "$ADJ_ARTIFACT_BYTES"; test "sha256:$(sha256sum "$O/adjudication.zip"|cut -d' ' -f1)" = "$ADJ_ARTIFACT_DIGEST"
+          unzip -t "$O/adjudication.zip" > "$O/adjudication-zip-test.txt"; unzip -q "$O/adjudication.zip" -d "$A"; (cd "$A" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$A/receipt.json"|cut -d' ' -f1)" = "$ADJ_RECEIPT_SHA"; test "$(sha256sum "$A/selected-protocol.json"|cut -d' ' -f1)" = "$PROTOCOL_SHA"
+          jq -e --arg route "$ROUTE_ID" '.schema_version=="ssc-rd04-nd-fy26-mi-nm-redirect-adjudication-receipt@2" and .state=="complete" and .stage=="complete" and .exit_code==0 and .additional_execution_authorized==true and .additional_execution_scope==$route and .selected_followup_routes==1 and .source_requests==0 and .route_executions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false' "$A/receipt.json" >/dev/null
+          jq -e --arg route "$ROUTE_ID" --arg url "$ROUTE_URL" --arg host "$EXACT_HOST" --argjson max "$MAX_BYTES" '.schema_version=="ssc-rd04-nd-fy26-mi-nm-archive-cdn-protocol@1" and .state=="selected_unexecuted" and .route_id==$route and .url==$url and .method=="GET" and .attempts==1 and .exact_host==$host and .maximum_followed_redirects==0 and .maximum_body_bytes==$max and .require_zip_magic_on_http_200==true and .same_host_expansion==0 and .sibling_path_expansion==0 and .result_spawned_requests==0 and .source_admissions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false' "$A/selected-protocol.json" >/dev/null
+          cp "$A/selected-protocol.json" "$O/request-plan.json"
+
+          stage=execute_exact_route
+          python - "$ROUTE_ID" "$ROUTE_URL" "$EXACT_HOST" "$MAX_BYTES" "$LOCK_BRANCH" "$H" "$O" <<'PY'
+          from __future__ import annotations
+          import hashlib,json,pathlib,ssl,sys,time,urllib.error,urllib.parse,urllib.request,zipfile
+          route_id,url,host,max_bytes,lock_branch,head,out=sys.argv[1],sys.argv[2],sys.argv[3],int(sys.argv[4]),sys.argv[5],sys.argv[6],pathlib.Path(sys.argv[7])
+          parsed=urllib.parse.urlsplit(url); assert parsed.scheme=='https' and parsed.hostname==host and not parsed.query
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self,req,fp,code,msg,headers,newurl): return None
+          opener=urllib.request.build_opener(urllib.request.HTTPSHandler(context=ssl.create_default_context()),NoRedirect())
+          req=urllib.request.Request(url,method='GET',headers={'User-Agent':'BigBirdReturns-RD04-bounded-archive-capture/1.0','Accept':'application/zip,application/octet-stream;q=0.9,*/*;q=0.1','Accept-Encoding':'identity','Cache-Control':'no-cache'})
+          started=time.time(); status=None; headers=None; body=b''; effective=url; error=None
+          try:
+              response=opener.open(req,timeout=180); status=int(response.status); headers=response.headers; effective=response.geturl(); body=response.read(max_bytes+1)
+          except urllib.error.HTTPError as exc:
+              status=int(exc.code); headers=exc.headers; effective=exc.geturl(); body=exc.read(max_bytes+1)
+          except Exception as exc: error=f'{type(exc).__name__}: {exc}'
+          assert len(body)<=max_bytes
+          normalized=[{'name':str(k).lower(),'value':str(v)} for k,v in sorted((headers.items() if headers else []),key=lambda x:(str(x[0]).lower(),str(x[1])))]
+          hm={x['name']:x['value'] for x in normalized}; location=hm.get('location'); ctype=(hm.get('content-type') or '').split(';',1)[0].strip().lower() or None
+          zip_magic=body.startswith((b'PK\x03\x04',b'PK\x05\x06',b'PK\x07\x08'))
+          if error: terminal='transport_error_terminal'
+          elif status==200 and zip_magic and effective==url: terminal='http_success_zip_captured'
+          elif status==200: terminal='http_success_non_zip_terminal'
+          elif status in {301,302,303,307,308}: terminal='redirect_refused_terminal'
+          else: terminal='http_non_success_terminal'
+          body_sha=hashlib.sha256(body).hexdigest(); (out/'transport/response-body.bin').write_bytes(body); (out/'transport/response-headers.json').write_text(json.dumps(normalized,indent=2,sort_keys=True)+'\n')
+          member_count=None; nd_members=None
+          if terminal=='http_success_zip_captured':
+              (out/'source.zip').write_bytes(body)
+              with zipfile.ZipFile(out/'source.zip') as z:
+                  assert z.testzip() is None
+                  rows=[]
+                  for i,info in enumerate(z.infolist(),1):
+                      if info.is_dir(): continue
+                      data=z.read(info)
+                      rows.append({'ordinal':i,'path':info.filename,'bytes':info.file_size,'compressed_bytes':info.compress_size,'crc32':f'{info.CRC:08x}','sha256':hashlib.sha256(data).hexdigest(),'north_dakota_path_match':('/ND/' in '/'+info.filename.upper()+'/' or 'NORTH DAKOTA' in info.filename.upper())})
+                  member_count=len(rows); nd_members=sum(1 for r in rows if r['north_dakota_path_match'])
+                  (out/'archive-member-ledger.json').write_text(json.dumps({'schema_version':'ssc-rd04-archive-member-ledger@1','member_count':member_count,'north_dakota_path_matches':nd_members,'members':rows,'semantic_reviews':0,'source_admissions':0},indent=2,sort_keys=True)+'\n')
+          route={'schema_version':'ssc-rd04-nd-fy26-mi-nm-azure-route-receipt@1','route_id':route_id,'requested_url':url,'effective_url':effective,'physical_requests':1,'http_status':status,'content_type':ctype,'location':location,'body_bytes':len(body),'body_sha256':body_sha,'zip_magic':zip_magic,'followed_redirects':0,'transport_error':error,'elapsed_ms':int((time.time()-started)*1000),'terminal_state':terminal,'archive_member_count':member_count,'north_dakota_path_matches':nd_members,'source_admissions':0,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,'additional_execution_authorized':False,'execution_lock_branch':lock_branch,'execution_lock_head':head}
+          (out/'route-receipt.json').write_text(json.dumps(route,indent=2,sort_keys=True)+'\n')
+          (out/'physical-request-ledger.json').write_text(json.dumps({'schema_version':'ssc-rd04-physical-request-ledger@1','physical_requests':1,'requests':[{'ordinal':1,'method':'GET','url':url,'status':status,'terminal_state':terminal}]},indent=2,sort_keys=True)+'\n')
+          receipt={'schema_version':'ssc-rd04-nd-fy26-mi-nm-azure-execution@1','state':'complete','failed_or_final_stage':'complete','exit_code':0,'execution_parent':'7d6f9895595a62b6a6cfb3205d03c3d9e50fce33','execution_head':head,'fixed_route_count':1,'terminal_route_count':1,'physical_requests':1,'route_terminal_state':terminal,'http_status':status,'body_bytes':len(body),'body_sha256':body_sha,'zip_magic':zip_magic,'archive_member_count':member_count,'north_dakota_path_matches':nd_members,'result_spawned_requests':0,'source_admissions':0,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,'cumulative_ledger_effect':'none','outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none','additional_execution_authorized':False,'next_authorized_operation':'request-free adjudication of this exact terminal response and archive-member ledger only'}
+          (out/'execution-receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          PY
+          stage=complete
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: ssc-rd04-nd-fy26-mi-nm-azure-execution-v1, path: '${{ env.OUT }}', if-no-files-found: error, include-hidden-files: true, retention-days: 90, compression-level: 0}
+      - name: Require terminal Azure custody
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail; test "$(cat "$OUT/EXIT_CODE")" = 0; test "$(cat "$OUT/STAGE")" = complete; (cd "$OUT" && sha256sum -c SHA256SUMS); jq -e '.state=="complete" and .fixed_route_count==1 and .terminal_route_count==1 and .physical_requests==1 and .result_spawned_requests==0 and .source_admissions==0 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false and .additional_execution_authorized==false' "$OUT/execution-receipt.json" >/dev/null
