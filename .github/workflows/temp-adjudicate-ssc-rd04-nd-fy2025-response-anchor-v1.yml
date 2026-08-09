@@ -1,0 +1,117 @@
+name: TEMP adjudicate RD-04 North Dakota FY2025 response anchor v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-fy2025-response-anchor-adjudication-base-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.trigger/ssc-rd04-nd-fy2025-response-anchor-adjudication-v1'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: temp-adjudicate-rd04-nd-fy2025-response-anchor-v1
+  cancel-in-progress: false
+
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+  CONTROLLER_BLOB: a4b4177ee73cb1a4f39ee174b66bd7b5062dd5f2
+  CONTROLLER_XZ_BYTES: '4740'
+  CONTROLLER_XZ_SHA256: ffcc9bad6e8b3ad69248aff1358fb80e5e1128cd0a6c327cd0756888de623842
+  CONTROLLER_SOURCE_BYTES: '15577'
+  CONTROLLER_SOURCE_SHA256: f2ca62ba1649781ff011e0e4e85494759d8e7bb146881f8a7dc2feb97ef8eac2
+
+jobs:
+  adjudicate:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy2025-response-anchor-adjudication-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Recover immutable request-free adjudication controller
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          ROOT="${RUNNER_TEMP}/ssc-rd04-nd-fy2025-anchor-controller"
+          rm -rf "$ROOT"
+          mkdir -p "$ROOT"
+          gh api "repos/${GITHUB_REPOSITORY}/git/blobs/${CONTROLLER_BLOB}" > "$ROOT/blob.json"
+          test "$(jq -r .encoding "$ROOT/blob.json")" = base64
+          jq -r .content "$ROOT/blob.json" | tr -d '\n' | base64 -d > "$ROOT/controller.sh.xz"
+          test "$(stat -c %s "$ROOT/controller.sh.xz")" = "$CONTROLLER_XZ_BYTES"
+          test "$(sha256sum "$ROOT/controller.sh.xz" | awk '{print $1}')" = "$CONTROLLER_XZ_SHA256"
+          test "$(git hash-object "$ROOT/controller.sh.xz")" = "$CONTROLLER_BLOB"
+          xz -dc "$ROOT/controller.sh.xz" > "$ROOT/controller.sh"
+          test "$(stat -c %s "$ROOT/controller.sh")" = "$CONTROLLER_SOURCE_BYTES"
+          test "$(sha256sum "$ROOT/controller.sh" | awk '{print $1}')" = "$CONTROLLER_SOURCE_SHA256"
+          bash -n "$ROOT/controller.sh"
+
+      - name: Adjudicate exact captured index without source contact
+        id: adjudicate
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: bash "${RUNNER_TEMP}/ssc-rd04-nd-fy2025-anchor-controller/controller.sh"
+
+      - name: Preserve exact request-free anchor adjudication
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy2025-response-anchor-adjudication-v1
+          path: ${{ runner.temp }}/ssc-rd04-nd-fy2025-response-anchor-adjudication-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce terminal request-free result
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-nd-fy2025-response-anchor-adjudication-v1"
+          test "${{ steps.adjudicate.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          jq -e '
+            .state=="complete" and
+            .failed_or_final_stage=="complete" and
+            .exit_code==0 and
+            .source_requests==0 and
+            .route_executions==0 and
+            .source_admissions==0 and
+            .field_decisions==1 and
+            .promotion_candidates==0 and
+            .held_open_fields==1 and
+            .selected_followup_routes==1 and
+            .field_terminalizations==0 and
+            .matrix_updates==0 and
+            .row_state_mutations==0 and
+            .class_closed==false and
+            .cumulative_ledger_effect=="none" and
+            .outside_human_dependency==false and
+            .publication_effect=="none" and
+            .adoption_effect=="none" and
+            .graph_effect=="none" and
+            .additional_execution_authorized==true
+          ' "$OUT/receipt.json" > /dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
