@@ -1,0 +1,112 @@
+name: TEMP reconcile RD-04 FY2026 Azure targets
+
+on:
+  pull_request:
+    branches: [agent/ssc-rd04-nd-fy26-quarter-status-azure-route-reconciliation-base-v1]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  reconcile:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy26-quarter-status-azure-route-reconciliation-trigger-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: BigBirdReturns/clifford-number
+      PARENT: a592acea22c69a979f2a90c24a2bafb8c9445759
+      MATRIX: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+      MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+      BASE: agent/ssc-rd04-nd-fy26-quarter-status-azure-route-reconciliation-base-v1
+      HEAD: agent/ssc-rd04-nd-fy26-quarter-status-azure-route-reconciliation-trigger-v1
+      WF: .github/workflows/temp-reconcile-ssc-rd04-nd-fy26-quarter-status-azure-routes-v1.yml
+      TRIGGER: .trigger/ssc-rd04-nd-fy26-quarter-status-azure-route-reconciliation-v1.json
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - id: run
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          O="$RUNNER_TEMP/out"; A="$RUNNER_TEMP/a"; Q="$RUNNER_TEMP/q"; mkdir -p "$O" "$A" "$Q"
+          stage=topology
+          sums(){ python - "$O" <<'PY'
+          import hashlib,pathlib,sys
+          r=pathlib.Path(sys.argv[1]); rows=[]
+          for p in sorted(x for x in r.rglob('*') if x.is_file() and x.name!='SHA256SUMS'):
+              rows.append(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(r).as_posix()}\n')
+          (r/'SHA256SUMS').write_text(''.join(rows))
+          PY
+          }
+          fail(){ c=$?; set +e; printf '%s\n' "$stage" >"$O/STAGE"; printf '%s\n' "$c" >"$O/EXIT_CODE"; ST="$stage" C="$c" O="$O" python - <<'PY'
+          import json,os,pathlib
+          p=pathlib.Path(os.environ['O']); p.joinpath('failure-receipt.json').write_text(json.dumps({'schema_version':'ssc-rd04-azure-route-reconciliation-failure@1','state':'failed_closed','stage':os.environ['ST'],'exit_code':int(os.environ['C']),'source_requests':0,'route_executions':0,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,'additional_execution_authorized':False},indent=2,sort_keys=True)+'\n')
+          PY
+          sums; exit "$c"; }
+          trap fail ERR
+          B='${{ github.event.pull_request.base.sha }}'; H='${{ github.event.pull_request.head.sha }}'
+          test '${{ github.event.pull_request.base.ref }}' = "$BASE"; test '${{ github.event.pull_request.head.ref }}' = "$HEAD"
+          test "$(git rev-parse "$B^")" = "$PARENT"; test "$(git rev-parse "$H^")" = "$B"
+          test "$(git diff --name-only "$PARENT" "$B")" = "$WF"; test "$(git diff --name-only "$B" "$H")" = "$TRIGGER"
+          cp "$TRIGGER" "$O/trigger.json"
+          stage=live_main
+          git fetch --no-tags origin main; git merge-base --is-ancestor "$PARENT" origin/main
+          test "$(git rev-parse "origin/main:$MATRIX")" = "$MATRIX_BLOB"
+          LM="$(git rev-parse origin/main)"; LT="$(git rev-parse 'origin/main^{tree}')"; printf '%s\n' "$LM" >"$O/live-main.txt"; printf '%s\n' "$LT" >"$O/live-main-tree.txt"
+          python - "$O/trigger.json" <<'PY'
+          import json,pathlib,sys
+          got=json.loads(pathlib.Path(sys.argv[1]).read_text())
+          exp={'schema_version':'ssc-rd04-azure-route-reconciliation-trigger@1','canonical_parent':'a592acea22c69a979f2a90c24a2bafb8c9445759','overbroad_artifact_id':9030880187,'overbroad_artifact_sha256':'da6ffe7d0a0455021b625eb39d293d030c0adacfd2a5ec433349ed5469bbba0f','q3_artifact_id':9030574383,'q3_artifact_sha256':'39477a4cb5ba89b03a3edf75c66148fed86ccd660493ded8d036724851fccfd0','q3_pdf_sha256':'ab65b3bbc62f27a6d3aa2811991b257e0f226c08791f0bdf6ddf4024a4b0e8c1','source_requests':0,'route_executions':0,'matrix_updates':0,'class_closed':False}
+          assert got==exp,(got,exp)
+          PY
+          get(){ id=$1; bytes=$2; sha=$3; zip=$4; dir=$5; gh api "repos/$REPO/actions/artifacts/$id" >"$O/$id.metadata.json"; jq -e --argjson i "$id" --argjson b "$bytes" --arg d "sha256:$sha" '.id==$i and .size_in_bytes==$b and .digest==$d and .expired==false' "$O/$id.metadata.json" >/dev/null; gh api "repos/$REPO/actions/artifacts/$id/zip" >"$zip"; test "$(stat -c%s "$zip")" = "$bytes"; test "$(sha256sum "$zip"|cut -d' ' -f1)" = "$sha"; unzip -t "$zip" >"$O/$id.zip-test.txt"; unzip -q "$zip" -d "$dir"; (cd "$dir" && sha256sum -c SHA256SUMS); }
+          stage=authenticate_overbroad_protocol
+          get 9030880187 188292 da6ffe7d0a0455021b625eb39d293d030c0adacfd2a5ec433349ed5469bbba0f "$RUNNER_TEMP/a.zip" "$A"
+          test "$(cat "$A/STAGE")" = complete; test "$(cat "$A/EXIT_CODE")" = 0
+          test "$(sha256sum "$A/receipt.json"|cut -d' ' -f1)" = 5744f1431925cb5052d382230ca9e99005f10b542ec1feab22c255095d94d812
+          test "$(sha256sum "$A/selected-followup-protocol.json"|cut -d' ' -f1)" = dd3deccbfdb643be9d18fe528d039a1b6ad6070c85a37cd333a7cc20a5f93775
+          stage=authenticate_consumed_q3
+          get 9030574383 222813 39477a4cb5ba89b03a3edf75c66148fed86ccd660493ded8d036724851fccfd0 "$RUNNER_TEMP/q.zip" "$Q"
+          test "$(sha256sum "$Q/execution-receipt.json"|cut -d' ' -f1)" = ee107513b4c59fa140a04de00e8be3430c13b2f78f072e9d03f614b47dc101b1
+          test "$(sha256sum "$Q/route-receipt.json"|cut -d' ' -f1)" = b4bc69a3639c83af4aa76134b103e715d446e2c505de8014adc67d47bbe3f341
+          test "$(sha256sum "$Q/source.pdf"|cut -d' ' -f1)" = ab65b3bbc62f27a6d3aa2811991b257e0f226c08791f0bdf6ddf4024a4b0e8c1
+          stage=reconcile
+          O="$O" A="$A" Q="$Q" H="$H" LM="$LM" LT="$LT" python - <<'PY'
+          import hashlib,json,os,pathlib
+          o=pathlib.Path(os.environ['O']); a=pathlib.Path(os.environ['A']); q=pathlib.Path(os.environ['Q'])
+          load=lambda p:json.loads(p.read_text()); write=lambda n,v:o.joinpath(n).write_text(json.dumps(v,indent=2,sort_keys=True)+'\n')
+          p=load(a/'selected-followup-protocol.json'); qr=load(q/'route-receipt.json'); er=load(q/'execution-receipt.json')
+          assert p['route_count']==3 and len(p['routes'])==3
+          assert er['physical_requests']==1 and er['additional_execution_authorized'] is False and er['pdf_body_captured'] is True
+          assert qr['http_status']==200 and qr['pdf_magic'] is True and qr['body_sha256']=='ab65b3bbc62f27a6d3aa2811991b257e0f226c08791f0bdf6ddf4024a4b0e8c1'
+          q1='https://fna-bwbufwdzbabpezgc.z01.azurefd.us/sites/default/files/resource-files/FY26-Quarter-1-ABAWD-Waiver-Status.pdf'; q2=q1.replace('Quarter-1','Quarter-2'); q3=q1.replace('Quarter-1','Quarter-3')
+          by={r['url']:r for r in p['routes']}; assert set(by)=={q1,q2,q3}
+          routes=[]
+          for i,u in enumerate((q1,q2),1):
+              routes.append({'ordinal':i,'route_id':f'RD04-ND-CURRENT-WAIVER-FY26Q{i}-AZURE-001','url':u,'method':'GET','attempts':1,'exact_host':'fna-bwbufwdzbabpezgc.z01.azurefd.us','maximum_followed_redirects':0,'maximum_body_bytes':12000000,'expected_media_type':'application/pdf','require_pdf_magic':True,'same_host_expansion':0,'result_spawned_requests':0})
+          protocol={'schema_version':'ssc-rd04-nd-fy26q1-q2-azure-pdf-transport-protocol@1','state':'selected_unexecuted','authority_source':'authenticated_three-route_protocol_reconciled_against_consumed_q3','canonical_parent':'a592acea22c69a979f2a90c24a2bafb8c9445759','fixed_route_count':2,'routes':routes,'excluded_routes':[{'url':q3,'reason':'already_consumed_and_pdf_captured','artifact_id':9030574383,'pdf_sha256':'ab65b3bbc62f27a6d3aa2811991b257e0f226c08791f0bdf6ddf4024a4b0e8c1'}],'source_requests':0,'route_executions':0,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,'additional_execution_authorized':True,'next_authorized_operation':'execute exactly Q1 and Q2 Azure targets once each; refuse every redirect and preserve complete body custody'}
+          write('selected-followup-protocol.json',protocol)
+          ps=hashlib.sha256(o.joinpath('selected-followup-protocol.json').read_bytes()).hexdigest()
+          receipt={'schema_version':'ssc-rd04-azure-route-reconciliation-receipt@1','state':'complete','stage':'complete','carrier_head':os.environ['H'],'live_main':os.environ['LM'],'live_main_tree':os.environ['LT'],'overbroad_artifact_id':9030880187,'q3_consumed_artifact_id':9030574383,'selected_protocol_sha256':ps,'selected_route_count':2,'excluded_consumed_route_count':1,'source_requests':0,'route_executions':0,'source_admissions':0,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False,'cumulative_ledger_effect':'none','outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none','additional_execution_authorized':True,'next_authorized_operation':protocol['next_authorized_operation']}
+          write('receipt.json',receipt); write('summary.json',{'state':'complete','selected_q1_q2_routes':2,'excluded_consumed_q3':1,'source_requests':0,'route_executions':0,'class_closed':False})
+          o.joinpath('summary.md').write_text('# RD-04 Azure target reconciliation\n\nThe checksum-valid three-route protocol was reconciled against terminal Q3 custody. Q3 is consumed. Only exact Q1 and Q2 targets retain one request each. No source request occurred here.\n')
+          PY
+          printf 'complete\n' >"$O/STAGE"; printf '0\n' >"$O/EXIT_CODE"; sums; (cd "$O" && sha256sum -c SHA256SUMS); trap - ERR
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy26-quarter-status-azure-route-reconciliation-v1
+          path: ${{ runner.temp }}/out
+          if-no-files-found: error
+          retention-days: 90
+      - if: always()
+        shell: bash
+        run: |
+          test '${{ steps.run.outcome }}' = success
+          O="$RUNNER_TEMP/out"; test "$(cat "$O/STAGE")" = complete; test "$(cat "$O/EXIT_CODE")" = 0
+          jq -e '.state=="complete" and .selected_route_count==2 and .excluded_consumed_route_count==1 and .source_requests==0 and .route_executions==0 and .additional_execution_authorized==true' "$O/receipt.json" >/dev/null
+          (cd "$O" && sha256sum -c SHA256SUMS)
