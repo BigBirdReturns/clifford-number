@@ -1,0 +1,275 @@
+name: TEMP publish cross-corpus fanout two-gap repair v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-publish-cross-corpus-fanout-two-gap-repair-v1.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-publish-cross-corpus-fanout-two-gap-repair-v1
+  cancel-in-progress: false
+
+env:
+  EXPECTED_MAIN: 4edc3f4f65851cf2643e889d93df3b6372a2f468
+  CARRIER_BRANCH: agent/cross-corpus-fanout-two-gap-repair-publisher-v1
+  CARRIER_PATH: .github/workflows/temp-publish-cross-corpus-fanout-two-gap-repair-v1.yml
+  PRODUCT_BRANCH: agent/cross-corpus-fanout-two-gap-repair-v1
+  TARGET_PATH: data/research/clifford-cross-corpus-public-interest-map.json
+  OUTPUT_DIR: /tmp/cross-corpus-fanout-two-gap-repair-v1
+
+jobs:
+  publish:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/cross-corpus-fanout-two-gap-repair-publisher-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Build, validate, and publish exact one-file repair
+        id: publish
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          OUT="$OUTPUT_DIR"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          exec > >(tee "$OUT/publish.log") 2>&1
+          stage=bootstrap
+
+          write_failure() {
+            local rc=$1
+            if [[ ! -s "$OUT/receipt.json" ]]; then
+              jq -n                 --arg state "failed_closed"                 --arg stage "$stage"                 --argjson exit_code "$rc"                 --arg parent "$EXPECTED_MAIN"                 --arg carrier "$(git rev-parse HEAD 2>/dev/null || true)"                 '{
+                  schema_version:"cross-corpus-fanout-two-gap-repair-publisher@1",
+                  state:$state,
+                  failed_or_final_stage:$stage,
+                  exit_code:$exit_code,
+                  canonical_parent:$parent,
+                  carrier_head:(if $carrier=="" then null else $carrier end),
+                  permanent_branch_moved:false,
+                  permanent_paths:0,
+                  source_requests:0,
+                  graph_effect:"none",
+                  outside_human_dependency:false
+                }' > "$OUT/receipt.json"
+            fi
+          }
+
+          finalize() {
+            local rc=$?
+            trap - EXIT
+            set +e
+            write_failure "$rc"
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          on_error() {
+            local rc=$?
+            trap - ERR
+            set +e
+            write_failure "$rc"
+            exit "$rc"
+          }
+          trap on_error ERR
+          set -Eeuo pipefail
+
+          stage=bind_carrier
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          test "$(git rev-list --count "$EXPECTED_MAIN"..HEAD)" -eq 1
+          test "$(git diff --name-only "$EXPECTED_MAIN" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$EXPECTED_MAIN" HEAD)" = "$CARRIER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$EXPECTED_MAIN" HEAD)"
+          git diff --check "$EXPECTED_MAIN" HEAD
+
+          stage=bind_live_main
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          printf '%s\n' "$(git rev-parse "$EXPECTED_MAIN^{tree}")" > "$OUT/parent-tree.txt"
+
+          stage=patch_exact_snapshot
+          git checkout --detach "$EXPECTED_MAIN"
+          before_blob="$(git rev-parse "$EXPECTED_MAIN:$TARGET_PATH")"
+          before_sha="$(sha256sum "$TARGET_PATH" | awk '{print $1}')"
+          BEFORE_BLOB="$before_blob" BEFORE_SHA="$before_sha" TARGET_PATH="$TARGET_PATH" python - <<'PY'
+          from __future__ import annotations
+          import json
+          import os
+          from pathlib import Path
+
+          path = Path(os.environ["TARGET_PATH"])
+          data = json.loads(path.read_text(encoding="utf-8"))
+          lanes = data.get("lanes", [])
+          lane = next(item for item in lanes if item.get("lane_id") == "official-research-fanout")
+          assert lane["counts"]["crawl_source_gaps"] == 1
+          assert lane["crawl_source_gap_states"] == [
+              {
+                  "source_id": "sam-opportunities",
+                  "status": "skipped_missing_credential",
+                  "interpretation": "Acquisition did not run; this is not a zero result.",
+              }
+          ]
+          old = lane["what_the_data_shows"]
+          assert "current committed crawl exposes one source gap" in old
+          assert "Federal Register source returned to ok" in old
+
+          lane["counts"]["crawl_source_gaps"] = 2
+          lane["crawl_source_gap_states"] = [
+              {
+                  "source_id": "sam-opportunities",
+                  "status": "skipped_missing_credential",
+                  "interpretation": "Acquisition did not run; this is not a zero result.",
+              },
+              {
+                  "source_id": "federal-register",
+                  "status": "partial",
+                  "records_seen": 9,
+                  "failed_queries": 1,
+                  "failure_class": "upstream_503",
+                  "interpretation": "Coverage is incomplete; the failed query is not a negative result.",
+              },
+          ]
+          lane["what_the_data_shows"] = (
+              "The repository generated at least 316 inspectable research tasks; the live target branch may "
+              "contain more as official-record intake advances. Batch count varies with the configured batch "
+              "size and is presentation geometry, not a research-data count. Rejections, failed routes, source "
+              "gaps, and inferred scout findings remain part of the discovery map rather than disappearing "
+              "from it. The current committed crawl exposes two source gaps: SAM.gov did not execute because "
+              "its credential is unavailable, and the Federal Register scan completed partially after one "
+              "upstream 503 response while preserving nine records seen. Neither state supports a zero-result "
+              "interpretation or evidence-of-absence claim."
+          )
+          path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+          PY
+
+          test "$(git diff --name-only)" = "$TARGET_PATH"
+          test "$(git diff --name-only --diff-filter=M)" = "$TARGET_PATH"
+          test -z "$(git diff --name-only --diff-filter=ADTCRUXB)"
+          git diff --check
+          after_sha="$(sha256sum "$TARGET_PATH" | awk '{print $1}')"
+
+          stage=qualify_repair
+          npm run release:check
+          test "$(git diff --name-only)" = "$TARGET_PATH"
+          git diff --check
+
+          stage=create_product_commit
+          git add "$TARGET_PATH"
+          product_tree="$(git write-tree)"
+          export GIT_AUTHOR_NAME="RD-04 control repair"
+          export GIT_AUTHOR_EMAIL="rd04-control-repair@users.noreply.github.com"
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+          product_commit="$(printf '%s\n'             'Repair current two-gap official-research fanout denominator'             ''             'Record SAM missing-credential and Federal Register partial coverage as the two current crawl-source gaps. Preserve both as acquisition limitations, not zero results or evidence of absence.' |
+            git commit-tree "$product_tree" -p "$EXPECTED_MAIN")"
+          test "$(git rev-parse "$product_commit^")" = "$EXPECTED_MAIN"
+          test "$(git diff --name-only "$EXPECTED_MAIN" "$product_commit")" = "$TARGET_PATH"
+          test "$(git diff --name-only --diff-filter=M "$EXPECTED_MAIN" "$product_commit")" = "$TARGET_PATH"
+          test -z "$(git diff --name-only --diff-filter=ADTCRUXB "$EXPECTED_MAIN" "$product_commit")"
+
+          stage=publish_product_ref
+          remote_before="$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')"
+          if [[ -n "$remote_before" && "$remote_before" != "$product_commit" ]]; then
+            echo "refusal: product branch already points elsewhere" >&2
+            exit 1
+          fi
+          git push origin "$product_commit:refs/heads/$PRODUCT_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$product_commit"
+
+          stage=reconcile_live_main
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+
+          jq -n             --arg parent "$EXPECTED_MAIN"             --arg parent_tree "$(cat "$OUT/parent-tree.txt")"             --arg carrier "${{ github.event.pull_request.head.sha }}"             --arg target "$TARGET_PATH"             --arg before_blob "$before_blob"             --arg before_sha "$before_sha"             --arg after_sha "$after_sha"             --arg product_branch "$PRODUCT_BRANCH"             --arg product_commit "$product_commit"             --arg product_tree "$product_tree"             '{
+              schema_version:"cross-corpus-fanout-two-gap-repair-publisher@1",
+              state:"complete",
+              failed_or_final_stage:"complete",
+              exit_code:0,
+              canonical_parent:$parent,
+              canonical_parent_tree:$parent_tree,
+              carrier_head:$carrier,
+              target_path:$target,
+              prior_blob:$before_blob,
+              prior_sha256:$before_sha,
+              repaired_sha256:$after_sha,
+              product_branch:$product_branch,
+              product_commit:$product_commit,
+              product_tree:$product_tree,
+              permanent_branch_moved:true,
+              permanent_paths:1,
+              modified_paths:1,
+              added_paths:0,
+              deleted_paths:0,
+              current_crawl_source_gaps:2,
+              source_requests:0,
+              graph_effect:"none",
+              outside_human_dependency:false
+            }' > "$OUT/receipt.json"
+
+          stage=complete
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          printf '%s\n' complete > "$OUT/STAGE"
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 |
+              LC_ALL=C sort -z |
+              xargs -0 sha256sum > SHA256SUMS
+          )
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+
+      - name: Upload publisher receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cross-corpus-fanout-two-gap-repair-publisher-v1
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal publication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(cat "$OUTPUT_DIR/EXIT_CODE")" = 0
+          test "$(cat "$OUTPUT_DIR/STAGE")" = complete
+          (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .state=="complete" and
+            .permanent_branch_moved==true and
+            .permanent_paths==1 and
+            .modified_paths==1 and
+            .current_crawl_source_gaps==2 and
+            .source_requests==0 and
+            .graph_effect=="none" and
+            .outside_human_dependency==false
+          ' "$OUTPUT_DIR/receipt.json" > /dev/null
