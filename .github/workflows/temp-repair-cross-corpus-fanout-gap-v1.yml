@@ -1,0 +1,275 @@
+name: TEMP repair cross-corpus fanout gap denominator v1
+
+on:
+  pull_request:
+    branches:
+      - agent/cross-corpus-fanout-gap-repair-base-v1
+    paths:
+      - .trigger/cross-corpus-fanout-gap-repair-v1.json
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    env:
+      EXPECTED_MAIN: 4edc3f4f65851cf2643e889d93df3b6372a2f468
+      EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
+      EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+      WORKFLOW_PATH: .github/workflows/temp-repair-cross-corpus-fanout-gap-v1.yml
+      TRIGGER_PATH: .trigger/cross-corpus-fanout-gap-repair-v1.json
+      TRIGGER_SHA256: a0b14fe79295ec19e91abc93d877573d52244226821d661649bb94607f34a4f1
+      MAP_PATH: data/research/clifford-cross-corpus-public-interest-map.json
+      MAP_BLOB: 3d09397a0d99c6f79c32d4a40f1d18d8fe1525ff
+      CRAWL_STATE_PATH: data/crawl/state.json
+      CRAWL_STATE_BLOB: 471ec73fe029a7d96b29dc38e190255e6b8d5a74
+      CRAWL_SOURCES_PATH: data/crawl/sources.json
+      CRAWL_SOURCES_BLOB: 8c7cde54c9193a4181ab748fbd0490301c4ba19e
+      PRODUCT_BRANCH: agent/cross-corpus-fanout-gap-product-v1
+      OUT: /tmp/cross-corpus-fanout-gap-repair-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Bind exact temporary topology and frozen inputs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+
+          git fetch --force origin main "$EXPECTED_BASE" "$EXPECTED_HEAD"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse "$EXPECTED_BASE^")" = "$EXPECTED_MAIN"
+          test "$(git rev-list --count "$EXPECTED_MAIN..$EXPECTED_BASE")" = 1
+          test "$(git diff --name-only "$EXPECTED_MAIN" "$EXPECTED_BASE")" = "$WORKFLOW_PATH"
+          test "$(git rev-parse "$EXPECTED_HEAD^")" = "$EXPECTED_BASE"
+          test "$(git rev-list --count "$EXPECTED_BASE..$EXPECTED_HEAD")" = 1
+          test "$(git diff --name-only "$EXPECTED_BASE" "$EXPECTED_HEAD")" = "$TRIGGER_PATH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test "$(sha256sum "$TRIGGER_PATH" | cut -d' ' -f1)" = "$TRIGGER_SHA256"
+
+          test "$(git rev-parse "$EXPECTED_MAIN:$MAP_PATH")" = "$MAP_BLOB"
+          test "$(git rev-parse "$EXPECTED_MAIN:$CRAWL_STATE_PATH")" = "$CRAWL_STATE_BLOB"
+          test "$(git rev-parse "$EXPECTED_MAIN:$CRAWL_SOURCES_PATH")" = "$CRAWL_SOURCES_BLOB"
+
+          git show "$EXPECTED_MAIN:$MAP_PATH" > "$OUT/map-before.json"
+          git show "$EXPECTED_MAIN:$CRAWL_STATE_PATH" > "$OUT/crawl-state.json"
+          git show "$EXPECTED_MAIN:$CRAWL_SOURCES_PATH" > "$OUT/crawl-sources.json"
+
+          if git ls-remote --exit-code --heads origin "$PRODUCT_BRANCH" >/dev/null 2>&1; then
+            echo "product branch already exists" >&2
+            exit 1
+          fi
+
+      - name: Construct exact one-file repair product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git checkout --detach "$EXPECTED_MAIN"
+
+          python - <<'PY'
+          from pathlib import Path
+          import json, os
+
+          map_path=Path(os.environ["MAP_PATH"])
+          state_path=Path(os.environ["CRAWL_STATE_PATH"])
+          sources_path=Path(os.environ["CRAWL_SOURCES_PATH"])
+          out=Path(os.environ["OUT"])
+
+          public_map=json.loads(map_path.read_text())
+          state=json.loads(state_path.read_text())
+          sources=json.loads(sources_path.read_text())
+          trigger=json.loads(Path(os.environ["TRIGGER_PATH"]).read_text())
+
+          enabled=sorted(
+              source["id"]
+              for source in sources.get("sources", [])
+              if source.get("enabled")
+          )
+          observed=[]
+          for source_id in enabled:
+              status=state.get("sources", {}).get(source_id, {}).get("status", "not_run")
+              if status != "ok":
+                  observed.append((source_id,status))
+
+          assert observed == [
+              ("federal-register","partial"),
+              ("sam-opportunities","skipped_missing_credential"),
+          ], observed
+
+          lane=next(
+              row for row in public_map["lanes"]
+              if row["lane_id"]=="official-research-fanout"
+          )
+          assert lane["counts"]["crawl_source_gaps"] == trigger["expected_gap_count_before"]
+          assert lane["crawl_source_gap_states"] == [{
+              "source_id":"sam-opportunities",
+              "status":"skipped_missing_credential",
+              "interpretation":"Acquisition did not run; this is not a zero result."
+          }]
+
+          lane["counts"]["crawl_source_gaps"] = trigger["expected_gap_count_after"]
+          lane["crawl_source_gap_states"] = trigger["expected_gap_states_after"]
+          lane["what_the_data_shows"] = (
+              "The repository generated at least 316 inspectable research tasks; "
+              "the live target branch may contain more as official-record intake advances. "
+              "Batch count varies with the configured batch size and is presentation geometry, "
+              "not a research-data count. Rejections, failed routes, source gaps, and inferred "
+              "scout findings remain part of the discovery map rather than disappearing from it. "
+              "The current committed crawl exposes two source gaps: SAM.gov did not execute "
+              "because its configured credential is unavailable, and the Federal Register scan "
+              "is partial after one query returned HTTP 503. These are acquisition or coverage "
+              "gaps, not zero results or evidence of absence."
+          )
+          lane["open_join"] = (
+              "A fanout item is a research lead or coverage state, not a verified finding. "
+              "The SAM credential gap and partial Federal Register query remain open until "
+              "separate successful acquisitions; neither may be interpreted as a negative result."
+          )
+          source_paths=list(lane.get("source_paths", []))
+          for rel in ["data/crawl/sources.json","data/crawl/state.json"]:
+              if rel not in source_paths:
+                  source_paths.append(rel)
+          lane["source_paths"]=source_paths
+          public_map["generated_at"]="2026-08-09"
+
+          map_path.write_text(json.dumps(public_map,indent=2,ensure_ascii=False)+"\n")
+          (out/"map-after.json").write_text(map_path.read_text())
+          (out/"gap-observation.json").write_text(json.dumps({
+              "enabled_sources":enabled,
+              "observed_gap_states":[
+                  {"source_id":source_id,"status":status}
+                  for source_id,status in observed
+              ],
+              "gap_count_before":trigger["expected_gap_count_before"],
+              "gap_count_after":trigger["expected_gap_count_after"],
+              "negative_result_claims":0,
+              "source_requests":0,
+              "graph_effect":"none"
+          },indent=2)+"\n")
+          PY
+
+          test "$(git diff --name-only)" = "$MAP_PATH"
+          test "$(git diff --name-status | cut -f1)" = M
+          git diff --check
+          git add "$MAP_PATH"
+          git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m 'Repair cross-corpus fanout source-gap denominator'
+
+          product_commit="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          test "$(git rev-list --count "$EXPECTED_MAIN..HEAD")" = 1
+          test "$(git diff --name-only "$EXPECTED_MAIN" HEAD)" = "$MAP_PATH"
+
+          printf '%s\n' "$product_commit" > "$OUT/PRODUCT_COMMIT"
+          printf '%s\n' "$product_tree" > "$OUT/PRODUCT_TREE"
+
+      - name: Run complete release gate on exact product commit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          product_commit="$(cat "$OUT/PRODUCT_COMMIT")"
+          test "$(git rev-parse HEAD)" = "$product_commit"
+
+          set +e
+          npm run release:check > "$OUT/release-check.log" 2>&1
+          release_status=$?
+          set -e
+          test "$release_status" = 0
+
+          git reset --hard HEAD
+          git clean -fdx
+          node tools/validate-clifford-cross-corpus-public-interest-map.mjs
+          test -z "$(git status --porcelain=v1)"
+
+      - name: Publish exact one-commit product branch
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch --force origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+
+          product_commit="$(cat "$OUT/PRODUCT_COMMIT")"
+          product_tree="$(cat "$OUT/PRODUCT_TREE")"
+          test "$(git rev-parse "$product_commit^")" = "$EXPECTED_MAIN"
+          test "$(git rev-parse "$product_commit^{tree}")" = "$product_tree"
+          test "$(git diff --name-only "$EXPECTED_MAIN" "$product_commit")" = "$MAP_PATH"
+
+          git push origin "$product_commit:refs/heads/$PRODUCT_BRANCH"
+          test "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | cut -f1)" = "$product_commit"
+
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os
+
+          out=Path(os.environ["OUT"])
+          product_commit=(out/"PRODUCT_COMMIT").read_text().strip()
+          product_tree=(out/"PRODUCT_TREE").read_text().strip()
+          before=json.loads((out/"map-before.json").read_text())
+          after=json.loads((out/"map-after.json").read_text())
+          before_lane=next(row for row in before["lanes"] if row["lane_id"]=="official-research-fanout")
+          after_lane=next(row for row in after["lanes"] if row["lane_id"]=="official-research-fanout")
+          receipt={
+              "schema_version":"cross-corpus-fanout-gap-repair-receipt@1",
+              "state":"product_published",
+              "canonical_parent":os.environ["EXPECTED_MAIN"],
+              "product_commit":product_commit,
+              "product_tree":product_tree,
+              "product_branch":os.environ["PRODUCT_BRANCH"],
+              "permanent_paths":[os.environ["MAP_PATH"]],
+              "permanent_path_count":1,
+              "modified_paths":1,
+              "added_paths":0,
+              "deleted_paths":0,
+              "map_blob_before":os.environ["MAP_BLOB"],
+              "map_sha256_before":hashlib.sha256((out/"map-before.json").read_bytes()).hexdigest(),
+              "map_sha256_after":hashlib.sha256((out/"map-after.json").read_bytes()).hexdigest(),
+              "crawl_source_gaps_before":before_lane["counts"]["crawl_source_gaps"],
+              "crawl_source_gaps_after":after_lane["counts"]["crawl_source_gaps"],
+              "crawl_source_gap_states_after":after_lane["crawl_source_gap_states"],
+              "release_gate":"pass",
+              "source_requests":0,
+              "source_admissions":0,
+              "field_terminalizations":0,
+              "matrix_updates":0,
+              "row_state_mutations":0,
+              "class_closed":False,
+              "outside_human_dependency":False,
+              "graph_effect":"none"
+          }
+          (out/"receipt.json").write_text(json.dumps(receipt,indent=2)+"\n")
+          PY
+
+          (
+            cd "$OUT"
+            find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\n' | sort |
+              while read -r p; do sha256sum "$p"; done > SHA256SUMS
+          )
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cross-corpus-fanout-gap-repair-v1
+          path: /tmp/cross-corpus-fanout-gap-repair-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal repair publication
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(jq -r .state "$OUT/receipt.json")" = product_published
+          test "$(jq -r .permanent_path_count "$OUT/receipt.json")" = 1
+          test "$(jq -r .crawl_source_gaps_after "$OUT/receipt.json")" = 2
+          test "$(jq -r .release_gate "$OUT/receipt.json")" = pass
+          test "$(jq -r .graph_effect "$OUT/receipt.json")" = none
