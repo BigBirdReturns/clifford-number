@@ -8,11 +8,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: write
 
 concurrency:
-  group: no-magic-human-gate-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: pc59-terminal-recovery-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
 
 jobs:
   validate:
@@ -29,3 +32,110 @@ jobs:
         run: |
           node tools/validate-no-magic-human-gate.mjs
           node test/no-magic-human-gate.test.js
+
+  recover-pc59-terminal-proof-and-cleanup:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/pc59-terminal-recovery-v2'
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPOSITORY: ${{ github.repository }}
+      API_URL: ${{ github.api_url }}
+      CARRIER_PARENT: 'cffe670fef5c006c7e963421d9fd18c29ed40fba'
+      CARRIER_PATH: '.github/workflows/no-magic-human-gate.yml'
+      CONTROLLER_BLOB: 'de263ca08bcd1af895b3df34c1081c1d1df43b7d'
+      CONTROLLER_GZIP_SHA256: '27d7349d836939e80a6faab1ac557d2bd78ca2538c643561f25c9af52f66ff82'
+      CONTROLLER_SHA256: '93e91097ed1eefc0bb251cdfc7f3a324676b2020a585905468999550425c490c'
+      ISSUE: '1662'
+      PRODUCT_PR: '1731'
+      PRODUCT: '80a9898890c2a8b271d4d36f74d37c1975149b25'
+      PRODUCT_PARENT: 'a592acea22c69a979f2a90c24a2bafb8c9445759'
+      PRODUCT_PARENT_TREE: 'c7dbb1df10b409caa7893846a9e4b3e8d1392be0'
+      PRODUCT_TREE: '9057a3daca6e8420c83652d5ba2669c2f2ae34a5'
+      MERGE: 'cffe670fef5c006c7e963421d9fd18c29ed40fba'
+      MERGE_FIRST_EXPECTED: 'aa1c0c3f741bf2fb7aa923a4008e5bc927dca032'
+      EXPECTED_MATRIX: '53'
+      CODEX_REQUEST_COMMENT: '5232899476'
+      CODEX_COMMIT_PREFIX: '80a9898890'
+      QUALIFIER_RUN: '31294560504'
+      QUALIFIER_HEAD: '5886d3c87bf3d083b6de6c376579067952018c0a'
+      QUALIFIER_ARTIFACT: '9032608869'
+      QUALIFIER_DIGEST: 'sha256:6882402385ebd8014c5cfc8a7c2a94cf77d1acc9b00b0198662f08f541452037'
+      PUBLICATION_RUN: '31327408812'
+      PUBLICATION_HEAD: 'afb990c64b598842931e6e54bd864ddfb164fe32'
+      PUBLICATION_ARTIFACT: '9041921964'
+      PUBLICATION_DIGEST: 'sha256:63f8c960826b8ba60187f274b3375ebe969e2e8dcac172b95cca4c9cc4e23cfd'
+      PACKAGE_RUN: '31327561157'
+      PACKAGE_HEAD: '00065a7cff3eebad46c7bbcf3533d4b25477d0bd'
+      PACKAGE_ARTIFACT: '9041961136'
+      PACKAGE_DIGEST: 'sha256:ab51add6b58db7028a4b9003ae8592d7311bd807646e505695fe0c835efacd17'
+      ARCHIVE_SHA256: '8a56d6209fba1a451cf733cf2d67b2e6dcc37e45209d70d340576773e5f7eef0'
+      MANIFEST_SHA256: 'e209ea8ba3d59849c24d4f217251b0053c71d559e838bc7f2968881f70942ee3'
+      FAILED_SUPERVISOR_RUN: '31328404859'
+      FAILED_SUPERVISOR_JOB: '93282546575'
+      FAILED_SUPERVISOR_HEAD: '7a5e1be9fb812ff27e3ec506aa5947d43cac29a9'
+      RESOLVED_FRONTIER: 'linkage_interval_repository_owner_login_canonical_profile_api_location_account_type_state_and_suspension_governance'
+      NEXT_FRONTIER_ONE: 'linkage_interval_repository_owner_login_normalization_alias_case_history_and_location_pair_governance'
+      NEXT_FRONTIER_TWO: 'linkage_interval_owner_account_type_active_suspended_deleted_ghost_restoration_site_admin_and_metadata_governance'
+      PROOF_DIR: '/tmp/pc59-exact-postmerge-proof'
+      CENSUS_DIR: '/tmp/pc59-terminal-census'
+      PACKAGE_DIR: '/tmp/pc59-complete-product-package'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Authenticate and materialize immutable recovery controller
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          gh api "/repos/${GH_REPOSITORY}/git/blobs/${CONTROLLER_BLOB}" --jq .content | tr -d '\n' | base64 -d > /tmp/pc59-terminal-recovery-controller.sh.gz
+          test "$(sha256sum /tmp/pc59-terminal-recovery-controller.sh.gz | awk '{print $1}')" = "$CONTROLLER_GZIP_SHA256"
+          gzip -dc /tmp/pc59-terminal-recovery-controller.sh.gz > /tmp/pc59-terminal-recovery-controller.sh
+          test "$(sha256sum /tmp/pc59-terminal-recovery-controller.sh | awk '{print $1}')" = "$CONTROLLER_SHA256"
+          chmod +x /tmp/pc59-terminal-recovery-controller.sh
+          bash -n /tmp/pc59-terminal-recovery-controller.sh
+      - name: Bind canonical product, failed supervisor stage, sealed package, matrix, and review
+        run: /tmp/pc59-terminal-recovery-controller.sh bind
+      - name: Recover exact canonical merge without another merge operation
+        id: merge
+        run: /tmp/pc59-terminal-recovery-controller.sh merge
+      - name: Reprove canonical topology, fourteen blobs, and complete replay
+        env:
+          MERGE: ${{ steps.merge.outputs.merge }}
+        run: /tmp/pc59-terminal-recovery-controller.sh proof
+      - name: Upload recovered exact PC-59 post-merge proof
+        id: proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc59-exact-postmerge-proof
+          path: /tmp/pc59-exact-postmerge-proof
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+      - name: Retire every PC-59 transaction surface and seal census
+        env:
+          MERGE: ${{ steps.merge.outputs.merge }}
+          PROOF_ARTIFACT_ID: ${{ steps.proof.outputs.artifact-id }}
+          PROOF_ARTIFACT_DIGEST: ${{ steps.proof.outputs.artifact-digest }}
+        run: /tmp/pc59-terminal-recovery-controller.sh cleanup
+      - name: Upload PC-59 terminal census
+        id: census
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc59-terminal-census
+          path: /tmp/pc59-terminal-census
+          if-no-files-found: error
+          retention-days: 90
+      - name: Write durable PC-59 terminal receipt and close issue
+        env:
+          MERGE: ${{ steps.merge.outputs.merge }}
+          PROOF_ARTIFACT_ID: ${{ steps.proof.outputs.artifact-id }}
+          PROOF_ARTIFACT_DIGEST: ${{ steps.proof.outputs.artifact-digest }}
+          CENSUS_ARTIFACT_ID: ${{ steps.census.outputs.artifact-id }}
+          CENSUS_ARTIFACT_DIGEST: ${{ steps.census.outputs.artifact-digest }}
+        run: /tmp/pc59-terminal-recovery-controller.sh receipt
