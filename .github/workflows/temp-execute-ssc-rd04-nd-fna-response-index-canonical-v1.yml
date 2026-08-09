@@ -1,0 +1,100 @@
+name: TEMP execute RD-04 North Dakota FNA canonical response index once v1
+on:
+  pull_request:
+    branches: [agent/ssc-rd04-nd-fna-response-index-canonical-execution-base-v1]
+    paths: [.trigger/ssc-rd04-nd-fna-response-index-canonical-execution-v1]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PARENT: a592acea22c69a979f2a90c24a2bafb8c9445759
+      WF: .github/workflows/temp-execute-ssc-rd04-nd-fna-response-index-canonical-v1.yml
+      TRIGGER: .trigger/ssc-rd04-nd-fna-response-index-canonical-execution-v1
+      LOCK: refs/heads/lock/ssc-rd04-nd-fna-response-index-canonical-2025-2029-execution-v1
+      SOURCE_ID: '9031936462'
+      SOURCE_BYTES: '2705970'
+      SOURCE_SHA: 1d597c3491c063c4b0701a26b2637ba8ff8e2c39aeeb5de09f267353205b7cfa
+      RECEIPT_SHA: 8424cdc4f44f884c93eead5bc5e3cd953b41cbd3909b225a4c2e65fdd8a988d1
+      PROTOCOL_SHA: 1eab081ed0e7346114f5d55045634885971510b96a76835422262536f3b4a589
+      ROUTE_ID: RD04-ND-FNA-TIME-LIMIT-WAIVER-INDEX-CANONICAL-2025-2029-001
+      ROUTE_URL: https://www.fna.usda.gov/snap/waivers/timelimit/2025-2029
+      OUT: /tmp/rd04-nd-fna-response-index-canonical-execution-v1
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - id: run
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"; mkdir -p "$OUT/source"; : > "$OUT/workflow.log"
+          exec > >(tee -a "$OUT/workflow.log") 2>&1
+          echo topology > "$OUT/STAGE"; echo 1 > "$OUT/EXIT_CODE"
+          H=$(git rev-parse HEAD); B=$(git rev-parse HEAD^); P=$(git rev-parse HEAD^^)
+          test "$H" = '${{ github.event.pull_request.head.sha }}'
+          test "$P" = "$PARENT"
+          test "$(git diff --name-only "$P" "$B")" = "$WF"
+          test "$(git diff --name-only "$B" "$H")" = "$TRIGGER"
+          git fetch --no-tags --force origin main
+          test "$(git rev-parse origin/main)" = "$PARENT"
+          test "$(git ls-remote origin "$LOCK" | awk '{print $1}')" = "$H"
+
+          echo authenticate > "$OUT/STAGE"
+          api="https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ID"
+          auth=(-H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json')
+          curl -fsSL "${auth[@]}" "$api" -o "$OUT/source-meta.json"
+          jq -e --argjson id "$SOURCE_ID" --argjson size "$SOURCE_BYTES" --arg d "sha256:$SOURCE_SHA" '.id==$id and .size_in_bytes==$size and .digest==$d and .expired==false' "$OUT/source-meta.json" >/dev/null
+          curl -fsSL "${auth[@]}" "$api/zip" -o "$OUT/source.zip"
+          test "$(stat -c%s "$OUT/source.zip")" -eq "$SOURCE_BYTES"
+          test "$(sha256sum "$OUT/source.zip" | cut -d' ' -f1)" = "$SOURCE_SHA"
+          unzip -t "$OUT/source.zip" > "$OUT/source-zip-test.txt"
+          unzip -q "$OUT/source.zip" -d "$OUT/source"
+          (cd "$OUT/source" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$OUT/source/receipt.json" | cut -d' ' -f1)" = "$RECEIPT_SHA"
+          test "$(sha256sum "$OUT/source/selected-followup-protocol.json" | cut -d' ' -f1)" = "$PROTOCOL_SHA"
+          jq -e '.state=="complete" and .selected_followup_routes==1 and .promotion_candidates==0 and .matrix_updates==0' "$OUT/source/receipt.json" >/dev/null
+          jq -e --arg id "$ROUTE_ID" --arg url "$ROUTE_URL" '.state=="selected_unexecuted" and .route_count==1 and .routes[0].route_id==$id and .routes[0].url==$url and .routes[0].attempts==1 and .routes[0].maximum_followed_redirects==0 and .routes[0].result_spawned_requests==0' "$OUT/source/selected-followup-protocol.json" >/dev/null
+
+          echo request > "$OUT/STAGE"
+          set +e
+          curl -sS --connect-timeout 15 --max-time 60 --max-filesize 5000000 \
+            -A 'Mozilla/5.0 ssc-rd04-canonical-response-index/1.0' \
+            -H 'Accept: text/html,application/xhtml+xml;q=0.9,*/*;q=0.8' \
+            -D "$OUT/response-headers.raw" -o "$OUT/response-body.bin" \
+            -w '%{http_code}\n%{url_effective}\n%{content_type}\n' "$ROUTE_URL" > "$OUT/curl-meta.txt"
+          EC=$?
+          set -e
+          test -f "$OUT/response-body.bin" || : > "$OUT/response-body.bin"
+          STATUS=$(sed -n '1p' "$OUT/curl-meta.txt"); EFFECTIVE=$(sed -n '2p' "$OUT/curl-meta.txt"); CTYPE=$(sed -n '3p' "$OUT/curl-meta.txt")
+          LOC=$(awk 'BEGIN{IGNORECASE=1} /^location:/{sub(/^[^:]*:[[:space:]]*/,""); sub(/\r$/,""); print; exit}' "$OUT/response-headers.raw")
+          BYTES=$(stat -c%s "$OUT/response-body.bin"); BODY_SHA=$(sha256sum "$OUT/response-body.bin" | cut -d' ' -f1)
+          if test "$EC" -ne 0; then TERM=transport_error_terminal
+          elif test "$STATUS" -ge 300 -a "$STATUS" -lt 400 -a -n "$LOC"; then TERM=redirect_refused_terminal
+          elif test "$STATUS" -ge 200 -a "$STATUS" -lt 300; then TERM=http_success_body_captured
+          else TERM=http_non_success_body_captured; fi
+          jq -n --arg id "$ROUTE_ID" --arg url "$ROUTE_URL" --arg effective "$EFFECTIVE" --argjson status "${STATUS:-0}" --arg ctype "$CTYPE" --arg loc "$LOC" --arg term "$TERM" --arg sha "$BODY_SHA" --argjson bytes "$BYTES" --argjson ec "$EC" '{schema_version:"ssc-rd04-nd-fna-response-index-canonical-route-receipt@1",state:"complete",route_id:$id,requested_url:$url,effective_url:$effective,physical_requests:1,attempts:1,redirects_followed:0,result_spawned_requests:0,status_code:$status,content_type:$ctype,location:$loc,body_bytes:$bytes,body_sha256:$sha,curl_exit_code:$ec,terminal_state:$term,source_admissions:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none",additional_execution_authorized:false}' > "$OUT/route-receipt.json"
+          jq -n '{schema_version:"ssc-rd04-nd-fna-response-index-canonical-execution-receipt@1",state:"complete",stage:"complete",fixed_routes:1,terminal_routes:1,physical_requests:1,source_requests:1,route_executions:1,source_admissions:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none",additional_execution_authorized:false,next_authorized_operation:"request-free offline adjudication of this exact response to identify only the North Dakota FY 2025 response anchor and exact href; no href may be followed automatically"}' > "$OUT/execution-receipt.json"
+          jq -e '.state=="complete" and .physical_requests==1 and .source_admissions==0 and .matrix_updates==0 and .additional_execution_authorized==false' "$OUT/route-receipt.json" >/dev/null
+          echo complete > "$OUT/STAGE"; echo 0 > "$OUT/EXIT_CODE"
+          find "$OUT" -type f ! -name SHA256SUMS ! -name workflow.log -print0 | sort -z | xargs -0 sha256sum | sed "s#  $OUT/#  #" > "$OUT/SHA256SUMS"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fna-response-index-canonical-execution-v1
+          path: /tmp/rd04-nd-fna-response-index-canonical-execution-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+      - if: always()
+        shell: bash
+        run: |
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          test '${{ steps.run.outcome }}' = success
