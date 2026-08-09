@@ -1,0 +1,129 @@
+name: TEMP materialize RD-04 North Dakota FY2025 waiver one-cell product v2
+
+on:
+  pull_request:
+    branches: [agent/ssc-rd04-nd-fy2025-waiver-one-cell-materializer-base-v2]
+    types: [opened]
+    paths: [.trigger/ssc-rd04-nd-fy2025-waiver-one-cell-materializer-v2.json]
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: ssc-rd04-nd-fy2025-waiver-one-cell-materializer-v2
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy2025-waiver-one-cell-materializer-trigger-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OUT: /tmp/ssc-rd04-nd-fy2025-waiver-one-cell-materializer-v2
+      PAYLOAD_DIR: /tmp/ssc-rd04-nd-fy2025-waiver-one-cell-carrier-v2
+      PAYLOAD_B64: /tmp/ssc-rd04-nd-fy2025-waiver-one-cell-carrier-v2.b64
+      PAYLOAD_ARCHIVE: /tmp/ssc-rd04-nd-fy2025-waiver-one-cell-carrier-v2.tar.xz
+      PAYLOAD_PREFIX: .tmp/ssc-rd04-nd-fy2025-waiver-one-cell-materializer-v2/carrier-payload.b64.part-
+      PAYLOAD_COUNT: '10'
+      PAYLOAD_BASE64_BYTES: '28296'
+      PAYLOAD_BASE64_SHA256: c92e2f7ff301109f6dc9f2928e930367b53a0028968a29aa1b2a411103f56f63
+      PAYLOAD_ARCHIVE_BYTES: '21220'
+      PAYLOAD_ARCHIVE_SHA256: fb7d2211fde9dccd6c8455a88259b919be583bee11fb5b831db2c4b75446f67c
+      PAYLOAD_LEDGER_SHA256: 91f46fa9cec8e0a8a2e996abb92ef9623dcfdd665ff4e69a1bab533127323542
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - id: run
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$PAYLOAD_DIR" "$PAYLOAD_B64" "$PAYLOAD_ARCHIVE"
+          mkdir -p "$OUT" "$PAYLOAD_DIR"
+          stage=payload_reconstruction
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          printf '%s\n' 1 > "$OUT/EXIT_CODE"
+          : > "$OUT/wrapper.log"
+          exec > >(tee -a "$OUT/wrapper.log") 2>&1
+          write_sums() {
+            python - "$OUT" <<'PY'
+          import hashlib,pathlib,sys
+          root=pathlib.Path(sys.argv[1]); rows=[]
+          for p in sorted(x for x in root.rglob('*') if x.is_file() and x.name not in {'SHA256SUMS','wrapper.log'}):
+              rows.append(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(root).as_posix()}\n')
+          root.joinpath('SHA256SUMS').write_text(''.join(rows))
+          PY
+          }
+          fail_wrapper() {
+            code=$?; set +e
+            printf '%s\n' "$stage" > "$OUT/STAGE"; printf '%s\n' "$code" > "$OUT/EXIT_CODE"
+            STAGE_VALUE="$stage" EXIT_VALUE="$code" OUT_VALUE="$OUT" python - <<'PY'
+          import json,os,pathlib
+          out=pathlib.Path(os.environ['OUT_VALUE'])
+          out.joinpath('wrapper-failure-receipt.json').write_text(json.dumps({
+            'schema_version':'ssc-rd04-nd-fy2025-waiver-one-cell-wrapper-failure@2',
+            'state':'failed_closed','stage':os.environ['STAGE_VALUE'],'exit_code':int(os.environ['EXIT_VALUE']),
+            'permanent_branch_moved':False,'canonical_effects':0,'source_requests':0,'route_executions':0,
+            'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'class_closed':False
+          },indent=2,sort_keys=True)+'\n')
+          PY
+            write_sums; exit "$code"
+          }
+          trap fail_wrapper ERR
+          : > "$PAYLOAD_B64"
+          for ((i=0; i<PAYLOAD_COUNT; i++)); do
+            chunk="$(printf '%s%02d' "$PAYLOAD_PREFIX" "$i")"
+            test -f "$chunk"
+            cat "$chunk" >> "$PAYLOAD_B64"
+          done
+          test "$(stat -c%s "$PAYLOAD_B64")" = "$PAYLOAD_BASE64_BYTES"
+          test "$(sha256sum "$PAYLOAD_B64" | cut -d' ' -f1)" = "$PAYLOAD_BASE64_SHA256"
+          base64 -d "$PAYLOAD_B64" > "$PAYLOAD_ARCHIVE"
+          test "$(stat -c%s "$PAYLOAD_ARCHIVE")" = "$PAYLOAD_ARCHIVE_BYTES"
+          test "$(sha256sum "$PAYLOAD_ARCHIVE" | cut -d' ' -f1)" = "$PAYLOAD_ARCHIVE_SHA256"
+          xz -t "$PAYLOAD_ARCHIVE"
+          tar -xJf "$PAYLOAD_ARCHIVE" -C "$PAYLOAD_DIR"
+          (cd "$PAYLOAD_DIR" && sha256sum -c payload-SHA256SUMS)
+          test "$(sha256sum "$PAYLOAD_DIR/payload-SHA256SUMS" | cut -d' ' -f1)" = "$PAYLOAD_LEDGER_SHA256"
+          test "$(stat -c%s "$PAYLOAD_DIR/runner.sh")" = 19152
+          test "$(sha256sum "$PAYLOAD_DIR/runner.sh" | cut -d' ' -f1)" = f7dc4b2be077d8821384c15eee1a8a311e4b32ac72a27091315105766ac5f887
+          trap - ERR
+          bash "$PAYLOAD_DIR/runner.sh"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy2025-waiver-one-cell-materializer-v2
+          path: /tmp/ssc-rd04-nd-fy2025-waiver-one-cell-materializer-v2
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test '${{ steps.run.outcome }}' = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          jq -e '.schema_version=="ssc-rd04-nd-fy2025-waiver-one-cell-materializer-receipt@1" and
+             .state=="complete" and .stage=="complete" and .exit_code==0 and
+             .canonical_parent=="a592acea22c69a979f2a90c24a2bafb8c9445759" and
+             .canonical_tree=="c7dbb1df10b409caa7893846a9e4b3e8d1392be0" and
+             .product_branch=="agent/ssc-rd04-nd-fy2025-waiver-one-cell-promotion-v1" and
+             .product_commits==1 and .permanent_paths==14 and .addition_only==true and
+             .product_combined_sha256=="3cc19a12287e392f504e2959d9d996348135335f22dd23999d550213d47ef686" and
+             .terminal_cells_after==228 and .open_substantive_cells_after==182 and .terminal_units_after==10 and
+             .north_dakota_row_state=="still_open" and .field_terminalizations==1 and .matrix_updates==1 and
+             .row_terminalizations==0 and .row_state_mutations==0 and .class_closed==false and
+             .source_requests==0 and .route_executions==0 and .outside_human_dependency==false and .canonical_effects==0' "$OUT/receipt.json" >/dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
