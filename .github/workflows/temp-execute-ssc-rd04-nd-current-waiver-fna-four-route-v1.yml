@@ -1,0 +1,274 @@
+name: TEMP execute RD-04 North Dakota FNA four-route follow-up v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-execute-ssc-rd04-nd-current-waiver-fna-four-route-v1.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+  CANONICAL_PARENT: b1d1d8afb6c957401a762bf9d0b2abc464bd5e07
+  CANONICAL_TREE: 64f5b5e9e9d72bdf86ef6cf14d728b2ae996f834
+  PROTOCOL_ARTIFACT_ID: '9029362471'
+  PROTOCOL_ARTIFACT_BYTES: '6210523'
+  PROTOCOL_ARTIFACT_SHA256: ffc95827c6747eee4a3b054740610bb30529652ae0eb488984a84f6e80f945a3
+  PROTOCOL_RECEIPT_SHA256: b10eb3ba6b2c3dede0fcfc50ac5000ef517141d69029a7c08d29356ebdecd4c3
+  PROTOCOL_SHA256: 8959e089855b322383b0fe2b8fb99201e11ba0915d858ca71246e04f07903cd7
+  PROTOCOL_BYTES: '2497'
+  PROGRAM_XZ_BYTES: '5280'
+  PROGRAM_XZ_SHA256: d3edbce86664fcbb314532028ef3e70bbaa2e782c5ed12f0da78782e05910c94
+  PROGRAM_BYTES: '20413'
+  PROGRAM_SHA256: 68618342b04074389d8ea95f1e6f524182a62b3afe9a2ce596116102db51c5a9
+  TARGET_BRANCH: agent/ssc-rd04-nd-current-waiver-fna-four-route-execution-v1
+  WORKFLOW_PATH: .github/workflows/temp-execute-ssc-rd04-nd-current-waiver-fna-four-route-v1.yml
+  OUTPUT_DIR: /tmp/ssc-rd04-nd-current-waiver-fna-four-route-transport-v1
+
+concurrency:
+  group: temp-execute-rd04-nd-current-waiver-fna-four-route-v1
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-current-waiver-fna-four-route-execution-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Execute exact four-route transport
+        id: execute
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$OUTPUT_DIR"
+          PROTOCOL="$OUT/protocol"
+          PROGRAM="$OUT/transport-program.py"
+          rm -rf "$OUT"
+          mkdir -p "$OUT" "$PROTOCOL"
+          stage=bootstrap
+          exec > >(tee "$OUT/transport.log") 2>&1
+
+          finalize() {
+            local rc=$?
+            trap - EXIT
+            set +e
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            if [ ! -f "$OUT/execution-receipt.json" ]; then
+              jq -n \
+                --arg state failed_closed \
+                --arg failed_stage "$stage" \
+                --argjson exit_code "$rc" \
+                --arg canonical_parent "$CANONICAL_PARENT" \
+                --arg protocol_artifact "$PROTOCOL_ARTIFACT_ID" \
+                '{
+                  schema_version:"ssc-rd04-nd-current-waiver-fna-four-route-transport@1",
+                  state:$state,failed_or_final_stage:$failed_stage,exit_code:$exit_code,
+                  canonical_parent:$canonical_parent,protocol_artifact_id:($protocol_artifact|tonumber),
+                  fixed_routes:4,initiated_route_attempts:0,physical_requests:0,terminal_routes:0,
+                  result_spawned_requests:0,source_admissions:0,field_classifications:0,
+                  field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,
+                  cumulative_ledger_effect:"none",outside_human_dependency:false,
+                  publication_effect:"none",adoption_effect:"none",graph_effect:"none",
+                  additional_execution_authorized:false
+                }' > "$OUT/execution-receipt.json"
+            fi
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          stage=bind_exact_carrier_and_live_main
+          test "$HEAD_REPO" = "$GITHUB_REPOSITORY"
+          test "$HEAD_REF" = "$TARGET_BRANCH"
+          test "$HEAD_SHA" = "$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"
+          test "$(git rev-list --count "$CANONICAL_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CANONICAL_PARENT" HEAD)" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD)" = "$WORKFLOW_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" HEAD)"
+          test "$(git rev-parse "$CANONICAL_PARENT^{tree}")" = "$CANONICAL_TREE"
+          git diff --check "$CANONICAL_PARENT" HEAD
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+
+          stage=authenticate_selected_protocol
+          gh api -H 'Accept: application/vnd.github+json' \
+            "/repos/$GITHUB_REPOSITORY/actions/artifacts/$PROTOCOL_ARTIFACT_ID" \
+            > "$OUT/protocol-artifact.json"
+          jq -e \
+            --argjson id "$PROTOCOL_ARTIFACT_ID" \
+            --argjson bytes "$PROTOCOL_ARTIFACT_BYTES" \
+            --arg digest "sha256:$PROTOCOL_ARTIFACT_SHA256" \
+            '.id==$id and .expired==false and .size_in_bytes==$bytes and .digest==$digest' \
+            "$OUT/protocol-artifact.json" > /dev/null
+          gh api -H 'Accept: application/vnd.github+json' \
+            "/repos/$GITHUB_REPOSITORY/actions/artifacts/$PROTOCOL_ARTIFACT_ID/zip" \
+            > "$OUT/protocol.zip"
+          test "$(stat -c %s "$OUT/protocol.zip")" -eq "$PROTOCOL_ARTIFACT_BYTES"
+          test "$(sha256sum "$OUT/protocol.zip" | awk '{print $1}')" = "$PROTOCOL_ARTIFACT_SHA256"
+          unzip -t "$OUT/protocol.zip" > "$OUT/protocol-zip-test.txt"
+          unzip -q "$OUT/protocol.zip" -d "$PROTOCOL"
+          (cd "$PROTOCOL" && sha256sum -c SHA256SUMS)
+          test "$(cat "$PROTOCOL/STAGE")" = complete
+          test "$(cat "$PROTOCOL/EXIT_CODE")" = 0
+          test "$(stat -c %s "$PROTOCOL/selected-followup-protocol.json")" -eq "$PROTOCOL_BYTES"
+          test "$(sha256sum "$PROTOCOL/selected-followup-protocol.json" | awk '{print $1}')" = "$PROTOCOL_SHA256"
+          test "$(sha256sum "$PROTOCOL/receipt.json" | awk '{print $1}')" = "$PROTOCOL_RECEIPT_SHA256"
+          jq -e '
+            .state=="complete" and .promotion_candidates==0 and .held_open_fields==1 and
+            .selected_followup_routes==4 and .source_requests==0 and .route_executions==0 and
+            .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and
+            .class_closed==false and
+            .next_authorized_operation=="execute the four exact FNA routes once; do not re-run the seventy-five-route census"
+          ' "$PROTOCOL/receipt.json" > /dev/null
+
+          stage=reconstruct_exact_transport_program
+          cat > "$OUT/transport-program.py.xz.b64" <<'B64'
+          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
+          B64
+          tr -d '\n' < "$OUT/transport-program.py.xz.b64" | base64 -d > "$OUT/transport-program.py.xz"
+          test "$(stat -c %s "$OUT/transport-program.py.xz")" -eq "$PROGRAM_XZ_BYTES"
+          test "$(sha256sum "$OUT/transport-program.py.xz" | awk '{print $1}')" = "$PROGRAM_XZ_SHA256"
+          xz -dc "$OUT/transport-program.py.xz" > "$PROGRAM"
+          test "$(stat -c %s "$PROGRAM")" -eq "$PROGRAM_BYTES"
+          test "$(sha256sum "$PROGRAM" | awk '{print $1}')" = "$PROGRAM_SHA256"
+          python -m py_compile "$PROGRAM"
+
+          stage=execute_exact_four_routes
+          python "$PROGRAM" "$PROTOCOL/selected-followup-protocol.json" "$OUT"
+
+          stage=complete
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          jq -e '
+            .state=="transport_complete" and .failed_or_final_stage=="complete" and .exit_code==0 and
+            .fixed_routes==4 and .initiated_route_attempts==4 and .terminal_routes==4 and
+            .physical_requests>=4 and .physical_requests<=24 and .same_host_expansion==0 and
+            .result_spawned_requests==0 and .source_admissions==0 and .field_classifications==0 and
+            .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and
+            .class_closed==false and .cumulative_ledger_effect=="none" and
+            .outside_human_dependency==false and .publication_effect=="none" and
+            .adoption_effect=="none" and .graph_effect=="none" and
+            .additional_execution_authorized==false
+          ' "$OUT/execution-receipt.json" > /dev/null
+
+      - name: Preserve exact four-route transport artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-current-waiver-fna-four-route-transport-v1
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce terminal transport custody
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$OUTPUT_DIR"
+          test "${{ steps.execute.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          jq -e '
+            .state=="transport_complete" and .failed_or_final_stage=="complete" and .exit_code==0 and
+            .canonical_parent=="b1d1d8afb6c957401a762bf9d0b2abc464bd5e07" and
+            .canonical_tree=="64f5b5e9e9d72bdf86ef6cf14d728b2ae996f834" and
+            .protocol_artifact_id==9029362471 and .fixed_routes==4 and
+            .initiated_route_attempts==4 and .terminal_routes==4 and
+            .physical_requests>=4 and .physical_requests<=24 and .same_host_expansion==0 and
+            .result_spawned_requests==0 and .source_admissions==0 and .field_classifications==0 and
+            .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and
+            .class_closed==false and .cumulative_ledger_effect=="none" and
+            .outside_human_dependency==false and .publication_effect=="none" and
+            .adoption_effect=="none" and .graph_effect=="none" and
+            .additional_execution_authorized==false
+          ' "$OUT/execution-receipt.json" > /dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
