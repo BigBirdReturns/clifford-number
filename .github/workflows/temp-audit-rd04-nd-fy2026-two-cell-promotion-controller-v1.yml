@@ -1,0 +1,310 @@
+name: TEMP audit RD-04 North Dakota two-cell promotion controller
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-audit-rd04-nd-fy2026-two-cell-promotion-controller-v1.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-audit-rd04-nd-fy2026-two-cell-promotion-controller-v1
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy2026-two-cell-controller-audit-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      EXPECTED_MAIN: 5be5fc4d15391b99bb29226fdd16e408be559507
+      EXPECTED_BRANCH: agent/ssc-rd04-nd-fy2026-two-cell-controller-audit-v1
+      WORKFLOW_PATH: .github/workflows/temp-audit-rd04-nd-fy2026-two-cell-promotion-controller-v1.yml
+      HISTORICAL_CONTROLLER_COMMIT: 7bf6b8f6efe8ee5f377713ef8c2df7b46542c218
+      HISTORICAL_WRAPPER_PATH: .tmp/rd04-nd-fy2026-two-cell-promotion-materializer-v1/materialize.py
+      HISTORICAL_WRAPPER_BLOB: b756c7bfc6b6d8516d4bafc19acb9ea80bf5daa9
+      INNER_BYTES: '50180'
+      INNER_SHA256: 860549fad2b09eafe866a8ae81620a132d208bdf14923ca8285acc1906019a34
+      OUT: /tmp/ssc-rd04-nd-fy2026-two-cell-controller-audit-v1
+      WORK: /tmp/ssc-rd04-nd-fy2026-two-cell-controller-audit-v1-work
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Extract immutable inner controller without execution
+        id: audit
+        continue-on-error: true
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$WORK"
+          mkdir -p "$OUT" "$WORK"
+          STAGE=initializing
+
+          finish() {
+            rc=$?
+            trap - EXIT
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$STAGE" > "$OUT/STAGE"
+            if [[ ! -s "$OUT/receipt.json" ]]; then
+              jq -n \
+                --arg stage "$STAGE" \
+                --argjson rc "$rc" \
+                --arg parent "$EXPECTED_MAIN" \
+                --arg head "${HEAD_SHA:-unknown}" \
+                '{
+                  schema_version:"ssc-rd04-nd-fy2026-two-cell-controller-audit-receipt@1",
+                  state:"failed_closed",
+                  failed_or_final_stage:$stage,
+                  exit_code:$rc,
+                  canonical_parent:$parent,
+                  carrier_head:$head,
+                  controller_executed:false,
+                  product_constructed:false,
+                  product_branch_moved:false,
+                  source_requests:0,
+                  route_executions:0,
+                  source_admissions:0,
+                  field_terminalizations:0,
+                  row_terminalizations:0,
+                  matrix_updates:0,
+                  row_state_mutations:0,
+                  class_closed:false,
+                  cumulative_ledger_effect:"none",
+                  outside_human_dependency:false,
+                  publication_effect:"none",
+                  adoption_effect:"none",
+                  graph_effect:"none"
+                }' > "$OUT/receipt.json"
+            fi
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 |
+                sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          STAGE=topology
+          test "$HEAD_REF" = "$EXPECTED_BRANCH"
+          test "$BASE_SHA" = "$EXPECTED_MAIN"
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          test "$(git rev-list --count "$EXPECTED_MAIN..$HEAD_SHA")" = 1
+          test "$(git diff --name-status "$EXPECTED_MAIN" "$HEAD_SHA")" = $'A\t'"$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$EXPECTED_MAIN" "$HEAD_SHA")" = "$WORKFLOW_PATH"
+          git diff --check "$EXPECTED_MAIN" "$HEAD_SHA"
+          git fetch --quiet --force origin main "$HISTORICAL_CONTROLLER_COMMIT"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse "$HISTORICAL_CONTROLLER_COMMIT:$HISTORICAL_WRAPPER_PATH")" = "$HISTORICAL_WRAPPER_BLOB"
+          printf '%s\n' "$EXPECTED_MAIN" > "$OUT/live-main.txt"
+          printf '%s\n' "$HEAD_SHA" > "$OUT/carrier-head.txt"
+
+          STAGE=wrapper
+          git show "$HISTORICAL_CONTROLLER_COMMIT:$HISTORICAL_WRAPPER_PATH" > "$WORK/materialize-wrapper.py"
+          test "$(git hash-object "$WORK/materialize-wrapper.py")" = "$HISTORICAL_WRAPPER_BLOB"
+          cp "$WORK/materialize-wrapper.py" "$OUT/materialize-wrapper.py"
+          wc -c < "$WORK/materialize-wrapper.py" | tr -d ' ' > "$OUT/wrapper-bytes.txt"
+          sha256sum "$WORK/materialize-wrapper.py" | cut -d' ' -f1 > "$OUT/wrapper-sha256.txt"
+
+          STAGE=decompress
+          python - "$WORK/materialize-wrapper.py" "$OUT/controller.py" "$OUT/controller-audit.json" <<'PY'
+          import ast
+          import base64
+          import gzip
+          import hashlib
+          import json
+          import re
+          import sys
+          from pathlib import Path
+
+          wrapper_path = Path(sys.argv[1])
+          controller_path = Path(sys.argv[2])
+          audit_path = Path(sys.argv[3])
+
+          wrapper = wrapper_path.read_text()
+          tree = ast.parse(wrapper, filename=str(wrapper_path))
+          payloads = []
+          for node in tree.body:
+              if isinstance(node, ast.Assign):
+                  for target in node.targets:
+                      if isinstance(target, ast.Name) and target.id == "_PAYLOAD":
+                          if not isinstance(node.value, ast.Constant) or not isinstance(node.value.value, str):
+                              raise AssertionError("_PAYLOAD is not a string constant")
+                          payloads.append(node.value.value)
+          if len(payloads) != 1:
+              raise AssertionError(f"expected one _PAYLOAD assignment, got {len(payloads)}")
+
+          compressed = base64.b64decode(payloads[0], validate=True)
+          controller = gzip.decompress(compressed)
+          if len(controller) != 50180:
+              raise AssertionError(f"inner byte count differs: {len(controller)}")
+          digest = hashlib.sha256(controller).hexdigest()
+          if digest != "860549fad2b09eafe866a8ae81620a132d208bdf14923ca8285acc1906019a34":
+              raise AssertionError(f"inner SHA-256 differs: {digest}")
+          controller.decode("utf-8")
+          compile(controller, "controller.py", "exec")
+          controller_path.write_bytes(controller)
+
+          text = controller.decode("utf-8")
+          terms = [
+              "matrix_updates",
+              "field_terminalizations",
+              "row_terminalizations",
+              "row_state_mutations",
+              "terminal_cells",
+              "still_open_cells",
+              "terminal_substantive_cells",
+              "still_open_substantive_cells",
+              "terminal_units",
+              "PRODUCT_BRANCH",
+              "product_branch",
+              "class_closed",
+              "cumulative_ledger_effect",
+          ]
+          selected = []
+          for number, line in enumerate(text.splitlines(), 1):
+              if any(term in line for term in terms):
+                  selected.append({"line": number, "text": line})
+          exact_patterns = {
+              "matrix_updates_0": len(re.findall(r'["\']matrix_updates["\']\s*:\s*0', text)),
+              "matrix_updates_1": len(re.findall(r'["\']matrix_updates["\']\s*:\s*1', text)),
+              "matrix_updates_2": len(re.findall(r'["\']matrix_updates["\']\s*:\s*2', text)),
+              "matrix_updates_equals_1": len(re.findall(r'matrix_updates\s*==\s*1', text)),
+              "matrix_updates_equals_2": len(re.findall(r'matrix_updates\s*==\s*2', text)),
+              "row_terminalizations_1": len(re.findall(r'["\']row_terminalizations["\']\s*:\s*1', text)),
+              "row_state_mutations_1": len(re.findall(r'["\']row_state_mutations["\']\s*:\s*1', text)),
+          }
+          audit = {
+              "schema_version": "ssc-rd04-nd-fy2026-two-cell-controller-static-audit@1",
+              "wrapper_git_blob": "b756c7bfc6b6d8516d4bafc19acb9ea80bf5daa9",
+              "inner_bytes": len(controller),
+              "inner_sha256": digest,
+              "python_compile": "pass",
+              "controller_executed": False,
+              "selected_line_count": len(selected),
+              "exact_pattern_counts": exact_patterns,
+              "selected_lines": selected,
+          }
+          audit_path.write_text(json.dumps(audit, indent=2, sort_keys=True) + "\n")
+          PY
+          test "$(wc -c < "$OUT/controller.py" | tr -d ' ')" = "$INNER_BYTES"
+          test "$(sha256sum "$OUT/controller.py" | cut -d' ' -f1)" = "$INNER_SHA256"
+
+          STAGE=static-audit
+          python - "$OUT/controller-audit.json" "$OUT/accounting-lines.txt" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          audit = json.loads(Path(sys.argv[1]).read_text())
+          lines = [f"{row['line']}: {row['text']}" for row in audit["selected_lines"]]
+          Path(sys.argv[2]).write_text("\n".join(lines) + "\n")
+          PY
+          jq -e '
+            .inner_bytes == 50180 and
+            .inner_sha256 == "860549fad2b09eafe866a8ae81620a132d208bdf14923ca8285acc1906019a34" and
+            .python_compile == "pass" and
+            .controller_executed == false and
+            .selected_line_count > 0
+          ' "$OUT/controller-audit.json" > /dev/null
+
+          STAGE=complete
+          jq -n \
+            --arg parent "$EXPECTED_MAIN" \
+            --arg head "$HEAD_SHA" \
+            --arg historical "$HISTORICAL_CONTROLLER_COMMIT" \
+            --arg wrapper_blob "$HISTORICAL_WRAPPER_BLOB" \
+            --arg inner_sha "$INNER_SHA256" \
+            --argjson inner_bytes "$INNER_BYTES" \
+            '{
+              schema_version:"ssc-rd04-nd-fy2026-two-cell-controller-audit-receipt@1",
+              state:"immutable_inner_controller_extracted_and_statically_audited",
+              failed_or_final_stage:"complete",
+              exit_code:0,
+              canonical_parent:$parent,
+              carrier_head:$head,
+              historical_controller_commit:$historical,
+              historical_wrapper_git_blob:$wrapper_blob,
+              inner_controller_bytes:$inner_bytes,
+              inner_controller_sha256:$inner_sha,
+              python_compile:"pass",
+              controller_executed:false,
+              product_constructed:false,
+              product_branch_moved:false,
+              source_requests:0,
+              route_executions:0,
+              source_admissions:0,
+              field_terminalizations:0,
+              row_terminalizations:0,
+              matrix_updates:0,
+              row_state_mutations:0,
+              class_closed:false,
+              cumulative_ledger_effect:"none",
+              outside_human_dependency:false,
+              publication_effect:"none",
+              adoption_effect:"none",
+              graph_effect:"none",
+              next_authorized_operation:"inspect the plaintext controller and reseal a corrected controller only if every two-cell transition and matrix-update predicate matches terminal validation artifact 9043612271"
+            }' > "$OUT/receipt.json"
+
+      - name: Upload immutable controller audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy2026-two-cell-controller-audit-v1
+          path: /tmp/ssc-rd04-nd-fy2026-two-cell-controller-audit-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce zero-effect audit boundary
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test '${{ steps.audit.outcome }}' = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (
+            cd "$OUT"
+            sha256sum -c SHA256SUMS
+          )
+          jq -e '
+            .state == "immutable_inner_controller_extracted_and_statically_audited" and
+            .exit_code == 0 and
+            .canonical_parent == "5be5fc4d15391b99bb29226fdd16e408be559507" and
+            .historical_wrapper_git_blob == "b756c7bfc6b6d8516d4bafc19acb9ea80bf5daa9" and
+            .inner_controller_bytes == 50180 and
+            .inner_controller_sha256 == "860549fad2b09eafe866a8ae81620a132d208bdf14923ca8285acc1906019a34" and
+            .python_compile == "pass" and
+            .controller_executed == false and
+            .product_constructed == false and
+            .product_branch_moved == false and
+            .source_requests == 0 and
+            .route_executions == 0 and
+            .source_admissions == 0 and
+            .field_terminalizations == 0 and
+            .row_terminalizations == 0 and
+            .matrix_updates == 0 and
+            .row_state_mutations == 0 and
+            .class_closed == false and
+            .cumulative_ledger_effect == "none" and
+            .outside_human_dependency == false and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none"
+          ' "$OUT/receipt.json" > /dev/null
