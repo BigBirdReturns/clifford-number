@@ -1,0 +1,134 @@
+name: TEMP publish exact qualified PC-59 product
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: pc59-product-publisher
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPOSITORY: ${{ github.repository }}
+      ISSUE: '1662'
+      QUALIFIER_RUN: '31294560504'
+      QUALIFIER_ARTIFACT: '9032608869'
+      QUALIFIER_DIGEST: 'sha256:6882402385ebd8014c5cfc8a7c2a94cf77d1acc9b00b0198662f08f541452037'
+      QUALIFIER_HEAD: '5886d3c87bf3d083b6de6c376579067952018c0a'
+      QUALIFIER_BRANCH: agent/pc59-materializer-carrier
+      PRODUCT_BRANCH: agent/pc59-materializer
+      PARENT: a592acea22c69a979f2a90c24a2bafb8c9445759
+      PARENT_TREE: c7dbb1df10b409caa7893846a9e4b3e8d1392be0
+      ARCHIVE_SHA256: 8a56d6209fba1a451cf733cf2d67b2e6dcc37e45209d70d340576773e5f7eef0
+      MANIFEST_SHA256: e209ea8ba3d59849c24d4f217251b0053c71d559e838bc7f2968881f70942ee3
+      CHUNK_BLOBS: '00afcc70c0f8c71fdf654960a0aee911f6539b85 1870b7c7a353ca21d06c991eb6c24026b5878871 f268960932f2e96c94d58594a282c9432a49b207 300266349434564928b5ecdc63cd16feb6c3b690 459172d20e965ab8b13873bbb8ce6cd0d8544a43 9b284c1f367abbd62c1b83083bc60c281d364a3c 8ddf1971794fda0ca047ee069e69a3515274030d e8487726a6f6beb0f39e87c072653fd575c6fa38 e5d5f4a14f12ed376466becddebcdb2b52425a04'
+      WORK: /tmp/pc59-publisher
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Authenticate qualifier and reconstruct frozen package
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$WORK/qualifier" "$WORK/product"
+          test "$(git rev-list --count HEAD^)" -gt 0
+          test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/temp-pc59-publish-qualified-product.yml'
+          git merge-base --is-ancestor "$PARENT" HEAD^
+
+          gh api "/repos/${GH_REPOSITORY}/actions/runs/${QUALIFIER_RUN}" > "$WORK/qualifier-run.json"
+          test "$(jq -r .head_sha "$WORK/qualifier-run.json")" = "$QUALIFIER_HEAD"
+          test "$(jq -r .status "$WORK/qualifier-run.json")" = completed
+          test "$(jq -r .conclusion "$WORK/qualifier-run.json")" = success
+          gh api "/repos/${GH_REPOSITORY}/actions/artifacts/${QUALIFIER_ARTIFACT}" > "$WORK/qualifier-artifact.json"
+          test "$(jq -r .workflow_run.id "$WORK/qualifier-artifact.json")" = "$QUALIFIER_RUN"
+          test "$(jq -r .digest "$WORK/qualifier-artifact.json")" = "$QUALIFIER_DIGEST"
+          gh api "/repos/${GH_REPOSITORY}/actions/artifacts/${QUALIFIER_ARTIFACT}/zip" > "$WORK/qualifier.zip"
+          unzip -q "$WORK/qualifier.zip" -d "$WORK/qualifier"
+          receipt=$(find "$WORK/qualifier" -name receipt.json -print -quit)
+          test -n "$receipt"
+          test "$(jq -r .status "$receipt")" = complete
+          test "$(jq -r .qualified_parent "$receipt")" = "$PARENT"
+          test "$(jq -r .permanent_paths "$receipt")" = 14
+          cp "$receipt" "$WORK/qualifier-receipt.json"
+
+          git fetch --no-tags origin "$QUALIFIER_BRANCH" main
+          git show "origin/${QUALIFIER_BRANCH}:.tmp/pc59/product-manifest.json" > "$WORK/manifest.json"
+          test "$(sha256sum "$WORK/manifest.json" | cut -d' ' -f1)" = "$MANIFEST_SHA256"
+          : > "$WORK/product.b64"
+          for blob in $CHUNK_BLOBS; do
+            gh api "/repos/${GH_REPOSITORY}/git/blobs/${blob}" --jq .content | tr -d '\n' | base64 -d >> "$WORK/product.b64"
+          done
+          base64 -d "$WORK/product.b64" > "$WORK/product.tar.gz"
+          test "$(sha256sum "$WORK/product.tar.gz" | cut -d' ' -f1)" = "$ARCHIVE_SHA256"
+          tar -xzf "$WORK/product.tar.gz" -C "$WORK/product"
+
+          python - <<'PY'
+          import hashlib,json,os,pathlib
+          w=pathlib.Path(os.environ['WORK']); m=json.loads((w/'manifest.json').read_text()); q=json.loads((w/'qualifier-receipt.json').read_text())
+          assert m['qualified_parent']==os.environ['PARENT'] and m['qualified_parent_tree']==os.environ['PARENT_TREE']
+          assert len(m['files'])==14 and q['product_blobs']=={x['path']:x['git_blob_sha'] for x in m['files']}
+          for x in m['files']:
+              b=(w/'product'/x['path']).read_bytes(); assert len(b)==x['bytes']; assert hashlib.sha256(b).hexdigest()==x['sha256']
+              assert hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()==x['git_blob_sha']
+          PY
+
+      - name: Publish immutable blobs, exact tree, one-parent commit, and product PR
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY' > "$WORK/blob-commands.sh"
+          import base64,json,os,pathlib,shlex
+          w=pathlib.Path(os.environ['WORK']); m=json.loads((w/'manifest.json').read_text())
+          for x in m['files']:
+              data=base64.b64encode((w/'product'/x['path']).read_bytes()).decode()
+              payload=w/('blob-'+x['git_blob_sha']+'.json'); payload.write_text(json.dumps({'content':data,'encoding':'base64'}))
+              print(f"sha=$(gh api --method POST /repos/${{GH_REPOSITORY}}/git/blobs --input {shlex.quote(str(payload))} --jq .sha)")
+              print(f"test \"$sha\" = {x['git_blob_sha']}")
+          PY
+          source "$WORK/blob-commands.sh"
+          python - <<'PY'
+          import json,os,pathlib
+          w=pathlib.Path(os.environ['WORK']); m=json.loads((w/'manifest.json').read_text())
+          payload={'base_tree':os.environ['PARENT_TREE'],'tree':[{'path':x['path'],'mode':'100644','type':'blob','sha':x['git_blob_sha']} for x in m['files']]}
+          (w/'tree.json').write_text(json.dumps(payload))
+          PY
+          tree=$(gh api --method POST "/repos/${GH_REPOSITORY}/git/trees" --input "$WORK/tree.json" --jq .sha)
+          test "$tree" = "$(jq -r .product_tree "$WORK/qualifier-receipt.json")"
+          jq -n --arg message 'Complete PC-59 owner profile and account-state custody' --arg tree "$tree" --arg parent "$PARENT" '{message:$message,tree:$tree,parents:[$parent]}' > "$WORK/commit.json"
+          commit=$(gh api --method POST "/repos/${GH_REPOSITORY}/git/commits" --input "$WORK/commit.json" --jq .sha)
+
+          if gh api "/repos/${GH_REPOSITORY}/git/ref/heads/${PRODUCT_BRANCH}" > "$WORK/ref.json" 2>/dev/null; then
+            test "$(jq -r .object.sha "$WORK/ref.json")" = "$commit"
+          else
+            gh api --method POST "/repos/${GH_REPOSITORY}/git/refs" -f ref="refs/heads/${PRODUCT_BRANCH}" -f sha="$commit" >/dev/null
+          fi
+
+          pr=$(gh pr list --repo "$GH_REPOSITORY" --state open --head "$PRODUCT_BRANCH" --json number --jq '.[0].number // empty')
+          if [[ -z "$pr" ]]; then
+            pr=$(gh api --method POST "/repos/${GH_REPOSITORY}/pulls" \
+              -f title='Add PC-59 owner profile, API location, account-state, and suspension custody' \
+              -f head="$PRODUCT_BRANCH" -f base=main \
+              -f body="Advances #1662. Issue remains open until exact canonical proof and cleanup. Exact product: \`$commit\`; tree: \`$tree\`; one parent; fourteen permanent additions; zero transport paths." --jq .number)
+          fi
+          gh issue comment "$pr" --repo "$GH_REPOSITORY" --body "@codex review\n\nReview exact PC-59 product \`$commit\` / tree \`$tree\`. Recheck the one-parent/fourteen-path topology, owner login/profile/API/account-state semantics, lifecycle safeguards, recursive floor-v56 source custody, canonical JSON and snapshot/cache refusal, frontier preservation, read-only workflows, and authority ceilings. Report actionable P0-P2 findings; otherwise record no major issue."
+          jq -n --arg status complete --arg product_commit "$commit" --arg product_tree "$tree" --argjson product_pr "$pr" '{status:$status,product_commit:$product_commit,product_tree:$product_tree,product_pr:$product_pr,ref_updates:1,outside_human_dependency:false,graph_effect:"none"}' > "$WORK/publication-receipt.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc59-product-publication-receipt
+          path: /tmp/pc59-publisher
+          if-no-files-found: error
+          retention-days: 90
