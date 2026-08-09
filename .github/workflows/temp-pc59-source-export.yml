@@ -1,0 +1,75 @@
+name: TEMP export exact current main for PC-59 construction
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pc59-source-export
+  cancel-in-progress: true
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      PARENT: a592acea22c69a979f2a90c24a2bafb8c9445759
+      OUT: /tmp/pc59-exact-current-main-source
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Verify one-parent read-only carrier and export exact parent tree
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$OUT"
+          HEAD_SHA="$(git rev-parse HEAD)"
+          test "$(git show -s --format='%P' "$HEAD_SHA")" = "$PARENT"
+          test "$(git diff --name-only "$PARENT" "$HEAD_SHA")" = ".github/workflows/temp-pc59-source-export.yml"
+          test "$(git rev-list --count "$PARENT..$HEAD_SHA")" = 1
+
+          PARENT_TREE="$(git rev-parse "$PARENT^{tree}")"
+          git archive --format=tar "$PARENT" | zstd -19 -T0 -o "$OUT/source.tar.zst"
+          git ls-tree -r --full-tree "$PARENT" > "$OUT/tracked-tree.tsv"
+          git ls-tree -r --name-only "$PARENT" > "$OUT/tracked-paths.txt"
+          sha256sum "$OUT/source.tar.zst" "$OUT/tracked-tree.tsv" "$OUT/tracked-paths.txt" > "$OUT/SHA256SUMS"
+
+          python - <<'PY'
+          import hashlib, json, os, pathlib, subprocess
+          out = pathlib.Path(os.environ['OUT'])
+          parent = os.environ['PARENT']
+          tree = subprocess.check_output(['git','rev-parse',f'{parent}^{{tree}}'], text=True).strip()
+          head = subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip()
+          archive = out / 'source.tar.zst'
+          receipt = {
+              'schema_version': 'pc59-exact-source-export@1',
+              'status': 'complete',
+              'qualified_parent': parent,
+              'qualified_parent_tree': tree,
+              'carrier_head': head,
+              'carrier_commits': 1,
+              'carrier_paths': 1,
+              'tracked_paths': len((out / 'tracked-paths.txt').read_text().splitlines()),
+              'archive_bytes': archive.stat().st_size,
+              'archive_sha256': hashlib.sha256(archive.read_bytes()).hexdigest(),
+              'ref_updates': 0,
+              'outside_human_dependency': False,
+              'graph_effect': 'none'
+          }
+          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          PY
+          sha256sum "$OUT/receipt.json" >> "$OUT/SHA256SUMS"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pc59-exact-current-main-source
+          path: /tmp/pc59-exact-current-main-source
+          if-no-files-found: error
+          retention-days: 90
