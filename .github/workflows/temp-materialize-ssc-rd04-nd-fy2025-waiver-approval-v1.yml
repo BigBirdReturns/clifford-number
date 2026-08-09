@@ -1,0 +1,129 @@
+name: TEMP materialize RD-04 North Dakota FY2025 waiver approval product v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-fy2025-waiver-approval-materializer-v1/trigger.json'
+
+permissions:
+  contents: write
+  actions: read
+  pull-requests: write
+  issues: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+  CARRIER_PARENT: a592acea22c69a979f2a90c24a2bafb8c9445759
+  CARRIER_TREE: c7dbb1df10b409caa7893846a9e4b3e8d1392be0
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  PRODUCT_SLUG: status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization
+  PERMANENT_BRANCH: agent/ssc-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization-v1
+  STAGING_BRANCH: agent/ssc-rd04-nd-fy2025-waiver-materializer-staging-v1
+  BASE_BRANCH: agent/ssc-rd04-nd-fy2025-waiver-materializer-base-v1
+  HEAD_BRANCH: agent/ssc-rd04-nd-fy2025-waiver-materializer-trigger-v1
+  WORKFLOW_PATH: .github/workflows/temp-materialize-ssc-rd04-nd-fy2025-waiver-approval-v1.yml
+  PAYLOAD_META_PATH: .tmp/rd04-nd-fy2025-waiver-approval-materializer-v1/payload-meta.json
+  TRIGGER_PATH: .tmp/rd04-nd-fy2025-waiver-approval-materializer-v1/trigger.json
+  WORKFLOW_CUSTODY_PATH: .tmp/rd04-nd-fy2025-waiver-approval-materializer-v1/permanent-workflow.yml
+  SOURCE_URL: https://fns-prod.azureedge.us/sites/default/files/resource-files/nd-abawd-response-fy2025.pdf
+  SOURCE_BYTES: '306585'
+  SOURCE_SHA256: dc8f7a9e03c79ce52e39a28dfee4d36b9afe768181c15ec02c44b9ccb27f3428
+  OUTPUT_DIR: /tmp/rd04-nd-fy2025-waiver-approval-materializer-v1
+  FULL_WORKTREE: /tmp/rd04-nd-fy2025-waiver-approval-full-v1
+  STAGING_WORKTREE: /tmp/rd04-nd-fy2025-waiver-approval-staging-v1
+
+concurrency:
+  group: temp-materialize-rd04-nd-fy2025-waiver-approval-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-fy2025-waiver-materializer-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy2025-waiver-materializer-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned validators and PDF tools
+        run: |
+          python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+      - name: Reconstruct and execute exact materializer
+        id: materialize
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_PR: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          META="$PAYLOAD_META_PATH"
+          PAYLOAD=/tmp/rd04-materializer-payload.tar.xz
+          PAYLOAD_DIR=/tmp/rd04-materializer-payload
+          rm -rf "$PAYLOAD" "$PAYLOAD_DIR"
+          mkdir -p "$PAYLOAD_DIR"
+          python - "$META" <<'PY_RECONSTRUCT'
+          import hashlib,json,sys
+          from pathlib import Path
+          m=json.load(open(sys.argv[1]))
+          for r in m['chunks']:
+            b=Path(r['path']).read_bytes(); assert len(b)==r['bytes'],(r['path'],len(b),r['bytes']); assert hashlib.sha256(b).hexdigest()==r['sha256'],r['path']
+          PY_RECONSTRUCT
+          cat $(jq -r '.chunks[].path' "$META") | tr -d '\n' | base64 -d > "$PAYLOAD"
+          test "$(stat -c %s "$PAYLOAD")" -eq "$(jq -r '.payload.bytes' "$META")"
+          test "$(sha256sum "$PAYLOAD" | awk '{print $1}')" = "$(jq -r '.payload.sha256' "$META")"
+          tar -tJf "$PAYLOAD"
+          tar -xJf "$PAYLOAD" -C "$PAYLOAD_DIR"
+          test "$(stat -c %s "$PAYLOAD_DIR/materializer.sh")" -eq "$(jq -r '.materializer.bytes' "$META")"
+          test "$(sha256sum "$PAYLOAD_DIR/materializer.sh" | awk '{print $1}')" = "$(jq -r '.materializer.sha256' "$META")"
+          test "$(stat -c %s "$PAYLOAD_DIR/static-product.tar.xz")" -eq "$(jq -r '.static_archive.bytes' "$META")"
+          test "$(sha256sum "$PAYLOAD_DIR/static-product.tar.xz" | awk '{print $1}')" = "$(jq -r '.static_archive.sha256' "$META")"
+          chmod 700 "$PAYLOAD_DIR/materializer.sh"
+          export STATIC_ARCHIVE="$PAYLOAD_DIR/static-product.tar.xz"
+          export STATIC_ARCHIVE_BYTES="$(jq -r '.static_archive.bytes' "$META")"
+          export STATIC_ARCHIVE_SHA256="$(jq -r '.static_archive.sha256' "$META")"
+          "$PAYLOAD_DIR/materializer.sh"
+      - name: Preserve checksum-bound receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rd04-nd-fy2025-waiver-approval-materializer-v1
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - name: Enforce qualified staging result
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.materialize.outcome }}" = success
+          test "$(cat "$OUTPUT_DIR/STAGE")" = complete
+          test "$(cat "$OUTPUT_DIR/EXIT_CODE")" = 0
+          (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
+          jq -e '.state=="qualified_ordinary_blob_custody_published" and .permanent_paths==14 and .field_terminalizations==1 and .row_terminalizations==1 and .matrix_updates==2 and .terminal_cells_after==229 and .open_substantive_cells_after==182 and .terminal_units_after==11 and .class_closed==false' "$OUTPUT_DIR/qualification-receipt.json" >/dev/null
+      - name: Retire temporary carrier refs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          gh api -X PATCH "/repos/$GITHUB_REPOSITORY/pulls/${{ github.event.pull_request.number }}" -f state=closed >/dev/null
+          git push origin --delete "$HEAD_BRANCH" "$BASE_BRANCH"
