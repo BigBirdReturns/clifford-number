@@ -1,0 +1,356 @@
+name: TEMP execute RD-04 FY2026 Q3 Azure PDF v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-fy26q3-azure-execution-base-v1
+    types: [opened]
+    paths:
+      - '.trigger/ssc-rd04-nd-fy26q3-azure-execution-v1'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ssc-rd04-nd-fy26q3-azure-execution-v1
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CURRENT_MAIN: a592acea22c69a979f2a90c24a2bafb8c9445759
+      BASE_BRANCH: agent/ssc-rd04-nd-fy26q3-azure-execution-base-v1
+      TRIGGER_BRANCH: agent/ssc-rd04-nd-fy26q3-azure-execution-trigger-v1
+      LOCK_BRANCH: lock/ssc-rd04-nd-fy26q3-azure-execution-v1
+      WORKFLOW_PATH: .github/workflows/temp-execute-ssc-rd04-nd-fy26q3-azure-v1.yml
+      TRIGGER_PATH: .trigger/ssc-rd04-nd-fy26q3-azure-execution-v1
+      TRIGGER_BYTES: '1154'
+      TRIGGER_SHA256: 3d55f5dd9fde9e36f3c86031d18823d86674109883dec6b57204d31fce071c8b
+      ADJUDICATION_ARTIFACT_ID: '9030519505'
+      ADJUDICATION_ARTIFACT_BYTES: '31273'
+      ADJUDICATION_ARTIFACT_DIGEST: sha256:5ba07a03915a38deeb44d679e2d48afbbf2caf6d62a8c44b70e64594e8b0bf8e
+      ADJUDICATION_RECEIPT_SHA256: 7552ce024b8dfbfb454648bbd86ae0e620408d44678bc4f1d53de6311210c6d1
+      PROTOCOL_SHA256: 04c7019993e6e77ca33ae3f1d2dae1a7bf25925ea39f7c9fff38e99657623e8e
+      ROUTE_ID: RD04-ND-CURRENT-WAIVER-FY26Q3-AZURE-001
+      ROUTE_URL: https://fna-bwbufwdzbabpezgc.z01.azurefd.us/sites/default/files/resource-files/FY26-Quarter-3-ABAWD-Waiver-Status.pdf
+      ROUTE_HOST: fna-bwbufwdzbabpezgc.z01.azurefd.us
+      OUTPUT_DIR: /tmp/ssc-rd04-nd-fy26q3-azure-execution-v1
+      INPUT_DIR: /tmp/ssc-rd04-nd-fy26q3-azure-adjudication-v1
+      INPUT_ZIP: /tmp/ssc-rd04-nd-fy26q3-azure-adjudication-v1.zip
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Verify exact one-route lease and topology
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUTPUT_DIR" "$INPUT_DIR" "$INPUT_ZIP"
+          mkdir -p "$OUTPUT_DIR" "$INPUT_DIR"
+          printf '%s\n' topology_verification > "$OUTPUT_DIR/STAGE"
+          HEAD_SHA="$(jq -r '.pull_request.head.sha' "$GITHUB_EVENT_PATH")"
+          BASE_SHA="$(jq -r '.pull_request.base.sha' "$GITHUB_EVENT_PATH")"
+          test "$(jq -r '.pull_request.head.ref' "$GITHUB_EVENT_PATH")" = "$TRIGGER_BRANCH"
+          test "$(jq -r '.pull_request.base.ref' "$GITHUB_EVENT_PATH")" = "$BASE_BRANCH"
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          git fetch --no-tags --force origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$BASE_BRANCH:refs/remotes/origin/$BASE_BRANCH" \
+            "+refs/heads/$TRIGGER_BRANCH:refs/remotes/origin/$TRIGGER_BRANCH" \
+            "+refs/heads/$LOCK_BRANCH:refs/remotes/origin/$LOCK_BRANCH"
+          test "$(git rev-parse origin/main)" = "$CURRENT_MAIN"
+          test "$(git rev-parse "$BASE_SHA^")" = "$CURRENT_MAIN"
+          test "$(git rev-list --count "$CURRENT_MAIN..$BASE_SHA")" = 1
+          test "$(git rev-list --count "$BASE_SHA..$HEAD_SHA")" = 1
+          test "$(git diff --name-only "$CURRENT_MAIN" "$BASE_SHA")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CURRENT_MAIN" "$BASE_SHA")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA")" = "$TRIGGER_PATH"
+          test "$(git rev-parse "origin/$LOCK_BRANCH")" = "$HEAD_SHA"
+          test "$(stat -c %s "$TRIGGER_PATH")" = "$TRIGGER_BYTES"
+          test "$(sha256sum "$TRIGGER_PATH" | awk '{print $1}')" = "$TRIGGER_SHA256"
+          jq -e \
+            --arg parent "$CURRENT_MAIN" \
+            --arg digest "$ADJUDICATION_ARTIFACT_DIGEST" \
+            --arg receipt "$ADJUDICATION_RECEIPT_SHA256" \
+            --arg protocol "$PROTOCOL_SHA256" \
+            --arg route "$ROUTE_ID" \
+            --arg url "$ROUTE_URL" \
+            '.schema_version=="ssc-rd04-nd-fy26q3-azure-execution-trigger@1" and
+             .canonical_parent==$parent and
+             .redirect_adjudication_artifact==9030519505 and
+             .redirect_adjudication_artifact_digest==$digest and
+             .redirect_adjudication_receipt_sha256==$receipt and
+             .selected_protocol_sha256==$protocol and
+             .route_id==$route and .url==$url and
+             .authorized_route_attempts==1 and
+             .maximum_followed_redirects==0 and
+             .maximum_body_bytes==12000000 and
+             .result_spawned_requests==0 and
+             .source_admissions==0 and
+             .field_terminalizations==0 and
+             .matrix_updates==0 and
+             .row_state_mutations==0 and
+             .class_closed==false and
+             .outside_human_dependency==false' "$TRIGGER_PATH" >/dev/null
+          git diff --check "$CURRENT_MAIN" "$HEAD_SHA"
+          jq -n --arg parent "$CURRENT_MAIN" --arg base "$BASE_SHA" --arg head "$HEAD_SHA" --arg lock "$LOCK_BRANCH" \
+            '{schema_version:"ssc-rd04-nd-fy26q3-azure-execution-topology@1",state:"verified",canonical_parent:$parent,workflow_base:$base,trigger_head:$head,lock_branch:$lock,base_commits:1,base_paths:1,trigger_commits:1,trigger_paths:1,permanent_paths:0}' \
+            > "$OUTPUT_DIR/topology-receipt.json"
+
+      - name: Authenticate exact redirect-adjudication artifact
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          printf '%s\n' authenticating_adjudication > "$OUTPUT_DIR/STAGE"
+          gh api -H 'Accept: application/vnd.github+json' \
+            "/repos/$GITHUB_REPOSITORY/actions/artifacts/$ADJUDICATION_ARTIFACT_ID" \
+            > "$OUTPUT_DIR/adjudication-artifact.json"
+          jq -e --argjson id "$ADJUDICATION_ARTIFACT_ID" --argjson bytes "$ADJUDICATION_ARTIFACT_BYTES" --arg digest "$ADJUDICATION_ARTIFACT_DIGEST" \
+            '.id==$id and .size_in_bytes==$bytes and .digest==$digest and .expired==false' \
+            "$OUTPUT_DIR/adjudication-artifact.json" >/dev/null
+          gh api -H 'Accept: application/vnd.github+json' \
+            "/repos/$GITHUB_REPOSITORY/actions/artifacts/$ADJUDICATION_ARTIFACT_ID/zip" \
+            > "$INPUT_ZIP"
+          test "$(stat -c %s "$INPUT_ZIP")" = "$ADJUDICATION_ARTIFACT_BYTES"
+          test "sha256:$(sha256sum "$INPUT_ZIP" | awk '{print $1}')" = "$ADJUDICATION_ARTIFACT_DIGEST"
+          unzip -t "$INPUT_ZIP" > "$OUTPUT_DIR/adjudication-zip-test.txt"
+          unzip -q "$INPUT_ZIP" -d "$INPUT_DIR"
+          (cd "$INPUT_DIR" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$INPUT_DIR/receipt.json" | awk '{print $1}')" = "$ADJUDICATION_RECEIPT_SHA256"
+          test "$(sha256sum "$INPUT_DIR/selected-followup-protocol.json" | awk '{print $1}')" = "$PROTOCOL_SHA256"
+          jq -e --arg parent "$CURRENT_MAIN" --arg route "$ROUTE_ID" --arg url "$ROUTE_URL" \
+            '.schema_version=="ssc-rd04-nd-fy26q3-azure-redirect-adjudication@1" and
+             .state=="redirect_adjudication_complete_followup_selected" and
+             .failed_or_final_stage=="complete" and .exit_code==0 and
+             .current_main==$parent and .selected_followup_routes==1 and
+             .selected_followup_route_id==$route and .selected_followup_url==$url and
+             .source_requests==0 and .route_executions==0 and
+             .source_admissions==0 and .field_decisions==1 and
+             .promotion_candidates==0 and .held_open_fields==1 and
+             .field_terminalizations==0 and .matrix_updates==0 and
+             .row_state_mutations==0 and .class_closed==false and
+             .outside_human_dependency==false and
+             .additional_original_route_execution_authorized==false and
+             .selected_redirect_execution_authorized==true' \
+            "$INPUT_DIR/receipt.json" >/dev/null
+          jq -e --arg route "$ROUTE_ID" --arg url "$ROUTE_URL" --arg host "$ROUTE_HOST" \
+            '.schema_version=="ssc-rd04-nd-fy26q3-azure-followup-protocol@1" and
+             .route_count==1 and .automatic_source_admission==false and
+             .automatic_field_classification==false and
+             .automatic_row_terminalization==false and
+             .automatic_class_closure==false and
+             .routes[0].route_id==$route and .routes[0].url==$url and
+             .routes[0].host==$host and .routes[0].method=="GET" and
+             .routes[0].attempts==1 and .routes[0].maximum_followed_redirects==0 and
+             .routes[0].redirect_policy=="refuse_and_record_any_redirect" and
+             .routes[0].maximum_body_bytes==12000000 and
+             .routes[0].expected_media_type=="application/pdf" and
+             .routes[0].require_pdf_magic_for_pdf_classification==true and
+             .routes[0].result_spawned_requests==0 and .routes[0].same_host_expansion==0' \
+            "$INPUT_DIR/selected-followup-protocol.json" >/dev/null
+          jq -n --arg artifact "$ADJUDICATION_ARTIFACT_ID" --arg digest "$ADJUDICATION_ARTIFACT_DIGEST" --arg receipt "$ADJUDICATION_RECEIPT_SHA256" --arg protocol "$PROTOCOL_SHA256" \
+            '{artifact_id:($artifact|tonumber),artifact_digest:$digest,receipt_sha256:$receipt,protocol_sha256:$protocol}' \
+            > "$OUTPUT_DIR/adjudication-binding.json"
+
+      - name: Execute exact Azure target once
+        id: execute
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '%s\n' executing_exact_route > "$OUTPUT_DIR/STAGE"
+          python - "$OUTPUT_DIR" <<'PY'
+          import hashlib, json, os, pathlib, ssl, sys, time
+          import urllib.error, urllib.parse, urllib.request
+
+          out = pathlib.Path(sys.argv[1])
+          rid = os.environ["ROUTE_ID"]
+          url = os.environ["ROUTE_URL"]
+          host = os.environ["ROUTE_HOST"]
+          limit = 12_000_000
+
+          parsed = urllib.parse.urlsplit(url)
+          assert parsed.scheme == "https" and parsed.hostname == host
+          assert not parsed.username and not parsed.password and not parsed.fragment
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+
+          opener = urllib.request.build_opener(
+              urllib.request.HTTPSHandler(context=ssl.create_default_context()),
+              NoRedirect(),
+          )
+          request = urllib.request.Request(
+              url,
+              method="GET",
+              headers={
+                  "User-Agent": "BigBirdReturns-RD04-bounded-azure-pdf-capture/1.0",
+                  "Accept": "application/pdf,*/*;q=0.1",
+                  "Accept-Encoding": "identity",
+                  "Cache-Control": "no-cache",
+              },
+          )
+          started = time.time()
+          error = None
+          try:
+              response = opener.open(request, timeout=90)
+              status = int(response.status)
+              headers = response.headers
+              body = response.read(limit + 1)
+              effective = response.geturl()
+          except urllib.error.HTTPError as exc:
+              status = int(exc.code)
+              headers = exc.headers
+              body = exc.read(limit + 1)
+              effective = exc.geturl()
+          except Exception as exc:
+              status = None
+              headers = None
+              body = b""
+              effective = url
+              error = f"{type(exc).__name__}: {exc}"
+
+          body_path = out / "response-body.bin"
+          body_path.write_bytes(body)
+          header_rows = []
+          location = None
+          content_type = None
+          if headers is not None:
+              header_rows = [
+                  {"name": key.lower(), "value": value}
+                  for key, value in sorted(headers.items(), key=lambda item: (item[0].lower(), item[1]))
+              ]
+              location = headers.get("Location")
+              content_type = headers.get_content_type() if hasattr(headers, "get_content_type") else headers.get("Content-Type")
+          pdf_magic = body.startswith(b"%PDF-")
+          over_limit = len(body) > limit
+          if error:
+              terminal_state = "terminal_transport_error"
+          elif over_limit:
+              terminal_state = "body_limit_exceeded_terminal"
+          elif status is not None and 200 <= status <= 299 and pdf_magic:
+              terminal_state = "http_success_pdf_captured"
+          elif status is not None and 200 <= status <= 299:
+              terminal_state = "http_success_non_pdf_body_captured"
+          elif status is not None and 300 <= status <= 399:
+              terminal_state = "redirect_refused_terminal"
+          else:
+              terminal_state = "http_non_success_terminal"
+
+          route = {
+              "route_id": rid,
+              "requested_url": url,
+              "effective_url": effective,
+              "physical_requests": 1,
+              "http_status": status,
+              "transport_error": error,
+              "elapsed_ms": round((time.time() - started) * 1000),
+              "headers": header_rows,
+              "location": location,
+              "body_path": body_path.name,
+              "body_bytes": len(body),
+              "body_sha256": hashlib.sha256(body).hexdigest(),
+              "content_type": content_type,
+              "body_limit_exceeded": over_limit,
+              "pdf_magic": pdf_magic,
+              "terminal_state": terminal_state,
+              "redirects_followed": 0,
+              "result_spawned_requests": 0,
+          }
+          (out / "route-receipt.json").write_text(json.dumps(route, indent=2, sort_keys=True) + "\n")
+          if terminal_state == "http_success_pdf_captured":
+              (out / "source.pdf").write_bytes(body)
+
+          receipt = {
+              "schema_version": "ssc-rd04-nd-fy26q3-azure-execution@1",
+              "state": "bounded_execution_complete",
+              "failed_or_final_stage": "complete",
+              "exit_code": 0,
+              "canonical_parent": os.environ["CURRENT_MAIN"],
+              "execution_head": os.popen("git rev-parse HEAD").read().strip(),
+              "adjudication_artifact": int(os.environ["ADJUDICATION_ARTIFACT_ID"]),
+              "adjudication_artifact_digest": os.environ["ADJUDICATION_ARTIFACT_DIGEST"],
+              "adjudication_receipt_sha256": os.environ["ADJUDICATION_RECEIPT_SHA256"],
+              "selected_protocol_sha256": os.environ["PROTOCOL_SHA256"],
+              "fixed_route_ids": [rid],
+              "fixed_route_count": 1,
+              "terminal_route_count": 1,
+              "physical_requests": 1,
+              "pdf_body_captured": terminal_state == "http_success_pdf_captured",
+              "route": route,
+              "result_spawned_requests": 0,
+              "automatic_source_admissions": 0,
+              "automatic_field_classifications": 0,
+              "automatic_row_terminalizations": 0,
+              "automatic_class_closures": 0,
+              "source_admissions": 0,
+              "field_terminalizations": 0,
+              "matrix_updates": 0,
+              "row_state_mutations": 0,
+              "class_closed": False,
+              "cumulative_ledger_effect": "none",
+              "outside_human_dependency": False,
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none",
+              "additional_execution_authorized": False,
+              "next_authorized_operation": "request-free page-complete PDF review if pdf_body_captured is true; otherwise request-free terminal transport adjudication",
+          }
+          (out / "execution-receipt.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
+          (out / "EXIT_CODE").write_text("0\n")
+          (out / "STAGE").write_text("complete\n")
+          rows = []
+          for path in sorted(out.rglob("*")):
+              if path.is_file() and path.name != "SHA256SUMS":
+                  rows.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(out).as_posix()}")
+          (out / "SHA256SUMS").write_text("\n".join(rows) + "\n")
+          PY
+
+      - name: Upload exact Azure transport custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy26q3-azure-execution-v1
+          path: /tmp/ssc-rd04-nd-fy26q3-azure-execution-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal bounded execution
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.execute.outcome }}" = success
+          test "$(cat "$OUTPUT_DIR/EXIT_CODE")" = 0
+          test "$(cat "$OUTPUT_DIR/STAGE")" = complete
+          (cd "$OUTPUT_DIR" && sha256sum -c SHA256SUMS)
+          jq -e --arg parent "$CURRENT_MAIN" --arg route "$ROUTE_ID" \
+            '.schema_version=="ssc-rd04-nd-fy26q3-azure-execution@1" and
+             .state=="bounded_execution_complete" and .failed_or_final_stage=="complete" and
+             .exit_code==0 and .canonical_parent==$parent and
+             .fixed_route_ids==[$route] and .fixed_route_count==1 and
+             .terminal_route_count==1 and .physical_requests==1 and
+             .route.redirects_followed==0 and .route.result_spawned_requests==0 and
+             .result_spawned_requests==0 and .automatic_source_admissions==0 and
+             .automatic_field_classifications==0 and .automatic_row_terminalizations==0 and
+             .automatic_class_closures==0 and .source_admissions==0 and
+             .field_terminalizations==0 and .matrix_updates==0 and
+             .row_state_mutations==0 and .class_closed==false and
+             .outside_human_dependency==false and .additional_execution_authorized==false' \
+            "$OUTPUT_DIR/execution-receipt.json" >/dev/null
+          git fetch --no-tags --force origin "+refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$CURRENT_MAIN"
