@@ -1,0 +1,142 @@
+name: TEMP adjudicate RD-04 North Dakota FY2026 MI-NM Azure redirect v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-fy26-mi-nm-azure-redirect-adjudication-v1/trigger.json'
+
+permissions:
+  contents: read
+  actions: read
+  issues: read
+
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+  CARRIER_PARENT: 7d6f9895595a62b6a6cfb3205d03c3d9e50fce33
+  EXECUTION_PARENT: 8482b941aa0b1ecac685ab6ca98bba80ed80c5ee
+  EXECUTION_HEAD: 8e3cf92f1577dce7d99aad82c7f7606b1c3b159e
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  WAIVER_CELL_SHA256: cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe
+  ROW_SHA256: 18f9b127b61e45edafb64c78bc8c387175fffdb351156ccf9154158ca467d2dd
+  BASE_BRANCH: agent/ssc-rd04-nd-fy26-mi-nm-azure-redirect-adjudication-base-v1
+  HEAD_BRANCH: agent/ssc-rd04-nd-fy26-mi-nm-azure-redirect-adjudication-trigger-v1
+  WORKFLOW_PATH: .github/workflows/temp-adjudicate-ssc-rd04-nd-fy26-mi-nm-azure-redirect-v1.yml
+  TRIGGER_PATH: .tmp/rd04-nd-fy26-mi-nm-azure-redirect-adjudication-v1/trigger.json
+  SOURCE_ARTIFACT_ID: '9041349436'
+  SOURCE_ARTIFACT_BYTES: '25304'
+  SOURCE_ARTIFACT_SHA256: 89b3dc1d4c8a3a246be1807089f32f6704342e7f5088b4515ade1a0889ddea20
+  EXECUTION_RECEIPT_SHA256: 5d9c5fd39eff254a588585d2d967e6d553693a32b6253c931e3f4c0e2c59860a
+  ROUTE_RECEIPT_SHA256: e13193e39e0279597edc8a97f41e6cf3bdcd503edf38a727e9a51665c90a9989
+  RESPONSE_HEADERS_SHA256: 0315b2bc8dec1c6c2550c9bf0f9edbb45a87abc709b489e25bcc398a4d185622
+  SOURCE_CHECKSUM_LEDGER_SHA256: e24991b5037cfa59aa00de66af7297682054af1812b05f5de38d6937911b619c
+  ORIGIN_ROUTE_ID: RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-MI-NM-ORIGIN-001
+  ORIGIN_URL: https://www.fna.usda.gov/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-MI-NM-7-2026.zip
+  TARGET_ROUTE_ID: RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-MI-NM-AZURE-001
+  TARGET_URL: https://fna-bwbufwdzbabpezgc.z01.azurefd.us/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-MI-NM-7-2026.zip
+  TARGET_HOST: fna-bwbufwdzbabpezgc.z01.azurefd.us
+  OUTPUT_DIR: /tmp/rd04-nd-fy26-mi-nm-azure-redirect-adjudication-v1
+  WORK_DIR: /tmp/rd04-nd-fy26-mi-nm-azure-redirect-adjudication-v1-work
+  CONTROLLER_ISSUE: '1717'
+  CONTROLLER_B64_BYTES: '16872'
+  CONTROLLER_B64_SHA256: bcbcb8d887b49b5ab7b30d0ecbda196dbe75efd44ae88a86ff2194f49096fed6
+  CONTROLLER_BYTES: '12654'
+  CONTROLLER_SHA256: 53bfca41b3d53a41bf395530961a989db9241b8d784d5d69814a4e9a28562579
+
+concurrency:
+  group: temp-rd04-nd-fy26-mi-nm-azure-redirect-adjudication-v1
+  cancel-in-progress: false
+
+jobs:
+  adjudicate:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-fy26-mi-nm-azure-redirect-adjudication-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fy26-mi-nm-azure-redirect-adjudication-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Reconstruct and execute the exact request-free controller
+        id: adjudicate
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUTPUT_DIR" "$WORK_DIR"
+          mkdir -p "$OUTPUT_DIR"
+          printf '%s\n' reconstruct_controller > "$OUTPUT_DIR/STAGE"
+          printf '%s\n' 1 > "$OUTPUT_DIR/EXIT_CODE"
+          python - <<'PY'
+          import base64, hashlib, json, os, re, urllib.request
+          from pathlib import Path
+          expected={
+            0:(4000,'ff6f608836f7188aa538f22b1ce963e81382dbef213483556b5dc20fd3a4eebd'),
+            1:(4000,'a23ca0c629cbb6e887d2d3953d35ad3a22725d27ab20b042c0648fdb5b4b44a2'),
+            2:(4000,'17e1ddbb1cac971f52079f9c834168de0fcc7eefee521fd4304bbf5f91b24497'),
+            3:(4000,'9c72890bf16cf62f1d6309806a6f323a72a1b7d986528316aca0e20ce1c997a4'),
+            4:(872,'0472d198beae0c9383cbedba982d6963c238ab39310dd75dbb30785d2d6f5a72'),
+          }
+          req=urllib.request.Request(
+            f'https://api.github.com/repos/{os.environ["GITHUB_REPOSITORY"]}/issues/{os.environ["CONTROLLER_ISSUE"]}/comments?per_page=100',
+            headers={'Authorization':f'Bearer {os.environ["GH_TOKEN"]}','Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','User-Agent':'rd04-mi-nm-azure-adjudicator'})
+          with urllib.request.urlopen(req,timeout=60) as response: comments=json.load(response)
+          pat=re.compile(r'^RD04_MI_NM_AZURE_ADJ_CONTROLLER_CHUNK_(\d{2})_OF_05 sha256=([0-9a-f]{64})\n([A-Za-z0-9+/=]+)$')
+          found={}; ids={}
+          for comment in comments:
+            m=pat.fullmatch(comment.get('body') or '')
+            if not m: continue
+            i=int(m.group(1)); payload=m.group(3)
+            if i not in expected or i in found: raise SystemExit(f'invalid controller chunk {i}')
+            size,digest=expected[i]
+            if len(payload.encode())!=size or m.group(2)!=digest or hashlib.sha256(payload.encode()).hexdigest()!=digest:
+              raise SystemExit(f'controller chunk {i} differs')
+            found[i]=payload; ids[i]=comment['id']
+          if set(found)!=set(expected): raise SystemExit(f'controller denominator differs: {sorted(found)}')
+          encoded=''.join(found[i] for i in range(5)).encode()
+          assert len(encoded)==int(os.environ['CONTROLLER_B64_BYTES'])
+          assert hashlib.sha256(encoded).hexdigest()==os.environ['CONTROLLER_B64_SHA256']
+          controller=base64.b64decode(encoded,validate=True)
+          assert len(controller)==int(os.environ['CONTROLLER_BYTES'])
+          assert hashlib.sha256(controller).hexdigest()==os.environ['CONTROLLER_SHA256']
+          Path('/tmp/rd04-mi-nm-azure-adjudicator.sh').write_bytes(controller)
+          Path(os.environ['OUTPUT_DIR'],'controller-custody.json').write_text(json.dumps({
+            'schema_version':'rd04-controller-comment-custody@1','issue_number':int(os.environ['CONTROLLER_ISSUE']),
+            'comment_ids':[ids[i] for i in range(5)],'chunk_count':5,'base64_bytes':len(encoded),
+            'base64_sha256':hashlib.sha256(encoded).hexdigest(),'controller_bytes':len(controller),
+            'controller_sha256':hashlib.sha256(controller).hexdigest()},indent=2)+'\n')
+          PY
+          bash -n /tmp/rd04-mi-nm-azure-adjudicator.sh
+          chmod 700 /tmp/rd04-mi-nm-azure-adjudicator.sh
+          /tmp/rd04-mi-nm-azure-adjudicator.sh
+
+      - name: Preserve request-free adjudication custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy26-mi-nm-azure-redirect-adjudication-v1
+          path: /tmp/rd04-nd-fy26-mi-nm-azure-redirect-adjudication-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal request-free result
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.adjudicate.outcome }}" = success
+          test "$(cat "$OUTPUT_DIR/STAGE")" = complete
+          test "$(cat "$OUTPUT_DIR/EXIT_CODE")" = 0
+          jq -e '.state=="complete" and .exit_code==0 and .source_requests==0 and .route_executions==0 and .selected_followup_routes==1 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .class_closed==false' "$OUTPUT_DIR/receipt.json" > /dev/null
