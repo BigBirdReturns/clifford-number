@@ -1,0 +1,134 @@
+name: TEMP adjudicate RD-04 North Dakota FY2025 FNA response PDF v1
+on:
+  pull_request:
+    branches: [agent/ssc-rd04-nd-fna-response-fy2025-pdf-adjudication-base-v1]
+    paths: [.trigger/ssc-rd04-nd-fna-response-fy2025-pdf-adjudication-v1.json]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  adjudicate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PARENT: a592acea22c69a979f2a90c24a2bafb8c9445759
+      WF: .github/workflows/temp-adjudicate-ssc-rd04-nd-fna-response-fy2025-pdf-v1.yml
+      TRIGGER: .trigger/ssc-rd04-nd-fna-response-fy2025-pdf-adjudication-v1.json
+      SOURCE_ID: '9032134671'
+      SOURCE_BYTES: '87184177'
+      SOURCE_SHA: 0bbbe62713c74b899039f3302a2d1b58d03eac65d8e87f21610ec207eaa67189
+      ROUTE_RECEIPT_SHA: dc93312848d098f27e0e812671adbc3c9095d0e71eebb11c149b9b397672ccee
+      EXECUTION_RECEIPT_SHA: f99290762e363aa47b9a5f59b891b64209d981cff5621841855f3ce3f0ae52c7
+      HEADER_SHA: 4757bbdd4d95d38d3a8c111caaa91d791f53a7844dfee688cca1ee2c96ef7e17
+      PDF_SHA: dc8f7a9e03c79ce52e39a28dfee4d36b9afe768181c15ec02c44b9ccb27f3428
+      PDF_BYTES: '306585'
+      MATRIX: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+      MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+      ROW_SHA: 18f9b127b61e45edafb64c78bc8c387175fffdb351156ccf9154158ca467d2dd
+      CELL_SHA: cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe
+      OUT: /tmp/rd04-nd-fna-response-fy2025-pdf-adjudication-v1
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - id: run
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"; mkdir -p "$OUT/source" "$OUT/render" "$OUT/text"; : > "$OUT/workflow.log"
+          exec > >(tee -a "$OUT/workflow.log") 2>&1
+          echo topology > "$OUT/STAGE"; echo 1 > "$OUT/EXIT_CODE"
+          H=$(git rev-parse HEAD); B=$(git rev-parse HEAD^); P=$(git rev-parse HEAD^^)
+          test "$H" = '${{ github.event.pull_request.head.sha }}'
+          test "$P" = "$PARENT"
+          test "$(git diff --name-only "$P" "$B")" = "$WF"
+          test "$(git diff --name-only "$B" "$H")" = "$TRIGGER"
+          git fetch --no-tags --force origin main
+          test "$(git rev-parse origin/main)" = "$PARENT"
+          test "$(git rev-parse "$PARENT:$MATRIX")" = "$MATRIX_BLOB"
+
+          echo authenticate > "$OUT/STAGE"
+          api="https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ID"
+          auth=(-H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json')
+          curl -fsSL "${auth[@]}" "$api" -o "$OUT/source-meta.json"
+          jq -e --argjson id "$SOURCE_ID" --argjson size "$SOURCE_BYTES" --arg d "sha256:$SOURCE_SHA" '.id==$id and .size_in_bytes==$size and .digest==$d and .expired==false' "$OUT/source-meta.json" >/dev/null
+          curl -fsSL "${auth[@]}" "$api/zip" -o "$OUT/source.zip"
+          test "$(stat -c%s "$OUT/source.zip")" -eq "$SOURCE_BYTES"
+          test "$(sha256sum "$OUT/source.zip" | cut -d' ' -f1)" = "$SOURCE_SHA"
+          unzip -t "$OUT/source.zip" > "$OUT/source-zip-test.txt"
+          unzip -q "$OUT/source.zip" -d "$OUT/source"
+          (cd "$OUT/source" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$OUT/source/route-receipt.json" | cut -d' ' -f1)" = "$ROUTE_RECEIPT_SHA"
+          test "$(sha256sum "$OUT/source/execution-receipt.json" | cut -d' ' -f1)" = "$EXECUTION_RECEIPT_SHA"
+          test "$(sha256sum "$OUT/source/response-headers.raw" | cut -d' ' -f1)" = "$HEADER_SHA"
+          test "$(stat -c%s "$OUT/source/response-body.bin")" -eq "$PDF_BYTES"
+          test "$(sha256sum "$OUT/source/response-body.bin" | cut -d' ' -f1)" = "$PDF_SHA"
+          jq -e '.state=="complete" and .status_code==200 and .content_type=="application/pdf" and .pdf_magic==true and .terminal_state=="http_success_pdf_captured"' "$OUT/source/route-receipt.json" >/dev/null
+          cp "$OUT/source/response-body.bin" "$OUT/source.pdf"
+
+          echo review > "$OUT/STAGE"
+          if ! command -v pdfinfo >/dev/null || ! command -v pdftotext >/dev/null || ! command -v pdftoppm >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y poppler-utils
+          fi
+          pdfinfo "$OUT/source.pdf" > "$OUT/pdfinfo.txt"
+          PAGES=$(awk '/^Pages:/{print $2}' "$OUT/pdfinfo.txt")
+          test "$PAGES" = 5
+          pdftotext -layout "$OUT/source.pdf" "$OUT/text/full.txt"
+          for i in 1 2 3 4 5; do pdftotext -layout -f "$i" -l "$i" "$OUT/source.pdf" "$OUT/text/page-$i.txt"; done
+          pdftoppm -r 180 -png "$OUT/source.pdf" "$OUT/render/page" >/dev/null 2>&1
+          test "$(find "$OUT/render" -maxdepth 1 -type f -name 'page-*.png' | wc -l)" -eq 5
+          test -s "$OUT/render/page-1.png"; test -s "$OUT/render/page-2.png"; test -s "$OUT/render/page-3.png"; test -s "$OUT/render/page-4.png"; test -s "$OUT/render/page-5.png"
+          jq -e --arg sha "$PDF_SHA" '.schema_version=="ssc-rd04-nd-fna-response-fy2025-operator-review@1" and .pdf_sha256==$sha and .pages_reviewed==[1,2,3,4,5] and .page_count==5 and .outside_human_dependency==false and .review_complete==true' "$TRIGGER" >/dev/null
+          grep -Fq 'North Dakota Request to Waive' "$OUT/text/page-1.txt"
+          grep -Fq 'Partial Approval' "$OUT/text/page-1.txt"
+          grep -Fq 'Rolette County and Turtle Mountain' "$OUT/text/full.txt"
+          grep -Fq 'Off-Reservation Trust Land' "$OUT/text/full.txt"
+          grep -Fq 'Bottineau County and Towner County' "$OUT/text/full.txt"
+          grep -Fq 'July 1, 2025' "$OUT/text/page-3.txt"
+          grep -Fq 'June 30, 2026' "$OUT/text/page-3.txt"
+          grep -Fq 'FNS Action and Justification' "$OUT/text/page-4.txt"
+          grep -Fq 'Implementation Date: July 1, 2025' "$OUT/text/page-4.txt"
+          grep -Fq 'Expiration Date: June 30, 2026' "$OUT/text/page-4.txt"
+          grep -Fq 'Information Required to Submit a Modification, Extension, or New Waiver' "$OUT/text/page-5.txt"
+
+          echo matrix > "$OUT/STAGE"
+          python - "$MATRIX" "$ROW_SHA" "$CELL_SHA" "$OUT/current-cell-custody.json" <<'PY'
+          import hashlib,json,sys
+          from pathlib import Path
+          matrix=json.loads(Path(sys.argv[1]).read_text())
+          row=next(r for r in matrix['rows'] if r['unit_id']=='US-STATE-ND')
+          cell=next(c for c in row['cells'] if c['field_id']=='abawd_or_work_requirement_waiver_state_and_governing_period')
+          canon=lambda v: hashlib.sha256(json.dumps(v,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest()
+          assert canon(row)==sys.argv[2], (canon(row),sys.argv[2])
+          assert canon(cell)==sys.argv[3], (canon(cell),sys.argv[3])
+          assert row['row_state']=='still_open' and row['terminal_fields']==7 and row['open_fields']==2
+          assert cell['state']=='still_open' and cell['terminal'] is False
+          out={'schema_version':'ssc-rd04-nd-fna-response-fy2025-current-cell-custody@1','state':'complete','unit_id':row['unit_id'],'row_sha256':canon(row),'cell_field_id':cell['field_id'],'cell_sha256':canon(cell),'cell_state':cell['state'],'cell_terminal':cell['terminal'],'row_state':row['row_state'],'terminal_fields':row['terminal_fields'],'open_fields':row['open_fields']}
+          Path(sys.argv[4]).write_text(json.dumps(out,indent=2)+'\n')
+          PY
+
+          echo adjudicate > "$OUT/STAGE"
+          jq -n '{schema_version:"ssc-rd04-nd-fna-response-fy2025-source-adjudication@1",state:"complete",source_id:"RD04-ND-FNA-RESPONSE-FY2025",source_role:"exact_official_fns_abawd_waiver_response",document_date:"2025-06-18",request_date:"2025-06-04",request_type:"initial",fns_action:"partial_approval",approved_areas:["Rolette County","Turtle Mountain Reservation and Off-Reservation Trust Land"],denied_areas:["Bottineau County","Towner County"],implementation_date:"2025-07-01",expiration_date:"2026-06-30",pages_reviewed:[1,2,3,4,5],page_count:5,source_admitted:true,limitations:["does not establish waiver status after 2026-06-30","does not establish uniform frontline practice","does not establish person-level outcome"],outside_human_dependency:false}' > "$OUT/source-adjudication.json"
+          jq -n '{schema_version:"ssc-rd04-nd-fna-response-fy2025-field-adjudication@1",state:"complete",decision_id:"RD04-ND-FNA-RESPONSE-FY2025-WAIVER-STATE-AND-GOVERNING-PERIOD",unit_id:"US-STATE-ND",field_id:"abawd_or_work_requirement_waiver_state_and_governing_period",disposition:"promotion_candidate_exact_partial_waiver_geography_and_governing_period_recovered",terminal_classification:"evidence_complete",value:{waiver_state:"partial_approval",approved_areas:["Rolette County","Turtle Mountain Reservation and Off-Reservation Trust Land"],denied_areas:["Bottineau County","Towner County"],implementation_date:"2025-07-01",expiration_date:"2026-06-30",response_date:"2025-06-18",post_expiration_status:"not_determined_by_this_source"},promotion_candidate:true,matrix_updated:false,row_updated:false,class_closed:false,outside_human_dependency:false}' > "$OUT/field-adjudication.json"
+          jq -n --arg row "$ROW_SHA" --arg cell "$CELL_SHA" '{schema_version:"ssc-rd04-nd-fna-response-fy2025-promotion-candidate-protocol@1",state:"candidate_only",candidate_count:1,candidates:[{candidate_id:"RD04-ND-FNA-RESPONSE-FY2025-CANDIDATE-WAIVER-STATE-AND-GOVERNING-PERIOD",decision_id:"RD04-ND-FNA-RESPONSE-FY2025-WAIVER-STATE-AND-GOVERNING-PERIOD",unit_id:"US-STATE-ND",field_id:"abawd_or_work_requirement_waiver_state_and_governing_period",current_row_sha256:$row,current_cell_sha256:$cell,current_cell_state:"still_open",target_state:"evidence_complete",terminal_classification:"evidence_complete",source_ids:["RD04-ND-FNA-RESPONSE-FY2025"],value:{waiver_state:"partial_approval",approved_areas:["Rolette County","Turtle Mountain Reservation and Off-Reservation Trust Land"],denied_areas:["Bottineau County","Towner County"],implementation_date:"2025-07-01",expiration_date:"2026-06-30",response_date:"2025-06-18",post_expiration_status:"not_determined_by_this_source"}}],field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,outside_human_dependency:false}' > "$OUT/promotion-candidate-protocol.json"
+          jq -n '{schema_version:"ssc-rd04-nd-fna-response-fy2025-pdf-adjudication-receipt@1",state:"complete",stage:"complete",source_requests:0,route_executions:0,pdf_pages:5,pages_reviewed:5,source_admissions:1,field_decisions:1,promotion_candidates:1,held_open_fields:0,selected_followup_routes:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none",next_authorized_operation:"separate exact-current-cell validation of the one candidate, followed only on success by a deterministic one-cell promotion product"}' > "$OUT/receipt.json"
+          echo complete > "$OUT/STAGE"; echo 0 > "$OUT/EXIT_CODE"
+          find "$OUT" -type f ! -name SHA256SUMS ! -name workflow.log -print0 | sort -z | xargs -0 sha256sum | sed "s#  $OUT/#  #" > "$OUT/SHA256SUMS"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fna-response-fy2025-pdf-adjudication-v1
+          path: /tmp/rd04-nd-fna-response-fy2025-pdf-adjudication-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+      - if: always()
+        shell: bash
+        run: |
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          test '${{ steps.run.outcome }}' = success
