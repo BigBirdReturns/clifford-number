@@ -1,0 +1,771 @@
+name: TEMP adjudicate RD-04 North Dakota FNA four-route transport v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-fna-four-route-adjudication-base-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/ssc-temp/rd04-nd-fna-four-route-adjudication-trigger-v1.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: temp-adjudicate-rd04-nd-fna-four-route-v1
+  cancel-in-progress: false
+
+env:
+  CANONICAL_MAIN: b1d1d8afb6c957401a762bf9d0b2abc464bd5e07
+  CANONICAL_TREE: 64f5b5e9e9d72bdf86ef6cf14d728b2ae996f834
+  BASE_BRANCH: agent/ssc-rd04-nd-fna-four-route-adjudication-base-v1
+  TRIGGER_BRANCH: agent/ssc-rd04-nd-fna-four-route-adjudication-trigger-v1
+  WORKFLOW_PATH: .github/workflows/temp-adjudicate-ssc-rd04-nd-fna-four-route-v1.yml
+  TRIGGER_PATH: .github/ssc-temp/rd04-nd-fna-four-route-adjudication-trigger-v1.txt
+  AUTH_ARTIFACT_ID: '9030165959'
+  AUTH_ARTIFACT_BYTES: '12451198'
+  AUTH_ARTIFACT_SHA256: 471bf617c14e4a0a5ce29598b1b55fd08c86a6e42a56cec14158c1cbb7dd2a42
+  DUP_ARTIFACT_ID: '9030196488'
+  DUP_ARTIFACT_BYTES: '12484702'
+  DUP_ARTIFACT_SHA256: 80a23c45563929330c61213aacb88d92fa8edd3ba30afb728a523b3014f98827
+  OUTPUT_DIR: /tmp/ssc-rd04-nd-fna-four-route-adjudication-v1
+
+jobs:
+  adjudicate:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-fna-four-route-adjudication-trigger-v1')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Authenticate exact topology and retained artifacts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUTPUT_DIR"
+          mkdir -p "$OUTPUT_DIR/authoritative" "$OUTPUT_DIR/duplicate" "$OUTPUT_DIR/result"
+          exec > >(tee "$OUTPUT_DIR/adjudication.log") 2>&1
+
+          test "$(git rev-parse HEAD^^)" = "$CANONICAL_MAIN"
+          BASE_COMMIT="$(git rev-parse HEAD^)"
+          test "$(git rev-list --count "$CANONICAL_MAIN".."$BASE_COMMIT")" -eq 1
+          test "$(git rev-list --count "$BASE_COMMIT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CANONICAL_MAIN" "$BASE_COMMIT")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_MAIN" "$BASE_COMMIT")" = "$WORKFLOW_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_MAIN" "$BASE_COMMIT")"
+          test "$(git diff --name-only "$BASE_COMMIT" HEAD)" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE_COMMIT" HEAD)" = "$TRIGGER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$BASE_COMMIT" HEAD)"
+          test "$(git rev-parse "$CANONICAL_MAIN^{tree}")" = "$CANONICAL_TREE"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CANONICAL_MAIN"
+
+          API="https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts"
+          curl -fsSL \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "$API/$AUTH_ARTIFACT_ID/zip" \
+            -o "$OUTPUT_DIR/authoritative.zip"
+          curl -fsSL \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "$API/$DUP_ARTIFACT_ID/zip" \
+            -o "$OUTPUT_DIR/duplicate.zip"
+
+          test "$(stat -c %s "$OUTPUT_DIR/authoritative.zip")" = "$AUTH_ARTIFACT_BYTES"
+          test "$(stat -c %s "$OUTPUT_DIR/duplicate.zip")" = "$DUP_ARTIFACT_BYTES"
+          test "$(sha256sum "$OUTPUT_DIR/authoritative.zip" | awk '{print $1}')" = "$AUTH_ARTIFACT_SHA256"
+          test "$(sha256sum "$OUTPUT_DIR/duplicate.zip" | awk '{print $1}')" = "$DUP_ARTIFACT_SHA256"
+          unzip -t "$OUTPUT_DIR/authoritative.zip" > "$OUTPUT_DIR/result/authoritative-zip-test.txt"
+          unzip -t "$OUTPUT_DIR/duplicate.zip" > "$OUTPUT_DIR/result/duplicate-zip-test.txt"
+          unzip -q "$OUTPUT_DIR/authoritative.zip" -d "$OUTPUT_DIR/authoritative"
+          unzip -q "$OUTPUT_DIR/duplicate.zip" -d "$OUTPUT_DIR/duplicate"
+          (cd "$OUTPUT_DIR/authoritative" && sha256sum -c SHA256SUMS)
+          (cd "$OUTPUT_DIR/duplicate" && sha256sum -c SHA256SUMS)
+
+          python - "$OUTPUT_DIR/result/artifact-authentication.json" <<'PY'
+          import json, os, sys
+          value = {
+              "schema_version": "ssc-rd04-nd-fna-artifact-authentication@1",
+              "authoritative": {
+                  "artifact_id": int(os.environ["AUTH_ARTIFACT_ID"]),
+                  "bytes": int(os.environ["AUTH_ARTIFACT_BYTES"]),
+                  "zip_sha256": os.environ["AUTH_ARTIFACT_SHA256"],
+                  "zip_integrity": "pass",
+                  "internal_sha256sums": "pass",
+              },
+              "duplicate": {
+                  "artifact_id": int(os.environ["DUP_ARTIFACT_ID"]),
+                  "bytes": int(os.environ["DUP_ARTIFACT_BYTES"]),
+                  "zip_sha256": os.environ["DUP_ARTIFACT_SHA256"],
+                  "zip_integrity": "pass",
+                  "internal_sha256sums": "pass",
+              },
+          }
+          open(sys.argv[1], "w", encoding="utf-8").write(json.dumps(value, indent=2, sort_keys=True) + "\n")
+          PY
+
+      - name: Adjudicate exact captured objects offline
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cat > "$OUTPUT_DIR/adjudicate.py" <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import html
+          import json
+          import re
+          import shutil
+          import sys
+          from html.parser import HTMLParser
+          from pathlib import Path
+          from urllib.parse import urljoin, urlsplit
+
+          AUTH_DIR = Path(sys.argv[1]).resolve()
+          DUP_DIR = Path(sys.argv[2]).resolve()
+          OUT = Path(sys.argv[3]).resolve()
+          REPO = Path(sys.argv[4]).resolve()
+          OUT.mkdir(parents=True, exist_ok=True)
+          (OUT / "review-bodies").mkdir(exist_ok=True)
+          (OUT / "visible-text").mkdir(exist_ok=True)
+
+          CANONICAL_PARENT = "b1d1d8afb6c957401a762bf9d0b2abc464bd5e07"
+          CANONICAL_TREE = "64f5b5e9e9d72bdf86ef6cf14d728b2ae996f834"
+          AUTH_ARTIFACT_ID = 9030165959
+          AUTH_ARTIFACT_SHA256 = "471bf617c14e4a0a5ce29598b1b55fd08c86a6e42a56cec14158c1cbb7dd2a42"
+          DUP_ARTIFACT_ID = 9030196488
+          DUP_ARTIFACT_SHA256 = "80a23c45563929330c61213aacb88d92fa8edd3ba30afb728a523b3014f98827"
+          AUTH_EXECUTION_HEAD = "fafc3fd8a3096725730ce6d347c7860634de8b98"
+          DUP_EXECUTION_HEAD = "58ca14c494a05cbe84ea44e5940a72f04050fdfb"
+          AUTH_RECEIPT_SHA256 = "d61b705ef137573f93d3398c0fedab10ed2eb40da4a7581db7f10efa6c3f1b74"
+          AUTH_ROUTE_LEDGER_SHA256 = "e7466cb4beb777d2b74fff1f7381dcae5d37afb5ae4f66329d5df9d9d6c68b14"
+          DUP_RECEIPT_SHA256 = "5ad24c52977c9fef7b41aadbc963da6c44427fca9c5cc59c11d06952345abc35"
+          DUP_ROUTE_LEDGER_SHA256 = "b2440b68b650c9190fc44e69b995cfdf49bd2cc807e8e3010772bb9b141108d4"
+          PRIOR_ADJUDICATION_RECEIPT_SHA256 = "b10eb3ba6b2c3dede0fcfc50ac5000ef517141d69029a7c08d29356ebdecd4c3"
+          PRIOR_FIELD_CELL_SHA256 = "cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe"
+          MATRIX_PATH = Path("data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json")
+
+          EXPECTED_ROUTES = {
+              "RD04-ND-CURRENT-WAIVER-FNA-001": {
+                  "ordinal": 1,
+                  "requested_url": "https://www.fna.usda.gov/snap/abawd/waivers",
+                  "final_url": "https://www.fna.usda.gov/snap/waivers/timelimit",
+                  "status": 200,
+                  "body_bytes": 56212,
+                  "body_sha256": "300035d49923fcaf8dfcbd54a99388d7b67af58ebb0b713b49548ff824e9a7f3",
+              },
+              "RD04-ND-CURRENT-WAIVER-FNA-002": {
+                  "ordinal": 2,
+                  "requested_url": "https://www.fna.usda.gov/snap/statewide-able-bodied-adults-without-dependent-waivers-effective-immediately-eligible-states",
+                  "final_url": "https://www.fna.usda.gov/snap/statewide-able-bodied-adults-without-dependent-waivers-effective-immediately-eligible-states",
+                  "status": 404,
+                  "body_bytes": 45835,
+                  "body_sha256": "02fd72e7135514260a447c234944c325fa83bf248439296bd7a000740b01ea97",
+              },
+              "RD04-ND-CURRENT-WAIVER-FNA-003": {
+                  "ordinal": 3,
+                  "requested_url": "https://www.fna.usda.gov/snap/abawd",
+                  "final_url": "https://www.fna.usda.gov/snap/work-requirements",
+                  "status": 200,
+                  "body_bytes": 49172,
+                  "body_sha256": "2477832ad3dce9398dbe1e6158347175c729fbe8ef46fe261fbd12d338794f11",
+              },
+              "RD04-ND-CURRENT-WAIVER-FNA-004": {
+                  "ordinal": 4,
+                  "requested_url": "https://www.fna.usda.gov/snap/obbb-implementation",
+                  "final_url": "https://www.fna.usda.gov/snap/obbb-implementation",
+                  "status": 200,
+                  "body_bytes": 43234,
+                  "body_sha256": "aaec6c27abf3e25dc6e995b7dd74c6a16b24e18846dc896f404872ee7de42661",
+              },
+          }
+
+          EXPECTED_QUARTER_ROUTES = [
+              {
+                  "ordinal": 1,
+                  "route_id": "RD04-ND-CURRENT-WAIVER-FY26-Q1",
+                  "fiscal_year": 2026,
+                  "quarter": 1,
+                  "url": "https://www.fna.usda.gov/sites/default/files/resource-files/FY26-Quarter-1-ABAWD-Waiver-Status.pdf",
+              },
+              {
+                  "ordinal": 2,
+                  "route_id": "RD04-ND-CURRENT-WAIVER-FY26-Q2",
+                  "fiscal_year": 2026,
+                  "quarter": 2,
+                  "url": "https://www.fna.usda.gov/sites/default/files/resource-files/FY26-Quarter-2-ABAWD-Waiver-Status.pdf",
+              },
+              {
+                  "ordinal": 3,
+                  "route_id": "RD04-ND-CURRENT-WAIVER-FY26-Q3",
+                  "fiscal_year": 2026,
+                  "quarter": 3,
+                  "url": "https://www.fna.usda.gov/sites/default/files/resource-files/FY26-Quarter-3-ABAWD-Waiver-Status.pdf",
+              },
+          ]
+
+
+          def sha256_bytes(data: bytes) -> str:
+              return hashlib.sha256(data).hexdigest()
+
+
+          def sha256_file(path: Path) -> str:
+              return sha256_bytes(path.read_bytes())
+
+
+          def load_json(path: Path):
+              return json.loads(path.read_text(encoding="utf-8"))
+
+
+          def dump_json(path: Path, value) -> None:
+              path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+          class VisibleHTML(HTMLParser):
+              def __init__(self, base_url: str):
+                  super().__init__(convert_charrefs=True)
+                  self.base_url = base_url
+                  self.links: list[dict[str, str]] = []
+                  self._chunks: list[str] = []
+                  self._anchor_href: str | None = None
+                  self._anchor_chunks: list[str] = []
+                  self._suppressed = 0
+
+              def handle_starttag(self, tag: str, attrs):
+                  tag = tag.lower()
+                  if tag in {"script", "style", "noscript", "svg"}:
+                      self._suppressed += 1
+                      return
+                  if self._suppressed:
+                      return
+                  if tag == "a":
+                      attrs_map = {str(k).lower(): str(v) for k, v in attrs if k and v is not None}
+                      self._anchor_href = attrs_map.get("href")
+                      self._anchor_chunks = []
+
+              def handle_endtag(self, tag: str):
+                  tag = tag.lower()
+                  if tag in {"script", "style", "noscript", "svg"} and self._suppressed:
+                      self._suppressed -= 1
+                      return
+                  if self._suppressed:
+                      return
+                  if tag == "a" and self._anchor_href:
+                      raw = html.unescape(self._anchor_href.strip())
+                      absolute = urljoin(self.base_url, raw)
+                      anchor = " ".join(" ".join(self._anchor_chunks).split())
+                      self.links.append({"anchor": anchor, "url": absolute})
+                      self._anchor_href = None
+                      self._anchor_chunks = []
+
+              def handle_data(self, data: str):
+                  if self._suppressed:
+                      return
+                  value = html.unescape(data)
+                  self._chunks.append(value)
+                  if self._anchor_href is not None:
+                      self._anchor_chunks.append(value)
+
+              @property
+              def text(self) -> str:
+                  return "\n".join(
+                      line for line in (" ".join(chunk.split()) for chunk in self._chunks) if line
+                  )
+
+
+          def parse_html(body: bytes, base_url: str) -> tuple[str, list[dict[str, str]]]:
+              parser = VisibleHTML(base_url)
+              parser.feed(body.decode("utf-8", errors="replace"))
+              parser.close()
+              return parser.text, parser.links
+
+
+          # Authenticate the unchanged canonical matrix and exact North Dakota open-cell boundary.
+          matrix_file = REPO / MATRIX_PATH
+          assert matrix_file.is_file()
+          matrix_bytes = matrix_file.read_bytes()
+          matrix = json.loads(matrix_bytes)
+          assert matrix["counts"]["terminal_cells"] == 227
+          assert matrix["counts"]["still_open_cells"] == 223
+          assert matrix["counts"]["terminal_substantive_cells"] == 117
+          assert matrix["counts"]["still_open_substantive_cells"] == 183
+          assert matrix["counts"]["terminal_units"] == 10
+          assert matrix["counts"]["class_closed"] is False
+          current_row = next(row for row in matrix["rows"] if row["unit_id"] == "US-STATE-ND")
+          assert current_row["row_state"] == "still_open"
+          assert current_row["terminal_fields"] == 7
+          assert current_row["open_fields"] == 2
+          current_cell = next(cell for cell in current_row["cells"] if cell["field_id"] == "abawd_or_work_requirement_waiver_state_and_governing_period")
+          assert current_cell == {
+              "field_ordinal": 4,
+              "field_id": "abawd_or_work_requirement_waiver_state_and_governing_period",
+              "state": "still_open",
+              "terminal": False,
+              "value": None,
+              "evidence_source_ids": [],
+              "typed_gap": "no_admitted_state_implementation_source_yet",
+              "authority_effect": "none",
+          }
+          row_state_cell = next(cell for cell in current_row["cells"] if cell["field_id"] == "field_and_row_terminal_state")
+          assert row_state_cell["state"] == "still_open"
+          assert row_state_cell["terminal"] is False
+          current_matrix_sha256 = sha256_bytes(matrix_bytes)
+          current_row_canonical_sha256 = sha256_bytes((json.dumps(current_row, sort_keys=True, separators=(",", ":")) + "\n").encode())
+          current_cell_canonical_json_sha256 = sha256_bytes((json.dumps(current_cell, sort_keys=True, separators=(",", ":")) + "\n").encode())
+
+          # Authenticate the execution receipts and the predecessor decision custody.
+          assert sha256_file(AUTH_DIR / "execution-receipt.json") == AUTH_RECEIPT_SHA256
+          assert sha256_file(AUTH_DIR / "route-receipts.json") == AUTH_ROUTE_LEDGER_SHA256
+          assert sha256_file(DUP_DIR / "execution-receipt.json") == DUP_RECEIPT_SHA256
+          assert sha256_file(DUP_DIR / "route-receipts.jsonl") == DUP_ROUTE_LEDGER_SHA256
+          assert sha256_file(AUTH_DIR / "adjudication" / "receipt.json") == PRIOR_ADJUDICATION_RECEIPT_SHA256
+
+          prior_field = load_json(AUTH_DIR / "adjudication" / "field-adjudication.json")
+          assert prior_field["current_cell_canonical_sha256"] == PRIOR_FIELD_CELL_SHA256
+          assert prior_field["field_id"] == "abawd_or_work_requirement_waiver_state_and_governing_period"
+          assert prior_field["unit_id"] == "US-STATE-ND"
+          assert prior_field["promotion_candidate"] is False
+          assert prior_field["field_terminalizations"] == 0
+          assert prior_field["matrix_updates"] == 0
+          assert prior_field["row_state_mutations"] == 0
+          assert prior_field["class_closed"] is False
+
+          # The current row identity is retained from the exact prior adjudication transaction.
+          prior_receipt = load_json(AUTH_DIR / "adjudication" / "receipt.json")
+          assert prior_receipt["canonical_parent"] == CANONICAL_PARENT
+          assert prior_receipt["canonical_tree"] == CANONICAL_TREE
+
+          # Reconcile the authoritative and duplicate route ledgers body-for-body.
+          auth_routes = load_json(AUTH_DIR / "route-receipts.json")
+          dup_routes = [json.loads(line) for line in (DUP_DIR / "route-receipts.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
+          assert [row["route_id"] for row in auth_routes] == list(EXPECTED_ROUTES)
+          assert [row["route_id"] for row in dup_routes] == list(EXPECTED_ROUTES)
+
+          dup_by_id = {row["route_id"]: row for row in dup_routes}
+          body_ledger: list[dict] = []
+          visible_text: dict[str, str] = {}
+          visible_links: dict[str, list[dict[str, str]]] = {}
+
+          for auth in auth_routes:
+              route_id = auth["route_id"]
+              expected = EXPECTED_ROUTES[route_id]
+              duplicate = dup_by_id[route_id]
+              assert auth["ordinal"] == expected["ordinal"]
+              assert auth["requested_url"] == expected["requested_url"]
+              assert auth["final_url"] == expected["final_url"]
+              assert auth["http_status"] == expected["status"]
+              assert auth["body_bytes"] == expected["body_bytes"]
+              assert auth["body_sha256"] == expected["body_sha256"]
+              assert duplicate["ordinal"] == expected["ordinal"]
+              assert duplicate["requested_url"] == expected["requested_url"]
+              assert duplicate["final_url"] == expected["final_url"]
+              assert duplicate["final_status_code"] == expected["status"]
+              assert duplicate["final_body_bytes"] == expected["body_bytes"]
+              assert duplicate["final_body_sha256"] == expected["body_sha256"]
+
+              auth_body_rel = auth["hops"][-1]["body_path"]
+              dup_body_rel = duplicate["final_body_path"]
+              auth_body_path = AUTH_DIR / auth_body_rel
+              dup_body_path = DUP_DIR / dup_body_rel
+              auth_body = auth_body_path.read_bytes()
+              dup_body = dup_body_path.read_bytes()
+              assert len(auth_body) == expected["body_bytes"]
+              assert len(dup_body) == expected["body_bytes"]
+              assert sha256_bytes(auth_body) == expected["body_sha256"]
+              assert sha256_bytes(dup_body) == expected["body_sha256"]
+              assert auth_body == dup_body
+
+              review_path = OUT / "review-bodies" / f"{route_id}.bin"
+              review_path.write_bytes(auth_body)
+              text, links = parse_html(auth_body, expected["final_url"])
+              (OUT / "visible-text" / f"{route_id}.txt").write_text(text + "\n", encoding="utf-8")
+              visible_text[route_id] = text
+              visible_links[route_id] = links
+              body_ledger.append({
+                  "route_id": route_id,
+                  "ordinal": expected["ordinal"],
+                  "requested_url": expected["requested_url"],
+                  "final_url": expected["final_url"],
+                  "http_status": expected["status"],
+                  "body_bytes": expected["body_bytes"],
+                  "body_sha256": expected["body_sha256"],
+                  "authoritative_body_path": auth_body_rel,
+                  "duplicate_body_path": dup_body_rel,
+                  "byte_identical": True,
+                  "substantive_weight": 1,
+                  "duplicate_substantive_weight": 0,
+                  "review_body_path": str(review_path.relative_to(OUT)),
+                  "visible_text_path": f"visible-text/{route_id}.txt",
+                  "visible_text_sha256": sha256_bytes((text + "\n").encode()),
+              })
+
+          dump_json(OUT / "duplicate-transport-ledger.json", {
+              "schema_version": "ssc-rd04-nd-fna-duplicate-transport-ledger@1",
+              "authoritative_artifact_id": AUTH_ARTIFACT_ID,
+              "authoritative_artifact_sha256": AUTH_ARTIFACT_SHA256,
+              "authoritative_execution_head": AUTH_EXECUTION_HEAD,
+              "duplicate_artifact_id": DUP_ARTIFACT_ID,
+              "duplicate_artifact_sha256": DUP_ARTIFACT_SHA256,
+              "duplicate_execution_head": DUP_EXECUTION_HEAD,
+              "unique_substantive_body_count": 4,
+              "duplicate_body_count": 4,
+              "duplicate_substantive_weight": 0,
+              "one_body_one_weight": True,
+              "body_ledger": body_ledger,
+          })
+
+          # Adjudicate the exact captured HTML, without making any request.
+          text1 = visible_text["RD04-ND-CURRENT-WAIVER-FNA-001"]
+          text2 = visible_text["RD04-ND-CURRENT-WAIVER-FNA-002"]
+          text3 = visible_text["RD04-ND-CURRENT-WAIVER-FNA-003"]
+          text4 = visible_text["RD04-ND-CURRENT-WAIVER-FNA-004"]
+
+          assert "Time Limit Waivers" in text1
+          assert "This page also includes information on waiver status by state by fiscal quarter." in text1
+          assert "FY 2026" in text1
+          assert "Page updated: July 16, 2026" in text1
+          assert "404" in text2 or "Page Not Found" in text2 or "not found" in text2.lower()
+          assert "We are in the process of providing guidance" in text3
+          assert "changes to the ABAWD exception criteria and ABAWD waiver criteria" in text3
+          assert "We will update this page once the guidance is released." in text3
+          assert "Page updated: July 16, 2026" in text3
+          assert "SNAP Provisions of the One Big Beautiful Bill Act of 2025" in text4
+          assert "Information Memorandum" in text4
+          assert "Page updated: February 25, 2026" in text4
+          assert "North Dakota" not in text1
+          assert "North Dakota" not in text3
+          assert "North Dakota" not in text4
+
+          expected_urls = {row["url"] for row in EXPECTED_QUARTER_ROUTES}
+          fy26_links = [
+              link for link in visible_links["RD04-ND-CURRENT-WAIVER-FNA-001"]
+              if re.search(r"FY26-Quarter-[123]-ABAWD-Waiver-Status\.pdf$", urlsplit(link["url"]).path)
+          ]
+          assert {link["url"] for link in fy26_links} == expected_urls
+          assert len(fy26_links) == 3
+          assert len({link["url"] for link in fy26_links}) == 3
+
+          locator_inventory = {
+              "schema_version": "ssc-rd04-nd-fy26-quarterly-waiver-locator-inventory@1",
+              "source_route_id": "RD04-ND-CURRENT-WAIVER-FNA-001",
+              "source_final_url": EXPECTED_ROUTES["RD04-ND-CURRENT-WAIVER-FNA-001"]["final_url"],
+              "source_body_sha256": EXPECTED_ROUTES["RD04-ND-CURRENT-WAIVER-FNA-001"]["body_sha256"],
+              "source_page_updated": "2026-07-16",
+              "locator_count": 3,
+              "locators": EXPECTED_QUARTER_ROUTES,
+              "state_specific_content_captured_here": False,
+              "source_requests_executed_here": 0,
+          }
+          dump_json(OUT / "quarterly-pdf-locator-inventory.json", locator_inventory)
+
+          source_adjudications = {
+              "schema_version": "ssc-rd04-nd-fna-four-route-source-adjudication@1",
+              "object_type": "source_adjudication",
+              "issue": 1017,
+              "lane_id": "RD-04",
+              "unit_id": "US-STATE-ND",
+              "class_id": "RD-04-C02",
+              "authoritative_artifact_id": AUTH_ARTIFACT_ID,
+              "duplicate_artifact_id": DUP_ARTIFACT_ID,
+              "source_admissions": 3,
+              "source_rejections": 1,
+              "decisions": [
+                  {
+                      "route_id": "RD04-ND-CURRENT-WAIVER-FNA-001",
+                      "body_sha256": EXPECTED_ROUTES["RD04-ND-CURRENT-WAIVER-FNA-001"]["body_sha256"],
+                      "source_admitted_for_narrow_scope": True,
+                      "admitted_for": [
+                          "current_federal_time_limit_waiver_index",
+                          "fy2026_quarterly_state_waiver_status_document_locator",
+                      ],
+                      "not_admitted_for": [
+                          "north_dakota_waiver_geography",
+                          "north_dakota_governing_period",
+                          "north_dakota_field_terminalization",
+                      ],
+                      "finding": "The current federal index states that it publishes waiver status by state by fiscal quarter and exposes exactly the FY2026 Quarter 1, Quarter 2, and Quarter 3 status-PDF locators.",
+                      "limitations": [
+                          "the index contains no North Dakota-specific status row",
+                          "a document locator is not the content of the linked document",
+                      ],
+                      "substantive_weight_count": 1,
+                  },
+                  {
+                      "route_id": "RD04-ND-CURRENT-WAIVER-FNA-002",
+                      "body_sha256": EXPECTED_ROUTES["RD04-ND-CURRENT-WAIVER-FNA-002"]["body_sha256"],
+                      "source_admitted_for_narrow_scope": False,
+                      "disposition": "terminal_http_404_not_substantive_absence_evidence",
+                      "not_admitted_for": [
+                          "no_waiver_finding",
+                          "north_dakota_waiver_geography",
+                          "north_dakota_governing_period",
+                      ],
+                      "substantive_weight_count": 0,
+                  },
+                  {
+                      "route_id": "RD04-ND-CURRENT-WAIVER-FNA-003",
+                      "body_sha256": EXPECTED_ROUTES["RD04-ND-CURRENT-WAIVER-FNA-003"]["body_sha256"],
+                      "source_admitted_for_narrow_scope": True,
+                      "admitted_for": [
+                          "current_federal_snap_work_requirement_surface",
+                          "current_federal_guidance_release_status",
+                      ],
+                      "not_admitted_for": [
+                          "north_dakota_waiver_geography",
+                          "north_dakota_governing_period",
+                      ],
+                      "finding": "The current federal page states that guidance on the 2025 statute's ABAWD exception and waiver-criteria changes remains in process and will be posted when released.",
+                      "limitations": [
+                          "the page contains no North Dakota-specific statement",
+                      ],
+                      "substantive_weight_count": 1,
+                  },
+                  {
+                      "route_id": "RD04-ND-CURRENT-WAIVER-FNA-004",
+                      "body_sha256": EXPECTED_ROUTES["RD04-ND-CURRENT-WAIVER-FNA-004"]["body_sha256"],
+                      "source_admitted_for_narrow_scope": True,
+                      "admitted_for": [
+                          "current_federal_obbb_snap_information_memorandum_locator",
+                      ],
+                      "not_admitted_for": [
+                          "north_dakota_waiver_geography",
+                          "north_dakota_governing_period",
+                      ],
+                      "finding": "The current page is an official locator for the SNAP provisions information memorandum.",
+                      "limitations": [
+                          "the captured page contains no North Dakota-specific waiver statement",
+                      ],
+                      "substantive_weight_count": 1,
+                  },
+              ],
+              "duplicate_transport_substantive_weight": 0,
+              "field_terminalizations": 0,
+              "matrix_updates": 0,
+              "row_state_mutations": 0,
+              "class_closed": False,
+              "cumulative_ledger_effect": "none",
+              "outside_human_dependency": False,
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none",
+          }
+          dump_json(OUT / "source-adjudications.json", source_adjudications)
+
+          field_adjudication = {
+              "schema_version": "ssc-rd04-nd-fna-four-route-field-adjudication@1",
+              "object_type": "field_adjudication",
+              "issue": 1017,
+              "lane_id": "RD-04",
+              "unit_id": "US-STATE-ND",
+              "class_id": "RD-04-C02",
+              "field_id": "abawd_or_work_requirement_waiver_state_and_governing_period",
+              "current_cell_canonical_sha256": PRIOR_FIELD_CELL_SHA256,
+              "current_matrix_sha256": current_matrix_sha256,
+              "current_row_canonical_sha256": current_row_canonical_sha256,
+              "current_cell_canonical_json_sha256": current_cell_canonical_json_sha256,
+              "disposition": "current_federal_locator_support_but_state_specific_quarter_documents_not_yet_captured_hold_open",
+              "promotion_candidate": False,
+              "held_open": True,
+              "rationale": "The captured index proves the exact FY2026 quarterly state-status document denominator but does not contain North Dakota's state row. The linked PDFs must be separately captured and reviewed before a geography or governing-period conclusion is considered.",
+              "prohibited_inferences": [
+                  "do_not_treat_document_locators_as_document_content",
+                  "do_not_infer_no_waiver_from_http_404",
+                  "do_not_infer_north_dakota_status_from_general_federal_criteria",
+                  "do_not_count_duplicate_transport_as_corroboration",
+                  "do_not_close_north_dakota_row",
+                  "do_not_close_rd04_c02",
+              ],
+              "field_terminalizations": 0,
+              "matrix_updates": 0,
+              "row_state_mutations": 0,
+              "class_closed": False,
+              "cumulative_ledger_effect": "none",
+              "outside_human_dependency": False,
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none",
+          }
+          dump_json(OUT / "field-adjudication.json", field_adjudication)
+
+          selected_protocol = {
+              "schema_version": "ssc-rd04-nd-fy26-quarterly-waiver-pdf-protocol@1",
+              "object_type": "selected_followup_protocol",
+              "issue": 1017,
+              "lane_id": "RD-04",
+              "unit_id": "US-STATE-ND",
+              "class_id": "RD-04-C02",
+              "target_field_id": "abawd_or_work_requirement_waiver_state_and_governing_period",
+              "selection_basis": "exact FY2026 Quarter 1 through Quarter 3 state-waiver-status PDF locators in authoritative FNA index body 300035d4",
+              "source_route_id": "RD04-ND-CURRENT-WAIVER-FNA-001",
+              "source_body_sha256": EXPECTED_ROUTES["RD04-ND-CURRENT-WAIVER-FNA-001"]["body_sha256"],
+              "route_count": 3,
+              "routes": [
+                  {
+                      **row,
+                      "route_category": "fy2026_abawd_waiver_status_by_state_pdf",
+                      "allowed_hosts": ["fna.usda.gov", "www.fna.usda.gov"],
+                      "attempts": 1,
+                      "redirects": "manual_same_host_only",
+                      "maximum_redirects": 3,
+                      "maximum_body_bytes": 12000000,
+                      "required_terminal_content_type": "application/pdf",
+                  }
+                  for row in EXPECTED_QUARTER_ROUTES
+              ],
+              "same_host_expansion": 0,
+              "result_spawned_requests": 0,
+              "source_requests_executed_here": 0,
+              "route_executions_here": 0,
+              "next_authorized_operation": "execute exactly these three PDF routes once under a durable pre-request lock, then perform complete page-level offline review",
+              "field_terminalizations": 0,
+              "matrix_updates": 0,
+              "row_state_mutations": 0,
+              "class_closed": False,
+              "cumulative_ledger_effect": "none",
+              "outside_human_dependency": False,
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none",
+          }
+          dump_json(OUT / "selected-quarterly-pdf-protocol.json", selected_protocol)
+          selected_protocol_sha256 = sha256_file(OUT / "selected-quarterly-pdf-protocol.json")
+
+          summary = {
+              "schema_version": "ssc-rd04-nd-fna-four-route-adjudication-summary@1",
+              "state": "complete",
+              "authoritative_artifact_id": AUTH_ARTIFACT_ID,
+              "duplicate_artifact_id": DUP_ARTIFACT_ID,
+              "unique_substantive_bodies": 4,
+              "duplicate_bodies": 4,
+              "duplicate_substantive_weight": 0,
+              "source_admissions": 3,
+              "source_rejections": 1,
+              "field_decisions": 1,
+              "promotion_candidates": 0,
+              "held_open_fields": 1,
+              "selected_followup_routes": 3,
+              "selected_followup_protocol_sha256": selected_protocol_sha256,
+              "source_requests": 0,
+              "route_executions": 0,
+              "field_terminalizations": 0,
+              "matrix_updates": 0,
+              "row_state_mutations": 0,
+              "class_closed": False,
+              "cumulative_ledger_effect": "none",
+              "outside_human_dependency": False,
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none",
+          }
+          dump_json(OUT / "summary.json", summary)
+
+          receipt = {
+              "schema_version": "ssc-rd04-nd-fna-four-route-adjudication@1",
+              "state": "complete",
+              "failed_or_final_stage": "complete",
+              "exit_code": 0,
+              "canonical_parent": CANONICAL_PARENT,
+              "canonical_tree": CANONICAL_TREE,
+              "authoritative_execution_head": AUTH_EXECUTION_HEAD,
+              "authoritative_artifact_id": AUTH_ARTIFACT_ID,
+              "authoritative_artifact_sha256": AUTH_ARTIFACT_SHA256,
+              "duplicate_execution_head": DUP_EXECUTION_HEAD,
+              "duplicate_artifact_id": DUP_ARTIFACT_ID,
+              "duplicate_artifact_sha256": DUP_ARTIFACT_SHA256,
+              "prior_adjudication_receipt_sha256": PRIOR_ADJUDICATION_RECEIPT_SHA256,
+              "current_cell_canonical_sha256": PRIOR_FIELD_CELL_SHA256,
+              "current_matrix_sha256": current_matrix_sha256,
+              "current_row_canonical_sha256": current_row_canonical_sha256,
+              "current_cell_canonical_json_sha256": current_cell_canonical_json_sha256,
+              "unique_substantive_bodies": 4,
+              "duplicate_bodies": 4,
+              "duplicate_substantive_weight": 0,
+              "source_admissions": 3,
+              "source_rejections": 1,
+              "field_decisions": 1,
+              "promotion_candidates": 0,
+              "held_open_fields": 1,
+              "selected_followup_routes": 3,
+              "selected_followup_protocol_sha256": selected_protocol_sha256,
+              "source_requests": 0,
+              "route_executions": 0,
+              "field_terminalizations": 0,
+              "matrix_updates": 0,
+              "row_state_mutations": 0,
+              "class_closed": False,
+              "cumulative_ledger_effect": "none",
+              "outside_human_dependency": False,
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none",
+              "additional_four_route_execution_authorized": False,
+              "next_authorized_operation": "one locked execution of the exact FY2026 Quarter 1 through Quarter 3 PDF routes, followed by complete page-level offline adjudication",
+          }
+          dump_json(OUT / "receipt.json", receipt)
+
+          (OUT / "EXIT_CODE").write_text("0\n", encoding="utf-8")
+          (OUT / "STAGE").write_text("complete\n", encoding="utf-8")
+          print(json.dumps(receipt, sort_keys=True))
+          PY
+          python "$OUTPUT_DIR/adjudicate.py" \
+            "$OUTPUT_DIR/authoritative" \
+            "$OUTPUT_DIR/duplicate" \
+            "$OUTPUT_DIR/result" \
+            "$GITHUB_WORKSPACE"
+          cp "$OUTPUT_DIR/adjudication.log" "$OUTPUT_DIR/result/adjudication.log"
+          printf '%s\n' "$(git rev-parse HEAD)" > "$OUTPUT_DIR/result/trigger-head.txt"
+          printf '%s\n' "$(git rev-parse HEAD^)" > "$OUTPUT_DIR/result/base-commit.txt"
+          printf '%s\n' "$CANONICAL_MAIN" > "$OUTPUT_DIR/result/canonical-main.txt"
+          printf '%s\n' "$CANONICAL_TREE" > "$OUTPUT_DIR/result/canonical-tree.txt"
+          (
+            cd "$OUTPUT_DIR/result"
+            find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - name: Preserve terminal offline adjudication
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fna-four-route-adjudication-v1
+          path: ${{ env.OUTPUT_DIR }}/result
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal adjudication and unchanged main
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(cat "$OUTPUT_DIR/result/EXIT_CODE")" = 0
+          test "$(cat "$OUTPUT_DIR/result/STAGE")" = complete
+          (cd "$OUTPUT_DIR/result" && sha256sum -c SHA256SUMS)
+          python - "$OUTPUT_DIR/result/receipt.json" <<'PY'
+          import json, sys
+          value = json.load(open(sys.argv[1], encoding="utf-8"))
+          assert value["state"] == "complete"
+          assert value["source_requests"] == 0
+          assert value["route_executions"] == 0
+          assert value["selected_followup_routes"] == 3
+          assert value["held_open_fields"] == 1
+          assert value["field_terminalizations"] == 0
+          assert value["matrix_updates"] == 0
+          assert value["row_state_mutations"] == 0
+          assert value["class_closed"] is False
+          assert value["duplicate_substantive_weight"] == 0
+          PY
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CANONICAL_MAIN"
