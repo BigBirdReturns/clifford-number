@@ -1,0 +1,201 @@
+name: TEMP compute RD-04 North Dakota canonical row digest v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-compute-ssc-rd04-nd-canonical-row-digest-v1.yml'
+
+permissions:
+  contents: read
+
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+  CARRIER_PARENT: a592acea22c69a979f2a90c24a2bafb8c9445759
+  TARGET_BRANCH: observer/ssc-rd04-nd-canonical-row-digest-v1
+  WORKFLOW_PATH: .github/workflows/temp-compute-ssc-rd04-nd-canonical-row-digest-v1.yml
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+  EXPECTED_CELL_SHA256: cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe
+  OUTPUT_DIR: /tmp/ssc-rd04-nd-canonical-row-digest-v1
+
+concurrency:
+  group: temp-compute-rd04-nd-canonical-row-digest-v1
+  cancel-in-progress: false
+
+jobs:
+  compute:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'observer/ssc-rd04-nd-canonical-row-digest-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Compute exact canonical row and cell digests
+        id: compute
+        shell: bash
+        env:
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -Eeuo pipefail
+          OUT="$OUTPUT_DIR"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+
+          test "$HEAD_REPO" = "$GITHUB_REPOSITORY"
+          test "$HEAD_REF" = "$TARGET_BRANCH"
+          test "$HEAD_SHA" = "$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$CARRIER_PARENT"
+          test "$(git rev-list --count "$CARRIER_PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$CARRIER_PARENT" HEAD)" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CARRIER_PARENT" HEAD)" = "$WORKFLOW_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CARRIER_PARENT" HEAD)"
+          git diff --check "$CARRIER_PARENT" HEAD
+
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          git merge-base --is-ancestor "$CARRIER_PARENT" origin/main
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          LIVE_TREE="$(git rev-parse 'origin/main^{tree}')"
+          test "$(git rev-parse "origin/main:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          git show "origin/main:$MATRIX_PATH" > "$OUT/matrix.json"
+
+          python - "$OUT/matrix.json" "$OUT" "$LIVE_MAIN" "$LIVE_TREE" <<'PY'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+
+          matrix_path = Path(sys.argv[1])
+          out = Path(sys.argv[2])
+          live_main = sys.argv[3]
+          live_tree = sys.argv[4]
+          matrix = json.loads(matrix_path.read_text())
+
+          def canonical_bytes(value):
+              return json.dumps(
+                  value,
+                  sort_keys=True,
+                  separators=(",", ":"),
+                  ensure_ascii=False,
+              ).encode("utf-8")
+
+          rows = [row for row in matrix["rows"] if row.get("unit_id") == "US-STATE-ND"]
+          assert len(rows) == 1, rows
+          row = rows[0]
+          cells = [
+              cell for cell in row["cells"]
+              if cell.get("field_id") == "abawd_or_work_requirement_waiver_state_and_governing_period"
+          ]
+          assert len(cells) == 1, cells
+          cell = cells[0]
+
+          row_bytes = canonical_bytes(row)
+          cell_bytes = canonical_bytes(cell)
+          row_sha = hashlib.sha256(row_bytes).hexdigest()
+          cell_sha = hashlib.sha256(cell_bytes).hexdigest()
+
+          assert row["unit_ordinal"] == 34
+          assert row["postal_code"] == "ND"
+          assert row["state_name"] == "North Dakota"
+          assert row["row_state"] == "still_open"
+          assert row["terminal_fields"] == 7
+          assert row["open_fields"] == 2
+          assert len(row["cells"]) == 9
+          assert cell["state"] == "still_open"
+          assert cell["terminal"] is False
+          assert cell_sha == "cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe"
+
+          (out / "north-dakota-row.json").write_text(
+              json.dumps(row, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+          )
+          (out / "north-dakota-waiver-cell.json").write_text(
+              json.dumps(cell, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+          )
+          receipt = {
+              "schema_version": "ssc-rd04-nd-canonical-row-digest@1",
+              "state": "complete",
+              "live_main": live_main,
+              "live_main_tree": live_tree,
+              "matrix_git_blob": "19357f8214ab2710bc5e75b3fae8c7fb09ff1654",
+              "unit_id": "US-STATE-ND",
+              "unit_ordinal": 34,
+              "row_state": row["row_state"],
+              "terminal_fields": row["terminal_fields"],
+              "open_fields": row["open_fields"],
+              "cell_count": len(row["cells"]),
+              "canonical_row_bytes": len(row_bytes),
+              "canonical_row_sha256": row_sha,
+              "canonical_waiver_cell_bytes": len(cell_bytes),
+              "canonical_waiver_cell_sha256": cell_sha,
+              "source_requests": 0,
+              "route_executions": 0,
+              "source_admissions": 0,
+              "field_classifications": 0,
+              "field_terminalizations": 0,
+              "matrix_updates": 0,
+              "row_state_mutations": 0,
+              "class_closed": False,
+              "cumulative_ledger_effect": "none",
+              "outside_human_dependency": False,
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none",
+          }
+          (out / "receipt.json").write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(receipt, sort_keys=True))
+          PY
+
+          rm "$OUT/matrix.json"
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 |
+              LC_ALL=C sort -z |
+              xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - name: Preserve canonical digest diagnostic
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-canonical-row-digest-v1
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce zero-effect canonical digest result
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$OUTPUT_DIR"
+          test "${{ steps.compute.outcome }}" = success
+          jq -e '
+            .state=="complete" and
+            .matrix_git_blob=="19357f8214ab2710bc5e75b3fae8c7fb09ff1654" and
+            .unit_id=="US-STATE-ND" and
+            .unit_ordinal==34 and
+            .row_state=="still_open" and
+            .terminal_fields==7 and
+            .open_fields==2 and
+            .cell_count==9 and
+            .canonical_waiver_cell_sha256=="cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe" and
+            .source_requests==0 and
+            .route_executions==0 and
+            .source_admissions==0 and
+            .field_terminalizations==0 and
+            .matrix_updates==0 and
+            .row_state_mutations==0 and
+            .class_closed==false
+          ' "$OUT/receipt.json" > /dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
