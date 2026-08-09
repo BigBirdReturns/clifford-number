@@ -1,0 +1,198 @@
+name: TEMP reconcile cross-corpus crawl source gaps v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/tmp-cross-corpus-crawl-source-gap-repair-v1.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      EXPECTED_PARENT: 4edc3f4f65851cf2643e889d93df3b6372a2f468
+      PRODUCT_BRANCH: agent/cross-corpus-crawl-source-gap-repair-v1
+      TARGET: data/research/clifford-cross-corpus-public-interest-map.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Bind carrier, current main, and unused product ref
+        env:
+          CARRIER_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$CARRIER_HEAD"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_PARENT"
+          if git ls-remote --exit-code --heads origin "$PRODUCT_BRANCH" >/dev/null 2>&1; then
+            echo "product branch already exists: $PRODUCT_BRANCH" >&2
+            exit 1
+          fi
+
+      - name: Build exact one-file compatibility repair
+        run: |
+          set -Eeuo pipefail
+          git checkout --detach "$EXPECTED_PARENT"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          target = Path("data/research/clifford-cross-corpus-public-interest-map.json")
+          obj = json.loads(target.read_text())
+          assert obj["schema_version"] == "clifford-cross-corpus-public-interest-map@1"
+          lanes = {lane["lane_id"]: lane for lane in obj["lanes"]}
+          lane = lanes["official-research-fanout"]
+          assert lane["counts"]["crawl_source_gaps"] == 1
+          assert lane["crawl_source_gap_states"] == [{
+              "source_id": "sam-opportunities",
+              "status": "skipped_missing_credential",
+              "interpretation": "Acquisition did not run; this is not a zero result."
+          }]
+          assert "exposes one source gap" in lane["what_the_data_shows"]
+          assert "Federal Register source returned to ok" in lane["what_the_data_shows"]
+
+          obj["generated_at"] = "2026-08-09"
+          lane["counts"]["crawl_source_gaps"] = 2
+          lane["crawl_source_gap_states"] = [
+              {
+                  "source_id": "sam-opportunities",
+                  "status": "skipped_missing_credential",
+                  "interpretation": "Acquisition did not run; this is not a zero result."
+              },
+              {
+                  "source_id": "federal-register",
+                  "status": "partial",
+                  "interpretation": "The committed 2026-08-09 crawl recovered records but one query returned HTTP 503; this is a partial acquisition gap, not a zero result or evidence of absence."
+              }
+          ]
+          lane["what_the_data_shows"] = (
+              "The repository generated at least 316 inspectable research tasks; the live target branch may contain more as official-record intake advances. "
+              "Batch count varies with the configured batch size and is presentation geometry, not a research-data count. "
+              "Rejections, failed routes, source gaps, and inferred scout findings remain part of the discovery map rather than disappearing from it. "
+              "The current committed crawl exposes two source gaps: SAM.gov did not execute because its credential is unavailable, and the Federal Register run is partial because one query returned HTTP 503 after other records were recovered. "
+              "These states are acquisition gaps, not zero results or evidence of absence."
+          )
+          target.write_text(json.dumps(obj, indent=2, ensure_ascii=False) + "\n")
+          PY
+
+          node tools/build-research-fanout.mjs
+          node tools/validate-clifford-cross-corpus-public-interest-map.mjs
+
+          git add -- "$TARGET"
+          git diff --cached --check "$EXPECTED_PARENT" --
+          test "$(git diff --cached --name-only "$EXPECTED_PARENT" -- | wc -l)" = 1
+          test "$(git diff --cached --diff-filter=M --name-only "$EXPECTED_PARENT" --)" = "$TARGET"
+          test -z "$(git diff --cached --diff-filter=ADRTUXB --name-only "$EXPECTED_PARENT" --)"
+
+          PRODUCT_TREE=$(git write-tree)
+          export GIT_AUTHOR_NAME='OpenAI Agent'
+          export GIT_AUTHOR_EMAIL='agent@openai.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+          export GIT_AUTHOR_DATE='2026-08-09T16:45:00Z'
+          export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"
+          PRODUCT_COMMIT=$(printf '%s\n\n%s\n' \
+            'Reconcile cross-corpus crawl source gaps' \
+            'Update the public-interest fanout map from one to two current crawl source gaps after the committed Federal Register partial run, preserving both gaps as acquisition states rather than zero results.' |
+            git commit-tree "$PRODUCT_TREE" -p "$EXPECTED_PARENT")
+          git reset --hard "$PRODUCT_COMMIT"
+          printf '%s\n' "$PRODUCT_COMMIT" > /tmp/product-commit.txt
+          printf '%s\n' "$PRODUCT_TREE" > /tmp/product-tree.txt
+          sha256sum "$TARGET" | awk '{print $1}' > /tmp/target-sha256.txt
+
+      - name: Enforce complete release and no-human gates
+        run: |
+          set -Eeuo pipefail
+          PRODUCT_COMMIT=$(cat /tmp/product-commit.txt)
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+          git reset --hard "$PRODUCT_COMMIT"
+          git clean -fdx
+          node tools/build-research-fanout.mjs
+          node tools/validate-clifford-cross-corpus-public-interest-map.mjs
+          git reset --hard "$PRODUCT_COMMIT"
+          git clean -fdx
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Push exact one-file product branch
+        run: |
+          set -Eeuo pipefail
+          PRODUCT_COMMIT=$(cat /tmp/product-commit.txt)
+          PRODUCT_TREE=$(cat /tmp/product-tree.txt)
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_PARENT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^1")" = "$EXPECTED_PARENT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^{tree}")" = "$PRODUCT_TREE"
+          test "$(git rev-list --count "$EXPECTED_PARENT..$PRODUCT_COMMIT")" = 1
+          test "$(git diff-tree --no-commit-id --name-only -r "$PRODUCT_COMMIT" | wc -l)" = 1
+          test "$(git diff-tree --no-commit-id --diff-filter=M --name-only -r "$PRODUCT_COMMIT")" = "$TARGET"
+          git push origin "$PRODUCT_COMMIT:refs/heads/$PRODUCT_BRANCH"
+          printf '%s\n' pushed > /tmp/product-pushed.txt
+
+      - name: Preserve materialization receipt
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/cross-corpus-crawl-source-gap-repair
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          cp /tmp/product-commit.txt "$OUT/product-commit.txt" 2>/dev/null || true
+          cp /tmp/product-tree.txt "$OUT/product-tree.txt" 2>/dev/null || true
+          cp /tmp/target-sha256.txt "$OUT/target-sha256.txt" 2>/dev/null || true
+          python - "$OUT" <<'PY'
+          import json, os, sys
+          from pathlib import Path
+          out = Path(sys.argv[1])
+          commit = (Path('/tmp/product-commit.txt').read_text().strip()
+                    if Path('/tmp/product-commit.txt').exists() else None)
+          tree = (Path('/tmp/product-tree.txt').read_text().strip()
+                  if Path('/tmp/product-tree.txt').exists() else None)
+          pushed = Path('/tmp/product-pushed.txt').exists()
+          sha256 = (Path('/tmp/target-sha256.txt').read_text().strip()
+                    if Path('/tmp/target-sha256.txt').exists() else None)
+          receipt = {
+              "schema_version": "cross-corpus-crawl-source-gap-repair-materializer-receipt@1",
+              "state": "complete" if commit and pushed else "failed_closed",
+              "canonical_parent": os.environ["EXPECTED_PARENT"],
+              "product_branch": os.environ["PRODUCT_BRANCH"],
+              "product_commit": commit,
+              "product_tree": tree,
+              "target_path": os.environ["TARGET"],
+              "target_sha256": sha256,
+              "changed_paths": 1,
+              "crawl_source_gaps_before": 1,
+              "crawl_source_gaps_after": 2,
+              "source_requests": 0,
+              "route_executions": 0,
+              "graph_effect": "none",
+              "outside_human_dependency": False,
+          }
+          (out / "receipt.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
+          PY
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 |
+              LC_ALL=C sort -z |
+              xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cross-corpus-crawl-source-gap-repair
+          path: /tmp/cross-corpus-crawl-source-gap-repair
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
