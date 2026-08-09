@@ -1,0 +1,176 @@
+name: TEMP requalify RD-04 North Dakota FY2026 archive adjudication v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-fy26-archive-requalification-base-v1
+    paths:
+      - .trigger/ssc-rd04-nd-fy26-archive-requalification-v1.json
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  requalify:
+    runs-on: ubuntu-latest
+    env:
+      EXPECTED_MAIN: 8482b941aa0b1ecac685ab6ca98bba80ed80c5ee
+      HISTORICAL_MAIN: 4edc3f4f65851cf2643e889d93df3b6372a2f468
+      REPAIR_PRODUCT: 55ca847cb8ac32b79e49bd3c3c7879b19669ac3a
+      REPAIR_PATH: data/research/clifford-cross-corpus-public-interest-map.json
+      EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
+      EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+      WORKFLOW_PATH: .github/workflows/temp-requalify-ssc-rd04-nd-fy26-archive-adjudication-v1.yml
+      TRIGGER_PATH: .trigger/ssc-rd04-nd-fy26-archive-requalification-v1.json
+      TRIGGER_SHA256: b33251258c914dc19c57586649e3eeea0b554864bc120f0da29b6035610b3e1d
+      MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json
+      MATRIX_BLOB: 19357f8214ab2710bc5e75b3fae8c7fb09ff1654
+      SCRIPT_BLOB: cf732e68c1708c27dbe1b85948be83ec04d6374b
+      SCRIPT_BYTES: "7827"
+      SCRIPT_SHA256: 7bbbb08a0d09060dd3fe321ad0e82d9f28a92ef469d61512df3b13cfa8dd2698
+      SOURCE_ARTIFACT_ID: "9041074548"
+      SOURCE_ARTIFACT_BYTES: "22927145"
+      SOURCE_ARTIFACT_SHA256: ba024c894347dd64f93775b9c2606072a49f3e785d7d08c933efd1619fe4dbe5
+      SOURCE_HEAD: 66238b2abc8660d6e9e48c78d22646ebda1343bd
+      EXPECTED_DISPOSITION: captured_fy2026_nv_wi_request_archive_contains_no_north_dakota_member_but_archive_nonmembership_does_not_prove_no_request_no_waiver_or_current_status_hold_open
+      OUT: /tmp/ssc-rd04-nd-fy26-archive-requalification-v1
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Bind exact topology, repaired main, and unchanged matrix
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT/source"
+
+          git fetch --force origin main "$EXPECTED_BASE" "$EXPECTED_HEAD" "$HISTORICAL_MAIN" "$REPAIR_PRODUCT"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse "$EXPECTED_MAIN^1")" = "$HISTORICAL_MAIN"
+          git merge-base --is-ancestor "$REPAIR_PRODUCT" "$EXPECTED_MAIN"
+          test "$(git diff --name-only "$HISTORICAL_MAIN" "$EXPECTED_MAIN")" = "$REPAIR_PATH"
+
+          test "$(git rev-parse "$EXPECTED_BASE^")" = "$EXPECTED_MAIN"
+          test "$(git rev-list --count "$EXPECTED_MAIN..$EXPECTED_BASE")" = 1
+          test "$(git diff --name-only "$EXPECTED_MAIN" "$EXPECTED_BASE")" = "$WORKFLOW_PATH"
+          test "$(git rev-parse "$EXPECTED_HEAD^")" = "$EXPECTED_BASE"
+          test "$(git rev-list --count "$EXPECTED_BASE..$EXPECTED_HEAD")" = 1
+          test "$(git diff --name-only "$EXPECTED_BASE" "$EXPECTED_HEAD")" = "$TRIGGER_PATH"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test "$(sha256sum "$TRIGGER_PATH" | cut -d' ' -f1)" = "$TRIGGER_SHA256"
+          cp "$TRIGGER_PATH" "$OUT/trigger.json"
+
+          test "$(git rev-parse "$EXPECTED_MAIN:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          expected_tree="$(git rev-parse "$EXPECTED_MAIN^{tree}")"
+          echo "EXPECTED_MAIN_TREE=$expected_tree" >> "$GITHUB_ENV"
+          printf '%s\n' "$expected_tree" > "$OUT/EXPECTED_MAIN_TREE"
+
+      - name: Authenticate terminal archive adjudication artifact
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ARTIFACT_ID" > "$OUT/source-artifact-api.json"
+          python - <<'PY'
+          import json, os
+          value=json.load(open(os.environ['OUT']+'/source-artifact-api.json'))
+          assert value['id'] == int(os.environ['SOURCE_ARTIFACT_ID'])
+          assert value['expired'] is False
+          assert value['size_in_bytes'] == int(os.environ['SOURCE_ARTIFACT_BYTES'])
+          assert value['digest'] == 'sha256:'+os.environ['SOURCE_ARTIFACT_SHA256']
+          assert value['workflow_run']['head_sha'] == os.environ['SOURCE_HEAD']
+          PY
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ARTIFACT_ID/zip" > "$OUT/source-artifact.zip"
+          test "$(wc -c < "$OUT/source-artifact.zip" | tr -d ' ')" = "$SOURCE_ARTIFACT_BYTES"
+          test "$(sha256sum "$OUT/source-artifact.zip" | cut -d' ' -f1)" = "$SOURCE_ARTIFACT_SHA256"
+          unzip -t "$OUT/source-artifact.zip"
+          unzip -q "$OUT/source-artifact.zip" -d "$OUT/source"
+
+      - name: Reconstruct exact request-free requalifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/git/blobs/$SCRIPT_BLOB" --jq .content |
+            tr -d '\n' | base64 -d > "$OUT/requalify.py"
+          test "$(wc -c < "$OUT/requalify.py" | tr -d ' ')" = "$SCRIPT_BYTES"
+          test "$(sha256sum "$OUT/requalify.py" | cut -d' ' -f1)" = "$SCRIPT_SHA256"
+          python -m py_compile "$OUT/requalify.py"
+
+      - name: Run complete release gate on exact repaired main
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git checkout --detach "$EXPECTED_MAIN"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_MAIN"
+
+          set +e
+          npm run release:check > "$OUT/release-check.log" 2>&1
+          release_status=$?
+          set -e
+          printf '%s\n' "$release_status" > "$OUT/RELEASE_EXIT_CODE"
+          test "$release_status" = 0
+
+          git reset --hard HEAD
+          git clean -fdx
+          node tools/validate-clifford-cross-corpus-public-interest-map.mjs
+          test -z "$(git status --porcelain=v1)"
+
+      - name: Requalify exact archive result without source requests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export EXPECTED_MAIN_TREE
+          python "$OUT/requalify.py"
+
+          test "$(jq -r .disposition "$OUT/field-adjudication.json")" = "$EXPECTED_DISPOSITION"
+          test "$(jq -r .state "$OUT/receipt.json")" = complete
+          test "$(jq -r .canonical_main "$OUT/receipt.json")" = "$EXPECTED_MAIN"
+          test "$(jq -r .release_gate "$OUT/receipt.json")" = pass
+          test "$(jq -r .archive_member_count "$OUT/receipt.json")" = 16
+          test "$(jq -r .north_dakota_member_count "$OUT/receipt.json")" = 0
+          test "$(jq -r .source_admissions "$OUT/receipt.json")" = 1
+          test "$(jq -r .promotion_candidates "$OUT/receipt.json")" = 0
+          test "$(jq -r .held_open_fields "$OUT/receipt.json")" = 1
+          test "$(jq -r .selected_follow_up_routes "$OUT/receipt.json")" = 0
+          test "$(jq -r .negative_existence_claims "$OUT/receipt.json")" = 0
+          test "$(jq -r .source_requests "$OUT/receipt.json")" = 0
+          test "$(jq -r .route_executions "$OUT/receipt.json")" = 0
+          test "$(jq -r .field_terminalizations "$OUT/receipt.json")" = 0
+          test "$(jq -r .matrix_updates "$OUT/receipt.json")" = 0
+          test "$(jq -r .row_state_mutations "$OUT/receipt.json")" = 0
+          test "$(jq -r .class_closed "$OUT/receipt.json")" = false
+          test "$(jq -r .exact_successor_protocol "$OUT/current-main-requalification.json")" = false
+          test "$(jq -r .next_authorized_operation "$OUT/current-main-requalification.json")" = permanent_candidate_free_archive_hold_product_only
+
+          (
+            cd "$OUT"
+            find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\n' | sort |
+              while read -r p; do sha256sum "$p"; done > SHA256SUMS
+          )
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy26-archive-requalification-v1
+          path: /tmp/ssc-rd04-nd-fy26-archive-requalification-v1
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce terminal current-main requalification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(jq -r .state "$OUT/receipt.json")" = complete
+          test "$(jq -r .release_gate "$OUT/receipt.json")" = pass
+          test "$(jq -r .selected_follow_up_routes "$OUT/receipt.json")" = 0
+          test "$(jq -r .negative_existence_claims "$OUT/receipt.json")" = 0
+          test "$(jq -r .matrix_updates "$OUT/receipt.json")" = 0
