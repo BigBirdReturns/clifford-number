@@ -1,0 +1,105 @@
+name: TEMP rebind RD-04 North Dakota FY2026 archive range to current main v3
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-fy26-archive-range-rebind-v3/trigger.json'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  rebind:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      CONTROLLER_PATH: .tmp/rd04-nd-fy26-archive-range-rebind-v3/controller.sh
+      CONTROLLER_BLOB: 86d2a79d6de193e258655d11b8cf20c7fd197399
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Authenticate exact ordinary Git rebind controller
+        run: |
+          set -Eeuo pipefail
+          test -f "$CONTROLLER_PATH"
+          test "$(git hash-object "$CONTROLLER_PATH")" = "$CONTROLLER_BLOB"
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          CONTROLLER_COMMIT="$(git rev-parse "$BASE_SHA^")"
+          test "$(git rev-parse "$CONTROLLER_COMMIT:$CONTROLLER_PATH")" = "$CONTROLLER_BLOB"
+          bash -n "$CONTROLLER_PATH"
+
+      - name: Rebind exact MI-NM archive route to current canonical main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: bash "$CONTROLLER_PATH"
+
+      - name: Preserve current-main rebind receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-fy26-archive-range-current-main-rebind-v3
+          path: ${{ runner.temp }}/ssc-rd04-nd-fy26-archive-range-current-main-rebind-v3
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce terminal current-main rebind
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-nd-fy26-archive-range-current-main-rebind-v3"
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          jq -e '
+            .state=="complete" and
+            .failed_or_final_stage=="complete" and
+            .exit_code==0 and
+            .current_parent=="8482b941aa0b1ecac685ab6ca98bba80ed80c5ee" and
+            .pre_repair_parent=="4edc3f4f65851cf2643e889d93df3b6372a2f468" and
+            .canonical_repair_product=="55ca847cb8ac32b79e49bd3c3c7879b19669ac3a" and
+            .matrix_blob=="19357f8214ab2710bc5e75b3fae8c7fb09ff1654" and
+            .current_cell_sha256=="cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe" and
+            .predecessor_artifact_id==9041062191 and
+            .predecessor_artifact_sha256=="a7e5652f8526b125732ef32ef0ce0c4fb975c3275b24b0f30d675b03c07462d3" and
+            .source_requests==0 and
+            .route_executions==0 and
+            .source_admissions==0 and
+            .archive_members_reviewed==16 and
+            .north_dakota_members==0 and
+            .field_decisions==1 and
+            .promotion_candidates==0 and
+            .held_open_fields==1 and
+            .selected_followup_routes==1 and
+            .field_terminalizations==0 and
+            .matrix_updates==0 and
+            .row_state_mutations==0 and
+            .class_closed==false and
+            .cumulative_ledger_effect=="none" and
+            .outside_human_dependency==false and
+            .publication_effect=="none" and
+            .adoption_effect=="none" and
+            .graph_effect=="none" and
+            .additional_execution_authorized==true and
+            .additional_execution_scope=="RD04-ND-FY2026-REQUEST-SUPPORT-ZIP-MI-NM-ORIGIN-001" and
+            .selected_route.url=="https://www.fna.usda.gov/sites/default/files/resource-files/FY2026-ABAWD-State-Requests-and-Data-MI-NM-7-2026.zip"
+          ' "$OUT/receipt.json" > /dev/null
+          jq -e '
+            .row_state=="still_open" and
+            .terminal_fields==7 and
+            .open_fields==2 and
+            .field_state=="still_open" and
+            .field_terminal==false and
+            .field_value==null and
+            .cell_sha256=="cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe"
+          ' "$OUT/current-cell-proof.json" > /dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
