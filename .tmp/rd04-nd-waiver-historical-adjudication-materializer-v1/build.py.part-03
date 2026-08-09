@@ -1,0 +1,64 @@
+ump(OUT_DIR / "source-custody.json", source_custody)
+dump(OUT_DIR / "summary.json", summary)
+
+payload_names = [
+    "adjudication.json",
+    "candidate-disposition.json",
+    "current-cell-custody.json",
+    "source-custody.json",
+    "summary.json",
+]
+payload_rows = []
+for name in payload_names:
+    ident = file_identity(OUT_DIR / name)
+    payload_rows.append({"path": f"data/intake/{SLUG}/{name}", **ident})
+combined_material = b"".join(
+    row["path"].encode("utf-8") + b"\0" + row["sha256"].encode("ascii") + b"\0" + str(row["bytes"]).encode("ascii") + b"\n"
+    for row in payload_rows
+)
+manifest = {
+    "schema_version": "ssc-rd04-nd-fy2025-waiver-historical-adjudication-product-manifest@1",
+    "wave_id": "SSC-RD-W03",
+    "lane_id": "RD-04",
+    "class_id": "RD-04-C02",
+    "issue": 1017,
+    "product_slug": SLUG,
+    "canonical_parent": CANONICAL_PARENT,
+    "canonical_parent_tree": CANONICAL_TREE,
+    "product_shape": "six_file_addition_only_json_custody_product",
+    "permanent_path_count": 6,
+    "workflow_or_transport_paths": 0,
+    "addition_only": True,
+    "payload_files": payload_rows,
+    "payload_combined_sha256": sha256_bytes(combined_material),
+    "permanent_paths": [row["path"] for row in payload_rows] + [f"data/intake/{SLUG}/product-manifest.json"],
+    "semantic_counts": {
+        "historical_source_findings": 1,
+        "promotion_candidates_rejected": 1,
+        "field_terminalizations": 0,
+        "row_terminalizations": 0,
+        "row_state_mutations": 0,
+        "matrix_updates": 0,
+        "class_closed": False,
+    },
+    "authority_boundary": adjudication["authority_boundary"],
+}
+dump(OUT_DIR / "product-manifest.json", manifest)
+
+# Final internal assertions.
+paths = sorted(p.relative_to(OUT_ROOT).as_posix() for p in OUT_ROOT.rglob("*") if p.is_file())
+assert paths == sorted(manifest["permanent_paths"]), (paths, manifest["permanent_paths"])
+assert len(paths) == 6
+for row in manifest["payload_files"]:
+    p = OUT_ROOT / row["path"]
+    assert file_identity(p) == {"bytes": row["bytes"], "sha256": row["sha256"]}
+assert json.loads((OUT_DIR / "summary.json").read_text())["effects"]["matrix_updates"] == 0
+assert json.loads((OUT_DIR / "candidate-disposition.json").read_text())["promotion_authorized"] is False
+assert json.loads((OUT_DIR / "current-cell-custody.json").read_text())["north_dakota"]["target_cell_sha256"] == "cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe"
+print(json.dumps({
+    "out_root": str(OUT_ROOT),
+    "permanent_paths": paths,
+    "payload_combined_sha256": manifest["payload_combined_sha256"],
+    "source_pdf_sha256": sha256_bytes(pdf_body),
+    "matrix_sha256": sha256_bytes(matrix_body),
+}, indent=2))

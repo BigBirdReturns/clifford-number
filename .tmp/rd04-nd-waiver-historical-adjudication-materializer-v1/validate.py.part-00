@@ -1,0 +1,126 @@
+from __future__ import annotations
+
+import argparse
+import base64
+import copy
+import hashlib
+import json
+import shutil
+import subprocess
+import tempfile
+from datetime import date
+from pathlib import Path
+from typing import Any, Callable
+
+SLUG = "status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-historical-adjudication"
+REL_DIR = Path("data/intake") / SLUG
+FILES = {
+    "adjudication.json",
+    "candidate-disposition.json",
+    "current-cell-custody.json",
+    "product-manifest.json",
+    "source-custody.json",
+    "summary.json",
+}
+CANONICAL_PARENT = "a592acea22c69a979f2a90c24a2bafb8c9445759"
+CANONICAL_TREE = "c7dbb1df10b409caa7893846a9e4b3e8d1392be0"
+MATRIX_REL = Path("data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json")
+CONTRACT_REL = Path("data/intake/status-sovereignty-rd-wave03-rd04-state-implementation/field-matrix-contract.json")
+EXPECTED = {
+    "matrix_sha256": "663f93d84f168bf6ccdd92eaee0deb47b109f4280e7b25613853c2c1a6be2b63",
+    "matrix_blob": "19357f8214ab2710bc5e75b3fae8c7fb09ff1654",
+    "contract_sha256": "03e2abfbda3f95d1ecc2ebbd1b87273a48162231c5e2a761fe44a4c2a6206241",
+    "contract_blob": "5b2f094adbd860ac3e28161de0bfd00f67b2db8d",
+    "source_sha256": "dc8f7a9e03c79ce52e39a28dfee4d36b9afe768181c15ec02c44b9ccb27f3428",
+    "source_bytes": 306585,
+    "row_sha256": "18f9b127b61e45edafb64c78bc8c387175fffdb351156ccf9154158ca467d2dd",
+    "target_sha256": "cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe",
+    "row_state_sha256": "6a4c7d204c6c99a89f3c121065860806668c5da850f44c67fe42b4dc84b1b5c3",
+    "sd_sha256": "aaecc19975a76bc3134af4c994bb426a916708e6dbbfb5f52a63d3c101848e56",
+    "wa_sha256": "d14795e9873544aaa0664f6c6630df54d79e98c921440e3128139127acf8e7a6",
+    "payload_combined_sha256": "f725da8ba9588660b26ef913db921e1068ba46521ab8f6f9e94271558db3e72f",
+}
+
+class ValidationError(RuntimeError):
+    pass
+
+
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise ValidationError(message)
+
+
+def load(path: Path) -> Any:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise ValidationError(f"invalid JSON {path}: {exc}") from exc
+
+
+def sha256_bytes(body: bytes) -> str:
+    return hashlib.sha256(body).hexdigest()
+
+
+def canonical_sha(obj: Any) -> str:
+    return sha256_bytes(json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8"))
+
+
+def file_identity(path: Path) -> dict[str, Any]:
+    body = path.read_bytes()
+    return {"bytes": len(body), "sha256": sha256_bytes(body)}
+
+
+def exact_keys(obj: dict[str, Any], keys: set[str], label: str) -> None:
+    require(set(obj) == keys, f"{label} keys differ: {sorted(set(obj) ^ keys)}")
+
+
+def validate(product_root: Path, repo_root: Path, pdf_tools: bool = False) -> dict[str, Any]:
+    out = product_root / REL_DIR
+    require(out.is_dir(), f"missing product directory {out}")
+    actual_paths = sorted(p.relative_to(product_root).as_posix() for p in product_root.rglob("*") if p.is_file())
+    expected_paths = sorted((REL_DIR / name).as_posix() for name in FILES)
+    require(actual_paths == expected_paths, f"product path denominator differs: {actual_paths}")
+    require(all(not p.startswith(".github/") and "/tools/" not in p and "/test/" not in p for p in actual_paths), "workflow/tool/test path present")
+
+    docs = {name: load(out / name) for name in FILES}
+    adjudication = docs["adjudication.json"]
+    candidate = docs["candidate-disposition.json"]
+    current = docs["current-cell-custody.json"]
+    manifest = docs["product-manifest.json"]
+    source = docs["source-custody.json"]
+    summary = docs["summary.json"]
+
+    for name, obj in docs.items():
+        require(isinstance(obj, dict), f"{name} must be an object")
+        require(obj.get("wave_id") == "SSC-RD-W03", f"{name} wave mismatch")
+        require(obj.get("lane_id") == "RD-04", f"{name} lane mismatch")
+        require(obj.get("class_id") == "RD-04-C02", f"{name} class mismatch")
+        require(obj.get("issue") == 1017, f"{name} issue mismatch")
+
+    exact_keys(adjudication, {
+        "schema_version", "wave_id", "lane_id", "class_id", "issue", "construction_date", "object_class",
+        "terminal_classification", "source_finding", "candidate_disposition", "current_authority_state",
+        "authority_boundary", "evidence_ledger", "prohibited_inferences"
+    }, "adjudication")
+    exact_keys(candidate, {
+        "schema_version", "wave_id", "lane_id", "class_id", "issue", "candidate_id", "decision_id", "unit_id",
+        "field_id", "candidate_source_body_sha256", "original_candidate_target_state", "disposition",
+        "promotion_authorized", "historical_evidence_retained", "current_field_state_after",
+        "current_field_terminal_after", "current_row_state_after", "reason_code", "reasoning", "review_custody",
+        "supersession", "next_bounded_operation"
+    }, "candidate")
+    exact_keys(current, {
+        "schema_version", "wave_id", "lane_id", "class_id", "issue", "canonical_parent", "canonical_parent_tree",
+        "matrix", "field_contract", "north_dakota", "expired_predecessor_comparators", "mutation_boundary"
+    }, "current-cell custody")
+    exact_keys(source, {
+        "schema_version", "wave_id", "lane_id", "class_id", "issue", "construction_date", "source_classification",
+        "source_custody", "page_complete_review", "source_finding", "transport_provenance", "request_boundary"
+    }, "source custody")
+    exact_keys(summary, {
+        "schema_version", "wave_id", "lane_id", "class_id", "issue", "status", "source", "decision",
+        "unchanged_counts", "effects", "next_bounded_operation", "control_question"
+    }, "summary")
+
+    require(current["canonical_parent"] == CANONICAL_PARENT and current["canonical_parent_tree"] == CANONICAL_TREE, "canonical parent binding differs")
+    require(manifest["canonical_parent"] == CANONICA

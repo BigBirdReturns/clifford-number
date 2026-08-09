@@ -1,0 +1,144 @@
+
+    },
+    "request_boundary": {
+        "historical_physical_requests_preserved": 1,
+        "new_source_requests": 0,
+        "new_route_executions": 0,
+        "additional_transport_authorized": False,
+        "outside_human_dependency": False,
+    },
+}
+
+current_cell_custody = {
+    "schema_version": "ssc-rd04-nd-fy2025-waiver-historical-current-cell-custody@1",
+    "wave_id": "SSC-RD-W03",
+    "lane_id": "RD-04",
+    "class_id": "RD-04-C02",
+    "issue": 1017,
+    "canonical_parent": CANONICAL_PARENT,
+    "canonical_parent_tree": CANONICAL_TREE,
+    "matrix": {
+        "path": MATRIX_REL.as_posix(),
+        "git_blob_sha": MATRIX_BLOB,
+        "bytes": len(matrix_body),
+        "sha256": sha256_bytes(matrix_body),
+        "counts": matrix["counts"],
+    },
+    "field_contract": {
+        "path": CONTRACT_REL.as_posix(),
+        "git_blob_sha": CONTRACT_BLOB,
+        "bytes": len(contract_body),
+        "sha256": sha256_bytes(contract_body),
+        "boundary": {
+            "waiver_authority_is_requested_approved_or_current_waiver": contract["boundaries"]["waiver_authority_is_requested_approved_or_current_waiver"]
+        },
+    },
+    "north_dakota": {
+        "row_sha256": canonical_sha(nd_row),
+        "row_state": nd_row["row_state"],
+        "terminal_fields": nd_row["terminal_fields"],
+        "open_fields": nd_row["open_fields"],
+        "target_cell_sha256": canonical_sha(nd_target),
+        "target_cell": nd_target,
+        "row_state_cell_sha256": canonical_sha(nd_row_state),
+        "row_state_cell": nd_row_state,
+    },
+    "expired_predecessor_comparators": [
+        {
+            "unit_id": "US-STATE-SD",
+            "cell_sha256": canonical_sha(sd_target),
+            "state": sd_target["state"],
+            "terminal": sd_target["terminal"],
+            "typed_gap": sd_target["typed_gap"],
+            "finding_code": sd_target["value"]["finding_code"],
+            "expired_predecessor_expiration_date": sd_target["value"]["observed_components"]["expired_predecessor_expiration_date"],
+        },
+        {
+            "unit_id": "US-STATE-WA",
+            "cell_sha256": canonical_sha(wa_target),
+            "state": wa_target["state"],
+            "terminal": wa_target["terminal"],
+            "typed_gap": wa_target["typed_gap"],
+            "finding_code": wa_target["value"]["finding_code"],
+            "expired_predecessor_expiration_date": wa_target["value"]["observed_components"]["expired_predecessor_expiration_date"],
+        },
+    ],
+    "mutation_boundary": {
+        "matrix_files_added_or_modified": 0,
+        "field_terminalizations": 0,
+        "row_terminalizations": 0,
+        "row_state_mutations": 0,
+        "matrix_updates": 0,
+        "counts_changed": False,
+        "class_closed": False,
+    },
+}
+
+candidate_disposition = {
+    "schema_version": "ssc-rd04-nd-fy2025-waiver-historical-candidate-disposition@1",
+    "wave_id": "SSC-RD-W03",
+    "lane_id": "RD-04",
+    "class_id": "RD-04-C02",
+    "issue": 1017,
+    "candidate_id": "RD04-ND-FNA-RESPONSE-FY2025-CANDIDATE-WAIVER-STATE-AND-GOVERNING-PERIOD",
+    "decision_id": "RD04-ND-FNA-RESPONSE-FY2025-WAIVER-STATE-AND-GOVERNING-PERIOD",
+    "unit_id": "US-STATE-ND",
+    "field_id": nd_target["field_id"],
+    "candidate_source_body_sha256": source["body_sha256"],
+    "original_candidate_target_state": "evidence_complete",
+    "disposition": "rejected_for_current_state_terminalization_expired_governing_period",
+    "promotion_authorized": False,
+    "historical_evidence_retained": True,
+    "current_field_state_after": "still_open",
+    "current_field_terminal_after": False,
+    "current_row_state_after": "still_open",
+    "reason_code": "expired_instrument_does_not_determine_current_post_expiration_waiver_state",
+    "reasoning": [
+        {
+            "rule": "temporal_scope",
+            "fact": "The admitted instrument expired on 2026-06-30, before the 2026-08-09 product construction date.",
+        },
+        {
+            "rule": "source_self_limitation",
+            "fact": "The source and completed adjudication expressly leave post-expiration status undetermined.",
+        },
+        {
+            "rule": "current_index_custody",
+            "fact": "The official index was updated on 2026-07-22, after expiration, without this source establishing a successor state.",
+        },
+        {
+            "rule": "frozen_field_contract",
+            "fact": "The canonical contract states that requested or approved waiver authority is not itself a current waiver finding.",
+        },
+        {
+            "rule": "canonical_comparator_practice",
+            "fact": "South Dakota and Washington preserve expired FY2025 waiver instruments as gap evidence rather than current evidence-complete findings.",
+        },
+    ],
+    "review_custody": {
+        "pull_request": 1691,
+        "reviewed_commit": "667691476ee97b0743565e0965c84d4a8b5cab35",
+        "review_state": "commented_with_actionable_p1",
+        "review_thread_id": "PRRT_kwDOTGqftc6Xj7vO",
+        "review_comment_id": "PRRC_kwDOTGqftc7fFU0-",
+        "review_submitted_at": "2026-08-09T05:12:22Z",
+        "accepted": True,
+    },
+    "supersession": {
+        "superseded_product_pr": 1691,
+        "superseded_product_commit": "667691476ee97b0743565e0965c84d4a8b5cab35",
+        "superseded_product_tree": "512d3cd84eb5f670f3c28680dee297859d090669",
+        "superseded_reason": "invalid_current_state_terminalization_from_expired_historical_authority",
+    },
+    "next_bounded_operation": {
+        "operation": "separately_authorized_current_status_recovery",
+        "required_evidence": "a successor FY2026 approval instrument or an exact current no-waiver record with a complete governing period",
+        "source_requests_authorized_by_this_product": 0,
+        "route_executions_authorized_by_this_product": 0,
+    },
+}
+
+adjudication = {
+    "schema_version": "ssc-rd04-nd-fy2025-waiver-historical-adjudication@1",
+    "wave_id": "SSC-RD-W03",
+    "lane_id"

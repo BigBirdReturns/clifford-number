@@ -1,0 +1,72 @@
+L_PARENT and manifest["canonical_parent_tree"] == CANONICAL_TREE, "manifest parent binding differs")
+    require(manifest["product_slug"] == SLUG, "manifest slug differs")
+    require(manifest["permanent_path_count"] == 6 and manifest["workflow_or_transport_paths"] == 0 and manifest["addition_only"] is True, "manifest shape differs")
+    require(sorted(manifest["permanent_paths"]) == expected_paths, "manifest path list differs")
+
+    payload_rows = manifest["payload_files"]
+    require(len(payload_rows) == 5, "payload row count differs")
+    require({Path(r["path"]).name for r in payload_rows} == FILES - {"product-manifest.json"}, "payload file set differs")
+    for row in payload_rows:
+        require(file_identity(product_root / row["path"]) == {"bytes": row["bytes"], "sha256": row["sha256"]}, f"payload identity differs for {row['path']}")
+    material = b"".join(
+        r["path"].encode() + b"\0" + r["sha256"].encode() + b"\0" + str(r["bytes"]).encode() + b"\n"
+        for r in payload_rows
+    )
+    require(sha256_bytes(material) == manifest["payload_combined_sha256"] == EXPECTED["payload_combined_sha256"], "payload combined hash differs")
+
+    matrix_path = repo_root / MATRIX_REL
+    contract_path = repo_root / CONTRACT_REL
+    require(matrix_path.is_file() and contract_path.is_file(), "canonical matrix or contract missing")
+    matrix_body = matrix_path.read_bytes()
+    contract_body = contract_path.read_bytes()
+    require(sha256_bytes(matrix_body) == EXPECTED["matrix_sha256"], "canonical matrix bytes differ")
+    require(sha256_bytes(contract_body) == EXPECTED["contract_sha256"], "field contract bytes differ")
+    matrix = json.loads(matrix_body)
+    contract = json.loads(contract_body)
+    require(contract["boundaries"]["waiver_authority_is_requested_approved_or_current_waiver"] is False, "field contract boundary widened")
+    require(current["matrix"] == {
+        "path": MATRIX_REL.as_posix(), "git_blob_sha": EXPECTED["matrix_blob"], "bytes": len(matrix_body),
+        "sha256": EXPECTED["matrix_sha256"], "counts": matrix["counts"]
+    }, "matrix custody differs")
+    require(current["field_contract"]["path"] == CONTRACT_REL.as_posix(), "contract path differs")
+    require(current["field_contract"]["git_blob_sha"] == EXPECTED["contract_blob"], "contract blob differs")
+    require(current["field_contract"]["bytes"] == len(contract_body) and current["field_contract"]["sha256"] == EXPECTED["contract_sha256"], "contract identity differs")
+    require(current["field_contract"]["boundary"]["waiver_authority_is_requested_approved_or_current_waiver"] is False, "recorded contract boundary widened")
+
+    rows = {r["unit_id"]: r for r in matrix["rows"]}
+    nd = rows["US-STATE-ND"]
+    target = next(c for c in nd["cells"] if c["field_id"] == candidate["field_id"])
+    row_state = next(c for c in nd["cells"] if c["field_id"] == "field_and_row_terminal_state")
+    require(canonical_sha(nd) == current["north_dakota"]["row_sha256"] == EXPECTED["row_sha256"], "ND row hash differs")
+    require(canonical_sha(target) == current["north_dakota"]["target_cell_sha256"] == EXPECTED["target_sha256"], "ND target cell differs")
+    require(canonical_sha(row_state) == current["north_dakota"]["row_state_cell_sha256"] == EXPECTED["row_state_sha256"], "ND row-state cell differs")
+    require(current["north_dakota"]["target_cell"] == target and current["north_dakota"]["row_state_cell"] == row_state, "raw ND cells differ")
+    require(nd["row_state"] == "still_open" and nd["terminal_fields"] == 7 and nd["open_fields"] == 2, "ND row custody differs")
+    require(target["state"] == "still_open" and target["terminal"] is False and target["value"] is None, "ND target field was closed")
+    require(row_state["state"] == "still_open" and row_state["terminal"] is False, "ND row-state field was closed")
+
+    comparators = {x["unit_id"]: x for x in current["expired_predecessor_comparators"]}
+    require(set(comparators) == {"US-STATE-SD", "US-STATE-WA"}, "comparator set differs")
+    for unit, expected_hash in [("US-STATE-SD", EXPECTED["sd_sha256"]), ("US-STATE-WA", EXPECTED["wa_sha256"])]:
+        cell = next(c for c in rows[unit]["cells"] if c["field_id"] == candidate["field_id"])
+        record = comparators[unit]
+        require(canonical_sha(cell) == record["cell_sha256"] == expected_hash, f"{unit} comparator hash differs")
+        require(cell["state"] == record["state"] == "not_publicly_recovered" and cell["terminal"] is True, f"{unit} comparator disposition differs")
+        require("current" in cell["typed_gap"], f"{unit} comparator does not preserve current gap")
+
+    sc = source["source_custody"]
+    pdf = base64.b64decode(sc["embedded_pdf"]["data_base64"], validate=True)
+    require(len(pdf) == sc["embedded_pdf"]["bytes"] == sc["body_bytes"] == EXPECTED["source_bytes"], "embedded PDF byte count differs")
+    require(sha256_bytes(pdf) == sc["embedded_pdf"]["sha256"] == sc["body_sha256"] == EXPECTED["source_sha256"], "embedded PDF hash differs")
+    require(sc["canonical_index_page_updated"] == "2026-07-22", "index update date differs")
+    require(sc["additional_transport_authorized"] is False, "additional transport authorized")
+    require(source["request_boundary"] == {
+        "historical_physical_requests_preserved": 1,
+        "new_source_requests": 0,
+        "new_route_executions": 0,
+        "additional_transport_authorized": False,
+        "outside_human_dependency": False,
+    }, "source request boundary differs")
+    require(source["page_complete_review"]["page_count"] == 5 and source["page_complete_review"]["all_pages_reviewed"] is True, "page review incomplete")
+    require(source["source_finding"]["expiration_date"] == "2026-06-30" and source["source_finding"]["post_expiration_status"] == "not_determined_by_this_source", "source temporal limitation differs")
+    require(date.fromisoformat(source["source_finding"]["expiration_date"]) < date.fromisoformat(source["construction_date"]), "instrume

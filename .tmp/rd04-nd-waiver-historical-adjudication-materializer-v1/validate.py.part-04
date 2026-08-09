@@ -1,0 +1,48 @@
+        ("source-base64", "source-custody.json", lambda o: o["source_custody"]["embedded_pdf"].__setitem__("data_base64", o["source_custody"]["embedded_pdf"]["data_base64"][:-4] + "AAAA")),
+        ("current-parent", "current-cell-custody.json", lambda o: o.__setitem__("canonical_parent", "0" * 40)),
+        ("current-target-hash", "current-cell-custody.json", lambda o: o["north_dakota"].__setitem__("target_cell_sha256", "0" * 64)),
+        ("current-target-terminal", "current-cell-custody.json", lambda o: o["north_dakota"]["target_cell"].__setitem__("terminal", True)),
+        ("current-row-state", "current-cell-custody.json", lambda o: o["north_dakota"].__setitem__("row_state", "evidence_complete")),
+        ("current-matrix-update", "current-cell-custody.json", lambda o: o["mutation_boundary"].__setitem__("matrix_updates", 1)),
+        ("current-counts-changed", "current-cell-custody.json", lambda o: o["mutation_boundary"].__setitem__("counts_changed", True)),
+        ("current-contract-widened", "current-cell-custody.json", lambda o: o["field_contract"]["boundary"].__setitem__("waiver_authority_is_requested_approved_or_current_waiver", True)),
+        ("summary-terminal-count", "summary.json", lambda o: o["unchanged_counts"].__setitem__("terminal_cells", 228)),
+        ("summary-matrix-update", "summary.json", lambda o: o["effects"].__setitem__("matrix_updates", 1)),
+        ("summary-class-closed", "summary.json", lambda o: o["effects"].__setitem__("class_closed", True)),
+        ("summary-authorized", "summary.json", lambda o: o["decision"].__setitem__("promotion_authorized", True)),
+        ("adjudication-terminalize", "adjudication.json", lambda o: o["authority_boundary"].__setitem__("field_terminalizations", 1)),
+        ("adjudication-graph", "adjudication.json", lambda o: o["authority_boundary"].__setitem__("graph_effect", "present")),
+        ("adjudication-close", "adjudication.json", lambda o: o["authority_boundary"].__setitem__("class_closed", True)),
+        ("manifest-count", "product-manifest.json", lambda o: o.__setitem__("permanent_path_count", 7)),
+        ("manifest-hash", "product-manifest.json", lambda o: o.__setitem__("payload_combined_sha256", "0" * 64)),
+        ("manifest-path", "product-manifest.json", lambda o: o["permanent_paths"].append(".github/workflows/forbidden.yml")),
+    ]
+    passed = 0
+    for name, filename, fn in mutations:
+        with tempfile.TemporaryDirectory(prefix=f"rd04-mut-{name}-") as td:
+            root = Path(td)
+            shutil.copytree(product_root / "data", root / "data")
+            mutate_json(root, filename, fn)
+            try:
+                validate(root, repo_root, pdf_tools=False)
+            except ValidationError:
+                passed += 1
+            else:
+                raise ValidationError(f"mutation unexpectedly passed: {name}")
+    return passed
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--product-root", type=Path, required=True)
+    parser.add_argument("--repo-root", type=Path, required=True)
+    parser.add_argument("--pdf-tools", action="store_true")
+    parser.add_argument("--mutations", action="store_true")
+    args = parser.parse_args()
+    result = validate(args.product_root, args.repo_root, pdf_tools=args.pdf_tools)
+    if args.mutations:
+        result["mutation_refusals"] = mutation_suite(args.product_root, args.repo_root)
+    print(json.dumps(result, indent=2, sort_keys=True))
+
+if __name__ == "__main__":
+    main()

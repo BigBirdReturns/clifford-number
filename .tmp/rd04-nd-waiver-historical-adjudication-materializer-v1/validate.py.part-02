@@ -1,0 +1,40 @@
+nt is not expired at construction")
+
+    require(candidate["candidate_source_body_sha256"] == EXPECTED["source_sha256"], "candidate source differs")
+    require(candidate["unit_id"] == "US-STATE-ND" and candidate["field_id"] == "abawd_or_work_requirement_waiver_state_and_governing_period", "candidate target differs")
+    require(candidate["disposition"] == "rejected_for_current_state_terminalization_expired_governing_period", "candidate disposition differs")
+    require(candidate["promotion_authorized"] is False and candidate["historical_evidence_retained"] is True, "candidate authority differs")
+    require(candidate["current_field_state_after"] == "still_open" and candidate["current_field_terminal_after"] is False and candidate["current_row_state_after"] == "still_open", "candidate current custody differs")
+    require(candidate["review_custody"]["accepted"] is True and candidate["review_custody"]["pull_request"] == 1691, "review acceptance differs")
+    require(candidate["next_bounded_operation"]["source_requests_authorized_by_this_product"] == 0 and candidate["next_bounded_operation"]["route_executions_authorized_by_this_product"] == 0, "candidate authorizes traffic")
+
+    expected_counts = {
+        "terminal_cells": 227,
+        "still_open_cells": 223,
+        "terminal_substantive_cells": 117,
+        "still_open_substantive_cells": 183,
+        "terminal_units": 10,
+        "north_dakota_terminal_fields": 7,
+        "north_dakota_open_fields": 2,
+    }
+    require(summary["unchanged_counts"] == expected_counts, "summary counts differ")
+    require(summary["decision"] == {
+        "candidate_rejected": True,
+        "promotion_authorized": False,
+        "historical_evidence_retained": True,
+        "target_field_state": "still_open",
+        "row_state": "still_open",
+    }, "summary decision differs")
+    require(summary["source"]["expiration_date"] == "2026-06-30" and summary["source"]["post_expiration_status"] == "not_determined_by_this_source", "summary temporal scope differs")
+
+    zero_effect_keys = ["new_source_requests", "new_route_executions", "field_terminalizations", "row_terminalizations", "row_state_mutations", "matrix_updates"]
+    for obj, label in [(adjudication["authority_boundary"], "adjudication"), (summary["effects"], "summary"), (current["mutation_boundary"], "current")]:
+        for key in zero_effect_keys:
+            if key in obj:
+                require(obj[key] == 0, f"{label} {key} is nonzero")
+    require(adjudication["authority_boundary"]["new_source_admissions"] == 1 and adjudication["authority_boundary"]["historical_source_findings"] == 1 and adjudication["authority_boundary"]["promotion_candidates_rejected"] == 1, "adjudication bounded effects differ")
+    require(adjudication["authority_boundary"]["class_closed"] is False and summary["effects"]["class_closed"] is False, "class closed")
+    require(current["mutation_boundary"]["counts_changed"] is False, "counts changed")
+    require(all(adjudication["authority_boundary"][key] == "none" for key in ["cumulative_ledger_effect", "publication_effect", "adoption_effect", "graph_effect", "prevalence_effect", "discrimination_effect", "coordination_effect", "common_purpose_effect", "racial_order_effect", "complete_compact_effect"]), "wider authority effect present")
+    require(adjudication["authority_boundary"]["outside_human_dependency"] is False and summary["effects"]["outside_human_dependency"] is False, "outside-human dependency present")
+    require("do_not_infer_post_expiration_waiver_status" in adjudication["prohibited_inferences"], "post-expiration refusal missing")

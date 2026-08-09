@@ -1,0 +1,113 @@
+from __future__ import annotations
+
+import base64
+import hashlib
+import json
+from pathlib import Path
+from typing import Any
+
+CANONICAL_PARENT = "a592acea22c69a979f2a90c24a2bafb8c9445759"
+CANONICAL_TREE = "c7dbb1df10b409caa7893846a9e4b3e8d1392be0"
+CONSTRUCTION_DATE = "2026-08-09"
+SLUG = "status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-historical-adjudication"
+ROOT = Path("/tmp/clifford-main-a592/tree")
+SOURCE_INPUT = Path("/tmp/rd04-product-art/product/data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization/terminalization-input-custody.json")
+OUT_ROOT = Path("/tmp/rd04-historical-product")
+OUT_DIR = OUT_ROOT / "data" / "intake" / SLUG
+MATRIX_REL = Path("data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-followup-one-cell-promotion/promoted-partial-field-matrix.json")
+CONTRACT_REL = Path("data/intake/status-sovereignty-rd-wave03-rd04-state-implementation/field-matrix-contract.json")
+MATRIX_BLOB = "19357f8214ab2710bc5e75b3fae8c7fb09ff1654"
+CONTRACT_BLOB = "5b2f094adbd860ac3e28161de0bfd00f67b2db8d"
+
+
+def dump(path: Path, obj: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(obj, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def sha256_bytes(body: bytes) -> str:
+    return hashlib.sha256(body).hexdigest()
+
+
+def canonical_sha(obj: Any) -> str:
+    body = json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    return sha256_bytes(body)
+
+
+def file_identity(path: Path) -> dict[str, Any]:
+    body = path.read_bytes()
+    return {"bytes": len(body), "sha256": sha256_bytes(body)}
+
+
+source_input = json.loads(SOURCE_INPUT.read_text(encoding="utf-8"))
+source = source_input["source_custody"]
+page_review = source_input["page_complete_review"]
+embedded = source["embedded_pdf"]
+pdf_body = base64.b64decode(embedded["data_base64"], validate=True)
+assert len(pdf_body) == embedded["bytes"] == source["body_bytes"] == 306585
+assert sha256_bytes(pdf_body) == embedded["sha256"] == source["body_sha256"] == "dc8f7a9e03c79ce52e39a28dfee4d36b9afe768181c15ec02c44b9ccb27f3428"
+assert page_review["page_count"] == 5 and page_review["all_pages_reviewed"] is True
+
+matrix_path = ROOT / MATRIX_REL
+contract_path = ROOT / CONTRACT_REL
+matrix_body = matrix_path.read_bytes()
+contract_body = contract_path.read_bytes()
+matrix = json.loads(matrix_body)
+contract = json.loads(contract_body)
+assert sha256_bytes(matrix_body) == "663f93d84f168bf6ccdd92eaee0deb47b109f4280e7b25613853c2c1a6be2b63"
+assert sha256_bytes(contract_body) == "03e2abfbda3f95d1ecc2ebbd1b87273a48162231c5e2a761fe44a4c2a6206241"
+assert contract["boundaries"]["waiver_authority_is_requested_approved_or_current_waiver"] is False
+
+rows = {row["unit_id"]: row for row in matrix["rows"]}
+nd_row = rows["US-STATE-ND"]
+nd_target = next(c for c in nd_row["cells"] if c["field_id"] == "abawd_or_work_requirement_waiver_state_and_governing_period")
+nd_row_state = next(c for c in nd_row["cells"] if c["field_id"] == "field_and_row_terminal_state")
+sd_target = next(c for c in rows["US-STATE-SD"]["cells"] if c["field_id"] == nd_target["field_id"])
+wa_target = next(c for c in rows["US-STATE-WA"]["cells"] if c["field_id"] == nd_target["field_id"])
+
+assert canonical_sha(nd_row) == "18f9b127b61e45edafb64c78bc8c387175fffdb351156ccf9154158ca467d2dd"
+assert canonical_sha(nd_target) == "cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe"
+assert canonical_sha(nd_row_state) == "6a4c7d204c6c99a89f3c121065860806668c5da850f44c67fe42b4dc84b1b5c3"
+assert nd_row["row_state"] == "still_open" and nd_row["terminal_fields"] == 7 and nd_row["open_fields"] == 2
+assert nd_target["state"] == "still_open" and nd_target["terminal"] is False
+assert nd_row_state["state"] == "still_open" and nd_row_state["terminal"] is False
+assert sd_target["state"] == "not_publicly_recovered" and sd_target["terminal"] is True
+assert wa_target["state"] == "not_publicly_recovered" and wa_target["terminal"] is True
+
+source_custody = {
+    "schema_version": "ssc-rd04-nd-fy2025-waiver-historical-source-custody@1",
+    "wave_id": "SSC-RD-W03",
+    "lane_id": "RD-04",
+    "class_id": "RD-04-C02",
+    "issue": 1017,
+    "construction_date": CONSTRUCTION_DATE,
+    "source_classification": "exact_official_federal_historical_waiver_instrument",
+    "source_custody": source,
+    "page_complete_review": page_review,
+    "source_finding": {
+        "request_date": "2025-06-04",
+        "response_date": "2025-06-18",
+        "approval_action": "partial_approval",
+        "approved_areas": [
+            "Rolette County",
+            "Turtle Mountain Reservation and Off-Reservation Trust Land",
+        ],
+        "denied_areas": ["Bottineau County", "Towner County"],
+        "implementation_date": "2025-07-01",
+        "expiration_date": "2026-06-30",
+        "post_expiration_status": "not_determined_by_this_source",
+        "authority": "section 6(o) of the Food and Nutrition Act of 2008 and 7 CFR 273.24(f)",
+    },
+    "transport_provenance": {
+        "completed_pdf_adjudication_pr": 1676,
+        "completed_pdf_adjudication_head": "ef3390633fb2e267a6d563d4d95350fc8f3a3cdf",
+        "completed_pdf_adjudication_artifact": 9032241598,
+        "completed_pdf_adjudication_zip_sha256": "8ccc448ec66a4c92e245cc467f5ddf87c6fccd057430a5b741d688ceb30ee796",
+        "candidate_validation_pr": 1679,
+        "candidate_validation_head": "179c5e021520021f31bf50361d9da1ff4c70b1b5",
+        "candidate_validation_artifact": 9032288142,
+        "candidate_validation_zip_sha256": "6c433b4f7a3c046f25b3852e9df6d578cc7bb2fae9a57b529363ee884b135b3d",
+        "superseded_terminalization_pr": 1691,
+        "superseded_terminalization_head": "667691476ee97b0743565e0965c84d4a8b5cab35",
+        "superseded_terminalization_artifact": 9032997304,
+        "superseded_terminalization_artifact_digest": "sha256:cec2614253ce255f4bc981aa804052af29004854fd5b0ca4f14a73cadab96459",

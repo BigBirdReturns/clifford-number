@@ -1,0 +1,246 @@
+name: TEMP RD-04 North Dakota historical waiver adjudication materializer v1
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/tmp-rd04-nd-waiver-historical-adjudication-materializer-v1.yml'
+      - '.tmp/rd04-nd-waiver-historical-adjudication-materializer-v1/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rd04-nd-waiver-historical-adjudication-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      EXPECTED_PARENT: a592acea22c69a979f2a90c24a2bafb8c9445759
+      EXPECTED_PARENT_TREE: c7dbb1df10b409caa7893846a9e4b3e8d1392be0
+      EXPECTED_PRODUCT_TREE: d6de3a1788811b09bc13c82e2c2d93a4268f6d47
+      SOURCE_PR: '1691'
+      SOURCE_HEAD: 667691476ee97b0743565e0965c84d4a8b5cab35
+      SOURCE_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-approval-terminalization/terminalization-input-custody.json
+      SOURCE_BLOB: f099b0187c8912fec17c1cbb2a2d5e377afc6ad5
+      SOURCE_SHA256: c72d97f3e47f44df7f5e15993b657366324b6870d3745d5c0c95e0cfcd6cfe94
+      BUILDER_SHA256: df34e88907482faa16474ac7a0b8338dfe4d1dc13ece006f455d802f0ead04b6
+      VALIDATOR_SHA256: a5595704a7a65b590f2770a7c23e27eb3fc3e117bd8d81e6044a5c68aa621661
+      PRODUCT_BRANCH: agent/ssc-rd04-postpromotion-nd-fy2025-waiver-historical-adjudication-v1
+      PRODUCT_SLUG: status-sovereignty-rd-wave03-rd04-postpromotion-nd-fy2025-waiver-historical-adjudication
+      PAYLOAD_DIR: .tmp/rd04-nd-waiver-historical-adjudication-materializer-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install PDF verification tools
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+      - name: Bind carrier, scripts, canonical parent, superseded source, and unused product ref
+        env:
+          CARRIER_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$CARRIER_HEAD"
+          test "$(find "$PAYLOAD_DIR" -maxdepth 1 -type f -name 'build.py.part-*' | wc -l)" = 4
+          test "$(find "$PAYLOAD_DIR" -maxdepth 1 -type f -name 'validate.py.part-*' | wc -l)" = 5
+          cat "$PAYLOAD_DIR"/build.py.part-* > /tmp/rd04-build-historical-product.py
+          cat "$PAYLOAD_DIR"/validate.py.part-* > /tmp/rd04-validate-historical-product.py
+          test "$(sha256sum /tmp/rd04-build-historical-product.py | awk '{print $1}')" = "$BUILDER_SHA256"
+          test "$(sha256sum /tmp/rd04-validate-historical-product.py | awk '{print $1}')" = "$VALIDATOR_SHA256"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_PARENT"
+          test "$(git rev-parse "$EXPECTED_PARENT^{tree}")" = "$EXPECTED_PARENT_TREE"
+          git fetch --no-tags origin "+refs/pull/$SOURCE_PR/head:refs/remotes/origin/rd04-superseded-product"
+          test "$(git rev-parse refs/remotes/origin/rd04-superseded-product)" = "$SOURCE_HEAD"
+          test "$(git rev-parse "$SOURCE_HEAD:$SOURCE_PATH")" = "$SOURCE_BLOB"
+          SOURCE_DEST="/tmp/rd04-product-art/product/$SOURCE_PATH"
+          mkdir -p "$(dirname "$SOURCE_DEST")"
+          git show "$SOURCE_HEAD:$SOURCE_PATH" > "$SOURCE_DEST"
+          test "$(stat -c '%s' "$SOURCE_DEST")" = 415276
+          test "$(sha256sum "$SOURCE_DEST" | awk '{print $1}')" = "$SOURCE_SHA256"
+          if git ls-remote --exit-code --heads origin "$PRODUCT_BRANCH" >/dev/null 2>&1; then
+            echo "product branch already exists: $PRODUCT_BRANCH" >&2
+            exit 1
+          fi
+      - name: Build and validate exact six-file product without source traffic
+        run: |
+          set -Eeuo pipefail
+          PRODUCT_DIR="data/intake/$PRODUCT_SLUG"
+          git checkout --detach "$EXPECTED_PARENT"
+          test ! -e "$PRODUCT_DIR"
+          rm -rf /tmp/clifford-main-a592 /tmp/rd04-historical-product
+          mkdir -p /tmp/clifford-main-a592
+          ln -s "$GITHUB_WORKSPACE" /tmp/clifford-main-a592/tree
+          python /tmp/rd04-build-historical-product.py | tee /tmp/rd04-build-result.json
+          python /tmp/rd04-validate-historical-product.py \
+            --product-root /tmp/rd04-historical-product \
+            --repo-root . \
+            --pdf-tools \
+            --mutations | tee /tmp/rd04-historical-validation.json
+          cp -a /tmp/rd04-historical-product/. .
+          mapfile -t MANIFEST_PATHS < <(jq -r '.permanent_paths[]' "$PRODUCT_DIR/product-manifest.json")
+          test "${#MANIFEST_PATHS[@]}" = 6
+          git add -- "${MANIFEST_PATHS[@]}"
+          git diff --cached --check "$EXPECTED_PARENT" --
+          test "$(git diff --cached --name-only "$EXPECTED_PARENT" -- | wc -l)" = 6
+          test "$(git diff --cached --diff-filter=A --name-only "$EXPECTED_PARENT" -- | wc -l)" = 6
+          test -z "$(git diff --cached --diff-filter=DMRTUXB --name-only "$EXPECTED_PARENT" --)"
+          jq -r '.permanent_paths[]' "$PRODUCT_DIR/product-manifest.json" | LC_ALL=C sort > /tmp/rd04-manifest-paths.txt
+          git diff --cached --name-only "$EXPECTED_PARENT" -- | LC_ALL=C sort > /tmp/rd04-git-paths.txt
+          cmp /tmp/rd04-manifest-paths.txt /tmp/rd04-git-paths.txt
+          PRODUCT_TREE=$(git write-tree)
+          test "$PRODUCT_TREE" = "$EXPECTED_PRODUCT_TREE"
+          export GIT_AUTHOR_NAME='OpenAI Agent'
+          export GIT_AUTHOR_EMAIL='agent@openai.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+          export GIT_AUTHOR_DATE='2026-08-09T05:25:00Z'
+          export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"
+          PRODUCT_COMMIT=$(printf '%s\n\n%s\n' \
+            'Adjudicate North Dakota FY2025 waiver as historical evidence' \
+            'Retain the exact five-page partial-approval instrument, reject current-state promotion after its expiration, preserve the canonical North Dakota waiver and row-state cells unchanged, and bind the six-file custody product to the accepted P1 review and frozen field contract.' | \
+            git commit-tree "$PRODUCT_TREE" -p "$EXPECTED_PARENT")
+          test "$(git rev-parse "$PRODUCT_COMMIT^1")" = "$EXPECTED_PARENT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^{tree}")" = "$EXPECTED_PRODUCT_TREE"
+          git reset --hard "$PRODUCT_COMMIT"
+          printf '%s\n' "$PRODUCT_COMMIT" > /tmp/rd04-product-commit.txt
+          printf '%s\n' "$PRODUCT_TREE" > /tmp/rd04-product-tree.txt
+      - name: Run complete gates twice and preserve clean replay
+        run: |
+          set -Eeuo pipefail
+          PRODUCT_COMMIT=$(cat /tmp/rd04-product-commit.txt)
+          EXPECTED=/tmp/rd04-release-status-expected.txt
+          FIRST=/tmp/rd04-release-status-first.txt
+          SECOND=/tmp/rd04-release-status-second.txt
+          cat > "$EXPECTED" <<'EOF'
+           M build/axm-identity.json
+           M build/build-hop-report.json
+           M build/hop-graph.json
+           M build/migration-review.md
+           M build/migration-summary.json
+           M build/receipt-graph.json
+           M build/scores.json
+           M build/scout-report.json
+           M build/scout-report.md
+           M build/surface-graph.json
+          EOF
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+          git status --porcelain=v1 --untracked-files=all > "$FIRST"
+          cmp "$FIRST" "$EXPECTED"
+          git reset --hard "$PRODUCT_COMMIT"
+          git clean -fdx
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+          git status --porcelain=v1 --untracked-files=all > "$SECOND"
+          cmp "$SECOND" "$EXPECTED"
+          cmp "$FIRST" "$SECOND"
+          git reset --hard "$PRODUCT_COMMIT"
+          git clean -fdx
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test "$(git rev-parse HEAD^{tree})" = "$EXPECTED_PRODUCT_TREE"
+      - name: Push exact one-commit product branch
+        run: |
+          set -Eeuo pipefail
+          PRODUCT_COMMIT=$(cat /tmp/rd04-product-commit.txt)
+          test "$(git rev-list --count "$EXPECTED_PARENT..$PRODUCT_COMMIT")" = 1
+          test "$(git diff-tree --no-commit-id --name-only -r "$PRODUCT_COMMIT" | wc -l)" = 6
+          test "$(git diff-tree --no-commit-id --diff-filter=A --name-only -r "$PRODUCT_COMMIT" | wc -l)" = 6
+          git push origin "$PRODUCT_COMMIT:refs/heads/$PRODUCT_BRANCH"
+          printf 'true\n' > /tmp/rd04-product-branch-pushed.txt
+      - name: Preserve materialization receipt
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/rd04-nd-waiver-historical-materializer
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          cp /tmp/rd04-build-result.json "$OUT/build-result.json" 2>/dev/null || true
+          cp /tmp/rd04-historical-validation.json "$OUT/validation.json" 2>/dev/null || true
+          cp /tmp/rd04-product-commit.txt "$OUT/product-commit.txt" 2>/dev/null || true
+          cp /tmp/rd04-product-tree.txt "$OUT/product-tree.txt" 2>/dev/null || true
+          cp /tmp/rd04-manifest-paths.txt "$OUT/manifest-paths.txt" 2>/dev/null || true
+          cp /tmp/rd04-git-paths.txt "$OUT/git-paths.txt" 2>/dev/null || true
+          cp /tmp/rd04-release-status-expected.txt "$OUT/release-status-expected.txt" 2>/dev/null || true
+          cp /tmp/rd04-release-status-first.txt "$OUT/release-status-first.txt" 2>/dev/null || true
+          cp /tmp/rd04-release-status-second.txt "$OUT/release-status-second.txt" 2>/dev/null || true
+          python - "$OUT" <<'PY'
+          import hashlib, json, os, sys
+          from pathlib import Path
+          out=Path(sys.argv[1])
+          commit=(Path('/tmp/rd04-product-commit.txt').read_text().strip() if Path('/tmp/rd04-product-commit.txt').exists() else None)
+          tree=(Path('/tmp/rd04-product-tree.txt').read_text().strip() if Path('/tmp/rd04-product-tree.txt').exists() else None)
+          pushed=Path('/tmp/rd04-product-branch-pushed.txt').exists()
+          receipt={
+            'schema_version':'rd04-nd-waiver-historical-materializer-receipt@1',
+            'state':'complete' if commit and pushed else 'failed_closed',
+            'canonical_parent':os.environ['EXPECTED_PARENT'],
+            'canonical_parent_tree':os.environ['EXPECTED_PARENT_TREE'],
+            'source_pr':int(os.environ['SOURCE_PR']),
+            'source_head':os.environ['SOURCE_HEAD'],
+            'source_path':os.environ['SOURCE_PATH'],
+            'source_blob':os.environ['SOURCE_BLOB'],
+            'source_sha256':os.environ['SOURCE_SHA256'],
+            'builder_sha256':os.environ['BUILDER_SHA256'],
+            'validator_sha256':os.environ['VALIDATOR_SHA256'],
+            'product_branch':os.environ['PRODUCT_BRANCH'],
+            'product_commit':commit,
+            'product_tree':tree,
+            'expected_product_tree':os.environ['EXPECTED_PRODUCT_TREE'],
+            'branch_pushed':pushed,
+            'permanent_paths':6,
+            'addition_only':True,
+            'field_terminalizations':0,
+            'row_terminalizations':0,
+            'row_state_mutations':0,
+            'matrix_updates':0,
+            'historical_source_findings':1,
+            'promotion_candidates_rejected':1,
+            'terminal_cells_after':227,
+            'still_open_cells_after':223,
+            'terminal_substantive_cells_after':117,
+            'still_open_substantive_cells_after':183,
+            'terminal_units_after':10,
+            'north_dakota_terminal_fields_after':7,
+            'north_dakota_open_fields_after':2,
+            'north_dakota_target_state_after':'still_open',
+            'north_dakota_row_state_after':'still_open',
+            'source_requests':0,
+            'route_executions':0,
+            'class_closed':False,
+            'cumulative_ledger_effect':'none',
+            'outside_human_dependency':False,
+          }
+          (out/'receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          rows=[]
+          for path in sorted(out.iterdir()):
+              if path.name=='SHA256SUMS': continue
+              rows.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}")
+          (out/'SHA256SUMS').write_text('\n'.join(rows)+'\n')
+          PY
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rd04-nd-waiver-historical-adjudication-materializer
+          path: /tmp/rd04-nd-waiver-historical-materializer
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9

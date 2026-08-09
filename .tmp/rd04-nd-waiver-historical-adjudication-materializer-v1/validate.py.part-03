@@ -1,0 +1,49 @@
+    require("successor FY2026" in summary["next_bounded_operation"], "next operation is not current-status recovery")
+
+    if pdf_tools:
+        with tempfile.TemporaryDirectory(prefix="rd04-pdf-") as td:
+            pdf_path = Path(td) / "source.pdf"
+            pdf_path.write_bytes(pdf)
+            info = subprocess.run(["pdfinfo", str(pdf_path)], check=True, text=True, capture_output=True).stdout
+            page_line = next((line for line in info.splitlines() if line.startswith("Pages:")), None)
+            require(page_line is not None and int(page_line.split(":", 1)[1].strip()) == 5, "pdfinfo page count differs")
+            text_path = Path(td) / "source.txt"
+            subprocess.run(["pdftotext", "-layout", str(pdf_path), str(text_path)], check=True)
+            text = text_path.read_text(encoding="utf-8", errors="replace")
+            for anchor in ["Rolette County", "Turtle Mountain Reservation and Off-Reservation Trust", "Implementation Date: July 1, 2025", "Expiration Date: June 30, 2026"]:
+                require(anchor in text, f"PDF anchor missing: {anchor}")
+
+    return {
+        "status": "pass",
+        "permanent_paths": len(actual_paths),
+        "source_pdf_sha256": sha256_bytes(pdf),
+        "matrix_sha256": sha256_bytes(matrix_body),
+        "payload_combined_sha256": manifest["payload_combined_sha256"],
+        "field_terminalizations": 0,
+        "row_terminalizations": 0,
+        "matrix_updates": 0,
+        "north_dakota_target_state": target["state"],
+        "north_dakota_row_state": nd["row_state"],
+    }
+
+
+def mutate_json(root: Path, filename: str, mutator: Callable[[dict[str, Any]], None]) -> None:
+    path = root / REL_DIR / filename
+    obj = load(path)
+    mutator(obj)
+    path.write_text(json.dumps(obj, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def mutation_suite(product_root: Path, repo_root: Path) -> int:
+    mutations: list[tuple[str, str, Callable[[dict[str, Any]], None]]] = [
+        ("candidate-authorized", "candidate-disposition.json", lambda o: o.__setitem__("promotion_authorized", True)),
+        ("candidate-terminal", "candidate-disposition.json", lambda o: o.__setitem__("current_field_terminal_after", True)),
+        ("candidate-field-closed", "candidate-disposition.json", lambda o: o.__setitem__("current_field_state_after", "evidence_complete")),
+        ("candidate-row-closed", "candidate-disposition.json", lambda o: o.__setitem__("current_row_state_after", "evidence_complete")),
+        ("candidate-review-unaccepted", "candidate-disposition.json", lambda o: o["review_custody"].__setitem__("accepted", False)),
+        ("candidate-traffic", "candidate-disposition.json", lambda o: o["next_bounded_operation"].__setitem__("source_requests_authorized_by_this_product", 1)),
+        ("source-new-request", "source-custody.json", lambda o: o["request_boundary"].__setitem__("new_source_requests", 1)),
+        ("source-more-transport", "source-custody.json", lambda o: o["source_custody"].__setitem__("additional_transport_authorized", True)),
+        ("source-post-status", "source-custody.json", lambda o: o["source_finding"].__setitem__("post_expiration_status", "no_waiver")),
+        ("source-expiration", "source-custody.json", lambda o: o["source_finding"].__setitem__("expiration_date", "2026-12-31")),
+        ("source-body-hash", "source-custody.json", lambda o: o["source_custody"].__setitem__("body_sha256", "0" * 64)),
