@@ -1,4 +1,4 @@
-name: TEMP reissue RD-04 North Dakota row-state product on current main
+name: TEMP V2 reissue RD-04 North Dakota row-state product on current main
 
 on:
   pull_request:
@@ -15,14 +15,14 @@ env:
   CARRIER_PARENT: 283c5993cb2ac0bff173c72aba70088c67b2ac3c
   SOURCE_HEAD: 4e180c0593cd2446faf2dc1286b07096d1d8b905
   SOURCE_BRANCH: agent/ssc-rd04-nd-current-public-record-gap-row-state-reconciliation-v1
-  TARGET_BRANCH: staging/ssc-rd04-nd-row-state-reconciliation-current-main-reissue-v1
+  TARGET_BRANCH: staging/ssc-rd04-nd-row-state-reconciliation-current-main-reissue-v2
   WORKFLOW_PATH: .github/workflows/temp-rd04-nd-row-state-current-main-reissue-controller.yml
   SCRIPT_PATH: .tmp/rd04-nd-row-state-current-main-reissue/materialize.py
   TRIGGER_PATH: .tmp/rd04-nd-row-state-current-main-reissue/trigger.json
-  OUT: /tmp/rd04-nd-row-state-current-main-reissue
-  FULL_WORK: /tmp/rd04-nd-row-state-current-main-reissue-full
-  QUAL_WORK: /tmp/rd04-nd-row-state-current-main-reissue-qual
-  STAGE_WORK: /tmp/rd04-nd-row-state-current-main-reissue-stage
+  OUT: /tmp/rd04-nd-row-state-current-main-reissue-v2
+  FULL_WORK: /tmp/rd04-nd-row-state-current-main-reissue-full-v2
+  QUAL_WORK: /tmp/rd04-nd-row-state-current-main-reissue-qual-v2
+  STAGE_WORK: /tmp/rd04-nd-row-state-current-main-reissue-stage-v2
 
 jobs:
   materialize:
@@ -52,7 +52,7 @@ jobs:
           pathlib.Path(sys.argv[1]).write_text(
               json.dumps(
                   {
-                      "schema_version": "ssc-rd04-nd-row-state-current-main-reissue-carrier-start@1",
+                      "schema_version": "ssc-rd04-nd-row-state-current-main-reissue-carrier-start@2",
                       "state": "carrier_started",
                       "event_head_sha": os.environ["EVENT_HEAD_SHA"],
                       "event_base_sha": os.environ["EVENT_BASE_SHA"],
@@ -90,7 +90,8 @@ jobs:
 
           path = pathlib.Path(sys.argv[1])
           text = path.read_text(encoding="utf-8")
-          old = '''    expected = sorted(PRODUCT_PATHS)
+
+          cached_old = '''    expected = sorted(PRODUCT_PATHS)
               assert exact_names(live_main, "HEAD", cwd=FULL_WORK) == expected
               assert exact_status(live_main, "HEAD", cwd=FULL_WORK) == [("A", p) for p in expected]
               run(["git", "diff", "--check", live_main, "HEAD"], cwd=FULL_WORK)
@@ -98,7 +99,7 @@ jobs:
               run(["git", "add", "--", *PRODUCT_PATHS], cwd=FULL_WORK)
               tree = run(["git", "write-tree"], cwd=FULL_WORK)
           '''.replace("              ", "    ")
-          new = '''    expected = sorted(PRODUCT_PATHS)
+          cached_new = '''    expected = sorted(PRODUCT_PATHS)
               run(["git", "add", "--", *PRODUCT_PATHS], cwd=FULL_WORK)
               cached_names = sorted(line for line in run(["git", "diff", "--cached", "--name-only", live_main], cwd=FULL_WORK).splitlines() if line)
               cached_status = sorted(tuple(line.split("\\t", 1)) for line in run(["git", "diff", "--cached", "--name-status", live_main], cwd=FULL_WORK).splitlines() if line)
@@ -107,9 +108,40 @@ jobs:
               run(["git", "diff", "--cached", "--check", live_main], cwd=FULL_WORK)
               tree = run(["git", "write-tree"], cwd=FULL_WORK)
           '''.replace("              ", "    ")
-          if text.count(old) != 1:
-              raise SystemExit(f"runtime patch denominator mismatch: {text.count(old)}")
-          path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+          custody_old = '''    text = replace_once(
+              text,
+              "validation_repair_merge_commit:C.CANONICAL_PARENT,",
+              f"validation_repair_merge_commit:'{OLD_PARENT}',",
+              "builder prior product metadata",
+          )
+          return text
+          '''.replace("          ", "    ")
+          custody_new = '''    text = replace_once(
+              text,
+              "validation_repair_merge_commit:C.CANONICAL_PARENT,",
+              f"validation_repair_merge_commit:'{OLD_PARENT}',",
+              "builder prior product metadata",
+          )
+              text = replace_once(
+                  text,
+                  "decision.prerequisite_satisfaction.validation_repair_merge_commit === C.CANONICAL_PARENT",
+                  f"decision.prerequisite_satisfaction.validation_repair_merge_commit === '{OLD_PARENT}'",
+                  "builder decision validation repair custody",
+              )
+              return text
+          '''.replace("              ", "    ")
+
+          patches = [
+              (cached_old, cached_new, "cached tree validation"),
+              (custody_old, custody_new, "historical validation merge custody"),
+          ]
+          for old, new, label in patches:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"runtime patch denominator mismatch for {label}: {count}")
+              text = text.replace(old, new, 1)
+          path.write_text(text, encoding="utf-8")
           PY
           python -m py_compile "$SCRIPT_PATH"
           python "$SCRIPT_PATH"
@@ -118,7 +150,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd04-nd-row-state-current-main-reissue-v1
+          name: ssc-rd04-nd-row-state-current-main-reissue-v2
           path: ${{ env.OUT }}
           if-no-files-found: error
           include-hidden-files: true
