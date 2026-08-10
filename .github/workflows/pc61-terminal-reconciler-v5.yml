@@ -25,7 +25,7 @@ env:
   RECONCILE_BRANCH: 'agent/pc61-terminal-reconcile-v5'
   RECONCILE_PATH: '.github/workflows/pc61-terminal-reconciler-v5.yml'
   PC60_CANONICAL_MERGE: '283c5993cb2ac0bff173c72aba70088c67b2ac3c'
-  MINIMUM_MATRIX: '55'
+  EXPECTED_MATRIX: '54'
   WORK: '/tmp/pc61-v5'
   REPLAY: '/tmp/pc61-v5-replay'
   PROOF: '/tmp/pc61-exact-postmerge-proof-v5'
@@ -193,10 +193,10 @@ jobs:
             pending=$(jq '[.[] | select(.status!="completed")] | length' "$WORK/matrix.json")
             failed=$(jq '[.[] | select(.status=="completed" and .conclusion!="success")] | length' "$WORK/matrix.json")
             [ "$failed" -gt 0 ] && { jq '[.[]|select(.status=="completed" and .conclusion!="success")|{id,name,conclusion,html_url}]' "$WORK/matrix.json" >&2; exit 1; }
-            [ "$matrix_count" -ge "$MINIMUM_MATRIX" ] && [ "$pending" -eq 0 ] && break
+            [ "$matrix_count" -eq "$EXPECTED_MATRIX" ] && [ "$pending" -eq 0 ] && break
             sleep 15
           done
-          test "$matrix_count" -ge "$MINIMUM_MATRIX"
+          test "$matrix_count" -eq "$EXPECTED_MATRIX"
           test "$pending" -eq 0
           test "$failed" -eq 0
           jq '[.[] | select(.name=="Release checks")]' "$WORK/matrix.json" > "$WORK/release-workflow.json"
@@ -207,6 +207,14 @@ jobs:
           test "$(jq 'length' "$WORK/floor-v59-workflow.json")" -eq 1
           test "$(jq -r '.[0].status' "$WORK/floor-v59-workflow.json")" = completed
           test "$(jq -r '.[0].conclusion' "$WORK/floor-v59-workflow.json")" = success
+          jq '[.[] | select(.name=="Preference custody laboratory floor v58")]' "$WORK/matrix.json" > "$WORK/floor-v58-workflow.json"
+          test "$(jq 'length' "$WORK/floor-v58-workflow.json")" -eq 0
+          grep -Fq "name: Preference custody laboratory floor v58" "$REPLAY/.github/workflows/preference-custody-v58.yml"
+          test "$(grep -cF 'preference-custody-v59' "$REPLAY/.github/workflows/preference-custody-v58.yml" || true)" -eq 0
+          test "$(grep -cF 'owner-login-unicode-casefold-alias-reuse' "$REPLAY/.github/workflows/preference-custody-v58.yml" || true)" -eq 0
+          grep -Fq "from './preference-custody-manifest-v58.mjs';" "$REPLAY/tools/lib/preference-custody-manifest-v59.mjs"
+          grep -Fq 'validatePreferenceCustodyManifestV58Build' "$REPLAY/tools/lib/preference-custody-manifest-v59.mjs"
+          jq -n --argjson expected "$EXPECTED_MATRIX" --argjson observed "$matrix_count" '{schema_version:"pc61-exact-head-matrix-basis@1",expected_workflows:$expected,observed_workflows:$observed,floor_v58:{exact_head_run_expected:false,exact_head_run_observed:false,inherited_path_scoped_workflow:true},floor_v59:{exact_head_run_required:true,recursively_validates_v58:true},release_checks:{exact_head_run_required:true}}' > "$WORK/matrix-basis.json"
 
           gh api --paginate --slurp "/repos/$GH_REPOSITORY/issues/$PRODUCT_PR/comments?per_page=100" > "$WORK/comment-pages.json"
           jq '[.[][]]' "$WORK/comment-pages.json" > "$WORK/comments.json"
@@ -300,6 +308,8 @@ jobs:
           cp "$WORK/matrix.json" "$PROOF/exact-head-matrix.json"
           cp "$WORK/release-workflow.json" "$PROOF/exact-head-release-workflow.json"
           cp "$WORK/floor-v59-workflow.json" "$PROOF/exact-head-floor-v59-workflow.json"
+          cp "$WORK/floor-v58-workflow.json" "$PROOF/exact-head-floor-v58-workflow.json"
+          cp "$WORK/matrix-basis.json" "$PROOF/exact-head-matrix-basis.json"
           cp "$WORK/codex-terminal-comments.json" "$PROOF/codex-terminal-comments.json"
           cp "$WORK/review-threads.json" "$PROOF/review-threads.json"
           cp "$WORK/product-replay.log" "$PROOF/premerge-product-replay.log"
@@ -352,7 +362,7 @@ jobs:
           cmp "$PROOF/canonical-product-blobs.tsv" "$PROOF/live-main-product-blobs.tsv"
           printf '%s\n' "$LIVE" > "$PROOF/live-main.txt"
 
-          jq -n --arg schema_version 'pc61-terminal-receipt@3' --arg status complete --argjson issue 1822 --arg product_pr "$PRODUCT_PR" --arg product_commit "$PRODUCT" --arg product_tree "$PRODUCT_TREE" --arg product_parent "$PARENT" --arg product_parent_tree "$PARENT_TREE" --arg canonical_merge "$MERGE" --arg merge_first_parent "$FIRST" --arg merge_second_parent "$PRODUCT" --arg live_main "$LIVE" --arg matrix "$MATRIX" --arg resolved "$RESOLVED_FRONTIER" --arg next_one "$NEXT_FRONTIER_ONE" --arg next_two "$NEXT_FRONTIER_TWO" --arg preserved_profile "$PRESERVED_PROFILE_API_FRONTIER" --arg preserved_account "$PRESERVED_ACCOUNT_FRONTIER" '{schema_version:$schema_version,status:$status,issue:$issue,product_pr:($product_pr|tonumber),product_commit:$product_commit,product_tree:$product_tree,product_parent:$product_parent,product_parent_tree:$product_parent_tree,canonical_merge:$canonical_merge,merge_first_parent:$merge_first_parent,merge_second_parent:$merge_second_parent,live_main:$live_main,permanent_paths:14,standalone_paths:7,compositional_paths:7,canonical_product_blob_matches:14,workflow_matrix:($matrix|tonumber),minimum_workflow_matrix:55,failed_workflows:0,pending_workflows:0,unresolved_review_threads:0,codex_terminal_positive_disposition:true,control_count:61,base_promotion_requirements:2525,requirements_added:61,final_promotion_requirements:2586,resolved_frontier:$resolved,next_frontiers:[$next_one,$next_two],preserved_profile_api_frontier:$preserved_profile,preserved_account_frontier:$preserved_account,authority:{outside_human_dependency:false,external_contacts:0,external_reviews:0,real_world_evidence:"none",ownership_finding:false,account_state_finding:false,impersonation_finding:false,security_compromise_finding:false,preference_change_finding:false,causal_effect_finding:false,coordination_finding:false,common_purpose_finding:false,intent_finding:false,graph_effect:"none",publication_effect:"none",adoption_effect:"none",binding_public_authority:false}}' > "$PROOF/terminal.json"
+          jq -n --arg schema_version 'pc61-terminal-receipt@3' --arg status complete --argjson issue 1822 --arg product_pr "$PRODUCT_PR" --arg product_commit "$PRODUCT" --arg product_tree "$PRODUCT_TREE" --arg product_parent "$PARENT" --arg product_parent_tree "$PARENT_TREE" --arg canonical_merge "$MERGE" --arg merge_first_parent "$FIRST" --arg merge_second_parent "$PRODUCT" --arg live_main "$LIVE" --arg matrix "$MATRIX" --arg resolved "$RESOLVED_FRONTIER" --arg next_one "$NEXT_FRONTIER_ONE" --arg next_two "$NEXT_FRONTIER_TWO" --arg preserved_profile "$PRESERVED_PROFILE_API_FRONTIER" --arg preserved_account "$PRESERVED_ACCOUNT_FRONTIER" '{schema_version:$schema_version,status:$status,issue:$issue,product_pr:($product_pr|tonumber),product_commit:$product_commit,product_tree:$product_tree,product_parent:$product_parent,product_parent_tree:$product_parent_tree,canonical_merge:$canonical_merge,merge_first_parent:$merge_first_parent,merge_second_parent:$merge_second_parent,live_main:$live_main,permanent_paths:14,standalone_paths:7,compositional_paths:7,canonical_product_blob_matches:14,workflow_matrix:($matrix|tonumber),minimum_workflow_matrix:54,failed_workflows:0,pending_workflows:0,unresolved_review_threads:0,codex_terminal_positive_disposition:true,control_count:61,base_promotion_requirements:2525,requirements_added:61,final_promotion_requirements:2586,resolved_frontier:$resolved,next_frontiers:[$next_one,$next_two],preserved_profile_api_frontier:$preserved_profile,preserved_account_frontier:$preserved_account,authority:{outside_human_dependency:false,external_contacts:0,external_reviews:0,real_world_evidence:"none",ownership_finding:false,account_state_finding:false,impersonation_finding:false,security_compromise_finding:false,preference_change_finding:false,causal_effect_finding:false,coordination_finding:false,common_purpose_finding:false,intent_finding:false,graph_effect:"none",publication_effect:"none",adoption_effect:"none",binding_public_authority:false}}' > "$PROOF/terminal.json"
           (cd "$PROOF" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
 
       - name: Upload v5 exact post-merge proof
