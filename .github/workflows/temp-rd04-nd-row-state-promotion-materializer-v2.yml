@@ -1,0 +1,128 @@
+name: TEMP V2 materialize RD-04 North Dakota derivative row-state promotion
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-rd04-nd-row-state-promotion-materializer-v2.yml'
+      - '.tmp/rd04-nd-row-state-promotion-materializer-v2/**'
+
+permissions:
+  contents: write
+
+env:
+  CANONICAL_PARENT: de81b27c48b0ffec0db37b55e1b6eb9b58290524
+  TARGET_BRANCH: agent/ssc-rd04-nd-row-state-reconciliation-nonworkflow-v2
+  FINAL_BRANCH: agent/ssc-rd04-nd-row-state-reconciliation-product-v2
+  WORKFLOW_PATH: .github/workflows/temp-rd04-nd-row-state-promotion-materializer-v2.yml
+  TRIGGER_PATH: .tmp/rd04-nd-row-state-promotion-materializer-v2/trigger.json
+  CARRIER_PAYLOAD_ROOT: .tmp/rd04-nd-row-state-promotion-materializer-v2
+  CARRIER_PAYLOAD_PATHS: .tmp/rd04-nd-row-state-promotion-materializer-v2/controller-00.b64:.tmp/rd04-nd-row-state-promotion-materializer-v2/controller-01.b64:.tmp/rd04-nd-row-state-promotion-materializer-v2/controller-02.b64:.tmp/rd04-nd-row-state-promotion-materializer-v2/controller-03.b64
+  RUNTIME_ROOT: /tmp/rd04-nd-row-state-promotion-runtime-v2
+  OUT: /tmp/rd04-nd-row-state-promotion-materializer-v2
+  FULL_WORK: /tmp/rd04-nd-row-state-promotion-full-v2
+  QUAL_WORK: /tmp/rd04-nd-row-state-promotion-qualification-v2
+  NON_WORK: /tmp/rd04-nd-row-state-promotion-nonworkflow-v2
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Initialize failure custody
+        shell: bash
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$FULL_WORK" "$QUAL_WORK" "$NON_WORK"
+          mkdir -p "$OUT"
+          python - "$OUT/carrier-start.json" <<'PY'
+          import json
+          import os
+          import pathlib
+          import sys
+
+          pathlib.Path(sys.argv[1]).write_text(
+              json.dumps(
+                  {
+                      "schema_version": "ssc-rd04-nd-row-state-promotion-materializer-start@2",
+                      "state": "carrier_started",
+                      "event_head_sha": os.environ["EVENT_HEAD_SHA"],
+                      "event_base_sha": os.environ["EVENT_BASE_SHA"],
+                      "canonical_parent": os.environ["CANONICAL_PARENT"],
+                      "target_branch": os.environ["TARGET_BRANCH"],
+                      "final_branch": os.environ["FINAL_BRANCH"],
+                  },
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Decode authenticated controller and product payload
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$RUNTIME_ROOT"
+          mkdir -p "$RUNTIME_ROOT"
+          test "$(wc -c < "$CARRIER_PAYLOAD_ROOT/controller-00.b64")" -eq 6339
+          test "$(sha256sum "$CARRIER_PAYLOAD_ROOT/controller-00.b64" | awk '{print $1}')" = '503d76faafa7b7ebf94c9b4ce69d1874e27fead20f652a27857f885f5db02a72'
+          test "$(wc -c < "$CARRIER_PAYLOAD_ROOT/controller-01.b64")" -eq 6339
+          test "$(sha256sum "$CARRIER_PAYLOAD_ROOT/controller-01.b64" | awk '{print $1}')" = 'ddedfa11e59ba074270d43b5c66bdb93b4380d6d1cd47c54bc612dcdd6167003'
+          test "$(wc -c < "$CARRIER_PAYLOAD_ROOT/controller-02.b64")" -eq 6339
+          test "$(sha256sum "$CARRIER_PAYLOAD_ROOT/controller-02.b64" | awk '{print $1}')" = '1a184d72d95e59ee3ca33ec09f96a1881b2a404b6b730d68db8213c07e939130'
+          test "$(wc -c < "$CARRIER_PAYLOAD_ROOT/controller-03.b64")" -eq 6337
+          test "$(sha256sum "$CARRIER_PAYLOAD_ROOT/controller-03.b64" | awk '{print $1}')" = '2799619455c20e00c6be3d5cf2f13d0f8cb32c3c7dc53f1068441912468a5757'
+          cat "$CARRIER_PAYLOAD_ROOT"/controller-0*.b64 > "$RUNTIME_ROOT/controller.b64"
+          test "$(wc -c < "$RUNTIME_ROOT/controller.b64")" -eq 25354
+          test "$(sha256sum "$RUNTIME_ROOT/controller.b64" | awk '{print $1}')" = '9c220dfc318718fbcca46f82043c7e81c97ecac8546929700b8665b083942d98'
+          base64 -d "$RUNTIME_ROOT/controller.b64" > "$RUNTIME_ROOT/controller.tar.xz"
+          test "$(wc -c < "$RUNTIME_ROOT/controller.tar.xz")" -eq 18768
+          test "$(sha256sum "$RUNTIME_ROOT/controller.tar.xz" | awk '{print $1}')" = '5e7a3ad0a40d082e711e1360e16cd0571ea096e1d47c6a96d50bc2fa17287f79'
+          xz -dc "$RUNTIME_ROOT/controller.tar.xz" > "$RUNTIME_ROOT/controller.tar"
+          test "$(wc -c < "$RUNTIME_ROOT/controller.tar")" -eq 51200
+          test "$(sha256sum "$RUNTIME_ROOT/controller.tar" | awk '{print $1}')" = '27ddf6203fc1bcd741b6795359af9811828b0b5a8c299c04c2ed5699b4fa4888'
+          tar -xf "$RUNTIME_ROOT/controller.tar" -C "$RUNTIME_ROOT"
+          test "$(sha256sum "$RUNTIME_ROOT/materialize.py" | awk '{print $1}')" = 'b0a87edc2644bbff62646a55a22183e55ca4a8bef56ac81fa9264129031eebe2'
+          test "$(wc -c < "$RUNTIME_ROOT/product-payload.tar.xz.b64")" -eq 16823
+          test "$(sha256sum "$RUNTIME_ROOT/product-payload.tar.xz.b64" | awk '{print $1}')" = '16e772e8d14aae01a25c36b7c615f5adc91fb31a77b245d106bf47e516df01be'
+          printf 'SCRIPT_PATH=%s\n' "$RUNTIME_ROOT/materialize.py" >> "$GITHUB_ENV"
+          printf 'PAYLOAD_PATH=%s\n' "$RUNTIME_ROOT/product-payload.tar.xz.b64" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Construct, qualify, and publish exact non-workflow product
+        shell: bash
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          python -m py_compile "$SCRIPT_PATH"
+          python "$SCRIPT_PATH"
+
+      - name: Preserve materialization and finalization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-row-state-promotion-materializer-v2
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
