@@ -87,7 +87,10 @@ jobs:
           git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
           LIVE_MAIN="$(git rev-parse origin/main)"
           LIVE_TREE="$(git rev-parse origin/main^{tree})"
-          test "$LIVE_MAIN" = "$CARRIER_PARENT"
+          git merge-base --is-ancestor "$CARRIER_PARENT" "$LIVE_MAIN"
+          git diff --name-only "$CARRIER_PARENT" "$LIVE_MAIN" | LC_ALL=C sort > "$OUT/main-advance-paths.txt"
+          comm -12 "$OUT/archive-paths.txt" "$OUT/main-advance-paths.txt" > "$OUT/main-advance-overlap.txt"
+          test ! -s "$OUT/main-advance-overlap.txt"
           printf '%s\n' "$LIVE_MAIN" > "$OUT/product-parent.txt"
           printf '%s\n' "$LIVE_TREE" > "$OUT/product-parent-tree.txt"
           while IFS= read -r path; do
@@ -100,6 +103,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+          PRODUCT_PARENT="$(cat "$OUT/product-parent.txt")"
           git worktree add --detach "$WORKTREE" origin/main
           cp -a "$PACKAGE"/. "$WORKTREE"/
           cd "$WORKTREE"
@@ -125,9 +129,9 @@ jobs:
           git commit -m 'Add PC-61 owner-login Unicode and namespace-reuse custody'
           PRODUCT="$(git rev-parse HEAD)"
           PRODUCT_TREE="$(git rev-parse HEAD^{tree})"
-          test "$(git show -s --format='%P' HEAD)" = "$CARRIER_PARENT"
-          test "$(git rev-list --count "$CARRIER_PARENT"..HEAD)" = 1
-          git diff --name-status "$CARRIER_PARENT" HEAD > "$OUT/product-delta.tsv"
+          test "$(git show -s --format='%P' HEAD)" = "$PRODUCT_PARENT"
+          test "$(git rev-list --count "$PRODUCT_PARENT"..HEAD)" = 1
+          git diff --name-status "$PRODUCT_PARENT" HEAD > "$OUT/product-delta.tsv"
           cmp "$OUT/index-delta.tsv" "$OUT/product-delta.tsv"
           printf '%s\n' "$PRODUCT" > "$OUT/product-commit.txt"
           printf '%s\n' "$PRODUCT_TREE" > "$OUT/product-tree.txt"
@@ -135,7 +139,7 @@ jobs:
           while IFS= read -r path; do printf '%s\t%s\n' "$path" "$(git rev-parse "HEAD:$path")" >> "$OUT/product-blobs.tsv"; done < "$OUT/archive-paths.txt"
           git push origin "HEAD:refs/heads/$PRODUCT_BRANCH" --force-with-lease="refs/heads/$PRODUCT_BRANCH:"
           git ls-remote --exit-code origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}' | grep -Fx "$PRODUCT"
-          jq -n --arg schema_version 'pc61-product-materialization@1' --arg status 'qualified_and_published' --arg parent "$CARRIER_PARENT" --arg product "$PRODUCT" --arg tree "$PRODUCT_TREE" --arg archive_sha256 "$ARCHIVE_SHA256" --arg path_list_sha256 "$PATH_LIST_SHA256" '{schema_version:$schema_version,status:$status,parent:$parent,product_commit:$product,product_tree:$tree,permanent_paths:14,standalone_paths:7,compositional_paths:7,archive_sha256:$archive_sha256,path_list_sha256:$path_list_sha256,write_capable_permanent_workflows:0,graph_effect:"none",outside_human_dependency:false}' > "$OUT/receipt.json"
+          jq -n --arg schema_version 'pc61-product-materialization@1' --arg status 'qualified_and_published' --arg parent "$PRODUCT_PARENT" --arg product "$PRODUCT" --arg tree "$PRODUCT_TREE" --arg archive_sha256 "$ARCHIVE_SHA256" --arg path_list_sha256 "$PATH_LIST_SHA256" '{schema_version:$schema_version,status:$status,parent:$parent,product_commit:$product,product_tree:$tree,permanent_paths:14,standalone_paths:7,compositional_paths:7,archive_sha256:$archive_sha256,path_list_sha256:$path_list_sha256,write_capable_permanent_workflows:0,graph_effect:"none",outside_human_dependency:false}' > "$OUT/receipt.json"
           (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
       - name: Preserve PC-61 materialization receipt
         if: always()
