@@ -1,0 +1,53 @@
+name: Preference custody owner-login Unicode, confusable, alias, and namespace assurance
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.yml'
+      - 'data/research/preference-custody/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.fixture.json'
+      - 'docs/preference-custody-repository-owner-login-unicode-casefold-alias-reuse-assurance.md'
+      - 'test/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.test.js'
+      - 'tools/compile-preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs'
+      - 'tools/lib/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs'
+      - 'tools/validate-preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.yml'
+      - 'data/research/preference-custody/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.fixture.json'
+      - 'docs/preference-custody-repository-owner-login-unicode-casefold-alias-reuse-assurance.md'
+      - 'test/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.test.js'
+      - 'tools/compile-preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs'
+      - 'tools/lib/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs'
+      - 'tools/validate-preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Compile, validate, and test PC-61
+        run: |
+          node tools/compile-preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs
+          node tools/validate-preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs
+          node test/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+      - name: Preserve deterministic PC-61 build
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc61-owner-login-unicode-confusable-alias-namespace
+          path: |
+            build/research/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.json
+            build/research/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.md
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
