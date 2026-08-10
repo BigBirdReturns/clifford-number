@@ -1,0 +1,850 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.schema.json",
+  "title": "RD-04 North Dakota current public-record-gap one-cell promotion product documents",
+  "description": "Closed root schemas for every JSON document in the one-cell promotion product. Cross-file and Git invariants remain enforced by the deterministic builder, validator, and adversarial suite.",
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "authorityBoundary": {
+      "type": "object",
+      "required": [
+        "source_requests",
+        "route_executions",
+        "source_admissions",
+        "field_terminalizations",
+        "matrix_updates",
+        "row_state_mutations",
+        "row_terminalizations",
+        "class_closed",
+        "cumulative_ledger_effect",
+        "publication_effect",
+        "adoption_effect",
+        "graph_effect",
+        "outside_human_dependency"
+      ],
+      "properties": {
+        "source_requests": {
+          "const": 0
+        },
+        "route_executions": {
+          "const": 0
+        },
+        "source_admissions": {
+          "const": 0
+        },
+        "field_terminalizations": {
+          "const": 1
+        },
+        "matrix_updates": {
+          "const": 1
+        },
+        "row_state_mutations": {
+          "const": 0
+        },
+        "row_terminalizations": {
+          "const": 0
+        },
+        "class_closed": {
+          "const": false
+        },
+        "cumulative_ledger_effect": {
+          "const": "none"
+        },
+        "publication_effect": {
+          "const": "none"
+        },
+        "adoption_effect": {
+          "const": "none"
+        },
+        "graph_effect": {
+          "const": "none"
+        },
+        "outside_human_dependency": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "externalBoundary": {
+      "type": "object",
+      "required": [
+        "cumulative_ledger_effect",
+        "publication_effect",
+        "adoption_effect",
+        "graph_effect",
+        "outside_human_dependency"
+      ],
+      "properties": {
+        "cumulative_ledger_effect": {
+          "const": "none"
+        },
+        "publication_effect": {
+          "const": "none"
+        },
+        "adoption_effect": {
+          "const": "none"
+        },
+        "graph_effect": {
+          "const": "none"
+        },
+        "outside_human_dependency": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "cell": {
+      "type": "object",
+      "required": [
+        "field_ordinal",
+        "field_id",
+        "state",
+        "terminal",
+        "value",
+        "evidence_source_ids",
+        "typed_gap",
+        "authority_effect"
+      ],
+      "properties": {
+        "field_ordinal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9
+        },
+        "field_id": {
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "evidence_complete",
+            "observed",
+            "not_publicly_recovered",
+            "still_open"
+          ]
+        },
+        "terminal": {
+          "type": "boolean"
+        },
+        "value": {},
+        "evidence_source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "typed_gap": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "authority_effect": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "row": {
+      "type": "object",
+      "required": [
+        "unit_ordinal",
+        "unit_id",
+        "postal_code",
+        "state_name",
+        "row_state",
+        "terminal_fields",
+        "open_fields",
+        "cells"
+      ],
+      "properties": {
+        "unit_ordinal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "unit_id": {
+          "type": "string"
+        },
+        "postal_code": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        },
+        "state_name": {
+          "type": "string"
+        },
+        "row_state": {
+          "type": "string"
+        },
+        "terminal_fields": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9
+        },
+        "open_fields": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9
+        },
+        "cells": {
+          "type": "array",
+          "minItems": 9,
+          "maxItems": 9,
+          "items": {
+            "$ref": "#/$defs/cell"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "fileRecord": {
+      "type": "object",
+      "required": [
+        "path",
+        "bytes",
+        "sha256",
+        "git_blob"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "git_blob": {
+          "$ref": "#/$defs/gitSha"
+        }
+      },
+      "additionalProperties": false
+    },
+    "promotionInputCustody": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "canonical_parent",
+        "canonical_parent_tree",
+        "inputs",
+        "candidate_product",
+        "validation_product",
+        "current_north_dakota",
+        "projected_transition",
+        "authority_boundary"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-nd-current-public-record-gap-promotion-input-custody@1"
+        },
+        "wave_id": {
+          "const": "SSC-RD-W03"
+        },
+        "lane_id": {
+          "const": "RD-04"
+        },
+        "class_id": {
+          "const": "RD-04-C02"
+        },
+        "issue": {
+          "const": 1017
+        },
+        "canonical_parent": {
+          "$ref": "#/$defs/gitSha"
+        },
+        "canonical_parent_tree": {
+          "$ref": "#/$defs/gitSha"
+        },
+        "inputs": {
+          "type": "object"
+        },
+        "candidate_product": {
+          "type": "object"
+        },
+        "validation_product": {
+          "type": "object"
+        },
+        "current_north_dakota": {
+          "type": "object"
+        },
+        "projected_transition": {
+          "type": "object"
+        },
+        "authority_boundary": {
+          "$ref": "#/$defs/authorityBoundary"
+        }
+      },
+      "additionalProperties": false
+    },
+    "promotionDecision": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "decision",
+        "candidate_id",
+        "decision_id",
+        "unit_id",
+        "field_id",
+        "current_state",
+        "target_state",
+        "current_cell_sha256",
+        "promoted_cell_sha256",
+        "evidence_source_ids",
+        "typed_gap",
+        "value",
+        "prohibited_inferences",
+        "validation",
+        "row_state_transition",
+        "authority_boundary"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-nd-current-public-record-gap-promotion-decision@1"
+        },
+        "wave_id": {
+          "const": "SSC-RD-W03"
+        },
+        "lane_id": {
+          "const": "RD-04"
+        },
+        "class_id": {
+          "const": "RD-04-C02"
+        },
+        "issue": {
+          "const": 1017
+        },
+        "decision": {
+          "const": "promote_exact_validated_public_record_gap_candidate"
+        },
+        "candidate_id": {
+          "type": "string"
+        },
+        "decision_id": {
+          "type": "string"
+        },
+        "unit_id": {
+          "const": "US-STATE-ND"
+        },
+        "field_id": {
+          "const": "abawd_or_work_requirement_waiver_state_and_governing_period"
+        },
+        "current_state": {
+          "const": "still_open"
+        },
+        "target_state": {
+          "const": "not_publicly_recovered"
+        },
+        "current_cell_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "promoted_cell_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "evidence_source_ids": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "typed_gap": {
+          "const": "complete_current_waiver_state_and_governing_period_not_publicly_recovered_after_fixed_protocol"
+        },
+        "value": {
+          "type": "object"
+        },
+        "prohibited_inferences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "validation": {
+          "type": "object"
+        },
+        "row_state_transition": {
+          "type": "object"
+        },
+        "authority_boundary": {
+          "$ref": "#/$defs/authorityBoundary"
+        }
+      },
+      "additionalProperties": false
+    },
+    "cellPromotionLedger": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "promotion_count",
+        "matrix_update_count",
+        "row_state_mutation_count",
+        "row_terminalization_count",
+        "promotion",
+        "matrix_transition",
+        "authority_boundary"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-nd-current-public-record-gap-cell-promotion-ledger@1"
+        },
+        "wave_id": {
+          "const": "SSC-RD-W03"
+        },
+        "lane_id": {
+          "const": "RD-04"
+        },
+        "class_id": {
+          "const": "RD-04-C02"
+        },
+        "issue": {
+          "const": 1017
+        },
+        "promotion_count": {
+          "const": 1
+        },
+        "matrix_update_count": {
+          "const": 1
+        },
+        "row_state_mutation_count": {
+          "const": 0
+        },
+        "row_terminalization_count": {
+          "const": 0
+        },
+        "promotion": {
+          "type": "object"
+        },
+        "matrix_transition": {
+          "type": "object"
+        },
+        "authority_boundary": {
+          "$ref": "#/$defs/authorityBoundary"
+        }
+      },
+      "additionalProperties": false
+    },
+    "promotedMatrix": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "field_order",
+        "counts",
+        "rows",
+        "current_result",
+        "source_product",
+        "composition_product",
+        "row_state_product",
+        "minimum_frontier_capture_adjudication_product",
+        "minimum_frontier_row_state_product",
+        "five_state_promotion_product",
+        "postpromotion_four_cell_promotion_product",
+        "postpromotion_nd_followup_one_cell_promotion_product",
+        "postpromotion_nd_current_public_record_gap_promotion_product"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-wave03-postpromotion-nd-current-public-record-gap-promoted-partial-field-matrix@1"
+        },
+        "wave_id": {
+          "const": "SSC-RD-W03"
+        },
+        "lane_id": {
+          "const": "RD-04"
+        },
+        "class_id": {
+          "const": "RD-04-C02"
+        },
+        "issue": {
+          "const": 1017
+        },
+        "field_order": {
+          "type": "array",
+          "minItems": 9,
+          "maxItems": 9,
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "counts": {
+          "type": "object"
+        },
+        "rows": {
+          "type": "array",
+          "minItems": 50,
+          "maxItems": 50,
+          "items": {
+            "$ref": "#/$defs/row"
+          }
+        },
+        "current_result": {
+          "type": "object"
+        },
+        "source_product": {
+          "type": "object"
+        },
+        "composition_product": {
+          "type": "object"
+        },
+        "row_state_product": {
+          "type": "object"
+        },
+        "minimum_frontier_capture_adjudication_product": {
+          "type": "object"
+        },
+        "minimum_frontier_row_state_product": {
+          "type": "object"
+        },
+        "five_state_promotion_product": {
+          "type": "object"
+        },
+        "postpromotion_four_cell_promotion_product": {
+          "type": "object"
+        },
+        "postpromotion_nd_followup_one_cell_promotion_product": {
+          "type": "object"
+        },
+        "postpromotion_nd_current_public_record_gap_promotion_product": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    "remainingOpenFieldCensus": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "matrix_sha256",
+        "open_cell_count",
+        "open_substantive_cell_count",
+        "open_row_state_cell_count",
+        "terminal_cell_count",
+        "terminal_substantive_cell_count",
+        "terminal_unit_count",
+        "terminal_unit_ids",
+        "north_dakota",
+        "open_cells",
+        "class_closed",
+        "authority_boundary"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-nd-current-public-record-gap-remaining-open-field-census@1"
+        },
+        "wave_id": {
+          "const": "SSC-RD-W03"
+        },
+        "lane_id": {
+          "const": "RD-04"
+        },
+        "class_id": {
+          "const": "RD-04-C02"
+        },
+        "issue": {
+          "const": 1017
+        },
+        "matrix_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "open_cell_count": {
+          "const": 222
+        },
+        "open_substantive_cell_count": {
+          "const": 182
+        },
+        "open_row_state_cell_count": {
+          "const": 40
+        },
+        "terminal_cell_count": {
+          "const": 228
+        },
+        "terminal_substantive_cell_count": {
+          "const": 118
+        },
+        "terminal_unit_count": {
+          "const": 10
+        },
+        "terminal_unit_ids": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "north_dakota": {
+          "type": "object"
+        },
+        "open_cells": {
+          "type": "array",
+          "minItems": 222,
+          "maxItems": 222,
+          "items": {
+            "type": "object"
+          }
+        },
+        "class_closed": {
+          "const": false
+        },
+        "authority_boundary": {
+          "$ref": "#/$defs/externalBoundary"
+        }
+      },
+      "additionalProperties": false
+    },
+    "promotionSummary": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "state",
+        "candidate_id",
+        "promoted_field",
+        "promoted_state",
+        "typed_gap",
+        "field_terminalizations",
+        "matrix_updates",
+        "row_state_mutations",
+        "row_terminalizations",
+        "counts",
+        "north_dakota",
+        "class_closed",
+        "next_bounded_operation",
+        "authority_boundary"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-nd-current-public-record-gap-promotion-summary@1"
+        },
+        "wave_id": {
+          "const": "SSC-RD-W03"
+        },
+        "lane_id": {
+          "const": "RD-04"
+        },
+        "class_id": {
+          "const": "RD-04-C02"
+        },
+        "issue": {
+          "const": 1017
+        },
+        "state": {
+          "const": "one_exact_validated_candidate_promoted"
+        },
+        "candidate_id": {
+          "type": "string"
+        },
+        "promoted_field": {
+          "type": "string"
+        },
+        "promoted_state": {
+          "const": "not_publicly_recovered"
+        },
+        "typed_gap": {
+          "type": "string"
+        },
+        "field_terminalizations": {
+          "const": 1
+        },
+        "matrix_updates": {
+          "const": 1
+        },
+        "row_state_mutations": {
+          "const": 0
+        },
+        "row_terminalizations": {
+          "const": 0
+        },
+        "counts": {
+          "type": "object"
+        },
+        "north_dakota": {
+          "type": "object"
+        },
+        "class_closed": {
+          "const": false
+        },
+        "next_bounded_operation": {
+          "type": "string"
+        },
+        "authority_boundary": {
+          "$ref": "#/$defs/authorityBoundary"
+        }
+      },
+      "additionalProperties": false
+    },
+    "index": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "wave_id",
+        "lane_id",
+        "class_id",
+        "issue",
+        "promotion_input_custody_path",
+        "promotion_decision_path",
+        "cell_promotion_ledger_path",
+        "promoted_partial_field_matrix_path",
+        "remaining_open_field_census_path",
+        "promotion_summary_path",
+        "counts",
+        "current_result",
+        "next_bounded_operation"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-nd-current-public-record-gap-promotion-index@1"
+        },
+        "wave_id": {
+          "const": "SSC-RD-W03"
+        },
+        "lane_id": {
+          "const": "RD-04"
+        },
+        "class_id": {
+          "const": "RD-04-C02"
+        },
+        "issue": {
+          "const": 1017
+        },
+        "promotion_input_custody_path": {
+          "type": "string"
+        },
+        "promotion_decision_path": {
+          "type": "string"
+        },
+        "cell_promotion_ledger_path": {
+          "type": "string"
+        },
+        "promoted_partial_field_matrix_path": {
+          "type": "string"
+        },
+        "remaining_open_field_census_path": {
+          "type": "string"
+        },
+        "promotion_summary_path": {
+          "type": "string"
+        },
+        "counts": {
+          "type": "object"
+        },
+        "current_result": {
+          "type": "object"
+        },
+        "next_bounded_operation": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "manifest": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "permanent_path_count",
+        "hashed_file_count",
+        "permanent_paths",
+        "hashed_files",
+        "combined_sha256",
+        "authority_boundary"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "ssc-rd04-nd-current-public-record-gap-promotion-manifest@1"
+        },
+        "permanent_path_count": {
+          "const": 14
+        },
+        "hashed_file_count": {
+          "const": 13
+        },
+        "permanent_paths": {
+          "type": "array",
+          "minItems": 14,
+          "maxItems": 14,
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "hashed_files": {
+          "type": "array",
+          "minItems": 13,
+          "maxItems": 13,
+          "items": {
+            "$ref": "#/$defs/fileRecord"
+          }
+        },
+        "combined_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "authority_boundary": {
+          "$ref": "#/$defs/authorityBoundary"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/promotionInputCustody"
+    },
+    {
+      "$ref": "#/$defs/promotionDecision"
+    },
+    {
+      "$ref": "#/$defs/cellPromotionLedger"
+    },
+    {
+      "$ref": "#/$defs/promotedMatrix"
+    },
+    {
+      "$ref": "#/$defs/remainingOpenFieldCensus"
+    },
+    {
+      "$ref": "#/$defs/promotionSummary"
+    },
+    {
+      "$ref": "#/$defs/index"
+    },
+    {
+      "$ref": "#/$defs/manifest"
+    }
+  ]
+}
