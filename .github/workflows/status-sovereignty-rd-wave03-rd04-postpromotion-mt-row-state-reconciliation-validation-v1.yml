@@ -1,4 +1,4 @@
-name: Validate RD-04 Montana row-state reconciliation candidate v1
+name: Qualify RD-04 Montana validation canonical-custody repair
 
 on:
   pull_request:
@@ -26,15 +26,19 @@ permissions:
   contents: read
 
 env:
-  CANONICAL_PARENT: e62de80e187f9be037cbdd3a4b942b5840d223de
-  CANONICAL_PARENT_TREE: 0d1f8369e2c68d18b11a8f375903ff597ea8ccdb
+  HISTORICAL_PARENT: e62de80e187f9be037cbdd3a4b942b5840d223de
+  VALIDATION_BASE: bc3cf04459bb0d18829f376c9b937693b521e444
+  VALIDATION_PRODUCT: a933ceacbfd9753401a7e9875c9f3048237c2014
+  REPAIR_PARENT: 5cbe9d8628efbc8c9fa85027876be77e77fbf0ef
   MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/promoted-partial-field-matrix.json
   MATRIX_BLOB: 6ba11a6025021e9df8ac6535be8c42499654c233
+  WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1.yml
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/product-manifest.json
   VALIDATOR: tools/validate-status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-v1.py
-  OUT: /tmp/rd04-mt-row-state-validation-v1
+  OUT: /tmp/rd04-mt-validation-canonical-custody-repair-v1
 
 jobs:
-  validate:
+  qualify-repair:
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     steps:
@@ -48,46 +52,103 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - name: Bind exact validation topology and canonical Montana row
+      - name: Bind exact two-commit repair topology and live matrix custody
         shell: bash
         run: |
           set -Eeuo pipefail
           rm -rf "$OUT" && mkdir -p "$OUT"
+
           EVENT='${{ github.event_name }}'
           if [ "$EVENT" = pull_request ]; then
-            PRODUCT_COMMIT='${{ github.event.pull_request.head.sha }}'
+            REPAIR_COMMIT='${{ github.event.pull_request.head.sha }}'
             BASE_SHA='${{ github.event.pull_request.base.sha }}'
-            test "$(git rev-parse HEAD)" = "$PRODUCT_COMMIT"
+            test "$(git rev-parse HEAD)" = "$REPAIR_COMMIT"
             git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
             test "$BASE_SHA" = "$(git rev-parse origin/main)"
           else
             read -r P1 P2 EXTRA <<< "$(git show -s --format='%P' HEAD)"
             test -n "$P1" && test -n "$P2" && test -z "${EXTRA:-}"
-            BASE_SHA="$P1"; PRODUCT_COMMIT="$P2"
+            BASE_SHA="$P1"
+            REPAIR_COMMIT="$P2"
           fi
-          test "$(git show -s --format='%P' "$PRODUCT_COMMIT")" = "$CANONICAL_PARENT"
-          git merge-base --is-ancestor "$CANONICAL_PARENT" "$BASE_SHA"
-          test "$(git rev-parse "$CANONICAL_PARENT^{tree}")" = "$CANONICAL_PARENT_TREE"
-          EXPECTED="$(printf '%s\n' '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1.yml' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/current-row-custody.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/product-manifest.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/row-state-validation.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/summary.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/validated-row-state-protocol.json' 'tools/validate-status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-v1.py')"
-          test "$(git diff --name-only "$CANONICAL_PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort)" = "$EXPECTED"
-          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort)" = "$EXPECTED"
-          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" "$PRODUCT_COMMIT")"
-          git diff --check "$CANONICAL_PARENT" "$PRODUCT_COMMIT"
-          git diff --name-only "$CANONICAL_PARENT" "$BASE_SHA" | LC_ALL=C sort > "$OUT/intervening-paths.txt"
-          printf '%s\n' "$EXPECTED" > "$OUT/product-paths.txt"
-          test -z "$(comm -12 "$OUT/product-paths.txt" "$OUT/intervening-paths.txt")"
-          test "$(git rev-parse "$PRODUCT_COMMIT:$MATRIX_PATH")" = "$MATRIX_BLOB"
+
+          WORKFLOW_COMMIT="$(git rev-parse "$REPAIR_COMMIT^")"
+          PRODUCT_PARENT="$(git rev-parse "$WORKFLOW_COMMIT^")"
+          test "$PRODUCT_PARENT" = "$REPAIR_PARENT"
+          test "$(git show -s --format='%P' "$WORKFLOW_COMMIT")" = "$REPAIR_PARENT"
+          test "$(git show -s --format='%P' "$REPAIR_COMMIT")" = "$WORKFLOW_COMMIT"
+          test "$(git show -s --format='%P' "$VALIDATION_PRODUCT")" = "$HISTORICAL_PARENT"
+          test "$(git show -s --format='%P' "$REPAIR_PARENT")" = "$VALIDATION_BASE $VALIDATION_PRODUCT"
+          git merge-base --is-ancestor "$REPAIR_PARENT" "$BASE_SHA"
+
+          REPAIR_PATHS="$(printf '%s\n' "$WORKFLOW_PATH" "$MANIFEST_PATH" | LC_ALL=C sort)"
+          test "$(git diff --name-only "$REPAIR_PARENT" "$REPAIR_COMMIT" | LC_ALL=C sort)" = "$REPAIR_PATHS"
+          test "$(git diff --name-only --diff-filter=M "$REPAIR_PARENT" "$REPAIR_COMMIT" | LC_ALL=C sort)" = "$REPAIR_PATHS"
+          test -z "$(git diff --name-only --diff-filter=ADTCRUXB "$REPAIR_PARENT" "$REPAIR_COMMIT")"
+          test "$(git diff --name-only "$REPAIR_PARENT" "$WORKFLOW_COMMIT")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=M "$REPAIR_PARENT" "$WORKFLOW_COMMIT")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only "$WORKFLOW_COMMIT" "$REPAIR_COMMIT")" = "$MANIFEST_PATH"
+          test "$(git diff --name-only --diff-filter=M "$WORKFLOW_COMMIT" "$REPAIR_COMMIT")" = "$MANIFEST_PATH"
+          git diff --check "$REPAIR_PARENT" "$REPAIR_COMMIT"
+
+          printf '%s\n' "$REPAIR_PATHS" > "$OUT/repair-paths.txt"
+          git diff --name-only "$REPAIR_PARENT" "$BASE_SHA" | LC_ALL=C sort > "$OUT/intervening-paths.txt"
+          test -z "$(comm -12 "$OUT/repair-paths.txt" "$OUT/intervening-paths.txt")"
+
+          FROZEN_PATHS="$(printf '%s\n' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/current-row-custody.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/row-state-validation.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/validated-row-state-protocol.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/summary.json' \
+            'tools/validate-status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-v1.py' | LC_ALL=C sort)"
+          printf '%s\n' "$FROZEN_PATHS" > "$OUT/frozen-paths.txt"
+
+          while IFS= read -r FROZEN_PATH; do
+            REPAIR_PARENT_BLOB="$(git rev-parse "$REPAIR_PARENT:$FROZEN_PATH")"
+            test "$(git rev-parse "$REPAIR_COMMIT:$FROZEN_PATH")" = "$REPAIR_PARENT_BLOB"
+            test "$(git rev-parse "$BASE_SHA:$FROZEN_PATH")" = "$REPAIR_PARENT_BLOB"
+          done <<< "$FROZEN_PATHS"
+
+          test "$(git rev-parse "$VALIDATION_PRODUCT:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          test "$(git rev-parse "$VALIDATION_BASE:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          test "$(git rev-parse "$REPAIR_PARENT:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          test "$(git rev-parse "$REPAIR_COMMIT:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          test "$(git rev-parse "$BASE_SHA:$MATRIX_PATH")" = "$MATRIX_BLOB"
+
           if [ "$EVENT" = push ]; then
-            test "$(git diff --name-only "$BASE_SHA" HEAD | LC_ALL=C sort)" = "$EXPECTED"
-            while IFS= read -r PRODUCT_PATH; do test "$(git rev-parse "HEAD:$PRODUCT_PATH")" = "$(git rev-parse "$PRODUCT_COMMIT:$PRODUCT_PATH")"; done <<< "$EXPECTED"
+            test "$(git diff --name-only "$BASE_SHA" HEAD | LC_ALL=C sort)" = "$REPAIR_PATHS"
+            test "$(git diff --name-only --diff-filter=M "$BASE_SHA" HEAD | LC_ALL=C sort)" = "$REPAIR_PATHS"
+            test -z "$(git diff --name-only --diff-filter=ADTCRUXB "$BASE_SHA" HEAD)"
+            while IFS= read -r REPAIR_PATH; do
+              test "$(git rev-parse "HEAD:$REPAIR_PATH")" = "$(git rev-parse "$REPAIR_COMMIT:$REPAIR_PATH")"
+            done <<< "$REPAIR_PATHS"
+            test "$(git rev-parse "HEAD:$MATRIX_PATH")" = "$MATRIX_BLOB"
           fi
-      - name: Validate request-free candidate and refusal surface
+
+          git show -s --format='%H%n%P%n%T%n%s' "$REPAIR_PARENT" > "$OUT/repair-parent.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$WORKFLOW_COMMIT" > "$OUT/workflow-commit.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$REPAIR_COMMIT" > "$OUT/repair-commit.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$BASE_SHA" > "$OUT/base-commit.txt"
+          printf '%s\n' "$MATRIX_BLOB" > "$OUT/base-matrix-blob.txt"
+
+      - name: Replay candidate, refusals, and repository release gate
         shell: bash
         run: |
           set -Eeuo pipefail
           python -m py_compile "$VALIDATOR"
           VALIDATION_HEAD="$(git rev-parse HEAD)" python "$VALIDATOR" | tee "$OUT/validation-receipt.json"
-          jq -e '.state == "qualified_request_free_montana_row_state_candidate" and .adversarial_refusals == 26 and .projected_terminal_cells == 230 and .projected_terminal_units == 12 and .promotion_executed_here == false and .class_closed == false' "$OUT/validation-receipt.json" >/dev/null
+          jq -e '
+            .state == "qualified_request_free_montana_row_state_candidate" and
+            .adversarial_refusals == 26 and
+            .projected_terminal_cells == 230 and
+            .projected_terminal_units == 12 and
+            .promotion_executed_here == false and
+            .class_closed == false and
+            .source_requests == 0 and
+            .matrix_updates == 0 and
+            .row_state_mutations == 0 and
+            .row_terminalizations == 0
+          ' "$OUT/validation-receipt.json" >/dev/null
           npm run release:check > "$OUT/release-check.log" 2>&1
           git reset --hard HEAD
           git clean -fdx
@@ -95,11 +156,12 @@ jobs:
           VALIDATION_HEAD="$(git rev-parse HEAD)" python "$VALIDATOR" > "$OUT/post-release-validation-receipt.json"
           cmp "$OUT/validation-receipt.json" "$OUT/post-release-validation-receipt.json"
           (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
-      - name: Preserve exact Montana validation receipt
+
+      - name: Preserve exact canonical-custody repair receipt
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd04-mt-row-state-reconciliation-validation-v1
+          name: ssc-rd04-mt-validation-canonical-custody-repair-v1
           path: ${{ env.OUT }}
           if-no-files-found: error
           include-hidden-files: true
