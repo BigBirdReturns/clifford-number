@@ -1,0 +1,70 @@
+name: TEMP repair exact RD-04 North Dakota current-result counters v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - agent/ssc-rd04-nd-current-result-repair-base-v1
+    paths:
+      - '.github/workflows/temp-rd04-nd-current-result-repair-v1.yml'
+      - '.tmp/rd04-nd-current-result-repair-v1/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd04-nd-current-result-repair-v1
+  cancel-in-progress: false
+
+env:
+  CANONICAL_PARENT: 77aef3313e85e1fddc68805a9f22252ff147b4e8
+  EXPECTED_PRODUCT_HEAD: 91ec5f11266b24cc935a33566db1c9d5db258e75
+  EXPECTED_PRODUCT_TREE: 5210b12a1158af5ac4333d5ef2bb9131bd9c2fb2
+  PRODUCT_BRANCH: agent/ssc-rd04-nd-current-public-record-gap-promotion-v1
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion
+  WORKFLOW_PATH: .github/workflows/temp-rd04-nd-current-result-repair-v1.yml
+  SCRIPT_PATH: .tmp/rd04-nd-current-result-repair-v1/repair.py
+  TRIGGER_PATH: .tmp/rd04-nd-current-result-repair-v1/trigger.json
+  OUT: /tmp/ssc-rd04-nd-current-result-repair-v1
+  PRODUCT_WORK: /tmp/ssc-rd04-nd-current-result-repair-product-v1
+
+jobs:
+  repair:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-current-result-repair-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-current-result-repair-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Repair, qualify, and publish exact replacement product
+        shell: bash
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$PRODUCT_WORK"
+          mkdir -p "$OUT"
+          python "$SCRIPT_PATH"
+      - name: Preserve repair and qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-current-result-counter-repair-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
