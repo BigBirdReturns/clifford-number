@@ -1,0 +1,341 @@
+name: TEMP prove RD-04 North Dakota current public-record-gap promotion postmerge v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-prove-ssc-rd04-nd-current-public-record-gap-promotion-postmerge-v1.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: temp-prove-rd04-nd-current-public-record-gap-promotion-postmerge-v1
+  cancel-in-progress: false
+
+env:
+  MERGE: 4eaa66d7a0f025e0c4ec797e9925634a22d9e49e
+  PARENT: 77aef3313e85e1fddc68805a9f22252ff147b4e8
+  PRODUCT: ec9ec9f6cfc3180adcf816ae91e4bbf14df0e4dd
+  TREE: 51c46f38071f7f5193ab7856a193095a86389356
+  BRANCH: observer/ssc-rd04-nd-current-public-record-gap-promotion-postmerge-v1
+  OBSERVER: .github/workflows/temp-prove-ssc-rd04-nd-current-public-record-gap-promotion-postmerge-v1.yml
+  STANDING: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.yml
+  WORKFLOW_NAME: Qualify RD-04 North Dakota current public-record-gap promotion
+  NATIVE_ARTIFACT_NAME: ssc-rd04-nd-current-public-record-gap-promotion-v1
+  PROOF_ARTIFACT_NAME: ssc-rd04-nd-current-public-record-gap-promotion-postmerge-proof-v1
+  ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion
+  BUILD: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs
+  VALIDATE: tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs
+  TEST: test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.test.js
+
+jobs:
+  prove:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'observer/ssc-rd04-nd-current-public-record-gap-promotion-postmerge-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: '${{ github.event.pull_request.head.sha }}'
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Prove canonical merge, native standing run, artifact, replay, and accounting
+        id: proof
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          OUT="${RUNNER_TEMP}/rd04-nd-current-gap-postmerge-v1"
+          X="$OUT/native-artifact"
+          REPLAY="$OUT/replay-generated"
+          rm -rf "$OUT"
+          mkdir -p "$X" "$REPLAY"
+          exec > >(tee "$OUT/proof.log") 2>&1
+          stage=bootstrap
+          fail() {
+            code=$?
+            trap - ERR
+            set +e
+            printf '%s\n' "$code" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            jq -n \
+              --arg stage "$stage" \
+              --argjson code "$code" \
+              --arg merge "$MERGE" \
+              '{schema_version:"ssc-rd04-nd-current-public-record-gap-promotion-postmerge-proof@1",
+                state:"failed_closed",failed_or_final_stage:$stage,exit_code:$code,
+                canonical_merge:$merge,field_terminalizations:0,matrix_updates:0,
+                row_state_mutations:0,row_terminalizations:0,class_closed:false,
+                source_requests:0,route_executions:0,source_admissions:0,
+                outside_human_dependency:false}' > "$OUT/receipt.json"
+            exit "$code"
+          }
+          trap fail ERR
+          set -Eeuo pipefail
+
+          stage=topology
+          test "${{ github.event.pull_request.head.ref }}" = "$BRANCH"
+          test "$(git rev-parse HEAD^)" = "$MERGE"
+          test "$(git rev-list --count "$MERGE"..HEAD)" -eq 1
+          test "$(git diff --name-only "$MERGE" HEAD)" = "$OBSERVER"
+          test "$(git diff --name-only --diff-filter=A "$MERGE" HEAD)" = "$OBSERVER"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$MERGE" HEAD)"
+          git diff --check "$MERGE" HEAD
+          git fetch --force --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$MERGE"
+          read -r P1 P2 EXTRA <<< "$(git show -s --format='%P' "$MERGE")"
+          test "$P1" = "$PARENT"
+          test "$P2" = "$PRODUCT"
+          test -z "${EXTRA:-}"
+          test "$(git rev-parse "$MERGE^{tree}")" = "$TREE"
+          test "$(git rev-parse "$PRODUCT^")" = "$PARENT"
+          test "$(git rev-parse "$PRODUCT^{tree}")" = "$TREE"
+          git diff --exit-code "$PRODUCT" "$MERGE"
+          cat > "$OUT/expected-product-paths" <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/cell-promotion-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promoted-partial-field-matrix.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promotion-decision.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promotion-input-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promotion-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/remaining-open-field-census.json
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs
+          EOF
+          sed -i 's/^          //' "$OUT/expected-product-paths"
+          LC_ALL=C sort -o "$OUT/expected-product-paths" "$OUT/expected-product-paths"
+          git diff --name-only "$PARENT" "$PRODUCT" | LC_ALL=C sort > "$OUT/product-paths"
+          diff -u "$OUT/expected-product-paths" "$OUT/product-paths"
+          test "$(git diff --name-only --diff-filter=A "$PARENT" "$PRODUCT" | wc -l)" -eq 14
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$PARENT" "$PRODUCT")"
+          test -z "$(grep -E '(^|/)(\.tmp|\.trigger)(/|$)' "$OUT/product-paths" || true)"
+
+          stage=native_standing_run
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$MERGE&event=push&per_page=100" > "$OUT/runs.json"
+          jq --arg name "$WORKFLOW_NAME" --arg path "$STANDING" --arg head "$MERGE" \
+            '[.workflow_runs[] |
+              select(.name==$name and .path==$path and .head_sha==$head and
+                     .head_branch=="main" and .event=="push")] |
+             sort_by(.run_started_at) | reverse | .[0]' \
+            "$OUT/runs.json" > "$OUT/run.json"
+          RUN_ID="$(jq -r .id "$OUT/run.json")"
+          test "$RUN_ID" != null
+          jq -e --arg head "$MERGE" \
+            '.status=="completed" and .conclusion=="success" and
+             .head_sha==$head and .head_branch=="main" and .event=="push"' \
+            "$OUT/run.json" >/dev/null
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs?per_page=100" > "$OUT/jobs.json"
+          jq '[.jobs[] | select(.name=="validate")] | .[0]' "$OUT/jobs.json" > "$OUT/job.json"
+          jq -e '.status=="completed" and .conclusion=="success"' "$OUT/job.json" >/dev/null
+          for name in \
+            'Bind exact product topology and canonical inputs' \
+            'Rebuild and validate exact one-cell promotion' \
+            'Preserve exact qualification receipt'; do
+            jq -e --arg name "$name" \
+              '[.steps[] | select(.name==$name and .status=="completed" and .conclusion=="success")] | length==1' \
+              "$OUT/job.json" >/dev/null
+          done
+
+          stage=native_artifact
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/artifacts?per_page=100" > "$OUT/artifacts.json"
+          jq --arg name "$NATIVE_ARTIFACT_NAME" \
+            '[.artifacts[] | select(.name==$name and .expired==false)] | .[0]' \
+            "$OUT/artifacts.json" > "$OUT/artifact.json"
+          ARTIFACT_ID="$(jq -r .id "$OUT/artifact.json")"
+          DIGEST="$(jq -r .digest "$OUT/artifact.json")"
+          ARTIFACT_BYTES="$(jq -r .size_in_bytes "$OUT/artifact.json")"
+          test "$ARTIFACT_ID" != null
+          test "$ARTIFACT_BYTES" -gt 0
+          test "${DIGEST#sha256:}" != "$DIGEST"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$OUT/artifact.zip"
+          ZIP_SHA="$(sha256sum "$OUT/artifact.zip" | cut -d' ' -f1)"
+          test "$ZIP_SHA" = "${DIGEST#sha256:}"
+          unzip -t "$OUT/artifact.zip" > "$OUT/zip-test.log"
+          unzip -q "$OUT/artifact.zip" -d "$X"
+          test -s "$X/SHA256SUMS"
+          (cd "$X" && sha256sum -c SHA256SUMS) > "$OUT/native-internal-checks.log"
+          test "$(cat "$X/product-commit.txt")" = "$PRODUCT"
+          jq -e \
+            '.state=="qualified_one_cell_promotion" and
+             .terminal_cells==228 and .open_cells==222 and
+             .nd_terminal_fields==8 and .nd_open_fields==1 and
+             .nd_row_state=="still_open"' \
+            "$X/validator.json" >/dev/null
+          jq -e \
+            '.state=="qualified_one_cell_promotion" and
+             .terminal_cells==228 and .open_cells==222 and
+             .nd_terminal_fields==8 and .nd_open_fields==1 and
+             .nd_row_state=="still_open"' \
+            "$X/post-release-validator.json" >/dev/null
+          jq -e \
+            '.state=="builder_independence_schema_root_exact_manifest_inventory_and_adversarial_refusals_complete" and
+             .refusals==38' \
+            "$X/adversarial.json" >/dev/null
+
+          stage=replay
+          node --check "$BUILD"
+          node --check "$VALIDATE"
+          node --check "$TEST"
+          node "$BUILD" --out "$REPLAY" > "$OUT/replay-builder.json"
+          for name in \
+            promotion-input-custody.json \
+            promotion-decision.json \
+            cell-promotion-ledger.json \
+            promoted-partial-field-matrix.json \
+            remaining-open-field-census.json \
+            promotion-summary.json \
+            index.json; do
+            cmp "$REPLAY/$name" "$ROOT/$name"
+          done
+          node "$VALIDATE" | tee "$OUT/replay-validator.json"
+          node "$TEST" | tee "$OUT/replay-adversarial.json"
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check > "$OUT/replay-release-check.log" 2>&1
+
+          stage=accounting
+          node - <<'NODE'
+          const fs = require('fs');
+          const root = 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion';
+          const read = name => JSON.parse(fs.readFileSync(`${root}/${name}`, 'utf8'));
+          const summary = read('promotion-summary.json');
+          const matrix = read('promoted-partial-field-matrix.json');
+          const manifest = read('product-manifest.json');
+          if (summary.state !== 'one_exact_validated_candidate_promoted') throw new Error('summary state');
+          if (summary.field_terminalizations !== 1 || summary.matrix_updates !== 1) throw new Error('effect count');
+          if (summary.row_state_mutations !== 0 || summary.row_terminalizations !== 0 || summary.class_closed !== false) throw new Error('row/class effect');
+          const c = matrix.counts;
+          if (c.materialized_cells !== 450 || c.terminal_cells !== 228 || c.still_open_cells !== 222 ||
+              c.terminal_substantive_cells !== 118 || c.still_open_substantive_cells !== 182 ||
+              c.terminal_units !== 10 || c.class_closed !== false) throw new Error('matrix count');
+          const nd = matrix.rows.find(row => row.unit_id === 'US-STATE-ND');
+          if (!nd || nd.terminal_fields !== 8 || nd.open_fields !== 1 || nd.row_state !== 'still_open') throw new Error('ND row');
+          const target = nd.cells.find(cell => cell.field_id === 'abawd_or_work_requirement_waiver_state_and_governing_period');
+          const rowState = nd.cells.find(cell => cell.field_id === 'field_and_row_terminal_state');
+          if (target.state !== 'not_publicly_recovered' || target.terminal !== true) throw new Error('target');
+          if (rowState.state !== 'still_open' || rowState.terminal !== false) throw new Error('row state');
+          if (manifest.permanent_path_count !== 14 || manifest.hashed_file_count !== 13 ||
+              manifest.permanent_paths.length !== 14 || manifest.hashed_files.length !== 13) throw new Error('manifest denominator');
+          for (const obj of [summary.authority_boundary, manifest.authority_boundary]) {
+            if (obj.source_requests !== 0 || obj.route_executions !== 0 || obj.source_admissions !== 0 ||
+                obj.field_terminalizations !== 1 || obj.matrix_updates !== 1 ||
+                obj.row_state_mutations !== 0 || obj.row_terminalizations !== 0 ||
+                obj.class_closed !== false || obj.cumulative_ledger_effect !== 'none' ||
+                obj.publication_effect !== 'none' || obj.adoption_effect !== 'none' ||
+                obj.graph_effect !== 'none' || obj.outside_human_dependency !== false) throw new Error('authority boundary');
+          }
+          NODE
+
+          stage=clean
+          git restore --staged --worktree .
+          git clean -fdx
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          node "$VALIDATE" > /dev/null
+          node "$TEST" > /dev/null
+          node tools/validate-no-magic-human-gate.mjs > /dev/null
+          test "$(git rev-parse origin/main)" = "$MERGE"
+
+          stage=complete
+          trap - ERR
+          printf '0\n' > "$OUT/EXIT_CODE"
+          printf 'complete\n' > "$OUT/STAGE"
+          jq -n \
+            --arg merge "$MERGE" \
+            --arg parent "$PARENT" \
+            --arg product "$PRODUCT" \
+            --arg tree "$TREE" \
+            --argjson run "$RUN_ID" \
+            --argjson artifact "$ARTIFACT_ID" \
+            --argjson artifact_bytes "$ARTIFACT_BYTES" \
+            --arg digest "$DIGEST" \
+            --arg zip "$ZIP_SHA" \
+            '{schema_version:"ssc-rd04-nd-current-public-record-gap-promotion-postmerge-proof@1",
+              state:"canonical_postmerge_proved",failed_or_final_stage:"complete",exit_code:0,
+              canonical_merge:$merge,canonical_parent:$parent,product_commit:$product,canonical_tree:$tree,
+              permanent_paths:14,addition_only:true,temporary_paths:0,
+              native_push_run_id:$run,native_push_conclusion:"success",
+              native_artifact_id:$artifact,native_artifact_bytes:$artifact_bytes,
+              native_artifact_digest:$digest,native_artifact_zip_sha256:$zip,
+              native_steps_authenticated:3,native_artifact_internal_checks:true,
+              adversarial_refusals:38,terminal_cells_before:227,terminal_cells_after:228,
+              still_open_cells_before:223,still_open_cells_after:222,
+              terminal_substantive_cells_before:117,terminal_substantive_cells_after:118,
+              still_open_substantive_cells_before:183,still_open_substantive_cells_after:182,
+              terminal_units_before:10,terminal_units_after:10,
+              north_dakota_terminal_fields_before:7,north_dakota_terminal_fields_after:8,
+              north_dakota_open_fields_before:2,north_dakota_open_fields_after:1,
+              north_dakota_row_state:"still_open",
+              field_terminalizations:1,matrix_updates:1,row_state_mutations:0,row_terminalizations:0,
+              class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,
+              publication_effect:"none",adoption_effect:"none",graph_effect:"none",
+              source_requests:0,route_executions:0,source_admissions:0}' > "$OUT/receipt.json"
+
+      - name: Seal proof custody
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/rd04-nd-current-gap-postmerge-v1"
+          test -s "$OUT/receipt.json"
+          test -s "$OUT/EXIT_CODE"
+          test -s "$OUT/STAGE"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+
+      - name: Upload proof custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PROOF_ARTIFACT_NAME }}
+          path: ${{ runner.temp }}/rd04-nd-current-gap-postmerge-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal success
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/rd04-nd-current-gap-postmerge-v1"
+          test "${{ steps.proof.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e \
+            '.state=="canonical_postmerge_proved" and
+             .failed_or_final_stage=="complete" and .exit_code==0 and
+             .canonical_merge=="4eaa66d7a0f025e0c4ec797e9925634a22d9e49e" and
+             .canonical_parent=="77aef3313e85e1fddc68805a9f22252ff147b4e8" and
+             .product_commit=="ec9ec9f6cfc3180adcf816ae91e4bbf14df0e4dd" and
+             .canonical_tree=="51c46f38071f7f5193ab7856a193095a86389356" and
+             .native_push_conclusion=="success" and
+             .permanent_paths==14 and .addition_only==true and .temporary_paths==0 and
+             .adversarial_refusals==38 and
+             .terminal_cells_after==228 and .still_open_cells_after==222 and
+             .terminal_substantive_cells_after==118 and .still_open_substantive_cells_after==182 and
+             .north_dakota_terminal_fields_after==8 and .north_dakota_open_fields_after==1 and
+             .north_dakota_row_state=="still_open" and
+             .field_terminalizations==1 and .matrix_updates==1 and
+             .row_state_mutations==0 and .row_terminalizations==0 and
+             .class_closed==false and .cumulative_ledger_effect=="none" and
+             .publication_effect=="none" and .adoption_effect=="none" and .graph_effect=="none" and
+             .source_requests==0 and .route_executions==0 and .source_admissions==0 and
+             .outside_human_dependency==false' \
+            "$OUT/receipt.json" >/dev/null
