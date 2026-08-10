@@ -1,4 +1,4 @@
-name: TEMP prove canonical RD-04 North Dakota row-state reconciliation v2
+name: TEMP prove canonical RD-04 North Dakota row-state reconciliation v2 repair
 
 on:
   pull_request:
@@ -53,6 +53,50 @@ jobs:
           set -Eeuo pipefail
           rm -rf "$OUT" "$CANONICAL_WORK"
           mkdir -p "$OUT"
+          python - "$SCRIPT_PATH" <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import sys
+
+          path = pathlib.Path(sys.argv[1])
+          before = path.read_bytes()
+          text = before.decode("utf-8")
+          patches = [
+              (
+                  'parents = run(["git", "show", "-s", "--format=%P", CANONICAL_MERGE).split()',
+                  'parents = run(["git", "show", "-s", "--format=%P", CANONICAL_MERGE]).split()',
+                  "merge-parent syntax",
+              ),
+              (
+                  'assert run(["git", "rev-list", "--count", f"{CANONICAL_MERGE}..{base}"]) == "2"',
+                  'assert run(["git", "rev-list", "--count", f"{CANONICAL_MERGE}..{base}"]) == "3"',
+                  "observer-base repair-commit denominator",
+              ),
+          ]
+          applied = []
+          for old, new, label in patches:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"runtime repair denominator mismatch for {label}: {count}")
+              text = text.replace(old, new, 1)
+              applied.append(label)
+          after = text.encode("utf-8")
+          path.write_bytes(after)
+          receipt = {
+              "schema_version": "ssc-rd04-nd-row-state-canonical-proof-runtime-repair@1",
+              "state": "exact_observer_runtime_repair_applied",
+              "script_path": str(path),
+              "patches": applied,
+              "before_sha256": hashlib.sha256(before).hexdigest(),
+              "after_sha256": hashlib.sha256(after).hexdigest(),
+          }
+          pathlib.Path(os.environ["OUT"], "observer-runtime-repair.json").write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
           python -m py_compile "$SCRIPT_PATH"
           python "$SCRIPT_PATH"
 
@@ -60,7 +104,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd04-nd-row-state-canonical-proof-v2
+          name: ssc-rd04-nd-row-state-canonical-proof-v2-repair
           path: ${{ env.OUT }}
           if-no-files-found: error
           include-hidden-files: true
