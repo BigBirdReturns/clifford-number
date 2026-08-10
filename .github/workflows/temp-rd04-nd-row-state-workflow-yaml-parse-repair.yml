@@ -1,0 +1,72 @@
+name: TEMP qualify RD-04 North Dakota standing-workflow YAML repair
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-rd04-nd-row-state-workflow-yaml-parse-repair.yml'
+      - '.tmp/rd04-nd-row-state-workflow-yaml-parse-repair/controller.sh.gz'
+
+permissions:
+  contents: write
+
+env:
+  CANONICAL_MAIN: 283c5993cb2ac0bff173c72aba70088c67b2ac3c
+  CANONICAL_MAIN_TREE: 80a04c3d6a59816e9f7c99e585e077c92df42dbd
+  SOURCE_PRODUCT: cc07834fcb7f54a59482538b78260b3eb03993e9
+  SOURCE_PRODUCT_TREE: 35dfc711caf69844a3de93a99b763d32988e29be
+  STAGING_BRANCH: staging/ssc-rd04-nd-row-state-workflow-yaml-parse-repair-v1
+  WORKFLOW_PATH: .github/workflows/temp-rd04-nd-row-state-workflow-yaml-parse-repair.yml
+  CONTROLLER_PATH: .tmp/rd04-nd-row-state-workflow-yaml-parse-repair/controller.sh.gz
+  CONTROLLER_GZ_BYTES: '4487'
+  CONTROLLER_GZ_SHA256: de81208b90618ab6ef6ffc31cbe6c38bc25c4e0623896afdb8ba1d788a9510f0
+  CONTROLLER_BYTES: '16106'
+  CONTROLLER_SHA256: 755006f42b2b95501f690b3a58f37a1f7fec45f508137586db21391c918ff84c
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation
+  STANDING_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.yml
+  VALIDATOR_PATH: tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs
+  TEST_PATH: test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.test.js
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/product-manifest.json
+  OUT: /tmp/rd04-nd-row-state-workflow-yaml-parse-repair
+  WORK: /tmp/rd04-nd-row-state-workflow-yaml-qualified-product
+  STAGE: /tmp/rd04-nd-row-state-workflow-yaml-staging
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Authenticate and execute sealed YAML repair controller
+        shell: bash
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          test "$(stat -c %s "$CONTROLLER_PATH")" = "$CONTROLLER_GZ_BYTES"
+          test "$(sha256sum "$CONTROLLER_PATH" | awk '{print $1}')" = "$CONTROLLER_GZ_SHA256"
+          gzip -dc "$CONTROLLER_PATH" > /tmp/rd04-workflow-yaml-repair-controller.sh
+          test "$(stat -c %s /tmp/rd04-workflow-yaml-repair-controller.sh)" = "$CONTROLLER_BYTES"
+          test "$(sha256sum /tmp/rd04-workflow-yaml-repair-controller.sh | awk '{print $1}')" = "$CONTROLLER_SHA256"
+          bash -n /tmp/rd04-workflow-yaml-repair-controller.sh
+          bash /tmp/rd04-workflow-yaml-repair-controller.sh
+      - name: Preserve exact YAML repair qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-row-state-workflow-yaml-parse-repair-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
