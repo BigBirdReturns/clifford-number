@@ -1,0 +1,271 @@
+name: TEMP prove RD-04 North Dakota current-gap promotion postmerge v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-current-gap-promotion-postmerge-base-v1
+    paths:
+      - .trigger/ssc-rd04-nd-current-gap-promotion-postmerge-v1
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      MERGE_COMMIT: 4eaa66d7a0f025e0c4ec797e9925634a22d9e49e
+      PRODUCT_PARENT: 77aef3313e85e1fddc68805a9f22252ff147b4e8
+      PRODUCT_COMMIT: ec9ec9f6cfc3180adcf816ae91e4bbf14df0e4dd
+      PRODUCT_TREE: 51c46f38071f7f5193ab7856a193095a86389356
+      PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion
+      WORKFLOW_PATH: .github/workflows/temp-prove-ssc-rd04-nd-current-gap-promotion-postmerge-v1.yml
+      TRIGGER_PATH: .trigger/ssc-rd04-nd-current-gap-promotion-postmerge-v1
+      EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
+      EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+      OUT: ${{ runner.temp }}/ssc-rd04-nd-current-gap-promotion-postmerge-v1
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Bind exact observer and canonical promotion topology
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT/native-artifact" "$OUT/rebuilt"
+
+          git fetch --no-tags --force origin main "$EXPECTED_BASE" "$EXPECTED_HEAD"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test "$(git rev-parse "$EXPECTED_HEAD^")" = "$EXPECTED_BASE"
+          test "$(git rev-list --count "$EXPECTED_BASE..$EXPECTED_HEAD")" -eq 1
+          test "$(git diff --name-only "$EXPECTED_BASE" "$EXPECTED_HEAD")" = "$TRIGGER_PATH"
+          test "$(git rev-parse "$EXPECTED_BASE^")" = "$MERGE_COMMIT"
+          test "$(git rev-list --count "$MERGE_COMMIT..$EXPECTED_BASE")" -eq 1
+          test "$(git diff --name-only "$MERGE_COMMIT" "$EXPECTED_BASE")" = "$WORKFLOW_PATH"
+
+          read -r P1 P2 EXTRA <<< "$(git show -s --format='%P' "$MERGE_COMMIT")"
+          test "$P1" = "$PRODUCT_PARENT"
+          test "$P2" = "$PRODUCT_COMMIT"
+          test -z "${EXTRA:-}"
+          test "$(git rev-parse "$PRODUCT_COMMIT^")" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^{tree}")" = "$PRODUCT_TREE"
+          test "$(git rev-parse "$MERGE_COMMIT^{tree}")" = "$PRODUCT_TREE"
+          git diff --exit-code "$PRODUCT_COMMIT" "$MERGE_COMMIT"
+
+          EXPECTED="$(printf '%s\n' \
+            ".github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.yml" \
+            "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promotion-input-custody.json" \
+            "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promotion-decision.json" \
+            "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/cell-promotion-ledger.json" \
+            "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promoted-partial-field-matrix.json" \
+            "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/remaining-open-field-census.json" \
+            "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promotion-summary.json" \
+            "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/index.json" \
+            "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/product-manifest.json" \
+            "docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.md" \
+            "schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.schema.json" \
+            "test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.test.js" \
+            "tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs" \
+            "tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs" | LC_ALL=C sort)"
+          test "$(git diff --name-only "$PRODUCT_PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort)" = "$EXPECTED"
+          test "$(git diff --name-only --diff-filter=A "$PRODUCT_PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort)" = "$EXPECTED"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$PRODUCT_PARENT" "$PRODUCT_COMMIT")"
+
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          git merge-base --is-ancestor "$MERGE_COMMIT" "$LIVE_MAIN"
+          if test "$LIVE_MAIN" != "$MERGE_COMMIT"; then
+            git diff --name-only "$MERGE_COMMIT" "$LIVE_MAIN" > "$OUT/live-main-successor-paths.txt"
+            if grep -Fx -f <(printf '%s\n' "$EXPECTED") "$OUT/live-main-successor-paths.txt"; then
+              echo "later main overlaps canonical promotion paths" >&2
+              exit 1
+            fi
+          else
+            : > "$OUT/live-main-successor-paths.txt"
+          fi
+          printf '%s\n' "$LIVE_MAIN" > "$OUT/live-main.txt"
+
+      - name: Authenticate native canonical-push workflow and artifact
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for attempt in $(seq 1 36); do
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$MERGE_COMMIT&event=push&per_page=100" > "$OUT/runs.json"
+            set +e
+            python - "$OUT/runs.json" "$OUT/native-selection.json" <<'PY'
+          import json, pathlib, sys
+          data=json.loads(pathlib.Path(sys.argv[1]).read_text())
+          runs=data.get("workflow_runs",[])
+          target=[r for r in runs if r.get("name")=="Qualify RD-04 North Dakota current public-record-gap promotion"]
+          active=[r for r in runs if r.get("status") in {"queued","in_progress","waiting","pending","requested"}]
+          bad=[r for r in runs if r.get("status")=="completed" and r.get("conclusion") not in {"success","skipped","neutral"}]
+          value={
+            "total_runs":len(runs),
+            "target_runs":[{k:r.get(k) for k in ("id","name","status","conclusion","event","head_sha")} for r in target],
+            "active_runs":[{k:r.get(k) for k in ("id","name","status","conclusion")} for r in active],
+            "bad_runs":[{k:r.get(k) for k in ("id","name","status","conclusion")} for r in bad],
+          }
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(value,indent=2,sort_keys=True)+"\n")
+          if bad: raise SystemExit(2)
+          if len(target)==1 and target[0].get("status")=="completed" and target[0].get("conclusion")=="success" and not active:
+              raise SystemExit(0)
+          raise SystemExit(1)
+          PY
+            status=$?
+            set -e
+            if test "$status" = 0; then
+              RUN_ID="$(python -c 'import json; d=json.load(open("'"$OUT"'/native-selection.json")); print(d["target_runs"][0]["id"])')"
+              printf '%s\n' "$RUN_ID" > "$OUT/native-run-id.txt"
+              break
+            fi
+            test "$status" != 2
+            sleep 10
+          done
+          test -s "$OUT/native-run-id.txt"
+          RUN_ID="$(cat "$OUT/native-run-id.txt")"
+
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/artifacts" > "$OUT/native-artifacts.json"
+          python - "$OUT/native-artifacts.json" "$OUT/native-artifact-selection.json" <<'PY'
+          import json, pathlib, sys
+          data=json.loads(pathlib.Path(sys.argv[1]).read_text())
+          rows=[a for a in data.get("artifacts",[]) if a.get("name")=="ssc-rd04-nd-current-public-record-gap-promotion-v1" and not a.get("expired")]
+          assert len(rows)==1, rows
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(rows[0],indent=2,sort_keys=True)+"\n")
+          PY
+          ARTIFACT_ID="$(python -c 'import json; print(json.load(open("'"$OUT"'/native-artifact-selection.json"))["id"])')"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$OUT/native-artifact.zip"
+          python - "$OUT/native-artifact-selection.json" "$OUT/native-artifact.zip" <<'PY'
+          import hashlib,json,pathlib,sys,zipfile
+          meta=json.loads(pathlib.Path(sys.argv[1]).read_text())
+          data=pathlib.Path(sys.argv[2]).read_bytes()
+          assert len(data)==meta["size_in_bytes"], (len(data),meta["size_in_bytes"])
+          digest="sha256:"+hashlib.sha256(data).hexdigest()
+          assert digest==meta["digest"], (digest,meta["digest"])
+          with zipfile.ZipFile(sys.argv[2]) as zf: assert zf.testzip() is None
+          PY
+          unzip -q "$OUT/native-artifact.zip" -d "$OUT/native-artifact"
+          find "$OUT/native-artifact" -name SHA256SUMS -print0 |
+            while IFS= read -r -d '' sums; do
+              (cd "$(dirname "$sums")" && sha256sum -c "$(basename "$sums")")
+            done
+          test "$(cat "$OUT/native-artifact/product-commit.txt")" = "$PRODUCT_COMMIT"
+          python - "$OUT/native-artifact" <<'PY'
+          import json,pathlib,sys
+          root=pathlib.Path(sys.argv[1])
+          for name in ("validator.json","post-release-validator.json"):
+              value=json.loads((root/name).read_text())
+              assert value["state"]=="qualified_one_cell_promotion"
+              assert value["terminal_cells"]==228 and value["open_cells"]==222
+              assert value["nd_terminal_fields"]==8 and value["nd_open_fields"]==1
+              assert value["nd_row_state"]=="still_open"
+          adv=json.loads((root/"adversarial.json").read_text())
+          assert adv.get("refusals")==38 or adv.get("adversarial_refusals")==38, adv
+          PY
+
+      - name: Reproduce canonical product from the merge
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          WORKTREE="$RUNNER_TEMP/ssc-rd04-nd-current-gap-promotion-canonical-worktree"
+          rm -rf "$WORKTREE"
+          git worktree add --detach "$WORKTREE" "$MERGE_COMMIT"
+          (
+            cd "$WORKTREE"
+            node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs --out "$OUT/rebuilt" > "$OUT/rebuild.json"
+            for name in promotion-input-custody.json promotion-decision.json cell-promotion-ledger.json promoted-partial-field-matrix.json remaining-open-field-census.json promotion-summary.json index.json; do
+              cmp "$OUT/rebuilt/$name" "$PRODUCT_ROOT/$name"
+            done
+            node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs > "$OUT/canonical-validator.json"
+            node test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.test.js > "$OUT/canonical-adversarial.json"
+            npm run release:check > "$OUT/canonical-release.log" 2>&1
+            git reset --hard "$MERGE_COMMIT"
+            git clean -fdx
+            test -z "$(git status --porcelain=v1 --untracked-files=all)"
+            node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs > "$OUT/canonical-post-release-validator.json"
+          )
+          git worktree remove --force "$WORKTREE"
+
+          python - "$OUT" <<'PY'
+          import json,pathlib,sys
+          root=pathlib.Path(sys.argv[1])
+          for name in ("canonical-validator.json","canonical-post-release-validator.json"):
+              value=json.loads((root/name).read_text())
+              assert value["state"]=="qualified_one_cell_promotion"
+              assert value["terminal_cells"]==228 and value["open_cells"]==222
+              assert value["nd_terminal_fields"]==8 and value["nd_open_fields"]==1
+              assert value["nd_row_state"]=="still_open"
+          adv=json.loads((root/"canonical-adversarial.json").read_text())
+          assert adv.get("refusals")==38 or adv.get("adversarial_refusals")==38, adv
+          PY
+
+      - name: Seal terminal postmerge receipt
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - "$OUT" <<'PY'
+          import json,pathlib,sys
+          out=pathlib.Path(sys.argv[1])
+          meta=json.loads((out/"native-artifact-selection.json").read_text())
+          receipt={
+            "schema_version":"ssc-rd04-nd-current-gap-promotion-postmerge-proof@1",
+            "state":"complete",
+            "canonical_merge":"4eaa66d7a0f025e0c4ec797e9925634a22d9e49e",
+            "canonical_parent":"77aef3313e85e1fddc68805a9f22252ff147b4e8",
+            "product_commit":"ec9ec9f6cfc3180adcf816ae91e4bbf14df0e4dd",
+            "product_tree":"51c46f38071f7f5193ab7856a193095a86389356",
+            "live_main":(out/"live-main.txt").read_text().strip(),
+            "native_push_run":int((out/"native-run-id.txt").read_text()),
+            "native_artifact_id":meta["id"],
+            "native_artifact_bytes":meta["size_in_bytes"],
+            "native_artifact_digest":meta["digest"],
+            "terminal_cells":228,
+            "still_open_cells":222,
+            "terminal_substantive_cells":118,
+            "still_open_substantive_cells":182,
+            "terminal_units":10,
+            "north_dakota_terminal_fields":8,
+            "north_dakota_open_fields":1,
+            "north_dakota_row_state":"still_open",
+            "field_terminalizations":1,
+            "matrix_updates":1,
+            "row_state_mutations":0,
+            "row_terminalizations":0,
+            "class_closed":False,
+            "outside_human_dependency":False,
+            "publication_effect":"none",
+            "adoption_effect":"none",
+            "graph_effect":"none",
+            "next_authorized_operation":"separate_request_free_exact_current_row_state_validation"
+          }
+          (out/"receipt.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n")
+          PY
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-current-gap-promotion-postmerge-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Require terminal proof
+        run: |
+          test "$(jq -r .state "$OUT/receipt.json")" = complete
+          test "$(jq -r .north_dakota_row_state "$OUT/receipt.json")" = still_open
+          test "$(jq -r .next_authorized_operation "$OUT/receipt.json")" = separate_request_free_exact_current_row_state_validation
