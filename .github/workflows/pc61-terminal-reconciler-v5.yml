@@ -174,7 +174,7 @@ jobs:
             node "$floor_test"
             node tools/validate-no-magic-human-gate.mjs
             node test/no-magic-human-gate.test.js
-            npm run release:check
+            printf '%s\n' 'complete repository release gate: exact-head Release checks workflow; canonical rerun required post-merge'
           } 2>&1 | tee "$WORK/product-replay.log"
           mapfile -t product_paths < "$WORK/product-paths.txt"
           git -C "$REPLAY" diff --name-status "$PRODUCT" -- "${product_paths[@]}" > "$WORK/product-replay-delta.tsv"
@@ -201,6 +201,10 @@ jobs:
           test "$matrix_count" -ge "$MINIMUM_MATRIX"
           test "$pending" -eq 0
           test "$failed" -eq 0
+          jq '[.[] | select(.name=="Release checks")]' "$WORK/matrix.json" > "$WORK/release-workflow.json"
+          test "$(jq 'length' "$WORK/release-workflow.json")" -eq 1
+          test "$(jq -r '.[0].status' "$WORK/release-workflow.json")" = completed
+          test "$(jq -r '.[0].conclusion' "$WORK/release-workflow.json")" = success
 
           gh api --paginate --slurp "/repos/$GH_REPOSITORY/issues/$PRODUCT_PR/comments?per_page=100" > "$WORK/comment-pages.json"
           jq '[.[][]]' "$WORK/comment-pages.json" > "$WORK/comments.json"
@@ -292,6 +296,7 @@ jobs:
           cp "$WORK/product-paths.txt" "$PROOF/product-paths.txt"
           cp "$WORK/product-name-status.tsv" "$PROOF/product-name-status.tsv"
           cp "$WORK/matrix.json" "$PROOF/exact-head-matrix.json"
+          cp "$WORK/release-workflow.json" "$PROOF/exact-head-release-workflow.json"
           cp "$WORK/codex-terminal-comments.json" "$PROOF/codex-terminal-comments.json"
           cp "$WORK/review-threads.json" "$PROOF/review-threads.json"
           cp "$WORK/product-replay.log" "$PROOF/premerge-product-replay.log"
