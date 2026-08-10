@@ -2,7 +2,7 @@ name: Validate RD-04 Montana row-state reconciliation candidate v1
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1.yml'
       - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/current-row-custody.json'
@@ -28,13 +28,17 @@ permissions:
 env:
   CANONICAL_PARENT: e62de80e187f9be037cbdd3a4b942b5840d223de
   CANONICAL_PARENT_TREE: 0d1f8369e2c68d18b11a8f375903ff597ea8ccdb
-  ADMITTED_VALIDATION_PRODUCT: a933ceacbfd9753401a7e9875c9f3048237c2014
-  ADMITTED_VALIDATION_PRODUCT_TREE: 53fffef006eccb181ed4f00ea606e49b74b83a60
-  ADMITTED_VALIDATION_MERGE: 5cbe9d8628efbc8c9fa85027876be77e77fbf0ef
+  VALIDATION_BASE: bc3cf04459bb0d18829f376c9b937693b521e444
+  VALIDATION_PRODUCT: a933ceacbfd9753401a7e9875c9f3048237c2014
+  VALIDATION_PRODUCT_TREE: 53fffef006eccb181ed4f00ea606e49b74b83a60
+  VALIDATION_MERGE: 5cbe9d8628efbc8c9fa85027876be77e77fbf0ef
+  REPAIR_PARENT: 7d06800b6899add8beff7891a526abec843bb8d9
+  WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1.yml
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/product-manifest.json
   MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/promoted-partial-field-matrix.json
   MATRIX_BLOB: 6ba11a6025021e9df8ac6535be8c42499654c233
   VALIDATOR: tools/validate-status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-v1.py
-  OUT: /tmp/rd04-mt-row-state-validation-control-repair-v1
+  OUT: /tmp/rd04-mt-row-state-validation-edge-census-v2
 
 jobs:
   validate:
@@ -51,59 +55,180 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - name: Bind canonical validation, repair topology, and live-base matrix
+      - name: Bind exact live-base matrix and first-parent edge custody
         shell: bash
         run: |
           set -Eeuo pipefail
           rm -rf "$OUT" && mkdir -p "$OUT"
           EVENT='${{ github.event_name }}'
           if [ "$EVENT" = pull_request ]; then
-            REPAIR_COMMIT='${{ github.event.pull_request.head.sha }}'
+            REPAIR_HEAD='${{ github.event.pull_request.head.sha }}'
             BASE_SHA='${{ github.event.pull_request.base.sha }}'
-            test "$(git rev-parse HEAD)" = "$REPAIR_COMMIT"
+            test "$(git rev-parse HEAD)" = "$REPAIR_HEAD"
             git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
             test "$BASE_SHA" = "$(git rev-parse origin/main)"
           else
             read -r P1 P2 EXTRA <<< "$(git show -s --format='%P' HEAD)"
             test -n "$P1" && test -n "$P2" && test -z "${EXTRA:-}"
-            BASE_SHA="$P1"; REPAIR_COMMIT="$P2"
+            BASE_SHA="$P1"
+            REPAIR_HEAD="$P2"
           fi
-          test "$(git show -s --format='%P' "$ADMITTED_VALIDATION_PRODUCT")" = "$CANONICAL_PARENT"
-          test "$(git rev-parse "$ADMITTED_VALIDATION_PRODUCT^{tree}")" = "$ADMITTED_VALIDATION_PRODUCT_TREE"
-          test "$(git show -s --format='%P' "$REPAIR_COMMIT")" = "$ADMITTED_VALIDATION_MERGE"
-          git merge-base --is-ancestor "$ADMITTED_VALIDATION_MERGE" "$BASE_SHA"
+
+          test "$(git show -s --format='%P' "$VALIDATION_PRODUCT")" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "$VALIDATION_PRODUCT^{tree}")" = "$VALIDATION_PRODUCT_TREE"
+          test "$(git show -s --format='%P' "$VALIDATION_MERGE")" = "$VALIDATION_BASE $VALIDATION_PRODUCT"
           test "$(git rev-parse "$CANONICAL_PARENT^{tree}")" = "$CANONICAL_PARENT_TREE"
-          test "$(git rev-parse "$BASE_SHA:$MATRIX_PATH")" = "$MATRIX_BLOB"
-          test "$(git rev-parse "$REPAIR_COMMIT:$MATRIX_PATH")" = "$MATRIX_BLOB"
 
-          REPAIR_PATHS="$(printf '%s\n' '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1.yml' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/product-manifest.json')"
-          PRODUCT_PATHS="$(printf '%s\n' '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1.yml' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/current-row-custody.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/product-manifest.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/row-state-validation.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/summary.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/validated-row-state-protocol.json' 'tools/validate-status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-v1.py')"
-          UNCHANGED_PATHS="$(printf '%s\n' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/current-row-custody.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/row-state-validation.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/summary.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/validated-row-state-protocol.json' 'tools/validate-status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-v1.py')"
+          for MATRIX_COMMIT in \
+            "$CANONICAL_PARENT" \
+            "$VALIDATION_BASE" \
+            "$VALIDATION_PRODUCT" \
+            "$VALIDATION_MERGE" \
+            "$REPAIR_PARENT" \
+            "$BASE_SHA" \
+            "$REPAIR_HEAD" \
+            HEAD; do
+            test "$(git rev-parse "$MATRIX_COMMIT:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          done
 
-          test "$(git diff --name-only "$ADMITTED_VALIDATION_MERGE" "$REPAIR_COMMIT" | LC_ALL=C sort)" = "$REPAIR_PATHS"
-          test "$(git diff --name-only --diff-filter=M "$ADMITTED_VALIDATION_MERGE" "$REPAIR_COMMIT" | LC_ALL=C sort)" = "$REPAIR_PATHS"
-          test -z "$(git diff --name-only --diff-filter=ADTRCUXB "$ADMITTED_VALIDATION_MERGE" "$REPAIR_COMMIT")"
-          git diff --check "$ADMITTED_VALIDATION_MERGE" "$REPAIR_COMMIT"
+          VALIDATION_PATHS="$(printf '%s\n' \
+            '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1.yml' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/current-row-custody.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/product-manifest.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/row-state-validation.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/summary.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/validated-row-state-protocol.json' \
+            'tools/validate-status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-v1.py')"
+          SEMANTIC_PATHS="$(printf '%s\n' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/current-row-custody.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/row-state-validation.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/summary.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/validated-row-state-protocol.json' \
+            'tools/validate-status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-v1.py')"
+          PROTECTED_PATHS="$(printf '%s\n%s\n' "$VALIDATION_PATHS" "$MATRIX_PATH" | LC_ALL=C sort -u)"
+          printf '%s\n' "$VALIDATION_PATHS" > "$OUT/validation-product-paths.txt"
+          printf '%s\n' "$SEMANTIC_PATHS" > "$OUT/semantic-validation-paths.txt"
+          printf '%s\n' "$PROTECTED_PATHS" > "$OUT/protected-paths.txt"
 
-          git diff --name-only "$ADMITTED_VALIDATION_MERGE" "$BASE_SHA" | LC_ALL=C sort > "$OUT/intervening-paths.txt"
-          printf '%s\n' "$PRODUCT_PATHS" > "$OUT/product-paths.txt"
-          printf '%s\n' "$REPAIR_PATHS" > "$OUT/repair-paths.txt"
-          test -z "$(comm -12 "$OUT/product-paths.txt" "$OUT/intervening-paths.txt")"
-
+          test "$(git diff --name-only "$CANONICAL_PARENT" "$VALIDATION_PRODUCT" | LC_ALL=C sort)" = "$VALIDATION_PATHS"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$VALIDATION_PRODUCT" | LC_ALL=C sort)" = "$VALIDATION_PATHS"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" "$VALIDATION_PRODUCT")"
+          test "$(git diff --name-only "$VALIDATION_BASE" "$VALIDATION_MERGE" | LC_ALL=C sort)" = "$VALIDATION_PATHS"
           while IFS= read -r PRODUCT_PATH; do
-            test "$(git rev-parse "$BASE_SHA:$PRODUCT_PATH")" = "$(git rev-parse "$ADMITTED_VALIDATION_MERGE:$PRODUCT_PATH")"
-          done <<< "$PRODUCT_PATHS"
-          while IFS= read -r UNCHANGED_PATH; do
-            test "$(git rev-parse "$REPAIR_COMMIT:$UNCHANGED_PATH")" = "$(git rev-parse "$ADMITTED_VALIDATION_MERGE:$UNCHANGED_PATH")"
-          done <<< "$UNCHANGED_PATHS"
+            test "$(git rev-parse "$VALIDATION_MERGE:$PRODUCT_PATH")" = "$(git rev-parse "$VALIDATION_PRODUCT:$PRODUCT_PATH")"
+          done <<< "$VALIDATION_PATHS"
+
+          first_parent_edge_census() {
+            local START="$1"
+            local END="$2"
+            local PREFIX="$3"
+            local CHAIN="$OUT/$PREFIX-first-parent-commits.txt"
+            local EDGES="$OUT/$PREFIX-first-parent-edge-paths.tsv"
+            local UNSORTED="$OUT/$PREFIX-first-parent-paths.unsorted"
+            local PATHS="$OUT/$PREFIX-first-parent-paths.txt"
+            : > "$CHAIN"
+            : > "$EDGES"
+            : > "$UNSORTED"
+            : > "$PATHS"
+            if [ "$START" = "$END" ]; then
+              return
+            fi
+            git merge-base --is-ancestor "$START" "$END"
+            git rev-list --first-parent --reverse "$START..$END" > "$CHAIN"
+            local PREV="$START"
+            local NEXT
+            local CHANGED
+            while IFS= read -r NEXT; do
+              test -n "$NEXT"
+              test "$(git rev-parse "$NEXT^1")" = "$PREV"
+              while IFS= read -r CHANGED; do
+                test -n "$CHANGED"
+                printf '%s\t%s\t%s\n' "$PREV" "$NEXT" "$CHANGED" >> "$EDGES"
+                printf '%s\n' "$CHANGED" >> "$UNSORTED"
+              done < <(git diff --name-only "$PREV" "$NEXT")
+              PREV="$NEXT"
+            done < "$CHAIN"
+            test "$PREV" = "$END"
+            LC_ALL=C sort -u "$UNSORTED" > "$PATHS"
+          }
+
+          first_parent_edge_census "$CANONICAL_PARENT" "$VALIDATION_BASE" validation
+          test -z "$(comm -12 "$OUT/protected-paths.txt" "$OUT/validation-first-parent-paths.txt")"
+
+          read -r REPAIR_P1 REPAIR_P2 REPAIR_EXTRA <<< "$(git show -s --format='%P' "$REPAIR_HEAD")"
+          test -n "$REPAIR_P1" && test -z "${REPAIR_P2:-}" && test -z "${REPAIR_EXTRA:-}"
+          WORKFLOW_COMMIT="$REPAIR_P1"
+          test "$(git show -s --format='%P' "$WORKFLOW_COMMIT")" = "$REPAIR_PARENT"
+
+          printf '%s\n' "$WORKFLOW_PATH" > "$OUT/workflow-repair-path.txt"
+          printf '%s\n' "$MANIFEST_PATH" > "$OUT/manifest-reseal-path.txt"
+          REPAIR_PATHS="$(printf '%s\n' "$WORKFLOW_PATH" "$MANIFEST_PATH" | LC_ALL=C sort)"
+          printf '%s\n' "$REPAIR_PATHS" > "$OUT/repair-paths.txt"
+
+          test "$(git diff --name-only "$REPAIR_PARENT" "$WORKFLOW_COMMIT")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=M "$REPAIR_PARENT" "$WORKFLOW_COMMIT")" = "$WORKFLOW_PATH"
+          test -z "$(git diff --name-only --diff-filter=ADTCURXB "$REPAIR_PARENT" "$WORKFLOW_COMMIT")"
+          test "$(git diff --name-only "$WORKFLOW_COMMIT" "$REPAIR_HEAD")" = "$MANIFEST_PATH"
+          test "$(git diff --name-only --diff-filter=M "$WORKFLOW_COMMIT" "$REPAIR_HEAD")" = "$MANIFEST_PATH"
+          test -z "$(git diff --name-only --diff-filter=ADTCURXB "$WORKFLOW_COMMIT" "$REPAIR_HEAD")"
+          test "$(git diff --name-only "$REPAIR_PARENT" "$REPAIR_HEAD" | LC_ALL=C sort)" = "$REPAIR_PATHS"
+          test "$(git diff --name-only --diff-filter=M "$REPAIR_PARENT" "$REPAIR_HEAD" | LC_ALL=C sort)" = "$REPAIR_PATHS"
+          test -z "$(git diff --name-only --diff-filter=ADTCURXB "$REPAIR_PARENT" "$REPAIR_HEAD")"
+          git diff --check "$REPAIR_PARENT" "$WORKFLOW_COMMIT"
+          git diff --check "$WORKFLOW_COMMIT" "$REPAIR_HEAD"
+
+          first_parent_edge_census "$REPAIR_PARENT" "$BASE_SHA" live
+          test -z "$(comm -12 "$OUT/protected-paths.txt" "$OUT/live-first-parent-paths.txt")"
+          while IFS= read -r PRODUCT_PATH; do
+            test "$(git rev-parse "$BASE_SHA:$PRODUCT_PATH")" = "$(git rev-parse "$REPAIR_PARENT:$PRODUCT_PATH")"
+          done <<< "$VALIDATION_PATHS"
+          while IFS= read -r SEMANTIC_PATH; do
+            test "$(git rev-parse "$REPAIR_HEAD:$SEMANTIC_PATH")" = "$(git rev-parse "$REPAIR_PARENT:$SEMANTIC_PATH")"
+          done <<< "$SEMANTIC_PATHS"
 
           if [ "$EVENT" = push ]; then
             test "$(git diff --name-only "$BASE_SHA" HEAD | LC_ALL=C sort)" = "$REPAIR_PATHS"
             while IFS= read -r REPAIR_PATH; do
-              test "$(git rev-parse "HEAD:$REPAIR_PATH")" = "$(git rev-parse "$REPAIR_COMMIT:$REPAIR_PATH")"
+              test "$(git rev-parse "HEAD:$REPAIR_PATH")" = "$(git rev-parse "$REPAIR_HEAD:$REPAIR_PATH")"
             done <<< "$REPAIR_PATHS"
           fi
-      - name: Validate unchanged candidate and repaired control surface
+
+      - name: Refuse touched-then-restored endpoint camouflage
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          FIXTURE="$(mktemp -d)"
+          git -C "$FIXTURE" init -q
+          git -C "$FIXTURE" config user.name 'RD-04 topology fixture'
+          git -C "$FIXTURE" config user.email 'rd04-topology-fixture@example.invalid'
+          printf 'canonical\n' > "$FIXTURE/product-path"
+          git -C "$FIXTURE" add product-path
+          GIT_AUTHOR_DATE='2000-01-01T00:00:00Z' GIT_COMMITTER_DATE='2000-01-01T00:00:00Z' git -C "$FIXTURE" commit -qm base
+          START="$(git -C "$FIXTURE" rev-parse HEAD)"
+          printf 'changed\n' > "$FIXTURE/product-path"
+          git -C "$FIXTURE" add product-path
+          GIT_AUTHOR_DATE='2000-01-01T00:00:01Z' GIT_COMMITTER_DATE='2000-01-01T00:00:01Z' git -C "$FIXTURE" commit -qm touch
+          printf 'canonical\n' > "$FIXTURE/product-path"
+          git -C "$FIXTURE" add product-path
+          GIT_AUTHOR_DATE='2000-01-01T00:00:02Z' GIT_COMMITTER_DATE='2000-01-01T00:00:02Z' git -C "$FIXTURE" commit -qm restore
+          END="$(git -C "$FIXTURE" rev-parse HEAD)"
+          test -z "$(git -C "$FIXTURE" diff --name-only "$START" "$END")"
+          git -C "$FIXTURE" merge-base --is-ancestor "$START" "$END"
+          git -C "$FIXTURE" rev-list --first-parent --reverse "$START..$END" > "$OUT/edge-census-regression-commits.txt"
+          : > "$OUT/edge-census-regression-paths.unsorted"
+          PREV="$START"
+          while IFS= read -r NEXT; do
+            test "$(git -C "$FIXTURE" rev-parse "$NEXT^1")" = "$PREV"
+            git -C "$FIXTURE" diff --name-only "$PREV" "$NEXT" >> "$OUT/edge-census-regression-paths.unsorted"
+            PREV="$NEXT"
+          done < "$OUT/edge-census-regression-commits.txt"
+          test "$PREV" = "$END"
+          LC_ALL=C sort -u "$OUT/edge-census-regression-paths.unsorted" > "$OUT/edge-census-regression-paths.txt"
+          test "$(cat "$OUT/edge-census-regression-paths.txt")" = 'product-path'
+          printf '%s\n' 'endpoint_diff_empty=true' 'edge_census_detected=product-path' > "$OUT/edge-census-regression-receipt.txt"
+          rm -rf "$FIXTURE"
+
+      - name: Validate request-free candidate and refusal surface
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -117,11 +242,11 @@ jobs:
           VALIDATION_HEAD="$(git rev-parse HEAD)" python "$VALIDATOR" > "$OUT/post-release-validation-receipt.json"
           cmp "$OUT/validation-receipt.json" "$OUT/post-release-validation-receipt.json"
           (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
-      - name: Preserve exact Montana validation control-repair receipt
+      - name: Preserve exact Montana validation edge-census receipt
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd04-mt-row-state-reconciliation-validation-control-repair-v1
+          name: ssc-rd04-mt-row-state-reconciliation-validation-edge-census-v2
           path: ${{ env.OUT }}
           if-no-files-found: error
           include-hidden-files: true
