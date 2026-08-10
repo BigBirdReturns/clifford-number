@@ -1,0 +1,95 @@
+name: TEMP repair exact RD-04 North Dakota current-result counters v3
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - agent/ssc-rd04-nd-current-result-repair-base-v3
+    paths:
+      - '.github/workflows/temp-rd04-nd-current-result-repair-v3.yml'
+      - '.tmp/rd04-nd-current-result-repair-v3/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd04-nd-current-result-repair-v3
+  cancel-in-progress: false
+
+env:
+  CANONICAL_PARENT: 77aef3313e85e1fddc68805a9f22252ff147b4e8
+  EXPECTED_PRODUCT_HEAD: 91ec5f11266b24cc935a33566db1c9d5db258e75
+  EXPECTED_PRODUCT_TREE: 5210b12a1158af5ac4333d5ef2bb9131bd9c2fb2
+  PRODUCT_BRANCH: agent/ssc-rd04-nd-current-public-record-gap-promotion-v1
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion
+  V2_SOURCE_BRANCH: agent/ssc-rd04-nd-current-result-repair-base-v2
+  V2_SOURCE_COMMIT: 0436fd9945eda541d903e3ec7838877f8722e0f9
+  V2_SOURCE_PATH: .tmp/rd04-nd-current-result-repair-v2/repair.py
+  V2_SOURCE_BLOB: a33a4eaffa245429bbaf5a8aa8b5451baa614647
+  WORKFLOW_PATH: .github/workflows/temp-rd04-nd-current-result-repair-v3.yml
+  SCRIPT_PATH: .tmp/rd04-nd-current-result-repair-v3/controller.py
+  TRIGGER_PATH: .tmp/rd04-nd-current-result-repair-v3/trigger.json
+  OUT: /tmp/ssc-rd04-nd-current-result-repair-v3
+  PRODUCT_WORK: /tmp/ssc-rd04-nd-current-result-repair-product-v3
+  QUAL_WORK: /tmp/ssc-rd04-nd-current-result-repair-qualification-v3
+
+jobs:
+  repair:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-current-result-repair-base-v3' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-current-result-repair-trigger-v3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Initialize failure custody
+        shell: bash
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$PRODUCT_WORK" "$QUAL_WORK"
+          mkdir -p "$OUT"
+          python - <<'PY'
+          import json, os, pathlib
+          pathlib.Path(os.environ['OUT'], 'carrier-start.json').write_text(
+              json.dumps({
+                  'schema_version': 'ssc-rd04-nd-current-result-repair-carrier-start@3',
+                  'state': 'carrier_started',
+                  'head': os.environ['EVENT_HEAD_SHA'],
+                  'base': os.environ['EVENT_BASE_SHA'],
+                  'expected_product_head': os.environ['EXPECTED_PRODUCT_HEAD'],
+                  'canonical_parent': os.environ['CANONICAL_PARENT'],
+                  'qualification_topology': 'separate_disposable_worktree',
+              }, indent=2, sort_keys=True) + '\n'
+          )
+          PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Repair, qualify in an isolated worktree, and publish exact replacement product
+        shell: bash
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          python "$SCRIPT_PATH"
+      - name: Preserve repair and qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-current-result-counter-repair-v3
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
