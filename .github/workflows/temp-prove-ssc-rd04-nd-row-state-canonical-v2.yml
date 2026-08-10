@@ -1,0 +1,68 @@
+name: TEMP prove canonical RD-04 North Dakota row-state reconciliation v2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-prove-ssc-rd04-nd-row-state-canonical-v2.yml'
+      - '.tmp/rd04-nd-row-state-canonical-proof-v2/prove.py'
+      - '.tmp/rd04-nd-row-state-canonical-proof-v2/trigger.json'
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  CANONICAL_PARENT: 283c5993cb2ac0bff173c72aba70088c67b2ac3c
+  PRODUCT_COMMIT: f9a3592a8853cf18c64779f8b4f59998e9a62256
+  PRODUCT_TREE: 0d1f8369e2c68d18b11a8f375903ff597ea8ccdb
+  CANONICAL_MERGE: e62de80e187f9be037cbdd3a4b942b5840d223de
+  WORKFLOW_PATH: .github/workflows/temp-prove-ssc-rd04-nd-row-state-canonical-v2.yml
+  SCRIPT_PATH: .tmp/rd04-nd-row-state-canonical-proof-v2/prove.py
+  TRIGGER_PATH: .tmp/rd04-nd-row-state-canonical-proof-v2/trigger.json
+  PRODUCT_WORKFLOW_NAME: Qualify RD-04 North Dakota derivative row-state reconciliation
+  PRODUCT_ARTIFACT_NAME: ssc-rd04-nd-current-public-record-gap-row-state-reconciliation-v2
+  OUT: /tmp/rd04-nd-row-state-canonical-proof-v2
+  CANONICAL_WORK: /tmp/rd04-nd-row-state-canonical-proof-v2-work
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Prove canonical merge, native push artifact, and deterministic replay
+        shell: bash
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$CANONICAL_WORK"
+          mkdir -p "$OUT"
+          python -m py_compile "$SCRIPT_PATH"
+          python "$SCRIPT_PATH"
+
+      - name: Preserve canonical proof artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-row-state-canonical-proof-v2
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
