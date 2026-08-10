@@ -1,0 +1,158 @@
+name: PC-61 terminal reconciler diagnostic
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pc61-terminal-diagnostic.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: pc61-terminal-diagnostic
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPOSITORY: ${{ github.repository }}
+  ISSUE: '1822'
+  SOURCE_BRANCH: 'agent/pc61-terminal-reconcile-v5'
+  DIAGNOSTIC_BRANCH: 'agent/pc61-terminal-diagnostic-v7'
+  OUT: '/tmp/pc61-terminal-diagnostic'
+
+jobs:
+  diagnose:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/pc61-terminal-diagnostic-v7'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 480
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Bind exact v5 controller run and preserve first failed predicate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" /tmp/pc61-v5-logs.zip /tmp/pc61-v5-logs
+          mkdir -p "$OUT" /tmp/pc61-v5-logs
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          BASE_SHA='${{ github.event.pull_request.base.sha }}'
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          git diff --check "$BASE_SHA" HEAD
+
+          receipt_count() {
+            gh api --paginate --slurp "/repos/$GH_REPOSITORY/issues/$ISSUE/comments?per_page=100" \
+              | jq '[.[][] | select(.body|startswith("## PC-61 terminal receipt"))] | length'
+          }
+
+          owner=${GH_REPOSITORY%%/*}
+          gh api --method GET "/repos/$GH_REPOSITORY/pulls" -f state=all -f head="$owner:$SOURCE_BRANCH" -F per_page=100 > "$OUT/source-prs.json"
+          test "$(jq 'length' "$OUT/source-prs.json")" -ge 1
+          jq 'sort_by(.number) | last' "$OUT/source-prs.json" > "$OUT/source-pr.json"
+          SOURCE_PR=$(jq -r .number "$OUT/source-pr.json")
+          SOURCE_HEAD=$(jq -r .head.sha "$OUT/source-pr.json")
+          test -n "$SOURCE_HEAD"
+
+          run_id=''
+          for attempt in $(seq 1 120); do
+            gh api "/repos/$GH_REPOSITORY/actions/runs?head_sha=$SOURCE_HEAD&event=pull_request&per_page=100" > "$OUT/source-runs.json"
+            run_id=$(jq -r '[.workflow_runs[] | select(.name=="PC-61 immutable-parent terminal reconciler")] | sort_by(.run_number) | last | .id // empty' "$OUT/source-runs.json")
+            [ -n "$run_id" ] && break
+            [ "$(receipt_count)" -ge 1 ] && break
+            sleep 5
+          done
+
+          if [ "$(receipt_count)" -ge 1 ]; then
+            jq -n --arg source_pr "$SOURCE_PR" --arg source_head "$SOURCE_HEAD" '{schema_version:"pc61-terminal-diagnostic@1",status:"terminal_receipt_already_present",source_pr:($source_pr|tonumber),source_head:$source_head,diagnosis_required:false}' > "$OUT/receipt.json"
+            exit 0
+          fi
+          test -n "$run_id"
+          printf '%s\n' "$run_id" > "$OUT/source-run-id.txt"
+
+          for attempt in $(seq 1 1680); do
+            gh api "/repos/$GH_REPOSITORY/actions/runs/$run_id" > "$OUT/source-run.json"
+            [ "$(jq -r .status "$OUT/source-run.json")" = completed ] && break
+            [ "$(receipt_count)" -ge 1 ] && break
+            sleep 15
+          done
+
+          if [ "$(receipt_count)" -ge 1 ]; then
+            jq -n --arg source_pr "$SOURCE_PR" --arg source_head "$SOURCE_HEAD" --arg run_id "$run_id" '{schema_version:"pc61-terminal-diagnostic@1",status:"source_controller_terminalized",source_pr:($source_pr|tonumber),source_head:$source_head,source_run:($run_id|tonumber),diagnosis_required:false}' > "$OUT/receipt.json"
+            exit 0
+          fi
+
+          test "$(jq -r .status "$OUT/source-run.json")" = completed
+          conclusion=$(jq -r .conclusion "$OUT/source-run.json")
+          gh api "/repos/$GH_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" > "$OUT/source-jobs.json"
+          jq '[.jobs[] | {id,name,status,conclusion,started_at,completed_at,failed_steps:[.steps[]? | select(.conclusion=="failure") | {number,name,status,conclusion,started_at,completed_at}]}]' "$OUT/source-jobs.json" > "$OUT/job-ledger.json"
+          jq '[.[] | select(.conclusion=="failure" or (.failed_steps|length)>0)]' "$OUT/job-ledger.json" > "$OUT/failed-jobs.json"
+
+          if [ "$conclusion" = success ]; then
+            jq -n --arg source_pr "$SOURCE_PR" --arg source_head "$SOURCE_HEAD" --arg run_id "$run_id" '{schema_version:"pc61-terminal-diagnostic@1",status:"successful_controller_without_terminal_receipt",source_pr:($source_pr|tonumber),source_head:$source_head,source_run:($run_id|tonumber),diagnosis_required:true,failure_class:"receipt_or_cleanup_postcondition_missing"}' > "$OUT/receipt.json"
+          else
+            curl --fail --location --silent --show-error \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              "${GITHUB_API_URL}/repos/${GH_REPOSITORY}/actions/runs/${run_id}/logs" \
+              --output /tmp/pc61-v5-logs.zip
+            unzip -q /tmp/pc61-v5-logs.zip -d /tmp/pc61-v5-logs
+            find /tmp/pc61-v5-logs -type f -maxdepth 2 -print | LC_ALL=C sort > "$OUT/log-files.txt"
+            : > "$OUT/error-lines.txt"
+            while IFS= read -r file; do
+              grep -nE '##\[error\]|Process completed with exit code|Error:|fatal:|AssertionError|must be|mismatch|expected|refused|failed|FAIL' "$file" \
+                | tail -n 80 \
+                | sed "s#^#$file:#" >> "$OUT/error-lines.txt" || true
+            done < "$OUT/log-files.txt"
+            tail -n 250 "$OUT/error-lines.txt" > "$OUT/error-excerpt.txt"
+            first_job=$(jq -r '.[0].name // "unknown"' "$OUT/failed-jobs.json")
+            first_step=$(jq -r '.[0].failed_steps[0].name // "unknown"' "$OUT/failed-jobs.json")
+            jq -n --arg source_pr "$SOURCE_PR" --arg source_head "$SOURCE_HEAD" --arg run_id "$run_id" --arg conclusion "$conclusion" --arg first_job "$first_job" --arg first_step "$first_step" '{schema_version:"pc61-terminal-diagnostic@1",status:"controller_failed",source_pr:($source_pr|tonumber),source_head:$source_head,source_run:($run_id|tonumber),conclusion:$conclusion,first_failed_job:$first_job,first_failed_step:$first_step,diagnosis_required:true}' > "$OUT/receipt.json"
+          fi
+
+          body=$(cat <<EOF
+          ## PC-61 terminal reconciler failure receipt
+
+          The immutable-parent reconciler did not produce a durable PC-61 terminal receipt. This is a controller-level observation only. It does not alter the clean product, canonical graph, authority ceiling, or successor frontier.
+
+          \`\`\`text
+          source reconciler PR                    #$SOURCE_PR
+          source head                             $SOURCE_HEAD
+          source workflow run                     $run_id
+          source conclusion                       $conclusion
+          first failed job                        $(jq -r '.[0].name // "none"' "$OUT/failed-jobs.json")
+          first failed step                       $(jq -r '.[0].failed_steps[0].name // "none"' "$OUT/failed-jobs.json")
+          terminal receipt present                false
+          product semantics changed               false
+          graph effect                            none
+          \`\`\`
+
+          The checksum-bound diagnostic artifact from this carrier preserves the complete job ledger and bounded error excerpt. Recovery must address the first rejected predicate without weakening product admission, exact-head qualification, Codex review, topology, blob identity, replay, cleanup, census, or authority controls.
+          EOF
+          )
+          gh api --method POST "/repos/$GH_REPOSITORY/issues/$ISSUE/comments" -f body="$body" > "$OUT/issue-comment.json"
+
+      - name: Upload terminal diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc61-terminal-reconciler-diagnostic
+          path: /tmp/pc61-terminal-diagnostic
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Retire diagnostic carrier
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          gh api --method PATCH "/repos/$GH_REPOSITORY/pulls/${{ github.event.pull_request.number }}" -f state=closed > /tmp/pc61-diagnostic-pr-closed.json || true
+          gh api --method DELETE "/repos/$GH_REPOSITORY/git/refs/heads/$DIAGNOSTIC_BRANCH" || true
