@@ -1,0 +1,147 @@
+name: TEMP recover RD-04 North Dakota row-state template v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-row-state-template-recovery-base-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-row-state-template-recovery-v1/trigger.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-rd04-nd-row-state-template-recovery-v1
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-row-state-template-recovery-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-row-state-template-recovery-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      OUT: /tmp/rd04-nd-row-state-template-recovery-v1
+      OLD_BRANCH: agent/ssc-rd04-nd-row-state-reconciliation-materializer-base-v1
+      OLD_COMMIT: d7530b8a8eb33c41458fa1ae986b9dacbb2c46a7
+      SOURCE_PATH: .tmp/rd04-nd-row-state-reconciliation-materializer-v1/source.tar.xz.b64
+      STANDING_WORKFLOW_PATH: .tmp/rd04-nd-row-state-reconciliation-materializer-v1/standing-workflow.yml
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Recover exact authored template without execution
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" && mkdir -p "$OUT/template"
+          git fetch --no-tags --force origin "+refs/heads/$OLD_BRANCH:refs/remotes/origin/$OLD_BRANCH"
+          test "$(git rev-parse "refs/remotes/origin/$OLD_BRANCH")" = "$OLD_COMMIT"
+          test "$(git rev-parse "$OLD_COMMIT:$SOURCE_PATH")" = fb8afd6507d1d5e8a016ce0858aaf5d01955da8a
+          git show "$OLD_COMMIT:$SOURCE_PATH" > "$OUT/source.tar.xz.b64"
+          test "$(stat -c %s "$OUT/source.tar.xz.b64")" -eq 19804
+          test "$(sha256sum "$OUT/source.tar.xz.b64" | awk '{print $1}')" = ae8be1ee9f30575cdbc5d31bcad3a9d4238b23e85c5ad1c6125ad6f184883642
+          base64 --decode "$OUT/source.tar.xz.b64" > "$OUT/source.tar.xz"
+          test "$(stat -c %s "$OUT/source.tar.xz")" -eq 14852
+          test "$(sha256sum "$OUT/source.tar.xz" | awk '{print $1}')" = 4a735e9bc51ce471e39bfb3ded66f410735fe16b31123d7d5bdd80163fa01865
+          xz -dc "$OUT/source.tar.xz" > "$OUT/source.tar"
+          test "$(stat -c %s "$OUT/source.tar")" -eq 92160
+          test "$(sha256sum "$OUT/source.tar" | awk '{print $1}')" = 9b1ccf3e4799011ae968cbf4f5eb9e2118e5de254bfd2c80907930fd47f8bb87
+          python - <<'PY'
+          import json
+          import pathlib
+          import tarfile
+
+          out = pathlib.Path('/tmp/rd04-nd-row-state-template-recovery-v1')
+          expected = [
+              'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/input-custody.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/row-state-decision.json',
+              'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/product-manifest.json',
+              'docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.md',
+              'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.schema.json',
+              'test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.test.js',
+              'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs',
+              'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs',
+          ]
+          with tarfile.open(out / 'source.tar', 'r:') as archive:
+              members = archive.getmembers()
+              names = [member.name for member in members]
+              if names != expected:
+                  raise SystemExit(f'unexpected template path list: {names!r}')
+              for member in members:
+                  if not member.isfile() or member.name.startswith('/') or '..' in pathlib.PurePosixPath(member.name).parts:
+                      raise SystemExit(f'unsafe template member: {member.name}')
+              archive.extractall(out / 'template', filter='data')
+          (out / 'template-paths.json').write_text(json.dumps(expected, indent=2) + '\n')
+          PY
+          test "$(git rev-parse "$OLD_COMMIT:$STANDING_WORKFLOW_PATH")" = 2b3fc9ee7487c2680aea16bf81796c21b784d63e
+          git show "$OLD_COMMIT:$STANDING_WORKFLOW_PATH" > "$OUT/standing-workflow.yml"
+          test "$(stat -c %s "$OUT/standing-workflow.yml")" -eq 7747
+          test "$(sha256sum "$OUT/standing-workflow.yml" | awk '{print $1}')" = 25da2b10c5df34e508227a5b20cbde3515191c089de90a47506c77e4fc1eae40
+          python - <<'PY'
+          import json
+          import pathlib
+
+          out = pathlib.Path('/tmp/rd04-nd-row-state-template-recovery-v1')
+          receipt = {
+              'schema_version': 'ssc-rd04-nd-row-state-template-recovery@1',
+              'state': 'complete',
+              'source_commit': 'd7530b8a8eb33c41458fa1ae986b9dacbb2c46a7',
+              'source_archive_base64_bytes': 19804,
+              'source_archive_base64_sha256': 'ae8be1ee9f30575cdbc5d31bcad3a9d4238b23e85c5ad1c6125ad6f184883642',
+              'source_archive_xz_bytes': 14852,
+              'source_archive_xz_sha256': '4a735e9bc51ce471e39bfb3ded66f410735fe16b31123d7d5bdd80163fa01865',
+              'source_tar_bytes': 92160,
+              'source_tar_sha256': '9b1ccf3e4799011ae968cbf4f5eb9e2118e5de254bfd2c80907930fd47f8bb87',
+              'template_paths': 8,
+              'standing_workflow_bytes': 7747,
+              'standing_workflow_sha256': '25da2b10c5df34e508227a5b20cbde3515191c089de90a47506c77e4fc1eae40',
+              'source_requests': 0,
+              'route_executions': 0,
+              'source_admissions': 0,
+              'field_terminalizations': 0,
+              'matrix_updates': 0,
+              'row_state_mutations': 0,
+              'row_terminalizations': 0,
+              'class_closed': False,
+              'outside_human_dependency': False,
+          }
+          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+          PY
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+
+      - name: Preserve exact template recovery
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-row-state-template-recovery-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce request-free recovery
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .state == "complete" and
+            .template_paths == 8 and
+            .source_requests == 0 and
+            .route_executions == 0 and
+            .source_admissions == 0 and
+            .field_terminalizations == 0 and
+            .matrix_updates == 0 and
+            .row_state_mutations == 0 and
+            .row_terminalizations == 0 and
+            .class_closed == false and
+            .outside_human_dependency == false
+          ' "$OUT/receipt.json" > /dev/null
