@@ -1,0 +1,130 @@
+name: PC-61 v5 exact path-ledger repair
+
+'on':
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pc61-v5-path-ledger-repair.yml'
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: pc61-v5-path-ledger-repair
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPOSITORY: ${{ github.repository }}
+  TARGET_BRANCH: 'agent/pc61-terminal-reconcile-v5'
+  TARGET_PATH: '.github/workflows/pc61-terminal-reconciler-v5.yml'
+  SOURCE_BLOB: '2e239ea521a136a1e3bb78798505943d9634e3f2'
+  OUT: '/tmp/pc61-v5-path-ledger-repair'
+
+jobs:
+  repair:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/pc61-terminal-reconcile-v5'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Generate and stage exact path-ledger controller blob
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+
+          gh api --method GET "/repos/$GH_REPOSITORY/contents/$TARGET_PATH" -f ref="$TARGET_BRANCH" > "$OUT/content-before.json"
+          before_blob=$(jq -r .sha "$OUT/content-before.json")
+          test "$before_blob" = "$SOURCE_BLOB"
+          jq -r .content "$OUT/content-before.json" | tr -d '\n' | base64 -d > "$OUT/before.yml"
+          test "$(git hash-object "$OUT/before.yml")" = "$SOURCE_BLOB"
+
+          python - "$OUT/before.yml" "$OUT/after.yml" <<'PY'
+          from pathlib import Path
+          import sys
+
+          source = Path(sys.argv[1]).read_text()
+          old = '''          floor=[p for p in rows if 'v59' in p]
+          standalone=[p for p in rows if 'v59' not in p]
+          if len(floor)!=7 or len(standalone)!=7:
+              raise SystemExit(f'standalone/floor denominator {len(standalone)}/{len(floor)}')
+          if any('preference-linkage-repository-owner-login' not in p for p in standalone):
+              raise SystemExit('standalone namespace mismatch')'''
+          new = '''          expected_standalone={
+              '.github/workflows/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.yml',
+              'data/research/preference-custody/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.fixture.json',
+              'docs/preference-custody-repository-owner-login-unicode-casefold-alias-reuse-assurance.md',
+              'test/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.test.js',
+              'tools/compile-preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs',
+              'tools/lib/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs',
+              'tools/validate-preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs',
+          }
+          expected_floor={
+              '.github/workflows/preference-custody-v59.yml',
+              'data/research/preference-custody/control-manifest-v59.json',
+              'docs/preference-custody-laboratory-floor-v59.md',
+              'test/preference-custody-manifest-v59.test.js',
+              'tools/compile-preference-custody-manifest-v59.mjs',
+              'tools/lib/preference-custody-manifest-v59.mjs',
+              'tools/validate-preference-custody-manifest-v59.mjs',
+          }
+          expected_paths=expected_standalone|expected_floor
+          if set(rows)!=expected_paths:
+              missing=sorted(expected_paths-set(rows))
+              unexpected=sorted(set(rows)-expected_paths)
+              raise SystemExit(f'exact product path ledger mismatch missing={missing} unexpected={unexpected}')
+          standalone=[p for p in rows if p in expected_standalone]
+          floor=[p for p in rows if p in expected_floor]
+          if len(floor)!=7 or len(standalone)!=7:
+              raise SystemExit(f'standalone/floor denominator {len(standalone)}/{len(floor)}')'''
+          if source.count(old) != 1:
+              raise SystemExit(f'path-classifier preimage denominator {source.count(old)} != 1')
+          target = source.replace(old, new)
+          if target.count(new) != 1 or old in target:
+              raise SystemExit('path-classifier postimage mismatch')
+          Path(sys.argv[2]).write_text(target)
+          PY
+
+          python - "$OUT/after.yml" <<'PY'
+          from pathlib import Path
+          import sys, yaml
+          document=yaml.safe_load(Path(sys.argv[1]).read_text())
+          job=document['jobs']['reconcile']
+          if job['timeout-minutes'] != 360:
+              raise SystemExit('reconciler timeout mismatch')
+          steps=job['steps']
+          if len(steps) < 8:
+              raise SystemExit('reconciler step ledger truncated')
+          PY
+          diff -u "$OUT/before.yml" "$OUT/after.yml" > "$OUT/exact.patch" || test "$?" = 1
+          target_blob=$(git hash-object "$OUT/after.yml")
+          target_sha256=$(sha256sum "$OUT/after.yml" | awk '{print $1}')
+          encoded=$(base64 -w0 "$OUT/after.yml")
+          gh api --method POST "/repos/$GH_REPOSITORY/git/blobs" -f content="$encoded" -f encoding=base64 > "$OUT/blob-response.json"
+          test "$(jq -r .sha "$OUT/blob-response.json")" = "$target_blob"
+          gh api "/repos/$GH_REPOSITORY/git/blobs/$target_blob" > "$OUT/remote-blob.json"
+          jq -r .content "$OUT/remote-blob.json" | tr -d '\n' | base64 -d > "$OUT/remote-after.yml"
+          cmp "$OUT/after.yml" "$OUT/remote-after.yml"
+
+          jq -n --arg schema_version 'pc61-v5-path-ledger-repair@1' --arg status complete --arg source_blob "$SOURCE_BLOB" --arg target_blob "$target_blob" --arg target_sha256 "$target_sha256" '{schema_version:$schema_version,status:$status,source_blob:$source_blob,target_blob:$target_blob,target_sha256:$target_sha256,change_denominator:{rejected_substring_predicates_removed:1,exact_standalone_paths:7,exact_floor_paths:7,exact_total_paths:14},product_semantics_changed:false,admission_gates_weakened:false,graph_effect:"none"}' > "$OUT/receipt.json"
+          echo "target_blob=$target_blob" >> "$GITHUB_OUTPUT"
+          echo "target_sha256=$target_sha256" >> "$GITHUB_OUTPUT"
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - name: Preserve exact path-ledger repair receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc61-v5-path-ledger-repair
+          path: /tmp/pc61-v5-path-ledger-repair
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
