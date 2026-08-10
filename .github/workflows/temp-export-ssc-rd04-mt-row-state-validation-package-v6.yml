@@ -1,0 +1,187 @@
+name: TEMP export exact Montana row-state validation package v6
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-export-ssc-rd04-mt-row-state-validation-package-v6.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-export-ssc-rd04-mt-row-state-validation-package-v6
+  cancel-in-progress: true
+
+env:
+  CARRIER_PARENT: 16785c62be801035f85c374af7c07a7be71673ce
+  RD04_CANONICAL_PARENT: e62de80ecaa7e8359f340f24b979486d6d352185
+  SOURCE_COMMIT: 149951157502874c7494995cf71ee6bda3f8f06c
+  SOURCE_PATH: .tmp/rd04-mt-row-state-validation-materializer/package.tar.gz.b64
+  SOURCE_BLOB: 70d92032dc1b6f89752c36eb0cea5d5987e2312b
+  GZIP_BYTES: '11054'
+  GZIP_SHA256: db899783e6a52055842ba9748b9ea1996d5bfa5b7806db374fbf127723c2c3ba
+  TAR_BYTES: '61440'
+  TAR_SHA256: d81a4cc83d47f192995a9bf32aed803f4f5c878799558ce906fc166ada7af559
+  SOURCE_PACKAGE_SHA256: 2987436428e01f6dbb431a422191532bde9f42548686c77a8c73a7f62fc85754
+  STALE_PACKAGE_SHA256: 1d606b66983b107dadbea65628731d2328cd9058558be8e7f1f6fa930dc5e503
+  WORKFLOW_PATH: .github/workflows/temp-export-ssc-rd04-mt-row-state-validation-package-v6.yml
+  OUT: /tmp/ssc-rd04-mt-row-state-validation-package-export-v6
+
+jobs:
+  export:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'observer/ssc-rd04-mt-row-state-validation-package-export-v6'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Bind exact one-path observer and immutable source object
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT/package"
+          test "$(git rev-parse HEAD^)" = "$CARRIER_PARENT"
+          test "$(git rev-list --count "$CARRIER_PARENT"..HEAD)" = 1
+          test "$(git diff --name-only "$CARRIER_PARENT" HEAD)" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CARRIER_PARENT" HEAD)" = "$WORKFLOW_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CARRIER_PARENT" HEAD)"
+          git diff --check "$CARRIER_PARENT" HEAD
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CARRIER_PARENT"
+          git merge-base --is-ancestor "$RD04_CANONICAL_PARENT" "$CARRIER_PARENT"
+          test "$(git rev-parse "$SOURCE_COMMIT^")" = "$RD04_CANONICAL_PARENT"
+          test "$(git rev-parse "$SOURCE_COMMIT:$SOURCE_PATH")" = "$SOURCE_BLOB"
+          git diff --name-only "$RD04_CANONICAL_PARENT" "$CARRIER_PARENT" | LC_ALL=C sort > "$OUT/intervening-main-paths.txt"
+          test -z "$(grep -E '(^|/)(status-sovereignty-rd-wave03-rd04|rd04-mt-row-state)' "$OUT/intervening-main-paths.txt" || true)"
+          printf '%s\n' "$CARRIER_PARENT" > "$OUT/carrier-parent.txt"
+          printf '%s\n' "$SOURCE_COMMIT" > "$OUT/source-commit.txt"
+          printf '%s\n' "$SOURCE_BLOB" > "$OUT/source-blob.txt"
+
+      - name: Authenticate, inspect, and export complete package without execution
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git show "$SOURCE_COMMIT:$SOURCE_PATH" > "$OUT/package.tar.gz.b64"
+          wc -c < "$OUT/package.tar.gz.b64" | tr -d ' ' > "$OUT/base64-bytes.txt"
+          sha256sum "$OUT/package.tar.gz.b64" | awk '{print $1}' > "$OUT/base64-sha256.txt"
+          base64 -d "$OUT/package.tar.gz.b64" > "$OUT/package.tar.gz"
+          test "$(stat -c %s "$OUT/package.tar.gz")" = "$GZIP_BYTES"
+          test "$(sha256sum "$OUT/package.tar.gz" | awk '{print $1}')" = "$GZIP_SHA256"
+          gzip -dc "$OUT/package.tar.gz" > "$OUT/package.tar"
+          test "$(stat -c %s "$OUT/package.tar")" = "$TAR_BYTES"
+          test "$(sha256sum "$OUT/package.tar" | awk '{print $1}')" = "$TAR_SHA256"
+
+          python - "$OUT/package.tar" "$OUT/package" "$OUT/package-members.json" <<'PY'
+          from __future__ import annotations
+          import hashlib
+          import json
+          import pathlib
+          import tarfile
+          import sys
+
+          archive = pathlib.Path(sys.argv[1])
+          destination = pathlib.Path(sys.argv[2])
+          receipt = pathlib.Path(sys.argv[3])
+          rows = []
+          with tarfile.open(archive, 'r:') as handle:
+              members = handle.getmembers()
+              if not members:
+                  raise SystemExit('empty package')
+              for member in members:
+                  path = pathlib.PurePosixPath(member.name)
+                  if path.is_absolute() or '..' in path.parts:
+                      raise SystemExit(f'unsafe member: {member.name}')
+                  if not (member.isdir() or member.isfile()):
+                      raise SystemExit(f'non-regular member: {member.name}')
+              handle.extractall(destination)
+          for path in sorted(p for p in destination.rglob('*') if p.is_file()):
+              data = path.read_bytes()
+              rows.append({
+                  'path': path.relative_to(destination).as_posix(),
+                  'bytes': len(data),
+                  'sha256': hashlib.sha256(data).hexdigest(),
+              })
+          receipt.write_text(json.dumps({'member_count': len(rows), 'members': rows}, indent=2, sort_keys=True) + '\n')
+          PY
+
+          mapfile -t package_hash_files < <(find "$OUT/package" -type f -name source-package-sha256.txt -print)
+          test "${#package_hash_files[@]}" = 1
+          test "$(tr -d '\r\n ' < "${package_hash_files[0]}")" = "$SOURCE_PACKAGE_SHA256"
+          mapfile -t controllers < <(find "$OUT/package" -type f -name controller.py -print)
+          test "${#controllers[@]}" = 1
+          python -m py_compile "${controllers[0]}"
+          grep -RIl --exclude='*.pyc' "$STALE_PACKAGE_SHA256" "$OUT/package" | LC_ALL=C sort > "$OUT/stale-hash-files.txt" || true
+          grep -RIl --exclude='*.pyc' "$SOURCE_PACKAGE_SHA256" "$OUT/package" | LC_ALL=C sort > "$OUT/current-hash-files.txt" || true
+          test "$(wc -l < "$OUT/stale-hash-files.txt" | tr -d ' ')" = 1
+          test "$(wc -l < "$OUT/current-hash-files.txt" | tr -d ' ')" -ge 1
+          find "$OUT/package" -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > "$OUT/package-SHA256SUMS"
+
+          python - "$OUT/receipt.json" <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          root = pathlib.Path(os.environ['OUT'])
+          value = {
+              'schema_version': 'ssc-rd04-mt-row-state-validation-package-export@6',
+              'state': 'complete_package_exported_without_execution',
+              'carrier_parent': os.environ['CARRIER_PARENT'],
+              'rd04_canonical_parent': os.environ['RD04_CANONICAL_PARENT'],
+              'source_commit': os.environ['SOURCE_COMMIT'],
+              'source_blob': os.environ['SOURCE_BLOB'],
+              'base64_bytes': int((root / 'base64-bytes.txt').read_text()),
+              'base64_sha256': (root / 'base64-sha256.txt').read_text().strip(),
+              'gzip_bytes': (root / 'package.tar.gz').stat().st_size,
+              'gzip_sha256': hashlib.sha256((root / 'package.tar.gz').read_bytes()).hexdigest(),
+              'tar_bytes': (root / 'package.tar').stat().st_size,
+              'tar_sha256': hashlib.sha256((root / 'package.tar').read_bytes()).hexdigest(),
+              'source_package_sha256': os.environ['SOURCE_PACKAGE_SHA256'],
+              'stale_hash_occurrences': len((root / 'stale-hash-files.txt').read_text().splitlines()),
+              'controller_count': 1,
+              'source_requests': 0,
+              'route_executions': 0,
+              'source_admissions': 0,
+              'field_terminalizations': 0,
+              'matrix_updates': 0,
+              'row_state_mutations': 0,
+              'row_terminalizations': 0,
+              'class_closed': False,
+              'cumulative_ledger_effect': 'none',
+              'outside_human_dependency': False,
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'execution_authority': 'none',
+              'merge_authority': 'none',
+          }
+          pathlib.Path(os.sys.argv[1]).write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+          PY
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - name: Preserve complete exact package export
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-validation-package-export-v6
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
