@@ -1,0 +1,58 @@
+  --arg name "$VALIDATION_ARTIFACT_NAME" \
+  --argjson bytes "$VALIDATION_ARTIFACT_BYTES" \
+  --arg digest "sha256:$VALIDATION_ARTIFACT_SHA256" \
+  '.id==$id and .name==$name and .size_in_bytes==$bytes and .expired==false and .digest==$digest' \
+  "$OUT/validation-artifact-metadata.json" > /dev/null
+curl -fsSL \
+  -H "Authorization: Bearer $GH_TOKEN" \
+  -H 'Accept: application/vnd.github+json' \
+  -H 'X-GitHub-Api-Version: 2022-11-28' \
+  "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/artifacts/$VALIDATION_ARTIFACT_ID/zip" \
+  -o "$OUT/validation-artifact.zip"
+test "$(stat -c %s "$OUT/validation-artifact.zip")" -eq "$VALIDATION_ARTIFACT_BYTES"
+test "$(sha256sum "$OUT/validation-artifact.zip" | awk '{print $1}')" = "$VALIDATION_ARTIFACT_SHA256"
+unzip -t "$OUT/validation-artifact.zip" > "$OUT/validation-artifact-zip-test.txt"
+mkdir "$OUT/validation-artifact"
+unzip -q "$OUT/validation-artifact.zip" -d "$OUT/validation-artifact"
+test -s "$OUT/validation-artifact/SHA256SUMS"
+(cd "$OUT/validation-artifact" && sha256sum -c SHA256SUMS > "$OUT/validation-artifact-internal-checks.txt")
+jq -e '
+  .state=="validated_candidate_requires_separate_promotion" and
+  .canonical_parent=="d94b5ecd4547c7f051593fe330600985afc5e41c" and
+  .candidate_id=="RD04-ND-CURRENT-WAIVER-PUBLIC-RECORD-GAP-CANDIDATE" and
+  .current_cell_sha256=="cbaabfa791f02aa4f17bc1b5b31e28775368b125a4b658cb216c22cd90a26dfe" and
+  .proposed_cell_sha256=="8700619932bd128250a308d5dcd7b1586a363ae3b78e4eb80c23bfb72c8a2e25" and
+  .source_ids_resolved==true and .validated_candidates==1 and .rejected_candidates==0 and
+  .projected_terminal_cells==228 and .projected_still_open_cells==222 and
+  .projected_open_substantive_cells==182 and .projected_terminal_units==10 and
+  .projected_nd_terminal_fields==8 and .projected_nd_open_fields==1 and
+  .projected_nd_row_state=="still_open" and
+  .separate_promotion_product_authorized==true and .promotion_executed_here==false and
+  .field_terminalizations==0 and .matrix_updates==0 and
+  .row_state_mutations==0 and .row_terminalizations==0 and
+  .class_closed==false and .outside_human_dependency==false
+' "$OUT/validation-artifact/validation-receipt.json" > /dev/null
+
+stage='construct_exact_one_cell_promotion_product'
+WORK="$(mktemp -d)"
+git worktree add --detach "$WORK" "$CANONICAL_PARENT"
+python "$PATCHED_PROGRAM" construct "$WORK" "$OUT/construction-receipt.json"
+cd "$WORK"
+EXPECTED_PATHS="$(printf '%s\n' \
+  "$PRODUCT_ROOT/cell-promotion-ledger.json" \
+  "$PRODUCT_ROOT/product-manifest.json" \
+  "$PRODUCT_ROOT/promoted-partial-field-matrix.json" \
+  "$PRODUCT_ROOT/promotion-decision.json" \
+  "$PRODUCT_ROOT/promotion-input-custody.json" \
+  "$PRODUCT_ROOT/promotion-receipt.json" \
+  "$PRODUCT_ROOT/remaining-open-field-census.json" \
+  "$PRODUCT_ROOT/summary.json" | LC_ALL=C sort)"
+test "$(find "$PRODUCT_ROOT" -maxdepth 1 -type f -printf '%p\n' | LC_ALL=C sort)" = "$EXPECTED_PATHS"
+test "$(git status --short --untracked-files=all | sed 's/^?? //' | LC_ALL=C sort)" = "$EXPECTED_PATHS"
+git diff --check
+git config user.name 'github-actions[bot]'
+git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+git add "$PRODUCT_ROOT"
+git commit -m 'Promote North Dakota current waiver public-record gap cell'
+PRODUCT_COMMIT="$(git rev-parse HEAD)"
+PRODUCT_TREE="$(git rev-parse 'HEAD^{tree}')"

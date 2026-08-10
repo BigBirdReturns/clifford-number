@@ -1,0 +1,82 @@
+VALIDATION_ARTIFACT_NAME='ssc-rd04-nd-current-public-record-gap-validation-v1'
+VALIDATION_ARTIFACT_BYTES='8035'
+VALIDATION_ARTIFACT_SHA256='38da554f82b05dacae14428217d529e6457a0b3bdfc065aeaefa725764e32ccc'
+OUT='/tmp/rd04-nd-current-public-record-gap-promotion-v2'
+
+export CANONICAL_PARENT CANDIDATE_MERGE CANDIDATE_PRODUCT_COMMIT CANDIDATE_PRODUCT_TREE
+export VALIDATION_PRODUCT_COMMIT VALIDATION_PRODUCT_TREE PRODUCT_BRANCH PRODUCT_ROOT
+export MATRIX_PATH MATRIX_BLOB MATRIX_BYTES MATRIX_SHA256
+export CANDIDATE_PATH CANDIDATE_BLOB SOURCE_PATH SOURCE_BLOB DECISION_PATH DECISION_BLOB
+export CANDIDATE_MANIFEST_PATH CANDIDATE_MANIFEST_BLOB VALIDATION_PROTOCOL_PATH VALIDATION_PROTOCOL_BLOB
+export CANDIDATE_VALIDATION_PATH CANDIDATE_VALIDATION_BLOB CURRENT_ROW_SHA256 CURRENT_TARGET_SHA256
+export CURRENT_ROW_STATE_SHA256 PROPOSED_CELL_SHA256 CANDIDATE_PAYLOAD_SHA256 PROMOTION_ID
+export VALIDATION_ARTIFACT_ID VALIDATION_ARTIFACT_NAME VALIDATION_ARTIFACT_BYTES VALIDATION_ARTIFACT_SHA256
+
+rm -rf "$OUT"
+mkdir -p "$OUT"
+stage='bootstrap'
+WORK=''
+PRODUCT_COMMIT=''
+PRODUCT_TREE=''
+MATRIX_AFTER_BLOB=''
+product_branch_moved='false'
+
+seal() {
+  (
+    cd "$OUT"
+    find . -type f ! -name SHA256SUMS -print0 |
+      LC_ALL=C sort -z |
+      xargs -0 sha256sum > SHA256SUMS
+  )
+}
+
+cleanup_worktree() {
+  if [[ -n "$WORK" && -e "$WORK/.git" ]]; then
+    git -C "$REPO_ROOT" worktree remove --force "$WORK" >/dev/null 2>&1 || true
+  fi
+}
+
+finalize() {
+  local rc=$?
+  trap - EXIT
+  set +e
+  cleanup_worktree
+  if [[ "$rc" -ne 0 && "$product_branch_moved" == 'true' && -n "$PRODUCT_COMMIT" ]]; then
+    remote_product="$(git -C "$REPO_ROOT" ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')"
+    if [[ "$remote_product" == "$PRODUCT_COMMIT" ]]; then
+      git -C "$REPO_ROOT" push origin ":refs/heads/$PRODUCT_BRANCH" >/dev/null 2>&1 || true
+    fi
+    product_branch_moved='false'
+  fi
+  printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+  printf '%s\n' "$stage" > "$OUT/STAGE"
+  if [[ ! -s "$OUT/receipt.json" ]]; then
+    jq -n \
+      --arg stage "$stage" \
+      --argjson exit_code "$rc" \
+      --arg parent "$CANONICAL_PARENT" \
+      --arg promotion "$PROMOTION_ID" \
+      --argjson branch_moved "$product_branch_moved" \
+      '{schema_version:"ssc-rd04-nd-current-public-record-gap-promotion-materializer@2",
+        state:"failed_closed",failed_or_final_stage:$stage,exit_code:$exit_code,
+        canonical_parent:$parent,promotion_id:$promotion,product_branch_moved:$branch_moved,
+        permanent_paths_added:0,source_requests:0,route_executions:0,source_admissions:0,
+        field_terminalizations:0,matrix_updates:0,row_state_mutations:0,
+        row_terminalizations:0,class_closed:false,outside_human_dependency:false}' \
+      > "$OUT/receipt.json"
+  fi
+  seal
+  exit "$rc"
+}
+trap finalize EXIT
+
+cd "$REPO_ROOT"
+
+stage='bind_exact_three_level_carrier'
+test "$(git rev-parse HEAD)" = "$EVENT_HEAD_SHA"
+test "$(git rev-parse "$EVENT_HEAD_SHA^")" = "$EVENT_BASE_SHA"
+test "$(git rev-parse "$EVENT_BASE_SHA^")" = "$CONTROLLER_COMMIT"
+test "$(git rev-parse "$CONTROLLER_COMMIT^")" = "$CANONICAL_PARENT"
+test "$(git rev-list --count "$CANONICAL_PARENT..$CONTROLLER_COMMIT")" -eq 1
+test "$(git rev-list --count "$CONTROLLER_COMMIT..$EVENT_BASE_SHA")" -eq 1
+test "$(git rev-list --count "$EVENT_BASE_SHA..$EVENT_HEAD_SHA")" -eq 1

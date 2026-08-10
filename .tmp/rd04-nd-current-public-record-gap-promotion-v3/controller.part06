@@ -1,0 +1,11 @@
+    class_closed:false,outside_human_dependency:false,
+    source_patch:$source_patch,promotion_receipt:$promotion_receipt}' > "$OUT/receipt.json"
+cd "$REPO_ROOT"
+cleanup_worktree
+WORK=''
+seal
+trap - EXIT
+printf '%s\n' 0 > "$OUT/EXIT_CODE"
+printf '%s\n' complete > "$OUT/STAGE"
+seal
+(cd "$OUT" && sha256sum -c SHA256SUMS)

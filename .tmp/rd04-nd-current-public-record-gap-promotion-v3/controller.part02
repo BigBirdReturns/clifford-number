@@ -1,0 +1,53 @@
+test "$(git diff --name-only "$CANONICAL_PARENT" "$CONTROLLER_COMMIT")" = "$CONTROLLER_PATH"
+test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$CONTROLLER_COMMIT")" = "$CONTROLLER_PATH"
+test "$(git diff --name-only "$CONTROLLER_COMMIT" "$EVENT_BASE_SHA")" = "$WORKFLOW_PATH"
+test "$(git diff --name-only --diff-filter=A "$CONTROLLER_COMMIT" "$EVENT_BASE_SHA")" = "$WORKFLOW_PATH"
+test "$(git diff --name-only "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA")" = "$TRIGGER_PATH"
+test "$(git diff --name-only --diff-filter=A "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA")" = "$TRIGGER_PATH"
+test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" "$EVENT_HEAD_SHA")"
+git diff --check "$CANONICAL_PARENT" "$EVENT_HEAD_SHA"
+cp "$TRIGGER_PATH" "$OUT/trigger.json"
+
+stage='authenticate_and_patch_immutable_v1_program'
+test "$(git rev-parse "$OLD_PROGRAM_COMMIT:$OLD_PROGRAM_PATH")" = "$OLD_PROGRAM_BLOB"
+git show "$OLD_PROGRAM_COMMIT:$OLD_PROGRAM_PATH" > "$OUT/materialize-v1.py"
+test "$(stat -c %s "$OUT/materialize-v1.py")" -eq "$OLD_PROGRAM_BYTES"
+test "$(sha256sum "$OUT/materialize-v1.py" | awk '{print $1}')" = "$OLD_PROGRAM_SHA256"
+python - "$OUT/materialize-v1.py" "$OUT/materialize-v2.py" "$OUT/source-patch-receipt.json" <<'PY'
+from __future__ import annotations
+import hashlib, json, pathlib, sys
+source_path, target_path, receipt_path = map(pathlib.Path, sys.argv[1:])
+source_bytes = source_path.read_bytes()
+assert len(source_bytes) == 25731
+assert hashlib.sha256(source_bytes).hexdigest() == 'f0e96c11da4b40ee9fe53f0f2a61bb91f6d44e967ebd91e8cc0bdc78c7461a12'
+source = source_bytes.decode('utf-8')
+old_construct = '    substantive = [cell for cell in all_cells if cell["field_id"] != "field_and_row_terminal_state"]\n'
+new_construct = '''    substantive_field_ids = {
+        "operative_state_implementation_authority_and_version",
+        "implementation_effective_date_or_typed_gap",
+        "abawd_or_work_requirement_waiver_state_and_governing_period",
+        "discretionary_exemption_authority_and_reported_state_practice",
+        "fitness_for_work_or_eligibility_screening_rule",
+        "verification_evidence_and_staff_discretion_surface",
+    }
+    substantive = [cell for cell in all_cells if cell["field_id"] in substantive_field_ids]
+    assert len(substantive) == 300
+    assert {cell["field_id"] for cell in substantive} == substantive_field_ids
+    assert all(sum(cell["field_id"] == field_id for cell in substantive) == 50 for field_id in substantive_field_ids)
+'''
+old_verify = '''    for key, value in expected.items():
+        assert matrix["counts"][key] == value
+    nd_rows = [row for row in matrix["rows"] if row["unit_id"] == "US-STATE-ND"]
+'''
+new_verify = '''    for key, value in expected.items():
+        assert matrix["counts"][key] == value
+    all_cells = [cell for row in matrix["rows"] for cell in row["cells"]]
+    substantive_field_ids = {
+        "operative_state_implementation_authority_and_version",
+        "implementation_effective_date_or_typed_gap",
+        "abawd_or_work_requirement_waiver_state_and_governing_period",
+        "discretionary_exemption_authority_and_reported_state_practice",
+        "fitness_for_work_or_eligibility_screening_rule",
+        "verification_evidence_and_staff_discretion_surface",
+    }
+    substantive = [cell for cell in all_cells if cell["field_id"] in substantive_field_ids]
