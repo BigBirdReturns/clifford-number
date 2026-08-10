@@ -1,4 +1,4 @@
-name: PC-61 v5 premerge floor-v59 deduplication
+name: PC-61 v5 exact-head matrix denominator repair
 
 'on':
   pull_request:
@@ -12,7 +12,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: pc61-v5-premerge-floor-dedup
+  group: pc61-v5-matrix-denominator-repair
   cancel-in-progress: false
 
 env:
@@ -20,8 +20,8 @@ env:
   GH_REPOSITORY: ${{ github.repository }}
   TARGET_BRANCH: 'agent/pc61-terminal-reconcile-v5'
   TARGET_PATH: '.github/workflows/pc61-terminal-reconciler-v5.yml'
-  SOURCE_BLOB: 'c90f51ca2764e67ecd49dbd4dabc6636cbb7f925'
-  OUT: '/tmp/pc61-v5-premerge-floor-dedup'
+  SOURCE_BLOB: 'e276ee81a5dbc73dd9c51c12d6267ecfd202a256'
+  OUT: '/tmp/pc61-v5-matrix-denominator-repair'
 
 jobs:
   repair:
@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - name: Stage exact floor-v59 replay deduplication
+      - name: Stage exact 54-run matrix observer repair
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -46,63 +46,57 @@ jobs:
           import sys
 
           source=Path(sys.argv[1]).read_text()
-          marker='          } 2>&1 | tee "$WORK/product-replay.log"'
-          if source.count(marker)!=1:
-              raise SystemExit(f'premerge replay sink denominator {source.count(marker)} != 1')
-          before,after=source.split(marker,1)
-          floor_lines=[
-              '            node "$floor_compile"\n',
-              '            node "$floor_validate"\n',
-              '            node "$floor_test"\n',
-          ]
-          for line in floor_lines:
-              if before.count(line)!=1:
-                  raise SystemExit(f'premerge floor command denominator {line.strip()}={before.count(line)}')
-              before=before.replace(line,'',1)
-          anchor='            node "$standalone_test"\n'
-          replacement=anchor+"            printf '%s\\n' 'Preference custody laboratory floor v59: exact-head workflow required; canonical rerun required post-merge'\n"
-          if before.count(anchor)!=1:
-              raise SystemExit('standalone test anchor denominator mismatch')
-          before=before.replace(anchor,replacement,1)
-          source=before+marker+after
+          replacements={
+              "  MINIMUM_MATRIX: '55'\n":"  EXPECTED_MATRIX: '54'\n",
+              '            [ "$matrix_count" -ge "$MINIMUM_MATRIX" ] && [ "$pending" -eq 0 ] && break\n':'            [ "$matrix_count" -eq "$EXPECTED_MATRIX" ] && [ "$pending" -eq 0 ] && break\n',
+              '          test "$matrix_count" -ge "$MINIMUM_MATRIX"\n':'          test "$matrix_count" -eq "$EXPECTED_MATRIX"\n',
+              'minimum_workflow_matrix:55':'minimum_workflow_matrix:54',
+          }
+          for old,new in replacements.items():
+              if source.count(old)!=1:
+                  raise SystemExit(f'exact replacement denominator {old!r}={source.count(old)}')
+              source=source.replace(old,new,1)
 
-          old_receipt='\n'.join([
-              '          test "$(jq -r \'.[0].conclusion\' "$WORK/release-workflow.json")" = success',
-              '',
-              '          gh api --paginate --slurp "/repos/$GH_REPOSITORY/issues/$PRODUCT_PR/comments?per_page=100" > "$WORK/comment-pages.json"',
-          ])
-          new_receipt='\n'.join([
-              '          test "$(jq -r \'.[0].conclusion\' "$WORK/release-workflow.json")" = success',
-              '          jq \'[.[] | select(.name=="Preference custody laboratory floor v59")]\' "$WORK/matrix.json" > "$WORK/floor-v59-workflow.json"',
-              '          test "$(jq \'length\' "$WORK/floor-v59-workflow.json")" -eq 1',
-              '          test "$(jq -r \'.[0].status\' "$WORK/floor-v59-workflow.json")" = completed',
+          anchor='\n'.join([
               '          test "$(jq -r \'.[0].conclusion\' "$WORK/floor-v59-workflow.json")" = success',
               '',
               '          gh api --paginate --slurp "/repos/$GH_REPOSITORY/issues/$PRODUCT_PR/comments?per_page=100" > "$WORK/comment-pages.json"',
           ])
-          if source.count(old_receipt)!=1:
-              raise SystemExit(f'floor-v59 receipt insertion denominator {source.count(old_receipt)} != 1')
-          source=source.replace(old_receipt,new_receipt,1)
-
-          old_proof='\n'.join([
-              '          cp "$WORK/release-workflow.json" "$PROOF/exact-head-release-workflow.json"',
-              '          cp "$WORK/codex-terminal-comments.json" "$PROOF/codex-terminal-comments.json"',
+          replacement='\n'.join([
+              '          test "$(jq -r \'.[0].conclusion\' "$WORK/floor-v59-workflow.json")" = success',
+              '          jq \'[.[] | select(.name=="Preference custody laboratory floor v58")]\' "$WORK/matrix.json" > "$WORK/floor-v58-workflow.json"',
+              '          test "$(jq \'length\' "$WORK/floor-v58-workflow.json")" -eq 0',
+              '          grep -Fq "name: Preference custody laboratory floor v58" "$REPLAY/.github/workflows/preference-custody-v58.yml"',
+              '          test "$(grep -cF \'preference-custody-v59\' "$REPLAY/.github/workflows/preference-custody-v58.yml" || true)" -eq 0',
+              '          test "$(grep -cF \'owner-login-unicode-casefold-alias-reuse\' "$REPLAY/.github/workflows/preference-custody-v58.yml" || true)" -eq 0',
+              '          grep -Fq "from \'./preference-custody-manifest-v58.mjs\';" "$REPLAY/tools/lib/preference-custody-manifest-v59.mjs"',
+              '          grep -Fq \'validatePreferenceCustodyManifestV58Build\' "$REPLAY/tools/lib/preference-custody-manifest-v59.mjs"',
+              '          jq -n --argjson expected "$EXPECTED_MATRIX" --argjson observed "$matrix_count" \'{schema_version:"pc61-exact-head-matrix-basis@1",expected_workflows:$expected,observed_workflows:$observed,floor_v58:{exact_head_run_expected:false,exact_head_run_observed:false,inherited_path_scoped_workflow:true},floor_v59:{exact_head_run_required:true,recursively_validates_v58:true},release_checks:{exact_head_run_required:true}}\' > "$WORK/matrix-basis.json"',
+              '',
+              '          gh api --paginate --slurp "/repos/$GH_REPOSITORY/issues/$PRODUCT_PR/comments?per_page=100" > "$WORK/comment-pages.json"',
           ])
-          new_proof='\n'.join([
-              '          cp "$WORK/release-workflow.json" "$PROOF/exact-head-release-workflow.json"',
+          if source.count(anchor)!=1:
+              raise SystemExit(f'v58 basis insertion denominator {source.count(anchor)} != 1')
+          source=source.replace(anchor,replacement,1)
+
+          proof_anchor='\n'.join([
               '          cp "$WORK/floor-v59-workflow.json" "$PROOF/exact-head-floor-v59-workflow.json"',
               '          cp "$WORK/codex-terminal-comments.json" "$PROOF/codex-terminal-comments.json"',
           ])
-          if source.count(old_proof)!=1:
-              raise SystemExit(f'proof floor-v59 receipt denominator {source.count(old_proof)} != 1')
-          source=source.replace(old_proof,new_proof,1)
+          proof_replacement='\n'.join([
+              '          cp "$WORK/floor-v59-workflow.json" "$PROOF/exact-head-floor-v59-workflow.json"',
+              '          cp "$WORK/floor-v58-workflow.json" "$PROOF/exact-head-floor-v58-workflow.json"',
+              '          cp "$WORK/matrix-basis.json" "$PROOF/exact-head-matrix-basis.json"',
+              '          cp "$WORK/codex-terminal-comments.json" "$PROOF/codex-terminal-comments.json"',
+          ])
+          if source.count(proof_anchor)!=1:
+              raise SystemExit(f'proof matrix-basis insertion denominator {source.count(proof_anchor)} != 1')
+          source=source.replace(proof_anchor,proof_replacement,1)
 
-          canonical=source.split('          } 2>&1 | tee "$PROOF/canonical-replay.log"',1)[0].rsplit('          {',1)[1]
-          for line in floor_lines:
-              if canonical.count(line)!=1:
-                  raise SystemExit(f'canonical floor command not retained: {line.strip()}')
-          if canonical.count('            npm run release:check\n')!=1:
-              raise SystemExit('canonical release invocation not retained')
+          if source.count('EXPECTED_MATRIX')!=3:
+              raise SystemExit(f'EXPECTED_MATRIX usage denominator {source.count("EXPECTED_MATRIX")} != 3')
+          if 'MINIMUM_MATRIX' in source:
+              raise SystemExit('stale MINIMUM_MATRIX remains')
           Path(sys.argv[2]).write_text(source)
           PY
 
@@ -110,9 +104,11 @@ jobs:
           from pathlib import Path
           import sys,yaml
           document=yaml.safe_load(Path(sys.argv[1]).read_text())
+          if document['env']['EXPECTED_MATRIX'] != '54': raise SystemExit('expected matrix mismatch')
           if document['jobs']['reconcile']['timeout-minutes'] != 360: raise SystemExit('timeout mismatch')
           if document['concurrency']['cancel-in-progress'] is not True: raise SystemExit('superseding concurrency mismatch')
           PY
+
           diff -u "$OUT/before.yml" "$OUT/after.yml" > "$OUT/exact.patch" || test "$?" = 1
           target_blob=$(git hash-object "$OUT/after.yml")
           target_sha256=$(sha256sum "$OUT/after.yml" | awk '{print $1}')
@@ -122,19 +118,20 @@ jobs:
           gh api "/repos/$GH_REPOSITORY/git/blobs/$target_blob" > "$OUT/remote-blob.json"
           jq -r .content "$OUT/remote-blob.json" | tr -d '\n' | base64 -d > "$OUT/remote-after.yml"
           cmp "$OUT/after.yml" "$OUT/remote-after.yml"
-          jq -n --arg schema_version 'pc61-v5-premerge-floor-dedup@1' --arg status complete --arg source_blob "$SOURCE_BLOB" --arg target_blob "$target_blob" --arg target_sha256 "$target_sha256" '{schema_version:$schema_version,status:$status,source_blob:$source_blob,target_blob:$target_blob,target_sha256:$target_sha256,change_denominator:{redundant_premerge_floor_v59_commands_removed:3,named_exact_head_floor_v59_receipts_added:1,canonical_postmerge_floor_v59_commands_retained:3,canonical_postmerge_release_invocations_retained:1},substantive_gate_effect:{exact_head_floor_v59_required:true,canonical_postmerge_floor_v59_required:true,canonical_postmerge_release_required:true,floor_gate_weakened:false},product_semantics_changed:false,graph_effect:"none"}' > "$OUT/receipt.json"
+
+          jq -n --arg schema_version 'pc61-v5-matrix-denominator-repair@1' --arg status complete --arg source_blob "$SOURCE_BLOB" --arg target_blob "$target_blob" --arg target_sha256 "$target_sha256" '{schema_version:$schema_version,status:$status,source_blob:$source_blob,target_blob:$target_blob,target_sha256:$target_sha256,observer:{expected_exact_head_workflows:54,floor_v58_exact_head_run_expected:false,floor_v59_exact_head_run_required:true,floor_v59_recursively_validates_v58:true,release_exact_head_run_required:true},substantive_gate_effect:{qualification_weakened:false,canonical_postmerge_floor_v59_required:true,canonical_postmerge_release_required:true},product_semantics_changed:false,graph_effect:"none"}' > "$OUT/receipt.json"
           (
             cd "$OUT"
             find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
             sha256sum -c SHA256SUMS
           )
 
-      - name: Preserve floor-v59 deduplication receipt
+      - name: Preserve matrix denominator repair receipt
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pc61-v5-premerge-floor-dedup
-          path: /tmp/pc61-v5-premerge-floor-dedup
+          name: pc61-v5-matrix-denominator-repair
+          path: /tmp/pc61-v5-matrix-denominator-repair
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 90
