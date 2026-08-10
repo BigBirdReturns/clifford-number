@@ -1,0 +1,341 @@
+name: TEMP repair RD-04 North Dakota row-state validation tree binding v2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-repair-rd04-nd-row-state-validation-tree-v2.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-repair-rd04-nd-row-state-validation-tree-v2
+  cancel-in-progress: false
+
+env:
+  CANONICAL_PARENT: bab9570ab043df7c5062e5a45a0717a82eed346b
+  CANONICAL_PARENT_TREE: 74c43136c79700be7cacf9d983738743cec227b8
+  STALE_PARENT_TREE: cca6b16db286f00125b9375c3a3cc505e58b3525
+  OLD_PRODUCT_COMMIT: 2e53e6da649f8c61a16944f52c37e810b6b6f286
+  OLD_PRODUCT_TREE: be28a32f4c15a68cd51ec977e7e5bc99e98778b8
+  CARRIER_BRANCH: agent/ssc-rd04-nd-row-state-validation-tree-repair-v2
+  CARRIER_PATH: .github/workflows/temp-repair-rd04-nd-row-state-validation-tree-v2.yml
+  PRODUCT_BRANCH: agent/ssc-rd04-nd-row-state-reconciliation-validation-v3
+  PRODUCT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation-validation-v2.yml
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation-validation-v2
+  PRODUCT_VALIDATOR: tools/validate-status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation-v2.py
+  OUT: /tmp/ssc-rd04-nd-row-state-validation-tree-repair-v2
+  WORK: /tmp/ssc-rd04-nd-row-state-validation-tree-repair-v2-work
+
+jobs:
+  repair:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-row-state-validation-tree-repair-v2' &&
+      github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Reconstruct, qualify, and publish the corrected seven-path product
+        id: repair
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$WORK"
+          mkdir -p "$OUT" "$WORK"
+          stage=bootstrap
+
+          seal() {
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 |
+                LC_ALL=C sort -z |
+                xargs -0 sha256sum > SHA256SUMS
+            )
+          }
+
+          finalize() {
+            rc=$?
+            trap - EXIT
+            set +e
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            if [[ ! -s "$OUT/receipt.json" ]]; then
+              jq -n \
+                --arg stage "$stage" \
+                --argjson exit_code "$rc" \
+                --arg parent "$CANONICAL_PARENT" \
+                --arg old_product "$OLD_PRODUCT_COMMIT" \
+                '{schema_version:"ssc-rd04-nd-row-state-validation-tree-repair-receipt@2",
+                  state:"failed_closed",failed_or_final_stage:$stage,exit_code:$exit_code,
+                  canonical_parent:$parent,old_product_commit:$old_product,
+                  corrected_product_commit:null,corrected_product_tree:null,
+                  corrected_product_branch_moved:false,permanent_paths:7,
+                  modified_product_bytes:0,source_requests:0,route_executions:0,
+                  source_admissions:0,field_terminalizations:0,matrix_updates:0,
+                  row_state_mutations:0,row_terminalizations:0,class_closed:false,
+                  cumulative_ledger_effect:"none",outside_human_dependency:false,
+                  publication_effect:"none",adoption_effect:"none",graph_effect:"none"}' \
+                > "$OUT/receipt.json"
+            fi
+            seal
+            exit "$rc"
+          }
+          trap finalize EXIT
+
+          stage=bind_exact_carrier_and_live_main
+          test "$(git rev-parse HEAD)" = "$EVENT_HEAD_SHA"
+          test "$EVENT_BASE_SHA" = "$CANONICAL_PARENT"
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"
+          test "$(git rev-list --count "$CANONICAL_PARENT..HEAD")" -eq 1
+          test "$(git diff --name-only "$CANONICAL_PARENT" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD)" = "$CARRIER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" HEAD)"
+          git diff --check "$CANONICAL_PARENT" HEAD
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "$CANONICAL_PARENT^{tree}")" = "$CANONICAL_PARENT_TREE"
+          test "$(git rev-parse "$OLD_PRODUCT_COMMIT^")" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "$OLD_PRODUCT_COMMIT^{tree}")" = "$OLD_PRODUCT_TREE"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+
+          stage=reconstruct_exact_old_product
+          CONSTRUCT="$WORK/construct"
+          git worktree add --detach "$CONSTRUCT" "$CANONICAL_PARENT"
+          PRODUCT_PATHS=(
+            "$PRODUCT_WORKFLOW"
+            "$PRODUCT_ROOT/current-row-custody.json"
+            "$PRODUCT_ROOT/row-state-validation.json"
+            "$PRODUCT_ROOT/validated-row-state-protocol.json"
+            "$PRODUCT_ROOT/summary.json"
+            "$PRODUCT_ROOT/product-manifest.json"
+            "$PRODUCT_VALIDATOR"
+          )
+          printf '%s\n' "${PRODUCT_PATHS[@]}" | LC_ALL=C sort > "$OUT/permanent-paths.txt"
+          test "$(wc -l < "$OUT/permanent-paths.txt" | tr -d ' ')" -eq 7
+          test "$(git diff --name-only "$CANONICAL_PARENT" "$OLD_PRODUCT_COMMIT" | LC_ALL=C sort)" = "$(cat "$OUT/permanent-paths.txt")"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$OLD_PRODUCT_COMMIT" | LC_ALL=C sort)" = "$(cat "$OUT/permanent-paths.txt")"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" "$OLD_PRODUCT_COMMIT")"
+          for path in "${PRODUCT_PATHS[@]}"; do
+            mkdir -p "$CONSTRUCT/$(dirname "$path")"
+            git show "$OLD_PRODUCT_COMMIT:$path" > "$CONSTRUCT/$path"
+          done
+
+          stage=repair_tree_bindings_and_manifest
+          python - "$CONSTRUCT" "$OUT/repair-identities.json" <<'PYREPAIR'
+          from __future__ import annotations
+          import hashlib,json,pathlib,sys
+
+          root=pathlib.Path(sys.argv[1])
+          receipt=pathlib.Path(sys.argv[2])
+          old_tree='cca6b16db286f00125b9375c3a3cc505e58b3525'
+          new_tree='74c43136c79700be7cacf9d983738743cec227b8'
+          manifest_path='data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation-validation-v2/product-manifest.json'
+          repair_paths=[
+            '.github/workflows/status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation-validation-v2.yml',
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation-validation-v2/current-row-custody.json',
+            'tools/validate-status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation-v2.py',
+          ]
+          unchanged_paths=[
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation-validation-v2/row-state-validation.json',
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation-validation-v2/validated-row-state-protocol.json',
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation-validation-v2/summary.json',
+          ]
+          def sha(data:bytes)->str: return hashlib.sha256(data).hexdigest()
+          def blob(data:bytes)->str: return hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
+          before={}
+          after={}
+          for path in repair_paths:
+            file=root/path
+            data=file.read_bytes()
+            assert data.count(old_tree.encode())==1, (path,data.count(old_tree.encode()))
+            before[path]={'bytes':len(data),'sha256':sha(data),'git_blob':blob(data)}
+            updated=data.replace(old_tree.encode(),new_tree.encode())
+            assert len(updated)==len(data) and updated.count(old_tree.encode())==0 and updated.count(new_tree.encode())==1
+            file.write_bytes(updated)
+            after[path]={'bytes':len(updated),'sha256':sha(updated),'git_blob':blob(updated)}
+          manifest_file=root/manifest_path
+          manifest_bytes=manifest_file.read_bytes()
+          manifest=json.loads(manifest_bytes)
+          assert (json.dumps(manifest,indent=2)+'\n').encode()==manifest_bytes
+          assert manifest['permanent_path_count']==7 and manifest['hashed_file_count']==6
+          assert manifest['authority_boundary']=={
+            'source_requests':0,'route_executions':0,'source_admissions':0,
+            'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,
+            'row_terminalizations':0,'class_closed':False,
+            'cumulative_ledger_effect':'none','publication_effect':'none',
+            'adoption_effect':'none','graph_effect':'none','outside_human_dependency':False}
+          records={row['path']:row for row in manifest['hashed_files']}
+          assert set(records)==set(repair_paths+unchanged_paths)
+          for path in repair_paths:
+            records[path].update(after[path])
+          rows=[f"{row['path']}\0{row['sha256']}\0{row['bytes']}\n" for row in manifest['hashed_files']]
+          manifest['combined_sha256']=sha(''.join(sorted(rows)).encode())
+          new_manifest=(json.dumps(manifest,indent=2)+'\n').encode()
+          manifest_file.write_bytes(new_manifest)
+          after[manifest_path]={'bytes':len(new_manifest),'sha256':sha(new_manifest),'git_blob':blob(new_manifest)}
+          old_manifest={'bytes':len(manifest_bytes),'sha256':sha(manifest_bytes),'git_blob':blob(manifest_bytes)}
+          for path in unchanged_paths:
+            data=(root/path).read_bytes()
+            after[path]={'bytes':len(data),'sha256':sha(data),'git_blob':blob(data)}
+          output={
+            'schema_version':'ssc-rd04-nd-row-state-validation-tree-repair-identities@2',
+            'canonical_parent':'bab9570ab043df7c5062e5a45a0717a82eed346b',
+            'canonical_parent_tree':new_tree,
+            'stale_parent_tree':old_tree,
+            'old_product_commit':'2e53e6da649f8c61a16944f52c37e810b6b6f286',
+            'repaired_literal_paths':repair_paths,
+            'dependent_manifest_path':manifest_path,
+            'changed_path_count':4,
+            'unchanged_payload_paths':unchanged_paths,
+            'before':before,
+            'old_manifest':old_manifest,
+            'after':after,
+            'combined_sha256':manifest['combined_sha256'],
+            'authority':'validation_product_repair_only'
+          }
+          receipt.write_text(json.dumps(output,indent=2,sort_keys=True)+'\n')
+          PYREPAIR
+          test "$(git -C "$CONSTRUCT" status --short --untracked-files=all | wc -l | tr -d ' ')" -eq 7
+          python -m py_compile "$CONSTRUCT/$PRODUCT_VALIDATOR"
+
+          stage=create_and_qualify_corrected_product
+          cd "$CONSTRUCT"
+          git add -- "${PRODUCT_PATHS[@]}"
+          test "$(git diff --cached --name-only --diff-filter=A "$CANONICAL_PARENT" | LC_ALL=C sort)" = "$(cat "$OUT/permanent-paths.txt")"
+          test -z "$(git diff --cached --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT")"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Repair RD-04 North Dakota row-state validation tree binding'
+          PRODUCT_COMMIT="$(git rev-parse HEAD)"
+          PRODUCT_TREE="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"
+          test "$(git rev-list --count "$CANONICAL_PARENT..HEAD")" -eq 1
+          test "$(git diff --name-only "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$(cat "$OUT/permanent-paths.txt")"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$(cat "$OUT/permanent-paths.txt")"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" HEAD)"
+          python "$PRODUCT_VALIDATOR" | tee "$OUT/validation-receipt.json"
+
+          QUALIFY="$WORK/qualify"
+          git worktree add --detach "$QUALIFY" "$PRODUCT_COMMIT"
+          cd "$QUALIFY"
+          python -m py_compile "$PRODUCT_VALIDATOR"
+          python "$PRODUCT_VALIDATOR" > "$OUT/pre-release-validation-receipt.json"
+          cmp "$OUT/validation-receipt.json" "$OUT/pre-release-validation-receipt.json"
+          npm run release:check > "$OUT/release-check.log" 2>&1
+          git reset --hard "$PRODUCT_COMMIT"
+          git clean -fdx
+          python "$PRODUCT_VALIDATOR" > "$OUT/post-release-validation-receipt.json"
+          cmp "$OUT/validation-receipt.json" "$OUT/post-release-validation-receipt.json"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+          stage=publish_corrected_product_branch
+          cd "$CONSTRUCT"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin "$PRODUCT_COMMIT:refs/heads/$PRODUCT_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$PRODUCT_COMMIT"
+          printf '%s\n' "$PRODUCT_COMMIT" > "$OUT/product-commit.txt"
+          printf '%s\n' "$PRODUCT_TREE" > "$OUT/product-tree.txt"
+          mkdir -p "$OUT/product"
+          for path in "${PRODUCT_PATHS[@]}"; do
+            mkdir -p "$OUT/product/$(dirname "$path")"
+            cp "$CONSTRUCT/$path" "$OUT/product/$path"
+          done
+
+          stage=complete
+          jq -n \
+            --arg parent "$CANONICAL_PARENT" \
+            --arg parent_tree "$CANONICAL_PARENT_TREE" \
+            --arg old_product "$OLD_PRODUCT_COMMIT" \
+            --arg old_tree "$OLD_PRODUCT_TREE" \
+            --arg product "$PRODUCT_COMMIT" \
+            --arg tree "$PRODUCT_TREE" \
+            --arg branch "$PRODUCT_BRANCH" \
+            '{schema_version:"ssc-rd04-nd-row-state-validation-tree-repair-receipt@2",
+              state:"corrected_validation_product_published",failed_or_final_stage:"complete",exit_code:0,
+              canonical_parent:$parent,canonical_parent_tree:$parent_tree,
+              old_product_commit:$old_product,old_product_tree:$old_tree,
+              corrected_product_commit:$product,corrected_product_tree:$tree,
+              corrected_product_branch:$branch,corrected_product_branch_moved:true,
+              permanent_paths:7,modified_product_bytes:4,unchanged_product_bytes:3,
+              repaired_tree_literal_paths:3,dependent_manifest_updates:1,
+              projected_terminal_cells:229,projected_still_open_cells:221,
+              projected_terminal_units:11,projected_nd_terminal_fields:9,
+              projected_nd_open_fields:0,projected_nd_row_state:"terminal",
+              source_requests:0,route_executions:0,source_admissions:0,
+              field_terminalizations:0,matrix_updates:0,row_state_mutations:0,
+              row_terminalizations:0,class_closed:false,
+              cumulative_ledger_effect:"none",outside_human_dependency:false,
+              publication_effect:"none",adoption_effect:"none",graph_effect:"none",
+              promotion_executed_here:false,
+              next_authorized_operation:"open permanent exact-head validation PR and require hosted checks plus independent review"}' \
+            > "$OUT/receipt.json"
+          printf '0\n' > "$OUT/EXIT_CODE"
+          printf 'complete\n' > "$OUT/STAGE"
+          seal
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          trap - EXIT
+
+      - name: Preserve corrected product publication evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-row-state-validation-tree-repair-v2
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce terminal corrected-product publication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.repair.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          jq -e '
+            .state=="corrected_validation_product_published" and
+            .failed_or_final_stage=="complete" and .exit_code==0 and
+            .canonical_parent=="bab9570ab043df7c5062e5a45a0717a82eed346b" and
+            .canonical_parent_tree=="74c43136c79700be7cacf9d983738743cec227b8" and
+            .old_product_commit=="2e53e6da649f8c61a16944f52c37e810b6b6f286" and
+            .corrected_product_branch_moved==true and .permanent_paths==7 and
+            .modified_product_bytes==4 and .unchanged_product_bytes==3 and
+            .repaired_tree_literal_paths==3 and .dependent_manifest_updates==1 and
+            .projected_terminal_cells==229 and .projected_still_open_cells==221 and
+            .projected_terminal_units==11 and .projected_nd_terminal_fields==9 and
+            .projected_nd_open_fields==0 and .projected_nd_row_state=="terminal" and
+            .source_requests==0 and .route_executions==0 and .source_admissions==0 and
+            .field_terminalizations==0 and .matrix_updates==0 and
+            .row_state_mutations==0 and .row_terminalizations==0 and
+            .class_closed==false and .cumulative_ledger_effect=="none" and
+            .outside_human_dependency==false and .publication_effect=="none" and
+            .adoption_effect=="none" and .graph_effect=="none" and
+            .promotion_executed_here==false
+          ' "$OUT/receipt.json" >/dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
