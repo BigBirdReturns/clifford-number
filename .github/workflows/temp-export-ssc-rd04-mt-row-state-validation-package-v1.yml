@@ -1,0 +1,155 @@
+name: TEMP export exact RD-04 Montana row-state validation package
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-export-ssc-rd04-mt-row-state-validation-package-v1.yml'
+      - '.tmp/rd04-mt-row-state-validation-package-export-v1/trigger.json'
+
+permissions:
+  contents: read
+
+env:
+  CANONICAL_PARENT: e62de80e187f9be037cbdd3a4b942b5840d223de
+  SOURCE_BRANCH: agent/ssc-rd04-mt-row-state-validation-materializer-base-v1
+  SOURCE_COMMIT: 6422ee14a1c95a118edf75d869d06e3febfd4c39
+  SOURCE_PATH: .tmp/rd04-mt-row-state-validation-materializer/package.tar.gz.b64
+  SOURCE_BLOB: 70d92032dc1b6f89752c36eb0cea5d5987e2312b
+  PAYLOAD_B64_BYTES: 14740
+  PAYLOAD_B64_SHA256: d19b30d285e725f0cba1844864f9a8a4d543e46de2ff66484e3a9b710b9771aa
+  PAYLOAD_GZIP_BYTES: 11054
+  PAYLOAD_GZIP_SHA256: db899783e6a52055842ba9748b9ea1996d5bfa5b7806db374fbf127723c2c3ba
+  PAYLOAD_TAR_BYTES: 61440
+  PAYLOAD_TAR_SHA256: d81a4cc83d47f192995a9bf32aed803f4f5c878799558ce906fc166ada7af559
+  CONTROLLER_BYTES: 9075
+  CONTROLLER_SHA256: 5b9b91cf7e30af38ca4fcec137b8a43d5e3e9c3c3c21e259b6aa21a1bf9d1674
+  WORKFLOW_PATH: .github/workflows/temp-export-ssc-rd04-mt-row-state-validation-package-v1.yml
+  TRIGGER_PATH: .tmp/rd04-mt-row-state-validation-package-export-v1/trigger.json
+  OUT: /tmp/rd04-mt-row-state-validation-package-export-v1
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Authenticate and export exact package
+        shell: bash
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" && mkdir -p "$OUT/package"
+          test "$(git rev-parse HEAD)" = "$EVENT_HEAD_SHA"
+          test "$(git rev-parse HEAD^)" = "$EVENT_BASE_SHA"
+          test "$(git rev-parse "$EVENT_BASE_SHA^")" = "$CANONICAL_PARENT"
+          test "$(git diff --name-only "$CANONICAL_PARENT" "$EVENT_BASE_SHA")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA")" = "$TRIGGER_PATH"
+          git diff --check "$CANONICAL_PARENT" "$EVENT_HEAD_SHA"
+
+          git fetch --no-tags --force origin "+refs/heads/$SOURCE_BRANCH:refs/remotes/origin/$SOURCE_BRANCH"
+          test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$SOURCE_COMMIT"
+          test "$(git rev-parse "$SOURCE_COMMIT:$SOURCE_PATH")" = "$SOURCE_BLOB"
+          git show "$SOURCE_COMMIT:$SOURCE_PATH" > "$OUT/package.tar.gz.b64"
+          test "$(stat -c %s "$OUT/package.tar.gz.b64")" -eq "$PAYLOAD_B64_BYTES"
+          test "$(sha256sum "$OUT/package.tar.gz.b64" | awk '{print $1}')" = "$PAYLOAD_B64_SHA256"
+          base64 -d "$OUT/package.tar.gz.b64" > "$OUT/package.tar.gz"
+          test "$(stat -c %s "$OUT/package.tar.gz")" -eq "$PAYLOAD_GZIP_BYTES"
+          test "$(sha256sum "$OUT/package.tar.gz" | awk '{print $1}')" = "$PAYLOAD_GZIP_SHA256"
+          gzip -t "$OUT/package.tar.gz"
+          gzip -dc "$OUT/package.tar.gz" > "$OUT/package.tar"
+          test "$(stat -c %s "$OUT/package.tar")" -eq "$PAYLOAD_TAR_BYTES"
+          test "$(sha256sum "$OUT/package.tar" | awk '{print $1}')" = "$PAYLOAD_TAR_SHA256"
+
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import tarfile
+
+          out = pathlib.Path(os.environ['OUT'])
+          package = out / 'package'
+          tar_path = out / 'package.tar'
+          rows = []
+          with tarfile.open(tar_path, mode='r:') as archive:
+              members = archive.getmembers()
+              for member in members:
+                  path = pathlib.PurePosixPath(member.name)
+                  assert not path.is_absolute()
+                  assert '..' not in path.parts
+                  assert member.isfile()
+              archive.extractall(package)
+          for path in sorted(package.rglob('*')):
+              if path.is_file():
+                  data = path.read_bytes()
+                  rows.append({
+                      'path': path.relative_to(package).as_posix(),
+                      'bytes': len(data),
+                      'sha256': hashlib.sha256(data).hexdigest(),
+                  })
+          (out / 'package-inventory.json').write_text(
+              json.dumps({'members': rows, 'member_count': len(rows)}, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+
+          test -f "$OUT/package/controller.py"
+          test "$(stat -c %s "$OUT/package/controller.py")" -eq "$CONTROLLER_BYTES"
+          test "$(sha256sum "$OUT/package/controller.py" | awk '{print $1}')" = "$CONTROLLER_SHA256"
+          python -m py_compile "$OUT/package/controller.py"
+          find "$OUT/package" -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > "$OUT/package-SHA256SUMS"
+          python - <<'PY'
+          import json
+          import os
+          import pathlib
+
+          out = pathlib.Path(os.environ['OUT'])
+          receipt = {
+              'schema_version': 'ssc-rd04-mt-row-state-validation-package-export@1',
+              'state': 'exact_package_exported',
+              'canonical_parent': os.environ['CANONICAL_PARENT'],
+              'source_branch': os.environ['SOURCE_BRANCH'],
+              'source_commit': os.environ['SOURCE_COMMIT'],
+              'source_path': os.environ['SOURCE_PATH'],
+              'source_blob': os.environ['SOURCE_BLOB'],
+              'payload_b64_bytes': int(os.environ['PAYLOAD_B64_BYTES']),
+              'payload_b64_sha256': os.environ['PAYLOAD_B64_SHA256'],
+              'payload_gzip_bytes': int(os.environ['PAYLOAD_GZIP_BYTES']),
+              'payload_gzip_sha256': os.environ['PAYLOAD_GZIP_SHA256'],
+              'payload_tar_bytes': int(os.environ['PAYLOAD_TAR_BYTES']),
+              'payload_tar_sha256': os.environ['PAYLOAD_TAR_SHA256'],
+              'controller_bytes': int(os.environ['CONTROLLER_BYTES']),
+              'controller_sha256': os.environ['CONTROLLER_SHA256'],
+              'source_requests': 0,
+              'route_executions': 0,
+              'matrix_updates': 0,
+              'row_state_mutations': 0,
+              'row_terminalizations': 0,
+              'class_closed': False,
+              'outside_human_dependency': False,
+          }
+          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          PY
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+
+      - name: Preserve exact package export
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-validation-package-export-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
