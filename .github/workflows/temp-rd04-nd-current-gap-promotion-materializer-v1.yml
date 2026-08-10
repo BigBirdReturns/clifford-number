@@ -1,0 +1,56 @@
+name: TEMP materialize RD-04 North Dakota current public-record-gap promotion v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-current-gap-promotion-materializer-v1/trigger.json'
+      - '.github/workflows/temp-rd04-nd-current-gap-promotion-materializer-v1.yml'
+      - '.tmp/rd04-nd-current-gap-promotion-materializer-v1/chunks/**'
+      - '.tmp/rd04-nd-current-gap-promotion-materializer-v1/controller/**'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Authenticate and execute immutable controller
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          CONTROLLER_CHUNK_COUNT: '8'
+        run: |
+          set -Eeuo pipefail
+          root=.tmp/rd04-nd-current-gap-promotion-materializer-v1/controller
+          out=/tmp/ssc-rd04-nd-current-gap-promotion-materializer-v1
+          mkdir -p "$out"
+          cat "$root"/chunk-*.txt > /tmp/controller.sh
+          test "$(stat -c %s /tmp/controller.sh)" = '21682'
+          test "$(sha256sum /tmp/controller.sh | awk '{print $1}')" = '26a1f65d96823b5efdbd4e7c0f4f5d9eaf62af99390a20b52ad485895a962204'
+          bash -n /tmp/controller.sh
+          bash /tmp/controller.sh
+      - name: Preserve materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-current-gap-promotion-materializer-v1
+          path: /tmp/ssc-rd04-nd-current-gap-promotion-materializer-v1
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9

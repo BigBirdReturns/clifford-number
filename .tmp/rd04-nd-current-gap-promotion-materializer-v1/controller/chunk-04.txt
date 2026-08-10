@@ -1,0 +1,24 @@
+wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/index.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/product-manifest.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promoted-partial-field-matrix.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promotion-decision.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promotion-input-custody.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promotion-summary.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/remaining-open-field-census.json' 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.md' 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.schema.json' 'test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.test.js' 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs' 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs'
+git config user.name 'github-actions[bot]'
+git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+git commit -m 'Qualify exact RD-04 North Dakota current public-record-gap promotion'
+FULL_COMMIT="$(git rev-parse HEAD)"
+FULL_TREE="$(git rev-parse HEAD^{tree})"
+test "$(git rev-parse HEAD^)" = "$CARRIER_PARENT"
+test "$(git diff --name-only "$CARRIER_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_FULL"
+test "$(git diff --name-only --diff-filter=A "$CARRIER_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_FULL"
+test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CARRIER_PARENT" HEAD)"
+git diff --check "$CARRIER_PARENT" HEAD
+
+printf '%s\n' qualify_full_product > "$OUT/STAGE"
+node "$VALIDATOR_PATH" | tee "$OUT/validator.json"
+node "$TEST_PATH" | tee "$OUT/adversarial.json"
+npm run release:check > "$OUT/release-check.log" 2>&1
+git reset --hard HEAD
+git clean -fdx
+test -z "$(git status --porcelain)"
+node "$VALIDATOR_PATH" > "$OUT/post-release-validator.json"
+
+printf '%s\n' publish_nonworkflow_product > "$OUT/STAGE"
+git switch --detach "$CARRIER_PARENT"
+git checkout "$FULL_COMMIT" -- 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/cell-promotion-ledger.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/index.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-reco

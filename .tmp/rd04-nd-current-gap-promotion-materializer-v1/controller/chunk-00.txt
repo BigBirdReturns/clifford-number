@@ -1,0 +1,44 @@
+CARRIER_PARENT=77aef3313e85e1fddc68805a9f22252ff147b4e8
+BASE_BRANCH=agent/ssc-rd04-nd-current-gap-promotion-materializer-base-v1
+HEAD_BRANCH=agent/ssc-rd04-nd-current-gap-promotion-materializer-trigger-v1
+PRODUCT_BRANCH=agent/ssc-rd04-nd-current-public-record-gap-promotion-nonworkflow-v1
+WORKFLOW_PATH=.github/workflows/temp-rd04-nd-current-gap-promotion-materializer-v1.yml
+SHARD_ROOT=.tmp/rd04-nd-current-gap-promotion-materializer-v1/chunks
+BASE64_BYTES=60168
+BASE64_SHA256=339d7a590c583a80b18e232917eb9a9d0bcbc2cba9a861366fba70a574f3cb09
+TRIGGER_PATH=.tmp/rd04-nd-current-gap-promotion-materializer-v1/trigger.json
+PERMANENT_WORKFLOW_PATH=.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.yml
+PERMANENT_WORKFLOW_BLOB=7dbb1c6445b7b09f68740a0890ed1da577ce5ef1
+PERMANENT_WORKFLOW_BYTES=9472
+PERMANENT_WORKFLOW_SHA256=5ac7c0e2ae27d73df5bb1a105fb452f151a4ce7775df0bb6c1a09e2b94886b23
+PAYLOAD_BYTES=45124
+PAYLOAD_SHA256=b6c7195778f86d51e86b3ae3e5c4431a6780d332ffd19c541633b8f20b50a545
+TAR_BYTES=706560
+TAR_SHA256=b883bbb1a6e5d83ff1d9538b21c336f6ecdf0d7e72eb62071858fa8de7fd1586
+PRODUCT_ROOT=data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion
+PRODUCT_MANIFEST_PATH=data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/product-manifest.json
+PROMOTED_MATRIX_PATH=data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promoted-partial-field-matrix.json
+BUILDER_PATH=tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs
+VALIDATOR_PATH=tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs
+TEST_PATH=test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.test.js
+OUT=/tmp/ssc-rd04-nd-current-gap-promotion-materializer-v1
+WORK=/tmp/ssc-rd04-nd-current-gap-promotion-work-v1
+CONTROLLER_ROOT=.tmp/rd04-nd-current-gap-promotion-materializer-v1/controller
+CONTROLLER_CHUNK_COUNT="${CONTROLLER_CHUNK_COUNT:?}"
+
+set -Eeuo pipefail
+rm -rf "$OUT" "$WORK"
+mkdir -p "$OUT" "$WORK"
+printf '%s\n' authenticate_carrier > "$OUT/STAGE"
+printf '%s\n' 1 > "$OUT/EXIT_CODE"
+test "${EVENT_NAME:?}" = pull_request
+test "${HEAD_SHA:?}" != ''
+test "${BASE_SHA:?}" != ''
+test "${HEAD_REPO:?}" = "$GITHUB_REPOSITORY"
+test "${BASE_REF:?}" = "$BASE_BRANCH"
+test "${HEAD_REF:?}" = "$HEAD_BRANCH"
+test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+test "$(git rev-parse "$BASE_SHA^")" = "$CARRIER_PARENT"
+mapfile -t base_paths < <(git diff --name-only "$CARRIER_PARENT" "$BASE_SHA" | LC_ALL=C sort)
+mapfile -t trigger_paths < <(git diff --name-only "$BASE_SHA" "$HEA

@@ -1,0 +1,19 @@
+s --short --untracked-files=all | sed -n 's/^A  //p;s/^?? //p' | LC_ALL=C sort)" = "$EXPECTED_NON"
+git add -- 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/cell-promotion-ledger.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/index.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/product-manifest.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promoted-partial-field-matrix.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promotion-decision.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promotion-input-custody.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promotion-summary.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/remaining-open-field-census.json' 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.md' 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.schema.json' 'test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.test.js' 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs' 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs'
+git commit -m 'Materialize nonworkflow RD-04 North Dakota current public-record-gap promotion custody'
+NONWORKFLOW_COMMIT="$(git rev-parse HEAD)"
+NONWORKFLOW_TREE="$(git rev-parse HEAD^{tree})"
+test "$(git rev-parse HEAD^)" = "$CARRIER_PARENT"
+test "$(git diff --name-only "$CARRIER_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_NON"
+test "$(git diff --name-only --diff-filter=A "$CARRIER_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_NON"
+test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CARRIER_PARENT" HEAD)"
+WORKFLOW_BLOB="$(git rev-parse "$FULL_COMMIT:$PERMANENT_WORKFLOW_PATH")"
+test "$WORKFLOW_BLOB" = "$PERMANENT_WORKFLOW_BLOB"
+rm -f "$WORK/full-index"
+GIT_INDEX_FILE="$WORK/full-index" git read-tree "$NONWORKFLOW_COMMIT"
+GIT_INDEX_FILE="$WORK/full-index" git update-index --add --cacheinfo "100644,$WORKFLOW_BLOB,$PERMANENT_WORKFLOW_PATH"
+RECONSTRUCTED_FULL_TREE="$(GIT_INDEX_FILE="$WORK/full-index" git write-tree)"
+test "$RECONSTRUCTED_FULL_TREE" = "$FULL_TREE"
+git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+test "$(git rev-parse origin/main)" = "$CARRIER_PARENT"
+if git ls-remote --exit-code --heads origin "ref

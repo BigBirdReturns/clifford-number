@@ -1,0 +1,37 @@
+s/heads/$PRODUCT_BRANCH" >/dev/null 2>&1; then exit 1; fi
+git push origin "$NONWORKFLOW_COMMIT:refs/heads/$PRODUCT_BRANCH"
+test "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$NONWORKFLOW_COMMIT"
+
+python - "$OUT/receipt.json" "$FULL_COMMIT" "$FULL_TREE" "$NONWORKFLOW_COMMIT" "$NONWORKFLOW_TREE" "$RECONSTRUCTED_FULL_TREE" <<'PYREC'
+import json,sys
+out,full_commit,full_tree,non_commit,non_tree,reconstructed=sys.argv[1:]
+obj={
+  'schema_version':'ssc-rd04-nd-current-gap-promotion-materializer-receipt@1',
+  'state':'qualified_nonworkflow_product_published',
+  'canonical_parent':'77aef3313e85e1fddc68805a9f22252ff147b4e8',
+  'carrier_base':'agent/ssc-rd04-nd-current-gap-promotion-materializer-base-v1',
+  'carrier_head':'agent/ssc-rd04-nd-current-gap-promotion-materializer-trigger-v1',
+  'full_product_commit_local':full_commit,
+  'full_product_tree':full_tree,
+  'nonworkflow_product_commit':non_commit,
+  'nonworkflow_product_tree':non_tree,
+  'reconstructed_full_tree':reconstructed,
+  'permanent_workflow_blob':'7dbb1c6445b7b09f68740a0890ed1da577ce5ef1',
+  'permanent_paths':14,
+  'published_nonworkflow_paths':13,
+  'promoted_matrix_sha256':'1878270c1c34d1a96b28eb0ee26eff5b1b3b6c8d74a56026c293544c7925d824',
+  'field_terminalizations':1,'matrix_updates':1,
+  'row_state_mutations':0,'row_terminalizations':0,
+  'class_closed':False,'outside_human_dependency':False,
+  'source_requests':0,'route_executions':0,'source_admissions':0,
+  'publication_effect':'none','adoption_effect':'none','graph_effect':'none'
+}
+open(out,'w').write(json.dumps(obj,indent=2,sort_keys=True)+'\n')
+PYREC
+cp "$WORK/product.tar.xz" "$OUT/product.tar.xz"
+cp "$WORK/product.b64" "$OUT/product.b64"
+git show "$FULL_COMMIT:$PERMANENT_WORKFLOW_PATH" > "$OUT/permanent-workflow.yml"
+git show "$FULL_COMMIT:$PRODUCT_MANIFEST_PATH" > "$OUT/product-manifest.json"
+printf '%s\n' 0 > "$OUT/EXIT_CODE"
+printf '%s\n' complete > "$OUT/STAGE"
+(cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)

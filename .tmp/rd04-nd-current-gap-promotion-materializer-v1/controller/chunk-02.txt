@@ -1,0 +1,17 @@
+es/ssc-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.md","schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.schema.json","test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.test.js","tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs","tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs"]
+with tarfile.open(sys.argv[1],'r:') as tf:
+    members=tf.getmembers()
+    names=[m.name for m in members]
+    assert names==expected
+    assert all(m.isfile() and not m.issym() and not m.islnk() for m in members)
+    for name in names:
+        p=pathlib.PurePosixPath(name)
+        assert not p.is_absolute() and '..' not in p.parts
+PYSAFE
+
+printf '%s\n' construct_full_product > "$OUT/STAGE"
+git worktree add --detach "$WORK/repo" "$CARRIER_PARENT"
+tar -xf "$WORK/product.tar" -C "$WORK/repo"
+cd "$WORK/repo"
+EXPECTED_FULL="$(printf '%s\n' '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.yml' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/cell-promotion-ledger.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/index.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/product-manifest.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promoted-partial-field-matrix.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promotion-decision.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promotion-input-custody.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promotion-summary.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/remaining-open-field-census.json' 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.md' 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.schema.json' 'test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.test.js' 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs' 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs' | LC_ALL=C sort)"
+test "$(find . -type f -not -path './.git/*' -printf '%P\n' | grep -F -x -f <(printf '%s\n' '.gi

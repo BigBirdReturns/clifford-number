@@ -1,0 +1,37 @@
+D_SHA" | LC_ALL=C sort)
+expected_base_count=$((1 + 21 + CONTROLLER_CHUNK_COUNT))
+test "${#base_paths[@]}" -eq "$expected_base_count"
+test "$(printf '%s\n' "${base_paths[@]}" | grep -Fxc "$WORKFLOW_PATH")" -eq 1
+for i in $(seq -w 0 20); do
+  p="$SHARD_ROOT/chunk-$i.b64"
+  test "$(printf '%s\n' "${base_paths[@]}" | grep -Fxc "$p")" -eq 1
+done
+for ((i=0; i<CONTROLLER_CHUNK_COUNT; i++)); do
+  printf -v n '%02d' "$i"
+  p="$CONTROLLER_ROOT/chunk-$n.txt"
+  test "$(printf '%s\n' "${base_paths[@]}" | grep -Fxc "$p")" -eq 1
+done
+test "${#trigger_paths[@]}" -eq 1
+test "${trigger_paths[0]}" = "$TRIGGER_PATH"
+git diff --check "$CARRIER_PARENT" "$HEAD_SHA"
+git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+test "$(git rev-parse origin/main)" = "$CARRIER_PARENT"
+if git ls-remote --exit-code --heads origin "refs/heads/$PRODUCT_BRANCH" >/dev/null 2>&1; then
+  echo product_branch_already_exists >&2
+  exit 1
+fi
+
+printf '%s\n' authenticate_payload > "$OUT/STAGE"
+cat "$SHARD_ROOT"/chunk-*.b64 > "$WORK/product.b64"
+test "$(stat -c %s "$WORK/product.b64")" = "$BASE64_BYTES"
+test "$(sha256sum "$WORK/product.b64" | awk '{print $1}')" = "$BASE64_SHA256"
+base64 -d "$WORK/product.b64" > "$WORK/product.tar.xz"
+test "$(stat -c %s "$WORK/product.tar.xz")" = "$PAYLOAD_BYTES"
+test "$(sha256sum "$WORK/product.tar.xz" | awk '{print $1}')" = "$PAYLOAD_SHA256"
+xz -t "$WORK/product.tar.xz"
+xz -dc "$WORK/product.tar.xz" > "$WORK/product.tar"
+test "$(stat -c %s "$WORK/product.tar")" = "$TAR_BYTES"
+test "$(sha256sum "$WORK/product.tar" | awk '{print $1}')" = "$TAR_SHA256"
+python - "$WORK/product.tar" <<'PYSAFE'
+import pathlib,sys,tarfile
+expected=[".github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.yml","data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/cell-promotion-ledger.json","data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/index.json","data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/product-manifest.json","data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promoted-partial-field-matrix.json","data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promotion-decision.json","data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promotion-input-custody.json","data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promotion-summary.json","data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/remaining-open-field-census.json","docs/mileston
