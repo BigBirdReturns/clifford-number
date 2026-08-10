@@ -1,0 +1,318 @@
+name: TEMP capture RD-04 Montana validation controller v4
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-mt-row-state-validation-diagnostic-base-v4
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-mt-row-state-validation-materializer/trigger.json'
+
+permissions:
+  contents: read
+
+env:
+  PAYLOAD: .tmp/rd04-mt-row-state-validation-materializer/package.tar.gz.b64
+  OUT: /tmp/rd04-mt-row-state-validation-materializer-v1-artifact
+  PACKAGE: /tmp/rd04-mt-row-state-validation-package
+  DIAG: /tmp/rd04-mt-row-state-validation-diagnostic-v4
+  PAYLOAD_B64_BYTES: '14740'
+  PAYLOAD_B64_SHA256: d19b30d285e725f0cba1844864f9a8a4d543e46de2ff66484e3a9b710b9771aa
+  PAYLOAD_GZIP_BYTES: '11054'
+  PAYLOAD_GZIP_SHA256: db899783e6a52055842ba9748b9ea1996d5bfa5b7806db374fbf127723c2c3ba
+  PAYLOAD_TAR_BYTES: '61440'
+  PAYLOAD_TAR_SHA256: d81a4cc83d47f192995a9bf32aed803f4f5c878799558ce906fc166ada7af559
+  CONTROLLER_BYTES: '9075'
+  CONTROLLER_SHA256: 5b9b91cf7e30af38ca4fcec137b8a43d5e3e9c3c3c21e259b6aa21a1bf9d1674
+
+jobs:
+  capture:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-mt-row-state-validation-diagnostic-base-v4' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-mt-row-state-validation-diagnostic-trigger-v4'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Initialize durable capture directory
+        if: always()
+        shell: bash
+        run: |
+          rm -rf "$DIAG" "$OUT" "$PACKAGE"
+          mkdir -p "$DIAG" "$OUT" "$PACKAGE"
+          printf '%s\n' capture_initialized > "$DIAG/initialization.txt"
+
+      - name: Execute exact package under non-throwing custody harness
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CARRIER_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          from __future__ import annotations
+
+          import base64
+          import gzip
+          import hashlib
+          import io
+          import json
+          import os
+          import pathlib
+          import py_compile
+          import stat
+          import subprocess
+          import sys
+          import tarfile
+          import traceback
+          from pathlib import PurePosixPath
+          from typing import Any
+
+          repo = pathlib.Path.cwd()
+          diag = pathlib.Path(os.environ["DIAG"])
+          out = pathlib.Path(os.environ["OUT"])
+          package = pathlib.Path(os.environ["PACKAGE"])
+          payload_path = repo / os.environ["PAYLOAD"]
+          diag.mkdir(parents=True, exist_ok=True)
+          out.mkdir(parents=True, exist_ok=True)
+          package.mkdir(parents=True, exist_ok=True)
+
+          expected = {
+              "payload_b64_bytes": int(os.environ["PAYLOAD_B64_BYTES"]),
+              "payload_b64_sha256": os.environ["PAYLOAD_B64_SHA256"],
+              "payload_gzip_bytes": int(os.environ["PAYLOAD_GZIP_BYTES"]),
+              "payload_gzip_sha256": os.environ["PAYLOAD_GZIP_SHA256"],
+              "payload_tar_bytes": int(os.environ["PAYLOAD_TAR_BYTES"]),
+              "payload_tar_sha256": os.environ["PAYLOAD_TAR_SHA256"],
+              "controller_bytes": int(os.environ["CONTROLLER_BYTES"]),
+              "controller_sha256": os.environ["CONTROLLER_SHA256"],
+          }
+          receipt: dict[str, Any] = {
+              "schema_version": "ssc-rd04-mt-row-state-validation-controller-capture@1",
+              "state": "capture_started",
+              "canonical_parent": "e62de80e187f9be037cbdd3a4b942b5840d223de",
+              "event_head_sha": os.environ.get("EVENT_HEAD_SHA"),
+              "carrier_base_sha": os.environ.get("CARRIER_BASE_SHA"),
+              "expected": expected,
+              "canonical_effect": "none",
+          }
+
+          def digest(data: bytes) -> str:
+              return hashlib.sha256(data).hexdigest()
+
+          def git_capture(name: str, args: list[str]) -> None:
+              proc = subprocess.run(
+                  args,
+                  cwd=repo,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.STDOUT,
+                  check=False,
+              )
+              (diag / name).write_bytes(proc.stdout)
+              receipt.setdefault("git_commands", {})[name] = {
+                  "argv": args,
+                  "exit_code": proc.returncode,
+              }
+
+          def snapshot_partial_output() -> None:
+              target_root = diag / "controller-out"
+              target_root.mkdir(parents=True, exist_ok=True)
+              if not out.exists():
+                  return
+              for source in sorted(out.rglob("*")):
+                  if source.is_file() and not source.is_symlink():
+                      relative = source.relative_to(out)
+                      target = target_root / relative
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      target.write_bytes(source.read_bytes())
+
+          try:
+              payload_b64 = payload_path.read_bytes()
+              assert len(payload_b64) == expected["payload_b64_bytes"]
+              assert digest(payload_b64) == expected["payload_b64_sha256"]
+              (diag / "package.tar.gz.b64").write_bytes(payload_b64)
+
+              compact_b64 = b"".join(payload_b64.split())
+              gzip_bytes = base64.b64decode(compact_b64, validate=True)
+              assert len(gzip_bytes) == expected["payload_gzip_bytes"]
+              assert digest(gzip_bytes) == expected["payload_gzip_sha256"]
+              (diag / "package.tar.gz").write_bytes(gzip_bytes)
+
+              tar_bytes = gzip.decompress(gzip_bytes)
+              assert len(tar_bytes) == expected["payload_tar_bytes"]
+              assert digest(tar_bytes) == expected["payload_tar_sha256"]
+              (diag / "package.tar").write_bytes(tar_bytes)
+
+              members: list[dict[str, Any]] = []
+              with tarfile.open(fileobj=io.BytesIO(tar_bytes), mode="r:") as archive:
+                  infos = archive.getmembers()
+                  assert infos
+                  for info in infos:
+                      member_path = PurePosixPath(info.name)
+                      assert not member_path.is_absolute()
+                      assert ".." not in member_path.parts
+                      assert info.isfile()
+                      extracted = archive.extractfile(info)
+                      assert extracted is not None
+                      data = extracted.read()
+                      assert len(data) == info.size
+                      target = package.joinpath(*member_path.parts)
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      target.write_bytes(data)
+                      os.chmod(target, stat.S_IMODE(info.mode))
+                      members.append(
+                          {
+                              "path": info.name,
+                              "bytes": info.size,
+                              "sha256": digest(data),
+                              "mode": oct(stat.S_IMODE(info.mode)),
+                          }
+                      )
+              (diag / "package-members.json").write_text(
+                  json.dumps(members, indent=2, sort_keys=True) + "\n",
+                  encoding="utf-8",
+              )
+
+              controller_path = package / "controller.py"
+              controller = controller_path.read_bytes()
+              assert len(controller) == expected["controller_bytes"]
+              assert digest(controller) == expected["controller_sha256"]
+              (diag / "controller.py").write_bytes(controller)
+              py_compile.compile(str(controller_path), doraise=True)
+              receipt["controller_compilation"] = "passed"
+
+              process = subprocess.run(
+                  [sys.executable, "-X", "dev", str(controller_path)],
+                  cwd=repo,
+                  env=os.environ.copy(),
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+                  check=False,
+              )
+              (diag / "controller-stdout.log").write_bytes(process.stdout)
+              (diag / "controller-stderr.log").write_bytes(process.stderr)
+              (diag / "controller-exit-code.txt").write_text(
+                  f"{process.returncode}\n",
+                  encoding="utf-8",
+              )
+              receipt["controller_exit_code"] = process.returncode
+              receipt["controller_stdout_bytes"] = len(process.stdout)
+              receipt["controller_stderr_bytes"] = len(process.stderr)
+              receipt["state"] = "controller_execution_captured"
+          except BaseException as exc:
+              receipt["state"] = "capture_harness_exception"
+              receipt["harness_error_type"] = type(exc).__name__
+              receipt["harness_error"] = str(exc)
+              (diag / "harness-traceback.txt").write_text(
+                  traceback.format_exc(),
+                  encoding="utf-8",
+              )
+          finally:
+              try:
+                  snapshot_partial_output()
+              except BaseException:
+                  (diag / "partial-output-snapshot-traceback.txt").write_text(
+                      traceback.format_exc(),
+                      encoding="utf-8",
+                  )
+              try:
+                  git_capture(
+                      "head-commit.txt",
+                      ["git", "show", "-s", "--format=%H%n%P%n%T%n%s", "HEAD"],
+                  )
+                  git_capture(
+                      "base-commit.txt",
+                      [
+                          "git",
+                          "show",
+                          "-s",
+                          "--format=%H%n%P%n%T%n%s",
+                          os.environ.get("CARRIER_BASE_SHA", ""),
+                      ],
+                  )
+                  git_capture(
+                      "trigger-diff.txt",
+                      [
+                          "git",
+                          "diff",
+                          "--name-status",
+                          os.environ.get("CARRIER_BASE_SHA", ""),
+                          os.environ.get("EVENT_HEAD_SHA", ""),
+                      ],
+                  )
+                  git_capture(
+                      "base-diff.txt",
+                      [
+                          "git",
+                          "diff",
+                          "--name-status",
+                          "e62de80e187f9be037cbdd3a4b942b5840d223de",
+                          os.environ.get("CARRIER_BASE_SHA", ""),
+                      ],
+                  )
+              except BaseException:
+                  (diag / "git-capture-traceback.txt").write_text(
+                      traceback.format_exc(),
+                      encoding="utf-8",
+                  )
+
+              (diag / "capture-receipt.json").write_text(
+                  json.dumps(receipt, indent=2, sort_keys=True) + "\n",
+                  encoding="utf-8",
+              )
+              rows = []
+              for path in sorted(diag.rglob("*")):
+                  if path.is_file() and path.name != "SHA256SUMS":
+                      rows.append(
+                          f"{digest(path.read_bytes())}  "
+                          f"{path.relative_to(diag).as_posix()}"
+                      )
+              (diag / "SHA256SUMS").write_text(
+                  "\n".join(rows) + "\n",
+                  encoding="utf-8",
+              )
+
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          sys.exit(0)
+          PY
+
+      - name: Print captured controller outcome
+        if: always()
+        shell: bash
+        run: |
+          echo '--- capture receipt ---'
+          cat "$DIAG/capture-receipt.json" 2>/dev/null || true
+          echo '--- controller stderr ---'
+          sed -n '1,400p' "$DIAG/controller-stderr.log" 2>/dev/null || true
+          echo '--- controller stdout ---'
+          sed -n '1,400p' "$DIAG/controller-stdout.log" 2>/dev/null || true
+          echo '--- harness traceback ---'
+          sed -n '1,400p' "$DIAG/harness-traceback.txt" 2>/dev/null || true
+          echo '--- partial controller output ---'
+          find "$DIAG/controller-out" -maxdepth 4 -type f -print 2>/dev/null || true
+
+      - name: Preserve exact Montana controller capture
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-validation-controller-capture-v4
+          path: ${{ env.DIAG }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
