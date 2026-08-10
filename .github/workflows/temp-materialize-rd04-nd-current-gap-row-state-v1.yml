@@ -1,0 +1,202 @@
+name: TEMP materialize RD-04 North Dakota derivative row-state v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - agent/ssc-rd04-nd-current-gap-row-state-materializer-base-v1
+    paths:
+      - '.tmp/rd04-nd-current-gap-row-state-materializer-v1/trigger.json'
+
+permissions:
+  contents: write
+
+env:
+  CANONICAL_PARENT: 4eaa66d7a0f025e0c4ec797e9925634a22d9e49e
+  CANONICAL_TREE: 51c46f38071f7f5193ab7856a193095a86389356
+  BASE_BRANCH: agent/ssc-rd04-nd-current-gap-row-state-materializer-base-v1
+  HEAD_BRANCH: agent/ssc-rd04-nd-current-gap-row-state-materializer-trigger-v1
+  PRODUCT_BRANCH: agent/ssc-rd04-nd-current-gap-row-state-reconciliation-v1
+  WORKFLOW_PATH: .github/workflows/temp-materialize-rd04-nd-current-gap-row-state-v1.yml
+  PAYLOAD_ROOT: .tmp/rd04-nd-current-gap-row-state-materializer-v1
+  TRIGGER_PATH: .tmp/rd04-nd-current-gap-row-state-materializer-v1/trigger.json
+  B64_BYTES: '77664'
+  B64_SHA256: 563f926ca65fcc25f1bc151c20588e8917fa18b80f4be4e20032fd787d4c326a
+  XZ_BYTES: '58248'
+  XZ_SHA256: 596fcad324f75dfcab505da0f419436a7016ca4c753f5c11a197f8463e7bc9b3
+  TAR_BYTES: '1423360'
+  TAR_SHA256: a733b64febd0f9ced96737d78356191662e6d789a4125353a75c4f638fec7315
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-row-state-reconciliation
+  OUT: /tmp/ssc-rd04-nd-current-gap-row-state-materializer-v1
+  WORK: /tmp/ssc-rd04-nd-current-gap-row-state-product-v1
+  EXTRACT: /tmp/ssc-rd04-nd-current-gap-row-state-extract-v1
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-current-gap-row-state-materializer-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-current-gap-row-state-materializer-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Bind exact carrier and authenticate sealed archive
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$WORK" "$EXTRACT"
+          mkdir -p "$OUT" "$EXTRACT"
+          printf '%s\n' bind > "$OUT/stage"
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          BASE_SHA='${{ github.event.pull_request.base.sha }}'
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          test "$(git rev-list --count "$CANONICAL_PARENT..$BASE_SHA")" -eq 9
+          test "$(git rev-list --count "$BASE_SHA..$HEAD_SHA")" -eq 1
+          EXPECTED_BASE="$(printf '%s\n' \
+            "$WORKFLOW_PATH" \
+            "$PAYLOAD_ROOT/payload-00.b64" \
+            "$PAYLOAD_ROOT/payload-01.b64" \
+            "$PAYLOAD_ROOT/payload-02.b64" \
+            "$PAYLOAD_ROOT/payload-03.b64" \
+            "$PAYLOAD_ROOT/payload-04.b64" \
+            "$PAYLOAD_ROOT/payload-05.b64" \
+            "$PAYLOAD_ROOT/payload-06.b64" \
+            "$PAYLOAD_ROOT/payload-07.b64" | LC_ALL=C sort)"
+          test "$(git diff --name-only "$CANONICAL_PARENT" "$BASE_SHA" | LC_ALL=C sort)" = "$EXPECTED_BASE"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$BASE_SHA" | LC_ALL=C sort)" = "$EXPECTED_BASE"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" "$BASE_SHA")"
+          test "$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA")" = "$TRIGGER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$BASE_SHA" "$HEAD_SHA")"
+          git diff --check "$CANONICAL_PARENT" "$HEAD_SHA"
+
+          cat "$PAYLOAD_ROOT"/payload-*.b64 > "$OUT/product.tar.xz.b64"
+          test "$(stat -c %s "$OUT/product.tar.xz.b64")" = "$B64_BYTES"
+          test "$(sha256sum "$OUT/product.tar.xz.b64" | cut -d' ' -f1)" = "$B64_SHA256"
+          base64 -d "$OUT/product.tar.xz.b64" > "$OUT/product.tar.xz"
+          test "$(stat -c %s "$OUT/product.tar.xz")" = "$XZ_BYTES"
+          test "$(sha256sum "$OUT/product.tar.xz" | cut -d' ' -f1)" = "$XZ_SHA256"
+          xz -t "$OUT/product.tar.xz"
+          xz -dc "$OUT/product.tar.xz" > "$OUT/product.tar"
+          test "$(stat -c %s "$OUT/product.tar")" = "$TAR_BYTES"
+          test "$(sha256sum "$OUT/product.tar" | cut -d' ' -f1)" = "$TAR_SHA256"
+          python - "$OUT/product.tar" <<'PY'
+          import pathlib,sys,tarfile
+          p=pathlib.Path(sys.argv[1])
+          with tarfile.open(p) as t:
+              members=t.getmembers()
+              assert len(members)==14
+              assert all(m.isfile() for m in members)
+              names=[m.name for m in members]
+              assert len(names)==len(set(names))==14
+              assert all(not n.startswith('/') and '..' not in pathlib.PurePosixPath(n).parts for n in names)
+          PY
+          tar -xf "$OUT/product.tar" -C "$EXTRACT"
+          python - "$EXTRACT" <<'PY'
+          import json,pathlib,sys
+          root=pathlib.Path(sys.argv[1])
+          manifest=json.loads((root/'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-row-state-reconciliation/product-manifest.json').read_text())
+          found=sorted(p.relative_to(root).as_posix() for p in root.rglob('*') if p.is_file())
+          assert manifest['permanent_path_count']==14
+          assert manifest['hashed_file_count']==13
+          assert sorted(manifest['permanent_paths'])==found
+          assert manifest['addition_only'] is True
+          assert manifest['workflow_or_transport_paths']==0
+          assert manifest['authority_boundary']['field_terminalizations']==1
+          assert manifest['authority_boundary']['matrix_updates']==1
+          assert manifest['authority_boundary']['row_state_mutations']==1
+          assert manifest['authority_boundary']['row_terminalizations']==1
+          assert manifest['authority_boundary']['class_closed'] is False
+          assert manifest['authority_boundary']['cumulative_ledger_effect']=='none'
+          PY
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "$CANONICAL_PARENT^{tree}")" = "$CANONICAL_TREE"
+          if git ls-remote --exit-code --heads origin "refs/heads/$PRODUCT_BRANCH" >/dev/null 2>&1; then
+            echo 'product branch already exists' >&2
+            exit 1
+          fi
+          printf '%s\n' authenticated > "$OUT/stage"
+
+      - name: Construct and qualify exact fourteen-path product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '%s\n' construct > "$OUT/stage"
+          git worktree add --detach "$WORK" "$CANONICAL_PARENT"
+          tar -xf "$OUT/product.tar" -C "$WORK"
+          cd "$WORK"
+          EXPECTED="$(tar -tf "$OUT/product.tar" | LC_ALL=C sort)"
+          test "$(git status --short --untracked-files=all | sed -n 's/^?? //p' | LC_ALL=C sort)" = "$EXPECTED"
+          git add -- $(tar -tf "$OUT/product.tar")
+          test "$(git diff --cached --name-only | LC_ALL=C sort)" = "$EXPECTED"
+          test "$(git diff --cached --name-only --diff-filter=A | LC_ALL=C sort)" = "$EXPECTED"
+          test -z "$(git diff --cached --name-only --diff-filter=MDTCRUXB)"
+          git config user.name 'RD-04 fail-closed materializer'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m 'Reconcile North Dakota derivative row-state after terminal evidence custody'
+          PRODUCT_COMMIT="$(git rev-parse HEAD)"
+          PRODUCT_TREE="$(git rev-parse 'HEAD^{tree}')"
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"
+          test "$(git rev-list --count "$CANONICAL_PARENT..HEAD")" -eq 1
+          test "$(git diff --name-only "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" HEAD)"
+
+          printf '%s\n' focused-validation > "$OUT/stage"
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-row-state-reconciliation.mjs --out /tmp/rd04-row-rebuild > "$OUT/build-receipt.json"
+          for f in row-state-input-custody.json row-state-decision.json row-state-transition-ledger.json reconciled-partial-field-matrix.json remaining-open-field-census.json row-state-summary.json index.json; do
+            cmp "/tmp/rd04-row-rebuild/$f" "$PRODUCT_ROOT/$f"
+          done
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-row-state-reconciliation.mjs > "$OUT/validation-receipt.json"
+          node --test test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-row-state-reconciliation.test.js > "$OUT/adversarial-test.log" 2>&1
+
+          printf '%s\n' release > "$OUT/stage"
+          npm run release:check > "$OUT/release-check.log" 2>&1
+          git reset --hard HEAD
+          git clean -fdx
+          test -z "$(git status --porcelain)"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-row-state-reconciliation.mjs > "$OUT/post-release-validation.json"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          if git ls-remote --exit-code --heads origin "refs/heads/$PRODUCT_BRANCH" >/dev/null 2>&1; then
+            echo 'product branch appeared during qualification' >&2
+            exit 1
+          fi
+
+          printf '%s\n' publish > "$OUT/stage"
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          git fetch --no-tags --force origin "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse "refs/remotes/origin/$PRODUCT_BRANCH")" = "$PRODUCT_COMMIT"
+          python - "$OUT/receipt.json" "$PRODUCT_COMMIT" "$PRODUCT_TREE" <<'PY'
+          import json,pathlib,subprocess,sys
+          out=pathlib.Path(sys.argv[1]); commit=sys.argv[2]; tree=sys.argv[3]
+          paths=subprocess.check_output(['git','diff','--name-only',commit+'^',commit],text=True).splitlines()
+          blobs={p:subprocess.check_output(['git','rev-parse',f'{commit}:{p}'],text=True).strip() for p in paths}
+          receipt={'schema_version':'ssc-rd04-nd-current-gap-row-state-materializer-receipt@1','state':'product_published','canonical_parent':'4eaa66d7a0f025e0c4ec797e9925634a22d9e49e','product_commit':commit,'product_tree':tree,'product_branch':'agent/ssc-rd04-nd-current-gap-row-state-reconciliation-v1','permanent_paths':14,'product_paths':paths,'product_blobs':blobs,'terminal_cells':229,'still_open_cells':221,'terminal_substantive_cells':118,'still_open_substantive_cells':182,'terminal_units':11,'field_terminalizations':1,'matrix_updates':1,'row_state_mutations':1,'row_terminalizations':1,'substantive_cell_changes':0,'source_requests':0,'route_executions':0,'source_admissions':0,'class_closed':False,'cumulative_ledger_effect':'none','outside_human_dependency':False,'next_unit_id':'US-STATE-AL','next_field_id':'operative_state_implementation_authority_and_version'}
+          out.write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          PY
+          printf '%s\n' complete > "$OUT/stage"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+
+      - name: Preserve materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-current-gap-row-state-materializer-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
