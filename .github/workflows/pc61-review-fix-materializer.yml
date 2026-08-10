@@ -1,0 +1,151 @@
+name: PC-61 exact review-fix materializer
+
+'on':
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pc61-review-fix-materializer.yml'
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: pc61-review-fix-materializer
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPOSITORY: ${{ github.repository }}
+  PRODUCT: 'a6c5b393311483159881c3f39a6db363550b80c0'
+  PARENT: 'e62de80e187f9be037cbdd3a4b942b5840d223de'
+  STANDALONE_PATH: 'tools/lib/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs'
+  STANDALONE_SOURCE_BLOB: '3c77c2880e3641f26140456f7fd90bdbb8a999ac'
+  FLOOR_PATH: 'tools/lib/preference-custody-manifest-v59.mjs'
+  FLOOR_SOURCE_BLOB: '2b2166e8609c061ca3bdd1048df237c7af8e59be'
+  WORK: '/tmp/pc61-review-fix'
+  REPLAY: '/tmp/pc61-review-fix-replay'
+
+jobs:
+  materialize:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/pc61-review-fix-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Stage exact P2 repairs and replay the product
+        id: stage
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$WORK" "$REPLAY"
+          mkdir -p "$WORK"
+          test "$(git show -s --format='%P' "$PRODUCT")" = "$PARENT"
+          test "$(git rev-list --count "$PARENT".."$PRODUCT")" = 1
+
+          fetch_path() {
+            local path=$1 expected=$2 stem=$3
+            gh api --method GET "/repos/$GH_REPOSITORY/contents/$path" -f ref="$PRODUCT" > "$WORK/$stem-source.json"
+            test "$(jq -r .sha "$WORK/$stem-source.json")" = "$expected"
+            jq -r .content "$WORK/$stem-source.json" | tr -d '\n' | base64 -d > "$WORK/$stem-before.mjs"
+            test "$(git hash-object "$WORK/$stem-before.mjs")" = "$expected"
+          }
+          fetch_path "$STANDALONE_PATH" "$STANDALONE_SOURCE_BLOB" standalone
+          fetch_path "$FLOOR_PATH" "$FLOOR_SOURCE_BLOB" floor
+
+          python - "$WORK/standalone-before.mjs" "$WORK/standalone-after.mjs" "$WORK/floor-before.mjs" "$WORK/floor-after.mjs" <<'PY'
+          from pathlib import Path
+          import sys
+
+          for source_path, target_path, label in [
+              (sys.argv[1], sys.argv[2], 'standalone metrics'),
+              (sys.argv[3], sys.argv[4], 'floor successor frontiers'),
+          ]:
+              source=Path(source_path).read_text()
+              old=".join('\\\\n')"
+              new=".join('\\n')"
+              if source.count(old)!=1:
+                  raise SystemExit(f'{label} literal-newline preimage denominator {source.count(old)} != 1')
+              target=source.replace(old,new)
+              if target.count(old)!=0 or target.count(new)!=1:
+                  raise SystemExit(f'{label} literal-newline postimage mismatch')
+              Path(target_path).write_text(target)
+          PY
+
+          node --check "$WORK/standalone-after.mjs"
+          node --check "$WORK/floor-after.mjs"
+          diff -u "$WORK/standalone-before.mjs" "$WORK/standalone-after.mjs" > "$WORK/standalone.patch" || test "$?" = 1
+          diff -u "$WORK/floor-before.mjs" "$WORK/floor-after.mjs" > "$WORK/floor.patch" || test "$?" = 1
+
+          git fetch --no-tags origin "$PRODUCT" "$PARENT"
+          git worktree add --detach "$REPLAY" "$PRODUCT"
+          cp "$WORK/standalone-after.mjs" "$REPLAY/$STANDALONE_PATH"
+          cp "$WORK/floor-after.mjs" "$REPLAY/$FLOOR_PATH"
+          {
+            cd "$REPLAY"
+            node tools/compile-preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs
+            node tools/validate-preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs
+            node test/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.test.js
+            node tools/compile-preference-custody-manifest-v59.mjs
+            node tools/validate-preference-custody-manifest-v59.mjs
+            node test/preference-custody-manifest-v59.test.js
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+            npm run release:check
+          } 2>&1 | tee "$WORK/replay.log"
+
+          python - "$REPLAY/build/research/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.md" "$REPLAY/build/research/preference-custody-laboratory-floor-v59.md" <<'PY'
+          from pathlib import Path
+          import sys
+          standalone=Path(sys.argv[1]).read_text()
+          floor=Path(sys.argv[2]).read_text()
+          if standalone.count('\n| ') < 17:
+              raise SystemExit('standalone Markdown metric-row denominator too small')
+          if '\\n| ' in standalone:
+              raise SystemExit('standalone Markdown retains literal newline escape')
+          successor=[line for line in floor.splitlines() if line.startswith('- `linkage_interval_')]
+          if len(successor)!=2:
+              raise SystemExit(f'floor Markdown successor denominator {len(successor)} != 2')
+          if '\\n- `' in floor:
+              raise SystemExit('floor Markdown retains literal newline escape')
+          PY
+
+          stage_blob() {
+            local file=$1 stem=$2
+            local expected encoded observed
+            expected=$(git hash-object "$file")
+            encoded=$(base64 -w0 "$file")
+            gh api --method POST "/repos/$GH_REPOSITORY/git/blobs" -f content="$encoded" -f encoding=base64 > "$WORK/$stem-blob-response.json"
+            observed=$(jq -r .sha "$WORK/$stem-blob-response.json")
+            test "$observed" = "$expected"
+            printf '%s' "$expected"
+          }
+          standalone_blob=$(stage_blob "$WORK/standalone-after.mjs" standalone)
+          floor_blob=$(stage_blob "$WORK/floor-after.mjs" floor)
+
+          jq -n --arg schema_version 'pc61-review-fix-materialization@1' --arg status complete --arg product "$PRODUCT" --arg parent "$PARENT" --arg standalone_path "$STANDALONE_PATH" --arg standalone_source "$STANDALONE_SOURCE_BLOB" --arg standalone_target "$standalone_blob" --arg floor_path "$FLOOR_PATH" --arg floor_source "$FLOOR_SOURCE_BLOB" --arg floor_target "$floor_blob" '{schema_version:$schema_version,status:$status,product:$product,immutable_parent:$parent,repairs:[{thread:"P2 metrics Markdown rows",path:$standalone_path,source_blob:$standalone_source,target_blob:$standalone_target,old:"literal_backslash_n",new:"newline_character"},{thread:"P2 successor-frontier bullets",path:$floor_path,source_blob:$floor_source,target_blob:$floor_target,old:"literal_backslash_n",new:"newline_character"}],targeted_replay:{standalone_pc61:true,floor_v59:true,no_magic_human:true,repository_release_gate:true,rendered_markdown_checked:true},product_semantics_changed:false,authority_ceiling_changed:false,graph_effect:"none"}' > "$WORK/receipt.json"
+          echo "standalone_blob=$standalone_blob" >> "$GITHUB_OUTPUT"
+          echo "floor_blob=$floor_blob" >> "$GITHUB_OUTPUT"
+          (
+            cd "$WORK"
+            find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - name: Preserve exact PC-61 review-fix materialization
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc61-review-fix-materialization
+          path: /tmp/pc61-review-fix
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
