@@ -1,0 +1,85 @@
+name: TEMP materialize corrected RD-04 North Dakota row-state validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-rd04-nd-row-state-validation-tree-repair.yml'
+      - '.tmp/rd04-nd-row-state-validation-tree-repair/materialize.py'
+      - '.tmp/rd04-nd-row-state-validation-tree-repair/trigger.json'
+
+permissions:
+  contents: write
+
+env:
+  CANONICAL_PARENT: bab9570ab043df7c5062e5a45a0717a82eed346b
+  SOURCE_HEAD: 2e53e6da649f8c61a16944f52c37e810b6b6f286
+  SOURCE_BRANCH: agent/ssc-rd04-nd-row-state-reconciliation-validation-v2
+  TARGET_BRANCH: agent/ssc-rd04-nd-row-state-reconciliation-validation-v2-repair
+  EXPECTED_TARGET_HEAD: bab9570ab043df7c5062e5a45a0717a82eed346b
+  WORKFLOW_PATH: .github/workflows/temp-rd04-nd-row-state-validation-tree-repair.yml
+  SCRIPT_PATH: .tmp/rd04-nd-row-state-validation-tree-repair/materialize.py
+  TRIGGER_PATH: .tmp/rd04-nd-row-state-validation-tree-repair/trigger.json
+  OUT: /tmp/rd04-nd-row-state-validation-tree-repair
+  PRODUCT_WORK: /tmp/rd04-nd-row-state-validation-product
+  QUAL_WORK: /tmp/rd04-nd-row-state-validation-qualification
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Initialize failure custody
+        shell: bash
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$PRODUCT_WORK" "$QUAL_WORK"
+          mkdir -p "$OUT"
+          cat > "$OUT/carrier-start.json" <<EOF
+          {
+            "schema_version": "ssc-rd04-nd-row-state-validation-tree-repair-carrier-start@1",
+            "state": "carrier_started",
+            "event_head_sha": "$EVENT_HEAD_SHA",
+            "event_base_sha": "$EVENT_BASE_SHA",
+            "canonical_parent": "$CANONICAL_PARENT",
+            "source_head": "$SOURCE_HEAD",
+            "target_branch": "$TARGET_BRANCH",
+            "expected_target_head": "$EXPECTED_TARGET_HEAD"
+          }
+          EOF
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Rebuild, qualify, and publish corrected one-parent validation product
+        shell: bash
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          python "$SCRIPT_PATH"
+
+      - name: Preserve materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-row-state-validation-tree-repair-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
