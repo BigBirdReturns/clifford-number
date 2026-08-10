@@ -93,8 +93,8 @@ jobs:
               raise SystemExit(f'proof matrix-basis insertion denominator {source.count(proof_anchor)} != 1')
           source=source.replace(proof_anchor,proof_replacement,1)
 
-          if source.count('EXPECTED_MATRIX')!=3:
-              raise SystemExit(f'EXPECTED_MATRIX usage denominator {source.count("EXPECTED_MATRIX")} != 3')
+          if source.count('EXPECTED_MATRIX')!=4:
+              raise SystemExit(f'EXPECTED_MATRIX usage denominator {source.count("EXPECTED_MATRIX")} != 4')
           if 'MINIMUM_MATRIX' in source:
               raise SystemExit('stale MINIMUM_MATRIX remains')
           Path(sys.argv[2]).write_text(source)
