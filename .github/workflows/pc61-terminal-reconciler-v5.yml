@@ -40,7 +40,7 @@ jobs:
   reconcile:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/pc61-terminal-reconcile-v5'
     runs-on: ubuntu-24.04
-    timeout-minutes: 420
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@v4
         with:
