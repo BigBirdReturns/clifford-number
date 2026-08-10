@@ -1,0 +1,88 @@
+name: Export exact RD-04 North Dakota row-state sources
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-nd-row-state-current-main-export.yml'
+
+permissions:
+  contents: read
+
+env:
+  CANONICAL_MAIN: 283c5993cb2ac0bff173c72aba70088c67b2ac3c
+  PRODUCT_COMMIT: 4e180c0593cd2446faf2dc1286b07096d1d8b905
+  PRODUCT_PARENT: 789c800d00a6d4924cb69d2ce33d336ab315972f
+  WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-nd-row-state-current-main-export.yml
+  OUT: /tmp/rd04-nd-row-state-current-main-export
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Bind exact one-path read-only carrier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          BASE_SHA='${{ github.event.pull_request.base.sha }}'
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test "$BASE_SHA" = "$CANONICAL_MAIN"
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_MAIN"
+          test "$(git rev-list --count "$CANONICAL_MAIN..HEAD")" -eq 1
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_MAIN"
+          test "$(git diff --name-only "$CANONICAL_MAIN" HEAD)" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_MAIN" HEAD)" = "$WORKFLOW_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_MAIN" HEAD)"
+          git diff --check "$CANONICAL_MAIN" HEAD
+          test "$(git rev-parse "$PRODUCT_COMMIT^")" = "$PRODUCT_PARENT"
+      - name: Export exact current main and product paths
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          git archive --format=tar "$CANONICAL_MAIN" | gzip -9 > "$OUT/current-main-source.tar.gz"
+          git archive --format=tar "$PRODUCT_COMMIT" -- \
+            .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.yml \
+            data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/index.json \
+            data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/input-custody.json \
+            data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/product-manifest.json \
+            data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/promoted-partial-field-matrix.json \
+            data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/remaining-open-field-census.json \
+            data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/row-state-decision.json \
+            data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/row-state-ledger.json \
+            data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/row-state-summary.json \
+            docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.md \
+            schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.schema.json \
+            test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.test.js \
+            tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs \
+            tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs \
+            | gzip -9 > "$OUT/product-paths.tar.gz"
+          {
+            printf 'canonical_main=%s\n' "$CANONICAL_MAIN"
+            printf 'canonical_main_tree=%s\n' "$(git rev-parse "$CANONICAL_MAIN^{tree}")"
+            printf 'product_commit=%s\n' "$PRODUCT_COMMIT"
+            printf 'product_parent=%s\n' "$PRODUCT_PARENT"
+            printf 'product_tree=%s\n' "$(git rev-parse "$PRODUCT_COMMIT^{tree}")"
+            printf 'carrier_head=%s\n' "$(git rev-parse HEAD)"
+          } > "$OUT/git-identities.txt"
+          git diff --name-only "$PRODUCT_PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort > "$OUT/product-paths.txt"
+          test "$(wc -l < "$OUT/product-paths.txt")" -eq 14
+          (cd "$OUT" && sha256sum current-main-source.tar.gz product-paths.tar.gz git-identities.txt product-paths.txt > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - name: Preserve exact source export
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-row-state-current-main-export-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 0
