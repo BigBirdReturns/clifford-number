@@ -1,0 +1,94 @@
+name: Validate RD-04 North Dakota row-state reconciliation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation-validation.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation-validation/**'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation.py'
+
+permissions:
+  contents: read
+
+env:
+  CANONICAL_PARENT: 4eaa66d7a0f025e0c4ec797e9925634a22d9e49e
+  CANONICAL_PARENT_TREE: 51c46f38071f7f5193ab7856a193095a86389356
+  PRODUCT_COMMIT: ec9ec9f6cfc3180adcf816ae91e4bbf14df0e4dd
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promoted-partial-field-matrix.json
+  MATRIX_BLOB: c25a1ad8fdfe82f70f1ff71e61da6796be94c737
+  MATRIX_BYTES: '495400'
+  MATRIX_SHA256: 1878270c1c34d1a96b28eb0ee26eff5b1b3b6c8d74a56026c293544c7925d824
+  VALIDATION_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation-validation
+  WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation-validation.yml
+  VALIDATOR_PATH: tools/validate-status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation.py
+  OUT: /tmp/rd04-nd-row-state-reconciliation-validation
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Bind exact current row-state validation product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          BASE_SHA='${{ github.event.pull_request.base.sha }}'
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test "$BASE_SHA" = "$CANONICAL_PARENT"
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"
+          test "$(git rev-list --count "$CANONICAL_PARENT..HEAD")" -eq 1
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "$CANONICAL_PARENT^1")" = "77aef3313e85e1fddc68805a9f22252ff147b4e8"
+          test "$(git rev-parse "$CANONICAL_PARENT^2")" = "$PRODUCT_COMMIT"
+          test "$(git rev-parse "$CANONICAL_PARENT^{tree}")" = "$CANONICAL_PARENT_TREE"
+          test "$(git rev-parse "$PRODUCT_COMMIT^{tree}")" = "$CANONICAL_PARENT_TREE"
+          EXPECTED="$(printf '%s\n' \
+            "$WORKFLOW_PATH" \
+            "$VALIDATION_ROOT/current-row-custody.json" \
+            "$VALIDATION_ROOT/row-state-validation.json" \
+            "$VALIDATION_ROOT/validated-row-state-protocol.json" \
+            "$VALIDATION_ROOT/summary.json" \
+            "$VALIDATION_ROOT/product-manifest.json" \
+            "$VALIDATOR_PATH" | LC_ALL=C sort)"
+          test "$(git diff --name-only "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" HEAD)"
+          git diff --check "$CANONICAL_PARENT" HEAD
+          test "$(git rev-parse "origin/main:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          test "$(stat -c %s "$MATRIX_PATH")" = "$MATRIX_BYTES"
+          test "$(sha256sum "$MATRIX_PATH" | awk '{print $1}')" = "$MATRIX_SHA256"
+          python -m py_compile "$VALIDATOR_PATH"
+      - name: Validate exact current row and mechanical projection
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python "$VALIDATOR_PATH" > "$OUT/validation-receipt.json"
+          npm run release:check > "$OUT/release-check.log" 2>&1
+          git reset --hard HEAD
+          git clean -fdx
+          test -z "$(git status --porcelain)"
+          python "$VALIDATOR_PATH" > "$OUT/post-release-validation-receipt.json"
+          cmp "$OUT/validation-receipt.json" "$OUT/post-release-validation-receipt.json"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - name: Preserve exact row-state validation receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-row-state-reconciliation-validation-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9

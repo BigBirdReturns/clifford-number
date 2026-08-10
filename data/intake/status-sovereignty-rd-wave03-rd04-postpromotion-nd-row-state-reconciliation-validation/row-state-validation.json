@@ -1,0 +1,146 @@
+{
+  "schema_version": "ssc-rd04-nd-row-state-reconciliation-validation@1",
+  "issue": 1017,
+  "wave_id": "SSC-RD-W03",
+  "lane_id": "RD-04",
+  "class_id": "RD-04-C02",
+  "canonical_parent": "4eaa66d7a0f025e0c4ec797e9925634a22d9e49e",
+  "current_row_sha256": "0f3ba29ee5c7354249f89c96fc38c21b55341fc9fdad9b5919ecdb9243c4929e",
+  "current_row_state_cell_sha256": "6a4c7d204c6c99a89f3c121065860806668c5da850f44c67fe42b4dc84b1b5c3",
+  "validation_result": {
+    "state": "validated_exact_current_row_state",
+    "all_eight_substantive_fields_terminal": true,
+    "remaining_open_cell_count": 1,
+    "remaining_open_field_id": "field_and_row_terminal_state",
+    "row_state_transition_mechanically_admissible": true,
+    "separate_promotion_product_authorized": true,
+    "promotion_executed_here": false
+  },
+  "proposed_row_state_cell": {
+    "field_ordinal": 9,
+    "field_id": "field_and_row_terminal_state",
+    "state": "evidence_complete",
+    "terminal": true,
+    "value": {
+      "terminal_classification": "terminal_fixed_public_record_obligation_complete",
+      "row_scope": "fixed_public_record_obligation_for_one_state",
+      "completed_evidence_fields": 8,
+      "terminal_evidence_field_ids": [
+        "canonical_state_identity",
+        "operative_state_implementation_authority_and_version",
+        "implementation_effective_date_or_typed_gap",
+        "abawd_or_work_requirement_waiver_state_and_governing_period",
+        "discretionary_exemption_authority_and_reported_state_practice",
+        "fitness_for_work_or_eligibility_screening_rule",
+        "verification_evidence_and_staff_discretion_surface",
+        "source_identities_and_exact_custody"
+      ],
+      "terminal_evidence_state_counts": {
+        "evidence_complete": 7,
+        "observed": 0,
+        "not_publicly_recovered": 1
+      },
+      "predecessor_row_canonical_sha256": "0f3ba29ee5c7354249f89c96fc38c21b55341fc9fdad9b5919ecdb9243c4929e",
+      "completion_rule": "all_eight_declared_state_evidence_fields_are_terminal_under_exact_source_or_typed_gap_custody",
+      "class_effect": "none",
+      "cumulative_ledger_effect": "none",
+      "limitations": [
+        "row completion closes only the declared fixed public-record obligation for this state",
+        "typed source gaps remain distinct from event, policy, practice, or implementation absence",
+        "row completion does not establish uniform frontline practice or person-level outcome",
+        "eleven terminal rows do not establish national prevalence or close RD-04-C02"
+      ],
+      "prohibited_inferences": [
+        "do_not_infer_complete_state_implementation_truth_beyond_terminal_field_custody",
+        "do_not_convert_not_publicly_recovered_fields_into_event_or_policy_absence",
+        "do_not_infer_uniform_frontline_practice",
+        "do_not_infer_person_level_outcome",
+        "do_not_infer_national_prevalence",
+        "do_not_infer_discrimination_or_racial_order",
+        "do_not_infer_coordination_or_common_purpose",
+        "do_not_infer_complete_compact",
+        "do_not_close_rd04_c02_or_wave03_from_eleven_terminal_rows"
+      ]
+    },
+    "evidence_source_ids": [
+      "RD04-ND-ROW-STATE-RECONCILIATION-V1"
+    ],
+    "typed_gap": null,
+    "authority_effect": "row_level_fixed_public_record_obligation_terminal_only"
+  },
+  "proposed_row_state_cell_sha256": "f0c6fe75d1720c1a6cf8b90fd44b96bc96fcb0656fc70808c5439d514d30217c",
+  "projected_row": {
+    "row_sha256": "82ab2d57298f6f80f5ec8c20dd3194988ca24a0d57ace533d580d83b4b5111fd",
+    "row_state": "terminal",
+    "terminal_fields": 9,
+    "open_fields": 0
+  },
+  "projected_matrix": {
+    "bytes": 498007,
+    "sha256": "ba02d60698de8ac1fdb64cad216bbbf7412687ade49c56a6604fafe804924c0a",
+    "git_blob_sha": "c8554fd331060be3b234debc21f68e6950823c4d",
+    "counts": {
+      "units": 50,
+      "required_fields_per_unit": 9,
+      "materialized_cells": 450,
+      "inherited_terminal_cells": 211,
+      "row_state_target_cells": 7,
+      "newly_terminalized_row_state_cells": 7,
+      "evidence_complete_cells": 198,
+      "observed_cells": 17,
+      "not_publicly_recovered_cells": 14,
+      "still_open_cells": 221,
+      "terminal_cells": 229,
+      "source_rows_promoted": 50,
+      "reported_use_rows": 37,
+      "reported_no_use_rows": 13,
+      "terminal_substantive_cells": 118,
+      "still_open_substantive_cells": 182,
+      "row_terminal_state_cells_terminal": 11,
+      "row_terminal_state_cells_open": 39,
+      "terminal_units": 11,
+      "class_closed": false,
+      "promotion_candidate_cells": 4,
+      "newly_terminalized_promotion_cells": 4,
+      "postpromotion_candidate_cells": 5,
+      "newly_terminalized_postpromotion_cells": 5,
+      "postpromotion_nd_followup_candidate_cells": 1,
+      "newly_terminalized_postpromotion_nd_followup_cells": 1,
+      "postpromotion_nd_current_public_record_gap_candidate_cells": 1,
+      "newly_terminalized_postpromotion_nd_current_public_record_gap_cells": 1,
+      "postpromotion_nd_current_public_record_gap_row_state_candidate_cells": 1,
+      "newly_terminalized_postpromotion_nd_current_public_record_gap_row_state_cells": 1
+    },
+    "changed_units": 1,
+    "changed_cells": 1,
+    "unchanged_non_target_rows": 49,
+    "unchanged_non_target_rows_sha256": "e9507cce90ced2d303b6d464968c4eeed630f2f058ba4302980c34f32f3e1105"
+  },
+  "projected_effects": {
+    "field_terminalizations": 0,
+    "matrix_updates": 1,
+    "row_state_mutations": 1,
+    "row_terminalizations": 1,
+    "class_closed": false,
+    "cumulative_ledger_effect": "none",
+    "publication_effect": "none",
+    "adoption_effect": "none",
+    "graph_effect": "none",
+    "outside_human_dependency": false
+  },
+  "authority_boundary": {
+    "source_requests": 0,
+    "route_executions": 0,
+    "source_admissions": 0,
+    "field_terminalizations": 0,
+    "matrix_updates": 0,
+    "row_state_mutations": 0,
+    "row_terminalizations": 0,
+    "class_closed": false,
+    "cumulative_ledger_effect": "none",
+    "publication_effect": "none",
+    "adoption_effect": "none",
+    "graph_effect": "none",
+    "outside_human_dependency": false
+  }
+}
