@@ -1,0 +1,214 @@
+{
+  "schema_version": "ssc-rd04-nd-row-state-reconciliation-ledger@1",
+  "wave_id": "SSC-RD-W03",
+  "lane_id": "RD-04",
+  "class_id": "RD-04-C02",
+  "issue": 1017,
+  "row_state_mutation_count": 1,
+  "row_terminalization_count": 1,
+  "substantive_field_terminalization_count": 0,
+  "matrix_update_count": 1,
+  "transition": {
+    "decision_id": "RD04-ND-EXACT-CURRENT-ROW-STATE-RECONCILIATION-DECISION-V1",
+    "candidate_id": "RD04-ND-EXACT-CURRENT-ROW-STATE-RECONCILIATION-CANDIDATE-V3",
+    "unit_ordinal": 34,
+    "unit_id": "US-STATE-ND",
+    "postal_code": "ND",
+    "state_name": "North Dakota",
+    "field_id": "field_and_row_terminal_state",
+    "field_ordinal": 9,
+    "cell_before": {
+      "field_ordinal": 9,
+      "field_id": "field_and_row_terminal_state",
+      "state": "still_open",
+      "terminal": false,
+      "value": null,
+      "evidence_source_ids": [],
+      "typed_gap": "row_remains_open_because_2_required_cells_are_unresolved",
+      "authority_effect": "none"
+    },
+    "cell_before_sha256": "6a4c7d204c6c99a89f3c121065860806668c5da850f44c67fe42b4dc84b1b5c3",
+    "cell_after": {
+      "field_ordinal": 9,
+      "field_id": "field_and_row_terminal_state",
+      "state": "evidence_complete",
+      "terminal": true,
+      "value": {
+        "terminal_classification": "terminal_fixed_public_record_obligation_complete",
+        "row_scope": "fixed_public_record_obligation_for_one_state",
+        "completed_evidence_fields": 8,
+        "terminal_evidence_field_ids": [
+          "canonical_state_identity",
+          "operative_state_implementation_authority_and_version",
+          "implementation_effective_date_or_typed_gap",
+          "abawd_or_work_requirement_waiver_state_and_governing_period",
+          "discretionary_exemption_authority_and_reported_state_practice",
+          "fitness_for_work_or_eligibility_screening_rule",
+          "verification_evidence_and_staff_discretion_surface",
+          "source_identities_and_exact_custody"
+        ],
+        "terminal_evidence_state_counts": {
+          "evidence_complete": 7,
+          "observed": 0,
+          "not_publicly_recovered": 1
+        },
+        "predecessor_row_canonical_sha256": "0f3ba29ee5c7354249f89c96fc38c21b55341fc9fdad9b5919ecdb9243c4929e",
+        "completion_rule": "all_eight_declared_state_evidence_fields_are_terminal_under_exact_source_or_typed_gap_custody",
+        "class_effect": "none",
+        "cumulative_ledger_effect": "none",
+        "limitations": [
+          "row completion closes only the declared fixed public-record obligation for this state",
+          "typed source gaps remain distinct from event, policy, practice, or implementation absence",
+          "row completion does not establish uniform frontline practice or person-level outcome",
+          "eleven terminal rows do not establish national prevalence or close RD-04-C02"
+        ],
+        "prohibited_inferences": [
+          "do_not_infer_complete_state_implementation_truth_beyond_terminal_field_custody",
+          "do_not_convert_not_publicly_recovered_fields_into_event_or_policy_absence",
+          "do_not_infer_uniform_frontline_practice",
+          "do_not_infer_person_level_outcome",
+          "do_not_infer_national_prevalence",
+          "do_not_infer_discrimination_or_racial_order",
+          "do_not_infer_coordination_or_common_purpose",
+          "do_not_infer_complete_compact",
+          "do_not_close_rd04_c02_or_wave03_from_eleven_terminal_rows"
+        ]
+      },
+      "evidence_source_ids": [
+        "RD04-ND-ROW-STATE-RECONCILIATION-V1"
+      ],
+      "typed_gap": null,
+      "authority_effect": "row_level_fixed_public_record_obligation_terminal_only"
+    },
+    "cell_after_sha256": "f0c6fe75d1720c1a6cf8b90fd44b96bc96fcb0656fc70808c5439d514d30217c",
+    "row_before_sha256": "0f3ba29ee5c7354249f89c96fc38c21b55341fc9fdad9b5919ecdb9243c4929e",
+    "row_after_sha256": "f75ac04e5c8fc53304e897d918ee80057c580e2b8bbeeca979e9f92312f96f4b",
+    "terminal_evidence_cells": [
+      {
+        "field_ordinal": 1,
+        "field_id": "canonical_state_identity",
+        "state": "evidence_complete",
+        "terminal": true,
+        "cell_sha256": "ae343af2d3a7e55ca080c413c82bf3da3ff5b346711595011e0d0c3ccf87e796"
+      },
+      {
+        "field_ordinal": 2,
+        "field_id": "operative_state_implementation_authority_and_version",
+        "state": "evidence_complete",
+        "terminal": true,
+        "cell_sha256": "d64b417c8d9358d3e1594ab5410dd8d647888077a3bab49dfb01a5d89bf7e85a"
+      },
+      {
+        "field_ordinal": 3,
+        "field_id": "implementation_effective_date_or_typed_gap",
+        "state": "evidence_complete",
+        "terminal": true,
+        "cell_sha256": "b30384e97edb52ef9baf36a6c2804f9ea608de9a52eb0b7b0976b1b3973aedda"
+      },
+      {
+        "field_ordinal": 4,
+        "field_id": "abawd_or_work_requirement_waiver_state_and_governing_period",
+        "state": "not_publicly_recovered",
+        "terminal": true,
+        "cell_sha256": "8700619932bd128250a308d5dcd7b1586a363ae3b78e4eb80c23bfb72c8a2e25"
+      },
+      {
+        "field_ordinal": 5,
+        "field_id": "discretionary_exemption_authority_and_reported_state_practice",
+        "state": "evidence_complete",
+        "terminal": true,
+        "cell_sha256": "ebe9440a96566f126fc844f0ea190b37247c7821c6081c7fff06ee703a681f3d"
+      },
+      {
+        "field_ordinal": 6,
+        "field_id": "fitness_for_work_or_eligibility_screening_rule",
+        "state": "evidence_complete",
+        "terminal": true,
+        "cell_sha256": "ea9f90e41d2fa59cd934e9fb8abe698b26602fdb9906a78ec28f988bb51d3de5"
+      },
+      {
+        "field_ordinal": 7,
+        "field_id": "verification_evidence_and_staff_discretion_surface",
+        "state": "evidence_complete",
+        "terminal": true,
+        "cell_sha256": "482be106cac2b3d8cd85d149bbaee0036a0cedc90112edd6b2933d829a7d819d"
+      },
+      {
+        "field_ordinal": 8,
+        "field_id": "source_identities_and_exact_custody",
+        "state": "evidence_complete",
+        "terminal": true,
+        "cell_sha256": "c4d0a1d61760e04432eaf24fefc9fb27e68b488832b963be1dec730ce41b4d87"
+      }
+    ],
+    "substantive_cells_reapplied": 0,
+    "source_requests": 0,
+    "route_executions": 0
+  },
+  "matrix_transition": {
+    "predecessor": {
+      "path": "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promoted-partial-field-matrix.json",
+      "bytes": 495400,
+      "sha256": "1878270c1c34d1a96b28eb0ee26eff5b1b3b6c8d74a56026c293544c7925d824",
+      "git_blob_sha": "c25a1ad8fdfe82f70f1ff71e61da6796be94c737"
+    },
+    "promoted": {
+      "path": "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/promoted-partial-field-matrix.json",
+      "bytes": 499923,
+      "sha256": "d2ff4b4d711417b2319b1c26486127c4eba1366aa0e11abf1fd489dcd2b2ffe6",
+      "git_blob_sha": "66a9a6d7003a39b1dca569895e0bc3513f004ca6"
+    },
+    "counts_before": {
+      "materialized_cells": 450,
+      "terminal_cells": 228,
+      "still_open_cells": 222,
+      "terminal_substantive_cells": 118,
+      "still_open_substantive_cells": 182,
+      "row_terminal_state_cells_terminal": 10,
+      "row_terminal_state_cells_open": 40,
+      "terminal_units": 10,
+      "class_closed": false
+    },
+    "counts_after": {
+      "materialized_cells": 450,
+      "terminal_cells": 229,
+      "still_open_cells": 221,
+      "terminal_substantive_cells": 118,
+      "still_open_substantive_cells": 182,
+      "row_terminal_state_cells_terminal": 11,
+      "row_terminal_state_cells_open": 39,
+      "terminal_units": 11,
+      "class_closed": false
+    },
+    "north_dakota_before": {
+      "row_state": "still_open",
+      "terminal_fields": 8,
+      "open_fields": 1,
+      "row_sha256": "0f3ba29ee5c7354249f89c96fc38c21b55341fc9fdad9b5919ecdb9243c4929e"
+    },
+    "north_dakota_after": {
+      "row_state": "terminal_fixed_public_record_obligation_complete",
+      "terminal_fields": 9,
+      "open_fields": 0,
+      "row_sha256": "f75ac04e5c8fc53304e897d918ee80057c580e2b8bbeeca979e9f92312f96f4b"
+    },
+    "unchanged_non_target_rows": 49,
+    "unchanged_non_target_rows_sha256": "93dd5ec59cbde9943931358aecc87b2d2cef918ba1f04a2c40d43574017c1dd4",
+    "unchanged_north_dakota_substantive_cells": 8
+  },
+  "authority_boundary": {
+    "source_requests": 0,
+    "route_executions": 0,
+    "source_admissions": 0,
+    "field_terminalizations": 0,
+    "matrix_updates": 1,
+    "row_state_mutations": 1,
+    "row_terminalizations": 1,
+    "class_closed": false,
+    "cumulative_ledger_effect": "none",
+    "publication_effect": "none",
+    "adoption_effect": "none",
+    "graph_effect": "none",
+    "outside_human_dependency": false
+  }
+}
