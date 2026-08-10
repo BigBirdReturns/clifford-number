@@ -1,0 +1,90 @@
+name: TEMP validate exact RD-04 North Dakota current-gap promotion v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-rd04-nd-current-gap-promotion-validation-v1.yml'
+      - '.tmp/rd04-nd-current-gap-promotion-validation-v1/**'
+
+permissions:
+  contents: read
+
+env:
+  CANONICAL_PARENT: 77aef3313e85e1fddc68805a9f22252ff147b4e8
+  PRODUCT_COMMIT: 3b867f7a0b1ffe3687e8497ed9219a07d745b3b0
+  PRODUCT_BRANCH: agent/ssc-rd04-nd-current-public-record-gap-promotion-v1
+  BASE_BRANCH: agent/ssc-rd04-nd-current-gap-promotion-validation-base-v1
+  HEAD_BRANCH: agent/ssc-rd04-nd-current-gap-promotion-validation-trigger-v1
+  WORKFLOW_PATH: .github/workflows/temp-rd04-nd-current-gap-promotion-validation-v1.yml
+  VALIDATOR_PATH: .tmp/rd04-nd-current-gap-promotion-validation-v1/validate.py
+  TRIGGER_PATH: .tmp/rd04-nd-current-gap-promotion-validation-v1/trigger.json
+  OUT: /tmp/ssc-rd04-nd-current-gap-promotion-validation-v1
+  PRODUCT_WORK: /tmp/ssc-rd04-nd-current-gap-promotion-product-v1
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Bind exact carrier and product topology
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$PRODUCT_WORK"
+          mkdir -p "$OUT"
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          BASE_SHA='${{ github.event.pull_request.base.sha }}'
+          test '${{ github.event_name }}' = pull_request
+          test '${{ github.event.pull_request.head.repo.full_name }}' = "$GITHUB_REPOSITORY"
+          test '${{ github.event.pull_request.base.ref }}' = "$BASE_BRANCH"
+          test '${{ github.event.pull_request.head.ref }}' = "$HEAD_BRANCH"
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          test "$(git rev-parse "$BASE_SHA^")" = "$CANONICAL_PARENT"
+          EXPECTED_BASE="$(printf '%s\n' "$WORKFLOW_PATH" "$VALIDATOR_PATH" | LC_ALL=C sort)"
+          test "$(git diff --name-only "$CANONICAL_PARENT" "$BASE_SHA" | LC_ALL=C sort)" = "$EXPECTED_BASE"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$BASE_SHA" | LC_ALL=C sort)" = "$EXPECTED_BASE"
+          test "$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA")" = "$TRIGGER_PATH"
+          git diff --check "$CANONICAL_PARENT" "$HEAD_SHA"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          git fetch --no-tags --force origin "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse "refs/remotes/origin/$PRODUCT_BRANCH")" = "$PRODUCT_COMMIT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^")" = "$CANONICAL_PARENT"
+          git worktree add --detach "$PRODUCT_WORK" "$PRODUCT_COMMIT"
+      - name: Validate minimum-delta product and full repository
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          VALIDATOR="$GITHUB_WORKSPACE/$VALIDATOR_PATH"
+          cd "$PRODUCT_WORK"
+          python "$VALIDATOR" "$OUT/validation-receipt.json" | tee "$OUT/validation.log"
+          npm run release:check > "$OUT/release-check.log" 2>&1
+          git reset --hard HEAD
+          git clean -fdx
+          test -z "$(git status --porcelain)"
+          python "$VALIDATOR" "$OUT/post-release-validation.json" > "$OUT/post-release-validation.log"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          git fetch --no-tags --force origin "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse "refs/remotes/origin/$PRODUCT_BRANCH")" = "$PRODUCT_COMMIT"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - name: Preserve independent validation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-current-gap-promotion-independent-validation-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
