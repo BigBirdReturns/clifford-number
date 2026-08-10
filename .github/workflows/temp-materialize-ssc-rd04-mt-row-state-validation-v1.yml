@@ -1,0 +1,191 @@
+name: TEMP recover RD-04 Montana validation package envelope v5
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-mt-row-state-validation-envelope-recovery-base-v5
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-mt-row-state-validation-materializer/trigger.json'
+
+permissions:
+  contents: read
+
+env:
+  PAYLOAD: .tmp/rd04-mt-row-state-validation-materializer/package.tar.gz.b64
+  DIAG: /tmp/rd04-mt-row-state-validation-envelope-recovery-v5
+  EXPECTED_B64_BYTES: '14740'
+  EXPECTED_B64_SHA256: d19b30d285e725f0cba1844864f9a8a4d543e46de2ff66484e3a9b710b9771aa
+  EXPECTED_GZIP_BYTES: '11054'
+  EXPECTED_GZIP_SHA256: db899783e6a52055842ba9748b9ea1996d5bfa5b7806db374fbf127723c2c3ba
+  EXPECTED_TAR_BYTES: '61440'
+  EXPECTED_TAR_SHA256: d81a4cc83d47f192995a9bf32aed803f4f5c878799558ce906fc166ada7af559
+  EXPECTED_CONTROLLER_BYTES: '9075'
+  EXPECTED_CONTROLLER_SHA256: 5b9b91cf7e30af38ca4fcec137b8a43d5e3e9c3c3c21e259b6aa21a1bf9d1674
+
+jobs:
+  recover:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-mt-row-state-validation-envelope-recovery-base-v5' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-mt-row-state-validation-envelope-recovery-trigger-v5'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Preserve exact envelope before evaluating it
+        if: always()
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CARRIER_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          rm -rf "$DIAG"
+          mkdir -p "$DIAG"
+          python - <<'PY'
+          from __future__ import annotations
+
+          import base64
+          import gzip
+          import hashlib
+          import io
+          import json
+          import os
+          import pathlib
+          import subprocess
+          import sys
+          import tarfile
+          import traceback
+          from pathlib import PurePosixPath
+          from typing import Any
+
+          repo = pathlib.Path.cwd()
+          diag = pathlib.Path(os.environ['DIAG'])
+          payload_path = repo / os.environ['PAYLOAD']
+          diag.mkdir(parents=True, exist_ok=True)
+
+          expected = {
+              'base64_bytes': int(os.environ['EXPECTED_B64_BYTES']),
+              'base64_sha256': os.environ['EXPECTED_B64_SHA256'],
+              'gzip_bytes': int(os.environ['EXPECTED_GZIP_BYTES']),
+              'gzip_sha256': os.environ['EXPECTED_GZIP_SHA256'],
+              'tar_bytes': int(os.environ['EXPECTED_TAR_BYTES']),
+              'tar_sha256': os.environ['EXPECTED_TAR_SHA256'],
+              'controller_bytes': int(os.environ['EXPECTED_CONTROLLER_BYTES']),
+              'controller_sha256': os.environ['EXPECTED_CONTROLLER_SHA256'],
+          }
+          receipt: dict[str, Any] = {
+              'schema_version': 'ssc-rd04-mt-row-state-validation-envelope-recovery@1',
+              'state': 'exact_envelope_preserved',
+              'canonical_parent': 'e62de80e187f9be037cbdd3a4b942b5840d223de',
+              'event_head_sha': os.environ.get('EVENT_HEAD_SHA'),
+              'carrier_base_sha': os.environ.get('CARRIER_BASE_SHA'),
+              'expected': expected,
+              'canonical_effect': 'none',
+          }
+
+          def sha(data: bytes) -> str:
+              return hashlib.sha256(data).hexdigest()
+
+          payload = payload_path.read_bytes()
+          (diag / 'package.tar.gz.b64').write_bytes(payload)
+          receipt['observed_base64'] = {
+              'bytes': len(payload),
+              'sha256': sha(payload),
+              'delta_bytes': len(payload) - expected['base64_bytes'],
+              'identity_match': len(payload) == expected['base64_bytes'] and sha(payload) == expected['base64_sha256'],
+          }
+
+          compact = b''.join(payload.split())
+          receipt['observed_base64']['compact_bytes'] = len(compact)
+          padding = (-len(compact)) % 4
+          receipt['observed_base64']['synthetic_padding_bytes'] = padding
+          try:
+              gzip_bytes = base64.b64decode(compact + b'=' * padding, validate=True)
+              (diag / 'decoded-package.tar.gz').write_bytes(gzip_bytes)
+              receipt['observed_gzip'] = {
+                  'bytes': len(gzip_bytes),
+                  'sha256': sha(gzip_bytes),
+                  'identity_match': len(gzip_bytes) == expected['gzip_bytes'] and sha(gzip_bytes) == expected['gzip_sha256'],
+              }
+              try:
+                  tar_bytes = gzip.decompress(gzip_bytes)
+                  (diag / 'decoded-package.tar').write_bytes(tar_bytes)
+                  receipt['observed_tar'] = {
+                      'bytes': len(tar_bytes),
+                      'sha256': sha(tar_bytes),
+                      'identity_match': len(tar_bytes) == expected['tar_bytes'] and sha(tar_bytes) == expected['tar_sha256'],
+                  }
+                  members = []
+                  with tarfile.open(fileobj=io.BytesIO(tar_bytes), mode='r:') as archive:
+                      for info in archive.getmembers():
+                          p = PurePosixPath(info.name)
+                          members.append({
+                              'path': info.name,
+                              'bytes': info.size,
+                              'regular_file': info.isfile(),
+                              'safe_relative_path': not p.is_absolute() and '..' not in p.parts,
+                          })
+                          if info.isfile() and info.name == 'controller.py':
+                              source = archive.extractfile(info).read()
+                              (diag / 'controller.py').write_bytes(source)
+                              receipt['observed_controller'] = {
+                                  'bytes': len(source),
+                                  'sha256': sha(source),
+                                  'identity_match': len(source) == expected['controller_bytes'] and sha(source) == expected['controller_sha256'],
+                              }
+                  (diag / 'tar-members.json').write_text(json.dumps(members, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+              except BaseException as exc:
+                  receipt['tar_decode_error_type'] = type(exc).__name__
+                  receipt['tar_decode_error'] = str(exc)
+                  (diag / 'tar-decode-traceback.txt').write_text(traceback.format_exc(), encoding='utf-8')
+          except BaseException as exc:
+              receipt['base64_decode_error_type'] = type(exc).__name__
+              receipt['base64_decode_error'] = str(exc)
+              (diag / 'base64-decode-traceback.txt').write_text(traceback.format_exc(), encoding='utf-8')
+
+          for name, args in {
+              'head-commit.txt': ['git', 'show', '-s', '--format=%H%n%P%n%T%n%s', 'HEAD'],
+              'base-commit.txt': ['git', 'show', '-s', '--format=%H%n%P%n%T%n%s', os.environ.get('CARRIER_BASE_SHA', '')],
+              'trigger-diff.txt': ['git', 'diff', '--name-status', os.environ.get('CARRIER_BASE_SHA', ''), os.environ.get('EVENT_HEAD_SHA', '')],
+              'base-diff.txt': ['git', 'diff', '--name-status', 'e62de80e187f9be037cbdd3a4b942b5840d223de', os.environ.get('CARRIER_BASE_SHA', '')],
+          }.items():
+              proc = subprocess.run(args, cwd=repo, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
+              (diag / name).write_bytes(proc.stdout)
+
+          (diag / 'recovery-receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          rows = []
+          for path in sorted(diag.rglob('*')):
+              if path.is_file() and path.name != 'SHA256SUMS':
+                  rows.append(f"{sha(path.read_bytes())}  {path.relative_to(diag).as_posix()}")
+          (diag / 'SHA256SUMS').write_text('\n'.join(rows) + '\n', encoding='utf-8')
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          sys.exit(0)
+          PY
+
+      - name: Print exact observed envelope identities
+        if: always()
+        shell: bash
+        run: |
+          cat "$DIAG/recovery-receipt.json" 2>/dev/null || true
+          sed -n '1,240p' "$DIAG/base64-decode-traceback.txt" 2>/dev/null || true
+          sed -n '1,240p' "$DIAG/tar-decode-traceback.txt" 2>/dev/null || true
+
+      - name: Preserve exact envelope recovery artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-validation-envelope-recovery-v5
+          path: ${{ env.DIAG }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
