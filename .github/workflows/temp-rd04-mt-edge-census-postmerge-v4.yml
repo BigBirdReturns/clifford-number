@@ -1,0 +1,179 @@
+name: TEMP prove RD-04 Montana edge-census canonical merge v4
+
+on:
+  pull_request:
+    branches: [observer/ssc-rd04-mt-edge-census-postmerge-base-v4]
+    types: [opened, synchronize, reopened]
+    paths: ['.tmp/rd04-mt-edge-census-postmerge-v4/trigger.json']
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+  issues: read
+
+concurrency:
+  group: temp-rd04-mt-edge-census-postmerge-v4
+  cancel-in-progress: false
+
+env:
+  CANONICAL_PARENT: e62de80e187f9be037cbdd3a4b942b5840d223de
+  VALIDATION_BASE: bc3cf04459bb0d18829f376c9b937693b521e444
+  VALIDATION_PRODUCT: a933ceacbfd9753401a7e9875c9f3048237c2014
+  VALIDATION_PRODUCT_TREE: 53fffef006eccb181ed4f00ea606e49b74b83a60
+  VALIDATION_MERGE: 5cbe9d8628efbc8c9fa85027876be77e77fbf0ef
+  MATRIX_REPAIR_PRODUCT: a26be29f081c20b9f2d0adeeaf25c4a434064999
+  MATRIX_REPAIR_PRODUCT_TREE: 4bb0367b873dac25b4b36f78256ac65cd615b32c
+  MATRIX_REPAIR_MERGE: 7d06800b6899add8beff7891a526abec843bb8d9
+  EDGE_WORKFLOW_COMMIT: 00036a809fb0e55a0427d7deb4d2cef2d5655d1d
+  EDGE_REPAIR_HEAD: 3aed7331a5f4b75618e9357bc7061e8ce1ad0064
+  EDGE_REPAIR_TREE: 38023f86bcc27527f9db8da9622bada00b3de542
+  CANONICAL_MERGE: 0840358962621b0be3db6864ecec763327f35903
+  PRODUCT_PR: '1866'
+  PRODUCT_RUN: '31413447117'
+  RELEASE_RUN: '31413447102'
+  NO_MAGIC_RUN: '31413447152'
+  PRODUCT_ARTIFACT_ID: '9072500310'
+  PRODUCT_ARTIFACT_NAME: ssc-rd04-mt-row-state-reconciliation-validation-edge-census-repair-v1
+  PRODUCT_ARTIFACT_SHA256: c255a62a6cafa08c3497c1fce74559405b8515006939ef4dbc495a801307dec6
+  PRODUCT_RECEIPT_SHA256: 9cee31e9e726817e1ed8c5f822898ea41d04d11e5308988623b1309da2695705
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 6ba11a6025021e9df8ac6535be8c42499654c233
+  WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1.yml
+  WORKFLOW_BLOB: 610d88e5b30d3e44579b02fd264fdb09e1475511
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/product-manifest.json
+  MANIFEST_BLOB: 3d29b059372af4676b61f90da7552983b614c8c6
+  VALIDATOR: tools/validate-status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-v1.py
+  VALIDATOR_BLOB: 5e3413f2349f8867d222a9ede3c6cc9573e473b6
+  RD01_WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd01-methodology-correction-terminal.yml
+  RD01_WORKFLOW_BLOB: 7e15a050c59f857ab280f7b0cc170c2a6af1fe7a
+  V2_SOURCE_COMMIT: 493fb0e65cef46767e775cea0241cdbdf5ae9fdb
+  V2_WORKFLOW_PATH: .github/workflows/temp-rd04-mt-edge-census-postmerge-v2.yml
+  V2_WORKFLOW_BLOB: c874099d7e6c15fd4206e61a429fcf0c3cc71996
+  V3_SOURCE_COMMIT: 98b1e25f9b79cfde617ccf0150b7fbd59997d595
+  V3_WORKFLOW_PATH: .github/workflows/temp-rd04-mt-edge-census-postmerge-v3.yml
+  V3_WORKFLOW_BLOB: b6a55d26b86497d9803e73eac759758ff0623f09
+  OBSERVER_WORKFLOW: .github/workflows/temp-rd04-mt-edge-census-postmerge-v4.yml
+  TRIGGER_PATH: .tmp/rd04-mt-edge-census-postmerge-v4/trigger.json
+  OUT: /tmp/rd04-mt-edge-census-postmerge-v4
+  WORK: /tmp/rd04-mt-edge-census-postmerge-v4-work
+
+jobs:
+  prove:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'observer/ssc-rd04-mt-edge-census-postmerge-base-v4' &&
+      github.event.pull_request.head.ref == 'observer/ssc-rd04-mt-edge-census-postmerge-trigger-v4'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Replay V3 proof and restore post-replay custody receipts
+        id: prove
+        continue-on-error: true
+        env:
+          EVENT_HEAD: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE: ${{ github.event.pull_request.base.sha }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse "$V3_SOURCE_COMMIT:$V3_WORKFLOW_PATH")" = "$V3_WORKFLOW_BLOB"
+          git show "$V3_SOURCE_COMMIT:$V3_WORKFLOW_PATH" > /tmp/rd04-mt-postmerge-v3.yml
+          ruby - <<'RB'
+          require 'yaml'
+          doc = YAML.load_file('/tmp/rd04-mt-postmerge-v3.yml')
+          step = doc.fetch('jobs').fetch('prove').fetch('steps').find { |item| item['id'] == 'prove' }
+          raise 'missing V3 prove step' unless step && step['run']
+          File.write('/tmp/rd04-mt-postmerge-v4-replay.sh', step.fetch('run'))
+          RB
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/rd04-mt-postmerge-v4-replay.sh')
+          s=p.read_text()
+          target='bash /tmp/rd04-mt-postmerge-v3-replay.sh'
+          if s.count(target) != 1:
+              raise SystemExit(f'expected one V3 replay seam, found {s.count(target)}')
+          injection=target + r'''
+printf '%s\n' \
+  "v2_source_commit=$V2_SOURCE_COMMIT" \
+  "v2_workflow_blob=$V2_WORKFLOW_BLOB" \
+  "rd01_workflow_blob=$RD01_WORKFLOW_BLOB" \
+  'rd01_postmerge_first_parent_untouched=true' > "$OUT/v3-repair-custody.txt"
+printf '%s\n' \
+  "v3_source_commit=$V3_SOURCE_COMMIT" \
+  "v3_workflow_blob=$V3_WORKFLOW_BLOB" \
+  'repair=post_replay_custody_receipt_reemit' \
+  'authority=read_only' > "$OUT/v4-repair-custody.txt"
+(cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+(cd "$OUT" && sha256sum -c SHA256SUMS)
+'''
+          p.write_text(s.replace(target,injection))
+          PY
+          bash /tmp/rd04-mt-postmerge-v4-replay.sh
+
+      - name: Preserve exact canonical proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-edge-census-postmerge-proof-v4
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce terminal read-only proof
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.prove.outcome }}" = success
+          for FILE in postmerge-proof.json artifact-custody.json native-push-ledger.json product-artifact.zip canonical-validation-receipt.json canonical-post-release-validation-receipt.json SHA256SUMS v3-repair-custody.txt v4-repair-custody.txt; do test -s "$OUT/$FILE"; done
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          test "$(sha256sum "$OUT/product-artifact.zip" | awk '{print $1}')" = "$PRODUCT_ARTIFACT_SHA256"
+          cmp "$OUT/canonical-validation-receipt.json" "$OUT/canonical-post-release-validation-receipt.json"
+          test "$(git rev-parse "$V3_SOURCE_COMMIT:$V3_WORKFLOW_PATH")" = "$V3_WORKFLOW_BLOB"
+          grep -Fx "v2_source_commit=$V2_SOURCE_COMMIT" "$OUT/v3-repair-custody.txt"
+          grep -Fx "v2_workflow_blob=$V2_WORKFLOW_BLOB" "$OUT/v3-repair-custody.txt"
+          grep -Fx "rd01_workflow_blob=$RD01_WORKFLOW_BLOB" "$OUT/v3-repair-custody.txt"
+          grep -Fx 'rd01_postmerge_first_parent_untouched=true' "$OUT/v3-repair-custody.txt"
+          grep -Fx "v3_source_commit=$V3_SOURCE_COMMIT" "$OUT/v4-repair-custody.txt"
+          grep -Fx "v3_workflow_blob=$V3_WORKFLOW_BLOB" "$OUT/v4-repair-custody.txt"
+          grep -Fx 'repair=post_replay_custody_receipt_reemit' "$OUT/v4-repair-custody.txt"
+          grep -Fx 'authority=read_only' "$OUT/v4-repair-custody.txt"
+          jq -e '
+            .schema_version == "ssc-rd04-mt-edge-census-postmerge-proof@3" and
+            .state == "canonical_montana_edge_census_merge_proved_with_property_bounded_zero_job_rd01_failures" and
+            .canonical_merge == "0840358962621b0be3db6864ecec763327f35903" and
+            .merge_first_parent == "7d06800b6899add8beff7891a526abec843bb8d9" and
+            .merge_second_parent == "3aed7331a5f4b75618e9357bc7061e8ce1ad0064" and
+            .product_pull_request == 1866 and .product_run == 31413447117 and .product_artifact_id == 9072500310 and
+            .native_push_state == "required_successes_plus_property_bounded_unchanged_zero_job_rd01_failures" and
+            .classified_zero_job_rd01_failure_count >= 1 and
+            .promotion_executed_here == false and .class_closed == false and
+            .authority_boundary.source_requests == 0 and .authority_boundary.route_executions == 0 and
+            .authority_boundary.source_admissions == 0 and .authority_boundary.field_terminalizations == 0 and
+            .authority_boundary.matrix_updates == 0 and .authority_boundary.row_state_mutations == 0 and
+            .authority_boundary.row_terminalizations == 0 and .authority_boundary.outside_human_dependency == false
+          ' "$OUT/postmerge-proof.json" >/dev/null
+          jq -e '
+            .schema_version == "ssc-rd04-mt-edge-census-native-push-ledger@3" and
+            .state == "required_successes_plus_property_bounded_unchanged_zero_job_rd01_failures" and
+            (.classified_failed_runs | length) >= 1 and
+            ([.classified_failed_runs[] | select(.workflow_id != 327362630 or .path != ".github/workflows/status-sovereignty-rd-wave03-rd01-methodology-correction-terminal.yml" or .status != "completed" or .conclusion != "failure")] | length) == 0 and
+            ([.failed_run_jobs[] | select(.total_count != 0 or (.jobs | length) != 0)] | length) == 0
+          ' "$OUT/native-push-ledger.json" >/dev/null
+          test "$(jq -r '.classified_zero_job_rd01_failure_count' "$OUT/postmerge-proof.json")" = "$(jq -r '.classified_failed_runs | length' "$OUT/native-push-ledger.json")"
+          test -z "$(git status --porcelain=v1)"
