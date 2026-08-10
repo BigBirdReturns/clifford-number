@@ -1,20 +1,21 @@
 {
-  "schema_version": "ssc-rd04-nd-row-state-reconciliation-validation@2",
+  "schema_version": "ssc-rd04-nd-row-state-reconciliation-validation@3",
   "issue": 1017,
   "wave_id": "SSC-RD-W03",
   "lane_id": "RD-04",
   "class_id": "RD-04-C02",
-  "canonical_parent": "bab9570ab043df7c5062e5a45a0717a82eed346b",
+  "canonical_parent": "de81b27c48b0ffec0db37b55e1b6eb9b58290524",
   "current_row_sha256": "0f3ba29ee5c7354249f89c96fc38c21b55341fc9fdad9b5919ecdb9243c4929e",
   "current_row_state_cell_sha256": "6a4c7d204c6c99a89f3c121065860806668c5da850f44c67fe42b4dc84b1b5c3",
   "validation_result": {
-    "state": "validated_exact_current_row_state",
+    "state": "validated_exact_current_row_state_with_reconciled_projected_summary",
     "all_eight_substantive_fields_terminal": true,
     "remaining_open_cell_count": 1,
     "remaining_open_field_id": "field_and_row_terminal_state",
     "row_state_transition_mechanically_admissible": true,
     "separate_promotion_product_authorized": true,
-    "promotion_executed_here": false
+    "promotion_executed_here": false,
+    "projection_repair": "current_result_reconciled_to_projected_counts"
   },
   "proposed_row_state_cell": {
     "field_ordinal": 9,
@@ -76,9 +77,9 @@
     "open_fields": 0
   },
   "projected_matrix": {
-    "bytes": 498047,
-    "sha256": "9f85cbff7eba6d66f84508d262c408d580e1d55e95568d3265f10d1c1fa416ad",
-    "git_blob_sha": "4911d717a072493f80a3631598799070f08f2a91",
+    "bytes": 498068,
+    "sha256": "00eccb409909c07bb66a6ef5dd20b35215ed4da047cd6a4f581576d1056d7037",
+    "git_blob_sha": "0da5d8d7a730836da60c86c0fb2f55f18c8af26d",
     "counts": {
       "units": 50,
       "required_fields_per_unit": 9,
@@ -110,6 +111,31 @@
       "newly_terminalized_postpromotion_nd_current_public_record_gap_cells": 1,
       "postpromotion_nd_current_public_record_gap_row_state_candidate_cells": 1,
       "newly_terminalized_postpromotion_nd_current_public_record_gap_row_state_cells": 1
+    },
+    "current_result": {
+      "terminal_cells": "229/450",
+      "still_open_cells": "221/450",
+      "terminal_substantive_cells": 118,
+      "still_open_substantive_cells": 182,
+      "row_terminal_state_cells_terminal": 11,
+      "row_terminal_state_cells_open": 39,
+      "terminal_units": 11,
+      "terminal_unit_ids": [
+        "US-STATE-AR",
+        "US-STATE-CA",
+        "US-STATE-GA",
+        "US-STATE-MD",
+        "US-STATE-NC",
+        "US-STATE-ND",
+        "US-STATE-PA",
+        "US-STATE-RI",
+        "US-STATE-SD",
+        "US-STATE-WA",
+        "US-STATE-WV"
+      ],
+      "field_matrix_terminal": false,
+      "class_state": "still_open",
+      "class_closed": false
     },
     "changed_units": 1,
     "changed_cells": 1,
