@@ -1,0 +1,175 @@
+name: Materialize current-main RD-04 North Dakota row-state product
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-nd-row-state-current-main-materializer.yml'
+      - '.tmp/rd04-nd-row-state-current-main-materializer/product.patch.gz'
+
+permissions:
+  contents: write
+
+env:
+  CANONICAL_MAIN: 283c5993cb2ac0bff173c72aba70088c67b2ac3c
+  CANONICAL_MAIN_TREE: 80a04c3d6a59816e9f7c99e585e077c92df42dbd
+  VALIDATION_MERGE: 789c800d00a6d4924cb69d2ce33d336ab315972f
+  STALE_PRODUCT_COMMIT: 4e180c0593cd2446faf2dc1286b07096d1d8b905
+  STALE_PRODUCT_TREE: 08d84c6ade5b7443bee85697287741ffe68d00bc
+  PRODUCT_BRANCH: agent/ssc-rd04-nd-current-public-record-gap-row-state-reconciliation-v2
+  PRODUCT_TREE: 8212b5bac3fd13c8eabe061d747bcaf11f54823b
+  PATCH_PATH: .tmp/rd04-nd-row-state-current-main-materializer/product.patch.gz
+  PATCH_GZ_SHA256: 0c3f6d723978d9d754ac3cf85f2150afd64e56837e57518cb1c69348bd127be3
+  PATCH_SHA256: bf032373beb8aa1332745b6f4aafceb3c1a5e8b62881a503e232c4afd52685e3
+  WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-nd-row-state-current-main-materializer.yml
+  OUT: /tmp/rd04-nd-row-state-current-main-materializer
+  WORK: /tmp/rd04-nd-row-state-current-main-product
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Bind exact two-path transport lease and source topology
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$WORK"
+          mkdir -p "$OUT"
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          BASE_SHA='${{ github.event.pull_request.base.sha }}'
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test "$BASE_SHA" = "$CANONICAL_MAIN"
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_MAIN"
+          test "$(git rev-list --count "$CANONICAL_MAIN..HEAD")" -eq 1
+          test "$(git rev-parse "$CANONICAL_MAIN^{tree}")" = "$CANONICAL_MAIN_TREE"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_MAIN"
+          printf '%s\n' "$WORKFLOW_PATH" "$PATCH_PATH" | LC_ALL=C sort > "$OUT/expected-carrier-paths.txt"
+          git diff --name-only "$CANONICAL_MAIN" HEAD | LC_ALL=C sort > "$OUT/actual-carrier-paths.txt"
+          cmp "$OUT/expected-carrier-paths.txt" "$OUT/actual-carrier-paths.txt"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_MAIN" HEAD | wc -l)" -eq 2
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_MAIN" HEAD)"
+          git diff --check "$CANONICAL_MAIN" HEAD
+          test "$(sha256sum "$PATCH_PATH" | awk '{print $1}')" = "$PATCH_GZ_SHA256"
+          test "$(git rev-parse "$STALE_PRODUCT_COMMIT^")" = "$VALIDATION_MERGE"
+          test "$(git rev-parse "$STALE_PRODUCT_COMMIT^{tree}")" = "$STALE_PRODUCT_TREE"
+          REMOTE_PRODUCT="$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')"
+          test "$REMOTE_PRODUCT" = "$CANONICAL_MAIN"
+          cat > "$OUT/product-paths.txt" <<'PATHS'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/input-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/promoted-partial-field-matrix.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/remaining-open-field-census.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/row-state-decision.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/row-state-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/row-state-summary.json
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs
+          PATHS
+          test "$(wc -l < "$OUT/product-paths.txt")" -eq 14
+          git diff --name-only "$VALIDATION_MERGE" "$STALE_PRODUCT_COMMIT" | LC_ALL=C sort > "$OUT/stale-product-paths.txt"
+          LC_ALL=C sort "$OUT/product-paths.txt" -o "$OUT/product-paths.txt"
+          cmp "$OUT/product-paths.txt" "$OUT/stale-product-paths.txt"
+          test "$(git diff --name-only --diff-filter=A "$VALIDATION_MERGE" "$STALE_PRODUCT_COMMIT" | wc -l)" -eq 14
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$VALIDATION_MERGE" "$STALE_PRODUCT_COMMIT")"
+      - name: Reconstruct and qualify exact current-main product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mapfile -t PRODUCT_PATHS < "$OUT/product-paths.txt"
+          git worktree add --detach "$WORK" "$CANONICAL_MAIN"
+          git -C "$WORK" checkout "$STALE_PRODUCT_COMMIT" -- "${PRODUCT_PATHS[@]}"
+          gzip -dc "$PATCH_PATH" > "$OUT/product.patch"
+          test "$(sha256sum "$OUT/product.patch" | awk '{print $1}')" = "$PATCH_SHA256"
+          git -C "$WORK" apply --check "$OUT/product.patch"
+          git -C "$WORK" apply "$OUT/product.patch"
+          git -C "$WORK" add -- "${PRODUCT_PATHS[@]}"
+          git -C "$WORK" diff --cached --name-only | LC_ALL=C sort > "$OUT/candidate-paths.txt"
+          cmp "$OUT/product-paths.txt" "$OUT/candidate-paths.txt"
+          test "$(git -C "$WORK" diff --cached --name-only --diff-filter=A | wc -l)" -eq 14
+          test -z "$(git -C "$WORK" diff --cached --name-only --diff-filter=MDTCRUXB)"
+          git -C "$WORK" diff --cached --check
+          test -z "$(git -C "$WORK" status --porcelain | awk '$1 !~ /^A/ {print}')"
+          test "$(sha256sum "$WORK/data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/input-custody.json" | awk '{print $1}')" = 'a9a26c6d6d3e80c214830023c0ee15dd3fe671a34436b8a3be40d256d5e7a6c6'
+          test "$(sha256sum "$WORK/data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/row-state-decision.json" | awk '{print $1}')" = 'f0f3f4247ea872df2943d9c04d806af54d0df4b06a62bb7e9cfb1cf3df0cd61f'
+          test "$(sha256sum "$WORK/data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/promoted-partial-field-matrix.json" | awk '{print $1}')" = 'dec7b632b088e3b68e97e71627a23359420b56e7c3663e9c6a45851959029f39'
+          test "$(sha256sum "$WORK/data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/product-manifest.json" | awk '{print $1}')" = '5d18cf225f8b620d7f96ac2b5f3fedc3b8f21f1b4f344fd484bed7f8a16e22b5'
+          git -C "$WORK" config user.name 'rd04-row-state-materializer'
+          git -C "$WORK" config user.email 'rd04-row-state-materializer@users.noreply.github.com'
+          git -C "$WORK" commit -m 'Terminalize North Dakota row on current main with V3 schema custody'
+          CANDIDATE="$(git -C "$WORK" rev-parse HEAD)"
+          test "$(git -C "$WORK" rev-parse HEAD^)" = "$CANONICAL_MAIN"
+          test "$(git -C "$WORK" rev-parse HEAD^{tree})" = "$PRODUCT_TREE"
+          printf '%s\n' "$CANDIDATE" > "$OUT/product-commit.txt"
+          printf '%s\n' "$PRODUCT_TREE" > "$OUT/product-tree.txt"
+          test "$(git rev-parse "$CANDIDATE:.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.yml")" = '0019864f5cd9bcaa70289eda71b53117ed0bb444'
+          test "$(git rev-parse "$CANDIDATE:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/index.json")" = 'a27d9c4841f26e94f8df9ff2d21e28b2ab99194c'
+          test "$(git rev-parse "$CANDIDATE:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/input-custody.json")" = '1a07285b73613639605b5b584f8e2acf7b2e1463'
+          test "$(git rev-parse "$CANDIDATE:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/product-manifest.json")" = '7bad51ffdb72ef00d6f3d0c08c4ee50ce73679c4'
+          test "$(git rev-parse "$CANDIDATE:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/promoted-partial-field-matrix.json")" = '0de0ce42c01c590c1caa19ccaa451f270bd68726'
+          test "$(git rev-parse "$CANDIDATE:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/remaining-open-field-census.json")" = 'd5f1607fb9b2e6c980841cea1792e415e659d180'
+          test "$(git rev-parse "$CANDIDATE:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/row-state-decision.json")" = 'a32e38bda9986929859b662fbebd15e81e51036a'
+          test "$(git rev-parse "$CANDIDATE:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/row-state-ledger.json")" = '12d3ade38f080cbcf55a4d33bb6a425da62d75a1'
+          test "$(git rev-parse "$CANDIDATE:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/row-state-summary.json")" = '9f1102cae589f0aa41e45357a9f4b9266bbdea11'
+          test "$(git rev-parse "$CANDIDATE:docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.md")" = '2a903247b14c8ce9bdd80aafbdaf9a209a38d33b'
+          test "$(git rev-parse "$CANDIDATE:schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.schema.json")" = 'e5256c0b1952b6d9a31fe890450c6961cc3ea069'
+          test "$(git rev-parse "$CANDIDATE:test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.test.js")" = 'a26c64f1ff1c95061e063eb6c582a18acf75f548'
+          test "$(git rev-parse "$CANDIDATE:tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs")" = 'ec6d907f86bda707039ad6321fdf11525bdc936e'
+          test "$(git rev-parse "$CANDIDATE:tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs")" = '0ff1bf1ed522486bfb166641888b14a74d5c388a'
+          (
+            cd "$WORK"
+            node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs --out "$OUT/generated" | tee "$OUT/builder.json"
+            for name in row-state-ledger.json promoted-partial-field-matrix.json remaining-open-field-census.json row-state-summary.json index.json; do
+              cmp "$OUT/generated/$name" "data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/$name"
+            done
+            node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs --out "$OUT/validator.json"
+            node --test test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.test.js | tee "$OUT/adversarial.log"
+            npm run release:check > "$OUT/release-check.log" 2>&1
+            git reset --hard "$CANDIDATE"
+            git clean -fdx
+            test -z "$(git status --porcelain)"
+            node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs --check > "$OUT/post-release-builder.json"
+            node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs --out "$OUT/post-release-validator.json"
+            cmp "$OUT/validator.json" "$OUT/post-release-validator.json"
+          )
+          REMOTE_PRODUCT="$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')"
+          test "$REMOTE_PRODUCT" = "$CANONICAL_MAIN"
+          git -C "$WORK" push origin "$CANDIDATE:refs/heads/$PRODUCT_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$CANDIDATE"
+          {
+            printf 'canonical_main=%s\n' "$CANONICAL_MAIN"
+            printf 'canonical_main_tree=%s\n' "$CANONICAL_MAIN_TREE"
+            printf 'validation_merge=%s\n' "$VALIDATION_MERGE"
+            printf 'stale_product_commit=%s\n' "$STALE_PRODUCT_COMMIT"
+            printf 'candidate_commit=%s\n' "$CANDIDATE"
+            printf 'candidate_tree=%s\n' "$PRODUCT_TREE"
+            printf 'product_branch=%s\n' "$PRODUCT_BRANCH"
+            printf 'permanent_paths=14\n'
+            printf 'source_requests=0\nroute_executions=0\nsource_admissions=0\n'
+            printf 'field_terminalizations=0\nmatrix_updates=1\nrow_state_mutations=1\nrow_terminalizations=1\n'
+            printf 'class_closed=false\noutside_human_dependency=false\n'
+          } > "$OUT/materialization-receipt.txt"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-row-state-current-main-materializer-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
