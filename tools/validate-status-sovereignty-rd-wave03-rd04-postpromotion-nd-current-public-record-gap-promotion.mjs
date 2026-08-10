@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { C, canon, sha, gitBlob, buildModel } from './build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs';
+import { C, canon, sha, gitBlob, buildModel, buildProduct } from './build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs';
 
 const assert = (ok, msg) => { if (!ok) throw new Error(msg); };
 const read = (root, name) => JSON.parse(fs.readFileSync(path.join(root, name), 'utf8'));
@@ -26,6 +26,20 @@ export function loadModel(repoRoot = process.cwd()) {
 
 export function validateModel(m) {
   const { promoted, candidate } = buildModel(m.repoRoot);
+  const deterministic = buildProduct(m.repoRoot);
+  const productObjects = {
+    'promotion-input-custody.json': m.input,
+    'promotion-decision.json': m.decision,
+    'cell-promotion-ledger.json': m.ledger,
+    'promoted-partial-field-matrix.json': m.matrix,
+    'remaining-open-field-census.json': m.census,
+    'promotion-summary.json': m.summary,
+    'index.json': m.index,
+  };
+  for (const [name, object] of Object.entries(productObjects)) {
+    const rebuilt = JSON.parse(deterministic[name].toString('utf8'));
+    assert(deepEqual(object, rebuilt), `committed ${name} differs from deterministic build`);
+  }
   assert(deepEqual(m.matrix, promoted), 'committed promoted matrix differs from deterministic build');
   assert(m.summary.state === 'one_exact_validated_candidate_promoted', 'summary state mismatch');
   assert(m.summary.candidate_id === candidate.candidate_id, 'summary candidate mismatch');
