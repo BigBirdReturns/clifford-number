@@ -1,0 +1,145 @@
+name: PC-61 terminal supervisor rerun
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pc61-rerun-terminal-supervisor.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+  issues: read
+  pull-requests: write
+
+concurrency:
+  group: pc61-terminal-supervisor-rerun
+  cancel-in-progress: false
+
+jobs:
+  rerun:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/pc61-terminal-recovery-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPOSITORY: ${{ github.repository }}
+      ISSUE: '1822'
+      SUPERVISOR_BRANCH: 'agent/pc61-terminal-supervisor-v1'
+      RECOVERY_BRANCH: 'agent/pc61-terminal-recovery-v2'
+      OUT: '/tmp/pc61-supervisor-rerun'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Authenticate recovery carrier and rerun exact supervisor
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          BASE_SHA='${{ github.event.pull_request.base.sha }}'
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          git diff --name-status "$BASE_SHA" HEAD > "$OUT/carrier-delta.tsv"
+          test "$(tail -n 1 "$OUT/carrier-delta.tsv")" = $'A\t.github/workflows/pc61-rerun-terminal-supervisor.yml'
+          git diff --check "$BASE_SHA" HEAD
+
+          gh api "/repos/$GH_REPOSITORY/issues/$ISSUE" > "$OUT/issue-before.json"
+          if [ "$(jq -r .state "$OUT/issue-before.json")" = closed ]; then
+            jq -n '{schema_version:"pc61-supervisor-rerun@1",status:"already_terminal",rerun_executed:false}' > "$OUT/receipt.json"
+            exit 0
+          fi
+
+          owner=${GH_REPOSITORY%%/*}
+          gh api --method GET "/repos/$GH_REPOSITORY/pulls" \
+            -f state=all -f head="$owner:$SUPERVISOR_BRANCH" -F per_page=100 \
+            > "$OUT/supervisor-prs.json"
+          test "$(jq 'length' "$OUT/supervisor-prs.json")" -ge 1
+          jq 'sort_by(.number) | last' "$OUT/supervisor-prs.json" > "$OUT/supervisor-pr.json"
+          SUPERVISOR_HEAD=$(jq -r .head.sha "$OUT/supervisor-pr.json")
+          test -n "$SUPERVISOR_HEAD"
+
+          latest_run=''
+          for attempt in $(seq 1 40); do
+            gh api "/repos/$GH_REPOSITORY/actions/runs?head_sha=$SUPERVISOR_HEAD&event=pull_request&per_page=100" \
+              > "$OUT/supervisor-runs.json"
+            latest_run=$(jq -r '[.workflow_runs[] | select(.name=="PC-61 exact terminal supervisor")] | sort_by(.run_number) | last | .id // empty' "$OUT/supervisor-runs.json")
+            [ -n "$latest_run" ] && break
+            sleep 5
+          done
+          test -n "$latest_run"
+          printf '%s\n' "$latest_run" > "$OUT/source-run-id.txt"
+
+          for attempt in $(seq 1 240); do
+            gh api "/repos/$GH_REPOSITORY/actions/runs/$latest_run" > "$OUT/source-run.json"
+            status=$(jq -r .status "$OUT/source-run.json")
+            [ "$status" = completed ] && break
+            sleep 15
+          done
+          test "$(jq -r .status "$OUT/source-run.json")" = completed
+
+          gh api "/repos/$GH_REPOSITORY/issues/$ISSUE" > "$OUT/issue-after-source.json"
+          if [ "$(jq -r .state "$OUT/issue-after-source.json")" = closed ]; then
+            jq -n --arg source_run "$latest_run" '{schema_version:"pc61-supervisor-rerun@1",status:"source_run_terminalized",source_run:($source_run|tonumber),rerun_executed:false}' > "$OUT/receipt.json"
+            exit 0
+          fi
+
+          conclusion=$(jq -r .conclusion "$OUT/source-run.json")
+          case "$conclusion" in
+            failure|cancelled|timed_out|action_required|stale) ;;
+            *) echo "source supervisor ended with non-rerunnable conclusion: $conclusion" >&2; exit 1 ;;
+          esac
+
+          gh api --method POST "/repos/$GH_REPOSITORY/actions/runs/$latest_run/rerun" > "$OUT/rerun-response.json"
+          rerun_number=$(jq -r .run_attempt "$OUT/source-run.json")
+
+          terminal=false
+          final_conclusion=''
+          for attempt in $(seq 1 720); do
+            gh api "/repos/$GH_REPOSITORY/issues/$ISSUE" > "$OUT/issue-current.json"
+            if [ "$(jq -r .state "$OUT/issue-current.json")" = closed ]; then
+              terminal=true
+              break
+            fi
+            gh api "/repos/$GH_REPOSITORY/actions/runs/$latest_run" > "$OUT/rerun-current.json"
+            if [ "$(jq -r .status "$OUT/rerun-current.json")" = completed ] && [ "$(jq -r .run_attempt "$OUT/rerun-current.json")" -gt "$rerun_number" ]; then
+              final_conclusion=$(jq -r .conclusion "$OUT/rerun-current.json")
+              break
+            fi
+            sleep 15
+          done
+
+          gh api "/repos/$GH_REPOSITORY/issues/$ISSUE" > "$OUT/issue-final.json"
+          if [ "$(jq -r .state "$OUT/issue-final.json")" = closed ]; then terminal=true; fi
+          jq -n \
+            --arg source_run "$latest_run" \
+            --argjson terminal "$terminal" \
+            --arg final_conclusion "$final_conclusion" \
+            '{schema_version:"pc61-supervisor-rerun@1",status:(if $terminal then "terminal" else "rerun_completed_without_terminal_issue" end),source_run:($source_run|tonumber),rerun_executed:true,terminal:$terminal,final_conclusion:$final_conclusion}' \
+            > "$OUT/receipt.json"
+          test "$terminal" = true
+
+      - name: Preserve rerun receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc61-terminal-supervisor-rerun
+          path: /tmp/pc61-supervisor-rerun
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Retire recovery carrier after terminal issue state
+        if: success()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(gh api "/repos/$GH_REPOSITORY/issues/$ISSUE" --jq .state)" = closed
+          pr='${{ github.event.pull_request.number }}'
+          gh api --method PATCH "/repos/$GH_REPOSITORY/pulls/$pr" -f state=closed >/tmp/pc61-recovery-pr-closed.json || true
+          gh api --method DELETE "/repos/$GH_REPOSITORY/git/refs/heads/$RECOVERY_BRANCH" || true
