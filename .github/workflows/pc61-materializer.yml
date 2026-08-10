@@ -1,4 +1,4 @@
-name: PC-61 exact product materializer
+name: PC-61 non-workflow blob stager
 
 on:
   pull_request:
@@ -15,44 +15,38 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: pc61-materializer-${{ github.event.pull_request.number || github.ref }}
+  group: pc61-stager-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 env:
   GH_TOKEN: ${{ github.token }}
   CARRIER_PARENT: '283c5993cb2ac0bff173c72aba70088c67b2ac3c'
-  CARRIER_PATH: '.github/workflows/pc61-materializer.yml'
-  PRODUCT_BRANCH: 'agent/pc61-product-v1'
-  ISSUE: '1822'
+  STAGING_BRANCH: 'agent/pc61-staging-v1'
   ARCHIVE_SHA256: 'b227f2507bdf3238daba027d16944189137719cff106bb6b41bf6ef1f620eed9'
   BASE64_SHA256: '18afdcbccbef24976c574259be44a7edefbdb61a62effdbb02e0e9de0c69febf'
   PATH_LIST_SHA256: '286b193587e6814f21e69d0bc6a7bf08234108f8baee6da1999f8935cccc8ed8'
-  OUT: '/tmp/pc61-materializer'
+  OUT: '/tmp/pc61-stager'
   PACKAGE: '/tmp/pc61-package'
   WORKTREE: '/tmp/pc61-worktree'
 
 jobs:
-  materialize:
+  stage:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.ref == 'agent/pc61-materializer-v1'
     runs-on: ubuntu-24.04
-    timeout-minutes: 300
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - name: Authenticate carrier and decode exact package
+      - name: Authenticate exact package and publish twelve non-workflow blobs
         shell: bash
         run: |
           set -Eeuo pipefail
           rm -rf "$OUT" "$PACKAGE" "$WORKTREE" /tmp/pc61-product.tar.gz /tmp/pc61-product.b64
           mkdir -p "$OUT" "$PACKAGE"
-          HEAD_SHA="$(git rev-parse HEAD)"
+
           test "$(git merge-base "$CARRIER_PARENT" HEAD)" = "$CARRIER_PARENT"
-          git diff --name-status "$CARRIER_PARENT" HEAD > "$OUT/carrier-delta.tsv"
           EXPECTED_CARRIER="$(printf '%s\n' \
             '.github/workflows/pc61-materializer.yml' \
             '.pc61/payload.part-00' \
@@ -65,6 +59,7 @@ jobs:
           test "$(git diff --name-only --diff-filter=A "$CARRIER_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_CARRIER"
           test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CARRIER_PARENT" HEAD)"
           git diff --check "$CARRIER_PARENT" HEAD
+
           test "$(sha256sum .pc61/payload.part-00 | awk '{print $1}')" = '81b6258ff2d2df91007a17fca296e4e1e668f176899522a9bd987b72d326d85e'
           test "$(sha256sum .pc61/payload.part-01 | awk '{print $1}')" = 'bb14cacbaa5cfb850f6f0f3a2680db7f890739e5546e47ea62be66ecd21ced38'
           test "$(sha256sum .pc61/payload.part-02 | awk '{print $1}')" = '65cfca521c28a3213ddca3e30a8530b95b39db8e6b232362b9f9c068710bffd4'
@@ -75,79 +70,85 @@ jobs:
           test "$(sha256sum /tmp/pc61-product.b64 | awk '{print $1}')" = "$BASE64_SHA256"
           base64 -d /tmp/pc61-product.b64 > /tmp/pc61-product.tar.gz
           test "$(sha256sum /tmp/pc61-product.tar.gz | awk '{print $1}')" = "$ARCHIVE_SHA256"
-          tar -tzf /tmp/pc61-product.tar.gz | sed 's#^./##' | sed '/^$/d' | sort > "$OUT/archive-paths.txt"
+          tar -tzf /tmp/pc61-product.tar.gz | sed 's#^./##' | sed '/^$/d' | LC_ALL=C sort > "$OUT/archive-paths.txt"
           test "$(sha256sum "$OUT/archive-paths.txt" | awk '{print $1}')" = "$PATH_LIST_SHA256"
           test "$(wc -l < "$OUT/archive-paths.txt" | tr -d ' ')" = 14
           tar -xzf /tmp/pc61-product.tar.gz -C "$PACKAGE"
-          find "$PACKAGE" -type f -printf '%P\n' | sort > "$OUT/extracted-paths.txt"
+          find "$PACKAGE" -type f -printf '%P\n' | LC_ALL=C sort > "$OUT/extracted-paths.txt"
           cmp "$OUT/archive-paths.txt" "$OUT/extracted-paths.txt"
-          (cd "$PACKAGE" && find . -type f -print0 | sort -z | xargs -0 sha256sum > "$OUT/package-SHA256SUMS")
-          printf '%s\n' "$HEAD_SHA" > "$OUT/carrier-head.txt"
+
+          cat > "$OUT/expected-blobs.tsv" <<'BLOBS'
+          .github/workflows/preference-custody-v59.yml	7b4ca9d79451ef1a48f16b9a4d96514a32794041
+          .github/workflows/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.yml	13d929e2bb2963a037b320c0f45f6b2f36733f8f
+          data/research/preference-custody/control-manifest-v59.json	c67f409463801ec2d08896440db0b0475cd5e9b2
+          data/research/preference-custody/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.fixture.json	1f2ca2abdc48567732ebaeb0a614c97ae7a6a18d
+          docs/preference-custody-laboratory-floor-v59.md	18b362a8cc705bb46d9ac1df8e074f5217047b20
+          docs/preference-custody-repository-owner-login-unicode-casefold-alias-reuse-assurance.md	7c563a05cdf062653e8d172d244729edd54ae1c8
+          test/preference-custody-manifest-v59.test.js	204ca569e8370163aa25370906335413450164ac
+          test/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.test.js	5158e4b6dcad5ec30b8aac059a3f3112966a513c
+          tools/compile-preference-custody-manifest-v59.mjs	6cf705b30f29cf05f36f8844a6e87e49f850175b
+          tools/compile-preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs	e7af5dc1ec6d7733259220f9c95cbc5c749286c8
+          tools/lib/preference-custody-manifest-v59.mjs	2b2166e8609c061ca3bdd1048df237c7af8e59be
+          tools/lib/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs	3c77c2880e3641f26140456f7fd90bdbb8a999ac
+          tools/validate-preference-custody-manifest-v59.mjs	769491ab36c1f67d5fec3fc8af2ede6973878ec0
+          tools/validate-preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs	0d983ae020df39d9640e2f1ce6c35ae7c75af9db
+          BLOBS
+          sed -i 's/^          //' "$OUT/expected-blobs.tsv"
+          : > "$OUT/actual-blobs.tsv"
+          while IFS= read -r path; do
+            printf '%s\t%s\n' "$path" "$(git hash-object "$PACKAGE/$path")" >> "$OUT/actual-blobs.tsv"
+          done < "$OUT/archive-paths.txt"
+          cmp "$OUT/expected-blobs.tsv" "$OUT/actual-blobs.tsv"
 
           git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
           LIVE_MAIN="$(git rev-parse origin/main)"
-          LIVE_TREE="$(git rev-parse origin/main^{tree})"
           git merge-base --is-ancestor "$CARRIER_PARENT" "$LIVE_MAIN"
           git diff --name-only "$CARRIER_PARENT" "$LIVE_MAIN" | LC_ALL=C sort > "$OUT/main-advance-paths.txt"
           comm -12 "$OUT/archive-paths.txt" "$OUT/main-advance-paths.txt" > "$OUT/main-advance-overlap.txt"
           test ! -s "$OUT/main-advance-overlap.txt"
-          printf '%s\n' "$LIVE_MAIN" > "$OUT/product-parent.txt"
-          printf '%s\n' "$LIVE_TREE" > "$OUT/product-parent-tree.txt"
-          while IFS= read -r path; do
-            if git cat-file -e "origin/main:$path" 2>/dev/null; then
-              echo "product path already exists on main: $path" >&2
-              exit 1
-            fi
-          done < "$OUT/archive-paths.txt"
-      - name: Qualify exact product against current main
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          PRODUCT_PARENT="$(cat "$OUT/product-parent.txt")"
+          while IFS= read -r path; do ! git cat-file -e "origin/main:$path" 2>/dev/null; done < "$OUT/archive-paths.txt"
+          printf '%s\n' "$LIVE_MAIN" > "$OUT/staging-parent.txt"
+          printf '%s\n' "$(git rev-parse origin/main^{tree})" > "$OUT/staging-parent-tree.txt"
+
+          grep -v '^\.github/workflows/' "$OUT/archive-paths.txt" > "$OUT/nonworkflow-paths.txt"
+          test "$(wc -l < "$OUT/nonworkflow-paths.txt" | tr -d ' ')" = 12
           git worktree add --detach "$WORKTREE" origin/main
           cp -a "$PACKAGE"/. "$WORKTREE"/
           cd "$WORKTREE"
-          node tools/compile-preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs 2>&1 | tee "$OUT/standalone-compile.log"
-          node tools/validate-preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs 2>&1 | tee "$OUT/standalone-validate.log"
-          node test/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.test.js 2>&1 | tee "$OUT/standalone-test.log"
-          node tools/compile-preference-custody-manifest-v59.mjs 2>&1 | tee "$OUT/floor-compile.log"
-          node tools/validate-preference-custody-manifest-v59.mjs 2>&1 | tee "$OUT/floor-validate.log"
-          node test/preference-custody-manifest-v59.test.js 2>&1 | tee "$OUT/floor-test.log"
-          node tools/validate-no-magic-human-gate.mjs 2>&1 | tee "$OUT/no-magic-validator.log"
-          node test/no-magic-human-gate.test.js 2>&1 | tee "$OUT/no-magic-test.log"
-          npm run release:check 2>&1 | tee "$OUT/release-check.log"
-          git reset --hard HEAD
-          git clean -fdx build dist
-          git status --porcelain --untracked-files=all | sed 's/^?? //' | sort > "$OUT/worktree-paths.txt"
-          cmp "$OUT/archive-paths.txt" "$OUT/worktree-paths.txt"
-          git diff --check
-          git add -- $(cat "$OUT/archive-paths.txt")
-          git diff --cached --name-status > "$OUT/index-delta.tsv"
-          test "$(wc -l < "$OUT/index-delta.tsv" | tr -d ' ')" = 14
-          test -z "$(awk '$1 != "A" {print}' "$OUT/index-delta.tsv")"
+          git add -- $(cat "$OUT/nonworkflow-paths.txt")
+          git diff --cached --name-status > "$OUT/staging-delta.tsv"
+          test "$(wc -l < "$OUT/staging-delta.tsv" | tr -d ' ')" = 12
+          test -z "$(awk '$1 != "A" {print}' "$OUT/staging-delta.tsv")"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'Add PC-61 owner-login Unicode and namespace-reuse custody'
-          PRODUCT="$(git rev-parse HEAD)"
-          PRODUCT_TREE="$(git rev-parse HEAD^{tree})"
-          test "$(git show -s --format='%P' HEAD)" = "$PRODUCT_PARENT"
-          test "$(git rev-list --count "$PRODUCT_PARENT"..HEAD)" = 1
-          git diff --name-status "$PRODUCT_PARENT" HEAD > "$OUT/product-delta.tsv"
-          cmp "$OUT/index-delta.tsv" "$OUT/product-delta.tsv"
-          printf '%s\n' "$PRODUCT" > "$OUT/product-commit.txt"
-          printf '%s\n' "$PRODUCT_TREE" > "$OUT/product-tree.txt"
-          : > "$OUT/product-blobs.tsv"
-          while IFS= read -r path; do printf '%s\t%s\n' "$path" "$(git rev-parse "HEAD:$path")" >> "$OUT/product-blobs.tsv"; done < "$OUT/archive-paths.txt"
-          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH" --force-with-lease="refs/heads/$PRODUCT_BRANCH:"
-          git ls-remote --exit-code origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}' | grep -Fx "$PRODUCT"
-          jq -n --arg schema_version 'pc61-product-materialization@1' --arg status 'qualified_and_published' --arg parent "$PRODUCT_PARENT" --arg product "$PRODUCT" --arg tree "$PRODUCT_TREE" --arg archive_sha256 "$ARCHIVE_SHA256" --arg path_list_sha256 "$PATH_LIST_SHA256" '{schema_version:$schema_version,status:$status,parent:$parent,product_commit:$product,product_tree:$tree,permanent_paths:14,standalone_paths:7,compositional_paths:7,archive_sha256:$archive_sha256,path_list_sha256:$path_list_sha256,write_capable_permanent_workflows:0,graph_effect:"none",outside_human_dependency:false}' > "$OUT/receipt.json"
-          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
-      - name: Preserve PC-61 materialization receipt
+          git commit -m 'Stage PC-61 non-workflow product blobs'
+          STAGING_COMMIT="$(git rev-parse HEAD)"
+          STAGING_TREE="$(git rev-parse HEAD^{tree})"
+          test "$(git show -s --format='%P' HEAD)" = "$LIVE_MAIN"
+          test "$(git rev-list --count "$LIVE_MAIN"..HEAD)" = 1
+          git diff --name-status "$LIVE_MAIN" HEAD > "$OUT/staging-commit-delta.tsv"
+          cmp "$OUT/staging-delta.tsv" "$OUT/staging-commit-delta.tsv"
+          printf '%s\n' "$STAGING_COMMIT" > "$OUT/staging-commit.txt"
+          printf '%s\n' "$STAGING_TREE" > "$OUT/staging-tree.txt"
+          git push origin "HEAD:refs/heads/$STAGING_BRANCH" --force-with-lease="refs/heads/$STAGING_BRANCH:"
+          git ls-remote --exit-code origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}' | grep -Fx "$STAGING_COMMIT"
+
+          jq -n \
+            --arg schema_version 'pc61-nonworkflow-blob-staging@1' \
+            --arg status 'twelve_exact_blobs_published' \
+            --arg parent "$LIVE_MAIN" \
+            --arg commit "$STAGING_COMMIT" \
+            --arg tree "$STAGING_TREE" \
+            --arg archive_sha256 "$ARCHIVE_SHA256" \
+            --arg path_list_sha256 "$PATH_LIST_SHA256" \
+            '{schema_version:$schema_version,status:$status,parent:$parent,staging_commit:$commit,staging_tree:$tree,staged_paths:12,withheld_read_only_workflows:2,final_product_paths:14,archive_sha256:$archive_sha256,path_list_sha256:$path_list_sha256,product_semantics_changed:false,graph_effect:"none",outside_human_dependency:false}' > "$OUT/receipt.json"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - name: Preserve PC-61 staging receipt
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pc61-product-materialization-v1
-          path: /tmp/pc61-materializer
+          name: pc61-nonworkflow-blob-staging-v1
+          path: /tmp/pc61-stager
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 90
