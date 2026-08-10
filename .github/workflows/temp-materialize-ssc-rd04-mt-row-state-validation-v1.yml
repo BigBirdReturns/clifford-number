@@ -1,0 +1,215 @@
+name: TEMP repair and materialize RD-04 Montana row-state validation v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-mt-row-state-validation-envelope-repair-base-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-mt-row-state-validation-materializer/trigger.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-rd04-mt-row-state-validation-envelope-repair-v1
+  cancel-in-progress: false
+
+env:
+  PAYLOAD: .tmp/rd04-mt-row-state-validation-materializer/package.tar.gz.b64
+  OUT: /tmp/rd04-mt-row-state-validation-materializer-v1-artifact
+  PACKAGE: /tmp/rd04-mt-row-state-validation-package
+  OBSERVED_B64_BYTES: '14740'
+  OBSERVED_B64_SHA256: 6a71fc9fea0de70c0d1281729a71872fcf7d0d9952f0c99a7dcebfd7ba0aca98
+  REPAIR_OFFSET: '2876'
+  REPAIR_OLD_BYTE: e
+  REPAIR_NEW_BYTE: '/'
+  REPAIRED_B64_BYTES: '14740'
+  REPAIRED_B64_SHA256: d19b30d285e725f0cba1844864f9a8a4d543e46de2ff66484e3a9b710b9771aa
+  PAYLOAD_GZIP_BYTES: '11054'
+  PAYLOAD_GZIP_SHA256: db899783e6a52055842ba9748b9ea1996d5bfa5b7806db374fbf127723c2c3ba
+  PAYLOAD_TAR_BYTES: '61440'
+  PAYLOAD_TAR_SHA256: d81a4cc83d47f192995a9bf32aed803f4f5c878799558ce906fc166ada7af559
+  CONTROLLER_BYTES: '9075'
+  CONTROLLER_SHA256: 5b9b91cf7e30af38ca4fcec137b8a43d5e3e9c3c3c21e259b6aa21a1bf9d1674
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-mt-row-state-validation-envelope-repair-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-mt-row-state-validation-envelope-repair-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Repair one envelope byte and execute exact controller
+        id: materialize
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CARRIER_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$PACKAGE"
+          mkdir -p "$OUT" "$PACKAGE"
+          python - <<'PY'
+          from __future__ import annotations
+
+          import base64
+          import gzip
+          import hashlib
+          import io
+          import json
+          import os
+          import pathlib
+          import stat
+          import tarfile
+          from pathlib import PurePosixPath
+
+          repo = pathlib.Path.cwd()
+          payload_path = repo / os.environ['PAYLOAD']
+          out = pathlib.Path(os.environ['OUT'])
+          package = pathlib.Path(os.environ['PACKAGE'])
+          observed = payload_path.read_bytes()
+          offset = int(os.environ['REPAIR_OFFSET'])
+          old = os.environ['REPAIR_OLD_BYTE'].encode('ascii')
+          new = os.environ['REPAIR_NEW_BYTE'].encode('ascii')
+
+          def sha(data: bytes) -> str:
+              return hashlib.sha256(data).hexdigest()
+
+          assert len(observed) == int(os.environ['OBSERVED_B64_BYTES'])
+          assert sha(observed) == os.environ['OBSERVED_B64_SHA256']
+          assert observed[offset:offset + 1] == old
+          repaired = observed[:offset] + new + observed[offset + 1:]
+          assert len(repaired) == int(os.environ['REPAIRED_B64_BYTES'])
+          assert sha(repaired) == os.environ['REPAIRED_B64_SHA256']
+          gzip_bytes = base64.b64decode(repaired, validate=True)
+          assert len(gzip_bytes) == int(os.environ['PAYLOAD_GZIP_BYTES'])
+          assert sha(gzip_bytes) == os.environ['PAYLOAD_GZIP_SHA256']
+          tar_bytes = gzip.decompress(gzip_bytes)
+          assert len(tar_bytes) == int(os.environ['PAYLOAD_TAR_BYTES'])
+          assert sha(tar_bytes) == os.environ['PAYLOAD_TAR_SHA256']
+
+          members = []
+          with tarfile.open(fileobj=io.BytesIO(tar_bytes), mode='r:') as archive:
+              infos = archive.getmembers()
+              assert infos
+              for info in infos:
+                  p = PurePosixPath(info.name)
+                  assert not p.is_absolute() and '..' not in p.parts and info.isfile()
+                  source = archive.extractfile(info)
+                  assert source is not None
+                  data = source.read()
+                  assert len(data) == info.size
+                  target = package.joinpath(*p.parts)
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(data)
+                  os.chmod(target, stat.S_IMODE(info.mode))
+                  members.append({'path': info.name, 'bytes': len(data), 'sha256': sha(data)})
+
+          controller = (package / 'controller.py').read_bytes()
+          assert len(controller) == int(os.environ['CONTROLLER_BYTES'])
+          assert sha(controller) == os.environ['CONTROLLER_SHA256']
+          receipt = {
+              'schema_version': 'ssc-rd04-mt-row-state-validation-envelope-repair@1',
+              'state': 'exact_single_byte_envelope_repair_applied',
+              'canonical_parent': 'e62de80e187f9be037cbdd3a4b942b5840d223de',
+              'observed': {'bytes': len(observed), 'sha256': sha(observed)},
+              'repair': {'offset': offset, 'old_byte': old.decode(), 'new_byte': new.decode()},
+              'repaired': {'bytes': len(repaired), 'sha256': sha(repaired)},
+              'gzip': {'bytes': len(gzip_bytes), 'sha256': sha(gzip_bytes)},
+              'tar': {'bytes': len(tar_bytes), 'sha256': sha(tar_bytes)},
+              'controller': {'bytes': len(controller), 'sha256': sha(controller)},
+              'members': members,
+              'canonical_effect': 'none',
+          }
+          (out / 'envelope-repair-receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          (out / 'repaired-package.tar.gz.b64').write_bytes(repaired)
+          (out / 'controller.py').write_bytes(controller)
+          PY
+          python -m py_compile "$PACKAGE/controller.py"
+          set +e
+          python -X dev "$PACKAGE/controller.py" > "$OUT/controller-stdout.log" 2> "$OUT/controller-stderr.log"
+          CONTROLLER_RC=$?
+          set -e
+          printf '%s\n' "$CONTROLLER_RC" > "$OUT/controller-exit-code.txt"
+          (cd "$OUT" && find . -type f ! -name CAPTURE_SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > CAPTURE_SHA256SUMS && sha256sum -c CAPTURE_SHA256SUMS)
+          if [ "$CONTROLLER_RC" -ne 0 ]; then
+            cat "$OUT/controller-stderr.log" >&2 || true
+            cat "$OUT/failure.txt" >&2 || true
+            exit "$CONTROLLER_RC"
+          fi
+
+      - name: Preserve repaired Montana validation custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-validation-envelope-repair-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce exact staged validation product
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.materialize.outcome }}" = success
+          (cd "$OUT" && sha256sum -c CAPTURE_SHA256SUMS)
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .schema_version == "ssc-rd04-mt-row-state-validation-envelope-repair@1" and
+            .state == "exact_single_byte_envelope_repair_applied" and
+            .canonical_parent == "e62de80e187f9be037cbdd3a4b942b5840d223de" and
+            .observed.bytes == 14740 and
+            .observed.sha256 == "6a71fc9fea0de70c0d1281729a71872fcf7d0d9952f0c99a7dcebfd7ba0aca98" and
+            .repair.offset == 2876 and .repair.old_byte == "e" and .repair.new_byte == "/" and
+            .repaired.sha256 == "d19b30d285e725f0cba1844864f9a8a4d543e46de2ff66484e3a9b710b9771aa" and
+            .gzip.sha256 == "db899783e6a52055842ba9748b9ea1996d5bfa5b7806db374fbf127723c2c3ba" and
+            .tar.sha256 == "d81a4cc83d47f192995a9bf32aed803f4f5c878799558ce906fc166ada7af559" and
+            .controller.sha256 == "5b9b91cf7e30af38ca4fcec137b8a43d5e3e9c3c3c21e259b6aa21a1bf9d1674" and
+            .canonical_effect == "none"
+          ' "$OUT/envelope-repair-receipt.json" >/dev/null
+          jq -e '
+            .schema_version == "ssc-rd04-mt-row-state-validation-materialization@1" and
+            .state == "qualified_montana_validation_objects_staged" and
+            .canonical_parent == "e62de80e187f9be037cbdd3a4b942b5840d223de" and
+            .canonical_parent_tree == "0d1f8369e2c68d18b11a8f375903ff597ea8ccdb" and
+            .permanent_paths == 7 and .added_paths == 7 and .modified_paths == 0 and .deleted_paths == 0 and
+            .candidate.unit_id == "US-STATE-MT" and
+            .candidate.proposed_cell_sha256 == "ba173d03c2f82316ca79eb8b6627057db6fdb54113340ff0f9539a85e89a1f2d" and
+            .candidate.projected_row_sha256 == "b6474320f690a653eae081cf655a090bb5d5da0f444e9a1c42077fd0b951bcbc" and
+            .candidate.projected_matrix_sha256 == "12e52344af0c8ec3d845b6f05f8a20014fa84504d10dbc9ee0674d37715abe1d" and
+            .candidate.projected_terminal_cells == 230 and
+            .candidate.projected_still_open_cells == 220 and
+            .candidate.projected_terminal_units == 12 and
+            .qualification.adversarial_refusals == 26 and
+            .qualification.release_check == "passed" and
+            .qualification.post_release_replay == "passed" and
+            .qualification.workflow_yaml_parse == "passed" and
+            .authority_boundary.source_requests == 0 and
+            .authority_boundary.field_terminalizations == 0 and
+            .authority_boundary.matrix_updates == 0 and
+            .authority_boundary.row_state_mutations == 0 and
+            .authority_boundary.row_terminalizations == 0 and
+            .authority_boundary.class_closed == false and
+            .authority_boundary.outside_human_dependency == false
+          ' "$OUT/materialization-receipt.json" >/dev/null
