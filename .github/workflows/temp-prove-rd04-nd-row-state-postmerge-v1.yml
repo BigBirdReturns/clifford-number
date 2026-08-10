@@ -1,0 +1,428 @@
+name: TEMP prove canonical RD-04 North Dakota row-state promotion v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-prove-rd04-nd-row-state-postmerge-v1.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: temp-prove-rd04-nd-row-state-postmerge-v1
+  cancel-in-progress: false
+
+env:
+  MERGE: e62de80e187f9be037cbdd3a4b942b5840d223de
+  MAIN_PARENT: 283c5993cb2ac0bff173c72aba70088c67b2ac3c
+  PRODUCT: f9a3592a8853cf18c64779f8b4f59998e9a62256
+  PRODUCT_TREE: 0d1f8369e2c68d18b11a8f375903ff597ea8ccdb
+  OBSERVER_BRANCH: observer/ssc-rd04-nd-row-state-postmerge-proof-v1
+  OBSERVER_PATH: .github/workflows/temp-prove-rd04-nd-row-state-postmerge-v1.yml
+  PRODUCT_WORKFLOW_NAME: Qualify RD-04 North Dakota derivative row-state reconciliation
+  PRODUCT_ARTIFACT_NAME: ssc-rd04-nd-current-public-record-gap-row-state-reconciliation-v2
+  OUT: /tmp/ssc-rd04-nd-row-state-postmerge-proof-v1
+
+jobs:
+  prove:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'observer/ssc-rd04-nd-row-state-postmerge-proof-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Bind exact observer, canonical merge, and product denominator
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+
+          test "$(git rev-parse HEAD^)" = "$MERGE"
+          test "$(git rev-list --count "$MERGE"..HEAD)" -eq 1
+          test "$(git diff --name-only "$MERGE" HEAD)" = "$OBSERVER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$MERGE" HEAD)" = "$OBSERVER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$MERGE" HEAD)"
+          git diff --check "$MERGE" HEAD
+
+          read -r observed_merge observed_parent observed_product extra < <(git rev-list --parents -n1 "$MERGE")
+          test "$observed_merge" = "$MERGE"
+          test "$observed_parent" = "$MAIN_PARENT"
+          test "$observed_product" = "$PRODUCT"
+          test -z "${extra:-}"
+          test "$(git rev-parse "$PRODUCT^")" = "$MAIN_PARENT"
+          test "$(git rev-parse "$PRODUCT^{tree}")" = "$PRODUCT_TREE"
+          test "$(git rev-parse "$MERGE^{tree}")" = "$PRODUCT_TREE"
+          test -z "$(git diff --name-only "$PRODUCT" "$MERGE")"
+
+          cat > "$OUT/product-paths.txt" <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/input-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/promoted-partial-field-matrix.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/remaining-open-field-census.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/row-state-decision.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/row-state-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/row-state-summary.json
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs
+          EOF
+          sed -i 's/^          //' "$OUT/product-paths.txt"
+          LC_ALL=C sort -o "$OUT/product-paths.txt" "$OUT/product-paths.txt"
+
+          git diff --name-only --diff-filter=A "$MAIN_PARENT" "$PRODUCT" | LC_ALL=C sort > "$OUT/product-added-paths.txt"
+          diff -u "$OUT/product-paths.txt" "$OUT/product-added-paths.txt"
+          test "$(wc -l < "$OUT/product-added-paths.txt" | tr -d ' ')" -eq 14
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$MAIN_PARENT" "$PRODUCT")"
+
+          git diff --name-only --diff-filter=A "$MAIN_PARENT" "$MERGE" | LC_ALL=C sort > "$OUT/merge-added-paths.txt"
+          diff -u "$OUT/product-paths.txt" "$OUT/merge-added-paths.txt"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$MAIN_PARENT" "$MERGE")"
+
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          git merge-base --is-ancestor "$MERGE" "$LIVE_MAIN"
+          git diff --name-only "$MERGE" "$LIVE_MAIN" | LC_ALL=C sort > "$OUT/intervening-main-paths.txt"
+          comm -12 "$OUT/product-paths.txt" "$OUT/intervening-main-paths.txt" > "$OUT/intervening-product-overlap.txt"
+          test ! -s "$OUT/intervening-product-overlap.txt"
+          printf '%s\n' "$LIVE_MAIN" > "$OUT/live-main.txt"
+
+      - name: Recover all five successful canonical push workflows
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          REQUIRED_NAMES="$OUT/required-workflow-names.txt"
+          cat > "$REQUIRED_NAMES" <<'EOF'
+          No magic human gate
+          Qualify RD-04 North Dakota derivative row-state reconciliation
+          Release checks
+          Status-for-sovereignty Wave 01
+          Status-for-sovereignty compact
+          EOF
+          sed -i 's/^          //' "$REQUIRED_NAMES"
+
+          terminal=0
+          for attempt in $(seq 1 120); do
+            curl -fsSL \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$MERGE&event=push&per_page=100" \
+              > "$OUT/runs.json"
+
+            set +e
+            python - "$OUT/runs.json" "$REQUIRED_NAMES" "$OUT/selected-runs.json" "$MERGE" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          runs_path, names_path, out_path, merge = sys.argv[1:]
+          data = json.loads(Path(runs_path).read_text())
+          names = [line for line in Path(names_path).read_text().splitlines() if line]
+          selected = {}
+          pending = False
+          for name in names:
+              matches = [
+                  run for run in data.get("workflow_runs", [])
+                  if run.get("name") == name
+                  and run.get("event") == "push"
+                  and run.get("head_sha") == merge
+              ]
+              if not matches:
+                  pending = True
+                  continue
+              matches.sort(key=lambda run: (run.get("created_at") or "", int(run.get("id", 0))))
+              run = matches[-1]
+              if run.get("status") != "completed":
+                  pending = True
+                  continue
+              if run.get("conclusion") != "success":
+                  print(json.dumps({"failed_workflow": name, "run": run}, sort_keys=True), file=sys.stderr)
+                  raise SystemExit(1)
+              selected[name] = {
+                  "id": int(run["id"]),
+                  "status": run["status"],
+                  "conclusion": run["conclusion"],
+                  "head_sha": run["head_sha"],
+                  "event": run["event"],
+                  "html_url": run.get("html_url"),
+              }
+          if pending:
+              raise SystemExit(2)
+          Path(out_path).write_text(json.dumps(selected, indent=2, sort_keys=True) + "\n")
+          PY
+            rc=$?
+            set -e
+            if [ "$rc" -eq 0 ]; then
+              terminal=1
+              break
+            fi
+            if [ "$rc" -eq 1 ]; then
+              exit 1
+            fi
+            sleep 5
+          done
+          test "$terminal" -eq 1
+          test -f "$OUT/selected-runs.json"
+
+      - name: Authenticate standing push job and product artifact
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          PRODUCT_RUN="$(jq -r --arg name "$PRODUCT_WORKFLOW_NAME" '.[$name].id' "$OUT/selected-runs.json")"
+          test -n "$PRODUCT_RUN"
+          printf '%s\n' "$PRODUCT_RUN" > "$OUT/product-push-run-id.txt"
+
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$PRODUCT_RUN/jobs?filter=latest&per_page=100" \
+            > "$OUT/product-push-jobs.json"
+
+          python - "$OUT/product-push-jobs.json" "$OUT/product-push-job-id.txt" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          data = json.loads(Path(sys.argv[1]).read_text())
+          jobs = data.get("jobs", [])
+          assert len(jobs) == 1, jobs
+          job = jobs[0]
+          assert job["name"] == "validate", job
+          assert job["status"] == "completed" and job["conclusion"] == "success", job
+          required = {
+              "Bind exact fourteen-path topology and canonical predecessor",
+              "Rebuild, validate, and execute adversarial refusals",
+              "Preserve exact qualification receipt",
+          }
+          steps = {step["name"]: step for step in job.get("steps", [])}
+          assert required <= set(steps), sorted(required - set(steps))
+          for name in required:
+              assert steps[name]["status"] == "completed", (name, steps[name])
+              assert steps[name]["conclusion"] == "success", (name, steps[name])
+          Path(sys.argv[2]).write_text(str(job["id"]) + "\n")
+          PY
+
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$PRODUCT_RUN/artifacts?per_page=100" \
+            > "$OUT/product-push-artifacts.json"
+
+          read -r ARTIFACT_ID ARTIFACT_DIGEST ARTIFACT_SIZE < <(
+            python - "$OUT/product-push-artifacts.json" "$PRODUCT_ARTIFACT_NAME" <<'PY'
+          import json
+          import sys
+
+          data = json.load(open(sys.argv[1]))
+          name = sys.argv[2]
+          matches = [
+              artifact for artifact in data.get("artifacts", [])
+              if artifact.get("name") == name and not artifact.get("expired")
+          ]
+          assert len(matches) == 1, matches
+          artifact = matches[0]
+          print(artifact["id"], artifact["digest"], artifact["size_in_bytes"])
+          PY
+          )
+          test -n "$ARTIFACT_ID"
+          test -n "$ARTIFACT_DIGEST"
+          printf '%s\n' "$ARTIFACT_ID" > "$OUT/product-push-artifact-id.txt"
+          printf '%s\n' "$ARTIFACT_DIGEST" > "$OUT/product-push-artifact-digest.txt"
+          printf '%s\n' "$ARTIFACT_SIZE" > "$OUT/product-push-artifact-size.txt"
+
+          curl -fsSL -L \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" \
+            > "$OUT/product-push-artifact.zip"
+          ZIP_SHA="$(sha256sum "$OUT/product-push-artifact.zip" | awk '{print $1}')"
+          test "$ARTIFACT_DIGEST" = "sha256:$ZIP_SHA"
+          printf '%s\n' "$ZIP_SHA" > "$OUT/product-push-artifact-zip-sha256.txt"
+          unzip -t "$OUT/product-push-artifact.zip" > "$OUT/product-push-zip-test.txt"
+          mkdir -p "$OUT/product-push-artifact"
+          unzip -q "$OUT/product-push-artifact.zip" -d "$OUT/product-push-artifact"
+          (
+            cd "$OUT/product-push-artifact"
+            sha256sum -c SHA256SUMS
+          ) > "$OUT/product-push-internal-checks.txt"
+
+          test "$(cat "$OUT/product-push-artifact/product-commit.txt")" = "$PRODUCT"
+          diff -u "$OUT/product-paths.txt" "$OUT/product-push-artifact/product-paths.txt"
+          cmp "$OUT/product-push-artifact/validator.json" "$OUT/product-push-artifact/post-release-validator.json"
+          cmp "$OUT/product-push-artifact/builder.json" "$OUT/product-push-artifact/post-release-builder.json"
+
+          jq -e '
+            .state=="qualified_exact_north_dakota_row_state_reconciliation" and
+            .matrix_sha256=="9f9dc05a057396056771bb566c44e9c3779d8ef6b0d2c078f7ffff11d9c7e6cb" and
+            .terminal_cells==229 and
+            .still_open_cells==221 and
+            .terminal_substantive_cells==118 and
+            .still_open_substantive_cells==182 and
+            .row_terminal_cells==11 and
+            .row_open_cells==39 and
+            .terminal_units==11 and
+            .north_dakota_terminal_fields==9 and
+            .north_dakota_open_fields==0 and
+            .north_dakota_row_state=="terminal_fixed_public_record_obligation_complete" and
+            .class_closed==false and
+            .adversarial_contract=="closed"
+          ' "$OUT/product-push-artifact/validator.json" > /dev/null
+
+          PRODUCT_ROOT='data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation'
+          for name in index.json promoted-partial-field-matrix.json remaining-open-field-census.json row-state-ledger.json row-state-summary.json; do
+            cmp "$OUT/product-push-artifact/generated/$name" "$PRODUCT_ROOT/$name"
+          done
+          for name in product-manifest.json row-state-decision.json row-state-ledger.json row-state-summary.json; do
+            cmp "$OUT/product-push-artifact/$name" "$PRODUCT_ROOT/$name"
+          done
+
+      - name: Independently replay canonical product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PRODUCT_ROOT='data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation'
+          mkdir -p "$OUT/replay-generated"
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs --out "$OUT/replay-generated" > "$OUT/replay-builder.json"
+          for name in row-state-ledger.json promoted-partial-field-matrix.json remaining-open-field-census.json row-state-summary.json index.json; do
+            cmp "$OUT/replay-generated/$name" "$PRODUCT_ROOT/$name"
+          done
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs --out "$OUT/replay-validator.json"
+          node --test test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.test.js > "$OUT/replay-adversarial.log"
+          node tools/validate-no-magic-human-gate.mjs > "$OUT/replay-no-magic-validator.json"
+          node test/no-magic-human-gate.test.js > "$OUT/replay-no-magic-test.log"
+          npm run release:check > "$OUT/replay-release-check.log" 2>&1
+
+          git reset --hard HEAD
+          git clean -fdx
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs --check > "$OUT/post-clean-builder.json"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs --out "$OUT/post-clean-validator.json"
+          cmp "$OUT/replay-validator.json" "$OUT/post-clean-validator.json"
+          test "$(git rev-parse HEAD^)" = "$MERGE"
+
+      - name: Seal canonical postmerge receipt
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - "$OUT/receipt.json" <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          out = Path(os.environ["OUT"])
+          runs = json.loads((out / "selected-runs.json").read_text())
+          validator = json.loads((out / "product-push-artifact/validator.json").read_text())
+          value = {
+              "schema_version": "ssc-rd04-nd-row-state-postmerge-proof@1",
+              "state": "canonical_merge_and_postmerge_verified",
+              "canonical_merge": os.environ["MERGE"],
+              "main_parent": os.environ["MAIN_PARENT"],
+              "product_commit": os.environ["PRODUCT"],
+              "product_tree": os.environ["PRODUCT_TREE"],
+              "live_main_at_proof": (out / "live-main.txt").read_text().strip(),
+              "push_workflows": runs,
+              "product_push_job": int((out / "product-push-job-id.txt").read_text()),
+              "product_push_artifact": int((out / "product-push-artifact-id.txt").read_text()),
+              "product_push_artifact_digest": (out / "product-push-artifact-digest.txt").read_text().strip(),
+              "product_push_artifact_zip_sha256": (out / "product-push-artifact-zip-sha256.txt").read_text().strip(),
+              "permanent_paths": 14,
+              "added_paths": 14,
+              "modified_paths": 0,
+              "deleted_paths": 0,
+              "matrix_sha256": validator["matrix_sha256"],
+              "terminal_cells": validator["terminal_cells"],
+              "still_open_cells": validator["still_open_cells"],
+              "terminal_substantive_cells": validator["terminal_substantive_cells"],
+              "still_open_substantive_cells": validator["still_open_substantive_cells"],
+              "row_terminal_cells": validator["row_terminal_cells"],
+              "row_open_cells": validator["row_open_cells"],
+              "terminal_units": validator["terminal_units"],
+              "north_dakota_terminal_fields": validator["north_dakota_terminal_fields"],
+              "north_dakota_open_fields": validator["north_dakota_open_fields"],
+              "north_dakota_row_state": validator["north_dakota_row_state"],
+              "source_requests": 0,
+              "route_executions": 0,
+              "source_admissions": 0,
+              "substantive_field_terminalizations": 0,
+              "matrix_updates": 1,
+              "row_state_mutations": 1,
+              "row_terminalizations": 1,
+              "class_closed": False,
+              "cumulative_ledger_effect": "none",
+              "outside_human_dependency": False,
+              "publication_effect": "none",
+              "adoption_effect": "none",
+              "graph_effect": "none",
+          }
+          Path(os.sys.argv[1]).write_text(json.dumps(value, indent=2, sort_keys=True) + "\n")
+          PY
+          (
+            cd "$OUT"
+            find . -type f \
+              ! -path './product-push-artifact/*' \
+              ! -name SHA256SUMS \
+              -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS > SHA256-CHECK.log
+          )
+
+      - name: Preserve terminal postmerge proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-row-state-postmerge-proof-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce terminal proof
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          jq -e '
+            .state=="canonical_merge_and_postmerge_verified" and
+            .canonical_merge=="e62de80e187f9be037cbdd3a4b942b5840d223de" and
+            .main_parent=="283c5993cb2ac0bff173c72aba70088c67b2ac3c" and
+            .product_commit=="f9a3592a8853cf18c64779f8b4f59998e9a62256" and
+            .product_tree=="0d1f8369e2c68d18b11a8f375903ff597ea8ccdb" and
+            .permanent_paths==14 and .added_paths==14 and .modified_paths==0 and .deleted_paths==0 and
+            .matrix_sha256=="9f9dc05a057396056771bb566c44e9c3779d8ef6b0d2c078f7ffff11d9c7e6cb" and
+            .terminal_cells==229 and .still_open_cells==221 and
+            .terminal_substantive_cells==118 and .still_open_substantive_cells==182 and
+            .row_terminal_cells==11 and .row_open_cells==39 and .terminal_units==11 and
+            .north_dakota_terminal_fields==9 and .north_dakota_open_fields==0 and
+            .north_dakota_row_state=="terminal_fixed_public_record_obligation_complete" and
+            .source_requests==0 and .route_executions==0 and .source_admissions==0 and
+            .substantive_field_terminalizations==0 and .matrix_updates==1 and
+            .row_state_mutations==1 and .row_terminalizations==1 and
+            .class_closed==false and .cumulative_ledger_effect=="none" and
+            .outside_human_dependency==false and
+            .publication_effect=="none" and .adoption_effect=="none" and .graph_effect=="none"
+          ' "$OUT/receipt.json" > /dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
