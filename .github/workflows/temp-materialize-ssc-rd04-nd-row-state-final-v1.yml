@@ -1,0 +1,150 @@
+name: TEMP materialize RD-04 North Dakota terminal row-state product v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-row-state-final-materializer-base-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-row-state-final-materializer-v1/trigger.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-rd04-nd-row-state-final-materializer-v1
+  cancel-in-progress: false
+
+env:
+  CONTROLLER_ROOT: .tmp/rd04-nd-row-state-final-materializer-v1
+  BASE_BRANCH: agent/ssc-rd04-nd-row-state-final-materializer-base-v1
+  HEAD_BRANCH: agent/ssc-rd04-nd-row-state-final-materializer-trigger-v1
+  STAGING_BRANCH: staging/ssc-rd04-nd-current-public-record-gap-row-state-reconciliation-v1
+  OUT: /tmp/rd04-nd-row-state-final-materializer-v1
+  CONTROLLER_B64_BYTES: '11420'
+  CONTROLLER_B64_SHA256: 1a1681aa7a03912ebdd098de594be4cec3050cc7de46a1a9024b1aeb4ccf091b
+  CONTROLLER_GZIP_BYTES: '8563'
+  CONTROLLER_GZIP_SHA256: bbd104454fa7f7902895781a8d6ed7fa54edc4609e708a7b63ba58c993640287
+  CONTROLLER_BYTES: '30592'
+  CONTROLLER_SHA256: 16ba8e8f6c77453d7c683a321fffb76ded45060edd1e241776e2b14508b882a4
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-row-state-final-materializer-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-row-state-final-materializer-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Reconstruct and execute exact guarded materializer
+        id: materialize
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CARRIER_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" && mkdir -p "$OUT"
+          B64=/tmp/rd04-nd-row-state-final-controller.py.gz.b64
+          GZ=/tmp/rd04-nd-row-state-final-controller.py.gz
+          PY=/tmp/rd04-nd-row-state-final-controller.py
+          : > "$B64"
+          paths=(
+            "$CONTROLLER_ROOT/controller.part00"
+            "$CONTROLLER_ROOT/controller.part01"
+            "$CONTROLLER_ROOT/controller.part02"
+            "$CONTROLLER_ROOT/controller.part03"
+          )
+          bytes=(3000 3000 3000 2420)
+          digests=(
+            2d6a24369aa7203764947581833a2ef8b7182b69cc4749349daa4e2e5b47c8b4
+            02a7be9f18dfa5a7f60f1f0585d2c7dc99e9a475695ce756de39b8458f665a53
+            9dd1a5840b183a08327a6e9c3fada0d0e71fa7630096b22b13171770d477f94c
+            79af7c8db41ac25ab150dbb3b321fc5f780c38ee9f4ce595b1c8b71c5ec211a0
+          )
+          for i in "${!paths[@]}"; do
+            test "$(stat -c %s "${paths[$i]}")" -eq "${bytes[$i]}"
+            test "$(sha256sum "${paths[$i]}" | awk '{print $1}')" = "${digests[$i]}"
+            cat "${paths[$i]}" >> "$B64"
+          done
+          test "$(stat -c %s "$B64")" -eq "$CONTROLLER_B64_BYTES"
+          test "$(sha256sum "$B64" | awk '{print $1}')" = "$CONTROLLER_B64_SHA256"
+          base64 --decode "$B64" > "$GZ"
+          test "$(stat -c %s "$GZ")" -eq "$CONTROLLER_GZIP_BYTES"
+          test "$(sha256sum "$GZ" | awk '{print $1}')" = "$CONTROLLER_GZIP_SHA256"
+          gzip -dc "$GZ" > "$PY"
+          test "$(stat -c %s "$PY")" -eq "$CONTROLLER_BYTES"
+          test "$(sha256sum "$PY" | awk '{print $1}')" = "$CONTROLLER_SHA256"
+          python -m py_compile "$PY"
+          python "$PY"
+
+      - name: Preserve exact final-materializer custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-row-state-final-materializer-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce exact staging publication
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.materialize.outcome }}" = success
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .schema_version == "ssc-rd04-nd-row-state-final-materializer@1" and
+            .state == "qualified_nonworkflow_staging_published" and
+            .canonical_parent == "789c800d00a6d4924cb69d2ce33d336ab315972f" and
+            .canonical_parent_tree == "fef73cc4267070c8cc7fb7c1dc15481477391d62" and
+            .staging_branch == "staging/ssc-rd04-nd-current-public-record-gap-row-state-reconciliation-v1" and
+            .permanent_path_count == 14 and
+            .staged_nonworkflow_paths == 13 and
+            .temporary_workflow_carrier_paths == 1 and
+            .matrix_sha256 == "d2ff4b4d711417b2319b1c26486127c4eba1366aa0e11abf1fd489dcd2b2ffe6" and
+            .semantic_projection_sha256 == "6347024e87acf6d21192fa40844ae22b5b5c76c36bfb853edf5e6d35b58c829c" and
+            .source_requests == 0 and .route_executions == 0 and .source_admissions == 0 and
+            .field_terminalizations == 0 and .matrix_updates == 1 and
+            .row_state_mutations == 1 and .row_terminalizations == 1 and
+            .class_closed == false and .outside_human_dependency == false and
+            .final_product_commit_created == false and .canonical_merge_authorized == false
+          ' "$OUT/receipt.json" > /dev/null
+          staging_commit="$(jq -r .staging_commit "$OUT/receipt.json")"
+          remote_commit=''
+          for attempt in 1 2 3 4 5; do
+            remote_commit="$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')"
+            test "$remote_commit" = "$staging_commit" && break
+            sleep 2
+          done
+          test "$remote_commit" = "$staging_commit"
+          git fetch --quiet --force origin "+refs/heads/$STAGING_BRANCH:refs/remotes/origin/$STAGING_BRANCH"
+          test "$(git rev-parse "refs/remotes/origin/$STAGING_BRANCH")" = "$staging_commit"
+          test "$(git rev-parse "$staging_commit^")" = 789c800d00a6d4924cb69d2ce33d336ab315972f
+          mapfile -t changed < <(git diff --name-status 789c800d00a6d4924cb69d2ce33d336ab315972f "$staging_commit")
+          test "${#changed[@]}" -eq 14
+          test "$(printf '%s\n' "${changed[@]}" | awk -F '\t' '$1=="A"{n++} END{print n+0}')" -eq 14
+          test "$(git rev-parse "$staging_commit:.tmp/rd04-nd-row-state-final-materializer-v1/permanent-workflow.yml")" = 95580339acbd39bd5d5008bda6659aa4f70825ca
+          test "$(git rev-parse "$staging_commit:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/promoted-partial-field-matrix.json")" = 66a9a6d7003a39b1dca569895e0bc3513f004ca6
