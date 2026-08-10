@@ -1,0 +1,95 @@
+name: TEMP materialize RD-04 North Dakota row-state reconciliation v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - agent/ssc-rd04-nd-row-state-reconciliation-materializer-base-v1
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-nd-row-state-reconciliation-v1.yml'
+      - '.tmp/rd04-nd-row-state-reconciliation-materializer-v1/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ssc-rd04-nd-row-state-reconciliation-materializer-v1
+  cancel-in-progress: false
+
+env:
+  CANONICAL_PARENT: 4eaa66d7a0f025e0c4ec797e9925634a22d9e49e
+  CANONICAL_PARENT_TREE: 51c46f38071f7f5193ab7856a193095a86389356
+  BASE_BRANCH: agent/ssc-rd04-nd-row-state-reconciliation-materializer-base-v1
+  HEAD_BRANCH: agent/ssc-rd04-nd-row-state-reconciliation-materializer-trigger-v1
+  NONWORKFLOW_BRANCH: agent/ssc-rd04-nd-row-state-reconciliation-nonworkflow-v1
+  WORKFLOW_PATH: .github/workflows/temp-materialize-ssc-rd04-nd-row-state-reconciliation-v1.yml
+  CONTROLLER_PATH: .tmp/rd04-nd-row-state-reconciliation-materializer-v1/controller.py
+  CONTROLLER_PAYLOAD_PATH: .tmp/rd04-nd-row-state-reconciliation-materializer-v1/controller.py.b64
+  SOURCE_PAYLOAD_PATH: .tmp/rd04-nd-row-state-reconciliation-materializer-v1/source.tar.xz.b64
+  STANDING_WORKFLOW_CARRIER_PATH: .tmp/rd04-nd-row-state-reconciliation-materializer-v1/standing-workflow.yml
+  TRIGGER_PATH: .tmp/rd04-nd-row-state-reconciliation-materializer-v1/trigger.json
+  FINAL_WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.yml
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation
+  OUT: /tmp/ssc-rd04-nd-row-state-reconciliation-materializer-v1
+  PRODUCT_WORK: /tmp/ssc-rd04-nd-row-state-reconciliation-product-v1
+  QUAL_WORK: /tmp/ssc-rd04-nd-row-state-reconciliation-qualification-v1
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-row-state-reconciliation-materializer-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-row-state-reconciliation-materializer-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Initialize failure custody
+        shell: bash
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$PRODUCT_WORK" "$QUAL_WORK"
+          mkdir -p "$OUT"
+          python - <<'PY'
+          import json, os, pathlib
+          pathlib.Path(os.environ['OUT'], 'carrier-start.json').write_text(
+              json.dumps({
+                  'schema_version': 'ssc-rd04-nd-row-state-reconciliation-carrier-start@1',
+                  'state': 'carrier_started',
+                  'head': os.environ['EVENT_HEAD_SHA'],
+                  'base': os.environ['EVENT_BASE_SHA'],
+                  'canonical_parent': os.environ['CANONICAL_PARENT'],
+                  'nonworkflow_branch': os.environ['NONWORKFLOW_BRANCH'],
+              }, indent=2, sort_keys=True) + '\n'
+          )
+          PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Construct, qualify, and publish exact non-workflow product
+        shell: bash
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          python "$CONTROLLER_PATH"
+      - name: Preserve materialization and qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-row-state-reconciliation-materializer-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
