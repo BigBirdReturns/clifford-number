@@ -1,0 +1,176 @@
+name: TEMP diagnose RD-04 Montana row-state validation controller v2
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-mt-row-state-validation-diagnostic-base-v2
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-mt-row-state-validation-materializer/trigger.json'
+
+permissions:
+  contents: read
+
+env:
+  PAYLOAD: .tmp/rd04-mt-row-state-validation-materializer/package.tar.gz.b64
+  OUT: /tmp/rd04-mt-row-state-validation-materializer-v1-artifact
+  PACKAGE: /tmp/rd04-mt-row-state-validation-package
+  DIAG: /tmp/rd04-mt-row-state-validation-diagnostic-v2
+  PAYLOAD_B64_BYTES: '14740'
+  PAYLOAD_B64_SHA256: d19b30d285e725f0cba1844864f9a8a4d543e46de2ff66484e3a9b710b9771aa
+  PAYLOAD_GZIP_BYTES: '11054'
+  PAYLOAD_GZIP_SHA256: db899783e6a52055842ba9748b9ea1996d5bfa5b7806db374fbf127723c2c3ba
+  PAYLOAD_TAR_BYTES: '61440'
+  PAYLOAD_TAR_SHA256: d81a4cc83d47f192995a9bf32aed803f4f5c878799558ce906fc166ada7af559
+  CONTROLLER_BYTES: '9075'
+  CONTROLLER_SHA256: 5b9b91cf7e30af38ca4fcec137b8a43d5e3e9c3c3c21e259b6aa21a1bf9d1674
+
+jobs:
+  diagnose:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-mt-row-state-validation-diagnostic-base-v2' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-mt-row-state-validation-diagnostic-trigger-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Authenticate package and capture exact controller failure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CARRIER_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$PACKAGE" "$DIAG"
+          mkdir -p "$OUT" "$PACKAGE" "$DIAG"
+
+          test "$(stat -c %s "$PAYLOAD")" -eq "$PAYLOAD_B64_BYTES"
+          test "$(sha256sum "$PAYLOAD" | awk '{print $1}')" = "$PAYLOAD_B64_SHA256"
+          base64 --decode "$PAYLOAD" > /tmp/rd04-mt-row-state-validation-package.tar.gz
+          test "$(stat -c %s /tmp/rd04-mt-row-state-validation-package.tar.gz)" -eq "$PAYLOAD_GZIP_BYTES"
+          test "$(sha256sum /tmp/rd04-mt-row-state-validation-package.tar.gz | awk '{print $1}')" = "$PAYLOAD_GZIP_SHA256"
+          gzip -dc /tmp/rd04-mt-row-state-validation-package.tar.gz > /tmp/rd04-mt-row-state-validation-package.tar
+          test "$(stat -c %s /tmp/rd04-mt-row-state-validation-package.tar)" -eq "$PAYLOAD_TAR_BYTES"
+          test "$(sha256sum /tmp/rd04-mt-row-state-validation-package.tar | awk '{print $1}')" = "$PAYLOAD_TAR_SHA256"
+
+          python - <<'PY'
+          import json
+          import os
+          import pathlib
+          import tarfile
+          from pathlib import PurePosixPath
+
+          archive = pathlib.Path('/tmp/rd04-mt-row-state-validation-package.tar')
+          package = pathlib.Path(os.environ['PACKAGE'])
+          diag = pathlib.Path(os.environ['DIAG'])
+          with tarfile.open(archive, 'r:') as tf:
+              members = tf.getmembers()
+              assert members
+              listing = []
+              for member in members:
+                  p = PurePosixPath(member.name)
+                  assert not p.is_absolute() and '..' not in p.parts
+                  assert member.isfile()
+                  listing.append({'name': member.name, 'bytes': member.size, 'mode': oct(member.mode)})
+              tf.extractall(package)
+          (diag / 'package-members.json').write_text(json.dumps(listing, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          PY
+
+          test "$(stat -c %s "$PACKAGE/controller.py")" -eq "$CONTROLLER_BYTES"
+          test "$(sha256sum "$PACKAGE/controller.py" | awk '{print $1}')" = "$CONTROLLER_SHA256"
+          python -m py_compile "$PACKAGE/controller.py"
+          cp "$PACKAGE/controller.py" "$DIAG/controller.py"
+          sha256sum "$PAYLOAD" /tmp/rd04-mt-row-state-validation-package.tar.gz /tmp/rd04-mt-row-state-validation-package.tar "$PACKAGE/controller.py" > "$DIAG/package-sha256.txt"
+          git show -s --format='%H%n%P%n%T%n%s' HEAD > "$DIAG/trigger-commit.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$CARRIER_BASE_SHA" > "$DIAG/base-commit.txt"
+          git diff --name-status "$CARRIER_BASE_SHA" "$EVENT_HEAD_SHA" > "$DIAG/trigger-diff.txt"
+          git diff --name-status e62de80e187f9be037cbdd3a4b942b5840d223de "$CARRIER_BASE_SHA" > "$DIAG/base-diff.txt"
+
+          set +e
+          python -X dev "$PACKAGE/controller.py" > /tmp/rd04-mt-controller.stdout 2> /tmp/rd04-mt-controller.stderr
+          CONTROLLER_RC=$?
+          set -e
+
+          mkdir -p "$DIAG"
+          cp /tmp/rd04-mt-controller.stdout "$DIAG/controller-stdout.log"
+          cp /tmp/rd04-mt-controller.stderr "$DIAG/controller-stderr.log"
+          printf '%s\n' "$CONTROLLER_RC" > "$DIAG/controller-exit-code.txt"
+          if [ -d "$OUT" ]; then
+            mkdir -p "$DIAG/controller-out"
+            cp -a "$OUT"/. "$DIAG/controller-out"/ 2>/dev/null || true
+          fi
+          python - "$DIAG/diagnostic-receipt.json" "$CONTROLLER_RC" <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import sys
+
+          controller = pathlib.Path(os.environ['DIAG'], 'controller.py').read_bytes()
+          receipt = {
+              'schema_version': 'ssc-rd04-mt-row-state-validation-controller-diagnostic@1',
+              'state': 'exact_controller_execution_captured',
+              'canonical_parent': 'e62de80e187f9be037cbdd3a4b942b5840d223de',
+              'event_head_sha': os.environ['EVENT_HEAD_SHA'],
+              'carrier_base_sha': os.environ['CARRIER_BASE_SHA'],
+              'controller_exit_code': int(sys.argv[2]),
+              'controller_bytes': len(controller),
+              'controller_sha256': hashlib.sha256(controller).hexdigest(),
+              'package_sha256': os.environ['PAYLOAD_TAR_SHA256'],
+              'canonical_effect': 'none',
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          PY
+          (cd "$DIAG" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+
+          echo '--- controller stderr ---'
+          sed -n '1,260p' "$DIAG/controller-stderr.log"
+          echo '--- controller stdout ---'
+          sed -n '1,260p' "$DIAG/controller-stdout.log"
+          echo "controller exit code: $CONTROLLER_RC"
+
+      - name: Preserve exact diagnostic custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-validation-controller-diagnostic-v2
+          path: ${{ env.DIAG }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce diagnostic receipt only
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -s "$DIAG/controller.py"
+          test -s "$DIAG/controller-exit-code.txt"
+          test -f "$DIAG/controller-stdout.log"
+          test -f "$DIAG/controller-stderr.log"
+          test -s "$DIAG/diagnostic-receipt.json"
+          (cd "$DIAG" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .schema_version == "ssc-rd04-mt-row-state-validation-controller-diagnostic@1" and
+            .state == "exact_controller_execution_captured" and
+            .canonical_parent == "e62de80e187f9be037cbdd3a4b942b5840d223de" and
+            .controller_bytes == 9075 and
+            .controller_sha256 == "5b9b91cf7e30af38ca4fcec137b8a43d5e3e9c3c3c21e259b6aa21a1bf9d1674" and
+            .package_sha256 == "d81a4cc83d47f192995a9bf32aed803f4f5c878799558ce906fc166ada7af559" and
+            .canonical_effect == "none"
+          ' "$DIAG/diagnostic-receipt.json" >/dev/null
