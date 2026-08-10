@@ -1,0 +1,61 @@
+MATRIX_AFTER_BLOB="$(git rev-parse "HEAD:$PRODUCT_ROOT/promoted-partial-field-matrix.json")"
+test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"
+test "$(git rev-list --count "$CANONICAL_PARENT..HEAD")" -eq 1
+test "$(git diff --name-only "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_PATHS"
+test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_PATHS"
+test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" HEAD)"
+printf '%s\n' "$PRODUCT_COMMIT" > "$OUT/product-commit.txt"
+printf '%s\n' "$PRODUCT_TREE" > "$OUT/product-tree.txt"
+printf '%s\n' "$MATRIX_AFTER_BLOB" > "$OUT/matrix-after-blob.txt"
+git diff --name-only "$CANONICAL_PARENT" HEAD > "$OUT/product-paths.txt"
+git show "HEAD:$PRODUCT_ROOT/product-manifest.json" > "$OUT/product-manifest.json"
+git show "HEAD:$PRODUCT_ROOT/promotion-receipt.json" > "$OUT/promotion-receipt.json"
+
+stage='run_complete_repository_qualification'
+node tools/validate-no-magic-human-gate.mjs
+node test/no-magic-human-gate.test.js
+npm run release:check > "$OUT/release-check.log" 2>&1
+git reset --hard "$PRODUCT_COMMIT"
+git clean -fdx
+test -z "$(git status --porcelain)"
+
+stage='reverify_committed_product'
+python "$PATCHED_PROGRAM" verify "$PRODUCT_ROOT" "$OUT/reverification.json"
+node tools/validate-no-magic-human-gate.mjs
+node test/no-magic-human-gate.test.js
+
+stage='publish_qualified_promotion_product'
+git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+git push origin "$PRODUCT_COMMIT:refs/heads/$PRODUCT_BRANCH"
+product_branch_moved='true'
+test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$PRODUCT_COMMIT"
+
+stage='complete'
+SOURCE_PATCH="$(cat "$OUT/source-patch-receipt.json")"
+CONSTRUCTION="$(cat "$OUT/construction-receipt.json")"
+PROMOTION_RECEIPT="$(cat "$OUT/promotion-receipt.json")"
+jq -n \
+  --arg parent "$CANONICAL_PARENT" \
+  --arg commit "$PRODUCT_COMMIT" \
+  --arg tree "$PRODUCT_TREE" \
+  --arg branch "$PRODUCT_BRANCH" \
+  --arg matrix_blob "$MATRIX_AFTER_BLOB" \
+  --arg promotion "$PROMOTION_ID" \
+  --arg controller_commit "$CONTROLLER_COMMIT" \
+  --argjson source_patch "$SOURCE_PATCH" \
+  --argjson construction "$CONSTRUCTION" \
+  --argjson promotion_receipt "$PROMOTION_RECEIPT" \
+  '{schema_version:"ssc-rd04-nd-current-public-record-gap-promotion-materializer@2",
+    state:"qualified_promotion_product_published",failed_or_final_stage:"complete",exit_code:0,
+    canonical_parent:$parent,controller_commit:$controller_commit,
+    product_commit:$commit,product_tree:$tree,product_branch:$branch,
+    product_branch_moved:true,promotion_id:$promotion,matrix_after_blob:$matrix_blob,
+    payload_combined_sha256:$construction.payload_combined_sha256,
+    matrix_after_sha256:$construction.matrix_after_sha256,
+    target_cell_after_sha256:$construction.target_cell_after_sha256,
+    row_state_cell_after_sha256:$construction.row_state_cell_after_sha256,
+    permanent_paths_added:8,source_requests:0,route_executions:0,source_admissions:0,
+    field_terminalizations:1,matrix_updates:1,row_state_mutations:0,row_terminalizations:0,
+    north_dakota_terminal_fields:8,north_dakota_open_fields:1,north_dakota_row_state:"still_open",

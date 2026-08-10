@@ -1,0 +1,61 @@
+    assert len(all_cells) == 450
+    assert len(substantive) == 300
+    assert {cell["field_id"] for cell in substantive} == substantive_field_ids
+    assert all(sum(cell["field_id"] == field_id for cell in substantive) == 50 for field_id in substantive_field_ids)
+    assert sum(bool(cell["terminal"]) for cell in substantive) == 118
+    assert sum(not bool(cell["terminal"]) for cell in substantive) == 182
+    nd_rows = [row for row in matrix["rows"] if row["unit_id"] == "US-STATE-ND"]
+'''
+assert source.count(old_construct) == 1
+assert source.count(old_verify) == 1
+patched = source.replace(old_construct, new_construct).replace(old_verify, new_verify)
+assert old_construct not in patched
+assert old_verify not in patched
+assert patched.count('substantive_field_ids = {') == 2
+patched_bytes = patched.encode('utf-8')
+target_path.write_bytes(patched_bytes)
+receipt = {
+    'schema_version': 'ssc-rd04-nd-current-public-record-gap-promotion-source-patch@1',
+    'state': 'exact_two-site_patch_applied',
+    'source_commit': 'bc2818f7415e9edb8ae6675c656764653dcada9c',
+    'source_blob': 'ff83c90e8a8fb7a57dddf808e670f727dbb18e94',
+    'source_bytes': len(source_bytes),
+    'source_sha256': hashlib.sha256(source_bytes).hexdigest(),
+    'patched_bytes': len(patched_bytes),
+    'patched_sha256': hashlib.sha256(patched_bytes).hexdigest(),
+    'replacement_sites': 2,
+    'semantic_change': 'restrict_substantive_denominator_to_exact_six_fields_at_ordinals_2_through_7_and_recount_during_construct_and_verify',
+    'product_semantics_changed': False,
+    'authority_envelope_changed': False,
+}
+receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+PY
+python -m py_compile "$OUT/materialize-v2.py"
+PATCHED_PROGRAM="$(realpath "$OUT/materialize-v2.py")"
+
+stage='bind_live_main_candidate_validation_and_matrix'
+git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+test "$(git rev-parse "$CANONICAL_PARENT^1")" = "$CANDIDATE_MERGE"
+test "$(git rev-parse "$CANONICAL_PARENT^2")" = "$VALIDATION_PRODUCT_COMMIT"
+test "$(git rev-parse "$VALIDATION_PRODUCT_COMMIT^{tree}")" = "$VALIDATION_PRODUCT_TREE"
+test "$(git rev-parse "$CANDIDATE_MERGE^2")" = "$CANDIDATE_PRODUCT_COMMIT"
+test "$(git rev-parse "$CANDIDATE_PRODUCT_COMMIT^{tree}")" = "$CANDIDATE_PRODUCT_TREE"
+test "$(git rev-parse "origin/main:$MATRIX_PATH")" = "$MATRIX_BLOB"
+test "$(git rev-parse "origin/main:$CANDIDATE_PATH")" = "$CANDIDATE_BLOB"
+test "$(git rev-parse "origin/main:$SOURCE_PATH")" = "$SOURCE_BLOB"
+test "$(git rev-parse "origin/main:$DECISION_PATH")" = "$DECISION_BLOB"
+test "$(git rev-parse "origin/main:$CANDIDATE_MANIFEST_PATH")" = "$CANDIDATE_MANIFEST_BLOB"
+test "$(git rev-parse "origin/main:$VALIDATION_PROTOCOL_PATH")" = "$VALIDATION_PROTOCOL_BLOB"
+test "$(git rev-parse "origin/main:$CANDIDATE_VALIDATION_PATH")" = "$CANDIDATE_VALIDATION_BLOB"
+test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+
+stage='authenticate_hosted_validation_artifact'
+curl -fsS \
+  -H "Authorization: Bearer $GH_TOKEN" \
+  -H 'Accept: application/vnd.github+json' \
+  -H 'X-GitHub-Api-Version: 2022-11-28' \
+  "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/artifacts/$VALIDATION_ARTIFACT_ID" \
+  > "$OUT/validation-artifact-metadata.json"
+jq -e \
+  --argjson id "$VALIDATION_ARTIFACT_ID" \
