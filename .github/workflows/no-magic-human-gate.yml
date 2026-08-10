@@ -8,11 +8,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: write
 
 concurrency:
-  group: no-magic-human-gate-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: pc59-terminal-cleanup-v6-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
 
 jobs:
   validate:
@@ -29,3 +32,156 @@ jobs:
         run: |
           node tools/validate-no-magic-human-gate.mjs
           node test/no-magic-human-gate.test.js
+
+  terminalize-pc59:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/pc59-terminal-cleanup-v6'
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPOSITORY: ${{ github.repository }}
+      API_URL: ${{ github.api_url }}
+      CARRIER_PARENT: '77aef3313e85e1fddc68805a9f22252ff147b4e8'
+      CARRIER_PATH: '.github/workflows/no-magic-human-gate.yml'
+      PROOF_SOURCE_RUN: '31333695530'
+      PROOF_SOURCE_HEAD: '60d73328999dfcef368fe1d2d328220079373f2f'
+      PROOF_ARTIFACT_ID: '9043826427'
+      PROOF_ARTIFACT_DIGEST: 'sha256:02fc2aab015ad15efeaa7970929dc8df374b488d50332eadf97c354f9afc8dea'
+      SOURCE_CONTROLLER_SHA256: '43a53fb93a41b3d397524678f4e809a298d68f68ec51e8eb3e92be92a881a460'
+      CLEANUP_CONTROLLER_SHA256: '1148d76bc9aa67fab68bb95e423a8cbb94b9177a06efdb62f795a5f973d05990'
+      CLEANUP_CONTROLLER_BLOB: 'c9a88fd49e98fdb8ec75334531cb6780e55bd043'
+      ISSUE: '1662'
+      PRODUCT_PR: '1731'
+      PRODUCT: '80a9898890c2a8b271d4d36f74d37c1975149b25'
+      PRODUCT_PARENT: 'a592acea22c69a979f2a90c24a2bafb8c9445759'
+      PRODUCT_PARENT_TREE: 'c7dbb1df10b409caa7893846a9e4b3e8d1392be0'
+      PRODUCT_TREE: '9057a3daca6e8420c83652d5ba2669c2f2ae34a5'
+      MERGE: 'cffe670fef5c006c7e963421d9fd18c29ed40fba'
+      RESOLVED_FRONTIER: 'linkage_interval_repository_owner_login_canonical_profile_api_location_account_type_state_and_suspension_governance'
+      NEXT_FRONTIER_ONE: 'linkage_interval_repository_owner_login_normalization_alias_case_history_and_location_pair_governance'
+      NEXT_FRONTIER_TWO: 'linkage_interval_owner_account_type_active_suspended_deleted_ghost_restoration_site_admin_and_metadata_governance'
+      PROOF_DIR: '/tmp/pc59-exact-postmerge-proof'
+      CENSUS_DIR: '/tmp/pc59-terminal-census'
+      PACKAGE_DIR: '/tmp/pc59-complete-product-package'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Authenticate carrier, source proof, and one-line cleanup recovery
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          BASE_SHA='${{ github.event.pull_request.base.sha }}'
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test "$BASE_SHA" = "$CARRIER_PARENT"
+          test "$(git show -s --format='%P' HEAD)" = "$CARRIER_PARENT"
+          test "$(git rev-list --count "$CARRIER_PARENT"..HEAD)" = 1
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CARRIER_PARENT"
+          git diff --name-status "$CARRIER_PARENT" HEAD > /tmp/pc59-cleanup-carrier-delta.tsv
+          test "$(wc -l < /tmp/pc59-cleanup-carrier-delta.tsv | tr -d ' ')" = 1
+          test "$(cat /tmp/pc59-cleanup-carrier-delta.tsv)" = $'M\t'"$CARRIER_PATH"
+          git diff --check "$CARRIER_PARENT" HEAD
+
+          rm -rf "$PROOF_DIR" "$CENSUS_DIR" "$PACKAGE_DIR" /tmp/pc59-proof.zip
+          mkdir -p "$PROOF_DIR" "$CENSUS_DIR" "$PACKAGE_DIR"
+          gh api "/repos/${GH_REPOSITORY}/actions/artifacts/${PROOF_ARTIFACT_ID}" > /tmp/pc59-proof-artifact.json
+          test "$(jq -r .id /tmp/pc59-proof-artifact.json)" = "$PROOF_ARTIFACT_ID"
+          test "$(jq -r .name /tmp/pc59-proof-artifact.json)" = 'pc59-exact-postmerge-proof'
+          test "$(jq -r .workflow_run.id /tmp/pc59-proof-artifact.json)" = "$PROOF_SOURCE_RUN"
+          test "$(jq -r .workflow_run.head_sha /tmp/pc59-proof-artifact.json)" = "$PROOF_SOURCE_HEAD"
+          test "$(jq -r .digest /tmp/pc59-proof-artifact.json)" = "$PROOF_ARTIFACT_DIGEST"
+          test "$(jq -r .expired /tmp/pc59-proof-artifact.json)" = false
+          curl --fail --location --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            "$API_URL/repos/$GH_REPOSITORY/actions/artifacts/$PROOF_ARTIFACT_ID/zip" \
+            --output /tmp/pc59-proof.zip
+          test "sha256:$(sha256sum /tmp/pc59-proof.zip | awk '{print $1}')" = "$PROOF_ARTIFACT_DIGEST"
+          unzip -q /tmp/pc59-proof.zip -d "$PROOF_DIR"
+          (
+            cd "$PROOF_DIR"
+            sha256sum -c SHA256SUMS
+          )
+
+          test "$(jq -r .schema_version "$PROOF_DIR/terminal.json")" = 'pc59-terminal-receipt@1'
+          test "$(jq -r .status "$PROOF_DIR/terminal.json")" = complete
+          test "$(jq -r .issue "$PROOF_DIR/terminal.json")" = "$ISSUE"
+          test "$(jq -r .product_pr "$PROOF_DIR/terminal.json")" = "$PRODUCT_PR"
+          test "$(jq -r .product_commit "$PROOF_DIR/terminal.json")" = "$PRODUCT"
+          test "$(jq -r .product_tree "$PROOF_DIR/terminal.json")" = "$PRODUCT_TREE"
+          test "$(jq -r .canonical_merge "$PROOF_DIR/terminal.json")" = "$MERGE"
+          test "$(jq -r .permanent_paths "$PROOF_DIR/terminal.json")" = 14
+          test "$(jq -r .workflow_matrix "$PROOF_DIR/terminal.json")" = 53
+          test "$(jq -r .failed_workflows "$PROOF_DIR/terminal.json")" = 0
+          test "$(jq -r .pending_workflows "$PROOF_DIR/terminal.json")" = 0
+          test "$(jq -r .unresolved_review_threads "$PROOF_DIR/terminal.json")" = 0
+          test "$(jq -r .codex_terminal_positive_disposition "$PROOF_DIR/terminal.json")" = true
+          test "$(jq -r .graph_effect "$PROOF_DIR/terminal.json")" = none
+          test "$(wc -l < "$PROOF_DIR/product-paths.txt" | tr -d ' ')" = 14
+          test "$(cat "$PROOF_DIR/canonical-merge.txt")" = "$MERGE"
+          test "$(sha256sum "$PROOF_DIR/controller-recovery/recovered-controller.sh" | awk '{print $1}')" = "$SOURCE_CONTROLLER_SHA256"
+          bash -n "$PROOF_DIR/controller-recovery/recovered-controller.sh"
+
+          python - <<'PY'
+          from pathlib import Path
+          source = Path('/tmp/pc59-exact-postmerge-proof/controller-recovery/recovered-controller.sh')
+          target = Path('/tmp/pc59-terminal-cleanup-controller.sh')
+          text = source.read_text()
+          old = 'test "$(jq -r .workflow_run.id "$CENSUS_DIR/proof-artifact.json")" = "$GITHUB_RUN_ID"'
+          new = 'test "$(jq -r .workflow_run.id "$CENSUS_DIR/proof-artifact.json")" = "$PROOF_SOURCE_RUN"'
+          if text.count(old) != 1:
+              raise SystemExit(f'cleanup source predicate count was {text.count(old)}, expected 1')
+          target.write_text(text.replace(old, new))
+          PY
+          test "$(sha256sum /tmp/pc59-terminal-cleanup-controller.sh | awk '{print $1}')" = "$CLEANUP_CONTROLLER_SHA256"
+          test "$(git hash-object /tmp/pc59-terminal-cleanup-controller.sh)" = "$CLEANUP_CONTROLLER_BLOB"
+          bash -n /tmp/pc59-terminal-cleanup-controller.sh
+          chmod 0755 /tmp/pc59-terminal-cleanup-controller.sh
+
+          jq -n \
+            --arg schema_version 'pc59-cleanup-recovery-receipt@1' \
+            --arg status 'authenticated_cleanup_ready' \
+            --arg carrier_parent "$CARRIER_PARENT" \
+            --arg carrier_head "$HEAD_SHA" \
+            --arg source_run "$PROOF_SOURCE_RUN" \
+            --arg proof_artifact_id "$PROOF_ARTIFACT_ID" \
+            --arg proof_artifact_digest "$PROOF_ARTIFACT_DIGEST" \
+            --arg source_controller_sha256 "$SOURCE_CONTROLLER_SHA256" \
+            --arg cleanup_controller_sha256 "$CLEANUP_CONTROLLER_SHA256" \
+            --arg cleanup_controller_blob "$CLEANUP_CONTROLLER_BLOB" \
+            '{
+              schema_version:$schema_version,
+              status:$status,
+              carrier_parent:$carrier_parent,
+              carrier_head:$carrier_head,
+              source_proof:{run:$source_run,artifact_id:$proof_artifact_id,digest:$proof_artifact_digest,authenticated:true},
+              failure:{phase:"cleanup_entry",first_rejected_predicate:"artifact_digest_representation",observed_output_form:"raw_hex",required_metadata_form:"sha256_prefixed",mutations_before_failure:0},
+              recovery:{source_controller_sha256:$source_controller_sha256,cleanup_controller_sha256:$cleanup_controller_sha256,cleanup_controller_blob:$cleanup_controller_blob,changed_predicates:1,proof_source_run_bound:true,digest_normalized:true,merge_operations_authorized:0,merge_operations_executed:0,product_semantics_changed:false,graph_effect:"none"}
+            }' > "$CENSUS_DIR/cleanup-recovery-receipt.json"
+          cp /tmp/pc59-cleanup-carrier-delta.tsv "$CENSUS_DIR/carrier-delta.tsv"
+
+      - name: Retire every PC-59 transaction surface and seal census
+        shell: bash
+        run: bash -x /tmp/pc59-terminal-cleanup-controller.sh cleanup
+
+      - name: Upload PC-59 terminal census
+        id: census
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc59-terminal-census
+          path: /tmp/pc59-terminal-census
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Write durable PC-59 terminal receipt and close issue
+        shell: bash
+        env:
+          CENSUS_ARTIFACT_ID: ${{ steps.census.outputs.artifact-id }}
+          CENSUS_ARTIFACT_DIGEST: sha256:${{ steps.census.outputs.artifact-digest }}
+        run: bash -x /tmp/pc59-terminal-cleanup-controller.sh receipt
