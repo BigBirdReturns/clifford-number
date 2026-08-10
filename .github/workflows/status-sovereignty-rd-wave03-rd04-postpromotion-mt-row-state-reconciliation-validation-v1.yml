@@ -1,0 +1,108 @@
+name: Validate RD-04 Montana row-state reconciliation candidate v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/current-row-custody.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/row-state-validation.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/validated-row-state-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/summary.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/product-manifest.json'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-v1.py'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/current-row-custody.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/row-state-validation.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/validated-row-state-protocol.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/summary.json'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/product-manifest.json'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-v1.py'
+
+permissions:
+  contents: read
+
+env:
+  CANONICAL_PARENT: e62de80e187f9be037cbdd3a4b942b5840d223de
+  CANONICAL_PARENT_TREE: 0d1f8369e2c68d18b11a8f375903ff597ea8ccdb
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 6ba11a6025021e9df8ac6535be8c42499654c233
+  VALIDATOR: tools/validate-status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-v1.py
+  OUT: /tmp/rd04-mt-row-state-validation-v1
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Bind exact validation topology and canonical Montana row
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" && mkdir -p "$OUT"
+          EVENT='${{ github.event_name }}'
+          if [ "$EVENT" = pull_request ]; then
+            PRODUCT_COMMIT='${{ github.event.pull_request.head.sha }}'
+            BASE_SHA='${{ github.event.pull_request.base.sha }}'
+            test "$(git rev-parse HEAD)" = "$PRODUCT_COMMIT"
+            test "$(git rev-parse "$PRODUCT_COMMIT^")" = "$CANONICAL_PARENT"
+            git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+            git merge-base --is-ancestor "$CANONICAL_PARENT" origin/main
+            test "$BASE_SHA" = "$(git rev-parse origin/main)"
+          else
+            read -r P1 P2 EXTRA <<< "$(git show -s --format='%P' HEAD)"
+            test -n "$P1" && test -n "$P2" && test -z "${EXTRA:-}"
+            BASE_SHA="$P1"; PRODUCT_COMMIT="$P2"
+            test "$(git rev-parse "$PRODUCT_COMMIT^")" = "$CANONICAL_PARENT"
+          fi
+          test "$(git rev-parse "$CANONICAL_PARENT^{tree}")" = "$CANONICAL_PARENT_TREE"
+          EXPECTED="$(printf '%s\n' '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1.yml' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/current-row-custody.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/product-manifest.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/row-state-validation.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/summary.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/validated-row-state-protocol.json' 'tools/validate-status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-v1.py')"
+          test "$(git diff --name-only "$CANONICAL_PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort)" = "$EXPECTED"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort)" = "$EXPECTED"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" "$PRODUCT_COMMIT")"
+          git diff --check "$CANONICAL_PARENT" "$PRODUCT_COMMIT"
+          git diff --name-only "$CANONICAL_PARENT" "$BASE_SHA" | LC_ALL=C sort > "$OUT/intervening-paths.txt"
+          printf '%s\n' "$EXPECTED" > "$OUT/product-paths.txt"
+          test -z "$(comm -12 "$OUT/product-paths.txt" "$OUT/intervening-paths.txt")"
+          test "$(git rev-parse "$PRODUCT_COMMIT:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          if [ "$EVENT" = push ]; then
+            test "$(git diff --name-only "$BASE_SHA" HEAD | LC_ALL=C sort)" = "$EXPECTED"
+            while IFS= read -r PRODUCT_PATH; do test "$(git rev-parse "HEAD:$PRODUCT_PATH")" = "$(git rev-parse "$PRODUCT_COMMIT:$PRODUCT_PATH")"; done <<< "$EXPECTED"
+          fi
+      - name: Validate request-free candidate and refusal surface
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m py_compile "$VALIDATOR"
+          VALIDATION_HEAD="$(git rev-parse HEAD)" python "$VALIDATOR" | tee "$OUT/validation-receipt.json"
+          jq -e '.state == "qualified_request_free_montana_row_state_candidate" and .adversarial_refusals == 26 and .projected_terminal_cells == 230 and .projected_terminal_units == 12 and .promotion_executed_here == false and .class_closed == false' "$OUT/validation-receipt.json" >/dev/null
+          npm run release:check > "$OUT/release-check.log" 2>&1
+          git reset --hard HEAD
+          git clean -fdx
+          test -z "$(git status --porcelain)"
+          VALIDATION_HEAD="$(git rev-parse HEAD)" python "$VALIDATOR" > "$OUT/post-release-validation-receipt.json"
+          cmp "$OUT/validation-receipt.json" "$OUT/post-release-validation-receipt.json"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - name: Preserve exact Montana validation receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-reconciliation-validation-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
