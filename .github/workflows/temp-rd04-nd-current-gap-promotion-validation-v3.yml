@@ -1,0 +1,120 @@
+name: TEMP validate repaired RD-04 North Dakota current-gap promotion v3
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - agent/ssc-rd04-nd-current-gap-promotion-validation-base-v3
+    paths:
+      - '.tmp/rd04-nd-current-gap-promotion-validation-v3/trigger.json'
+
+permissions:
+  contents: read
+
+env:
+  CANONICAL_PARENT: 77aef3313e85e1fddc68805a9f22252ff147b4e8
+  PRODUCT_COMMIT: 91ec5f11266b24cc935a33566db1c9d5db258e75
+  PRODUCT_TREE: 5210b12a1158af5ac4333d5ef2bb9131bd9c2fb2
+  PRODUCT_BRANCH: agent/ssc-rd04-nd-current-public-record-gap-promotion-v1
+  SOURCE_VALIDATOR_COMMIT: b4e5ff79212a1eac1ea55df4127929150051443f
+  SOURCE_VALIDATOR_PATH: .tmp/rd04-nd-current-gap-promotion-validation-v1/validate.py
+  SOURCE_VALIDATOR_BLOB: 0c31d47a5993e5560d4897b454f9c00e824ae7eb
+  BASE_BRANCH: agent/ssc-rd04-nd-current-gap-promotion-validation-base-v3
+  HEAD_BRANCH: agent/ssc-rd04-nd-current-gap-promotion-validation-trigger-v3
+  WORKFLOW_PATH: .github/workflows/temp-rd04-nd-current-gap-promotion-validation-v3.yml
+  VALIDATOR_PATH: .tmp/rd04-nd-current-gap-promotion-validation-v3/validate.py
+  TRIGGER_PATH: .tmp/rd04-nd-current-gap-promotion-validation-v3/trigger.json
+  VALIDATOR_BYTES: '3280'
+  VALIDATOR_SHA256: 1c6347e5598e74d15ad5d783e33fec6a1c77f92447e4cb9a19d7d22dc3e04597
+  VALIDATOR_BLOB: cebe3e77e5b277163d7dbf5b99eef98a6f70269b
+  OUT: /tmp/ssc-rd04-nd-current-gap-promotion-validation-v3
+  PRODUCT_WORK: /tmp/ssc-rd04-nd-current-gap-promotion-product-v3
+
+jobs:
+  validate:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-current-gap-promotion-validation-base-v3' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-current-gap-promotion-validation-trigger-v3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Bind exact carrier, immutable source validator, and repaired product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$PRODUCT_WORK"
+          mkdir -p "$OUT"
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          BASE_SHA='${{ github.event.pull_request.base.sha }}'
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          test "$(git rev-list --count "$CANONICAL_PARENT..$BASE_SHA")" -eq 2
+          test "$(git rev-list --count "$BASE_SHA..$HEAD_SHA")" -eq 1
+          EXPECTED_BASE="$(printf '%s\n' "$WORKFLOW_PATH" "$VALIDATOR_PATH" | LC_ALL=C sort)"
+          test "$(git diff --name-only "$CANONICAL_PARENT" "$BASE_SHA" | LC_ALL=C sort)" = "$EXPECTED_BASE"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$BASE_SHA" | LC_ALL=C sort)" = "$EXPECTED_BASE"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" "$BASE_SHA")"
+          test "$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA")" = "$TRIGGER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$BASE_SHA" "$HEAD_SHA")"
+          test "$(stat -c %s "$VALIDATOR_PATH")" = "$VALIDATOR_BYTES"
+          test "$(sha256sum "$VALIDATOR_PATH" | cut -d' ' -f1)" = "$VALIDATOR_SHA256"
+          test "$(git hash-object "$VALIDATOR_PATH")" = "$VALIDATOR_BLOB"
+          python -m py_compile "$VALIDATOR_PATH"
+          git diff --check "$CANONICAL_PARENT" "$HEAD_SHA"
+
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+
+          git fetch --no-tags --force origin "$SOURCE_VALIDATOR_COMMIT"
+          test "$(git rev-parse FETCH_HEAD)" = "$SOURCE_VALIDATOR_COMMIT"
+          test "$(git rev-parse "$SOURCE_VALIDATOR_COMMIT:$SOURCE_VALIDATOR_PATH")" = "$SOURCE_VALIDATOR_BLOB"
+
+          git fetch --no-tags --force origin "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse "refs/remotes/origin/$PRODUCT_BRANCH")" = "$PRODUCT_COMMIT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^")" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^{tree}")" = "$PRODUCT_TREE"
+          git worktree add --detach "$PRODUCT_WORK" "$PRODUCT_COMMIT"
+
+      - name: Validate repaired ledger boundary, minimum delta, and repository
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          VALIDATOR="$GITHUB_WORKSPACE/$VALIDATOR_PATH"
+          cd "$PRODUCT_WORK"
+          python "$VALIDATOR" "$OUT/validation-receipt.json" | tee "$OUT/validation.log"
+          npm run release:check > "$OUT/release-check.log" 2>&1
+          git reset --hard HEAD
+          git clean -fdx
+          test -z "$(git status --porcelain)"
+          python "$VALIDATOR" "$OUT/post-release-validation.json" > "$OUT/post-release-validation.log"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          git fetch --no-tags --force origin "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse "refs/remotes/origin/$PRODUCT_BRANCH")" = "$PRODUCT_COMMIT"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+
+      - name: Preserve repaired independent validation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-current-gap-promotion-independent-validation-v3
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
