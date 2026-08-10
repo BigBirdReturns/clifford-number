@@ -169,9 +169,7 @@ jobs:
             node "$standalone_compile"
             node "$standalone_validate"
             node "$standalone_test"
-            node "$floor_compile"
-            node "$floor_validate"
-            node "$floor_test"
+            printf '%s\n' 'Preference custody laboratory floor v59: exact-head workflow required; canonical rerun required post-merge'
             node tools/validate-no-magic-human-gate.mjs
             node test/no-magic-human-gate.test.js
             printf '%s\n' 'complete repository release gate: exact-head Release checks workflow; canonical rerun required post-merge'
@@ -205,6 +203,10 @@ jobs:
           test "$(jq 'length' "$WORK/release-workflow.json")" -eq 1
           test "$(jq -r '.[0].status' "$WORK/release-workflow.json")" = completed
           test "$(jq -r '.[0].conclusion' "$WORK/release-workflow.json")" = success
+          jq '[.[] | select(.name=="Preference custody laboratory floor v59")]' "$WORK/matrix.json" > "$WORK/floor-v59-workflow.json"
+          test "$(jq 'length' "$WORK/floor-v59-workflow.json")" -eq 1
+          test "$(jq -r '.[0].status' "$WORK/floor-v59-workflow.json")" = completed
+          test "$(jq -r '.[0].conclusion' "$WORK/floor-v59-workflow.json")" = success
 
           gh api --paginate --slurp "/repos/$GH_REPOSITORY/issues/$PRODUCT_PR/comments?per_page=100" > "$WORK/comment-pages.json"
           jq '[.[][]]' "$WORK/comment-pages.json" > "$WORK/comments.json"
@@ -297,6 +299,7 @@ jobs:
           cp "$WORK/product-name-status.tsv" "$PROOF/product-name-status.tsv"
           cp "$WORK/matrix.json" "$PROOF/exact-head-matrix.json"
           cp "$WORK/release-workflow.json" "$PROOF/exact-head-release-workflow.json"
+          cp "$WORK/floor-v59-workflow.json" "$PROOF/exact-head-floor-v59-workflow.json"
           cp "$WORK/codex-terminal-comments.json" "$PROOF/codex-terminal-comments.json"
           cp "$WORK/review-threads.json" "$PROOF/review-threads.json"
           cp "$WORK/product-replay.log" "$PROOF/premerge-product-replay.log"
