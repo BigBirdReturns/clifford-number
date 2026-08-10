@@ -1,0 +1,290 @@
+name: TEMP export RD-04 Montana validation controller v5
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-mt-row-state-validation-controller-export-base-v5
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-mt-row-state-validation-materializer/controller-export-v5-trigger.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-rd04-mt-row-state-validation-controller-export-v5
+  cancel-in-progress: false
+
+env:
+  CANONICAL_MAIN: e62de80e187f9be037cbdd3a4b942b5840d223de
+  SOURCE_PACKAGE_COMMIT: 149951157502874c7494995cf71ee6bda3f8f06c
+  PACKAGE_PATH: .tmp/rd04-mt-row-state-validation-materializer/package.tar.gz.b64
+  WORKFLOW_PATH: .github/workflows/temp-export-ssc-rd04-mt-row-state-validation-controller-v5.yml
+  TRIGGER_PATH: .tmp/rd04-mt-row-state-validation-materializer/controller-export-v5-trigger.json
+  TARGET_REF: refs/heads/staging/ssc-rd04-mt-row-state-reconciliation-validation-v1
+  EXTRACT: /tmp/rd04-mt-row-state-validation-controller-export-v5-package
+  OUT: /tmp/rd04-mt-row-state-validation-controller-export-v5
+  PAYLOAD_B64_BYTES: '14740'
+  PAYLOAD_B64_SHA256: d19b30d285e725f0cba1844864f9a8a4d543e46de2ff66484e3a9b710b9771aa
+  PAYLOAD_GZIP_BYTES: '11054'
+  PAYLOAD_GZIP_SHA256: db899783e6a52055842ba9748b9ea1996d5bfa5b7806db374fbf127723c2c3ba
+  PAYLOAD_TAR_BYTES: '61440'
+  PAYLOAD_TAR_SHA256: d81a4cc83d47f192995a9bf32aed803f4f5c878799558ce906fc166ada7af559
+  CONTROLLER_BYTES: '9075'
+  CONTROLLER_SHA256: 5b9b91cf7e30af38ca4fcec137b8a43d5e3e9c3c3c21e259b6aa21a1bf9d1674
+
+jobs:
+  export:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-mt-row-state-validation-controller-export-base-v5' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-mt-row-state-validation-controller-export-trigger-v5'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Authenticate exact package, base, and trigger topology
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$EXTRACT"
+          mkdir -p "$OUT" "$EXTRACT"
+
+          test "$(git rev-parse HEAD)" = "$EVENT_HEAD_SHA"
+          test "$(git rev-parse HEAD^)" = "$EVENT_BASE_SHA"
+          test "$(git rev-list --count "$EVENT_BASE_SHA..HEAD")" -eq 1
+          test "$(git rev-parse "$EVENT_BASE_SHA^")" = "$SOURCE_PACKAGE_COMMIT"
+          test "$(git rev-list --count "$SOURCE_PACKAGE_COMMIT..$EVENT_BASE_SHA")" -eq 1
+          test "$(git rev-parse "$SOURCE_PACKAGE_COMMIT^")" = "$CANONICAL_MAIN"
+          test "$(git rev-list --count "$CANONICAL_MAIN..$SOURCE_PACKAGE_COMMIT")" -eq 1
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CANONICAL_MAIN"
+
+          printf '%s\n' "$PACKAGE_PATH" > "$OUT/expected-package-paths.txt"
+          git diff --name-only "$CANONICAL_MAIN" "$SOURCE_PACKAGE_COMMIT" | LC_ALL=C sort > "$OUT/actual-package-paths.txt"
+          cmp "$OUT/expected-package-paths.txt" "$OUT/actual-package-paths.txt"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_MAIN" "$SOURCE_PACKAGE_COMMIT" | wc -l)" -eq 1
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_MAIN" "$SOURCE_PACKAGE_COMMIT")"
+
+          printf '%s\n' "$WORKFLOW_PATH" > "$OUT/expected-base-paths.txt"
+          git diff --name-only "$SOURCE_PACKAGE_COMMIT" "$EVENT_BASE_SHA" | LC_ALL=C sort > "$OUT/actual-base-paths.txt"
+          cmp "$OUT/expected-base-paths.txt" "$OUT/actual-base-paths.txt"
+          test "$(git diff --name-only --diff-filter=A "$SOURCE_PACKAGE_COMMIT" "$EVENT_BASE_SHA" | wc -l)" -eq 1
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$SOURCE_PACKAGE_COMMIT" "$EVENT_BASE_SHA")"
+
+          printf '%s\n' "$TRIGGER_PATH" > "$OUT/expected-trigger-paths.txt"
+          git diff --name-only "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA" | LC_ALL=C sort > "$OUT/actual-trigger-paths.txt"
+          cmp "$OUT/expected-trigger-paths.txt" "$OUT/actual-trigger-paths.txt"
+          test "$(git diff --name-only --diff-filter=A "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA" | wc -l)" -eq 1
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA")"
+
+          test -f "$PACKAGE_PATH"
+          test -f "$WORKFLOW_PATH"
+          test -f "$TRIGGER_PATH"
+          git diff --check "$CANONICAL_MAIN" "$EVENT_HEAD_SHA"
+
+      - name: Export exact package and controller without execution
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(stat -c %s "$PACKAGE_PATH")" -eq "$PAYLOAD_B64_BYTES"
+          test "$(sha256sum "$PACKAGE_PATH" | awk '{print $1}')" = "$PAYLOAD_B64_SHA256"
+
+          base64 --decode "$PACKAGE_PATH" > /tmp/rd04-mt-row-state-validation-controller-export-v5.tar.gz
+          test "$(stat -c %s /tmp/rd04-mt-row-state-validation-controller-export-v5.tar.gz)" -eq "$PAYLOAD_GZIP_BYTES"
+          test "$(sha256sum /tmp/rd04-mt-row-state-validation-controller-export-v5.tar.gz | awk '{print $1}')" = "$PAYLOAD_GZIP_SHA256"
+
+          gzip -dc /tmp/rd04-mt-row-state-validation-controller-export-v5.tar.gz > /tmp/rd04-mt-row-state-validation-controller-export-v5.tar
+          test "$(stat -c %s /tmp/rd04-mt-row-state-validation-controller-export-v5.tar)" -eq "$PAYLOAD_TAR_BYTES"
+          test "$(sha256sum /tmp/rd04-mt-row-state-validation-controller-export-v5.tar | awk '{print $1}')" = "$PAYLOAD_TAR_SHA256"
+
+          git ls-remote --heads origin "$TARGET_REF" | awk '{print $1}' > "$OUT/target-ref-before.txt"
+
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import shutil
+          import tarfile
+          from pathlib import PurePosixPath
+
+          archive = pathlib.Path('/tmp/rd04-mt-row-state-validation-controller-export-v5.tar')
+          extract = pathlib.Path(os.environ['EXTRACT'])
+          out = pathlib.Path(os.environ['OUT'])
+          members = []
+
+          with tarfile.open(archive, 'r:') as tf:
+              infos = tf.getmembers()
+              assert infos
+              for info in infos:
+                  name = PurePosixPath(info.name)
+                  assert not name.is_absolute()
+                  assert '..' not in name.parts
+                  assert info.isdir() or info.isfile()
+                  members.append({
+                      'name': info.name,
+                      'type': 'directory' if info.isdir() else 'file',
+                      'bytes': info.size,
+                      'mode': oct(info.mode),
+                  })
+              tf.extractall(extract, filter='data')
+
+          controllers = sorted(p for p in extract.rglob('controller.py') if p.is_file())
+          assert len(controllers) == 1
+          controller = controllers[0]
+          controller_bytes = controller.read_bytes()
+          assert len(controller_bytes) == int(os.environ['CONTROLLER_BYTES'])
+          assert hashlib.sha256(controller_bytes).hexdigest() == os.environ['CONTROLLER_SHA256']
+          compile(controller_bytes, str(controller), 'exec')
+
+          exported_package = out / 'package'
+          shutil.copytree(extract, exported_package)
+          shutil.copyfile(controller, out / 'controller.py')
+          (out / 'controller-path.txt').write_text(
+              str(controller.relative_to(extract)) + '\n',
+              encoding='utf-8',
+          )
+          (out / 'package-members.json').write_text(
+              json.dumps(members, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+
+          files = []
+          combined = hashlib.sha256()
+          for path in sorted(p for p in exported_package.rglob('*') if p.is_file()):
+              data = path.read_bytes()
+              rel = path.relative_to(exported_package).as_posix()
+              sha256 = hashlib.sha256(data).hexdigest()
+              git_blob = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+              record = {'path': rel, 'bytes': len(data), 'sha256': sha256, 'git_blob': git_blob}
+              files.append(record)
+              line = json.dumps(record, sort_keys=True, separators=(',', ':')).encode() + b'\n'
+              combined.update(line)
+          assert files
+          manifest = {
+              'schema_version': 'ssc-rd04-mt-row-state-validation-package-export@5',
+              'files': files,
+              'combined_file_record_sha256': combined.hexdigest(),
+          }
+          (out / 'package-file-manifest.json').write_text(
+              json.dumps(manifest, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+
+          receipt = {
+              'schema_version': 'ssc-rd04-mt-row-state-validation-controller-export@5',
+              'state': 'exact_package_and_controller_exported_without_execution',
+              'canonical_main': os.environ['CANONICAL_MAIN'],
+              'source_package_commit': os.environ['SOURCE_PACKAGE_COMMIT'],
+              'event_base_sha': os.environ['EVENT_BASE_SHA'],
+              'event_head_sha': os.environ['EVENT_HEAD_SHA'],
+              'payload_b64_bytes': int(os.environ['PAYLOAD_B64_BYTES']),
+              'payload_b64_sha256': os.environ['PAYLOAD_B64_SHA256'],
+              'payload_gzip_bytes': int(os.environ['PAYLOAD_GZIP_BYTES']),
+              'payload_gzip_sha256': os.environ['PAYLOAD_GZIP_SHA256'],
+              'payload_tar_bytes': int(os.environ['PAYLOAD_TAR_BYTES']),
+              'payload_tar_sha256': os.environ['PAYLOAD_TAR_SHA256'],
+              'controller_path': str(controller.relative_to(extract)),
+              'controller_bytes': len(controller_bytes),
+              'controller_sha256': hashlib.sha256(controller_bytes).hexdigest(),
+              'controller_executed': False,
+              'source_requests': 0,
+              'route_executions': 0,
+              'evidence_admissions': 0,
+              'field_terminalizations': 0,
+              'matrix_updates': 0,
+              'row_state_mutations': 0,
+              'row_terminalizations': 0,
+              'class_closures': 0,
+              'canonical_effect': 'none',
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'outside_human_dependency': False,
+          }
+          (out / 'export-receipt.json').write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+
+          git ls-remote --heads origin "$TARGET_REF" | awk '{print $1}' > "$OUT/target-ref-after.txt"
+          cmp "$OUT/target-ref-before.txt" "$OUT/target-ref-after.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$CANONICAL_MAIN" > "$OUT/canonical-main-commit.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$SOURCE_PACKAGE_COMMIT" > "$OUT/source-package-commit.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$EVENT_BASE_SHA" > "$OUT/base-commit.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$EVENT_HEAD_SHA" > "$OUT/head-commit.txt"
+          sha256sum "$PACKAGE_PATH" /tmp/rd04-mt-row-state-validation-controller-export-v5.tar.gz /tmp/rd04-mt-row-state-validation-controller-export-v5.tar "$OUT/controller.py" > "$OUT/payload-sha256.txt"
+          git status --porcelain=v1 > "$OUT/repository-status.txt"
+          test ! -s "$OUT/repository-status.txt"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+
+      - name: Preserve exact package and controller export
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-validation-controller-export-v5
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce exact zero-authority export
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -s "$OUT/controller.py"
+          test -s "$OUT/package-members.json"
+          test -s "$OUT/package-file-manifest.json"
+          test -s "$OUT/export-receipt.json"
+          test -s "$OUT/SHA256SUMS"
+          test -d "$OUT/package"
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .schema_version == "ssc-rd04-mt-row-state-validation-controller-export@5" and
+            .state == "exact_package_and_controller_exported_without_execution" and
+            .canonical_main == "e62de80e187f9be037cbdd3a4b942b5840d223de" and
+            .source_package_commit == "149951157502874c7494995cf71ee6bda3f8f06c" and
+            .payload_b64_bytes == 14740 and
+            .payload_b64_sha256 == "d19b30d285e725f0cba1844864f9a8a4d543e46de2ff66484e3a9b710b9771aa" and
+            .payload_gzip_bytes == 11054 and
+            .payload_gzip_sha256 == "db899783e6a52055842ba9748b9ea1996d5bfa5b7806db374fbf127723c2c3ba" and
+            .payload_tar_bytes == 61440 and
+            .payload_tar_sha256 == "d81a4cc83d47f192995a9bf32aed803f4f5c878799558ce906fc166ada7af559" and
+            .controller_bytes == 9075 and
+            .controller_sha256 == "5b9b91cf7e30af38ca4fcec137b8a43d5e3e9c3c3c21e259b6aa21a1bf9d1674" and
+            .controller_executed == false and
+            .source_requests == 0 and
+            .route_executions == 0 and
+            .evidence_admissions == 0 and
+            .field_terminalizations == 0 and
+            .matrix_updates == 0 and
+            .row_state_mutations == 0 and
+            .row_terminalizations == 0 and
+            .class_closures == 0 and
+            .canonical_effect == "none" and
+            .publication_effect == "none" and
+            .adoption_effect == "none" and
+            .graph_effect == "none" and
+            .outside_human_dependency == false
+          ' "$OUT/export-receipt.json" >/dev/null
+          cmp "$OUT/target-ref-before.txt" "$OUT/target-ref-after.txt"
+          git status --porcelain=v1 | test ! -s /dev/stdin
