@@ -1,0 +1,119 @@
+{
+  "schema_version": "ssc-rd04-nd-row-state-reconciliation-decision@2",
+  "wave_id": "SSC-RD-W03",
+  "lane_id": "RD-04",
+  "class_id": "RD-04-C02",
+  "issue": 1017,
+  "decision_id": "RD04-ND-EXACT-CURRENT-ROW-STATE-RECONCILIATION-DECISION-V1",
+  "candidate_id": "RD04-ND-EXACT-CURRENT-ROW-STATE-RECONCILIATION-CANDIDATE-V3",
+  "decision": "terminalize_exact_derivative_row_state_cell_after_all_eight_evidence_fields_are_terminal",
+  "unit_id": "US-STATE-ND",
+  "postal_code": "ND",
+  "state_name": "North Dakota",
+  "field_id": "field_and_row_terminal_state",
+  "field_ordinal": 9,
+  "current_row_state": "still_open",
+  "target_row_state": "terminal_fixed_public_record_obligation_complete",
+  "current_row_sha256": "0f3ba29ee5c7354249f89c96fc38c21b55341fc9fdad9b5919ecdb9243c4929e",
+  "reconciled_row_sha256": "f75ac04e5c8fc53304e897d918ee80057c580e2b8bbeeca979e9f92312f96f4b",
+  "current_cell_sha256": "6a4c7d204c6c99a89f3c121065860806668c5da850f44c67fe42b4dc84b1b5c3",
+  "proposed_cell_sha256": "f0c6fe75d1720c1a6cf8b90fd44b96bc96fcb0656fc70808c5439d514d30217c",
+  "prerequisite_satisfaction": {
+    "required_terminal_evidence_fields": 8,
+    "observed_terminal_evidence_fields": 8,
+    "all_eight_terminal": true,
+    "substantive_prerequisite_applied": true,
+    "substantive_cell_reapplication_authorized": false,
+    "validation_repair_product_commit": "0de57f1d6d395e28e495b456794fe92b681a35c6",
+    "validation_repair_merge_commit": "789c800d00a6d4924cb69d2ce33d336ab315972f",
+    "validation_receipt_sha256": "8f1b31c8b8d8e664c9b25f128d2bc31a85ee08ea7b9c8ea3f4217805f2b54ab7",
+    "corrected_semantic_projection_sha256": "6347024e87acf6d21192fa40844ae22b5b5c76c36bfb853edf5e6d35b58c829c"
+  },
+  "proposed_row_state_cell": {
+    "field_ordinal": 9,
+    "field_id": "field_and_row_terminal_state",
+    "state": "evidence_complete",
+    "terminal": true,
+    "value": {
+      "terminal_classification": "terminal_fixed_public_record_obligation_complete",
+      "row_scope": "fixed_public_record_obligation_for_one_state",
+      "completed_evidence_fields": 8,
+      "terminal_evidence_field_ids": [
+        "canonical_state_identity",
+        "operative_state_implementation_authority_and_version",
+        "implementation_effective_date_or_typed_gap",
+        "abawd_or_work_requirement_waiver_state_and_governing_period",
+        "discretionary_exemption_authority_and_reported_state_practice",
+        "fitness_for_work_or_eligibility_screening_rule",
+        "verification_evidence_and_staff_discretion_surface",
+        "source_identities_and_exact_custody"
+      ],
+      "terminal_evidence_state_counts": {
+        "evidence_complete": 7,
+        "observed": 0,
+        "not_publicly_recovered": 1
+      },
+      "predecessor_row_canonical_sha256": "0f3ba29ee5c7354249f89c96fc38c21b55341fc9fdad9b5919ecdb9243c4929e",
+      "completion_rule": "all_eight_declared_state_evidence_fields_are_terminal_under_exact_source_or_typed_gap_custody",
+      "class_effect": "none",
+      "cumulative_ledger_effect": "none",
+      "limitations": [
+        "row completion closes only the declared fixed public-record obligation for this state",
+        "typed source gaps remain distinct from event, policy, practice, or implementation absence",
+        "row completion does not establish uniform frontline practice or person-level outcome",
+        "eleven terminal rows do not establish national prevalence or close RD-04-C02"
+      ],
+      "prohibited_inferences": [
+        "do_not_infer_complete_state_implementation_truth_beyond_terminal_field_custody",
+        "do_not_convert_not_publicly_recovered_fields_into_event_or_policy_absence",
+        "do_not_infer_uniform_frontline_practice",
+        "do_not_infer_person_level_outcome",
+        "do_not_infer_national_prevalence",
+        "do_not_infer_discrimination_or_racial_order",
+        "do_not_infer_coordination_or_common_purpose",
+        "do_not_infer_complete_compact",
+        "do_not_close_rd04_c02_or_wave03_from_eleven_terminal_rows"
+      ]
+    },
+    "evidence_source_ids": [
+      "RD04-ND-ROW-STATE-RECONCILIATION-V1"
+    ],
+    "typed_gap": null,
+    "authority_effect": "row_level_fixed_public_record_obligation_terminal_only"
+  },
+  "prohibited_inferences": [
+    "do_not_infer_complete_state_implementation_truth_beyond_terminal_field_custody",
+    "do_not_convert_not_publicly_recovered_fields_into_event_or_policy_absence",
+    "do_not_infer_uniform_frontline_practice",
+    "do_not_infer_person_level_outcome",
+    "do_not_infer_national_prevalence",
+    "do_not_infer_discrimination_or_racial_order",
+    "do_not_infer_coordination_or_common_purpose",
+    "do_not_infer_complete_compact",
+    "do_not_close_rd04_c02_or_wave03_from_eleven_terminal_rows"
+  ],
+  "transition_effects": {
+    "field_terminalizations": 0,
+    "matrix_updates": 1,
+    "row_state_mutations": 1,
+    "row_terminalizations": 1,
+    "terminal_units_delta": 1,
+    "class_closed": false,
+    "cumulative_ledger_effect": "none"
+  },
+  "authority_boundary": {
+    "source_requests": 0,
+    "route_executions": 0,
+    "source_admissions": 0,
+    "field_terminalizations": 0,
+    "matrix_updates": 1,
+    "row_state_mutations": 1,
+    "row_terminalizations": 1,
+    "class_closed": false,
+    "cumulative_ledger_effect": "none",
+    "publication_effect": "none",
+    "adoption_effect": "none",
+    "graph_effect": "none",
+    "outside_human_dependency": false
+  }
+}
