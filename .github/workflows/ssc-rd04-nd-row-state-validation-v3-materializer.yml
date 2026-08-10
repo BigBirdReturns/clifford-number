@@ -1,0 +1,142 @@
+name: Materialize corrected RD-04 North Dakota row-state validation v3
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/ssc-rd04-nd-row-state-validation-v3-materializer.yml'
+      - '.tmp/ssc-rd04-nd-row-state-validation-v3/product.tar.xz'
+
+permissions:
+  contents: write
+
+env:
+  FROZEN_MAIN: bab9570ab043df7c5062e5a45a0717a82eed346b
+  FROZEN_TREE: 74c43136c79700be7cacf9d983738743cec227b8
+  CARRIER_WORKFLOW: .github/workflows/ssc-rd04-nd-row-state-validation-v3-materializer.yml
+  ARCHIVE_PATH: .tmp/ssc-rd04-nd-row-state-validation-v3/product.tar.xz
+  ARCHIVE_BYTES: '11532'
+  ARCHIVE_SHA256: 6ba8a61d8f0fdc8b08081bc318f45880bc2dc244d0e728a69ca1699b30afb4b4
+  ARCHIVE_BLOB: 3f04b313d464e01dee2992d58da0729b72a03b3f
+  PRODUCT_BRANCH: agent/ssc-rd04-nd-row-state-reconciliation-validation-v3
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promoted-partial-field-matrix.json
+  VALIDATION_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation-validation
+  PRODUCT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation-validation.yml
+  VALIDATOR_PATH: tools/validate-status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation.py
+  OUT: /tmp/ssc-rd04-nd-row-state-validation-v3-materializer
+  WT: /tmp/ssc-rd04-nd-row-state-validation-v3-product
+  QWT: /tmp/ssc-rd04-nd-row-state-validation-v3-qualification
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'carrier/ssc-rd04-nd-row-state-validation-v3-materializer-v1' && github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Bind exact two-path carrier and immutable archive
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$WT" "$QWT"
+          mkdir -p "$OUT"
+          CARRIER_HEAD='${{ github.event.pull_request.head.sha }}'
+          test '${{ github.event.pull_request.base.sha }}' = "$FROZEN_MAIN"
+          test "$(git rev-parse HEAD)" = "$CARRIER_HEAD"
+          test "$(git rev-parse HEAD^)" = "$FROZEN_MAIN"
+          test "$(git rev-list --count "$FROZEN_MAIN..HEAD")" -eq 1
+          EXPECTED_CARRIER="$(printf '%s\n' "$CARRIER_WORKFLOW" "$ARCHIVE_PATH" | LC_ALL=C sort)"
+          test "$(git diff --name-only "$FROZEN_MAIN" HEAD | LC_ALL=C sort)" = "$EXPECTED_CARRIER"
+          test "$(git diff --name-only --diff-filter=A "$FROZEN_MAIN" HEAD | LC_ALL=C sort)" = "$EXPECTED_CARRIER"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$FROZEN_MAIN" HEAD)"
+          git diff --check "$FROZEN_MAIN" HEAD
+          test "$(stat -c %s "$ARCHIVE_PATH")" = "$ARCHIVE_BYTES"
+          test "$(sha256sum "$ARCHIVE_PATH" | awk '{print $1}')" = "$ARCHIVE_SHA256"
+          test "$(git hash-object "$ARCHIVE_PATH")" = "$ARCHIVE_BLOB"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$FROZEN_MAIN"
+          test "$(git rev-parse "$FROZEN_MAIN^{tree}")" = "$FROZEN_TREE"
+          if git ls-remote --exit-code --heads origin "$PRODUCT_BRANCH" >/dev/null 2>&1; then
+            echo "product branch already exists" >&2
+            exit 1
+          fi
+          printf '%s\n' "$CARRIER_HEAD" > "$OUT/carrier-head.txt"
+          printf '%s\n' "$ARCHIVE_SHA256" > "$OUT/archive-sha256.txt"
+      - name: Construct and independently qualify exact seven-path product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git worktree add --detach "$WT" "$FROZEN_MAIN"
+          tar -xJf "$GITHUB_WORKSPACE/$ARCHIVE_PATH" -C "$WT"
+          EXPECTED_PRODUCT="$(printf '%s\n' \
+            "$PRODUCT_WORKFLOW" \
+            "$VALIDATION_ROOT/current-row-custody.json" \
+            "$VALIDATION_ROOT/row-state-validation.json" \
+            "$VALIDATION_ROOT/validated-row-state-protocol.json" \
+            "$VALIDATION_ROOT/summary.json" \
+            "$VALIDATION_ROOT/product-manifest.json" \
+            "$VALIDATOR_PATH" | LC_ALL=C sort)"
+          while IFS= read -r path; do
+            test -n "$path"
+            test -f "$WT/$path"
+            test -z "$(git -C "$WT" ls-tree -r --name-only "$FROZEN_MAIN" -- "$path")"
+          done <<< "$EXPECTED_PRODUCT"
+          test "$(git -C "$WT" status --porcelain | sed 's/^?? //' | LC_ALL=C sort)" = "$EXPECTED_PRODUCT"
+          git -C "$WT" diff --check
+          export VALIDATION_ROOT MATRIX_PATH WORKFLOW_PATH="$PRODUCT_WORKFLOW" VALIDATOR_PATH
+          export EXPECTED_CHECKOUT_HEAD="$FROZEN_MAIN"
+          (cd "$WT" && python -m py_compile "$VALIDATOR_PATH")
+          (cd "$WT" && python "$VALIDATOR_PATH") | tee "$OUT/precommit-validation.json"
+          (cd "$WT" && python "$VALIDATOR_PATH" --adversarial) | tee "$OUT/precommit-adversarial.json"
+          jq -e '.adversarial_refusals == 44 and .final_product_identity_authorized == false and .promotion_executed_here == false' "$OUT/precommit-validation.json" >/dev/null
+          jq -e '.refusals == 44' "$OUT/precommit-adversarial.json" >/dev/null
+          git -C "$WT" config user.name 'BigBirdReturns'
+          git -C "$WT" config user.email '219768509+BigBirdReturns@users.noreply.github.com'
+          while IFS= read -r path; do git -C "$WT" add -- "$path"; done <<< "$EXPECTED_PRODUCT"
+          test "$(git -C "$WT" diff --cached --name-only | LC_ALL=C sort)" = "$EXPECTED_PRODUCT"
+          test "$(git -C "$WT" diff --cached --name-only --diff-filter=A | LC_ALL=C sort)" = "$EXPECTED_PRODUCT"
+          test -z "$(git -C "$WT" diff --cached --name-only --diff-filter=MDTCRUXB)"
+          git -C "$WT" commit -m 'Validate corrected North Dakota row-state reconciliation'
+          PRODUCT_COMMIT="$(git -C "$WT" rev-parse HEAD)"
+          PRODUCT_TREE="$(git -C "$WT" rev-parse HEAD^{tree})"
+          test "$(git -C "$WT" rev-parse HEAD^)" = "$FROZEN_MAIN"
+          test "$(git -C "$WT" rev-list --count "$FROZEN_MAIN..HEAD")" -eq 1
+          test "$(git -C "$WT" diff --name-only "$FROZEN_MAIN" HEAD | LC_ALL=C sort)" = "$EXPECTED_PRODUCT"
+          printf '%s\n' "$PRODUCT_COMMIT" > "$OUT/product-commit.txt"
+          printf '%s\n' "$PRODUCT_TREE" > "$OUT/product-tree.txt"
+          git worktree add --detach "$QWT" "$PRODUCT_COMMIT"
+          export EXPECTED_CHECKOUT_HEAD="$PRODUCT_COMMIT"
+          (cd "$QWT" && python -m py_compile "$VALIDATOR_PATH")
+          (cd "$QWT" && python "$VALIDATOR_PATH") | tee "$OUT/validation.json"
+          (cd "$QWT" && python "$VALIDATOR_PATH" --adversarial) | tee "$OUT/adversarial.json"
+          jq -e '.adversarial_refusals == 44 and .projected_row_state == "terminal_fixed_public_record_obligation_complete" and .projected_semantic_matrix_sha256 == "51b04421b4b87d592662326f5282ee492f61e0bf20abcd905401651635c82c60" and .final_product_identity_authorized == false and .promotion_executed_here == false' "$OUT/validation.json" >/dev/null
+          jq -e '.refusals == 44' "$OUT/adversarial.json" >/dev/null
+          (cd "$QWT" && npm run release:check > "$OUT/release-check.log" 2>&1)
+          git -C "$QWT" reset --hard "$PRODUCT_COMMIT"
+          git -C "$QWT" clean -fdx
+          test -z "$(git -C "$QWT" status --porcelain)"
+          export EXPECTED_CHECKOUT_HEAD="$PRODUCT_COMMIT"
+          (cd "$QWT" && python "$VALIDATOR_PATH") > "$OUT/post-release-validation.json"
+          (cd "$QWT" && python "$VALIDATOR_PATH" --adversarial) > "$OUT/post-release-adversarial.json"
+          cmp "$OUT/validation.json" "$OUT/post-release-validation.json"
+          cmp "$OUT/adversarial.json" "$OUT/post-release-adversarial.json"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+          git -C "$WT" push origin "$PRODUCT_COMMIT:refs/heads/$PRODUCT_BRANCH"
+          printf '%s\n' "$PRODUCT_COMMIT" >> "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' "$PRODUCT_TREE" >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve materialization and qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-row-state-validation-v3-materializer
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
