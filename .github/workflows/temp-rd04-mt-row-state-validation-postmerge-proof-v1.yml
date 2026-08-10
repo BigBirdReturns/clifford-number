@@ -133,14 +133,14 @@ jobs:
               .projected_terminal_units == 12 and
               .promotion_executed_here == false and
               .class_closed == false and
-              .authority_boundary.source_requests == 0 and
-              .authority_boundary.route_executions == 0 and
-              .authority_boundary.source_admissions == 0 and
-              .authority_boundary.field_terminalizations == 0 and
-              .authority_boundary.matrix_updates == 0 and
-              .authority_boundary.row_state_mutations == 0 and
-              .authority_boundary.row_terminalizations == 0 and
-              .authority_boundary.outside_human_dependency == false
+              .source_requests == 0 and
+              .route_executions == 0 and
+              .source_admissions == 0 and
+              .field_terminalizations == 0 and
+              .matrix_updates == 0 and
+              .row_state_mutations == 0 and
+              .row_terminalizations == 0 and
+              .outside_human_dependency == false
             ' "$OUT/validation-receipt.json" > /dev/null
             npm run release:check > "$OUT/release-check.log" 2>&1
             git reset --hard "$MERGE_SHA"
@@ -160,6 +160,21 @@ jobs:
           receipt = json.loads((out / 'validation-receipt.json').read_text())
           def git(*args):
               return subprocess.check_output(['git', *args], text=True).strip()
+          authority = {
+              'source_requests': receipt['source_requests'],
+              'route_executions': receipt['route_executions'],
+              'source_admissions': receipt['source_admissions'],
+              'field_terminalizations': receipt['field_terminalizations'],
+              'matrix_updates': receipt['matrix_updates'],
+              'row_state_mutations': receipt['row_state_mutations'],
+              'row_terminalizations': receipt['row_terminalizations'],
+              'class_closed': receipt['class_closed'],
+              'cumulative_ledger_effect': 'none',
+              'publication_effect': 'none',
+              'adoption_effect': 'none',
+              'graph_effect': 'none',
+              'outside_human_dependency': receipt['outside_human_dependency'],
+          }
           proof = {
               'schema_version': 'ssc-rd04-mt-row-state-validation-postmerge-proof@1',
               'state': 'qualified_canonical_montana_validation_merge',
@@ -172,16 +187,16 @@ jobs:
               'live_main': git('rev-parse', 'origin/main'),
               'product_path_count': 7,
               'first_parent_crawl_path_count': 3,
-              'candidate_sha256': receipt['candidate_sha256'],
-              'projected_montana_row_sha256': receipt['projected_montana_row_sha256'],
+              'candidate_sha256': receipt['proposed_cell_sha256'],
+              'projected_montana_row_sha256': receipt['projected_row_sha256'],
               'projected_matrix_sha256': receipt['projected_matrix_sha256'],
               'adversarial_refusals': receipt['adversarial_refusals'],
               'promotion_executed_here': receipt['promotion_executed_here'],
               'class_closed': receipt['class_closed'],
               'release_check': 'passed',
               'post_release_replay': 'passed',
-              'outside_human_dependency': False,
-              'authority_boundary': receipt['authority_boundary'],
+              'outside_human_dependency': receipt['outside_human_dependency'],
+              'authority_boundary': authority,
           }
           (out / 'postmerge-proof.json').write_text(json.dumps(proof, indent=2, sort_keys=True) + '\n')
           PY
