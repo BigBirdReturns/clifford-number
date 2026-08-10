@@ -1,0 +1,160 @@
+{
+  "schema_version": "ssc-rd04-nd-row-state-reconciliation-validation@3",
+  "issue": 1017,
+  "wave_id": "SSC-RD-W03",
+  "lane_id": "RD-04",
+  "class_id": "RD-04-C02",
+  "canonical_parent": "de81b27c48b0ffec0db37b55e1b6eb9b58290524",
+  "validation_result": {
+    "state": "validated_exact_current_row_state_projection_integrity_repaired",
+    "all_eight_substantive_fields_terminal": true,
+    "remaining_open_cell_count": 1,
+    "remaining_open_field_id": "field_and_row_terminal_state",
+    "row_state_transition_mechanically_admissible": true,
+    "separate_promotion_product_authorized": true,
+    "promotion_executed_here": false
+  },
+  "proposed_row_state_cell": {
+    "field_ordinal": 9,
+    "field_id": "field_and_row_terminal_state",
+    "state": "evidence_complete",
+    "terminal": true,
+    "value": {
+      "terminal_classification": "terminal_fixed_public_record_obligation_complete",
+      "row_scope": "fixed_public_record_obligation_for_one_state",
+      "completed_evidence_fields": 8,
+      "terminal_evidence_field_ids": [
+        "canonical_state_identity",
+        "operative_state_implementation_authority_and_version",
+        "implementation_effective_date_or_typed_gap",
+        "abawd_or_work_requirement_waiver_state_and_governing_period",
+        "discretionary_exemption_authority_and_reported_state_practice",
+        "fitness_for_work_or_eligibility_screening_rule",
+        "verification_evidence_and_staff_discretion_surface",
+        "source_identities_and_exact_custody"
+      ],
+      "terminal_evidence_state_counts": {
+        "evidence_complete": 7,
+        "observed": 0,
+        "not_publicly_recovered": 1
+      },
+      "predecessor_row_canonical_sha256": "0f3ba29ee5c7354249f89c96fc38c21b55341fc9fdad9b5919ecdb9243c4929e",
+      "completion_rule": "all_eight_declared_state_evidence_fields_are_terminal_under_exact_source_or_typed_gap_custody",
+      "class_effect": "none",
+      "cumulative_ledger_effect": "none",
+      "limitations": [
+        "row completion closes only the declared fixed public-record obligation for this state",
+        "typed source gaps remain distinct from event, policy, practice, or implementation absence",
+        "row completion does not establish uniform frontline practice or person-level outcome",
+        "eleven terminal rows do not establish national prevalence or close RD-04-C02"
+      ],
+      "prohibited_inferences": [
+        "do_not_infer_complete_state_implementation_truth_beyond_terminal_field_custody",
+        "do_not_convert_not_publicly_recovered_fields_into_event_or_policy_absence",
+        "do_not_infer_uniform_frontline_practice",
+        "do_not_infer_person_level_outcome",
+        "do_not_infer_national_prevalence",
+        "do_not_infer_discrimination_or_racial_order",
+        "do_not_infer_coordination_or_common_purpose",
+        "do_not_infer_complete_compact",
+        "do_not_close_rd04_c02_or_wave03_from_eleven_terminal_rows"
+      ]
+    },
+    "evidence_source_ids": [
+      "RD04-ND-ROW-STATE-RECONCILIATION-V1"
+    ],
+    "typed_gap": null,
+    "authority_effect": "row_level_fixed_public_record_obligation_terminal_only"
+  },
+  "proposed_row_state_cell_sha256": "f0c6fe75d1720c1a6cf8b90fd44b96bc96fcb0656fc70808c5439d514d30217c",
+  "projected_row": {
+    "row_sha256": "f75ac04e5c8fc53304e897d918ee80057c580e2b8bbeeca979e9f92312f96f4b",
+    "row_state": "terminal_fixed_public_record_obligation_complete",
+    "terminal_fields": 9,
+    "open_fields": 0
+  },
+  "superseded_inconsistent_projection": {
+    "bytes": 498047,
+    "sha256": "9f85cbff7eba6d66f84508d262c408d580e1d55e95568d3265f10d1c1fa416ad",
+    "git_blob_sha": "4911d717a072493f80a3631598799070f08f2a91",
+    "defect": "counts_and_current_result_disagree_on_terminal_cells_and_terminal_units",
+    "promotion_authority": false
+  },
+  "corrected_semantic_projection": {
+    "schema_version": "ssc-rd04-wave03-postpromotion-nd-row-state-reconciled-partial-field-matrix@2",
+    "bytes": 498054,
+    "sha256": "6347024e87acf6d21192fa40844ae22b5b5c76c36bfb853edf5e6d35b58c829c",
+    "git_blob_sha": "8efadaa94bc9de68b4d90d471051d613ad0ce32e",
+    "counts": {
+      "materialized_cells": 450,
+      "terminal_cells": 229,
+      "still_open_cells": 221,
+      "terminal_substantive_cells": 118,
+      "still_open_substantive_cells": 182,
+      "evidence_complete_cells": 198,
+      "observed_cells": 17,
+      "not_publicly_recovered_cells": 14,
+      "row_terminal_state_cells_terminal": 11,
+      "row_terminal_state_cells_open": 39,
+      "terminal_units": 11,
+      "class_closed": false
+    },
+    "current_result": {
+      "terminal_cells": "229/450",
+      "still_open_cells": "221/450",
+      "terminal_substantive_cells": 118,
+      "still_open_substantive_cells": 182,
+      "row_terminal_state_cells_terminal": 11,
+      "row_terminal_state_cells_open": 39,
+      "terminal_units": 11,
+      "terminal_unit_ids": [
+        "US-STATE-AR",
+        "US-STATE-CA",
+        "US-STATE-GA",
+        "US-STATE-MD",
+        "US-STATE-NC",
+        "US-STATE-ND",
+        "US-STATE-PA",
+        "US-STATE-RI",
+        "US-STATE-SD",
+        "US-STATE-WA",
+        "US-STATE-WV"
+      ],
+      "field_matrix_terminal": false,
+      "class_state": "still_open",
+      "class_closed": false
+    },
+    "changed_units": 1,
+    "changed_cells": 1,
+    "unchanged_non_target_rows": 49,
+    "unchanged_non_target_rows_sha256": "e9507cce90ced2d303b6d464968c4eeed630f2f058ba4302980c34f32f3e1105",
+    "normalization_rule": "remove_exact_final_product_metadata_object_and_serialize_with_two_space_indent_utf8_newline"
+  },
+  "projected_effects": {
+    "field_terminalizations": 0,
+    "matrix_updates": 1,
+    "row_state_mutations": 1,
+    "row_terminalizations": 1,
+    "class_closed": false,
+    "cumulative_ledger_effect": "none",
+    "publication_effect": "none",
+    "adoption_effect": "none",
+    "graph_effect": "none",
+    "outside_human_dependency": false
+  },
+  "authority_boundary": {
+    "source_requests": 0,
+    "route_executions": 0,
+    "source_admissions": 0,
+    "field_terminalizations": 0,
+    "matrix_updates": 0,
+    "row_state_mutations": 0,
+    "row_terminalizations": 0,
+    "class_closed": false,
+    "cumulative_ledger_effect": "none",
+    "publication_effect": "none",
+    "adoption_effect": "none",
+    "graph_effect": "none",
+    "outside_human_dependency": false
+  }
+}

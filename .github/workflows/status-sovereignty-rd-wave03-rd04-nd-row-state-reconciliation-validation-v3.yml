@@ -1,0 +1,93 @@
+name: Validate RD-04 North Dakota row-state projection integrity V3
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation-validation-v3.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation-validation-v3/**'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation-v3.py'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation-validation-v3.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation-validation-v3/**'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation-v3.py'
+
+permissions:
+  contents: read
+
+env:
+  CANONICAL_PARENT: de81b27c48b0ffec0db37b55e1b6eb9b58290524
+  CANONICAL_PARENT_TREE: 919775a3acbc19ff5a70de98409c02e2960f91f9
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promoted-partial-field-matrix.json
+  VALIDATION_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation-validation-v3
+  WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation-validation-v3.yml
+  VALIDATOR_PATH: tools/validate-status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation-v3.py
+  OUT: /tmp/rd04-nd-row-state-reconciliation-validation-v3
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Bind exact projection-integrity repair product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" && mkdir -p "$OUT"
+          test "$(git rev-parse "$CANONICAL_PARENT^{tree}")" = "$CANONICAL_PARENT_TREE"
+          EVENT='${{ github.event_name }}'
+          if [ "$EVENT" = pull_request ]; then
+            PRODUCT_COMMIT='${{ github.event.pull_request.head.sha }}'
+            test "$(git rev-parse HEAD)" = "$PRODUCT_COMMIT"
+            test '${{ github.event.pull_request.base.sha }}' = "$CANONICAL_PARENT"
+            test "$(git rev-parse "$PRODUCT_COMMIT^")" = "$CANONICAL_PARENT"
+            git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+            test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          else
+            read -r P1 P2 EXTRA <<< "$(git show -s --format='%P' HEAD)"
+            test "$P1" = "$CANONICAL_PARENT" && test -n "$P2" && test -z "${EXTRA:-}"
+            PRODUCT_COMMIT="$P2"
+            test "$(git rev-parse "$PRODUCT_COMMIT^")" = "$CANONICAL_PARENT"
+            test "$(git rev-parse HEAD^{tree})" = "$(git rev-parse "$PRODUCT_COMMIT^{tree}")"
+          fi
+          EXPECTED="$(printf '%s\n' '.github/workflows/status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation-validation-v3.yml' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation-validation-v3/current-row-custody.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation-validation-v3/row-state-validation.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation-validation-v3/validated-row-state-protocol.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation-validation-v3/summary.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation-validation-v3/product-manifest.json' 'tools/validate-status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation-v3.py' | LC_ALL=C sort)"
+          test "$(git diff --name-only "$CANONICAL_PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort)" = "$EXPECTED"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort)" = "$EXPECTED"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" "$PRODUCT_COMMIT")"
+          git diff --check "$CANONICAL_PARENT" "$PRODUCT_COMMIT"
+          test "$(git rev-parse "$PRODUCT_COMMIT:$MATRIX_PATH")" = c25a1ad8fdfe82f70f1ff71e61da6796be94c737
+      - name: Validate exact row-state projection repair
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m py_compile "$VALIDATOR_PATH"
+          VALIDATION_HEAD="$(git rev-parse HEAD)" python "$VALIDATOR_PATH" | tee "$OUT/validation-receipt.json"
+          npm run release:check > "$OUT/release-check.log" 2>&1
+          git reset --hard HEAD
+          git clean -fdx
+          test -z "$(git status --porcelain)"
+          VALIDATION_HEAD="$(git rev-parse HEAD)" python "$VALIDATOR_PATH" > "$OUT/post-release-validation-receipt.json"
+          cmp "$OUT/validation-receipt.json" "$OUT/post-release-validation-receipt.json"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - name: Preserve exact validation receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-row-state-reconciliation-validation-v3
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
