@@ -186,9 +186,7 @@ jobs:
           prefix=${PRODUCT:0:10}
           codex=$(jq --arg prefix "$prefix" '[.[] | select(.user.login=="chatgpt-codex-connector[bot]") | select((.body|test("Didn.t find any major issues";"i"))) | select(.body|contains($prefix))] | length' "$WORK/comments.json")
           if [ "$codex" -eq 0 ] && [ "$(jq -r .state "$WORK/product-pr.json")" = open ]; then
-            body="@codex review
-
-Review exact PC-61 product \`$PRODUCT\` / tree \`$PRODUCT_TREE\`. Recheck the one-parent fourteen-addition topology, literal UTF-8 and codepoint identity, normalization and casefold versions, confusable collision custody, alias and rename intervals, recycled and reserved namespace state, identity-reuse refusal, recursive floor-v58 source custody, canonical JSON and cache refusal, frontier preservation, read-only workflows, and authority ceilings. Report actionable P0-P2 findings; otherwise record no major issue."
+            body=$(printf '%s\n\n%s\n' '@codex review' "Review exact PC-61 product \`$PRODUCT\` / tree \`$PRODUCT_TREE\`. Recheck the one-parent fourteen-addition topology, literal UTF-8 and codepoint identity, normalization and casefold versions, confusable collision custody, alias and rename intervals, recycled and reserved namespace state, identity-reuse refusal, recursive floor-v58 source custody, canonical JSON and cache refusal, frontier preservation, read-only workflows, and authority ceilings. Report actionable P0-P2 findings; otherwise record no major issue.")
             gh api --method POST "/repos/$GH_REPOSITORY/issues/$PRODUCT_PR/comments" -f body="$body" > "$WORK/codex-request.json"
             for attempt in $(seq 1 160); do
               gh api --paginate --slurp "/repos/$GH_REPOSITORY/issues/$PRODUCT_PR/comments?per_page=100" > "$WORK/comment-pages.json"
