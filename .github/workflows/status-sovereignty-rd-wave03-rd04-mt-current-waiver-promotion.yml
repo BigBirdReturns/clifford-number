@@ -1,0 +1,115 @@
+name: Qualify RD-04 Montana current-waiver promotion
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-mt-current-waiver-promotion.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion/**'
+      - 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.schema.json'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.test.py'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.py'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.py'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-mt-current-waiver-promotion.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion/**'
+      - 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.schema.json'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.test.py'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.py'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rd04-mt-current-waiver-promotion-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion/product-manifest.json
+  BUILDER_PATH: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.py
+  VALIDATOR_PATH: tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.py
+  TEST_PATH: test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.test.py
+  OUT: /tmp/rd04-mt-current-waiver-promotion
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Bind exact product topology and immutable parent
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" && mkdir -p "$OUT"
+          PARENT="$(jq -r .canonical_parent "$MANIFEST_PATH")"
+          test "$PARENT" != null
+          EVENT='${{ github.event_name }}'
+          if [ "$EVENT" = pull_request ]; then
+            PRODUCT='${{ github.event.pull_request.head.sha }}'
+            test '${{ github.event.pull_request.base.sha }}' = "$PARENT"
+            test "$(git rev-parse HEAD)" = "$PRODUCT"
+            test "$(git rev-parse "$PRODUCT^")" = "$PARENT"
+            git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+            test "$(git rev-parse origin/main)" = "$PARENT"
+          else
+            read -r P1 P2 EXTRA <<< "$(git show -s --format='%P' HEAD)"
+            test "$P1" = "$PARENT" && test -n "$P2" && test -z "${EXTRA:-}"
+            PRODUCT="$P2"
+            test "$(git rev-parse "$PRODUCT^")" = "$PARENT"
+            test "$(git rev-parse HEAD^{tree})" = "$(git rev-parse "$PRODUCT^{tree}")"
+          fi
+          jq -r '.permanent_paths[]' "$MANIFEST_PATH" | LC_ALL=C sort > "$OUT/manifest-paths.txt"
+          git diff --name-only --diff-filter=A "$PARENT" "$PRODUCT" | LC_ALL=C sort > "$OUT/added-paths.txt"
+          diff -u "$OUT/manifest-paths.txt" "$OUT/added-paths.txt"
+          test "$(wc -l < "$OUT/added-paths.txt" | tr -d ' ')" = 14
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$PARENT" "$PRODUCT")"
+          git diff --check "$PARENT" "$PRODUCT"
+          printf '%s\n' "$PARENT" > "$OUT/canonical-parent.txt"
+          printf '%s\n' "$PRODUCT" > "$OUT/product-commit.txt"
+      - name: Rebuild, validate, and adversarially qualify exact product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m py_compile "$BUILDER_PATH" "$VALIDATOR_PATH" "$TEST_PATH"
+          python "$BUILDER_PATH" --check | tee "$OUT/build-receipt.json"
+          python "$VALIDATOR_PATH" --self-test | tee "$OUT/validation-receipt.json"
+          python "$TEST_PATH" | tee "$OUT/adversarial-receipt.json"
+          npm run release:check > "$OUT/release-check.log" 2>&1
+          git reset --hard HEAD
+          git clean -fdx
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          python "$BUILDER_PATH" --check > "$OUT/post-release-build-receipt.json"
+          python "$VALIDATOR_PATH" --self-test > "$OUT/post-release-validation-receipt.json"
+          cmp "$OUT/build-receipt.json" "$OUT/post-release-build-receipt.json"
+          cmp "$OUT/validation-receipt.json" "$OUT/post-release-validation-receipt.json"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - name: Preserve exact product qualification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-current-waiver-promotion-v1
+          path: |
+            ${{ env.OUT }}
+            ${{ env.PRODUCT_ROOT }}
+            ${{ env.MANIFEST_PATH }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
