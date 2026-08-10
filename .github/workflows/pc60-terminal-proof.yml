@@ -1,0 +1,128 @@
+name: PC-60 exact post-merge proof and terminal cleanup
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pc60-terminal-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: pc60-terminal-proof-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPOSITORY: ${{ github.repository }}
+  API_URL: ${{ github.api_url }}
+  CARRIER_PARENT: '283c5993cb2ac0bff173c72aba70088c67b2ac3c'
+  CARRIER_PATH: '.github/workflows/pc60-terminal-proof.yml'
+  ISSUE: '1766'
+  PRODUCT_PR: '1803'
+  PRODUCT: 'dbb7960b05f7250dedfc9f79806ffdef5e4ee94e'
+  PRODUCT_PARENT: '789c800d00a6d4924cb69d2ce33d336ab315972f'
+  PRODUCT_PARENT_TREE: 'fef73cc4267070c8cc7fb7c1dc15481477391d62'
+  PRODUCT_TREE: '80a04c3d6a59816e9f7c99e585e077c92df42dbd'
+  MERGE: '283c5993cb2ac0bff173c72aba70088c67b2ac3c'
+  MERGE_FIRST_PARENT: '789c800d00a6d4924cb69d2ce33d336ab315972f'
+  EXPECTED_MATRIX: '54'
+  CODEX_REQUEST_COMMENT: '5236393840'
+  CODEX_COMMIT_PREFIX: 'dbb7960b05'
+  MATERIALIZER_RUN: '31359314156'
+  MATERIALIZER_HEAD: '7abee94e20d959cccdda52eddb9a277121ca73e3'
+  MATERIALIZER_ARTIFACT: '9051834457'
+  MATERIALIZER_DIGEST: 'sha256:6cc8b21360cc6d62e1c05c0499991a10bf63ffd994ce69c318c36a1bc83c4c98'
+  MATERIALIZER_CONTENT_MANIFEST_SHA256: 'eae87895215cb4c2a2670fae6b8a64dc18bd776691ba8ebd33d982c5d602ce2f'
+  CONTROLLER_B64_SHA256: '65bcf569078228b0fee6fbb77e2a839b9a6897dcb1c5d3c1e3f6ba0d8694450c'
+  CONTROLLER_GZIP_SHA256: '95711ac2d13979116f0b1fe183698e04e38019661cc7ec12a15a6f54984d9ab6'
+  CONTROLLER_SHA256: 'ab5595abefc25c51f8cc67543caf1bd4f73b097a9bf9d1d21437bf4350232959'
+  RESOLVED_FRONTIER: 'linkage_interval_repository_owner_login_normalization_alias_case_history_and_location_pair_governance'
+  NEXT_FRONTIER_ONE: 'linkage_interval_repository_owner_login_unicode_normalization_casefold_confusable_collision_recycled_reserved_and_rename_history_governance'
+  NEXT_FRONTIER_TWO: 'linkage_interval_repository_owner_profile_api_url_canonicalization_redirect_endpoint_version_pairing_and_observation_time_governance'
+  PRESERVED_ACCOUNT_FRONTIER: 'linkage_interval_owner_account_type_active_suspended_deleted_ghost_restoration_site_admin_and_metadata_governance'
+  PROOF_DIR: '/tmp/pc60-exact-postmerge-proof'
+  CENSUS_DIR: '/tmp/pc60-terminal-census'
+  MATERIALIZER_DIR: '/tmp/pc60-materializer-v4'
+
+jobs:
+  terminalize:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/pc60-terminal-proof-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Authenticate exact terminal controller from sealed Git blobs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          : > /tmp/pc60-terminal-controller.sh.gz.b64
+          for sha in \
+            2f90b3ee804d2d276fe6dfc615b84317f1ed9d41 \
+            1e81b379c89ddf0f32eef4098b70781fa1498615 \
+            9a91badadcaeb469d07efb204fec763c4c4a4c59 \
+            638afc8bbed26fc2d54c45fa39c2c7f5fc438d42 \
+            bb9f91184539ad9a701b8d27a26af51a11905ee4 \
+            92050119db22595904c9de9d0d0b80226c42fd50 \
+            85aba8ca0fbfa0e23fdd6fd00574fc7410402bab \
+            a9d625e74867bd2d45fda7bc62e78b799d2e6754
+          do
+            gh api "/repos/${GH_REPOSITORY}/git/blobs/${sha}" > /tmp/controller-shard.json
+            test "$(jq -r .sha /tmp/controller-shard.json)" = "$sha"
+            jq -r .content /tmp/controller-shard.json | tr -d '\n' | base64 -d >> /tmp/pc60-terminal-controller.sh.gz.b64
+          done
+          test "$(sha256sum /tmp/pc60-terminal-controller.sh.gz.b64 | awk '{print $1}')" = "$CONTROLLER_B64_SHA256"
+          base64 -d /tmp/pc60-terminal-controller.sh.gz.b64 > /tmp/pc60-terminal-controller.sh.gz
+          test "$(sha256sum /tmp/pc60-terminal-controller.sh.gz | awk '{print $1}')" = "$CONTROLLER_GZIP_SHA256"
+          gzip -t /tmp/pc60-terminal-controller.sh.gz
+          gzip -dc /tmp/pc60-terminal-controller.sh.gz > /tmp/pc60-terminal-controller.sh
+          test "$(sha256sum /tmp/pc60-terminal-controller.sh | awk '{print $1}')" = "$CONTROLLER_SHA256"
+          bash -n /tmp/pc60-terminal-controller.sh
+          chmod 0755 /tmp/pc60-terminal-controller.sh
+      - name: Bind product, matrix, review, materializer, canonical merge, and live main
+        run: /tmp/pc60-terminal-controller.sh bind
+      - name: Prove canonical topology, all fourteen blobs, and complete replay
+        run: /tmp/pc60-terminal-controller.sh proof
+      - name: Upload exact PC-60 post-merge proof
+        id: proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc60-exact-postmerge-proof
+          path: /tmp/pc60-exact-postmerge-proof
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+      - name: Retire every PC-60 transaction surface and seal census
+        env:
+          PROOF_ARTIFACT_ID: ${{ steps.proof.outputs.artifact-id }}
+          PROOF_ARTIFACT_DIGEST: sha256:${{ steps.proof.outputs.artifact-digest }}
+        run: /tmp/pc60-terminal-controller.sh cleanup
+      - name: Upload PC-60 terminal census
+        id: census
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc60-terminal-census
+          path: /tmp/pc60-terminal-census
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+      - name: Write durable PC-60 terminal receipt and close issue
+        env:
+          PROOF_ARTIFACT_ID: ${{ steps.proof.outputs.artifact-id }}
+          PROOF_ARTIFACT_DIGEST: sha256:${{ steps.proof.outputs.artifact-digest }}
+          CENSUS_ARTIFACT_ID: ${{ steps.census.outputs.artifact-id }}
+          CENSUS_ARTIFACT_DIGEST: sha256:${{ steps.census.outputs.artifact-digest }}
+        run: /tmp/pc60-terminal-controller.sh receipt
