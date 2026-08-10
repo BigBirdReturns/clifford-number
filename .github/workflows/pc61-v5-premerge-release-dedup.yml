@@ -1,0 +1,129 @@
+name: PC-61 v5 premerge release deduplication
+
+'on':
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pc61-v5-premerge-release-dedup.yml'
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: pc61-v5-premerge-release-dedup
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPOSITORY: ${{ github.repository }}
+  TARGET_BRANCH: 'agent/pc61-terminal-reconcile-v5'
+  TARGET_PATH: '.github/workflows/pc61-terminal-reconciler-v5.yml'
+  SOURCE_BLOB: 'f226e0faacb46f0061c94a4950ec10dfcac99f96'
+  OUT: '/tmp/pc61-v5-premerge-release-dedup'
+
+jobs:
+  repair:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/pc61-terminal-reconcile-v5'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Stage exact redundant-release removal with named hosted receipt
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          gh api --method GET "/repos/$GH_REPOSITORY/contents/$TARGET_PATH" -f ref="$TARGET_BRANCH" > "$OUT/content-before.json"
+          before_blob=$(jq -r .sha "$OUT/content-before.json")
+          test "$before_blob" = "$SOURCE_BLOB"
+          jq -r .content "$OUT/content-before.json" | tr -d '\n' | base64 -d > "$OUT/before.yml"
+          test "$(git hash-object "$OUT/before.yml")" = "$SOURCE_BLOB"
+
+          python - "$OUT/before.yml" "$OUT/after.yml" <<'PY'
+          from pathlib import Path
+          import sys
+          source=Path(sys.argv[1]).read_text()
+
+          old_replay='''            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+            npm run release:check
+          } 2>&1 | tee "$WORK/product-replay.log"'''
+          new_replay='''            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+            printf '%s\\n' 'complete repository release gate: exact-head Release checks workflow; canonical rerun required post-merge'
+          } 2>&1 | tee "$WORK/product-replay.log"'''
+          if source.count(old_replay)!=1:
+              raise SystemExit(f'premerge release block denominator {source.count(old_replay)} != 1')
+          source=source.replace(old_replay,new_replay)
+
+          old_matrix='''          test "$matrix_count" -ge "$MINIMUM_MATRIX"
+          test "$pending" -eq 0
+          test "$failed" -eq 0
+
+          gh api --paginate --slurp "/repos/$GH_REPOSITORY/issues/$PRODUCT_PR/comments?per_page=100" > "$WORK/comment-pages.json"'''
+          new_matrix='''          test "$matrix_count" -ge "$MINIMUM_MATRIX"
+          test "$pending" -eq 0
+          test "$failed" -eq 0
+          jq '[.[] | select(.name=="Release checks")]' "$WORK/matrix.json" > "$WORK/release-workflow.json"
+          test "$(jq 'length' "$WORK/release-workflow.json")" -eq 1
+          test "$(jq -r '.[0].status' "$WORK/release-workflow.json")" = completed
+          test "$(jq -r '.[0].conclusion' "$WORK/release-workflow.json")" = success
+
+          gh api --paginate --slurp "/repos/$GH_REPOSITORY/issues/$PRODUCT_PR/comments?per_page=100" > "$WORK/comment-pages.json"'''
+          if source.count(old_matrix)!=1:
+              raise SystemExit(f'matrix receipt insertion denominator {source.count(old_matrix)} != 1')
+          source=source.replace(old_matrix,new_matrix)
+
+          old_proof='''          cp "$WORK/matrix.json" "$PROOF/exact-head-matrix.json"
+          cp "$WORK/codex-terminal-comments.json" "$PROOF/codex-terminal-comments.json"'''
+          new_proof='''          cp "$WORK/matrix.json" "$PROOF/exact-head-matrix.json"
+          cp "$WORK/release-workflow.json" "$PROOF/exact-head-release-workflow.json"
+          cp "$WORK/codex-terminal-comments.json" "$PROOF/codex-terminal-comments.json"'''
+          if source.count(old_proof)!=1:
+              raise SystemExit(f'proof release receipt denominator {source.count(old_proof)} != 1')
+          source=source.replace(old_proof,new_proof)
+
+          if source.count('            npm run release:check\n')!=1:
+              raise SystemExit('canonical post-merge release invocation denominator changed')
+          Path(sys.argv[2]).write_text(source)
+          PY
+
+          python - "$OUT/after.yml" <<'PY'
+          from pathlib import Path
+          import sys,yaml
+          document=yaml.safe_load(Path(sys.argv[1]).read_text())
+          job=document['jobs']['reconcile']
+          if job['timeout-minutes'] != 360:
+              raise SystemExit('timeout mismatch')
+          if document['concurrency']['cancel-in-progress'] is not True:
+              raise SystemExit('superseding concurrency mismatch')
+          PY
+          diff -u "$OUT/before.yml" "$OUT/after.yml" > "$OUT/exact.patch" || test "$?" = 1
+          target_blob=$(git hash-object "$OUT/after.yml")
+          target_sha256=$(sha256sum "$OUT/after.yml" | awk '{print $1}')
+          encoded=$(base64 -w0 "$OUT/after.yml")
+          gh api --method POST "/repos/$GH_REPOSITORY/git/blobs" -f content="$encoded" -f encoding=base64 > "$OUT/blob-response.json"
+          test "$(jq -r .sha "$OUT/blob-response.json")" = "$target_blob"
+          gh api "/repos/$GH_REPOSITORY/git/blobs/$target_blob" > "$OUT/remote-blob.json"
+          jq -r .content "$OUT/remote-blob.json" | tr -d '\n' | base64 -d > "$OUT/remote-after.yml"
+          cmp "$OUT/after.yml" "$OUT/remote-after.yml"
+
+          jq -n --arg schema_version 'pc61-v5-premerge-release-dedup@1' --arg status complete --arg source_blob "$SOURCE_BLOB" --arg target_blob "$target_blob" --arg target_sha256 "$target_sha256" '{schema_version:$schema_version,status:$status,source_blob:$source_blob,target_blob:$target_blob,target_sha256:$target_sha256,change_denominator:{redundant_premerge_release_invocations_removed:1,named_exact_head_release_receipts_added:1,canonical_postmerge_release_invocations_retained:1},substantive_gate_effect:{exact_head_release_required:true,canonical_postmerge_release_required:true,release_gate_weakened:false},product_semantics_changed:false,graph_effect:"none"}' > "$OUT/receipt.json"
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - name: Preserve premerge-release deduplication receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc61-v5-premerge-release-dedup
+          path: /tmp/pc61-v5-premerge-release-dedup
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
