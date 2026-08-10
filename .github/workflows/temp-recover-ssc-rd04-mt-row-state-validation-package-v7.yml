@@ -1,0 +1,447 @@
+name: TEMP recover RD-04 Montana validation package v7
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-mt-row-state-validation-one-char-recovery-base-v7
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-mt-row-state-validation-materializer/one-char-recovery-v7-trigger.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-rd04-mt-row-state-validation-one-char-recovery-v7
+  cancel-in-progress: false
+
+env:
+  CANONICAL_MAIN: bc3cf04459bb0d18829f376c9b937693b521e444
+  SOURCE_PACKAGE_COMMIT: a53a40fc92368cf32cfb106ec7099199e80b8b51
+  PACKAGE_PATH: .tmp/rd04-mt-row-state-validation-materializer/package.tar.gz.b64
+  WORKFLOW_PATH: .github/workflows/temp-recover-ssc-rd04-mt-row-state-validation-package-v7.yml
+  TRIGGER_PATH: .tmp/rd04-mt-row-state-validation-materializer/one-char-recovery-v7-trigger.json
+  TARGET_REF: refs/heads/staging/ssc-rd04-mt-row-state-reconciliation-validation-v1
+  OUT: /tmp/rd04-mt-row-state-validation-one-char-recovery-v7
+  EXTRACT: /tmp/rd04-mt-row-state-validation-one-char-recovery-v7-package
+  PAYLOAD_B64_BYTES: '14740'
+  CORRUPT_PAYLOAD_B64_SHA256: 6a71fc9fea0de70c0d1281729a71872fcf7d0d9952f0c99a7dcebfd7ba0aca98
+  REPAIRED_PAYLOAD_B64_SHA256: d19b30d285e725f0cba1844864f9a8a4d543e46de2ff66484e3a9b710b9771aa
+  PAYLOAD_GZIP_BYTES: '11054'
+  PAYLOAD_GZIP_SHA256: db899783e6a52055842ba9748b9ea1996d5bfa5b7806db374fbf127723c2c3ba
+  PAYLOAD_TAR_BYTES: '61440'
+  PAYLOAD_TAR_SHA256: d81a4cc83d47f192995a9bf32aed803f4f5c878799558ce906fc166ada7af559
+  CONTROLLER_BYTES: '9075'
+  CONTROLLER_SHA256: 5b9b91cf7e30af38ca4fcec137b8a43d5e3e9c3c3c21e259b6aa21a1bf9d1674
+
+jobs:
+  recover:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-mt-row-state-validation-one-char-recovery-base-v7' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-mt-row-state-validation-one-char-recovery-trigger-v7'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Authenticate exact corrupt-package recovery topology
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$EXTRACT"
+          mkdir -p "$OUT" "$EXTRACT"
+
+          test "$(git rev-parse HEAD)" = "$EVENT_HEAD_SHA"
+          test "$(git rev-parse HEAD^)" = "$EVENT_BASE_SHA"
+          test "$(git rev-parse "$EVENT_BASE_SHA^")" = "$SOURCE_PACKAGE_COMMIT"
+          test "$(git rev-parse "$SOURCE_PACKAGE_COMMIT^")" = "$CANONICAL_MAIN"
+          test "$(git rev-list --count "$EVENT_BASE_SHA..$EVENT_HEAD_SHA")" -eq 1
+          test "$(git rev-list --count "$SOURCE_PACKAGE_COMMIT..$EVENT_BASE_SHA")" -eq 1
+          test "$(git rev-list --count "$CANONICAL_MAIN..$SOURCE_PACKAGE_COMMIT")" -eq 1
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CANONICAL_MAIN"
+
+          printf '%s\n' "$PACKAGE_PATH" > "$OUT/expected-package-paths.txt"
+          git diff --name-only "$CANONICAL_MAIN" "$SOURCE_PACKAGE_COMMIT" | LC_ALL=C sort > "$OUT/actual-package-paths.txt"
+          cmp "$OUT/expected-package-paths.txt" "$OUT/actual-package-paths.txt"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_MAIN" "$SOURCE_PACKAGE_COMMIT" | wc -l)" -eq 1
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_MAIN" "$SOURCE_PACKAGE_COMMIT")"
+
+          printf '%s\n' "$WORKFLOW_PATH" > "$OUT/expected-base-paths.txt"
+          git diff --name-only "$SOURCE_PACKAGE_COMMIT" "$EVENT_BASE_SHA" | LC_ALL=C sort > "$OUT/actual-base-paths.txt"
+          cmp "$OUT/expected-base-paths.txt" "$OUT/actual-base-paths.txt"
+          test "$(git diff --name-only --diff-filter=A "$SOURCE_PACKAGE_COMMIT" "$EVENT_BASE_SHA" | wc -l)" -eq 1
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$SOURCE_PACKAGE_COMMIT" "$EVENT_BASE_SHA")"
+
+          printf '%s\n' "$TRIGGER_PATH" > "$OUT/expected-trigger-paths.txt"
+          git diff --name-only "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA" | LC_ALL=C sort > "$OUT/actual-trigger-paths.txt"
+          cmp "$OUT/expected-trigger-paths.txt" "$OUT/actual-trigger-paths.txt"
+          test "$(git diff --name-only --diff-filter=A "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA" | wc -l)" -eq 1
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA")"
+
+          test -f "$PACKAGE_PATH"
+          test -f "$WORKFLOW_PATH"
+          test -f "$TRIGGER_PATH"
+          git diff --check "$CANONICAL_MAIN" "$EVENT_HEAD_SHA"
+
+      - name: Recover the unique one-character package and prove every layer
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          before="$(git ls-remote --heads origin "$TARGET_REF" | awk '{print $1}')"
+          printf '%s\n' "${before:-absent}" > "$OUT/target-ref-before.txt"
+
+          python - <<'PY'
+          import base64
+          import gzip
+          import hashlib
+          import io
+          import json
+          import os
+          import pathlib
+          import shutil
+          import tarfile
+          import traceback
+          from pathlib import PurePosixPath
+
+          package = pathlib.Path(os.environ["PACKAGE_PATH"])
+          out = pathlib.Path(os.environ["OUT"])
+          extract = pathlib.Path(os.environ["EXTRACT"])
+
+          def sha256(data):
+              return hashlib.sha256(data).hexdigest()
+
+          def emit(name, value):
+              (out / name).write_text(
+                  json.dumps(value, indent=2, sort_keys=True) + "\n",
+                  encoding="utf-8",
+              )
+
+          observations = {
+              "schema_version": "ssc-rd04-mt-row-state-validation-one-char-recovery-observations@7",
+              "state": "started",
+          }
+          emit("observations.json", observations)
+
+          try:
+              corrupt = package.read_bytes()
+              assert len(corrupt) == int(os.environ["PAYLOAD_B64_BYTES"])
+              assert sha256(corrupt) == os.environ["CORRUPT_PAYLOAD_B64_SHA256"]
+              assert sha256(corrupt) != os.environ["REPAIRED_PAYLOAD_B64_SHA256"]
+              allowed_input = set(b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=")
+              assert set(corrupt) <= allowed_input
+              observations.update(
+                  state="corrupt_package_authenticated",
+                  corrupt_payload_b64_bytes=len(corrupt),
+                  corrupt_payload_b64_sha256=sha256(corrupt),
+              )
+              emit("observations.json", observations)
+
+              target = os.environ["REPAIRED_PAYLOAD_B64_SHA256"]
+              replacements = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
+              work = bytearray(corrupt)
+              matches = []
+              tested = 0
+
+              for index, original in enumerate(corrupt):
+                  if index % 1000 == 0:
+                      print(f"one-character recovery position {index}/{len(corrupt)}", flush=True)
+                  for replacement in replacements:
+                      if replacement == original:
+                          continue
+                      work[index] = replacement
+                      tested += 1
+                      if hashlib.sha256(work).hexdigest() == target:
+                          matches.append(
+                              {
+                                  "zero_based_index": index,
+                                  "one_based_index": index + 1,
+                                  "original_byte": original,
+                                  "replacement_byte": replacement,
+                                  "original_character": chr(original),
+                                  "replacement_character": chr(replacement),
+                                  "repaired": bytes(work),
+                              }
+                          )
+                  work[index] = original
+
+              assert len(matches) == 1, f"expected exactly one one-character repair, found {len(matches)}"
+              match = matches[0]
+              repaired = match.pop("repaired")
+              assert len(repaired) == len(corrupt)
+              assert sum(a != b for a, b in zip(corrupt, repaired)) == 1
+              assert sha256(repaired) == target
+              assert set(repaired) <= allowed_input
+              (out / "repaired-package.tar.gz.b64").write_bytes(repaired)
+
+              compressed = base64.b64decode(repaired, validate=True)
+              assert len(compressed) == int(os.environ["PAYLOAD_GZIP_BYTES"])
+              assert sha256(compressed) == os.environ["PAYLOAD_GZIP_SHA256"]
+              (out / "repaired-package.tar.gz").write_bytes(compressed)
+
+              archive = gzip.decompress(compressed)
+              assert len(archive) == int(os.environ["PAYLOAD_TAR_BYTES"])
+              assert sha256(archive) == os.environ["PAYLOAD_TAR_SHA256"]
+              (out / "repaired-package.tar").write_bytes(archive)
+
+              members = []
+              file_targets = set()
+              directory_members = 0
+              file_members = 0
+              with tarfile.open(fileobj=io.BytesIO(archive), mode="r:") as tf:
+                  infos = tf.getmembers()
+                  assert infos
+                  for info in infos:
+                      raw = info.name
+                      posix = PurePosixPath(raw)
+                      assert not posix.is_absolute()
+                      assert ".." not in posix.parts
+                      assert "\\" not in raw
+                      assert info.isdir() or info.isfile()
+                      parts = tuple(part for part in posix.parts if part not in ("", "."))
+                      normalized = PurePosixPath(*parts).as_posix() if parts else "."
+                      if info.isfile():
+                          assert parts
+                          assert normalized not in file_targets
+                          file_targets.add(normalized)
+                          file_members += 1
+                      else:
+                          directory_members += 1
+                      members.append(
+                          {
+                              "name": raw,
+                              "normalized_path": normalized,
+                              "type": "file" if info.isfile() else "directory",
+                              "bytes": info.size,
+                              "mode": oct(info.mode),
+                          }
+                      )
+                  emit("package-members.json", members)
+
+                  root = extract.resolve()
+                  for info in infos:
+                      posix = PurePosixPath(info.name)
+                      parts = tuple(part for part in posix.parts if part not in ("", "."))
+                      if not parts:
+                          continue
+                      target_path = extract.joinpath(*parts)
+                      resolved = target_path.resolve()
+                      assert resolved == root or root in resolved.parents
+                      if info.isdir():
+                          target_path.mkdir(parents=True, exist_ok=True)
+                      else:
+                          target_path.parent.mkdir(parents=True, exist_ok=True)
+                          stream = tf.extractfile(info)
+                          assert stream is not None
+                          data = stream.read()
+                          assert len(data) == info.size
+                          target_path.write_bytes(data)
+
+              controllers = sorted(path for path in extract.rglob("controller.py") if path.is_file())
+              assert len(controllers) == 1
+              controller = controllers[0]
+              controller_data = controller.read_bytes()
+              assert len(controller_data) == int(os.environ["CONTROLLER_BYTES"])
+              assert sha256(controller_data) == os.environ["CONTROLLER_SHA256"]
+              compile(controller_data, str(controller), "exec")
+              controller_relative = controller.relative_to(extract).as_posix()
+              (out / "controller.py").write_bytes(controller_data)
+              (out / "controller-path.txt").write_text(
+                  controller_relative + "\n",
+                  encoding="utf-8",
+              )
+
+              exported = out / "package"
+              shutil.copytree(extract, exported)
+              file_manifest = []
+              combined = hashlib.sha256()
+              for path in sorted(item for item in exported.rglob("*") if item.is_file()):
+                  data = path.read_bytes()
+                  record = {
+                      "path": path.relative_to(exported).as_posix(),
+                      "bytes": len(data),
+                      "sha256": sha256(data),
+                      "git_blob": hashlib.sha1(
+                          b"blob " + str(len(data)).encode() + b"\0" + data
+                      ).hexdigest(),
+                  }
+                  file_manifest.append(record)
+                  combined.update(
+                      json.dumps(record, sort_keys=True, separators=(",", ":")).encode()
+                      + b"\n"
+                  )
+              assert file_manifest
+              emit(
+                  "package-file-manifest.json",
+                  {
+                      "schema_version": "ssc-rd04-mt-row-state-validation-package-export@7",
+                      "files": file_manifest,
+                      "combined_file_record_sha256": combined.hexdigest(),
+                  },
+              )
+
+              repair = {
+                  "schema_version": "ssc-rd04-mt-row-state-validation-one-char-repair@7",
+                  "state": "unique_one_character_repair_recovered",
+                  "tested_candidate_substitutions": tested,
+                  "corrupt_payload_b64_bytes": len(corrupt),
+                  "corrupt_payload_b64_sha256": sha256(corrupt),
+                  "repaired_payload_b64_bytes": len(repaired),
+                  "repaired_payload_b64_sha256": sha256(repaired),
+                  "gzip_bytes": len(compressed),
+                  "gzip_sha256": sha256(compressed),
+                  "tar_bytes": len(archive),
+                  "tar_sha256": sha256(archive),
+                  **match,
+              }
+              emit("one-character-repair.json", repair)
+
+              receipt = {
+                  "schema_version": "ssc-rd04-mt-row-state-validation-package-recovery@7",
+                  "state": "exact_repaired_package_and_controller_recovered_without_execution",
+                  "canonical_main": os.environ["CANONICAL_MAIN"],
+                  "source_package_commit": os.environ["SOURCE_PACKAGE_COMMIT"],
+                  "event_base_sha": os.environ["EVENT_BASE_SHA"],
+                  "event_head_sha": os.environ["EVENT_HEAD_SHA"],
+                  "repair_hamming_distance": 1,
+                  "corrupt_payload_b64_sha256": sha256(corrupt),
+                  "repaired_payload_b64_sha256": sha256(repaired),
+                  "payload_gzip_sha256": sha256(compressed),
+                  "payload_tar_sha256": sha256(archive),
+                  "archive_directory_members": directory_members,
+                  "archive_file_members": file_members,
+                  "package_file_count": len(file_manifest),
+                  "controller_path": controller_relative,
+                  "controller_bytes": len(controller_data),
+                  "controller_sha256": sha256(controller_data),
+                  "controller_executed": False,
+                  "source_requests": 0,
+                  "route_executions": 0,
+                  "evidence_admissions": 0,
+                  "field_terminalizations": 0,
+                  "matrix_updates": 0,
+                  "row_state_mutations": 0,
+                  "row_terminalizations": 0,
+                  "class_closures": 0,
+                  "canonical_effect": "none",
+                  "publication_effect": "none",
+                  "adoption_effect": "none",
+                  "graph_effect": "none",
+                  "outside_human_dependency": False,
+              }
+              emit("recovery-receipt.json", receipt)
+              observations.update(
+                  state=receipt["state"],
+                  repaired_payload_b64_sha256=sha256(repaired),
+                  controller_path=controller_relative,
+              )
+              emit("observations.json", observations)
+          except BaseException as error:
+              observations.update(
+                  state="recovery_failed_closed",
+                  error_type=type(error).__name__,
+                  error=str(error),
+              )
+              emit("observations.json", observations)
+              (out / "recovery-traceback.txt").write_text(
+                  traceback.format_exc(),
+                  encoding="utf-8",
+              )
+              raise
+          PY
+
+          after="$(git ls-remote --heads origin "$TARGET_REF" | awk '{print $1}')"
+          printf '%s\n' "${after:-absent}" > "$OUT/target-ref-after.txt"
+          cmp "$OUT/target-ref-before.txt" "$OUT/target-ref-after.txt"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CANONICAL_MAIN"
+          git show -s --format='%H%n%P%n%T%n%s' "$CANONICAL_MAIN" > "$OUT/canonical-main-commit.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$SOURCE_PACKAGE_COMMIT" > "$OUT/source-package-commit.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$EVENT_BASE_SHA" > "$OUT/base-commit.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$EVENT_HEAD_SHA" > "$OUT/head-commit.txt"
+          git status --porcelain=v1 > "$OUT/repository-status.txt"
+          test ! -s "$OUT/repository-status.txt"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+
+      - name: Preserve exact repaired package and controller
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-validation-one-char-recovery-v7
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce exact zero-authority recovery
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -s "$OUT/repaired-package.tar.gz.b64"
+          test -s "$OUT/repaired-package.tar.gz"
+          test -s "$OUT/repaired-package.tar"
+          test -s "$OUT/controller.py"
+          test -s "$OUT/one-character-repair.json"
+          test -s "$OUT/package-members.json"
+          test -s "$OUT/package-file-manifest.json"
+          test -s "$OUT/recovery-receipt.json"
+          test -s "$OUT/SHA256SUMS"
+          test -d "$OUT/package"
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          test "$(stat -c %s "$OUT/repaired-package.tar.gz.b64")" -eq 14740
+          test "$(sha256sum "$OUT/repaired-package.tar.gz.b64" | awk '{print $1}')" = "$REPAIRED_PAYLOAD_B64_SHA256"
+          test "$(stat -c %s "$OUT/repaired-package.tar.gz")" -eq 11054
+          test "$(sha256sum "$OUT/repaired-package.tar.gz" | awk '{print $1}')" = "$PAYLOAD_GZIP_SHA256"
+          test "$(stat -c %s "$OUT/repaired-package.tar")" -eq 61440
+          test "$(sha256sum "$OUT/repaired-package.tar" | awk '{print $1}')" = "$PAYLOAD_TAR_SHA256"
+          test "$(stat -c %s "$OUT/controller.py")" -eq 9075
+          test "$(sha256sum "$OUT/controller.py" | awk '{print $1}')" = "$CONTROLLER_SHA256"
+          jq -e '
+            .schema_version == "ssc-rd04-mt-row-state-validation-one-char-repair@7" and
+            .state == "unique_one_character_repair_recovered" and
+            .corrupt_payload_b64_sha256 == "6a71fc9fea0de70c0d1281729a71872fcf7d0d9952f0c99a7dcebfd7ba0aca98" and
+            .repaired_payload_b64_sha256 == "d19b30d285e725f0cba1844864f9a8a4d543e46de2ff66484e3a9b710b9771aa" and
+            .gzip_sha256 == "db899783e6a52055842ba9748b9ea1996d5bfa5b7806db374fbf127723c2c3ba" and
+            .tar_sha256 == "d81a4cc83d47f192995a9bf32aed803f4f5c878799558ce906fc166ada7af559"
+          ' "$OUT/one-character-repair.json" >/dev/null
+          jq -e '
+            .schema_version == "ssc-rd04-mt-row-state-validation-package-recovery@7" and
+            .state == "exact_repaired_package_and_controller_recovered_without_execution" and
+            .canonical_main == "bc3cf04459bb0d18829f376c9b937693b521e444" and
+            .source_package_commit == "a53a40fc92368cf32cfb106ec7099199e80b8b51" and
+            .repair_hamming_distance == 1 and
+            .corrupt_payload_b64_sha256 == "6a71fc9fea0de70c0d1281729a71872fcf7d0d9952f0c99a7dcebfd7ba0aca98" and
+            .repaired_payload_b64_sha256 == "d19b30d285e725f0cba1844864f9a8a4d543e46de2ff66484e3a9b710b9771aa" and
+            .payload_gzip_sha256 == "db899783e6a52055842ba9748b9ea1996d5bfa5b7806db374fbf127723c2c3ba" and
+            .payload_tar_sha256 == "d81a4cc83d47f192995a9bf32aed803f4f5c878799558ce906fc166ada7af559" and
+            .archive_directory_members >= 1 and .archive_file_members >= 1 and
+            .package_file_count >= 1 and
+            .controller_bytes == 9075 and
+            .controller_sha256 == "5b9b91cf7e30af38ca4fcec137b8a43d5e3e9c3c3c21e259b6aa21a1bf9d1674" and
+            .controller_executed == false and
+            .source_requests == 0 and .route_executions == 0 and
+            .evidence_admissions == 0 and .field_terminalizations == 0 and
+            .matrix_updates == 0 and .row_state_mutations == 0 and
+            .row_terminalizations == 0 and .class_closures == 0 and
+            .canonical_effect == "none" and .publication_effect == "none" and
+            .adoption_effect == "none" and .graph_effect == "none" and
+            .outside_human_dependency == false
+          ' "$OUT/recovery-receipt.json" >/dev/null
+          cmp "$OUT/target-ref-before.txt" "$OUT/target-ref-after.txt"
+          test -z "$(git status --porcelain=v1)"
