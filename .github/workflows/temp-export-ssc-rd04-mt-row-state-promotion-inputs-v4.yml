@@ -1,0 +1,145 @@
+name: TEMP export exact RD-04 Montana row-state promotion inputs v4
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/temp-export-ssc-rd04-mt-row-state-promotion-inputs-v4.yml'
+      - '.tmp/rd04-mt-row-state-promotion-export-v4/trigger.json'
+
+permissions:
+  contents: read
+
+env:
+  SOURCE_MAIN: 0840358962621b0be3db6864ecec763327f35903
+  WORKFLOW_PATH: .github/workflows/temp-export-ssc-rd04-mt-row-state-promotion-inputs-v4.yml
+  TRIGGER_PATH: .tmp/rd04-mt-row-state-promotion-export-v4/trigger.json
+  OUT: /tmp/rd04-mt-row-state-promotion-export-v4
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Export exact repaired canonical inputs
+        shell: bash
+        env:
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT/source"
+          printf '%s\n' start > "$OUT/STAGE"
+          printf '%s\n' 1 > "$OUT/EXIT_CODE"
+          trap 'rc=$?; printf "%s\n" "$rc" > "$OUT/EXIT_CODE"; exit "$rc"' EXIT
+          stage() { printf '%s\n' "$1" > "$OUT/STAGE"; }
+
+          stage bind_exact_two_commit_carrier_and_main
+          test "$EVENT_BASE_REF" = main
+          test "$EVENT_BASE_SHA" = "$SOURCE_MAIN"
+          test "$(git rev-parse HEAD)" = "$EVENT_HEAD_SHA"
+          TRIGGER_COMMIT="$(git rev-parse HEAD)"
+          WORKFLOW_COMMIT="$(git rev-parse HEAD^)"
+          test "$(git rev-parse HEAD^^)" = "$SOURCE_MAIN"
+          test "$(git diff --name-only "$SOURCE_MAIN" "$WORKFLOW_COMMIT")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$SOURCE_MAIN" "$WORKFLOW_COMMIT")" = "$WORKFLOW_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$SOURCE_MAIN" "$WORKFLOW_COMMIT")"
+          test "$(git diff --name-only "$WORKFLOW_COMMIT" "$TRIGGER_COMMIT")" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$WORKFLOW_COMMIT" "$TRIGGER_COMMIT")" = "$TRIGGER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$WORKFLOW_COMMIT" "$TRIGGER_COMMIT")"
+          EXPECTED_CARRIER="$(printf '%s\n' "$WORKFLOW_PATH" "$TRIGGER_PATH" | LC_ALL=C sort)"
+          test "$(git diff --name-only "$SOURCE_MAIN" "$TRIGGER_COMMIT" | LC_ALL=C sort)" = "$EXPECTED_CARRIER"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$SOURCE_MAIN"
+
+          stage export_exact_files
+          printf '%s\n' \
+            '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1.yml' \
+            '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.yml' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/current-row-custody.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/product-manifest.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/row-state-validation.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/summary.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/validated-row-state-protocol.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/index.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/input-custody.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/product-manifest.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/promoted-partial-field-matrix.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/remaining-open-field-census.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/row-state-decision.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/row-state-ledger.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/row-state-summary.json' \
+            'docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.md' \
+            'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.schema.json' \
+            'test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.test.js' \
+            'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs' \
+            'tools/validate-status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-v1.py' \
+            'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs' \
+            | LC_ALL=C sort > "$OUT/source-paths.txt"
+          test "$(wc -l < "$OUT/source-paths.txt" | tr -d ' ')" = 21
+          : > "$OUT/source-file-inventory.tsv"
+          while IFS= read -r path; do
+            test -f "$path"
+            mkdir -p "$OUT/source/$(dirname "$path")"
+            cp --preserve=mode,timestamps "$path" "$OUT/source/$path"
+            bytes="$(wc -c < "$path" | tr -d ' ')"
+            sha256="$(sha256sum "$path" | awk '{print $1}')"
+            git_blob="$(git rev-parse "$SOURCE_MAIN:$path")"
+            printf '%s\t%s\t%s\t%s\n' "$path" "$bytes" "$sha256" "$git_blob" >> "$OUT/source-file-inventory.tsv"
+            test "$(git hash-object "$path")" = "$git_blob"
+          done < "$OUT/source-paths.txt"
+
+          stage package_exact_files
+          SOURCE_TREE="$(git rev-parse "$SOURCE_MAIN^{tree}")"
+          printf '%s\n' "$SOURCE_MAIN" > "$OUT/source-main.txt"
+          printf '%s\n' "$SOURCE_TREE" > "$OUT/source-tree.txt"
+          printf '%s\n' "$WORKFLOW_COMMIT" > "$OUT/workflow-commit.txt"
+          printf '%s\n' "$TRIGGER_COMMIT" > "$OUT/trigger-commit.txt"
+          tar --sort=name --mtime='UTC 2000-01-01' --owner=0 --group=0 --numeric-owner -C "$OUT/source" -cJf "$OUT/source-files.tar.xz" .
+          tar -tJf "$OUT/source-files.tar.xz" | sed 's#^\./##; s#/$##' | grep -v '^$' | LC_ALL=C sort > "$OUT/archive-paths.txt"
+          diff -u "$OUT/source-paths.txt" "$OUT/archive-paths.txt"
+          printf '%s\n' \
+            'state=complete_exact_repaired_canonical_export' \
+            'source_requests=0' \
+            'route_executions=0' \
+            'source_admissions=0' \
+            'field_terminalizations=0' \
+            'matrix_updates=0' \
+            'row_state_mutations=0' \
+            'row_terminalizations=0' \
+            'class_closed=false' \
+            'cumulative_ledger_effect=none' \
+            'publication_effect=none' \
+            'adoption_effect=none' \
+            'graph_effect=none' \
+            'outside_human_dependency=false' > "$OUT/BOUNDARY"
+          printf '%s\n' complete > "$OUT/STAGE"
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+          trap - EXIT
+      - name: Preserve exact source export
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-promotion-inputs-v4
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 0
+      - name: Enforce terminal exact export
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          test "$(cat "$OUT/source-main.txt")" = "$SOURCE_MAIN"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$SOURCE_MAIN"
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
