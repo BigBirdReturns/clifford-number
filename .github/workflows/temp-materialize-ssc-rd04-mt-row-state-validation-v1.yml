@@ -1,0 +1,131 @@
+name: TEMP materialize RD-04 Montana row-state validation v1
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-mt-row-state-validation-materializer-base-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-mt-row-state-validation-materializer/trigger.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-rd04-mt-row-state-validation-materializer-v1
+  cancel-in-progress: false
+
+env:
+  PAYLOAD: .tmp/rd04-mt-row-state-validation-materializer/package.tar.gz.b64
+  OUT: /tmp/rd04-mt-row-state-validation-materializer-v1-artifact
+  PACKAGE: /tmp/rd04-mt-row-state-validation-package
+  PAYLOAD_B64_BYTES: '14740'
+  PAYLOAD_B64_SHA256: d19b30d285e725f0cba1844864f9a8a4d543e46de2ff66484e3a9b710b9771aa
+  PAYLOAD_GZIP_BYTES: '11054'
+  PAYLOAD_GZIP_SHA256: db899783e6a52055842ba9748b9ea1996d5bfa5b7806db374fbf127723c2c3ba
+  PAYLOAD_TAR_BYTES: '61440'
+  PAYLOAD_TAR_SHA256: d81a4cc83d47f192995a9bf32aed803f4f5c878799558ce906fc166ada7af559
+  CONTROLLER_BYTES: '9075'
+  CONTROLLER_SHA256: 5b9b91cf7e30af38ca4fcec137b8a43d5e3e9c3c3c21e259b6aa21a1bf9d1674
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-mt-row-state-validation-materializer-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-mt-row-state-validation-materializer-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Authenticate and execute exact validation materializer
+        id: materialize
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CARRIER_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$PACKAGE" && mkdir -p "$OUT" "$PACKAGE"
+          test "$(stat -c %s "$PAYLOAD")" -eq "$PAYLOAD_B64_BYTES"
+          test "$(sha256sum "$PAYLOAD" | awk '{print $1}')" = "$PAYLOAD_B64_SHA256"
+          base64 --decode "$PAYLOAD" > /tmp/rd04-mt-row-state-validation-package.tar.gz
+          test "$(stat -c %s /tmp/rd04-mt-row-state-validation-package.tar.gz)" -eq "$PAYLOAD_GZIP_BYTES"
+          test "$(sha256sum /tmp/rd04-mt-row-state-validation-package.tar.gz | awk '{print $1}')" = "$PAYLOAD_GZIP_SHA256"
+          gzip -dc /tmp/rd04-mt-row-state-validation-package.tar.gz > /tmp/rd04-mt-row-state-validation-package.tar
+          test "$(stat -c %s /tmp/rd04-mt-row-state-validation-package.tar)" -eq "$PAYLOAD_TAR_BYTES"
+          test "$(sha256sum /tmp/rd04-mt-row-state-validation-package.tar | awk '{print $1}')" = "$PAYLOAD_TAR_SHA256"
+          python - <<'PY'
+          import tarfile
+          from pathlib import PurePosixPath
+          archive='/tmp/rd04-mt-row-state-validation-package.tar'
+          with tarfile.open(archive,'r:') as tf:
+              members=tf.getmembers()
+              assert members
+              for member in members:
+                  p=PurePosixPath(member.name)
+                  assert not p.is_absolute() and '..' not in p.parts
+                  assert member.isfile()
+              tf.extractall('/tmp/rd04-mt-row-state-validation-package')
+          PY
+          test "$(stat -c %s "$PACKAGE/controller.py")" -eq "$CONTROLLER_BYTES"
+          test "$(sha256sum "$PACKAGE/controller.py" | awk '{print $1}')" = "$CONTROLLER_SHA256"
+          python -m py_compile "$PACKAGE/controller.py"
+          python "$PACKAGE/controller.py"
+
+      - name: Preserve exact Montana validation custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-validation-materializer-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce exact staged validation product
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.materialize.outcome }}" = success
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .schema_version == "ssc-rd04-mt-row-state-validation-materialization@1" and
+            .state == "qualified_montana_validation_objects_staged" and
+            .canonical_parent == "e62de80e187f9be037cbdd3a4b942b5840d223de" and
+            .canonical_parent_tree == "0d1f8369e2c68d18b11a8f375903ff597ea8ccdb" and
+            .permanent_paths == 7 and .added_paths == 7 and .modified_paths == 0 and .deleted_paths == 0 and
+            .candidate.unit_id == "US-STATE-MT" and
+            .candidate.proposed_cell_sha256 == "ba173d03c2f82316ca79eb8b6627057db6fdb54113340ff0f9539a85e89a1f2d" and
+            .candidate.projected_row_sha256 == "b6474320f690a653eae081cf655a090bb5d5da0f444e9a1c42077fd0b951bcbc" and
+            .candidate.projected_matrix_sha256 == "12e52344af0c8ec3d845b6f05f8a20014fa84504d10dbc9ee0674d37715abe1d" and
+            .candidate.projected_terminal_cells == 230 and
+            .candidate.projected_still_open_cells == 220 and
+            .candidate.projected_terminal_units == 12 and
+            .qualification.adversarial_refusals == 26 and
+            .qualification.release_check == "passed" and
+            .qualification.post_release_replay == "passed" and
+            .authority_boundary.source_requests == 0 and
+            .authority_boundary.field_terminalizations == 0 and
+            .authority_boundary.matrix_updates == 0 and
+            .authority_boundary.row_state_mutations == 0 and
+            .authority_boundary.row_terminalizations == 0 and
+            .authority_boundary.class_closed == false and
+            .authority_boundary.outside_human_dependency == false
+          ' "$OUT/materialization-receipt.json" >/dev/null
