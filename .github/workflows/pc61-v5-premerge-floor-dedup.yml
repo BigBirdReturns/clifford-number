@@ -44,27 +44,27 @@ jobs:
           python - "$OUT/before.yml" "$OUT/after.yml" <<'PY'
           from pathlib import Path
           import sys
-          source=Path(sys.argv[1]).read_text()
 
-          old_replay='\n'.join([
-              '            node "$standalone_compile"',
-              '            node "$standalone_validate"',
-              '            node "$standalone_test"',
-              '            node "$floor_compile"',
-              '            node "$floor_validate"',
-              '            node "$floor_test"',
-              '            node tools/validate-no-magic-human-gate.mjs',
-          ])
-          new_replay='\n'.join([
-              '            node "$standalone_compile"',
-              '            node "$standalone_validate"',
-              '            node "$standalone_test"',
-              "            printf '%s\\n' 'Preference custody laboratory floor v59: exact-head workflow required; canonical rerun required post-merge'",
-              '            node tools/validate-no-magic-human-gate.mjs',
-          ])
-          if source.count(old_replay)!=1:
-              raise SystemExit(f'premerge floor-v59 replay denominator {source.count(old_replay)} != 1')
-          source=source.replace(old_replay,new_replay)
+          source=Path(sys.argv[1]).read_text()
+          marker='          } 2>&1 | tee "$WORK/product-replay.log"'
+          if source.count(marker)!=1:
+              raise SystemExit(f'premerge replay sink denominator {source.count(marker)} != 1')
+          before,after=source.split(marker,1)
+          floor_lines=[
+              '            node "$floor_compile"\n',
+              '            node "$floor_validate"\n',
+              '            node "$floor_test"\n',
+          ]
+          for line in floor_lines:
+              if before.count(line)!=1:
+                  raise SystemExit(f'premerge floor command denominator {line.strip()}={before.count(line)}')
+              before=before.replace(line,'',1)
+          anchor='            node "$standalone_test"\n'
+          replacement=anchor+"            printf '%s\\n' 'Preference custody laboratory floor v59: exact-head workflow required; canonical rerun required post-merge'\n"
+          if before.count(anchor)!=1:
+              raise SystemExit('standalone test anchor denominator mismatch')
+          before=before.replace(anchor,replacement,1)
+          source=before+marker+after
 
           old_receipt='\n'.join([
               '          test "$(jq -r \'.[0].conclusion\' "$WORK/release-workflow.json")" = success',
@@ -82,7 +82,7 @@ jobs:
           ])
           if source.count(old_receipt)!=1:
               raise SystemExit(f'floor-v59 receipt insertion denominator {source.count(old_receipt)} != 1')
-          source=source.replace(old_receipt,new_receipt)
+          source=source.replace(old_receipt,new_receipt,1)
 
           old_proof='\n'.join([
               '          cp "$WORK/release-workflow.json" "$PROOF/exact-head-release-workflow.json"',
@@ -95,12 +95,14 @@ jobs:
           ])
           if source.count(old_proof)!=1:
               raise SystemExit(f'proof floor-v59 receipt denominator {source.count(old_proof)} != 1')
-          source=source.replace(old_proof,new_proof)
+          source=source.replace(old_proof,new_proof,1)
 
-          if source.count('            node "$floor_test"\n')!=1:
-              raise SystemExit('canonical post-merge floor-v59 replay denominator changed')
-          if source.count('            npm run release:check\n')!=1:
-              raise SystemExit('canonical post-merge release denominator changed')
+          canonical=source.split('          } 2>&1 | tee "$PROOF/canonical-replay.log"',1)[0].rsplit('          {',1)[1]
+          for line in floor_lines:
+              if canonical.count(line)!=1:
+                  raise SystemExit(f'canonical floor command not retained: {line.strip()}')
+          if canonical.count('            npm run release:check\n')!=1:
+              raise SystemExit('canonical release invocation not retained')
           Path(sys.argv[2]).write_text(source)
           PY
 
@@ -108,10 +110,8 @@ jobs:
           from pathlib import Path
           import sys,yaml
           document=yaml.safe_load(Path(sys.argv[1]).read_text())
-          if document['jobs']['reconcile']['timeout-minutes'] != 360:
-              raise SystemExit('timeout mismatch')
-          if document['concurrency']['cancel-in-progress'] is not True:
-              raise SystemExit('superseding concurrency mismatch')
+          if document['jobs']['reconcile']['timeout-minutes'] != 360: raise SystemExit('timeout mismatch')
+          if document['concurrency']['cancel-in-progress'] is not True: raise SystemExit('superseding concurrency mismatch')
           PY
           diff -u "$OUT/before.yml" "$OUT/after.yml" > "$OUT/exact.patch" || test "$?" = 1
           target_blob=$(git hash-object "$OUT/after.yml")
@@ -122,7 +122,6 @@ jobs:
           gh api "/repos/$GH_REPOSITORY/git/blobs/$target_blob" > "$OUT/remote-blob.json"
           jq -r .content "$OUT/remote-blob.json" | tr -d '\n' | base64 -d > "$OUT/remote-after.yml"
           cmp "$OUT/after.yml" "$OUT/remote-after.yml"
-
           jq -n --arg schema_version 'pc61-v5-premerge-floor-dedup@1' --arg status complete --arg source_blob "$SOURCE_BLOB" --arg target_blob "$target_blob" --arg target_sha256 "$target_sha256" '{schema_version:$schema_version,status:$status,source_blob:$source_blob,target_blob:$target_blob,target_sha256:$target_sha256,change_denominator:{redundant_premerge_floor_v59_commands_removed:3,named_exact_head_floor_v59_receipts_added:1,canonical_postmerge_floor_v59_commands_retained:3,canonical_postmerge_release_invocations_retained:1},substantive_gate_effect:{exact_head_floor_v59_required:true,canonical_postmerge_floor_v59_required:true,canonical_postmerge_release_required:true,floor_gate_weakened:false},product_semantics_changed:false,graph_effect:"none"}' > "$OUT/receipt.json"
           (
             cd "$OUT"
