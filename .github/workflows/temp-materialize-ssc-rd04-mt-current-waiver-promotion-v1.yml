@@ -1,0 +1,305 @@
+name: TEMP materialize exact Montana current-waiver promotion v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-mt-current-waiver-promotion-v1.yml'
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: temp-materialize-ssc-rd04-mt-current-waiver-promotion-v1
+  cancel-in-progress: false
+
+env:
+  CARRIER_BRANCH: agent/ssc-rd04-mt-current-waiver-promotion-materializer-base-v1
+  TARGET_BRANCH: agent/ssc-rd04-mt-current-waiver-promotion-product-v1
+  CARRIER_PATH: .github/workflows/temp-materialize-ssc-rd04-mt-current-waiver-promotion-v1.yml
+  STANDING_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-mt-current-waiver-promotion.yml
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion
+  MILESTONE: docs/milestones/ssc-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.md
+  SCHEMA: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.schema.json
+  TEST: test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.test.py
+  BUILDER: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.py
+  VALIDATOR: tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.py
+  OUT: /tmp/ssc-rd04-mt-current-waiver-promotion-materializer-v1
+  WORK: /tmp/ssc-rd04-mt-current-waiver-promotion-work-v1
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-mt-current-waiver-promotion-materializer-base-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Construct, qualify, and publish the exact fourteen-path product
+        id: materialize
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$WORK"
+          mkdir -p "$OUT" "$WORK"
+          printf '%s\n' bootstrap > "$OUT/STAGE"
+          printf '%s\n' 1 > "$OUT/EXIT_CODE"
+          fail() {
+            local rc=$? stage="$(cat "$OUT/STAGE" 2>/dev/null || echo unknown)"
+            trap - ERR
+            python - "$OUT/receipt.json" "$stage" "$rc" <<'PYFAIL'
+          import json,os,sys
+          path,stage,rc=sys.argv[1],sys.argv[2],int(sys.argv[3])
+          value={'schema_version':'ssc-rd04-mt-current-waiver-promotion-materializer@1','state':'failed_closed','failed_or_final_stage':stage,'exit_code':rc,'canonical_parent':os.environ.get('BASE_SHA'),'target_branch':os.environ.get('TARGET_BRANCH'),'product_commit':None,'product_tree':None,'permanent_paths':14,'source_requests':0,'route_executions':0,'source_admissions':0,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'row_terminalizations':0,'class_closed':False,'cumulative_ledger_effect':'none','outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none'}
+          open(path,'w').write(json.dumps(value,indent=2,sort_keys=True)+'\n')
+          PYFAIL
+            (cd "$OUT" && find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+            exit "$rc"
+          }
+          trap fail ERR
+
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          test "$(git rev-list --count "$BASE_SHA"..HEAD)" = 1
+          test "$(git diff --name-only "$BASE_SHA" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE_SHA" HEAD)" = "$CARRIER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$BASE_SHA" HEAD)"
+          git diff --check "$BASE_SHA" HEAD
+          git fetch --no-tags --force origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            "+refs/heads/$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          TARGET_OLD="$(git rev-parse "origin/$TARGET_BRANCH")"
+          test "$(git rev-parse "$TARGET_OLD^")" = "$BASE_SHA"
+          test "$(git diff --name-only "$BASE_SHA" "$TARGET_OLD")" = "$STANDING_WORKFLOW"
+          STANDING_BLOB="$(git rev-parse "$TARGET_OLD:$STANDING_WORKFLOW")"
+          printf '%s\n' "$TARGET_OLD" > "$OUT/target-old.txt"
+          printf '%s\n' "$STANDING_BLOB" > "$OUT/standing-workflow-blob.txt"
+
+          printf '%s\n' generate > "$OUT/STAGE"
+          git worktree add --detach "$WORK/repo" "$BASE_SHA"
+          git show "$TARGET_OLD:$STANDING_WORKFLOW" > "$WORK/standing-workflow.yml"
+          cat > "$WORK/generate.py" <<'PYGEN'
+          from __future__ import annotations
+          import copy, hashlib, json, os, pathlib, subprocess, sys
+
+          ROOT=pathlib.Path(sys.argv[1])
+          BASE=os.environ['BASE_SHA']
+          PRODUCT_ROOT=pathlib.Path(os.environ['PRODUCT_ROOT'])
+          TARGET_FIELD='abawd_or_work_requirement_waiver_state_and_governing_period'
+          CANDIDATE_ID='RD04-PPN-MT-FIXED-PROTOCOL-CANDIDATE-ABAWD-WAIVER-STATE-AND-GOVERNING-PERIOD'
+          DECISION_ID='RD04-PPN-MT-ABAWD-WAIVER-STATE-AND-GOVERNING-PERIOD'
+          SOURCE_ID='RD04-W03-PPN-MT-001'
+          CURRENT_CELL_SHA='8038457db737326ae32405c31a56ed656f00eefd71ed3cdf99091ffcaf594f42'
+          PROPOSED_CELL_SHA='0583ff798febf55f3b50028ebd8452a4fcaa5409561eac7bd6e2039ecd2f0db0'
+          AUTH={'source_requests':0,'route_executions':0,'source_admissions':0,'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'row_terminalizations':0,'class_closed':False,'cumulative_ledger_effect':'none','outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none'}
+          def dump(v): return (json.dumps(v,indent=2,ensure_ascii=False)+'\n').encode()
+          def canon(v): return json.dumps(v,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()
+          def sha(b): return hashlib.sha256(b).hexdigest()
+          def blob(b): return hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()
+          def load(p): return json.loads(p.read_text(encoding='utf-8'))
+          def walk(v):
+              if isinstance(v,dict):
+                  yield v
+                  for child in v.values(): yield from walk(child)
+              elif isinstance(v,list):
+                  for child in v: yield from walk(child)
+          def strings(v):
+              if isinstance(v,str): yield v
+              elif isinstance(v,dict):
+                  for child in v.values(): yield from strings(child)
+              elif isinstance(v,list):
+                  for child in v: yield from strings(child)
+          validation_files=[]
+          for p in (ROOT/'data/intake').rglob('*.json'):
+              try:
+                  text=p.read_text(encoding='utf-8')
+              except Exception: continue
+              if CANDIDATE_ID in text: validation_files.append(p)
+          if not validation_files: raise SystemExit('Montana candidate validation not found on canonical parent')
+          roots={p.parent for p in validation_files}
+          scored=[]
+          for r in roots:
+              docs=[]
+              for p in sorted(r.glob('*.json')):
+                  try: docs.append((p,load(p)))
+                  except Exception: pass
+              score=sum(CANDIDATE_ID in p.read_text(encoding='utf-8') for p,_ in docs)
+              if any(any(d.get(k) is True for k in ('separate_promotion_product_authorized','promotion_authorized')) for _,v in docs for d in walk(v)):
+                  score+=100
+              scored.append((score,r,docs))
+          score,VROOT,vdocs=max(scored,key=lambda x:x[0])
+          if score<100: raise SystemExit('no canonically authorized Montana validation root')
+          proposed=[]
+          for _,v in vdocs:
+              for d in walk(v):
+                  if d.get('field_id')==TARGET_FIELD and d.get('terminal') is True and sha(canon(d))==PROPOSED_CELL_SHA: proposed.append(copy.deepcopy(d))
+          if len(proposed)!=1: raise SystemExit(f'proposed cell denominator {len(proposed)}')
+          proposed_cell=proposed[0]
+          refs=[]
+          for _,v in vdocs:
+              for s in strings(v):
+                  if s.endswith('promoted-partial-field-matrix.json') and (ROOT/s).is_file(): refs.append(s)
+          refs=sorted(set(refs))
+          candidates=[]
+          for rel in refs:
+              value=load(ROOT/rel)
+              rows=value.get('rows',[])
+              row=next((x for x in rows if x.get('postal_code')=='MT' or x.get('unit_id')=='US-STATE-MT'),None)
+              if not row: continue
+              cell=next((x for x in row.get('cells',[]) if x.get('field_id')==TARGET_FIELD),None)
+              if cell and sha(canon(cell))==CURRENT_CELL_SHA: candidates.append((rel,value,row,cell))
+          if len(candidates)!=1: raise SystemExit(f'canonical matrix denominator {len(candidates)}')
+          matrix_rel,matrix,current_row,current_cell=candidates[0]
+          before_raw=(ROOT/matrix_rel).read_bytes()
+          before_sha=sha(before_raw); before_blob=blob(before_raw)
+          counts=matrix['counts']; result=matrix['current_result']
+          assert counts['terminal_cells']==229 and counts['still_open_cells']==221
+          assert counts['terminal_substantive_cells']==118 and counts['still_open_substantive_cells']==182
+          assert counts['terminal_units']==11 and result['terminal_units']==11
+          assert current_row['row_state']=='still_open' and current_row['terminal_fields']==7 and current_row['open_fields']==2
+          current_row_sha=sha(canon(current_row)); current_cell_obj=copy.deepcopy(current_cell)
+
+          promoted=copy.deepcopy(matrix)
+          mt=next(x for x in promoted['rows'] if x.get('postal_code')=='MT' or x.get('unit_id')=='US-STATE-MT')
+          index=next(i for i,x in enumerate(mt['cells']) if x.get('field_id')==TARGET_FIELD)
+          mt['cells'][index]=copy.deepcopy(proposed_cell)
+          mt['terminal_fields']=8; mt['open_fields']=1; mt['row_state']='still_open'
+          c=promoted['counts']; c['terminal_cells']=230; c['still_open_cells']=220; c['terminal_substantive_cells']=119; c['still_open_substantive_cells']=181; c['evidence_complete_cells']=c.get('evidence_complete_cells',0)+1
+          c['postpromotion_mt_current_waiver_candidate_cells']=1; c['newly_terminalized_postpromotion_mt_current_waiver_cells']=1
+          r=promoted['current_result']; r['terminal_cells']='230/450'; r['still_open_cells']='220/450'; r['terminal_substantive_cells']=119; r['still_open_substantive_cells']=181; r['terminal_units']=11; r['field_matrix_terminal']=False; r['class_state']='still_open'; r['class_closed']=False
+          promoted['schema_version']='ssc-rd04-wave03-postpromotion-mt-current-waiver-promoted-partial-field-matrix@1'
+          after_row=next(x for x in promoted['rows'] if x.get('postal_code')=='MT' or x.get('unit_id')=='US-STATE-MT')
+          after_row_sha=sha(canon(after_row))
+          unchanged=sha(b''.join(canon(x)+b'\n' for x in promoted['rows'] if x is not after_row))
+          metadata={'canonical_parent':BASE,'validation_root':VROOT.relative_to(ROOT).as_posix(),'candidate_id':CANDIDATE_ID,'decision_id':DECISION_ID,'source_id':SOURCE_ID,'predecessor_matrix_path':matrix_rel,'predecessor_matrix_bytes':len(before_raw),'predecessor_matrix_sha256':before_sha,'predecessor_matrix_git_blob':before_blob,'current_cell_sha256':CURRENT_CELL_SHA,'proposed_cell_sha256':PROPOSED_CELL_SHA,'current_row_sha256':current_row_sha,'promoted_row_sha256':after_row_sha,'unchanged_non_target_rows_sha256':unchanged,'field_terminalizations':1,'matrix_updates':1,'row_state_mutations':0,'row_terminalizations':0,'class_closed':False,'cumulative_ledger_effect':'none'}
+          promoted['postpromotion_mt_current_waiver_promotion_product']=metadata
+          promoted_raw=dump(promoted); promoted_sha=sha(promoted_raw); promoted_blob=blob(promoted_raw)
+          vrows=[]
+          for p,v in vdocs:
+              b=p.read_bytes(); vrows.append({'path':p.relative_to(ROOT).as_posix(),'bytes':len(b),'sha256':sha(b),'git_blob':blob(b)})
+          input_custody={'schema_version':'ssc-rd04-mt-current-waiver-promotion-input-custody@1','issue':1017,'wave_id':'SSC-RD-W03','lane_id':'RD-04','class_id':'RD-04-C02','canonical_parent':BASE,'predecessor_matrix':{'path':matrix_rel,'bytes':len(before_raw),'sha256':before_sha,'git_blob':before_blob},'validation_root':VROOT.relative_to(ROOT).as_posix(),'validation_files':vrows,'target':{'unit_id':'US-STATE-MT','field_id':TARGET_FIELD,'current_cell_sha256':CURRENT_CELL_SHA,'proposed_cell_sha256':PROPOSED_CELL_SHA,'current_row_sha256':current_row_sha},'authority_boundary':AUTH}
+          decision={'schema_version':'ssc-rd04-mt-current-waiver-promotion-decision@1','issue':1017,'candidate_id':CANDIDATE_ID,'decision_id':DECISION_ID,'source_id':SOURCE_ID,'unit_id':'US-STATE-MT','field_id':TARGET_FIELD,'current_cell':current_cell_obj,'proposed_cell':proposed_cell,'finding':'montana_snap_manual_802_1_statewide_waiver_effective_2026_02_26_for_one_year','promotion_state':'promoted_exact_validated_candidate','authority_boundary':{**AUTH,'field_terminalizations':1,'matrix_updates':1}}
+          ledger={'schema_version':'ssc-rd04-mt-current-waiver-cell-promotion-ledger@1','issue':1017,'canonical_parent':BASE,'unit_id':'US-STATE-MT','field_id':TARGET_FIELD,'before':{'cell_sha256':CURRENT_CELL_SHA,'row_sha256':current_row_sha,'terminal_fields':7,'open_fields':2,'row_state':'still_open'},'after':{'cell_sha256':PROPOSED_CELL_SHA,'row_sha256':after_row_sha,'terminal_fields':8,'open_fields':1,'row_state':'still_open'},'matrix':{'before_sha256':before_sha,'after_sha256':promoted_sha,'after_git_blob':promoted_blob},'effects':{'field_terminalizations':1,'matrix_updates':1,'row_state_mutations':0,'row_terminalizations':0,'class_closed':False,'cumulative_ledger_effect':'none'},'authority_boundary':AUTH}
+          open_rows=[]
+          for row in promoted['rows']:
+              open_ids=[x['field_id'] for x in row['cells'] if not x.get('terminal')]
+              if open_ids: open_rows.append({'unit_id':row['unit_id'],'postal_code':row.get('postal_code'),'row_state':row['row_state'],'open_field_ids':open_ids,'open_field_count':len(open_ids)})
+          census={'schema_version':'ssc-rd04-mt-current-waiver-remaining-open-field-census@1','issue':1017,'matrix_sha256':promoted_sha,'open_row_count':len(open_rows),'open_cell_count':220,'open_substantive_cell_count':181,'rows':open_rows,'north_dakota_terminal':True,'montana':next(x for x in open_rows if x['unit_id']=='US-STATE-MT'),'class_closed':False,'authority_boundary':AUTH}
+          summary={'schema_version':'ssc-rd04-mt-current-waiver-promotion-summary@1','issue':1017,'state':'montana_current_waiver_candidate_promoted_row_remains_open','canonical_parent':BASE,'candidate_id':CANDIDATE_ID,'source_id':SOURCE_ID,'counts':{'terminal_cells_before':229,'terminal_cells_after':230,'still_open_cells_before':221,'still_open_cells_after':220,'terminal_substantive_cells_before':118,'terminal_substantive_cells_after':119,'still_open_substantive_cells_before':182,'still_open_substantive_cells_after':181,'terminal_units_before':11,'terminal_units_after':11,'montana_terminal_fields_before':7,'montana_terminal_fields_after':8,'montana_open_fields_before':2,'montana_open_fields_after':1},'effects':{'field_terminalizations':1,'matrix_updates':1,'row_state_mutations':0,'row_terminalizations':0,'class_closed':False,'cumulative_ledger_effect':'none'},'next_authorized_operation':'request_free_exact_current_montana_row_state_validation','authority_boundary':AUTH}
+          index_doc={'schema_version':'ssc-rd04-mt-current-waiver-promotion-index@1','issue':1017,'canonical_parent':BASE,'product_root':PRODUCT_ROOT.as_posix(),'documents':['promotion-input-custody.json','promotion-decision.json','cell-promotion-ledger.json','promoted-partial-field-matrix.json','remaining-open-field-census.json','promotion-summary.json','index.json','product-manifest.json'],'matrix_sha256':promoted_sha,'candidate_id':CANDIDATE_ID,'class_closed':False,'authority_boundary':AUTH}
+          docs={'promotion-input-custody.json':input_custody,'promotion-decision.json':decision,'cell-promotion-ledger.json':ledger,'promoted-partial-field-matrix.json':promoted,'remaining-open-field-census.json':census,'promotion-summary.json':summary,'index.json':index_doc}
+          out=ROOT/PRODUCT_ROOT; out.mkdir(parents=True,exist_ok=True)
+          for name,value in docs.items(): (out/name).write_bytes(dump(value))
+
+          validator_source='''#!/usr/bin/env python3\nfrom __future__ import annotations\nimport argparse,copy,hashlib,json,pathlib,subprocess,tempfile\nROOT=pathlib.Path(__file__).resolve().parents[1]\nPRODUCT_ROOT=ROOT/"data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion"\nMANIFEST=PRODUCT_ROOT/"product-manifest.json"\ndef load(p): return json.loads(p.read_text(encoding="utf-8"))\ndef canon(v): return json.dumps(v,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()\ndef sha(b): return hashlib.sha256(b).hexdigest()\ndef blob(b): return hashlib.sha1(b"blob "+str(len(b)).encode()+b"\\0"+b).hexdigest()\ndef validate(root=ROOT):\n p=root/PRODUCT_ROOT.relative_to(ROOT); m=load(root/MANIFEST.relative_to(ROOT)); assert m["permanent_path_count"]==14 and len(m["permanent_paths"])==14 and len(set(m["permanent_paths"]))==14; assert m["authority_boundary"]["class_closed"] is False\n declared={x["path"]:x for x in m["hashed_files"]}; assert len(declared)==13\n for rel,rec in declared.items():\n  data=(root/rel).read_bytes(); assert rec=={"path":rel,"bytes":len(data),"sha256":sha(data),"git_blob":blob(data)}\n rows=[f"{x['path']}\\0{x['sha256']}\\0{x['bytes']}\\n" for x in m["hashed_files"]]; assert sha("".join(sorted(rows)).encode())==m["combined_sha256"]\n matrix=load(p/"promoted-partial-field-matrix.json"); assert matrix["counts"]["terminal_cells"]==230 and matrix["counts"]["still_open_cells"]==220 and matrix["counts"]["terminal_substantive_cells"]==119 and matrix["counts"]["still_open_substantive_cells"]==181 and matrix["counts"]["terminal_units"]==11 and matrix["current_result"]["terminal_units"]==11 and matrix["current_result"]["terminal_cells"]=="230/450" and matrix["current_result"]["class_closed"] is False\n mt=next(x for x in matrix["rows"] if x.get("postal_code")=="MT" or x.get("unit_id")=="US-STATE-MT"); assert (mt["row_state"],mt["terminal_fields"],mt["open_fields"])==("still_open",8,1); cell=next(x for x in mt["cells"] if x["field_id"]=="abawd_or_work_requirement_waiver_state_and_governing_period"); assert cell["terminal"] is True and sha(canon(cell))=="0583ff798febf55f3b50028ebd8452a4fcaa5409561eac7bd6e2039ecd2f0db0"\n s=load(p/"promotion-summary.json"); assert s["effects"]=={"field_terminalizations":1,"matrix_updates":1,"row_state_mutations":0,"row_terminalizations":0,"class_closed":False,"cumulative_ledger_effect":"none"}; assert s["authority_boundary"]["field_terminalizations"]==0\n return {"state":"validated_exact_montana_one_cell_promotion","matrix_sha256":sha((p/"promoted-partial-field-matrix.json").read_bytes()),"field_terminalizations":1,"matrix_updates":1,"row_state_mutations":0,"row_terminalizations":0,"class_closed":False,"source_requests":0,"route_executions":0,"outside_human_dependency":False}\ndef self_test():\n base=validate(); refusals=0\n cases=[("terminal_cells",lambda m:m["counts"].__setitem__("terminal_cells",229)),("terminal_units",lambda m:m["counts"].__setitem__("terminal_units",12)),("class_closed",lambda m:m["current_result"].__setitem__("class_closed",True)),("row_state",lambda m:next(x for x in m["rows"] if x.get("postal_code")=="MT").__setitem__("row_state","terminal_fixed_public_record_obligation_complete")),("open_fields",lambda m:next(x for x in m["rows"] if x.get("postal_code")=="MT").__setitem__("open_fields",0))]\n for _,mut in cases:\n  with tempfile.TemporaryDirectory() as d:\n   t=pathlib.Path(d); subprocess.run(["cp","-a",str(ROOT)+"/.",str(t)],check=True); mp=t/PRODUCT_ROOT.relative_to(ROOT)/"promoted-partial-field-matrix.json"; v=load(mp); mut(v); mp.write_text(json.dumps(v,indent=2)+"\\n");\n   try: validate(t)\n   except Exception: refusals+=1\n assert refusals==len(cases); return {**base,"refusals":refusals}\nif __name__=="__main__":\n a=argparse.ArgumentParser(); a.add_argument("--self-test",action="store_true"); z=a.parse_args(); print(json.dumps(self_test() if z.self_test else validate(),indent=2,sort_keys=True))\n'''
+          builder_source='''#!/usr/bin/env python3\nfrom __future__ import annotations\nimport argparse,json,pathlib,subprocess,sys\nROOT=pathlib.Path(__file__).resolve().parents[1]\ndef main():\n p=argparse.ArgumentParser(); p.add_argument("--check",action="store_true"); a=p.parse_args(); v=subprocess.run([sys.executable,str(ROOT/"tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.py")],cwd=ROOT,text=True,capture_output=True);\n if v.returncode: raise SystemExit(v.stderr or v.stdout)\n print(json.dumps({"state":"deterministic_product_matches_committed_bytes","check":a.check},indent=2,sort_keys=True))\nif __name__=="__main__": main()\n'''
+          test_source='''#!/usr/bin/env python3\nimport json,pathlib,subprocess,sys\nroot=pathlib.Path(__file__).resolve().parents[1]\nr=subprocess.run([sys.executable,str(root/"tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.py"),"--self-test"],cwd=root,text=True,capture_output=True); assert r.returncode==0,(r.stdout,r.stderr); value=json.loads(r.stdout); assert value["refusals"]==5; print(json.dumps({"state":"adversarial_refusals_passed","refusals":5},indent=2,sort_keys=True))\n'''
+          (ROOT/pathlib.Path(os.environ['VALIDATOR'])).parent.mkdir(parents=True,exist_ok=True); (ROOT/os.environ['VALIDATOR']).write_text(validator_source)
+          (ROOT/os.environ['BUILDER']).write_text(builder_source); (ROOT/os.environ['TEST']).write_text(test_source)
+          milestone=f'''# RD-04 Montana current-waiver promotion\n\nThis addition-only product promotes one exact validated Montana field candidate while leaving the Montana row and RD-04-C02 open.\n\n- Candidate: `{CANDIDATE_ID}`\n- Source: `{SOURCE_ID}`\n- Matrix transition: 229 to 230 terminal cells\n- Montana: 7/2 to 8/1 terminal/open fields\n- Row-state mutations: 0\n- Class closure: false\n'''
+          (ROOT/os.environ['MILESTONE']).parent.mkdir(parents=True,exist_ok=True); (ROOT/os.environ['MILESTONE']).write_text(milestone)
+          def schema_for(v):
+              if isinstance(v,dict): return {'type':'object','required':list(v.keys()),'properties':{k:schema_for(x) for k,x in v.items()},'additionalProperties':False}
+              if isinstance(v,list): return {'type':'array','items':schema_for(v[0]) if v else {}}
+              if isinstance(v,bool): return {'type':'boolean'}
+              if isinstance(v,int): return {'type':'integer'}
+              if v is None: return {'type':'null'}
+              return {'type':'string'}
+          schema={'$schema':'https://json-schema.org/draft/2020-12/schema','$id':'https://github.com/BigBirdReturns/clifford-number/schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.schema.json','title':'RD-04 Montana current-waiver promotion product documents','oneOf':[schema_for(v) for v in docs.values()]}
+          (ROOT/os.environ['SCHEMA']).parent.mkdir(parents=True,exist_ok=True); (ROOT/os.environ['SCHEMA']).write_bytes(dump(schema))
+          standing=(pathlib.Path(os.environ['WORK'])/'standing-workflow.yml').read_bytes(); (ROOT/os.environ['STANDING_WORKFLOW']).parent.mkdir(parents=True,exist_ok=True); (ROOT/os.environ['STANDING_WORKFLOW']).write_bytes(standing)
+          permanent=[os.environ['STANDING_WORKFLOW']]+[f'{PRODUCT_ROOT.as_posix()}/{x}' for x in ['promotion-input-custody.json','promotion-decision.json','cell-promotion-ledger.json','promoted-partial-field-matrix.json','remaining-open-field-census.json','promotion-summary.json','index.json','product-manifest.json']]+[os.environ['MILESTONE'],os.environ['SCHEMA'],os.environ['TEST'],os.environ['BUILDER'],os.environ['VALIDATOR']]
+          assert len(permanent)==14 and len(set(permanent))==14
+          hashed=[]
+          for rel in permanent:
+              if rel.endswith('/product-manifest.json'): continue
+              b=(ROOT/rel).read_bytes(); hashed.append({'path':rel,'bytes':len(b),'sha256':sha(b),'git_blob':blob(b)})
+          rows=[f"{x['path']}\0{x['sha256']}\0{x['bytes']}\n" for x in hashed]
+          manifest={'schema_version':'ssc-rd04-mt-current-waiver-promotion-product-manifest@1','issue':1017,'canonical_parent':BASE,'product_slug':'status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion','addition_only':True,'permanent_path_count':14,'permanent_paths':permanent,'hashed_file_count':13,'hashed_files':hashed,'combined_sha256':sha(''.join(sorted(rows)).encode()),'semantic_counts':{'field_terminalizations':1,'matrix_updates':1,'row_state_mutations':0,'row_terminalizations':0,'terminal_cells':230,'still_open_cells':220,'terminal_substantive_cells':119,'still_open_substantive_cells':181,'terminal_units':11,'montana_terminal_fields':8,'montana_open_fields':1,'montana_row_state':'still_open','class_closed':False},'authority_boundary':AUTH}
+          (out/'product-manifest.json').write_bytes(dump(manifest))
+          print(json.dumps({'validation_root':VROOT.relative_to(ROOT).as_posix(),'matrix_path':matrix_rel,'promoted_matrix_sha256':promoted_sha,'promoted_matrix_git_blob':promoted_blob,'permanent_paths':permanent},indent=2,sort_keys=True))
+          PYGEN
+          python "$WORK/generate.py" "$WORK/repo" | tee "$OUT/generation-receipt.json"
+
+          printf '%s\n' qualify > "$OUT/STAGE"
+          cd "$WORK/repo"
+          python -m py_compile "$BUILDER" "$VALIDATOR" "$TEST"
+          python "$BUILDER" --check | tee "$OUT/build-receipt.json"
+          python "$VALIDATOR" --self-test | tee "$OUT/validation-receipt.json"
+          python "$TEST" | tee "$OUT/adversarial-receipt.json"
+          npm run release:check > "$OUT/release-check.log" 2>&1
+          git reset --hard "$BASE_SHA"
+          git clean -fdx
+          python "$WORK/generate.py" "$WORK/repo" > "$OUT/replay-generation-receipt.json"
+          python "$BUILDER" --check > "$OUT/replay-build-receipt.json"
+          python "$VALIDATOR" --self-test > "$OUT/replay-validation-receipt.json"
+          cmp "$OUT/generation-receipt.json" "$OUT/replay-generation-receipt.json"
+          cmp "$OUT/build-receipt.json" "$OUT/replay-build-receipt.json"
+          cmp "$OUT/validation-receipt.json" "$OUT/replay-validation-receipt.json"
+          mapfile -t PATHS < <(jq -r '.permanent_paths[]' "$PRODUCT_ROOT/product-manifest.json")
+          test "${#PATHS[@]}" = 14
+          git add -- "${PATHS[@]}"
+          test "$(git diff --cached --name-only --diff-filter=A "$BASE_SHA" | LC_ALL=C sort)" = "$(printf '%s\n' "${PATHS[@]}" | LC_ALL=C sort)"
+          test -z "$(git diff --cached --name-only --diff-filter=MDTCRUXB "$BASE_SHA")"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Promote exact Montana current-waiver candidate'
+          PRODUCT_COMMIT="$(git rev-parse HEAD)"
+          PRODUCT_TREE="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          test "$(git rev-list --count "$BASE_SHA"..HEAD)" = 1
+          test "$(git rev-parse HEAD:$STANDING_WORKFLOW)" = "$STANDING_BLOB"
+
+          printf '%s\n' publish > "$OUT/STAGE"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_OLD" origin "HEAD:refs/heads/$TARGET_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$PRODUCT_COMMIT"
+          printf '%s\n' "$PRODUCT_COMMIT" > "$OUT/product-commit.txt"
+          printf '%s\n' "$PRODUCT_TREE" > "$OUT/product-tree.txt"
+          printf '%s\n' complete > "$OUT/STAGE"
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          python - "$OUT/receipt.json" "$PRODUCT_COMMIT" "$PRODUCT_TREE" <<'PYSUCCESS'
+          import json,os,sys
+          path,commit,tree=sys.argv[1:]
+          value={'schema_version':'ssc-rd04-mt-current-waiver-promotion-materializer@1','state':'qualified_one_parent_product_published','failed_or_final_stage':'complete','exit_code':0,'canonical_parent':os.environ['BASE_SHA'],'target_branch':os.environ['TARGET_BRANCH'],'product_commit':commit,'product_tree':tree,'permanent_paths':14,'source_requests':0,'route_executions':0,'source_admissions':0,'field_terminalizations':1,'matrix_updates':1,'row_state_mutations':0,'row_terminalizations':0,'class_closed':False,'cumulative_ledger_effect':'none','outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none'}
+          open(path,'w').write(json.dumps(value,indent=2,sort_keys=True)+'\n')
+          PYSUCCESS
+          (cd "$OUT" && find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+          trap - ERR
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-current-waiver-promotion-materializer-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - name: Report result to RD-04 ledger
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R="$OUT/receipt.json"
+          jq -r '"Montana current-waiver promotion materializer reached `\(.state)` at stage `\(.failed_or_final_stage)`.\n\n```text\ncanonical parent: \(.canonical_parent)\nproduct commit: \(.product_commit)\nproduct tree: \(.product_tree)\npermanent paths: \(.permanent_paths)\nfield terminalizations: \(.field_terminalizations)\nmatrix updates: \(.matrix_updates)\nrow-state mutations: \(.row_state_mutations)\nrow terminalizations: \(.row_terminalizations)\nclass closed: \(.class_closed)\n```\n\nThis receipt grants no source, row, class, ledger, publication, adoption, graph, or outside-human authority beyond the exact typed product state. The control question is whether the published product head now passes its native exact-head workflow and independent review before canonical admission."' "$R" > /tmp/comment.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
