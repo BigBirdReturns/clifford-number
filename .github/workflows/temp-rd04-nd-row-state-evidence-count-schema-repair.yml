@@ -1,0 +1,75 @@
+name: TEMP repair RD-04 North Dakota row-state evidence-count schema
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-rd04-nd-row-state-evidence-count-schema-repair.yml'
+      - '.tmp/rd04-nd-row-state-evidence-count-schema-repair/controller.sh.gz'
+
+permissions:
+  contents: write
+
+env:
+  CANONICAL_MAIN: 283c5993cb2ac0bff173c72aba70088c67b2ac3c
+  CANONICAL_MAIN_TREE: 80a04c3d6a59816e9f7c99e585e077c92df42dbd
+  SOURCE_PRODUCT: b41b72024bb9121fd865c8c6632b480ef2644bb8
+  SOURCE_PRODUCT_TREE: 961aadbc46d8e7460a443df478aedf59d432180f
+  STAGING_BRANCH: staging/ssc-rd04-nd-row-state-evidence-count-schema-repair-v1
+  STANDING_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.yml
+  STANDING_WORKFLOW_BLOB: d037cf760329b4056c8ef0491b8aeb6ef433314d
+  STANDING_WORKFLOW_BYTES: '8429'
+  STANDING_WORKFLOW_SHA256: 702b1db16c4379cc1a97e33d3ac431f7918b7a60f510f737fd12ef6c9a189aa0
+  WORKFLOW_PATH: .github/workflows/temp-rd04-nd-row-state-evidence-count-schema-repair.yml
+  CONTROLLER_PATH: .tmp/rd04-nd-row-state-evidence-count-schema-repair/controller.sh.gz
+  CONTROLLER_GZ_BYTES: '4294'
+  CONTROLLER_GZ_SHA256: 1fc3bb13995ff0938c189de0ab17bcae20f15db4751937457a94cc37b5a9ec28
+  CONTROLLER_SHA256: ac398c8c03e3990b57ce4187c0d5cfe6c71e24cc531729f030e63fc8a1cb192e
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation
+  SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.schema.json
+  TEST_PATH: test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.test.js
+  VALIDATOR_PATH: tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs
+  DOCS_PATH: docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.md
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/product-manifest.json
+  OUT: /tmp/rd04-nd-row-state-evidence-count-schema-repair
+  QUAL: /tmp/rd04-nd-row-state-evidence-count-qualified-product
+  STAGE: /tmp/rd04-nd-row-state-evidence-count-staging
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Authenticate and execute sealed repair controller
+        shell: bash
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          test "$(stat -c %s "$CONTROLLER_PATH")" = "$CONTROLLER_GZ_BYTES"
+          test "$(sha256sum "$CONTROLLER_PATH" | awk '{print $1}')" = "$CONTROLLER_GZ_SHA256"
+          gzip -dc "$CONTROLLER_PATH" > /tmp/rd04-evidence-count-controller.sh
+          test "$(sha256sum /tmp/rd04-evidence-count-controller.sh | awk '{print $1}')" = "$CONTROLLER_SHA256"
+          bash -n /tmp/rd04-evidence-count-controller.sh
+          bash /tmp/rd04-evidence-count-controller.sh
+      - name: Preserve exact repair receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-row-state-evidence-count-schema-repair-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
