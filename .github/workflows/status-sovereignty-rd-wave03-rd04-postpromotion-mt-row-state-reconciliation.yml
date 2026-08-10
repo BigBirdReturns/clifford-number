@@ -1,0 +1,236 @@
+name: Qualify RD-04 Montana derivative row-state reconciliation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/**'
+      - 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/**'
+      - 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs'
+
+permissions:
+  contents: read
+
+env:
+  CANONICAL_PARENT: 0840358962621b0be3db6864ecec763327f35903
+  CANONICAL_PARENT_TREE: 38023f86bcc27527f9db8da9622bada00b3de542
+  VALIDATION_PARENT: e62de80e187f9be037cbdd3a4b942b5840d223de
+  VALIDATION_BASE: bc3cf04459bb0d18829f376c9b937693b521e444
+  VALIDATION_PRODUCT: a933ceacbfd9753401a7e9875c9f3048237c2014
+  VALIDATION_PRODUCT_TREE: 53fffef006eccb181ed4f00ea606e49b74b83a60
+  VALIDATION_MERGE: 5cbe9d8628efbc8c9fa85027876be77e77fbf0ef
+  MATRIX_REPAIR_PRODUCT: a26be29f081c20b9f2d0adeeaf25c4a434064999
+  MATRIX_REPAIR_PRODUCT_TREE: 4bb0367b873dac25b4b36f78256ac65cd615b32c
+  MATRIX_REPAIR_MERGE: 7d06800b6899add8beff7891a526abec843bb8d9
+  EDGE_REPAIR_WORKFLOW_COMMIT: 00036a809fb0e55a0427d7deb4d2cef2d5655d1d
+  EDGE_REPAIR_PRODUCT: 3aed7331a5f4b75618e9357bc7061e8ce1ad0064
+  PREDECESSOR_MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/promoted-partial-field-matrix.json
+  PREDECESSOR_MATRIX_BLOB: 6ba11a6025021e9df8ac6535be8c42499654c233
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation
+  OUT: /tmp/rd04-mt-row-state-reconciliation-v1
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned Draft 2020-12 validator
+        run: python -m pip install --disable-pip-version-check jsonschema==4.25.1
+      - name: Bind exact fourteen-path product, admitted validation, and protected first-parent history
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" && mkdir -p "$OUT/generated"
+          EVENT='${{ github.event_name }}'
+          if [ "$EVENT" = pull_request ]; then
+            PRODUCT_COMMIT='${{ github.event.pull_request.head.sha }}'
+            BASE_SHA='${{ github.event.pull_request.base.sha }}'
+            test "$(git rev-parse HEAD)" = "$PRODUCT_COMMIT"
+            git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+            test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          else
+            read -r P1 P2 EXTRA <<< "$(git show -s --format='%P' HEAD)"
+            test -n "$P1" && test -n "$P2" && test -z "${EXTRA:-}"
+            BASE_SHA="$P1"
+            PRODUCT_COMMIT="$P2"
+          fi
+
+          test "$(git show -s --format='%P' "$PRODUCT_COMMIT")" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "$CANONICAL_PARENT^{tree}")" = "$CANONICAL_PARENT_TREE"
+          git merge-base --is-ancestor "$CANONICAL_PARENT" "$BASE_SHA"
+          test "$(git show -s --format='%P' "$VALIDATION_PRODUCT")" = "$VALIDATION_PARENT"
+          test "$(git rev-parse "$VALIDATION_PRODUCT^{tree}")" = "$VALIDATION_PRODUCT_TREE"
+          test "$(git show -s --format='%P' "$VALIDATION_MERGE")" = "$VALIDATION_BASE $VALIDATION_PRODUCT"
+          test "$(git show -s --format='%P' "$MATRIX_REPAIR_PRODUCT")" = "$VALIDATION_MERGE"
+          test "$(git rev-parse "$MATRIX_REPAIR_PRODUCT^{tree}")" = "$MATRIX_REPAIR_PRODUCT_TREE"
+          test "$(git show -s --format='%P' "$MATRIX_REPAIR_MERGE")" = "$VALIDATION_MERGE $MATRIX_REPAIR_PRODUCT"
+          test "$(git show -s --format='%P' "$EDGE_REPAIR_WORKFLOW_COMMIT")" = "$MATRIX_REPAIR_MERGE"
+          test "$(git show -s --format='%P' "$EDGE_REPAIR_PRODUCT")" = "$EDGE_REPAIR_WORKFLOW_COMMIT"
+          test "$(git show -s --format='%P' "$CANONICAL_PARENT")" = "$MATRIX_REPAIR_MERGE $EDGE_REPAIR_PRODUCT"
+
+          EXPECTED="$(printf '%s\n' \
+            '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/input-custody.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-decision.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-ledger.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/promoted-partial-field-matrix.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/remaining-open-field-census.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-summary.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/index.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/product-manifest.json' \
+            'docs/milestones/ssc-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.md' \
+            'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json' \
+            'test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js' \
+            'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs' \
+            'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs' | LC_ALL=C sort)"
+          printf '%s\n' "$EXPECTED" > "$OUT/product-paths.txt"
+          test "$(git diff --name-only "$CANONICAL_PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort)" = "$EXPECTED"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort)" = "$EXPECTED"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" "$PRODUCT_COMMIT")"
+          git diff --check "$CANONICAL_PARENT" "$PRODUCT_COMMIT"
+
+          PROTECTED="$(printf '%s\n%s\n' "$EXPECTED" \
+            "$PREDECESSOR_MATRIX_PATH" \
+            '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1.yml' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/current-row-custody.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/product-manifest.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/row-state-validation.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/summary.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/validated-row-state-protocol.json' \
+            'tools/validate-status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-v1.py' | LC_ALL=C sort -u)"
+          printf '%s\n' "$PROTECTED" > "$OUT/protected-paths.txt"
+
+          : > "$OUT/first-parent-edge-paths.tsv"
+          : > "$OUT/first-parent-paths.unsorted"
+          if [ "$CANONICAL_PARENT" != "$BASE_SHA" ]; then
+            git rev-list --first-parent --reverse "$CANONICAL_PARENT..$BASE_SHA" > "$OUT/first-parent-commits.txt"
+            PREV="$CANONICAL_PARENT"
+            while IFS= read -r NEXT; do
+              test "$(git rev-parse "$NEXT^")" = "$PREV"
+              while IFS= read -r CHANGED; do
+                [ -z "$CHANGED" ] && continue
+                printf '%s\t%s\t%s\n' "$PREV" "$NEXT" "$CHANGED" >> "$OUT/first-parent-edge-paths.tsv"
+                printf '%s\n' "$CHANGED" >> "$OUT/first-parent-paths.unsorted"
+              done < <(git diff --name-only "$PREV" "$NEXT")
+              PREV="$NEXT"
+            done < "$OUT/first-parent-commits.txt"
+            test "$PREV" = "$BASE_SHA"
+          else
+            : > "$OUT/first-parent-commits.txt"
+          fi
+          LC_ALL=C sort -u "$OUT/first-parent-paths.unsorted" > "$OUT/first-parent-paths.txt"
+          test -z "$(comm -12 "$OUT/protected-paths.txt" "$OUT/first-parent-paths.txt")"
+
+          for COMMIT in "$VALIDATION_BASE" "$VALIDATION_PRODUCT" "$VALIDATION_MERGE" "$MATRIX_REPAIR_PRODUCT" "$MATRIX_REPAIR_MERGE" "$CANONICAL_PARENT" "$BASE_SHA" "$PRODUCT_COMMIT"; do
+            test "$(git rev-parse "$COMMIT:$PREDECESSOR_MATRIX_PATH")" = "$PREDECESSOR_MATRIX_BLOB"
+          done
+
+          if [ "$EVENT" = push ]; then
+            test "$(git diff --name-only "$BASE_SHA" HEAD | LC_ALL=C sort)" = "$EXPECTED"
+            test "$(git diff --name-only --diff-filter=A "$BASE_SHA" HEAD | LC_ALL=C sort)" = "$EXPECTED"
+            test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$BASE_SHA" HEAD)"
+            while IFS= read -r PRODUCT_PATH; do
+              test "$(git rev-parse "HEAD:$PRODUCT_PATH")" = "$(git rev-parse "$PRODUCT_COMMIT:$PRODUCT_PATH")"
+            done <<< "$EXPECTED"
+          fi
+          printf '%s\n' "$PRODUCT_COMMIT" > "$OUT/product-commit.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$CANONICAL_PARENT" > "$OUT/canonical-parent.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$PRODUCT_COMMIT" > "$OUT/product.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$BASE_SHA" > "$OUT/base.txt"
+      - name: Rebuild, validate, execute adversarial refusals, and replay after Release
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/generated" | tee "$OUT/builder.json"
+          for name in row-state-ledger.json promoted-partial-field-matrix.json remaining-open-field-census.json row-state-summary.json index.json; do
+            cmp "$OUT/generated/$name" "$PRODUCT_ROOT/$name"
+          done
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/validator.json"
+          node --test test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js | tee "$OUT/adversarial.log"
+          python - <<'PY' > "$OUT/schema-validation.txt"
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          root = Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation')
+          schema = json.load(open('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json'))
+          manifest = json.load(open(root / 'product-manifest.json'))
+          instance = {
+              'schema_version': 'ssc-rd04-mt-row-state-reconciliation-schema@1',
+              'product_contract': {
+                  'canonical_parent': '0840358962621b0be3db6864ecec763327f35903',
+                  'canonical_parent_tree': '38023f86bcc27527f9db8da9622bada00b3de542',
+                  'permanent_path_count': 14,
+                  'hashed_file_count': 13,
+                  'matrix_transition': {
+                      'predecessor_sha256': '9f9dc05a057396056771bb566c44e9c3779d8ef6b0d2c078f7ffff11d9c7e6cb',
+                      'promoted_sha256': '12e52344af0c8ec3d845b6f05f8a20014fa84504d10dbc9ee0674d37715abe1d',
+                      'changed_rows': 1,
+                      'changed_cells': 1,
+                      'substantive_cells_changed': 0,
+                      'terminal_units_before': 11,
+                      'terminal_units_after': 12,
+                      'class_closed': False,
+                  },
+                  'authority_boundary': manifest['authority_boundary'],
+              },
+              'document_schemas': {
+                  'input_custody': json.load(open(root / 'input-custody.json')),
+                  'row_state_decision': json.load(open(root / 'row-state-decision.json')),
+                  'row_state_ledger': json.load(open(root / 'row-state-ledger.json')),
+                  'promoted_matrix': json.load(open(root / 'promoted-partial-field-matrix.json')),
+                  'remaining_open_census': json.load(open(root / 'remaining-open-field-census.json')),
+                  'row_state_summary': json.load(open(root / 'row-state-summary.json')),
+                  'index': json.load(open(root / 'index.json')),
+                  'product_manifest': manifest,
+              },
+          }
+          Draft202012Validator.check_schema(schema)
+          Draft202012Validator(schema).validate(instance)
+          print('draft_2020_12_schema_and_all_eight_documents_ok')
+          PY
+          npm run release:check > "$OUT/release-check.log" 2>&1
+          git reset --hard HEAD
+          git clean -fdx
+          test -z "$(git status --porcelain)"
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --check > "$OUT/post-release-builder.json"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/post-release-validator.json"
+          cmp "$OUT/validator.json" "$OUT/post-release-validator.json"
+          cp "$PRODUCT_ROOT/row-state-decision.json" "$OUT/"
+          cp "$PRODUCT_ROOT/row-state-ledger.json" "$OUT/"
+          cp "$PRODUCT_ROOT/row-state-summary.json" "$OUT/"
+          cp "$PRODUCT_ROOT/product-manifest.json" "$OUT/"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - name: Preserve exact Montana promotion qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-reconciliation-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
