@@ -1,0 +1,176 @@
+name: PC-60 exact product materializer v4
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pc60-materializer-v3.yml'
+      - '.pc60/**'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: pc60-materializer-v4-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPOSITORY: ${{ github.repository }}
+  API_URL: ${{ github.api_url }}
+  CARRIER_PARENT: '789c800d00a6d4924cb69d2ce33d336ab315972f'
+  CARRIER_PATH: '.github/workflows/pc60-materializer-v3.yml'
+  PRODUCT_BRANCH: 'agent/pc60-product-v1'
+  PC59_CANONICAL_MERGE: 'cffe670fef5c006c7e963421d9fd18c29ed40fba'
+  ARCHIVE_SHA256: '04596ed28b93133fb58d87d910c6d37630e4acc356ffe3d0193b9dbd72047de8'
+  BASE64_SHA256: 'a8f3e34abd13bf96a08e9d2d55e472fe096e63a55bd09ed03b6418469ca28f1c'
+  PATH_LIST_SHA256: 'be73f3d5d7d7f8c87e81ca2167cd41a2344a6ff152d89ce91f49e6528ec0c089'
+  COMBINED_PAYLOAD_SHA256: '2fa027e6b7288b3d6df52498a605d6da7d6ef9306dabd3107c95ebc94800c062'
+  OUT: '/tmp/pc60-materializer-v4'
+  PACKAGE: '/tmp/pc60-package-v4'
+  WORKTREE: '/tmp/pc60-worktree-v4'
+
+jobs:
+  materialize:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.ref == 'agent/pc60-materializer-v3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Authenticate carrier and exact product package
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$PACKAGE" "$WORKTREE" /tmp/pc60-product.b64 /tmp/pc60-product.tar.gz
+          mkdir -p "$OUT" "$PACKAGE"
+          test "$(git show -s --format='%P' HEAD)" = "$CARRIER_PARENT"
+          test "$(git rev-list --count "$CARRIER_PARENT"..HEAD)" = 1
+          cat > "$OUT/carrier-paths.txt" <<'EOF'
+          .github/workflows/pc60-materializer-v3.yml
+          .pc60/payload.part-01
+          .pc60/payload.part-02
+          .pc60/payload.part-03
+          .pc60/payload.part-04
+          .pc60/payload.part-05
+          .pc60/payload.part-06
+          .pc60/payload.part-07
+          .pc60/payload.part-08
+          EOF
+          git diff --name-only "$CARRIER_PARENT" HEAD | LC_ALL=C sort > "$OUT/actual-carrier-paths.txt"
+          diff -u "$OUT/carrier-paths.txt" "$OUT/actual-carrier-paths.txt"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CARRIER_PARENT" HEAD)"
+          git diff --check "$CARRIER_PARENT" HEAD
+          cat .pc60/payload.part-* | tr -d '\n' > /tmp/pc60-product.b64
+          test "$(sha256sum /tmp/pc60-product.b64 | awk '{print $1}')" = "$BASE64_SHA256"
+          base64 -d /tmp/pc60-product.b64 > /tmp/pc60-product.tar.gz
+          test "$(sha256sum /tmp/pc60-product.tar.gz | awk '{print $1}')" = "$ARCHIVE_SHA256"
+          tar -xzf /tmp/pc60-product.tar.gz -C "$PACKAGE"
+          cat > "$OUT/product-paths.txt" <<'EOF'
+          .github/workflows/preference-custody-v58.yml
+          .github/workflows/preference-linkage-repository-owner-login-normalization-alias-case-location-pair-assurance.yml
+          data/research/preference-custody/control-manifest-v58.json
+          data/research/preference-custody/preference-linkage-repository-owner-login-normalization-alias-case-location-pair-assurance.fixture.json
+          docs/preference-custody-laboratory-floor-v58.md
+          docs/preference-custody-repository-owner-login-normalization-alias-case-location-pair-assurance.md
+          test/preference-custody-manifest-v58.test.js
+          test/preference-linkage-repository-owner-login-normalization-alias-case-location-pair-assurance.test.js
+          tools/compile-preference-custody-manifest-v58.mjs
+          tools/compile-preference-linkage-repository-owner-login-normalization-alias-case-location-pair-assurance.mjs
+          tools/lib/preference-custody-manifest-v58.mjs
+          tools/lib/preference-linkage-repository-owner-login-normalization-alias-case-location-pair-assurance.mjs
+          tools/validate-preference-custody-manifest-v58.mjs
+          tools/validate-preference-linkage-repository-owner-login-normalization-alias-case-location-pair-assurance.mjs
+          EOF
+          test "$(sha256sum "$OUT/product-paths.txt" | awk '{print $1}')" = "$PATH_LIST_SHA256"
+          find "$PACKAGE" -type f -printf '%P\n' | LC_ALL=C sort > "$OUT/extracted-paths.txt"
+          diff -u "$OUT/product-paths.txt" "$OUT/extracted-paths.txt"
+          python - "$PACKAGE" "$OUT/product-paths.txt" "$COMBINED_PAYLOAD_SHA256" <<'PY'
+          import hashlib,pathlib,sys
+          root=pathlib.Path(sys.argv[1]); paths=pathlib.Path(sys.argv[2]).read_text().splitlines(); h=hashlib.sha256()
+          for rel in paths: h.update(rel.encode()+b'\0'+(root/rel).read_bytes()+b'\0')
+          assert h.hexdigest()==sys.argv[3], h.hexdigest()
+          PY
+      - name: Execute exact live-main replay and isolate generated reconstruction
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CARRIER_PARENT"
+          git merge-base --is-ancestor "$PC59_CANONICAL_MERGE" "$CARRIER_PARENT"
+          while IFS= read -r path; do ! git cat-file -e "$CARRIER_PARENT:$path" 2>/dev/null || { echo "path collision: $path"; exit 1; }; done < "$OUT/product-paths.txt"
+          printf '%s\n' "$(git rev-parse "$CARRIER_PARENT^{tree}")" > "$OUT/product-parent-tree.txt"
+          git worktree add --detach "$WORKTREE" "$CARRIER_PARENT"
+          while IFS= read -r path; do mkdir -p "$WORKTREE/$(dirname "$path")"; cp "$PACKAGE/$path" "$WORKTREE/$path"; done < "$OUT/product-paths.txt"
+          cd "$WORKTREE"
+          node tools/compile-preference-linkage-repository-owner-login-normalization-alias-case-location-pair-assurance.mjs | tee "$OUT/standalone-compile.log"
+          node tools/validate-preference-linkage-repository-owner-login-normalization-alias-case-location-pair-assurance.mjs | tee "$OUT/standalone-validate.log"
+          node test/preference-linkage-repository-owner-login-normalization-alias-case-location-pair-assurance.test.js | tee "$OUT/standalone-test.log"
+          node tools/compile-preference-custody-manifest-v58.mjs | tee "$OUT/floor-compile.log"
+          node tools/validate-preference-custody-manifest-v58.mjs | tee "$OUT/floor-validate.log"
+          node test/preference-custody-manifest-v58.test.js | tee "$OUT/floor-test.log"
+          node tools/validate-no-magic-human-gate.mjs | tee "$OUT/no-magic-validator.log"
+          node test/no-magic-human-gate.test.js | tee "$OUT/no-magic-test.log"
+          npm run release:check 2>&1 | tee "$OUT/release-check.log"
+          git diff --name-only | LC_ALL=C sort -u > "$OUT/tracked-reconstruction-paths.txt"
+          test -z "$(grep -v '^build/' "$OUT/tracked-reconstruction-paths.txt" || true)"
+          git restore --source=HEAD --staged --worktree -- build
+          git clean -fdx -- build
+          git status --porcelain | LC_ALL=C sort > "$OUT/prepublication-status.txt"
+          sed -n 's/^?? //p' "$OUT/prepublication-status.txt" | LC_ALL=C sort > "$OUT/prepublication-untracked.txt"
+          diff -u "$OUT/product-paths.txt" "$OUT/prepublication-untracked.txt"
+          test -z "$(sed -n '/^?? /!p' "$OUT/prepublication-status.txt")"
+      - name: Create exact remote Git objects and publish or seal for connector admission
+        id: publish
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd "$WORKTREE"
+          jq -n '[]' > "$OUT/tree-elements.json"
+          : > "$OUT/product-blobs.tsv"
+          while IFS= read -r path; do
+            jq -Rs '{content:.,encoding:"utf-8"}' < "$path" > /tmp/blob-request.json
+            blob="$(gh api --method POST "/repos/$GH_REPOSITORY/git/blobs" --input /tmp/blob-request.json --jq .sha)"
+            test "$blob" = "$(git hash-object "$path")"
+            printf '%s\t%s\n' "$path" "$blob" >> "$OUT/product-blobs.tsv"
+            jq --arg path "$path" --arg sha "$blob" '. + [{path:$path,mode:"100644",type:"blob",sha:$sha}]' "$OUT/tree-elements.json" > /tmp/tree-elements.json
+            mv /tmp/tree-elements.json "$OUT/tree-elements.json"
+          done < "$OUT/product-paths.txt"
+          jq -n --arg base_tree "$(cat "$OUT/product-parent-tree.txt")" --slurpfile tree "$OUT/tree-elements.json" '{base_tree:$base_tree,tree:$tree[0]}' > /tmp/tree-request.json
+          tree="$(gh api --method POST "/repos/$GH_REPOSITORY/git/trees" --input /tmp/tree-request.json --jq .sha)"
+          jq -n --arg message $'Add PC-60 owner-login normalization and location-pair custody\n\nCompose Preference Custody floor v58 from the qualified v57 base. Resolve only login normalization, alias/case history, and canonical profile/API location pairing; preserve every sibling frontier and authority ceiling.' --arg tree "$tree" --arg parent "$CARRIER_PARENT" '{message:$message,tree:$tree,parents:[$parent]}' > /tmp/commit-request.json
+          product="$(gh api --method POST "/repos/$GH_REPOSITORY/git/commits" --input /tmp/commit-request.json --jq .sha)"
+          test "$(gh api "/repos/$GH_REPOSITORY/git/commits/$product" --jq '.parents|length')" = 1
+          test "$(gh api "/repos/$GH_REPOSITORY/git/commits/$product" --jq .parents[0].sha)" = "$CARRIER_PARENT"
+          test "$(gh api "/repos/$GH_REPOSITORY/git/commits/$product" --jq .tree.sha)" = "$tree"
+          printf '%s\n' "$product" > "$OUT/product-commit.txt"
+          printf '%s\n' "$tree" > "$OUT/product-tree.txt"
+          if gh api "/repos/$GH_REPOSITORY/git/ref/heads/$PRODUCT_BRANCH" >/tmp/existing-ref.json 2>/dev/null; then
+            current="$(jq -r .object.sha /tmp/existing-ref.json)"
+            jq -n --arg sha "$product" '{sha:$sha,force:true}' > /tmp/ref-request.json
+            if gh api --method PATCH "/repos/$GH_REPOSITORY/git/refs/heads/$PRODUCT_BRANCH" --input /tmp/ref-request.json >/tmp/ref-response.json; then state=published_by_workflow; else state=objects_sealed_connector_ref_required; fi
+          else
+            jq -n --arg ref "refs/heads/$PRODUCT_BRANCH" --arg sha "$product" '{ref:$ref,sha:$sha}' > /tmp/ref-request.json
+            if gh api --method POST "/repos/$GH_REPOSITORY/git/refs" --input /tmp/ref-request.json >/tmp/ref-response.json; then state=published_by_workflow; else state=objects_sealed_connector_ref_required; fi
+          fi
+          jq -n --arg state "$state" --arg parent "$CARRIER_PARENT" --arg product "$product" --arg tree "$tree" '{schema_version:"pc60-product-materialization-receipt@2",status:$state,product_parent:$parent,product_commit:$product,product_tree:$tree,permanent_paths:14,standalone_paths:7,compositional_paths:7,complete_replay:"pass",tracked_reconstruction_scope:"build_only",graph_effect:"none",outside_human_dependency:false}' > "$OUT/receipt.json"
+          echo "product=$product" >> "$GITHUB_OUTPUT"
+          echo "state=$state" >> "$GITHUB_OUTPUT"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - name: Preserve PC-60 materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc60-product-materialization-v4
+          path: /tmp/pc60-materializer-v4
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
