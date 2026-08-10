@@ -106,12 +106,33 @@ jobs:
               rows.append(parts[1])
           if len(rows)!=14 or len(set(rows))!=14:
               raise SystemExit(f'product denominator {len(rows)} != 14')
-          floor=[p for p in rows if 'v59' in p]
-          standalone=[p for p in rows if 'v59' not in p]
+          expected_standalone={
+              '.github/workflows/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.yml',
+              'data/research/preference-custody/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.fixture.json',
+              'docs/preference-custody-repository-owner-login-unicode-casefold-alias-reuse-assurance.md',
+              'test/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.test.js',
+              'tools/compile-preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs',
+              'tools/lib/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs',
+              'tools/validate-preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs',
+          }
+          expected_floor={
+              '.github/workflows/preference-custody-v59.yml',
+              'data/research/preference-custody/control-manifest-v59.json',
+              'docs/preference-custody-laboratory-floor-v59.md',
+              'test/preference-custody-manifest-v59.test.js',
+              'tools/compile-preference-custody-manifest-v59.mjs',
+              'tools/lib/preference-custody-manifest-v59.mjs',
+              'tools/validate-preference-custody-manifest-v59.mjs',
+          }
+          expected_paths=expected_standalone|expected_floor
+          if set(rows)!=expected_paths:
+              missing=sorted(expected_paths-set(rows))
+              unexpected=sorted(set(rows)-expected_paths)
+              raise SystemExit(f'exact product path ledger mismatch missing={missing} unexpected={unexpected}')
+          standalone=[p for p in rows if p in expected_standalone]
+          floor=[p for p in rows if p in expected_floor]
           if len(floor)!=7 or len(standalone)!=7:
               raise SystemExit(f'standalone/floor denominator {len(standalone)}/{len(floor)}')
-          if any('preference-linkage-repository-owner-login' not in p for p in standalone):
-              raise SystemExit('standalone namespace mismatch')
           forbidden=('materializer','carrier','controller','supervisor','reconciler','diagnostic','trigger','marker','shard','transport','receipt')
           if any(any(token in p.lower() for token in forbidden) for p in rows):
               raise SystemExit('temporary path entered permanent product')
