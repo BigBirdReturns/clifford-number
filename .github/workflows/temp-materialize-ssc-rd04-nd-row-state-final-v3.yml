@@ -1,0 +1,246 @@
+name: TEMP materialize RD-04 North Dakota terminal row-state product v3
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-row-state-final-materializer-base-v3
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-row-state-final-materializer-v3/trigger.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-rd04-nd-row-state-final-materializer-v3
+  cancel-in-progress: false
+
+env:
+  BASE_BRANCH: agent/ssc-rd04-nd-row-state-final-materializer-base-v3
+  HEAD_BRANCH: agent/ssc-rd04-nd-row-state-final-materializer-trigger-v3
+  OLD_BASE_BRANCH: agent/ssc-rd04-nd-row-state-final-materializer-base-v1
+  OLD_BASE_COMMIT: 252c278e190dfb7431c4464395c44a32de55379f
+  OLD_CONTROLLER_ROOT: .tmp/rd04-nd-row-state-final-materializer-v1
+  WORKFLOW_PATH: .github/workflows/temp-materialize-ssc-rd04-nd-row-state-final-v3.yml
+  TRIGGER_PATH: .tmp/rd04-nd-row-state-final-materializer-v3/trigger.json
+  STAGING_BRANCH: staging/ssc-rd04-nd-current-public-record-gap-row-state-reconciliation-v1
+  CANONICAL_PARENT: 283c5993cb2ac0bff173c72aba70088c67b2ac3c
+  CANONICAL_PARENT_TREE: 80a04c3d6a59816e9f7c99e585e077c92df42dbd
+  OUT: /tmp/rd04-nd-row-state-final-materializer-v1
+  ORIGINAL_CONTROLLER_B64_BYTES: '11420'
+  ORIGINAL_CONTROLLER_B64_SHA256: 1a1681aa7a03912ebdd098de594be4cec3050cc7de46a1a9024b1aeb4ccf091b
+  ORIGINAL_CONTROLLER_GZIP_BYTES: '8563'
+  ORIGINAL_CONTROLLER_GZIP_SHA256: bbd104454fa7f7902895781a8d6ed7fa54edc4609e708a7b63ba58c993640287
+  ORIGINAL_CONTROLLER_BYTES: '30592'
+  ORIGINAL_CONTROLLER_SHA256: 16ba8e8f6c77453d7c683a321fffb76ded45060edd1e241776e2b14508b882a4
+  REBOUND_CONTROLLER_BYTES: '30702'
+  REBOUND_CONTROLLER_SHA256: 82ed0f95bd60cfa780ac518621a7844136be6a0b0ded0d60fcd13120531fb723
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-row-state-final-materializer-base-v3' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-row-state-final-materializer-trigger-v3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Reconstruct, rebind, and execute exact guarded materializer
+        id: materialize
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CARRIER_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" && mkdir -p "$OUT"
+          git fetch --no-tags --force origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            "+refs/heads/$OLD_BASE_BRANCH:refs/remotes/origin/$OLD_BASE_BRANCH"
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "$CANONICAL_PARENT^{tree}")" = "$CANONICAL_PARENT_TREE"
+          test "$(git rev-parse "refs/remotes/origin/$OLD_BASE_BRANCH")" = "$OLD_BASE_COMMIT"
+          test "$(git rev-parse "$EVENT_BASE_SHA^")" = "$CANONICAL_PARENT"
+          test "$(git rev-list --count "$CANONICAL_PARENT..$EVENT_BASE_SHA")" -eq 1
+          test "$(git diff --name-only "$CANONICAL_PARENT" "$EVENT_BASE_SHA")" = "$WORKFLOW_PATH"
+          test "$(git rev-parse "$EVENT_HEAD_SHA^")" = "$EVENT_BASE_SHA"
+          test "$(git rev-list --count "$EVENT_BASE_SHA..$EVENT_HEAD_SHA")" -eq 1
+          test "$(git diff --name-only "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA")" = "$TRIGGER_PATH"
+          test "$(git rev-parse HEAD)" = "$EVENT_HEAD_SHA"
+          test -z "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH")"
+
+          B64=/tmp/rd04-nd-row-state-final-controller-original.py.gz.b64
+          GZ=/tmp/rd04-nd-row-state-final-controller-original.py.gz
+          ORIGINAL=/tmp/rd04-nd-row-state-final-controller-original.py
+          REBOUND=/tmp/rd04-nd-row-state-final-controller-rebound.py
+          : > "$B64"
+          paths=(
+            "$OLD_CONTROLLER_ROOT/controller.part00"
+            "$OLD_CONTROLLER_ROOT/controller.part01"
+            "$OLD_CONTROLLER_ROOT/controller.part02"
+            "$OLD_CONTROLLER_ROOT/controller.part03"
+          )
+          blobs=(
+            b8492952ac098d84260549d4faeacec70c37b246
+            a990731040a342afdebe7f41203dd8dc89291d90
+            f193cf5202ca870394d86883ad6cea90a2144928
+            eac0682cabc1696e1d73dbcd844f9ae6e044fbc3
+          )
+          bytes=(3000 3000 3000 2420)
+          digests=(
+            2d6a24369aa7203764947581833a2ef8b7182b69cc4749349daa4e2e5b47c8b4
+            02a7be9f18dfa5a7f60f1f0585d2c7dc99e9a475695ce756de39b8458f665a53
+            9dd1a5840b183a08327a6e9c3fada0d0e71fa7630096b22b13171770d477f94c
+            79af7c8db41ac25ab150dbb3b321fc5f780c38ee9f4ce595b1c8b71c5ec211a0
+          )
+          for i in "${!paths[@]}"; do
+            test "$(git rev-parse "$OLD_BASE_COMMIT:${paths[$i]}")" = "${blobs[$i]}"
+            git show "$OLD_BASE_COMMIT:${paths[$i]}" > "/tmp/controller.part$i"
+            test "$(stat -c %s "/tmp/controller.part$i")" -eq "${bytes[$i]}"
+            test "$(sha256sum "/tmp/controller.part$i" | awk '{print $1}')" = "${digests[$i]}"
+            cat "/tmp/controller.part$i" >> "$B64"
+          done
+          test "$(stat -c %s "$B64")" -eq "$ORIGINAL_CONTROLLER_B64_BYTES"
+          test "$(sha256sum "$B64" | awk '{print $1}')" = "$ORIGINAL_CONTROLLER_B64_SHA256"
+          base64 --decode "$B64" > "$GZ"
+          test "$(stat -c %s "$GZ")" -eq "$ORIGINAL_CONTROLLER_GZIP_BYTES"
+          test "$(sha256sum "$GZ" | awk '{print $1}')" = "$ORIGINAL_CONTROLLER_GZIP_SHA256"
+          gzip -dc "$GZ" > "$ORIGINAL"
+          test "$(stat -c %s "$ORIGINAL")" -eq "$ORIGINAL_CONTROLLER_BYTES"
+          test "$(sha256sum "$ORIGINAL" | awk '{print $1}')" = "$ORIGINAL_CONTROLLER_SHA256"
+
+          ORIGINAL="$ORIGINAL" REBOUND="$REBOUND" python - <<'PY'
+          import json, os, pathlib
+          original=pathlib.Path(os.environ['ORIGINAL'])
+          rebound=pathlib.Path(os.environ['REBOUND'])
+          source=original.read_text(encoding='utf-8')
+          patches=[
+            ["v3=json.loads(OUT/'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation-validation-v3/row-state-validation.json'.read_text())","v3=json.loads((OUT/'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation-validation-v3/row-state-validation.json').read_text())"],
+            ["CANONICAL_PARENT='789c800d00a6d4924cb69d2ce33d336ab315972f'","CANONICAL_PARENT='283c5993cb2ac0bff173c72aba70088c67b2ac3c'"],
+            ["CANONICAL_PARENT_TREE='fef73cc4267070c8cc7fb7c1dc15481477391d62'","CANONICAL_PARENT_TREE='80a04c3d6a59816e9f7c99e585e077c92df42dbd'"],
+            ["PARENT='789c800d00a6d4924cb69d2ce33d336ab315972f'; PTREE='fef73cc4267070c8cc7fb7c1dc15481477391d62'","PARENT='283c5993cb2ac0bff173c72aba70088c67b2ac3c'; PTREE='80a04c3d6a59816e9f7c99e585e077c92df42dbd'"],
+            ["VMERGE=PARENT","VMERGE='789c800d00a6d4924cb69d2ce33d336ab315972f'"],
+            ["prior.merge_commit === C.CANONICAL_PARENT","prior.merge_commit === '789c800d00a6d4924cb69d2ce33d336ab315972f'"],
+            ["decision.prerequisite_satisfaction.validation_repair_merge_commit === C.CANONICAL_PARENT","decision.prerequisite_satisfaction.validation_repair_merge_commit === '789c800d00a6d4924cb69d2ce33d336ab315972f'"],
+            ["validation_repair_merge_commit:C.CANONICAL_PARENT","validation_repair_merge_commit:'789c800d00a6d4924cb69d2ce33d336ab315972f'"],
+            ["FINAL_SHA='d2ff4b4d711417b2319b1c26486127c4eba1366aa0e11abf1fd489dcd2b2ffe6'; FINAL_BLOB='66a9a6d7003a39b1dca569895e0bc3513f004ca6'; FINAL_BYTES=499923","FINAL_SHA='9f9dc05a057396056771bb566c44e9c3779d8ef6b0d2c078f7ffff11d9c7e6cb'; FINAL_BLOB='6ba11a6025021e9df8ac6535be8c42499654c233'; FINAL_BYTES=499923"],
+            ["'matrix_sha256':'d2ff4b4d711417b2319b1c26486127c4eba1366aa0e11abf1fd489dcd2b2ffe6'","'matrix_sha256':'9f9dc05a057396056771bb566c44e9c3779d8ef6b0d2c078f7ffff11d9c7e6cb'"],
+          ]
+          for old,new in patches:
+              assert source.count(old)==1,(old,source.count(old))
+              source=source.replace(old,new)
+          rebound.write_text(source,encoding='utf-8')
+          PY
+          test "$(stat -c %s "$REBOUND")" -eq "$REBOUND_CONTROLLER_BYTES"
+          test "$(sha256sum "$REBOUND" | awk '{print $1}')" = "$REBOUND_CONTROLLER_SHA256"
+          python -m py_compile "$REBOUND"
+          cp "$REBOUND" "$OUT/rebound-controller.py"
+          python - <<'PY'
+          import json, os, pathlib
+          out=pathlib.Path(os.environ['OUT'])
+          value={
+            'schema_version':'ssc-rd04-nd-row-state-final-controller-rebind@1',
+            'state':'rebound_controller_ready',
+            'source_commit':os.environ['OLD_BASE_COMMIT'],
+            'original_bytes':int(os.environ['ORIGINAL_CONTROLLER_BYTES']),
+            'original_sha256':os.environ['ORIGINAL_CONTROLLER_SHA256'],
+            'rebound_bytes':int(os.environ['REBOUND_CONTROLLER_BYTES']),
+            'rebound_sha256':os.environ['REBOUND_CONTROLLER_SHA256'],
+            'source_replacements':10,
+            'canonical_parent':os.environ['CANONICAL_PARENT'],
+            'canonical_parent_tree':os.environ['CANONICAL_PARENT_TREE'],
+            'validation_repair_merge':'789c800d00a6d4924cb69d2ce33d336ab315972f',
+            'final_matrix_sha256':'9f9dc05a057396056771bb566c44e9c3779d8ef6b0d2c078f7ffff11d9c7e6cb',
+            'source_requests':0,
+            'matrix_updates':0,
+            'row_state_mutations':0,
+          }
+          (out/'controller-rebind.json').write_text(json.dumps(value,indent=2,sort_keys=True)+'\n')
+          PY
+
+          set +e
+          python "$REBOUND"
+          status=$?
+          set -e
+          if [ ! -f "$OUT/SHA256SUMS" ]; then
+            (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+          fi
+          exit "$status"
+
+      - name: Preserve exact rebound-materializer custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-row-state-final-materializer-v3
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce exact staging publication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.materialize.outcome }}" = success
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .schema_version == "ssc-rd04-nd-row-state-final-controller-rebind@1" and
+            .state == "rebound_controller_ready" and
+            .source_commit == "252c278e190dfb7431c4464395c44a32de55379f" and
+            .original_sha256 == "16ba8e8f6c77453d7c683a321fffb76ded45060edd1e241776e2b14508b882a4" and
+            .rebound_sha256 == "82ed0f95bd60cfa780ac518621a7844136be6a0b0ded0d60fcd13120531fb723" and
+            .source_replacements == 10 and
+            .canonical_parent == "283c5993cb2ac0bff173c72aba70088c67b2ac3c"
+          ' "$OUT/controller-rebind.json" > /dev/null
+          jq -e '
+            .schema_version == "ssc-rd04-nd-row-state-final-materializer@1" and
+            .state == "qualified_nonworkflow_staging_published" and
+            .canonical_parent == "283c5993cb2ac0bff173c72aba70088c67b2ac3c" and
+            .canonical_parent_tree == "80a04c3d6a59816e9f7c99e585e077c92df42dbd" and
+            .staging_branch == "staging/ssc-rd04-nd-current-public-record-gap-row-state-reconciliation-v1" and
+            .permanent_path_count == 14 and
+            .staged_nonworkflow_paths == 13 and
+            .temporary_workflow_carrier_paths == 1 and
+            .matrix_sha256 == "9f9dc05a057396056771bb566c44e9c3779d8ef6b0d2c078f7ffff11d9c7e6cb" and
+            .semantic_projection_sha256 == "6347024e87acf6d21192fa40844ae22b5b5c76c36bfb853edf5e6d35b58c829c" and
+            .manifest_combined_sha256 == "ee0a5cba53a3d5a07627b59c6063272853fd834049df469381250df0b1daa1bb" and
+            .source_requests == 0 and .route_executions == 0 and .source_admissions == 0 and
+            .field_terminalizations == 0 and .matrix_updates == 1 and
+            .row_state_mutations == 1 and .row_terminalizations == 1 and
+            .class_closed == false and .outside_human_dependency == false and
+            .final_product_commit_created == false and .canonical_merge_authorized == false
+          ' "$OUT/receipt.json" > /dev/null
+          staging_commit="$(jq -r .staging_commit "$OUT/receipt.json")"
+          remote_commit=''
+          for attempt in 1 2 3 4 5; do
+            remote_commit="$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')"
+            test "$remote_commit" = "$staging_commit" && break
+            sleep 2
+          done
+          test "$remote_commit" = "$staging_commit"
+          git fetch --quiet --force origin "+refs/heads/$STAGING_BRANCH:refs/remotes/origin/$STAGING_BRANCH"
+          test "$(git rev-parse "refs/remotes/origin/$STAGING_BRANCH")" = "$staging_commit"
+          test "$(git rev-parse "$staging_commit^")" = "$CANONICAL_PARENT"
+          mapfile -t changed < <(git diff --name-status "$CANONICAL_PARENT" "$staging_commit")
+          test "${#changed[@]}" -eq 14
+          test "$(printf '%s\n' "${changed[@]}" | awk -F '\t' '$1=="A"{n++} END{print n+0}')" -eq 14
+          test "$(git rev-parse "$staging_commit:.tmp/rd04-nd-row-state-final-materializer-v1/permanent-workflow.yml")" = 165385d2f35f1d9c1f3da5ae71c4cc44c7a7e15e
+          test "$(git rev-parse "$staging_commit:data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/promoted-partial-field-matrix.json")" = 6ba11a6025021e9df8ac6535be8c42499654c233
