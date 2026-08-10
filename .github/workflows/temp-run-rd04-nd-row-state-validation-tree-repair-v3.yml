@@ -1,0 +1,131 @@
+name: TEMP run repaired RD-04 North Dakota row-state validation carrier v3
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-run-rd04-nd-row-state-validation-tree-repair-v3.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-run-rd04-nd-row-state-validation-tree-repair-v3
+  cancel-in-progress: false
+
+env:
+  CANONICAL_PARENT: bab9570ab043df7c5062e5a45a0717a82eed346b
+  SOURCE_WORKFLOW: .github/workflows/temp-repair-rd04-nd-row-state-validation-tree-v3.yml
+  WRAPPER_WORKFLOW: .github/workflows/temp-run-rd04-nd-row-state-validation-tree-repair-v3.yml
+  ACCIDENTAL_PATH: .tmp/accidental
+  OUT: /tmp/ssc-rd04-nd-row-state-validation-tree-repair-v3
+
+jobs:
+  execute:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-row-state-validation-tree-repair-v3' &&
+      github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned workflow parser
+        run: python -m pip install --disable-pip-version-check --no-input 'PyYAML==6.0.2'
+      - name: Bind three-commit carrier and execute the exact patched controller
+        id: execute
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          test "$(git rev-parse HEAD)" = "$EVENT_HEAD_SHA"
+          test "$EVENT_BASE_SHA" = "$CANONICAL_PARENT"
+          test "$(git rev-parse HEAD^^^)" = "$CANONICAL_PARENT"
+          test "$(git rev-list --count "$CANONICAL_PARENT..HEAD")" -eq 3
+          EXPECTED="$(printf '%s\n' "$SOURCE_WORKFLOW" "$WRAPPER_WORKFLOW" "$ACCIDENTAL_PATH" | LC_ALL=C sort)"
+          test "$(git diff --name-only "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" HEAD)"
+          git diff --check "$CANONICAL_PARENT" HEAD
+          test "$(cat "$ACCIDENTAL_PATH")" = accidental
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          python - "$SOURCE_WORKFLOW" "$OUT/controller-source.json" "$EVENT_HEAD_SHA" "$EVENT_BASE_SHA" <<'PY'
+          from __future__ import annotations
+          import hashlib,json,os,pathlib,subprocess,sys,yaml
+          path=pathlib.Path(sys.argv[1])
+          source_bytes=path.read_bytes()
+          doc=yaml.safe_load(source_bytes)
+          env={str(k):str(v) for k,v in doc['env'].items()}
+          steps=doc['jobs']['repair']['steps']
+          matches=[step for step in steps if step.get('id')=='repair']
+          assert len(matches)==1
+          script=matches[0]['run']
+          old_parent='test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"'
+          new_parent='test "$(git rev-parse HEAD^^^)" = "$CANONICAL_PARENT"'
+          old_count='test "$(git rev-list --count "$CANONICAL_PARENT..HEAD")" -eq 1'
+          new_count='test "$(git rev-list --count "$CANONICAL_PARENT..HEAD")" -eq 3'
+          old_names='test "$(git diff --name-only "$CANONICAL_PARENT" HEAD)" = "$CARRIER_PATH"'
+          new_names='EXPECTED_CARRIER="$(printf \'%s\\n\' "$CARRIER_PATH" ".github/workflows/temp-run-rd04-nd-row-state-validation-tree-repair-v3.yml" ".tmp/accidental" | LC_ALL=C sort)"\n          test "$(git diff --name-only "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_CARRIER"'
+          old_adds='test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD)" = "$CARRIER_PATH"'
+          new_adds='test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_CARRIER"'
+          for old,new in [(old_parent,new_parent),(old_count,new_count),(old_names,new_names),(old_adds,new_adds)]:
+              assert script.count(old)==1, (old,script.count(old))
+              script=script.replace(old,new)
+          controller=pathlib.Path('/tmp/rd04-row-state-tree-repair-controller.sh')
+          controller.write_text(script)
+          subprocess.run(['bash','-n',str(controller)],check=True)
+          env.update(os.environ)
+          env['EVENT_HEAD_SHA']=sys.argv[3]
+          env['EVENT_BASE_SHA']=sys.argv[4]
+          env['GH_TOKEN']=os.environ['GH_TOKEN']
+          meta={
+            'schema_version':'ssc-rd04-nd-row-state-validation-tree-repair-controller-source@1',
+            'source_workflow':str(path),
+            'source_workflow_bytes':len(source_bytes),
+            'source_workflow_sha256':hashlib.sha256(source_bytes).hexdigest(),
+            'patched_controller_bytes':controller.stat().st_size,
+            'patched_controller_sha256':hashlib.sha256(controller.read_bytes()).hexdigest(),
+            'topology_patch_count':4,
+            'substantive_controller_changes':0,
+          }
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(meta,indent=2,sort_keys=True)+'\n')
+          result=subprocess.run(['bash',str(controller)],env=env)
+          raise SystemExit(result.returncode)
+          PY
+      - name: Preserve corrected product publication evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-row-state-validation-tree-repair-v3-wrapper
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - name: Enforce corrected-product publication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.execute.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          jq -e '.state=="corrected_validation_product_published" and .corrected_product_branch_moved==true and .permanent_paths==7 and .modified_product_bytes==4 and .unchanged_product_bytes==3 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .row_terminalizations==0 and .class_closed==false and .promotion_executed_here==false' "$OUT/receipt.json" >/dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
