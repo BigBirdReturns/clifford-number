@@ -1,0 +1,207 @@
+name: TEMP terminalize exact Montana current-waiver promotion v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-terminalize-ssc-rd04-mt-current-waiver-promotion-v1.yml'
+
+permissions:
+  actions: read
+  checks: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: temp-terminalize-ssc-rd04-mt-current-waiver-promotion-v1
+  cancel-in-progress: false
+
+env:
+  OBSERVER_BRANCH: observer/ssc-rd04-mt-current-waiver-promotion-merge-controller-v1
+  OBSERVER_PATH: .github/workflows/temp-terminalize-ssc-rd04-mt-current-waiver-promotion-v1.yml
+  TARGET_BRANCH: agent/ssc-rd04-mt-current-waiver-promotion-product-v1
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion
+  STANDING_WORKFLOW_NAME: Qualify RD-04 Montana current-waiver promotion
+  OUT: /tmp/ssc-rd04-mt-current-waiver-promotion-terminal-v1
+
+jobs:
+  terminalize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'observer/ssc-rd04-mt-current-waiver-promotion-merge-controller-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Admit, review, merge, and prove exact product
+        id: terminalize
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OBSERVER_HEAD: ${{ github.event.pull_request.head.sha }}
+          OBSERVER_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -uo pipefail
+          rm -rf "$OUT" && mkdir -p "$OUT"
+          stage=bind_observer
+          state=failed_closed
+          reason=''
+          product_head=''; product_parent=''; product_tree=''; product_pr=''; merge_sha=''
+          standing_pr_run=''; release_pr_run=''; no_magic_pr_run=''
+          standing_push_run=''; release_push_run=''; no_magic_push_run=''
+          review_count=0; unresolved_threads=-1
+          finish() {
+            local code="$1"
+            python - "$OUT/receipt.json" "$stage" "$state" "$code" "$reason" "$product_head" "$product_parent" "$product_tree" "$product_pr" "$merge_sha" "$standing_pr_run" "$release_pr_run" "$no_magic_pr_run" "$standing_push_run" "$release_push_run" "$no_magic_push_run" "$review_count" "$unresolved_threads" <<'PY'
+          import json,os,sys
+          (path,stage,state,code,reason,phead,pparent,ptree,ppr,merge,sp,rp,np,ss,rs,ns,reviews,threads)=sys.argv[1:]
+          value={'schema_version':'ssc-rd04-mt-current-waiver-promotion-terminal-receipt@1','state':state,'failed_or_final_stage':stage,'exit_code':int(code),'reason':reason or None,'observer_base':os.environ['OBSERVER_BASE'],'observer_head':os.environ['OBSERVER_HEAD'],'product_branch':os.environ['TARGET_BRANCH'],'product_head':phead or None,'product_parent':pparent or None,'product_tree':ptree or None,'product_pr':int(ppr) if ppr else None,'canonical_merge':merge or None,'pull_request_runs':{'standing':int(sp) if sp else None,'release':int(rp) if rp else None,'no_magic_human':int(np) if np else None},'push_runs':{'standing':int(ss) if ss else None,'release':int(rs) if rs else None,'no_magic_human':int(ns) if ns else None},'review_count':int(reviews),'unresolved_review_threads':int(threads),'permanent_paths':14,'field_terminalizations':1 if state=='canonical_merge_and_push_verified' else 0,'matrix_updates':1 if state=='canonical_merge_and_push_verified' else 0,'row_state_mutations':0,'row_terminalizations':0,'class_closed':False,'cumulative_ledger_effect':'none','outside_human_dependency':False,'publication_effect':'none','adoption_effect':'none','graph_effect':'none'}
+          open(path,'w').write(json.dumps(value,indent=2,sort_keys=True)+'\n')
+          PY
+            (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+            exit "$code"
+          }
+          trap 'code=$?; reason=${reason:-unexpected_failure}; finish "$code"' ERR
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$OBSERVER_HEAD"
+          test "$(git rev-parse HEAD^)" = "$OBSERVER_BASE"
+          test "$(git rev-list --count "$OBSERVER_BASE"..HEAD)" = 1
+          test "$(git diff --name-only "$OBSERVER_BASE" HEAD)" = "$OBSERVER_PATH"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$OBSERVER_BASE"
+
+          stage=wait_product_branch
+          for attempt in $(seq 1 240); do
+            if git ls-remote --exit-code --heads origin "refs/heads/$TARGET_BRANCH" >/dev/null 2>&1; then
+              git fetch --no-tags --force origin "+refs/heads/$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
+              product_head="$(git rev-parse "origin/$TARGET_BRANCH")"
+              product_parent="$(git rev-parse "origin/$TARGET_BRANCH^")"
+              count="$(git diff --name-only --diff-filter=A "$OBSERVER_BASE" "$product_head" | awk 'END{print NR}')"
+              if test "$product_parent" = "$OBSERVER_BASE" && test "$count" = 14; then break; fi
+            fi
+            sleep 15
+          done
+          test "$product_parent" = "$OBSERVER_BASE"
+          test "$(git rev-list --count "$OBSERVER_BASE".."$product_head")" = 1
+          test "$(git diff --name-only --diff-filter=A "$OBSERVER_BASE" "$product_head" | awk 'END{print NR}')" = 14
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$OBSERVER_BASE" "$product_head")"
+          product_tree="$(git rev-parse "$product_head^{tree}")"
+          git diff --check "$OBSERVER_BASE" "$product_head"
+          git worktree add --detach "$OUT/product" "$product_head"
+          cd "$OUT/product"
+          jq -e --arg parent "$OBSERVER_BASE" '.canonical_parent==$parent and .permanent_path_count==14 and .semantic_counts.field_terminalizations==1 and .semantic_counts.matrix_updates==1 and .semantic_counts.row_state_mutations==0 and .semantic_counts.row_terminalizations==0 and .semantic_counts.montana_row_state=="still_open" and .semantic_counts.class_closed==false' "$PRODUCT_ROOT/product-manifest.json" >/dev/null
+          python tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.py --check > "$OUT/local-build.json"
+          python tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.py --self-test > "$OUT/local-validation.json"
+          python test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.test.py > "$OUT/local-adversarial.json"
+          cd - >/dev/null
+
+          stage=open_product_pr
+          gh pr list --repo "$GITHUB_REPOSITORY" --state open --head "$TARGET_BRANCH" --base main --json number,headRefOid,isDraft --limit 20 > "$OUT/product-prs.json"
+          product_pr="$(jq -r 'if length==1 then .[0].number else empty end' "$OUT/product-prs.json")"
+          if test -z "$product_pr"; then
+            cat > "$OUT/product-pr-body.md" <<EOF
+          This fourteen-addition product applies one exact validated Montana field candidate under RD-04 Issue #1017. It terminalizes only `US-STATE-MT / abawd_or_work_requirement_waiver_state_and_governing_period`, moves the matrix from 229 to 230 terminal cells, leaves Montana at eight terminal and one open field with row state `still_open`, and preserves zero row, class, cumulative-ledger, publication, adoption, graph, or outside-human effect.
+
+          Exact product head: `$product_head`
+
+          Exact product tree: `$product_tree`
+
+          The control question is whether this one-parent product passes its dedicated workflow, Release checks, No magic human, and independent exact-head review while changing no second cell or row.
+          EOF
+            gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$TARGET_BRANCH" --title 'Promote exact Montana current-waiver candidate' --body-file "$OUT/product-pr-body.md" > "$OUT/product-pr-url.txt"
+            product_pr="$(gh pr view --repo "$GITHUB_REPOSITORY" "$TARGET_BRANCH" --json number --jq .number)"
+          fi
+          test "$(gh pr view --repo "$GITHUB_REPOSITORY" "$product_pr" --json headRefOid --jq .headRefOid)" = "$product_head"
+          if test "$(gh pr view --repo "$GITHUB_REPOSITORY" "$product_pr" --json isDraft --jq .isDraft)" = true; then gh pr ready "$product_pr" --repo "$GITHUB_REPOSITORY"; fi
+          gh pr comment "$product_pr" --repo "$GITHUB_REPOSITORY" --body '@codex review'
+
+          stage=wait_exact_head_gates
+          for attempt in $(seq 1 240); do
+            gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${product_head}&event=pull_request&per_page=100" > "$OUT/pr-runs.json"
+            standing_pr_run="$(jq -r --arg name "$STANDING_WORKFLOW_NAME" '[.workflow_runs[]|select(.name==$name)]|sort_by(.created_at)|last|.id // empty' "$OUT/pr-runs.json")"
+            release_pr_run="$(jq -r '[.workflow_runs[]|select(.name=="Release checks")]|sort_by(.created_at)|last|.id // empty' "$OUT/pr-runs.json")"
+            no_magic_pr_run="$(jq -r '[.workflow_runs[]|select(.name=="No magic human gate")]|sort_by(.created_at)|last|.id // empty' "$OUT/pr-runs.json")"
+            all_done=true
+            for id in "$standing_pr_run" "$release_pr_run" "$no_magic_pr_run"; do
+              test -n "$id" || all_done=false
+              test -z "$id" || test "$(jq -r --argjson id "$id" '.workflow_runs[]|select(.id==$id)|.status' "$OUT/pr-runs.json")" = completed || all_done=false
+            done
+            $all_done && break
+            sleep 15
+          done
+          for id in "$standing_pr_run" "$release_pr_run" "$no_magic_pr_run"; do test -n "$id"; test "$(jq -r --argjson id "$id" '.workflow_runs[]|select(.id==$id)|.conclusion' "$OUT/pr-runs.json")" = success; done
+
+          stage=wait_review_ledger
+          for attempt in $(seq 1 240); do
+            gh api "repos/${GITHUB_REPOSITORY}/pulls/${product_pr}/reviews?per_page=100" > "$OUT/reviews.json"
+            review_count="$(jq '[.[]|select(.user.login=="chatgpt-codex-connector" or .user.login=="github-copilot")] | length' "$OUT/reviews.json")"
+            changes="$(jq '[.[]|select(.state=="CHANGES_REQUESTED")]|length' "$OUT/reviews.json")"
+            gh api graphql -f query='query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){pullRequest(number:$n){reviewThreads(first:100){nodes{isResolved}}}}}' -F o="${GITHUB_REPOSITORY%/*}" -F r="${GITHUB_REPOSITORY#*/}" -F n="$product_pr" > "$OUT/threads.json"
+            unresolved_threads="$(jq '[.data.repository.pullRequest.reviewThreads.nodes[]|select(.isResolved==false)]|length' "$OUT/threads.json")"
+            test "$review_count" -ge 1 && test "$changes" = 0 && test "$unresolved_threads" = 0 && break
+            sleep 15
+          done
+          test "$review_count" -ge 1
+          test "$(jq '[.[]|select(.state=="CHANGES_REQUESTED")]|length' "$OUT/reviews.json")" = 0
+          test "$unresolved_threads" = 0
+
+          stage=merge_exact_head
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$OBSERVER_BASE"
+          gh api -X PUT "repos/${GITHUB_REPOSITORY}/pulls/${product_pr}/merge" -f merge_method=merge -f sha="$product_head" > "$OUT/merge.json"
+          jq -e '.merged==true' "$OUT/merge.json" >/dev/null
+          merge_sha="$(jq -r .sha "$OUT/merge.json")"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$merge_sha"
+          read -r observed p1 p2 extra <<< "$(git rev-list --parents -n1 "$merge_sha")"
+          test "$p1" = "$OBSERVER_BASE" && test "$p2" = "$product_head" && test -z "${extra:-}"
+          test "$(git rev-parse "$merge_sha^{tree}")" = "$product_tree"
+
+          stage=wait_push_replay
+          for attempt in $(seq 1 240); do
+            gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${merge_sha}&event=push&per_page=100" > "$OUT/push-runs.json"
+            standing_push_run="$(jq -r --arg name "$STANDING_WORKFLOW_NAME" '[.workflow_runs[]|select(.name==$name)]|sort_by(.created_at)|last|.id // empty' "$OUT/push-runs.json")"
+            release_push_run="$(jq -r '[.workflow_runs[]|select(.name=="Release checks")]|sort_by(.created_at)|last|.id // empty' "$OUT/push-runs.json")"
+            no_magic_push_run="$(jq -r '[.workflow_runs[]|select(.name=="No magic human gate")]|sort_by(.created_at)|last|.id // empty' "$OUT/push-runs.json")"
+            all_done=true
+            for id in "$standing_push_run" "$release_push_run" "$no_magic_push_run"; do
+              test -n "$id" || all_done=false
+              test -z "$id" || test "$(jq -r --argjson id "$id" '.workflow_runs[]|select(.id==$id)|.status' "$OUT/push-runs.json")" = completed || all_done=false
+            done
+            $all_done && break
+            sleep 15
+          done
+          for id in "$standing_push_run" "$release_push_run" "$no_magic_push_run"; do test -n "$id"; test "$(jq -r --argjson id "$id" '.workflow_runs[]|select(.id==$id)|.conclusion' "$OUT/push-runs.json")" = success; done
+          state=canonical_merge_and_push_verified
+          stage=complete
+          reason=''
+          finish 0
+      - name: Preserve terminal receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-current-waiver-promotion-terminal-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - name: Report terminal state
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          jq -r '"Montana current-waiver promotion terminal controller reached `\(.state)` at stage `\(.failed_or_final_stage)`.\n\n```text\nproduct PR: \(.product_pr)\nproduct head: \(.product_head)\nproduct tree: \(.product_tree)\ncanonical merge: \(.canonical_merge)\nreview count: \(.review_count)\nunresolved threads: \(.unresolved_review_threads)\nPR standing / release / no-magic runs: \(.pull_request_runs.standing) / \(.pull_request_runs.release) / \(.pull_request_runs.no_magic_human)\npush standing / release / no-magic runs: \(.push_runs.standing) / \(.push_runs.release) / \(.push_runs.no_magic_human)\nreason: \(.reason)\n```\n\nThe controller creates no row, class, ledger, publication, adoption, graph, or outside-human effect. The control question is whether the exact canonical receipt proves only one Montana field terminalization and leaves the derivative row-state cell for a separate request-free transaction."' "$OUT/receipt.json" > /tmp/comment.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
