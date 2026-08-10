@@ -1,0 +1,122 @@
+name: TEMP repair RD-04 North Dakota promoted current-result counters v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - agent/ssc-rd04-nd-current-gap-promotion-p2-repair-base-v1
+    paths:
+      - '.tmp/rd04-nd-current-gap-promotion-p2-repair-v1/trigger.json'
+
+permissions:
+  contents: write
+
+env:
+  CANONICAL_PARENT: 77aef3313e85e1fddc68805a9f22252ff147b4e8
+  OLD_PRODUCT_COMMIT: 91ec5f11266b24cc935a33566db1c9d5db258e75
+  OLD_PRODUCT_TREE: 5210b12a1158af5ac4333d5ef2bb9131bd9c2fb2
+  PRODUCT_BRANCH: agent/ssc-rd04-nd-current-public-record-gap-promotion-v1
+  BASE_BRANCH: agent/ssc-rd04-nd-current-gap-promotion-p2-repair-base-v1
+  HEAD_BRANCH: agent/ssc-rd04-nd-current-gap-promotion-p2-repair-trigger-v1
+  WORKFLOW_PATH: .github/workflows/temp-rd04-nd-current-gap-promotion-p2-repair-v1.yml
+  SCRIPT_PATH: .tmp/rd04-nd-current-gap-promotion-p2-repair-v1/repair.py
+  TRIGGER_PATH: .tmp/rd04-nd-current-gap-promotion-p2-repair-v1/trigger.json
+  SCRIPT_BYTES: '16887'
+  SCRIPT_SHA256: 5c9fca504b3ec52dc6313208956d987023d9cc73038401ad724da13e6646fcb5
+  SCRIPT_BLOB: fee42e1963f75e0eaa59297c18ec99e153b5b4fc
+  OUT: /tmp/ssc-rd04-nd-current-gap-promotion-p2-repair-v1
+
+jobs:
+  repair:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-current-gap-promotion-p2-repair-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-current-gap-promotion-p2-repair-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Bind exact carrier, script, canonical parent, and product lease
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          printf '%s\n' bind > "$OUT/stage"
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          BASE_SHA='${{ github.event.pull_request.base.sha }}'
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          test "$(git rev-list --count "$CANONICAL_PARENT..$BASE_SHA")" -eq 2
+          test "$(git rev-list --count "$BASE_SHA..$HEAD_SHA")" -eq 1
+          EXPECTED_BASE="$(printf '%s\n' "$WORKFLOW_PATH" "$SCRIPT_PATH" | LC_ALL=C sort)"
+          test "$(git diff --name-only "$CANONICAL_PARENT" "$BASE_SHA" | LC_ALL=C sort)" = "$EXPECTED_BASE"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$BASE_SHA" | LC_ALL=C sort)" = "$EXPECTED_BASE"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" "$BASE_SHA")"
+          test "$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA")" = "$TRIGGER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$BASE_SHA" "$HEAD_SHA")"
+          test "$(stat -c %s "$SCRIPT_PATH")" = "$SCRIPT_BYTES"
+          test "$(sha256sum "$SCRIPT_PATH" | cut -d' ' -f1)" = "$SCRIPT_SHA256"
+          test "$(git hash-object "$SCRIPT_PATH")" = "$SCRIPT_BLOB"
+          python -m py_compile "$SCRIPT_PATH"
+          git diff --check "$CANONICAL_PARENT" "$HEAD_SHA"
+
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          git fetch --no-tags --force origin "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "refs/remotes/origin/$PRODUCT_BRANCH")" = "$OLD_PRODUCT_COMMIT"
+          test "$(git rev-parse "$OLD_PRODUCT_COMMIT^")" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "$OLD_PRODUCT_COMMIT^{tree}")" = "$OLD_PRODUCT_TREE"
+          printf '%s\n' bound > "$OUT/stage"
+
+      - name: Construct, qualify, and publish exact replacement product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf '%s\n' repair > "$OUT/stage"
+          python "$SCRIPT_PATH" "$OUT/receipt.json" | tee "$OUT/controller.log"
+          python - "$OUT/receipt.json" <<'PY'
+          import json,pathlib,sys
+          receipt=json.loads(pathlib.Path(sys.argv[1]).read_text())
+          assert receipt['state']=='replacement_product_published'
+          assert receipt['canonical_parent']=='77aef3313e85e1fddc68805a9f22252ff147b4e8'
+          assert receipt['old_product_commit']=='91ec5f11266b24cc935a33566db1c9d5db258e75'
+          assert receipt['new_product_commit']!=receipt['old_product_commit']
+          assert receipt['permanent_paths']==8
+          assert len(receipt['modified_product_files'])==4
+          assert receipt['field_terminalizations']==1
+          assert receipt['matrix_updates']==1
+          assert receipt['row_state_mutations']==0
+          assert receipt['row_terminalizations']==0
+          assert receipt['class_closed'] is False
+          assert receipt['cumulative_ledger_effect']=='none'
+          assert receipt['source_requests']==receipt['route_executions']==receipt['source_admissions']==0
+          assert receipt['outside_human_dependency'] is False
+          PY
+          printf '%s\n' complete > "$OUT/stage"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+
+      - name: Preserve P2 repair receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-current-gap-promotion-p2-repair-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
