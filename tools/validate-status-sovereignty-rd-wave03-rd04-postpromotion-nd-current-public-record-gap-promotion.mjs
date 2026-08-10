@@ -8,24 +8,6 @@ import { C, canon, sha, gitBlob, buildModel, buildProduct } from './build-status
 const assert = (ok, msg) => { if (!ok) throw new Error(msg); };
 const read = (root, name) => JSON.parse(fs.readFileSync(path.join(root, name), 'utf8'));
 const deepEqual = (a,b) => JSON.stringify(a) === JSON.stringify(b);
-const sortedKeys = obj => Object.keys(obj).sort();
-const exactKeys = (obj, expected) => deepEqual(sortedKeys(obj), [...expected].sort());
-
-const AUTHORITY_KEYS = [
-  'source_requests',
-  'route_executions',
-  'source_admissions',
-  'field_terminalizations',
-  'matrix_updates',
-  'row_state_mutations',
-  'row_terminalizations',
-  'class_closed',
-  'cumulative_ledger_effect',
-  'publication_effect',
-  'adoption_effect',
-  'graph_effect',
-  'outside_human_dependency',
-];
 
 const EXPECTED_PERMANENT_PATHS = [
   '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.yml',
@@ -43,9 +25,24 @@ const EXPECTED_PERMANENT_PATHS = [
   'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs',
   'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs',
 ];
-const MANIFEST_PATH = `${C.ROOT}/product-manifest.json`;
+const MANIFEST_PATH = 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/product-manifest.json';
 const EXPECTED_HASHED_PATHS = EXPECTED_PERMANENT_PATHS.filter(p => p !== MANIFEST_PATH);
-const MANIFEST_KEYS = [
+const AUTHORITY_KEYS = [
+  'source_requests',
+  'route_executions',
+  'source_admissions',
+  'field_terminalizations',
+  'matrix_updates',
+  'row_state_mutations',
+  'row_terminalizations',
+  'class_closed',
+  'cumulative_ledger_effect',
+  'publication_effect',
+  'adoption_effect',
+  'graph_effect',
+  'outside_human_dependency',
+];
+const MANIFEST_ROOT_KEYS = [
   'schema_version',
   'permanent_path_count',
   'hashed_file_count',
@@ -54,7 +51,14 @@ const MANIFEST_KEYS = [
   'combined_sha256',
   'authority_boundary',
 ];
-const HASHED_FILE_KEYS = ['path', 'bytes', 'sha256', 'git_blob'];
+const HASHED_RECORD_KEYS = ['path','bytes','sha256','git_blob'];
+
+function assertExactKeys(label, obj, expected) {
+  assert(obj && typeof obj === 'object' && !Array.isArray(obj), `${label} missing or not an object`);
+  const actual = Object.keys(obj).sort();
+  const wanted = [...expected].sort();
+  assert(deepEqual(actual, wanted), `${label} key set mismatch`);
+}
 
 export function loadModel(repoRoot = process.cwd()) {
   const root = path.join(repoRoot, C.ROOT);
@@ -72,8 +76,7 @@ export function loadModel(repoRoot = process.cwd()) {
 }
 
 function validateAuthorityBoundary(label, obj) {
-  assert(obj && typeof obj === 'object' && !Array.isArray(obj), `${label} authority boundary missing`);
-  assert(exactKeys(obj, AUTHORITY_KEYS), `${label} authority boundary key set mismatch`);
+  assertExactKeys(`${label} authority boundary`, obj, AUTHORITY_KEYS);
   assert(obj.source_requests === 0 && obj.route_executions === 0 && obj.source_admissions === 0, `${label} network/source authority widened`);
   assert(obj.field_terminalizations === 1 && obj.matrix_updates === 1, `${label} field/matrix denominator mismatch`);
   assert(obj.row_state_mutations === 0 && obj.row_terminalizations === 0, `${label} row authority widened`);
@@ -117,6 +120,8 @@ export function validateModel(m) {
   assert(m.matrix.counts.materialized_cells === 450 && m.matrix.counts.terminal_cells === 228 && m.matrix.counts.still_open_cells === 222, 'matrix global counts mismatch');
   assert(m.matrix.counts.terminal_substantive_cells === 118 && m.matrix.counts.still_open_substantive_cells === 182, 'matrix substantive counts mismatch');
   assert(m.matrix.counts.terminal_units === 10 && m.matrix.counts.class_closed === false, 'matrix unit or class mismatch');
+  assert(m.matrix.current_result.terminal_cells === '228/450' && m.matrix.current_result.still_open_cells === '222/450', 'matrix current-result global counts mismatch');
+  assert(m.matrix.current_result.terminal_substantive_cells === 118 && m.matrix.current_result.still_open_substantive_cells === 182, 'matrix current-result substantive counts mismatch');
   const nd = m.matrix.rows.find(r => r.unit_id === 'US-STATE-ND');
   assert(nd && nd.row_state === 'still_open' && nd.terminal_fields === 8 && nd.open_fields === 1, 'North Dakota row projection mismatch');
   const target = nd.cells.find(c => c.field_id === candidate.field_id);
@@ -138,20 +143,23 @@ export function validateModel(m) {
     ['manifest', m.manifest.authority_boundary],
   ]) validateAuthorityBoundary(label, obj);
 
-  assert(exactKeys(m.manifest, MANIFEST_KEYS), 'manifest root key set mismatch');
-  assert(m.manifest.permanent_path_count === 14 && m.manifest.hashed_file_count === 13, 'manifest denominator mismatch');
-  assert(Array.isArray(m.manifest.permanent_paths) && m.manifest.permanent_paths.length === 14, 'manifest permanent-path array denominator mismatch');
-  assert(new Set(m.manifest.permanent_paths).size === 14, 'manifest permanent paths are not unique');
-  assert(deepEqual(m.manifest.permanent_paths, EXPECTED_PERMANENT_PATHS), 'manifest permanent-path inventory mismatch');
-  assert(Array.isArray(m.manifest.hashed_files) && m.manifest.hashed_files.length === 13, 'manifest hashed-file array denominator mismatch');
+  assertExactKeys('manifest root', m.manifest, MANIFEST_ROOT_KEYS);
+  assert(m.manifest.schema_version === 'ssc-rd04-nd-current-public-record-gap-promotion-manifest@1', 'manifest schema version mismatch');
+  assert(m.manifest.permanent_path_count === EXPECTED_PERMANENT_PATHS.length, 'manifest permanent-path scalar mismatch');
+  assert(m.manifest.hashed_file_count === EXPECTED_HASHED_PATHS.length, 'manifest hashed-file scalar mismatch');
+  assert(Array.isArray(m.manifest.permanent_paths) && deepEqual(m.manifest.permanent_paths, EXPECTED_PERMANENT_PATHS), 'manifest permanent-path inventory mismatch');
+  assert(new Set(m.manifest.permanent_paths).size === EXPECTED_PERMANENT_PATHS.length, 'manifest permanent-path inventory contains duplicates');
+  assert(Array.isArray(m.manifest.hashed_files) && m.manifest.hashed_files.length === EXPECTED_HASHED_PATHS.length, 'manifest hashed-file denominator mismatch');
   const hashedPaths = m.manifest.hashed_files.map(rec => rec.path);
-  assert(new Set(hashedPaths).size === 13, 'manifest hashed-file paths are not unique');
-  assert(deepEqual(hashedPaths, EXPECTED_HASHED_PATHS), 'manifest hashed-file inventory mismatch');
+  assert(deepEqual(hashedPaths, EXPECTED_HASHED_PATHS), 'manifest hashed-path inventory mismatch');
+  assert(new Set(hashedPaths).size === EXPECTED_HASHED_PATHS.length, 'manifest hashed-path inventory contains duplicates');
 
   const rows = [];
   for (const rec of m.manifest.hashed_files) {
-    assert(rec && typeof rec === 'object' && !Array.isArray(rec), 'manifest hashed-file record missing');
-    assert(exactKeys(rec, HASHED_FILE_KEYS), `manifest hashed-file key set mismatch ${rec.path ?? '<missing>'}`);
+    assertExactKeys(`manifest record ${rec.path}`, rec, HASHED_RECORD_KEYS);
+    assert(Number.isInteger(rec.bytes) && rec.bytes >= 0, `manifest byte count invalid ${rec.path}`);
+    assert(/^[0-9a-f]{64}$/.test(rec.sha256), `manifest sha format invalid ${rec.path}`);
+    assert(/^[0-9a-f]{40}$/.test(rec.git_blob), `manifest blob format invalid ${rec.path}`);
     const bytes = fs.readFileSync(path.join(m.repoRoot, rec.path));
     assert(bytes.length === rec.bytes, `manifest bytes mismatch ${rec.path}`);
     assert(sha(bytes) === rec.sha256, `manifest sha mismatch ${rec.path}`);
@@ -159,6 +167,7 @@ export function validateModel(m) {
     rows.push(`${rec.path}\0${rec.sha256}\0${rec.bytes}\n`);
   }
   rows.sort();
+  assert(/^[0-9a-f]{64}$/.test(m.manifest.combined_sha256), 'manifest combined sha format invalid');
   assert(crypto.createHash('sha256').update(rows.join('')).digest('hex') === m.manifest.combined_sha256, 'manifest combined digest mismatch');
   return {state:'qualified_one_cell_promotion',terminal_cells:228,open_cells:222,nd_terminal_fields:8,nd_open_fields:1,nd_row_state:'still_open'};
 }

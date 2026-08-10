@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { C, buildProduct } from '../tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs';
@@ -71,15 +70,10 @@ function reject(name, mutate) {
   assert.throws(() => validateModel(model), undefined, name);
   refusals += 1;
 }
-function recomputeManifestDigest(model) {
-  const rows = model.manifest.hashed_files
-    .map(rec => `${rec.path}\0${rec.sha256}\0${rec.bytes}\n`)
-    .sort();
-  model.manifest.combined_sha256 = crypto.createHash('sha256').update(rows.join('')).digest('hex');
-}
-
 reject('terminal count inflation', m => m.matrix.counts.terminal_cells = 229);
 reject('open count deflation', m => m.matrix.counts.still_open_cells = 221);
+reject('current-result global counter rollback', m => m.matrix.current_result.terminal_cells = '227/450');
+reject('current-result substantive counter rollback', m => m.matrix.current_result.terminal_substantive_cells = 117);
 reject('unit terminalization', m => m.matrix.counts.terminal_units = 11);
 reject('class closure', m => m.matrix.counts.class_closed = true);
 reject('row transition', m => m.matrix.rows.find(r => r.unit_id === 'US-STATE-ND').row_state = 'terminal');
@@ -98,7 +92,10 @@ reject('publication effect', m => m.decision.authority_boundary.publication_effe
 reject('graph effect', m => m.summary.authority_boundary.graph_effect = 'edge_created');
 reject('open census shrink', m => m.census.open_cell_count = 221);
 reject('non-target census corruption', m => m.census.open_cells.find(cell => cell.unit_id === 'US-STATE-AL').typed_gap = 'corrupted_non_target_row');
+reject('manifest schema version drift', m => m.manifest.schema_version = 'ssc-rd04-nd-current-public-record-gap-promotion-manifest@2');
 reject('manifest path denominator', m => m.manifest.permanent_path_count = 13);
+reject('manifest hashed-file denominator', m => m.manifest.hashed_file_count = 12);
+reject('manifest combined digest forgery', m => m.manifest.combined_sha256 = '0'.repeat(64));
 reject('manifest network request authority', m => m.manifest.authority_boundary.source_requests = 1);
 reject('manifest source admission authority', m => m.manifest.authority_boundary.source_admissions = 1);
 reject('manifest row mutation authority', m => m.manifest.authority_boundary.row_state_mutations = 1);
@@ -110,19 +107,11 @@ reject('manifest graph effect', m => m.manifest.authority_boundary.graph_effect 
 reject('manifest outside-human dependency', m => m.manifest.authority_boundary.outside_human_dependency = true);
 reject('manifest undeclared authority claim', m => m.manifest.authority_boundary.prevalence_effect = 'claimed');
 reject('manifest undeclared root claim', m => m.manifest.prevalence_effect = 'claimed');
-reject('manifest permanent path forgery', m => m.manifest.permanent_paths[0] = 'forged/undeclared-path');
-reject('manifest permanent path duplication', m => m.manifest.permanent_paths[0] = m.manifest.permanent_paths[1]);
-reject('manifest hashed-file omission with recomputed digest', m => {
-  m.manifest.hashed_files.pop();
-  recomputeManifestDigest(m);
-});
-reject('manifest hashed-file duplication with recomputed digest', m => {
-  m.manifest.hashed_files[0] = structuredClone(m.manifest.hashed_files[1]);
-  recomputeManifestDigest(m);
-});
-reject('manifest hashed-file path forgery with recomputed digest', m => {
-  m.manifest.hashed_files[0].path = 'README.md';
-  recomputeManifestDigest(m);
-});
-reject('manifest hashed-file undeclared key', m => m.manifest.hashed_files[0].authority_effect = 'claimed');
-console.log(JSON.stringify({state:'builder_independence_schema_root_exact_manifest_inventory_and_adversarial_refusals_complete',refusals}, null, 2));
+reject('manifest missing hashed entry', m => m.manifest.hashed_files.pop());
+reject('manifest duplicate hashed path', m => m.manifest.hashed_files.at(-1).path = m.manifest.hashed_files[0].path);
+reject('manifest arbitrary permanent path', m => m.manifest.permanent_paths[0] = 'arbitrary/path.json');
+reject('manifest duplicate permanent path', m => m.manifest.permanent_paths[m.manifest.permanent_paths.length - 1] = m.manifest.permanent_paths[0]);
+reject('manifest hashed record extra property', m => m.manifest.hashed_files[0].authority_effect = 'claimed');
+reject('manifest hashed path order', m => [m.manifest.hashed_files[0],m.manifest.hashed_files[1]] = [m.manifest.hashed_files[1],m.manifest.hashed_files[0]]);
+reject('manifest permanent path order', m => [m.manifest.permanent_paths[0],m.manifest.permanent_paths[1]] = [m.manifest.permanent_paths[1],m.manifest.permanent_paths[0]]);
+console.log(JSON.stringify({state:'builder_independence_schema_root_exact_manifest_contract_topology_and_adversarial_refusals_complete',refusals}, null, 2));
