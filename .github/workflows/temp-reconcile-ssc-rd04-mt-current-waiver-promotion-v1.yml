@@ -1,0 +1,191 @@
+name: TEMP reconcile exact Montana current-waiver promotion v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-reconcile-ssc-rd04-mt-current-waiver-promotion-v1.yml'
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: temp-reconcile-ssc-rd04-mt-current-waiver-promotion-v1
+  cancel-in-progress: false
+
+env:
+  OBSERVER_BRANCH: observer/ssc-rd04-mt-current-waiver-promotion-terminal-v1
+  OBSERVER_PATH: .github/workflows/temp-reconcile-ssc-rd04-mt-current-waiver-promotion-v1.yml
+  MATERIALIZER_BRANCH: agent/ssc-rd04-mt-current-waiver-promotion-materializer-base-v1
+  MATERIALIZER_WORKFLOW: TEMP materialize exact Montana current-waiver promotion v1
+  MATERIALIZER_ARTIFACT: ssc-rd04-mt-current-waiver-promotion-materializer-v1
+  TARGET_BRANCH: agent/ssc-rd04-mt-current-waiver-promotion-product-v1
+  STANDING_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-mt-current-waiver-promotion.yml
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion
+  OUT: /tmp/ssc-rd04-mt-current-waiver-promotion-reconciliation-v1
+
+jobs:
+  reconcile:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'observer/ssc-rd04-mt-current-waiver-promotion-terminal-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Reconcile materializer and exact product branch
+        id: reconcile
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OBSERVER_HEAD: ${{ github.event.pull_request.head.sha }}
+          OBSERVER_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -uo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT/materializer-artifact"
+          stage=bind_observer
+          result=failed_closed
+          materializer_pr=''
+          materializer_head=''
+          materializer_run=''
+          materializer_conclusion=''
+          artifact_id=''
+          artifact_digest=''
+          product_head=''
+          product_parent=''
+          product_tree=''
+          product_path_count=0
+          product_locally_qualified=false
+          fail_reason=''
+          finalize() {
+            local code="$1"
+            python - "$OUT/receipt.json" "$stage" "$result" "$code" "$materializer_pr" "$materializer_head" "$materializer_run" "$materializer_conclusion" "$artifact_id" "$artifact_digest" "$product_head" "$product_parent" "$product_tree" "$product_path_count" "$product_locally_qualified" "$fail_reason" <<'PY'
+          import json,os,sys
+          (path,stage,state,code,mpr,mhead,mrun,mconclusion,aid,adigest,phead,pparent,ptree,pcount,localq,reason)=sys.argv[1:]
+          value={
+            'schema_version':'ssc-rd04-mt-current-waiver-promotion-reconciliation@1',
+            'state':state,'failed_or_final_stage':stage,'exit_code':int(code),
+            'observer_base':os.environ['OBSERVER_BASE'],'observer_head':os.environ['OBSERVER_HEAD'],
+            'materializer_pr':int(mpr) if mpr else None,'materializer_head':mhead or None,
+            'materializer_run':int(mrun) if mrun else None,'materializer_conclusion':mconclusion or None,
+            'materializer_artifact':int(aid) if aid else None,'materializer_artifact_digest':adigest or None,
+            'product_branch':os.environ['TARGET_BRANCH'],'product_head':phead or None,
+            'product_parent':pparent or None,'product_tree':ptree or None,
+            'permanent_path_count':int(pcount),'product_locally_qualified':localq=='true',
+            'reason':reason or None,
+            'source_requests':0,'route_executions':0,'source_admissions':0,
+            'field_terminalizations_executed_here':0,'matrix_updates_executed_here':0,
+            'row_state_mutations':0,'row_terminalizations':0,'class_closed':False,
+            'cumulative_ledger_effect':'none','outside_human_dependency':False,
+            'publication_effect':'none','adoption_effect':'none','graph_effect':'none',
+            'merge_authority':'none'
+          }
+          open(path,'w').write(json.dumps(value,indent=2,sort_keys=True)+'\n')
+          PY
+            (
+              cd "$OUT"
+              find . -type f ! -path './materializer-artifact/*' ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+            exit "$code"
+          }
+          trap 'code=$?; fail_reason=${fail_reason:-unexpected_failure}; finalize "$code"' ERR
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$OBSERVER_HEAD"
+          test "$(git rev-parse HEAD^)" = "$OBSERVER_BASE"
+          test "$(git rev-list --count "$OBSERVER_BASE"..HEAD)" = 1
+          test "$(git diff --name-only "$OBSERVER_BASE" HEAD)" = "$OBSERVER_PATH"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$OBSERVER_BASE"
+
+          stage=locate_materializer
+          gh pr list --repo "$GITHUB_REPOSITORY" --state all --head "$MATERIALIZER_BRANCH" --json number,headRefOid,state --limit 20 > "$OUT/materializer-prs.json"
+          materializer_pr="$(jq -r 'if length==1 then .[0].number else empty end' "$OUT/materializer-prs.json")"
+          materializer_head="$(jq -r 'if length==1 then .[0].headRefOid else empty end' "$OUT/materializer-prs.json")"
+          test -n "$materializer_pr" && test -n "$materializer_head"
+
+          stage=wait_materializer
+          for attempt in $(seq 1 240); do
+            gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${materializer_head}&event=pull_request&per_page=100" > "$OUT/materializer-runs.json"
+            materializer_run="$(jq -r --arg name "$MATERIALIZER_WORKFLOW" '[.workflow_runs[]|select(.name==$name)]|sort_by(.created_at)|last|.id // empty' "$OUT/materializer-runs.json")"
+            if test -n "$materializer_run"; then
+              status="$(jq -r --argjson id "$materializer_run" '.workflow_runs[]|select(.id==$id)|.status' "$OUT/materializer-runs.json")"
+              materializer_conclusion="$(jq -r --argjson id "$materializer_run" '.workflow_runs[]|select(.id==$id)|.conclusion // ""' "$OUT/materializer-runs.json")"
+              test "$status" = completed && break
+            fi
+            sleep 15
+          done
+          test -n "$materializer_run"
+          test "$materializer_conclusion" = success
+
+          stage=authenticate_materializer_artifact
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${materializer_run}/artifacts?per_page=100" > "$OUT/materializer-artifacts.json"
+          artifact_id="$(jq -r --arg name "$MATERIALIZER_ARTIFACT" '[.artifacts[]|select(.name==$name and .expired==false)]|sort_by(.created_at)|last|.id // empty' "$OUT/materializer-artifacts.json")"
+          artifact_digest="$(jq -r --arg name "$MATERIALIZER_ARTIFACT" '[.artifacts[]|select(.name==$name and .expired==false)]|sort_by(.created_at)|last|.digest // empty' "$OUT/materializer-artifacts.json")"
+          test -n "$artifact_id" && test -n "$artifact_digest"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > "$OUT/materializer-artifact.zip"
+          test "sha256:$(sha256sum "$OUT/materializer-artifact.zip"|awk '{print $1}')" = "$artifact_digest"
+          unzip -t "$OUT/materializer-artifact.zip" > "$OUT/materializer-zip-test.txt"
+          unzip -q "$OUT/materializer-artifact.zip" -d "$OUT/materializer-artifact"
+          test -f "$OUT/materializer-artifact/receipt.json"
+          jq -e '.state=="qualified_one_parent_product_published" and .exit_code==0 and .permanent_paths==14 and .field_terminalizations==1 and .matrix_updates==1 and .row_state_mutations==0 and .row_terminalizations==0 and .class_closed==false' "$OUT/materializer-artifact/receipt.json" >/dev/null
+
+          stage=bind_product_branch
+          git fetch --no-tags --force origin "+refs/heads/$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
+          product_head="$(git rev-parse "origin/$TARGET_BRANCH")"
+          product_parent="$(git rev-parse "origin/$TARGET_BRANCH^")"
+          product_tree="$(git rev-parse "origin/$TARGET_BRANCH^{tree}")"
+          test "$product_head" = "$(jq -r .product_commit "$OUT/materializer-artifact/receipt.json")"
+          test "$product_tree" = "$(jq -r .product_tree "$OUT/materializer-artifact/receipt.json")"
+          test "$product_parent" = "$OBSERVER_BASE"
+          test "$(git rev-list --count "$OBSERVER_BASE".."$product_head")" = 1
+          product_path_count="$(git diff --name-only --diff-filter=A "$OBSERVER_BASE" "$product_head"|awk 'END{print NR}')"
+          test "$product_path_count" = 14
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$OBSERVER_BASE" "$product_head")"
+          git diff --check "$OBSERVER_BASE" "$product_head"
+
+          stage=independent_product_qualification
+          git worktree add --detach "$OUT/product-worktree" "$product_head"
+          cd "$OUT/product-worktree"
+          test -f "$PRODUCT_ROOT/product-manifest.json"
+          jq -e --arg parent "$OBSERVER_BASE" '.canonical_parent==$parent and .addition_only==true and .permanent_path_count==14 and .semantic_counts.field_terminalizations==1 and .semantic_counts.matrix_updates==1 and .semantic_counts.row_state_mutations==0 and .semantic_counts.row_terminalizations==0 and .semantic_counts.montana_row_state=="still_open" and .semantic_counts.class_closed==false' "$PRODUCT_ROOT/product-manifest.json" >/dev/null
+          python tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.py --check > "$OUT/independent-build.json"
+          python tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.py --self-test > "$OUT/independent-validation.json"
+          python test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-current-waiver-promotion.test.py > "$OUT/independent-adversarial.json"
+          product_locally_qualified=true
+          result=qualified_product_branch_reconciled
+          stage=complete
+          fail_reason=''
+          finalize 0
+      - name: Preserve exact reconciliation receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-current-waiver-promotion-reconciliation-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - name: Report reconciliation to RD-04 ledger
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          R="$OUT/receipt.json"
+          jq -r '"Montana promotion reconciliation reached `\(.state)` at stage `\(.failed_or_final_stage)`.\n\n```text\nmaterializer PR: \(.materializer_pr)\nmaterializer run: \(.materializer_run)\nmaterializer conclusion: \(.materializer_conclusion)\nmaterializer artifact: \(.materializer_artifact)\nproduct head: \(.product_head)\nproduct parent: \(.product_parent)\nproduct tree: \(.product_tree)\npermanent paths: \(.permanent_path_count)\nlocal qualification: \(.product_locally_qualified)\nreason: \(.reason)\n```\n\nThis reconciliation creates no canonical effect and grants no merge authority. The control question is whether the exact product head may now enter its own hosted and independent review gates without any stale parent, path, or semantic ambiguity."' "$R" > /tmp/comment.md
+          gh issue comment 1017 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
