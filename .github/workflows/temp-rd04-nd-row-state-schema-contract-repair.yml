@@ -1,0 +1,99 @@
+name: TEMP repair RD-04 North Dakota row-state schema contract
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-rd04-nd-row-state-schema-contract-repair.yml'
+      - '.tmp/rd04-nd-row-state-schema-contract-repair/materialize.py'
+      - '.tmp/rd04-nd-row-state-schema-contract-repair/trigger.json'
+
+permissions:
+  contents: write
+
+env:
+  CANONICAL_PARENT: 283c5993cb2ac0bff173c72aba70088c67b2ac3c
+  SOURCE_HEAD: 3ed3e9a983e6807e44326917218352738cefe22e
+  SOURCE_BRANCH: agent/ssc-rd04-nd-current-public-record-gap-row-state-reconciliation-v2
+  TARGET_BRANCH: staging/ssc-rd04-nd-row-state-schema-contract-repair-v1
+  WORKFLOW_PATH: .github/workflows/temp-rd04-nd-row-state-schema-contract-repair.yml
+  SCRIPT_PATH: .tmp/rd04-nd-row-state-schema-contract-repair/materialize.py
+  TRIGGER_PATH: .tmp/rd04-nd-row-state-schema-contract-repair/trigger.json
+  OUT: /tmp/rd04-nd-row-state-schema-contract-repair
+  FULL_WORK: /tmp/rd04-nd-row-state-schema-contract-repair-full
+  QUAL_WORK: /tmp/rd04-nd-row-state-schema-contract-repair-qual
+  STAGE_WORK: /tmp/rd04-nd-row-state-schema-contract-repair-stage
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Initialize failure custody
+        shell: bash
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$FULL_WORK" "$QUAL_WORK" "$STAGE_WORK"
+          mkdir -p "$OUT"
+          python - "$OUT/carrier-start.json" <<'PY'
+          import json
+          import os
+          import pathlib
+          import sys
+
+          pathlib.Path(sys.argv[1]).write_text(
+              json.dumps(
+                  {
+                      "schema_version": "ssc-rd04-nd-row-state-schema-contract-repair-carrier-start@1",
+                      "state": "carrier_started",
+                      "event_head_sha": os.environ["EVENT_HEAD_SHA"],
+                      "event_base_sha": os.environ["EVENT_BASE_SHA"],
+                      "canonical_parent": os.environ["CANONICAL_PARENT"],
+                      "source_head": os.environ["SOURCE_HEAD"],
+                      "source_branch": os.environ["SOURCE_BRANCH"],
+                      "target_branch": os.environ["TARGET_BRANCH"],
+                  },
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Repair, qualify, and stage exact product objects
+        shell: bash
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          python -m py_compile "$SCRIPT_PATH"
+          python "$SCRIPT_PATH"
+
+      - name: Preserve repair receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-row-state-schema-contract-repair-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
