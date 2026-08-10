@@ -84,6 +84,33 @@ jobs:
           EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -Eeuo pipefail
+          python - "$SCRIPT_PATH" <<'PY'
+          import pathlib
+          import sys
+
+          path = pathlib.Path(sys.argv[1])
+          text = path.read_text(encoding="utf-8")
+          old = '''    expected = sorted(PRODUCT_PATHS)
+              assert exact_names(live_main, "HEAD", cwd=FULL_WORK) == expected
+              assert exact_status(live_main, "HEAD", cwd=FULL_WORK) == [("A", p) for p in expected]
+              run(["git", "diff", "--check", live_main, "HEAD"], cwd=FULL_WORK)
+
+              run(["git", "add", "--", *PRODUCT_PATHS], cwd=FULL_WORK)
+              tree = run(["git", "write-tree"], cwd=FULL_WORK)
+          '''.replace("              ", "    ")
+          new = '''    expected = sorted(PRODUCT_PATHS)
+              run(["git", "add", "--", *PRODUCT_PATHS], cwd=FULL_WORK)
+              cached_names = sorted(line for line in run(["git", "diff", "--cached", "--name-only", live_main], cwd=FULL_WORK).splitlines() if line)
+              cached_status = sorted(tuple(line.split("\\t", 1)) for line in run(["git", "diff", "--cached", "--name-status", live_main], cwd=FULL_WORK).splitlines() if line)
+              assert cached_names == expected
+              assert cached_status == [("A", item) for item in expected]
+              run(["git", "diff", "--cached", "--check", live_main], cwd=FULL_WORK)
+              tree = run(["git", "write-tree"], cwd=FULL_WORK)
+          '''.replace("              ", "    ")
+          if text.count(old) != 1:
+              raise SystemExit(f"runtime patch denominator mismatch: {text.count(old)}")
+          path.write_text(text.replace(old, new, 1), encoding="utf-8")
+          PY
           python -m py_compile "$SCRIPT_PATH"
           python "$SCRIPT_PATH"
 
