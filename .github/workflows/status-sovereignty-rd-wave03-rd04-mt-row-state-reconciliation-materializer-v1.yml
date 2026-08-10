@@ -1,0 +1,296 @@
+name: Materialize RD-04 Montana derivative row-state product
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-materializer-v1.yml'
+      - '/tmp/ssc-rd04-mt-row-state-reconciliation-materializer-v1/product.tar.xz'
+
+permissions:
+  contents: write
+
+env:
+  CANONICAL_PARENT: 0840358962621b0be3db6864ecec763327f35903
+  CANONICAL_PARENT_TREE: 38023f86bcc27527f9db8da9622bada00b3de542
+  CARRIER_WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-materializer-v1.yml
+  ARCHIVE_PART_ROOT: .tmp/ssc-rd04-mt-row-state-reconciliation-materializer-v1
+  ARCHIVE_PATH: /tmp/ssc-rd04-mt-row-state-reconciliation-materializer-v1/product.tar.xz
+  ARCHIVE_BYTES: '52112'
+  ARCHIVE_SHA256: 9128170f1811868995230193cdae4943ded708c8a793e1818c8cb2f60cefde0c
+  ARCHIVE_BLOB: 12407c083f66e25a2c028e30547dcb32cf27b2e7
+  PRODUCT_WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/product-manifest.json
+  MANIFEST_BYTES: '6129'
+  MANIFEST_SHA256: cb6ce4dbec507737c17b80842709f32d18309d6ff8d93d94cf7d53a5826f5325
+  MANIFEST_BLOB: 7cb6125c629bd0daeef0ebf8845da49f242aeb89
+  STAGING_BRANCH: staging/ssc-rd04-mt-row-state-reconciliation-v1
+  OUT: /tmp/ssc-rd04-mt-row-state-reconciliation-materializer-v1
+  EXTRACT: /tmp/ssc-rd04-mt-row-state-reconciliation-product-v1
+  WORKTREE: /tmp/ssc-rd04-mt-row-state-reconciliation-worktree-v1
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Initialize receipt and install pinned Draft 2020-12 validator
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$OUT"
+          python -m pip install --disable-pip-version-check jsonschema==4.25.1 | tee "$OUT/pip-install.log"
+      - name: Bind exact two-path carrier and safely recover fourteen-path product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$EXTRACT" "$WORKTREE"
+          mkdir -p "$OUT" "$EXTRACT"
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          BASE_SHA='${{ github.event.pull_request.base.sha }}'
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test "$BASE_SHA" = "$CANONICAL_PARENT"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          test "$(git show -s --format='%P' "$HEAD_SHA")" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "$CANONICAL_PARENT^{tree}")" = "$CANONICAL_PARENT_TREE"
+
+          cat > "$OUT/carrier-paths.txt" <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-materializer-v1.yml
+          .tmp/ssc-rd04-mt-row-state-reconciliation-materializer-v1/product.tar.xz.part-000
+          .tmp/ssc-rd04-mt-row-state-reconciliation-materializer-v1/product.tar.xz.part-001
+          .tmp/ssc-rd04-mt-row-state-reconciliation-materializer-v1/product.tar.xz.part-002
+          .tmp/ssc-rd04-mt-row-state-reconciliation-materializer-v1/product.tar.xz.part-003
+          EOF
+          LC_ALL=C sort -o "$OUT/carrier-paths.txt" "$OUT/carrier-paths.txt"
+          test "$(git diff --name-only "$CANONICAL_PARENT" "$HEAD_SHA" | LC_ALL=C sort)" = "$(cat "$OUT/carrier-paths.txt")"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$HEAD_SHA" | LC_ALL=C sort)" = "$(cat "$OUT/carrier-paths.txt")"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" "$HEAD_SHA")"
+          git diff --check "$CANONICAL_PARENT" "$HEAD_SHA"
+
+          cat > "$OUT/archive-parts.tsv" <<'EOF'
+          .tmp/ssc-rd04-mt-row-state-reconciliation-materializer-v1/product.tar.xz.part-000	13028	970e8fad2bd5dadc7341a112af9446ef99aa50df590df57c55981cbe6a213b08	1782369d2279b5019f26d77063244a32cb7eb552
+          .tmp/ssc-rd04-mt-row-state-reconciliation-materializer-v1/product.tar.xz.part-001	13028	cb8b61179d3108c7568f125d80b8d8b61aff586d3d0e716b20e53deb916f075d	814b42ccdd5f4f9308233463ef6919c684e1bdc6
+          .tmp/ssc-rd04-mt-row-state-reconciliation-materializer-v1/product.tar.xz.part-002	13028	0b441f2bda1f332a784fc88d215aeb48329591dd7b076ef0e69eba03dd345164	78a47d9cdb7722044acddc033703babe174a9d39
+          .tmp/ssc-rd04-mt-row-state-reconciliation-materializer-v1/product.tar.xz.part-003	13028	9e673f02ae7159d11c0450872de1579aedbb0132a89294d5f8f54f91c7084af7	00008ebea2849ead12aebeae09a90fa53b4a9503
+          EOF
+          while IFS=$'\t' read -r PART_PATH PART_BYTES PART_SHA PART_BLOB; do
+            test "$(wc -c < "$PART_PATH" | tr -d ' ')" = "$PART_BYTES"
+            test "$(sha256sum "$PART_PATH" | cut -d' ' -f1)" = "$PART_SHA"
+            test "$(git hash-object "$PART_PATH")" = "$PART_BLOB"
+          done < "$OUT/archive-parts.tsv"
+          cat "$ARCHIVE_PART_ROOT"/product.tar.xz.part-* > "$ARCHIVE_PATH"
+          test "$(wc -c < "$ARCHIVE_PATH" | tr -d ' ')" = "$ARCHIVE_BYTES"
+          test "$(sha256sum "$ARCHIVE_PATH" | cut -d' ' -f1)" = "$ARCHIVE_SHA256"
+          test "$(git hash-object "$ARCHIVE_PATH")" = "$ARCHIVE_BLOB"
+
+          cat > "$OUT/product-paths.txt" <<'EOF'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/input-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-decision.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/promoted-partial-field-matrix.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/remaining-open-field-census.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/product-manifest.json
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs
+          EOF
+          LC_ALL=C sort -o "$OUT/product-paths.txt" "$OUT/product-paths.txt"
+          test "$(wc -l < "$OUT/product-paths.txt" | tr -d ' ')" = 14
+          while IFS= read -r PRODUCT_PATH; do
+            ! git cat-file -e "$CANONICAL_PARENT:$PRODUCT_PATH" 2>/dev/null
+          done < "$OUT/product-paths.txt"
+
+          python - <<'PY'
+          import os, pathlib, tarfile
+          archive = pathlib.Path(os.environ['ARCHIVE_PATH'])
+          dest = pathlib.Path(os.environ['EXTRACT']).resolve()
+          expected = set(pathlib.Path(os.environ['OUT'], 'product-paths.txt').read_text().splitlines())
+          with tarfile.open(archive, 'r:xz') as tf:
+              members = tf.getmembers()
+              names = [m.name for m in members]
+              assert len(members) == 14, names
+              assert set(names) == expected, (set(names) - expected, expected - set(names))
+              for member in members:
+                  assert member.isfile(), member.name
+                  rel = pathlib.PurePosixPath(member.name)
+                  assert not rel.is_absolute() and '..' not in rel.parts, member.name
+                  target = (dest / pathlib.Path(*rel.parts)).resolve()
+                  assert target.is_relative_to(dest), member.name
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  source = tf.extractfile(member)
+                  assert source is not None
+                  target.write_bytes(source.read())
+          PY
+
+          find "$EXTRACT" -type f -printf '%P\n' | LC_ALL=C sort > "$OUT/extracted-paths.txt"
+          cmp "$OUT/product-paths.txt" "$OUT/extracted-paths.txt"
+
+          python - <<'PY'
+          import hashlib, json, os, pathlib
+          root = pathlib.Path(os.environ['EXTRACT'])
+          manifest_path = pathlib.Path(os.environ['MANIFEST_PATH'])
+          manifest_bytes = (root / manifest_path).read_bytes()
+          assert len(manifest_bytes) == int(os.environ['MANIFEST_BYTES'])
+          assert hashlib.sha256(manifest_bytes).hexdigest() == os.environ['MANIFEST_SHA256']
+          def blob(data):
+              return hashlib.sha1(f'blob {len(data)}\0'.encode() + data).hexdigest()
+          assert blob(manifest_bytes) == os.environ['MANIFEST_BLOB']
+          manifest = json.loads(manifest_bytes)
+          assert manifest_bytes == (json.dumps(manifest, indent=2) + '\n').encode()
+          expected = pathlib.Path(os.environ['OUT'], 'product-paths.txt').read_text().splitlines()
+          assert sorted(manifest['permanent_paths']) == expected
+          assert manifest['permanent_path_count'] == 14
+          assert manifest['hashed_file_count'] == 13
+          records = []
+          for rec in manifest['hashed_files']:
+              data = (root / rec['path']).read_bytes()
+              observed = {'path': rec['path'], 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest(), 'git_blob': blob(data)}
+              assert observed == rec, (observed, rec)
+              records.append(rec)
+          combined = hashlib.sha256(''.join(sorted(f"{r['path']}\0{r['sha256']}\0{r['bytes']}\n" for r in records)).encode()).hexdigest()
+          assert combined == manifest['combined_sha256']
+          all_records = records + [{'path': str(manifest_path), 'bytes': len(manifest_bytes), 'sha256': hashlib.sha256(manifest_bytes).hexdigest(), 'git_blob': blob(manifest_bytes)}]
+          with open(pathlib.Path(os.environ['OUT'], 'product-blob-map.tsv'), 'w') as out:
+              for rec in sorted(all_records, key=lambda r: r['path']):
+                  out.write(f"{rec['path']}\t{rec['bytes']}\t{rec['sha256']}\t{rec['git_blob']}\n")
+          PY
+      - name: Qualify exact full tree and publish ordinary staging objects
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git worktree add --detach "$WORKTREE" "$CANONICAL_PARENT"
+          while IFS= read -r PRODUCT_PATH; do
+            mkdir -p "$WORKTREE/$(dirname "$PRODUCT_PATH")"
+            cp "$EXTRACT/$PRODUCT_PATH" "$WORKTREE/$PRODUCT_PATH"
+          done < "$OUT/product-paths.txt"
+
+          git -C "$WORKTREE" add --all -- $(cat "$OUT/product-paths.txt")
+          test "$(git -C "$WORKTREE" diff --cached --name-only | LC_ALL=C sort)" = "$(cat "$OUT/product-paths.txt")"
+          test "$(git -C "$WORKTREE" diff --cached --name-only --diff-filter=A | LC_ALL=C sort)" = "$(cat "$OUT/product-paths.txt")"
+          test -z "$(git -C "$WORKTREE" diff --cached --name-only --diff-filter=MDTCRUXB)"
+          FULL_TREE="$(git -C "$WORKTREE" write-tree)"
+          export GIT_AUTHOR_NAME='RD-04 Montana materializer'
+          export GIT_AUTHOR_EMAIL='rd04-mt-materializer@users.noreply.github.com'
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+          export GIT_AUTHOR_DATE='2026-08-10T18:00:00Z'
+          export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"
+          FULL_COMMIT="$(printf '%s\n' 'Qualify exact Montana row-state reconciliation tree' | git -C "$WORKTREE" commit-tree "$FULL_TREE" -p "$CANONICAL_PARENT")"
+          git -C "$WORKTREE" reset --hard "$FULL_COMMIT"
+          test -z "$(git -C "$WORKTREE" status --porcelain)"
+          test "$(git -C "$WORKTREE" diff --name-only "$CANONICAL_PARENT" "$FULL_COMMIT" | LC_ALL=C sort)" = "$(cat "$OUT/product-paths.txt")"
+          test "$(git -C "$WORKTREE" diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$FULL_COMMIT" | LC_ALL=C sort)" = "$(cat "$OUT/product-paths.txt")"
+          printf '%s\n' "$FULL_TREE" > "$OUT/full-product-tree.txt"
+          printf '%s\n' "$FULL_COMMIT" > "$OUT/local-qualification-commit.txt"
+          git -C "$WORKTREE" ls-tree -r "$FULL_COMMIT" -- $(cat "$OUT/product-paths.txt") > "$OUT/full-product-ls-tree.txt"
+
+          cd "$WORKTREE"
+          ruby -e "require 'yaml'; YAML.load_file(ARGV.fetch(0)); puts 'yaml_ok'" "$PRODUCT_WORKFLOW_PATH" > "$OUT/product-workflow-yaml.txt"
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/generated" | tee "$OUT/builder.json"
+          for name in row-state-ledger.json promoted-partial-field-matrix.json remaining-open-field-census.json row-state-summary.json index.json; do
+            cmp "$OUT/generated/$name" "$PRODUCT_ROOT/$name"
+          done
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/validator.json"
+          node --test test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js | tee "$OUT/adversarial.log"
+          python - <<'PY' > "$OUT/schema-validation.txt"
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          root = Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation')
+          schema = json.load(open('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json'))
+          manifest = json.load(open(root / 'product-manifest.json'))
+          instance = {
+              'schema_version': 'ssc-rd04-mt-row-state-reconciliation-schema@1',
+              'product_contract': {
+                  'canonical_parent': '0840358962621b0be3db6864ecec763327f35903',
+                  'canonical_parent_tree': '38023f86bcc27527f9db8da9622bada00b3de542',
+                  'permanent_path_count': 14,
+                  'hashed_file_count': 13,
+                  'matrix_transition': {
+                      'predecessor_sha256': '9f9dc05a057396056771bb566c44e9c3779d8ef6b0d2c078f7ffff11d9c7e6cb',
+                      'promoted_sha256': '12e52344af0c8ec3d845b6f05f8a20014fa84504d10dbc9ee0674d37715abe1d',
+                      'changed_rows': 1, 'changed_cells': 1, 'substantive_cells_changed': 0,
+                      'terminal_units_before': 11, 'terminal_units_after': 12, 'class_closed': False,
+                  },
+                  'authority_boundary': manifest['authority_boundary'],
+              },
+              'document_schemas': {
+                  'input_custody': json.load(open(root / 'input-custody.json')),
+                  'row_state_decision': json.load(open(root / 'row-state-decision.json')),
+                  'row_state_ledger': json.load(open(root / 'row-state-ledger.json')),
+                  'promoted_matrix': json.load(open(root / 'promoted-partial-field-matrix.json')),
+                  'remaining_open_census': json.load(open(root / 'remaining-open-field-census.json')),
+                  'row_state_summary': json.load(open(root / 'row-state-summary.json')),
+                  'index': json.load(open(root / 'index.json')),
+                  'product_manifest': manifest,
+              },
+          }
+          Draft202012Validator.check_schema(schema)
+          Draft202012Validator(schema).validate(instance)
+          print('draft_2020_12_schema_and_all_eight_documents_ok')
+          PY
+          npm run release:check > "$OUT/release-check.log" 2>&1
+          git reset --hard HEAD
+          git clean -fdx
+          test -z "$(git status --porcelain)"
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --check > "$OUT/post-release-builder.json"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/post-release-validator.json"
+          cmp "$OUT/validator.json" "$OUT/post-release-validator.json"
+
+          git checkout --detach "$CANONICAL_PARENT"
+          git clean -fdx
+          grep -Fxv "$PRODUCT_WORKFLOW_PATH" "$OUT/product-paths.txt" > "$OUT/staging-paths.txt"
+          test "$(wc -l < "$OUT/staging-paths.txt" | tr -d ' ')" = 13
+          while IFS= read -r STAGING_PATH; do
+            mkdir -p "$(dirname "$STAGING_PATH")"
+            cp "$EXTRACT/$STAGING_PATH" "$STAGING_PATH"
+          done < "$OUT/staging-paths.txt"
+          git add --all -- $(cat "$OUT/staging-paths.txt")
+          test "$(git diff --cached --name-only | LC_ALL=C sort)" = "$(cat "$OUT/staging-paths.txt")"
+          test "$(git diff --cached --name-only --diff-filter=A | LC_ALL=C sort)" = "$(cat "$OUT/staging-paths.txt")"
+          test -z "$(git diff --cached --name-only --diff-filter=MDTCRUXB)"
+          STAGING_TREE="$(git write-tree)"
+          STAGING_COMMIT="$(printf '%s\n' 'Stage ordinary blobs for Montana row-state reconciliation' | git commit-tree "$STAGING_TREE" -p "$CANONICAL_PARENT")"
+          printf '%s\n' "$STAGING_TREE" > "$OUT/staging-tree.txt"
+          printf '%s\n' "$STAGING_COMMIT" > "$OUT/staging-commit.txt"
+          git ls-tree -r "$STAGING_COMMIT" -- $(cat "$OUT/staging-paths.txt") > "$OUT/staging-ls-tree.txt"
+
+          REMOTE="$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')"
+          if [ -n "$REMOTE" ]; then
+            test "$REMOTE" = "$STAGING_COMMIT"
+          else
+            git push origin "$STAGING_COMMIT:refs/heads/$STAGING_BRANCH"
+          fi
+          test "$(git ls-remote --heads origin "refs/heads/$STAGING_BRANCH" | awk '{print $1}')" = "$STAGING_COMMIT"
+          cp "$EXTRACT/$MANIFEST_PATH" "$OUT/product-manifest.json"
+          cp "$EXTRACT/$PRODUCT_WORKFLOW_PATH" "$OUT/final-product-workflow.yml"
+          git show -s --format='%H%n%P%n%T%n%s' "$CANONICAL_PARENT" > "$OUT/canonical-parent.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$STAGING_COMMIT" > "$OUT/staging-product.txt"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - name: Preserve exact materializer receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-reconciliation-materializer-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
