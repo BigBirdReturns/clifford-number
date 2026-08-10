@@ -109,28 +109,30 @@ jobs:
               tree = run(["git", "write-tree"], cwd=FULL_WORK)
           '''.replace("              ", "    ")
 
-          custody_old = '''    text = replace_once(
-              text,
-              "validation_repair_merge_commit:C.CANONICAL_PARENT,",
-              f"validation_repair_merge_commit:'{OLD_PARENT}',",
-              "builder prior product metadata",
+          custody_old = (
+              "    text = replace_once(\n"
+              "        text,\n"
+              "        \"validation_repair_merge_commit:C.CANONICAL_PARENT,\",\n"
+              "        f\"validation_repair_merge_commit:'{OLD_PARENT}',\",\n"
+              "        \"builder prior product metadata\",\n"
+              "    )\n"
+              "    return text\n"
           )
-          return text
-          '''.replace("          ", "    ")
-          custody_new = '''    text = replace_once(
-              text,
-              "validation_repair_merge_commit:C.CANONICAL_PARENT,",
-              f"validation_repair_merge_commit:'{OLD_PARENT}',",
-              "builder prior product metadata",
+          custody_new = (
+              "    text = replace_once(\n"
+              "        text,\n"
+              "        \"validation_repair_merge_commit:C.CANONICAL_PARENT,\",\n"
+              "        f\"validation_repair_merge_commit:'{OLD_PARENT}',\",\n"
+              "        \"builder prior product metadata\",\n"
+              "    )\n"
+              "    text = replace_once(\n"
+              "        text,\n"
+              "        \"decision.prerequisite_satisfaction.validation_repair_merge_commit === C.CANONICAL_PARENT\",\n"
+              "        f\"decision.prerequisite_satisfaction.validation_repair_merge_commit === '{OLD_PARENT}'\",\n"
+              "        \"builder decision validation repair custody\",\n"
+              "    )\n"
+              "    return text\n"
           )
-              text = replace_once(
-                  text,
-                  "decision.prerequisite_satisfaction.validation_repair_merge_commit === C.CANONICAL_PARENT",
-                  f"decision.prerequisite_satisfaction.validation_repair_merge_commit === '{OLD_PARENT}'",
-                  "builder decision validation repair custody",
-              )
-              return text
-          '''.replace("              ", "    ")
 
           patches = [
               (cached_old, cached_new, "cached tree validation"),
