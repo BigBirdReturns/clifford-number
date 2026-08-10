@@ -1,0 +1,149 @@
+name: PC-61 exact product materializer
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pc61-materializer.yml'
+      - '.pc61/**'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: pc61-materializer-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  CARRIER_PARENT: '283c5993cb2ac0bff173c72aba70088c67b2ac3c'
+  CARRIER_PATH: '.github/workflows/pc61-materializer.yml'
+  PRODUCT_BRANCH: 'agent/pc61-product-v1'
+  ISSUE: '1822'
+  ARCHIVE_SHA256: 'b227f2507bdf3238daba027d16944189137719cff106bb6b41bf6ef1f620eed9'
+  BASE64_SHA256: '18afdcbccbef24976c574259be44a7edefbdb61a62effdbb02e0e9de0c69febf'
+  PATH_LIST_SHA256: 'e9b7dfc0a3075255add29995233fa7b1b05e79715a5d288ad37c41f73ba94238'
+  OUT: '/tmp/pc61-materializer'
+  PACKAGE: '/tmp/pc61-package'
+  WORKTREE: '/tmp/pc61-worktree'
+
+jobs:
+  materialize:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.ref == 'agent/pc61-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Authenticate carrier and decode exact package
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$PACKAGE" "$WORKTREE" /tmp/pc61-product.tar.gz /tmp/pc61-product.b64
+          mkdir -p "$OUT" "$PACKAGE"
+          HEAD_SHA="$(git rev-parse HEAD)"
+          test "$(git merge-base "$CARRIER_PARENT" HEAD)" = "$CARRIER_PARENT"
+          git diff --name-status "$CARRIER_PARENT" HEAD > "$OUT/carrier-delta.tsv"
+          EXPECTED_CARRIER="$(printf '%s\n' \
+            '.github/workflows/pc61-materializer.yml' \
+            '.pc61/payload.part-00' \
+            '.pc61/payload.part-01' \
+            '.pc61/payload.part-02' \
+            '.pc61/payload.part-03' \
+            '.pc61/payload.part-04' \
+            '.pc61/payload.part-05' | LC_ALL=C sort)"
+          test "$(git diff --name-only "$CARRIER_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_CARRIER"
+          test "$(git diff --name-only --diff-filter=A "$CARRIER_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_CARRIER"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CARRIER_PARENT" HEAD)"
+          git diff --check "$CARRIER_PARENT" HEAD
+          test "$(sha256sum .pc61/payload.part-00 | awk '{print $1}')" = '81b6258ff2d2df91007a17fca296e4e1e668f176899522a9bd987b72d326d85e'
+          test "$(sha256sum .pc61/payload.part-01 | awk '{print $1}')" = 'bb14cacbaa5cfb850f6f0f3a2680db7f890739e5546e47ea62be66ecd21ced38'
+          test "$(sha256sum .pc61/payload.part-02 | awk '{print $1}')" = '65cfca521c28a3213ddca3e30a8530b95b39db8e6b232362b9f9c068710bffd4'
+          test "$(sha256sum .pc61/payload.part-03 | awk '{print $1}')" = '988812203e05fb64247aa5534965285cccc5267a87a71c5efc5dc0e8cb16638a'
+          test "$(sha256sum .pc61/payload.part-04 | awk '{print $1}')" = 'cbe8ea42e6d64bd427776312c1838f9bc684eb947032bb1ec0ab4a0f86ab6b1f'
+          test "$(sha256sum .pc61/payload.part-05 | awk '{print $1}')" = '854b92fdd7c76f02343f4ca6b9cd094526edb84efd057027e4d1f7e20bf2aeae'
+          cat .pc61/payload.part-* > /tmp/pc61-product.b64
+          test "$(sha256sum /tmp/pc61-product.b64 | awk '{print $1}')" = "$BASE64_SHA256"
+          base64 -d /tmp/pc61-product.b64 > /tmp/pc61-product.tar.gz
+          test "$(sha256sum /tmp/pc61-product.tar.gz | awk '{print $1}')" = "$ARCHIVE_SHA256"
+          tar -tzf /tmp/pc61-product.tar.gz | sed 's#^./##' | sed '/^$/d' | sort > "$OUT/archive-paths.txt"
+          test "$(sha256sum "$OUT/archive-paths.txt" | awk '{print $1}')" = "$PATH_LIST_SHA256"
+          test "$(wc -l < "$OUT/archive-paths.txt" | tr -d ' ')" = 14
+          tar -xzf /tmp/pc61-product.tar.gz -C "$PACKAGE"
+          find "$PACKAGE" -type f -printf '%P\n' | sort > "$OUT/extracted-paths.txt"
+          cmp "$OUT/archive-paths.txt" "$OUT/extracted-paths.txt"
+          (cd "$PACKAGE" && find . -type f -print0 | sort -z | xargs -0 sha256sum > "$OUT/package-SHA256SUMS")
+          printf '%s\n' "$HEAD_SHA" > "$OUT/carrier-head.txt"
+
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          LIVE_TREE="$(git rev-parse origin/main^{tree})"
+          test "$LIVE_MAIN" = "$CARRIER_PARENT"
+          printf '%s\n' "$LIVE_MAIN" > "$OUT/product-parent.txt"
+          printf '%s\n' "$LIVE_TREE" > "$OUT/product-parent-tree.txt"
+          while IFS= read -r path; do
+            if git cat-file -e "origin/main:$path" 2>/dev/null; then
+              echo "product path already exists on main: $path" >&2
+              exit 1
+            fi
+          done < "$OUT/archive-paths.txt"
+      - name: Qualify exact product against current main
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git worktree add --detach "$WORKTREE" origin/main
+          cp -a "$PACKAGE"/. "$WORKTREE"/
+          cd "$WORKTREE"
+          node tools/compile-preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs 2>&1 | tee "$OUT/standalone-compile.log"
+          node tools/validate-preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.mjs 2>&1 | tee "$OUT/standalone-validate.log"
+          node test/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.test.js 2>&1 | tee "$OUT/standalone-test.log"
+          node tools/compile-preference-custody-manifest-v59.mjs 2>&1 | tee "$OUT/floor-compile.log"
+          node tools/validate-preference-custody-manifest-v59.mjs 2>&1 | tee "$OUT/floor-validate.log"
+          node test/preference-custody-manifest-v59.test.js 2>&1 | tee "$OUT/floor-test.log"
+          node tools/validate-no-magic-human-gate.mjs 2>&1 | tee "$OUT/no-magic-validator.log"
+          node test/no-magic-human-gate.test.js 2>&1 | tee "$OUT/no-magic-test.log"
+          npm run release:check 2>&1 | tee "$OUT/release-check.log"
+          find . -type f -path './build/*' -delete || true
+          git status --porcelain --untracked-files=all | sed 's/^?? //' | sort > "$OUT/worktree-paths.txt"
+          cmp "$OUT/archive-paths.txt" "$OUT/worktree-paths.txt"
+          git diff --check
+          git add -- $(cat "$OUT/archive-paths.txt")
+          git diff --cached --name-status > "$OUT/index-delta.tsv"
+          test "$(wc -l < "$OUT/index-delta.tsv" | tr -d ' ')" = 14
+          test -z "$(awk '$1 != "A" {print}' "$OUT/index-delta.tsv")"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Add PC-61 owner-login Unicode and namespace-reuse custody'
+          PRODUCT="$(git rev-parse HEAD)"
+          PRODUCT_TREE="$(git rev-parse HEAD^{tree})"
+          test "$(git show -s --format='%P' HEAD)" = "$CARRIER_PARENT"
+          test "$(git rev-list --count "$CARRIER_PARENT"..HEAD)" = 1
+          git diff --name-status "$CARRIER_PARENT" HEAD > "$OUT/product-delta.tsv"
+          cmp "$OUT/index-delta.tsv" "$OUT/product-delta.tsv"
+          printf '%s\n' "$PRODUCT" > "$OUT/product-commit.txt"
+          printf '%s\n' "$PRODUCT_TREE" > "$OUT/product-tree.txt"
+          : > "$OUT/product-blobs.tsv"
+          while IFS= read -r path; do printf '%s\t%s\n' "$path" "$(git rev-parse "HEAD:$path")" >> "$OUT/product-blobs.tsv"; done < "$OUT/archive-paths.txt"
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH" --force-with-lease="refs/heads/$PRODUCT_BRANCH:"
+          git ls-remote --exit-code origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}' | grep -Fx "$PRODUCT"
+          jq -n --arg schema_version 'pc61-product-materialization@1' --arg status 'qualified_and_published' --arg parent "$CARRIER_PARENT" --arg product "$PRODUCT" --arg tree "$PRODUCT_TREE" --arg archive_sha256 "$ARCHIVE_SHA256" --arg path_list_sha256 "$PATH_LIST_SHA256" '{schema_version:$schema_version,status:$status,parent:$parent,product_commit:$product,product_tree:$tree,permanent_paths:14,standalone_paths:7,compositional_paths:7,archive_sha256:$archive_sha256,path_list_sha256:$path_list_sha256,write_capable_permanent_workflows:0,graph_effect:"none",outside_human_dependency:false}' > "$OUT/receipt.json"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - name: Preserve PC-61 materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc61-product-materialization-v1
+          path: /tmp/pc61-materializer
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
