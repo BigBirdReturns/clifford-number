@@ -1,0 +1,317 @@
+name: TEMP repair RD-04 North Dakota promotion review defects v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - agent/ssc-rd04-nd-current-gap-promotion-review-repair-base-v1
+    paths:
+      - '.tmp/rd04-nd-current-gap-promotion-review-repair-v1/trigger.json'
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: temp-rd04-nd-current-gap-promotion-review-repair-v1
+  cancel-in-progress: false
+
+env:
+  CANONICAL_PARENT: 77aef3313e85e1fddc68805a9f22252ff147b4e8
+  CANONICAL_PARENT_TREE: 4a8b28c6d3e00ac72e8a9b3f6769b50fc0e29259
+  BASE_BRANCH: agent/ssc-rd04-nd-current-gap-promotion-review-repair-base-v1
+  HEAD_BRANCH: agent/ssc-rd04-nd-current-gap-promotion-review-repair-trigger-v1
+  TARGET_BRANCH: agent/ssc-rd04-nd-current-public-record-gap-promotion-product-v2
+  TARGET_OLD_HEAD: e2e2a8334f30c7187ca99363185e51aedea6354c
+  TARGET_OLD_TREE: 0bf03253c5ce2450571f93b27f59bf5f2bc27d1c
+  TARGET_PR: '1760'
+  WORKFLOW_PATH: .github/workflows/temp-rd04-nd-current-gap-promotion-review-repair-v1.yml
+  ARCHIVE_PATH: .tmp/rd04-nd-current-gap-promotion-review-repair-v1/review-fix.tar.xz
+  ARCHIVE_GIT_BLOB: 82d312bedd297484e1d72465078b079384f89e6c
+  ARCHIVE_BYTES: '12424'
+  ARCHIVE_SHA256: 50927be1c3531c6daf7709a063d957b41f79d7de6d499de92b4dd016e25a15dc
+  TRIGGER_PATH: .tmp/rd04-nd-current-gap-promotion-review-repair-v1/trigger.json
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion
+  BUILDER_PATH: tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs
+  VALIDATOR_PATH: tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.mjs
+  TEST_PATH: test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.test.js
+  SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion.schema.json
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/product-manifest.json
+  OUT: /tmp/ssc-rd04-nd-current-gap-promotion-review-repair-v1
+  WORK: /tmp/ssc-rd04-nd-current-gap-promotion-review-repair-v1-work
+
+jobs:
+  repair:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-current-gap-promotion-review-repair-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-current-gap-promotion-review-repair-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Apply exact review repair under target-head lease
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$WORK"
+          mkdir -p "$OUT" "$WORK"
+          printf '%s\n' topology > "$OUT/STAGE"
+          printf '%s\n' 1 > "$OUT/EXIT_CODE"
+          stage=topology
+
+          seal() {
+            (cd "$OUT" && find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+          }
+          fail_receipt() {
+            local rc="$1" reason="$2"
+            trap - ERR
+            python - "$OUT/receipt.json" "$stage" "$reason" "$rc" <<'PYFAIL'
+          import json,sys
+          path,stage,reason,rc=sys.argv[1],sys.argv[2],sys.argv[3],int(sys.argv[4])
+          obj={
+            'schema_version':'ssc-rd04-nd-current-gap-promotion-review-repair-receipt@1',
+            'state':'failed_closed','failed_or_final_stage':stage,'reason':reason,'exit_code':rc,
+            'canonical_parent':'77aef3313e85e1fddc68805a9f22252ff147b4e8',
+            'target_pr':1760,'target_branch':'agent/ssc-rd04-nd-current-public-record-gap-promotion-product-v2',
+            'target_old_head':'e2e2a8334f30c7187ca99363185e51aedea6354c',
+            'target_new_head':None,'review_threads_addressed':0,'patched_paths':0,
+            'builder_reconstructed_from_inputs':False,'schema_root_closed':False,
+            'adversarial_refusals':0,'release_gate_passed':False,'target_branch_updated':False,
+            'source_requests':0,'route_executions':0,'source_admissions':0,
+            'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'row_terminalizations':0,
+            'class_closed':False,'cumulative_ledger_effect':'none','outside_human_dependency':False,
+            'publication_effect':'none','adoption_effect':'none','graph_effect':'none'
+          }
+          open(path,'w',encoding='utf-8').write(json.dumps(obj,indent=2,sort_keys=True)+'\n')
+          PYFAIL
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            seal
+            exit "$rc"
+          }
+          trap 'fail_receipt $? unexpected_failure' ERR
+
+          test "$EVENT_NAME" = pull_request || fail_receipt 1 event_not_pull_request
+          test "$HEAD_REPO" = "$GITHUB_REPOSITORY" || fail_receipt 1 head_repository_mismatch
+          test "$BASE_REF" = "$BASE_BRANCH" || fail_receipt 1 base_branch_mismatch
+          test "$HEAD_REF" = "$HEAD_BRANCH" || fail_receipt 1 head_branch_mismatch
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA" || fail_receipt 1 checkout_head_mismatch
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA" || fail_receipt 1 head_parent_mismatch
+          test "$(git rev-parse "$BASE_SHA^")" = "$CANONICAL_PARENT" || fail_receipt 1 base_parent_mismatch
+          test "$(git rev-parse "$CANONICAL_PARENT^{tree}")" = "$CANONICAL_PARENT_TREE" || fail_receipt 1 canonical_parent_tree_mismatch
+          mapfile -t base_paths < <(git diff --name-only "$CANONICAL_PARENT" "$BASE_SHA" | LC_ALL=C sort)
+          mapfile -t trigger_paths < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | LC_ALL=C sort)
+          test "${#base_paths[@]}" = 2 || fail_receipt 1 base_path_count_mismatch
+          test "$(printf '%s\n' "${base_paths[@]}")" = "$(printf '%s\n' "$ARCHIVE_PATH" "$WORKFLOW_PATH" | LC_ALL=C sort)" || fail_receipt 1 base_path_set_mismatch
+          test "${#trigger_paths[@]}" = 1 || fail_receipt 1 trigger_path_count_mismatch
+          test "${trigger_paths[0]}" = "$TRIGGER_PATH" || fail_receipt 1 trigger_path_mismatch
+          test "$(git rev-parse "$BASE_SHA:$ARCHIVE_PATH")" = "$ARCHIVE_GIT_BLOB" || fail_receipt 1 archive_blob_mismatch
+          git diff --check "$CANONICAL_PARENT" "$HEAD_SHA"
+
+          git fetch --no-tags --force origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            "+refs/heads/$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT" || fail_receipt 1 live_main_moved
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$TARGET_OLD_HEAD" || fail_receipt 1 target_head_moved
+          test "$(git rev-parse "$TARGET_OLD_HEAD^")" = "$CANONICAL_PARENT" || fail_receipt 1 target_parent_mismatch
+          test "$(git rev-parse "$TARGET_OLD_HEAD^{tree}")" = "$TARGET_OLD_TREE" || fail_receipt 1 target_tree_mismatch
+          gh api "repos/${GITHUB_REPOSITORY}/pulls/${TARGET_PR}" > "$OUT/target-pr-before.json"
+          jq -e --arg branch "$TARGET_BRANCH" --arg head "$TARGET_OLD_HEAD" --arg base "$CANONICAL_PARENT" '
+            .number==1760 and .state=="open" and .draft==false and
+            .head.ref==$branch and .head.sha==$head and .base.ref=="main" and .base.sha==$base
+          ' "$OUT/target-pr-before.json" >/dev/null || fail_receipt 1 target_pr_lease_mismatch
+          jq -e --arg parent "$CANONICAL_PARENT" --arg target "$TARGET_OLD_HEAD" --arg archive "$ARCHIVE_SHA256" '
+            .schema_version=="ssc-rd04-nd-current-gap-promotion-review-repair-trigger@1" and
+            .issue==1017 and .canonical_parent==$parent and .target_pr==1760 and
+            .target_old_head==$target and .review_fix_archive_sha256==$archive and
+            .patched_paths==5 and .review_threads==2 and
+            .source_requests==0 and .route_executions==0 and .field_terminalizations==0 and
+            .matrix_updates==0 and .row_state_mutations==0 and .row_terminalizations==0 and
+            .class_closed==false and .outside_human_dependency==false
+          ' "$TRIGGER_PATH" >/dev/null || fail_receipt 1 trigger_contract_mismatch
+
+          stage=authenticate_archive
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          test "$(stat -c %s "$ARCHIVE_PATH")" = "$ARCHIVE_BYTES" || fail_receipt 1 archive_size_mismatch
+          test "$(sha256sum "$ARCHIVE_PATH" | awk '{print $1}')" = "$ARCHIVE_SHA256" || fail_receipt 1 archive_digest_mismatch
+          xz -t "$ARCHIVE_PATH" || fail_receipt 1 archive_xz_integrity_failure
+          tar -tJf "$ARCHIVE_PATH" | LC_ALL=C sort > "$OUT/archive-paths.txt"
+          EXPECTED_PATCH_PATHS="$(printf '%s\n' \
+            "$MANIFEST_PATH" \
+            "$SCHEMA_PATH" \
+            "$TEST_PATH" \
+            "$BUILDER_PATH" \
+            "$VALIDATOR_PATH" | LC_ALL=C sort)"
+          test "$(cat "$OUT/archive-paths.txt")" = "$EXPECTED_PATCH_PATHS" || fail_receipt 1 archive_path_set_mismatch
+
+          stage=apply_and_qualify
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          git worktree add --detach "$WORK/target" "$TARGET_OLD_HEAD"
+          tar -xJf "$ARCHIVE_PATH" -C "$WORK/target"
+          cd "$WORK/target"
+          test "$(git diff --name-only | LC_ALL=C sort)" = "$EXPECTED_PATCH_PATHS" || fail_receipt 1 patched_path_set_mismatch
+          test "$(git diff --name-only --diff-filter=M | LC_ALL=C sort)" = "$EXPECTED_PATCH_PATHS" || fail_receipt 1 patch_not_modification_only
+          test -z "$(git diff --name-only --diff-filter=ADTCRUXB)" || fail_receipt 1 patch_added_or_deleted_path
+          git diff --check
+
+          test "$(stat -c %s "$BUILDER_PATH")" = 27623
+          test "$(sha256sum "$BUILDER_PATH" | awk '{print $1}')" = 8fad54471c298eca0860509ef09e53bd22c72d6cfe384291476b9394caaf9b0e
+          test "$(git hash-object "$BUILDER_PATH")" = 57b74bb8536314f0d0b363de6c40fb9e03b6fd49
+          test "$(stat -c %s "$VALIDATOR_PATH")" = 7963
+          test "$(sha256sum "$VALIDATOR_PATH" | awk '{print $1}')" = b3a9c3f96f735d90eac95dd319c9f577f8e3aa048e6ee5542e9b7a5482987cee
+          test "$(git hash-object "$VALIDATOR_PATH")" = ddc685f6968f102fa34b99dede38ea10e62120bf
+          test "$(stat -c %s "$TEST_PATH")" = 5856
+          test "$(sha256sum "$TEST_PATH" | awk '{print $1}')" = e7520093af53cb30a2ccbf7e2e16549424a78e72686ae24bad4346e772988bb1
+          test "$(git hash-object "$TEST_PATH")" = 8c62f7965e0472c67222deb471bc5f14d5e998d3
+          test "$(stat -c %s "$SCHEMA_PATH")" = 20376
+          test "$(sha256sum "$SCHEMA_PATH" | awk '{print $1}')" = 3a1c5decb0e639efe4d65537f04ff2eaa88e02c41c902b113d20c52cf0bdbda5
+          test "$(git hash-object "$SCHEMA_PATH")" = 3396ee10b4c4673b836e85ed158a45b8956029dd
+          test "$(stat -c %s "$MANIFEST_PATH")" = 6467
+          test "$(sha256sum "$MANIFEST_PATH" | awk '{print $1}')" = 96eafd30d148e43e51bb0857d780154bddfd1e14c28664d8892feaf97208395c
+          test "$(git hash-object "$MANIFEST_PATH")" = 645f9ba0d891289613f4e48b30d8792dde04b6b8
+          jq -e '.combined_sha256=="dcebeef087f27136ea26ae660c8ea80c6fc5dc4fe53942f7bd57af499c7e85f8" and .permanent_path_count==14 and .hashed_file_count==13' "$MANIFEST_PATH" >/dev/null
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "$MANIFEST_PATH" "$SCHEMA_PATH" "$TEST_PATH" "$BUILDER_PATH" "$VALIDATOR_PATH"
+          git commit -m 'Repair deterministic rebuild and product schema review defects'
+          REPAIR_COMMIT="$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$TARGET_OLD_HEAD"
+          test "$(git diff --name-only "$TARGET_OLD_HEAD" "$REPAIR_COMMIT" | LC_ALL=C sort)" = "$EXPECTED_PATCH_PATHS"
+          test "$(git diff --name-only --diff-filter=M "$TARGET_OLD_HEAD" "$REPAIR_COMMIT" | LC_ALL=C sort)" = "$EXPECTED_PATCH_PATHS"
+          test -z "$(git diff --name-only --diff-filter=ADTCRUXB "$TARGET_OLD_HEAD" "$REPAIR_COMMIT")"
+
+          mkdir -p "$OUT/generated-first"
+          node "$BUILDER_PATH" --out "$OUT/generated-first" | tee "$OUT/builder-first.json"
+          for name in promotion-input-custody.json promotion-decision.json cell-promotion-ledger.json promoted-partial-field-matrix.json remaining-open-field-census.json promotion-summary.json index.json; do
+            cmp "$OUT/generated-first/$name" "$PRODUCT_ROOT/$name"
+          done
+          node "$VALIDATOR_PATH" | tee "$OUT/validator-first.json"
+          node "$TEST_PATH" | tee "$OUT/adversarial-first.json"
+          test "$(jq -r .state "$OUT/builder-first.json")" = deterministic_product_rebuilt_from_predecessor_and_validated_candidate
+          test "$(jq -r .state "$OUT/validator-first.json")" = qualified_one_cell_promotion
+          test "$(jq -r .state "$OUT/adversarial-first.json")" = builder_independence_schema_root_and_adversarial_refusals_complete
+          test "$(jq -r .refusals "$OUT/adversarial-first.json")" = 21
+          node - "$SCHEMA_PATH" <<'NODE_SCHEMA'
+          import fs from 'node:fs';
+          const schema=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
+          if(schema.$schema!=='https://json-schema.org/draft/2020-12/schema') throw new Error('draft mismatch');
+          if(!Array.isArray(schema.oneOf)||schema.oneOf.length!==8) throw new Error('root union mismatch');
+          if(schema.$defs.authorityBoundary.additionalProperties!==false) throw new Error('authority boundary open');
+          if(schema.$defs.cell.additionalProperties!==false) throw new Error('cell open');
+          if(schema.$defs.row.properties.cells.items.$ref!=='#/$defs/cell') throw new Error('row cell ref missing');
+          if(schema.$defs.promotedMatrix.properties.rows.items.$ref!=='#/$defs/row') throw new Error('matrix row ref missing');
+          if(schema.$defs.manifest.properties.authority_boundary.$ref!=='#/$defs/authorityBoundary') throw new Error('manifest authority ref missing');
+          NODE_SCHEMA
+          npm run release:check > "$OUT/release-check.log" 2>&1
+
+          git reset --hard "$REPAIR_COMMIT"
+          git clean -fdx
+          mkdir -p "$OUT/generated-replay"
+          node "$BUILDER_PATH" --out "$OUT/generated-replay" | tee "$OUT/builder-replay.json"
+          for name in promotion-input-custody.json promotion-decision.json cell-promotion-ledger.json promoted-partial-field-matrix.json remaining-open-field-census.json promotion-summary.json index.json; do
+            cmp "$OUT/generated-replay/$name" "$PRODUCT_ROOT/$name"
+          done
+          node "$VALIDATOR_PATH" | tee "$OUT/validator-replay.json"
+          node "$TEST_PATH" | tee "$OUT/adversarial-replay.json"
+          test "$(jq -r .refusals "$OUT/adversarial-replay.json")" = 21
+          test -z "$(git status --porcelain)"
+          git diff --check "$TARGET_OLD_HEAD" "$REPAIR_COMMIT"
+
+          stage=publish_under_lease
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          git fetch --no-tags --force origin \
+            '+refs/heads/main:refs/remotes/origin/main' \
+            "+refs/heads/$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT" || fail_receipt 1 live_main_moved_before_push
+          test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$TARGET_OLD_HEAD" || fail_receipt 1 target_head_moved_before_push
+          gh api "repos/${GITHUB_REPOSITORY}/pulls/${TARGET_PR}" > "$OUT/target-pr-before-push.json"
+          jq -e --arg branch "$TARGET_BRANCH" --arg head "$TARGET_OLD_HEAD" --arg base "$CANONICAL_PARENT" '.state=="open" and .head.ref==$branch and .head.sha==$head and .base.sha==$base' "$OUT/target-pr-before-push.json" >/dev/null || fail_receipt 1 target_pr_moved_before_push
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin "$REPAIR_COMMIT:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$TARGET_OLD_HEAD"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$REPAIR_COMMIT" || fail_receipt 1 target_push_verification_failed
+          gh api "repos/${GITHUB_REPOSITORY}/pulls/${TARGET_PR}" > "$OUT/target-pr-after.json"
+          jq -e --arg branch "$TARGET_BRANCH" --arg head "$REPAIR_COMMIT" --arg base "$CANONICAL_PARENT" '.state=="open" and .head.ref==$branch and .head.sha==$head and .base.sha==$base' "$OUT/target-pr-after.json" >/dev/null || fail_receipt 1 target_pr_after_push_mismatch
+
+          stage=complete
+          printf '%s\n' complete > "$OUT/STAGE"
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          python - "$OUT/receipt.json" "$REPAIR_COMMIT" <<'PYSUCCESS'
+          import json,sys
+          path,new_head=sys.argv[1:]
+          obj={
+            'schema_version':'ssc-rd04-nd-current-gap-promotion-review-repair-receipt@1',
+            'state':'review_defects_repaired_and_target_fast_forwarded','failed_or_final_stage':'complete','exit_code':0,
+            'canonical_parent':'77aef3313e85e1fddc68805a9f22252ff147b4e8',
+            'target_pr':1760,'target_branch':'agent/ssc-rd04-nd-current-public-record-gap-promotion-product-v2',
+            'target_old_head':'e2e2a8334f30c7187ca99363185e51aedea6354c','target_new_head':new_head,
+            'target_old_tree':'0bf03253c5ce2450571f93b27f59bf5f2bc27d1c',
+            'review_threads_addressed':2,'patched_paths':5,
+            'archive_bytes':12424,'archive_sha256':'50927be1c3531c6daf7709a063d957b41f79d7de6d499de92b4dd016e25a15dc',
+            'builder_sha256':'8fad54471c298eca0860509ef09e53bd22c72d6cfe384291476b9394caaf9b0e',
+            'validator_sha256':'b3a9c3f96f735d90eac95dd319c9f577f8e3aa048e6ee5542e9b7a5482987cee',
+            'test_sha256':'e7520093af53cb30a2ccbf7e2e16549424a78e72686ae24bad4346e772988bb1',
+            'schema_sha256':'3a1c5decb0e639efe4d65537f04ff2eaa88e02c41c902b113d20c52cf0bdbda5',
+            'manifest_sha256':'96eafd30d148e43e51bb0857d780154bddfd1e14c28664d8892feaf97208395c',
+            'manifest_combined_sha256':'dcebeef087f27136ea26ae660c8ea80c6fc5dc4fe53942f7bd57af499c7e85f8',
+            'builder_reconstructed_from_inputs':True,'committed_product_root_absent_during_builder_test':True,
+            'schema_root_closed':True,'schema_root_variants':8,'adversarial_refusals':21,
+            'non_target_census_corruption_refused':True,'release_gate_passed':True,'clean_replay_passed':True,
+            'target_branch_updated':True,
+            'source_requests':0,'route_executions':0,'source_admissions':0,
+            'field_terminalizations':0,'matrix_updates':0,'row_state_mutations':0,'row_terminalizations':0,
+            'class_closed':False,'cumulative_ledger_effect':'none','outside_human_dependency':False,
+            'publication_effect':'none','adoption_effect':'none','graph_effect':'none'
+          }
+          open(path,'w',encoding='utf-8').write(json.dumps(obj,indent=2,sort_keys=True)+'\n')
+          PYSUCCESS
+          seal
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          trap - ERR
+      - name: Preserve exact review-repair receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-current-gap-promotion-review-repair-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - name: Enforce exact successful terminal state
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          jq -e '
+            .state=="review_defects_repaired_and_target_fast_forwarded" and .exit_code==0 and
+            .canonical_parent=="77aef3313e85e1fddc68805a9f22252ff147b4e8" and
+            .target_pr==1760 and .target_old_head=="e2e2a8334f30c7187ca99363185e51aedea6354c" and
+            .target_new_head!=null and .review_threads_addressed==2 and .patched_paths==5 and
+            .builder_reconstructed_from_inputs==true and .committed_product_root_absent_during_builder_test==true and
+            .schema_root_closed==true and .schema_root_variants==8 and .adversarial_refusals==21 and
+            .non_target_census_corruption_refused==true and .release_gate_passed==true and .clean_replay_passed==true and
+            .target_branch_updated==true and .source_requests==0 and .route_executions==0 and .source_admissions==0 and
+            .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .row_terminalizations==0 and
+            .class_closed==false and .cumulative_ledger_effect=="none" and .outside_human_dependency==false and
+            .publication_effect=="none" and .adoption_effect=="none" and .graph_effect=="none"
+          ' "$OUT/receipt.json" >/dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
