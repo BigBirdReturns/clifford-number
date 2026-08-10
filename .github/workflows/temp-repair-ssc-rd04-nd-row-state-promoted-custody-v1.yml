@@ -1,0 +1,98 @@
+name: TEMP repair RD-04 North Dakota promoted-matrix custody
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-row-state-promoted-custody-repair-controller-base-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-row-state-promoted-custody-repair/trigger.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-rd04-nd-row-state-promoted-custody-repair-v1
+  cancel-in-progress: false
+
+env:
+  CONTROLLER: .tmp/rd04-nd-row-state-promoted-custody-repair/controller.py
+  OUT: /tmp/rd04-nd-row-state-promoted-custody-repair-v1-artifact
+
+jobs:
+  repair:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-row-state-promoted-custody-repair-controller-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-row-state-promoted-custody-repair-controller-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Repair, qualify, and stage exact product objects
+        id: repair
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CARRIER_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" && mkdir -p "$OUT"
+          python -m py_compile "$CONTROLLER"
+          python "$CONTROLLER"
+
+      - name: Preserve exact repair custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-row-state-promoted-custody-repair-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce exact staged repair
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.repair.outcome }}" = success
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .schema_version == "ssc-rd04-nd-row-state-promoted-custody-repair-materialization@1" and
+            .state == "qualified_promoted_custody_repair_objects_staged" and
+            .canonical_parent == "283c5993cb2ac0bff173c72aba70088c67b2ac3c" and
+            .source_product_head == "ae2f47acdaf962034ce21cb5bbdc0ffe0a3a8229" and
+            .product_tree != null and
+            .permanent_paths == 14 and
+            .added_paths == 14 and .modified_paths == 0 and .deleted_paths == 0 and
+            (.repaired_paths | length) == 4 and
+            .promoted_matrix.sha256 == "9f9dc05a057396056771bb566c44e9c3779d8ef6b0d2c078f7ffff11d9c7e6cb" and
+            .promoted_matrix.git_blob == "6ba11a6025021e9df8ac6535be8c42499654c233" and
+            .schema.changed == false and
+            .qualification.promoted_custody_cross_checks == 2 and
+            .qualification.adversarial_refusals == 49 and
+            .qualification.release_check == "passed" and
+            .qualification.post_release_replay == "passed" and
+            .transition.substantive_field_terminalizations == 0 and
+            .transition.matrix_updates == 1 and
+            .transition.row_state_mutations == 1 and
+            .transition.row_terminalizations == 1 and
+            .transition.class_closed == false and
+            .outside_human_dependency == false
+          ' "$OUT/materialization-receipt.json" > /dev/null
