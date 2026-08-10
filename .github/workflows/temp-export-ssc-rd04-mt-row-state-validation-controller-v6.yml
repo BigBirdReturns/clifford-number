@@ -1,0 +1,324 @@
+name: TEMP export RD-04 Montana validation controller v6
+
+on:
+  pull_request:
+    branches: [agent/ssc-rd04-mt-row-state-validation-controller-export-base-v6]
+    types: [opened, synchronize, reopened]
+    paths: ['.tmp/rd04-mt-row-state-validation-materializer/controller-export-v6-trigger.json']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-rd04-mt-row-state-validation-controller-export-v6
+  cancel-in-progress: false
+
+env:
+  CANONICAL_MAIN: bc3cf04459bb0d18829f376c9b937693b521e444
+  SOURCE_PACKAGE_COMMIT: a53a40fc92368cf32cfb106ec7099199e80b8b51
+  PACKAGE_PATH: .tmp/rd04-mt-row-state-validation-materializer/package.tar.gz.b64
+  WORKFLOW_PATH: .github/workflows/temp-export-ssc-rd04-mt-row-state-validation-controller-v6.yml
+  TRIGGER_PATH: .tmp/rd04-mt-row-state-validation-materializer/controller-export-v6-trigger.json
+  TARGET_REF: refs/heads/staging/ssc-rd04-mt-row-state-reconciliation-validation-v1
+  OUT: /tmp/rd04-mt-row-state-validation-controller-export-v6
+  EXTRACT: /tmp/rd04-mt-row-state-validation-controller-export-v6-package
+  PAYLOAD_B64_BYTES: '14740'
+  PAYLOAD_B64_SHA256: d19b30d285e725f0cba1844864f9a8a4d543e46de2ff66484e3a9b710b9771aa
+  PAYLOAD_GZIP_BYTES: '11054'
+  PAYLOAD_GZIP_SHA256: db899783e6a52055842ba9748b9ea1996d5bfa5b7806db374fbf127723c2c3ba
+  PAYLOAD_TAR_BYTES: '61440'
+  PAYLOAD_TAR_SHA256: d81a4cc83d47f192995a9bf32aed803f4f5c878799558ce906fc166ada7af559
+  CONTROLLER_BYTES: '9075'
+  CONTROLLER_SHA256: 5b9b91cf7e30af38ca4fcec137b8a43d5e3e9c3c3c21e259b6aa21a1bf9d1674
+
+jobs:
+  export:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-mt-row-state-validation-controller-export-base-v6' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-mt-row-state-validation-controller-export-trigger-v6'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Authenticate exact four-commit topology
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$EXTRACT"
+          mkdir -p "$OUT" "$EXTRACT"
+          test "$(git rev-parse HEAD)" = "$EVENT_HEAD_SHA"
+          test "$(git rev-parse HEAD^)" = "$EVENT_BASE_SHA"
+          test "$(git rev-parse "$EVENT_BASE_SHA^")" = "$SOURCE_PACKAGE_COMMIT"
+          test "$(git rev-parse "$SOURCE_PACKAGE_COMMIT^")" = "$CANONICAL_MAIN"
+          test "$(git rev-list --count "$EVENT_BASE_SHA..$EVENT_HEAD_SHA")" -eq 1
+          test "$(git rev-list --count "$SOURCE_PACKAGE_COMMIT..$EVENT_BASE_SHA")" -eq 1
+          test "$(git rev-list --count "$CANONICAL_MAIN..$SOURCE_PACKAGE_COMMIT")" -eq 1
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CANONICAL_MAIN"
+
+          printf '%s\n' "$PACKAGE_PATH" > "$OUT/expected-package-paths.txt"
+          git diff --name-only "$CANONICAL_MAIN" "$SOURCE_PACKAGE_COMMIT" | LC_ALL=C sort > "$OUT/actual-package-paths.txt"
+          cmp "$OUT/expected-package-paths.txt" "$OUT/actual-package-paths.txt"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_MAIN" "$SOURCE_PACKAGE_COMMIT" | wc -l)" -eq 1
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_MAIN" "$SOURCE_PACKAGE_COMMIT")"
+
+          printf '%s\n' "$WORKFLOW_PATH" > "$OUT/expected-base-paths.txt"
+          git diff --name-only "$SOURCE_PACKAGE_COMMIT" "$EVENT_BASE_SHA" | LC_ALL=C sort > "$OUT/actual-base-paths.txt"
+          cmp "$OUT/expected-base-paths.txt" "$OUT/actual-base-paths.txt"
+          test "$(git diff --name-only --diff-filter=A "$SOURCE_PACKAGE_COMMIT" "$EVENT_BASE_SHA" | wc -l)" -eq 1
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$SOURCE_PACKAGE_COMMIT" "$EVENT_BASE_SHA")"
+
+          printf '%s\n' "$TRIGGER_PATH" > "$OUT/expected-trigger-paths.txt"
+          git diff --name-only "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA" | LC_ALL=C sort > "$OUT/actual-trigger-paths.txt"
+          cmp "$OUT/expected-trigger-paths.txt" "$OUT/actual-trigger-paths.txt"
+          test "$(git diff --name-only --diff-filter=A "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA" | wc -l)" -eq 1
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA")"
+          git diff --check "$CANONICAL_MAIN" "$EVENT_HEAD_SHA"
+
+      - name: Export exact package and controller without execution
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          before="$(git ls-remote --heads origin "$TARGET_REF" | awk '{print $1}')"
+          printf '%s\n' "${before:-absent}" > "$OUT/target-ref-before.txt"
+
+          python - <<'PY'
+          import base64, gzip, hashlib, json, os, pathlib, shutil, tarfile, traceback
+          from pathlib import PurePosixPath
+
+          package = pathlib.Path(os.environ['PACKAGE_PATH'])
+          out = pathlib.Path(os.environ['OUT'])
+          extract = pathlib.Path(os.environ['EXTRACT'])
+
+          def digest(data):
+              return hashlib.sha256(data).hexdigest()
+
+          def emit(name, value):
+              (out / name).write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+
+          state = {
+              'schema_version': 'ssc-rd04-mt-row-state-validation-controller-export-observations@6',
+              'state': 'started',
+          }
+          emit('observations.json', state)
+
+          try:
+              encoded = package.read_bytes()
+              state.update(payload_b64_bytes=len(encoded), payload_b64_sha256=digest(encoded))
+              emit('observations.json', state)
+              assert len(encoded) == int(os.environ['PAYLOAD_B64_BYTES'])
+              assert digest(encoded) == os.environ['PAYLOAD_B64_SHA256']
+
+              compressed = base64.b64decode(encoded)
+              state.update(payload_gzip_bytes=len(compressed), payload_gzip_sha256=digest(compressed))
+              emit('observations.json', state)
+              assert len(compressed) == int(os.environ['PAYLOAD_GZIP_BYTES'])
+              assert digest(compressed) == os.environ['PAYLOAD_GZIP_SHA256']
+              (out / 'package.tar.gz').write_bytes(compressed)
+
+              archive = gzip.decompress(compressed)
+              state.update(payload_tar_bytes=len(archive), payload_tar_sha256=digest(archive))
+              emit('observations.json', state)
+              assert len(archive) == int(os.environ['PAYLOAD_TAR_BYTES'])
+              assert digest(archive) == os.environ['PAYLOAD_TAR_SHA256']
+              tar_path = out / 'package.tar'
+              tar_path.write_bytes(archive)
+
+              members, files_seen = [], set()
+              dirs = files = 0
+              with tarfile.open(tar_path, 'r:') as tf:
+                  infos = tf.getmembers()
+                  assert infos
+                  for info in infos:
+                      p = PurePosixPath(info.name)
+                      assert not p.is_absolute()
+                      assert '..' not in p.parts
+                      assert '\\' not in info.name
+                      assert info.isdir() or info.isfile()
+                      parts = tuple(x for x in p.parts if x not in ('', '.'))
+                      normalized = PurePosixPath(*parts).as_posix() if parts else '.'
+                      if info.isfile():
+                          assert parts and normalized not in files_seen
+                          files_seen.add(normalized)
+                          files += 1
+                      else:
+                          dirs += 1
+                      members.append({
+                          'name': info.name,
+                          'normalized_path': normalized,
+                          'type': 'file' if info.isfile() else 'directory',
+                          'bytes': info.size,
+                          'mode': oct(info.mode),
+                      })
+                  emit('package-members.json', members)
+
+                  root = extract.resolve()
+                  for info in infos:
+                      p = PurePosixPath(info.name)
+                      parts = tuple(x for x in p.parts if x not in ('', '.'))
+                      if not parts:
+                          continue
+                      target = extract.joinpath(*parts)
+                      resolved = target.resolve()
+                      assert resolved == root or root in resolved.parents
+                      if info.isdir():
+                          target.mkdir(parents=True, exist_ok=True)
+                      else:
+                          target.parent.mkdir(parents=True, exist_ok=True)
+                          stream = tf.extractfile(info)
+                          assert stream is not None
+                          data = stream.read()
+                          assert len(data) == info.size
+                          target.write_bytes(data)
+
+              controllers = sorted(p for p in extract.rglob('controller.py') if p.is_file())
+              assert len(controllers) == 1
+              controller = controllers[0]
+              controller_data = controller.read_bytes()
+              assert len(controller_data) == int(os.environ['CONTROLLER_BYTES'])
+              assert digest(controller_data) == os.environ['CONTROLLER_SHA256']
+              compile(controller_data, str(controller), 'exec')
+
+              exported = out / 'package'
+              shutil.copytree(extract, exported)
+              (out / 'controller.py').write_bytes(controller_data)
+              controller_rel = controller.relative_to(extract).as_posix()
+              (out / 'controller-path.txt').write_text(controller_rel + '\n')
+
+              manifest, combined = [], hashlib.sha256()
+              for path in sorted(p for p in exported.rglob('*') if p.is_file()):
+                  data = path.read_bytes()
+                  record = {
+                      'path': path.relative_to(exported).as_posix(),
+                      'bytes': len(data),
+                      'sha256': digest(data),
+                      'git_blob': hashlib.sha1(
+                          b'blob ' + str(len(data)).encode() + b'\0' + data
+                      ).hexdigest(),
+                  }
+                  manifest.append(record)
+                  combined.update(json.dumps(record, sort_keys=True, separators=(',', ':')).encode() + b'\n')
+              assert manifest
+              emit('package-file-manifest.json', {
+                  'schema_version': 'ssc-rd04-mt-row-state-validation-package-export@6',
+                  'files': manifest,
+                  'combined_file_record_sha256': combined.hexdigest(),
+              })
+
+              receipt = {
+                  'schema_version': 'ssc-rd04-mt-row-state-validation-controller-export@6',
+                  'state': 'exact_package_and_controller_exported_without_execution',
+                  'canonical_main': os.environ['CANONICAL_MAIN'],
+                  'source_package_commit': os.environ['SOURCE_PACKAGE_COMMIT'],
+                  'event_base_sha': os.environ['EVENT_BASE_SHA'],
+                  'event_head_sha': os.environ['EVENT_HEAD_SHA'],
+                  'payload_b64_bytes': len(encoded),
+                  'payload_b64_sha256': digest(encoded),
+                  'payload_gzip_bytes': len(compressed),
+                  'payload_gzip_sha256': digest(compressed),
+                  'payload_tar_bytes': len(archive),
+                  'payload_tar_sha256': digest(archive),
+                  'archive_directory_members': dirs,
+                  'archive_file_members': files,
+                  'package_file_count': len(manifest),
+                  'controller_path': controller_rel,
+                  'controller_bytes': len(controller_data),
+                  'controller_sha256': digest(controller_data),
+                  'controller_executed': False,
+                  'source_requests': 0,
+                  'route_executions': 0,
+                  'evidence_admissions': 0,
+                  'field_terminalizations': 0,
+                  'matrix_updates': 0,
+                  'row_state_mutations': 0,
+                  'row_terminalizations': 0,
+                  'class_closures': 0,
+                  'canonical_effect': 'none',
+                  'publication_effect': 'none',
+                  'adoption_effect': 'none',
+                  'graph_effect': 'none',
+                  'outside_human_dependency': False,
+              }
+              emit('export-receipt.json', receipt)
+              state.update(state=receipt['state'], controller_path=controller_rel)
+              emit('observations.json', state)
+          except BaseException as error:
+              state.update(state='export_failed_closed', error_type=type(error).__name__, error=str(error))
+              emit('observations.json', state)
+              (out / 'export-traceback.txt').write_text(traceback.format_exc())
+              raise
+          PY
+
+          after="$(git ls-remote --heads origin "$TARGET_REF" | awk '{print $1}')"
+          printf '%s\n' "${after:-absent}" > "$OUT/target-ref-after.txt"
+          cmp "$OUT/target-ref-before.txt" "$OUT/target-ref-after.txt"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CANONICAL_MAIN"
+          git show -s --format='%H%n%P%n%T%n%s' "$CANONICAL_MAIN" > "$OUT/canonical-main-commit.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$SOURCE_PACKAGE_COMMIT" > "$OUT/source-package-commit.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$EVENT_BASE_SHA" > "$OUT/base-commit.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$EVENT_HEAD_SHA" > "$OUT/head-commit.txt"
+          git status --porcelain=v1 > "$OUT/repository-status.txt"
+          test ! -s "$OUT/repository-status.txt"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+
+      - name: Preserve exact export
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-validation-controller-export-v6
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce exact zero-authority export
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -s "$OUT/controller.py"
+          test -s "$OUT/package-members.json"
+          test -s "$OUT/package-file-manifest.json"
+          test -s "$OUT/export-receipt.json"
+          test -s "$OUT/SHA256SUMS"
+          test -d "$OUT/package"
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .schema_version == "ssc-rd04-mt-row-state-validation-controller-export@6" and
+            .state == "exact_package_and_controller_exported_without_execution" and
+            .canonical_main == "bc3cf04459bb0d18829f376c9b937693b521e444" and
+            .source_package_commit == "a53a40fc92368cf32cfb106ec7099199e80b8b51" and
+            .payload_b64_sha256 == "d19b30d285e725f0cba1844864f9a8a4d543e46de2ff66484e3a9b710b9771aa" and
+            .payload_gzip_sha256 == "db899783e6a52055842ba9748b9ea1996d5bfa5b7806db374fbf127723c2c3ba" and
+            .payload_tar_sha256 == "d81a4cc83d47f192995a9bf32aed803f4f5c878799558ce906fc166ada7af559" and
+            .archive_directory_members >= 1 and .archive_file_members >= 1 and
+            .controller_bytes == 9075 and
+            .controller_sha256 == "5b9b91cf7e30af38ca4fcec137b8a43d5e3e9c3c3c21e259b6aa21a1bf9d1674" and
+            .controller_executed == false and
+            .source_requests == 0 and .route_executions == 0 and
+            .evidence_admissions == 0 and .field_terminalizations == 0 and
+            .matrix_updates == 0 and .row_state_mutations == 0 and
+            .row_terminalizations == 0 and .class_closures == 0 and
+            .canonical_effect == "none" and .publication_effect == "none" and
+            .adoption_effect == "none" and .graph_effect == "none" and
+            .outside_human_dependency == false
+          ' "$OUT/export-receipt.json" >/dev/null
+          cmp "$OUT/target-ref-before.txt" "$OUT/target-ref-after.txt"
+          test -z "$(git status --porcelain=v1)"
