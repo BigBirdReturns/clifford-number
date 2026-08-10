@@ -1,0 +1,117 @@
+name: PC-61 v5 YAML registration repair
+
+'on':
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pc61-v5-yaml-repair.yml'
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: pc61-v5-yaml-repair
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPOSITORY: ${{ github.repository }}
+  TARGET_BRANCH: 'agent/pc61-terminal-reconcile-v5'
+  TARGET_PATH: '.github/workflows/pc61-terminal-reconciler-v5.yml'
+  SOURCE_BLOB: 'cb84c5bed7c6a972420ddade9a2adf4519056a96'
+  EXPECTED_TARGET_BLOB: '2e239ea521a136a1e3bb78798505943d9634e3f2'
+  EXPECTED_TARGET_SHA256: 'dad7e18ceee20be812eba21450b0c085ed3b1775e432e6397117d284a75ca363'
+  OUT: '/tmp/pc61-v5-yaml-repair'
+
+jobs:
+  repair:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/pc61-terminal-reconcile-v5'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Stage exact YAML postimage and authenticate remote Git blob
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+
+          gh api --method GET "/repos/$GH_REPOSITORY/contents/$TARGET_PATH" -f ref="$TARGET_BRANCH" > "$OUT/content-before.json"
+          before_blob=$(jq -r .sha "$OUT/content-before.json")
+          test "$before_blob" = "$SOURCE_BLOB"
+          jq -r .content "$OUT/content-before.json" | tr -d '\n' | base64 -d > "$OUT/before.yml"
+          test "$(git hash-object "$OUT/before.yml")" = "$SOURCE_BLOB"
+
+          python - "$OUT/before.yml" "$OUT/after.yml" <<'PY'
+          from pathlib import Path
+          import sys
+          source = Path(sys.argv[1]).read_text()
+          old = '''            body="@codex review
+
+          Review exact PC-61 product \\`$PRODUCT\\` / tree \\`$PRODUCT_TREE\\`. Recheck the one-parent fourteen-addition topology, literal UTF-8 and codepoint identity, normalization and casefold versions, confusable collision custody, alias and rename intervals, recycled and reserved namespace state, identity-reuse refusal, recursive floor-v58 source custody, canonical JSON and cache refusal, frontier preservation, read-only workflows, and authority ceilings. Report actionable P0-P2 findings; otherwise record no major issue."'''
+          new = '''            body=$(printf '%s\\n\\n%s\\n' '@codex review' "Review exact PC-61 product \\`$PRODUCT\\` / tree \\`$PRODUCT_TREE\\`. Recheck the one-parent fourteen-addition topology, literal UTF-8 and codepoint identity, normalization and casefold versions, confusable collision custody, alias and rename intervals, recycled and reserved namespace state, identity-reuse refusal, recursive floor-v58 source custody, canonical JSON and cache refusal, frontier preservation, read-only workflows, and authority ceilings. Report actionable P0-P2 findings; otherwise record no major issue.")'''
+          if source.count(old) != 1:
+              raise SystemExit(f'Codex body preimage denominator {source.count(old)} != 1')
+          target = source.replace(old, new)
+          if target.count(new) != 1 or old in target:
+              raise SystemExit('Codex body postimage mismatch')
+          Path(sys.argv[2]).write_text(target)
+          PY
+
+          test "$(git hash-object "$OUT/after.yml")" = "$EXPECTED_TARGET_BLOB"
+          test "$(sha256sum "$OUT/after.yml" | awk '{print $1}')" = "$EXPECTED_TARGET_SHA256"
+          python - "$OUT/after.yml" <<'PY'
+          from pathlib import Path
+          import sys, yaml
+          document = yaml.safe_load(Path(sys.argv[1]).read_text())
+          if list(document['jobs']) != ['reconcile']:
+              raise SystemExit('reconciler job ledger mismatch')
+          if document['jobs']['reconcile']['timeout-minutes'] != 360:
+              raise SystemExit('reconciler timeout mismatch')
+          PY
+          diff -u "$OUT/before.yml" "$OUT/after.yml" > "$OUT/exact.patch" || test "$?" = 1
+
+          encoded=$(base64 -w0 "$OUT/after.yml")
+          set +e
+          gh api --method PUT "/repos/$GH_REPOSITORY/contents/$TARGET_PATH" \
+            -f message='Repair PC-61 v5 YAML registration' \
+            -f content="$encoded" \
+            -f sha="$SOURCE_BLOB" \
+            -f branch="$TARGET_BRANCH" > "$OUT/update-response.json" 2> "$OUT/update-error.txt"
+          update_status=$?
+          set -e
+
+          if [ "$update_status" -eq 0 ]; then
+            test "$(jq -r .content.sha "$OUT/update-response.json")" = "$EXPECTED_TARGET_BLOB"
+            mode='contents_update_succeeded'
+            repair_commit=$(jq -r .commit.sha "$OUT/update-response.json")
+          else
+            grep -qi 'workflows permission' "$OUT/update-error.txt"
+            mode='blob_staged_only'
+            repair_commit='none'
+          fi
+
+          gh api "/repos/$GH_REPOSITORY/git/blobs/$EXPECTED_TARGET_BLOB" > "$OUT/remote-blob.json"
+          test "$(jq -r .sha "$OUT/remote-blob.json")" = "$EXPECTED_TARGET_BLOB"
+          jq -r .content "$OUT/remote-blob.json" | tr -d '\n' | base64 -d > "$OUT/remote-after.yml"
+          cmp "$OUT/after.yml" "$OUT/remote-after.yml"
+
+          jq -n --arg schema_version 'pc61-v5-yaml-repair@1' --arg status complete --arg mode "$mode" --arg source_blob "$SOURCE_BLOB" --arg target_blob "$EXPECTED_TARGET_BLOB" --arg target_sha256 "$EXPECTED_TARGET_SHA256" --arg repair_commit "$repair_commit" '{schema_version:$schema_version,status:$status,mode:$mode,source_blob:$source_blob,target_blob:$target_blob,target_sha256:$target_sha256,repair_commit:$repair_commit,change_denominator:{yaml_parse_errors_removed:1,codex_body_assignments_replaced:1,timeout_minutes:360},product_semantics_changed:false,graph_effect:"none"}' > "$OUT/receipt.json"
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - name: Preserve YAML-repair receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc61-v5-yaml-repair
+          path: /tmp/pc61-v5-yaml-repair
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
