@@ -1,0 +1,158 @@
+name: TEMP materialize exact RD-04 Montana row-state promotion v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-mt-row-state-promotion-materializer-v1/trigger.json'
+      - '.github/workflows/temp-materialize-ssc-rd04-mt-row-state-promotion-v1.yml'
+
+permissions:
+  contents: write
+
+env:
+  CANONICAL_PARENT: 0840358962621b0be3db6864ecec763327f35903
+  CARRIER_BRANCH: agent/ssc-rd04-mt-row-state-promotion-materializer-v1
+  WORKFLOW_PATH: .github/workflows/temp-materialize-ssc-rd04-mt-row-state-promotion-v1.yml
+  TRIGGER_PATH: .tmp/rd04-mt-row-state-promotion-materializer-v1/trigger.json
+  CHUNK_ROOT: .tmp/rd04-mt-row-state-promotion-materializer-v1
+  PRODUCT_BRANCH: staging/ssc-rd04-mt-row-state-reconciliation-ordinary-v1
+  PRODUCT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml
+  WORKFLOW_PAYLOAD: .tmp/rd04-mt-row-state-reconciliation-staging-v1/permanent-workflow.yml
+  ARCHIVE_SHA256: eac85b0da36f04757c662f22e52164b2c3ae4129ed74cfdfc7c11c33c7803780
+  OUT: /tmp/rd04-mt-row-state-promotion-materializer-v1
+  FULL: /tmp/rd04-mt-row-state-promotion-full-v1
+  STAGE: /tmp/rd04-mt-row-state-promotion-staging-v1
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/ssc-rd04-mt-row-state-promotion-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reconstruct, qualify, and stage exact Montana promotion
+        shell: bash
+        env:
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$FULL" "$STAGE"
+          mkdir -p "$OUT"
+          printf '%s\n' start > "$OUT/STAGE"
+          printf '%s\n' 1 > "$OUT/EXIT_CODE"
+          trap 'rc=$?; printf "%s\n" "$rc" > "$OUT/EXIT_CODE"; exit "$rc"' EXIT
+          stage() { printf '%s\n' "$1" > "$OUT/STAGE"; }
+
+          stage bind_exact_carrier
+          test "$EVENT_BASE_SHA" = "$CANONICAL_PARENT"
+          test "$(git rev-parse HEAD)" = "$EVENT_HEAD_SHA"
+          test "$(git merge-base "$CANONICAL_PARENT" HEAD)" = "$CANONICAL_PARENT"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CANONICAL_PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+          printf '%s\n' '.github/workflows/temp-materialize-ssc-rd04-mt-row-state-promotion-v1.yml' '.tmp/rd04-mt-row-state-promotion-materializer-v1/chunk-00' '.tmp/rd04-mt-row-state-promotion-materializer-v1/chunk-01' '.tmp/rd04-mt-row-state-promotion-materializer-v1/chunk-02' '.tmp/rd04-mt-row-state-promotion-materializer-v1/chunk-03' '.tmp/rd04-mt-row-state-promotion-materializer-v1/chunk-04' '.tmp/rd04-mt-row-state-promotion-materializer-v1/chunk-05' '.tmp/rd04-mt-row-state-promotion-materializer-v1/chunk-06' '.tmp/rd04-mt-row-state-promotion-materializer-v1/chunk-07' '.tmp/rd04-mt-row-state-promotion-materializer-v1/chunk-08' '.tmp/rd04-mt-row-state-promotion-materializer-v1/chunk-09' '.tmp/rd04-mt-row-state-promotion-materializer-v1/chunk-10' '.tmp/rd04-mt-row-state-promotion-materializer-v1/chunk-11' '.tmp/rd04-mt-row-state-promotion-materializer-v1/chunk-12' '.tmp/rd04-mt-row-state-promotion-materializer-v1/chunk-13' '.tmp/rd04-mt-row-state-promotion-materializer-v1/trigger.json' | LC_ALL=C sort > "$OUT/expected-carrier-paths.txt"
+          git diff --name-only "$CANONICAL_PARENT" HEAD | LC_ALL=C sort > "$OUT/observed-carrier-paths.txt"
+          diff -u "$OUT/expected-carrier-paths.txt" "$OUT/observed-carrier-paths.txt"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$(cat "$OUT/expected-carrier-paths.txt")"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" HEAD)"
+
+          stage reconstruct_archive
+          cat "$CHUNK_ROOT"/chunk-* > "$OUT/product.tar.xz.b64"
+          base64 -d "$OUT/product.tar.xz.b64" > "$OUT/product.tar.xz"
+          test "$(sha256sum "$OUT/product.tar.xz" | awk '{print $1}')" = "$ARCHIVE_SHA256"
+          printf '%s\n' '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/index.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/input-custody.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/product-manifest.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/promoted-partial-field-matrix.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/remaining-open-field-census.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-decision.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-ledger.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-summary.json' 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.md' 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json' 'test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js' 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs' 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs' | LC_ALL=C sort > "$OUT/expected-product-paths.txt"
+          tar -tJf "$OUT/product.tar.xz" | sed 's#^\./##; s#/$##' | grep -v '^$' | LC_ALL=C sort > "$OUT/archive-paths.raw.txt"
+          grep -E '(^|/)\.\.?($|/)' "$OUT/archive-paths.raw.txt" && exit 1 || true
+          grep -v '/$' "$OUT/archive-paths.raw.txt" > "$OUT/archive-paths.txt"
+          diff -u "$OUT/expected-product-paths.txt" "$OUT/archive-paths.txt"
+          mkdir -p "$OUT/product"
+          tar -xJf "$OUT/product.tar.xz" -C "$OUT/product"
+          printf '%b\n' '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml\\td308f52288f5e6157369890812bf3210513c8006' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/index.json\\t014014b5a22deeee428ab6f00a7cd227b8fae786' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/input-custody.json\\t221669afcf6ffc50fa90327e062023587c3097ed' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/product-manifest.json\\t3b772551c3d04779b2a0ebdab1d87a3fe09cf115' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/promoted-partial-field-matrix.json\\t741bda42b609f386d71090e6368af537fd334914' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/remaining-open-field-census.json\\tb0e385476665d9a9a0c4c72f3f2f4edfea85fe7c' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-decision.json\\ta798f25d4fb27e98c6e07574ccafd7e2a371e1fa' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-ledger.json\\t4ce912cc3b4f280b77386e95533756ca393cf52c' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-summary.json\\te2bfdf8fef743ace2765e8af1b0e361d613c8516' 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.md\\t61ef8308598f028eff7d0150064b505091f9a4ff' 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json\\te95b3dbe6b8d09775f9e9487e89af5f00b3b8282' 'test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js\\td7ac9b741abef79ddcbc0e4719cb0153e1ca2934' 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs\\t6b2f4ab656571008a3338891c7eace0c2b2bd70f' 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs\\t577fd324d08a8aa03243cd098cac407ce7a7b074' > "$OUT/expected-blobs.tsv"
+          while IFS=$'\t' read -r path expected; do
+            test -f "$OUT/product/$path"
+            test "$(git hash-object "$OUT/product/$path")" = "$expected"
+          done < "$OUT/expected-blobs.tsv"
+
+          stage qualify_full_candidate
+          git worktree add --detach "$FULL" "$CANONICAL_PARENT"
+          while IFS= read -r path; do
+            mkdir -p "$FULL/$(dirname "$path")"
+            cp "$OUT/product/$path" "$FULL/$path"
+          done < "$OUT/expected-product-paths.txt"
+          while IFS= read -r path; do git -C "$FULL" add -- "$path"; done < "$OUT/expected-product-paths.txt"
+          test "$(git -C "$FULL" diff --cached --name-only | LC_ALL=C sort)" = "$(cat "$OUT/expected-product-paths.txt")"
+          test "$(git -C "$FULL" diff --cached --name-only --diff-filter=A | LC_ALL=C sort)" = "$(cat "$OUT/expected-product-paths.txt")"
+          test -z "$(git -C "$FULL" diff --cached --name-only --diff-filter=MDTCRUXB)"
+          git -C "$FULL" -c user.name='RD-04 Montana materializer' -c user.email='rd04-mt-materializer@example.invalid' commit -m 'Materialize exact Montana row-state reconciliation candidate'
+          FULL_COMMIT="$(git -C "$FULL" rev-parse HEAD)"
+          FULL_TREE="$(git -C "$FULL" rev-parse 'HEAD^{tree}')"
+          test "$(git -C "$FULL" show -s --format='%P' HEAD)" = "$CANONICAL_PARENT"
+          (cd "$FULL" && node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --check > "$OUT/builder-check.json")
+          (cd "$FULL" && node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/validator.json")
+          jq -e '.state == "qualified_exact_montana_row_state_reconciliation" and .terminal_cells == 230 and .terminal_units == 12 and .montana_terminal_fields == 9 and .montana_open_fields == 0 and .class_closed == false' "$OUT/validator.json" >/dev/null
+          (cd "$FULL" && node --test test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js > "$OUT/adversarial.log" 2>&1)
+          (cd "$FULL" && npm run release:check > "$OUT/release-check.log" 2>&1)
+          git -C "$FULL" reset --hard HEAD
+          git -C "$FULL" clean -fdx
+          test -z "$(git -C "$FULL" status --porcelain)"
+          (cd "$FULL" && node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --check > "$OUT/post-release-builder-check.json")
+          (cd "$FULL" && node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/post-release-validator.json")
+          cmp "$OUT/validator.json" "$OUT/post-release-validator.json"
+          printf '%s\n' "$FULL_COMMIT" > "$OUT/full-candidate-commit.txt"
+          printf '%s\n' "$FULL_TREE" > "$OUT/full-candidate-tree.txt"
+
+          stage publish_ordinary_staging
+          git worktree add --detach "$STAGE" "$CANONICAL_PARENT"
+          printf '%s\n' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/index.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/input-custody.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/product-manifest.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/promoted-partial-field-matrix.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/remaining-open-field-census.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-decision.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-ledger.json' 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-summary.json' 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.md' 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json' 'test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js' 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs' 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs' | LC_ALL=C sort > "$OUT/ordinary-product-paths.txt"
+          while IFS= read -r path; do
+            mkdir -p "$STAGE/$(dirname "$path")"
+            cp "$OUT/product/$path" "$STAGE/$path"
+          done < "$OUT/ordinary-product-paths.txt"
+          mkdir -p "$STAGE/$(dirname "$WORKFLOW_PAYLOAD")"
+          cp "$OUT/product/$PRODUCT_WORKFLOW" "$STAGE/$WORKFLOW_PAYLOAD"
+          while IFS= read -r path; do git -C "$STAGE" add -- "$path"; done < "$OUT/ordinary-product-paths.txt"
+          git -C "$STAGE" add -- "$WORKFLOW_PAYLOAD"
+          STAGE_EXPECTED="$(printf '%s\n%s\n' "$(cat "$OUT/ordinary-product-paths.txt")" "$WORKFLOW_PAYLOAD" | LC_ALL=C sort)"
+          test "$(git -C "$STAGE" diff --cached --name-only | LC_ALL=C sort)" = "$STAGE_EXPECTED"
+          test "$(git -C "$STAGE" diff --cached --name-only --diff-filter=A | LC_ALL=C sort)" = "$STAGE_EXPECTED"
+          test -z "$(git -C "$STAGE" diff --cached --name-only --diff-filter=MDTCRUXB)"
+          git -C "$STAGE" -c user.name='RD-04 Montana materializer' -c user.email='rd04-mt-materializer@example.invalid' commit -m 'Stage exact Montana row-state reconciliation blobs'
+          STAGE_COMMIT="$(git -C "$STAGE" rev-parse HEAD)"
+          test "$(git -C "$STAGE" show -s --format='%P' HEAD)" = "$CANONICAL_PARENT"
+          test "$(git ls-remote --heads origin refs/heads/main | awk '{print $1}')" = "$CANONICAL_PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+          git -C "$STAGE" push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          printf '%s\n' "$STAGE_COMMIT" > "$OUT/staging-commit.txt"
+          git -C "$STAGE" ls-tree -r HEAD | LC_ALL=C sort > "$OUT/staging-tree.txt"
+          git -C "$STAGE" rev-parse "HEAD:$WORKFLOW_PAYLOAD" > "$OUT/workflow-payload-blob.txt"
+          while IFS= read -r path; do printf '%s\t%s\n' "$path" "$(git -C "$STAGE" rev-parse "HEAD:$path")"; done < "$OUT/ordinary-product-paths.txt" > "$OUT/ordinary-blobs.tsv"
+          printf '%s\n' complete > "$OUT/STAGE"
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          printf '%s\n' 'source_requests=0' 'route_executions=0' 'source_admissions=0' 'field_terminalizations=0' 'matrix_updates=0' 'row_state_mutations=0' 'row_terminalizations=0' 'class_closed=false' 'cumulative_ledger_effect=none' 'publication_effect=none' 'adoption_effect=none' 'graph_effect=none' 'outside_human_dependency=false' > "$OUT/BOUNDARY"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+          trap - EXIT
+      - name: Preserve exact Montana materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-promotion-materializer-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - name: Enforce terminal materialization
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
