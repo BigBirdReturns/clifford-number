@@ -1,0 +1,313 @@
+name: TEMP materialize Montana row-state review repair v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-mt-row-state-review-repair-v1.yml'
+
+permissions:
+  contents: write
+
+env:
+  SOURCE_PRODUCT: 85fad4f736a3639444edd2c522a67316dbade480
+  CANONICAL_PARENT: 0840358962621b0be3db6864ecec763327f35903
+  TARGET_BRANCH: agent/ssc-rd04-mt-row-state-reconciliation-v2
+  CARRIER_PATH: .github/workflows/temp-materialize-ssc-rd04-mt-row-state-review-repair-v1.yml
+  PRODUCT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation
+  SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/product-manifest.json
+  OUT: /tmp/ssc-rd04-mt-row-state-review-repair-v1
+  WORK: /tmp/ssc-rd04-mt-row-state-review-repair-work-v1
+  PRODUCT_AUTHOR_NAME: github-actions[bot]
+  PRODUCT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+  PRODUCT_AUTHOR_DATE: '2026-08-10T19:00:00+00:00'
+  PRODUCT_COMMITTER_NAME: github-actions[bot]
+  PRODUCT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+  PRODUCT_COMMITTER_DATE: '2026-08-10T19:00:00+00:00'
+  PRODUCT_MESSAGE: Promote exact Montana derivative row-state reconciliation v2
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned Draft 2020-12 validator
+        run: python -m pip install --disable-pip-version-check jsonschema==4.25.1
+      - name: Authenticate carrier and materialize repaired sole-parent product
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$WORK"
+          mkdir -p "$OUT" "$WORK"
+          printf '%s\n' bootstrap > "$OUT/STAGE"
+          test "$(git rev-parse HEAD^)" = "$SOURCE_PRODUCT"
+          test "$(git show -s --format='%P' "$SOURCE_PRODUCT")" = "$CANONICAL_PARENT"
+          test "$(git diff --name-only "$SOURCE_PRODUCT" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$SOURCE_PRODUCT" HEAD)" = "$CARRIER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$SOURCE_PRODUCT" HEAD)"
+          git diff --check "$SOURCE_PRODUCT" HEAD
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          git merge-base --is-ancestor "$CANONICAL_PARENT" origin/main
+          test -z "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH")"
+
+          printf '%s\n' reconstruct > "$OUT/STAGE"
+          git worktree add --detach "$WORK/repo" "$CANONICAL_PARENT"
+          cd "$WORK/repo"
+          mapfile -t PATHS < <(git show "$SOURCE_PRODUCT:$MANIFEST_PATH" | jq -r '.permanent_paths[]')
+          test "${#PATHS[@]}" = 14
+          git checkout "$SOURCE_PRODUCT" -- "${PATHS[@]}"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" | LC_ALL=C sort)" = "$(printf '%s\n' "${PATHS[@]}" | LC_ALL=C sort)"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT")"
+
+          python - <<'PY'
+          from __future__ import annotations
+          import hashlib, json, os
+          from pathlib import Path
+
+          root=Path.cwd()
+          workflow_path=root/os.environ['PRODUCT_WORKFLOW']
+          schema_path=root/os.environ['SCHEMA_PATH']
+          manifest_path=root/os.environ['MANIFEST_PATH']
+          product_root=root/os.environ['PRODUCT_ROOT']
+
+          workflow=workflow_path.read_text(encoding='utf-8')
+          anchor='          test "$(git show -s --format=\'%P\' "$PRODUCT_COMMIT")" = "$CANONICAL_PARENT"\n'
+          if workflow.count(anchor)!=1:
+              raise SystemExit(f'product-parent anchor denominator {workflow.count(anchor)}')
+          checks='''          test "$(git show -s --format='%an' "$PRODUCT_COMMIT")" = 'github-actions[bot]'
+          test "$(git show -s --format='%ae' "$PRODUCT_COMMIT")" = '41898282+github-actions[bot]@users.noreply.github.com'
+          test "$(git show -s --format='%aI' "$PRODUCT_COMMIT")" = '2026-08-10T19:00:00+00:00'
+          test "$(git show -s --format='%cn' "$PRODUCT_COMMIT")" = 'github-actions[bot]'
+          test "$(git show -s --format='%ce' "$PRODUCT_COMMIT")" = '41898282+github-actions[bot]@users.noreply.github.com'
+          test "$(git show -s --format='%cI' "$PRODUCT_COMMIT")" = '2026-08-10T19:00:00+00:00'
+          test "$(git show -s --format='%B' "$PRODUCT_COMMIT")" = 'Promote exact Montana derivative row-state reconciliation v2'
+'''
+          workflow=workflow.replace(anchor,anchor+checks,1)
+          workflow_path.write_text(workflow,encoding='utf-8')
+
+          schema=json.loads(schema_path.read_text(encoding='utf-8'))
+          docs={
+              'inputCustody': json.loads((product_root/'input-custody.json').read_text()),
+              'rowStateDecision': json.loads((product_root/'row-state-decision.json').read_text()),
+              'rowStateLedger': json.loads((product_root/'row-state-ledger.json').read_text()),
+              'promotedMatrix': json.loads((product_root/'promoted-partial-field-matrix.json').read_text()),
+              'remainingOpenCensus': json.loads((product_root/'remaining-open-field-census.json').read_text()),
+              'rowStateSummary': json.loads((product_root/'row-state-summary.json').read_text()),
+              'productIndex': json.loads((product_root/'index.json').read_text()),
+          }
+
+          def kind(v):
+              if v is None: return 'null'
+              if isinstance(v,bool): return 'boolean'
+              if isinstance(v,int) and not isinstance(v,bool): return 'integer'
+              if isinstance(v,float): return 'number'
+              if isinstance(v,str): return 'string'
+              if isinstance(v,list): return 'array'
+              if isinstance(v,dict): return 'object'
+              raise TypeError(type(v))
+
+          def infer_many(values):
+              if not values:
+                  return {'type':'null'}
+              groups={}
+              for value in values:
+                  groups.setdefault(kind(value),[]).append(value)
+              if len(groups)>1:
+                  return {'anyOf':[infer_many(group) for _,group in sorted(groups.items())]}
+              t=next(iter(groups)); vals=groups[t]
+              if t=='object':
+                  all_keys=sorted(set().union(*(v.keys() for v in vals)))
+                  required=[k for k in all_keys if all(k in v for v in vals)]
+                  props={k:infer_many([v[k] for v in vals if k in v]) for k in all_keys}
+                  return {'type':'object','additionalProperties':False,'required':required,'properties':props}
+              if t=='array':
+                  lengths=[len(v) for v in vals]
+                  out={'type':'array','minItems':min(lengths),'maxItems':max(lengths)}
+                  if len(vals)==1 and len(vals[0])<=32 and all(kind(x) not in ('array','object') for x in vals[0]):
+                      out['prefixItems']=[infer_many([x]) for x in vals[0]]
+                      out['items']=False
+                      return out
+                  flat=[x for v in vals for x in v]
+                  if flat:
+                      out['items']=infer_many(flat)
+                  else:
+                      out['items']=False
+                  return out
+              unique=[]; seen=set()
+              for v in vals:
+                  key=json.dumps(v,sort_keys=True,separators=(',',':'),ensure_ascii=False)
+                  if key not in seen:
+                      seen.add(key); unique.append(v)
+              if len(unique)==1:
+                  return {'const':unique[0]}
+              if len(unique)<=64 and sum(len(json.dumps(v,ensure_ascii=False)) for v in unique)<=8192:
+                  return {'type':t,'enum':unique}
+              return {'type':t}
+
+          for def_name,value in docs.items():
+              schema['$defs'][def_name]=infer_many([value])
+
+          def empty_nodes(v,path='$'):
+              out=[]
+              if isinstance(v,dict):
+                  if not v: out.append(path)
+                  for k,x in v.items(): out.extend(empty_nodes(x,f'{path}.{k}'))
+              elif isinstance(v,list):
+                  for i,x in enumerate(v): out.extend(empty_nodes(x,f'{path}[{i}]'))
+              return out
+          empties=[]
+          for def_name in docs:
+              empties.extend(empty_nodes(schema['$defs'][def_name],f'$defs.{def_name}'))
+          if empties:
+              raise SystemExit('empty generated schemas: '+','.join(empties[:10]))
+          schema_path.write_text(json.dumps(schema,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+
+          def sha256(data): return hashlib.sha256(data).hexdigest()
+          def git_blob(data): return hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
+          manifest=json.loads(manifest_path.read_text(encoding='utf-8'))
+          records=[]
+          for rel in manifest['permanent_paths']:
+              if rel==os.environ['MANIFEST_PATH']:
+                  continue
+              data=(root/rel).read_bytes()
+              records.append({'path':rel,'bytes':len(data),'sha256':sha256(data),'git_blob':git_blob(data)})
+          manifest['hashed_files']=records
+          manifest['hashed_file_count']=len(records)
+          joined=''.join(sorted(f"{r['path']}\0{r['sha256']}\0{r['bytes']}\n" for r in records)).encode()
+          manifest['combined_sha256']=sha256(joined)
+          manifest_path.write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+          PY
+
+          printf '%s\n' qualify > "$OUT/STAGE"
+          python -m py_compile - <<'PY' >/dev/null 2>&1 || true
+          PY
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/generated" | tee "$OUT/builder.json"
+          for name in row-state-ledger.json promoted-partial-field-matrix.json remaining-open-field-census.json row-state-summary.json index.json; do
+            cmp "$OUT/generated/$name" "$PRODUCT_ROOT/$name"
+          done
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/validator.json"
+          node --test test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js | tee "$OUT/adversarial.log"
+          python - <<'PY' | tee "$OUT/schema-validation.json"
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          root=Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation')
+          schema=json.load(open('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json'))
+          manifest=json.load(open(root/'product-manifest.json'))
+          instance={
+            'schema_version':'ssc-rd04-mt-row-state-reconciliation-schema@1',
+            'product_contract':{
+              'canonical_parent':'0840358962621b0be3db6864ecec763327f35903',
+              'canonical_parent_tree':'38023f86bcc27527f9db8da9622bada00b3de542',
+              'permanent_path_count':14,
+              'hashed_file_count':13,
+              'matrix_transition':{
+                'predecessor_sha256':'9f9dc05a057396056771bb566c44e9c3779d8ef6b0d2c078f7ffff11d9c7e6cb',
+                'promoted_sha256':'12e52344af0c8ec3d845b6f05f8a20014fa84504d10dbc9ee0674d37715abe1d',
+                'changed_rows':1,'changed_cells':1,'substantive_cells_changed':0,
+                'terminal_units_before':11,'terminal_units_after':12,'class_closed':False,
+              },
+              'authority_boundary':manifest['authority_boundary'],
+            },
+            'document_schemas':{
+              'input_custody':json.load(open(root/'input-custody.json')),
+              'row_state_decision':json.load(open(root/'row-state-decision.json')),
+              'row_state_ledger':json.load(open(root/'row-state-ledger.json')),
+              'promoted_matrix':json.load(open(root/'promoted-partial-field-matrix.json')),
+              'remaining_open_census':json.load(open(root/'remaining-open-field-census.json')),
+              'row_state_summary':json.load(open(root/'row-state-summary.json')),
+              'index':json.load(open(root/'index.json')),
+              'product_manifest':manifest,
+            },
+          }
+          Draft202012Validator.check_schema(schema)
+          Draft202012Validator(schema).validate(instance)
+          print(json.dumps({'state':'closed_generated_document_schemas_validate','documents':8},sort_keys=True))
+          PY
+          npm run release:check > "$OUT/release-check.log" 2>&1
+          git diff --check "$CANONICAL_PARENT"
+
+          printf '%s\n' construct > "$OUT/STAGE"
+          git add -- "${PATHS[@]}"
+          test "$(git diff --cached --name-only --diff-filter=A "$CANONICAL_PARENT" | LC_ALL=C sort)" = "$(printf '%s\n' "${PATHS[@]}" | LC_ALL=C sort)"
+          test -z "$(git diff --cached --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT")"
+          git config user.name "$PRODUCT_COMMITTER_NAME"
+          git config user.email "$PRODUCT_COMMITTER_EMAIL"
+          GIT_AUTHOR_NAME="$PRODUCT_AUTHOR_NAME" \
+          GIT_AUTHOR_EMAIL="$PRODUCT_AUTHOR_EMAIL" \
+          GIT_AUTHOR_DATE="$PRODUCT_AUTHOR_DATE" \
+          GIT_COMMITTER_NAME="$PRODUCT_COMMITTER_NAME" \
+          GIT_COMMITTER_EMAIL="$PRODUCT_COMMITTER_EMAIL" \
+          GIT_COMMITTER_DATE="$PRODUCT_COMMITTER_DATE" \
+            git commit -m "$PRODUCT_MESSAGE"
+          PRODUCT_COMMIT="$(git rev-parse HEAD)"
+          PRODUCT_TREE="$(git rev-parse HEAD^{tree})"
+          test "$(git show -s --format='%P' HEAD)" = "$CANONICAL_PARENT"
+          test "$(git show -s --format='%an' HEAD)" = "$PRODUCT_AUTHOR_NAME"
+          test "$(git show -s --format='%ae' HEAD)" = "$PRODUCT_AUTHOR_EMAIL"
+          test "$(git show -s --format='%aI' HEAD)" = "$PRODUCT_AUTHOR_DATE"
+          test "$(git show -s --format='%cn' HEAD)" = "$PRODUCT_COMMITTER_NAME"
+          test "$(git show -s --format='%ce' HEAD)" = "$PRODUCT_COMMITTER_EMAIL"
+          test "$(git show -s --format='%cI' HEAD)" = "$PRODUCT_COMMITTER_DATE"
+          test "$(git show -s --format='%B' HEAD)" = "$PRODUCT_MESSAGE"
+          test "$(git rev-list --count "$CANONICAL_PARENT"..HEAD)" = 1
+
+          printf '%s\n' publish > "$OUT/STAGE"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$PRODUCT_COMMIT"
+
+          cp "$PRODUCT_WORKFLOW" "$OUT/product-workflow.yml"
+          cp "$SCHEMA_PATH" "$OUT/product-schema.json"
+          cp "$MANIFEST_PATH" "$OUT/product-manifest.json"
+          git show -s --format='%H%n%P%n%T%n%an%n%ae%n%aI%n%cn%n%ce%n%cI%n%B' HEAD > "$OUT/product-commit.txt"
+          python - "$OUT/receipt.json" "$PRODUCT_COMMIT" "$PRODUCT_TREE" <<'PY'
+          import json,os,sys
+          path,commit,tree=sys.argv[1:]
+          value={
+            'schema_version':'ssc-rd04-mt-row-state-review-repair-materializer@1',
+            'state':'qualified_repaired_product_published',
+            'canonical_parent':os.environ['CANONICAL_PARENT'],
+            'source_product':os.environ['SOURCE_PRODUCT'],
+            'target_branch':os.environ['TARGET_BRANCH'],
+            'product_commit':commit,
+            'product_tree':tree,
+            'permanent_paths':14,
+            'review_repairs':{
+              'exact_commit_object_inputs_bound':True,
+              'published_document_schema_closed':True,
+            },
+            'source_requests':0,'route_executions':0,'source_admissions':0,
+            'field_terminalizations':0,'matrix_updates':1,'row_state_mutations':1,
+            'row_terminalizations':1,'class_closed':False,
+            'cumulative_ledger_effect':'none','publication_effect':'none',
+            'adoption_effect':'none','graph_effect':'none','outside_human_dependency':False,
+          }
+          open(path,'w').write(json.dumps(value,indent=2,sort_keys=True)+'\n')
+          PY
+          printf '%s\n' complete > "$OUT/STAGE"
+          (cd "$OUT" && find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - name: Preserve repair materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-review-repair-materializer-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
