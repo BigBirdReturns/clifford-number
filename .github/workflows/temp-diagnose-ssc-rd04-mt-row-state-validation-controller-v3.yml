@@ -1,0 +1,273 @@
+name: TEMP diagnose RD-04 Montana row-state validation controller v3
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-mt-row-state-validation-diagnostic-base-v3
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-mt-row-state-validation-materializer/diagnostic-v3-trigger.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-rd04-mt-row-state-validation-controller-diagnostic-v3
+  cancel-in-progress: false
+
+env:
+  SOURCE_CARRIER_BASE: 6422ee14a1c95a118edf75d869d06e3febfd4c39
+  PAYLOAD: .tmp/rd04-mt-row-state-validation-materializer/package.tar.gz.b64
+  ORIGINAL_WORKFLOW: .github/workflows/temp-materialize-ssc-rd04-mt-row-state-validation-v1.yml
+  DIAGNOSTIC_WORKFLOW: .github/workflows/temp-diagnose-ssc-rd04-mt-row-state-validation-controller-v3.yml
+  TRIGGER_PATH: .tmp/rd04-mt-row-state-validation-materializer/diagnostic-v3-trigger.json
+  ORIGINAL_TRIGGER_PATH: .tmp/rd04-mt-row-state-validation-materializer/trigger.json
+  PACKAGE: /tmp/rd04-mt-row-state-validation-controller-diagnostic-v3-package
+  OUT: /tmp/rd04-mt-row-state-validation-materializer-v1-artifact
+  DIAG: /tmp/rd04-mt-row-state-validation-controller-diagnostic-v3
+  TARGET_REF: refs/heads/staging/ssc-rd04-mt-row-state-reconciliation-validation-v1
+  PAYLOAD_B64_BYTES: '14740'
+  PAYLOAD_B64_SHA256: d19b30d285e725f0cba1844864f9a8a4d543e46de2ff66484e3a9b710b9771aa
+  PAYLOAD_GZIP_BYTES: '11054'
+  PAYLOAD_GZIP_SHA256: db899783e6a52055842ba9748b9ea1996d5bfa5b7806db374fbf127723c2c3ba
+  PAYLOAD_TAR_BYTES: '61440'
+  PAYLOAD_TAR_SHA256: d81a4cc83d47f192995a9bf32aed803f4f5c878799558ce906fc166ada7af559
+  CONTROLLER_BYTES: '9075'
+  CONTROLLER_SHA256: 5b9b91cf7e30af38ca4fcec137b8a43d5e3e9c3c3c21e259b6aa21a1bf9d1674
+
+jobs:
+  diagnose:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-mt-row-state-validation-diagnostic-base-v3' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-mt-row-state-validation-diagnostic-trigger-v3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Authenticate exact diagnostic topology
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$EVENT_HEAD_SHA"
+          test "$(git rev-parse HEAD^)" = "$EVENT_BASE_SHA"
+          test "$(git rev-list --count "$EVENT_BASE_SHA..HEAD")" -eq 1
+          test "$(git rev-parse "$EVENT_BASE_SHA^")" = "$SOURCE_CARRIER_BASE"
+          test "$(git rev-list --count "$SOURCE_CARRIER_BASE..$EVENT_BASE_SHA")" -eq 1
+
+          printf '%s\n' "$DIAGNOSTIC_WORKFLOW" > /tmp/expected-base-paths.txt
+          git diff --name-only "$SOURCE_CARRIER_BASE" "$EVENT_BASE_SHA" | LC_ALL=C sort > /tmp/actual-base-paths.txt
+          cmp /tmp/expected-base-paths.txt /tmp/actual-base-paths.txt
+          test "$(git diff --name-only --diff-filter=A "$SOURCE_CARRIER_BASE" "$EVENT_BASE_SHA" | wc -l)" -eq 1
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$SOURCE_CARRIER_BASE" "$EVENT_BASE_SHA")"
+
+          printf '%s\n' "$TRIGGER_PATH" > /tmp/expected-trigger-paths.txt
+          git diff --name-only "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA" | LC_ALL=C sort > /tmp/actual-trigger-paths.txt
+          cmp /tmp/expected-trigger-paths.txt /tmp/actual-trigger-paths.txt
+          test "$(git diff --name-only --diff-filter=A "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA" | wc -l)" -eq 1
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA")"
+
+          test -f "$PAYLOAD"
+          test -f "$ORIGINAL_WORKFLOW"
+          test -f "$DIAGNOSTIC_WORKFLOW"
+          test -f "$TRIGGER_PATH"
+          test ! -e "$ORIGINAL_TRIGGER_PATH"
+          git diff --check "$SOURCE_CARRIER_BASE" "$EVENT_HEAD_SHA"
+
+      - name: Recover exact controller and capture its fail-closed execution
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$PACKAGE" "$OUT" "$DIAG"
+          mkdir -p "$PACKAGE" "$DIAG"
+
+          test "$(stat -c %s "$PAYLOAD")" -eq "$PAYLOAD_B64_BYTES"
+          test "$(sha256sum "$PAYLOAD" | awk '{print $1}')" = "$PAYLOAD_B64_SHA256"
+          base64 --decode "$PAYLOAD" > /tmp/rd04-mt-row-state-validation-controller-diagnostic-v3.tar.gz
+          test "$(stat -c %s /tmp/rd04-mt-row-state-validation-controller-diagnostic-v3.tar.gz)" -eq "$PAYLOAD_GZIP_BYTES"
+          test "$(sha256sum /tmp/rd04-mt-row-state-validation-controller-diagnostic-v3.tar.gz | awk '{print $1}')" = "$PAYLOAD_GZIP_SHA256"
+          gzip -dc /tmp/rd04-mt-row-state-validation-controller-diagnostic-v3.tar.gz > /tmp/rd04-mt-row-state-validation-controller-diagnostic-v3.tar
+          test "$(stat -c %s /tmp/rd04-mt-row-state-validation-controller-diagnostic-v3.tar)" -eq "$PAYLOAD_TAR_BYTES"
+          test "$(sha256sum /tmp/rd04-mt-row-state-validation-controller-diagnostic-v3.tar | awk '{print $1}')" = "$PAYLOAD_TAR_SHA256"
+
+          python - <<'PY'
+          import json
+          import os
+          import shutil
+          import tarfile
+          from pathlib import Path, PurePosixPath
+
+          archive = Path('/tmp/rd04-mt-row-state-validation-controller-diagnostic-v3.tar')
+          package = Path(os.environ['PACKAGE'])
+          diag = Path(os.environ['DIAG'])
+          listing = []
+          with tarfile.open(archive, 'r:') as tf:
+              members = tf.getmembers()
+              assert members
+              for member in members:
+                  path = PurePosixPath(member.name)
+                  assert not path.is_absolute()
+                  assert '..' not in path.parts
+                  assert member.isdir() or member.isfile()
+                  listing.append({
+                      'name': member.name,
+                      'bytes': member.size,
+                      'mode': oct(member.mode),
+                      'type': 'directory' if member.isdir() else 'file',
+                  })
+              tf.extractall(package, filter='data')
+
+          controller = package / 'controller.py'
+          if not controller.is_file():
+              matches = [p for p in package.rglob('controller.py') if p.is_file()]
+              assert len(matches) == 1
+              controller = matches[0]
+          shutil.copyfile(controller, diag / 'controller.py')
+          (diag / 'package-members.json').write_text(
+              json.dumps(listing, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          (diag / 'controller-path.txt').write_text(
+              str(controller.relative_to(package)) + '\n',
+              encoding='utf-8',
+          )
+          PY
+
+          test "$(stat -c %s "$DIAG/controller.py")" -eq "$CONTROLLER_BYTES"
+          test "$(sha256sum "$DIAG/controller.py" | awk '{print $1}')" = "$CONTROLLER_SHA256"
+          python -m py_compile "$DIAG/controller.py"
+
+          git ls-remote --heads origin "$TARGET_REF" | awk '{print $1}' > "$DIAG/target-ref-before.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$EVENT_HEAD_SHA" > "$DIAG/trigger-commit.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$EVENT_BASE_SHA" > "$DIAG/base-commit.txt"
+          git show -s --format='%H%n%P%n%T%n%s' "$SOURCE_CARRIER_BASE" > "$DIAG/source-carrier-commit.txt"
+          git diff --name-status "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA" > "$DIAG/trigger-diff.txt"
+          git diff --name-status "$SOURCE_CARRIER_BASE" "$EVENT_BASE_SHA" > "$DIAG/base-diff.txt"
+          sha256sum "$PAYLOAD" /tmp/rd04-mt-row-state-validation-controller-diagnostic-v3.tar.gz /tmp/rd04-mt-row-state-validation-controller-diagnostic-v3.tar "$DIAG/controller.py" > "$DIAG/package-sha256.txt"
+
+          set +e
+          python -X dev "$DIAG/controller.py" > "$DIAG/controller-stdout.log" 2> "$DIAG/controller-stderr.log"
+          CONTROLLER_RC=$?
+          set -e
+          printf '%s\n' "$CONTROLLER_RC" > "$DIAG/controller-exit-code.txt"
+
+          git ls-remote --heads origin "$TARGET_REF" | awk '{print $1}' > "$DIAG/target-ref-after.txt"
+          cmp "$DIAG/target-ref-before.txt" "$DIAG/target-ref-after.txt"
+          git status --porcelain=v1 > "$DIAG/repository-status.txt"
+          test ! -s "$DIAG/repository-status.txt"
+
+          if [ -d "$OUT" ]; then
+            mkdir -p "$DIAG/controller-out"
+            cp -a "$OUT"/. "$DIAG/controller-out"/ 2>/dev/null || true
+          fi
+
+          python - "$DIAG/diagnostic-receipt.json" "$CONTROLLER_RC" <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import sys
+
+          diag = pathlib.Path(os.environ['DIAG'])
+          controller = (diag / 'controller.py').read_bytes()
+          before = (diag / 'target-ref-before.txt').read_text(encoding='utf-8').strip()
+          after = (diag / 'target-ref-after.txt').read_text(encoding='utf-8').strip()
+          receipt = {
+              'schema_version': 'ssc-rd04-mt-row-state-validation-controller-diagnostic@3',
+              'state': 'exact_controller_failure_captured',
+              'source_carrier_base': os.environ['SOURCE_CARRIER_BASE'],
+              'event_base_sha': os.environ['EVENT_BASE_SHA'],
+              'event_head_sha': os.environ['EVENT_HEAD_SHA'],
+              'payload_b64_sha256': os.environ['PAYLOAD_B64_SHA256'],
+              'payload_gzip_sha256': os.environ['PAYLOAD_GZIP_SHA256'],
+              'payload_tar_sha256': os.environ['PAYLOAD_TAR_SHA256'],
+              'controller_exit_code': int(sys.argv[2]),
+              'controller_bytes': len(controller),
+              'controller_sha256': hashlib.sha256(controller).hexdigest(),
+              'target_ref': os.environ['TARGET_REF'],
+              'target_ref_before': before or None,
+              'target_ref_after': after or None,
+              'target_ref_unchanged': before == after,
+              'source_requests': 0,
+              'route_executions': 0,
+              'evidence_admissions': 0,
+              'field_terminalizations': 0,
+              'matrix_updates': 0,
+              'row_state_mutations': 0,
+              'row_terminalizations': 0,
+              'class_closures': 0,
+              'canonical_effect': 'none',
+          }
+          pathlib.Path(sys.argv[1]).write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+
+          (cd "$DIAG" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+          (cd "$DIAG" && sha256sum -c SHA256SUMS)
+
+          echo '--- controller stderr ---'
+          sed -n '1,320p' "$DIAG/controller-stderr.log"
+          echo '--- controller stdout ---'
+          sed -n '1,320p' "$DIAG/controller-stdout.log"
+          echo "controller exit code: $CONTROLLER_RC"
+
+      - name: Preserve exact diagnostic custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-validation-controller-diagnostic-v3
+          path: ${{ env.DIAG }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce captured failure and zero authority
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -s "$DIAG/controller.py"
+          test -s "$DIAG/controller-exit-code.txt"
+          test -f "$DIAG/controller-stdout.log"
+          test -s "$DIAG/controller-stderr.log"
+          test -s "$DIAG/diagnostic-receipt.json"
+          test -s "$DIAG/SHA256SUMS"
+          (cd "$DIAG" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .schema_version == "ssc-rd04-mt-row-state-validation-controller-diagnostic@3" and
+            .state == "exact_controller_failure_captured" and
+            .source_carrier_base == "6422ee14a1c95a118edf75d869d06e3febfd4c39" and
+            .controller_exit_code != 0 and
+            .controller_bytes == 9075 and
+            .controller_sha256 == "5b9b91cf7e30af38ca4fcec137b8a43d5e3e9c3c3c21e259b6aa21a1bf9d1674" and
+            .target_ref_unchanged == true and
+            .source_requests == 0 and
+            .route_executions == 0 and
+            .evidence_admissions == 0 and
+            .field_terminalizations == 0 and
+            .matrix_updates == 0 and
+            .row_state_mutations == 0 and
+            .row_terminalizations == 0 and
+            .class_closures == 0 and
+            .canonical_effect == "none"
+          ' "$DIAG/diagnostic-receipt.json" >/dev/null
+          git status --porcelain=v1 | test ! -s /dev/stdin
