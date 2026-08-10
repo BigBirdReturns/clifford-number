@@ -1,0 +1,94 @@
+name: TEMP export exact RD-04 North Dakota promotion v4 source
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - agent/ssc-rd04-nd-promotion-v4-source-export-base-v1
+    paths:
+      - '.tmp/rd04-nd-promotion-v4-source-export-v1/trigger.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ssc-rd04-nd-promotion-v4-source-export-v1
+  cancel-in-progress: false
+
+env:
+  CANONICAL_PARENT: 77aef3313e85e1fddc68805a9f22252ff147b4e8
+  PRODUCT_COMMIT: 07de734457c915af366ef3bcea3b15dd91f28576
+  PRODUCT_TREE: ecbbaf838ef44e3b14ef835fd3e2fc6324611f05
+  BASE_BRANCH: agent/ssc-rd04-nd-promotion-v4-source-export-base-v1
+  HEAD_BRANCH: agent/ssc-rd04-nd-promotion-v4-source-export-trigger-v1
+  WORKFLOW_PATH: .github/workflows/temp-rd04-nd-promotion-v4-source-export-v1.yml
+  TRIGGER_PATH: .tmp/rd04-nd-promotion-v4-source-export-v1/trigger.json
+  OUT: /tmp/ssc-rd04-nd-promotion-v4-source-export-v1
+
+jobs:
+  export:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-promotion-v4-source-export-base-v1' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-promotion-v4-source-export-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Export exact product source
+        shell: bash
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT/source"
+          HEAD_SHA="$(git rev-parse HEAD)"
+          BASE_SHA="$(git rev-parse HEAD^)"
+          test "$HEAD_SHA" = "$EVENT_HEAD_SHA"
+          test "$BASE_SHA" = "$EVENT_BASE_SHA"
+          test "$(git rev-parse "$BASE_SHA^")" = "$PRODUCT_COMMIT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^")" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^{tree}")" = "$PRODUCT_TREE"
+          test "$(git diff --name-only "$PRODUCT_COMMIT" "$BASE_SHA")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$PRODUCT_COMMIT" "$BASE_SHA")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA")" = "$TRIGGER_PATH"
+          git diff --check "$PRODUCT_COMMIT" "$HEAD_SHA"
+
+          git diff --name-only "$CANONICAL_PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort > "$OUT/product-paths.txt"
+          git diff --name-status "$CANONICAL_PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort > "$OUT/product-status.txt"
+          test "$(wc -l < "$OUT/product-paths.txt")" -eq 14
+          test "$(awk '$1 != "A" {n++} END {print n+0}' "$OUT/product-status.txt")" -eq 0
+
+          while IFS= read -r path; do
+            mkdir -p "$OUT/source/$(dirname "$path")"
+            git show "$PRODUCT_COMMIT:$path" > "$OUT/source/$path"
+          done < "$OUT/product-paths.txt"
+
+          : > "$OUT/source-files.tsv"
+          while IFS= read -r path; do
+            bytes="$(wc -c < "$OUT/source/$path")"
+            digest="$(sha256sum "$OUT/source/$path" | awk '{print $1}')"
+            blob="$(git rev-parse "$PRODUCT_COMMIT:$path")"
+            printf '%s\t%s\t%s\t%s\n' "$path" "$bytes" "$digest" "$blob" >> "$OUT/source-files.tsv"
+          done < "$OUT/product-paths.txt"
+
+          printf '%s\n' "$PRODUCT_COMMIT" > "$OUT/product-commit.txt"
+          printf '%s\n' "$PRODUCT_TREE" > "$OUT/product-tree.txt"
+          find "$OUT" -type f ! -name SHA256SUMS -printf '%P\n' | LC_ALL=C sort | while IFS= read -r file; do
+            sha256sum "$OUT/$file" | sed "s#  $OUT/#  #"
+          done > "$OUT/SHA256SUMS"
+      - name: Preserve exact source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-promotion-v4-exact-source-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
