@@ -1,0 +1,249 @@
+name: TEMP rebuild corrected RD-04 North Dakota row-state validation V3
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.tmp/rd04-nd-row-state-validation-v3/trigger.json'
+
+permissions:
+  contents: write
+
+env:
+  CANONICAL_PARENT: bab9570ab043df7c5062e5a45a0717a82eed346b
+  CANONICAL_PARENT_TREE: 74c43136c79700be7cacf9d983738743cec227b8
+  SOURCE_COMMIT: 2e53e6da649f8c61a16944f52c37e810b6b6f286
+  SOURCE_TREE: be28a32f4c15a68cd51ec977e7e5bc99e98778b8
+  STALE_PARENT_TREE: cca6b16db286f00125b9375c3a3cc505e58b3525
+  BASE_BRANCH: agent/ssc-rd04-nd-row-state-validation-v3-materializer-base
+  HEAD_BRANCH: agent/ssc-rd04-nd-row-state-validation-v3-materializer-trigger
+  PRODUCT_BRANCH: agent/ssc-rd04-nd-row-state-reconciliation-validation-v3
+  WORKFLOW_PATH: .github/workflows/temp-materialize-ssc-rd04-nd-row-state-validation-v3.yml
+  TRIGGER_PATH: .tmp/rd04-nd-row-state-validation-v3/trigger.json
+  PRODUCT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation-validation-v2.yml
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation-validation-v2
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-current-public-record-gap-promotion/promoted-partial-field-matrix.json
+  VALIDATOR_PATH: tools/validate-status-sovereignty-rd-wave03-rd04-nd-row-state-reconciliation-v2.py
+  OUT: /tmp/rd04-nd-row-state-validation-v3-materializer
+  WORK: /tmp/rd04-nd-row-state-validation-v3-work
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Reconstruct, qualify, and publish corrected validation product
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          EVENT_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$WORK"
+          mkdir -p "$OUT"
+          printf '%s\n' start > "$OUT/STAGE"
+          printf '%s\n' 1 > "$OUT/EXIT_CODE"
+          trap 'rc=$?; printf "%s\n" "$rc" > "$OUT/EXIT_CODE"; exit "$rc"' EXIT
+          stage() { printf '%s\n' "$1" > "$OUT/STAGE"; }
+
+          stage bind_exact_carrier_and_live_main
+          test "$EVENT_BASE_REF" = "$BASE_BRANCH"
+          test "$EVENT_HEAD_REF" = "$HEAD_BRANCH"
+          test "$(git rev-parse HEAD)" = "$EVENT_HEAD_SHA"
+          test "$(git rev-parse HEAD^)" = "$EVENT_BASE_SHA"
+          test "$(git rev-parse "$EVENT_BASE_SHA^")" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "$CANONICAL_PARENT^{tree}")" = "$CANONICAL_PARENT_TREE"
+          mapfile -t base_status < <(git diff --name-status "$CANONICAL_PARENT" "$EVENT_BASE_SHA")
+          test "${#base_status[@]}" -eq 1
+          test "${base_status[0]}" = $'A\t'"$WORKFLOW_PATH"
+          mapfile -t head_status < <(git diff --name-status "$EVENT_BASE_SHA" "$EVENT_HEAD_SHA")
+          test "${#head_status[@]}" -eq 1
+          test "${head_status[0]}" = $'A\t'"$TRIGGER_PATH"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+
+          stage authenticate_failed_v2_source_objects
+          test "$(git rev-parse "$SOURCE_COMMIT^")" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "$SOURCE_COMMIT^{tree}")" = "$SOURCE_TREE"
+          EXPECTED="$(printf '%s\n' \
+            "$PRODUCT_WORKFLOW" \
+            "$PRODUCT_ROOT/current-row-custody.json" \
+            "$PRODUCT_ROOT/row-state-validation.json" \
+            "$PRODUCT_ROOT/validated-row-state-protocol.json" \
+            "$PRODUCT_ROOT/summary.json" \
+            "$PRODUCT_ROOT/product-manifest.json" \
+            "$VALIDATOR_PATH" | LC_ALL=C sort)"
+          test "$(git diff --name-only "$CANONICAL_PARENT" "$SOURCE_COMMIT" | LC_ALL=C sort)" = "$EXPECTED"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$SOURCE_COMMIT" | LC_ALL=C sort)" = "$EXPECTED"
+          test "$(git rev-parse "$SOURCE_COMMIT:$PRODUCT_WORKFLOW")" = '212de56c4431af80d21dcd4dff35d5fa6970477b'
+          test "$(git rev-parse "$SOURCE_COMMIT:$PRODUCT_ROOT/current-row-custody.json")" = 'e1d1da727229a4aa30f562fac430bd57d261e146'
+          test "$(git rev-parse "$SOURCE_COMMIT:$PRODUCT_ROOT/row-state-validation.json")" = '6c10c4a87d3fd178f326667a9d8ef8e59bf65c5c'
+          test "$(git rev-parse "$SOURCE_COMMIT:$PRODUCT_ROOT/validated-row-state-protocol.json")" = '915cc884848126a8ec49b774c541ab5bebfff5f4'
+          test "$(git rev-parse "$SOURCE_COMMIT:$PRODUCT_ROOT/summary.json")" = '5dc22d4006c082e90ab880dc3cf036c70f8fdca6'
+          test "$(git rev-parse "$SOURCE_COMMIT:$PRODUCT_ROOT/product-manifest.json")" = 'fa468e4120d8d0386a70f81c8d2dacd2977114b3'
+          test "$(git rev-parse "$SOURCE_COMMIT:$VALIDATOR_PATH")" = 'fe0a64c9f2b8e7563377b8fabb07ea77b381d76d'
+
+          stage reconstruct_corrected_seven_path_product
+          git worktree add --detach "$WORK" "$CANONICAL_PARENT"
+          cd "$WORK"
+          for path in \
+            "$PRODUCT_WORKFLOW" \
+            "$PRODUCT_ROOT/current-row-custody.json" \
+            "$PRODUCT_ROOT/row-state-validation.json" \
+            "$PRODUCT_ROOT/validated-row-state-protocol.json" \
+            "$PRODUCT_ROOT/summary.json" \
+            "$VALIDATOR_PATH"; do
+            mkdir -p "$(dirname "$path")"
+            git show "$SOURCE_COMMIT:$path" > "$path"
+          done
+          git show "$SOURCE_COMMIT:$PRODUCT_ROOT/product-manifest.json" > "$OUT/source-manifest.json"
+          export CANONICAL_PARENT_TREE STALE_PARENT_TREE PRODUCT_WORKFLOW PRODUCT_ROOT VALIDATOR_PATH OUT WORK
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          work=Path(os.environ['WORK'])
+          old=os.environ['STALE_PARENT_TREE']; new=os.environ['CANONICAL_PARENT_TREE']
+          patched=[
+            work/os.environ['PRODUCT_WORKFLOW'],
+            work/os.environ['PRODUCT_ROOT']/ 'current-row-custody.json',
+            work/os.environ['VALIDATOR_PATH'],
+          ]
+          for path in patched:
+            text=path.read_text()
+            if text.count(old)!=1 or new in text:
+              raise SystemExit(f'exact tree preimage mismatch: {path}')
+            path.write_text(text.replace(old,new))
+          source=json.loads((Path(os.environ['OUT'])/'source-manifest.json').read_text())
+          expected=source['permanent_paths']
+          manifest_path=f"{os.environ['PRODUCT_ROOT']}/product-manifest.json"
+          if len(expected)!=7 or manifest_path not in expected:
+            raise SystemExit('source manifest denominator mismatch')
+          records=[]; rows=[]
+          for rel in expected:
+            if rel==manifest_path: continue
+            data=(work/rel).read_bytes()
+            sha=hashlib.sha256(data).hexdigest()
+            git_blob=hashlib.sha1(f'blob {len(data)}\0'.encode()+data).hexdigest()
+            records.append({'path':rel,'bytes':len(data),'sha256':sha,'git_blob':git_blob})
+            rows.append(f'{rel}\0{sha}\0{len(data)}\n')
+          manifest={
+            'schema_version':source['schema_version'],
+            'permanent_path_count':7,
+            'hashed_file_count':6,
+            'self_describing_manifest_excluded_from_combined_payload':True,
+            'permanent_paths':expected,
+            'hashed_files':records,
+            'combined_sha256':hashlib.sha256(''.join(sorted(rows)).encode()).hexdigest(),
+            'authority_boundary':source['authority_boundary'],
+          }
+          path=work/manifest_path
+          path.parent.mkdir(parents=True,exist_ok=True)
+          path.write_text(json.dumps(manifest,indent=2)+'\n')
+          (Path(os.environ['OUT'])/'corrected-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
+          PY
+
+          stage create_exact_product_commit
+          mapfile -t status < <(git status --short --untracked-files=all)
+          test "${#status[@]}" -eq 7
+          test "$(printf '%s\n' "${status[@]}" | awk '$1=="??"{n++} END{print n+0}')" -eq 7
+          git add --all
+          test "$(git diff --cached --name-only | LC_ALL=C sort)" = "$EXPECTED"
+          git diff --cached --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Validate North Dakota row-state reconciliation after exact parent-tree repair'
+          PRODUCT_COMMIT="$(git rev-parse HEAD)"
+          PRODUCT_TREE="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"
+          printf '%s\n' "$PRODUCT_COMMIT" > "$OUT/product-commit.txt"
+          printf '%s\n' "$PRODUCT_TREE" > "$OUT/product-tree.txt"
+
+          stage qualify_corrected_product
+          export MATRIX_PATH PRODUCT_ROOT
+          export VALIDATION_ROOT="$PRODUCT_ROOT"
+          export VALIDATION_HEAD="$PRODUCT_COMMIT"
+          python -m py_compile "$VALIDATOR_PATH"
+          python "$VALIDATOR_PATH" | tee "$OUT/validation-receipt.json"
+          npm run release:check > "$OUT/release-check.log" 2>&1
+          git reset --hard "$PRODUCT_COMMIT"
+          git clean -fdx
+          test -z "$(git status --porcelain)"
+          python "$VALIDATOR_PATH" > "$OUT/post-release-validation-receipt.json"
+          cmp "$OUT/validation-receipt.json" "$OUT/post-release-validation-receipt.json"
+          test "$(git diff --name-only "$CANONICAL_PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort)" = "$EXPECTED"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort)" = "$EXPECTED"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" "$PRODUCT_COMMIT")"
+
+          stage reacquire_live_main_and_publish
+          cd "$GITHUB_WORKSPACE"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$CANONICAL_PARENT"
+          test -z "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH")"
+          git push origin "$PRODUCT_COMMIT:refs/heads/$PRODUCT_BRANCH"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$PRODUCT_COMMIT"
+
+          stage complete
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          out=Path(os.environ['OUT'])
+          receipt={
+            'schema_version':'ssc-rd04-nd-row-state-validation-v3-materializer@1',
+            'state':'qualified_validation_product_published',
+            'canonical_parent':os.environ['CANONICAL_PARENT'],
+            'canonical_parent_tree':os.environ['CANONICAL_PARENT_TREE'],
+            'source_commit':os.environ['SOURCE_COMMIT'],
+            'source_tree':os.environ['SOURCE_TREE'],
+            'replaced_tree_identity':os.environ['STALE_PARENT_TREE'],
+            'product_commit':(out/'product-commit.txt').read_text().strip(),
+            'product_tree':(out/'product-tree.txt').read_text().strip(),
+            'permanent_paths':7,
+            'source_requests':0,
+            'route_executions':0,
+            'source_admissions':0,
+            'field_terminalizations':0,
+            'matrix_updates':0,
+            'row_state_mutations':0,
+            'row_terminalizations':0,
+            'promotion_executed_here':False,
+            'class_closed':False,
+            'outside_human_dependency':False,
+          }
+          (out/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          PY
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+          trap - EXIT
+      - name: Preserve exact materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-row-state-validation-v3-materializer
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - name: Enforce terminal product publication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '.state=="qualified_validation_product_published" and .permanent_paths==7 and .field_terminalizations==0 and .matrix_updates==0 and .row_state_mutations==0 and .row_terminalizations==0 and .promotion_executed_here==false and .class_closed==false and .outside_human_dependency==false' "$OUT/receipt.json" > /dev/null
