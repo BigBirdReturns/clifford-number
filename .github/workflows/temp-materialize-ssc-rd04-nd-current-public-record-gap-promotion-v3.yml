@@ -1,0 +1,164 @@
+name: TEMP materialize RD-04 North Dakota current public-record-gap promotion v3
+
+on:
+  pull_request:
+    branches:
+      - agent/ssc-rd04-nd-current-public-record-gap-promotion-materializer-base-v3
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-nd-current-public-record-gap-promotion-v3/trigger.json'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: temp-rd04-nd-current-public-record-gap-promotion-v3
+  cancel-in-progress: false
+
+env:
+  CONTROLLER_COMMIT: 88be38f356089e6eebd8a9018134f9b63223a949
+  CONTROLLER_ROOT: .tmp/rd04-nd-current-public-record-gap-promotion-v3
+  BASE_BRANCH: agent/ssc-rd04-nd-current-public-record-gap-promotion-materializer-base-v3
+  HEAD_BRANCH: agent/ssc-rd04-nd-current-public-record-gap-promotion-materializer-trigger-v3
+  WORKFLOW_PATH: .github/workflows/temp-materialize-ssc-rd04-nd-current-public-record-gap-promotion-v3.yml
+  TRIGGER_PATH: .tmp/rd04-nd-current-public-record-gap-promotion-v3/trigger.json
+  PRODUCT_BRANCH: agent/ssc-rd04-nd-current-public-record-gap-promotion-v1
+  OUT: /tmp/rd04-nd-current-public-record-gap-promotion-v2
+  CONTROLLER_ABS: /tmp/rd04-nd-current-public-record-gap-promotion-controller-v3.sh
+  CONTROLLER_BYTES: '20542'
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-current-public-record-gap-promotion-materializer-base-v3' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-current-public-record-gap-promotion-materializer-trigger-v3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Authenticate corrected controller chunks and execute guarded materialization
+        id: materialize
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -f "$CONTROLLER_ABS"
+
+          paths=(
+            "$CONTROLLER_ROOT/controller.part00"
+            "$CONTROLLER_ROOT/controller.part01"
+            "$CONTROLLER_ROOT/controller.part02"
+            "$CONTROLLER_ROOT/controller.part03"
+            "$CONTROLLER_ROOT/controller.part04"
+            "$CONTROLLER_ROOT/controller.part05"
+            "$CONTROLLER_ROOT/controller.part06"
+          )
+          blobs=(
+            5f6d1e79ba1b82c2822ae331057e7fad3f000942
+            cfa76b7684270389ad0db46029521373ce741a45
+            cc6b1a8357607d7e3b908723c8d8aba64dc4d2fd
+            eff2d4bdb6532fa997743829098f87a8889aa8a3
+            a92ddeaa56c09a6a7cea95b34876bbb86e8bdd1b
+            ac395d5e0cd583bd23dbadf7fa22f106e1d29736
+            9b911e3472cd7ba13aed48fc159a795771966836
+          )
+          bytes=(3382 3349 3376 3393 3346 3374 322)
+          digests=(
+            e6b7a979049ba021f5af3cf07df65f7a841d83a319ce374baba201dd9ce1a730
+            39279181c50796d18d90f15c360322935e59419430388ff3e67ea90dd40d0adb
+            ea9742a70b748f0d81712f8732570629762d207e4a61ec3850c2a8f842756342
+            7224bde4f3579ddf62f233dadc1362dfb363a8df4b7e911c3ba56473283efd21
+            e09f5750e60b325ff441d3aaa9408a50e95ad8c1eb1aabbce3c163bfe6b71ac6
+            feb4e741dd8d1ee137fbdbf230273490bc55b1758a219caad8241eb2578ac7f4
+            0f844eb43a5a40c1afca92451524ac9ebc56448d44191182b7083c292b38bf43
+          )
+
+          test "${#paths[@]}" -eq 7
+          for index in "${!paths[@]}"; do
+            path="${paths[$index]}"
+            test "$(git rev-parse "$CONTROLLER_COMMIT:$path")" = "${blobs[$index]}"
+            test "$(git rev-parse "HEAD:$path")" = "${blobs[$index]}"
+            test "$(stat -c %s "$path")" -eq "${bytes[$index]}"
+            test "$(sha256sum "$path" | awk '{print $1}')" = "${digests[$index]}"
+            cat "$path" >> "$CONTROLLER_ABS"
+          done
+          test "$(stat -c %s "$CONTROLLER_ABS")" -eq "$CONTROLLER_BYTES"
+          test "$(grep -Fxc "SOURCE_BLOB='c4cf754c064e4cc707b7b55ca872eff3006afe07'" "$CONTROLLER_ABS")" -eq 1
+          test "$(grep -Fxc "SOURCE_BLOB='c4cf754c064e4cc707b55ca872eff3006afe07'" "$CONTROLLER_ABS" || true)" -eq 0
+          bash -n "$CONTROLLER_ABS"
+
+          CONTROLLER_PATH="$(printf '%s\n' "${paths[@]}")"
+          export CONTROLLER_PATH
+          export CONTROLLER_COMMIT BASE_BRANCH HEAD_BRANCH WORKFLOW_PATH TRIGGER_PATH
+          export GH_TOKEN EVENT_BASE_SHA EVENT_HEAD_SHA
+
+          bash "$CONTROLLER_ABS"
+
+      - name: Preserve promotion materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-nd-current-public-record-gap-promotion-materializer-v3
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce exact one-cell promotion publication
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.materialize.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .schema_version=="ssc-rd04-nd-current-public-record-gap-promotion-materializer@2" and
+            .state=="qualified_promotion_product_published" and
+            .failed_or_final_stage=="complete" and .exit_code==0 and
+            .controller_commit=="88be38f356089e6eebd8a9018134f9b63223a949" and
+            .product_branch_moved==true and .permanent_paths_added==8 and
+            .promotion_id=="RD04-ND-CURRENT-PUBLIC-RECORD-GAP-PROMOTION-V1" and
+            .target_cell_after_sha256=="8700619932bd128250a308d5dcd7b1586a363ae3b78e4eb80c23bfb72c8a2e25" and
+            .row_state_cell_after_sha256=="6a4c7d204c6c99a89f3c121065860806668c5da850f44c67fe42b4dc84b1b5c3" and
+            .source_requests==0 and .route_executions==0 and .source_admissions==0 and
+            .field_terminalizations==1 and .matrix_updates==1 and
+            .row_state_mutations==0 and .row_terminalizations==0 and
+            .north_dakota_terminal_fields==8 and .north_dakota_open_fields==1 and
+            .north_dakota_row_state=="still_open" and
+            .class_closed==false and .outside_human_dependency==false and
+            .source_patch.state=="exact_two_site_patch_applied" and
+            .source_patch.replacement_sites==2 and
+            .source_patch.product_semantics_changed==false and
+            .source_patch.authority_envelope_changed==false
+          ' "$OUT/receipt.json" > /dev/null
+          product_commit="$(jq -r .product_commit "$OUT/receipt.json")"
+          canonical_parent="$(jq -r .canonical_parent "$OUT/receipt.json")"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$product_commit"
+          git fetch --quiet origin "$PRODUCT_BRANCH"
+          test "$(git rev-parse "origin/$PRODUCT_BRANCH^")" = "$canonical_parent"
+          mapfile -t product_status < <(git diff --name-status "$canonical_parent" "origin/$PRODUCT_BRANCH")
+          test "${#product_status[@]}" -eq 8
+          test "$(printf '%s\n' "${product_status[@]}" | awk -F '\t' '$1=="A"{n++} END{print n+0}')" -eq 8
