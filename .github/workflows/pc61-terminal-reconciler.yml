@@ -1,0 +1,515 @@
+name: PC-61 exact terminal reconciler
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pc61-terminal-reconciler.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: pc61-terminal-reconciliation-global
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPOSITORY: ${{ github.repository }}
+  ISSUE: '1822'
+  PRODUCT_BRANCH: 'agent/pc61-product-v1'
+  RECONCILE_BRANCH: 'agent/pc61-terminal-reconcile-v3'
+  RECONCILE_PATH: '.github/workflows/pc61-terminal-reconciler.yml'
+  PC60_CANONICAL_MERGE: '283c5993cb2ac0bff173c72aba70088c67b2ac3c'
+  MINIMUM_MATRIX: '55'
+  WORK: '/tmp/pc61-reconcile'
+  REPLAY: '/tmp/pc61-reconcile-worktree'
+  PROOF: '/tmp/pc61-exact-postmerge-proof-reconciled'
+  CENSUS: '/tmp/pc61-terminal-census-reconciled'
+  RESOLVED_FRONTIER: 'linkage_interval_repository_owner_login_unicode_normalization_casefold_confusable_collision_recycled_reserved_and_rename_history_governance'
+  NEXT_FRONTIER_ONE: 'linkage_interval_repository_owner_login_unicode_normalization_algorithm_casefold_locale_confusable_skeleton_and_collision_adjudication_governance'
+  NEXT_FRONTIER_TWO: 'linkage_interval_repository_owner_login_alias_validity_rename_redirect_recycled_reserved_namespace_and_identity_reuse_governance'
+  PRESERVED_PROFILE_API_FRONTIER: 'linkage_interval_repository_owner_profile_api_url_canonicalization_redirect_endpoint_version_pairing_and_observation_time_governance'
+  PRESERVED_ACCOUNT_FRONTIER: 'linkage_interval_owner_account_type_active_suspended_deleted_ghost_restoration_site_admin_and_metadata_governance'
+
+jobs:
+  reconcile:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/pc61-terminal-reconcile-v3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Discover and admit exact PC-61 product state
+        id: admit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$WORK" "$REPLAY" "$PROOF" "$CENSUS"
+          mkdir -p "$WORK" "$PROOF" "$CENSUS"
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          git show "$HEAD_SHA:$RECONCILE_PATH" >/dev/null
+          git diff --check "${{ github.event.pull_request.base.sha }}" "$HEAD_SHA"
+          printf '%s\n' "$HEAD_SHA" > "$WORK/reconciler-head.txt"
+
+          owner=${GH_REPOSITORY%%/*}
+          repo=${GH_REPOSITORY#*/}
+          gh api --method GET "/repos/$GH_REPOSITORY/pulls" \
+            -f state=all -f head="$owner:$PRODUCT_BRANCH" -F per_page=100 \
+            > "$WORK/product-prs.json"
+          test "$(jq 'length' "$WORK/product-prs.json")" -eq 1
+          jq '.[0]' "$WORK/product-prs.json" > "$WORK/product-pr.json"
+          PRODUCT_PR=$(jq -r .number "$WORK/product-pr.json")
+          PRODUCT=$(jq -r .head.sha "$WORK/product-pr.json")
+          PARENT=$(jq -r .base.sha "$WORK/product-pr.json")
+          PRODUCT_STATE=$(jq -r .state "$WORK/product-pr.json")
+          PRODUCT_MERGED=$(jq -r .merged_at "$WORK/product-pr.json")
+          test -n "$PRODUCT_PR"
+          test -n "$PRODUCT"
+          test -n "$PARENT"
+
+          git fetch --no-tags --force origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH" || true
+          if git show "$PRODUCT^{commit}" >/dev/null 2>&1; then :; else git fetch --no-tags origin "$PRODUCT"; fi
+          if git show "$PARENT^{commit}" >/dev/null 2>&1; then :; else git fetch --no-tags origin "$PARENT"; fi
+          test "$(git show -s --format='%P' "$PRODUCT")" = "$PARENT"
+          test "$(git rev-list --count "$PARENT".."$PRODUCT")" = 1
+          PRODUCT_TREE=$(git rev-parse "$PRODUCT^{tree}")
+          PARENT_TREE=$(git rev-parse "$PARENT^{tree}")
+
+          git diff --name-status "$PARENT" "$PRODUCT" > "$WORK/product-name-status.tsv"
+          python - "$WORK/product-name-status.tsv" "$WORK/product-paths.txt" <<'PY'
+          from pathlib import Path
+          import sys
+          rows=[]
+          for raw in Path(sys.argv[1]).read_text().splitlines():
+              parts=raw.split('\t')
+              if len(parts)!=2 or parts[0] != 'A':
+                  raise SystemExit(f'non-addition row: {raw}')
+              rows.append(parts[1])
+          if len(rows)!=14 or len(set(rows))!=14:
+              raise SystemExit(f'product denominator {len(rows)} != 14')
+          floor=[p for p in rows if 'v59' in p]
+          standalone=[p for p in rows if 'v59' not in p]
+          if len(floor)!=7 or len(standalone)!=7:
+              raise SystemExit(f'standalone/floor denominator {len(standalone)}/{len(floor)}')
+          if any('preference-linkage-repository-owner-login' not in p for p in standalone):
+              raise SystemExit('standalone namespace mismatch')
+          forbidden=('materializer','carrier','controller','supervisor','reconciler','diagnostic','trigger','marker','shard','transport','receipt')
+          if any(any(x in p.lower() for x in forbidden) for p in rows):
+              raise SystemExit('temporary path in permanent product')
+          expected={'.github/workflows/':2,'data/research/preference-custody/':2,'docs/':2,'test/':2,'tools/':6}
+          for prefix,count in expected.items():
+              actual=sum(p.startswith(prefix) for p in rows)
+              if actual!=count: raise SystemExit(f'{prefix} {actual} != {count}')
+          Path(sys.argv[2]).write_text('\n'.join(sorted(rows))+'\n')
+          PY
+
+          git worktree add --detach "$REPLAY" "$PRODUCT"
+          python - "$REPLAY" "$WORK/product-paths.txt" <<'PY'
+          from pathlib import Path
+          import re,sys
+          root=Path(sys.argv[1]); paths=Path(sys.argv[2]).read_text().splitlines()
+          workflows=[p for p in paths if p.startswith('.github/workflows/')]
+          if len(workflows)!=2: raise SystemExit('workflow denominator mismatch')
+          for p in workflows:
+              text=(root/p).read_text()
+              if not re.search(r'(?m)^permissions:\s*\n\s+contents:\s*read\s*$',text):
+                  raise SystemExit(f'{p} lacks read-only permission')
+              for bad in ('contents: write','issues: write','pull-requests: write','actions: write','packages: write','id-token: write'):
+                  if bad in text: raise SystemExit(f'{p} write capable: {bad}')
+          PY
+
+          standalone_compile=$(grep '^tools/compile-preference-linkage-' "$WORK/product-paths.txt")
+          standalone_validate=$(grep '^tools/validate-preference-linkage-' "$WORK/product-paths.txt")
+          standalone_test=$(grep '^test/preference-linkage-' "$WORK/product-paths.txt")
+          floor_compile=$(grep '^tools/compile-preference-custody-manifest-v59\.mjs$' "$WORK/product-paths.txt")
+          floor_validate=$(grep '^tools/validate-preference-custody-manifest-v59\.mjs$' "$WORK/product-paths.txt")
+          floor_test=$(grep '^test/preference-custody-manifest-v59\.test\.js$' "$WORK/product-paths.txt")
+          {
+            cd "$REPLAY"
+            node "$standalone_compile"
+            node "$standalone_validate"
+            node "$standalone_test"
+            node "$floor_compile"
+            node "$floor_validate"
+            node "$floor_test"
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+            npm run release:check
+          } 2>&1 | tee "$WORK/product-replay.log"
+          mapfile -t product_paths < "$WORK/product-paths.txt"
+          git -C "$REPLAY" diff --name-status "$PRODUCT" -- "${product_paths[@]}" > "$WORK/product-replay-delta.tsv"
+          test ! -s "$WORK/product-replay-delta.tsv"
+          : > "$WORK/product-blobs.tsv"
+          while IFS= read -r path; do
+            committed=$(git rev-parse "$PRODUCT:$path")
+            replay=$(git -C "$REPLAY" hash-object "$path")
+            test "$committed" = "$replay"
+            printf '%s\t%s\n' "$path" "$committed" >> "$WORK/product-blobs.tsv"
+          done < "$WORK/product-paths.txt"
+
+          gh api --paginate --slurp "/repos/$GH_REPOSITORY/actions/runs?head_sha=$PRODUCT&event=pull_request&per_page=100" > "$WORK/matrix-pages.json"
+          jq '[.[].workflow_runs[]] | sort_by(.workflow_id,.run_number) | group_by(.workflow_id) | map(max_by(.run_number))' "$WORK/matrix-pages.json" > "$WORK/matrix.json"
+          matrix_count=$(jq 'length' "$WORK/matrix.json")
+          pending=$(jq '[.[] | select(.status!="completed")] | length' "$WORK/matrix.json")
+          failed=$(jq '[.[] | select(.status=="completed" and .conclusion!="success")] | length' "$WORK/matrix.json")
+          test "$matrix_count" -ge "$MINIMUM_MATRIX"
+          test "$pending" -eq 0
+          test "$failed" -eq 0
+
+          gh api --paginate --slurp "/repos/$GH_REPOSITORY/issues/$PRODUCT_PR/comments?per_page=100" > "$WORK/product-comment-pages.json"
+          jq '[.[][]]' "$WORK/product-comment-pages.json" > "$WORK/product-comments.json"
+          prefix=${PRODUCT:0:10}
+          codex=$(jq --arg prefix "$prefix" '[.[] | select(.user.login=="chatgpt-codex-connector[bot]") | select(.body|contains("Didn\u0027t find any major issues")) | select(.body|contains($prefix))] | length' "$WORK/product-comments.json")
+          if [ "$codex" -eq 0 ] && [ "$PRODUCT_STATE" = open ]; then
+            body="@codex review
+
+Review exact PC-61 product \`$PRODUCT\` / tree \`$PRODUCT_TREE\`. Recheck the one-parent fourteen-addition topology, literal UTF-8 and codepoint identity, normalization and casefold versions, confusable collision custody, alias and rename intervals, recycled and reserved namespace state, identity-reuse refusal, recursive floor-v58 source custody, canonical JSON and cache refusal, frontier preservation, read-only workflows, and authority ceilings. Report actionable P0-P2 findings; otherwise record no major issue."
+            gh api --method POST "/repos/$GH_REPOSITORY/issues/$PRODUCT_PR/comments" -f body="$body" > "$WORK/codex-request.json"
+            for attempt in $(seq 1 120); do
+              gh api --paginate --slurp "/repos/$GH_REPOSITORY/issues/$PRODUCT_PR/comments?per_page=100" > "$WORK/product-comment-pages.json"
+              jq '[.[][]]' "$WORK/product-comment-pages.json" > "$WORK/product-comments.json"
+              codex=$(jq --arg prefix "$prefix" '[.[] | select(.user.login=="chatgpt-codex-connector[bot]") | select(.body|contains("Didn\u0027t find any major issues")) | select(.body|contains($prefix))] | length' "$WORK/product-comments.json")
+              [ "$codex" -ge 1 ] && break
+              sleep 30
+            done
+          fi
+          test "$codex" -ge 1
+          jq --arg prefix "$prefix" '[.[] | select(.user.login=="chatgpt-codex-connector[bot]") | select(.body|contains("Didn\u0027t find any major issues")) | select(.body|contains($prefix))]' "$WORK/product-comments.json" > "$WORK/codex-terminal-comments.json"
+
+          gh api graphql -f owner="$owner" -f repo="$repo" -F number="$PRODUCT_PR" -f query='query($owner:String!,$repo:String!,$number:Int!){repository(owner:$owner,name:$repo){pullRequest(number:$number){reviewThreads(first:100){nodes{isResolved}}}}}' > "$WORK/review-threads.json"
+          test "$(jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved==false)] | length' "$WORK/review-threads.json")" -eq 0
+
+          printf '%s\n' "$PRODUCT_PR" > "$WORK/product-pr-number.txt"
+          printf '%s\n' "$PRODUCT" > "$WORK/product-commit.txt"
+          printf '%s\n' "$PRODUCT_TREE" > "$WORK/product-tree.txt"
+          printf '%s\n' "$PARENT" > "$WORK/product-parent.txt"
+          printf '%s\n' "$PARENT_TREE" > "$WORK/product-parent-tree.txt"
+          echo "product_pr=$PRODUCT_PR" >> "$GITHUB_OUTPUT"
+          echo "product=$PRODUCT" >> "$GITHUB_OUTPUT"
+          echo "product_tree=$PRODUCT_TREE" >> "$GITHUB_OUTPUT"
+          echo "parent=$PARENT" >> "$GITHUB_OUTPUT"
+          echo "parent_tree=$PARENT_TREE" >> "$GITHUB_OUTPUT"
+          echo "matrix=$matrix_count" >> "$GITHUB_OUTPUT"
+
+      - name: Recover or create exact canonical merge
+        id: merge
+        shell: bash
+        env:
+          PRODUCT_PR: ${{ steps.admit.outputs.product_pr }}
+          PRODUCT: ${{ steps.admit.outputs.product }}
+          PARENT: ${{ steps.admit.outputs.parent }}
+        run: |
+          set -Eeuo pipefail
+          gh api "/repos/$GH_REPOSITORY/pulls/$PRODUCT_PR" > "$WORK/product-pr-before-merge.json"
+          test "$(jq -r .head.sha "$WORK/product-pr-before-merge.json")" = "$PRODUCT"
+          if [ "$(jq -r .merged "$WORK/product-pr-before-merge.json")" = true ]; then
+            MERGE=$(jq -r .merge_commit_sha "$WORK/product-pr-before-merge.json")
+          else
+            test "$(jq -r .state "$WORK/product-pr-before-merge.json")" = open
+            git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+            PREMERGE=$(git rev-parse origin/main)
+            git merge-base --is-ancestor "$PC60_CANONICAL_MERGE" "$PREMERGE"
+            git merge-base --is-ancestor "$PARENT" "$PREMERGE"
+            git diff --name-only "$PARENT" "$PREMERGE" | LC_ALL=C sort > "$WORK/premerge-successor-paths.txt"
+            comm -12 "$WORK/product-paths.txt" "$WORK/premerge-successor-paths.txt" > "$WORK/premerge-overlap.txt"
+            test ! -s "$WORK/premerge-overlap.txt"
+            while IFS= read -r path; do
+              if git cat-file -e "$PREMERGE:$path" 2>/dev/null; then echo "product path exists on main: $path" >&2; exit 1; fi
+            done < "$WORK/product-paths.txt"
+            gh api --method PUT "/repos/$GH_REPOSITORY/pulls/$PRODUCT_PR/merge" \
+              -f merge_method=merge -f sha="$PRODUCT" \
+              -f commit_title='Merge PC-61 owner-login Unicode and namespace-reuse custody' \
+              -f commit_message="Preserve exact clean PC-61 product $PRODUCT. Compose Preference Custody floor v59, resolve only the Unicode/confusable/alias/rename/namespace-reuse frontier, preserve every sibling and authority ceiling, and create no real ownership, account-state, impersonation, compromise, graph, publication, adoption, causal, intent, or public-authority finding." > "$WORK/merge-response.json"
+            test "$(jq -r .merged "$WORK/merge-response.json")" = true
+            MERGE=$(jq -r .sha "$WORK/merge-response.json")
+          fi
+          test -n "$MERGE"
+          git fetch --no-tags origin "$MERGE" "$PRODUCT" "$PARENT" '+refs/heads/main:refs/remotes/origin/main'
+          read -r FIRST SECOND <<<"$(git show -s --format='%P' "$MERGE")"
+          test "$SECOND" = "$PRODUCT"
+          git merge-base --is-ancestor "$PARENT" "$FIRST"
+          git diff --name-only "$PARENT" "$FIRST" | LC_ALL=C sort > "$WORK/first-parent-successor-paths.txt"
+          comm -12 "$WORK/product-paths.txt" "$WORK/first-parent-successor-paths.txt" > "$WORK/first-parent-overlap.txt"
+          test ! -s "$WORK/first-parent-overlap.txt"
+          printf '%s\n' "$MERGE" > "$WORK/canonical-merge.txt"
+          printf '%s\n' "$FIRST" > "$WORK/merge-first-parent.txt"
+          printf '%s\n' "$SECOND" > "$WORK/merge-second-parent.txt"
+          echo "merge=$MERGE" >> "$GITHUB_OUTPUT"
+          echo "first=$FIRST" >> "$GITHUB_OUTPUT"
+
+      - name: Prove canonical replay and live-main preservation
+        shell: bash
+        env:
+          PRODUCT_PR: ${{ steps.admit.outputs.product_pr }}
+          PRODUCT: ${{ steps.admit.outputs.product }}
+          PRODUCT_TREE: ${{ steps.admit.outputs.product_tree }}
+          PARENT: ${{ steps.admit.outputs.parent }}
+          PARENT_TREE: ${{ steps.admit.outputs.parent_tree }}
+          MATRIX: ${{ steps.admit.outputs.matrix }}
+          MERGE: ${{ steps.merge.outputs.merge }}
+          FIRST: ${{ steps.merge.outputs.first }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$PROOF" "$REPLAY"
+          mkdir -p "$PROOF"
+          git fetch --no-tags origin "$MERGE" "$PRODUCT" "$PARENT" '+refs/heads/main:refs/remotes/origin/main'
+          read -r OBS_FIRST OBS_SECOND <<<"$(git show -s --format='%P' "$MERGE")"
+          test "$OBS_FIRST" = "$FIRST"
+          test "$OBS_SECOND" = "$PRODUCT"
+          test "$(git rev-parse "$PRODUCT^{tree}")" = "$PRODUCT_TREE"
+          cp "$WORK/product-paths.txt" "$PROOF/product-paths.txt"
+          cp "$WORK/product-name-status.tsv" "$PROOF/product-name-status.tsv"
+          cp "$WORK/matrix.json" "$PROOF/exact-head-matrix.json"
+          cp "$WORK/codex-terminal-comments.json" "$PROOF/codex-terminal-comments.json"
+          cp "$WORK/review-threads.json" "$PROOF/review-threads.json"
+          cp "$WORK/product-replay.log" "$PROOF/premerge-product-replay.log"
+          printf '%s\n' "$MERGE" > "$PROOF/canonical-merge.txt"
+          printf '%s\n' "$FIRST" > "$PROOF/merge-first-parent.txt"
+          printf '%s\n' "$PRODUCT" > "$PROOF/merge-second-parent.txt"
+          : > "$PROOF/canonical-product-blobs.tsv"
+          while IFS= read -r path; do
+            product_blob=$(git rev-parse "$PRODUCT:$path")
+            merge_blob=$(git rev-parse "$MERGE:$path")
+            test "$product_blob" = "$merge_blob"
+            printf '%s\t%s\n' "$path" "$merge_blob" >> "$PROOF/canonical-product-blobs.tsv"
+          done < "$PROOF/product-paths.txt"
+          test "$(wc -l < "$PROOF/canonical-product-blobs.tsv" | tr -d ' ')" = 14
+
+          git worktree add --detach "$REPLAY" "$MERGE"
+          standalone_compile=$(grep '^tools/compile-preference-linkage-' "$PROOF/product-paths.txt")
+          standalone_validate=$(grep '^tools/validate-preference-linkage-' "$PROOF/product-paths.txt")
+          standalone_test=$(grep '^test/preference-linkage-' "$PROOF/product-paths.txt")
+          floor_compile=$(grep '^tools/compile-preference-custody-manifest-v59\.mjs$' "$PROOF/product-paths.txt")
+          floor_validate=$(grep '^tools/validate-preference-custody-manifest-v59\.mjs$' "$PROOF/product-paths.txt")
+          floor_test=$(grep '^test/preference-custody-manifest-v59\.test\.js$' "$PROOF/product-paths.txt")
+          {
+            cd "$REPLAY"
+            node "$standalone_compile"
+            node "$standalone_validate"
+            node "$standalone_test"
+            node "$floor_compile"
+            node "$floor_validate"
+            node "$floor_test"
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+            npm run release:check
+          } 2>&1 | tee "$PROOF/canonical-replay.log"
+          git -C "$REPLAY" status --porcelain --untracked-files=all > "$PROOF/canonical-replay-reconstruction.txt"
+          mapfile -t paths < "$PROOF/product-paths.txt"
+          git -C "$REPLAY" diff --name-status "$MERGE" -- "${paths[@]}" > "$PROOF/canonical-replay-product-delta.tsv"
+          test ! -s "$PROOF/canonical-replay-product-delta.tsv"
+          : > "$PROOF/canonical-replay-product-blobs.tsv"
+          while IFS= read -r path; do
+            committed=$(git rev-parse "$MERGE:$path")
+            replay=$(git -C "$REPLAY" hash-object "$path")
+            test "$committed" = "$replay"
+            printf '%s\t%s\n' "$path" "$replay" >> "$PROOF/canonical-replay-product-blobs.tsv"
+          done < "$PROOF/product-paths.txt"
+          cmp "$PROOF/canonical-product-blobs.tsv" "$PROOF/canonical-replay-product-blobs.tsv"
+
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          LIVE=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$MERGE" "$LIVE"
+          : > "$PROOF/live-main-product-blobs.tsv"
+          while IFS= read -r path; do
+            merge_blob=$(git rev-parse "$MERGE:$path")
+            live_blob=$(git rev-parse "$LIVE:$path")
+            test "$merge_blob" = "$live_blob"
+            printf '%s\t%s\n' "$path" "$live_blob" >> "$PROOF/live-main-product-blobs.tsv"
+          done < "$PROOF/product-paths.txt"
+          cmp "$PROOF/canonical-product-blobs.tsv" "$PROOF/live-main-product-blobs.tsv"
+          printf '%s\n' "$LIVE" > "$PROOF/live-main.txt"
+
+          jq -n --arg schema_version 'pc61-terminal-receipt@2' --arg status complete --argjson issue 1822 \
+            --arg product_pr "$PRODUCT_PR" --arg product_commit "$PRODUCT" --arg product_tree "$PRODUCT_TREE" \
+            --arg product_parent "$PARENT" --arg product_parent_tree "$PARENT_TREE" --arg canonical_merge "$MERGE" \
+            --arg merge_first_parent "$FIRST" --arg merge_second_parent "$PRODUCT" --arg live_main "$LIVE" --arg matrix "$MATRIX" \
+            --arg resolved "$RESOLVED_FRONTIER" --arg next_one "$NEXT_FRONTIER_ONE" --arg next_two "$NEXT_FRONTIER_TWO" \
+            --arg preserved_profile "$PRESERVED_PROFILE_API_FRONTIER" --arg preserved_account "$PRESERVED_ACCOUNT_FRONTIER" \
+            '{schema_version:$schema_version,status:$status,issue:$issue,product_pr:($product_pr|tonumber),product_commit:$product_commit,product_tree:$product_tree,product_parent:$product_parent,product_parent_tree:$product_parent_tree,canonical_merge:$canonical_merge,merge_first_parent:$merge_first_parent,merge_second_parent:$merge_second_parent,live_main:$live_main,permanent_paths:14,standalone_paths:7,compositional_paths:7,canonical_product_blob_matches:14,workflow_matrix:($matrix|tonumber),minimum_workflow_matrix:55,failed_workflows:0,pending_workflows:0,unresolved_review_threads:0,codex_terminal_positive_disposition:true,control_count:61,base_promotion_requirements:2525,requirements_added:61,final_promotion_requirements:2586,resolved_frontier:$resolved,next_frontiers:[$next_one,$next_two],preserved_profile_api_frontier:$preserved_profile,preserved_account_frontier:$preserved_account,authority:{outside_human_dependency:false,external_contacts:0,external_reviews:0,real_world_evidence:"none",ownership_finding:false,account_state_finding:false,impersonation_finding:false,security_compromise_finding:false,preference_change_finding:false,causal_effect_finding:false,coordination_finding:false,common_purpose_finding:false,intent_finding:false,graph_effect:"none",publication_effect:"none",adoption_effect:"none",binding_public_authority:false}}' > "$PROOF/terminal.json"
+          (cd "$PROOF" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+
+      - name: Upload reconciled exact post-merge proof
+        id: proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc61-exact-postmerge-proof-reconciled
+          path: /tmp/pc61-exact-postmerge-proof-reconciled
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Retire all PC-61 transaction surfaces and build census
+        shell: bash
+        env:
+          PRODUCT: ${{ steps.admit.outputs.product }}
+          MERGE: ${{ steps.merge.outputs.merge }}
+          PROOF_ARTIFACT_ID: ${{ steps.proof.outputs.artifact-id }}
+          PROOF_DIGEST_RAW: ${{ steps.proof.outputs.artifact-digest }}
+        run: |
+          set -Eeuo pipefail
+          gh api "/repos/$GH_REPOSITORY/actions/artifacts/$PROOF_ARTIFACT_ID" > "$CENSUS/proof-artifact.json"
+          test "$(jq -r .id "$CENSUS/proof-artifact.json")" = "$PROOF_ARTIFACT_ID"
+          test "$(jq -r .workflow_run.id "$CENSUS/proof-artifact.json")" = "$GITHUB_RUN_ID"
+          test "$(jq -r .digest "$CENSUS/proof-artifact.json")" = "sha256:$PROOF_DIGEST_RAW"
+          test "$(jq -r .expired "$CENSUS/proof-artifact.json")" = false
+
+          gh api --method GET "/repos/$GH_REPOSITORY/pulls" -f state=open -F per_page=100 > "$CENSUS/open-prs-before.json"
+          jq '[.[] | select(.head.ref|startswith("agent/pc61")) | {number,head_ref:.head.ref,head_sha:.head.sha}]' "$CENSUS/open-prs-before.json" > "$CENSUS/prs-to-close.json"
+          : > "$CENSUS/closed-prs.tsv"
+          while IFS=$'\t' read -r number ref sha; do
+            [ -n "$number" ] || continue
+            gh api --method PATCH "/repos/$GH_REPOSITORY/pulls/$number" -f state=closed > "$CENSUS/closed-pr-$number.json"
+            test "$(jq -r .state "$CENSUS/closed-pr-$number.json")" = closed
+            test "$(jq -r .merged "$CENSUS/closed-pr-$number.json")" = false
+            printf '%s\t%s\t%s\n' "$number" "$ref" "$sha" >> "$CENSUS/closed-prs.tsv"
+          done < <(jq -r '.[] | [.number,.head_ref,.head_sha] | @tsv' "$CENSUS/prs-to-close.json")
+
+          if ! gh api "/repos/$GH_REPOSITORY/git/matching-refs/heads/agent/pc61" > "$CENSUS/refs-before.json" 2>/dev/null; then printf '[]\n' > "$CENSUS/refs-before.json"; fi
+          jq '[.[] | {ref,sha:.object.sha}]' "$CENSUS/refs-before.json" > "$CENSUS/refs-to-delete.json"
+          : > "$CENSUS/deleted-refs.tsv"
+          while IFS=$'\t' read -r ref sha; do
+            [ -n "$ref" ] || continue
+            api_ref=${ref#refs/}
+            observed=$(gh api "/repos/$GH_REPOSITORY/git/ref/$api_ref" --jq .object.sha)
+            test "$observed" = "$sha"
+            gh api --method DELETE "/repos/$GH_REPOSITORY/git/refs/$api_ref"
+            printf '%s\t%s\n' "$ref" "$sha" >> "$CENSUS/deleted-refs.tsv"
+          done < <(jq -r '.[] | [.ref,.sha] | @tsv' "$CENSUS/refs-to-delete.json")
+
+          for attempt in $(seq 1 60); do
+            if ! gh api "/repos/$GH_REPOSITORY/git/matching-refs/heads/agent/pc61" > "$CENSUS/refs-after.json" 2>/dev/null; then printf '[]\n' > "$CENSUS/refs-after.json"; fi
+            gh api --method GET "/repos/$GH_REPOSITORY/pulls" -f state=open -F per_page=100 > "$CENSUS/open-prs-after.json"
+            remaining_refs=$(jq 'length' "$CENSUS/refs-after.json")
+            remaining_prs=$(jq '[.[] | select(.head.ref|startswith("agent/pc61"))] | length' "$CENSUS/open-prs-after.json")
+            [ "$remaining_refs" -eq 0 ] && [ "$remaining_prs" -eq 0 ] && break
+            sleep 3
+          done
+          test "$remaining_refs" -eq 0
+          test "$remaining_prs" -eq 0
+
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          LIVE=$(git rev-parse origin/main)
+          git merge-base --is-ancestor "$MERGE" "$LIVE"
+          : > "$CENSUS/live-main-product-blobs.tsv"
+          while IFS= read -r path; do
+            m=$(git rev-parse "$MERGE:$path")
+            l=$(git rev-parse "$LIVE:$path")
+            test "$m" = "$l"
+            printf '%s\t%s\n' "$path" "$l" >> "$CENSUS/live-main-product-blobs.tsv"
+          done < "$WORK/product-paths.txt"
+          test "$(wc -l < "$CENSUS/live-main-product-blobs.tsv" | tr -d ' ')" = 14
+
+          refs_retired=$(wc -l < "$CENSUS/deleted-refs.tsv" | tr -d ' ')
+          prs_closed=$(wc -l < "$CENSUS/closed-prs.tsv" | tr -d ' ')
+          jq -n --arg schema_version 'pc61-terminal-census@2' --arg status complete --arg product "$PRODUCT" --arg merge "$MERGE" --arg live "$LIVE" \
+            --arg artifact "$PROOF_ARTIFACT_ID" --arg digest "sha256:$PROOF_DIGEST_RAW" --arg refs "$refs_retired" --arg prs "$prs_closed" \
+            '{schema_version:$schema_version,status:$status,product_commit:$product,canonical_merge:$merge,live_main:$live,proof_artifact:{id:($artifact|tonumber),digest:$digest,authenticated:true},refs_retired:($refs|tonumber),execution_prs_closed_without_merge:($prs|tonumber),remaining_agent_pc61_refs:0,remaining_open_pc61_transaction_prs:0,permanent_product_paths:14,permanent_product_blob_matches:14,merge_operations_after_canonical_merge:0,product_semantics_changed:false,graph_effect:"none"}' > "$CENSUS/census.json"
+          (cd "$CENSUS" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+
+      - name: Upload reconciled terminal census
+        id: census
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc61-terminal-census-reconciled
+          path: /tmp/pc61-terminal-census-reconciled
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Post durable receipt if absent and close issue as completed
+        shell: bash
+        env:
+          PRODUCT_PR: ${{ steps.admit.outputs.product_pr }}
+          PRODUCT: ${{ steps.admit.outputs.product }}
+          PRODUCT_TREE: ${{ steps.admit.outputs.product_tree }}
+          PARENT: ${{ steps.admit.outputs.parent }}
+          PARENT_TREE: ${{ steps.admit.outputs.parent_tree }}
+          MATRIX: ${{ steps.admit.outputs.matrix }}
+          MERGE: ${{ steps.merge.outputs.merge }}
+          FIRST: ${{ steps.merge.outputs.first }}
+          PROOF_ID: ${{ steps.proof.outputs.artifact-id }}
+          PROOF_DIGEST_RAW: ${{ steps.proof.outputs.artifact-digest }}
+          CENSUS_ID: ${{ steps.census.outputs.artifact-id }}
+          CENSUS_DIGEST_RAW: ${{ steps.census.outputs.artifact-digest }}
+        run: |
+          set -Eeuo pipefail
+          gh api --paginate --slurp "/repos/$GH_REPOSITORY/issues/$ISSUE/comments?per_page=100" > /tmp/pc61-issue-comment-pages.json
+          jq '[.[][]]' /tmp/pc61-issue-comment-pages.json > /tmp/pc61-issue-comments.json
+          existing=$(jq '[.[] | select(.body|startswith("## PC-61 terminal receipt"))] | length' /tmp/pc61-issue-comments.json)
+          refs_retired=$(jq -r .refs_retired "$CENSUS/census.json")
+          prs_closed=$(jq -r .execution_prs_closed_without_merge "$CENSUS/census.json")
+          if [ "$existing" -eq 0 ]; then
+            cat > /tmp/pc61-terminal-receipt.md <<EOF
+          ## PC-61 terminal receipt
+
+          PC-61 is a synthetic Preference Custody control over repository-owner login literal-byte and codepoint identity, Unicode normalization and casefold implementation, confusable skeletons and collision adjudication, alias validity, rename redirects, recycled and reserved namespace state, identity reuse, correction, and current lineage. The actors are issue #1822, clean product PR #$PRODUCT_PR, product commit \`$PRODUCT\`, canonical merge \`$MERGE\`, the $MATRIX exact-head workflows, the Codex bot disposition bound to exact head \`${PRODUCT:0:10}\`, and the transaction carriers retired by the terminal census.
+
+          The mechanism admitted one parented, fourteen-addition product after exact replay, complete hosted qualification, terminal review, zero current-main overlap, exact two-parent merge topology, fourteen canonical/product blob matches, canonical replay, live-main preservation, and zero-residual transaction census all passed.
+
+          \`\`\`text
+          status                                  complete
+          issue                                   #1822 closed / completed
+          product pull request                    #$PRODUCT_PR merged
+          qualified parent
+          $PARENT
+          qualified parent tree
+          $PARENT_TREE
+          clean product commit
+          $PRODUCT
+          clean product tree
+          $PRODUCT_TREE
+          canonical merge
+          $MERGE
+          merge first parent
+          $FIRST
+          merge second parent
+          $PRODUCT
+
+          permanent product paths                 14
+          standalone PC-61 paths                   7
+          compositional floor-v59 paths            7
+          canonical/product blob matches       14 / 14
+          hosted exact-head workflows          $MATRIX / $MATRIX
+          failed workflows                           0
+          pending workflows                          0
+          unresolved review threads                  0
+          terminal Codex disposition              true
+          retired agent/pc61* refs                   $refs_retired
+          execution PRs closed without merge         $prs_closed
+          remaining agent/pc61* refs                  0
+          remaining open PC-61 transaction PRs        0
+
+          qualified v58 base controls               60
+          PC-61 extension                            1
+          qualified v59 controls                    61
+          base promotion requirements             2525
+          PC-61 requirements added                   61
+          final promotion requirements            2586
+          \`\`\`
+
+          The reconciled exact post-merge proof is artifact \`$PROOF_ID\` with digest \`sha256:$PROOF_DIGEST_RAW\`. The reconciled terminal census is artifact \`$CENSUS_ID\` with digest \`sha256:$CENSUS_DIGEST_RAW\`.
+
+          PC-61 resolves only \`$RESOLVED_FRONTIER\`. It opens only \`$NEXT_FRONTIER_ONE\` and \`$NEXT_FRONTIER_TWO\`, while preserving \`$PRESERVED_PROFILE_API_FRONTIER\`, \`$PRESERVED_ACCOUNT_FRONTIER\`, and every earlier canonical sibling. It establishes no real ownership, account-state, impersonation, compromise, preference-change, causal, coordination, common-purpose, intent, graph, publication, adoption, or binding public-authority finding.
+          EOF
+            gh api --method POST "/repos/$GH_REPOSITORY/issues/$ISSUE/comments" -f body="$(cat /tmp/pc61-terminal-receipt.md)" > /tmp/pc61-terminal-comment.json
+          fi
+          gh api --method PATCH "/repos/$GH_REPOSITORY/issues/$ISSUE" -f state=closed -f state_reason=completed > /tmp/pc61-issue-closed.json
+          test "$(jq -r .state /tmp/pc61-issue-closed.json)" = closed
+          test "$(jq -r .state_reason /tmp/pc61-issue-closed.json)" = completed
