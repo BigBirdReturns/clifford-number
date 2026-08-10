@@ -1,0 +1,99 @@
+name: TEMP materialize RD-04 North Dakota current public-record-gap promotion v3
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - agent/ssc-rd04-nd-current-gap-promotion-materializer-base-v3
+    paths:
+      - '.tmp/rd04-nd-current-gap-promotion-materializer-v1/trigger-v3.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-rd04-nd-current-public-record-gap-promotion-materializer-v3
+  cancel-in-progress: false
+
+env:
+  HEAD_BRANCH: agent/ssc-rd04-nd-current-gap-promotion-materializer-trigger-v3
+  BASE_BRANCH: agent/ssc-rd04-nd-current-gap-promotion-materializer-base-v3
+  PRODUCT_BRANCH: agent/ssc-rd04-nd-current-public-record-gap-promotion-v1
+  RUNNER_PATH: .tmp/rd04-nd-current-gap-promotion-materializer-v1/run-v3.sh
+  RUNNER_BYTES: '14550'
+  RUNNER_SHA256: a3dc259db74c1d3853e9f6ea55deb07e1d60053bef2f9a75e91dc24a16a77bb2
+  RUNNER_BLOB: 9acde5a49d91083ae4234729f6a33b6905096466
+  OUT: /tmp/rd04-nd-current-gap-promotion-materializer-v3
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'agent/ssc-rd04-nd-current-gap-promotion-materializer-base-v3' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-nd-current-gap-promotion-materializer-trigger-v3'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Authenticate compact controller and publish exact product
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        shell: bash
+        run: bash "$RUNNER_PATH"
+
+      - name: Preserve checksum-bound materializer receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rd04-nd-current-public-record-gap-promotion-materializer-v3
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce terminal publication receipt
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -f "$OUT/publication-receipt.json"
+          test "$(cat "$OUT/STAGE")" = complete
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e --arg branch "$PRODUCT_BRANCH" '
+            .state=="complete" and .product_branch==$branch and
+            .canonical_parent=="77aef3313e85e1fddc68805a9f22252ff147b4e8" and
+            .product_path_count==8 and .addition_only==true and
+            .terminal_cells_before==227 and .terminal_cells_after==228 and
+            .still_open_cells_before==223 and .still_open_cells_after==222 and
+            .terminal_substantive_cells_before==117 and .terminal_substantive_cells_after==118 and
+            .still_open_substantive_cells_before==183 and .still_open_substantive_cells_after==182 and
+            .terminal_units_before==10 and .terminal_units_after==10 and
+            .north_dakota_terminal_fields_before==7 and .north_dakota_terminal_fields_after==8 and
+            .north_dakota_open_fields_before==2 and .north_dakota_open_fields_after==1 and
+            .north_dakota_row_state_after=="still_open" and
+            .field_terminalizations==1 and .matrix_updates==1 and
+            .row_state_mutations==0 and .row_terminalizations==0 and
+            .class_closed==false and .source_requests==0 and .route_executions==0 and
+            .source_admissions==0 and .cumulative_ledger_effect=="none" and
+            .publication_effect=="none" and .adoption_effect=="none" and
+            .graph_effect=="none" and .outside_human_dependency==false
+          ' "$OUT/publication-receipt.json" >/dev/null
+          product_commit="$(jq -r .product_commit "$OUT/publication-receipt.json")"
+          test "$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$product_commit"
