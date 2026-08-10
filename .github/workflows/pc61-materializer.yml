@@ -112,7 +112,7 @@ jobs:
           node tools/validate-no-magic-human-gate.mjs 2>&1 | tee "$OUT/no-magic-validator.log"
           node test/no-magic-human-gate.test.js 2>&1 | tee "$OUT/no-magic-test.log"
           npm run release:check 2>&1 | tee "$OUT/release-check.log"
-          find . -type f -path './build/*' -delete || true
+          git reset --hard HEAD
           git status --porcelain --untracked-files=all | sed 's/^?? //' | sort > "$OUT/worktree-paths.txt"
           cmp "$OUT/archive-paths.txt" "$OUT/worktree-paths.txt"
           git diff --check
