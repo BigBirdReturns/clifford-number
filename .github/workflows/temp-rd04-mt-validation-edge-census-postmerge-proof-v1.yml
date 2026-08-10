@@ -1,0 +1,394 @@
+name: TEMP prove canonical Montana edge-census validation repair
+
+on:
+  pull_request:
+    branches:
+      - observer/ssc-rd04-mt-validation-edge-census-postmerge-base-v1
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.tmp/rd04-mt-validation-edge-census-postmerge-proof-v1/trigger.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-rd04-mt-validation-edge-census-postmerge-proof-v1
+  cancel-in-progress: false
+
+env:
+  MERGE_SHA: 0840358962621b0be3db6864ecec763327f35903
+  FIRST_PARENT: 7d06800b6899add8beff7891a526abec843bb8d9
+  PRODUCT_HEAD: 3aed7331a5f4b75618e9357bc7061e8ce1ad0064
+  WORKFLOW_COMMIT: 00036a809fb0e55a0427d7deb4d2cef2d5655d1d
+  PRODUCT_TREE: 38023f86bcc27527f9db8da9622bada00b3de542
+  VALIDATION_PARENT: e62de80e187f9be037cbdd3a4b942b5840d223de
+  VALIDATION_BASE: bc3cf04459bb0d18829f376c9b937693b521e444
+  VALIDATION_PRODUCT: a933ceacbfd9753401a7e9875c9f3048237c2014
+  VALIDATION_MERGE: 5cbe9d8628efbc8c9fa85027876be77e77fbf0ef
+  MATRIX_REPAIR_PRODUCT: a26be29f081c20b9f2d0adeeaf25c4a434064999
+  MATRIX_REPAIR_PRODUCT_TREE: 4bb0367b873dac25b4b36f78256ac65cd615b32c
+  MATRIX_REPAIR_MERGE: 7d06800b6899add8beff7891a526abec843bb8d9
+  MATRIX_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/promoted-partial-field-matrix.json
+  MATRIX_BLOB: 6ba11a6025021e9df8ac6535be8c42499654c233
+  CANONICAL_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1.yml
+  CANONICAL_MANIFEST: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/product-manifest.json
+  VALIDATOR: tools/validate-status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-v1.py
+  EXPECTED_WORKFLOW_BLOB: 610d88e5b30d3e44579b02fd264fdb09e1475511
+  EXPECTED_MANIFEST_BLOB: 3d29b059372af4676b61f90da7552983b614c8c6
+  EXACT_HEAD_RUN: '31413447117'
+  EXACT_HEAD_ARTIFACT: '9072500310'
+  EXACT_HEAD_ARTIFACT_BYTES: '15354'
+  EXACT_HEAD_ARTIFACT_SHA256: c255a62a6cafa08c3497c1fce74559405b8515006939ef4dbc495a801307dec6
+  WORKFLOW_PATH: .github/workflows/temp-rd04-mt-validation-edge-census-postmerge-proof-v1.yml
+  TRIGGER_PATH: .tmp/rd04-mt-validation-edge-census-postmerge-proof-v1/trigger.json
+  OUT: /tmp/rd04-mt-validation-edge-census-postmerge-proof-v1
+  WORK: /tmp/rd04-mt-validation-edge-census-postmerge-proof-v1-work
+
+jobs:
+  prove:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'observer/ssc-rd04-mt-validation-edge-census-postmerge-base-v1' &&
+      github.event.pull_request.head.ref == 'observer/ssc-rd04-mt-validation-edge-census-postmerge-trigger-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Authenticate observer, canonical merge, and protected history
+        env:
+          EVENT_HEAD: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$WORK"
+          mkdir -p "$OUT"
+
+          test "$(git rev-parse HEAD)" = "$EVENT_HEAD"
+          test "$(git show -s --format='%P' "$EVENT_HEAD")" = "$EVENT_BASE"
+          test "$(git show -s --format='%P' "$EVENT_BASE")" = "$MERGE_SHA"
+          test "$(git diff --name-only "$MERGE_SHA" "$EVENT_BASE")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$MERGE_SHA" "$EVENT_BASE")" = "$WORKFLOW_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$MERGE_SHA" "$EVENT_BASE")"
+          test "$(git diff --name-only "$EVENT_BASE" "$EVENT_HEAD")" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$EVENT_BASE" "$EVENT_HEAD")" = "$TRIGGER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$EVENT_BASE" "$EVENT_HEAD")"
+
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          git merge-base --is-ancestor "$MERGE_SHA" origin/main
+
+          test "$(git show -s --format='%P' "$MERGE_SHA")" = "$FIRST_PARENT $PRODUCT_HEAD"
+          test "$(git show -s --format='%P' "$PRODUCT_HEAD")" = "$WORKFLOW_COMMIT"
+          test "$(git show -s --format='%P' "$WORKFLOW_COMMIT")" = "$FIRST_PARENT"
+          test "$(git rev-parse "$PRODUCT_HEAD^{tree}")" = "$PRODUCT_TREE"
+          test "$(git rev-parse "$MERGE_SHA^{tree}")" = "$PRODUCT_TREE"
+
+          test "$(git show -s --format='%P' "$VALIDATION_PRODUCT")" = "$VALIDATION_PARENT"
+          test "$(git show -s --format='%P' "$VALIDATION_MERGE")" = "$VALIDATION_BASE $VALIDATION_PRODUCT"
+          test "$(git show -s --format='%P' "$MATRIX_REPAIR_PRODUCT")" = "$VALIDATION_MERGE"
+          test "$(git rev-parse "$MATRIX_REPAIR_PRODUCT^{tree}")" = "$MATRIX_REPAIR_PRODUCT_TREE"
+          test "$(git show -s --format='%P' "$MATRIX_REPAIR_MERGE")" = "$VALIDATION_MERGE $MATRIX_REPAIR_PRODUCT"
+          test "$FIRST_PARENT" = "$MATRIX_REPAIR_MERGE"
+
+          PRODUCT_PATHS="$(printf '%s\n' \
+            '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1.yml' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/current-row-custody.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/product-manifest.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/row-state-validation.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/summary.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/validated-row-state-protocol.json' \
+            'tools/validate-status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-v1.py' | LC_ALL=C sort)"
+          REPAIR_PATHS="$(printf '%s\n' "$CANONICAL_WORKFLOW" "$CANONICAL_MANIFEST" | LC_ALL=C sort)"
+          SEMANTIC_PATHS="$(printf '%s\n' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/current-row-custody.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/row-state-validation.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/summary.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/validated-row-state-protocol.json' \
+            'tools/validate-status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-v1.py' | LC_ALL=C sort)"
+          PROTECTED_PATHS="$(printf '%s\n%s\n' "$PRODUCT_PATHS" "$MATRIX_PATH" | LC_ALL=C sort -u)"
+          printf '%s\n' "$PRODUCT_PATHS" > "$OUT/validation-product-paths.txt"
+          printf '%s\n' "$REPAIR_PATHS" > "$OUT/repair-paths.txt"
+          printf '%s\n' "$SEMANTIC_PATHS" > "$OUT/semantic-paths.txt"
+          printf '%s\n' "$PROTECTED_PATHS" > "$OUT/protected-paths.txt"
+
+          test "$(git diff --name-only "$FIRST_PARENT" "$WORKFLOW_COMMIT")" = "$CANONICAL_WORKFLOW"
+          test "$(git diff --name-only --diff-filter=M "$FIRST_PARENT" "$WORKFLOW_COMMIT")" = "$CANONICAL_WORKFLOW"
+          test -z "$(git diff --name-only --diff-filter=ADTCURXB "$FIRST_PARENT" "$WORKFLOW_COMMIT")"
+          test "$(git diff --name-only "$WORKFLOW_COMMIT" "$PRODUCT_HEAD")" = "$CANONICAL_MANIFEST"
+          test "$(git diff --name-only --diff-filter=M "$WORKFLOW_COMMIT" "$PRODUCT_HEAD")" = "$CANONICAL_MANIFEST"
+          test -z "$(git diff --name-only --diff-filter=ADTCURXB "$WORKFLOW_COMMIT" "$PRODUCT_HEAD")"
+          test "$(git diff --name-only "$FIRST_PARENT" "$PRODUCT_HEAD" | LC_ALL=C sort)" = "$REPAIR_PATHS"
+          test "$(git diff --name-only --diff-filter=M "$FIRST_PARENT" "$PRODUCT_HEAD" | LC_ALL=C sort)" = "$REPAIR_PATHS"
+          test -z "$(git diff --name-only --diff-filter=ADTCURXB "$FIRST_PARENT" "$PRODUCT_HEAD")"
+          test "$(git diff --name-only "$FIRST_PARENT" "$MERGE_SHA" | LC_ALL=C sort)" = "$REPAIR_PATHS"
+          test "$(git diff --name-only --diff-filter=M "$FIRST_PARENT" "$MERGE_SHA" | LC_ALL=C sort)" = "$REPAIR_PATHS"
+          test -z "$(git diff --name-only --diff-filter=ADTCURXB "$FIRST_PARENT" "$MERGE_SHA")"
+          git diff --check "$FIRST_PARENT" "$WORKFLOW_COMMIT"
+          git diff --check "$WORKFLOW_COMMIT" "$PRODUCT_HEAD"
+
+          while IFS= read -r REPAIR_PATH; do
+            test "$(git rev-parse "$MERGE_SHA:$REPAIR_PATH")" = "$(git rev-parse "$PRODUCT_HEAD:$REPAIR_PATH")"
+            test "$(git rev-parse "origin/main:$REPAIR_PATH")" = "$(git rev-parse "$MERGE_SHA:$REPAIR_PATH")"
+          done <<< "$REPAIR_PATHS"
+          test "$(git rev-parse "$MERGE_SHA:$CANONICAL_WORKFLOW")" = "$EXPECTED_WORKFLOW_BLOB"
+          test "$(git rev-parse "$MERGE_SHA:$CANONICAL_MANIFEST")" = "$EXPECTED_MANIFEST_BLOB"
+
+          for MATRIX_COMMIT in "$VALIDATION_BASE" "$VALIDATION_PRODUCT" "$VALIDATION_MERGE" "$MATRIX_REPAIR_PRODUCT" "$MATRIX_REPAIR_MERGE" "$PRODUCT_HEAD" "$MERGE_SHA" origin/main; do
+            test "$(git rev-parse "$MATRIX_COMMIT:$MATRIX_PATH")" = "$MATRIX_BLOB"
+          done
+          while IFS= read -r SEMANTIC_PATH; do
+            EXPECTED_BLOB="$(git rev-parse "$VALIDATION_MERGE:$SEMANTIC_PATH")"
+            for SEMANTIC_COMMIT in "$MATRIX_REPAIR_MERGE" "$PRODUCT_HEAD" "$MERGE_SHA" origin/main; do
+              test "$(git rev-parse "$SEMANTIC_COMMIT:$SEMANTIC_PATH")" = "$EXPECTED_BLOB"
+            done
+          done <<< "$SEMANTIC_PATHS"
+
+          first_parent_edge_census() {
+            local START="$1"
+            local END="$2"
+            local PREFIX="$3"
+            local CHAIN="$OUT/$PREFIX-first-parent-commits.txt"
+            local EDGES="$OUT/$PREFIX-first-parent-edge-paths.tsv"
+            local UNSORTED="$OUT/$PREFIX-first-parent-paths.unsorted"
+            local PATHS="$OUT/$PREFIX-first-parent-paths.txt"
+            : > "$CHAIN"; : > "$EDGES"; : > "$UNSORTED"; : > "$PATHS"
+            if [ "$START" = "$END" ]; then return; fi
+            git merge-base --is-ancestor "$START" "$END"
+            git rev-list --first-parent --reverse "$START..$END" > "$CHAIN"
+            local PREV="$START" NEXT CHANGED
+            while IFS= read -r NEXT; do
+              test -n "$NEXT"
+              test "$(git rev-parse "$NEXT^1")" = "$PREV"
+              while IFS= read -r CHANGED; do
+                test -n "$CHANGED"
+                printf '%s\t%s\t%s\n' "$PREV" "$NEXT" "$CHANGED" >> "$EDGES"
+                printf '%s\n' "$CHANGED" >> "$UNSORTED"
+              done < <(git diff --name-only "$PREV" "$NEXT")
+              PREV="$NEXT"
+            done < "$CHAIN"
+            test "$PREV" = "$END"
+            LC_ALL=C sort -u "$UNSORTED" > "$PATHS"
+          }
+
+          first_parent_edge_census "$VALIDATION_PARENT" "$VALIDATION_BASE" validation
+          test -z "$(comm -12 "$OUT/protected-paths.txt" "$OUT/validation-first-parent-paths.txt")"
+          first_parent_edge_census "$MERGE_SHA" "$(git rev-parse origin/main)" postmerge
+          test -z "$(comm -12 "$OUT/protected-paths.txt" "$OUT/postmerge-first-parent-paths.txt")"
+
+          git rev-parse origin/main > "$OUT/live-main.txt"
+          git rev-parse "$MERGE_SHA^{tree}" > "$OUT/merge-tree.txt"
+          git rev-parse "$FIRST_PARENT^{tree}" > "$OUT/first-parent-tree.txt"
+
+      - name: Reproduce touched-then-restored edge-census refusal
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          FIXTURE="$(mktemp -d)"
+          git -C "$FIXTURE" init -q
+          git -C "$FIXTURE" config user.name 'RD-04 topology fixture'
+          git -C "$FIXTURE" config user.email 'rd04-topology-fixture@example.invalid'
+          printf 'canonical\n' > "$FIXTURE/product-path"
+          git -C "$FIXTURE" add product-path
+          GIT_AUTHOR_DATE='2000-01-01T00:00:00Z' GIT_COMMITTER_DATE='2000-01-01T00:00:00Z' git -C "$FIXTURE" commit -qm base
+          START="$(git -C "$FIXTURE" rev-parse HEAD)"
+          printf 'changed\n' > "$FIXTURE/product-path"
+          git -C "$FIXTURE" add product-path
+          GIT_AUTHOR_DATE='2000-01-01T00:00:01Z' GIT_COMMITTER_DATE='2000-01-01T00:00:01Z' git -C "$FIXTURE" commit -qm touch
+          printf 'canonical\n' > "$FIXTURE/product-path"
+          git -C "$FIXTURE" add product-path
+          GIT_AUTHOR_DATE='2000-01-01T00:00:02Z' GIT_COMMITTER_DATE='2000-01-01T00:00:02Z' git -C "$FIXTURE" commit -qm restore
+          END="$(git -C "$FIXTURE" rev-parse HEAD)"
+          test -z "$(git -C "$FIXTURE" diff --name-only "$START" "$END")"
+          git -C "$FIXTURE" rev-list --first-parent --reverse "$START..$END" > "$OUT/edge-census-regression-commits.txt"
+          : > "$OUT/edge-census-regression-paths.unsorted"
+          PREV="$START"
+          while IFS= read -r NEXT; do
+            test "$(git -C "$FIXTURE" rev-parse "$NEXT^1")" = "$PREV"
+            git -C "$FIXTURE" diff --name-only "$PREV" "$NEXT" >> "$OUT/edge-census-regression-paths.unsorted"
+            PREV="$NEXT"
+          done < "$OUT/edge-census-regression-commits.txt"
+          test "$PREV" = "$END"
+          LC_ALL=C sort -u "$OUT/edge-census-regression-paths.unsorted" > "$OUT/edge-census-regression-paths.txt"
+          test "$(cat "$OUT/edge-census-regression-paths.txt")" = 'product-path'
+          printf '%s\n' 'endpoint_diff_empty=true' 'edge_census_detected=product-path' > "$OUT/edge-census-regression-receipt.txt"
+          rm -rf "$FIXTURE"
+
+      - name: Replay manifest, validation, Release, and clean post-Release state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git worktree add --detach "$WORK" "$MERGE_SHA"
+          (
+            cd "$WORK"
+            ruby -e "require 'yaml'; YAML.load_file(ARGV.fetch(0)); puts 'yaml_ok'" "$CANONICAL_WORKFLOW" > "$OUT/workflow-parse.txt"
+            python -m py_compile "$VALIDATOR"
+            python - <<'PY'
+          import hashlib
+          import json
+          import pathlib
+
+          root = pathlib.Path.cwd()
+          path = root / 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/product-manifest.json'
+          manifest = json.loads(path.read_text())
+          assert manifest['permanent_path_count'] == 7
+          assert manifest['hashed_file_count'] == 6
+          assert len(manifest['permanent_paths']) == 7
+          assert len(set(manifest['permanent_paths'])) == 7
+          assert len(manifest['hashed_files']) == 6
+          rows = []
+          for record in manifest['hashed_files']:
+              data = (root / record['path']).read_bytes()
+              sha = hashlib.sha256(data).hexdigest()
+              blob = hashlib.sha1(f'blob {len(data)}\0'.encode() + data).hexdigest()
+              assert len(data) == record['bytes']
+              assert sha == record['sha256']
+              assert blob == record['git_blob']
+              rows.append(f"{record['path']}\0{sha}\0{len(data)}\n")
+          combined = hashlib.sha256(''.join(sorted(rows)).encode()).hexdigest()
+          assert combined == manifest['combined_sha256']
+          pathlib.Path('/tmp/rd04-mt-validation-edge-census-postmerge-proof-v1/manifest-proof.json').write_text(json.dumps({
+              'permanent_paths': 7,
+              'hashed_files': 6,
+              'combined_sha256': combined,
+          }, indent=2, sort_keys=True) + '\n')
+          PY
+            VALIDATION_HEAD="$MERGE_SHA" python "$VALIDATOR" | tee "$OUT/validation-receipt.json"
+            jq -e '
+              .state == "qualified_request_free_montana_row_state_candidate" and
+              .proposed_cell_sha256 == "ba173d03c2f82316ca79eb8b6627057db6fdb54113340ff0f9539a85e89a1f2d" and
+              .projected_row_sha256 == "b6474320f690a653eae081cf655a090bb5d5da0f444e9a1c42077fd0b951bcbc" and
+              .projected_matrix_sha256 == "12e52344af0c8ec3d845b6f05f8a20014fa84504d10dbc9ee0674d37715abe1d" and
+              .adversarial_refusals == 26 and
+              .projected_terminal_cells == 230 and
+              .projected_terminal_units == 12 and
+              .promotion_executed_here == false and
+              .class_closed == false and
+              .source_requests == 0 and
+              .route_executions == 0 and
+              .source_admissions == 0 and
+              .field_terminalizations == 0 and
+              .matrix_updates == 0 and
+              .row_state_mutations == 0 and
+              .row_terminalizations == 0 and
+              .outside_human_dependency == false
+            ' "$OUT/validation-receipt.json" > /dev/null
+            npm run release:check > "$OUT/release-check.log" 2>&1
+            git reset --hard "$MERGE_SHA"
+            git clean -fdx
+            test -z "$(git status --porcelain)"
+            VALIDATION_HEAD="$MERGE_SHA" python "$VALIDATOR" > "$OUT/post-release-validation-receipt.json"
+            cmp "$OUT/validation-receipt.json" "$OUT/post-release-validation-receipt.json"
+          )
+
+          python - <<'PY'
+          import json
+          import os
+          import pathlib
+          import subprocess
+
+          out = pathlib.Path(os.environ['OUT'])
+          receipt = json.loads((out / 'validation-receipt.json').read_text())
+          def git(*args):
+              return subprocess.check_output(['git', *args], text=True).strip()
+          proof = {
+              'schema_version': 'ssc-rd04-mt-validation-edge-census-postmerge-proof@1',
+              'state': 'qualified_canonical_montana_edge_census_repair',
+              'canonical_merge': os.environ['MERGE_SHA'],
+              'canonical_merge_tree': git('rev-parse', f"{os.environ['MERGE_SHA']}^{{tree}}"),
+              'merge_first_parent': os.environ['FIRST_PARENT'],
+              'merge_second_parent': os.environ['PRODUCT_HEAD'],
+              'workflow_commit': os.environ['WORKFLOW_COMMIT'],
+              'product_tree': os.environ['PRODUCT_TREE'],
+              'live_main': git('rev-parse', 'origin/main'),
+              'repair_path_count': 2,
+              'semantic_path_count': 5,
+              'protected_path_count': 8,
+              'matrix_blob': os.environ['MATRIX_BLOB'],
+              'candidate_sha256': receipt['proposed_cell_sha256'],
+              'projected_montana_row_sha256': receipt['projected_row_sha256'],
+              'projected_matrix_sha256': receipt['projected_matrix_sha256'],
+              'adversarial_refusals': receipt['adversarial_refusals'],
+              'exact_head_run': int(os.environ['EXACT_HEAD_RUN']),
+              'exact_head_artifact': int(os.environ['EXACT_HEAD_ARTIFACT']),
+              'exact_head_artifact_bytes': int(os.environ['EXACT_HEAD_ARTIFACT_BYTES']),
+              'exact_head_artifact_sha256': os.environ['EXACT_HEAD_ARTIFACT_SHA256'],
+              'release_check': 'passed',
+              'post_release_replay': 'passed',
+              'promotion_executed_here': False,
+              'class_closed': False,
+              'outside_human_dependency': False,
+              'authority_boundary': {
+                  'source_requests': 0,
+                  'route_executions': 0,
+                  'source_admissions': 0,
+                  'field_terminalizations': 0,
+                  'matrix_updates': 0,
+                  'row_state_mutations': 0,
+                  'row_terminalizations': 0,
+                  'class_closed': False,
+                  'cumulative_ledger_effect': 'none',
+                  'publication_effect': 'none',
+                  'adoption_effect': 'none',
+                  'graph_effect': 'none',
+                  'outside_human_dependency': False,
+              },
+          }
+          (out / 'postmerge-proof.json').write_text(json.dumps(proof, indent=2, sort_keys=True) + '\n')
+          PY
+
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+
+      - name: Preserve exact canonical proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-validation-edge-census-postmerge-proof-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce terminal read-only proof
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .schema_version == "ssc-rd04-mt-validation-edge-census-postmerge-proof@1" and
+            .state == "qualified_canonical_montana_edge_census_repair" and
+            .canonical_merge == "0840358962621b0be3db6864ecec763327f35903" and
+            .canonical_merge_tree == "38023f86bcc27527f9db8da9622bada00b3de542" and
+            .merge_first_parent == "7d06800b6899add8beff7891a526abec843bb8d9" and
+            .merge_second_parent == "3aed7331a5f4b75618e9357bc7061e8ce1ad0064" and
+            .workflow_commit == "00036a809fb0e55a0427d7deb4d2cef2d5655d1d" and
+            .product_tree == "38023f86bcc27527f9db8da9622bada00b3de542" and
+            .repair_path_count == 2 and
+            .semantic_path_count == 5 and
+            .protected_path_count == 8 and
+            .matrix_blob == "6ba11a6025021e9df8ac6535be8c42499654c233" and
+            .candidate_sha256 == "ba173d03c2f82316ca79eb8b6627057db6fdb54113340ff0f9539a85e89a1f2d" and
+            .projected_montana_row_sha256 == "b6474320f690a653eae081cf655a090bb5d5da0f444e9a1c42077fd0b951bcbc" and
+            .projected_matrix_sha256 == "12e52344af0c8ec3d845b6f05f8a20014fa84504d10dbc9ee0674d37715abe1d" and
+            .adversarial_refusals == 26 and
+            .exact_head_artifact == 9072500310 and
+            .exact_head_artifact_sha256 == "c255a62a6cafa08c3497c1fce74559405b8515006939ef4dbc495a801307dec6" and
+            .release_check == "passed" and
+            .post_release_replay == "passed" and
+            .promotion_executed_here == false and
+            .class_closed == false and
+            .outside_human_dependency == false
+          ' "$OUT/postmerge-proof.json" > /dev/null
