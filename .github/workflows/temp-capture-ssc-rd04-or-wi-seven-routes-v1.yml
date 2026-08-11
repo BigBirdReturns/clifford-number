@@ -1,0 +1,431 @@
+name: TEMP capture RD-04 Oregon and Wisconsin seven-route frontier v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-capture-ssc-rd04-or-wi-seven-routes-v1.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-capture-ssc-rd04-or-wi-seven-routes-v1
+  cancel-in-progress: false
+
+env:
+  BASE_COMMIT: 9510310129c3aab44f8b5b187430a3ede005b7b4
+  PROTOCOL_PATH: data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/selected-followup-protocol.json
+  PROTOCOL_BLOB: 88cb73c7bae87a4031d1571d7dd5ebdcb58aa2f4
+  PROTOCOL_SHA256: a27c057b36de0155463b2872b0e610500db2d7abca08de886e4661c8fc233834
+  OUT: /tmp/ssc-rd04-or-wi-seven-route-capture-v1
+
+jobs:
+  capture:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Bind canonical main and frozen seven-route subset
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" /tmp/rd04-or-wi-protocol.json
+          mkdir -p "$OUT/routes"
+          printf '%s\n' bind-canonical-protocol > "$OUT/STAGE"
+          printf '%s\n' 1 > "$OUT/EXIT_CODE"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/main)" = "$BASE_COMMIT"
+          git merge-base --is-ancestor "$BASE_COMMIT" HEAD
+          test "$(git rev-parse "refs/remotes/origin/main:$PROTOCOL_PATH")" = "$PROTOCOL_BLOB"
+          git show "refs/remotes/origin/main:$PROTOCOL_PATH" > /tmp/rd04-or-wi-protocol.json
+          test "$(sha256sum /tmp/rd04-or-wi-protocol.json | awk '{print $1}')" = "$PROTOCOL_SHA256"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          protocol=json.loads(Path('/tmp/rd04-or-wi-protocol.json').read_text())
+          expected=[
+            'RD04-NF-OR-001','RD04-NF-OR-002',
+            'RD04-NF-WI-001','RD04-NF-WI-002','RD04-NF-WI-003','RD04-NF-WI-004','RD04-NF-WI-005'
+          ]
+          assert protocol['schema_version']=='ssc-rd04-wave03-five-state-selected-followup-protocol@1'
+          assert protocol['class_id']=='RD-04-C02' and protocol['issue']==1017
+          assert protocol['route_count']==11
+          assert protocol['execution_ceiling']['maximum_total_requests']==11
+          assert protocol['execution_ceiling']['maximum_attempts_per_route']==1
+          assert protocol['execution_ceiling']['result_spawned_requests']==0
+          routes=[r for r in protocol['routes'] if r['postal_code'] in {'OR','WI'}]
+          assert [r['route_id'] for r in routes]==expected
+          assert len({r['requested_url'] for r in routes})==7
+          assert all(r['maximum_attempts']==1 and r['result_spawned_requests']==0 for r in routes)
+          assert all(not r['cross_host_redirects_allowed'] for r in routes)
+          Path('/tmp/rd04-or-wi-seven-routes.json').write_text(json.dumps(routes,indent=2,sort_keys=True)+'\n')
+          print('frozen_route_subset=pass routes=7 states=OR,WI')
+          PY
+
+      - name: Execute exactly one logical attempt per frozen route
+        id: capture
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          fail() {
+            local rc=$?
+            trap - ERR
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            exit "$rc"
+          }
+          trap fail ERR
+          printf '%s\n' execute-seven-frozen-routes > "$OUT/STAGE"
+          cp /tmp/rd04-or-wi-protocol.json "$OUT/frozen-protocol.json"
+          cp /tmp/rd04-or-wi-seven-routes.json "$OUT/frozen-seven-routes.json"
+          python - <<'PY'
+          import hashlib
+          import json
+          import re
+          import socket
+          import ssl
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          OUT=Path('/tmp/ssc-rd04-or-wi-seven-route-capture-v1')
+          routes=json.loads(Path('/tmp/rd04-or-wi-seven-routes.json').read_text())
+          expected_ids=[
+            'RD04-NF-OR-001','RD04-NF-OR-002',
+            'RD04-NF-WI-001','RD04-NF-WI-002','RD04-NF-WI-003','RD04-NF-WI-004','RD04-NF-WI-005'
+          ]
+          assert [r['route_id'] for r in routes]==expected_ids
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+
+          class VisibleText(HTMLParser):
+              def __init__(self):
+                  super().__init__(convert_charrefs=True)
+                  self.parts=[]
+                  self.skip=0
+              def handle_starttag(self, tag, attrs):
+                  if tag.lower() in {'script','style','noscript','svg'}:
+                      self.skip+=1
+                  elif tag.lower() in {'p','div','section','article','li','br','tr','h1','h2','h3','h4','h5','h6'}:
+                      self.parts.append('\n')
+              def handle_endtag(self, tag):
+                  if tag.lower() in {'script','style','noscript','svg'} and self.skip:
+                      self.skip-=1
+                  elif tag.lower() in {'p','div','section','article','li','tr','h1','h2','h3','h4','h5','h6'}:
+                      self.parts.append('\n')
+              def handle_data(self, data):
+                  if not self.skip:
+                      self.parts.append(data)
+              def text(self):
+                  raw=''.join(self.parts).replace('\r','\n')
+                  lines=[]
+                  for line in raw.split('\n'):
+                      line=re.sub(r'\s+',' ',line).strip()
+                      if line:
+                          lines.append(line)
+                  return '\n'.join(lines)+'\n'
+
+          def write_json(path, value):
+              path.write_text(json.dumps(value,indent=2,sort_keys=True)+'\n')
+
+          def read_limited(stream, limit):
+              chunks=[]
+              total=0
+              while True:
+                  chunk=stream.read(min(65536, limit+1-total))
+                  if not chunk:
+                      break
+                  chunks.append(chunk)
+                  total+=len(chunk)
+                  if total>limit:
+                      break
+              return b''.join(chunks), total>limit
+
+          opener=urllib.request.build_opener(NoRedirect())
+          context=ssl.create_default_context()
+          results=[]
+          physical_requests=0
+          for route in routes:
+              route_dir=OUT/'routes'/route['route_id']
+              route_dir.mkdir(parents=True,exist_ok=True)
+              write_json(route_dir/'request.json',{
+                  'route_id':route['route_id'],
+                  'postal_code':route['postal_code'],
+                  'requested_url':route['requested_url'],
+                  'method':route['method'],
+                  'allowed_final_hosts':route['allowed_final_hosts'],
+                  'maximum_attempts':route['maximum_attempts'],
+                  'maximum_redirects':route['maximum_redirects'],
+                  'maximum_body_bytes':route['maximum_body_bytes'],
+                  'target_field_ids':route['target_field_ids'],
+                  'logical_attempt':1,
+                  'result_spawned_requests':0,
+              })
+              current=route['requested_url']
+              allowed=set(route['allowed_final_hosts'])
+              hops=[]
+              body=b''
+              outcome='transport_error'
+              error=None
+              final_status=None
+              final_url=None
+              final_headers=[]
+              final_content_type=None
+              try:
+                  for hop_index in range(route['maximum_redirects']+1):
+                      parsed=urllib.parse.urlparse(current)
+                      if parsed.scheme!='https' or parsed.hostname not in allowed:
+                          outcome='cross_host_redirect_refused'
+                          error=f'unauthorized_request_target:{parsed.scheme}://{parsed.hostname}'
+                          final_url=current
+                          break
+                      req=urllib.request.Request(
+                          current,
+                          method='GET',
+                          headers={
+                              'User-Agent':'BigBirdReturns-RD04-fixed-route-capture/1.0',
+                              'Accept':'text/html,application/pdf,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.5',
+                              'Accept-Encoding':'identity',
+                              'Cache-Control':'no-cache',
+                          },
+                      )
+                      physical_requests+=1
+                      try:
+                          response=opener.open(req,timeout=120,context=context)
+                      except urllib.error.HTTPError as exc:
+                          response=exc
+                      status=int(response.getcode())
+                      header_pairs=list(response.headers.raw_items())
+                      location=response.headers.get('Location')
+                      hops.append({
+                          'hop_index':hop_index,
+                          'requested_url':current,
+                          'status':status,
+                          'headers':header_pairs,
+                          'location':location,
+                      })
+                      if 300<=status<400 and location:
+                          next_url=urllib.parse.urljoin(current,location)
+                          next_parsed=urllib.parse.urlparse(next_url)
+                          if next_parsed.scheme!='https' or next_parsed.hostname not in allowed:
+                              outcome='cross_host_redirect_refused'
+                              error=f'redirect_target_refused:{next_url}'
+                              final_status=status
+                              final_url=current
+                              final_headers=header_pairs
+                              break
+                          if hop_index>=route['maximum_redirects']:
+                              outcome='redirect_limit_exceeded'
+                              error=f'maximum_redirects:{route["maximum_redirects"]}'
+                              final_status=status
+                              final_url=current
+                              final_headers=header_pairs
+                              break
+                          current=next_url
+                          continue
+                      body,oversize=read_limited(response,route['maximum_body_bytes'])
+                      final_status=status
+                      final_url=current
+                      final_headers=header_pairs
+                      final_content_type=response.headers.get('Content-Type')
+                      if oversize:
+                          body=body[:route['maximum_body_bytes']]
+                          outcome='body_limit_exceeded'
+                          error=f'maximum_body_bytes:{route["maximum_body_bytes"]}'
+                      elif 200<=status<300:
+                          outcome='http_success'
+                      else:
+                          outcome='http_non_success'
+                      break
+              except (urllib.error.URLError,TimeoutError,socket.timeout,ssl.SSLError,OSError) as exc:
+                  outcome='transport_error'
+                  error=f'{type(exc).__name__}:{exc}'
+                  final_url=current
+
+              (route_dir/'body.bin').write_bytes(body)
+              write_json(route_dir/'response.json',{
+                  'route_id':route['route_id'],
+                  'postal_code':route['postal_code'],
+                  'outcome':outcome,
+                  'error':error,
+                  'logical_attempts':1,
+                  'physical_requests':len(hops),
+                  'redirects_followed':max(0,len(hops)-1),
+                  'final_status':final_status,
+                  'final_url':final_url,
+                  'final_host':urllib.parse.urlparse(final_url).hostname if final_url else None,
+                  'final_content_type':final_content_type,
+                  'final_headers':final_headers,
+                  'hops':hops,
+                  'body_bytes':len(body),
+                  'body_sha256':hashlib.sha256(body).hexdigest(),
+                  'result_spawned_requests':0,
+                  'automatic_source_admission':False,
+                  'automatic_field_classification':False,
+                  'automatic_row_terminalization':False,
+                  'automatic_class_closure':False,
+                  'outside_human_dependency':False,
+              })
+              content_type=(final_content_type or '').lower()
+              if body and ('html' in content_type or content_type.startswith('text/')):
+                  charset='utf-8'
+                  match=re.search(r'charset=([^;\s]+)',content_type)
+                  if match:
+                      charset=match.group(1).strip('"\'')
+                  text=body.decode(charset,errors='replace')
+                  if 'html' in content_type or b'<html' in body[:2048].lower():
+                      parser=VisibleText()
+                      parser.feed(text)
+                      text=parser.text()
+                  (route_dir/'body.txt').write_text(text)
+              results.append({
+                  'route_id':route['route_id'],
+                  'postal_code':route['postal_code'],
+                  'requested_url':route['requested_url'],
+                  'outcome':outcome,
+                  'final_status':final_status,
+                  'final_url':final_url,
+                  'body_bytes':len(body),
+                  'body_sha256':hashlib.sha256(body).hexdigest(),
+                  'target_field_ids':route['target_field_ids'],
+              })
+
+          counts={}
+          for result in results:
+              counts[result['outcome']]=counts.get(result['outcome'],0)+1
+          write_json(OUT/'capture-results.json',{'routes':results})
+          write_json(OUT/'summary.json',{
+              'schema_version':'ssc-rd04-or-wi-seven-route-capture-summary@1',
+              'wave_id':'SSC-RD-W03',
+              'lane_id':'RD-04',
+              'class_id':'RD-04-C02',
+              'issue':1017,
+              'canonical_main':'9510310129c3aab44f8b5b187430a3ede005b7b4',
+              'frozen_protocol_path':'data/intake/status-sovereignty-rd-wave03-rd04-fl-mt-nd-or-wi-source-field-adjudication/selected-followup-protocol.json',
+              'frozen_protocol_blob':'88cb73c7bae87a4031d1571d7dd5ebdcb58aa2f4',
+              'frozen_protocol_sha256':'a27c057b36de0155463b2872b0e610500db2d7abca08de886e4661c8fc233834',
+              'selected_states':['OR','WI'],
+              'selected_route_ids':expected_ids,
+              'logical_attempts':7,
+              'physical_requests':physical_requests,
+              'outcome_counts':counts,
+              'source_requests_executed':7,
+              'result_spawned_requests':0,
+              'source_admissions':0,
+              'field_classifications':0,
+              'field_terminalizations':0,
+              'matrix_updates':0,
+              'row_state_mutations':0,
+              'row_terminalizations':0,
+              'class_closed':False,
+              'cumulative_ledger_effect':'none',
+              'publication_effect':'none',
+              'adoption_effect':'none',
+              'graph_effect':'none',
+              'outside_human_dependency':False,
+              'next_operation':'offline source and field adjudication of this fixed seven-route artifact; no new route execution is authorized by the capture result',
+          })
+          print(json.dumps({'logical_attempts':7,'physical_requests':physical_requests,'outcomes':counts},sort_keys=True))
+          PY
+
+          printf '%s\n' extract-pdf-text > "$OUT/STAGE"
+          pdf_count=0
+          while IFS= read -r body; do
+            route_dir="$(dirname "$body")"
+            if test "$(head -c 5 "$body" 2>/dev/null || true)" = '%PDF-'; then
+              command -v pdfinfo >/dev/null
+              command -v pdftotext >/dev/null
+              pdfinfo "$body" > "$route_dir/pdfinfo.txt"
+              pdftotext -layout "$body" "$route_dir/body.txt"
+              pdf_count=$((pdf_count+1))
+            fi
+          done < <(find "$OUT/routes" -mindepth 2 -maxdepth 2 -type f -name body.bin | LC_ALL=C sort)
+          printf '%s\n' "$pdf_count" > "$OUT/pdf-count.txt"
+
+          printf '%s\n' finalize-checksums > "$OUT/STAGE"
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          out=Path('/tmp/ssc-rd04-or-wi-seven-route-capture-v1')
+          summary=json.loads((out/'summary.json').read_text())
+          results=json.loads((out/'capture-results.json').read_text())['routes']
+          assert summary['selected_route_ids']==[
+            'RD04-NF-OR-001','RD04-NF-OR-002',
+            'RD04-NF-WI-001','RD04-NF-WI-002','RD04-NF-WI-003','RD04-NF-WI-004','RD04-NF-WI-005'
+          ]
+          assert summary['logical_attempts']==7 and summary['source_requests_executed']==7
+          assert summary['result_spawned_requests']==0
+          assert len(results)==7 and len({r['route_id'] for r in results})==7
+          assert all((out/'routes'/r['route_id']/'request.json').is_file() for r in results)
+          assert all((out/'routes'/r['route_id']/'response.json').is_file() for r in results)
+          entries=[]
+          combined=hashlib.sha256()
+          for path in sorted(p for p in out.rglob('*') if p.is_file() and p.name not in {'manifest.json','SHA256SUMS','STAGE','EXIT_CODE'}):
+              rel=path.relative_to(out).as_posix()
+              body=path.read_bytes()
+              sha=hashlib.sha256(body).hexdigest()
+              entries.append({'path':rel,'bytes':len(body),'sha256':sha})
+              combined.update(rel.encode()+b'\0'+sha.encode()+b'\n')
+          manifest={
+              'schema_version':'ssc-rd04-or-wi-seven-route-capture-manifest@1',
+              'entry_count':len(entries),
+              'entries':entries,
+              'combined_sha256':combined.hexdigest(),
+          }
+          (out/'manifest.json').write_text(json.dumps(manifest,indent=2,sort_keys=True)+'\n')
+          files=sorted(p for p in out.rglob('*') if p.is_file() and p.name!='SHA256SUMS')
+          (out/'SHA256SUMS').write_text(''.join(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(out).as_posix()}\n" for p in files))
+          print(f"manifest_entries={len(entries)} combined_sha256={combined.hexdigest()}")
+          PY
+          printf '%s\n' complete > "$OUT/STAGE"
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          trap - ERR
+
+      - name: Preserve fixed seven-route capture artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-or-wi-seven-route-capture-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce bounded capture completion
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.capture.outcome }}" = success
+          test "$(cat "$OUT/STAGE")" = complete
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          jq -e '
+            .schema_version == "ssc-rd04-or-wi-seven-route-capture-summary@1" and
+            .canonical_main == "9510310129c3aab44f8b5b187430a3ede005b7b4" and
+            .selected_states == ["OR","WI"] and
+            (.selected_route_ids | length) == 7 and
+            .logical_attempts == 7 and .source_requests_executed == 7 and
+            .result_spawned_requests == 0 and .source_admissions == 0 and
+            .field_classifications == 0 and .field_terminalizations == 0 and
+            .matrix_updates == 0 and .row_state_mutations == 0 and .row_terminalizations == 0 and
+            .class_closed == false and .outside_human_dependency == false
+          ' "$OUT/summary.json" >/dev/null
+          jq -e '.entry_count == (.entries | length) and .entry_count > 20' "$OUT/manifest.json" >/dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
