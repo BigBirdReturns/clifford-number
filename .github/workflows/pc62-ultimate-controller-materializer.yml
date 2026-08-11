@@ -1,0 +1,84 @@
+name: PC-62 ultimate terminal-controller materializer
+
+'on':
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pc62-ultimate-controller-materializer.yml'
+      - '.github/pc62-ultimate-controller-transform.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc62-ultimate-terminal-controller-materializer
+  cancel-in-progress: true
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPOSITORY: ${{ github.repository }}
+  SOURCE_CONTROLLER_BLOB: 'd2ea3d248251c2eb9fdc291c8b905c66b997c2db'
+  SOURCE_CONTROLLER_SHA256: '7708fd1a52494022b4f2b4d79b16dc170448ac68bf3638fe99b5d637ab02d594'
+  SOURCE_CONTROLLER_BYTES: '39968'
+  FINAL_PRODUCT: '3df0391ed6fb30240423c7df3aa721479668903a'
+  FINAL_PRODUCT_TREE: '955603ce04e9aca04e8dae4a3589f89bef6bc4f4'
+  FINAL_LIBRARY_BLOB: 'a7692f871d546ba3f16cfd4bdfa6842e7c246d9e'
+  FINAL_TEST_BLOB: '4633de4e3df3b0286f76d3676738d1af22145ca3'
+  FINAL_VALIDATION_REPAIR_ARTIFACT: '9094045040'
+  FINAL_VALIDATION_REPAIR_DIGEST: 'sha256:3d4aee2b42efe7357bb0fc412ba5a90c75ba0d5639c1d59517673f7cd0686128'
+  OUT: '/tmp/pc62-ultimate-controller-materializer'
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/pc62-ultimate-controller-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      - name: Authenticate source controller, transform, and publish ultimate blob
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          rm -rf "$OUT"
+          mkdir -p "$OUT/api"
+          python --check .github/pc62-ultimate-controller-transform.py
+
+          gh api "/repos/$GH_REPOSITORY/git/blobs/$SOURCE_CONTROLLER_BLOB" > "$OUT/api/source-controller.json"
+          test "$(jq -r .sha "$OUT/api/source-controller.json")" = "$SOURCE_CONTROLLER_BLOB"
+          jq -r .content "$OUT/api/source-controller.json" | tr -d '\n' | base64 -d > "$OUT/source-controller.yml"
+          test "$(wc -c < "$OUT/source-controller.yml" | tr -d ' ')" = "$SOURCE_CONTROLLER_BYTES"
+          test "$(sha256sum "$OUT/source-controller.yml" | awk '{print $1}')" = "$SOURCE_CONTROLLER_SHA256"
+          test "$(git hash-object "$OUT/source-controller.yml")" = "$SOURCE_CONTROLLER_BLOB"
+
+          python .github/pc62-ultimate-controller-transform.py "$OUT/source-controller.yml" "$OUT/final-controller.yml"
+          test "$(grep -cF "$FINAL_PRODUCT" "$OUT/final-controller.yml")" -ge 1
+          test "$(grep -cF "$FINAL_PRODUCT_TREE" "$OUT/final-controller.yml")" -ge 1
+          test "$(grep -cF "$FINAL_LIBRARY_BLOB" "$OUT/final-controller.yml")" -ge 1
+          test "$(grep -cF "$FINAL_TEST_BLOB" "$OUT/final-controller.yml")" -ge 1
+          test "$(grep -cF 'PC-62 fixture mutations rejected: 61' "$OUT/final-controller.yml")" = 1
+          test "$(grep -cF 'non_extensible_web_exotic_mutations:2' "$OUT/final-controller.yml")" = 1
+          test "$(grep -cF 'malformed_world_shape_mutations:2' "$OUT/final-controller.yml")" = 1
+          ruby -e 'require "yaml"; y=YAML.load_file(ARGV[0]); abort "name" unless y["name"]=="PC-62 terminal reconciler"; abort "product" unless y["env"]["PRODUCT"]==ENV["FINAL_PRODUCT"]; abort "tree" unless y["env"]["PRODUCT_TREE"]==ENV["FINAL_PRODUCT_TREE"]; abort "final validation artifact" unless y["env"]["FINAL_VALIDATION_REPAIR_ARTIFACT"]==ENV["FINAL_VALIDATION_REPAIR_ARTIFACT"]' "$OUT/final-controller.yml"
+
+          FINAL_BYTES=$(wc -c < "$OUT/final-controller.yml" | tr -d ' ')
+          FINAL_SHA256=$(sha256sum "$OUT/final-controller.yml" | awk '{print $1}')
+          FINAL_BLOB=$(git hash-object "$OUT/final-controller.yml")
+          encoded=$(base64 -w0 "$OUT/final-controller.yml")
+          gh api --method POST "/repos/$GH_REPOSITORY/git/blobs" -f content="$encoded" -f encoding=base64 > "$OUT/api/final-controller-blob.json"
+          test "$(jq -r .sha "$OUT/api/final-controller-blob.json")" = "$FINAL_BLOB"
+
+          jq -n --arg schema_version 'pc62-ultimate-controller-materializer@1' --arg source_controller_blob "$SOURCE_CONTROLLER_BLOB" --arg source_controller_sha256 "sha256:$SOURCE_CONTROLLER_SHA256" --arg final_controller_blob "$FINAL_BLOB" --arg final_controller_sha256 "sha256:$FINAL_SHA256" --arg final_controller_bytes "$FINAL_BYTES" --arg final_product "$FINAL_PRODUCT" --arg final_product_tree "$FINAL_PRODUCT_TREE" --arg final_validation_artifact "$FINAL_VALIDATION_REPAIR_ARTIFACT" --arg final_validation_digest "$FINAL_VALIDATION_REPAIR_DIGEST" '{schema_version:$schema_version,status:"complete",source_controller:{blob:$source_controller_blob,sha256:$source_controller_sha256},final_controller:{blob:$final_controller_blob,sha256:$final_controller_sha256,bytes:($final_controller_bytes|tonumber),yaml_parsed:true},final_product:{commit:$final_product,tree:$final_product_tree},final_validation_repair_artifact:{id:($final_validation_artifact|tonumber),digest:$final_validation_digest,authenticated_in_controller:true},adversarial_mutations:61,prototype_rewritten_node_mutations:16,prototype_rewritten_web_api_mutations:6,non_extensible_web_api_mutations:2,malformed_world_shape_mutations:2,product_semantics_changed:false,graph_effect:"none"}' > "$OUT/receipt.json"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - name: Upload ultimate controller materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc62-ultimate-terminal-controller-materializer
+          path: /tmp/pc62-ultimate-controller-materializer
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 9
