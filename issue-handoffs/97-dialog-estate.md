@@ -9,12 +9,12 @@ Milestone: `estate-aperture-v1`
 - Upstream tasks still partial by design: **8**
 - Estate state: **open residual fog**
 - Dominant residual fog: `missing_bounded_co_participation`
-- Packet fingerprint: `8e560d023df1920b17c3`
+- Packet fingerprint: `cbb3f51db989d5aa30c6`
 
 **What is now in custody**
 
 - 224 primary-case claims
-- 15 primary-case receipt references
+- 16 primary-case receipt references
 - 0 primary-slice records
 - 5 declared source routes with stable locators and residual-fog descriptions
 

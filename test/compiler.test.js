@@ -134,6 +134,45 @@ assert.equal(
   'the commission and development surface must not manufacture Starmer participation'
 );
 
+// The Strategic Defence Review lifecycle is split so commissioning authority cannot become year-long co-work.
+const sdrDevelopment = surf('strategic-defence-review-development-2024-2025');
+assert.ok(sdrDevelopment, 'the external-reviewer workstream must be compiled');
+assert.equal(sdrDevelopment.hop_eligible, false, 'the review workstream must remain context only');
+assert.deepEqual(sdrDevelopment.receipt_ids, ['gov-sdr-terms-of-reference', 'gov-sdr-2025-publication']);
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === sdrDevelopment.surface_id)),
+  'the review workstream must never create actor adjacency');
+assert.deepEqual(
+  sdrDevelopment.participants.filter(part => part.participant_type === 'actor').map(part => part.actor_id).sort(),
+  ['fiona-hill', 'george-robertson', 'john-healey', 'richard-barrons']
+);
+
+const sdrTermsReceipt = receipt('gov-sdr-terms-of-reference');
+const sdrPublicationReceipt = receipt('gov-sdr-2025-publication');
+assert.equal(sdrTermsReceipt.source_published_at, '2024-07-17');
+assert.equal(sdrTermsReceipt.event_date, '2024-07-17');
+assert.equal(sdrPublicationReceipt.source_published_at, '2025-06-02');
+assert.equal(sdrPublicationReceipt.source_updated_at, '2025-07-08');
+assert.equal(sdrPublicationReceipt.event_date, '2025-06-02');
+
+const starmerBarrons = hop.edges.find(edge =>
+  [edge.actor_a, edge.actor_b].sort().join('|') === 'keir-starmer|richard-barrons');
+assert.ok(starmerBarrons, 'Keir Starmer and Richard Barrons must connect on the bounded terms record');
+const sdrTermsBasis = starmerBarrons.surfaces.find(basis => basis.surface_id === 'strategic-defence-review-2024-2025');
+assert.ok(sdrTermsBasis, 'the Starmer/Barrons edge must name the terms-and-commission surface');
+assert.equal(sdrTermsBasis.surface_label, 'Strategic Defence Review terms and commission, 17 July 2024');
+assert.equal(sdrTermsBasis.evidence_class, 'official');
+assert.equal(sdrTermsBasis.valid_from, '2024-07-17');
+assert.equal(sdrTermsBasis.valid_until, '2024-07-17');
+assert.deepEqual(sdrTermsBasis.receipt_ids, ['gov-sdr-terms-of-reference']);
+const activeSdrTermsBasis = date => starmerBarrons.surfaces.filter(basis =>
+  basis.surface_id === 'strategic-defence-review-2024-2025'
+    && basis.valid_from <= date
+    && basis.valid_until >= date);
+assert.equal(activeSdrTermsBasis('2024-07-16').length, 0, 'the terms record must not backdate a direct hop to the launch date');
+assert.equal(activeSdrTermsBasis('2024-07-17').length, 1, 'the terms record supports the direct hop only on its publication date');
+assert.equal(activeSdrTermsBasis('2025-06-02').length, 0, 'final-report publication must not manufacture a later Prime Minister hop');
+assert.equal(shortestPath(topology, 'keir-starmer', 'richard-barrons', { asOf: '2024-07-17' }).number, 1);
+
 // Disjoint dated participations on the same surface must NOT hop. Rosenfield
 // (No.10, 2021) and Cummings (No.10, 2019-2020) shared the surface in
 // different windows, so there is no direct Rosenfield↔Cummings hop.
