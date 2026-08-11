@@ -1,0 +1,83 @@
+name: PC-62 final terminal-controller materializer v2
+
+'on':
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pc62-final-controller-materializer-v2.yml'
+      - '.github/pc62-final-controller-transform.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc62-final-terminal-controller-materializer-v2
+  cancel-in-progress: true
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPOSITORY: ${{ github.repository }}
+  SOURCE_CONTROLLER_BLOB: 'd2ea3d248251c2eb9fdc291c8b905c66b997c2db'
+  SOURCE_CONTROLLER_SHA256: '7708fd1a52494022b4f2b4d79b16dc170448ac68bf3638fe99b5d637ab02d594'
+  SOURCE_CONTROLLER_BYTES: '39968'
+  FINAL_PRODUCT: 'a45823ea9cdf8e587472a9ee116cf8487a65fb97'
+  FINAL_PRODUCT_TREE: '2f802dce5499c95a60bf0634766061e9524092b9'
+  FINAL_LIBRARY_BLOB: 'e1b853f4dc71b8e102a5517df6ccf5834fc22d6e'
+  FINAL_TEST_BLOB: '034bf4a4dde5cf074d01e4430cd3a6d78b6125c8'
+  WEB_REPAIR_ARTIFACT: '9093108773'
+  WEB_REPAIR_DIGEST: 'sha256:2bebb951bcf84d70c5c68a9acc978ccf8069dbada90764651b0dc9db3458650e'
+  OUT: '/tmp/pc62-final-controller-materializer-v2'
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/pc62-final-controller-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      - name: Authenticate source controller, transform, and publish final blob
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          rm -rf "$OUT"
+          mkdir -p "$OUT/api"
+          python --check .github/pc62-final-controller-transform.py
+
+          gh api "/repos/$GH_REPOSITORY/git/blobs/$SOURCE_CONTROLLER_BLOB" > "$OUT/api/source-controller.json"
+          test "$(jq -r .sha "$OUT/api/source-controller.json")" = "$SOURCE_CONTROLLER_BLOB"
+          jq -r .content "$OUT/api/source-controller.json" | tr -d '\n' | base64 -d > "$OUT/source-controller.yml"
+          test "$(wc -c < "$OUT/source-controller.yml" | tr -d ' ')" = "$SOURCE_CONTROLLER_BYTES"
+          test "$(sha256sum "$OUT/source-controller.yml" | awk '{print $1}')" = "$SOURCE_CONTROLLER_SHA256"
+          test "$(git hash-object "$OUT/source-controller.yml")" = "$SOURCE_CONTROLLER_BLOB"
+
+          python .github/pc62-final-controller-transform.py "$OUT/source-controller.yml" "$OUT/final-controller.yml"
+          test "$(grep -cF "$FINAL_PRODUCT" "$OUT/final-controller.yml")" -ge 1
+          test "$(grep -cF "$FINAL_PRODUCT_TREE" "$OUT/final-controller.yml")" -ge 1
+          test "$(grep -cF "$FINAL_LIBRARY_BLOB" "$OUT/final-controller.yml")" -ge 1
+          test "$(grep -cF "$FINAL_TEST_BLOB" "$OUT/final-controller.yml")" -ge 1
+          test "$(grep -cF 'PC-62 fixture mutations rejected: 57' "$OUT/final-controller.yml")" = 1
+          test "$(grep -cF 'prototype_rewritten_web_exotic_mutations:4' "$OUT/final-controller.yml")" = 1
+          ruby -e 'require "yaml"; y=YAML.load_file(ARGV[0]); abort "name" unless y["name"]=="PC-62 terminal reconciler"; abort "product" unless y["env"]["PRODUCT"]==ENV["FINAL_PRODUCT"]; abort "tree" unless y["env"]["PRODUCT_TREE"]==ENV["FINAL_PRODUCT_TREE"]; abort "web artifact" unless y["env"]["WEB_REPAIR_ARTIFACT"]==ENV["WEB_REPAIR_ARTIFACT"]' "$OUT/final-controller.yml"
+
+          FINAL_BYTES=$(wc -c < "$OUT/final-controller.yml" | tr -d ' ')
+          FINAL_SHA256=$(sha256sum "$OUT/final-controller.yml" | awk '{print $1}')
+          FINAL_BLOB=$(git hash-object "$OUT/final-controller.yml")
+          encoded=$(base64 -w0 "$OUT/final-controller.yml")
+          gh api --method POST "/repos/$GH_REPOSITORY/git/blobs" -f content="$encoded" -f encoding=base64 > "$OUT/api/final-controller-blob.json"
+          test "$(jq -r .sha "$OUT/api/final-controller-blob.json")" = "$FINAL_BLOB"
+
+          jq -n --arg schema_version 'pc62-final-controller-materializer@2' --arg source_controller_blob "$SOURCE_CONTROLLER_BLOB" --arg source_controller_sha256 "sha256:$SOURCE_CONTROLLER_SHA256" --arg final_controller_blob "$FINAL_BLOB" --arg final_controller_sha256 "sha256:$FINAL_SHA256" --arg final_controller_bytes "$FINAL_BYTES" --arg final_product "$FINAL_PRODUCT" --arg final_product_tree "$FINAL_PRODUCT_TREE" --arg web_repair_artifact "$WEB_REPAIR_ARTIFACT" --arg web_repair_digest "$WEB_REPAIR_DIGEST" '{schema_version:$schema_version,status:"complete",source_controller:{blob:$source_controller_blob,sha256:$source_controller_sha256},final_controller:{blob:$final_controller_blob,sha256:$final_controller_sha256,bytes:($final_controller_bytes|tonumber),yaml_parsed:true},final_product:{commit:$final_product,tree:$final_product_tree},web_repair_artifact:{id:($web_repair_artifact|tonumber),digest:$web_repair_digest,authenticated_in_controller:true},adversarial_mutations:57,prototype_rewritten_node_mutations:16,prototype_rewritten_web_api_mutations:4,product_semantics_changed:false,graph_effect:"none"}' > "$OUT/receipt.json"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - name: Upload final controller materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc62-final-terminal-controller-materializer-v2
+          path: /tmp/pc62-final-controller-materializer-v2
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 9
