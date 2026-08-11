@@ -1,0 +1,120 @@
+name: TEMP export exact RD-04 Oregon-Wisconsin payload v1
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-export-ssc-rd04-or-wi-payload-v1.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-export-ssc-rd04-or-wi-payload-v1
+  cancel-in-progress: false
+
+jobs:
+  export:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'observer/ssc-rd04-or-wi-payload-export-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Bind exact one-path observer and export carrier bytes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE_HEAD='46c6701810f5cc0d8cdac281de33bdd3d5895a0b'
+          OBSERVER='.github/workflows/temp-export-ssc-rd04-or-wi-payload-v1.yml'
+          ROOT='data/transport/ssc-rd04-or-wi-minimum-frontier-materializer'
+          OUT='/tmp/ssc-rd04-or-wi-payload-export-v1'
+
+          test "$(git rev-parse HEAD^)" = "$SOURCE_HEAD"
+          test "$(git rev-list --count "$SOURCE_HEAD"..HEAD)" = 1
+          test "$(git diff --name-only "$SOURCE_HEAD" HEAD)" = "$OBSERVER"
+          test "$(git diff --name-only --diff-filter=A "$SOURCE_HEAD" HEAD)" = "$OBSERVER"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$SOURCE_HEAD" HEAD)"
+          git diff --check "$SOURCE_HEAD" HEAD
+
+          rm -rf "$OUT"
+          mkdir -p "$OUT/carrier"
+          cp -a "$ROOT" "$OUT/carrier/"
+          cp '.github/workflows/temp-materialize-ssc-rd04-or-wi-minimum-frontier.yml' "$OUT/carrier/"
+          cp 'tools/temp-materialize-ssc-rd04-or-wi-minimum-frontier.sh' "$OUT/carrier/"
+
+          cat "$ROOT"/payload-*.b64 > "$OUT/product.tgz.b64"
+          base64 --decode "$OUT/product.tgz.b64" > "$OUT/product-corrupt.tgz"
+
+          python - "$OUT/receipt.json" <<'PY'
+          from pathlib import Path
+          import hashlib,json,subprocess
+          out=Path('/tmp/ssc-rd04-or-wi-payload-export-v1')
+          root=Path('data/transport/ssc-rd04-or-wi-minimum-frontier-materializer')
+          expected={
+            'payload-00.b64':(10001,'f56ab0368b298da2f72ca6d5c899d1f9d014a1b1'),
+            'payload-01.b64':(10001,'c8642b17c58c8ac7dcf2e15ab55d83aec36118a5'),
+            'payload-02.b64':(10001,'801a8a89f4e480cb1e139bc7b427a904ba0a4a9a'),
+            'payload-03.b64':(10001,'eda5917d6c4d01a76842041046f2fe24e333a45e'),
+            'payload-04.b64':(10001,'ec81e2e21628c83c5aa8afbf785653607d35e872'),
+            'payload-05.b64':(9773,'d091898d4e9fbb0d1dbf287d8cac8d30cfecf508'),
+          }
+          rows=[]
+          for name,(target_bytes,target_blob) in expected.items():
+              p=root/name
+              data=p.read_bytes()
+              observed_blob=subprocess.check_output(['git','hash-object',str(p)],text=True).strip()
+              rows.append({
+                'path':str(p),
+                'observed_bytes':len(data),
+                'observed_sha256':hashlib.sha256(data).hexdigest(),
+                'observed_git_blob':observed_blob,
+                'target_bytes':target_bytes,
+                'target_git_blob':target_blob,
+                'exact':len(data)==target_bytes and observed_blob==target_blob,
+              })
+          b64=(out/'product.tgz.b64').read_bytes()
+          tgz=(out/'product-corrupt.tgz').read_bytes()
+          value={
+            'schema_version':'ssc-rd04-or-wi-payload-export@1',
+            'source_head':'46c6701810f5cc0d8cdac281de33bdd3d5895a0b',
+            'observer_head':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+            'payload_rows':rows,
+            'concatenated_base64_bytes':len(b64),
+            'concatenated_base64_sha256':hashlib.sha256(b64).hexdigest(),
+            'decoded_corrupt_tgz_bytes':len(tgz),
+            'decoded_corrupt_tgz_sha256':hashlib.sha256(tgz).hexdigest(),
+            'expected_tgz_sha256':'3569879a0349e4f32b80ca1e65e1e486368d3ff49979b3ffd61b863f58bfd2c4',
+            'source_requests':0,
+            'source_admissions':0,
+            'field_terminalizations':0,
+            'matrix_updates':0,
+            'row_state_mutations':0,
+            'class_closed':False,
+            'outside_human_dependency':False,
+            'authority':'payload_export_only',
+          }
+          (out/'receipt.json').write_text(json.dumps(value,indent=2,sort_keys=True)+'\n')
+          PY
+
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-or-wi-payload-export-v1
+          path: /tmp/ssc-rd04-or-wi-payload-export-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
