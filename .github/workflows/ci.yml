@@ -53,11 +53,9 @@ jobs:
           PY
           fi
           exit "$status"
-      - name: Commit the exact regenerated public artifacts and restore read-only CI
+      - name: Publish only the exact regenerated public artifacts
         shell: bash
         run: |
-          # The release gate creates a transient untracked Pages fixture. It is
-          # test scaffolding, not a repository artifact.
           rm -f .github/workflows/deploy-pages.yml
 
           python - <<'PY'
@@ -77,17 +75,24 @@ jobs:
                   path = path.split(' -> ', 1)[1]
               changed.add(path)
           print('GENERATED_DELTA ' + ' | '.join(sorted(changed)))
-          if changed != expected:
+          if changed and changed != expected:
               missing = sorted(expected - changed)
               extra = sorted(changed - expected)
               raise SystemExit(f'projection delta mismatch; missing={missing}; extra={extra}')
           PY
 
+          if git diff --quiet -- \
+            build/cases/uk-ai-policy.json \
+            build/report-frontier.json \
+            build/scout-report.md \
+            reports/index.html; then
+            echo "Projection set already reconciled."
+            exit 0
+          fi
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout origin/main -- .github/workflows/ci.yml
           git add \
-            .github/workflows/ci.yml \
             build/cases/uk-ai-policy.json \
             build/report-frontier.json \
             build/scout-report.md \
@@ -97,7 +102,6 @@ jobs:
           import subprocess
 
           expected = {
-              '.github/workflows/ci.yml',
               'build/cases/uk-ai-policy.json',
               'build/report-frontier.json',
               'build/scout-report.md',
