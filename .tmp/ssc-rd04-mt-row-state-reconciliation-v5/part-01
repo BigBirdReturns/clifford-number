@@ -1,0 +1,45 @@
+          test "$(git rev-parse "$PREVIOUS_PRODUCT^{tree}")" = "$PREVIOUS_PRODUCT_TREE"
+          test "$(git show -s --format='%P' "$PREVIOUS_MERGE")" = "$PREVIOUS_BASE $PREVIOUS_PRODUCT"
+''','previous topology gate')
+marker=r'''          printf '%s\n' "$EXPECTED" > "$OUT/product-paths.txt"'''+"\n"
+delta=r'''          SUPERSESSION_DELTA="$(printf '%s\n' \
+            '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/product-manifest.json' \
+            'test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js' \
+            'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs' | LC_ALL=C sort)"
+          printf '%s\n' "$SUPERSESSION_DELTA" > "$OUT/supersession-delta.txt"
+'''
+one(marker,marker+delta,'supersession delta definition')
+one(
+r'''          while IFS= read -r PRODUCT_PATH; do
+            test "$(git ls-tree "$PRODUCT_COMMIT" -- "$PRODUCT_PATH" | awk '{print $1" "$2}')" = '100644 blob'
+          done <<< "$EXPECTED"
+
+          PROTECTED="$(printf '%s\n%s\n' "$EXPECTED" \
+''',
+r'''          while IFS= read -r PRODUCT_PATH; do
+            test "$(git ls-tree "$PRODUCT_COMMIT" -- "$PRODUCT_PATH" | awk '{print $1" "$2}')" = '100644 blob'
+            test "$(git rev-parse "$BASE_SHA:$PRODUCT_PATH")" = "$(git rev-parse "$PREVIOUS_PRODUCT:$PRODUCT_PATH")"
+          done <<< "$EXPECTED"
+          test "$(git diff --name-only "$PREVIOUS_PRODUCT" "$PRODUCT_COMMIT" | LC_ALL=C sort)" = "$SUPERSESSION_DELTA"
+          test "$(git diff --name-only --diff-filter=M "$PREVIOUS_PRODUCT" "$PRODUCT_COMMIT" | LC_ALL=C sort)" = "$SUPERSESSION_DELTA"
+          test -z "$(git diff --name-only --diff-filter=ADTRCUXB "$PREVIOUS_PRODUCT" "$PRODUCT_COMMIT")"
+
+          PROTECTED="$(printf '%s\n%s\n' "$EXPECTED" \
+''','supersession tree gate')
+one('          if [ "$CANONICAL_PARENT" != "$BASE_SHA" ]; then\n','          if [ "$PREVIOUS_MERGE" != "$BASE_SHA" ]; then\n','history condition')
+one('            git rev-list --first-parent --reverse "$CANONICAL_PARENT..$BASE_SHA" > "$OUT/first-parent-commits.txt"\n','            git rev-list --first-parent --reverse "$PREVIOUS_MERGE..$BASE_SHA" > "$OUT/first-parent-commits.txt"\n','history range')
+one('            PREV="$CANONICAL_PARENT"\n','            PREV="$PREVIOUS_MERGE"\n','history origin')
+one('          for COMMIT in "$VALIDATION_BASE" "$VALIDATION_PRODUCT" "$VALIDATION_MERGE" "$MATRIX_REPAIR_PRODUCT" "$MATRIX_REPAIR_MERGE" "$CANONICAL_PARENT" "$BASE_SHA" "$PRODUCT_COMMIT"; do\n','          for COMMIT in "$VALIDATION_BASE" "$VALIDATION_PRODUCT" "$VALIDATION_MERGE" "$MATRIX_REPAIR_PRODUCT" "$MATRIX_REPAIR_MERGE" "$CANONICAL_PARENT" "$PREVIOUS_BASE" "$PREVIOUS_PRODUCT" "$PREVIOUS_MERGE" "$BASE_SHA" "$PRODUCT_COMMIT"; do\n','predecessor preservation range')
+one(
+r'''          if [ "$EVENT" = push ]; then
+            test "$(git diff --name-only "$BASE_SHA" HEAD | LC_ALL=C sort)" = "$EXPECTED"
+            test "$(git diff --name-only --diff-filter=A "$BASE_SHA" HEAD | LC_ALL=C sort)" = "$EXPECTED"
+            test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$BASE_SHA" HEAD)"
+            while IFS= read -r PRODUCT_PATH; do
+              test "$(git rev-parse "HEAD:$PRODUCT_PATH")" = "$(git rev-parse "$PRODUCT_COMMIT:$PRODUCT_PATH")"
+            done <<< "$EXPECTED"
+          fi
+''',
+r'''          if [ "$EVENT" = push ]; then
+            test "$(git diff --name-only "$BASE_SHA" HEAD | LC_ALL=C sort)" = "$SUPERSESSION_DELTA"

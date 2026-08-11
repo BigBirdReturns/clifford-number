@@ -1,0 +1,67 @@
+set -Eeuo pipefail
+rm -rf "$OUT" "$WORK" && mkdir -p "$OUT" "$WORK"
+printf '%s\n' bootstrap > "$OUT/STAGE"
+printf '%s\n' 1 > "$OUT/EXIT_CODE"
+fail(){ rc=$?; trap - ERR; printf '%s\n' "$rc" > "$OUT/EXIT_CODE"; exit "$rc"; }
+trap fail ERR
+
+test "$(git rev-parse HEAD^)" = "$CARRIER_PARENT"
+EXPECTED_CARRIER="$(printf '%s\n' "$CARRIER_PATH" "$PART_ROOT/part-00" "$PART_ROOT/part-01" "$PART_ROOT/part-02" "$PART_ROOT/part-03" | LC_ALL=C sort)"
+test "$(git diff --name-only "$CARRIER_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_CARRIER"
+test "$(git diff --name-only --diff-filter=A "$CARRIER_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_CARRIER"
+test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CARRIER_PARENT" HEAD)"
+git diff --check "$CARRIER_PARENT" HEAD
+
+git fetch --no-tags --force origin \
+  "+refs/heads/$SOURCE_BRANCH:refs/remotes/origin/source" \
+  "+$SOURCE_LOCK_REF:refs/remotes/origin/source-lock" \
+  '+refs/heads/main:refs/remotes/origin/main'
+test "$(git rev-parse refs/remotes/origin/source)" = "$SOURCE_PRODUCT"
+test "$(git rev-parse refs/remotes/origin/source-lock)" = "$SOURCE_PRODUCT"
+test "$(git show -s --format='%P' "$SOURCE_PRODUCT")" = "$CANONICAL_PARENT"
+test "$(git rev-parse "$SOURCE_PRODUCT^{tree}")" = "$SOURCE_TREE"
+git merge-base --is-ancestor "$PREVIOUS_MERGE" refs/remotes/origin/main
+test -z "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH")"
+test -z "$(git ls-remote --heads origin "$QUALIFIED_PRODUCT_REF")"
+
+printf '%s\n' reconstruct > "$OUT/STAGE"
+git worktree add --detach "$WORK/repo" "$CANONICAL_PARENT"
+cd "$WORK/repo"
+mapfile -t PATHS < <(git show "$SOURCE_PRODUCT:$MANIFEST_PATH" | jq -r '.permanent_paths[]')
+test "${#PATHS[@]}" = 14
+git checkout "$SOURCE_PRODUCT" -- "${PATHS[@]}"
+test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" | LC_ALL=C sort)" = "$(printf '%s\n' "${PATHS[@]}" | LC_ALL=C sort)"
+test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT")"
+
+printf '%s\n' repair > "$OUT/STAGE"
+python - <<'PY'
+import hashlib,json,os
+from pathlib import Path
+root=Path.cwd()
+wf=root/os.environ['WORKFLOW_PATH']
+vp=root/'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs'
+tp=root/'test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js'
+mp=root/os.environ['MANIFEST_PATH']
+
+text=wf.read_text()
+def one(old,new,label):
+    global text
+    c=text.count(old)
+    if c!=1: raise SystemExit(f'{label} denominator {c}')
+    text=text.replace(old,new,1)
+
+one(
+'  CANONICAL_PARENT_TREE: 38023f86bcc27527f9db8da9622bada00b3de542\n',
+'''  CANONICAL_PARENT_TREE: 38023f86bcc27527f9db8da9622bada00b3de542
+  PREVIOUS_BASE: 966ea44274ff0372d3b0fa8e25e18d4e98f0b7cb
+  PREVIOUS_PRODUCT: 30e4f3c17848419790d27826199e37df942c351f
+  PREVIOUS_PRODUCT_TREE: f1a05ffc235228a852387104f1175a882cae0e49
+  PREVIOUS_MERGE: 9510310129c3aab44f8b5b187430a3ede005b7b4
+''','previous topology env')
+one('  QUALIFIED_PRODUCT_REF: refs/heads/lock/ssc-rd04-mt-row-state-reconciliation-v4-qualified\n','  QUALIFIED_PRODUCT_REF: refs/heads/lock/ssc-rd04-mt-row-state-reconciliation-v5-qualified\n','qualified ref')
+one("            printf '%s\\n' 'Promote exact Montana derivative row-state reconciliation v4'\n","            printf '%s\\n' 'Promote topology-aware Montana derivative row-state reconciliation v5'\n",'commit message')
+one(
+'          git merge-base --is-ancestor "$CANONICAL_PARENT" "$BASE_SHA"\n',
+'''          git merge-base --is-ancestor "$CANONICAL_PARENT" "$BASE_SHA"
+          git merge-base --is-ancestor "$PREVIOUS_MERGE" "$BASE_SHA"
+          test "$(git show -s --format='%P' "$PREVIOUS_PRODUCT")" = "$CANONICAL_PARENT"
