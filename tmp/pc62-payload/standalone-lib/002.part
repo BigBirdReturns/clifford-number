@@ -1,0 +1,114 @@
+    if (!Number.isInteger(section?.[key]) || section[key] < 0) errors.push(`${label}.${key} must be a nonnegative integer`);
+  }
+}
+function validateWorld(world, index, errors) {
+  exactKeys(world, WORLD_KEYS, `world ${index}`, errors);
+  validateSection(world.normalization_profile, NORMALIZATION_BOOL, NORMALIZATION_COUNT, `world ${index} normalization`, errors);
+  validateSection(world.implementation_conformance, IMPLEMENTATION_BOOL, IMPLEMENTATION_COUNT, `world ${index} implementation`, errors);
+  validateSection(world.casefold_locale, CASEFOLD_BOOL, CASEFOLD_COUNT, `world ${index} casefold`, errors);
+  validateSection(world.script_policy, SCRIPT_BOOL, SCRIPT_COUNT, `world ${index} script`, errors);
+  validateSection(world.confusable_mapping, CONFUSABLE_BOOL, CONFUSABLE_COUNT, `world ${index} confusable`, errors);
+  validateSection(world.collision_adjudication, COLLISION_BOOL, COLLISION_COUNT, `world ${index} collision`, errors);
+  validateSection(world.lineage, [...LINEAGE_BOOL, 'binding_public_authority'], LINEAGE_COUNT, `world ${index} lineage`, errors);
+  exactKeys(world.expected_flags, FLAG_KEYS, `world ${index} flags`, errors);
+  if (typeof world.world_id !== 'string' || !world.world_id) errors.push(`world ${index} id missing`);
+  if (typeof world.description !== 'string' || !world.description) errors.push(`world ${index} description missing`);
+  if (world.expected_mechanism !== world.world_id) errors.push(`world ${index} mechanism mismatch`);
+  if (stableJson(world.expected_flags) !== stableJson(completeFlags(world))) errors.push(`world ${index} flag ledger mismatch`);
+  const expected = EXPECTED_WORLD_SNAPSHOTS[world.world_id];
+  if (!expected || sha256(world) !== expected) errors.push(`world ${index} frozen state snapshot mismatch`);
+}
+
+export function validateFixture(fixture) {
+  const errors = [];
+  validateCanonicalJsonValue(fixture, 'PC-62 fixture', errors);
+  if (errors.length) return unique(errors);
+  exactKeys(fixture, ROOT_KEYS, 'PC-62 fixture', errors);
+  exactKeys(fixture.baseline, BASELINE_KEYS, 'PC-62 baseline', errors);
+  exactKeys(fixture.interpretation_contract, INTERPRETATION_KEYS, 'PC-62 interpretation', errors);
+  exactKeys(fixture.expected_classification, CLASSIFICATION_KEYS, 'PC-62 classification', errors);
+  if (!Array.isArray(fixture.required_refusal_rules)
+      || stableJson(fixture.required_refusal_rules) !== stableJson(REQUIRED_REFUSAL_RULES)) {
+    errors.push('PC-62 refusal-rule ledger mismatch');
+  }
+  if (!Array.isArray(fixture.worlds) || fixture.worlds.length !== 8) errors.push('PC-62 fixture must contain eight worlds');
+  if (fixture.schema_version !== FIXTURE_SCHEMA_VERSION
+      || fixture.fixture_id !== 'same-linkage-owner-login-status-different-normalization-casefold-confusable-adjudication-states-v1'
+      || fixture.issue !== 1893
+      || fixture.parent_program_issue !== 594) {
+    errors.push('PC-62 fixture identity mismatch');
+  }
+  if (fixture.captured_at !== '2026-08-10' || !isoDate(fixture.captured_at)) errors.push('PC-62 capture date mismatch');
+  if (fixture.status !== 'synthetic_repository_owner_login_normalization_collision_control'
+      || fixture.graph_effect !== 'none'
+      || fixture.counts_toward_thesis_evidence !== false) {
+    errors.push('PC-62 authority/status mismatch');
+  }
+  if (Array.isArray(fixture.worlds)) fixture.worlds.forEach((world, index) => validateWorld(world, index, errors));
+  const ids = Array.isArray(fixture.worlds) ? fixture.worlds.map(world => world.world_id) : [];
+  if (ids.length !== new Set(ids).size) errors.push('PC-62 world ids must be unique');
+  if (sha256(fixture) !== EXPECTED_FIXTURE_SHA256) errors.push(`PC-62 fixture snapshot mismatch: ${sha256(fixture)}`);
+  return unique(errors);
+}
+
+function metrics(worlds) {
+  const sum = (section, key) => worlds.reduce((total, world) => total + world[section][key], 0);
+  return {
+    worlds: worlds.length,
+    public_normalization_collision_signatures: new Set(worlds.map(world => world.public_signature_sha256)).size,
+    normalization_collision_governance_signatures: new Set(worlds.map(world => world.governance_signature_sha256)).size,
+    complete_normalization_collision_assurance_worlds: worlds.filter(world => world.flags.complete_owner_login_normalization_casefold_confusable_collision_assurance).length,
+    normalization_form_unicode_version_substitutions: sum('normalization_profile', 'normalization_form_unicode_version_substitutions'),
+    normalization_implementation_conformance_gaps: sum('implementation_conformance', 'normalization_implementation_conformance_gaps'),
+    casefold_locale_tailoring_substitutions: sum('casefold_locale', 'casefold_locale_tailoring_substitutions'),
+    script_inventory_mixed_script_gaps: sum('script_policy', 'script_inventory_mixed_script_gaps'),
+    confusable_skeleton_substitutions: sum('confusable_mapping', 'confusable_skeleton_substitutions'),
+    collision_candidate_set_gaps: sum('collision_adjudication', 'collision_candidate_set_gaps'),
+    collision_adjudication_appeal_gaps: sum('collision_adjudication', 'collision_adjudication_appeal_gaps'),
+    unreconciled_normalization_collision_decisions: sum('lineage', 'unreconciled_normalization_collision_decisions'),
+    stale_normalization_collision_decisions: sum('lineage', 'stale_normalization_collision_decisions'),
+    unsupported_normalization_collision_decisions: sum('lineage', 'unsupported_normalization_collision_decisions'),
+    binding_public_authority_worlds: worlds.filter(world => world.lineage.binding_public_authority).length
+  };
+}
+function seal(event, previous_event_sha256) {
+  const unsigned = { ...canonicalize(event), previous_event_sha256 };
+  return { ...unsigned, event_sha256: sha256(unsigned) };
+}
+
+export function compileFixture(fixture) {
+  const errors = validateFixture(fixture);
+  if (errors.length) throw new Error(errors.join('; '));
+  const snapshot = structuredClone(fixture);
+  const publicSignature = sha256(snapshot.baseline);
+  const worlds = snapshot.worlds.map(world => ({
+    world_id: world.world_id,
+    description: world.description,
+    public_signature_sha256: publicSignature,
+    governance_signature_sha256: sha256({
+      normalization_profile: world.normalization_profile,
+      implementation_conformance: world.implementation_conformance,
+      casefold_locale: world.casefold_locale,
+      script_policy: world.script_policy,
+      confusable_mapping: world.confusable_mapping,
+      collision_adjudication: world.collision_adjudication,
+      lineage: world.lineage
+    }),
+    normalization_profile: world.normalization_profile,
+    implementation_conformance: world.implementation_conformance,
+    casefold_locale: world.casefold_locale,
+    script_policy: world.script_policy,
+    confusable_mapping: world.confusable_mapping,
+    collision_adjudication: world.collision_adjudication,
+    lineage: world.lineage,
+    mechanism: world.expected_mechanism,
+    flags: world.expected_flags
+  }));
+  const compiledMetrics = metrics(worlds);
+  const chain = [];
+  chain.push(seal({ event: 'fixture_bound', fixture_id: snapshot.fixture_id, fixture_snapshot_sha256: sha256(snapshot) }, null));
+  chain.push(seal({ event: 'public_surface_bound', public_surface_sha256: sha256(snapshot.baseline), world_count: worlds.length }, chain.at(-1).event_sha256));
+  chain.push(seal({ event: 'normalization_collision_states_bound', world_state_sha256: sha256(worlds.map(world => ({ world_id: world.world_id, governance_signature_sha256: world.governance_signature_sha256 }))) }, chain.at(-1).event_sha256));
+  chain.push(seal({ event: 'metrics_and_refusals_bound', metrics_sha256: sha256(compiledMetrics), refusal_rules_sha256: sha256(snapshot.required_refusal_rules) }, chain.at(-1).event_sha256));
+  chain.push(seal({ event: 'interpretation_sealed', interpretation_sha256: sha256(snapshot.interpretation_contract), graph_effect: 'none', binding_public_authority: false }, chain.at(-1).event_sha256));
+  return {
