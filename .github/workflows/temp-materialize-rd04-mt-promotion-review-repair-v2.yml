@@ -54,6 +54,58 @@ jobs:
           raise 'HEAD_SHA assignment remains ambiguous' unless program.scan(/^[ \t]*HEAD_SHA=/).length == 1
           raise 'BASE_SHA assignment remains ambiguous' unless program.scan(/^[ \t]*BASE_SHA=/).length == 1
 
+          needle = %q{printf '%s\n' create-remote-object > "$OUT/STAGE"}
+          cut = program.index(needle)
+          raise 'remote-object marker absent' unless cut
+          program = program[0...cut]
+          program << <<'BASH'
+          printf '%s\n' archive-qualified-local-object > "$OUT/STAGE"
+          export LOCAL_PRODUCT_COMMIT LOCAL_PRODUCT_TREE HEAD_SHA BASE_SHA
+          mkdir -p "$OUT/product"
+          git archive --format=tar HEAD "${PATHS[@]}" | tar -xf - -C "$OUT/product"
+          printf '%s\n' "${PATHS[@]}" > "$OUT/product-paths.txt"
+          git show -s --format='%H%n%P%n%T%n%an%n%ae%n%aI%n%cn%n%ce%n%cI%n%B' HEAD > "$OUT/local-product-commit.txt"
+          git cat-file -p "$LOCAL_PRODUCT_COMMIT" > "$OUT/local-product-commit-object.txt"
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+
+          root = Path.cwd()
+          out = Path(os.environ['OUT'])
+          manifest = json.load(open(os.environ['MANIFEST_PATH']))
+          receipt = {
+              'state': 'qualified_local_product_object_built',
+              'canonical_parent': os.environ['CANONICAL_PARENT'],
+              'canonical_parent_tree': os.environ['CANONICAL_PARENT_TREE'],
+              'source_product': os.environ['SOURCE_PRODUCT'],
+              'carrier_head': os.environ['CARRIER_HEAD'],
+              'materializer_head': os.environ['HEAD_SHA'],
+              'live_main_at_construction': os.environ['BASE_SHA'],
+              'local_product_commit': os.environ['LOCAL_PRODUCT_COMMIT'],
+              'product_tree': os.environ['LOCAL_PRODUCT_TREE'],
+              'workflow_sha256': hashlib.sha256((root / os.environ['PRODUCT_WORKFLOW']).read_bytes()).hexdigest(),
+              'schema_sha256': hashlib.sha256((root / os.environ['SCHEMA_PATH']).read_bytes()).hexdigest(),
+              'manifest_sha256': hashlib.sha256((root / os.environ['MANIFEST_PATH']).read_bytes()).hexdigest(),
+              'combined_sha256': manifest['combined_sha256'],
+              'permanent_path_count': len(manifest['permanent_paths']),
+              'hashed_file_count': len(manifest['hashed_files']),
+              'schema_negative_refusals': 10,
+              'empty_schema_nodes': 0,
+              'manifest_paths_exact': 13,
+              'remote_ref_updates': 0,
+              'source_requests': 0,
+              'route_executions': 0,
+              'canonical_effects': 0,
+              'outside_human_dependency': False,
+          }
+          if receipt['permanent_path_count'] != 14 or receipt['hashed_file_count'] != 13:
+              raise SystemExit('qualified product denominator drift')
+          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          PY
+          printf '%s\n' complete > "$OUT/STAGE"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+          BASH
+
           exports = environment.reject { |key, _| key == 'GH_TOKEN' }.map do |key, value|
             "export #{key}=#{Shellwords.shellescape(value.to_s)}"
           end
