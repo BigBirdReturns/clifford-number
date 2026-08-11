@@ -37,7 +37,11 @@ jobs:
           rm -rf "$OUT"
           mkdir -p "$OUT"
 
-          gh api --method GET "/repos/$GH_REPOSITORY/contents/$TARGET_PATH" -f ref="$TARGET_BRANCH" > "$OUT/content-before.json"
+          gh api "/repos/$GH_REPOSITORY/git/ref/heads/$TARGET_BRANCH" > "$OUT/ref-before.json"
+          branch_head=$(jq -r .object.sha "$OUT/ref-before.json")
+          test "$branch_head" = '${{ github.event.pull_request.head.sha }}'
+
+          gh api --method GET "/repos/$GH_REPOSITORY/contents/$TARGET_PATH" -f ref="$branch_head" > "$OUT/content-before.json"
           before_blob=$(jq -r .sha "$OUT/content-before.json")
           jq -r .content "$OUT/content-before.json" | tr -d '\n' | base64 -d > "$OUT/before.yml"
           test "$(git hash-object "$OUT/before.yml")" = "$before_blob"
@@ -47,7 +51,7 @@ jobs:
           if grep -Fqx "$repaired" "$OUT/before.yml"; then
             test "$(grep -Fxc "$repaired" "$OUT/before.yml")" = 1
             test "$(grep -Fxc '          git worktree prune' "$OUT/before.yml")" = 1
-            jq -n --arg schema_version 'pc61-v5-worktree-registration-repair@1' --arg status already_repaired --arg branch "$TARGET_BRANCH" --arg path "$TARGET_PATH" --arg blob "$before_blob" '{schema_version:$schema_version,status:$status,target_branch:$branch,target_path:$path,current_blob:$blob,changed:false,product_semantics_changed:false,admission_gates_weakened:false,graph_effect:"none"}' > "$OUT/receipt.json"
+            jq -n --arg schema_version 'pc61-v5-worktree-registration-repair@2' --arg status already_repaired --arg branch "$TARGET_BRANCH" --arg path "$TARGET_PATH" --arg blob "$before_blob" --arg head "$branch_head" '{schema_version:$schema_version,status:$status,target_branch:$branch,target_path:$path,current_blob:$blob,current_head:$head,changed:false,product_semantics_changed:false,admission_gates_weakened:false,graph_effect:"none"}' > "$OUT/receipt.json"
           else
             test "$before_blob" = "$EXPECTED_BLOB"
             test "$(grep -Fxc "$old" "$OUT/before.yml")" = 1
@@ -81,15 +85,30 @@ jobs:
 
             after_blob=$(git hash-object "$OUT/after.yml")
             encoded=$(base64 -w0 "$OUT/after.yml")
-            gh api --method PUT "/repos/$GH_REPOSITORY/contents/$TARGET_PATH" \
-              -f message='Repair PC-61 v5 replay worktree registration' \
-              -f content="$encoded" \
-              -f sha="$before_blob" \
-              -f branch="$TARGET_BRANCH" > "$OUT/update-response.json"
-            test "$(jq -r .content.sha "$OUT/update-response.json")" = "$after_blob"
-            commit=$(jq -r .commit.sha "$OUT/update-response.json")
-            test -n "$commit"
-            jq -n --arg schema_version 'pc61-v5-worktree-registration-repair@1' --arg status repaired --arg branch "$TARGET_BRANCH" --arg path "$TARGET_PATH" --arg before "$before_blob" --arg after "$after_blob" --arg commit "$commit" '{schema_version:$schema_version,status:$status,target_branch:$branch,target_path:$path,before_blob:$before,after_blob:$after,repair_commit:$commit,changed:true,change_denominator:{lines_removed:0,lines_added:2,worktree_unregister_added:1,worktree_prune_added:1},product_semantics_changed:false,admission_gates_weakened:false,graph_effect:"none"}' > "$OUT/receipt.json"
+            gh api --method POST "/repos/$GH_REPOSITORY/git/blobs" \
+              -f content="$encoded" -f encoding=base64 > "$OUT/blob-response.json"
+            test "$(jq -r .sha "$OUT/blob-response.json")" = "$after_blob"
+
+            gh api "/repos/$GH_REPOSITORY/git/commits/$branch_head" > "$OUT/commit-before.json"
+            base_tree=$(jq -r .tree.sha "$OUT/commit-before.json")
+            test -n "$base_tree"
+            jq -n --arg base "$base_tree" --arg path "$TARGET_PATH" --arg blob "$after_blob" \
+              '{base_tree:$base,tree:[{path:$path,mode:"100644",type:"blob",sha:$blob}]}' > "$OUT/tree-request.json"
+            gh api --method POST "/repos/$GH_REPOSITORY/git/trees" --input "$OUT/tree-request.json" > "$OUT/tree-response.json"
+            new_tree=$(jq -r .sha "$OUT/tree-response.json")
+            test -n "$new_tree"
+
+            jq -n --arg message 'Repair PC-61 v5 replay worktree registration' --arg tree "$new_tree" --arg parent "$branch_head" \
+              '{message:$message,tree:$tree,parents:[$parent]}' > "$OUT/commit-request.json"
+            gh api --method POST "/repos/$GH_REPOSITORY/git/commits" --input "$OUT/commit-request.json" > "$OUT/commit-response.json"
+            repair_commit=$(jq -r .sha "$OUT/commit-response.json")
+            test -n "$repair_commit"
+
+            gh api --method PATCH "/repos/$GH_REPOSITORY/git/refs/heads/$TARGET_BRANCH" \
+              -f sha="$repair_commit" -F force=false > "$OUT/ref-after.json"
+            test "$(jq -r .object.sha "$OUT/ref-after.json")" = "$repair_commit"
+
+            jq -n --arg schema_version 'pc61-v5-worktree-registration-repair@2' --arg status repaired --arg branch "$TARGET_BRANCH" --arg path "$TARGET_PATH" --arg before "$before_blob" --arg after "$after_blob" --arg parent "$branch_head" --arg tree "$new_tree" --arg commit "$repair_commit" '{schema_version:$schema_version,status:$status,target_branch:$branch,target_path:$path,before_blob:$before,after_blob:$after,parent_commit:$parent,repair_tree:$tree,repair_commit:$commit,changed:true,change_denominator:{lines_removed:0,lines_added:2,worktree_unregister_added:1,worktree_prune_added:1},ref_update:{force:false,fast_forward:true},product_semantics_changed:false,admission_gates_weakened:false,graph_effect:"none"}' > "$OUT/receipt.json"
           fi
 
           (
