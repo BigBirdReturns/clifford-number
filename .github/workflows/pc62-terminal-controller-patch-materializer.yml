@@ -26,6 +26,8 @@ env:
   FINAL_CONTROLLER_BYTES: '36236'
   FINAL_PRODUCT: 6c2ffff2b1768f766a84a4bd37f9c1a9ab7827cd
   FINAL_PRODUCT_TREE: 0a6ebb735cfb7670a65da26c148306ece9fcc0c3
+  RECONCILE_BRANCH: agent/pc62-terminal-reconcile-v1
+  RECONCILE_PATH: .github/workflows/pc62-terminal-reconciler.yml
 
 jobs:
   materialize:
@@ -84,6 +86,55 @@ jobs:
             find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
             sha256sum -c SHA256SUMS
           )
+      - name: Publish exact one-file terminal reconciler over live main
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          test "$(git hash-object "$OUT/final-controller.yml")" = "$FINAL_CONTROLLER_BLOB"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          LIVE_MAIN=$(git rev-parse origin/main)
+          LIVE_TREE=$(git rev-parse "$LIVE_MAIN^{tree}")
+
+          jq -n \
+            --arg base_tree "$LIVE_TREE" \
+            --arg path "$RECONCILE_PATH" \
+            --arg sha "$FINAL_CONTROLLER_BLOB" \
+            '{base_tree:$base_tree,tree:[{path:$path,mode:"100644",type:"blob",sha:$sha}]}' > "$OUT/tree-request.json"
+          gh api --method POST "/repos/$GH_REPOSITORY/git/trees" --input "$OUT/tree-request.json" > "$OUT/tree-response.json"
+          RECONCILE_TREE=$(jq -r .sha "$OUT/tree-response.json")
+          test -n "$RECONCILE_TREE"
+
+          jq -n \
+            --arg message 'Run exact PC-62 terminal reconciliation' \
+            --arg tree "$RECONCILE_TREE" \
+            --arg parent "$LIVE_MAIN" \
+            '{message:$message,tree:$tree,parents:[$parent]}' > "$OUT/commit-request.json"
+          gh api --method POST "/repos/$GH_REPOSITORY/git/commits" --input "$OUT/commit-request.json" > "$OUT/commit-response.json"
+          RECONCILE_COMMIT=$(jq -r .sha "$OUT/commit-response.json")
+          test -n "$RECONCILE_COMMIT"
+
+          if gh api "/repos/$GH_REPOSITORY/git/ref/heads/$RECONCILE_BRANCH" > "$OUT/ref-before.json" 2>/dev/null; then
+            gh api --method PATCH "/repos/$GH_REPOSITORY/git/refs/heads/$RECONCILE_BRANCH" -f sha="$RECONCILE_COMMIT" -F force=true > "$OUT/ref-response.json"
+          else
+            gh api --method POST "/repos/$GH_REPOSITORY/git/refs" -f ref="refs/heads/$RECONCILE_BRANCH" -f sha="$RECONCILE_COMMIT" > "$OUT/ref-response.json"
+          fi
+          test "$(jq -r .object.sha "$OUT/ref-response.json")" = "$RECONCILE_COMMIT"
+          test "$(gh api "/repos/$GH_REPOSITORY/git/ref/heads/$RECONCILE_BRANCH" --jq .object.sha)" = "$RECONCILE_COMMIT"
+
+          git fetch --no-tags origin "$RECONCILE_COMMIT"
+          test "$(git show -s --format='%P' "$RECONCILE_COMMIT")" = "$LIVE_MAIN"
+          test "$(git rev-parse "$RECONCILE_COMMIT:$RECONCILE_PATH")" = "$FINAL_CONTROLLER_BLOB"
+          test "$(git diff --name-status "$LIVE_MAIN" "$RECONCILE_COMMIT")" = $'A\t'"$RECONCILE_PATH"
+          jq -n \
+            --arg live_main "$LIVE_MAIN" \
+            --arg reconcile_commit "$RECONCILE_COMMIT" \
+            --arg reconcile_tree "$RECONCILE_TREE" \
+            --arg reconcile_branch "$RECONCILE_BRANCH" \
+            --arg controller_blob "$FINAL_CONTROLLER_BLOB" \
+            '{schema_version:"pc62-terminal-controller-publication@1",status:"complete",live_main:$live_main,reconcile_commit:$reconcile_commit,reconcile_tree:$reconcile_tree,reconcile_branch:$reconcile_branch,controller_blob:$controller_blob,permanent_paths:0,merge_operations:0,product_semantics_changed:false,graph_effect:"none"}' > "$OUT/publication.json"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+
       - name: Upload controller patch materialization receipt
         uses: actions/upload-artifact@v4
         with:
