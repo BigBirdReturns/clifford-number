@@ -1,0 +1,104 @@
+import { createHash } from 'node:crypto';
+import { types as nodeTypes } from 'node:util';
+
+export const BUILD_SCHEMA_VERSION = 'preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance-build@1';
+export const FIXTURE_SCHEMA_VERSION = 'preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance-fixture@1';
+export const REQUIRED_REFUSAL_RULES = Object.freeze([
+  'one_normalized_string_is_not_normalization_form_unicode_data_version_implementation_decomposition_combining_class_composition_exclusion_recomposition_quick_check_idempotence_and_equivalence_class_custody',
+  'one_case_insensitive_comparison_is_not_full_simple_casefold_locale_tailoring_turkic_final_sigma_dotted_dotless_i_display_case_and_canonical_case_custody',
+  'one_script_label_is_not_script_extensions_mixed_script_allowed_script_set_and_restricted_identifier_profile_custody',
+  'one_confusable_skeleton_is_not_algorithm_version_mapping_table_normalization_order_whole_script_mixed_script_candidate_universe_and_collision_set_custody',
+  'one_collision_disposition_is_not_adjudicator_identity_authority_evidence_rejected_candidate_exception_expiration_and_appeal_custody',
+  'matching_repository_replays_are_not_proof_that_the_same_unicode_data_normalization_implementation_locale_script_skeleton_candidate_universe_and_adjudication_policy_were_used',
+  'historical_normalization_collision_assurance_is_not_current_after_unicode_data_algorithm_implementation_locale_script_skeleton_collision_policy_adjudicator_exception_correction_release_or_use_succession',
+  'normalization_or_collision_failure_is_not_proof_of_ownership_transfer_impersonation_compromise_misconduct_coordination_common_purpose_intent_or_graph_linkage',
+  'binding_public_authority_requires_separate_current_public_authorization_receipts',
+  'synthetic_normalization_collision_burdens_are_not_real_world_defect_prevalence_causal_effect_ownership_compromise_or_institutional_performance_estimates'
+]);
+
+const EXPECTED_FIXTURE_SHA256 = 'c2bba8d5fb8158f47b9d7907fa0a7c782df6ee5f9cfd3a2f8941842a4e0cf075';
+const EXPECTED_WORLD_SNAPSHOTS = Object.freeze({
+  complete_owner_login_normalization_casefold_confusable_collision_assurance: '5ee90500ebd083c568cede846fe399462a370d9c919c7a51bc842e515afaea1e',
+  normalization_form_or_unicode_data_version_substitution: 'f1e2b50d71532c9a7b9e93a700a822bb4a8b16d99f5ff7023c76bee62f02615d',
+  normalization_implementation_conformance_gap: '70e2fc0284b82e743536852910bb57cf61764923b6af22676cadd13e9f54b2b4',
+  casefold_locale_tailoring_substitution: 'cee7b1f60cec167805ebaed134f833965d4d98515e65c3f0f9ae5b059d50be2b',
+  script_inventory_or_mixed_script_policy_gap: 'e4cdea4bb2f6c1fd8a86c60faef4663475801d48c4d996d56d384c95704f90df',
+  confusable_skeleton_mapping_substitution: 'f7350fada23ea2b4a394a155dbb3c69e1dc5e3e7a5fdd6c6b1e518bc6cb9c312',
+  collision_candidate_set_or_adjudication_gap: 'cd81d1c71712607465f8cd993f002f4a0c358bc603b54ab5e14ec06d7c274eae',
+  historical_normalization_collision_assurance_inherited_after_succession: 'bd98b8737b4a654c6ccb6ce5b9b202d99e6bb4a4c0fc3a5057337ee773baaddc'
+});
+
+const ROOT_KEYS = Object.freeze([
+  'schema_version', 'fixture_id', 'issue', 'parent_program_issue', 'captured_at',
+  'status', 'graph_effect', 'counts_toward_thesis_evidence', 'baseline',
+  'interpretation_contract', 'required_refusal_rules', 'expected_classification', 'worlds'
+]);
+const BASELINE_KEYS = Object.freeze([
+  'operative_release', 'published_candidate_pairs', 'published_interval_bearing_pairs',
+  'published_nominal_coverage', 'published_empirical_coverage', 'published_interval_misses',
+  'published_mean_interval_width', 'public_repository_status', 'public_owner_status',
+  'public_owner_login_status', 'public_owner_unicode_status', 'public_owner_confusable_status',
+  'public_owner_collision_status', 'public_immutable_owner_id_status',
+  'published_repository_replays', 'published_matching_repository_replays', 'approved_use'
+]);
+const INTERPRETATION_KEYS = Object.freeze(['what_this_is', 'what_this_is_not', 'copy_ready_caveat']);
+const CLASSIFICATION_KEYS = Object.freeze([
+  'public_unicode_badge_identifies_complete_normalization_implementation',
+  'public_confusable_badge_identifies_complete_skeleton_mapping',
+  'public_collision_badge_identifies_complete_candidate_set_and_adjudication',
+  'one_normalized_output_identifies_canonical_equivalence_class',
+  'one_casefolded_output_identifies_locale_policy',
+  'one_confusable_skeleton_identifies_complete_collision_universe',
+  'matching_repository_replays_establish_current_normalization_collision_assurance',
+  'ownership_established', 'impersonation_established', 'security_compromise_established',
+  'graph_effect_present', 'binding_public_authority_present',
+  'complete_owner_login_normalization_casefold_confusable_collision_assurance_supported_in_at_least_one_world'
+]);
+const WORLD_KEYS = Object.freeze([
+  'world_id', 'description', 'normalization_profile', 'implementation_conformance',
+  'casefold_locale', 'script_policy', 'confusable_mapping', 'collision_adjudication',
+  'lineage', 'expected_mechanism', 'expected_flags'
+]);
+
+const NORMALIZATION_BOOL = Object.freeze([
+  'observed_login_literal_bound', 'login_utf8_bytes_bound', 'login_unicode_codepoints_bound',
+  'unicode_scalar_value_validity_bound', 'normalization_form_bound', 'unicode_data_version_bound',
+  'normalized_output_identity_bound', 'normalized_equivalence_class_identity_bound',
+  'immutable_numeric_owner_id_bound', 'owner_node_id_bound', 'owner_database_id_consistency_bound'
+]);
+const NORMALIZATION_COUNT = Object.freeze(['normalization_form_unicode_version_substitutions']);
+const IMPLEMENTATION_BOOL = Object.freeze([
+  'normalization_algorithm_identity_bound', 'normalization_algorithm_version_bound',
+  'normalization_implementation_identity_bound', 'normalization_implementation_version_bound',
+  'canonical_decomposition_table_bound', 'compatibility_decomposition_policy_bound',
+  'canonical_combining_class_table_bound', 'composition_exclusion_table_bound',
+  'recomposition_policy_bound', 'normalization_quick_check_policy_bound',
+  'stream_safe_text_policy_bound', 'normalization_idempotence_checked', 'canonical_ordering_checked'
+]);
+const IMPLEMENTATION_COUNT = Object.freeze(['normalization_implementation_conformance_gaps']);
+const CASEFOLD_BOOL = Object.freeze([
+  'casefold_algorithm_identity_bound', 'casefold_algorithm_version_bound', 'casefold_mode_bound',
+  'casefold_unicode_data_version_bound', 'casefold_locale_policy_bound', 'locale_tailoring_table_bound',
+  'turkic_casefold_policy_bound', 'final_sigma_policy_bound', 'dotted_dotless_i_policy_bound',
+  'display_case_bound', 'canonical_case_bound'
+]);
+const CASEFOLD_COUNT = Object.freeze(['casefold_locale_tailoring_substitutions']);
+const SCRIPT_BOOL = Object.freeze([
+  'script_inventory_bound', 'script_extensions_inventory_bound', 'mixed_script_policy_bound',
+  'allowed_script_set_bound', 'restricted_identifier_profile_bound'
+]);
+const SCRIPT_COUNT = Object.freeze(['script_inventory_mixed_script_gaps']);
+const CONFUSABLE_BOOL = Object.freeze([
+  'confusable_skeleton_bound', 'confusable_algorithm_identity_bound',
+  'confusable_algorithm_version_bound', 'confusables_data_version_bound',
+  'skeleton_mapping_table_bound', 'skeleton_normalization_order_bound',
+  'whole_script_confusable_policy_bound', 'mixed_script_confusable_policy_bound'
+]);
+const CONFUSABLE_COUNT = Object.freeze(['confusable_skeleton_substitutions']);
+const COLLISION_BOOL = Object.freeze([
+  'confusable_candidate_universe_bound', 'collision_set_bound', 'collision_detection_time_bound',
+  'collision_adjudication_identity_bound', 'collision_adjudicator_authority_bound',
+  'collision_evidence_ledger_bound', 'rejected_collision_candidates_bound',
+  'accepted_collision_exception_bound', 'collision_exception_expiration_bound',
+  'collision_appeal_process_bound'
+]);
