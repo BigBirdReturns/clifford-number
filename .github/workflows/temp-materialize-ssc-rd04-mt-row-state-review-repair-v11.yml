@@ -1,0 +1,303 @@
+name: TEMP materialize Montana row-state review repair v11
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-mt-row-state-review-repair-v11.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-rd04-mt-row-state-review-repair-v11
+  cancel-in-progress: false
+
+env:
+  SOURCE_PRODUCT: 85fad4f736a3639444edd2c522a67316dbade480
+  SOURCE_CARRIER_BRANCH: agent/ssc-rd04-mt-row-state-review-repair-materializer-v1
+  SOURCE_CARRIER_COMMIT: 3d576b154fad26a1bd87ca6b70300183f97673ec
+  SOURCE_CARRIER_BLOB: cdbe6947307487a52a9f98f059cfaa7a05a2ecb4
+  SOURCE_CARRIER_PATH: .github/workflows/temp-materialize-ssc-rd04-mt-row-state-review-repair-v1.yml
+  CANONICAL_PARENT: 0840358962621b0be3db6864ecec763327f35903
+  TARGET_BRANCH: agent/ssc-rd04-mt-row-state-reconciliation-v2
+  CARRIER_PATH: .github/workflows/temp-materialize-ssc-rd04-mt-row-state-review-repair-v11.yml
+  PRODUCT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation
+  SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/product-manifest.json
+  OUT: /tmp/ssc-rd04-mt-row-state-review-repair-v1
+  WORK: /tmp/ssc-rd04-mt-row-state-review-repair-work-v1
+  WRAPPER_OUT: /tmp/ssc-rd04-mt-row-state-review-repair-wrapper-v11
+  PRODUCT_AUTHOR_NAME: github-actions[bot]
+  PRODUCT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+  PRODUCT_AUTHOR_DATE: '2026-08-10T19:00:00+00:00'
+  PRODUCT_COMMITTER_NAME: github-actions[bot]
+  PRODUCT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+  PRODUCT_COMMITTER_DATE: '2026-08-10T19:00:00+00:00'
+  PRODUCT_MESSAGE: Promote exact Montana derivative row-state reconciliation v2
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-mt-row-state-review-repair-materializer-v11'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned validators
+        run: python -m pip install --disable-pip-version-check jsonschema==4.25.1
+
+      - name: Execute immutable review-repair materializer with exact transport fixes
+        id: materialize
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$WRAPPER_OUT" "$OUT" "$WORK" /tmp/source-carrier.yml /tmp/materialize.sh /tmp/materializer-console.log
+          mkdir -p "$WRAPPER_OUT"
+          printf '%s\n' wrapper-bootstrap > "$WRAPPER_OUT/STAGE"
+          printf '%s\n' 1 > "$WRAPPER_OUT/EXIT_CODE"
+          stage() { printf '%s\n' "$1" > "$WRAPPER_OUT/STAGE"; }
+          capture() {
+            if [ -f /tmp/source-carrier.yml ]; then cp /tmp/source-carrier.yml "$WRAPPER_OUT/source-carrier.yml"; fi
+            if [ -f /tmp/materialize.sh ]; then cp /tmp/materialize.sh "$WRAPPER_OUT/materialize.sh"; fi
+            if [ -f /tmp/materializer-console.log ]; then cp /tmp/materializer-console.log "$WRAPPER_OUT/materializer-console.log"; fi
+            rm -rf "$WRAPPER_OUT/materializer-out"
+            if [ -d "$OUT" ]; then mkdir -p "$WRAPPER_OUT/materializer-out"; cp -a "$OUT"/. "$WRAPPER_OUT/materializer-out"/ || true; fi
+          }
+          fail() {
+            local rc=$?
+            trap - ERR
+            printf '%s\n' "$rc" > "$WRAPPER_OUT/EXIT_CODE"
+            capture
+            (cd "$WRAPPER_OUT" && find . -type f ! -path './SHA256SUMS' -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS) || true
+            exit "$rc"
+          }
+          trap fail ERR
+
+          stage authenticate-wrapper-and-source
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"
+          test "$(git diff --name-only "$CANONICAL_PARENT" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD)" = "$CARRIER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" HEAD)"
+          git diff --check "$CANONICAL_PARENT" HEAD
+          git fetch --no-tags --force origin \
+            "+refs/heads/$SOURCE_CARRIER_BRANCH:refs/remotes/origin/source-carrier" \
+            '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/source-carrier)" = "$SOURCE_CARRIER_COMMIT"
+          test "$(git show -s --format='%P' "$SOURCE_CARRIER_COMMIT")" = "$SOURCE_PRODUCT"
+          test "$(git show -s --format='%P' "$SOURCE_PRODUCT")" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "$SOURCE_CARRIER_COMMIT:$SOURCE_CARRIER_PATH")" = "$SOURCE_CARRIER_BLOB"
+          git merge-base --is-ancestor "$CANONICAL_PARENT" origin/main
+          test -z "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH")"
+          git show "$SOURCE_CARRIER_COMMIT:$SOURCE_CARRIER_PATH" > /tmp/source-carrier.yml
+          test "$(git hash-object /tmp/source-carrier.yml)" = "$SOURCE_CARRIER_BLOB"
+          printf '%s\n' "$SOURCE_CARRIER_COMMIT" > "$WRAPPER_OUT/source-carrier-commit.txt"
+          printf '%s\n' "$SOURCE_CARRIER_BLOB" > "$WRAPPER_OUT/source-carrier-blob.txt"
+          sha256sum /tmp/source-carrier.yml > "$WRAPPER_OUT/source-carrier.sha256"
+
+          stage extract-sealed-program
+          python - /tmp/source-carrier.yml /tmp/materialize.sh "$WRAPPER_OUT/extraction-receipt.json" <<'PYEXTRACT'
+          from pathlib import Path
+          import hashlib, json, sys
+          src,out,receipt=map(Path,sys.argv[1:])
+          text=src.read_text(encoding='utf-8')
+          start="      - name: Authenticate carrier and materialize repaired sole-parent product\n"
+          end="      - name: Preserve repair materialization receipt\n"
+          if text.count(start)!=1 or text.count(end)!=1:
+              raise SystemExit(f'materializer marker denominator start={text.count(start)} end={text.count(end)}')
+          section=text.split(start,1)[1].split(end,1)[0]
+          run_marker="        run: |\n"
+          if section.count(run_marker)!=1:
+              raise SystemExit(f'run marker denominator {section.count(run_marker)}')
+          raw=section.split(run_marker,1)[1]
+          lines=raw.splitlines()
+          body=[]
+          legacy_unindented=[]
+          for lineno,line in enumerate(lines,1):
+              if not line:
+                  body.append('')
+              elif line.startswith('          '):
+                  body.append(line[10:])
+              elif line == "'''":
+                  legacy_unindented.append((lineno,line))
+                  body.append(line)
+              else:
+                  raise SystemExit(f'run block indentation mismatch line {lineno}: {line!r}')
+          if legacy_unindented != [(46,"'''")]:
+              raise SystemExit(f'legacy unindented denominator mismatch: {legacy_unindented!r}')
+          program='\n'.join(body)+'\n'
+          if program.count('set -Eeuo pipefail')!=1 or program.count('qualified_repaired_product_published')!=1:
+              raise SystemExit('extracted program authentication markers absent or nonunique')
+          out.write_text(program,encoding='utf-8')
+          value={
+              'schema_version':'ssc-rd04-mt-row-state-review-repair-extraction@2',
+              'state':'immutable_marker_bounded_extraction_complete',
+              'source_bytes':len(text.encode()),
+              'source_sha256':hashlib.sha256(text.encode()).hexdigest(),
+              'program_bytes':len(program.encode()),
+              'program_sha256':hashlib.sha256(program.encode()).hexdigest(),
+              'legacy_unindented_lines':[{'line':n,'text':v} for n,v in legacy_unindented],
+          }
+          receipt.write_text(json.dumps(value,indent=2,sort_keys=True)+'\n')
+          PYEXTRACT
+
+          stage apply-exact-transport-repairs
+          python - /tmp/materialize.sh "$WRAPPER_OUT/patch-receipt.json" <<'PYPATCH'
+          from pathlib import Path
+          import hashlib, json, sys
+          p,receipt=map(Path,sys.argv[1:])
+          before=p.read_text(encoding='utf-8')
+          s=before
+          preflight={
+            'test "$(git rev-parse HEAD^)" = "$SOURCE_PRODUCT"':'test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"',
+            'test "$(git diff --name-only "$SOURCE_PRODUCT" HEAD)" = "$CARRIER_PATH"':'test "$(git diff --name-only "$CANONICAL_PARENT" HEAD)" = "$CARRIER_PATH"',
+            'test "$(git diff --name-only --diff-filter=A "$SOURCE_PRODUCT" HEAD)" = "$CARRIER_PATH"':'test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD)" = "$CARRIER_PATH"',
+            'test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$SOURCE_PRODUCT" HEAD)"':'test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" HEAD)"',
+            'git diff --check "$SOURCE_PRODUCT" HEAD':'git diff --check "$CANONICAL_PARENT" HEAD',
+          }
+          for old,new in preflight.items():
+              if s.count(old)!=1:
+                  raise SystemExit(f'preflight replacement denominator for {old!r}: {s.count(old)}')
+              s=s.replace(old,new,1)
+
+          first="checks='''          test \"$(git show -s --format='%an' \"$PRODUCT_COMMIT\")\" = 'github-actions[bot]'"
+          if s.count(first)!=1:
+              raise SystemExit(f'commit-check anchor denominator {s.count(first)}')
+          trailing_checks=[
+              'test "$(git show -s --format=\'%ae\' "$PRODUCT_COMMIT")" = \'41898282+github-actions[bot]@users.noreply.github.com\'',
+              'test "$(git show -s --format=\'%aI\' "$PRODUCT_COMMIT")" = \'2026-08-10T19:00:00+00:00\'',
+              'test "$(git show -s --format=\'%cn\' "$PRODUCT_COMMIT")" = \'github-actions[bot]\'',
+              'test "$(git show -s --format=\'%ce\' "$PRODUCT_COMMIT")" = \'41898282+github-actions[bot]@users.noreply.github.com\'',
+              'test "$(git show -s --format=\'%cI\' "$PRODUCT_COMMIT")" = \'2026-08-10T19:00:00+00:00\'',
+              'test "$(git show -s --format=\'%B\' "$PRODUCT_COMMIT")" = \'Promote exact Montana derivative row-state reconciliation v2\'',
+          ]
+          for line in trailing_checks:
+              needle='\n'+line+'\n'
+              if s.count(needle)!=1:
+                  raise SystemExit(f'workflow indentation denominator for {line!r}: {s.count(needle)}')
+              s=s.replace(needle,'\n          '+line+'\n',1)
+
+          old_array_guard="if len(vals)==1 and len(vals[0])<=32 and all(kind(x) not in ('array','object') for x in vals[0]):"
+          new_array_guard="if len(vals)==1 and 0 < len(vals[0]) <= 32 and all(kind(x) not in ('array','object') for x in vals[0]):"
+          if s.count(old_array_guard)!=1:
+              raise SystemExit(f'empty-array schema guard denominator {s.count(old_array_guard)}')
+          s=s.replace(old_array_guard,new_array_guard,1)
+
+          old_push='git push origin "HEAD:refs/heads/$TARGET_BRANCH"'
+          new_push='git push --force-with-lease="refs/heads/$TARGET_BRANCH:" origin "HEAD:refs/heads/$TARGET_BRANCH"'
+          if s.count(old_push)!=1:
+              raise SystemExit(f'publication push denominator {s.count(old_push)}')
+          s=s.replace(old_push,new_push,1)
+          p.write_text(s,encoding='utf-8')
+          value={
+              'schema_version':'ssc-rd04-mt-row-state-review-repair-transport-patch@1',
+              'state':'exact_transport_repairs_applied',
+              'before_sha256':hashlib.sha256(before.encode()).hexdigest(),
+              'after_sha256':hashlib.sha256(s.encode()).hexdigest(),
+              'preflight_rebindings':5,
+              'workflow_lines_reindented':6,
+              'destination_absent_lease':True,
+              'schema_empty_array_predicate_repaired':True,
+              'schema_algorithm_repairs':1,
+              'direct_product_bytes_authored_by_wrapper':False,
+          }
+          receipt.write_text(json.dumps(value,indent=2,sort_keys=True)+'\n')
+          PYPATCH
+          bash -n /tmp/materialize.sh
+
+          stage execute-repaired-materializer
+          set +e
+          bash /tmp/materialize.sh > /tmp/materializer-console.log 2>&1
+          rc=$?
+          set -e
+          cat /tmp/materializer-console.log
+          test "$rc" = 0
+          test -f "$OUT/receipt.json"
+          test -s "$OUT/schema-validation.json"
+          test -s "$OUT/release-check.log"
+          jq -e '.state == "closed_generated_document_schemas_validate" and .documents == 8' "$OUT/schema-validation.json" > /dev/null
+          jq -e \
+            '.schema_version == "ssc-rd04-mt-row-state-review-repair-materializer@1" and
+             .state == "qualified_repaired_product_published" and
+             .canonical_parent == "0840358962621b0be3db6864ecec763327f35903" and
+             .source_product == "85fad4f736a3639444edd2c522a67316dbade480" and
+             .target_branch == "agent/ssc-rd04-mt-row-state-reconciliation-v2" and
+             .permanent_paths == 14 and
+             .review_repairs.exact_commit_object_inputs_bound == true and
+             .review_repairs.published_document_schema_closed == true and
+             .matrix_updates == 1 and .row_state_mutations == 1 and .row_terminalizations == 1 and
+             .field_terminalizations == 0 and .class_closed == false and .outside_human_dependency == false' \
+            "$OUT/receipt.json" > /dev/null
+          PRODUCT_COMMIT="$(jq -r '.product_commit' "$OUT/receipt.json")"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$PRODUCT_COMMIT"
+
+          printf '%s\n' complete > "$WRAPPER_OUT/STAGE"
+          printf '%s\n' 0 > "$WRAPPER_OUT/EXIT_CODE"
+          capture
+          (cd "$WRAPPER_OUT" && find . -type f ! -path './SHA256SUMS' -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+          trap - ERR
+
+      - name: Preserve repair materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-review-repair-materializer-v11
+          path: |
+            ${{ env.OUT }}
+            ${{ env.WRAPPER_OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce terminal repaired publication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.materialize.outcome }}" = success
+          test "$(cat "$WRAPPER_OUT/EXIT_CODE")" = 0
+          test "$(cat "$WRAPPER_OUT/STAGE")" = complete
+          (cd "$WRAPPER_OUT" && sha256sum -c SHA256SUMS)
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e \
+            '.state == "exact_transport_repairs_applied" and
+             .preflight_rebindings == 5 and .workflow_lines_reindented == 6 and
+             .destination_absent_lease == true and
+             .schema_empty_array_predicate_repaired == true and .schema_algorithm_repairs == 1 and
+             .direct_product_bytes_authored_by_wrapper == false' \
+            "$WRAPPER_OUT/patch-receipt.json" > /dev/null
+          PRODUCT_COMMIT="$(jq -r '.product_commit' "$OUT/receipt.json")"
+          PRODUCT_TREE="$(jq -r '.product_tree' "$OUT/receipt.json")"
+          test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$PRODUCT_COMMIT"
+          git fetch --no-tags --force origin "+refs/heads/$TARGET_BRANCH:refs/remotes/origin/product-v2"
+          test "$(git rev-parse refs/remotes/origin/product-v2)" = "$PRODUCT_COMMIT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^{tree}")" = "$PRODUCT_TREE"
+          test "$(git show -s --format='%P' "$PRODUCT_COMMIT")" = "$CANONICAL_PARENT"
+          test "$(git show -s --format='%an' "$PRODUCT_COMMIT")" = "$PRODUCT_AUTHOR_NAME"
+          test "$(git show -s --format='%ae' "$PRODUCT_COMMIT")" = "$PRODUCT_AUTHOR_EMAIL"
+          test "$(git show -s --format='%aI' "$PRODUCT_COMMIT")" = "$PRODUCT_AUTHOR_DATE"
+          test "$(git show -s --format='%cn' "$PRODUCT_COMMIT")" = "$PRODUCT_COMMITTER_NAME"
+          test "$(git show -s --format='%ce' "$PRODUCT_COMMIT")" = "$PRODUCT_COMMITTER_EMAIL"
+          test "$(git show -s --format='%cI' "$PRODUCT_COMMIT")" = "$PRODUCT_COMMITTER_DATE"
+          test "$(git show -s --format='%B' "$PRODUCT_COMMIT")" = "$PRODUCT_MESSAGE"
+          test "$(git rev-list --count "$CANONICAL_PARENT..$PRODUCT_COMMIT")" = 1
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$PRODUCT_COMMIT" | wc -l | tr -d ' ')" = 14
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" "$PRODUCT_COMMIT")"
+          git diff --check "$CANONICAL_PARENT" "$PRODUCT_COMMIT"
