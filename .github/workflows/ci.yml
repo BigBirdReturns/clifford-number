@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   release-check:
@@ -13,29 +13,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          fetch-depth: 0
           show-progress: false
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Regenerate the complete public projection set
-        shell: bash
-        run: |
-          node tools/compile.mjs
-          python - <<'PY'
-          from pathlib import Path
-          import json
-
-          cross_path = Path('data/research/clifford-cross-corpus-public-interest-map.json')
-          cross = json.loads(cross_path.read_text())
-          scout = json.loads(Path('build/scout-report.json').read_text())
-          scout_count = len(scout.get('findings', []))
-          cross['inventory']['discovery_queue']['scout_findings'] = scout_count
-          lane = next(row for row in cross['lanes'] if row['lane_id'] == 'official-research-fanout')
-          lane['counts']['scout_findings'] = scout_count
-          cross_path.write_text(json.dumps(cross, ensure_ascii=False, indent=2) + '\n')
-          PY
       - name: Run repository release gate
         shell: bash
         run: |
@@ -47,47 +28,10 @@ jobs:
           from pathlib import Path
           import re
           lines = Path('/tmp/release-check.log').read_text(errors='replace').splitlines()
-          relevant = [line.strip() for line in lines if re.search(r'AssertionError|ERR_ASSERTION|failed|Error:|SyntaxError|not found|must |does not|cannot |expected ', line, re.I)]
-          tail = [line.strip() for line in lines[-20:] if line.strip()]
-          print('CI_DIAG ' + ' | '.join((relevant[-10:] + tail)[-20:])[:7000])
+          relevant = [line.strip() for line in lines if re.search(r'AssertionError|ERR_ASSERTION|failed|Error:|SyntaxError|not found|must |does not|cannot ', line, re.I)]
+          tail = [line.strip() for line in lines[-14:] if line.strip()]
+          message = ' | '.join((relevant[-8:] + tail)[-16:])
+          print('CI_DIAG ' + message[:7000])
           PY
           fi
           exit "$status"
-      - name: Publish the allowlisted regenerated public artifacts
-        shell: bash
-        run: |
-          rm -f .github/workflows/deploy-pages.yml
-
-          git add -- \
-            build/cases/uk-ai-policy.json \
-            build/report-frontier.json \
-            build/scout-report.md \
-            reports/index.html
-
-          python - <<'PY'
-          import subprocess
-
-          allowed = {
-              'build/cases/uk-ai-policy.json',
-              'build/report-frontier.json',
-              'build/scout-report.md',
-              'reports/index.html',
-          }
-          staged = set(subprocess.check_output(
-              ['git', 'diff', '--cached', '--name-only'], text=True
-          ).splitlines())
-          print('STAGED_PROJECTION_DELTA ' + ' | '.join(sorted(staged)))
-          extra = sorted(staged - allowed)
-          if extra:
-              raise SystemExit('unexpected staged projection changes: ' + ', '.join(extra))
-          PY
-
-          if git diff --cached --quiet; then
-            echo "Projection set already reconciled."
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "build: reconcile Action Plan public projections"
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
