@@ -1,0 +1,321 @@
+name: TEMP admit exact RD-04 Oregon-Wisconsin adjudication product
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-admit-ssc-rd04-or-wi-minimum-frontier-product-v1.yml'
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: temp-admit-ssc-rd04-or-wi-minimum-frontier-product-v1
+  cancel-in-progress: false
+
+jobs:
+  admit:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-or-wi-minimum-frontier-admission-controller-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Authenticate materialization and attach exact product object
+        id: admit
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONTROLLER_PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -Eeuo pipefail
+          PARENT='146f5ceb1882d02c7be8d225d49665d63478a7df'
+          CONTROLLER_BRANCH='agent/ssc-rd04-or-wi-minimum-frontier-admission-controller-v1'
+          CONTROLLER_PATH='.github/workflows/temp-admit-ssc-rd04-or-wi-minimum-frontier-product-v1.yml'
+          MATERIALIZER_PR='1935'
+          MATERIALIZER_BRANCH='agent/ssc-rd04-or-wi-minimum-frontier-materializer-v2'
+          MATERIALIZER_WORKFLOW='TEMP materialize RD-04 Oregon and Wisconsin minimum-frontier product v2'
+          MATERIALIZER_ARTIFACT='ssc-rd04-or-wi-minimum-frontier-materialization-v2'
+          PRODUCT_BRANCH='agent/ssc-rd04-or-wi-minimum-frontier-adjudication-v2'
+          PRODUCT_TITLE='Adjudicate Oregon and Wisconsin RD-04 minimum frontier v2'
+          OUT="${RUNNER_TEMP}/ssc-rd04-or-wi-minimum-frontier-admission-v1"
+          mkdir -p "$OUT/source"
+          stage='bootstrap'
+          printf '1\n' > "$OUT/EXIT_CODE"
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+
+          api_get() {
+            curl --fail-with-body --silent --show-error \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/$1"
+          }
+          api_post() {
+            curl --fail-with-body --silent --show-error \
+              -X POST \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              --data-binary @- \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/$1"
+          }
+          finalize_sums() {
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+          }
+          write_failure() {
+            local code="$1"
+            jq -n \
+              --arg stage "$stage" \
+              --argjson code "$code" \
+              --arg parent "$PARENT" \
+              --arg materializer_pr "$MATERIALIZER_PR" \
+              '{schema_version:"ssc-rd04-or-wi-admission-failure@1",state:"failed_closed",failed_or_final_stage:$stage,exit_code:$code,canonical_parent:$parent,materializer_pr:($materializer_pr|tonumber),product_ref_updated:false,product_pr_created:false,source_requests:0,new_source_admissions:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none",authority:"failure_custody_only"}' > "$OUT/failure-receipt.json"
+          }
+          on_error() {
+            local code=$?
+            trap - ERR
+            set +e
+            printf '%s\n' "$code" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            write_failure "$code"
+            finalize_sums
+            exit "$code"
+          }
+          trap on_error ERR
+
+          stage='bind_controller_and_live_main'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          test "$(git rev-parse HEAD^)" = "$PARENT"
+          test "$(git rev-list --count "$PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$PARENT" HEAD)" = "$CONTROLLER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$PARENT" HEAD)" = "$CONTROLLER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$PARENT" HEAD)"
+          git diff --check "$PARENT" HEAD
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/main)" = "$PARENT"
+
+          stage='bind_exact_materializer_pr_topology'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          api_get "pulls/$MATERIALIZER_PR" > "$OUT/materializer-pr.json"
+          jq -e \
+            --arg branch "$MATERIALIZER_BRANCH" \
+            --arg parent "$PARENT" \
+            '.state=="open" and .draft==true and .head.ref==$branch and .base.ref=="main" and .base.sha==$parent' \
+            "$OUT/materializer-pr.json" > /dev/null
+          MATERIALIZER_HEAD="$(jq -er '.head.sha' "$OUT/materializer-pr.json")"
+          git fetch --no-tags --force origin "+refs/heads/$MATERIALIZER_BRANCH:refs/remotes/origin/$MATERIALIZER_BRANCH"
+          test "$(git rev-parse "refs/remotes/origin/$MATERIALIZER_BRANCH")" = "$MATERIALIZER_HEAD"
+          test "$(git rev-list --count "$PARENT".."$MATERIALIZER_HEAD")" -eq 6
+          git diff --name-only "$PARENT" "$MATERIALIZER_HEAD" | LC_ALL=C sort > "$OUT/materializer-paths.txt"
+          git diff --name-only --diff-filter=A "$PARENT" "$MATERIALIZER_HEAD" | LC_ALL=C sort > "$OUT/materializer-added-paths.txt"
+          cmp "$OUT/materializer-paths.txt" "$OUT/materializer-added-paths.txt"
+          test "$(wc -l < "$OUT/materializer-paths.txt" | tr -d ' ')" -eq 6
+          test "$(grep -c '^data/transport/.*\.b64$' "$OUT/materializer-paths.txt")" -eq 4
+          grep -Fx '.github/workflows/temp-materialize-ssc-rd04-or-wi-minimum-frontier-v2.yml' "$OUT/materializer-paths.txt" >/dev/null
+          grep -Fx 'tools/temp-materialize-ssc-rd04-or-wi-minimum-frontier-v2.sh' "$OUT/materializer-paths.txt" >/dev/null
+
+          stage='recover_terminal_materializer_run'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          RUN_ID=''
+          for attempt in $(seq 1 180); do
+            api_get "actions/runs?head_sha=$MATERIALIZER_HEAD&event=pull_request&per_page=100" > "$OUT/materializer-runs.json"
+            RUN_ID="$(jq -r --arg name "$MATERIALIZER_WORKFLOW" --arg sha "$MATERIALIZER_HEAD" '[.workflow_runs[] | select(.name==$name and .head_sha==$sha and .event=="pull_request")] | sort_by(.created_at) | last | .id // empty' "$OUT/materializer-runs.json")"
+            if test -n "$RUN_ID"; then
+              RUN_STATUS="$(jq -r --argjson id "$RUN_ID" '.workflow_runs[] | select(.id==$id) | .status' "$OUT/materializer-runs.json")"
+              if test "$RUN_STATUS" = completed; then break; fi
+            fi
+            sleep 10
+          done
+          test -n "$RUN_ID"
+          api_get "actions/runs/$RUN_ID" > "$OUT/materializer-run.json"
+          RUN_CONCLUSION="$(jq -er '.conclusion' "$OUT/materializer-run.json")"
+          test "$RUN_CONCLUSION" = success
+          jq -e --arg sha "$MATERIALIZER_HEAD" --arg name "$MATERIALIZER_WORKFLOW" '.head_sha==$sha and .name==$name and .event=="pull_request" and .status=="completed" and .conclusion=="success"' "$OUT/materializer-run.json" >/dev/null
+          api_get "actions/runs/$RUN_ID/jobs?filter=latest&per_page=100" > "$OUT/materializer-jobs.json"
+          jq -e '.total_count==1 and .jobs[0].name=="materialize" and .jobs[0].status=="completed" and .jobs[0].conclusion=="success"' "$OUT/materializer-jobs.json" >/dev/null
+
+          stage='authenticate_materializer_artifact'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          api_get "actions/runs/$RUN_ID/artifacts?per_page=100" > "$OUT/materializer-artifacts.json"
+          read -r ARTIFACT_ID ARTIFACT_DIGEST < <(
+            jq -r --arg name "$MATERIALIZER_ARTIFACT" '[.artifacts[] | select(.name==$name and .expired==false)] | sort_by(.created_at) | last | [.id,.digest] | @tsv' "$OUT/materializer-artifacts.json"
+          )
+          test -n "$ARTIFACT_ID"
+          test -n "$ARTIFACT_DIGEST"
+          curl --fail-with-body --silent --show-error -L \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$OUT/materializer-artifact.zip"
+          ARTIFACT_ZIP_SHA256="$(sha256sum "$OUT/materializer-artifact.zip" | awk '{print $1}')"
+          test "$ARTIFACT_DIGEST" = "sha256:$ARTIFACT_ZIP_SHA256"
+          unzip -t "$OUT/materializer-artifact.zip" > "$OUT/materializer-zip-test.txt"
+          unzip -q "$OUT/materializer-artifact.zip" -d "$OUT/source"
+          mapfile -t RECEIPTS < <(find "$OUT/source" -type f -name materialization-receipt.json -print)
+          test "${#RECEIPTS[@]}" -eq 1
+          RECEIPT="${RECEIPTS[0]}"
+          SUM_DIR="$(dirname "$RECEIPT")"
+          test -f "$SUM_DIR/SHA256SUMS"
+          (cd "$SUM_DIR" && sha256sum -c SHA256SUMS) > "$OUT/source-internal-checks.txt"
+          jq -e '
+            .schema_version=="ssc-rd04-or-wi-materialization-receipt@2" and
+            .state=="exact_one_parent_fourteen_addition_product_object_created" and
+            .canonical_parent=="146f5ceb1882d02c7be8d225d49665d63478a7df" and
+            .permanent_path_count==14 and
+            .change_class=="addition_only" and
+            .transport_path_count==0 and
+            .source_requests==0 and
+            .source_admissions==12 and
+            .candidate_count==6 and
+            .observed_candidates==3 and
+            .typed_gap_candidates==3 and
+            .field_terminalizations==0 and
+            .matrix_updates==0 and
+            .row_state_mutations==0 and
+            .class_closed==false and
+            .focused_adversarial_refusals==73 and
+            .release_check=="passed" and
+            .post_release_replay=="byte_identical" and
+            .product_ref_updated==false
+          ' "$RECEIPT" > /dev/null
+          PRODUCT_COMMIT="$(jq -er '.product_commit' "$RECEIPT")"
+          PRODUCT_TREE="$(jq -er '.product_tree' "$RECEIPT")"
+          ARCHIVE_SHA256="$(jq -er '.archive_sha256' "$RECEIPT")"
+
+          stage='authenticate_remote_product_object'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          api_get "git/commits/$PRODUCT_COMMIT" > "$OUT/product-commit.json"
+          jq -e --arg tree "$PRODUCT_TREE" --arg parent "$PARENT" '.tree.sha==$tree and (.parents|length)==1 and .parents[0].sha==$parent' "$OUT/product-commit.json" >/dev/null
+
+          stage='attach_exact_product_ref'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          status="$(curl --silent --output "$OUT/existing-product-ref.json" --write-out '%{http_code}' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/git/ref/heads/$PRODUCT_BRANCH")"
+          if test "$status" = 200; then
+            test "$(jq -er '.object.sha' "$OUT/existing-product-ref.json")" = "$PRODUCT_COMMIT"
+          else
+            test "$status" = 404
+            jq -n --arg ref "refs/heads/$PRODUCT_BRANCH" --arg sha "$PRODUCT_COMMIT" '{ref:$ref,sha:$sha}' | api_post git/refs > "$OUT/create-product-ref.json"
+            test "$(jq -er '.object.sha' "$OUT/create-product-ref.json")" = "$PRODUCT_COMMIT"
+          fi
+          api_get "git/ref/heads/$PRODUCT_BRANCH" > "$OUT/final-product-ref.json"
+          test "$(jq -er '.object.sha' "$OUT/final-product-ref.json")" = "$PRODUCT_COMMIT"
+
+          stage='open_or_recover_permanent_product_pr'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          OWNER="${GITHUB_REPOSITORY%%/*}"
+          api_get "pulls?state=all&head=$OWNER:$PRODUCT_BRANCH&base=main&per_page=100" > "$OUT/existing-product-prs.json"
+          PRODUCT_PR="$(jq -r 'sort_by(.created_at) | last | .number // empty' "$OUT/existing-product-prs.json")"
+          if test -z "$PRODUCT_PR"; then
+            cat > "$OUT/product-pr-body.md" <<EOF
+This permanent pull request publishes the exact current-main Oregon-Wisconsin minimum-frontier adjudication product constructed in hosted custody by temporary carrier PR #$MATERIALIZER_PR.
+
+The exact object is one commit over canonical parent \`$PARENT\`, tree \`$PRODUCT_TREE\`, and commit \`$PRODUCT_COMMIT\`. Its permanent denominator is fourteen additions and zero transport paths. The product admits twelve source records and records six bounded field candidates, comprising three observed candidates and three typed gaps. It performs zero live requests, zero field terminalizations, zero matrix updates, zero row-state mutations, and zero class closure.
+
+The product preserves the controlling distinctions: a signed waiver request is not an FNS approval instrument; an approval is not automatically a currently operative waiver period; an authority is not observed exercise; and an unrecovered current public record is not policy, practice, or event absence. The three typed gaps remain explicit promotion candidates only where the governing terminal protocol permits them.
+
+Hosted materialization run \`$RUN_ID\` and artifact \`$ARTIFACT_ID\` at digest \`$ARTIFACT_DIGEST\` authenticated archive SHA-256 \`$ARCHIVE_SHA256\`, safe fourteen-path extraction, deterministic construction, 73 adversarial refusals, recursively closed Draft 2020-12 schemas, No magic human, the complete repository Release gate, clean replay, and exact local-to-remote Git-object equality.
+
+Evidence tier: finalized seven-route capture custody, exact current-main package, safe archive extraction, deterministic product reconstruction, recursive schema closure, 73 refusals, complete Release replay, remote Git-object readback, and exact branch attachment. Venue: this permanent PR, carrier PR #$MATERIALIZER_PR, capture PR #1928, finalizer PR #1929, Issue #1017, and canonical \`main\`. Target: source and field adjudication only. Upside: Oregon and Wisconsin receive six reviewable current-frontier decisions without repeated requests. Downside: a separate exact-current-cell validation and promotion transaction remains required. Failure mode: altered parent, widened path set, changed body or field decision, request-to-approval collapse, approval-to-current-period collapse, failed exact-head gate, unresolved review, or treatment of adjudication as matrix mutation.
+
+The control question is whether exact commit \`$PRODUCT_COMMIT\` passes every exact-head and review gate while preserving zero field, matrix, row, class, cumulative-ledger, publication, adoption, graph, and outside-human effect.
+EOF
+            jq -n --arg title "$PRODUCT_TITLE" --arg head "$PRODUCT_BRANCH" --arg base main --rawfile body "$OUT/product-pr-body.md" '{title:$title,head:$head,base:$base,body:$body,draft:true,maintainer_can_modify:false}' | api_post pulls > "$OUT/create-product-pr.json"
+            PRODUCT_PR="$(jq -er '.number' "$OUT/create-product-pr.json")"
+          fi
+          api_get "pulls/$PRODUCT_PR" > "$OUT/product-pr.json"
+          jq -e --arg head "$PRODUCT_BRANCH" --arg sha "$PRODUCT_COMMIT" '.state=="open" and .head.ref==$head and .head.sha==$sha and .base.ref=="main"' "$OUT/product-pr.json" >/dev/null
+
+          stage='complete'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          printf '0\n' > "$OUT/EXIT_CODE"
+          jq -n \
+            --arg parent "$PARENT" \
+            --arg materializer_head "$MATERIALIZER_HEAD" \
+            --argjson materializer_pr "$MATERIALIZER_PR" \
+            --argjson run "$RUN_ID" \
+            --argjson artifact "$ARTIFACT_ID" \
+            --arg artifact_digest "$ARTIFACT_DIGEST" \
+            --arg product_commit "$PRODUCT_COMMIT" \
+            --arg product_tree "$PRODUCT_TREE" \
+            --arg product_branch "$PRODUCT_BRANCH" \
+            --argjson product_pr "$PRODUCT_PR" \
+            '{schema_version:"ssc-rd04-or-wi-product-admission@1",state:"exact_product_ref_and_review_pr_created",canonical_parent:$parent,materializer_pr:$materializer_pr,materializer_head:$materializer_head,materializer_run:$run,materializer_artifact:$artifact,materializer_artifact_digest:$artifact_digest,product_commit:$product_commit,product_tree:$product_tree,product_branch:$product_branch,product_pr:$product_pr,permanent_paths:14,source_requests:0,source_admissions:12,candidates:6,observed_candidates:3,typed_gap_candidates:3,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none",authority:"permanent_adjudication_review_only"}' > "$OUT/admission-receipt.json"
+          finalize_sums
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          trap - ERR
+
+          cat > "$OUT/controller-comment.md" <<EOF
+The exact Oregon-Wisconsin adjudication object has been attached to permanent review PR #$PRODUCT_PR.
+
+\`\`\`text
+materializer PR     #$MATERIALIZER_PR
+materializer head   $MATERIALIZER_HEAD
+materializer run    $RUN_ID
+materializer artifact $ARTIFACT_ID
+product commit      $PRODUCT_COMMIT
+product tree        $PRODUCT_TREE
+permanent PR        #$PRODUCT_PR
+permanent paths     14 additions
+source admissions   12
+field candidates    6, comprising 3 observed and 3 typed gaps
+field/matrix/row    0 / 0 / 0
+class closed        false
+\`\`\`
+
+The product remains adjudication custody only. Exact-head qualification, review, and a later current-cell promotion remain separate gates.
+EOF
+          jq -n --rawfile body "$OUT/controller-comment.md" '{body:$body}' | api_post "issues/$CONTROLLER_PR/comments" > "$OUT/controller-comment-response.json"
+          jq -n --rawfile body "$OUT/controller-comment.md" '{body:$body}' | api_post 'issues/1017/comments' > "$OUT/issue-comment-response.json"
+      - name: Preserve exact admission receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-or-wi-minimum-frontier-product-admission-v1
+          path: ${{ runner.temp }}/ssc-rd04-or-wi-minimum-frontier-admission-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - name: Require exact product admission
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-or-wi-minimum-frontier-admission-v1"
+          test "${{ steps.admit.outcome }}" = success
+          test "$(cat "$OUT/STAGE")" = complete
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          jq -e '
+            .state=="exact_product_ref_and_review_pr_created" and
+            .canonical_parent=="146f5ceb1882d02c7be8d225d49665d63478a7df" and
+            .permanent_paths==14 and
+            .source_requests==0 and
+            .source_admissions==12 and
+            .candidates==6 and
+            .observed_candidates==3 and
+            .typed_gap_candidates==3 and
+            .field_terminalizations==0 and
+            .matrix_updates==0 and
+            .row_state_mutations==0 and
+            .class_closed==false and
+            .outside_human_dependency==false
+          ' "$OUT/admission-receipt.json" > /dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
