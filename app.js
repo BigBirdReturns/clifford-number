@@ -1,4 +1,4 @@
-import { decodeHashPart, formatCitation, safeExternalUrl, validAsOf } from './src/ui-utils.js';
+import { decodeHashPart, formatCitation, safeExternalUrl, safeLocalReceiptPath, validAsOf } from './src/ui-utils.js';
 import { applyTranslations, normalizeLocale, translate } from './src/i18n.js';
 
 const PREFERENCES_KEY = 'clifford-preferences';
@@ -296,10 +296,12 @@ function publicReceiptCount() {
 
 function receiptInspector(receipt) {
   if (!receipt) return '<p class="evidence-note">This receipt is not present in the current public release.</p>';
-  const sourceUrl = safeExternalUrl(receipt.url || receipt.source_url || '');
-  const archiveUrl = safeExternalUrl(receipt.archive_url || receipt.archive?.url || '');
+  const sourceUrl = safeExternalUrl(receipt.url || receipt.source_url || receipt.path || '');
+  const archiveUrl = safeExternalUrl(receipt.archive_url || receipt.archive?.url || receipt.archive?.ref || '');
+  const localReceiptPath = safeLocalReceiptPath(receipt.path);
   const links = [
     sourceUrl ? `<a class="receipt-link" href="${esc(sourceUrl)}" target="_blank" rel="noreferrer">Open original source ↗</a>` : '',
+    localReceiptPath ? `<a class="receipt-link" href="${esc(localReceiptPath)}">Open preserved extract →</a>` : '',
     archiveUrl ? `<a class="receipt-link" href="${esc(archiveUrl)}" target="_blank" rel="noreferrer">Open archived copy ↗</a>` : ''
   ].filter(Boolean).join('');
   const claimLinks = (receipt.claim_ids ?? []).map(id => {
@@ -311,7 +313,9 @@ function receiptInspector(receipt) {
     <dl class="evidence-facts">
       ${receipt.publisher ? `<div><dt>Publisher</dt><dd>${esc(receipt.publisher)}</dd></div>` : ''}
       ${receipt.source_type ? `<div><dt>Source type</dt><dd>${esc(humanLabel(receipt.source_type))}</dd></div>` : ''}
-      ${receipt.published_at ? `<div><dt>Published</dt><dd>${esc(receipt.published_at)}</dd></div>` : ''}
+      ${receipt.source_published_at ? `<div><dt>Source published</dt><dd>${esc(receipt.source_published_at)}</dd></div>` : receipt.published_at ? `<div><dt>Published</dt><dd>${esc(receipt.published_at)}</dd></div>` : ''}
+      ${receipt.source_updated_at ? `<div><dt>Source updated</dt><dd>${esc(receipt.source_updated_at)}</dd></div>` : ''}
+      ${receipt.event_date ? `<div><dt>Event date</dt><dd>${esc(receipt.event_date)}</dd></div>` : ''}
       ${receipt.retrieved_at ? `<div><dt>Retrieved</dt><dd>${esc(receipt.retrieved_at)}</dd></div>` : ''}
     </dl>
     ${receipt.extract ? `<div class="receipt-locator"><strong>Relevant locator or excerpt</strong><p>${esc(receipt.extract)}</p></div>` : receipt.notes ? `<div class="receipt-locator"><strong>What this receipt supports</strong><p>${esc(receipt.notes)}</p></div>` : '<p class="meta">The public record has source metadata but no stored excerpt.</p>'}
@@ -1669,9 +1673,10 @@ function receiptRefs(ids) {
     const r = mergeReceiptRecords(state.receiptCatalog.get(id), state.receipts.get(id), state.caseReceipts.get(id));
     if (!r) return { id, label: id, url: null, archiveUrl: null, health: 'warning', healthLabel: 'Receipt record missing' };
     const path = String(r.path || '');
+    const localPath = safeLocalReceiptPath(path);
     const externalUrl = safeExternalUrl(r.url || r.source_url || path);
-    const local = false;
-    const url = externalUrl;
+    const local = Boolean(localPath && !externalUrl);
+    const url = externalUrl || localPath;
     const archiveUrl = safeExternalUrl(r.archive_url || r.archive?.url || r.archive?.ref);
     const lost = r.archive?.method === 'unrecoverable_local_paste';
     const warning = !lost && !r.archive?.ref;
