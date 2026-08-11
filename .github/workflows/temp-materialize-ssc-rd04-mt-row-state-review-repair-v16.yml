@@ -1,0 +1,228 @@
+name: TEMP materialize Montana row-state raw-object repair v16
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-mt-row-state-review-repair-v16.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-rd04-mt-row-state-review-repair-v16
+  cancel-in-progress: false
+
+env:
+  SOURCE_PRODUCT: 85fad4f736a3639444edd2c522a67316dbade480
+  SOURCE_PRODUCT_BRANCH: agent/ssc-rd04-mt-row-state-reconciliation-v1
+  CANONICAL_PARENT: 0840358962621b0be3db6864ecec763327f35903
+  TARGET_BRANCH: agent/ssc-rd04-mt-row-state-reconciliation-v3
+  CARRIER_PATH: .github/workflows/temp-materialize-ssc-rd04-mt-row-state-review-repair-v16.yml
+  PRODUCT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation
+  SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/product-manifest.json
+  OUT: /tmp/ssc-rd04-mt-row-state-review-repair-v3
+  WORK: /tmp/ssc-rd04-mt-row-state-review-repair-work-v3
+  WRAPPER_OUT: /tmp/ssc-rd04-mt-row-state-review-repair-wrapper-v16
+  SOURCE_ARTIFACT_ID: '9086919216'
+  SOURCE_ARTIFACT_SHA256: 1c954280e6b05ec14ef10779455d9b5d6e276156f48a3b24450654e6564005c7
+  SOURCE_MATERIALIZER_SHA256: 3dd83e91b4aa5fcf2a611cbba3aa673748223d5b9cc6338e317d1ac35a76ecc6
+  PATCHED_MATERIALIZER_SHA256: 85db1bdea67d08d321b7bfc9396f74c1e95e8851ca9e5d89131b45fd77d71d4b
+  PRODUCT_AUTHOR_NAME: github-actions[bot]
+  PRODUCT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+  PRODUCT_AUTHOR_DATE: '2026-08-10T19:00:00Z'
+  PRODUCT_COMMITTER_NAME: github-actions[bot]
+  PRODUCT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+  PRODUCT_COMMITTER_DATE: '2026-08-10T19:00:00Z'
+  PRODUCT_MESSAGE: Promote exact Montana derivative row-state reconciliation v3
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-mt-row-state-review-repair-materializer-v16'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned validators
+        run: python -m pip install --disable-pip-version-check jsonschema==4.25.1
+      - name: Recover, repair, and execute exact materializer
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$WRAPPER_OUT" "$OUT" "$WORK" /tmp/v14.zip /tmp/v14 /tmp/materialize-v16.sh /tmp/materializer-console.log
+          mkdir -p "$WRAPPER_OUT" /tmp/v14
+          printf '%s\n' wrapper-bootstrap > "$WRAPPER_OUT/STAGE"
+          printf '%s\n' 1 > "$WRAPPER_OUT/EXIT_CODE"
+          capture() {
+            if [ -f /tmp/materialize-v16.sh ]; then cp /tmp/materialize-v16.sh "$WRAPPER_OUT/materialize-v16.sh"; fi
+            if [ -f /tmp/materializer-console.log ]; then cp /tmp/materializer-console.log "$WRAPPER_OUT/materializer-console.log"; fi
+            rm -rf "$WRAPPER_OUT/materializer-out"
+            if [ -d "$OUT" ]; then mkdir -p "$WRAPPER_OUT/materializer-out"; cp -a "$OUT"/. "$WRAPPER_OUT/materializer-out"/ || true; fi
+            if [ -d "$WORK/repo/.git" ] || [ -f "$WORK/repo/.git" ]; then
+              git -C "$WORK/repo" rev-parse HEAD > "$WRAPPER_OUT/local-product-sha.txt" || true
+              git -C "$WORK/repo" rev-parse 'HEAD^{tree}' > "$WRAPPER_OUT/local-product-tree.txt" || true
+              git -C "$WORK/repo" cat-file commit HEAD > "$WRAPPER_OUT/local-product-commit-object.raw" || true
+              git -C "$WORK/repo" status --short > "$WRAPPER_OUT/repository-status.txt" || true
+            fi
+          }
+          fail() {
+            local rc=$?
+            trap - ERR
+            printf '%s\n' "$rc" > "$WRAPPER_OUT/EXIT_CODE"
+            capture
+            (cd "$WRAPPER_OUT" && find . -type f ! -path './SHA256SUMS' -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS) || true
+            exit "$rc"
+          }
+          trap fail ERR
+
+          printf '%s\n' authenticate-carrier > "$WRAPPER_OUT/STAGE"
+          test "$(git show -s --format='%P' HEAD)" = "$CANONICAL_PARENT"
+          test "$(git diff --name-only "$CANONICAL_PARENT" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD)" = "$CARRIER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" HEAD)"
+          git diff --check "$CANONICAL_PARENT" HEAD
+          git fetch --no-tags --force origin \
+            "+refs/heads/$SOURCE_PRODUCT_BRANCH:refs/remotes/origin/source-product" \
+            '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/source-product)" = "$SOURCE_PRODUCT"
+          test "$(git show -s --format='%P' "$SOURCE_PRODUCT")" = "$CANONICAL_PARENT"
+          git merge-base --is-ancestor "$CANONICAL_PARENT" refs/remotes/origin/main
+          test -z "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH")"
+
+          printf '%s\n' recover-source-materializer > "$WRAPPER_OUT/STAGE"
+          curl --fail --location --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ARTIFACT_ID/zip" \
+            -o /tmp/v14.zip
+          test "$(sha256sum /tmp/v14.zip | awk '{print $1}')" = "$SOURCE_ARTIFACT_SHA256"
+          unzip -q /tmp/v14.zip -d /tmp/v14
+          SOURCE_SCRIPT=/tmp/v14/ssc-rd04-mt-row-state-review-repair-wrapper-v14/materialize-v14.sh
+          test "$(sha256sum "$SOURCE_SCRIPT" | awk '{print $1}')" = "$SOURCE_MATERIALIZER_SHA256"
+          cp "$SOURCE_SCRIPT" "$WRAPPER_OUT/materialize-v14.sh"
+
+          printf '%s\n' repair-workflow-generator > "$WRAPPER_OUT/STAGE"
+          python - "$SOURCE_SCRIPT" /tmp/materialize-v16.sh <<'PY'
+          from pathlib import Path
+          import sys
+          source, output = map(Path, sys.argv[1:])
+          text = source.read_text(encoding='utf-8')
+          start = text.index("workflow=workflow_path.read_text(encoding='utf-8')")
+          end = text.index("schema=json.loads", start)
+          replacement = """workflow=workflow_path.read_text(encoding='utf-8')
+          old_block = "\\n".join([
+              '          test "$(git show -s --format=\\'%P\\' "$PRODUCT_COMMIT")" = "$CANONICAL_PARENT"',
+              '          test "$(git show -s --format=\\'%an\\' "$PRODUCT_COMMIT")" = \\'github-actions[bot]\\'',
+              '          test "$(git show -s --format=\\'%ae\\' "$PRODUCT_COMMIT")" = \\'41898282+github-actions[bot]@users.noreply.github.com\\'',
+              '          test "$(git show -s --format=\\'%aI\\' "$PRODUCT_COMMIT")" = \\'2026-08-10T19:00:00Z\\'',
+              '          test "$(git show -s --format=\\'%cn\\' "$PRODUCT_COMMIT")" = \\'github-actions[bot]\\'',
+              '          test "$(git show -s --format=\\'%ce\\' "$PRODUCT_COMMIT")" = \\'41898282+github-actions[bot]@users.noreply.github.com\\'',
+              '          test "$(git show -s --format=\\'%cI\\' "$PRODUCT_COMMIT")" = \\'2026-08-10T19:00:00Z\\'',
+              '          test "$(git show -s --format=\\'%B\\' "$PRODUCT_COMMIT")" = \\'Promote exact Montana derivative row-state reconciliation v2\\'',
+          ]) + "\\n"
+          new_block = "\\n".join([
+              '          test "$(git show -s --format=\\'%P\\' "$PRODUCT_COMMIT")" = "$CANONICAL_PARENT"',
+              '          ACTUAL_COMMIT_OBJECT="$OUT/actual-product-commit-object.txt"',
+              '          EXPECTED_COMMIT_OBJECT="$OUT/expected-product-commit-object.txt"',
+              '          git cat-file commit "$PRODUCT_COMMIT" > "$ACTUAL_COMMIT_OBJECT"',
+              '          {',
+              '            printf \\'tree %s\\\\n\\' "$(git rev-parse "$PRODUCT_COMMIT^{tree}")"',
+              '            printf \\'parent %s\\\\n\\' "$CANONICAL_PARENT"',
+              '            printf \\'author github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> 1786388400 +0000\\\\n\\'',
+              '            printf \\'committer github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> 1786388400 +0000\\\\n\\'',
+              '            printf \\'\\\\n\\'',
+              '            printf \\'%s\\\\n\\' \\'Promote exact Montana derivative row-state reconciliation v3\\'',
+              '          } > "$EXPECTED_COMMIT_OBJECT"',
+              '          cmp "$EXPECTED_COMMIT_OBJECT" "$ACTUAL_COMMIT_OBJECT"',
+          ]) + "\\n"
+          if workflow.count(old_block) != 1:
+              raise SystemExit(f'old commit-object block denominator {workflow.count(old_block)}')
+          workflow = workflow.replace(old_block, new_block, 1)
+          workflow_path.write_text(workflow,encoding='utf-8')
+
+          """
+          patched = text[:start] + replacement + text[end:]
+          output.write_text(patched, encoding='utf-8')
+          PY
+          test "$(sha256sum /tmp/materialize-v16.sh | awk '{print $1}')" = "$PATCHED_MATERIALIZER_SHA256"
+          bash -n /tmp/materialize-v16.sh
+          cp /tmp/materialize-v16.sh "$WRAPPER_OUT/materialize-v16.sh"
+
+          printf '%s\n' execute-materializer > "$WRAPPER_OUT/STAGE"
+          set +e
+          bash /tmp/materialize-v16.sh > /tmp/materializer-console.log 2>&1
+          rc=$?
+          set -e
+          cat /tmp/materializer-console.log
+          capture
+
+          if [ "$rc" = 0 ]; then
+            printf '%s\n' published > "$WRAPPER_OUT/TRANSPORT_STATE"
+          else
+            printf '%s\n' classify-publication-boundary > "$WRAPPER_OUT/STAGE"
+            test "$(cat "$OUT/STAGE")" = publish
+            grep -F 'refusing to allow an OAuth App to create or update workflow' /tmp/materializer-console.log
+            PRODUCT_COMMIT="$(git -C "$WORK/repo" rev-parse HEAD)"
+            PRODUCT_TREE="$(git -C "$WORK/repo" rev-parse 'HEAD^{tree}')"
+            test "$(git -C "$WORK/repo" show -s --format='%P' HEAD)" = "$CANONICAL_PARENT"
+            test "$(git -C "$WORK/repo" rev-list --count "$CANONICAL_PARENT"..HEAD)" = 1
+            cmp "$OUT/actual-constructed-product-commit-object.txt" "$OUT/expected-constructed-product-commit-object.txt"
+            python - "$WRAPPER_OUT/dangling-product.json" "$PRODUCT_COMMIT" "$PRODUCT_TREE" <<'PY'
+          import json, os, sys
+          path, commit, tree = sys.argv[1:]
+          value = {
+              'schema_version': 'ssc-rd04-mt-row-state-review-repair-dangling-product@1',
+              'state': 'qualified_exact_product_object_refused_only_by_workflow_scope',
+              'canonical_parent': os.environ['CANONICAL_PARENT'],
+              'target_branch': os.environ['TARGET_BRANCH'],
+              'product_commit': commit,
+              'product_tree': tree,
+              'patched_materializer_sha256': os.environ['PATCHED_MATERIALIZER_SHA256'],
+              'raw_commit_object_bound': True,
+              'raw_commit_message_bytes_bound': True,
+              'explicit_empty_destination_lease': True,
+              'semantic_effect': 'one_derivative_montana_row_state_terminalization_only',
+              'class_closed': False,
+              'outside_human_dependency': False,
+          }
+          open(path, 'w', encoding='utf-8').write(json.dumps(value, indent=2, sort_keys=True) + '\n')
+          PY
+            printf '%s\n' qualified_dangling_product_workflow_scope_refusal > "$WRAPPER_OUT/TRANSPORT_STATE"
+          fi
+
+          printf '%s\n' complete > "$WRAPPER_OUT/STAGE"
+          printf '%s\n' 0 > "$WRAPPER_OUT/EXIT_CODE"
+          capture
+          (cd "$WRAPPER_OUT" && find . -type f ! -path './SHA256SUMS' -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+          trap - ERR
+      - name: Preserve exact repair materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-review-repair-materializer-v16
+          path: |
+            ${{ env.OUT }}
+            ${{ env.WRAPPER_OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
