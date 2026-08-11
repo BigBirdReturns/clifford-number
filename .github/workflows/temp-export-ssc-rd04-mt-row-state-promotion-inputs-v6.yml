@@ -1,0 +1,291 @@
+name: TEMP export exact RD-04 Montana row-state promotion inputs v6
+
+on:
+  pull_request:
+    branches: [observer/ssc-rd04-mt-row-state-promotion-export-base-v6]
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.tmp/rd04-mt-row-state-promotion-export-v6/trigger.json'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: temp-rd04-mt-row-state-promotion-export-v6
+  cancel-in-progress: false
+
+env:
+  SOURCE_MAIN: 0840358962621b0be3db6864ecec763327f35903
+  START_MAIN: bafb00ad4036be2d38cbeeee7573af9f9d10a2be
+  FINALITY_TRIGGER: 86cd935595775cabd3ca972922b04e086e2cf415
+  FINALITY_RUN: '31424034211'
+  FINALITY_ARTIFACT_ID: '9076482043'
+  FINALITY_ARTIFACT_NAME: ssc-rd04-mt-edge-census-postmerge-proof-v5
+  FINALITY_ARTIFACT_SHA256: 02010b8f6dced4a470861fa67574fa1852523f5b2acfcce604013289472bed0a
+  WORKFLOW_PATH: .github/workflows/temp-export-ssc-rd04-mt-row-state-promotion-inputs-v6.yml
+  TRIGGER_PATH: .tmp/rd04-mt-row-state-promotion-export-v6/trigger.json
+  OUT: /tmp/rd04-mt-row-state-promotion-export-v6
+
+jobs:
+  export:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'observer/ssc-rd04-mt-row-state-promotion-export-base-v6' &&
+      github.event.pull_request.head.ref == 'observer/ssc-rd04-mt-row-state-promotion-export-trigger-v6'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Export exact current-main-custodied inputs
+        id: export
+        continue-on-error: true
+        shell: bash
+        env:
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT/source" "$OUT/api" "$OUT/finality-proof"
+          printf '%s\n' start > "$OUT/STAGE"
+          printf '%s\n' 1 > "$OUT/EXIT_CODE"
+          trap 'rc=$?; printf "%s\n" "$rc" > "$OUT/EXIT_CODE"; exit "$rc"' EXIT
+          stage() { printf '%s\n' "$1" > "$OUT/STAGE"; }
+          api() {
+            curl --fail --silent --show-error --location \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "$1"
+          }
+
+          stage bind_carrier_and_live_main
+          test "$EVENT_BASE_REF" = observer/ssc-rd04-mt-row-state-promotion-export-base-v6
+          test "$(git rev-parse HEAD)" = "$EVENT_HEAD_SHA"
+          TRIGGER_COMMIT="$(git rev-parse HEAD)"
+          WORKFLOW_COMMIT="$(git rev-parse HEAD^)"
+          test "$EVENT_BASE_SHA" = "$WORKFLOW_COMMIT"
+          test "$(git show -s --format='%P' "$TRIGGER_COMMIT")" = "$WORKFLOW_COMMIT"
+          test "$(git show -s --format='%P' "$WORKFLOW_COMMIT")" = "$START_MAIN"
+          test "$(git diff --name-only "$START_MAIN" "$WORKFLOW_COMMIT")" = "$WORKFLOW_PATH"
+          test "$(git diff --name-only --diff-filter=A "$START_MAIN" "$WORKFLOW_COMMIT")" = "$WORKFLOW_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$START_MAIN" "$WORKFLOW_COMMIT")"
+          test "$(git diff --name-only "$WORKFLOW_COMMIT" "$TRIGGER_COMMIT")" = "$TRIGGER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$WORKFLOW_COMMIT" "$TRIGGER_COMMIT")" = "$TRIGGER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$WORKFLOW_COMMIT" "$TRIGGER_COMMIT")"
+          git diff --check "$START_MAIN" "$TRIGGER_COMMIT"
+
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          LIVE_MAIN="$(git rev-parse origin/main)"
+          git merge-base --is-ancestor "$SOURCE_MAIN" "$START_MAIN"
+          git merge-base --is-ancestor "$START_MAIN" "$LIVE_MAIN"
+          printf '%s\n' "$SOURCE_MAIN" > "$OUT/source-main.txt"
+          printf '%s\n' "$START_MAIN" > "$OUT/start-main.txt"
+          printf '%s\n' "$LIVE_MAIN" > "$OUT/live-main.txt"
+          printf '%s\n' "$WORKFLOW_COMMIT" > "$OUT/workflow-commit.txt"
+          printf '%s\n' "$TRIGGER_COMMIT" > "$OUT/trigger-commit.txt"
+
+          stage bind_v5_canonical_finality
+          api "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$FINALITY_ARTIFACT_ID" > "$OUT/api/finality-artifact.json"
+          jq -e \
+            --arg name "$FINALITY_ARTIFACT_NAME" \
+            --arg digest "sha256:$FINALITY_ARTIFACT_SHA256" \
+            --arg head "$FINALITY_TRIGGER" \
+            --argjson run "$FINALITY_RUN" \
+            '.id == 9076482043 and .name == $name and .expired == false and .digest == $digest and .workflow_run.id == $run and .workflow_run.head_sha == $head' \
+            "$OUT/api/finality-artifact.json" > /dev/null
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$FINALITY_ARTIFACT_ID/zip" \
+            -o "$OUT/finality-proof.zip"
+          test "$(sha256sum "$OUT/finality-proof.zip" | awk '{print $1}')" = "$FINALITY_ARTIFACT_SHA256"
+          unzip -q "$OUT/finality-proof.zip" -d "$OUT/finality-proof"
+          (cd "$OUT/finality-proof" && sha256sum -c SHA256SUMS > "$OUT/finality-proof-checks.txt")
+          jq -e \
+            --arg canonical "$SOURCE_MAIN" \
+            --arg start "$START_MAIN" \
+            '.schema_version == "ssc-rd04-mt-edge-census-postmerge-proof@3" and
+             .state == "canonical_montana_edge_census_merge_proved_with_property_bounded_zero_job_rd01_failures" and
+             .canonical_merge == $canonical and .live_main == $start and
+             .classified_zero_job_rd01_failure_count == 12 and
+             .release_check == "passed" and .post_release_replay == "passed" and
+             .promotion_executed_here == false and .class_closed == false and
+             .authority_boundary.source_requests == 0 and .authority_boundary.route_executions == 0 and
+             .authority_boundary.source_admissions == 0 and .authority_boundary.field_terminalizations == 0 and
+             .authority_boundary.matrix_updates == 0 and .authority_boundary.row_state_mutations == 0 and
+             .authority_boundary.row_terminalizations == 0 and .authority_boundary.outside_human_dependency == false' \
+            "$OUT/finality-proof/postmerge-proof.json" > /dev/null
+          jq -e \
+            '.schema_version == "ssc-rd04-mt-edge-census-native-push-ledger@3" and
+             .state == "required_successes_plus_property_bounded_unchanged_zero_job_rd01_failures" and
+             (.classified_failed_runs | length) == 12 and
+             ([.failed_run_jobs[] | select(.total_count != 0 or (.jobs | length) != 0)] | length) == 0' \
+            "$OUT/finality-proof/native-push-ledger.json" > /dev/null
+
+          stage bind_complete_21_path_denominator
+          printf '%s\n' \
+            '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1.yml' \
+            '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.yml' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/current-row-custody.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/product-manifest.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/row-state-validation.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/summary.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation-validation-v1/validated-row-state-protocol.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/index.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/input-custody.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/product-manifest.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/promoted-partial-field-matrix.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/remaining-open-field-census.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/row-state-decision.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/row-state-ledger.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation/row-state-summary.json' \
+            'docs/milestones/ssc-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.md' \
+            'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.schema.json' \
+            'test/status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.test.js' \
+            'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs' \
+            'tools/validate-status-sovereignty-rd-wave03-rd04-mt-row-state-reconciliation-v1.py' \
+            'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-nd-row-state-reconciliation.mjs' \
+            | LC_ALL=C sort > "$OUT/source-paths.txt"
+          LC_ALL=C sort -o "$OUT/source-paths.txt" "$OUT/source-paths.txt"
+          test "$(wc -l < "$OUT/source-paths.txt" | tr -d ' ')" = 21
+          : > "$OUT/source-file-inventory.tsv"
+          while IFS= read -r path; do
+            SOURCE_BLOB="$(git rev-parse "$SOURCE_MAIN:$path")"
+            START_BLOB="$(git rev-parse "$START_MAIN:$path")"
+            LIVE_BLOB="$(git rev-parse "$LIVE_MAIN:$path")"
+            test "$SOURCE_BLOB" = "$START_BLOB"
+            test "$SOURCE_BLOB" = "$LIVE_BLOB"
+            MODE="$(git ls-tree "$SOURCE_MAIN" -- "$path" | awk '{print $1}')"
+            test "$MODE" = 100644 -o "$MODE" = 100755
+            mkdir -p "$OUT/source/$(dirname "$path")"
+            git show "$SOURCE_MAIN:$path" > "$OUT/source/$path"
+            if [ "$MODE" = 100755 ]; then chmod 755 "$OUT/source/$path"; else chmod 644 "$OUT/source/$path"; fi
+            test "$(git hash-object "$OUT/source/$path")" = "$SOURCE_BLOB"
+            BYTES="$(wc -c < "$OUT/source/$path" | tr -d ' ')"
+            SHA256="$(sha256sum "$OUT/source/$path" | awk '{print $1}')"
+            printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$path" "$MODE" "$BYTES" "$SHA256" "$SOURCE_BLOB" "$LIVE_BLOB" >> "$OUT/source-file-inventory.tsv"
+          done < "$OUT/source-paths.txt"
+
+          stage prove_first_parent_non_touch
+          : > "$OUT/live-first-parent-commits.txt"
+          : > "$OUT/live-first-parent-edge-paths.tsv"
+          : > "$OUT/live-first-parent-paths.unsorted"
+          git rev-list --first-parent --reverse "$SOURCE_MAIN..$LIVE_MAIN" > "$OUT/live-first-parent-commits.txt"
+          PREV="$SOURCE_MAIN"
+          while IFS= read -r NEXT; do
+            test -n "$NEXT"
+            test "$(git rev-parse "$NEXT^1")" = "$PREV"
+            while IFS= read -r CHANGED; do
+              test -n "$CHANGED"
+              printf '%s\t%s\t%s\n' "$PREV" "$NEXT" "$CHANGED" >> "$OUT/live-first-parent-edge-paths.tsv"
+              printf '%s\n' "$CHANGED" >> "$OUT/live-first-parent-paths.unsorted"
+            done < <(git diff --name-only "$PREV" "$NEXT")
+            PREV="$NEXT"
+          done < "$OUT/live-first-parent-commits.txt"
+          test "$PREV" = "$LIVE_MAIN"
+          LC_ALL=C sort -u "$OUT/live-first-parent-paths.unsorted" > "$OUT/live-first-parent-paths.txt"
+          test -z "$(comm -12 "$OUT/source-paths.txt" "$OUT/live-first-parent-paths.txt")"
+
+          stage package_exact_files
+          SOURCE_TREE="$(git rev-parse "$SOURCE_MAIN^{tree}")"
+          LIVE_TREE="$(git rev-parse "$LIVE_MAIN^{tree}")"
+          printf '%s\n' "$SOURCE_TREE" > "$OUT/source-tree.txt"
+          printf '%s\n' "$LIVE_TREE" > "$OUT/live-tree.txt"
+          tar --sort=name --mtime='UTC 2000-01-01' --owner=0 --group=0 --numeric-owner -C "$OUT/source" -cJf "$OUT/source-files.tar.xz" .
+          tar -tJf "$OUT/source-files.tar.xz" | grep -v '/$' | sed 's#^\./##' | grep -v '^$' | LC_ALL=C sort > "$OUT/archive-paths.txt"
+          diff -u "$OUT/source-paths.txt" "$OUT/archive-paths.txt"
+
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          out=Path(os.environ['OUT'])
+          receipt={
+            'schema_version':'ssc-rd04-mt-row-state-promotion-input-export@6',
+            'state':'complete_exact_current_main_custodied_export',
+            'source_main':os.environ['SOURCE_MAIN'],
+            'start_main':os.environ['START_MAIN'],
+            'observed_live_main':(out/'live-main.txt').read_text().strip(),
+            'source_path_count':21,
+            'first_parent_edge_count':sum(1 for x in (out/'live-first-parent-commits.txt').read_text().splitlines() if x),
+            'protected_overlap_count':0,
+            'finality_trigger':os.environ['FINALITY_TRIGGER'],
+            'finality_run':int(os.environ['FINALITY_RUN']),
+            'finality_artifact_id':int(os.environ['FINALITY_ARTIFACT_ID']),
+            'finality_artifact_sha256':os.environ['FINALITY_ARTIFACT_SHA256'],
+            'archive_inventory':'exact_files_only',
+            'source_requests':0,
+            'route_executions':0,
+            'source_admissions':0,
+            'field_terminalizations':0,
+            'matrix_updates':0,
+            'row_state_mutations':0,
+            'row_terminalizations':0,
+            'class_closed':False,
+            'cumulative_ledger_effect':'none',
+            'publication_effect':'none',
+            'adoption_effect':'none',
+            'graph_effect':'none',
+            'outside_human_dependency':False,
+          }
+          (out/'export-receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          PY
+          printf '%s\n' \
+            'state=complete_exact_current_main_custodied_export' \
+            'source_requests=0' 'route_executions=0' 'source_admissions=0' 'field_terminalizations=0' \
+            'matrix_updates=0' 'row_state_mutations=0' 'row_terminalizations=0' 'class_closed=false' \
+            'cumulative_ledger_effect=none' 'publication_effect=none' 'adoption_effect=none' 'graph_effect=none' \
+            'outside_human_dependency=false' > "$OUT/BOUNDARY"
+          printf '%s\n' complete > "$OUT/STAGE"
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          (cd "$OUT" && find . -type f ! -path './SHA256SUMS' -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+          trap - EXIT
+
+      - name: Preserve exact source export
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-promotion-inputs-v6
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 0
+
+      - name: Enforce terminal exact export
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.export.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          test "$(cat "$OUT/source-main.txt")" = "$SOURCE_MAIN"
+          test "$(cat "$OUT/start-main.txt")" = "$START_MAIN"
+          test "$(wc -l < "$OUT/source-paths.txt" | tr -d ' ')" = 21
+          test -z "$(comm -12 "$OUT/source-paths.txt" "$OUT/live-first-parent-paths.txt")"
+          diff -u "$OUT/source-paths.txt" "$OUT/archive-paths.txt"
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e \
+            '.schema_version == "ssc-rd04-mt-row-state-promotion-input-export@6" and
+             .state == "complete_exact_current_main_custodied_export" and
+             .source_path_count == 21 and .protected_overlap_count == 0 and
+             .finality_artifact_id == 9076482043 and
+             .finality_artifact_sha256 == "02010b8f6dced4a470861fa67574fa1852523f5b2acfcce604013289472bed0a" and
+             .archive_inventory == "exact_files_only" and
+             .source_requests == 0 and .route_executions == 0 and .source_admissions == 0 and
+             .field_terminalizations == 0 and .matrix_updates == 0 and .row_state_mutations == 0 and
+             .row_terminalizations == 0 and .class_closed == false and
+             .cumulative_ledger_effect == "none" and .publication_effect == "none" and
+             .adoption_effect == "none" and .graph_effect == "none" and .outside_human_dependency == false' \
+            "$OUT/export-receipt.json" > /dev/null
+          test -z "$(git status --porcelain=v1)"
