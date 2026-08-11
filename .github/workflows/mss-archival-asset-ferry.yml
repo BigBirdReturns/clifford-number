@@ -39,8 +39,18 @@ jobs:
           fetch_commons 'Indian_soldiers_landing_at_Srinagar_airfield_during_the_1947%E2%80%931948_war.jpg' 'photo-srinagar-airlift-1947.jpg'
           fetch_commons '1965_war.jpg' 'photo-barki-lahore-1965.jpg'
           curl --fail --location --retry 4 --retry-all-errors --connect-timeout 20 --user-agent "$ua" --output "$out/official-history-1965-ch06.pdf" 'https://www.bharat-rakshak.com/archives/OfficialHistory/1965War/1965Chapter06.pdf'
-          pdftoppm -f 11 -l 11 -singlefile -png -r 180 "$out/official-history-1965-ch06.pdf" "$out/map-dograi-official-6-sep-1965"
-          rm "$out/official-history-1965-ch06.pdf"
+          python -m pip install --quiet pymupdf
+          python - <<'PY'
+          from pathlib import Path
+          import fitz
+          out = Path('mss-archival-assets')
+          pdf = fitz.open(out / 'official-history-1965-ch06.pdf')
+          page = pdf.load_page(10)
+          pix = page.get_pixmap(matrix=fitz.Matrix(2.5, 2.5), alpha=False)
+          pix.save(out / 'map-dograi-official-6-sep-1965.png')
+          pdf.close()
+          (out / 'official-history-1965-ch06.pdf').unlink()
+          PY
           find "$out" -maxdepth 1 -type f -printf '%f %s bytes\n'
       - name: Upload archival assets
         uses: actions/upload-artifact@v4
