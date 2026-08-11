@@ -24,12 +24,12 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          import textwrap
           carrier = Path('.github/workflows/temp-action-plan-receipt-seam.yml').read_text()
           marker = "          python - <<'PY'\n"
           start = carrier.index(marker) + len(marker)
           end = carrier.index("\n          PY\n", start)
-          source = textwrap.dedent(carrier[start:end])
+          lines = carrier[start:end].splitlines()
+          source = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines)
           exec(compile(source, 'action-plan-receipt-repair.py', 'exec'), {'__name__': '__main__'})
           PY
       - name: Run repository release gate
