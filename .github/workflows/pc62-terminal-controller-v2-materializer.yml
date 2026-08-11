@@ -1,0 +1,175 @@
+name: PC-62 terminal-controller v2 materializer
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pc62-terminal-controller-v2-materializer.yml'
+      - 'data/tmp/pc62-terminal-controller-v2.patch.gz.b64'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: pc62-terminal-controller-v2-materializer
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPOSITORY: ${{ github.repository }}
+  MATERIALIZER_BRANCH: agent/pc62-terminal-controller-materializer-v2
+  WORKFLOW_PATH: .github/workflows/pc62-terminal-controller-v2-materializer.yml
+  PATCH_PATH: data/tmp/pc62-terminal-controller-v2.patch.gz.b64
+  PATCH_TEXT_BLOB: 10392388737cfb685aa1dc52ca644b40e1ef8bf4
+  PATCH_TEXT_SHA256: cf0a4b27ac6b7a35eae921c6e3df32734690fd16cca557d609f394f729163506
+  PATCH_GZIP_SHA256: 2efcb3c42c144ffce1231565223062f12a083f11737bbcd8beaa362cbfb0cf1a
+  PATCH_SHA256: 75b94a224d049bfa36c3c12c2c0aff9ab4ce193ccde85d5bcdfdc96ca95a9f03
+  PATCH_BLOB: e8d2b214e4576f258e893a5bd52dcfefb73405d5
+  OLD_CONTROLLER_BLOB: c7b81be209eb2bed2a382ac325a8a66c55101ead
+  OLD_CONTROLLER_SHA256: dbd27049e6c49498847bff4fbf263d73b43f90a06d911314501486d8d45208a5
+  OLD_CONTROLLER_BYTES: '34738'
+  NEW_CONTROLLER_BLOB: b7008cf04a5686b1d48966d91574a61da306690d
+  NEW_CONTROLLER_SHA256: f4ff256502769610d5186ea020be77af8c9595bceb2659a165335e36c89a412c
+  NEW_CONTROLLER_BYTES: '38994'
+  FINAL_PRODUCT: 6a0c39239abd5f10a80c2dab66bd50a40c14fe52
+  FINAL_PRODUCT_TREE: 52a37d47d0821d2027bce69b5329920a4fcd8833
+  OUT: /tmp/pc62-terminal-controller-v2-materializer
+
+jobs:
+  materialize:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'agent/pc62-terminal-controller-materializer-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Reconstruct, authenticate, and publish exact v2 controller
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT"
+          mkdir -p "$OUT/run-blocks"
+
+          test "$(git rev-parse "HEAD:$PATCH_PATH")" = "$PATCH_TEXT_BLOB"
+          cp "$PATCH_PATH" "$OUT/controller-v2.patch.gz.b64"
+          test "$(sha256sum "$OUT/controller-v2.patch.gz.b64" | awk '{print $1}')" = "$PATCH_TEXT_SHA256"
+
+          base64 -d "$OUT/controller-v2.patch.gz.b64" > "$OUT/controller-v2.patch.gz"
+          test "$(sha256sum "$OUT/controller-v2.patch.gz" | awk '{print $1}')" = "$PATCH_GZIP_SHA256"
+          gzip -t "$OUT/controller-v2.patch.gz"
+          gzip -dc "$OUT/controller-v2.patch.gz" > "$OUT/controller-v2.patch"
+          test "$(sha256sum "$OUT/controller-v2.patch" | awk '{print $1}')" = "$PATCH_SHA256"
+          test "$(git hash-object "$OUT/controller-v2.patch")" = "$PATCH_BLOB"
+
+          gh api "/repos/$GH_REPOSITORY/git/blobs/$OLD_CONTROLLER_BLOB" > "$OUT/old-controller-blob.json"
+          test "$(jq -r .sha "$OUT/old-controller-blob.json")" = "$OLD_CONTROLLER_BLOB"
+          jq -r .content "$OUT/old-controller-blob.json" | tr -d '\n' | base64 -d > "$OUT/controller-v1.yml"
+          test "$(wc -c < "$OUT/controller-v1.yml" | tr -d ' ')" = "$OLD_CONTROLLER_BYTES"
+          test "$(sha256sum "$OUT/controller-v1.yml" | awk '{print $1}')" = "$OLD_CONTROLLER_SHA256"
+          test "$(git hash-object "$OUT/controller-v1.yml")" = "$OLD_CONTROLLER_BLOB"
+
+          cp "$OUT/controller-v1.yml" "$OUT/controller-v2.yml"
+          patch --batch --fuzz=0 --no-backup-if-mismatch "$OUT/controller-v2.yml" < "$OUT/controller-v2.patch"
+          test "$(wc -c < "$OUT/controller-v2.yml" | tr -d ' ')" = "$NEW_CONTROLLER_BYTES"
+          test "$(sha256sum "$OUT/controller-v2.yml" | awk '{print $1}')" = "$NEW_CONTROLLER_SHA256"
+          test "$(git hash-object "$OUT/controller-v2.yml")" = "$NEW_CONTROLLER_BLOB"
+          grep -Fq "$FINAL_PRODUCT" "$OUT/controller-v2.yml"
+          grep -Fq "$FINAL_PRODUCT_TREE" "$OUT/controller-v2.yml"
+
+          ruby -e "require 'yaml'; YAML.load_file(ARGV.fetch(0)); puts 'yaml_ok'" "$OUT/controller-v2.yml" > "$OUT/yaml-parse.txt"
+          ruby -ryaml - "$OUT/controller-v2.yml" "$OUT/run-blocks" <<'RUBY'
+          document = YAML.load_file(ARGV.fetch(0))
+          output = ARGV.fetch(1)
+          index = 0
+          document.fetch('jobs').each_value do |job|
+            Array(job['steps']).each do |step|
+              next unless step.is_a?(Hash) && step['run'].is_a?(String)
+              index += 1
+              File.write(File.join(output, format('run-%02d.sh', index)), step.fetch('run'))
+            end
+          end
+          abort 'no run blocks found' if index.zero?
+          puts index
+          RUBY
+          for script in "$OUT"/run-blocks/run-*.sh; do
+            bash -n "$script"
+          done
+          printf '%s\n' shell_syntax_ok > "$OUT/shell-syntax.txt"
+
+          encoded=$(base64 -w0 "$OUT/controller-v2.yml")
+          gh api --method POST "/repos/$GH_REPOSITORY/git/blobs" \
+            -f content="$encoded" \
+            -f encoding=base64 > "$OUT/published-controller-blob.json"
+          test "$(jq -r .sha "$OUT/published-controller-blob.json")" = "$NEW_CONTROLLER_BLOB"
+
+          cp "$WORKFLOW_PATH" "$OUT/materializer-workflow.yml"
+          jq -n \
+            --arg schema_version pc62-terminal-controller-v2-materializer-receipt@1 \
+            --arg status complete \
+            --arg materializer_head "$GITHUB_SHA" \
+            --arg patch_text_blob "$PATCH_TEXT_BLOB" \
+            --arg patch_text_sha256 "$PATCH_TEXT_SHA256" \
+            --arg patch_gzip_sha256 "$PATCH_GZIP_SHA256" \
+            --arg patch_blob "$PATCH_BLOB" \
+            --arg patch_sha256 "$PATCH_SHA256" \
+            --arg old_blob "$OLD_CONTROLLER_BLOB" \
+            --arg old_sha256 "$OLD_CONTROLLER_SHA256" \
+            --arg new_blob "$NEW_CONTROLLER_BLOB" \
+            --arg new_sha256 "$NEW_CONTROLLER_SHA256" \
+            --arg product "$FINAL_PRODUCT" \
+            --arg tree "$FINAL_PRODUCT_TREE" \
+            '{
+              schema_version:$schema_version,
+              status:$status,
+              materializer_head:$materializer_head,
+              patch:{
+                text_blob:$patch_text_blob,
+                text_sha256:$patch_text_sha256,
+                gzip_sha256:$patch_gzip_sha256,
+                raw_blob:$patch_blob,
+                raw_sha256:$patch_sha256
+              },
+              controller:{
+                source_blob:$old_blob,
+                source_sha256:$old_sha256,
+                published_blob:$new_blob,
+                published_sha256:$new_sha256,
+                bytes:38994,
+                yaml_parse:true,
+                shell_syntax:true
+              },
+              final_product:{
+                commit:$product,
+                tree:$tree
+              },
+              effects:{
+                product_semantics_changed:false,
+                merge_operations:0,
+                graph_effect:"none",
+                publication_effect:"none",
+                adoption_effect:"none",
+                binding_public_authority:false
+              }
+            }' > "$OUT/receipt.json"
+
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - name: Upload exact v2 controller materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc62-terminal-controller-v2-materializer
+          path: /tmp/pc62-terminal-controller-v2-materializer
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 9
