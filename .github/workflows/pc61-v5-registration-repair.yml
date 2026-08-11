@@ -1,4 +1,4 @@
-name: PC-61 v5 workflow registration repair
+name: PC-61 v5 replay worktree registration repair
 
 'on':
   pull_request:
@@ -21,8 +21,8 @@ env:
   GH_REPOSITORY: ${{ github.repository }}
   TARGET_BRANCH: 'agent/pc61-terminal-reconcile-v5'
   TARGET_PATH: '.github/workflows/pc61-terminal-reconciler-v5.yml'
-  ORIGINAL_BLOB: '9930cd150c51855a1679dc264b084893afcc2132'
-  OUT: '/tmp/pc61-v5-registration-repair'
+  EXPECTED_BLOB: '55cbe4486a01b4660609841905e28f9b802a99f5'
+  OUT: '/tmp/pc61-v5-worktree-registration-repair'
 
 jobs:
   repair:
@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - name: Replace only the invalid 420-minute job timeout
+      - name: Replace only the stale replay worktree reset
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -42,41 +42,55 @@ jobs:
           jq -r .content "$OUT/content-before.json" | tr -d '\n' | base64 -d > "$OUT/before.yml"
           test "$(git hash-object "$OUT/before.yml")" = "$before_blob"
 
-          if grep -qx '    timeout-minutes: 360' "$OUT/before.yml" && ! grep -qx '    timeout-minutes: 420' "$OUT/before.yml"; then
-            jq -n --arg schema_version 'pc61-v5-registration-repair@1' --arg status 'already_repaired' --arg branch "$TARGET_BRANCH" --arg path "$TARGET_PATH" --arg blob "$before_blob" '{schema_version:$schema_version,status:$status,target_branch:$branch,target_path:$path,current_blob:$blob,changed:false,product_semantics_changed:false,graph_effect:"none"}' > "$OUT/receipt.json"
+          old='          rm -rf "$PROOF" "$REPLAY"'
+          repaired='          git worktree remove --force "$REPLAY" 2>/dev/null || true'
+          if grep -Fqx "$repaired" "$OUT/before.yml"; then
+            test "$(grep -Fxc "$repaired" "$OUT/before.yml")" = 1
+            test "$(grep -Fxc '          git worktree prune' "$OUT/before.yml")" = 1
+            jq -n --arg schema_version 'pc61-v5-worktree-registration-repair@1' --arg status already_repaired --arg branch "$TARGET_BRANCH" --arg path "$TARGET_PATH" --arg blob "$before_blob" '{schema_version:$schema_version,status:$status,target_branch:$branch,target_path:$path,current_blob:$blob,changed:false,product_semantics_changed:false,admission_gates_weakened:false,graph_effect:"none"}' > "$OUT/receipt.json"
           else
-            test "$before_blob" = "$ORIGINAL_BLOB"
-            test "$(grep -xc '    timeout-minutes: 420' "$OUT/before.yml")" = 1
-            test "$(grep -xc '    timeout-minutes: 360' "$OUT/before.yml" || true)" = 0
+            test "$before_blob" = "$EXPECTED_BLOB"
+            test "$(grep -Fxc "$old" "$OUT/before.yml")" = 1
+            test "$(grep -Fxc '          mkdir -p "$PROOF"' "$OUT/before.yml")" = 1
 
             python - "$OUT/before.yml" "$OUT/after.yml" <<'PY'
           from pathlib import Path
           import sys
-          source = Path(sys.argv[1]).read_text()
-          old = '    timeout-minutes: 420\n'
-          new = '    timeout-minutes: 360\n'
-          if source.count(old) != 1 or source.count(new) != 0:
-              raise SystemExit('timeout replacement denominator mismatch')
-          target = source.replace(old, new)
-          if target.count(new) != 1 or target.count(old) != 0:
-              raise SystemExit('timeout replacement result mismatch')
-          Path(sys.argv[2]).write_text(target)
+
+          source = Path(sys.argv[1]).read_text(encoding='utf-8')
+          old = '          rm -rf "$PROOF" "$REPLAY"\n          mkdir -p "$PROOF"\n'
+          new = (
+              '          git worktree remove --force "$REPLAY" 2>/dev/null || true\n'
+              '          git worktree prune\n'
+              '          rm -rf "$PROOF" "$REPLAY"\n'
+              '          mkdir -p "$PROOF"\n'
+          )
+          if source.count(old) != 1:
+              raise SystemExit(f'proof replay reset denominator {source.count(old)} != 1')
+          target = source.replace(old, new, 1)
+          if target.count(new) != 1 or source == target:
+              raise SystemExit('proof replay reset postimage mismatch')
+          Path(sys.argv[2]).write_text(target, encoding='utf-8')
           PY
 
             diff -u "$OUT/before.yml" "$OUT/after.yml" > "$OUT/exact.patch" || test "$?" = 1
             test "$(grep -c '^-' "$OUT/exact.patch")" = 2
-            test "$(grep -c '^+' "$OUT/exact.patch")" = 2
+            test "$(grep -c '^+' "$OUT/exact.patch")" = 4
+            test "$(grep -Fxc '+          git worktree remove --force "$REPLAY" 2>/dev/null || true' "$OUT/exact.patch")" = 1
+            test "$(grep -Fxc '+          git worktree prune' "$OUT/exact.patch")" = 1
+            test "$(grep -Fxc '+          rm -rf "$PROOF" "$REPLAY"' "$OUT/exact.patch")" = 1
+
             after_blob=$(git hash-object "$OUT/after.yml")
             encoded=$(base64 -w0 "$OUT/after.yml")
             gh api --method PUT "/repos/$GH_REPOSITORY/contents/$TARGET_PATH" \
-              -f message='Repair PC-61 v5 workflow registration timeout' \
+              -f message='Repair PC-61 v5 replay worktree registration' \
               -f content="$encoded" \
               -f sha="$before_blob" \
               -f branch="$TARGET_BRANCH" > "$OUT/update-response.json"
             test "$(jq -r .content.sha "$OUT/update-response.json")" = "$after_blob"
             commit=$(jq -r .commit.sha "$OUT/update-response.json")
             test -n "$commit"
-            jq -n --arg schema_version 'pc61-v5-registration-repair@1' --arg status 'repaired' --arg branch "$TARGET_BRANCH" --arg path "$TARGET_PATH" --arg before "$before_blob" --arg after "$after_blob" --arg commit "$commit" '{schema_version:$schema_version,status:$status,target_branch:$branch,target_path:$path,before_blob:$before,after_blob:$after,repair_commit:$commit,changed:true,change_denominator:{lines_removed:1,lines_added:1,old_timeout_minutes:420,new_timeout_minutes:360},product_semantics_changed:false,graph_effect:"none"}' > "$OUT/receipt.json"
+            jq -n --arg schema_version 'pc61-v5-worktree-registration-repair@1' --arg status repaired --arg branch "$TARGET_BRANCH" --arg path "$TARGET_PATH" --arg before "$before_blob" --arg after "$after_blob" --arg commit "$commit" '{schema_version:$schema_version,status:$status,target_branch:$branch,target_path:$path,before_blob:$before,after_blob:$after,repair_commit:$commit,changed:true,change_denominator:{lines_removed:1,lines_added:3,worktree_unregister_added:1,worktree_prune_added:1},product_semantics_changed:false,admission_gates_weakened:false,graph_effect:"none"}' > "$OUT/receipt.json"
           fi
 
           (
@@ -85,12 +99,12 @@ jobs:
             sha256sum -c SHA256SUMS
           )
 
-      - name: Preserve registration-repair receipt
+      - name: Preserve worktree-registration repair receipt
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pc61-v5-registration-repair
-          path: /tmp/pc61-v5-registration-repair
+          name: pc61-v5-worktree-registration-repair
+          path: /tmp/pc61-v5-worktree-registration-repair
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 90
