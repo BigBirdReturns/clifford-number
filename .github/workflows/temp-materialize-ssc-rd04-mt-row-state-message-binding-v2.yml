@@ -1,0 +1,152 @@
+name: TEMP materialize Montana raw-message binding successor v2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-mt-row-state-message-binding-v2.yml'
+
+permissions:
+  contents: write
+
+env:
+  CANONICAL_PARENT: 0840358962621b0be3db6864ecec763327f35903
+  SOURCE_PRODUCT: e4d363df169e0707eb1e23ba705ea7ac55745717
+  SOURCE_BRANCH: agent/ssc-rd04-mt-row-state-reconciliation-v2
+  TARGET_BRANCH: agent/ssc-rd04-mt-row-state-reconciliation-v3
+  CARRIER_PATH: .github/workflows/temp-materialize-ssc-rd04-mt-row-state-message-binding-v2.yml
+  PRODUCT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation
+  SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/product-manifest.json
+  OUT: /tmp/ssc-rd04-mt-row-state-message-binding-v2
+  WORK: /tmp/ssc-rd04-mt-row-state-message-binding-work-v2
+  WRAPPER_OUT: /tmp/ssc-rd04-mt-row-state-message-binding-wrapper-v2
+  PRODUCT_AUTHOR_NAME: github-actions[bot]
+  PRODUCT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+  PRODUCT_AUTHOR_DATE: '2026-08-10T19:00:00Z'
+  PRODUCT_COMMITTER_NAME: github-actions[bot]
+  PRODUCT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+  PRODUCT_COMMITTER_DATE: '2026-08-10T19:00:00Z'
+  PRODUCT_MESSAGE: Promote exact Montana derivative row-state reconciliation v3
+  PRODUCT_MESSAGE_SHA256: 7d9850092b8fc9e2144d9ceee3592193211115aeefbc825f69e0811318365fa5
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned validators
+        run: python -m pip install --disable-pip-version-check jsonschema==4.25.1
+      - name: Execute authenticated compressed materializer
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$WRAPPER_OUT"
+          printf '%s\n' decode-payload > "$WRAPPER_OUT/STAGE"
+          printf '%s\n' 1 > "$WRAPPER_OUT/EXIT_CODE"
+          base64 -d > /tmp/mt-message-binding-materializer.sh.gz <<'PAYLOAD'
+          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
+          vnAZzPWsN3Bz0JVQ7XWv1GZex/0f5OUL13Q8AAA=
+          PAYLOAD
+          gzip -dc /tmp/mt-message-binding-materializer.sh.gz > /tmp/mt-message-binding-materializer.sh
+          test "$(sha256sum /tmp/mt-message-binding-materializer.sh | awk '{print $1}')" = '23bb83c2c4fd9899c8941167af60c7445a1e4e64641f795918ed267ae9e8beb4'
+          bash -n /tmp/mt-message-binding-materializer.sh
+          bash /tmp/mt-message-binding-materializer.sh
+      - name: Preserve message-binding materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-message-binding-materializer-v2
+          path: |
+            ${{ env.OUT }}
+            ${{ env.WRAPPER_OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
