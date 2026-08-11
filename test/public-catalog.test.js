@@ -19,7 +19,7 @@ assert.deepEqual(ukAiEntry.source_counts, { nodes: 194, edges: 223, sources: 14 
 assert.equal(ukAiEntry.featured_priority, 100);
 assert.equal(ukAiEntry.subtitle, 'Seven degrees of UK AI policy topology, with receipts.');
 assert.match(ukAiEntry.featured_claim.plain, /all 50 recommendations/);
-assert.equal(ukAiEntry.featured_claim.receipt_count, 2);
+assert.equal(ukAiEntry.featured_claim.receipt_count, 3);
 const ukAiCase = JSON.parse(readFileSync(ukAiEntry.href, 'utf8'));
 assert.equal(ukAiCase.projection_version, 'legacy-uk-ai-policy@1');
 assert.equal(ukAiCase.counts.events, 224);
@@ -28,7 +28,14 @@ assert.equal(ukAiCase.counts.sequenced_claims, 224);
 assert.equal(ukAiCase.counts.unsequenced_claims, 0);
 assert.equal(ukAiCase.claims.length, 224);
 assert.deepEqual(ukAiCase.unsequenced_claim_ids, []);
-assert.equal(ukAiCase.sections[0].records[0].claims[0].receipt_ids.length, 2);
+assert.deepEqual(
+  [...ukAiCase.sections[0].records[0].claims[0].receipt_ids].sort(),
+  [
+    'gov-ai-opportunities-action-plan',
+    'gov-ai-opportunities-action-plan-terms-2024-07-26',
+    'gov-pm-ai-blueprint-2025'
+  ].sort()
+);
 assert.equal(ukAiCase.relations.length, 0);
 assert.equal(ukAiCase.beacons.length, 0);
 assert.equal(
