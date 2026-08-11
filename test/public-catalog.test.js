@@ -13,6 +13,24 @@ assert.equal(catalog.counts.receipts, catalog.receipts.length);
 assert.ok(catalog.tracks.length > 0);
 assert.ok(catalog.cases.length > 0);
 
+const receiptLedger = readFileSync('data/ledger/receipts.jsonl', 'utf8')
+  .trim()
+  .split('\n')
+  .map(line => JSON.parse(line));
+const termsReceipt = receiptLedger.find(item => item.receipt_id === 'gov-ai-opportunities-action-plan-terms-2024-07-26');
+const planReceipt = receiptLedger.find(item => item.receipt_id === 'gov-ai-opportunities-action-plan');
+const pmReceipt = receiptLedger.find(item => item.receipt_id === 'gov-pm-ai-blueprint-2025');
+assert.ok(termsReceipt, 'the exact 26 July 2024 terms receipt must remain canonical');
+assert.ok(planReceipt, 'the 13 January 2025 Action Plan publication receipt must remain canonical');
+assert.ok(pmReceipt, 'the Prime Minister response receipt must remain canonical');
+assert.equal(termsReceipt.source_published_at, '2024-07-26');
+assert.equal(termsReceipt.event_date, '2024-07-26');
+assert.equal(planReceipt.source_published_at, '2025-01-13');
+assert.equal(planReceipt.event_date, '2025-01-13');
+assert.equal(pmReceipt.source_published_at, '2025-01-12');
+assert.equal(pmReceipt.source_updated_at, '2025-01-13');
+assert.equal(pmReceipt.event_date, '2025-01-13');
+
 const ukAiEntry = catalog.cases.find(item => item.case_id === 'uk-ai-policy');
 assert.ok(ukAiEntry, 'the legacy UK AI graph must cross the public-case boundary');
 assert.deepEqual(ukAiEntry.source_counts, { nodes: 194, edges: 223, sources: 14 });
