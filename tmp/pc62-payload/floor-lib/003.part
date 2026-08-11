@@ -1,0 +1,20 @@
+  if (Object.values(build.control_integrity).some(value => value !== true)) {
+    errors.push('Preference Custody v60 integrity ledger contains false');
+  }
+  let previous = null;
+  for (const [index, event] of build.custody_chain.entries()) {
+    const { event_sha256, ...unsigned } = event;
+    if (unsigned.previous_event_sha256 !== previous || event_sha256 !== sha256(unsigned)) {
+      errors.push(`Preference Custody v60 custody event ${index} mismatch`);
+    }
+    previous = event_sha256;
+  }
+  if (build.custody_chain_head_sha256 !== previous) {
+    errors.push('Preference Custody v60 custody chain head mismatch');
+  }
+  return unique(errors);
+}
+
+export function renderMarkdown(build) {
+  return `# Preference Custody laboratory floor v60\n\nSynthetic compositional floor only. Graph effect: **${build.graph_effect}**. Real-world evidence: **${build.real_world_evidence_state}**.\n\n| Measure | Value |\n| --- | ---: |\n| Base controls | ${build.composition.base_control_count} |\n| PC-62 extension | 1 |\n| Final controls | ${build.control_count} |\n| Base promotion requirements | ${build.composition.base_promotion_requirement_count} |\n| Requirements added | ${build.composition.added_promotion_requirement_count} |\n| Final promotion requirements | ${build.promotion_boundary.promotion_requirement_count} |\n\nResolved frontier: \`${build.frontier_transition.resolved_base_frontier}\`.\n\nSuccessor frontiers:\n${build.frontier_transition.successor_frontiers.map(frontier => `- \`${frontier}\``).join('\n')}\n\nThe qualified v59 base is recursively source-bound and byte-preserved. PC-62 creates no real ownership, impersonation, account-state, security, graph, publication, adoption, causal, intent, or public-authority conclusion.\n`;
+}
