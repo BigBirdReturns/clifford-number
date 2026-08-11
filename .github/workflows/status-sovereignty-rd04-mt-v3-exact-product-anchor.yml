@@ -1,0 +1,332 @@
+name: RD-04 Montana V3 exact-product admission anchor
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/status-sovereignty-rd04-mt-v3-exact-product-anchor.yml'
+      - 'data/intake/status-sovereignty-rd04-mt-v3-exact-product-anchor.json'
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/**'
+      - 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml'
+      - 'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/**'
+      - 'docs/milestones/ssc-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.md'
+      - 'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json'
+      - 'test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js'
+      - 'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs'
+      - 'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rd04-mt-v3-exact-product-anchor
+  cancel-in-progress: false
+
+env:
+  ANCHOR_BRANCH: agent/ssc-rd04-mt-v3-exact-product-anchor-v1
+  ANCHOR_START_MAIN: bafb00ad4036be2d38cbeeee7573af9f9d10a2be
+  ANCHOR_WORKFLOW_PATH: .github/workflows/status-sovereignty-rd04-mt-v3-exact-product-anchor.yml
+  ANCHOR_DATA_PATH: data/intake/status-sovereignty-rd04-mt-v3-exact-product-anchor.json
+  ANCHOR_DATA_BLOB: 50221cc1ae5a827d84b8459718ee43c079fbb872
+  ANCHOR_DATA_SHA256: 0b7f5ac2be6110848fc9b73e966332c6c493de07608c127093a92289d0317e8a
+  ANCHOR_DATA_BYTES: '1325'
+  PRODUCT_BRANCH: agent/ssc-rd04-mt-row-state-reconciliation-v3
+  PRODUCT_COMMIT: 30e4f3c17848419790d27826199e37df942c351f
+  PRODUCT_TREE: f1a05ffc235228a852387104f1175a882cae0e49
+  PRODUCT_PARENT: 0840358962621b0be3db6864ecec763327f35903
+  PRODUCT_MESSAGE: Promote exact Montana derivative row-state reconciliation v3
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation
+  PRODUCT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml
+  OUT: /tmp/ssc-rd04-mt-v3-exact-product-anchor
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned Draft 2020-12 validator
+        run: python -m pip install --disable-pip-version-check jsonschema==4.25.1
+
+      - name: Bind canonical anchor and exact product object
+        id: qualify
+        continue-on-error: true
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          EVENT_HEAD_REF: ${{ github.event.pull_request.head.ref || '' }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+          EVENT_BASE_REF: ${{ github.event.pull_request.base.ref || '' }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" /tmp/rd04-mt-v3-anchor-product
+          mkdir -p "$OUT"
+          printf '%s\n' bootstrap > "$OUT/STAGE"
+          printf '%s\n' 1 > "$OUT/EXIT_CODE"
+          trap 'rc=$?; printf "%s\n" "$rc" > "$OUT/EXIT_CODE"; exit "$rc"' EXIT
+          stage() { printf '%s\n' "$1" > "$OUT/STAGE"; }
+
+          stage classify_event_and_bind_anchor_surface
+          test "$(git rev-parse HEAD)" = "$EVENT_HEAD_SHA"
+          git fetch --no-tags --force origin \
+            "+refs/heads/main:refs/remotes/origin/main" \
+            "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/product-v3"
+          test "$(git rev-parse refs/remotes/origin/product-v3)" = "$PRODUCT_COMMIT"
+
+          if [ "$EVENT_NAME" = pull_request ] && [ "$EVENT_HEAD_REF" = "$ANCHOR_BRANCH" ]; then
+            MODE=anchor_self_qualification
+            test "$EVENT_BASE_REF" = main
+            test "$EVENT_BASE_SHA" = "$ANCHOR_START_MAIN"
+            test "$(git rev-parse origin/main)" = "$ANCHOR_START_MAIN"
+            WORKFLOW_COMMIT="$(git rev-parse HEAD)"
+            DATA_COMMIT="$(git rev-parse HEAD^)"
+            test "$(git rev-parse HEAD^^)" = "$ANCHOR_START_MAIN"
+            test "$(git show -s --format='%P' "$WORKFLOW_COMMIT")" = "$DATA_COMMIT"
+            test "$(git show -s --format='%P' "$DATA_COMMIT")" = "$ANCHOR_START_MAIN"
+            test "$(git diff --name-only "$ANCHOR_START_MAIN" "$DATA_COMMIT")" = "$ANCHOR_DATA_PATH"
+            test "$(git diff --name-only --diff-filter=A "$ANCHOR_START_MAIN" "$DATA_COMMIT")" = "$ANCHOR_DATA_PATH"
+            test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$ANCHOR_START_MAIN" "$DATA_COMMIT")"
+            test "$(git diff --name-only "$DATA_COMMIT" "$WORKFLOW_COMMIT")" = "$ANCHOR_WORKFLOW_PATH"
+            test "$(git diff --name-only --diff-filter=A "$DATA_COMMIT" "$WORKFLOW_COMMIT")" = "$ANCHOR_WORKFLOW_PATH"
+            test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$DATA_COMMIT" "$WORKFLOW_COMMIT")"
+            EXPECTED_ANCHOR_PATHS="$(printf '%s\n' "$ANCHOR_WORKFLOW_PATH" "$ANCHOR_DATA_PATH" | LC_ALL=C sort)"
+            test "$(git diff --name-only "$ANCHOR_START_MAIN" HEAD | LC_ALL=C sort)" = "$EXPECTED_ANCHOR_PATHS"
+            test "$(git diff --name-only --diff-filter=A "$ANCHOR_START_MAIN" HEAD | LC_ALL=C sort)" = "$EXPECTED_ANCHOR_PATHS"
+            test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$ANCHOR_START_MAIN" HEAD)"
+            git diff --check "$ANCHOR_START_MAIN" HEAD
+            ANCHOR_SOURCE=HEAD
+            HISTORY_BASE="$ANCHOR_START_MAIN"
+          elif [ "$EVENT_NAME" = pull_request ]; then
+            MODE=product_pull_request_admission
+            test "$EVENT_HEAD_REF" = "$PRODUCT_BRANCH"
+            test "$EVENT_BASE_REF" = main
+            test "$EVENT_HEAD_SHA" = "$PRODUCT_COMMIT"
+            test "$(git rev-parse origin/main)" = "$EVENT_BASE_SHA"
+            ANCHOR_SOURCE="$EVENT_BASE_SHA"
+            HISTORY_BASE="$EVENT_BASE_SHA"
+          else
+            MODE=canonical_push_admission
+            read -r P1 P2 EXTRA <<< "$(git show -s --format='%P' HEAD)"
+            test -n "$P1" && test -n "$P2" && test -z "${EXTRA:-}"
+            test "$P2" = "$PRODUCT_COMMIT"
+            ANCHOR_SOURCE="$P1"
+            HISTORY_BASE="$P1"
+          fi
+          printf '%s\n' "$MODE" > "$OUT/mode.txt"
+          printf '%s\n' "$HISTORY_BASE" > "$OUT/base-sha.txt"
+
+          stage bind_anchor_data
+          test "$(git rev-parse "$ANCHOR_SOURCE:$ANCHOR_DATA_PATH")" = "$ANCHOR_DATA_BLOB"
+          git cat-file -e "$ANCHOR_SOURCE:$ANCHOR_WORKFLOW_PATH"
+          git show "$ANCHOR_SOURCE:$ANCHOR_DATA_PATH" > "$OUT/anchor.json"
+          test "$(wc -c < "$OUT/anchor.json" | tr -d ' ')" = "$ANCHOR_DATA_BYTES"
+          test "$(sha256sum "$OUT/anchor.json" | awk '{print $1}')" = "$ANCHOR_DATA_SHA256"
+          jq -e \
+            --arg commit "$PRODUCT_COMMIT" \
+            --arg tree "$PRODUCT_TREE" \
+            --arg parent "$PRODUCT_PARENT" \
+            --arg message "$PRODUCT_MESSAGE" \
+            '.schema_version == "ssc-rd04-mt-v3-exact-product-anchor@1" and
+             .state == "canonical_prerequisite_exact_product_anchor" and
+             .product_pull_request == 1903 and
+             .product_branch == "agent/ssc-rd04-mt-row-state-reconciliation-v3" and
+             .product_commit == $commit and .product_tree == $tree and .product_parent == $parent and
+             .product_message == $message and .product_path_count == 14 and
+             .product_change_class == "addition_only" and .product_transport_path_count == 0 and
+             .candidate_cell_sha256 == "ba173d03c2f82316ca79eb8b6627057db6fdb54113340ff0f9539a85e89a1f2d" and
+             .montana_row_sha256 == "b6474320f690a653eae081cf655a090bb5d5da0f444e9a1c42077fd0b951bcbc" and
+             .promoted_matrix_sha256 == "12e52344af0c8ec3d845b6f05f8a20014fa84504d10dbc9ee0674d37715abe1d" and
+             .terminal_cells == 230 and .open_cells == 220 and .terminal_units == 12 and
+             .field_terminalizations == 0 and .matrix_updates == 1 and
+             .row_state_mutations == 1 and .row_terminalizations == 1 and .class_closed == false and
+             .cumulative_ledger_effect == "none" and .publication_effect == "none" and
+             .adoption_effect == "none" and .graph_effect == "none" and
+             .outside_human_dependency == false and .anchor_effect == "exact_product_admission_only"' \
+            "$OUT/anchor.json" > /dev/null
+
+          stage bind_exact_product_commit_tree_and_paths
+          test "$(git show -s --format='%P' "$PRODUCT_COMMIT")" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^{tree}")" = "$PRODUCT_TREE"
+          EXPECTED_PRODUCT_PATHS="$(printf '%s\n' \
+            '.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/input-custody.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-decision.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-ledger.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/promoted-partial-field-matrix.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/remaining-open-field-census.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-summary.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/index.json' \
+            'data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/product-manifest.json' \
+            'docs/milestones/ssc-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.md' \
+            'schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json' \
+            'test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js' \
+            'tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs' \
+            'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs' | LC_ALL=C sort)"
+          printf '%s\n' "$EXPECTED_PRODUCT_PATHS" > "$OUT/product-paths.txt"
+          test "$(wc -l < "$OUT/product-paths.txt" | tr -d ' ')" = 14
+          test "$(git diff --name-only "$PRODUCT_PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort)" = "$EXPECTED_PRODUCT_PATHS"
+          test "$(git diff --name-only --diff-filter=A "$PRODUCT_PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort)" = "$EXPECTED_PRODUCT_PATHS"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$PRODUCT_PARENT" "$PRODUCT_COMMIT")"
+          git diff --check "$PRODUCT_PARENT" "$PRODUCT_COMMIT"
+
+          stage bind_complete_raw_commit_object
+          {
+            printf 'tree %s\n' "$PRODUCT_TREE"
+            printf 'parent %s\n' "$PRODUCT_PARENT"
+            printf 'author github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> 1786388400 +0000\n'
+            printf 'committer github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> 1786388400 +0000\n'
+            printf '\n'
+            printf '%s\n' "$PRODUCT_MESSAGE"
+          } > "$OUT/expected-product-commit.raw"
+          git cat-file commit "$PRODUCT_COMMIT" > "$OUT/actual-product-commit.raw"
+          cmp "$OUT/expected-product-commit.raw" "$OUT/actual-product-commit.raw"
+          test "$(git hash-object -t commit --stdin < "$OUT/expected-product-commit.raw")" = "$PRODUCT_COMMIT"
+
+          stage bind_current_main_and_push_topology
+          git merge-base --is-ancestor "$ANCHOR_START_MAIN" "$HISTORY_BASE"
+          if [ "$MODE" != anchor_self_qualification ]; then
+            test "$(git rev-parse "$HISTORY_BASE:$ANCHOR_DATA_PATH")" = "$ANCHOR_DATA_BLOB"
+          fi
+          if [ "$MODE" = canonical_push_admission ]; then
+            test "$(git rev-parse "HEAD:$ANCHOR_DATA_PATH")" = "$ANCHOR_DATA_BLOB"
+            while IFS= read -r path; do
+              test "$(git rev-parse "HEAD:$path")" = "$(git rev-parse "$PRODUCT_COMMIT:$path")"
+            done < "$OUT/product-paths.txt"
+            test "$(git diff --name-only "$HISTORY_BASE" HEAD | LC_ALL=C sort)" = "$EXPECTED_PRODUCT_PATHS"
+            test "$(git diff --name-only --diff-filter=A "$HISTORY_BASE" HEAD | LC_ALL=C sort)" = "$EXPECTED_PRODUCT_PATHS"
+            test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$HISTORY_BASE" HEAD)"
+          fi
+
+          stage replay_exact_product_qualification
+          git worktree add --detach /tmp/rd04-mt-v3-anchor-product "$PRODUCT_COMMIT"
+          pushd /tmp/rd04-mt-v3-anchor-product > /dev/null
+          ruby -e "require 'yaml'; YAML.load_file(ARGV.fetch(0)); puts 'yaml_ok'" "$PRODUCT_WORKFLOW" > "$OUT/product-workflow-yaml.txt"
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/generated" | tee "$OUT/builder.json"
+          for name in row-state-ledger.json promoted-partial-field-matrix.json remaining-open-field-census.json row-state-summary.json index.json; do
+            cmp "$OUT/generated/$name" "$PRODUCT_ROOT/$name"
+          done
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/validator.json"
+          node --test test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js | tee "$OUT/adversarial.log"
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check | tee "$OUT/release-check.log"
+          git reset --hard "$PRODUCT_COMMIT"
+          git clean -fdx
+          test -z "$(git status --porcelain=v1)"
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --check > "$OUT/builder-post-release.json"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/validator-post-release.json"
+          cmp "$OUT/validator.json" "$OUT/validator-post-release.json"
+          popd > /dev/null
+          jq -e \
+            '.state == "qualified_exact_montana_row_state_reconciliation" and
+             .promoted_matrix_sha256 == "12e52344af0c8ec3d845b6f05f8a20014fa84504d10dbc9ee0674d37715abe1d" and
+             .montana_row_sha256 == "b6474320f690a653eae081cf655a090bb5d5da0f444e9a1c42077fd0b951bcbc" and
+             .proposed_cell_sha256 == "ba173d03c2f82316ca79eb8b6627057db6fdb54113340ff0f9539a85e89a1f2d" and
+             .terminal_cells == 230 and .still_open_cells == 220 and .terminal_units == 12 and
+             .field_terminalizations == 0 and .matrix_updates == 1 and
+             .row_state_mutations == 1 and .row_terminalizations == 1 and
+             .class_closed == false and .outside_human_dependency == false and
+             .adversarial_refusal_floor == 40' "$OUT/validator.json" > /dev/null
+          grep -F '# pass 5' "$OUT/adversarial.log" > /dev/null
+
+          python - "$OUT/receipt.json" "$MODE" "$HISTORY_BASE" <<'PY'
+          import json, os, sys
+          path, mode, base = sys.argv[1:]
+          value = {
+            'schema_version': 'ssc-rd04-mt-v3-exact-product-anchor-receipt@1',
+            'state': 'exact_product_anchor_qualified',
+            'mode': mode,
+            'anchor_data_blob': os.environ['ANCHOR_DATA_BLOB'],
+            'anchor_data_sha256': os.environ['ANCHOR_DATA_SHA256'],
+            'base_sha': base,
+            'product_commit': os.environ['PRODUCT_COMMIT'],
+            'product_tree': os.environ['PRODUCT_TREE'],
+            'product_parent': os.environ['PRODUCT_PARENT'],
+            'product_path_count': 14,
+            'raw_commit_object_bound': True,
+            'deterministic_reconstruction': 'passed',
+            'closed_schema_validation': 'passed',
+            'adversarial_refusal_floor': 40,
+            'release_check': 'passed',
+            'post_release_replay': 'passed',
+            'source_requests': 0,
+            'route_executions': 0,
+            'source_admissions': 0,
+            'field_terminalizations': 0,
+            'matrix_updates': 0,
+            'row_state_mutations': 0,
+            'row_terminalizations': 0,
+            'class_closed': False,
+            'cumulative_ledger_effect': 'none',
+            'publication_effect': 'none',
+            'adoption_effect': 'none',
+            'graph_effect': 'none',
+            'outside_human_dependency': False,
+            'promotion_executed_here': False,
+          }
+          open(path, 'w').write(json.dumps(value, indent=2, sort_keys=True) + '\n')
+          PY
+          printf '%s\n' complete > "$OUT/STAGE"
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+          trap - EXIT
+
+      - name: Preserve exact-product anchor proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-v3-exact-product-anchor
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce terminal exact-product anchor
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.qualify.outcome }}" = success
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test "$(cat "$OUT/STAGE")" = complete
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e \
+            --arg commit "$PRODUCT_COMMIT" --arg tree "$PRODUCT_TREE" --arg parent "$PRODUCT_PARENT" \
+            '.schema_version == "ssc-rd04-mt-v3-exact-product-anchor-receipt@1" and
+             .state == "exact_product_anchor_qualified" and
+             .anchor_data_blob == "50221cc1ae5a827d84b8459718ee43c079fbb872" and
+             .anchor_data_sha256 == "0b7f5ac2be6110848fc9b73e966332c6c493de07608c127093a92289d0317e8a" and
+             .product_commit == $commit and .product_tree == $tree and .product_parent == $parent and
+             .product_path_count == 14 and .raw_commit_object_bound == true and
+             .deterministic_reconstruction == "passed" and .closed_schema_validation == "passed" and
+             .adversarial_refusal_floor == 40 and .release_check == "passed" and
+             .post_release_replay == "passed" and .source_requests == 0 and .route_executions == 0 and
+             .source_admissions == 0 and .field_terminalizations == 0 and .matrix_updates == 0 and
+             .row_state_mutations == 0 and .row_terminalizations == 0 and .class_closed == false and
+             .cumulative_ledger_effect == "none" and .publication_effect == "none" and
+             .adoption_effect == "none" and .graph_effect == "none" and
+             .outside_human_dependency == false and .promotion_executed_here == false' \
+            "$OUT/receipt.json" > /dev/null
+          test -z "$(git status --porcelain=v1)"
