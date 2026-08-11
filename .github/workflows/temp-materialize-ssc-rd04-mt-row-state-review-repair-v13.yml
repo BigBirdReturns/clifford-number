@@ -1,0 +1,322 @@
+name: TEMP materialize Montana row-state raw-commit repair v13
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-mt-row-state-review-repair-v13.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: temp-rd04-mt-row-state-review-repair-v13
+  cancel-in-progress: false
+
+env:
+  V12_RUN: '31451160837'
+  V12_ARTIFACT_ID: '9086380746'
+  V12_ARTIFACT_NAME: ssc-rd04-mt-row-state-review-repair-materializer-v12
+  V12_ARTIFACT_SHA256: 084513d5e7a03ab36ab3973a5663300a75559aaed3791a03e45ba672331c952e
+  V12_HEAD: a94e279ed1e22fed6390af672a340ae05fd3997c
+  V12_PROGRAM_PATH: ssc-rd04-mt-row-state-review-repair-wrapper-v12/materialize.sh
+  V12_PROGRAM_SHA256: 1f62a2d0fd386b409584c850388cec255d9209028a0ac12248eeee873b5944fc
+  V13_PROGRAM_SHA256: 45d50b2debb5555101802d2c96081154b51ac3fbb69a08254d21dd492988f06f
+  SOURCE_PRODUCT: 85fad4f736a3639444edd2c522a67316dbade480
+  CANONICAL_PARENT: 0840358962621b0be3db6864ecec763327f35903
+  TARGET_BRANCH: agent/ssc-rd04-mt-row-state-reconciliation-v3
+  CARRIER_PATH: .github/workflows/temp-materialize-ssc-rd04-mt-row-state-review-repair-v13.yml
+  PRODUCT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation
+  SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/product-manifest.json
+  OUT: /tmp/ssc-rd04-mt-row-state-review-repair-v1
+  WORK: /tmp/ssc-rd04-mt-row-state-review-repair-work-v1
+  WRAPPER_OUT: /tmp/ssc-rd04-mt-row-state-review-repair-wrapper-v13
+  PRODUCT_AUTHOR_NAME: github-actions[bot]
+  PRODUCT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+  PRODUCT_AUTHOR_DATE: '2026-08-10T19:00:00Z'
+  PRODUCT_COMMITTER_NAME: github-actions[bot]
+  PRODUCT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+  PRODUCT_COMMITTER_DATE: '2026-08-10T19:00:00Z'
+  PRODUCT_MESSAGE: Promote exact Montana derivative row-state reconciliation v3
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-mt-row-state-review-repair-materializer-v13'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned validators
+        run: python -m pip install --disable-pip-version-check jsonschema==4.25.1
+
+      - name: Recover V12 program and apply raw commit-object repair
+        id: materialize
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$WRAPPER_OUT" "$OUT" "$WORK" /tmp/v12-artifact /tmp/v12.zip /tmp/materialize-v13.sh /tmp/materializer-console.log
+          mkdir -p "$WRAPPER_OUT" /tmp/v12-artifact
+          printf '%s\n' bootstrap > "$WRAPPER_OUT/STAGE"
+          printf '%s\n' 1 > "$WRAPPER_OUT/EXIT_CODE"
+          stage() { printf '%s\n' "$1" > "$WRAPPER_OUT/STAGE"; }
+          api() {
+            curl --fail --silent --show-error --location \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "$1"
+          }
+          capture() {
+            if [ -f /tmp/materialize-v13.sh ]; then cp /tmp/materialize-v13.sh "$WRAPPER_OUT/materialize-v13.sh"; fi
+            if [ -f /tmp/materializer-console.log ]; then cp /tmp/materializer-console.log "$WRAPPER_OUT/materializer-console.log"; fi
+            if [ -f /tmp/v12-artifact.json ]; then cp /tmp/v12-artifact.json "$WRAPPER_OUT/v12-artifact.json"; fi
+            if [ -f /tmp/v12.zip ]; then sha256sum /tmp/v12.zip > "$WRAPPER_OUT/v12-artifact.sha256"; fi
+            rm -rf "$WRAPPER_OUT/materializer-out"
+            if [ -d "$OUT" ]; then mkdir -p "$WRAPPER_OUT/materializer-out"; cp -a "$OUT"/. "$WRAPPER_OUT/materializer-out"/ || true; fi
+          }
+          fail() {
+            local rc=$?
+            trap - ERR
+            printf '%s\n' "$rc" > "$WRAPPER_OUT/EXIT_CODE"
+            capture
+            (cd "$WRAPPER_OUT" && find . -type f ! -path './SHA256SUMS' -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS) || true
+            exit "$rc"
+          }
+          trap fail ERR
+
+          stage authenticate-carrier-and-source-artifact
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"
+          test "$(git diff --name-only "$CANONICAL_PARENT" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD)" = "$CARRIER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" HEAD)"
+          git diff --check "$CANONICAL_PARENT" HEAD
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          git merge-base --is-ancestor "$CANONICAL_PARENT" origin/main
+          test -z "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH")"
+
+          api "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$V12_ARTIFACT_ID" > /tmp/v12-artifact.json
+          jq -e \
+            --arg name "$V12_ARTIFACT_NAME" \
+            --arg digest "sha256:$V12_ARTIFACT_SHA256" \
+            --arg head "$V12_HEAD" \
+            --argjson run "$V12_RUN" \
+            '.id == 9086380746 and .name == $name and .expired == false and .digest == $digest and .workflow_run.id == $run and .workflow_run.head_sha == $head' \
+            /tmp/v12-artifact.json > /dev/null
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$V12_ARTIFACT_ID/zip" \
+            -o /tmp/v12.zip
+          test "$(sha256sum /tmp/v12.zip | awk '{print $1}')" = "$V12_ARTIFACT_SHA256"
+          unzip -q /tmp/v12.zip -d /tmp/v12-artifact
+          test "$(sha256sum "/tmp/v12-artifact/$V12_PROGRAM_PATH" | awk '{print $1}')" = "$V12_PROGRAM_SHA256"
+
+          stage apply-exact-raw-object-repair
+          cp "/tmp/v12-artifact/$V12_PROGRAM_PATH" /tmp/materialize-v13.sh
+          python - /tmp/materialize-v13.sh "$WRAPPER_OUT/patch-receipt.json" <<'PYPATCH'
+          from pathlib import Path
+          import hashlib,json,sys
+          path,receipt=map(Path,sys.argv[1:])
+          before=path.read_text(encoding='utf-8')
+          s=before
+          old_checks='''checks=\'\'\'          test "$(git show -s --format=\'%an\' "$PRODUCT_COMMIT")" = \'github-actions[bot]\'
+          test "$(git show -s --format=\'%ae\' "$PRODUCT_COMMIT")" = \'41898282+github-actions[bot]@users.noreply.github.com\'
+          test "$(git show -s --format=\'%aI\' "$PRODUCT_COMMIT")" = \'2026-08-10T19:00:00Z\'
+          test "$(git show -s --format=\'%cn\' "$PRODUCT_COMMIT")" = \'github-actions[bot]\'
+          test "$(git show -s --format=\'%ce\' "$PRODUCT_COMMIT")" = \'41898282+github-actions[bot]@users.noreply.github.com\'
+          test "$(git show -s --format=\'%cI\' "$PRODUCT_COMMIT")" = \'2026-08-10T19:00:00Z\'
+          test "$(git show -s --format=\'%B\' "$PRODUCT_COMMIT")" = \'Promote exact Montana derivative row-state reconciliation v2\'
+\'\'\'
+workflow=workflow.replace(anchor,anchor+checks,1)'''
+          new_checks='''checks="\\n".join([
+    '          git cat-file commit "$PRODUCT_COMMIT" > "$OUT/product-commit-object.raw"',
+    '          python - "$OUT/product-commit-object.raw" <<\'PYCOMMIT\'',
+    '          from pathlib import Path',
+    '          import sys',
+    '          raw=Path(sys.argv[1]).read_bytes()',
+    '          headers,message=raw.split(b"\\n\\n",1)',
+    '          lines=headers.splitlines()',
+    '          author=b"author github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> 1786388400 +0000"',
+    '          committer=b"committer github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> 1786388400 +0000"',
+    '          if lines.count(author)!=1: raise SystemExit(f"author header denominator {lines.count(author)}")',
+    '          if lines.count(committer)!=1: raise SystemExit(f"committer header denominator {lines.count(committer)}")',
+    '          if message != b"Promote exact Montana derivative row-state reconciliation v3\\n": raise SystemExit(f"message bytes mismatch: {message!r}")',
+    '          PYCOMMIT',
+    '',
+])
+workflow=workflow.replace(anchor,anchor+checks,1)'''
+          assert s.count(old_checks)==1, s.count(old_checks)
+          s=s.replace(old_checks,new_checks,1)
+          old_post='''test "$(git show -s --format='%an' HEAD)" = "$PRODUCT_AUTHOR_NAME"
+test "$(git show -s --format='%ae' HEAD)" = "$PRODUCT_AUTHOR_EMAIL"
+test "$(git show -s --format='%aI' HEAD)" = "$PRODUCT_AUTHOR_DATE"
+test "$(git show -s --format='%cn' HEAD)" = "$PRODUCT_COMMITTER_NAME"
+test "$(git show -s --format='%ce' HEAD)" = "$PRODUCT_COMMITTER_EMAIL"
+test "$(git show -s --format='%cI' HEAD)" = "$PRODUCT_COMMITTER_DATE"
+test "$(git show -s --format='%B' HEAD)" = "$PRODUCT_MESSAGE"'''
+          new_post='''git cat-file commit HEAD > "$OUT/product-commit-object.raw"
+python - "$OUT/product-commit-object.raw" <<'PYCOMMIT'
+from pathlib import Path
+import sys
+raw=Path(sys.argv[1]).read_bytes()
+headers,message=raw.split(b'\\n\\n',1)
+lines=headers.splitlines()
+author=b'author github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> 1786388400 +0000'
+committer=b'committer github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> 1786388400 +0000'
+if lines.count(author)!=1: raise SystemExit(f'author header denominator {lines.count(author)}')
+if lines.count(committer)!=1: raise SystemExit(f'committer header denominator {lines.count(committer)}')
+expected=b'Promote exact Montana derivative row-state reconciliation v3\\n'
+if message != expected: raise SystemExit(f'message bytes mismatch: {message!r}')
+PYCOMMIT'''
+          assert s.count(old_post)==1, s.count(old_post)
+          s=s.replace(old_post,new_post,1)
+          old_push='''git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$PRODUCT_COMMIT"'''
+          new_push='''git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+set +e
+git push --force-with-lease="refs/heads/$TARGET_BRANCH:" origin "HEAD:refs/heads/$TARGET_BRANCH" > "$OUT/push.log" 2>&1
+PUSH_RC=$?
+set -e
+cat "$OUT/push.log"
+if [ "$PUSH_RC" = 0 ]; then
+  test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$PRODUCT_COMMIT"
+  PUBLICATION_STATE=qualified_repaired_product_published
+  PRODUCT_REF_PUBLISHED=true
+else
+  grep -F 'refusing to allow a GitHub App to create or update workflow' "$OUT/push.log" > /dev/null
+  test -z "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH")"
+  PUBLICATION_STATE=qualified_dangling_product_object_created
+  PRODUCT_REF_PUBLISHED=false
+fi
+export PUBLICATION_STATE PRODUCT_REF_PUBLISHED'''
+          assert s.count(old_push)==1, s.count(old_push)
+          s=s.replace(old_push,new_push,1)
+          s=s.replace("'state':'qualified_repaired_product_published',","'state':os.environ['PUBLICATION_STATE'],\n  'product_ref_published':os.environ['PRODUCT_REF_PUBLISHED']=='true',",1)
+          s=s.replace("'exact_commit_object_inputs_bound':True,","'exact_commit_object_inputs_bound':True,\n    'raw_commit_headers_and_message_bound':True,",1)
+          path.write_text(s,encoding='utf-8')
+          value={
+            'schema_version':'ssc-rd04-mt-row-state-raw-commit-repair-patch@1',
+            'state':'exact_raw_commit_and_publication_transport_repair_applied',
+            'before_sha256':hashlib.sha256(before.encode()).hexdigest(),
+            'after_sha256':hashlib.sha256(s.encode()).hexdigest(),
+            'raw_author_headers_bound':1,
+            'raw_committer_headers_bound':1,
+            'raw_message_bytes_bound':True,
+            'raw_epoch':1786388400,
+            'raw_offset':'+0000',
+            'standing_timestamp_format_dependency_removed':True,
+            'self_sha_dependency':False,
+            'destination_absent_lease':True,
+          }
+          receipt.write_text(json.dumps(value,indent=2,sort_keys=True)+'\n')
+          PYPATCH
+          test "$(sha256sum /tmp/materialize-v13.sh | awk '{print $1}')" = "$V13_PROGRAM_SHA256"
+          bash -n /tmp/materialize-v13.sh
+
+          stage execute-repaired-materializer
+          set +e
+          bash /tmp/materialize-v13.sh > /tmp/materializer-console.log 2>&1
+          rc=$?
+          set -e
+          cat /tmp/materializer-console.log
+          test "$rc" = 0
+          test -f "$OUT/receipt.json"
+          jq -e \
+            '.schema_version == "ssc-rd04-mt-row-state-review-repair-materializer@1" and
+             (.state == "qualified_repaired_product_published" or .state == "qualified_dangling_product_object_created") and
+             .canonical_parent == "0840358962621b0be3db6864ecec763327f35903" and
+             .source_product == "85fad4f736a3639444edd2c522a67316dbade480" and
+             .target_branch == "agent/ssc-rd04-mt-row-state-reconciliation-v3" and
+             .permanent_paths == 14 and
+             .review_repairs.exact_commit_object_inputs_bound == true and
+             .review_repairs.raw_commit_headers_and_message_bound == true and
+             .review_repairs.published_document_schema_closed == true and
+             .matrix_updates == 1 and .row_state_mutations == 1 and .row_terminalizations == 1 and
+             .field_terminalizations == 0 and .class_closed == false and .outside_human_dependency == false' \
+            "$OUT/receipt.json" > /dev/null
+          jq -e '.state == "closed_generated_document_schemas_validate" and .documents == 8' "$OUT/schema-validation.json" > /dev/null
+          PRODUCT_COMMIT="$(jq -r '.product_commit' "$OUT/receipt.json")"
+          test -n "$PRODUCT_COMMIT" && test "$PRODUCT_COMMIT" != null
+
+          printf '%s\n' complete > "$WRAPPER_OUT/STAGE"
+          printf '%s\n' 0 > "$WRAPPER_OUT/EXIT_CODE"
+          capture
+          (cd "$WRAPPER_OUT" && find . -type f ! -path './SHA256SUMS' -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+          trap - ERR
+
+      - name: Preserve exact V3 construction receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-review-repair-materializer-v13
+          path: |
+            ${{ env.OUT }}
+            ${{ env.WRAPPER_OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce terminal V3 construction
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.materialize.outcome }}" = success
+          test "$(cat "$WRAPPER_OUT/EXIT_CODE")" = 0
+          test "$(cat "$WRAPPER_OUT/STAGE")" = complete
+          (cd "$WRAPPER_OUT" && sha256sum -c SHA256SUMS)
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e \
+            '.state == "exact_raw_commit_and_publication_transport_repair_applied" and
+             .raw_author_headers_bound == 1 and .raw_committer_headers_bound == 1 and
+             .raw_message_bytes_bound == true and .raw_epoch == 1786388400 and .raw_offset == "+0000" and
+             .standing_timestamp_format_dependency_removed == true and .self_sha_dependency == false and
+             .destination_absent_lease == true' \
+            "$WRAPPER_OUT/patch-receipt.json" > /dev/null
+          PRODUCT_COMMIT="$(jq -r '.product_commit' "$OUT/receipt.json")"
+          PRODUCT_TREE="$(jq -r '.product_tree' "$OUT/receipt.json")"
+          test "$(git show -s --format='%P' "$PRODUCT_COMMIT")" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^{tree}")" = "$PRODUCT_TREE"
+          test "$(git rev-list --count "$CANONICAL_PARENT..$PRODUCT_COMMIT")" = 1
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" "$PRODUCT_COMMIT" | wc -l | tr -d ' ')" = 14
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" "$PRODUCT_COMMIT")"
+          git diff --check "$CANONICAL_PARENT" "$PRODUCT_COMMIT"
+          python - "$OUT/product-commit-object.raw" <<'PYCOMMIT'
+          from pathlib import Path
+          import sys
+          raw=Path(sys.argv[1]).read_bytes()
+          headers,message=raw.split(b'\n\n',1)
+          lines=headers.splitlines()
+          assert lines.count(b'author github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> 1786388400 +0000') == 1
+          assert lines.count(b'committer github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> 1786388400 +0000') == 1
+          assert message == b'Promote exact Montana derivative row-state reconciliation v3\n'
+          PYCOMMIT
+          STATE="$(jq -r '.state' "$OUT/receipt.json")"
+          if [ "$STATE" = qualified_repaired_product_published ]; then
+            test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$PRODUCT_COMMIT"
+          else
+            test "$STATE" = qualified_dangling_product_object_created
+            test -z "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH")"
+          fi
