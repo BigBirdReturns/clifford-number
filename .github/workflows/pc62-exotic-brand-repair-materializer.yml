@@ -1,0 +1,196 @@
+name: PC-62 exotic-brand repair materializer
+
+'on':
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pc62-exotic-brand-repair-materializer.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc62-exotic-brand-repair-materializer
+  cancel-in-progress: true
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPOSITORY: ${{ github.repository }}
+  OUT: /tmp/pc62-exotic-brand-repair
+  OLD_LIB: ac1c7fd556e1092c792bb53a87dd14435f09c7b8
+  NEW_LIB: ab7e0d33680abd17efc4f79a8c70359a5435dbf1
+  NEW_LIB_SHA256: ba2bce82c09bbd24f98a10f712f7b1cc6e51affbfc44d64c5a3f835ea704e768
+  OLD_TEST: 5b35b16a018647f1c385479a3ca7550c92b6d22d
+  NEW_TEST: 6572515cc35a7b0a15e0822e579c567470dc4140
+  NEW_TEST_SHA256: 749d1bf0c2f4119ab0ed15e880499b62cb9d66e57ae92a6ae15d8005f824daa0
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/pc62-blob-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Apply exact exotic-brand validator and mutation patches
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          rm -rf "$OUT"
+          mkdir -p "$OUT/before" "$OUT/after" "$OUT/api"
+
+          fetch_blob() {
+            local sha="$1" target="$2"
+            gh api "/repos/$GH_REPOSITORY/git/blobs/$sha" > "$OUT/api/fetch-$sha.json"
+            jq -r .content "$OUT/api/fetch-$sha.json" | tr -d '\n' | base64 -d > "$target"
+            test "$(git hash-object "$target")" = "$sha"
+          }
+          publish_blob() {
+            local source="$1" expected="$2" response="$3"
+            encoded=$(base64 -w0 "$source")
+            gh api --method POST "/repos/$GH_REPOSITORY/git/blobs" -f content="$encoded" -f encoding=base64 > "$response"
+            test "$(jq -r .sha "$response")" = "$expected"
+          }
+
+          fetch_blob "$OLD_LIB" "$OUT/before/standalone-lib.mjs"
+          fetch_blob "$OLD_TEST" "$OUT/before/standalone-test.js"
+
+          python - "$OUT/before/standalone-lib.mjs" "$OUT/after/standalone-lib.mjs" <<'PY'
+          from pathlib import Path
+          import sys
+          source=Path(sys.argv[1]).read_text()
+          old="""const unique = values => [...new Set(values)];
+          const plain = value => value !== null
+            && typeof value === 'object'
+            && !Array.isArray(value)
+            && !nodeTypes.isProxy(value)
+            && Object.getPrototypeOf(value) === Object.prototype;
+
+          export function validateCanonicalJsonValue(value, label = 'value', errors = [], seen = new WeakSet()) {
+          """
+          new="""const unique = values => [...new Set(values)];
+          const NODE_EXOTIC_BRAND_PREDICATES = Object.freeze([
+            'isArgumentsObject', 'isAnyArrayBuffer', 'isArrayBuffer', 'isSharedArrayBuffer',
+            'isDataView', 'isTypedArray', 'isDate', 'isMap', 'isSet', 'isWeakMap',
+            'isWeakSet', 'isMapIterator', 'isSetIterator', 'isRegExp', 'isNativeError',
+            'isPromise', 'isBoxedPrimitive', 'isBooleanObject', 'isNumberObject',
+            'isStringObject', 'isSymbolObject', 'isBigIntObject', 'isGeneratorObject',
+            'isModuleNamespaceObject', 'isKeyObject', 'isCryptoKey', 'isExternal'
+          ].filter(name => typeof nodeTypes[name] === 'function'));
+          function nodeExoticBrand(value) {
+            for (const name of NODE_EXOTIC_BRAND_PREDICATES) {
+              try {
+                if (nodeTypes[name](value)) return name;
+              } catch {
+                return `${name}:uninspectable`;
+              }
+            }
+            return null;
+          }
+          const plain = value => value !== null
+            && typeof value === 'object'
+            && !Array.isArray(value)
+            && !nodeTypes.isProxy(value)
+            && nodeExoticBrand(value) === null
+            && Object.getPrototypeOf(value) === Object.prototype;
+
+          export function validateCanonicalJsonValue(value, label = 'value', errors = [], seen = new WeakSet()) {
+          """
+          if source.count(old)!=1: raise SystemExit(f'library helper preimage count {source.count(old)}')
+          target=source.replace(old,new,1)
+          old2="""  if (seen.has(value)) {
+              errors.push(`${label} contains a repeated identity or cycle`);
+              return errors;
+            }
+          """
+          new2="""  const exoticBrand = nodeExoticBrand(value);
+            if (exoticBrand !== null) {
+              errors.push(`${label} must not retain Node exotic brand ${exoticBrand}`);
+              return errors;
+            }
+            if (seen.has(value)) {
+              errors.push(`${label} contains a repeated identity or cycle`);
+              return errors;
+            }
+          """
+          if target.count(old2)!=1: raise SystemExit(f'library brand-check preimage count {target.count(old2)}')
+          Path(sys.argv[2]).write_text(target.replace(old2,new2,1))
+          PY
+
+          python - "$OUT/before/standalone-test.js" "$OUT/after/standalone-test.js" <<'PY'
+          from pathlib import Path
+          import sys
+          source=Path(sys.argv[1]).read_text()
+          old="import { compileFixture, validateBuild, validateFixture } from '../tools/lib/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs';\n"
+          new="import { compileFixture, validateBuild, validateCanonicalJsonValue, validateFixture } from '../tools/lib/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs';\n"
+          if source.count(old)!=1: raise SystemExit('test import preimage mismatch')
+          target=source.replace(old,new,1)
+          old2="""bad('non-enumerable property', value => { Object.defineProperty(value.worlds[0], 'hidden', { value: true, enumerable: false }); });
+
+          function badBuild(label, mutate) {
+          """
+          new2="""bad('non-enumerable property', value => { Object.defineProperty(value.worlds[0], 'hidden', { value: true, enumerable: false }); });
+
+          const disguisedNodeExotics = [
+            ['arguments', () => (function () { return arguments; })(1)],
+            ['array buffer', () => new ArrayBuffer(8)],
+            ['shared array buffer', () => new SharedArrayBuffer(8)],
+            ['data view', () => new DataView(new ArrayBuffer(8))],
+            ['typed array', () => new Uint8Array(0)],
+            ['date', () => new Date(0)],
+            ['map', () => new Map()],
+            ['set', () => new Set()],
+            ['weak map', () => new WeakMap()],
+            ['weak set', () => new WeakSet()],
+            ['map iterator', () => new Map().entries()],
+            ['set iterator', () => new Set().values()],
+            ['regular expression', () => /pc62/],
+            ['native error', () => new Error('pc62')],
+            ['promise', () => Promise.resolve('pc62')],
+            ['boxed primitive', () => Object('pc62')]
+          ];
+          for (const [label, factory] of disguisedNodeExotics) {
+            const value = factory();
+            Object.setPrototypeOf(value, Object.prototype);
+            const errors = validateCanonicalJsonValue(value, `disguised ${label}`, []);
+            assert.ok(errors.some(error => error.includes('Node exotic brand')), `${label} internal brand should be rejected`);
+            rejects.push(`disguised ${label}`);
+          }
+
+          function badBuild(label, mutate) {
+          """
+          if target.count(old2)!=1: raise SystemExit(f'test mutation anchor count {target.count(old2)}')
+          Path(sys.argv[2]).write_text(target.replace(old2,new2,1))
+          PY
+
+          test "$(wc -c < "$OUT/after/standalone-lib.mjs" | tr -d ' ')" = 30139
+          test "$(sha256sum "$OUT/after/standalone-lib.mjs" | awk '{print $1}')" = "$NEW_LIB_SHA256"
+          test "$(git hash-object "$OUT/after/standalone-lib.mjs")" = "$NEW_LIB"
+          test "$(wc -c < "$OUT/after/standalone-test.js" | tr -d ' ')" = 6893
+          test "$(sha256sum "$OUT/after/standalone-test.js" | awk '{print $1}')" = "$NEW_TEST_SHA256"
+          test "$(git hash-object "$OUT/after/standalone-test.js")" = "$NEW_TEST"
+
+          diff -u "$OUT/before/standalone-lib.mjs" "$OUT/after/standalone-lib.mjs" > "$OUT/library.patch" || test "$?" = 1
+          diff -u "$OUT/before/standalone-test.js" "$OUT/after/standalone-test.js" > "$OUT/test.patch" || test "$?" = 1
+          publish_blob "$OUT/after/standalone-lib.mjs" "$NEW_LIB" "$OUT/api/publish-lib.json"
+          publish_blob "$OUT/after/standalone-test.js" "$NEW_TEST" "$OUT/api/publish-test.json"
+
+          jq -n \
+            --arg schema_version 'pc62-exotic-brand-repair-materializer@1' \
+            --arg old_lib "$OLD_LIB" --arg new_lib "$NEW_LIB" --arg lib_sha "sha256:$NEW_LIB_SHA256" \
+            --arg old_test "$OLD_TEST" --arg new_test "$NEW_TEST" --arg test_sha "sha256:$NEW_TEST_SHA256" \
+            '{schema_version:$schema_version,status:"complete",repair:{classification:"P2",mechanism:"prototype_rewritten_internal_slot_brand_acceptance",old_library_blob:$old_lib,new_library_blob:$new_lib,new_library_sha256:$lib_sha,old_test_blob:$old_test,new_test_blob:$new_test,new_test_sha256:$test_sha,disguised_exotic_mutations_added:16},product_semantics_changed:false,admission_gates_weakened:false,graph_effect:"none"}' > "$OUT/receipt.json"
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - name: Upload exotic-brand repair receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc62-exotic-brand-repair-materializer
+          path: /tmp/pc62-exotic-brand-repair
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 9
