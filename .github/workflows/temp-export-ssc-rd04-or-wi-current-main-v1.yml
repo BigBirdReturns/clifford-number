@@ -1,0 +1,96 @@
+name: TEMP export exact current main for RD-04 Oregon-Wisconsin
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-export-ssc-rd04-or-wi-current-main-v1.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temp-export-ssc-rd04-or-wi-current-main-v1
+  cancel-in-progress: false
+
+jobs:
+  export:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-or-wi-current-main-export-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Export exact current-main tree
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          MAIN='146f5ceb1882d02c7be8d225d49665d63478a7df'
+          OBSERVER='.github/workflows/temp-export-ssc-rd04-or-wi-current-main-v1.yml'
+          OUT='/tmp/ssc-rd04-or-wi-current-main-export-v1'
+
+          test "$(git rev-parse HEAD^)" = "$MAIN"
+          test "$(git rev-list --count "$MAIN"..HEAD)" = 1
+          test "$(git diff --name-only "$MAIN" HEAD)" = "$OBSERVER"
+          test "$(git diff --name-only --diff-filter=A "$MAIN" HEAD)" = "$OBSERVER"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$MAIN" HEAD)"
+          git diff --check "$MAIN" HEAD
+
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/main)" = "$MAIN"
+
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          git archive --format=tar "$MAIN" > "$OUT/main.tar"
+          xz -9e -T0 < "$OUT/main.tar" > "$OUT/main.tar.xz"
+          git ls-tree -r --full-tree "$MAIN" > "$OUT/main-ls-tree.txt"
+          printf '%s\n' "$MAIN" > "$OUT/main-commit.txt"
+          git rev-parse "$MAIN^{tree}" > "$OUT/main-tree.txt"
+          git show -s --format=raw "$MAIN" > "$OUT/main-commit-raw.txt"
+
+          python - "$OUT/receipt.json" <<'PY'
+          from pathlib import Path
+          import hashlib,json,subprocess
+          out=Path('/tmp/ssc-rd04-or-wi-current-main-export-v1')
+          value={
+            'schema_version':'ssc-rd04-or-wi-current-main-export@1',
+            'main_commit':(out/'main-commit.txt').read_text().strip(),
+            'main_tree':(out/'main-tree.txt').read_text().strip(),
+            'tracked_path_count':len((out/'main-ls-tree.txt').read_text().splitlines()),
+            'archive_tar_bytes':(out/'main.tar').stat().st_size,
+            'archive_tar_sha256':hashlib.sha256((out/'main.tar').read_bytes()).hexdigest(),
+            'archive_xz_bytes':(out/'main.tar.xz').stat().st_size,
+            'archive_xz_sha256':hashlib.sha256((out/'main.tar.xz').read_bytes()).hexdigest(),
+            'source_requests':0,
+            'source_admissions':0,
+            'field_terminalizations':0,
+            'matrix_updates':0,
+            'row_state_mutations':0,
+            'class_closed':False,
+            'outside_human_dependency':False,
+            'authority':'source_export_only',
+          }
+          (out/'receipt.json').write_text(json.dumps(value,indent=2,sort_keys=True)+'\n')
+          PY
+
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-or-wi-current-main-export-v1
+          path: /tmp/ssc-rd04-or-wi-current-main-export-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 0
