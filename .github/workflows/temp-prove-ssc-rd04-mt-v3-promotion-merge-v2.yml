@@ -1,0 +1,131 @@
+name: TEMP prove canonical Montana V3 promotion merge v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-prove-ssc-rd04-mt-v3-promotion-merge-v2.yml'
+      - '.tmp/ssc-rd04-mt-v3-promotion-postmerge-v2/**'
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: temp-prove-ssc-rd04-mt-v3-promotion-postmerge-v2
+  cancel-in-progress: false
+
+env:
+  MERGE_COMMIT: 9510310129c3aab44f8b5b187430a3ede005b7b4
+  MERGE_FIRST_PARENT: 966ea44274ff0372d3b0fa8e25e18d4e98f0b7cb
+  PRODUCT_COMMIT: 30e4f3c17848419790d27826199e37df942c351f
+  PRODUCT_TREE: f1a05ffc235228a852387104f1175a882cae0e49
+  PRODUCT_PARENT: 0840358962621b0be3db6864ecec763327f35903
+  ANCHOR_DATA_PATH: data/intake/status-sovereignty-rd04-mt-v3-exact-product-anchor.json
+  ANCHOR_DATA_BLOB: 50221cc1ae5a827d84b8459718ee43c079fbb872
+  ANCHOR_WORKFLOW_PATH: .github/workflows/status-sovereignty-rd04-mt-v3-exact-product-anchor.yml
+  ANCHOR_WORKFLOW_BLOB: 27f4185f7016bd981a16fd56dd1760a0fb4378aa
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation
+  PRODUCT_SCHEMA: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json
+  OUT: /tmp/ssc-rd04-mt-v3-promotion-postmerge-proof-v2
+  WORK: /tmp/ssc-rd04-mt-v3-promotion-postmerge-work-v2
+  RELEASE_WORKFLOW_ID: '311907056'
+  RELEASE_PR_RUN_ID: '31466467306'
+  PAYLOAD_ROOT: .tmp/ssc-rd04-mt-v3-promotion-postmerge-v2
+  PAYLOAD_SHA256: 44454d88e1fff8827a5fc909c8d0be95cd982a27db7afcbbf6c2596cfcb4b3a2
+
+jobs:
+  prove:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref == 'observer/ssc-rd04-mt-v3-promotion-postmerge-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned Draft 2020-12 validator
+        run: python -m pip install --disable-pip-version-check jsonschema==4.25.1
+      - name: Authenticate and execute exact post-merge proof program
+        id: prove
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" /tmp/ssc-rd04-mt-v3-postmerge-v2.b64 /tmp/ssc-rd04-mt-v3-postmerge-v2.sh
+          mkdir -p "$OUT"
+          printf '%s\n' wrapper-authentication > "$OUT/STAGE"
+          printf '%s\n' 1 > "$OUT/EXIT_CODE"
+          cat > /tmp/payload-sha256s <<'SUMS'
+          4f503d4cf70c20dbbbe2bd7fde98a451c8145dee68749af936f77c91e58d19be  .tmp/ssc-rd04-mt-v3-promotion-postmerge-v2/payload-000.b64
+          1d1ec74d014b995257d5e9d23d775a4d576cbddfb46cec23b43fb5a534fea678  .tmp/ssc-rd04-mt-v3-promotion-postmerge-v2/payload-001.b64
+          c794924c1764c913fd316bedf5cc4c26a9e6c0a582feef6f2b5262791ca61293  .tmp/ssc-rd04-mt-v3-promotion-postmerge-v2/payload-002.b64
+          398bac41dc3dcfdc167d0c2f1ff5e274f13870b4c1846ee25715cc1dd2fbe657  .tmp/ssc-rd04-mt-v3-promotion-postmerge-v2/payload-003.b64
+          f1e69cb1954710e9b2f51dd6174f67391e8b10b2d9f60a84f2ae9e9054a3c758  .tmp/ssc-rd04-mt-v3-promotion-postmerge-v2/payload-004.b64
+          9e12d327c9d8e0660780c33dbab6925c748148484cf20b0e12addd4689d2e456  .tmp/ssc-rd04-mt-v3-promotion-postmerge-v2/payload-005.b64
+          SUMS
+          sed -i 's/^          //' /tmp/payload-sha256s
+          sha256sum -c /tmp/payload-sha256s
+          cat "$PAYLOAD_ROOT"/payload-*.b64 > /tmp/ssc-rd04-mt-v3-postmerge-v2.b64
+          base64 --decode /tmp/ssc-rd04-mt-v3-postmerge-v2.b64 > /tmp/ssc-rd04-mt-v3-postmerge-v2.sh
+          test "$(sha256sum /tmp/ssc-rd04-mt-v3-postmerge-v2.sh | awk '{print $1}')" = "$PAYLOAD_SHA256"
+          bash -n /tmp/ssc-rd04-mt-v3-postmerge-v2.sh
+          bash /tmp/ssc-rd04-mt-v3-postmerge-v2.sh
+
+      - name: Preserve canonical Montana V3 post-merge proof v2
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-v3-promotion-postmerge-proof-v2
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce terminal canonical proof
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.prove.outcome }}" = success
+          test "$(cat "$OUT/STAGE")" = complete
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test -s "$OUT/receipt.json"
+          test -s "$OUT/native-push-required.json"
+          test -s "$OUT/review-receipt.json"
+          test -s "$OUT/release-contract.json"
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .state == "canonical_exact_montana_v3_promotion_proved" and
+            .merge_commit == "9510310129c3aab44f8b5b187430a3ede005b7b4" and
+            .merge_first_parent == "966ea44274ff0372d3b0fa8e25e18d4e98f0b7cb" and
+            .merge_second_parent == "30e4f3c17848419790d27826199e37df942c351f" and
+            .product_paths == 14 and .merge_change_class == "fourteen_additions_only" and
+            .full_tree_entries_equal == true and .raw_product_commit_object_equal == true and
+            .anchor_preserved_from_first_parent == true and .protected_postmerge_overlap_count == 0 and
+            .required_native_push_runs == 5 and .native_push_state == "five_configured_native_push_runs_successful" and
+            .release_contract_state == "pull_request_only_release_contract_and_exact_product_run_bound" and
+            .release_workflow_id == 311907056 and .release_native_push_expected == false and
+            .release_exact_product_pr_run_id == 31466467306 and .release_exact_product_pr_conclusion == "success" and
+            .clean_disposition_preceded_merge == false and .review_temporal_delta_seconds == 172 and
+            .deterministic_reconstruction == "passed" and .closed_schema_validation == "passed" and
+            .adversarial_refusal_floor == 40 and .no_magic_human == "passed" and
+            .release_check == "exact_product_pr_success_plus_postmerge_local_replay" and .post_release_replay == "byte_identical" and
+            .field_terminalizations == 0 and .matrix_updates == 1 and
+            .row_state_mutations == 1 and .row_terminalizations == 1 and
+            .class_closed == false and .outside_human_dependency == false
+          ' "$OUT/receipt.json" >/dev/null
