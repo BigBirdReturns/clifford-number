@@ -32,6 +32,18 @@ jobs:
           source = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines)
           exec(compile(source, 'action-plan-receipt-repair.py', 'exec'), {'__name__': '__main__'})
           PY
+      - name: Preserve the exact public adoption wording
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          path = Path('data/research/clifford-thiel-trump-wrap-up.json')
+          wrap = json.loads(path.read_text())
+          outcome = next(row for row in wrap['surviving_outcomes'] if row['outcome_id'] == 'clifford-starmer-action-plan')
+          outcome['outcome'] = 'Official records place Clifford on the Action Plan commission and development work, then place Clifford and Starmer together only on the 13 January 2025 publication and government-response surface where the government said it would take forward all 50 recommendations.'
+          path.write_text(json.dumps(wrap, ensure_ascii=False, indent=2) + '\n')
+          PY
       - name: Reconcile generated topology counts
         shell: bash
         run: |
