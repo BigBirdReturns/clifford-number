@@ -1,0 +1,55 @@
+name: Preference custody normalization, locale casefold, confusable, and collision assurance
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.yml'
+      - 'data/research/preference-custody/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.fixture.json'
+      - 'docs/preference-custody-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.md'
+      - 'test/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.test.js'
+      - 'tools/compile-preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs'
+      - 'tools/lib/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs'
+      - 'tools/validate-preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.yml'
+      - 'data/research/preference-custody/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.fixture.json'
+      - 'docs/preference-custody-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.md'
+      - 'test/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.test.js'
+      - 'tools/compile-preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs'
+      - 'tools/lib/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs'
+      - 'tools/validate-preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Compile, validate, and test PC-62
+        run: |
+          node tools/compile-preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs
+          node tools/validate-preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs
+          node test/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+      - name: Preserve deterministic PC-62 build
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc62-normalization-casefold-confusable-collision
+          path: |
+            build/research/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.json
+            build/research/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.md
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9

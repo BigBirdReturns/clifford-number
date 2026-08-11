@@ -1,0 +1,72 @@
+name: Preference custody laboratory floor v60
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/preference-custody-v60.yml'
+      - 'data/research/preference-custody/control-manifest-v60.json'
+      - 'docs/preference-custody-laboratory-floor-v60.md'
+      - 'test/preference-custody-manifest-v60.test.js'
+      - 'tools/compile-preference-custody-manifest-v60.mjs'
+      - 'tools/lib/preference-custody-manifest-v60.mjs'
+      - 'tools/validate-preference-custody-manifest-v60.mjs'
+      - '.github/workflows/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.yml'
+      - 'data/research/preference-custody/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.fixture.json'
+      - 'docs/preference-custody-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.md'
+      - 'test/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.test.js'
+      - 'tools/compile-preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs'
+      - 'tools/lib/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs'
+      - 'tools/validate-preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/preference-custody-v60.yml'
+      - 'data/research/preference-custody/control-manifest-v60.json'
+      - 'docs/preference-custody-laboratory-floor-v60.md'
+      - 'test/preference-custody-manifest-v60.test.js'
+      - 'tools/compile-preference-custody-manifest-v60.mjs'
+      - 'tools/lib/preference-custody-manifest-v60.mjs'
+      - 'tools/validate-preference-custody-manifest-v60.mjs'
+      - '.github/workflows/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.yml'
+      - 'data/research/preference-custody/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.fixture.json'
+      - 'docs/preference-custody-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.md'
+      - 'test/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.test.js'
+      - 'tools/compile-preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs'
+      - 'tools/lib/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs'
+      - 'tools/validate-preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Compile, validate, and test floor v60
+        run: |
+          node tools/compile-preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs
+          node tools/validate-preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs
+          node test/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.test.js
+          node tools/compile-preference-custody-manifest-v60.mjs
+          node tools/validate-preference-custody-manifest-v60.mjs
+          node test/preference-custody-manifest-v60.test.js
+          node tools/validate-no-magic-human-gate.mjs
+          node test/no-magic-human-gate.test.js
+          npm run release:check
+      - name: Preserve deterministic floor-v60 build
+        uses: actions/upload-artifact@v4
+        with:
+          name: preference-custody-floor-v60
+          path: |
+            build/research/preference-custody-laboratory-floor-v60.json
+            build/research/preference-custody-laboratory-floor-v60.md
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
