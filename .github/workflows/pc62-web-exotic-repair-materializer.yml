@@ -1,0 +1,146 @@
+name: PC-62 Web exotic-brand repair materializer
+
+'on':
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pc62-web-exotic-repair-materializer.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc62-web-exotic-repair-materializer
+  cancel-in-progress: true
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPOSITORY: ${{ github.repository }}
+  SOURCE_PRODUCT: '6c2ffff2b1768f766a84a4bd37f9c1a9ab7827cd'
+  SOURCE_LIBRARY_BLOB: 'ab7e0d33680abd17efc4f79a8c70359a5435dbf1'
+  SOURCE_LIBRARY_SHA256: 'ba2bce82c09bbd24f98a10f712f7b1cc6e51affbfc44d64c5a3f835ea704e768'
+  SOURCE_TEST_BLOB: '6572515cc35a7b0a15e0822e579c567470dc4140'
+  SOURCE_TEST_SHA256: '749d1bf0c2f4119ab0ed15e880499b62cb9d66e57ae92a6ae15d8005f824daa0'
+  LIBRARY_PATCH_BLOB: '600f99d19a9fb7b0baa98be57b12a32d725b94bd'
+  LIBRARY_PATCH_SHA256: 'a5f818a888f89c36432e56c1717b7a9337c5c0c16fedd8fcf1efe9523b98ab5a'
+  TEST_PATCH_BLOB: 'f6678b28ea7f3b0e4696b3a8e97bf8d8b3a7da27'
+  TEST_PATCH_SHA256: '0ec6d7efd73e71860d78c3d9282f7da29292d16ce48d5f56409c32bb4eebef8c'
+  REPAIRED_LIBRARY_BLOB: 'e1b853f4dc71b8e102a5517df6ccf5834fc22d6e'
+  REPAIRED_LIBRARY_SHA256: '82c57ac5685fd7a851a840b6c11827034ec8e56ef1d91632efc13d5d4c8cd3c4'
+  REPAIRED_LIBRARY_BYTES: '32528'
+  REPAIRED_TEST_BLOB: '034bf4a4dde5cf074d01e4430cd3a6d78b6125c8'
+  REPAIRED_TEST_SHA256: 'ddf4184b158b4f7df6fa9111e9501bdef224c28c857112ad064bac068e71bf62'
+  REPAIRED_TEST_BYTES: '7820'
+  OUT: '/tmp/pc62-web-exotic-repair'
+  REPLAY: '/tmp/pc62-web-exotic-replay'
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/pc62-web-exotic-repair-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Authenticate sources, apply exact repair, and publish blobs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          rm -rf "$OUT" "$REPLAY"
+          mkdir -p "$OUT/before" "$OUT/after" "$OUT/api"
+
+          fetch_blob() {
+            local sha="$1" destination="$2" record="$3"
+            gh api "/repos/$GH_REPOSITORY/git/blobs/$sha" > "$record"
+            test "$(jq -r .sha "$record")" = "$sha"
+            jq -r .content "$record" | tr -d '\n' | base64 -d > "$destination"
+            test "$(git hash-object "$destination")" = "$sha"
+          }
+
+          fetch_blob "$SOURCE_LIBRARY_BLOB" "$OUT/before/standalone-lib.mjs" "$OUT/api/source-library.json"
+          fetch_blob "$SOURCE_TEST_BLOB" "$OUT/before/standalone-test.js" "$OUT/api/source-test.json"
+          fetch_blob "$LIBRARY_PATCH_BLOB" "$OUT/library.patch" "$OUT/api/library-patch.json"
+          fetch_blob "$TEST_PATCH_BLOB" "$OUT/test.patch" "$OUT/api/test-patch.json"
+          test "$(sha256sum "$OUT/before/standalone-lib.mjs" | awk '{print $1}')" = "$SOURCE_LIBRARY_SHA256"
+          test "$(sha256sum "$OUT/before/standalone-test.js" | awk '{print $1}')" = "$SOURCE_TEST_SHA256"
+          test "$(sha256sum "$OUT/library.patch" | awk '{print $1}')" = "$LIBRARY_PATCH_SHA256"
+          test "$(sha256sum "$OUT/test.patch" | awk '{print $1}')" = "$TEST_PATCH_SHA256"
+
+          cp "$OUT/before/standalone-lib.mjs" "$OUT/after/standalone-lib.mjs"
+          cp "$OUT/before/standalone-test.js" "$OUT/after/standalone-test.js"
+          patch --batch --fuzz=0 --no-backup-if-mismatch "$OUT/after/standalone-lib.mjs" < "$OUT/library.patch"
+          patch --batch --fuzz=0 --no-backup-if-mismatch "$OUT/after/standalone-test.js" < "$OUT/test.patch"
+
+          test "$(wc -c < "$OUT/after/standalone-lib.mjs" | tr -d ' ')" = "$REPAIRED_LIBRARY_BYTES"
+          test "$(wc -c < "$OUT/after/standalone-test.js" | tr -d ' ')" = "$REPAIRED_TEST_BYTES"
+          test "$(sha256sum "$OUT/after/standalone-lib.mjs" | awk '{print $1}')" = "$REPAIRED_LIBRARY_SHA256"
+          test "$(sha256sum "$OUT/after/standalone-test.js" | awk '{print $1}')" = "$REPAIRED_TEST_SHA256"
+          test "$(git hash-object "$OUT/after/standalone-lib.mjs")" = "$REPAIRED_LIBRARY_BLOB"
+          test "$(git hash-object "$OUT/after/standalone-test.js")" = "$REPAIRED_TEST_BLOB"
+          node --check "$OUT/after/standalone-lib.mjs"
+          node --check "$OUT/after/standalone-test.js"
+
+          git fetch --no-tags origin "$SOURCE_PRODUCT"
+          git worktree add --detach "$REPLAY" "$SOURCE_PRODUCT"
+          test "$(git rev-parse "$SOURCE_PRODUCT:tools/lib/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs")" = "$SOURCE_LIBRARY_BLOB"
+          test "$(git rev-parse "$SOURCE_PRODUCT:test/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.test.js")" = "$SOURCE_TEST_BLOB"
+          install -m 0644 "$OUT/after/standalone-lib.mjs" "$REPLAY/tools/lib/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs"
+          install -m 0644 "$OUT/after/standalone-test.js" "$REPLAY/test/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.test.js"
+          {
+            cd "$REPLAY"
+            node tools/compile-preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs
+            node tools/validate-preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs
+            node test/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.test.js
+            node tools/compile-preference-custody-manifest-v60.mjs
+            node tools/validate-preference-custody-manifest-v60.mjs
+            node test/preference-custody-manifest-v60.test.js
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          } 2>&1 | tee "$OUT/focused-replay.log"
+          grep -Fq 'PC-62 fixture mutations rejected: 57' "$OUT/focused-replay.log"
+          grep -Fq 'preference-custody-manifest-v60.test.js: OK' "$OUT/focused-replay.log"
+          test "$(git -C "$REPLAY" hash-object tools/lib/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs)" = "$REPAIRED_LIBRARY_BLOB"
+          test "$(git -C "$REPLAY" hash-object test/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.test.js)" = "$REPAIRED_TEST_BLOB"
+
+          publish_blob() {
+            local source="$1" expected="$2" record="$3"
+            local encoded
+            encoded=$(base64 -w0 "$source")
+            gh api --method POST "/repos/$GH_REPOSITORY/git/blobs" -f content="$encoded" -f encoding=base64 > "$record"
+            test "$(jq -r .sha "$record")" = "$expected"
+          }
+          publish_blob "$OUT/after/standalone-lib.mjs" "$REPAIRED_LIBRARY_BLOB" "$OUT/api/publish-library.json"
+          publish_blob "$OUT/after/standalone-test.js" "$REPAIRED_TEST_BLOB" "$OUT/api/publish-test.json"
+
+          jq -n \
+            --arg schema_version 'pc62-web-exotic-repair-materializer@1' \
+            --arg source_product "$SOURCE_PRODUCT" \
+            --arg source_library_blob "$SOURCE_LIBRARY_BLOB" \
+            --arg source_test_blob "$SOURCE_TEST_BLOB" \
+            --arg library_patch_blob "$LIBRARY_PATCH_BLOB" \
+            --arg test_patch_blob "$TEST_PATCH_BLOB" \
+            --arg repaired_library_blob "$REPAIRED_LIBRARY_BLOB" \
+            --arg repaired_library_sha256 "sha256:$REPAIRED_LIBRARY_SHA256" \
+            --arg repaired_test_blob "$REPAIRED_TEST_BLOB" \
+            --arg repaired_test_sha256 "sha256:$REPAIRED_TEST_SHA256" \
+            '{schema_version:$schema_version,status:"complete",source_product:$source_product,source_blobs:{library:$source_library_blob,test:$source_test_blob},patch_blobs:{library:$library_patch_blob,test:$test_patch_blob},repaired_blobs:{library:{blob:$repaired_library_blob,sha256:$repaired_library_sha256},test:{blob:$repaired_test_blob,sha256:$repaired_test_sha256}},adversarial_mutations:57,prototype_rewritten_web_exotic_mutations:4,web_exotic_brands:["URL","URLSearchParams","Headers","FormData"],complete_fixture_path_exercised:true,caller_visible_prototype_restored:true,product_semantics_changed:false,graph_effect:"none"}' > "$OUT/receipt.json"
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+      - name: Upload Web exotic-brand repair receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc62-web-exotic-repair-materializer
+          path: /tmp/pc62-web-exotic-repair
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 9
