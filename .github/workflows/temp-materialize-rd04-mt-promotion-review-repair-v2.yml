@@ -45,16 +45,37 @@ jobs:
             candidate['name'] == 'Reconstruct, qualify, and create unreachable exact Git object'
           end
           raise 'v3 constructor step absent' unless step
-          program = step.fetch('run')
-          program = program.gsub('${{ github.event.pull_request.head.sha }}', ENV.fetch('ACTUAL_HEAD_SHA'))
-          program = program.gsub('${{ github.event.pull_request.base.sha }}', ENV.fetch('ACTUAL_BASE_SHA'))
+
+          program = step.fetch('run').dup
+          head_assignment = "HEAD_SHA=#{Shellwords.shellescape(ENV.fetch('ACTUAL_HEAD_SHA'))}"
+          base_assignment = "BASE_SHA=#{Shellwords.shellescape(ENV.fetch('ACTUAL_BASE_SHA'))}"
+          raise 'HEAD_SHA assignment absent' unless program.sub!(/^[ \t]*HEAD_SHA=.*$/, head_assignment)
+          raise 'BASE_SHA assignment absent' unless program.sub!(/^[ \t]*BASE_SHA=.*$/, base_assignment)
+          raise 'HEAD_SHA assignment remains ambiguous' unless program.scan(/^[ \t]*HEAD_SHA=/).length == 1
+          raise 'BASE_SHA assignment remains ambiguous' unless program.scan(/^[ \t]*BASE_SHA=/).length == 1
+
           exports = environment.reject { |key, _| key == 'GH_TOKEN' }.map do |key, value|
             "export #{key}=#{Shellwords.shellescape(value.to_s)}"
           end
           File.write('/tmp/rd04-mt-review-repair-constructor-v3.sh', exports.join("\n") + "\n" + program)
           RUBY
+
           bash -n /tmp/rd04-mt-review-repair-constructor-v3.sh
+          set +e
           bash /tmp/rd04-mt-review-repair-constructor-v3.sh
+          rc=$?
+          set -e
+
+          mkdir -p /tmp/rd04-mt-review-repair-constructor-v3
+          cp /tmp/rd04-mt-review-repair-constructor-v3.sh /tmp/rd04-mt-review-repair-constructor-v3/wrapper-generated-program.sh
+          {
+            printf 'actual_head=%s\n' "$ACTUAL_HEAD_SHA"
+            printf 'actual_base=%s\n' "$ACTUAL_BASE_SHA"
+            printf 'checked_out_head=%s\n' "$(git rev-parse HEAD)"
+            grep -E '^(HEAD_SHA|BASE_SHA)=' /tmp/rd04-mt-review-repair-constructor-v3.sh || true
+          } > /tmp/rd04-mt-review-repair-constructor-v3/wrapper-binding.txt
+          (cd /tmp/rd04-mt-review-repair-constructor-v3 && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+          exit "$rc"
       - name: Upload qualified product object and complete custody
         if: always()
         uses: actions/upload-artifact@v4
