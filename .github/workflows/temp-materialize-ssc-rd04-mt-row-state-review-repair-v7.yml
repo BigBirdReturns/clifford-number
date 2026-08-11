@@ -183,5 +183,24 @@ jobs:
           bash /tmp/materialize.sh > /tmp/materializer-console.log 2>&1
           rc=$?
           set -e
-         ÜÝ\ÛX]\šX[^™\‹XÛÛœÛÛK›ÙÈ‰ÔTT—ÓÕUÛX]\šX[^™\‹XÛÛœÛÛK›ÙÈ‚ˆÜÝ\ÛX]\šX[^™KœÚ‰ÔTT—ÓÕUÛX]\šX[^™KœÚ‚ˆYˆÈY‰ÕUˆNÈ[ˆZÙ\ˆ\‰ÔTT—ÓÕUÛX]\šX[^™\‹[Ý]ŽÈÜXH‰ÕU‹Ëˆ‰ÔTT—ÓÕUÛX]\šX[^™\‹[Ý]‹ÈYNÈšBˆØ]Ý\ÛX]\šX[^™\‹XÛÛœÛÛK›ÙÂˆ\Ý‰˜ÈˆH‚ˆš[ˆ	É\×‰ÈÛÛ\]Hˆ‰ÔTT—ÓÕUÔÕQÑH‚ˆš[ˆ	É\×‰Èˆ‰ÔTT—ÓÕUÑVUÐÓÑH‚ˆ˜\HT”‚ˆH˜[YNˆ™\Ù\™H^XÝ™\Z\ˆ™XÙZ\ˆYŽˆ[Ø^\Ê
-Bˆ\Ù\ÎˆXÝ[ÛœËÝ\ØYX\Y˜XÝˆÚ]‚ˆ˜[YNˆÜØË\™[]\›ÝË\Ý]K\™]šY]Ë\™\Z\‹[X]\šX[^™\‹]Âˆ]ˆˆ	ÞÈ[‹“ÕU_Bˆ	ÞÈ[‹•ÔTT—ÓÕU_BˆY‹[›ËYš[\ËY›Ý[™ˆ\œ›Ü‚ˆ[˜ÛYKZY[‹Yš[\ÎˆYBˆ™][[Û‹Y^\ÎˆLˆÛÛ\™\ÜÚ[Û‹[]™[ˆB
+          cp /tmp/materializer-console.log "$WRAPPER_OUT/materializer-console.log"
+          cp /tmp/materialize.sh "$WRAPPER_OUT/materialize.sh"
+          if [ -d "$OUT" ]; then mkdir -p "$WRAPPER_OUT/materializer-out"; cp -a "$OUT"/. "$WRAPPER_OUT/materializer-out"/ || true; fi
+          cat /tmp/materializer-console.log
+          test "$rc" = 0
+
+          printf '%s\n' complete > "$WRAPPER_OUT/STAGE"
+          printf '%s\n' 0 > "$WRAPPER_OUT/EXIT_CODE"
+          trap - ERR
+      - name: Preserve exact repair receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-review-repair-materializer-v7
+          path: |
+            ${{ env.OUT }}
+            ${{ env.WRAPPER_OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
