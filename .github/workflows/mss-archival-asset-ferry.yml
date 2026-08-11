@@ -1,6 +1,9 @@
 name: MSS archival asset ferry
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - scratch/placeholder-do-not-use
@@ -38,7 +41,7 @@ jobs:
           curl --fail --location --retry 4 --retry-all-errors --connect-timeout 20 --user-agent "$ua" --output "$out/official-history-1965-ch06.pdf" 'https://www.bharat-rakshak.com/archives/OfficialHistory/1965War/1965Chapter06.pdf'
           pdftoppm -f 11 -l 11 -singlefile -png -r 180 "$out/official-history-1965-ch06.pdf" "$out/map-dograi-official-6-sep-1965"
           rm "$out/official-history-1965-ch06.pdf"
-          find "$out" -type f -maxdepth 1 -printf '%f %s bytes\n'
+          find "$out" -maxdepth 1 -type f -printf '%f %s bytes\n'
       - name: Upload archival assets
         uses: actions/upload-artifact@v4
         with:
