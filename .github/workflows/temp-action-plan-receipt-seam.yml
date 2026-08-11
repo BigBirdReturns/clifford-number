@@ -1,0 +1,458 @@
+name: TEMP repair Action Plan receipt seam
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Repair the receipt seam and split the lifecycle surface
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+
+          def read_jsonl(path):
+              return [json.loads(line) for line in Path(path).read_text().splitlines() if line.strip()]
+
+          def write_jsonl(path, rows):
+              Path(path).write_text('\n'.join(json.dumps(row, ensure_ascii=False, separators=(',', ':')) for row in rows) + '\n')
+
+          def read_json(path):
+              return json.loads(Path(path).read_text())
+
+          def write_json(path, value):
+              Path(path).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one occurrence, found {count}')
+              return text.replace(old, new, 1)
+
+          terms_url = 'https://www.gov.uk/government/publications/artificial-intelligence-ai-opportunities-action-plan-terms-of-reference/artificial-intelligence-ai-opportunities-action-plan-terms-of-reference'
+          extract_path = Path('receipts/topology/gov-ai-opportunities-action-plan-terms-2024-07-26.md')
+          extract_path.parent.mkdir(parents=True, exist_ok=True)
+          extract = '''# GOV.UK AI Opportunities Action Plan terms of reference
+
+Source URL: https://www.gov.uk/government/publications/artificial-intelligence-ai-opportunities-action-plan-terms-of-reference/artificial-intelligence-ai-opportunities-action-plan-terms-of-reference
+Publisher: Department for Science, Innovation and Technology
+Source published: 2024-07-26
+Retrieved: 2026-08-11
+
+## Preserved source facts
+
+The terms of reference identify Matt Clifford as the person leading development of the AI Opportunities Action Plan. They state that officials in the Department for Science, Innovation and Technology would support the work and that the completed plan would be published. These facts support the dated commission-and-development surface beginning on 26 July 2024.
+
+## Limits
+
+This extract does not place Keir Starmer on the development surface, establish a private meeting or conversation, or prove influence, agreement beyond the published policy process, coordination, motive, wrongdoing, common purpose, or causation. The later publication and government-response event has separate receipts and its own bounded surface.
+'''
+          extract_path.write_text(extract)
+          extract_sha = hashlib.sha256(extract.encode()).hexdigest()
+
+          terms_receipt = {
+              'receipt_id': 'gov-ai-opportunities-action-plan-terms-2024-07-26',
+              'label': 'GOV.UK — AI Opportunities Action Plan terms of reference (26 Jul 2024)',
+              'source_type': 'official_source_extract',
+              'evidence_class': 'official',
+              'path': str(extract_path),
+              'source_url': terms_url,
+              'publisher': 'Department for Science, Innovation and Technology',
+              'source_published_at': '2024-07-26',
+              'event_date': '2024-07-26',
+              'retrieved_at': '2026-08-11',
+              'notes': 'Structured extract of the official terms of reference. It supports the exact commission date, Matt Clifford lead role, DSIT support role, and planned publication. It does not support Keir Starmer participation before the separately receipted government response.',
+              'archive': {
+                  'method': 'in_repo_content_hash',
+                  'ref': f'sha256:{extract_sha}',
+                  'captured': '2026-08-11',
+                  'checked': '2026-08-11',
+                  'note': 'Hash covers the in-repo structured extract; source_url preserves the official page.'
+              }
+          }
+          plan_receipt = {
+              'receipt_id': 'gov-ai-opportunities-action-plan',
+              'label': 'GOV.UK — AI Opportunities Action Plan (13 Jan 2025)',
+              'source_type': 'official_reference',
+              'evidence_class': 'official',
+              'path': 'https://www.gov.uk/government/publications/ai-opportunities-action-plan/ai-opportunities-action-plan',
+              'publisher': 'Department for Science, Innovation and Technology',
+              'source_published_at': '2025-01-13',
+              'event_date': '2025-01-13',
+              'retrieved_at': '2026-08-11',
+              'notes': 'Official publication identifies Matt Clifford as the Action Plan lead and contains the fifty recommendations. It does not establish the exact July 2024 commission date; that date is carried by the separate terms-of-reference receipt.',
+              'archive': {
+                  'method': 'internet_archive',
+                  'ref': 'http://web.archive.org/web/20260625150104/https://www.gov.uk/government/publications/ai-opportunities-action-plan/ai-opportunities-action-plan',
+                  'captured': '20260625150104',
+                  'checked': '2026-07-06'
+              }
+          }
+          pm_receipt = {
+              'receipt_id': 'gov-pm-ai-blueprint-2025',
+              'label': 'GOV.UK — Prime Minister sets out blueprint to turbocharge AI',
+              'source_type': 'official_reference',
+              'evidence_class': 'official',
+              'path': 'https://www.gov.uk/government/news/prime-minister-sets-out-blueprint-to-turbocharge-ai',
+              'publisher': "Prime Minister's Office, 10 Downing Street",
+              'source_published_at': '2025-01-12',
+              'source_updated_at': '2025-01-13',
+              'event_date': '2025-01-13',
+              'retrieved_at': '2026-08-11',
+              'notes': 'The page was published on 12 January 2025, updated on 13 January, and describes the 13 January government announcement taking forward all fifty recommendations. The event date, source publication date, and source update date remain separate.',
+              'archive': {
+                  'method': 'internet_archive',
+                  'ref': 'http://web.archive.org/web/20260626131707/https://www.gov.uk/government/news/prime-minister-sets-out-blueprint-to-turbocharge-ai',
+                  'captured': '20260626131707',
+                  'checked': '2026-07-06'
+              }
+          }
+
+          receipts = read_jsonl('data/ledger/receipts.jsonl')
+          out = []
+          plan_seen = pm_seen = False
+          for row in receipts:
+              if row.get('receipt_id') == terms_receipt['receipt_id']:
+                  continue
+              if row.get('receipt_id') == plan_receipt['receipt_id']:
+                  out.extend([terms_receipt, plan_receipt])
+                  plan_seen = True
+              elif row.get('receipt_id') == pm_receipt['receipt_id']:
+                  out.append(pm_receipt)
+                  pm_seen = True
+              else:
+                  out.append(row)
+          if not plan_seen or not pm_seen:
+              raise SystemExit('expected Action Plan receipt rows are missing')
+          write_jsonl('data/ledger/receipts.jsonl', out)
+
+          development_surface = {
+              'surface_id': 'ai-opportunities-action-plan-development-2024-2025',
+              'surface_label': 'AI Opportunities Action Plan commission and development, 2024-2025',
+              'surface_type': 'policy_document_surface',
+              'secondary_surface_types': ['policy_to_procurement_surface'],
+              'hop_eligible': False,
+              'scorable': True,
+              'status': 'split_from_lifecycle_composite',
+              'bounded_by': [
+                  '26 July 2024 official terms of reference commissioning Matt Clifford to lead development',
+                  'DSIT support role stated in the terms of reference',
+                  '13 January 2025 publication endpoint'
+              ],
+              'time_start': '2024-07-26',
+              'time_end': '2025-01-13',
+              'receipt_ids': ['gov-ai-opportunities-action-plan-terms-2024-07-26', 'gov-ai-opportunities-action-plan'],
+              'notes': 'Non-hop predecessor surface for the commission and development lifecycle. It records Matt Clifford and DSIT only. It does not place Keir Starmer on the work before the dated public response and cannot create actor-to-actor adjacency.'
+          }
+          response_surface = {
+              'surface_id': 'ai-opportunities-action-plan-2025',
+              'surface_label': 'AI Opportunities Action Plan publication and government response, 13 January 2025',
+              'surface_type': 'policy_document_surface',
+              'secondary_surface_types': ['policy_to_procurement_surface'],
+              'hop_eligible': True,
+              'scorable': True,
+              'status': 'split_and_strengthened_from_official_records',
+              'bounded_by': [
+                  '13 January 2025 official Action Plan publication identifying Matt Clifford as lead',
+                  '13 January 2025 government-response event attributed to the Prime Minister',
+                  'official announcement taking forward all fifty recommendations'
+              ],
+              'time_start': '2025-01-13',
+              'time_end': '2025-01-13',
+              'receipt_ids': ['gov-ai-opportunities-action-plan', 'gov-pm-ai-blueprint-2025'],
+              'notes': 'One-day publication and government-response surface linking Matt Clifford and Keir Starmer through the public policy record. It does not establish a private meeting, conversation, personal influence, coordination outside the published process, motive, wrongdoing, common purpose, or causation.'
+          }
+          surfaces = read_jsonl('data/ledger/surfaces.jsonl')
+          out = []
+          replaced = False
+          for row in surfaces:
+              if row.get('surface_id') == response_surface['surface_id']:
+                  out.extend([development_surface, response_surface])
+                  replaced = True
+              elif row.get('surface_id') != development_surface['surface_id']:
+                  out.append(row)
+          if not replaced:
+              raise SystemExit('Action Plan surface is missing')
+          write_jsonl('data/ledger/surfaces.jsonl', out)
+
+          action_participation = [
+              {
+                  'surface_id': development_surface['surface_id'],
+                  'participant_type': 'actor',
+                  'actor_id': 'matt-clifford',
+                  'role': 'Commissioned lead for development of the AI Opportunities Action Plan',
+                  'participation_type': 'policy_author_adviser',
+                  'time_start': '2024-07-26',
+                  'time_end': '2025-01-13',
+                  'evidence_class': 'official',
+                  'receipt_ids': ['gov-ai-opportunities-action-plan-terms-2024-07-26', 'gov-ai-opportunities-action-plan']
+              },
+              {
+                  'surface_id': development_surface['surface_id'],
+                  'participant_type': 'organization',
+                  'organization_id': 'dsit',
+                  'role': 'Department supporting development and publication',
+                  'participation_type': 'policy_department',
+                  'time_start': '2024-07-26',
+                  'time_end': '2025-01-13',
+                  'evidence_class': 'official',
+                  'receipt_ids': ['gov-ai-opportunities-action-plan-terms-2024-07-26', 'gov-ai-opportunities-action-plan']
+              },
+              {
+                  'surface_id': response_surface['surface_id'],
+                  'participant_type': 'actor',
+                  'actor_id': 'matt-clifford',
+                  'role': 'Action Plan lead identified in the publication and government response',
+                  'participation_type': 'policy_author_adviser',
+                  'time_start': '2025-01-13',
+                  'time_end': '2025-01-13',
+                  'evidence_class': 'official',
+                  'receipt_ids': ['gov-ai-opportunities-action-plan', 'gov-pm-ai-blueprint-2025']
+              },
+              {
+                  'surface_id': response_surface['surface_id'],
+                  'participant_type': 'actor',
+                  'actor_id': 'keir-starmer',
+                  'role': 'Prime Minister — publicly committed the government to take the recommendations forward',
+                  'participation_type': 'government_official',
+                  'time_start': '2025-01-13',
+                  'time_end': '2025-01-13',
+                  'evidence_class': 'official',
+                  'receipt_ids': ['gov-pm-ai-blueprint-2025']
+              },
+              {
+                  'surface_id': response_surface['surface_id'],
+                  'participant_type': 'organization',
+                  'organization_id': 'dsit',
+                  'role': 'Publishing department and implementation institution',
+                  'participation_type': 'policy_department',
+                  'time_start': '2025-01-13',
+                  'time_end': '2025-01-13',
+                  'evidence_class': 'official',
+                  'receipt_ids': ['gov-ai-opportunities-action-plan', 'gov-pm-ai-blueprint-2025']
+              }
+          ]
+          participation = read_jsonl('data/ledger/participation.jsonl')
+          out = []
+          inserted = False
+          for row in participation:
+              if row.get('surface_id') in {development_surface['surface_id'], response_surface['surface_id']}:
+                  if not inserted:
+                      out.extend(action_participation)
+                      inserted = True
+                  continue
+              out.append(row)
+          if not inserted:
+              raise SystemExit('Action Plan participation rows are missing')
+          write_jsonl('data/ledger/participation.jsonl', out)
+
+          commission_claim = {
+              'claim_id': 'ai-opportunities-action-plan-clifford-commission-2024-07-26',
+              'text': 'The UK government terms of reference published on 26 July 2024 identify Matt Clifford as the person leading development of the AI Opportunities Action Plan.',
+              'receipt_ids': ['gov-ai-opportunities-action-plan-terms-2024-07-26'],
+              'evidence_class': 'official',
+              'actor_ids': ['matt-clifford'],
+              'organization_ids': ['dsit'],
+              'surface_ids': ['ai-opportunities-action-plan-development-2024-2025'],
+              'date': '2024-07-26'
+          }
+          adoption_claim = {
+              'claim_id': 'ai-opportunities-action-plan-starmer-adoption-2025-01-13',
+              'text': 'On 13 January 2025, the official government response said all fifty recommendations of the Matt Clifford-led AI Opportunities Action Plan would be taken forward.',
+              'receipt_ids': ['gov-ai-opportunities-action-plan', 'gov-pm-ai-blueprint-2025'],
+              'evidence_class': 'official',
+              'actor_ids': ['keir-starmer', 'matt-clifford'],
+              'organization_ids': ['dsit'],
+              'surface_ids': ['ai-opportunities-action-plan-2025'],
+              'date': '2025-01-13'
+          }
+          claims = read_jsonl('data/ledger/claims.jsonl')
+          replacements = {commission_claim['claim_id']: commission_claim, adoption_claim['claim_id']: adoption_claim}
+          seen = set()
+          out = []
+          for row in claims:
+              claim_id = row.get('claim_id')
+              if claim_id in replacements:
+                  out.append(replacements[claim_id])
+                  seen.add(claim_id)
+              else:
+                  out.append(row)
+          if seen != set(replacements):
+              raise SystemExit(f'Action Plan claim rows missing: {set(replacements) - seen}')
+          write_jsonl('data/ledger/claims.jsonl', out)
+
+          app_path = Path('app.js')
+          app = app_path.read_text()
+          app = replace_once(
+              app,
+              "import { decodeHashPart, formatCitation, safeExternalUrl, validAsOf } from './src/ui-utils.js';",
+              "import { decodeHashPart, formatCitation, safeExternalUrl, safeLocalReceiptPath, validAsOf } from './src/ui-utils.js';",
+              'app import'
+          )
+          app = replace_once(
+              app,
+              "  const sourceUrl = safeExternalUrl(receipt.url || receipt.source_url || '');\n  const archiveUrl = safeExternalUrl(receipt.archive_url || receipt.archive?.url || '');\n  const links = [\n    sourceUrl ? `<a class=\"receipt-link\" href=\"${esc(sourceUrl)}\" target=\"_blank\" rel=\"noreferrer\">Open original source ↗</a>` : '',\n    archiveUrl ? `<a class=\"receipt-link\" href=\"${esc(archiveUrl)}\" target=\"_blank\" rel=\"noreferrer\">Open archived copy ↗</a>` : ''\n  ].filter(Boolean).join('');",
+              "  const sourceUrl = safeExternalUrl(receipt.url || receipt.source_url || receipt.path || '');\n  const archiveUrl = safeExternalUrl(receipt.archive_url || receipt.archive?.url || receipt.archive?.ref || '');\n  const localReceiptPath = safeLocalReceiptPath(receipt.path);\n  const links = [\n    sourceUrl ? `<a class=\"receipt-link\" href=\"${esc(sourceUrl)}\" target=\"_blank\" rel=\"noreferrer\">Open original source ↗</a>` : '',\n    localReceiptPath ? `<a class=\"receipt-link\" href=\"${esc(localReceiptPath)}\">Open preserved extract →</a>` : '',\n    archiveUrl ? `<a class=\"receipt-link\" href=\"${esc(archiveUrl)}\" target=\"_blank\" rel=\"noreferrer\">Open archived copy ↗</a>` : ''\n  ].filter(Boolean).join('');",
+              'receipt links'
+          )
+          app = replace_once(
+              app,
+              "      ${receipt.published_at ? `<div><dt>Published</dt><dd>${esc(receipt.published_at)}</dd></div>` : ''}\n      ${receipt.retrieved_at ? `<div><dt>Retrieved</dt><dd>${esc(receipt.retrieved_at)}</dd></div>` : ''}",
+              "      ${receipt.source_published_at ? `<div><dt>Source published</dt><dd>${esc(receipt.source_published_at)}</dd></div>` : receipt.published_at ? `<div><dt>Published</dt><dd>${esc(receipt.published_at)}</dd></div>` : ''}\n      ${receipt.source_updated_at ? `<div><dt>Source updated</dt><dd>${esc(receipt.source_updated_at)}</dd></div>` : ''}\n      ${receipt.event_date ? `<div><dt>Event date</dt><dd>${esc(receipt.event_date)}</dd></div>` : ''}\n      ${receipt.retrieved_at ? `<div><dt>Retrieved</dt><dd>${esc(receipt.retrieved_at)}</dd></div>` : ''}",
+              'receipt metadata'
+          )
+          app = replace_once(
+              app,
+              "    const path = String(r.path || '');\n    const externalUrl = safeExternalUrl(r.url || r.source_url || path);\n    const local = false;\n    const url = externalUrl;\n    const archiveUrl = safeExternalUrl(r.archive_url || r.archive?.url || r.archive?.ref);",
+              "    const path = String(r.path || '');\n    const localPath = safeLocalReceiptPath(path);\n    const externalUrl = safeExternalUrl(r.url || r.source_url || path);\n    const local = Boolean(localPath && !externalUrl);\n    const url = externalUrl || localPath;\n    const archiveUrl = safeExternalUrl(r.archive_url || r.archive?.url || r.archive?.ref);",
+              'receipt references'
+          )
+          app_path.write_text(app)
+
+          compiler_path = Path('test/compiler.test.js')
+          compiler = compiler_path.read_text()
+          compiler = replace_once(
+              compiler,
+              "const legacyGraph = JSON.parse(fs.readFileSync('graph.json', 'utf8'));\n",
+              "const legacyGraph = JSON.parse(fs.readFileSync('graph.json', 'utf8'));\nconst ledgerReceipts = fs.readFileSync('data/ledger/receipts.jsonl', 'utf8').split(/\\r?\\n/).filter(Boolean).map(line => JSON.parse(line));\n",
+              'compiler receipt load'
+          )
+          compiler = replace_once(
+              compiler,
+              "const surf = id => surface.surfaces.find(s => s.surface_id === id);\n",
+              "const surf = id => surface.surfaces.find(s => s.surface_id === id);\nconst receipt = id => ledgerReceipts.find(row => row.receipt_id === id);\n",
+              'compiler receipt helper'
+          )
+          start = compiler.index('// The Action Plan route is supported only on the dated public-adoption record.')
+          end = compiler.index('// Disjoint dated participations on the same surface must NOT hop.')
+          action_test = '''// The Action Plan lifecycle is split so development cannot manufacture a Prime Minister hop.
+const actionPlanDevelopment = surf('ai-opportunities-action-plan-development-2024-2025');
+assert.ok(actionPlanDevelopment, 'the commission and development predecessor surface must be compiled');
+assert.equal(actionPlanDevelopment.hop_eligible, false, 'development lifecycle must remain context only');
+assert.deepEqual(actionPlanDevelopment.receipt_ids, [
+  'gov-ai-opportunities-action-plan-terms-2024-07-26',
+  'gov-ai-opportunities-action-plan'
+]);
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === actionPlanDevelopment.surface_id)),
+  'the development predecessor must never create an actor hop');
+const developmentActors = actionPlanDevelopment.participants.filter(part => part.participant_type === 'actor').map(part => part.actor_id);
+assert.deepEqual(developmentActors, ['matt-clifford']);
+
+const termsReceipt = receipt('gov-ai-opportunities-action-plan-terms-2024-07-26');
+assert.ok(termsReceipt, 'the exact dated commission receipt must exist');
+assert.equal(termsReceipt.path, 'receipts/topology/gov-ai-opportunities-action-plan-terms-2024-07-26.md');
+assert.equal(termsReceipt.source_published_at, '2024-07-26');
+assert.equal(termsReceipt.event_date, '2024-07-26');
+assert.equal(receipt('gov-ai-opportunities-action-plan').source_published_at, '2025-01-13');
+assert.equal(receipt('gov-pm-ai-blueprint-2025').source_published_at, '2025-01-12');
+assert.equal(receipt('gov-pm-ai-blueprint-2025').source_updated_at, '2025-01-13');
+assert.equal(receipt('gov-pm-ai-blueprint-2025').event_date, '2025-01-13');
+
+// The actor-to-actor answer rests only on the one-day publication and response surface.
+const starmerClifford = hop.edges.find(e =>
+  [e.actor_a, e.actor_b].sort().join('|') === 'keir-starmer|matt-clifford');
+assert.ok(starmerClifford, 'Keir Starmer and Matt Clifford must connect through the dated Action Plan response');
+const actionPlanBasis = starmerClifford.surfaces.find(s => s.surface_id === 'ai-opportunities-action-plan-2025');
+assert.ok(actionPlanBasis, 'Starmer/Clifford must name the publication and response surface as the hop basis');
+assert.equal(actionPlanBasis.surface_label, 'AI Opportunities Action Plan publication and government response, 13 January 2025');
+assert.equal(actionPlanBasis.evidence_class, 'official');
+assert.equal(actionPlanBasis.valid_from, '2025-01-13');
+assert.equal(actionPlanBasis.valid_until, '2025-01-13');
+assert.deepEqual(actionPlanBasis.receipt_ids, ['gov-ai-opportunities-action-plan', 'gov-pm-ai-blueprint-2025']);
+const topology = buildAdjacency(hop.edges);
+assert.equal(shortestPath(topology, 'keir-starmer', 'matt-clifford', { asOf: '2025-01-13' }).number, 1);
+assert.equal(shortestPath(topology, 'keir-starmer', 'matt-clifford', { asOf: '2025' }).number, 1);
+assert.equal(
+  shortestPath(topology, 'keir-starmer', 'matt-clifford', { asOf: '2025-01-12' }).number,
+  null,
+  'the source publication date is not the event date and must not create a 12 January path'
+);
+assert.equal(
+  shortestPath(topology, 'keir-starmer', 'matt-clifford', { asOf: '2024' }).number,
+  null,
+  'the commission and development surface must not manufacture Starmer participation'
+);
+
+'''
+          compiler = compiler[:start] + action_test + compiler[end:]
+          compiler_path.write_text(compiler)
+
+          ui_path = Path('test/ui-contract.test.js')
+          ui = ui_path.read_text()
+          marker = "assert.match(app, /function renderReceiptArchive/);\n"
+          insertion = marker + "assert.match(app, /safeLocalReceiptPath/);\nassert.match(app, /Open preserved extract/);\nfor (const field of ['source_published_at', 'source_updated_at', 'event_date']) assert.match(app, new RegExp(field));\n"
+          ui = replace_once(ui, marker, insertion, 'UI receipt contract')
+          ui_path.write_text(ui)
+
+          coverage = read_json('data/research/corpus-coverage.json')
+          lane = next(row for row in coverage['lanes'] if row['lane_id'] == 'ai-policy-public-private-topology')
+          metric = next(row for row in lane['metrics'] if row['metric_id'] == 'bounded_surfaces')
+          metric['observed'] = 15
+          write_json('data/research/corpus-coverage.json', coverage)
+
+          cross = read_json('data/research/clifford-cross-corpus-public-interest-map.json')
+          cross['inventory']['canonical'].update({
+              'surfaces': 15,
+              'participations': 166,
+              'receipts': 32,
+              'compiled_hop_edges': 31
+          })
+          write_json('data/research/clifford-cross-corpus-public-interest-map.json', cross)
+
+          wrap = read_json('data/research/clifford-thiel-trump-wrap-up.json')
+          clifford = wrap['principals']['matt-clifford']
+          clifford['scorable_surface_count'] = 3
+          clifford['hop_eligible_surface_count'] = 1
+          clifford['supported_summary'] = "The ledger supports Clifford's official Action Plan development role and the separately bounded publication-and-response hop to Keir Starmer. His Dialog listing remains scorable context but not hop-eligible; a prior unsupported Faculty-investor participation remains excluded."
+          outcome = next(row for row in wrap['surviving_outcomes'] if row['outcome_id'] == 'clifford-starmer-action-plan')
+          outcome['path'] = ['matt-clifford', 'ai-opportunities-action-plan-2025', 'keir-starmer']
+          outcome['outcome'] = 'Official records place Clifford on the Action Plan commission and development work, then place Clifford and Starmer together only on the 13 January 2025 publication and government-response surface.'
+          outcome['receipt_ids'] = ['gov-ai-opportunities-action-plan-terms-2024-07-26', 'gov-ai-opportunities-action-plan', 'gov-pm-ai-blueprint-2025']
+          write_json('data/research/clifford-thiel-trump-wrap-up.json', wrap)
+          PY
+      - name: Compile and validate the exact public release
+        run: npm run release:check
+      - name: Commit the canonical increment and remove temporary transport
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/temp-action-plan-receipt-seam.yml
+          git add \
+            app.js \
+            data/ledger/claims.jsonl \
+            data/ledger/participation.jsonl \
+            data/ledger/receipts.jsonl \
+            data/ledger/surfaces.jsonl \
+            data/research/clifford-cross-corpus-public-interest-map.json \
+            data/research/clifford-thiel-trump-wrap-up.json \
+            data/research/corpus-coverage.json \
+            receipts/topology/gov-ai-opportunities-action-plan-terms-2024-07-26.md \
+            test/compiler.test.js \
+            test/ui-contract.test.js \
+            build/axm-identity.json \
+            build/build-hop-report.json \
+            build/hop-graph.json \
+            build/public-catalog.json \
+            build/receipt-graph.json \
+            build/scores.json \
+            build/scout-report.json \
+            build/surface-graph.json
+          git commit -m "topology: separate Action Plan development from dated response"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
