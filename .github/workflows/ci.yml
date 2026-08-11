@@ -35,3 +35,16 @@ jobs:
           PY
           fi
           exit "$status"
+      - name: Export generated topology artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: topology-build
+          if-no-files-found: error
+          retention-days: 1
+          path: |
+            build/hop-graph.json
+            build/surface-graph.json
+            build/receipt-graph.json
+            build/axm-identity.json
+            build/build-hop-report.json
