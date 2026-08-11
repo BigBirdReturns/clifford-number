@@ -296,6 +296,8 @@ jobs:
           FIRST: ${{ steps.merge.outputs.first }}
         run: |
           set -Eeuo pipefail
+          git worktree remove --force "$REPLAY" 2>/dev/null || true
+          git worktree prune
           rm -rf "$PROOF" "$REPLAY"
           mkdir -p "$PROOF"
           git fetch --no-tags origin "$MERGE" "$PRODUCT" "$PARENT" '+refs/heads/main:refs/remotes/origin/main'
