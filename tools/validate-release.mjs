@@ -234,7 +234,7 @@ assert(actorScore.get('ben-warner')?.governance_replacement_score > 0, 'Ben Warn
 // Regression fixture 2: Electric Twin surface factory.
 const et = orgScore.get('electric-twin');
 assert(et?.surface_factory === true, 'Electric Twin must be a surface factory');
-for (const sid of ['electric-twin-founder-2023', 'electric-twin-ethics-board-2026', 'electric-twin-funding-surface-2023-2026', 'electric-twin-newsuk-synthetic-audience', 'gartner-synthetic-population-category-2026']) {
+for (const sid of ['electric-twin-founder-2023', 'electric-twin-ethics-board-2026', 'electric-twin-seed-round-2026-02-11', 'electric-twin-ben-blume-director-appointment-2025-09-12', 'electric-twin-newsuk-synthetic-audience', 'gartner-synthetic-population-category-2026']) {
   assert(et?.surfaces.includes(sid), `Electric Twin missing factory surface ${sid}`);
 }
 

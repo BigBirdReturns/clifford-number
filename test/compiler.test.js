@@ -134,6 +134,91 @@ assert.equal(
   'the commission and development surface must not manufacture Starmer participation'
 );
 
+// The Electric Twin capital layer is a dated financing-announcement surface, not a 2023-2026 relationship span.
+assert.equal(surf('electric-twin-funding-surface-2023-2026'), undefined,
+  'the legacy multi-year funding surface must be retired');
+const electricTwinSeed = surf('electric-twin-seed-round-2026-02-11');
+assert.ok(electricTwinSeed, 'the source-native Electric Twin seed-round surface must compile');
+assert.equal(electricTwinSeed.surface_label, 'Electric Twin $10m seed round announcement, 11 February 2026');
+assert.equal(electricTwinSeed.hop_eligible, true);
+assert.deepEqual(electricTwinSeed.receipt_ids, [
+  'electric-twin-seed-round-announcement-2026-02-11',
+  'tech-eu-electric-twin-seed-round-2026-02-12'
+]);
+assert.ok(!electricTwinSeed.receipt_ids.includes('master-doc-v3'),
+  'the funding surface must no longer rest on the master-summary receipt');
+
+const electricTwinSeedActors = electricTwinSeed.participants
+  .filter(part => part.participant_type === 'actor')
+  .map(part => part.actor_id)
+  .sort();
+assert.deepEqual(electricTwinSeedActors, [
+  'cal-henderson',
+  'eric-salama',
+  'louis-mosley',
+  'marc-andreessen',
+  'tom-shinner'
+]);
+const electricTwinSeedOrgs = electricTwinSeed.participants
+  .filter(part => part.participant_type === 'organization')
+  .map(part => part.organization_id)
+  .sort();
+assert.deepEqual(electricTwinSeedOrgs, ['atomico', 'electric-twin', 'localglobe', 'mercuri', 'samos']);
+const seedParticipant = id => electricTwinSeed.participants.find(part =>
+  part.actor_id === id || part.organization_id === id);
+for (const id of ['electric-twin', 'atomico', 'localglobe', 'mercuri', 'marc-andreessen']) {
+  assert.equal(seedParticipant(id).evidence_class, 'primary_public', `${id} must retain company-source evidence`);
+}
+for (const id of ['samos', 'cal-henderson', 'eric-salama', 'tom-shinner', 'louis-mosley']) {
+  assert.equal(seedParticipant(id).evidence_class, 'reported', `${id} must remain reported`);
+}
+
+const electricTwinAnnouncementReceipt = receipt('electric-twin-seed-round-announcement-2026-02-11');
+const techEuFundingReceipt = receipt('tech-eu-electric-twin-seed-round-2026-02-12');
+assert.equal(electricTwinAnnouncementReceipt.path,
+  'receipts/topology/electric-twin-seed-round-announcement-2026-02-11.md');
+assert.equal(electricTwinAnnouncementReceipt.source_published_at, '2026-02-11');
+assert.equal(electricTwinAnnouncementReceipt.event_date, '2026-02-11');
+assert.equal(techEuFundingReceipt.source_published_at, '2026-02-12');
+assert.equal(techEuFundingReceipt.event_date, '2026-02-11',
+  'the reporting date must remain separate from the announcement event date');
+
+const andreessenSalama = hop.edges.find(edge =>
+  [edge.actor_a, edge.actor_b].sort().join('|') === 'eric-salama|marc-andreessen');
+assert.ok(andreessenSalama, 'the reported angels must share the bounded announced round');
+const electricTwinFundingBasis = andreessenSalama.surfaces.find(basis =>
+  basis.surface_id === 'electric-twin-seed-round-2026-02-11');
+assert.ok(electricTwinFundingBasis);
+assert.equal(electricTwinFundingBasis.evidence_class, 'reported');
+assert.equal(electricTwinFundingBasis.valid_from, '2026-02-11');
+assert.equal(electricTwinFundingBasis.valid_until, '2026-02-11');
+assert.deepEqual(electricTwinFundingBasis.receipt_ids, [
+  'electric-twin-seed-round-announcement-2026-02-11',
+  'tech-eu-electric-twin-seed-round-2026-02-12'
+]);
+assert.equal(shortestPath(topology, 'marc-andreessen', 'eric-salama', { asOf: '2026-02-10' }).number, null,
+  'the funding announcement must not backdate investor adjacency');
+assert.equal(shortestPath(topology, 'marc-andreessen', 'eric-salama', { asOf: '2026-02-11' }).number, 1);
+assert.equal(shortestPath(topology, 'marc-andreessen', 'eric-salama', { asOf: '2026-02-12' }).number, null,
+  'a one-day announcement surface must not become an ongoing relationship');
+
+const benBlumeAppointment = surf('electric-twin-ben-blume-director-appointment-2025-09-12');
+assert.ok(benBlumeAppointment, 'the official Ben Blume officer appointment must compile separately');
+assert.equal(benBlumeAppointment.hop_eligible, false);
+assert.deepEqual(
+  benBlumeAppointment.participants.filter(part => part.participant_type === 'actor').map(part => part.actor_id),
+  ['ben-blume']
+);
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === benBlumeAppointment.surface_id)),
+  'a single-actor officer appointment must never manufacture pairwise adjacency');
+const benBlumeReceipt = receipt('companies-house-electric-twin-ben-blume-director-2025-09-12');
+assert.equal(benBlumeReceipt.event_date, '2025-09-12');
+assert.equal(benBlumeReceipt.evidence_class, 'official');
+
+// The previously undisclosed $4m pre-seed remains undated and has no promoted participant surface.
+assert.ok(!surface.surfaces.some(row => /pre.?seed/i.test(row.surface_id)),
+  'the undated pre-seed disclosure must not be promoted into a dated surface');
+
 // The Strategic Defence Review lifecycle is split so commissioning authority cannot become year-long co-work.
 const sdrDevelopment = surf('strategic-defence-review-development-2024-2025');
 assert.ok(sdrDevelopment, 'the external-reviewer workstream must be compiled');
