@@ -32,6 +32,22 @@ jobs:
           source = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines)
           exec(compile(source, 'action-plan-receipt-repair.py', 'exec'), {'__name__': '__main__'})
           PY
+      - name: Reconcile generated topology counts
+        shell: bash
+        run: |
+          node tools/compile.mjs
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          cross_path = Path('data/research/clifford-cross-corpus-public-interest-map.json')
+          cross = json.loads(cross_path.read_text())
+          scout = json.loads(Path('build/scout-report.json').read_text())
+          scout_count = len(scout.get('findings', []))
+          cross['inventory']['discovery_queue']['scout_findings'] = scout_count
+          lane = next(row for row in cross['lanes'] if row['lane_id'] == 'official-research-fanout')
+          lane['counts']['scout_findings'] = scout_count
+          cross_path.write_text(json.dumps(cross, ensure_ascii=False, indent=2) + '\n')
+          PY
       - name: Run repository release gate
         shell: bash
         run: |
