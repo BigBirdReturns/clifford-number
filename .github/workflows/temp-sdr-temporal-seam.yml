@@ -34,9 +34,11 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm .github/workflows/temp-sdr-temporal-seam.yml .github/materialize-sdr-temporal-seam.py
           git add -A
-          if git diff --cached --name-only | grep -E '^\.github/(workflows/temp-sdr-temporal-seam\.yml|materialize-sdr-temporal-seam\.py)$'; then
-            echo 'temporary transport remains staged' >&2
-            exit 1
-          fi
+          for path in .github/workflows/temp-sdr-temporal-seam.yml .github/materialize-sdr-temporal-seam.py; do
+            if [ -e "$path" ] || git ls-files --error-unmatch "$path" >/dev/null 2>&1; then
+              echo "temporary transport remains present or tracked: $path" >&2
+              exit 1
+            fi
+          done
           git commit -m "topology: separate SDR terms from review workstream"
           git push origin HEAD:agent/sdr-temporal-seam
