@@ -121,6 +121,63 @@ assert.equal(actionPlanBasis.valid_from, '2025-01-13');
 assert.equal(actionPlanBasis.valid_until, '2025-01-13');
 assert.deepEqual(actionPlanBasis.receipt_ids, ['gov-ai-opportunities-action-plan', 'gov-pm-ai-blueprint-2025']);
 const topology = buildAdjacency(hop.edges);
+
+
+// Electric Twin legal formation is a one-day co-participation event, not an open-ended founder relationship.
+assert.equal(surf('electric-twin-founder-2023'), undefined,
+  'the legacy open-ended founder surface must be retired');
+const electricTwinIncorporation = surf('electric-twin-incorporation-2023-09-28');
+assert.ok(electricTwinIncorporation, 'the exact Electric Twin incorporation surface must compile');
+assert.equal(electricTwinIncorporation.surface_label,
+  'Electric Twin incorporation and initial-director surface, 28 September 2023');
+assert.equal(electricTwinIncorporation.hop_eligible, true);
+assert.equal(electricTwinIncorporation.time_start, '2023-09-28');
+assert.equal(electricTwinIncorporation.time_end, '2023-09-28');
+assert.deepEqual(electricTwinIncorporation.receipt_ids,
+  ['companies-house-electric-twin-incorporation-2023-09-28']);
+assert.deepEqual(
+  electricTwinIncorporation.participants.filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id).sort(),
+  ['alex-cooper', 'ben-warner']
+);
+const benAlexElectricTwin = hop.edges.find(edge =>
+  [edge.actor_a, edge.actor_b].sort().join('|') === 'alex-cooper|ben-warner');
+assert.ok(benAlexElectricTwin, 'the two initial directors must share the dated incorporation surface');
+const incorporationHopBasis = benAlexElectricTwin.surfaces.find(basis =>
+  basis.surface_id === 'electric-twin-incorporation-2023-09-28');
+assert.ok(incorporationHopBasis);
+assert.equal(incorporationHopBasis.evidence_class, 'official');
+assert.equal(incorporationHopBasis.valid_from, '2023-09-28');
+assert.equal(incorporationHopBasis.valid_until, '2023-09-28');
+assert.deepEqual(incorporationHopBasis.receipt_ids,
+  ['companies-house-electric-twin-incorporation-2023-09-28']);
+assert.equal(shortestPath(topology, 'ben-warner', 'alex-cooper', { asOf: '2023-09-27' }).number, null,
+  'the incorporation record must not backdate initial-director adjacency');
+assert.equal(shortestPath(topology, 'ben-warner', 'alex-cooper', { asOf: '2023-09-28' }).number, 1);
+assert.equal(shortestPath(topology, 'ben-warner', 'alex-cooper', { asOf: '2023-09-29' }).number, null,
+  'the incorporation event must not become an ongoing relationship');
+for (const [surfaceId, actorId] of [
+  ['electric-twin-ben-warner-director-tenure-2023-09-28', 'ben-warner'],
+  ['electric-twin-alex-cooper-director-tenure-2023-09-28', 'alex-cooper'],
+]) {
+  const tenure = surf(surfaceId);
+  assert.ok(tenure, `${surfaceId} must compile`);
+  assert.equal(tenure.hop_eligible, false, `${surfaceId} must remain non-hop`);
+  assert.equal(tenure.time_start, '2023-09-28');
+  assert.equal(tenure.time_end, '2026-08-11');
+  assert.deepEqual(tenure.participants.filter(part => part.participant_type === 'actor').map(part => part.actor_id),
+    [actorId]);
+  assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === surfaceId)),
+    `${surfaceId} must never manufacture pairwise adjacency`);
+}
+const electricTwinIncorporationReceipt = receipt('companies-house-electric-twin-incorporation-2023-09-28');
+assert.equal(electricTwinIncorporationReceipt.path,
+  'receipts/topology/companies-house-electric-twin-incorporation-2023-09-28.md');
+assert.equal(electricTwinIncorporationReceipt.evidence_class, 'official');
+assert.equal(electricTwinIncorporationReceipt.event_date, '2023-09-28');
+assert.equal(electricTwinIncorporationReceipt.retrieved_at, '2026-08-11');
+assert.ok(actor('ben-warner').surfaces.includes('electric-twin-ben-warner-director-tenure-2023-09-28'));
+assert.ok(actor('alex-cooper').surfaces.includes('electric-twin-alex-cooper-director-tenure-2023-09-28'));
 assert.equal(shortestPath(topology, 'keir-starmer', 'matt-clifford', { asOf: '2025-01-13' }).number, 1);
 assert.equal(shortestPath(topology, 'keir-starmer', 'matt-clifford', { asOf: '2025' }).number, 1);
 assert.equal(
