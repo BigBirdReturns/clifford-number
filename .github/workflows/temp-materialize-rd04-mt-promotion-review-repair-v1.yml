@@ -1,0 +1,220 @@
+name: TEMP materialize RD-04 Montana promotion review repair v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-materialize-rd04-mt-promotion-review-repair-v1.yml'
+      - '.tmp/rd04-mt-promotion-review-repair-v1/**'
+
+permissions:
+  contents: write
+  actions: read
+
+env:
+  CANONICAL_PARENT: 0840358962621b0be3db6864ecec763327f35903
+  CANONICAL_PARENT_TREE: 38023f86bcc27527f9db8da9622bada00b3de542
+  SUPERSEDED_PRODUCT: 85fad4f736a3639444edd2c522a67316dbade480
+  SUPERSEDED_TREE: 5a27b91e3ce26f2435cb2df16915062f2c5d1801
+  REPAIRED_WORKFLOW_XZ_SHA256: b22dab603a46888c581ccedda7a616995298e9155f290a87707893a4195ae2ba
+  REPAIRED_WORKFLOW_SHA256: 05caa14cb4fe6fa094f6cd24a636188db37f3702fadad601c14d5494727800d4
+  REPAIRED_SCHEMA_XZ_SHA256: d312cd9c02997cc9b9f2c7e4da3dc70c427ec43e49224788e9d6cd852a55f60d
+  REPAIRED_SCHEMA_SHA256: eb33ccef7da61d28c24b81adde8b74900fce998aed651c25c7f0893bfe33b691
+  REPAIRED_MANIFEST_SHA256: a84414592e36853a00d1bdf18787a0b9dcf1b3731159c0e3e7855c3d6036ca2f
+  REPAIRED_COMBINED_SHA256: 3e7795b6bd18c5e22f8a21daf6fca240781ba376844fc5147ab3277c30314c21
+  STAGING_BRANCH: staging/ssc-rd04-mt-row-state-reconciliation-review-repair-v1
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation
+  PERMANENT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml
+  PERMANENT_SCHEMA: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json
+  OUT: /tmp/rd04-mt-promotion-review-repair-v1
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned schema validator
+        run: python -m pip install --disable-pip-version-check --no-input jsonschema==4.25.1
+      - name: Authenticate carrier and reconstruct repaired product bytes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" /tmp/rd04-mt-review-product /tmp/rd04-mt-review-staging
+          mkdir -p "$OUT" /tmp/rd04-mt-review-product
+          BASE_SHA='${{ github.event.pull_request.base.sha }}'
+          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          git merge-base --is-ancestor "$CANONICAL_PARENT" "$BASE_SHA"
+          test "$(git rev-parse "$CANONICAL_PARENT^{tree}")" = "$CANONICAL_PARENT_TREE"
+          test "$(git show -s --format='%P' "$SUPERSEDED_PRODUCT")" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "$SUPERSEDED_PRODUCT^{tree}")" = "$SUPERSEDED_TREE"
+          test "$(git rev-list --count "$BASE_SHA..$HEAD_SHA")" = 10
+          EXPECTED_CARRIER="$(printf '%s\n' \
+            '.github/workflows/temp-materialize-rd04-mt-promotion-review-repair-v1.yml' \
+            '.tmp/rd04-mt-promotion-review-repair-v1/repaired-schema.xz.b64.part00' \
+            '.tmp/rd04-mt-promotion-review-repair-v1/repaired-schema.xz.b64.part01' \
+            '.tmp/rd04-mt-promotion-review-repair-v1/repaired-schema.xz.b64.part02' \
+            '.tmp/rd04-mt-promotion-review-repair-v1/repaired-schema.xz.b64.part03' \
+            '.tmp/rd04-mt-promotion-review-repair-v1/repaired-schema.xz.b64.part04' \
+            '.tmp/rd04-mt-promotion-review-repair-v1/repaired-schema.xz.b64.part05' \
+            '.tmp/rd04-mt-promotion-review-repair-v1/repaired-schema.xz.b64.part06' \
+            '.tmp/rd04-mt-promotion-review-repair-v1/repaired-schema.xz.b64.part07' \
+            '.tmp/rd04-mt-promotion-review-repair-v1/repaired-workflow.xz.b64' | LC_ALL=C sort)"
+          test "$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | LC_ALL=C sort)" = "$EXPECTED_CARRIER"
+          test "$(git diff --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA" | LC_ALL=C sort)" = "$EXPECTED_CARRIER"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$BASE_SHA" "$HEAD_SHA")"
+          base64 -d .tmp/rd04-mt-promotion-review-repair-v1/repaired-workflow.xz.b64 > /tmp/repaired-workflow.xz
+          cat .tmp/rd04-mt-promotion-review-repair-v1/repaired-schema.xz.b64.part0* > /tmp/repaired-schema.xz.b64
+          base64 -d /tmp/repaired-schema.xz.b64 > /tmp/repaired-schema.xz
+          test "$(sha256sum /tmp/repaired-workflow.xz | cut -d' ' -f1)" = "$REPAIRED_WORKFLOW_XZ_SHA256"
+          test "$(sha256sum /tmp/repaired-schema.xz | cut -d' ' -f1)" = "$REPAIRED_SCHEMA_XZ_SHA256"
+          xz -dc /tmp/repaired-workflow.xz > /tmp/repaired-workflow.yml
+          xz -dc /tmp/repaired-schema.xz > /tmp/repaired-schema.json
+          test "$(sha256sum /tmp/repaired-workflow.yml | cut -d' ' -f1)" = "$REPAIRED_WORKFLOW_SHA256"
+          test "$(sha256sum /tmp/repaired-schema.json | cut -d' ' -f1)" = "$REPAIRED_SCHEMA_SHA256"
+          git worktree add --detach /tmp/rd04-mt-review-staging "$CANONICAL_PARENT"
+          cd /tmp/rd04-mt-review-staging
+          git show "$SUPERSEDED_PRODUCT:$PRODUCT_ROOT/product-manifest.json" > /tmp/original-manifest.json
+          python - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          root=Path('/tmp/rd04-mt-review-staging')
+          manifest=json.load(open('/tmp/original-manifest.json'))
+          source=os.environ['SUPERSEDED_PRODUCT']
+          for rel in manifest['permanent_paths']:
+              target=root/rel
+              target.parent.mkdir(parents=True,exist_ok=True)
+              data=subprocess.check_output(['git','show',f'{source}:{rel}'],cwd=root)
+              target.write_bytes(data)
+          PY
+          cp /tmp/repaired-workflow.yml "$PERMANENT_WORKFLOW"
+          cp /tmp/repaired-schema.json "$PERMANENT_SCHEMA"
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          root=Path('/tmp/rd04-mt-review-staging')
+          path=root/os.environ['PRODUCT_ROOT']/ 'product-manifest.json'
+          manifest=json.loads(path.read_text())
+          def sha(data): return hashlib.sha256(data).hexdigest()
+          def blob(data): return hashlib.sha1(f'blob {len(data)}\0'.encode()+data).hexdigest()
+          for row in manifest['hashed_files']:
+              data=(root/row['path']).read_bytes()
+              row.update(bytes=len(data),sha256=sha(data),git_blob=blob(data))
+          manifest['combined_sha256']=hashlib.sha256(''.join(
+              f"{row['path']}\0{row['sha256']}\0{row['bytes']}\n"
+              for row in sorted(manifest['hashed_files'],key=lambda row:f"{row['path']}\0{row['sha256']}\0{row['bytes']}\n")
+          ).encode()).hexdigest()
+          path.write_text(json.dumps(manifest,indent=2)+'\n')
+          assert sha((root/os.environ['PERMANENT_WORKFLOW']).read_bytes())==os.environ['REPAIRED_WORKFLOW_SHA256']
+          assert sha((root/os.environ['PERMANENT_SCHEMA']).read_bytes())==os.environ['REPAIRED_SCHEMA_SHA256']
+          assert sha(path.read_bytes())==os.environ['REPAIRED_MANIFEST_SHA256']
+          assert manifest['combined_sha256']==os.environ['REPAIRED_COMBINED_SHA256']
+          Path(os.environ['OUT'],'repair-identities.json').write_text(json.dumps({
+              'state':'exact_review_repairs_reconstructed',
+              'workflow_sha256':os.environ['REPAIRED_WORKFLOW_SHA256'],
+              'schema_sha256':os.environ['REPAIRED_SCHEMA_SHA256'],
+              'manifest_sha256':os.environ['REPAIRED_MANIFEST_SHA256'],
+              'combined_sha256':manifest['combined_sha256'],
+          },indent=2)+'\n')
+          PY
+      - name: Qualify repaired product and publish ordinary staging commit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd /tmp/rd04-mt-review-staging
+          test "$(git status --porcelain --untracked-files=all | wc -l | tr -d ' ')" = 14
+          test "$(git status --porcelain --untracked-files=all | grep -vc '^?? ')" = 0
+          ruby -e "require 'yaml'; YAML.load_file(ARGV.fetch(0)); puts 'yaml_ok'" "$PERMANENT_WORKFLOW" > "$OUT/permanent-workflow-yaml.txt"
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --check | tee "$OUT/builder.json"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/validator.json"
+          node --test test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js | tee "$OUT/adversarial.log"
+          python - <<'PY' > "$OUT/schema-validation.txt"
+          import copy, json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          root=Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation')
+          schema=json.load(open('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json'))
+          manifest=json.load(open(root/'product-manifest.json'))
+          instance={'schema_version':'ssc-rd04-mt-row-state-reconciliation-schema@1','product_contract':{'canonical_parent':'0840358962621b0be3db6864ecec763327f35903','canonical_parent_tree':'38023f86bcc27527f9db8da9622bada00b3de542','permanent_path_count':14,'hashed_file_count':13,'matrix_transition':{'predecessor_sha256':'9f9dc05a057396056771bb566c44e9c3779d8ef6b0d2c078f7ffff11d9c7e6cb','promoted_sha256':'12e52344af0c8ec3d845b6f05f8a20014fa84504d10dbc9ee0674d37715abe1d','changed_rows':1,'changed_cells':1,'substantive_cells_changed':0,'terminal_units_before':11,'terminal_units_after':12,'class_closed':False},'authority_boundary':manifest['authority_boundary']},'document_schemas':{'input_custody':json.load(open(root/'input-custody.json')),'row_state_decision':json.load(open(root/'row-state-decision.json')),'row_state_ledger':json.load(open(root/'row-state-ledger.json')),'promoted_matrix':json.load(open(root/'promoted-partial-field-matrix.json')),'remaining_open_census':json.load(open(root/'remaining-open-field-census.json')),'row_state_summary':json.load(open(root/'row-state-summary.json')),'index':json.load(open(root/'index.json')),'product_manifest':manifest}}
+          Draft202012Validator.check_schema(schema)
+          validator=Draft202012Validator(schema);validator.validate(instance)
+          mutations=[lambda x:x['document_schemas']['row_state_ledger'].__setitem__('row_state_mutation_count','corrupt'),lambda x:x['document_schemas']['row_state_ledger'].__setitem__('transition',None),lambda x:x['document_schemas']['promoted_matrix']['rows'][25].__setitem__('row_state','corrupt'),lambda x:x['document_schemas']['promoted_matrix']['counts'].__setitem__('terminal_cells','230'),lambda x:x['document_schemas']['remaining_open_census'].__setitem__('open_cell_count',219),lambda x:x['document_schemas']['remaining_open_census']['open_cells'][0].__setitem__('field_ordinal','corrupt'),lambda x:x['document_schemas']['row_state_summary']['counts'].__setitem__('terminal_units',13),lambda x:x['document_schemas']['row_state_summary'].__setitem__('counts',None),lambda x:x['document_schemas']['index']['counts'].__setitem__('substantive_field_terminalizations',1),lambda x:x['document_schemas']['product_manifest']['hashed_files'][0].__setitem__('path',x['document_schemas']['product_manifest']['hashed_files'][1]['path'])]
+          for index,mutate in enumerate(mutations):
+              candidate=copy.deepcopy(instance);mutate(candidate)
+              if not list(validator.iter_errors(candidate)):raise SystemExit(f'negative schema mutation accepted: {index}')
+          def empty(value,inside_const=False):
+              if isinstance(value,dict):
+                  if not value and not inside_const:return 1
+                  return sum(empty(child,inside_const or key=='const') for key,child in value.items())
+              if isinstance(value,list):return sum(empty(child,inside_const) for child in value)
+              return 0
+          if empty(schema):raise SystemExit('empty public schema node remains')
+          print('schema_ok documents=8 negative_refusals=10 empty_nodes=0')
+          PY
+          npm run release:check > "$OUT/release-check.log" 2>&1
+          cp "$PERMANENT_WORKFLOW" "$OUT/permanent-workflow.yml"
+          cp "$PRODUCT_ROOT/product-manifest.json" "$OUT/product-manifest.json"
+          git reset --hard "$CANONICAL_PARENT"
+          git clean -fdx
+          python - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          source=Path('/tmp/rd04-mt-review-staging')
+          product=Path('/tmp/rd04-mt-review-product')
+          product.mkdir(parents=True,exist_ok=True)
+          # Reconstruct once more from immutable original plus repaired files retained in OUT.
+          manifest=json.load(open(os.path.join(os.environ['OUT'],'product-manifest.json'))
+          for rel in manifest['permanent_paths']:
+              if rel==os.environ['PERMANENT_WORKFLOW']:
+                  data=Path(os.environ['OUT'],'permanent-workflow.yml').read_bytes()
+              elif rel.endswith('/product-manifest.json'):
+                  data=Path(os.environ['OUT'],'product-manifest.json').read_bytes()
+              elif rel==os.environ['PERMANENT_SCHEMA']:
+                  data=Path('/tmp/repaired-schema.json').read_bytes()
+              else:
+                  data=subprocess.check_output(['git','show',f"{os.environ['SUPERSEDED_PRODUCT']}:{rel}"],cwd=source)
+              target=product/rel;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(data)
+          PY
+          while IFS= read -r REL; do
+            [ "$REL" = "$PERMANENT_WORKFLOW" ] && continue
+            mkdir -p "$(dirname "$REL")"
+            cp "/tmp/rd04-mt-review-product/$REL" "$REL"
+          done < <(jq -r '.permanent_paths[]' "$OUT/product-manifest.json")
+          git add --all
+          git -c user.name=BigBirdReturns -c user.email=bigbirdreturns@users.noreply.github.com commit -m 'Stage Montana promotion review repair ordinary product files'
+          STAGING_COMMIT="$(git rev-parse HEAD)"
+          STAGING_TREE="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"
+          test "$(git diff --name-only "$CANONICAL_PARENT" HEAD | wc -l | tr -d ' ')" = 13
+          test -z "$(git diff --name-only "$CANONICAL_PARENT" HEAD | grep -F "$PERMANENT_WORKFLOW" || true)"
+          if git ls-remote --exit-code --heads origin "$STAGING_BRANCH" > "$OUT/staging-before.txt" 2>/dev/null; then
+            echo 'staging branch collision' >&2
+            exit 1
+          fi
+          git push origin "HEAD:refs/heads/$STAGING_BRANCH"
+          printf '%s\n' "$STAGING_COMMIT" > "$OUT/staging-commit.txt"
+          printf '%s\n' "$STAGING_TREE" > "$OUT/staging-tree.txt"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - name: Preserve review-repair materializer receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-promotion-review-repair-materializer-v1
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
