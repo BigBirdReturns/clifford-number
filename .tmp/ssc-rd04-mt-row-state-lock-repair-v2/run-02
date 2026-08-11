@@ -1,0 +1,40 @@
+'''
+event_replacement='''          fi
+
+git fetch --no-tags --force origin "+$QUALIFIED_PRODUCT_REF:refs/remotes/origin/qualified-product"
+test "$(git rev-parse refs/remotes/origin/qualified-product)" = "$PRODUCT_COMMIT"
+test "$(git show -s --format='%P' "$PRODUCT_COMMIT")" = "$CANONICAL_PARENT"
+'''
+if text.count(event_anchor)!=1:
+    raise SystemExit(f'workflow qualification-ref gate denominator {text.count(event_anchor)}')
+text=text.replace(event_anchor,event_replacement,1)
+
+old_message="            printf '%s\\n' 'Promote exact Montana derivative row-state reconciliation v3'\n"
+new_message="            printf '%s\\n' 'Promote exact Montana derivative row-state reconciliation v4'\n"
+if text.count(old_message)!=1:
+    raise SystemExit(f'workflow message denominator {text.count(old_message)}')
+text=text.replace(old_message,new_message,1)
+
+mode_anchor='''          git diff --check "$CANONICAL_PARENT" "$PRODUCT_COMMIT"
+
+PROTECTED="$(printf '%s\\n%s\\n' "$EXPECTED" \\
+'''
+mode_replacement='''          git diff --check "$CANONICAL_PARENT" "$PRODUCT_COMMIT"
+while IFS= read -r PRODUCT_PATH; do
+  test "$(git ls-tree "$PRODUCT_COMMIT" -- "$PRODUCT_PATH" | awk '{print $1" "$2}')" = '100644 blob'
+done <<< "$EXPECTED"
+
+PROTECTED="$(printf '%s\\n%s\\n' "$EXPECTED" \\
+'''
+if text.count(mode_anchor)!=1:
+    raise SystemExit(f'workflow mode-gate denominator {text.count(mode_anchor)}')
+text=text.replace(mode_anchor,mode_replacement,1)
+wf.write_text(text)
+
+text=vp.read_text()
+validator_anchor="  const docs=readBytes(repoRoot,'docs/milestones/ssc-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.md',overrides).toString();"
+validator_assert=(
+    "  assert(workflow.includes('QUALIFIED_PRODUCT_REF: refs/heads/lock/ssc-rd04-mt-row-state-reconciliation-v4-qualified')"
+    "&&workflow.includes('refs/remotes/origin/qualified-product')"
+    "&&workflow.includes('git rev-parse refs/remotes/origin/qualified-product')"
+    "&&workflow.includes('git ls-tree \\\"$PRODUCT_COMMIT\\\"')"
