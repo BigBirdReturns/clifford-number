@@ -1,0 +1,25 @@
+set -Eeuo pipefail
+rm -rf "$OUT" "$WORK" && mkdir -p "$OUT" "$WORK"
+printf '%s\n' bootstrap > "$OUT/STAGE"; printf '%s\n' 1 > "$OUT/EXIT_CODE"
+fail(){ rc=$?; trap - ERR; printf '%s\n' "$rc" > "$OUT/EXIT_CODE"; exit "$rc"; }; trap fail ERR
+test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"
+EXPECTED_CARRIER="$(printf '%s\n' "$CARRIER_PATH" "$PART_ROOT/part-00" "$PART_ROOT/part-01" "$PART_ROOT/part-02" "$PART_ROOT/part-03" | LC_ALL=C sort)"
+test "$(git diff --name-only "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_CARRIER"
+test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_CARRIER"
+test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" HEAD)"
+git diff --check "$CANONICAL_PARENT" HEAD
+git fetch --no-tags --force origin "+refs/heads/$SOURCE_BRANCH:refs/remotes/origin/source" '+refs/heads/main:refs/remotes/origin/main'
+test "$(git rev-parse refs/remotes/origin/source)" = "$SOURCE_PRODUCT"
+test "$(git show -s --format='%P' "$SOURCE_PRODUCT")" = "$CANONICAL_PARENT"
+test "$(git rev-parse "$SOURCE_PRODUCT^{tree}")" = "$SOURCE_TREE"
+git merge-base --is-ancestor "$CANONICAL_PARENT" refs/remotes/origin/main
+test -z "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH")"
+
+printf '%s\n' reconstruct > "$OUT/STAGE"
+git worktree add --detach "$WORK/repo" "$CANONICAL_PARENT"; cd "$WORK/repo"
+mapfile -t PATHS < <(git show "$SOURCE_PRODUCT:$MANIFEST_PATH" | jq -r '.permanent_paths[]')
+test "${#PATHS[@]}" = 14; git checkout "$SOURCE_PRODUCT" -- "${PATHS[@]}"
+test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" | LC_ALL=C sort)" = "$(printf '%s\n' "${PATHS[@]}" | LC_ALL=C sort)"
+test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT")"
+
+printf '%s\n' repair > "$OUT/STAGE"

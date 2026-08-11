@@ -1,0 +1,20 @@
+git diff --check "$CANONICAL_PARENT"
+
+printf '%s\n' construct > "$OUT/STAGE"
+git add -- "${PATHS[@]}"
+test "$(git diff --cached --name-only --diff-filter=A "$CANONICAL_PARENT" | LC_ALL=C sort)" = "$(printf '%s\n' "${PATHS[@]}" | LC_ALL=C sort)"
+test -z "$(git diff --cached --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT")"
+git config user.name "$PRODUCT_NAME"; git config user.email "$PRODUCT_EMAIL"
+GIT_AUTHOR_NAME="$PRODUCT_NAME" GIT_AUTHOR_EMAIL="$PRODUCT_EMAIL" GIT_AUTHOR_DATE="$PRODUCT_DATE" GIT_COMMITTER_NAME="$PRODUCT_NAME" GIT_COMMITTER_EMAIL="$PRODUCT_EMAIL" GIT_COMMITTER_DATE="$PRODUCT_DATE" git commit -m "$PRODUCT_MESSAGE"
+COMMIT="$(git rev-parse HEAD)"; TREE="$(git rev-parse HEAD^{tree})"; E="$OUT/expected.raw"; A="$OUT/actual.raw"
+{ printf 'tree %s\n' "$TREE"; printf 'parent %s\n' "$CANONICAL_PARENT"; printf 'author %s <%s> %s\n' "$PRODUCT_NAME" "$PRODUCT_EMAIL" "$PRODUCT_DATE"; printf 'committer %s <%s> %s\n' "$PRODUCT_NAME" "$PRODUCT_EMAIL" "$PRODUCT_DATE"; printf '\n%s\n' "$PRODUCT_MESSAGE"; } > "$E"
+git cat-file commit "$COMMIT" > "$A"; cmp "$E" "$A"; test "$(git hash-object -t commit --stdin < "$E")" = "$COMMIT"
+test "$(git show -s --format='%P' HEAD)" = "$CANONICAL_PARENT"; test "$(git rev-list --count "$CANONICAL_PARENT"..HEAD)" = 1
+while IFS= read -r p; do test "$(git ls-tree "$COMMIT" -- "$p" | awk '{print $1" "$2}')" = '100644 blob'; done < <(printf '%s\n' "${PATHS[@]}")
+printf '%s\n' "$COMMIT" > "$OUT/product-commit-sha.txt"; git show -s --format='%H%n%P%n%T%n%s' HEAD > "$OUT/product.txt"; cp "$WORKFLOW_PATH" "$OUT/product-workflow.yml"; cp "$MANIFEST_PATH" "$OUT/product-manifest.json"
+
+printf '%s\n' publish > "$OUT/STAGE"
+git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+set +e; git push origin "HEAD:refs/heads/$TARGET_BRANCH" > "$OUT/push.log" 2>&1; rc=$?; set -e; cat "$OUT/push.log"
+if [ "$rc" = 0 ]; then test "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')" = "$COMMIT"; printf '%s\n' published > "$OUT/PUBLICATION_STATE"; else grep -F 'refusing to allow a GitHub App to create or update workflow' "$OUT/push.log"; test -z "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH")"; printf '%s\n' object_transferred_ref_refused > "$OUT/PUBLICATION_STATE"; fi
+printf '%s\n' 0 > "$OUT/EXIT_CODE"; printf '%s\n' complete > "$OUT/STAGE"; trap - ERR

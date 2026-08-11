@@ -1,0 +1,25 @@
+'            printf \'%s\\n\' \'Promote exact Montana derivative row-state reconciliation v3\'',
+'          } > "$EXPECTED_COMMIT_OBJECT"',
+'          git cat-file commit "$PRODUCT_COMMIT" > "$ACTUAL_COMMIT_OBJECT"',
+'          cmp "$EXPECTED_COMMIT_OBJECT" "$ACTUAL_COMMIT_OBJECT"',
+'          test "$(git hash-object -t commit --stdin < "$EXPECTED_COMMIT_OBJECT")" = "$PRODUCT_COMMIT"',
+])+'\n'
+s=wf.read_text(); assert s.count(old)==1,s.count(old); wf.write_text(s.replace(old,new,1))
+s=vp.read_text(); a="'workflow control mismatch');"; b="'workflow control mismatch');assert(workflow.includes('git cat-file commit \\\"$PRODUCT_COMMIT\\\"')&&workflow.includes('git hash-object -t commit --stdin < \\\"$EXPECTED_COMMIT_OBJECT\\\"')&&workflow.includes('cmp \\\"$EXPECTED_COMMIT_OBJECT\\\" \\\"$ACTUAL_COMMIT_OBJECT\\\"')&&!workflow.includes(\"--format='%aI'\")&&!workflow.includes(\"--format='%cI'\")&&!workflow.includes(\"--format='%B' \\\"$PRODUCT_COMMIT\\\"\"),'workflow exact commit-object control mismatch');"; assert s.count(a)==1,s.count(a); vp.write_text(s.replace(a,b,1))
+s=tp.read_text(); a="test('exact product validates'"; r="test('raw product commit object is reconstructed and hashed',()=>{const w=bytes(rel.workflow).toString();assert.match(w,/git cat-file commit \\\"\\$PRODUCT_COMMIT\\\"/);assert.match(w,/git hash-object -t commit --stdin < \\\"\\$EXPECTED_COMMIT_OBJECT\\\"/);assert.match(w,/cmp \\\"\\$EXPECTED_COMMIT_OBJECT\\\" \\\"\\$ACTUAL_COMMIT_OBJECT\\\"/);assert.doesNotMatch(w,/--format='%[ac]I'/);assert.doesNotMatch(w,/--format='%B' \\\"\\$PRODUCT_COMMIT\\\"/);});\n"; assert s.count(a)==1,s.count(a); tp.write_text(s.replace(a,r+a,1))
+def sha(b): return hashlib.sha256(b).hexdigest()
+def blob(b): return hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()
+m=json.loads(mp.read_text()); rec=[]
+for p in m['permanent_paths']:
+    if p==os.environ['MANIFEST_PATH']: continue
+    d=(root/p).read_bytes(); rec.append({'path':p,'bytes':len(d),'sha256':sha(d),'git_blob':blob(d)})
+m['hashed_files']=rec; m['hashed_file_count']=len(rec); m['combined_sha256']=sha(''.join(sorted(f"{x['path']}\0{x['sha256']}\0{x['bytes']}\n" for x in rec)).encode()); mp.write_text(json.dumps(m,indent=2,ensure_ascii=False)+'\n')
+PY
+
+printf '%s\n' qualify > "$OUT/STAGE"
+ruby -e "require 'yaml'; YAML.load_file(ARGV.fetch(0)); puts 'yaml_ok'" "$WORKFLOW_PATH" | tee "$OUT/workflow-yaml.txt"
+node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/generated" | tee "$OUT/builder.json"
+for n in row-state-ledger.json promoted-partial-field-matrix.json remaining-open-field-census.json row-state-summary.json index.json; do cmp "$OUT/generated/$n" "$PRODUCT_ROOT/$n"; done
+node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/validator.json"
+node --test test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js | tee "$OUT/adversarial.log"
+npm run release:check > "$OUT/release-check.log" 2>&1

@@ -1,0 +1,25 @@
+python - <<'PY'
+import hashlib,json,os
+from pathlib import Path
+root=Path.cwd(); wf=root/os.environ['WORKFLOW_PATH']; vp=root/'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs'; tp=root/'test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js'; mp=root/os.environ['MANIFEST_PATH']
+old='\n'.join([
+'          test "$(git show -s --format=\'%P\' "$PRODUCT_COMMIT")" = "$CANONICAL_PARENT"',
+'          test "$(git show -s --format=\'%an\' "$PRODUCT_COMMIT")" = \'github-actions[bot]\'',
+'          test "$(git show -s --format=\'%ae\' "$PRODUCT_COMMIT")" = \'41898282+github-actions[bot]@users.noreply.github.com\'',
+'          test "$(git show -s --format=\'%aI\' "$PRODUCT_COMMIT")" = \'2026-08-10T19:00:00Z\'',
+'          test "$(git show -s --format=\'%cn\' "$PRODUCT_COMMIT")" = \'github-actions[bot]\'',
+'          test "$(git show -s --format=\'%ce\' "$PRODUCT_COMMIT")" = \'41898282+github-actions[bot]@users.noreply.github.com\'',
+'          test "$(git show -s --format=\'%cI\' "$PRODUCT_COMMIT")" = \'2026-08-10T19:00:00Z\'',
+'          test "$(git show -s --format=\'%B\' "$PRODUCT_COMMIT")" = \'Promote exact Montana derivative row-state reconciliation v2\'',
+])+'\n'
+new='\n'.join([
+'          test "$(git show -s --format=\'%P\' "$PRODUCT_COMMIT")" = "$CANONICAL_PARENT"',
+'          PRODUCT_TREE="$(git rev-parse "$PRODUCT_COMMIT^{tree}")"',
+'          EXPECTED_COMMIT_OBJECT="$OUT/expected-product-commit.raw"',
+'          ACTUAL_COMMIT_OBJECT="$OUT/actual-product-commit.raw"',
+'          {',
+'            printf \'tree %s\\n\' "$PRODUCT_TREE"',
+'            printf \'parent %s\\n\' "$CANONICAL_PARENT"',
+'            printf \'author github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> 1786388400 +0000\\n\'',
+'            printf \'committer github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> 1786388400 +0000\\n\'',
+'            printf \'\\n\'',
