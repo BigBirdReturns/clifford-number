@@ -1,0 +1,129 @@
+name: PC-62 final terminal-controller materializer
+
+'on':
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pc62-final-controller-materializer.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc62-final-terminal-controller-materializer
+  cancel-in-progress: true
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPOSITORY: ${{ github.repository }}
+  SOURCE_CONTROLLER_BLOB: 'd2ea3d248251c2eb9fdc291c8b905c66b997c2db'
+  SOURCE_CONTROLLER_SHA256: '7708fd1a52494022b4f2b4d79b16dc170448ac68bf3638fe99b5d637ab02d594'
+  SOURCE_CONTROLLER_BYTES: '39968'
+  FINAL_PRODUCT: 'a45823ea9cdf8e587472a9ee116cf8487a65fb97'
+  FINAL_PRODUCT_TREE: '2f802dce5499c95a60bf0634766061e9524092b9'
+  FINAL_LIBRARY_BLOB: 'e1b853f4dc71b8e102a5517df6ccf5834fc22d6e'
+  FINAL_TEST_BLOB: '034bf4a4dde5cf074d01e4430cd3a6d78b6125c8'
+  WEB_REPAIR_RUN: '31470358425'
+  WEB_REPAIR_ARTIFACT: '9093108773'
+  WEB_REPAIR_DIGEST: 'sha256:2bebb951bcf84d70c5c68a9acc978ccf8069dbada90764651b0dc9db3458650e'
+  WEB_REPAIR_HEAD: 'f0b1df5ebcbb0c402cbfbf3031f960a9a0200332'
+  OUT: '/tmp/pc62-final-controller-materializer'
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/pc62-final-controller-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      - name: Authenticate source controller, bind final repair, and publish exact blob
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          rm -rf "$OUT"
+          mkdir -p "$OUT/api"
+
+          gh api "/repos/$GH_REPOSITORY/git/blobs/$SOURCE_CONTROLLER_BLOB" > "$OUT/api/source-controller.json"
+          test "$(jq -r .sha "$OUT/api/source-controller.json")" = "$SOURCE_CONTROLLER_BLOB"
+          jq -r .content "$OUT/api/source-controller.json" | tr -d '\n' | base64 -d > "$OUT/source-controller.yml"
+          test "$(wc -c < "$OUT/source-controller.yml" | tr -d ' ')" = "$SOURCE_CONTROLLER_BYTES"
+          test "$(sha256sum "$OUT/source-controller.yml" | awk '{print $1}')" = "$SOURCE_CONTROLLER_SHA256"
+          test "$(git hash-object "$OUT/source-controller.yml")" = "$SOURCE_CONTROLLER_BLOB"
+
+          python - "$OUT/source-controller.yml" "$OUT/final-controller.yml" <<'PY'
+          from pathlib import Path
+          import sys
+          source=Path(sys.argv[1]).read_text()
+
+          def once(old,new,label):
+              global source
+              count=source.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label} denominator {count} != 1')
+              source=source.replace(old,new)
+
+          once("  PRODUCT: '6c2ffff2b1768f766a84a4bd37f9c1a9ab7827cd'", "  PRODUCT: 'a45823ea9cdf8e587472a9ee116cf8487a65fb97'", 'product pin')
+          once("  PRODUCT_TREE: '0a6ebb735cfb7670a65da26c148306ece9fcc0c3'", "  PRODUCT_TREE: '2f802dce5499c95a60bf0634766061e9524092b9'", 'tree pin')
+          once("  REPAIRED_LIBRARY_BLOB: 'ab7e0d33680abd17efc4f79a8c70359a5435dbf1'\n  REPAIRED_TEST_BLOB: '6572515cc35a7b0a15e0822e579c567470dc4140'", "  WEB_REPAIR_RUN: '31470358425'\n  WEB_REPAIR_ARTIFACT: '9093108773'\n  WEB_REPAIR_DIGEST: 'sha256:2bebb951bcf84d70c5c68a9acc978ccf8069dbada90764651b0dc9db3458650e'\n  WEB_REPAIR_HEAD: 'f0b1df5ebcbb0c402cbfbf3031f960a9a0200332'\n  REPAIRED_LIBRARY_BLOB: 'e1b853f4dc71b8e102a5517df6ccf5834fc22d6e'\n  REPAIRED_TEST_BLOB: '034bf4a4dde5cf074d01e4430cd3a6d78b6125c8'", 'repair env')
+          once("grep -Fq 'PC-62 fixture mutations rejected: 53'", "grep -Fq 'PC-62 fixture mutations rejected: 57'", 'mutation gate')
+
+          exotic_block='''          gh api "/repos/$GH_REPOSITORY/actions/artifacts/$EXOTIC_REPAIR_ARTIFACT" > "$WORK/exotic-repair-artifact.json"
+          test "$(jq -r .id "$WORK/exotic-repair-artifact.json")" = "$EXOTIC_REPAIR_ARTIFACT"
+          test "$(jq -r .name "$WORK/exotic-repair-artifact.json")" = 'pc62-exotic-brand-repair-materializer'
+          test "$(jq -r .digest "$WORK/exotic-repair-artifact.json")" = "$EXOTIC_REPAIR_DIGEST"
+          test "$(jq -r .workflow_run.id "$WORK/exotic-repair-artifact.json")" = "$EXOTIC_REPAIR_RUN"
+          test "$(jq -r .workflow_run.head_sha "$WORK/exotic-repair-artifact.json")" = "$EXOTIC_REPAIR_HEAD"
+          test "$(jq -r .expired "$WORK/exotic-repair-artifact.json")" = false
+'''
+          web_block=exotic_block+'''
+          gh api "/repos/$GH_REPOSITORY/actions/artifacts/$WEB_REPAIR_ARTIFACT" > "$WORK/web-repair-artifact.json"
+          test "$(jq -r .id "$WORK/web-repair-artifact.json")" = "$WEB_REPAIR_ARTIFACT"
+          test "$(jq -r .name "$WORK/web-repair-artifact.json")" = 'pc62-web-exotic-repair-materializer'
+          test "$(jq -r .digest "$WORK/web-repair-artifact.json")" = "$WEB_REPAIR_DIGEST"
+          test "$(jq -r .workflow_run.id "$WORK/web-repair-artifact.json")" = "$WEB_REPAIR_RUN"
+          test "$(jq -r .workflow_run.head_sha "$WORK/web-repair-artifact.json")" = "$WEB_REPAIR_HEAD"
+          test "$(jq -r .expired "$WORK/web-repair-artifact.json")" = false
+'''
+          once(exotic_block,web_block,'repair artifact authentication')
+          once('          cp "$WORK/exotic-repair-artifact.json" "$PROOF/exotic-repair-artifact.json"', '          cp "$WORK/exotic-repair-artifact.json" "$PROOF/exotic-repair-artifact.json"\n          cp "$WORK/web-repair-artifact.json" "$PROOF/web-repair-artifact.json"', 'proof repair copies')
+          once('            --arg exotic_repair_digest "$EXOTIC_REPAIR_DIGEST" \\\n            --arg floor_v60_workflow_blob', '            --arg exotic_repair_digest "$EXOTIC_REPAIR_DIGEST" \\\n            --arg web_repair_artifact "$WEB_REPAIR_ARTIFACT" \\\n            --arg web_repair_digest "$WEB_REPAIR_DIGEST" \\\n            --arg floor_v60_workflow_blob', 'proof jq args')
+          once('adversarial_mutations:53,prototype_rewritten_exotic_mutations:16', 'adversarial_mutations:57,prototype_rewritten_exotic_mutations:20,prototype_rewritten_node_exotic_mutations:16,prototype_rewritten_web_exotic_mutations:4', 'proof mutation ledger')
+          once('node_exotic_internal_slot_refusal:true,floor_v60_push_dependency_filter:true', 'node_exotic_internal_slot_refusal:true,web_api_exotic_internal_slot_refusal:true,floor_v60_push_dependency_filter:true', 'proof paid repair flags')
+          once('repair_artifact:{id:($exotic_repair_artifact|tonumber),digest:$exotic_repair_digest,authenticated:true}},control_count', 'repair_artifact:{id:($exotic_repair_artifact|tonumber),digest:$exotic_repair_digest,authenticated:true},web_repair_artifact:{id:($web_repair_artifact|tonumber),digest:$web_repair_digest,authenticated:true}},control_count', 'proof repair artifacts')
+          once('          adversarial mutations                     53\n          prototype-rewritten exotic mutations     16', '          adversarial mutations                     57\n          prototype-rewritten exotic mutations     20\n          prototype-rewritten Node mutations       16\n          prototype-rewritten Web API mutations     4', 'receipt mutation ledger')
+          once('          Node exotic-brand refusal repair        true\n          floor-v60 push dependency repair', '          Node exotic-brand refusal repair        true\n          Web API exotic-brand refusal repair     true\n          floor-v60 push dependency repair', 'receipt repair flags')
+          once("The paid exotic-brand P2 repair is artifact `{e['EXOTIC_REPAIR_ARTIFACT']}` with digest `{e['EXOTIC_REPAIR_DIGEST']}`. Floor-v60 binds", "The paid Node exotic-brand P2 repair is artifact `{e['EXOTIC_REPAIR_ARTIFACT']}` with digest `{e['EXOTIC_REPAIR_DIGEST']}`. The paid Web API exotic-brand P2 repair is artifact `{e['WEB_REPAIR_ARTIFACT']}` with digest `{e['WEB_REPAIR_DIGEST']}`. Floor-v60 binds", 'receipt repair artifact prose')
+
+          Path(sys.argv[2]).write_text(source)
+          PY
+
+          test "$(grep -cF "$FINAL_PRODUCT" "$OUT/final-controller.yml")" -ge 1
+          test "$(grep -cF "$FINAL_PRODUCT_TREE" "$OUT/final-controller.yml")" -ge 1
+          test "$(grep -cF "$FINAL_LIBRARY_BLOB" "$OUT/final-controller.yml")" -ge 1
+          test "$(grep -cF "$FINAL_TEST_BLOB" "$OUT/final-controller.yml")" -ge 1
+          test "$(grep -cF 'PC-62 fixture mutations rejected: 57' "$OUT/final-controller.yml")" = 1
+          test "$(grep -cF 'prototype_rewritten_web_exotic_mutations:4' "$OUT/final-controller.yml")" = 1
+          ruby -e 'require "yaml"; y=YAML.load_file(ARGV[0]); abort "name" unless y["name"]=="PC-62 terminal reconciler"; abort "product" unless y["env"]["PRODUCT"]==ENV["FINAL_PRODUCT"]; abort "tree" unless y["env"]["PRODUCT_TREE"]==ENV["FINAL_PRODUCT_TREE"]; abort "web artifact" unless y["env"]["WEB_REPAIR_ARTIFACT"]==ENV["WEB_REPAIR_ARTIFACT"]' "$OUT/final-controller.yml"
+
+          FINAL_BYTES=$(wc -c < "$OUT/final-controller.yml" | tr -d ' ')
+          FINAL_SHA256=$(sha256sum "$OUT/final-controller.yml" | awk '{print $1}')
+          FINAL_BLOB=$(git hash-object "$OUT/final-controller.yml")
+          encoded=$(base64 -w0 "$OUT/final-controller.yml")
+          gh api --method POST "/repos/$GH_REPOSITORY/git/blobs" -f content="$encoded" -f encoding=base64 > "$OUT/api/final-controller-blob.json"
+          test "$(jq -r .sha "$OUT/api/final-controller-blob.json")" = "$FINAL_BLOB"
+
+          jq -n --arg schema_version 'pc62-final-controller-materializer@1' --arg source_controller_blob "$SOURCE_CONTROLLER_BLOB" --arg source_controller_sha256 "sha256:$SOURCE_CONTROLLER_SHA256" --arg final_controller_blob "$FINAL_BLOB" --arg final_controller_sha256 "sha256:$FINAL_SHA256" --arg final_controller_bytes "$FINAL_BYTES" --arg final_product "$FINAL_PRODUCT" --arg final_product_tree "$FINAL_PRODUCT_TREE" --arg web_repair_artifact "$WEB_REPAIR_ARTIFACT" --arg web_repair_digest "$WEB_REPAIR_DIGEST" '{schema_version:$schema_version,status:"complete",source_controller:{blob:$source_controller_blob,sha256:$source_controller_sha256},final_controller:{blob:$final_controller_blob,sha256:$final_controller_sha256,bytes:($final_controller_bytes|tonumber),yaml_parsed:true},final_product:{commit:$final_product,tree:$final_product_tree},web_repair_artifact:{id:($web_repair_artifact|tonumber),digest:$web_repair_digest,authenticated_in_controller:true},adversarial_mutations:57,prototype_rewritten_node_mutations:16,prototype_rewritten_web_api_mutations:4,product_semantics_changed:false,graph_effect:"none"}' > "$OUT/receipt.json"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - name: Upload final terminal-controller materialization receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc62-final-terminal-controller-materializer
+          path: /tmp/pc62-final-controller-materializer
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 9
