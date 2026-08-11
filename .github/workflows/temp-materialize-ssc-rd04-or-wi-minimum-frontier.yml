@@ -1,0 +1,120 @@
+name: TEMP materialize RD-04 Oregon and Wisconsin minimum-frontier product
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-or-wi-minimum-frontier.yml'
+      - 'tools/temp-materialize-ssc-rd04-or-wi-minimum-frontier.sh'
+      - 'data/transport/ssc-rd04-or-wi-minimum-frontier-materializer/**'
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+env:
+  CANONICAL_PARENT: 9510310129c3aab44f8b5b187430a3ede005b7b4
+  CANONICAL_PARENT_TREE: f26f766dba0d795660a4bb84489c233731031b9b
+  PRODUCT_MESSAGE: Adjudicate Oregon and Wisconsin RD-04 minimum frontier
+  PRODUCT_DATE: '2026-08-11T09:00:00Z'
+  PAYLOAD_SHA256: 3569879a0349e4f32b80ca1e65e1e486368d3ff49979b3ffd61b863f58bfd2c4
+  OUT: /tmp/rd04-or-wi-materializer
+  WORK: /tmp/rd04-or-wi-work
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Repair copied payload chunks to exact Git blob identities
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+
+          root = Path('data/transport/ssc-rd04-or-wi-minimum-frontier-materializer')
+          expected = {
+              'payload-00.b64': (10001, 'f56ab0368b298da2f72ca6d5c899d1f9d014a1b1'),
+              'payload-01.b64': (10001, 'c8642b17c58c8ac7dcf2e15ab55d83aec36118a5'),
+              'payload-02.b64': (10001, '801a8a89f4e480cb1e139bc7b427a904ba0a4a9a'),
+              'payload-03.b64': (10001, 'eda5917d6c4d01a76842041046f2fe24e333a45e'),
+              'payload-04.b64': (10001, 'ec81e2e21628c83c5aa8afbf785653607d35e872'),
+              'payload-05.b64': (9773, 'd091898d4e9fbb0d1dbf287d8cac8d30cfecf508'),
+          }
+          alphabet = b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
+
+          def blob_sha(data: bytes) -> str:
+              return hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+
+          def repair_one(data: bytes, target_len: int, target_sha: str) -> tuple[bytes, str]:
+              if blob_sha(data) == target_sha:
+                  return data, 'already_exact'
+              if len(data) == target_len - 1:
+                  for index in range(len(data) + 1):
+                      for char in alphabet:
+                          candidate = data[:index] + bytes((char,)) + data[index:]
+                          if blob_sha(candidate) == target_sha:
+                              return candidate, f'inserted_{chr(char)}_at_{index}'
+              elif len(data) == target_len + 1:
+                  for index in range(len(data)):
+                      candidate = data[:index] + data[index + 1:]
+                      if blob_sha(candidate) == target_sha:
+                          return candidate, f'deleted_{chr(data[index])}_at_{index}'
+              elif len(data) == target_len:
+                  for index, old in enumerate(data):
+                      if index == len(data) - 1 and old == 10:
+                          continue
+                      for char in alphabet:
+                          if char == old:
+                              continue
+                          candidate = data[:index] + bytes((char,)) + data[index + 1:]
+                          if blob_sha(candidate) == target_sha:
+                              return candidate, f'replaced_{chr(old)}_with_{chr(char)}_at_{index}'
+              raise SystemExit(f'no single-edit repair reaches {target_sha}; observed length={len(data)} sha={blob_sha(data)}')
+
+          for name, (target_len, target_sha) in expected.items():
+              path = root / name
+              repaired, action = repair_one(path.read_bytes(), target_len, target_sha)
+              path.write_bytes(repaired)
+              observed = blob_sha(repaired)
+              if len(repaired) != target_len or observed != target_sha:
+                  raise SystemExit(f'{name}: repair verification failed')
+              print(f'{name}: {action}; bytes={len(repaired)}; git_blob={observed}')
+          PY
+      - name: Install pinned validators
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+      - name: Materialize exact product object
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: bash tools/temp-materialize-ssc-rd04-or-wi-minimum-frontier.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rd04-or-wi-minimum-frontier-materialization
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - name: Require terminal success
+        if: always()
+        run: |
+          test "${{ job.status }}" = success
+          test "$(cat "$OUT/STAGE")" = complete
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test -s "$OUT/materialization-receipt.json"
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
