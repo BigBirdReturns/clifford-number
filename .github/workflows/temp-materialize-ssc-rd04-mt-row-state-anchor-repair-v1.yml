@@ -1,0 +1,89 @@
+name: TEMP materialize Montana frozen-anchor repair v4
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-mt-row-state-anchor-repair-v1.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+env:
+  SOURCE_PRODUCT: 30e4f3c17848419790d27826199e37df942c351f
+  SOURCE_PRODUCT_BRANCH: agent/ssc-rd04-mt-row-state-reconciliation-v3
+  CANONICAL_PARENT: 0840358962621b0be3db6864ecec763327f35903
+  TARGET_BRANCH: agent/ssc-rd04-mt-row-state-reconciliation-v4
+  PRODUCT_ANCHOR_BRANCH: anchor/ssc-rd04-mt-row-state-reconciliation-v4
+  CARRIER_PATH: .github/workflows/temp-materialize-ssc-rd04-mt-row-state-anchor-repair-v1.yml
+  PRODUCT_MESSAGE: Promote exact Montana derivative row-state reconciliation v4
+  OUT: /tmp/ssc-rd04-mt-row-state-anchor-repair-v4
+  WORK: /tmp/ssc-rd04-mt-row-state-anchor-repair-work-v4
+  PRODUCT_AUTHOR_DATE: '2026-08-11T03:10:00Z'
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned validator
+        run: python -m pip install --disable-pip-version-check jsonschema==4.25.1
+      - name: Recover and execute exact materializer program
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import base64, gzip
+          payload = (
+            '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'
+            'LBfIFe1/eKR8m1c5AAA='
+          )
+          open('/tmp/materialize-mt-v4.sh','wb').write(gzip.decompress(base64.b64decode(payload)))
+          PY
+          bash /tmp/materialize-mt-v4.sh
+      - name: Preserve exact V4 materialization receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-anchor-repair-materializer-v1
+          path: /tmp/ssc-rd04-mt-row-state-anchor-repair-v4
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
