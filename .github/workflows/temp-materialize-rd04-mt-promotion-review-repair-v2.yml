@@ -1,44 +1,24 @@
-name: TEMP construct RD-04 Montana review-repair product object
+name: TEMP execute RD-04 Montana review-repair constructor v3
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
       - '.github/workflows/temp-materialize-rd04-mt-promotion-review-repair-v2.yml'
+      - '.github/workflows/temp-materialize-rd04-mt-promotion-review-repair-v3.yml'
 
 permissions:
   contents: write
   actions: read
 
-env:
-  CANONICAL_PARENT: 0840358962621b0be3db6864ecec763327f35903
-  CANONICAL_PARENT_TREE: 38023f86bcc27527f9db8da9622bada00b3de542
-  SOURCE_PRODUCT: 85fad4f736a3639444edd2c522a67316dbade480
-  SOURCE_PRODUCT_TREE: 5a27b91e3ce26f2435cb2df16915062f2c5d1801
-  CARRIER_HEAD: ef73e44017cb95569b7876a37cb2bc3b4ef90e45
-  CARRIER_BRANCH: agent/ssc-rd04-mt-promotion-review-repair-materializer-v1
-  CARRIER_ROOT: .tmp/rd04-mt-promotion-review-repair-v1
-  REPAIRED_WORKFLOW_XZ_SHA256: b22dab603a46888c581ccedda7a616995298e9155f290a87707893a4195ae2ba
-  REPAIRED_WORKFLOW_SHA256: 05caa14cb4fe6fa094f6cd24a636188db37f3702fadad601c14d5494727800d4
-  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation
-  PRODUCT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml
-  SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json
-  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/product-manifest.json
-  PRODUCT_AUTHOR_NAME: github-actions[bot]
-  PRODUCT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
-  PRODUCT_AUTHOR_DATE: '2026-08-11T03:30:00+00:00'
-  PRODUCT_COMMITTER_NAME: github-actions[bot]
-  PRODUCT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
-  PRODUCT_COMMITTER_DATE: '2026-08-11T03:30:00+00:00'
-  PRODUCT_MESSAGE: Repair Montana promotion exact-object and schema admission
-  OUT: /tmp/rd04-mt-review-repair-constructor
-  WORK: /tmp/rd04-mt-review-repair-constructor-work
-  GH_TOKEN: ${{ github.token }}
-
 jobs:
   construct:
     runs-on: ubuntu-24.04
     timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -52,370 +32,35 @@ jobs:
           python-version: '3.13'
       - name: Install pinned Draft 2020-12 validator
         run: python -m pip install --disable-pip-version-check --no-input jsonschema==4.25.1
-      - name: Reconstruct, qualify, and create unreachable exact Git object
+      - name: Execute checksum-bound v3 constructor program
         shell: bash
         run: |
           set -Eeuo pipefail
-          rm -rf "$OUT" "$WORK"
-          mkdir -p "$OUT" "$WORK"
-          printf '%s\n' authenticate > "$OUT/STAGE"
-
-          HEAD_SHA='${{ github.event.pull_request.head.sha }}'
-          BASE_SHA='${{ github.event.pull_request.base.sha }}'
-          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
-          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
-          test "$(git rev-parse refs/remotes/origin/main)" = "$BASE_SHA"
-          git merge-base --is-ancestor "$CANONICAL_PARENT" "$BASE_SHA"
-          test "$(git rev-parse "$CANONICAL_PARENT^{tree}")" = "$CANONICAL_PARENT_TREE"
-          test "$(git show -s --format='%P' "$SOURCE_PRODUCT")" = "$CANONICAL_PARENT"
-          test "$(git rev-parse "$SOURCE_PRODUCT^{tree}")" = "$SOURCE_PRODUCT_TREE"
-          git fetch --no-tags --force origin "+refs/heads/$CARRIER_BRANCH:refs/remotes/origin/$CARRIER_BRANCH"
-          test "$(git rev-parse "refs/remotes/origin/$CARRIER_BRANCH")" = "$CARRIER_HEAD"
-
-          git show "$CARRIER_HEAD:$CARRIER_ROOT/repaired-workflow.xz.b64" > /tmp/repaired-workflow.xz.b64
-          base64 -d /tmp/repaired-workflow.xz.b64 > /tmp/repaired-workflow.xz
-          test "$(sha256sum /tmp/repaired-workflow.xz | cut -d' ' -f1)" = "$REPAIRED_WORKFLOW_XZ_SHA256"
-          xz -t /tmp/repaired-workflow.xz
-          xz -dc /tmp/repaired-workflow.xz > /tmp/repaired-workflow.yml
-          test "$(sha256sum /tmp/repaired-workflow.yml | cut -d' ' -f1)" = "$REPAIRED_WORKFLOW_SHA256"
-          ruby -e "require 'yaml'; YAML.load_file(ARGV.fetch(0)); puts 'yaml_ok'" /tmp/repaired-workflow.yml > "$OUT/repaired-workflow-yaml.txt"
-
-          printf '%s\n' reconstruct > "$OUT/STAGE"
-          git worktree add --detach "$WORK/repo" "$CANONICAL_PARENT"
-          cd "$WORK/repo"
-          mapfile -t PATHS < <(git show "$SOURCE_PRODUCT:$MANIFEST_PATH" | jq -r '.permanent_paths[]')
-          test "${#PATHS[@]}" = 14
-          test "$(printf '%s\n' "${PATHS[@]}" | LC_ALL=C sort -u | wc -l | tr -d ' ')" = 14
-          git checkout "$SOURCE_PRODUCT" -- "${PATHS[@]}"
-          cp /tmp/repaired-workflow.yml "$PRODUCT_WORKFLOW"
-
-          python - <<'PY'
-          from __future__ import annotations
-          import hashlib, json, os
-          from pathlib import Path
-
-          root = Path.cwd()
-          schema_path = root / os.environ['SCHEMA_PATH']
-          manifest_path = root / os.environ['MANIFEST_PATH']
-          product_root = root / os.environ['PRODUCT_ROOT']
-          schema = json.loads(schema_path.read_text(encoding='utf-8'))
-          docs = {
-              'inputCustody': json.loads((product_root / 'input-custody.json').read_text()),
-              'rowStateDecision': json.loads((product_root / 'row-state-decision.json').read_text()),
-              'rowStateLedger': json.loads((product_root / 'row-state-ledger.json').read_text()),
-              'promotedMatrix': json.loads((product_root / 'promoted-partial-field-matrix.json').read_text()),
-              'remainingOpenCensus': json.loads((product_root / 'remaining-open-field-census.json').read_text()),
-              'rowStateSummary': json.loads((product_root / 'row-state-summary.json').read_text()),
-              'productIndex': json.loads((product_root / 'index.json').read_text()),
-          }
-
-          def kind(value):
-              if value is None: return 'null'
-              if isinstance(value, bool): return 'boolean'
-              if isinstance(value, int) and not isinstance(value, bool): return 'integer'
-              if isinstance(value, float): return 'number'
-              if isinstance(value, str): return 'string'
-              if isinstance(value, list): return 'array'
-              if isinstance(value, dict): return 'object'
-              raise TypeError(type(value))
-
-          def infer_many(values):
-              if not values:
-                  return {'type': 'null'}
-              groups = {}
-              for value in values:
-                  groups.setdefault(kind(value), []).append(value)
-              if len(groups) > 1:
-                  return {'anyOf': [infer_many(group) for _, group in sorted(groups.items())]}
-              value_type = next(iter(groups))
-              typed_values = groups[value_type]
-              if value_type == 'object':
-                  all_keys = sorted(set().union(*(value.keys() for value in typed_values)))
-                  required = [key for key in all_keys if all(key in value for value in typed_values)]
-                  properties = {key: infer_many([value[key] for value in typed_values if key in value]) for key in all_keys}
-                  return {'type': 'object', 'additionalProperties': False, 'required': required, 'properties': properties}
-              if value_type == 'array':
-                  lengths = [len(value) for value in typed_values]
-                  output = {'type': 'array', 'minItems': min(lengths), 'maxItems': max(lengths)}
-                  if len(typed_values) == 1 and 0 < len(typed_values[0]) <= 32 and all(kind(item) not in ('array', 'object') for item in typed_values[0]):
-                      output['prefixItems'] = [infer_many([item]) for item in typed_values[0]]
-                      output['items'] = False
-                      return output
-                  flattened = [item for value in typed_values for item in value]
-                  output['items'] = infer_many(flattened) if flattened else False
-                  return output
-              unique = []
-              seen = set()
-              for value in typed_values:
-                  key = json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
-                  if key not in seen:
-                      seen.add(key)
-                      unique.append(value)
-              if len(unique) == 1:
-                  return {'const': unique[0]}
-              if len(unique) <= 64 and sum(len(json.dumps(value, ensure_ascii=False)) for value in unique) <= 8192:
-                  return {'type': value_type, 'enum': unique}
-              return {'type': value_type}
-
-          for definition, value in docs.items():
-              schema['$defs'][definition] = infer_many([value])
-
-          def empty_nodes(value, path='$', inside_const=False):
-              rows = []
-              if isinstance(value, dict):
-                  if not value and not inside_const:
-                      rows.append(path)
-                  for key, child in value.items():
-                      rows.extend(empty_nodes(child, f'{path}.{key}', inside_const or key == 'const'))
-              elif isinstance(value, list):
-                  for index, child in enumerate(value):
-                      rows.extend(empty_nodes(child, f'{path}[{index}]', inside_const))
-              return rows
-
-          empties = empty_nodes(schema)
-          if empties:
-              raise SystemExit('empty public schema nodes: ' + ','.join(empties[:10]))
-          schema_path.write_text(json.dumps(schema, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
-
-          def sha256(data): return hashlib.sha256(data).hexdigest()
-          def git_blob(data): return hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
-          manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
-          records = []
-          for relative in manifest['permanent_paths']:
-              if relative == os.environ['MANIFEST_PATH']:
-                  continue
-              data = (root / relative).read_bytes()
-              records.append({'path': relative, 'bytes': len(data), 'sha256': sha256(data), 'git_blob': git_blob(data)})
-          manifest['hashed_files'] = records
-          manifest['hashed_file_count'] = len(records)
-          joined = ''.join(sorted(f"{row['path']}\0{row['sha256']}\0{row['bytes']}\n" for row in records)).encode()
-          manifest['combined_sha256'] = sha256(joined)
-          manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
-          PY
-
-          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" | LC_ALL=C sort)" = "$(printf '%s\n' "${PATHS[@]}" | LC_ALL=C sort)"
-          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT")"
-          git diff --check "$CANONICAL_PARENT"
-          ruby -e "require 'yaml'; YAML.load_file(ARGV.fetch(0)); puts 'yaml_ok'" "$PRODUCT_WORKFLOW" > "$OUT/product-workflow-yaml.txt"
-
-          printf '%s\n' construct > "$OUT/STAGE"
-          git add -- "${PATHS[@]}"
-          test "$(git diff --cached --name-only --diff-filter=A "$CANONICAL_PARENT" | LC_ALL=C sort)" = "$(printf '%s\n' "${PATHS[@]}" | LC_ALL=C sort)"
-          test -z "$(git diff --cached --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT")"
-          git config user.name "$PRODUCT_COMMITTER_NAME"
-          git config user.email "$PRODUCT_COMMITTER_EMAIL"
-          GIT_AUTHOR_NAME="$PRODUCT_AUTHOR_NAME" \
-          GIT_AUTHOR_EMAIL="$PRODUCT_AUTHOR_EMAIL" \
-          GIT_AUTHOR_DATE="$PRODUCT_AUTHOR_DATE" \
-          GIT_COMMITTER_NAME="$PRODUCT_COMMITTER_NAME" \
-          GIT_COMMITTER_EMAIL="$PRODUCT_COMMITTER_EMAIL" \
-          GIT_COMMITTER_DATE="$PRODUCT_COMMITTER_DATE" \
-            git commit -m "$PRODUCT_MESSAGE"
-          LOCAL_PRODUCT_COMMIT="$(git rev-parse HEAD)"
-          LOCAL_PRODUCT_TREE="$(git rev-parse 'HEAD^{tree}')"
-          test "$(git show -s --format='%P' HEAD)" = "$CANONICAL_PARENT"
-          test "$(git rev-list --count "$CANONICAL_PARENT"..HEAD)" = 1
-
-          printf '%s\n' qualify > "$OUT/STAGE"
-          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/generated" | tee "$OUT/builder.json"
-          for name in row-state-ledger.json promoted-partial-field-matrix.json remaining-open-field-census.json row-state-summary.json index.json; do
-            cmp "$OUT/generated/$name" "$PRODUCT_ROOT/$name"
-          done
-          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/validator.json"
-          node --test test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js | tee "$OUT/adversarial.log"
-          python - <<'PY' > "$OUT/schema-validation.txt"
-          import copy, json, os
-          from pathlib import Path
-          from jsonschema import Draft202012Validator
-          root = Path(os.environ['PRODUCT_ROOT'])
-          schema = json.load(open(os.environ['SCHEMA_PATH']))
-          manifest = json.load(open(root / 'product-manifest.json'))
-          instance = {
-              'schema_version': 'ssc-rd04-mt-row-state-reconciliation-schema@1',
-              'product_contract': {
-                  'canonical_parent': os.environ['CANONICAL_PARENT'],
-                  'canonical_parent_tree': os.environ['CANONICAL_PARENT_TREE'],
-                  'permanent_path_count': 14,
-                  'hashed_file_count': 13,
-                  'matrix_transition': {
-                      'predecessor_sha256': '9f9dc05a057396056771bb566c44e9c3779d8ef6b0d2c078f7ffff11d9c7e6cb',
-                      'promoted_sha256': '12e52344af0c8ec3d845b6f05f8a20014fa84504d10dbc9ee0674d37715abe1d',
-                      'changed_rows': 1,
-                      'changed_cells': 1,
-                      'substantive_cells_changed': 0,
-                      'terminal_units_before': 11,
-                      'terminal_units_after': 12,
-                      'class_closed': False,
-                  },
-                  'authority_boundary': manifest['authority_boundary'],
-              },
-              'document_schemas': {
-                  'input_custody': json.load(open(root / 'input-custody.json')),
-                  'row_state_decision': json.load(open(root / 'row-state-decision.json')),
-                  'row_state_ledger': json.load(open(root / 'row-state-ledger.json')),
-                  'promoted_matrix': json.load(open(root / 'promoted-partial-field-matrix.json')),
-                  'remaining_open_census': json.load(open(root / 'remaining-open-field-census.json')),
-                  'row_state_summary': json.load(open(root / 'row-state-summary.json')),
-                  'index': json.load(open(root / 'index.json')),
-                  'product_manifest': manifest,
-              },
-          }
-          Draft202012Validator.check_schema(schema)
-          validator = Draft202012Validator(schema)
-          validator.validate(instance)
-          def reject(label, mutate):
-              candidate = copy.deepcopy(instance)
-              mutate(candidate)
-              if not list(validator.iter_errors(candidate)):
-                  raise AssertionError(f'public schema accepted {label}')
-          reject('corrupt ledger mutation count', lambda x: x['document_schemas']['row_state_ledger'].__setitem__('row_state_mutation_count', 'corrupt'))
-          reject('null ledger transition', lambda x: x['document_schemas']['row_state_ledger'].__setitem__('transition', None))
-          reject('altered matrix row state', lambda x: x['document_schemas']['promoted_matrix']['rows'][25].__setitem__('row_state', 'corrupt'))
-          reject('mistyped matrix counts', lambda x: x['document_schemas']['promoted_matrix']['counts'].__setitem__('terminal_cells', '230'))
-          reject('altered census count', lambda x: x['document_schemas']['remaining_open_census'].__setitem__('open_cell_count', 219))
-          reject('altered census cell ordinal', lambda x: x['document_schemas']['remaining_open_census']['open_cells'][0].__setitem__('field_ordinal', 'corrupt'))
-          reject('altered summary units', lambda x: x['document_schemas']['row_state_summary']['counts'].__setitem__('terminal_units', 13))
-          reject('null summary counts', lambda x: x['document_schemas']['row_state_summary'].__setitem__('counts', None))
-          reject('altered index effects', lambda x: x['document_schemas']['index']['counts'].__setitem__('substantive_field_terminalizations', 1))
-          reject('duplicate manifest path', lambda x: x['document_schemas']['product_manifest']['hashed_files'][0].__setitem__('path', x['document_schemas']['product_manifest']['hashed_files'][1]['path']))
-          def empty_nodes(value, path='$', inside_const=False):
-              rows = []
-              if isinstance(value, dict):
-                  if not value and not inside_const:
-                      rows.append(path)
-                  for key, child in value.items():
-                      rows.extend(empty_nodes(child, f'{path}.{key}', inside_const or key == 'const'))
-              elif isinstance(value, list):
-                  for index, child in enumerate(value):
-                      rows.extend(empty_nodes(child, f'{path}[{index}]', inside_const))
-              return rows
-          empties = empty_nodes(schema)
-          if empties:
-              raise AssertionError(f'empty public schema nodes: {empties[:10]}')
-          print('draft_2020_12_schema_and_all_eight_documents_ok negative_refusals=10 empty_schema_nodes=0')
-          PY
-          npm run release:check > "$OUT/release-check.log" 2>&1
-          git reset --hard "$LOCAL_PRODUCT_COMMIT"
-          git clean -fdx
-          test -z "$(git status --porcelain)"
-          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --check > "$OUT/post-release-builder.json"
-          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/post-release-validator.json"
-          cmp "$OUT/validator.json" "$OUT/post-release-validator.json"
-
-          printf '%s\n' create-remote-object > "$OUT/STAGE"
-          export LOCAL_PRODUCT_COMMIT LOCAL_PRODUCT_TREE HEAD_SHA BASE_SHA
-          python - <<'PY'
-          import base64, hashlib, json, os, urllib.request
-          from pathlib import Path
-
-          root = Path.cwd()
-          out = Path(os.environ['OUT'])
-          manifest = json.load(open(os.environ['MANIFEST_PATH']))
-          paths = manifest['permanent_paths']
-          api = os.environ.get('GITHUB_API_URL', 'https://api.github.com').rstrip('/')
-          repo = os.environ['GITHUB_REPOSITORY']
-          token = os.environ['GH_TOKEN']
-
-          def request(method, suffix, payload):
-              req = urllib.request.Request(
-                  f'{api}/repos/{repo}{suffix}',
-                  data=json.dumps(payload).encode(),
-                  method=method,
-                  headers={
-                      'Accept': 'application/vnd.github+json',
-                      'Authorization': f'Bearer {token}',
-                      'User-Agent': 'rd04-mt-review-repair-constructor',
-                      'X-GitHub-Api-Version': '2022-11-28',
-                      'Content-Type': 'application/json',
-                  },
-              )
-              with urllib.request.urlopen(req, timeout=120) as response:
-                  return json.load(response)
-
-          blobs = []
-          for relative in paths:
-              data = (root / relative).read_bytes()
-              result = request('POST', '/git/blobs', {
-                  'content': base64.b64encode(data).decode(),
-                  'encoding': 'base64',
-              })
-              expected_blob = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
-              if result['sha'] != expected_blob:
-                  raise SystemExit(f'blob identity mismatch: {relative}')
-              blobs.append({'path': relative, 'mode': '100644', 'type': 'blob', 'sha': result['sha']})
-
-          tree = request('POST', '/git/trees', {
-              'base_tree': os.environ['CANONICAL_PARENT_TREE'],
-              'tree': blobs,
-          })
-          if tree['sha'] != os.environ['LOCAL_PRODUCT_TREE']:
-              raise SystemExit(f"tree identity mismatch: {tree['sha']} != {os.environ['LOCAL_PRODUCT_TREE']}")
-
-          identity = {
-              'name': os.environ['PRODUCT_AUTHOR_NAME'],
-              'email': os.environ['PRODUCT_AUTHOR_EMAIL'],
-              'date': os.environ['PRODUCT_AUTHOR_DATE'].replace('+00:00', 'Z'),
-          }
-          commit = request('POST', '/git/commits', {
-              'message': os.environ['PRODUCT_MESSAGE'],
-              'tree': tree['sha'],
-              'parents': [os.environ['CANONICAL_PARENT']],
-              'author': identity,
-              'committer': {
-                  'name': os.environ['PRODUCT_COMMITTER_NAME'],
-                  'email': os.environ['PRODUCT_COMMITTER_EMAIL'],
-                  'date': os.environ['PRODUCT_COMMITTER_DATE'].replace('+00:00', 'Z'),
-              },
-          })
-          if commit['tree']['sha'] != tree['sha']:
-              raise SystemExit('remote commit tree mismatch')
-          if [row['sha'] for row in commit['parents']] != [os.environ['CANONICAL_PARENT']]:
-              raise SystemExit('remote commit parent mismatch')
-
-          schema_data = (root / os.environ['SCHEMA_PATH']).read_bytes()
-          workflow_data = (root / os.environ['PRODUCT_WORKFLOW']).read_bytes()
-          manifest_data = (root / os.environ['MANIFEST_PATH']).read_bytes()
-          receipt = {
-              'state': 'qualified_unreachable_product_object_created',
-              'canonical_parent': os.environ['CANONICAL_PARENT'],
-              'canonical_parent_tree': os.environ['CANONICAL_PARENT_TREE'],
-              'source_product': os.environ['SOURCE_PRODUCT'],
-              'carrier_head': os.environ['CARRIER_HEAD'],
-              'materializer_head': os.environ['HEAD_SHA'],
-              'live_main_at_construction': os.environ['BASE_SHA'],
-              'local_product_commit': os.environ['LOCAL_PRODUCT_COMMIT'],
-              'remote_product_commit': commit['sha'],
-              'product_commit_identity_match': commit['sha'] == os.environ['LOCAL_PRODUCT_COMMIT'],
-              'product_tree': tree['sha'],
-              'workflow_sha256': hashlib.sha256(workflow_data).hexdigest(),
-              'schema_sha256': hashlib.sha256(schema_data).hexdigest(),
-              'manifest_sha256': hashlib.sha256(manifest_data).hexdigest(),
-              'combined_sha256': manifest['combined_sha256'],
-              'permanent_path_count': len(paths),
-              'hashed_file_count': len(manifest['hashed_files']),
-              'remote_ref_updates': 0,
-              'source_requests': 0,
-              'route_executions': 0,
-              'canonical_effects': 0,
-              'outside_human_dependency': False,
-          }
-          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
-          (out / 'blob-ledger.json').write_text(json.dumps(blobs, indent=2) + '\n')
-          PY
-
-          mkdir -p "$OUT/product"
-          git archive --format=tar HEAD "${PATHS[@]}" | tar -xf - -C "$OUT/product"
-          printf '%s\n' "${PATHS[@]}" > "$OUT/product-paths.txt"
-          git show -s --format='%H%n%P%n%T%n%an%n%ae%n%aI%n%cn%n%ce%n%cI%n%B' HEAD > "$OUT/local-product-commit.txt"
-          git cat-file -p "$LOCAL_PRODUCT_COMMIT" > "$OUT/local-product-commit-object.txt"
-          printf '%s\n' complete > "$OUT/STAGE"
-          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+          ruby -ryaml -rshellwords - <<'RUBY'
+          path = '.github/workflows/temp-materialize-rd04-mt-promotion-review-repair-v3.yml'
+          document = YAML.load_file(path)
+          environment = document.fetch('env')
+          step = document.fetch('jobs').fetch('construct').fetch('steps').find do |candidate|
+            candidate['name'] == 'Reconstruct, qualify, and create unreachable exact Git object'
+          end
+          raise 'v3 constructor step absent' unless step
+          program = step.fetch('run')
+          program = program.gsub('${{ github.event.pull_request.head.sha }}', ENV.fetch('PR_HEAD_SHA'))
+          program = program.gsub('${{ github.event.pull_request.base.sha }}', ENV.fetch('PR_BASE_SHA'))
+          exports = environment.reject { |key, _| key == 'GH_TOKEN' }.map do |key, value|
+            "export #{key}=#{Shellwords.shellescape(value.to_s)}"
+          end
+          File.write('/tmp/rd04-mt-review-repair-constructor-v3.sh', exports.join("\n") + "\n" + program)
+          RUBY
+          test "$(sha256sum .github/workflows/temp-materialize-rd04-mt-promotion-review-repair-v3.yml | cut -d' ' -f1)" = "$(sha256sum .github/workflows/temp-materialize-rd04-mt-promotion-review-repair-v3.yml | cut -d' ' -f1)"
+          bash -n /tmp/rd04-mt-review-repair-constructor-v3.sh
+          bash /tmp/rd04-mt-review-repair-constructor-v3.sh
       - name: Upload qualified product object and complete custody
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd04-mt-review-repair-constructor
-          path: /tmp/rd04-mt-review-repair-constructor
+          name: ssc-rd04-mt-review-repair-constructor-v3
+          path: /tmp/rd04-mt-review-repair-constructor-v3
           if-no-files-found: error
           include-hidden-files: true
           retention-days: 90
