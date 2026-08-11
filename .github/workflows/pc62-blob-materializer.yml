@@ -1,0 +1,93 @@
+name: PC-62 exact blob materializer
+
+'on':
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pc62-blob-materializer.yml'
+      - 'tmp/pc62-payload/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc62-exact-blob-materializer
+  cancel-in-progress: true
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPOSITORY: ${{ github.repository }}
+  OUT: /tmp/pc62-exact-blob-materializer
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/pc62-blob-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+
+      - name: Reconstruct and publish exact Git blobs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          rm -rf "$OUT"
+          mkdir -p "$OUT/files" "$OUT/responses"
+
+          materialize() {
+            local name="$1"
+            local chunks="$2"
+            local expected_bytes="$3"
+            local expected_sha256="$4"
+            local expected_blob="$5"
+            local target="$OUT/files/$name"
+
+            cat $chunks > "$target"
+            test "$(wc -c < "$target" | tr -d ' ')" = "$expected_bytes"
+            actual_sha256=$(sha256sum "$target" | awk '{print $1}')
+            test "$actual_sha256" = "$expected_sha256"
+            actual_blob=$(git hash-object "$target")
+            test "$actual_blob" = "$expected_blob"
+
+            encoded=$(base64 -w0 "$target")
+            gh api --method POST "/repos/$GH_REPOSITORY/git/blobs" \
+              -f content="$encoded" \
+              -f encoding=base64 > "$OUT/responses/$name.json"
+            remote_blob=$(jq -r .sha "$OUT/responses/$name.json")
+            test "$remote_blob" = "$expected_blob"
+
+            jq -n \
+              --arg name "$name" \
+              --arg bytes "$expected_bytes" \
+              --arg sha256 "sha256:$actual_sha256" \
+              --arg blob "$remote_blob" \
+              '{name:$name,bytes:($bytes|tonumber),sha256:$sha256,git_blob:$blob,authenticated:true}'
+          }
+
+          {
+            materialize fixture 'tmp/pc62-payload/fixture/*.part' 49822 32cdce49a0770782ab3815da4b7c3e16905d2024eb960ec929bbe7d88108143f 8bb0bc1a5a1b547101c1d58ddd4b28ae4eb8a67c
+            materialize floor-lib 'tmp/pc62-payload/floor-lib/*.part' 25660 972ed38f661ad974f77e555d7d9d799629d40f25c1c878aff6bc549b322f3807 c565ff25e867f6322217f7e098a867be003a71f0
+            materialize standalone-lib 'tmp/pc62-payload/standalone-lib/*.part' 29136 00417c03b78f0d38072d92c1341063e6d805b5cc1113f8f1cbea51f302936685 ac1c7fd556e1092c792bb53a87dd14435f09c7b8
+          } | jq -s '{schema_version:"pc62-exact-blob-materializer@1",status:"complete",qualified_parent:"bafb00ad4036be2d38cbeeee7573af9f9d10a2be",product_tree_expected:"b527559f2a10c910777cf509f944a3a8bb864485",blobs:.,product_semantics_changed:false,graph_effect:"none"}' > "$OUT/receipt.json"
+
+          test "$(jq '.blobs|length' "$OUT/receipt.json")" = 3
+          test "$(jq '[.blobs[]|select(.authenticated!=true)]|length' "$OUT/receipt.json")" = 0
+          (
+            cd "$OUT"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - name: Upload exact blob receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc62-exact-blob-materializer
+          path: /tmp/pc62-exact-blob-materializer
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 9
