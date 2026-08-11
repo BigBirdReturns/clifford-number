@@ -1,4 +1,4 @@
-name: TEMP finalize RD-04 Oregon and Wisconsin seven-route capture v1
+name: TEMP finalize RD-04 Oregon and Wisconsin seven-route capture v2
 
 on:
   pull_request:
@@ -6,13 +6,14 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - '.github/workflows/temp-finalize-ssc-rd04-or-wi-seven-route-capture-v1.yml'
+      - '.tmp/ssc-rd04-or-wi-seven-route-finalizer-v2/**'
 
 permissions:
   actions: read
   contents: read
 
 concurrency:
-  group: temp-finalize-ssc-rd04-or-wi-seven-route-capture-v1
+  group: temp-finalize-ssc-rd04-or-wi-seven-route-capture-v2
   cancel-in-progress: false
 
 env:
@@ -27,8 +28,11 @@ env:
   SEVEN_ROUTES_SHA256: 48f750326f15c8aa712af0d47cbd697cc23dfbffe3d9a9646747b22e3e6d5b04
   SUMMARY_SHA256: 8005fc8b0d21db758b2ba6ecd5b96076747132098a98d5416311c7c23b3f6931
   CAPTURE_RESULTS_SHA256: 47d546f758e4c3c57ef0fd212c97a796302c8b4ecfbb37b7e15a7ae4f30c2450
+  PAYLOAD_ROOT: .tmp/ssc-rd04-or-wi-seven-route-finalizer-v2
+  PROGRAM_SHA256: 0d5e0d56083adf19748f6a93bac156e7015779f46704ec21749cfd4e20f5ec7b
   SOURCE_ZIP: /tmp/ssc-rd04-or-wi-seven-route-capture-v1.zip
-  OUT: /tmp/ssc-rd04-or-wi-seven-route-capture-finalized-v1
+  SRC: /tmp/ssc-rd04-or-wi-seven-route-source-v1
+  OUT: /tmp/ssc-rd04-or-wi-seven-route-capture-finalized-v2
 
 jobs:
   finalize:
@@ -46,271 +50,28 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Bind canonical main and source artifact metadata
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -Eeuo pipefail
-          rm -rf "$OUT" "$SOURCE_ZIP" /tmp/source-artifact.json
-          mkdir -p "$OUT"
-          printf '%s\n' bind-source-artifact > "$OUT/STAGE"
-          printf '%s\n' 1 > "$OUT/EXIT_CODE"
-          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
-          test "$(git rev-parse refs/remotes/origin/main)" = "$BASE_COMMIT"
-          git merge-base --is-ancestor "$BASE_COMMIT" HEAD
-          curl --fail --silent --show-error --location \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H 'Accept: application/vnd.github+json' \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ARTIFACT_ID" \
-            > /tmp/source-artifact.json
-          jq -e --argjson artifact_id "$SOURCE_ARTIFACT_ID" \
-            --arg name "$SOURCE_ARTIFACT_NAME" \
-            --argjson run_id "$SOURCE_RUN_ID" \
-            --arg head_sha "$SOURCE_HEAD_SHA" \
-            --arg digest "sha256:$SOURCE_ARTIFACT_SHA256" '
-              .id == $artifact_id and .name == $name and .expired == false and
-              .workflow_run.id == $run_id and .workflow_run.head_sha == $head_sha and
-              .digest == $digest
-            ' /tmp/source-artifact.json >/dev/null
-          cp /tmp/source-artifact.json "$OUT/source-artifact-api.json"
-
-      - name: Download and authenticate the existing capture artifact
+      - name: Authenticate wrapper payload and finalize existing capture
         id: finalize
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
-          fail() {
-            local rc=$?
-            trap - ERR
-            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
-            exit "$rc"
-          }
-          trap fail ERR
-          printf '%s\n' download-existing-capture > "$OUT/STAGE"
-          curl --fail --silent --show-error --location \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H 'Accept: application/vnd.github+json' \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$SOURCE_ARTIFACT_ID/zip" \
-            --output "$SOURCE_ZIP"
-          test "$(sha256sum "$SOURCE_ZIP" | awk '{print $1}')" = "$SOURCE_ARTIFACT_SHA256"
-          unzip -q "$SOURCE_ZIP" -d "$OUT"
-          test "$(cat "$OUT/STAGE")" = extract-pdf-text
-          test "$(cat "$OUT/EXIT_CODE")" = 1
-          mv "$OUT/STAGE" "$OUT/source-STAGE"
-          mv "$OUT/EXIT_CODE" "$OUT/source-EXIT_CODE"
-          printf '%s\n' authenticate-capture-payload > "$OUT/STAGE"
-          printf '%s\n' 1 > "$OUT/EXIT_CODE"
-          test ! -e "$OUT/manifest.json"
-          test ! -e "$OUT/SHA256SUMS"
-          test "$(sha256sum "$OUT/frozen-protocol.json" | awk '{print $1}')" = "$PROTOCOL_SHA256"
-          test "$(sha256sum "$OUT/frozen-seven-routes.json" | awk '{print $1}')" = "$SEVEN_ROUTES_SHA256"
-          test "$(sha256sum "$OUT/summary.json" | awk '{print $1}')" = "$SUMMARY_SHA256"
-          test "$(sha256sum "$OUT/capture-results.json" | awk '{print $1}')" = "$CAPTURE_RESULTS_SHA256"
-
-          python - "$OUT" <<'PY'
-          import hashlib
-          import json
-          import sys
-          import urllib.parse
-          from pathlib import Path
-
-          out=Path(sys.argv[1])
-          expected={
-            'RD04-NF-OR-001':('OR','https://www.oregon.gov/odhs/food/Pages/snap-interviews.aspx','www.oregon.gov',94289,'b934887ca53878b1cecb17b8bc63c98776b2f26264669172959364d0ef5f0b5b',False),
-            'RD04-NF-OR-002':('OR','https://www.oregon.gov/odhs/food/Pages/report-snap-changes.aspx','www.oregon.gov',87876,'50f60f31c7dd0c935dbc300246d6072553be7e760fe0dbc18e9713abaa43b40a',False),
-            'RD04-NF-WI-001':('WI','https://www.dhs.wisconsin.gov/foodshare/interviews.htm','www.dhs.wisconsin.gov',166508,'4b07dae32f8388ca2ec48766694cad1df21d7e9d1e476421905d0fc2afc200e5',False),
-            'RD04-NF-WI-002':('WI','https://www.dhs.wisconsin.gov/library/collection/p-03606','www.dhs.wisconsin.gov',158683,'d70e2024de584c5b5dcc6ed706e52a590b872a8cd1dcf6ad5328430b53dea8ab',False),
-            'RD04-NF-WI-003':('WI','https://www.dhs.wisconsin.gov/fset/ffy2025-fset-wi-stateplan.pdf','www.dhs.wisconsin.gov',1272731,'028694c6e4a7b5f2d1e7e68c237befe578c2a48ec40a15ad37dfd5c2bb33547f',True),
-            'RD04-NF-WI-004':('WI','https://www.dhs.wisconsin.gov/fset/ffy2025-fset-wi-addendum.pdf','www.dhs.wisconsin.gov',157309,'3455f1a990ae5c46008a88616b166a5b9cb38640a8cf80f71cc7ed6d633c41c9',True),
-            'RD04-NF-WI-005':('WI','https://www.dhs.wisconsin.gov/foodshare/publications.htm','www.dhs.wisconsin.gov',173582,'4ebb77765b74f90862feb79fa0affba303d1f1b64e0bd4e5a9b614e82513a782',False),
-          }
-          route_ids=list(expected)
-          protocol=json.loads((out/'frozen-protocol.json').read_text())
-          routes=json.loads((out/'frozen-seven-routes.json').read_text())
-          summary=json.loads((out/'summary.json').read_text())
-          results=json.loads((out/'capture-results.json').read_text())['routes']
-          assert protocol['schema_version']=='ssc-rd04-wave03-five-state-selected-followup-protocol@1'
-          assert protocol['class_id']=='RD-04-C02' and protocol['issue']==1017
-          assert summary['canonical_main']=='9510310129c3aab44f8b5b187430a3ede005b7b4'
-          assert summary['frozen_protocol_blob']=='88cb73c7bae87a4031d1571d7dd5ebdcb58aa2f4'
-          assert summary['frozen_protocol_sha256']=='a27c057b36de0155463b2872b0e610500db2d7abca08de886e4661c8fc233834'
-          assert summary['selected_route_ids']==route_ids
-          assert summary['selected_states']==['OR','WI']
-          assert summary['logical_attempts']==7 and summary['physical_requests']==7
-          assert summary['outcome_counts']=={'http_success':7}
-          assert summary['source_requests_executed']==7 and summary['result_spawned_requests']==0
-          for key in ('source_admissions','field_classifications','field_terminalizations','matrix_updates','row_state_mutations','row_terminalizations'):
-              assert summary[key]==0
-          assert summary['class_closed'] is False and summary['outside_human_dependency'] is False
-          assert [route['route_id'] for route in routes]==route_ids
-          assert [result['route_id'] for result in results]==route_ids
-          results_by_id={result['route_id']:result for result in results}
-          for route in routes:
-              rid=route['route_id']
-              postal,url,host,size,sha,is_pdf=expected[rid]
-              assert route['postal_code']==postal and route['requested_url']==url
-              assert route['allowed_final_hosts']==[host]
-              assert route['maximum_attempts']==1 and route['maximum_redirects']==4
-              assert route['maximum_body_bytes']==16777216
-              assert route['result_spawned_requests']==0 and route['cross_host_redirects_allowed'] is False
-              route_dir=out/'routes'/rid
-              request=json.loads((route_dir/'request.json').read_text())
-              response=json.loads((route_dir/'response.json').read_text())
-              result=results_by_id[rid]
-              body=(route_dir/'body.bin').read_bytes()
-              actual_sha=hashlib.sha256(body).hexdigest()
-              assert request['route_id']==rid and request['requested_url']==url
-              assert request['allowed_final_hosts']==[host] and request['logical_attempt']==1
-              assert request['result_spawned_requests']==0
-              assert response['route_id']==rid and response['outcome']=='http_success'
-              assert response['logical_attempts']==1 and response['physical_requests']==1
-              assert response['redirects_followed']==0 and len(response['hops'])==1
-              assert response['final_status']==200 and response['final_url']==url and response['final_host']==host
-              assert urllib.parse.urlparse(response['final_url']).hostname in request['allowed_final_hosts']
-              assert response['body_bytes']==size and response['body_sha256']==sha
-              assert len(body)==size and actual_sha==sha
-              assert response['result_spawned_requests']==0
-              assert response['automatic_source_admission'] is False
-              assert response['automatic_field_classification'] is False
-              assert response['automatic_row_terminalization'] is False
-              assert response['automatic_class_closure'] is False
-              assert response['outside_human_dependency'] is False
-              assert result['outcome']=='http_success' and result['final_status']==200
-              assert result['requested_url']==url and result['final_url']==url
-              assert result['body_bytes']==size and result['body_sha256']==sha
-              if is_pdf:
-                  assert body.startswith(b'%PDF-')
-                  assert not (route_dir/'body.txt').exists()
-              else:
-                  text=route_dir/'body.txt'
-                  assert text.is_file() and text.stat().st_size>100
-          print('source_capture_authentication=pass routes=7 physical_requests=7 source_host_requests_in_finalizer=0')
-          PY
-
-          cat > "$OUT/finalizer-custody.json" <<JSON
-          {
-            "schema_version": "ssc-rd04-or-wi-seven-route-finalizer-custody@1",
-            "canonical_main": "$BASE_COMMIT",
-            "source_run_id": $SOURCE_RUN_ID,
-            "source_artifact_id": $SOURCE_ARTIFACT_ID,
-            "source_artifact_name": "$SOURCE_ARTIFACT_NAME",
-            "source_artifact_sha256": "$SOURCE_ARTIFACT_SHA256",
-            "source_head_sha": "$SOURCE_HEAD_SHA",
-            "protocol_blob": "$PROTOCOL_BLOB",
-            "protocol_sha256": "$PROTOCOL_SHA256",
-            "logical_attempts_preserved": 7,
-            "physical_source_requests_preserved": 7,
-            "source_host_requests_executed_by_finalizer": 0,
-            "github_artifact_downloads": 1,
-            "semantic_authority": "none",
-            "outside_human_dependency": false
-          }
-          JSON
-          sed -i 's/^          //' "$OUT/finalizer-custody.json"
-
-          printf '%s\n' install-pdf-derivative-runtime > "$OUT/STAGE"
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends poppler-utils
-          command -v pdfinfo >/dev/null
-          command -v pdftotext >/dev/null
-
-          printf '%s\n' derive-two-captured-pdfs > "$OUT/STAGE"
-          for rid in RD04-NF-WI-003 RD04-NF-WI-004; do
-            route_dir="$OUT/routes/$rid"
-            pdfinfo "$route_dir/body.bin" > "$route_dir/pdfinfo.txt"
-            pdftotext -layout "$route_dir/body.bin" "$route_dir/body.txt"
-            test -s "$route_dir/pdfinfo.txt"
-            test -s "$route_dir/body.txt"
-          done
-          test "$(awk -F: '/^Pages:/ {gsub(/[[:space:]]/,"",$2); print $2}' "$OUT/routes/RD04-NF-WI-003/pdfinfo.txt")" = 113
-          test "$(awk -F: '/^Pages:/ {gsub(/[[:space:]]/,"",$2); print $2}' "$OUT/routes/RD04-NF-WI-004/pdfinfo.txt")" = 3
-
-          python - "$OUT" <<'PY'
-          import hashlib
-          import json
-          import sys
-          from pathlib import Path
-          out=Path(sys.argv[1])
-          records=[]
-          for rid,pages in [('RD04-NF-WI-003',113),('RD04-NF-WI-004',3)]:
-              route_dir=out/'routes'/rid
-              info=route_dir/'pdfinfo.txt'
-              text=route_dir/'body.txt'
-              body=route_dir/'body.bin'
-              assert info.is_file() and text.is_file()
-              assert text.stat().st_size>1000
-              records.append({
-                  'route_id':rid,
-                  'pages':pages,
-                  'body_bytes':body.stat().st_size,
-                  'body_sha256':hashlib.sha256(body.read_bytes()).hexdigest(),
-                  'pdfinfo_bytes':info.stat().st_size,
-                  'pdfinfo_sha256':hashlib.sha256(info.read_bytes()).hexdigest(),
-                  'text_bytes':text.stat().st_size,
-                  'text_sha256':hashlib.sha256(text.read_bytes()).hexdigest(),
-                  'derivative_authority':'nonauthoritative_text_derivative',
-              })
-          payload={
-              'schema_version':'ssc-rd04-or-wi-seven-route-pdf-derivatives@1',
-              'pdf_count':2,
-              'total_pages':116,
-              'records':records,
-              'ocr_used':False,
-              'source_host_requests_executed':0,
-              'semantic_authority':'none',
-          }
-          (out/'pdf-derivatives.json').write_text(json.dumps(payload,indent=2,sort_keys=True)+'\n')
-          print(f"pdf_derivatives=pass pdfs=2 pages=116 text_bytes={sum(r['text_bytes'] for r in records)}")
-          PY
-
-          printf '%s\n' finalize-checksum-complete-receipt > "$OUT/STAGE"
-          python - "$OUT" <<'PY'
-          import hashlib
-          import json
-          import sys
-          from pathlib import Path
-          out=Path(sys.argv[1])
-          entries=[]
-          combined=hashlib.sha256()
-          excluded={'manifest.json','SHA256SUMS','STAGE','EXIT_CODE'}
-          for path in sorted(p for p in out.rglob('*') if p.is_file() and p.name not in excluded):
-              rel=path.relative_to(out).as_posix()
-              body=path.read_bytes()
-              sha=hashlib.sha256(body).hexdigest()
-              entries.append({'path':rel,'bytes':len(body),'sha256':sha})
-              combined.update(rel.encode()+b'\0'+sha.encode()+b'\n')
-          manifest={
-              'schema_version':'ssc-rd04-or-wi-seven-route-finalized-manifest@1',
-              'entry_count':len(entries),
-              'entries':entries,
-              'combined_sha256':combined.hexdigest(),
-              'source_artifact_sha256':'4d50acf7b1ea5dda841cadec7e51e8ce422731042ac2a7dc2fea209b47829e39',
-              'source_host_requests_executed_by_finalizer':0,
-              'semantic_authority':'none',
-          }
-          (out/'manifest.json').write_text(json.dumps(manifest,indent=2,sort_keys=True)+'\n')
-          files=sorted(p for p in out.rglob('*') if p.is_file() and p.name not in {'SHA256SUMS','STAGE','EXIT_CODE'})
-          (out/'SHA256SUMS').write_text(''.join(
-              f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(out).as_posix()}\n"
-              for path in files
-          ))
-          print(f"manifest_entries={len(entries)} combined_sha256={combined.hexdigest()}")
-          PY
-          printf '%s\n' complete > "$OUT/STAGE"
-          printf '%s\n' 0 > "$OUT/EXIT_CODE"
-          (cd "$OUT" && sha256sum -c SHA256SUMS)
-          trap - ERR
+          test "$(find "$PAYLOAD_ROOT" -maxdepth 1 -type f -name 'payload-*.b64' | wc -l | tr -d ' ')" = 4
+          rm -f /tmp/ssc-rd04-or-wi-finalizer-v2.b64 /tmp/ssc-rd04-or-wi-finalizer-v2.sh
+          for payload in "$PAYLOAD_ROOT"/payload-*.b64; do
+            tr -d '\r\n' < "$payload"
+          done > /tmp/ssc-rd04-or-wi-finalizer-v2.b64
+          base64 --decode /tmp/ssc-rd04-or-wi-finalizer-v2.b64 > /tmp/ssc-rd04-or-wi-finalizer-v2.sh
+          test "$(sha256sum /tmp/ssc-rd04-or-wi-finalizer-v2.sh | awk '{print $1}')" = "$PROGRAM_SHA256"
+          bash -n /tmp/ssc-rd04-or-wi-finalizer-v2.sh
+          bash /tmp/ssc-rd04-or-wi-finalizer-v2.sh
 
       - name: Preserve finalized seven-route capture artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ssc-rd04-or-wi-seven-route-capture-finalized-v1
+          name: ssc-rd04-or-wi-seven-route-capture-finalized-v2
           path: ${{ env.OUT }}
           if-no-files-found: error
           include-hidden-files: true
@@ -328,22 +89,23 @@ jobs:
           test "$(cat "$OUT/source-STAGE")" = extract-pdf-text
           test "$(cat "$OUT/source-EXIT_CODE")" = 1
           jq -e '
-            .schema_version == "ssc-rd04-or-wi-seven-route-finalizer-custody@1" and
+            .schema_version == "ssc-rd04-or-wi-seven-route-finalizer-custody@2" and
             .canonical_main == "9510310129c3aab44f8b5b187430a3ede005b7b4" and
             .source_run_id == 31477150525 and .source_artifact_id == 9095692392 and
             .source_artifact_sha256 == "4d50acf7b1ea5dda841cadec7e51e8ce422731042ac2a7dc2fea209b47829e39" and
             .logical_attempts_preserved == 7 and .physical_source_requests_preserved == 7 and
             .source_host_requests_executed_by_finalizer == 0 and
+            .repair_class == "offline_derivative_runtime_and_receipt_finalization_only" and
             .semantic_authority == "none" and .outside_human_dependency == false
           ' "$OUT/finalizer-custody.json" >/dev/null
           jq -e '
-            .schema_version == "ssc-rd04-or-wi-seven-route-pdf-derivatives@1" and
+            .schema_version == "ssc-rd04-or-wi-seven-route-pdf-derivatives@2" and
             .pdf_count == 2 and .total_pages == 116 and (.records | length) == 2 and
             .ocr_used == false and .source_host_requests_executed == 0 and
             .semantic_authority == "none"
           ' "$OUT/pdf-derivatives.json" >/dev/null
           jq -e '
-            .schema_version == "ssc-rd04-or-wi-seven-route-finalized-manifest@1" and
+            .schema_version == "ssc-rd04-or-wi-seven-route-finalized-manifest@2" and
             .entry_count == (.entries | length) and .entry_count > 35 and
             .source_artifact_sha256 == "4d50acf7b1ea5dda841cadec7e51e8ce422731042ac2a7dc2fea209b47829e39" and
             .source_host_requests_executed_by_finalizer == 0 and .semantic_authority == "none"
