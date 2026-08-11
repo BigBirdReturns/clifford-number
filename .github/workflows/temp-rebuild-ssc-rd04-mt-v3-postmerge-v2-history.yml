@@ -1,0 +1,173 @@
+name: TEMP rebuild exact Montana V3 post-merge observer history
+
+on:
+  push:
+    branches:
+      - agent/ssc-rd04-mt-v3-postmerge-v2-history-rebuilder
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-rebuild-ssc-rd04-mt-v3-postmerge-v2-history
+  cancel-in-progress: false
+
+env:
+  BASE_COMMIT: 9510310129c3aab44f8b5b187430a3ede005b7b4
+  CONTAMINATED_HEAD: 8f08d8166c425dc8eb790160e85e524b73442d7c
+  TARGET_BRANCH: staging/ssc-rd04-mt-v3-promotion-postmerge-v2-clean
+  PAYLOAD_ROOT: .tmp/ssc-rd04-mt-v3-promotion-postmerge-v2
+  PROGRAM_SHA256: 44454d88e1fff8827a5fc909c8d0be95cd982a27db7afcbbf6c2596cfcb4b3a2
+  OUT: /tmp/ssc-rd04-mt-v3-postmerge-v2-history-rebuilder
+
+jobs:
+  rebuild:
+    if: github.repository == 'BigBirdReturns/clifford-number'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Rebuild and publish six exact payload commits
+        id: rebuild
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" /tmp/ssc-rd04-mt-v3-postmerge-v2-rebuilt.b64 /tmp/ssc-rd04-mt-v3-postmerge-v2-rebuilt.sh
+          mkdir -p "$OUT"
+          printf '%s\n' bootstrap > "$OUT/STAGE"
+          printf '%s\n' 1 > "$OUT/EXIT_CODE"
+          fail() {
+            local rc=$?
+            trap - ERR
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            exit "$rc"
+          }
+          trap fail ERR
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git cat-file -e "$BASE_COMMIT^{commit}"
+          git cat-file -e "$CONTAMINATED_HEAD^{commit}"
+          git checkout --detach "$BASE_COMMIT"
+          git switch -c rebuilt-observer-history
+
+          for index in 000 001 002 003 004 005; do
+            path="$PAYLOAD_ROOT/payload-$index.b64"
+            mkdir -p "$(dirname "$path")"
+            git show "$CONTAMINATED_HEAD:$path" > "$path"
+            case "$index" in
+              002|003|004) printf '\n' >> "$path" ;;
+            esac
+            test "$(tail -c 1 "$path" | od -An -t x1 | tr -d '[:space:]')" = 0a
+            git add "$path"
+            git commit -m "Add exact Montana V3 post-merge proof payload $index"
+          done
+
+          cat > "$OUT/payload-sha256s" <<'SUMS'
+          4f503d4cf70c20dbbbe2bd7fde98a451c8145dee68749af936f77c91e58d19be  .tmp/ssc-rd04-mt-v3-promotion-postmerge-v2/payload-000.b64
+          1d1ec74d014b995257d5e9d23d775a4d576cbddfb46cec23b43fb5a534fea678  .tmp/ssc-rd04-mt-v3-promotion-postmerge-v2/payload-001.b64
+          c794924c1764c913fd316bedf5cc4c26a9e6c0a582feef6f2b5262791ca61293  .tmp/ssc-rd04-mt-v3-promotion-postmerge-v2/payload-002.b64
+          398bac41dc3dcfdc167d0c2f1ff5e274f13870b4c1846ee25715cc1dd2fbe657  .tmp/ssc-rd04-mt-v3-promotion-postmerge-v2/payload-003.b64
+          f1e69cb1954710e9b2f51dd6174f67391e8b10b2d9f60a84f2ae9e9054a3c758  .tmp/ssc-rd04-mt-v3-promotion-postmerge-v2/payload-004.b64
+          9e12d327c9d8e0660780c33dbab6925c748148484cf20b0e12addd4689d2e456  .tmp/ssc-rd04-mt-v3-promotion-postmerge-v2/payload-005.b64
+          SUMS
+          sed -i 's/^          //' "$OUT/payload-sha256s"
+          sha256sum -c "$OUT/payload-sha256s" | tee "$OUT/payload-sha256-check.txt"
+
+          cat > "$OUT/payload-blob-shas" <<'BLOBS'
+          8626e9446063ce34b416ca1f84e88955d88908c2  .tmp/ssc-rd04-mt-v3-promotion-postmerge-v2/payload-000.b64
+          63d625b02d675f3db71cac9360191acf5cf61a45  .tmp/ssc-rd04-mt-v3-promotion-postmerge-v2/payload-001.b64
+          d037cdd454ab3193d9c15177f82a1ee8bc9f2d1c  .tmp/ssc-rd04-mt-v3-promotion-postmerge-v2/payload-002.b64
+          eca6e7fff9d9c98cf9f27411934f9668df01067a  .tmp/ssc-rd04-mt-v3-promotion-postmerge-v2/payload-003.b64
+          eb197a39c9304f8fe544c9873001291b425123f3  .tmp/ssc-rd04-mt-v3-promotion-postmerge-v2/payload-004.b64
+          e7f3d528ae7f8fa7b3b0c56c4fb85ad751f81640  .tmp/ssc-rd04-mt-v3-promotion-postmerge-v2/payload-005.b64
+          BLOBS
+          sed -i 's/^          //' "$OUT/payload-blob-shas"
+          while read -r expected path; do
+            test "$(git rev-parse "HEAD:$path")" = "$expected"
+          done < "$OUT/payload-blob-shas"
+
+          test "$(git rev-list --count "$BASE_COMMIT"..HEAD)" = 6
+          git rev-list --first-parent --reverse "$BASE_COMMIT"..HEAD > "$OUT/commits.txt"
+          test "$(wc -l < "$OUT/commits.txt" | tr -d ' ')" = 6
+          previous="$BASE_COMMIT"
+          while read -r next; do
+            test "$(git show -s --format='%P' "$next")" = "$previous"
+            previous="$next"
+          done < "$OUT/commits.txt"
+          test "$previous" = "$(git rev-parse HEAD)"
+
+          find "$PAYLOAD_ROOT" -maxdepth 1 -type f -name 'payload-*.b64' -printf '%p\n' | LC_ALL=C sort > "$OUT/expected-paths.txt"
+          test "$(wc -l < "$OUT/expected-paths.txt" | tr -d ' ')" = 6
+          git diff --name-only "$BASE_COMMIT" HEAD | LC_ALL=C sort > "$OUT/actual-paths.txt"
+          cmp "$OUT/expected-paths.txt" "$OUT/actual-paths.txt"
+          test "$(git diff --name-only --diff-filter=A "$BASE_COMMIT" HEAD | wc -l | tr -d ' ')" = 6
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$BASE_COMMIT" HEAD)"
+          git diff --check "$BASE_COMMIT" HEAD
+
+          cat "$PAYLOAD_ROOT"/payload-*.b64 > /tmp/ssc-rd04-mt-v3-postmerge-v2-rebuilt.b64
+          base64 --decode /tmp/ssc-rd04-mt-v3-postmerge-v2-rebuilt.b64 > /tmp/ssc-rd04-mt-v3-postmerge-v2-rebuilt.sh
+          test "$(wc -c < /tmp/ssc-rd04-mt-v3-postmerge-v2-rebuilt.sh | tr -d ' ')" = 25225
+          test "$(sha256sum /tmp/ssc-rd04-mt-v3-postmerge-v2-rebuilt.sh | awk '{print $1}')" = "$PROGRAM_SHA256"
+          bash -n /tmp/ssc-rd04-mt-v3-postmerge-v2-rebuilt.sh
+
+          new_head="$(git rev-parse HEAD)"
+          new_tree="$(git rev-parse HEAD^{tree})"
+          printf '%s\n' "$new_head" > "$OUT/new-head.txt"
+          printf '%s\n' "$new_tree" > "$OUT/new-tree.txt"
+          printf '%s\n' publishing > "$OUT/STAGE"
+          git push --force origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          cat > "$OUT/receipt.json" <<JSON
+          {
+            "state": "six_exact_payload_commits_published",
+            "base_commit": "$BASE_COMMIT",
+            "contaminated_head": "$CONTAMINATED_HEAD",
+            "target_branch": "$TARGET_BRANCH",
+            "new_head": "$new_head",
+            "new_tree": "$new_tree",
+            "commit_count": 6,
+            "path_count": 6,
+            "corrected_terminal_newline_chunks": ["002", "003", "004"],
+            "program_bytes": 25225,
+            "program_sha256": "$PROGRAM_SHA256"
+          }
+          JSON
+          sed -i 's/^          //' "$OUT/receipt.json"
+          printf '%s\n' complete > "$OUT/STAGE"
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+          trap - ERR
+
+      - name: Preserve history-rebuilder receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-v3-postmerge-v2-history-rebuilder
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          compression-level: 9
+
+      - name: Enforce exact six-commit publication
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.rebuild.outcome }}" = success
+          test "$(cat "$OUT/STAGE")" = complete
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          jq -e '
+            .state == "six_exact_payload_commits_published" and
+            .base_commit == "9510310129c3aab44f8b5b187430a3ede005b7b4" and
+            .commit_count == 6 and .path_count == 6 and
+            .program_bytes == 25225 and
+            .program_sha256 == "44454d88e1fff8827a5fc909c8d0be95cd982a27db7afcbbf6c2596cfcb4b3a2"
+          ' "$OUT/receipt.json" >/dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
