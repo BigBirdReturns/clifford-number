@@ -1,0 +1,89 @@
+    schema_version: BUILD_SCHEMA_VERSION,
+    fixture_id: snapshot.fixture_id,
+    issue: snapshot.issue,
+    captured_at: snapshot.captured_at,
+    status: 'synthetic_repository_owner_login_normalization_collision_control_compiled',
+    graph_effect: 'none',
+    counts_toward_thesis_evidence: false,
+    fixture_snapshot_sha256: sha256(snapshot),
+    public_surface: snapshot.baseline,
+    worlds,
+    metrics: compiledMetrics,
+    expected_classification: snapshot.expected_classification,
+    refusal_rules: snapshot.required_refusal_rules,
+    custody_chain: chain,
+    custody_chain_head_sha256: chain.at(-1).event_sha256,
+    interpretation_contract: snapshot.interpretation_contract
+  };
+}
+
+export function validateBuild(build, fixture) {
+  const errors = [];
+  validateCanonicalJsonValue(build, 'PC-62 build', errors);
+  if (errors.length) return unique(errors);
+  exactKeys(build, BUILD_KEYS, 'PC-62 build', errors);
+  exactKeys(build.public_surface, BASELINE_KEYS, 'PC-62 build public surface', errors);
+  exactKeys(build.metrics, METRIC_KEYS, 'PC-62 build metrics', errors);
+  exactKeys(build.expected_classification, CLASSIFICATION_KEYS, 'PC-62 build classification', errors);
+  exactKeys(build.interpretation_contract, INTERPRETATION_KEYS, 'PC-62 build interpretation', errors);
+  if (!Array.isArray(build.worlds) || build.worlds.length !== 8) {
+    errors.push('PC-62 build must contain eight worlds');
+  } else {
+    build.worlds.forEach((world, index) => {
+      exactKeys(world, BUILD_WORLD_KEYS, `PC-62 build world ${index}`, errors);
+      validateSection(world.normalization_profile, NORMALIZATION_BOOL, NORMALIZATION_COUNT, `PC-62 build world ${index} normalization`, errors);
+      validateSection(world.implementation_conformance, IMPLEMENTATION_BOOL, IMPLEMENTATION_COUNT, `PC-62 build world ${index} implementation`, errors);
+      validateSection(world.casefold_locale, CASEFOLD_BOOL, CASEFOLD_COUNT, `PC-62 build world ${index} casefold`, errors);
+      validateSection(world.script_policy, SCRIPT_BOOL, SCRIPT_COUNT, `PC-62 build world ${index} script`, errors);
+      validateSection(world.confusable_mapping, CONFUSABLE_BOOL, CONFUSABLE_COUNT, `PC-62 build world ${index} confusable`, errors);
+      validateSection(world.collision_adjudication, COLLISION_BOOL, COLLISION_COUNT, `PC-62 build world ${index} collision`, errors);
+      validateSection(world.lineage, [...LINEAGE_BOOL, 'binding_public_authority'], LINEAGE_COUNT, `PC-62 build world ${index} lineage`, errors);
+      exactKeys(world.flags, FLAG_KEYS, `PC-62 build world ${index} flags`, errors);
+    });
+  }
+  if (!Array.isArray(build.refusal_rules) || !Array.isArray(build.custody_chain) || build.custody_chain.length !== 5) {
+    errors.push('PC-62 build array denominator mismatch');
+  }
+  const fixtureErrors = validateFixture(fixture);
+  errors.push(...fixtureErrors);
+  if (fixtureErrors.length) return unique(errors);
+  let expected;
+  try {
+    expected = compileFixture(fixture);
+  } catch (error) {
+    return unique([...errors, `PC-62 deterministic compile failed: ${error.message}`]);
+  }
+  if (stableJson(build) !== stableJson(expected)) errors.push('PC-62 build differs from deterministic compilation');
+  const expectedMetrics = {
+    worlds: 8,
+    public_normalization_collision_signatures: 1,
+    normalization_collision_governance_signatures: 8,
+    complete_normalization_collision_assurance_worlds: 1,
+    normalization_form_unicode_version_substitutions: 100,
+    normalization_implementation_conformance_gaps: 90,
+    casefold_locale_tailoring_substitutions: 80,
+    script_inventory_mixed_script_gaps: 70,
+    confusable_skeleton_substitutions: 60,
+    collision_candidate_set_gaps: 50,
+    collision_adjudication_appeal_gaps: 40,
+    unreconciled_normalization_collision_decisions: 40,
+    stale_normalization_collision_decisions: 100,
+    unsupported_normalization_collision_decisions: 700,
+    binding_public_authority_worlds: 0
+  };
+  if (stableJson(build.metrics) !== stableJson(expectedMetrics)) errors.push('PC-62 metric denominator mismatch');
+  let previous = null;
+  for (const [index, event] of build.custody_chain.entries()) {
+    const { event_sha256, ...unsigned } = event;
+    if (unsigned.previous_event_sha256 !== previous || event_sha256 !== sha256(unsigned)) {
+      errors.push(`PC-62 custody event ${index} mismatch`);
+    }
+    previous = event_sha256;
+  }
+  if (build.custody_chain_head_sha256 !== previous) errors.push('PC-62 custody chain head mismatch');
+  return unique(errors);
+}
+
+export function renderMarkdown(build) {
+  return `# PC-62 normalization implementation, locale casefold, confusable skeleton, and collision adjudication assurance\n\nSynthetic control only. Graph effect: **${build.graph_effect}**.\n\n| Measure | Value |\n| --- | ---: |\n${Object.entries(build.metrics).map(([key, value]) => `| ${key.replaceAll('_', ' ')} | ${value} |`).join('\n')}\n\nThe eight worlds preserve one public owner-login normalization and collision surface while separating complete assurance from Unicode-data, implementation, locale-casefold, script-policy, skeleton-mapping, collision-set, adjudication, exception, appeal, and stale-succession failures. No real ownership, impersonation, compromise, graph, publication, adoption, or public-authority finding is created.\n`;
+}
