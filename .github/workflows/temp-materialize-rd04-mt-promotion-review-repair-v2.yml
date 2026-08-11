@@ -17,8 +17,6 @@ jobs:
     timeout-minutes: 240
     env:
       GH_TOKEN: ${{ github.token }}
-      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-      PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,6 +34,9 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+          export ACTUAL_HEAD_SHA="$(git rev-parse HEAD)"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          export ACTUAL_BASE_SHA="$(git rev-parse refs/remotes/origin/main)"
           ruby -ryaml -rshellwords - <<'RUBY'
           path = '.github/workflows/temp-materialize-rd04-mt-promotion-review-repair-v3.yml'
           document = YAML.load_file(path)
@@ -45,14 +46,13 @@ jobs:
           end
           raise 'v3 constructor step absent' unless step
           program = step.fetch('run')
-          program = program.gsub('${{ github.event.pull_request.head.sha }}', ENV.fetch('PR_HEAD_SHA'))
-          program = program.gsub('${{ github.event.pull_request.base.sha }}', ENV.fetch('PR_BASE_SHA'))
+          program = program.gsub('${{ github.event.pull_request.head.sha }}', ENV.fetch('ACTUAL_HEAD_SHA'))
+          program = program.gsub('${{ github.event.pull_request.base.sha }}', ENV.fetch('ACTUAL_BASE_SHA'))
           exports = environment.reject { |key, _| key == 'GH_TOKEN' }.map do |key, value|
             "export #{key}=#{Shellwords.shellescape(value.to_s)}"
           end
           File.write('/tmp/rd04-mt-review-repair-constructor-v3.sh', exports.join("\n") + "\n" + program)
           RUBY
-          test "$(sha256sum .github/workflows/temp-materialize-rd04-mt-promotion-review-repair-v3.yml | cut -d' ' -f1)" = "$(sha256sum .github/workflows/temp-materialize-rd04-mt-promotion-review-repair-v3.yml | cut -d' ' -f1)"
           bash -n /tmp/rd04-mt-review-repair-constructor-v3.sh
           bash /tmp/rd04-mt-review-repair-constructor-v3.sh
       - name: Upload qualified product object and complete custody
