@@ -1,0 +1,48 @@
+name: MSS archival asset ferry
+
+on:
+  push:
+    branches:
+      - scratch/placeholder-do-not-use
+
+permissions:
+  contents: read
+
+jobs:
+  fetch-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch public-domain archival assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          out='mss-archival-assets'
+          mkdir -p "$out"
+          ua='Historical research asset fetcher/1.0'
+          fetch_commons() {
+            local filename="$1"
+            local dest="$2"
+            curl --fail --location --retry 4 --retry-all-errors --connect-timeout 20 --user-agent "$ua" --output "$out/$dest" "https://commons.wikimedia.org/wiki/Special:Redirect/file/${filename}"
+            test -s "$out/$dest"
+          }
+          fetch_commons '3.7inchHowitzersFiringIndia1930.jpg' 'photo-howitzer-india-1930.jpg'
+          fetch_commons 'Arakan_Campaign_Indian_Division_at_observation.jpg' 'photo-arakan-observation-1944.jpg'
+          fetch_commons 'The_British_Army_in_Burma_1945_SE3915.jpg' 'photo-burma-elephant-point-1945.jpg'
+          fetch_commons 'Allied_Third_Burma_Campaign_June_1944-May_1945.jpg' 'map-burma-campaign-1944-45.jpg'
+          fetch_commons 'Dakotas_in_Poonch_1947.jpg' 'photo-poonch-airfield-1947.jpg'
+          fetch_commons 'Relief_of_Poonch_%28Op_Easy%29.png' 'map-relief-of-poonch.png'
+          fetch_commons 'Jammu_and_Kashmir_in_1947_Political_Map_of_India.jpg' 'map-jammu-kashmir-1947.jpg'
+          fetch_commons 'Daimler_Kashmir_1948.jpg' 'photo-daimler-kashmir-1948.jpg'
+          fetch_commons 'Indian_soldiers_landing_at_Srinagar_airfield_during_the_1947%E2%80%931948_war.jpg' 'photo-srinagar-airlift-1947.jpg'
+          fetch_commons '1965_war.jpg' 'photo-barki-lahore-1965.jpg'
+          curl --fail --location --retry 4 --retry-all-errors --connect-timeout 20 --user-agent "$ua" --output "$out/official-history-1965-ch06.pdf" 'https://www.bharat-rakshak.com/archives/OfficialHistory/1965War/1965Chapter06.pdf'
+          pdftoppm -f 11 -l 11 -singlefile -png -r 180 "$out/official-history-1965-ch06.pdf" "$out/map-dograi-official-6-sep-1965"
+          rm "$out/official-history-1965-ch06.pdf"
+          find "$out" -type f -maxdepth 1 -printf '%f %s bytes\n'
+      - name: Upload archival assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: mss-archival-assets
+          path: mss-archival-assets
+          if-no-files-found: error
+          retention-days: 1
