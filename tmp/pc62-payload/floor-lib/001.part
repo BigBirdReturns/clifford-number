@@ -1,0 +1,153 @@
+export const preferenceCustodyV59SourceBundleSnapshot = bundle => sha256({
+  schema_version: V59_SOURCE_BUNDLE_SCHEMA_VERSION,
+  source_bundle: bundle
+});
+export const preferenceCustodyManifestV60Snapshot = manifest => sha256(manifest);
+
+export function validateManifest(manifest) {
+  const errors = [];
+  validateCanonicalJsonValue(manifest, 'Preference Custody v60 manifest', errors);
+  if (errors.length) return unique(errors);
+  exactKeys(manifest, MANIFEST_KEYS, 'Preference Custody v60 manifest', errors);
+  exactKeys(manifest.base_floor, BASE_KEYS, 'Preference Custody v60 base floor', errors);
+  exactKeys(manifest.extension_control, EXTENSION_KEYS, 'Preference Custody v60 extension', errors);
+  exactKeys(manifest.identification_requirement, IDENTIFICATION_KEYS, 'Preference Custody v60 identification', errors);
+  exactKeys(manifest.frontier_transition, TRANSITION_KEYS, 'Preference Custody v60 frontier transition', errors);
+  exactKeys(manifest.interpretation_contract, INTERPRETATION_KEYS, 'Preference Custody v60 interpretation', errors);
+  if (manifest.schema_version !== MANIFEST_SCHEMA_VERSION
+      || manifest.manifest_id !== 'preference-custody-laboratory-floor-v60'
+      || manifest.issue !== 594
+      || manifest.control_issue !== 1893) {
+    errors.push('Preference Custody v60 identity mismatch');
+  }
+  if (manifest.captured_at !== '2026-08-10' || !isoDate(manifest.captured_at)) {
+    errors.push('Preference Custody v60 capture date mismatch');
+  }
+  if (manifest.status !== 'synthetic_control_floor_extension'
+      || manifest.graph_effect !== 'none'
+      || manifest.counts_toward_thesis_evidence !== false) {
+    errors.push('Preference Custody v60 authority/status mismatch');
+  }
+  if (manifest.base_floor.manifest_id !== 'preference-custody-laboratory-floor-v59'
+      || manifest.base_floor.expected_build_schema !== 'preference-custody-control-manifest-v59-build@1'
+      || manifest.base_floor.expected_control_count !== 61) {
+    errors.push('Preference Custody v60 base contract mismatch');
+  }
+  if (manifest.extension_control.control_id !== 'PC-62'
+      || manifest.extension_control.expected_build_schema !== PC62_BUILD_SCHEMA_VERSION
+      || stableJson(manifest.extension_control.required_refusal_rules) !== stableJson(PC62_REFUSAL_RULES)) {
+    errors.push('Preference Custody v60 extension contract mismatch');
+  }
+  if (manifest.frontier_transition.resolved_base_frontier !== RESOLVED_FRONTIER
+      || stableJson(manifest.frontier_transition.successor_frontiers) !== stableJson(SUCCESSOR_FRONTIERS)
+      || manifest.preserved_alias_namespace_frontier !== PRESERVED_ALIAS_NAMESPACE_FRONTIER
+      || manifest.preserved_profile_api_frontier !== PRESERVED_PROFILE_API_FRONTIER
+      || manifest.preserved_account_frontier !== PRESERVED_ACCOUNT_FRONTIER) {
+    errors.push('Preference Custody v60 frontier transition mismatch');
+  }
+  if (!Array.isArray(manifest.real_case_requirements_added)
+      || manifest.real_case_requirements_added.length !== 62
+      || unique(manifest.real_case_requirements_added).length !== 62) {
+    errors.push('Preference Custody v60 must add exactly 62 unique requirements');
+  }
+  if (!Array.isArray(manifest.prohibited_inferences)
+      || manifest.prohibited_inferences.length !== 12
+      || unique(manifest.prohibited_inferences).length !== 12) {
+    errors.push('Preference Custody v60 prohibited-inference ledger mismatch');
+  }
+  if (sha256(manifest) !== EXPECTED_MANIFEST_SHA256) {
+    errors.push(`Preference Custody v60 manifest snapshot mismatch: ${sha256(manifest)}`);
+  }
+  return unique(errors);
+}
+
+function validateInputs(manifest, baseBuild, targetBuild, targetFixture, baseSources) {
+  const errors = validateManifest(manifest);
+  if (errors.length) return errors;
+  const root = { manifest, baseBuild, targetBuild, targetFixture, baseSources };
+  validateCanonicalJsonValue(root, 'Preference Custody v60 input graph', errors);
+  if (errors.length) return unique(errors);
+  const snapshot = structuredClone(root);
+  const base = snapshot.baseBuild;
+  const target = snapshot.targetBuild;
+  const fixture = snapshot.targetFixture;
+  const sources = snapshot.baseSources;
+  const currentManifest = snapshot.manifest;
+  errors.push(...validatePC62Fixture(fixture));
+  errors.push(...validatePC62Build(target, fixture));
+  errors.push(...validatePreferenceCustodyManifestV59(sources.manifest));
+  errors.push(...validatePreferenceCustodyManifestV59Build(
+    base,
+    sources.manifest,
+    sources.baseBuild,
+    sources.targetBuild,
+    sources.targetFixture,
+    sources.baseSources
+  ));
+  if (base.schema_version !== currentManifest.base_floor.expected_build_schema
+      || base.manifest_id !== currentManifest.base_floor.manifest_id
+      || base.control_count !== 61) {
+    errors.push('Preference Custody v60 base build identity mismatch');
+  }
+  if (base.promotion_boundary?.promotion_requirement_count !== 2586) {
+    errors.push('Preference Custody v59 promotion denominator mismatch');
+  }
+  if (base.controls?.at(-1)?.control_id !== 'PC-61') {
+    errors.push('Preference Custody v59 terminal control mismatch');
+  }
+  if (!base.open_frontiers?.includes(RESOLVED_FRONTIER)) {
+    errors.push('Preference Custody v60 resolved frontier absent from qualified base');
+  }
+  if (!base.open_frontiers?.includes(PRESERVED_ALIAS_NAMESPACE_FRONTIER)) {
+    errors.push('Preference Custody v60 preserved alias/namespace frontier absent from qualified base');
+  }
+  if (target.fixture_snapshot_sha256 !== sha256(fixture)) {
+    errors.push('PC-62 fixture/build source divergence');
+  }
+  const dates = [];
+  collectDates(snapshot, 'v60-inputs', dates);
+  for (const [label, date] of dates) {
+    if (!isoDate(date)) errors.push(`${label} must be an exact ISO date`);
+    else if (date > currentManifest.captured_at) errors.push(`${label} postdates Preference Custody v60`);
+  }
+  return unique(errors);
+}
+
+export function compileManifest(manifest, baseBuild, targetBuild, targetFixture, baseSources) {
+  const errors = validateInputs(manifest, baseBuild, targetBuild, targetFixture, baseSources);
+  if (errors.length) throw new Error(errors.join('; '));
+  const currentManifest = structuredClone(manifest);
+  const base = structuredClone(baseBuild);
+  const target = structuredClone(targetBuild);
+  const sources = structuredClone(baseSources);
+  const controls = [
+    ...base.controls,
+    {
+      control_id: 'PC-62',
+      fixture_id: currentManifest.extension_control.fixture_id,
+      failure_class: currentManifest.extension_control.failure_class,
+      build_schema_version: target.schema_version,
+      fixture_snapshot_sha256: target.fixture_snapshot_sha256,
+      build_snapshot_sha256: sha256(target),
+      world_count: target.metrics.worlds,
+      complete_assurance_worlds: target.metrics.complete_normalization_collision_assurance_worlds,
+      public_signature_count: target.metrics.public_normalization_collision_signatures,
+      governance_signature_count: target.metrics.normalization_collision_governance_signatures
+    }
+  ];
+  const identification = [...base.identification_requirements, currentManifest.identification_requirement];
+  const refusals = unique([...base.refusal_rule_union, ...currentManifest.extension_control.required_refusal_rules]);
+  const openFrontiers = unique([
+    ...base.open_frontiers.filter(frontier => frontier !== RESOLVED_FRONTIER),
+    ...SUCCESSOR_FRONTIERS
+  ]);
+  const requirements = [...base.promotion_boundary.real_case_requires, ...currentManifest.real_case_requirements_added];
+  const prohibited = [...base.prohibited_inferences, ...currentManifest.prohibited_inferences];
+  const composition = {
+    base_manifest_id: base.manifest_id,
+    base_schema_version: base.schema_version,
+    base_control_count: base.control_count,
+    extension_control_id: 'PC-62',
+    manifest_snapshot_sha256: sha256(currentManifest),
+    base_floor_snapshot_sha256: sha256(base),
+    extension_snapshot_sha256: sha256(target),
