@@ -1,0 +1,134 @@
+name: TEMP terminalize exact RD-04 Oregon-Wisconsin adjudication product review-poll repair
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-terminalize-ssc-rd04-or-wi-minimum-frontier-v1-review-poll-repair.yml'
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: temp-terminalize-ssc-rd04-or-wi-minimum-frontier-v1-review-poll-repair
+  cancel-in-progress: false
+
+jobs:
+  terminalize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-or-wi-minimum-frontier-terminal-controller-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned replay validators
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+      - name: Reconstruct and execute denominator-bound terminal controller repair
+        id: terminalize
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONTROLLER_PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -Eeuo pipefail
+          SOURCE='.github/workflows/temp-terminalize-ssc-rd04-or-wi-minimum-frontier-v1.yml'
+          REPAIR='.github/workflows/temp-terminalize-ssc-rd04-or-wi-minimum-frontier-v1-review-poll-repair.yml'
+          PARENT='146f5ceb1882d02c7be8d225d49665d63478a7df'
+          OUT="${RUNNER_TEMP}/ssc-rd04-or-wi-minimum-frontier-terminal-v1"
+          mkdir -p "$OUT"
+
+          test "$(git rev-list --count "$PARENT"..HEAD)" -eq 2
+          printf '%s\n' "$SOURCE" "$REPAIR" | LC_ALL=C sort > "$OUT/controller-paths.expected"
+          git diff --name-only "$PARENT" HEAD | LC_ALL=C sort > "$OUT/controller-paths.actual"
+          git diff --name-only --diff-filter=A "$PARENT" HEAD | LC_ALL=C sort > "$OUT/controller-additions.actual"
+          cmp "$OUT/controller-paths.expected" "$OUT/controller-paths.actual"
+          cmp "$OUT/controller-paths.expected" "$OUT/controller-additions.actual"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$PARENT" HEAD)"
+          git diff --check "$PARENT" HEAD
+
+          python - "$SOURCE" "$REPAIR" "$RUNNER_TEMP/terminal-controller.sh" <<'PY'
+          from pathlib import Path
+          import sys,yaml
+          source,repair,target=map(Path,sys.argv[1:])
+          value=yaml.safe_load(source.read_text())
+          steps=value['jobs']['terminalize']['steps']
+          matches=[step for step in steps if step.get('id')=='terminalize']
+          if len(matches)!=1:
+              raise SystemExit(f'expected one terminalize step, got {len(matches)}')
+          script=matches[0]['run']
+          replacements={
+            "CONTROLLER_PATH='.github/workflows/temp-terminalize-ssc-rd04-or-wi-minimum-frontier-v1.yml'":
+              "CONTROLLER_PATH='.github/workflows/temp-terminalize-ssc-rd04-or-wi-minimum-frontier-v1.yml'\n          REPAIR_PATH='.github/workflows/temp-terminalize-ssc-rd04-or-wi-minimum-frontier-v1-review-poll-repair.yml'",
+            'test "$(git rev-list --count "$PARENT"..HEAD)" -eq 1':
+              'test "$(git rev-list --count "$PARENT"..HEAD)" -eq 2',
+            'test "$(git diff --name-only "$PARENT" HEAD)" = "$CONTROLLER_PATH"\n          test "$(git diff --name-only --diff-filter=A "$PARENT" HEAD)" = "$CONTROLLER_PATH"':
+              'printf \'%s\\n\' "$CONTROLLER_PATH" "$REPAIR_PATH" | LC_ALL=C sort > "$OUT/controller-paths.expected"\n          git diff --name-only "$PARENT" HEAD | LC_ALL=C sort > "$OUT/controller-paths.actual"\n          git diff --name-only --diff-filter=A "$PARENT" HEAD | LC_ALL=C sort > "$OUT/controller-additions.actual"\n          cmp "$OUT/controller-paths.expected" "$OUT/controller-paths.actual"\n          cmp "$OUT/controller-paths.expected" "$OUT/controller-additions.actual"',
+            '            python - "$OUT/review-state.json" "$PREFIX" <<\'PY\'':
+              '            set +e\n            python - "$OUT/review-state.json" "$PREFIX" <<\'PY\'',
+            '            code=$?\n            if test "$code" -eq 0; then REVIEW_OK=\'true\'; break; fi':
+              '            code=$?\n            set -e\n            if test "$code" -eq 0; then REVIEW_OK=\'true\'; break; fi',
+          }
+          for old,new in replacements.items():
+              count=script.count(old)
+              if count!=1:
+                  raise SystemExit(f'replacement denominator mismatch {count}: {old[:80]}')
+              script=script.replace(old,new)
+          target.write_text(script)
+          PY
+          bash -n "$RUNNER_TEMP/terminal-controller.sh"
+          bash "$RUNNER_TEMP/terminal-controller.sh"
+      - name: Preserve canonical terminal receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-or-wi-minimum-frontier-terminal-receipt-v1-review-poll-repair
+          path: ${{ runner.temp }}/ssc-rd04-or-wi-minimum-frontier-terminal-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - name: Require canonical terminal state
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-or-wi-minimum-frontier-terminal-v1"
+          test "${{ steps.terminalize.outcome }}" = success
+          test "$(cat "$OUT/STAGE")" = complete
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          jq -e '
+            .state=="canonical_adjudication_merged_and_postmerge_verified" and
+            .canonical_parent=="146f5ceb1882d02c7be8d225d49665d63478a7df" and
+            .permanent_paths==14 and
+            .source_requests==0 and
+            .source_admissions==12 and
+            .candidates==6 and
+            .observed_candidates==3 and
+            .typed_gap_candidates==3 and
+            .field_terminalizations==0 and
+            .matrix_updates==0 and
+            .row_state_mutations==0 and
+            .class_closed==false and
+            .review_threads_unresolved==0 and
+            .terminal_exact_head_review==true and
+            .release_replay=="passed" and
+            .clean_replay=="byte_identical" and
+            .outside_human_dependency==false
+          ' "$OUT/terminal-receipt.json" > /dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
