@@ -1,0 +1,161 @@
+const COLLISION_COUNT = Object.freeze(['collision_candidate_set_gaps', 'collision_adjudication_appeal_gaps']);
+const LINEAGE_BOOL = Object.freeze([
+  'assurance_current', 'approved_unicode_data_lineage_current',
+  'approved_normalization_lineage_current', 'approved_implementation_lineage_current',
+  'approved_casefold_lineage_current', 'approved_locale_lineage_current',
+  'approved_script_lineage_current', 'approved_confusable_lineage_current',
+  'approved_collision_lineage_current', 'approved_adjudicator_lineage_current',
+  'approved_exception_lineage_current', 'approved_policy_lineage_current',
+  'approved_correction_lineage_current', 'approved_release_lineage_current',
+  'approved_use_lineage_current', 'monitoring_defined', 'invalidation_defined',
+  'quarantine_defined', 'correction_defined', 'rollback_defined', 'rereview_defined',
+  'republication_defined', 'appeal_defined', 'durability_defined'
+]);
+const LINEAGE_COUNT = Object.freeze([
+  'unreconciled_normalization_collision_decisions',
+  'stale_normalization_collision_decisions',
+  'unsupported_normalization_collision_decisions'
+]);
+const FLAG_KEYS = Object.freeze([
+  'complete_normalization_profile', 'complete_implementation_conformance',
+  'complete_casefold_locale', 'complete_script_policy', 'complete_confusable_mapping',
+  'complete_collision_adjudication', 'current_normalization_collision_lineage',
+  'complete_owner_login_normalization_casefold_confusable_collision_assurance'
+]);
+const BUILD_KEYS = Object.freeze([
+  'schema_version', 'fixture_id', 'issue', 'captured_at', 'status', 'graph_effect',
+  'counts_toward_thesis_evidence', 'fixture_snapshot_sha256', 'public_surface',
+  'worlds', 'metrics', 'expected_classification', 'refusal_rules', 'custody_chain',
+  'custody_chain_head_sha256', 'interpretation_contract'
+]);
+const BUILD_WORLD_KEYS = Object.freeze([
+  'world_id', 'description', 'public_signature_sha256', 'governance_signature_sha256',
+  'normalization_profile', 'implementation_conformance', 'casefold_locale', 'script_policy',
+  'confusable_mapping', 'collision_adjudication', 'lineage', 'mechanism', 'flags'
+]);
+const METRIC_KEYS = Object.freeze([
+  'worlds', 'public_normalization_collision_signatures',
+  'normalization_collision_governance_signatures',
+  'complete_normalization_collision_assurance_worlds',
+  'normalization_form_unicode_version_substitutions',
+  'normalization_implementation_conformance_gaps',
+  'casefold_locale_tailoring_substitutions', 'script_inventory_mixed_script_gaps',
+  'confusable_skeleton_substitutions', 'collision_candidate_set_gaps',
+  'collision_adjudication_appeal_gaps', 'unreconciled_normalization_collision_decisions',
+  'stale_normalization_collision_decisions', 'unsupported_normalization_collision_decisions',
+  'binding_public_authority_worlds'
+]);
+
+export const canonicalize = value => Array.isArray(value)
+  ? value.map(canonicalize)
+  : value && typeof value === 'object'
+    ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonicalize(value[key])]))
+    : value;
+export const stableJson = value => JSON.stringify(canonicalize(value));
+export const sha256 = value => createHash('sha256')
+  .update(typeof value === 'string' ? value : stableJson(value))
+  .digest('hex');
+
+const unique = values => [...new Set(values)];
+const plain = value => value !== null
+  && typeof value === 'object'
+  && !Array.isArray(value)
+  && !nodeTypes.isProxy(value)
+  && Object.getPrototypeOf(value) === Object.prototype;
+
+export function validateCanonicalJsonValue(value, label = 'value', errors = [], seen = new WeakSet()) {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') return errors;
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) errors.push(`${label} must be finite`);
+    if (Object.is(value, -0)) errors.push(`${label} must not be negative zero`);
+    return errors;
+  }
+  if (typeof value !== 'object') {
+    errors.push(`${label} contains unsupported ${typeof value}`);
+    return errors;
+  }
+  try {
+    if (nodeTypes.isProxy(value)) {
+      errors.push(`${label} must not be a proxy`);
+      return errors;
+    }
+  } catch {
+    errors.push(`${label} proxy state could not be inspected`);
+    return errors;
+  }
+  if (seen.has(value)) {
+    errors.push(`${label} contains a repeated identity or cycle`);
+    return errors;
+  }
+  seen.add(value);
+  const isArray = Array.isArray(value);
+  if (Object.getPrototypeOf(value) !== (isArray ? Array.prototype : Object.prototype)) {
+    errors.push(`${label} must use a canonical JSON prototype`);
+    return errors;
+  }
+  const keys = Reflect.ownKeys(value);
+  for (const key of keys) if (typeof key !== 'string') errors.push(`${label} contains a symbol key`);
+  if (isArray) {
+    const named = keys.filter(key => typeof key === 'string'
+      && key !== 'length'
+      && !/^(0|[1-9]\d*)$/.test(key));
+    if (named.length) errors.push(`${label} array contains named keys`);
+    for (let index = 0; index < value.length; index += 1) {
+      if (!Object.prototype.hasOwnProperty.call(value, String(index))) {
+        errors.push(`${label} array is sparse at ${index}`);
+      }
+    }
+    for (const key of keys) {
+      if (typeof key === 'string' && /^(0|[1-9]\d*)$/.test(key) && Number(key) >= value.length) {
+        errors.push(`${label} array contains out-of-range index ${key}`);
+      }
+    }
+  }
+  for (const key of keys) {
+    if ((isArray && key === 'length') || typeof key !== 'string') continue;
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (!descriptor || !descriptor.enumerable || !('value' in descriptor)) {
+      errors.push(`${label}.${key} must be an enumerable data property`);
+      continue;
+    }
+    validateCanonicalJsonValue(descriptor.value, `${label}.${key}`, errors, seen);
+  }
+  return errors;
+}
+
+function exactKeys(value, expected, label, errors) {
+  if (!plain(value)) {
+    errors.push(`${label} must be a plain object`);
+    return;
+  }
+  if (stableJson(Object.keys(value).sort()) !== stableJson([...expected].sort())) {
+    errors.push(`${label} key ledger mismatch`);
+  }
+}
+function isoDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+function sectionComplete(section, boolKeys, countKeys) {
+  return boolKeys.every(key => section[key] === true) && countKeys.every(key => section[key] === 0);
+}
+function completeFlags(world) {
+  const output = {
+    complete_normalization_profile: sectionComplete(world.normalization_profile, NORMALIZATION_BOOL, NORMALIZATION_COUNT),
+    complete_implementation_conformance: sectionComplete(world.implementation_conformance, IMPLEMENTATION_BOOL, IMPLEMENTATION_COUNT),
+    complete_casefold_locale: sectionComplete(world.casefold_locale, CASEFOLD_BOOL, CASEFOLD_COUNT),
+    complete_script_policy: sectionComplete(world.script_policy, SCRIPT_BOOL, SCRIPT_COUNT),
+    complete_confusable_mapping: sectionComplete(world.confusable_mapping, CONFUSABLE_BOOL, CONFUSABLE_COUNT),
+    complete_collision_adjudication: sectionComplete(world.collision_adjudication, COLLISION_BOOL, COLLISION_COUNT),
+    current_normalization_collision_lineage: LINEAGE_BOOL.every(key => world.lineage[key] === true)
+      && world.lineage.binding_public_authority === false
+      && LINEAGE_COUNT.every(key => world.lineage[key] === 0)
+  };
+  output.complete_owner_login_normalization_casefold_confusable_collision_assurance = Object.values(output).every(Boolean);
+  return output;
+}
+function validateSection(section, boolKeys, countKeys, label, errors) {
+  exactKeys(section, [...boolKeys, ...countKeys], label, errors);
+  for (const key of boolKeys) if (typeof section?.[key] !== 'boolean') errors.push(`${label}.${key} must be boolean`);
+  for (const key of countKeys) {
