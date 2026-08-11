@@ -1,0 +1,128 @@
+name: PC-62 final validation repair materializer
+
+'on':
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pc62-final-validation-repair-materializer.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc62-final-validation-repair-materializer
+  cancel-in-progress: true
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPOSITORY: ${{ github.repository }}
+  SOURCE_PRODUCT: 'a45823ea9cdf8e587472a9ee116cf8487a65fb97'
+  SOURCE_LIBRARY_BLOB: 'e1b853f4dc71b8e102a5517df6ccf5834fc22d6e'
+  SOURCE_LIBRARY_SHA256: '82c57ac5685fd7a851a840b6c11827034ec8e56ef1d91632efc13d5d4c8cd3c4'
+  SOURCE_TEST_BLOB: '034bf4a4dde5cf074d01e4430cd3a6d78b6125c8'
+  SOURCE_TEST_SHA256: 'ddf4184b158b4f7df6fa9111e9501bdef224c28c857112ad064bac068e71bf62'
+  LIBRARY_PATCH_BLOB: 'ad7d83b5a0a07609ea97448a73f545574c419b16'
+  LIBRARY_PATCH_SHA256: 'bb0894424083a85f56105cf84dc91b44868b2304b068ecfa31d579bde81b9e8d'
+  TEST_PATCH_BLOB: '9be3f81e8554c407342c7989952f236f62732446'
+  TEST_PATCH_SHA256: '0c36fbc7b2c62efc4d93e616fe6afc72ece7bebbde6acf64a1814de13d816f04'
+  REPAIRED_LIBRARY_BLOB: 'a7692f871d546ba3f16cfd4bdfa6842e7c246d9e'
+  REPAIRED_LIBRARY_SHA256: '7269818ec94da0a642aed072496466ad0c81f53bf9cfd25d7f064bb02f46d67b'
+  REPAIRED_LIBRARY_BYTES: '33375'
+  REPAIRED_TEST_BLOB: '4633de4e3df3b0286f76d3676738d1af22145ca3'
+  REPAIRED_TEST_SHA256: 'feeafa0f36916997540f4a3d6fae4bfe9ac22d04349ca6a3e678ad53faccd480'
+  REPAIRED_TEST_BYTES: '9034'
+  OUT: '/tmp/pc62-final-validation-repair'
+  REPLAY: '/tmp/pc62-final-validation-replay'
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.ref == 'agent/pc62-final-validation-repair-materializer-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Authenticate sources, apply exact final repair, and publish blobs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          rm -rf "$OUT" "$REPLAY"
+          mkdir -p "$OUT/before" "$OUT/after" "$OUT/api"
+
+          fetch_blob() {
+            local sha="$1" destination="$2" record="$3"
+            gh api "/repos/$GH_REPOSITORY/git/blobs/$sha" > "$record"
+            test "$(jq -r .sha "$record")" = "$sha"
+            jq -r .content "$record" | tr -d '\n' | base64 -d > "$destination"
+            test "$(git hash-object "$destination")" = "$sha"
+          }
+          fetch_blob "$SOURCE_LIBRARY_BLOB" "$OUT/before/standalone-lib.mjs" "$OUT/api/source-library.json"
+          fetch_blob "$SOURCE_TEST_BLOB" "$OUT/before/standalone-test.js" "$OUT/api/source-test.json"
+          fetch_blob "$LIBRARY_PATCH_BLOB" "$OUT/library.patch" "$OUT/api/library-patch.json"
+          fetch_blob "$TEST_PATCH_BLOB" "$OUT/test.patch" "$OUT/api/test-patch.json"
+          test "$(sha256sum "$OUT/before/standalone-lib.mjs" | awk '{print $1}')" = "$SOURCE_LIBRARY_SHA256"
+          test "$(sha256sum "$OUT/before/standalone-test.js" | awk '{print $1}')" = "$SOURCE_TEST_SHA256"
+          test "$(sha256sum "$OUT/library.patch" | awk '{print $1}')" = "$LIBRARY_PATCH_SHA256"
+          test "$(sha256sum "$OUT/test.patch" | awk '{print $1}')" = "$TEST_PATCH_SHA256"
+
+          cp "$OUT/before/standalone-lib.mjs" "$OUT/after/standalone-lib.mjs"
+          cp "$OUT/before/standalone-test.js" "$OUT/after/standalone-test.js"
+          patch --batch --fuzz=0 --no-backup-if-mismatch "$OUT/after/standalone-lib.mjs" < "$OUT/library.patch"
+          patch --batch --fuzz=0 --no-backup-if-mismatch "$OUT/after/standalone-test.js" < "$OUT/test.patch"
+          test "$(wc -c < "$OUT/after/standalone-lib.mjs" | tr -d ' ')" = "$REPAIRED_LIBRARY_BYTES"
+          test "$(wc -c < "$OUT/after/standalone-test.js" | tr -d ' ')" = "$REPAIRED_TEST_BYTES"
+          test "$(sha256sum "$OUT/after/standalone-lib.mjs" | awk '{print $1}')" = "$REPAIRED_LIBRARY_SHA256"
+          test "$(sha256sum "$OUT/after/standalone-test.js" | awk '{print $1}')" = "$REPAIRED_TEST_SHA256"
+          test "$(git hash-object "$OUT/after/standalone-lib.mjs")" = "$REPAIRED_LIBRARY_BLOB"
+          test "$(git hash-object "$OUT/after/standalone-test.js")" = "$REPAIRED_TEST_BLOB"
+          node --check "$OUT/after/standalone-lib.mjs"
+          node --check "$OUT/after/standalone-test.js"
+
+          git fetch --no-tags origin "$SOURCE_PRODUCT"
+          git worktree add --detach "$REPLAY" "$SOURCE_PRODUCT"
+          test "$(git rev-parse "$SOURCE_PRODUCT:tools/lib/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs")" = "$SOURCE_LIBRARY_BLOB"
+          test "$(git rev-parse "$SOURCE_PRODUCT:test/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.test.js")" = "$SOURCE_TEST_BLOB"
+          install -m 0644 "$OUT/after/standalone-lib.mjs" "$REPLAY/tools/lib/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs"
+          install -m 0644 "$OUT/after/standalone-test.js" "$REPLAY/test/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.test.js"
+          {
+            cd "$REPLAY"
+            node tools/compile-preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs
+            node tools/validate-preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs
+            node test/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.test.js
+            node tools/compile-preference-custody-manifest-v60.mjs
+            node tools/validate-preference-custody-manifest-v60.mjs
+            node test/preference-custody-manifest-v60.test.js
+            node tools/validate-no-magic-human-gate.mjs
+            node test/no-magic-human-gate.test.js
+          } 2>&1 | tee "$OUT/focused-replay.log"
+          grep -Fq 'PC-62 fixture mutations rejected: 61' "$OUT/focused-replay.log"
+          grep -Fq 'preference-custody-manifest-v60.test.js: OK' "$OUT/focused-replay.log"
+          test "$(git -C "$REPLAY" hash-object tools/lib/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs)" = "$REPAIRED_LIBRARY_BLOB"
+          test "$(git -C "$REPLAY" hash-object test/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.test.js)" = "$REPAIRED_TEST_BLOB"
+
+          publish_blob() {
+            local source="$1" expected="$2" record="$3" encoded
+            encoded=$(base64 -w0 "$source")
+            gh api --method POST "/repos/$GH_REPOSITORY/git/blobs" -f content="$encoded" -f encoding=base64 > "$record"
+            test "$(jq -r .sha "$record")" = "$expected"
+          }
+          publish_blob "$OUT/after/standalone-lib.mjs" "$REPAIRED_LIBRARY_BLOB" "$OUT/api/publish-library.json"
+          publish_blob "$OUT/after/standalone-test.js" "$REPAIRED_TEST_BLOB" "$OUT/api/publish-test.json"
+
+          jq -n --arg schema_version 'pc62-final-validation-repair-materializer@1' --arg source_product "$SOURCE_PRODUCT" --arg library_blob "$REPAIRED_LIBRARY_BLOB" --arg library_sha256 "sha256:$REPAIRED_LIBRARY_SHA256" --arg test_blob "$REPAIRED_TEST_BLOB" --arg test_sha256 "sha256:$REPAIRED_TEST_SHA256" '{schema_version:$schema_version,status:"complete",source_product:$source_product,repaired_blobs:{library:{blob:$library_blob,sha256:$library_sha256},test:{blob:$test_blob,sha256:$test_sha256}},adversarial_mutations:61,non_extensible_web_exotic_mutations:2,malformed_world_shape_mutations:2,validator_returns_error_ledger:true,complete_fixture_path_exercised:true,canonical_json_requires_extensible_containers:true,product_semantics_changed:false,graph_effect:"none"}' > "$OUT/receipt.json"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - name: Upload final validation repair receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc62-final-validation-repair-materializer
+          path: /tmp/pc62-final-validation-repair
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 9
