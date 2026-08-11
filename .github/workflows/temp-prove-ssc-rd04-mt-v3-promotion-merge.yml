@@ -1,0 +1,467 @@
+name: TEMP prove canonical Montana V3 promotion merge
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-prove-ssc-rd04-mt-v3-promotion-merge.yml'
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: temp-prove-ssc-rd04-mt-v3-promotion-merge
+  cancel-in-progress: false
+
+env:
+  MERGE_COMMIT: 9510310129c3aab44f8b5b187430a3ede005b7b4
+  MERGE_FIRST_PARENT: 966ea44274ff0372d3b0fa8e25e18d4e98f0b7cb
+  PRODUCT_COMMIT: 30e4f3c17848419790d27826199e37df942c351f
+  PRODUCT_TREE: f1a05ffc235228a852387104f1175a882cae0e49
+  PRODUCT_PARENT: 0840358962621b0be3db6864ecec763327f35903
+  ANCHOR_DATA_PATH: data/intake/status-sovereignty-rd04-mt-v3-exact-product-anchor.json
+  ANCHOR_DATA_BLOB: 50221cc1ae5a827d84b8459718ee43c079fbb872
+  ANCHOR_WORKFLOW_PATH: .github/workflows/status-sovereignty-rd04-mt-v3-exact-product-anchor.yml
+  ANCHOR_WORKFLOW_BLOB: 27f4185f7016bd981a16fd56dd1760a0fb4378aa
+  CARRIER_PATH: .github/workflows/temp-prove-ssc-rd04-mt-v3-promotion-merge.yml
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation
+  PRODUCT_SCHEMA: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json
+  OUT: /tmp/ssc-rd04-mt-v3-promotion-postmerge-proof
+  WORK: /tmp/ssc-rd04-mt-v3-promotion-postmerge-work
+
+jobs:
+  prove:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref == 'observer/ssc-rd04-mt-v3-promotion-postmerge-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned Draft 2020-12 validator
+        run: python -m pip install --disable-pip-version-check jsonschema==4.25.1
+      - name: Prove exact merge, native push, review finality, and semantic replay
+        id: prove
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$OUT" "$WORK"
+          mkdir -p "$OUT" "$WORK"
+          printf '%s\n' bootstrap > "$OUT/STAGE"
+          printf '%s\n' 1 > "$OUT/EXIT_CODE"
+          fail() {
+            local rc=$?
+            trap - ERR
+            printf '%s\n' "$rc" > "$OUT/EXIT_CODE"
+            (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS) || true
+            exit "$rc"
+          }
+          trap fail ERR
+
+          api() {
+            curl --fail --silent --show-error --location \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "$1"
+          }
+
+          printf '%s\n' bind-observer-and-live-main > "$OUT/STAGE"
+          OBSERVER_HEAD="$(git rev-parse HEAD)"
+          test "$(git show -s --format='%P' HEAD)" = "$MERGE_COMMIT"
+          test "$(git diff --name-only "$MERGE_COMMIT" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$MERGE_COMMIT" HEAD)" = "$CARRIER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$MERGE_COMMIT" HEAD)"
+          git diff --check "$MERGE_COMMIT" HEAD
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          LIVE_MAIN="$(git rev-parse refs/remotes/origin/main)"
+          git merge-base --is-ancestor "$MERGE_COMMIT" "$LIVE_MAIN"
+          printf '%s\n' "$OBSERVER_HEAD" > "$OUT/observer-head.txt"
+          printf '%s\n' "$LIVE_MAIN" > "$OUT/live-main.txt"
+
+          cat > "$OUT/product-paths.txt" <<'PATHS'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/input-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/promoted-partial-field-matrix.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/remaining-open-field-census.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-decision.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-ledger.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/row-state-summary.json
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs
+          PATHS
+          sed -i 's/^          //' "$OUT/product-paths.txt"
+          test "$(wc -l < "$OUT/product-paths.txt" | tr -d ' ')" = 14
+          test "$(LC_ALL=C sort "$OUT/product-paths.txt")" = "$(cat "$OUT/product-paths.txt")"
+          { cat "$OUT/product-paths.txt"; printf '%s\n%s\n' "$ANCHOR_DATA_PATH" "$ANCHOR_WORKFLOW_PATH"; } | LC_ALL=C sort -u > "$OUT/protected-paths.txt"
+
+          printf '%s\n' bind-canonical-merge-topology > "$OUT/STAGE"
+          test "$(git show -s --format='%P' "$MERGE_COMMIT")" = "$MERGE_FIRST_PARENT $PRODUCT_COMMIT"
+          test "$(git show -s --format='%P' "$PRODUCT_COMMIT")" = "$PRODUCT_PARENT"
+          test "$(git rev-parse "$PRODUCT_COMMIT^{tree}")" = "$PRODUCT_TREE"
+          test "$(git rev-parse "$MERGE_FIRST_PARENT:$ANCHOR_DATA_PATH")" = "$ANCHOR_DATA_BLOB"
+          test "$(git rev-parse "$MERGE_COMMIT:$ANCHOR_DATA_PATH")" = "$ANCHOR_DATA_BLOB"
+          test "$(git rev-parse "$MERGE_FIRST_PARENT:$ANCHOR_WORKFLOW_PATH")" = "$ANCHOR_WORKFLOW_BLOB"
+          test "$(git rev-parse "$MERGE_COMMIT:$ANCHOR_WORKFLOW_PATH")" = "$ANCHOR_WORKFLOW_BLOB"
+          git show "$MERGE_FIRST_PARENT:$ANCHOR_DATA_PATH" > "$OUT/anchor.json"
+          jq -e --arg commit "$PRODUCT_COMMIT" --arg tree "$PRODUCT_TREE" --arg parent "$PRODUCT_PARENT" '
+            .schema_version == "ssc-rd04-mt-v3-exact-product-anchor@1" and
+            .product_commit == $commit and .product_tree == $tree and .product_parent == $parent and
+            .product_path_count == 14 and .product_change_class == "addition_only" and
+            .product_transport_path_count == 0 and .field_terminalizations == 0 and
+            .matrix_updates == 1 and .row_state_mutations == 1 and .row_terminalizations == 1 and
+            .class_closed == false and .outside_human_dependency == false
+          ' "$OUT/anchor.json" >/dev/null
+
+          EXPECTED_COMMIT_OBJECT="$OUT/expected-product-commit.raw"
+          ACTUAL_COMMIT_OBJECT="$OUT/actual-product-commit.raw"
+          {
+            printf 'tree %s\n' "$PRODUCT_TREE"
+            printf 'parent %s\n' "$PRODUCT_PARENT"
+            printf 'author github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> 1786388400 +0000\n'
+            printf 'committer github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> 1786388400 +0000\n'
+            printf '\n'
+            printf '%s\n' 'Promote exact Montana derivative row-state reconciliation v3'
+          } > "$EXPECTED_COMMIT_OBJECT"
+          git cat-file commit "$PRODUCT_COMMIT" > "$ACTUAL_COMMIT_OBJECT"
+          cmp "$EXPECTED_COMMIT_OBJECT" "$ACTUAL_COMMIT_OBJECT"
+          test "$(git hash-object -t commit --stdin < "$EXPECTED_COMMIT_OBJECT")" = "$PRODUCT_COMMIT"
+
+          git diff --name-status "$MERGE_FIRST_PARENT" "$MERGE_COMMIT" | LC_ALL=C sort > "$OUT/merge-first-parent-delta.tsv"
+          git diff --name-status "$PRODUCT_PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort > "$OUT/product-construction-delta.tsv"
+          python - "$OUT/product-paths.txt" "$OUT/merge-first-parent-delta.tsv" "$OUT/product-construction-delta.tsv" <<'PY'
+          from pathlib import Path
+          import sys
+          expected=Path(sys.argv[1]).read_text().splitlines()
+          for name in sys.argv[2:]:
+              rows=[]
+              for line in Path(name).read_text().splitlines():
+                  status,path=line.split('\t',1)
+                  if status != 'A':
+                      raise SystemExit(f'{name}: non-addition status {status!r} for {path!r}')
+                  rows.append(path)
+              if rows != expected:
+                  raise SystemExit(f'{name}: path denominator mismatch')
+          print('both_exact_fourteen_addition_denominators_ok')
+          PY
+          git diff --check "$MERGE_FIRST_PARENT" "$MERGE_COMMIT"
+          git diff --check "$PRODUCT_PARENT" "$PRODUCT_COMMIT"
+
+          : > "$OUT/product-tree-entries.tsv"
+          while IFS= read -r PRODUCT_PATH; do
+            MERGE_ENTRY="$(git ls-tree "$MERGE_COMMIT" -- "$PRODUCT_PATH")"
+            PRODUCT_ENTRY="$(git ls-tree "$PRODUCT_COMMIT" -- "$PRODUCT_PATH")"
+            test -n "$MERGE_ENTRY"
+            test "$MERGE_ENTRY" = "$PRODUCT_ENTRY"
+            test -z "$(git ls-tree "$MERGE_FIRST_PARENT" -- "$PRODUCT_PATH")"
+            MODE="$(printf '%s\n' "$MERGE_ENTRY" | awk '{print $1}')"
+            TYPE="$(printf '%s\n' "$MERGE_ENTRY" | awk '{print $2}')"
+            test "$MODE" = 100644
+            test "$TYPE" = blob
+            printf '%s\n' "$MERGE_ENTRY" >> "$OUT/product-tree-entries.tsv"
+          done < "$OUT/product-paths.txt"
+
+          printf '%s\n' census-protected-live-history > "$OUT/STAGE"
+          : > "$OUT/postmerge-first-parent-commits.txt"
+          : > "$OUT/postmerge-first-parent-edge-paths.tsv"
+          : > "$OUT/postmerge-first-parent-paths.unsorted"
+          if [ "$MERGE_COMMIT" != "$LIVE_MAIN" ]; then
+            git rev-list --first-parent --reverse "$MERGE_COMMIT..$LIVE_MAIN" > "$OUT/postmerge-first-parent-commits.txt"
+            PREV="$MERGE_COMMIT"
+            while IFS= read -r NEXT; do
+              test "$(git rev-parse "$NEXT^")" = "$PREV"
+              while IFS= read -r CHANGED; do
+                [ -z "$CHANGED" ] && continue
+                printf '%s\t%s\t%s\n' "$PREV" "$NEXT" "$CHANGED" >> "$OUT/postmerge-first-parent-edge-paths.tsv"
+                printf '%s\n' "$CHANGED" >> "$OUT/postmerge-first-parent-paths.unsorted"
+              done < <(git diff --name-only "$PREV" "$NEXT")
+              PREV="$NEXT"
+            done < "$OUT/postmerge-first-parent-commits.txt"
+            test "$PREV" = "$LIVE_MAIN"
+          fi
+          LC_ALL=C sort -u "$OUT/postmerge-first-parent-paths.unsorted" > "$OUT/postmerge-first-parent-paths.txt"
+          test -z "$(comm -12 "$OUT/protected-paths.txt" "$OUT/postmerge-first-parent-paths.txt")"
+
+          printf '%s\n' bind-native-push-and-review-record > "$OUT/STAGE"
+          api "https://api.github.com/repos/$GITHUB_REPOSITORY/pulls/1903" > "$OUT/product-pr.json"
+          jq -e --arg merge "$MERGE_COMMIT" --arg product "$PRODUCT_COMMIT" --arg base "$MERGE_FIRST_PARENT" '
+            .merged == true and .merge_commit_sha == $merge and .head.sha == $product and .base.sha == $base
+          ' "$OUT/product-pr.json" >/dev/null
+          api "https://api.github.com/repos/$GITHUB_REPOSITORY/issues/1903/comments?per_page=100" > "$OUT/product-pr-comments.json"
+
+          cat > "$OUT/review-threads-query.json" <<'GRAPHQL'
+          {
+            "query": "query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100){nodes{isResolved}}}}}",
+            "variables": {"owner":"BigBirdReturns","name":"clifford-number","number":1903}
+          }
+          GRAPHQL
+          sed -i 's/^          //' "$OUT/review-threads-query.json"
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Content-Type: application/json' \
+            --data-binary @"$OUT/review-threads-query.json" \
+            https://api.github.com/graphql > "$OUT/review-threads.json"
+          jq -e '.data.repository.pullRequest.reviewThreads.nodes | all(.isResolved == true)' "$OUT/review-threads.json" >/dev/null
+
+          api "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$MERGE_COMMIT&event=push&per_page=100" > "$OUT/native-push-runs.json"
+          python - "$OUT/product-pr.json" "$OUT/product-pr-comments.json" "$OUT/native-push-runs.json" "$OUT/review-receipt.json" "$OUT/native-push-required.json" <<'PY'
+          from datetime import datetime
+          from pathlib import Path
+          import json, sys
+          pr=json.load(open(sys.argv[1]))
+          comments=json.load(open(sys.argv[2]))
+          runs=json.load(open(sys.argv[3])).get('workflow_runs',[])
+          merge=datetime.fromisoformat(pr['merged_at'].replace('Z','+00:00'))
+          clean=[]
+          for c in comments:
+              login=(c.get('user') or {}).get('login')
+              body=c.get('body') or ''
+              if login == 'chatgpt-codex-connector[bot]' and "Didn't find any major issues" in body and '30e4f3c178' in body:
+                  clean.append(c)
+          if not clean:
+              raise SystemExit('missing exact-head terminal clean Codex disposition')
+          clean.sort(key=lambda c:c['created_at'])
+          disposition=clean[0]
+          reviewed=datetime.fromisoformat(disposition['created_at'].replace('Z','+00:00'))
+          review_receipt={
+              'schema_version':'ssc-rd04-mt-v3-review-finality@1',
+              'state':'postmerge_exact_head_clean_disposition_reconciled',
+              'product_pull_request':1903,
+              'product_commit':'30e4f3c17848419790d27826199e37df942c351f',
+              'merge_commit':'9510310129c3aab44f8b5b187430a3ede005b7b4',
+              'merged_at':pr['merged_at'],
+              'clean_disposition_comment_id':disposition['id'],
+              'clean_disposition_created_at':disposition['created_at'],
+              'clean_disposition_preceded_merge':reviewed <= merge,
+              'temporal_delta_seconds':int((reviewed-merge).total_seconds()),
+              'unresolved_review_threads':0,
+          }
+          Path(sys.argv[4]).write_text(json.dumps(review_receipt,indent=2,sort_keys=True)+'\n')
+
+          required=[
+              'RD-04 Montana V3 exact-product admission anchor',
+              'Qualify RD-04 Montana derivative row-state reconciliation',
+              'Release checks',
+              'No magic human gate',
+              'Status-for-sovereignty compact',
+              'Status-for-sovereignty Wave 01',
+          ]
+          selected={}
+          for name in required:
+              matches=[r for r in runs if r.get('name')==name and r.get('head_sha')=='9510310129c3aab44f8b5b187430a3ede005b7b4' and r.get('event')=='push']
+              successes=[r for r in matches if r.get('status')=='completed' and r.get('conclusion')=='success']
+              if not successes:
+                  states=[(r.get('id'),r.get('status'),r.get('conclusion')) for r in matches]
+                  raise SystemExit(f'missing successful native push run for {name!r}: {states!r}')
+              successes.sort(key=lambda r:r.get('run_started_at') or r.get('created_at') or '')
+              r=successes[-1]
+              selected[name]={
+                  'run_id':r['id'],
+                  'workflow_id':r['workflow_id'],
+                  'status':r['status'],
+                  'conclusion':r['conclusion'],
+                  'created_at':r['created_at'],
+                  'updated_at':r['updated_at'],
+              }
+          value={
+              'schema_version':'ssc-rd04-mt-v3-native-push-runs@1',
+              'state':'all_required_native_push_runs_successful',
+              'merge_commit':'9510310129c3aab44f8b5b187430a3ede005b7b4',
+              'required_runs':selected,
+              'observed_push_run_count':len(runs),
+          }
+          Path(sys.argv[5]).write_text(json.dumps(value,indent=2,sort_keys=True)+'\n')
+          PY
+          jq -e '.unresolved_review_threads == 0 and .state == "postmerge_exact_head_clean_disposition_reconciled"' "$OUT/review-receipt.json" >/dev/null
+          jq -e '.state == "all_required_native_push_runs_successful" and (.required_runs | length) == 6' "$OUT/native-push-required.json" >/dev/null
+
+          printf '%s\n' replay-canonical-product > "$OUT/STAGE"
+          git worktree add --detach "$WORK/repo" "$MERGE_COMMIT"
+          cd "$WORK/repo"
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/generated" | tee "$OUT/builder.json"
+          for name in row-state-ledger.json promoted-partial-field-matrix.json remaining-open-field-census.json row-state-summary.json index.json; do
+            cmp "$OUT/generated/$name" "$PRODUCT_ROOT/$name"
+          done
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/validator.json"
+          jq -e '
+            .state == "qualified_exact_montana_row_state_reconciliation" and
+            .promoted_matrix_sha256 == "12e52344af0c8ec3d845b6f05f8a20014fa84504d10dbc9ee0674d37715abe1d" and
+            .montana_row_sha256 == "b6474320f690a653eae081cf655a090bb5d5da0f444e9a1c42077fd0b951bcbc" and
+            .proposed_cell_sha256 == "ba173d03c2f82316ca79eb8b6627057db6fdb54113340ff0f9539a85e89a1f2d" and
+            .terminal_cells == 230 and .still_open_cells == 220 and
+            .terminal_substantive_cells == 118 and .still_open_substantive_cells == 182 and
+            .terminal_units == 12 and .row_state_mutations == 1 and .row_terminalizations == 1 and
+            .field_terminalizations == 0 and .matrix_updates == 1 and
+            .class_closed == false and .outside_human_dependency == false and
+            .adversarial_refusal_floor == 40
+          ' "$OUT/validator.json" >/dev/null
+          node --test test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js | tee "$OUT/adversarial.log"
+          python - <<'PY' > "$OUT/schema-validation.txt"
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          root = Path('data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation')
+          schema = json.load(open('schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json'))
+          manifest = json.load(open(root / 'product-manifest.json'))
+          instance = {
+              'schema_version': 'ssc-rd04-mt-row-state-reconciliation-schema@1',
+              'product_contract': {
+                  'canonical_parent': '0840358962621b0be3db6864ecec763327f35903',
+                  'canonical_parent_tree': '38023f86bcc27527f9db8da9622bada00b3de542',
+                  'permanent_path_count': 14,
+                  'hashed_file_count': 13,
+                  'matrix_transition': {
+                      'predecessor_sha256': '9f9dc05a057396056771bb566c44e9c3779d8ef6b0d2c078f7ffff11d9c7e6cb',
+                      'promoted_sha256': '12e52344af0c8ec3d845b6f05f8a20014fa84504d10dbc9ee0674d37715abe1d',
+                      'changed_rows': 1,
+                      'changed_cells': 1,
+                      'substantive_cells_changed': 0,
+                      'terminal_units_before': 11,
+                      'terminal_units_after': 12,
+                      'class_closed': False,
+                  },
+                  'authority_boundary': manifest['authority_boundary'],
+              },
+              'document_schemas': {
+                  'input_custody': json.load(open(root / 'input-custody.json')),
+                  'row_state_decision': json.load(open(root / 'row-state-decision.json')),
+                  'row_state_ledger': json.load(open(root / 'row-state-ledger.json')),
+                  'promoted_matrix': json.load(open(root / 'promoted-partial-field-matrix.json')),
+                  'remaining_open_census': json.load(open(root / 'remaining-open-field-census.json')),
+                  'row_state_summary': json.load(open(root / 'row-state-summary.json')),
+                  'index': json.load(open(root / 'index.json')),
+                  'product_manifest': manifest,
+              },
+          }
+          Draft202012Validator.check_schema(schema)
+          Draft202012Validator(schema).validate(instance)
+          print('draft_2020_12_schema_and_all_eight_documents_ok')
+          PY
+          node tools/validate-no-magic-human-gate.mjs | tee "$OUT/no-magic-human-validator.log"
+          node test/no-magic-human-gate.test.js | tee "$OUT/no-magic-human-test.log"
+          npm run release:check > "$OUT/release-check.log" 2>&1
+          git reset --hard HEAD
+          git clean -fdx
+          test -z "$(git status --porcelain)"
+          node tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --check > "$OUT/post-release-builder.json"
+          node tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs --out "$OUT/post-release-validator.json"
+          cmp "$OUT/validator.json" "$OUT/post-release-validator.json"
+
+          printf '%s\n' write-terminal-receipt > "$OUT/STAGE"
+          python - "$OUT/receipt.json" "$LIVE_MAIN" <<'PY'
+          from pathlib import Path
+          import json, sys
+          review=json.load(open('/tmp/ssc-rd04-mt-v3-promotion-postmerge-proof/review-receipt.json'))
+          native=json.load(open('/tmp/ssc-rd04-mt-v3-promotion-postmerge-proof/native-push-required.json'))
+          value={
+              'schema_version':'ssc-rd04-mt-v3-promotion-postmerge-proof@1',
+              'state':'canonical_exact_montana_v3_promotion_proved',
+              'merge_commit':'9510310129c3aab44f8b5b187430a3ede005b7b4',
+              'merge_first_parent':'966ea44274ff0372d3b0fa8e25e18d4e98f0b7cb',
+              'merge_second_parent':'30e4f3c17848419790d27826199e37df942c351f',
+              'product_parent':'0840358962621b0be3db6864ecec763327f35903',
+              'product_tree':'f1a05ffc235228a852387104f1175a882cae0e49',
+              'live_main':sys.argv[2],
+              'product_paths':14,
+              'merge_change_class':'fourteen_additions_only',
+              'full_tree_entries_equal':True,
+              'raw_product_commit_object_equal':True,
+              'anchor_preserved_from_first_parent':True,
+              'protected_postmerge_overlap_count':0,
+              'required_native_push_runs':len(native['required_runs']),
+              'native_push_state':native['state'],
+              'review_state':review['state'],
+              'clean_disposition_preceded_merge':review['clean_disposition_preceded_merge'],
+              'review_temporal_delta_seconds':review['temporal_delta_seconds'],
+              'deterministic_reconstruction':'passed',
+              'closed_schema_validation':'passed',
+              'adversarial_refusal_floor':40,
+              'no_magic_human':'passed',
+              'release_check':'passed',
+              'post_release_replay':'byte_identical',
+              'source_requests':0,
+              'route_executions':0,
+              'source_admissions':0,
+              'field_terminalizations':0,
+              'matrix_updates':1,
+              'row_state_mutations':1,
+              'row_terminalizations':1,
+              'terminal_cells':230,
+              'still_open_cells':220,
+              'terminal_substantive_cells':118,
+              'still_open_substantive_cells':182,
+              'terminal_units':12,
+              'class_closed':False,
+              'cumulative_ledger_effect':'none',
+              'publication_effect':'none',
+              'adoption_effect':'none',
+              'graph_effect':'none',
+              'outside_human_dependency':False,
+          }
+          Path(sys.argv[1]).write_text(json.dumps(value,indent=2,sort_keys=True)+'\n')
+          PY
+          printf '%s\n' complete > "$OUT/STAGE"
+          printf '%s\n' 0 > "$OUT/EXIT_CODE"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+          trap - ERR
+
+      - name: Preserve canonical Montana V3 post-merge proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-v3-promotion-postmerge-proof
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Enforce terminal canonical proof
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "${{ steps.prove.outcome }}" = success
+          test "$(cat "$OUT/STAGE")" = complete
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          test -s "$OUT/receipt.json"
+          test -s "$OUT/native-push-required.json"
+          test -s "$OUT/review-receipt.json"
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          jq -e '
+            .state == "canonical_exact_montana_v3_promotion_proved" and
+            .merge_commit == "9510310129c3aab44f8b5b187430a3ede005b7b4" and
+            .merge_first_parent == "966ea44274ff0372d3b0fa8e25e18d4e98f0b7cb" and
+            .merge_second_parent == "30e4f3c17848419790d27826199e37df942c351f" and
+            .product_paths == 14 and .merge_change_class == "fourteen_additions_only" and
+            .full_tree_entries_equal == true and .raw_product_commit_object_equal == true and
+            .anchor_preserved_from_first_parent == true and .protected_postmerge_overlap_count == 0 and
+            .required_native_push_runs == 6 and .native_push_state == "all_required_native_push_runs_successful" and
+            .deterministic_reconstruction == "passed" and .closed_schema_validation == "passed" and
+            .adversarial_refusal_floor == 40 and .no_magic_human == "passed" and
+            .release_check == "passed" and .post_release_replay == "byte_identical" and
+            .field_terminalizations == 0 and .matrix_updates == 1 and
+            .row_state_mutations == 1 and .row_terminalizations == 1 and
+            .class_closed == false and .outside_human_dependency == false
+          ' "$OUT/receipt.json" >/dev/null
