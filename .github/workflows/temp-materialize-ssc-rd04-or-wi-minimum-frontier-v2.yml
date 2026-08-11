@@ -1,0 +1,118 @@
+name: TEMP materialize RD-04 Oregon-Wisconsin minimum-frontier v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-or-wi-minimum-frontier-v2.yml'
+      - 'tools/temp-materialize-ssc-rd04-or-wi-minimum-frontier-v2.sh'
+      - 'data/transport/ssc-rd04-or-wi-minimum-frontier-materializer-v2/**'
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: temp-materialize-ssc-rd04-or-wi-minimum-frontier-v2
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-or-wi-minimum-frontier-materializer-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned schema validator
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+
+      - name: Authenticate and execute exact materializer controller
+        id: materialize
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          CONTROLLER='tools/temp-materialize-ssc-rd04-or-wi-minimum-frontier-v2.sh'
+          test "$(stat -c %s "$CONTROLLER")" = 17874
+          test "$(sha256sum "$CONTROLLER" | awk '{print $1}')" = c995dce6838ab830719f9715ae2b564d580eb65f6b1d9060364b5fb524f4398f
+          bash -n "$CONTROLLER"
+          bash "$CONTROLLER"
+
+      - name: Preserve materialization evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-or-wi-minimum-frontier-materializer-v2
+          path: /tmp/ssc-rd04-or-wi-minimum-frontier-materializer-v2
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+
+      - name: Report terminal result
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT='/tmp/ssc-rd04-or-wi-minimum-frontier-materializer-v2'
+          if test -f "$OUT/receipt.json"; then
+            jq -r '
+              "Exact Oregon-Wisconsin adjudication product object qualified.\n\n```text\nproduct_commit: \(.product_commit)\nproduct_tree: \(.product_tree)\npermanent_paths: \(.permanent_path_count)\nsource_admissions: \(.source_admissions)\nfield_candidates: \(.field_candidates)\nobserved_candidates: \(.observed_candidates)\ntyped_gap_candidates: \(.typed_gap_candidates)\nmatrix_updates: \(.matrix_updates)\nrow_state_mutations: \(.row_state_mutations)\nclass_closed: \(.class_closed)\nrelease_check: \(.release_check)\n```\n\nThe object is qualified but unreferenced. This carrier creates no product ref, matrix change, row transition, class closure, publication effect, adoption effect, graph effect, or outside-human dependency."
+            ' "$OUT/receipt.json" > /tmp/comment.md
+          else
+            jq -r '
+              "Oregon-Wisconsin adjudication materialization failed closed.\n\n```text\nfailed_stage: \(.failed_stage)\nexit_code: \(.exit_code)\nproduct_ref_updated: \(.product_ref_updated)\nmatrix_updates: \(.matrix_updates)\nrow_state_mutations: \(.row_state_mutations)\nclass_closed: \(.class_closed)\n```\n\nNo substantive or canonical authority was created."
+            ' "$OUT/failure.json" > /tmp/comment.md
+          fi
+          gh pr comment '${{ github.event.pull_request.number }}' --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+
+      - name: Require terminal success
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT='/tmp/ssc-rd04-or-wi-minimum-frontier-materializer-v2'
+          test "${{ steps.materialize.outcome }}" = success
+          test "$(cat "$OUT/STAGE")" = complete
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          jq -e '
+            .state=="exact_one_parent_fourteen_addition_product_object_created" and
+            .canonical_parent=="146f5ceb1882d02c7be8d225d49665d63478a7df" and
+            .canonical_parent_tree=="4f9eb0269d5259bdc8cea438321d3a89683abdc8" and
+            .permanent_path_count==14 and
+            .change_class=="addition_only" and
+            .transport_path_count==0 and
+            .source_admissions==12 and
+            .field_candidates==6 and
+            .observed_candidates==3 and
+            .typed_gap_candidates==3 and
+            .field_terminalizations==0 and
+            .matrix_updates==0 and
+            .row_state_mutations==0 and
+            .class_closed==false and
+            .outside_human_dependency==false and
+            .release_check=="passed" and
+            .post_release_replay=="clean_and_exact" and
+            .product_ref_updated==false
+          ' "$OUT/receipt.json" > /dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
