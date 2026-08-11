@@ -1,0 +1,163 @@
+    v59_source_bundle_schema_version: V59_SOURCE_BUNDLE_SCHEMA_VERSION,
+    v59_source_bundle_sha256: preferenceCustodyV59SourceBundleSnapshot(sources),
+    base_controls_sha256: sha256(base.controls),
+    base_promotion_requirements_sha256: sha256(base.promotion_boundary.real_case_requires),
+    base_refusal_rule_union_sha256: sha256(base.refusal_rule_union),
+    base_identification_requirements_sha256: sha256(base.identification_requirements),
+    base_open_frontiers_sha256: sha256(base.open_frontiers),
+    base_prohibited_inferences_sha256: sha256(base.prohibited_inferences),
+    base_interpretation_contract_sha256: sha256(base.interpretation_contract),
+    base_promotion_requirement_count: 2586,
+    added_promotion_requirement_count: 62,
+    final_promotion_requirement_count: 2648,
+    base_open_frontiers: base.open_frontiers
+  };
+  const integrity = {
+    base_floor_qualified: true,
+    base_integrity_preserved: true,
+    v59_complete_source_bundle_bound: true,
+    all_graph_effect_none: true,
+    no_thesis_evidence_consumption: true,
+    no_real_world_conclusion: true,
+    no_preference_change_claim: true,
+    no_intent_inference: true,
+    no_security_compromise_claim: true,
+    no_ownership_finding: true,
+    no_impersonation_finding: true,
+    all_required_pc62_refusal_rules_present: currentManifest.extension_control.required_refusal_rules.every(rule => refusals.includes(rule)),
+    complete_normalization_collision_path_preserved: target.metrics.complete_normalization_collision_assurance_worlds === 1,
+    unicode_implementation_successor_preserved: openFrontiers.includes(SUCCESSOR_FRONTIERS[0]),
+    casefold_confusable_successor_preserved: openFrontiers.includes(SUCCESSOR_FRONTIERS[1]),
+    alias_namespace_frontier_preserved: openFrontiers.includes(PRESERVED_ALIAS_NAMESPACE_FRONTIER),
+    profile_api_frontier_preserved: openFrontiers.includes(PRESERVED_PROFILE_API_FRONTIER),
+    account_lifecycle_frontier_preserved: openFrontiers.includes(PRESERVED_ACCOUNT_FRONTIER),
+    owner_rename_transfer_sibling_preserved: openFrontiers.includes(PRESERVED_SIBLINGS[0]),
+    repository_transfer_event_sibling_preserved: openFrontiers.includes(PRESERVED_SIBLINGS[1]),
+    canonical_location_fork_sibling_preserved: openFrontiers.includes(PRESERVED_SIBLINGS[2]),
+    branch_tag_release_commit_sibling_preserved: openFrontiers.includes(PRESERVED_SIBLINGS[3]),
+    all_unresolved_base_frontiers_preserved: base.open_frontiers
+      .filter(frontier => frontier !== RESOLVED_FRONTIER)
+      .every(frontier => openFrontiers.includes(frontier))
+  };
+  const chain = [];
+  chain.push(seal({
+    event: 'qualified_v59_base_bound',
+    base_manifest_id: base.manifest_id,
+    base_snapshot_sha256: sha256(base),
+    base_source_bundle_sha256: preferenceCustodyV59SourceBundleSnapshot(sources)
+  }, null));
+  chain.push(seal({
+    event: 'pc62_extension_admitted',
+    control_id: 'PC-62',
+    fixture_snapshot_sha256: target.fixture_snapshot_sha256,
+    build_snapshot_sha256: sha256(target)
+  }, chain.at(-1).event_sha256));
+  chain.push(seal({
+    event: 'frontier_transition_bound',
+    resolved_frontier: RESOLVED_FRONTIER,
+    successor_frontiers: SUCCESSOR_FRONTIERS,
+    preserved_alias_namespace_frontier: PRESERVED_ALIAS_NAMESPACE_FRONTIER,
+    preserved_profile_api_frontier: PRESERVED_PROFILE_API_FRONTIER,
+    preserved_account_frontier: PRESERVED_ACCOUNT_FRONTIER
+  }, chain.at(-1).event_sha256));
+  chain.push(seal({
+    event: 'promotion_boundary_bound',
+    base_requirement_count: 2586,
+    added_requirement_count: 62,
+    final_requirement_count: 2648,
+    requirements_sha256: sha256(requirements)
+  }, chain.at(-1).event_sha256));
+  chain.push(seal({
+    event: 'interpretation_sealed',
+    interpretation_sha256: sha256(currentManifest.interpretation_contract),
+    graph_effect: 'none',
+    real_world_evidence_state: 'none',
+    binding_public_authority: false
+  }, chain.at(-1).event_sha256));
+  return {
+    schema_version: BUILD_SCHEMA_VERSION,
+    manifest_id: currentManifest.manifest_id,
+    issue: currentManifest.issue,
+    control_issue: currentManifest.control_issue,
+    captured_at: currentManifest.captured_at,
+    status: 'synthetic_control_floor_compiled',
+    graph_effect: 'none',
+    counts_toward_thesis_evidence: false,
+    conclusion_generated: false,
+    real_world_evidence_state: 'none',
+    control_count: 62,
+    controls,
+    composition,
+    control_integrity: integrity,
+    identification_requirements: identification,
+    refusal_rule_union: refusals,
+    open_frontiers: openFrontiers,
+    frontier_transition: currentManifest.frontier_transition,
+    preserved_alias_namespace_frontier: PRESERVED_ALIAS_NAMESPACE_FRONTIER,
+    preserved_profile_api_frontier: PRESERVED_PROFILE_API_FRONTIER,
+    preserved_account_frontier: PRESERVED_ACCOUNT_FRONTIER,
+    promotion_boundary: {
+      promotion_authority: 'laboratory_only',
+      promotion_requirement_count: 2648,
+      real_case_requires: requirements,
+      laboratory_controls_are_real_world_evidence: false
+    },
+    custody_chain: chain,
+    custody_chain_head_sha256: chain.at(-1).event_sha256,
+    prohibited_inferences: prohibited,
+    interpretation_contract: currentManifest.interpretation_contract
+  };
+}
+
+export function validateBuild(build, manifest, baseBuild, targetBuild, targetFixture, baseSources) {
+  const errors = [];
+  validateCanonicalJsonValue(build, 'Preference Custody v60 build', errors);
+  if (errors.length) return unique(errors);
+  exactKeys(build, BUILD_KEYS, 'Preference Custody v60 build', errors);
+  exactKeys(build.composition, COMPOSITION_KEYS, 'Preference Custody v60 composition', errors);
+  exactKeys(build.control_integrity, INTEGRITY_KEYS, 'Preference Custody v60 integrity', errors);
+  exactKeys(build.frontier_transition, TRANSITION_KEYS, 'Preference Custody v60 frontier transition', errors);
+  exactKeys(build.promotion_boundary, PROMOTION_KEYS, 'Preference Custody v60 promotion', errors);
+  exactKeys(build.interpretation_contract, INTERPRETATION_KEYS, 'Preference Custody v60 interpretation', errors);
+  const inputErrors = validateInputs(manifest, baseBuild, targetBuild, targetFixture, baseSources);
+  errors.push(...inputErrors);
+  if (inputErrors.length) return unique(errors);
+  let expected;
+  try {
+    expected = compileManifest(manifest, baseBuild, targetBuild, targetFixture, baseSources);
+  } catch (error) {
+    return unique([...errors, `Preference Custody v60 deterministic compile failed: ${error.message}`]);
+  }
+  if (stableJson(build) !== stableJson(expected)) {
+    errors.push('Preference Custody v60 build differs from deterministic compilation');
+  }
+  if (build.control_count !== 62
+      || stableJson(build.controls.slice(0, 61)) !== stableJson(baseBuild.controls)
+      || build.controls.at(-1)?.control_id !== 'PC-62') {
+    errors.push('Preference Custody v60 control denominator mismatch');
+  }
+  if (build.promotion_boundary.promotion_requirement_count !== 2648
+      || build.composition.base_promotion_requirement_count !== 2586
+      || build.composition.added_promotion_requirement_count !== 62
+      || build.composition.final_promotion_requirement_count !== 2648) {
+    errors.push('Preference Custody v60 promotion denominator mismatch');
+  }
+  if (build.open_frontiers.includes(RESOLVED_FRONTIER)) {
+    errors.push('Preference Custody v60 resolved frontier remains open');
+  }
+  for (const frontier of [
+    ...SUCCESSOR_FRONTIERS,
+    PRESERVED_ALIAS_NAMESPACE_FRONTIER,
+    PRESERVED_PROFILE_API_FRONTIER,
+    PRESERVED_ACCOUNT_FRONTIER,
+    ...PRESERVED_SIBLINGS
+  ]) {
+    if (!build.open_frontiers.includes(frontier)) {
+      errors.push(`Preference Custody v60 missing required frontier ${frontier}`);
+    }
+  }
+  for (const frontier of baseBuild.open_frontiers.filter(value => value !== RESOLVED_FRONTIER)) {
+    if (!build.open_frontiers.includes(frontier)) {
+      errors.push(`Preference Custody v60 dropped base frontier ${frontier}`);
+    }
+  }
