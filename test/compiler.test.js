@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import { buildAdjacency, shortestPath } from '../tools/lib/hops.mjs';
 
 function run(cmd, args) {
   const res = spawnSync(cmd, args, { encoding: 'utf8' });
@@ -82,6 +83,33 @@ for (const edge of hop.edges) {
     }
   }
 }
+
+// The Action Plan route is supported only on the dated public-adoption record.
+const starmerClifford = hop.edges.find(e =>
+  [e.actor_a, e.actor_b].sort().join('|') === 'keir-starmer|matt-clifford');
+assert.ok(starmerClifford, 'Keir Starmer and Matt Clifford must connect through the dated Action Plan surface');
+const actionPlanBasis = starmerClifford.surfaces.find(s => s.surface_id === 'ai-opportunities-action-plan-2025');
+assert.ok(actionPlanBasis, 'Starmer/Clifford must name the Action Plan as the hop basis');
+assert.equal(actionPlanBasis.evidence_class, 'official');
+assert.equal(actionPlanBasis.valid_from, '2025-01-13');
+assert.equal(actionPlanBasis.valid_until, '2025-01-13');
+const actionPlanReceipts = new Set(actionPlanBasis.receipt_ids);
+assert.ok(actionPlanReceipts.has('gov-ai-opportunities-action-plan'));
+assert.ok(actionPlanReceipts.has('gov-pm-ai-blueprint-2025'));
+const topology = buildAdjacency(hop.edges);
+assert.equal(shortestPath(topology, 'keir-starmer', 'matt-clifford', { asOf: '2025-01-13' }).number, 1);
+assert.equal(shortestPath(topology, 'keir-starmer', 'matt-clifford', { asOf: '2025' }).number, 1);
+assert.equal(
+  shortestPath(topology, 'keir-starmer', 'matt-clifford', { asOf: '2025-01-12' }).number,
+  null,
+  'before the dated government response the corpus must refuse a Starmer/Clifford path'
+);
+assert.equal(
+  shortestPath(topology, 'keir-starmer', 'matt-clifford', { asOf: '2024' }).number,
+  null,
+  'the commission period alone must not manufacture Starmer participation'
+);
+
 // Disjoint dated participations on the same surface must NOT hop. Rosenfield
 // (No.10, 2021) and Cummings (No.10, 2019-2020) shared the surface in
 // different windows, so there is no direct Rosenfield↔Cummings hop.
