@@ -1,0 +1,62 @@
+name: PC-61 v5 worktree registry repair
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pc61-v5-worktree-registry-repair.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pc61-v5-worktree-registry-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.ref == 'agent/pc61-terminal-reconcile-v5'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Repair stale worktree registration and retire this carrier
+        shell: bash
+        env:
+          TARGET_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = 'ced5c17b7a4a706786f1ae071f62a67804542978'
+          python - <<'PY'
+          from pathlib import Path
+
+          target = Path('.github/workflows/pc61-terminal-reconciler-v5.yml')
+          carrier = Path('.github/workflows/pc61-v5-worktree-registry-repair.yml')
+          text = target.read_text(encoding='utf-8')
+          old = '          rm -rf "$PROOF" "$REPLAY"\n          mkdir -p "$PROOF"\n'
+          new = (
+              '          git worktree remove --force "$REPLAY" 2>/dev/null || true\n'
+              '          git worktree prune\n'
+              '          rm -rf "$PROOF" "$REPLAY"\n'
+              '          mkdir -p "$PROOF"\n'
+          )
+          if text.count(old) != 1:
+              raise SystemExit(f'expected exactly one proof replay reset marker, observed {text.count(old)}')
+          target.write_text(text.replace(old, new, 1), encoding='utf-8')
+          carrier.unlink()
+          PY
+
+          git diff --check
+          test ! -e .github/workflows/pc61-v5-worktree-registry-repair.yml
+          test "$(git diff --name-only | LC_ALL=C sort | tr '\n' ' ')" = '.github/workflows/pc61-terminal-reconciler-v5.yml .github/workflows/pc61-v5-worktree-registry-repair.yml '
+          grep -Fq 'git worktree remove --force "$REPLAY" 2>/dev/null || true' .github/workflows/pc61-terminal-reconciler-v5.yml
+          grep -Fq 'git worktree prune' .github/workflows/pc61-terminal-reconciler-v5.yml
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A .github/workflows/pc61-terminal-reconciler-v5.yml .github/workflows/pc61-v5-worktree-registry-repair.yml
+          git commit -m 'Repair PC-61 v5 replay worktree registration'
+          git push origin "HEAD:$TARGET_BRANCH"
