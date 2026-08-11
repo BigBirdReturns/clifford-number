@@ -74,11 +74,10 @@ jobs:
           PY
 
             diff -u "$OUT/before.yml" "$OUT/after.yml" > "$OUT/exact.patch" || test "$?" = 1
-            test "$(grep -c '^-' "$OUT/exact.patch")" = 2
-            test "$(grep -c '^+' "$OUT/exact.patch")" = 4
+            test "$(grep -c '^-' "$OUT/exact.patch")" = 1
+            test "$(grep -c '^+' "$OUT/exact.patch")" = 3
             test "$(grep -Fxc '+          git worktree remove --force "$REPLAY" 2>/dev/null || true' "$OUT/exact.patch")" = 1
             test "$(grep -Fxc '+          git worktree prune' "$OUT/exact.patch")" = 1
-            test "$(grep -Fxc '+          rm -rf "$PROOF" "$REPLAY"' "$OUT/exact.patch")" = 1
 
             after_blob=$(git hash-object "$OUT/after.yml")
             encoded=$(base64 -w0 "$OUT/after.yml")
@@ -90,7 +89,7 @@ jobs:
             test "$(jq -r .content.sha "$OUT/update-response.json")" = "$after_blob"
             commit=$(jq -r .commit.sha "$OUT/update-response.json")
             test -n "$commit"
-            jq -n --arg schema_version 'pc61-v5-worktree-registration-repair@1' --arg status repaired --arg branch "$TARGET_BRANCH" --arg path "$TARGET_PATH" --arg before "$before_blob" --arg after "$after_blob" --arg commit "$commit" '{schema_version:$schema_version,status:$status,target_branch:$branch,target_path:$path,before_blob:$before,after_blob:$after,repair_commit:$commit,changed:true,change_denominator:{lines_removed:1,lines_added:3,worktree_unregister_added:1,worktree_prune_added:1},product_semantics_changed:false,admission_gates_weakened:false,graph_effect:"none"}' > "$OUT/receipt.json"
+            jq -n --arg schema_version 'pc61-v5-worktree-registration-repair@1' --arg status repaired --arg branch "$TARGET_BRANCH" --arg path "$TARGET_PATH" --arg before "$before_blob" --arg after "$after_blob" --arg commit "$commit" '{schema_version:$schema_version,status:$status,target_branch:$branch,target_path:$path,before_blob:$before,after_blob:$after,repair_commit:$commit,changed:true,change_denominator:{lines_removed:0,lines_added:2,worktree_unregister_added:1,worktree_prune_added:1},product_semantics_changed:false,admission_gates_weakened:false,graph_effect:"none"}' > "$OUT/receipt.json"
           fi
 
           (
