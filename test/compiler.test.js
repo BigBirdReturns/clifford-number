@@ -21,11 +21,13 @@ const surface = JSON.parse(fs.readFileSync('build/surface-graph.json', 'utf8'));
 const scores = JSON.parse(fs.readFileSync('build/scores.json', 'utf8'));
 const migration = JSON.parse(fs.readFileSync('build/migration-summary.json', 'utf8'));
 const legacyGraph = JSON.parse(fs.readFileSync('graph.json', 'utf8'));
+const ledgerReceipts = fs.readFileSync('data/ledger/receipts.jsonl', 'utf8').split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
 assert.equal(legacyGraph.subtitle, 'Seven degrees of UK AI policy topology, with receipts.');
 
 const actor = id => scores.actors.find(a => a.actor_id === id);
 const org = id => scores.organizations.find(o => o.organization_id === id);
 const surf = id => surface.surfaces.find(s => s.surface_id === id);
+const receipt = id => ledgerReceipts.find(row => row.receipt_id === id);
 
 assert.ok(actor('ben-warner').surfaces.includes('electric-twin-newsuk-synthetic-audience'));
 assert.ok(actor('ben-warner').secondary_surface_types.includes('democratic_input_replacement'));
@@ -84,30 +86,52 @@ for (const edge of hop.edges) {
   }
 }
 
-// The Action Plan route is supported only on the dated public-adoption record.
+// The Action Plan lifecycle is split so development cannot manufacture a Prime Minister hop.
+const actionPlanDevelopment = surf('ai-opportunities-action-plan-development-2024-2025');
+assert.ok(actionPlanDevelopment, 'the commission and development predecessor surface must be compiled');
+assert.equal(actionPlanDevelopment.hop_eligible, false, 'development lifecycle must remain context only');
+assert.deepEqual(actionPlanDevelopment.receipt_ids, [
+  'gov-ai-opportunities-action-plan-terms-2024-07-26',
+  'gov-ai-opportunities-action-plan'
+]);
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === actionPlanDevelopment.surface_id)),
+  'the development predecessor must never create an actor hop');
+const developmentActors = actionPlanDevelopment.participants.filter(part => part.participant_type === 'actor').map(part => part.actor_id);
+assert.deepEqual(developmentActors, ['matt-clifford']);
+
+const termsReceipt = receipt('gov-ai-opportunities-action-plan-terms-2024-07-26');
+assert.ok(termsReceipt, 'the exact dated commission receipt must exist');
+assert.equal(termsReceipt.path, 'receipts/topology/gov-ai-opportunities-action-plan-terms-2024-07-26.md');
+assert.equal(termsReceipt.source_published_at, '2024-07-26');
+assert.equal(termsReceipt.event_date, '2024-07-26');
+assert.equal(receipt('gov-ai-opportunities-action-plan').source_published_at, '2025-01-13');
+assert.equal(receipt('gov-pm-ai-blueprint-2025').source_published_at, '2025-01-12');
+assert.equal(receipt('gov-pm-ai-blueprint-2025').source_updated_at, '2025-01-13');
+assert.equal(receipt('gov-pm-ai-blueprint-2025').event_date, '2025-01-13');
+
+// The actor-to-actor answer rests only on the one-day publication and response surface.
 const starmerClifford = hop.edges.find(e =>
   [e.actor_a, e.actor_b].sort().join('|') === 'keir-starmer|matt-clifford');
-assert.ok(starmerClifford, 'Keir Starmer and Matt Clifford must connect through the dated Action Plan surface');
+assert.ok(starmerClifford, 'Keir Starmer and Matt Clifford must connect through the dated Action Plan response');
 const actionPlanBasis = starmerClifford.surfaces.find(s => s.surface_id === 'ai-opportunities-action-plan-2025');
-assert.ok(actionPlanBasis, 'Starmer/Clifford must name the Action Plan as the hop basis');
+assert.ok(actionPlanBasis, 'Starmer/Clifford must name the publication and response surface as the hop basis');
+assert.equal(actionPlanBasis.surface_label, 'AI Opportunities Action Plan publication and government response, 13 January 2025');
 assert.equal(actionPlanBasis.evidence_class, 'official');
 assert.equal(actionPlanBasis.valid_from, '2025-01-13');
 assert.equal(actionPlanBasis.valid_until, '2025-01-13');
-const actionPlanReceipts = new Set(actionPlanBasis.receipt_ids);
-assert.ok(actionPlanReceipts.has('gov-ai-opportunities-action-plan'));
-assert.ok(actionPlanReceipts.has('gov-pm-ai-blueprint-2025'));
+assert.deepEqual(actionPlanBasis.receipt_ids, ['gov-ai-opportunities-action-plan', 'gov-pm-ai-blueprint-2025']);
 const topology = buildAdjacency(hop.edges);
 assert.equal(shortestPath(topology, 'keir-starmer', 'matt-clifford', { asOf: '2025-01-13' }).number, 1);
 assert.equal(shortestPath(topology, 'keir-starmer', 'matt-clifford', { asOf: '2025' }).number, 1);
 assert.equal(
   shortestPath(topology, 'keir-starmer', 'matt-clifford', { asOf: '2025-01-12' }).number,
   null,
-  'before the dated government response the corpus must refuse a Starmer/Clifford path'
+  'the source publication date is not the event date and must not create a 12 January path'
 );
 assert.equal(
   shortestPath(topology, 'keir-starmer', 'matt-clifford', { asOf: '2024' }).number,
   null,
-  'the commission period alone must not manufacture Starmer participation'
+  'the commission and development surface must not manufacture Starmer participation'
 );
 
 // Disjoint dated participations on the same surface must NOT hop. Rosenfield

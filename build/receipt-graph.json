@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-11T10:52:34.966Z",
+  "generated": "2026-08-11T12:31:17.874Z",
   "receipts": [
     {
       "receipt_id": "master-doc-v3",
@@ -174,12 +174,36 @@
       }
     },
     {
+      "receipt_id": "gov-ai-opportunities-action-plan-terms-2024-07-26",
+      "label": "GOV.UK — AI Opportunities Action Plan terms of reference (26 Jul 2024)",
+      "source_type": "official_source_extract",
+      "evidence_class": "official",
+      "path": "receipts/topology/gov-ai-opportunities-action-plan-terms-2024-07-26.md",
+      "source_url": "https://www.gov.uk/government/publications/artificial-intelligence-ai-opportunities-action-plan-terms-of-reference/artificial-intelligence-ai-opportunities-action-plan-terms-of-reference",
+      "publisher": "Department for Science, Innovation and Technology",
+      "source_published_at": "2024-07-26",
+      "event_date": "2024-07-26",
+      "retrieved_at": "2026-08-11",
+      "notes": "Structured extract of the official terms of reference. It supports the exact commission date, Matt Clifford lead role, DSIT support role, and planned publication. It does not support Keir Starmer participation before the separately receipted government response.",
+      "archive": {
+        "method": "in_repo_content_hash",
+        "ref": "sha256:52ead48f09acdfd37f9b25e21334b64d40ca312d77448bb67793ef5a92c7f859",
+        "captured": "2026-08-11",
+        "checked": "2026-08-11",
+        "note": "Hash covers the in-repo structured extract; source_url preserves the official page."
+      }
+    },
+    {
       "receipt_id": "gov-ai-opportunities-action-plan",
-      "label": "GOV.UK — AI Opportunities Action Plan (13 Jan 2025) and Clifford commission (26 Jul 2024)",
+      "label": "GOV.UK — AI Opportunities Action Plan (13 Jan 2025)",
       "source_type": "official_reference",
       "evidence_class": "official",
       "path": "https://www.gov.uk/government/publications/ai-opportunities-action-plan/ai-opportunities-action-plan",
-      "notes": "Official publication and commissioning of the Clifford-authored Action Plan.",
+      "publisher": "Department for Science, Innovation and Technology",
+      "source_published_at": "2025-01-13",
+      "event_date": "2025-01-13",
+      "retrieved_at": "2026-08-11",
+      "notes": "Official publication identifies Matt Clifford as the Action Plan lead and contains the fifty recommendations. It does not establish the exact July 2024 commission date; that date is carried by the separate terms-of-reference receipt.",
       "archive": {
         "method": "internet_archive",
         "ref": "http://web.archive.org/web/20260625150104/https://www.gov.uk/government/publications/ai-opportunities-action-plan/ai-opportunities-action-plan",
@@ -273,11 +297,16 @@
     },
     {
       "receipt_id": "gov-pm-ai-blueprint-2025",
-      "label": "GOV.UK — Prime Minister sets out blueprint to turbocharge AI (13 Jan 2025)",
+      "label": "GOV.UK — Prime Minister sets out blueprint to turbocharge AI",
       "source_type": "official_reference",
       "evidence_class": "official",
       "path": "https://www.gov.uk/government/news/prime-minister-sets-out-blueprint-to-turbocharge-ai",
-      "notes": "PM Keir Starmer agrees to take forward all 50 recommendations of the Matt Clifford-authored AI Opportunities Action Plan; Clifford named adviser to the PM on AI opportunities.",
+      "publisher": "Prime Minister's Office, 10 Downing Street",
+      "source_published_at": "2025-01-12",
+      "source_updated_at": "2025-01-13",
+      "event_date": "2025-01-13",
+      "retrieved_at": "2026-08-11",
+      "notes": "The page was published on 12 January 2025, updated on 13 January, and describes the 13 January government announcement taking forward all fifty recommendations. The event date, source publication date, and source update date remain separate.",
       "archive": {
         "method": "internet_archive",
         "ref": "http://web.archive.org/web/20260626131707/https://www.gov.uk/government/news/prime-minister-sets-out-blueprint-to-turbocharge-ai",
@@ -516,9 +545,9 @@
     },
     {
       "claim_id": "ai-opportunities-action-plan-clifford-commission-2024-07-26",
-      "text": "The UK government commissioned Matt Clifford to lead the AI Opportunities Action Plan on 26 July 2024.",
+      "text": "The UK government terms of reference published on 26 July 2024 identify Matt Clifford as the person leading development of the AI Opportunities Action Plan.",
       "receipt_ids": [
-        "gov-ai-opportunities-action-plan"
+        "gov-ai-opportunities-action-plan-terms-2024-07-26"
       ],
       "evidence_class": "official",
       "actor_ids": [
@@ -528,14 +557,15 @@
         "dsit"
       ],
       "surface_ids": [
-        "ai-opportunities-action-plan-2025"
+        "ai-opportunities-action-plan-development-2024-2025"
       ],
       "date": "2024-07-26"
     },
     {
       "claim_id": "ai-opportunities-action-plan-starmer-adoption-2025-01-13",
-      "text": "On 13 January 2025, the official Prime Minister announcement said the government would take forward all 50 recommendations of the Matt Clifford-authored AI Opportunities Action Plan.",
+      "text": "On 13 January 2025, the official government response said all fifty recommendations of the Matt Clifford-led AI Opportunities Action Plan would be taken forward.",
       "receipt_ids": [
+        "gov-ai-opportunities-action-plan",
         "gov-pm-ai-blueprint-2025"
       ],
       "evidence_class": "official",
@@ -618,6 +648,13 @@
       "surface_id": "team-barrow-public-private-fund-2026",
       "receipt_ids": [
         "master-doc-v3"
+      ]
+    },
+    {
+      "surface_id": "ai-opportunities-action-plan-development-2024-2025",
+      "receipt_ids": [
+        "gov-ai-opportunities-action-plan-terms-2024-07-26",
+        "gov-ai-opportunities-action-plan"
       ]
     },
     {
@@ -907,10 +944,33 @@
       ]
     },
     {
+      "surface_id": "ai-opportunities-action-plan-development-2024-2025",
+      "participant_id": "matt-clifford",
+      "receipt_ids": [
+        "gov-ai-opportunities-action-plan-terms-2024-07-26",
+        "gov-ai-opportunities-action-plan"
+      ]
+    },
+    {
+      "surface_id": "ai-opportunities-action-plan-development-2024-2025",
+      "participant_id": "dsit",
+      "receipt_ids": [
+        "gov-ai-opportunities-action-plan-terms-2024-07-26",
+        "gov-ai-opportunities-action-plan"
+      ]
+    },
+    {
       "surface_id": "ai-opportunities-action-plan-2025",
       "participant_id": "matt-clifford",
       "receipt_ids": [
         "gov-ai-opportunities-action-plan",
+        "gov-pm-ai-blueprint-2025"
+      ]
+    },
+    {
+      "surface_id": "ai-opportunities-action-plan-2025",
+      "participant_id": "keir-starmer",
+      "receipt_ids": [
         "gov-pm-ai-blueprint-2025"
       ]
     },
@@ -1911,13 +1971,6 @@
       "participant_id": "mod",
       "receipt_ids": [
         "gov-sdr-terms-of-reference"
-      ]
-    },
-    {
-      "surface_id": "ai-opportunities-action-plan-2025",
-      "participant_id": "keir-starmer",
-      "receipt_ids": [
-        "gov-pm-ai-blueprint-2025"
       ]
     }
   ]

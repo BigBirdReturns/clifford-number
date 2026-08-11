@@ -10,19 +10,63 @@
     "adjudication_boundary": "Canonical hop eligibility controls only the asserted Clifford Number graph. It does not control discovery visibility."
   },
   "rendering_legend": [
-    { "evidence_state": "official", "line_style": "solid_heavy", "visible": true },
-    { "evidence_state": "primary_public", "line_style": "solid", "visible": true },
-    { "evidence_state": "reported", "line_style": "dashed", "visible": true },
-    { "evidence_state": "self_claimed", "line_style": "dash_dot", "visible": true },
-    { "evidence_state": "inferred", "line_style": "dotted", "visible": true },
-    { "evidence_state": "disputed_or_contradicted", "line_style": "split_warning", "visible": true },
-    { "evidence_state": "unavailable_or_not_searched", "line_style": "ghost_open", "visible": true }
+    {
+      "evidence_state": "official",
+      "line_style": "solid_heavy",
+      "visible": true
+    },
+    {
+      "evidence_state": "primary_public",
+      "line_style": "solid",
+      "visible": true
+    },
+    {
+      "evidence_state": "reported",
+      "line_style": "dashed",
+      "visible": true
+    },
+    {
+      "evidence_state": "self_claimed",
+      "line_style": "dash_dot",
+      "visible": true
+    },
+    {
+      "evidence_state": "inferred",
+      "line_style": "dotted",
+      "visible": true
+    },
+    {
+      "evidence_state": "disputed_or_contradicted",
+      "line_style": "split_warning",
+      "visible": true
+    },
+    {
+      "evidence_state": "unavailable_or_not_searched",
+      "line_style": "ghost_open",
+      "visible": true
+    }
   ],
   "authoritative_boundary": {
-    "surface_ledger": ["data/ledger/surfaces.jsonl", "data/ledger/participation.jsonl"],
-    "compiled_topology": ["build/hop-graph.json", "build/scores.json"],
-    "trump_office_business_pipeline": ["data/canonical/us-presidential-officeholder-cohort.json", "data/research/presidential-disclosure-source-coverage.json", "data/research/trump-2016-candidate-disclosure-manifest.json"],
-    "excluded_as_findings": ["legacy graph exports", "import queues", "intake-only probes", "name-only overlap candidates", "dense roster co-listing"]
+    "surface_ledger": [
+      "data/ledger/surfaces.jsonl",
+      "data/ledger/participation.jsonl"
+    ],
+    "compiled_topology": [
+      "build/hop-graph.json",
+      "build/scores.json"
+    ],
+    "trump_office_business_pipeline": [
+      "data/canonical/us-presidential-officeholder-cohort.json",
+      "data/research/presidential-disclosure-source-coverage.json",
+      "data/research/trump-2016-candidate-disclosure-manifest.json"
+    ],
+    "excluded_as_findings": [
+      "legacy graph exports",
+      "import queues",
+      "intake-only probes",
+      "name-only overlap candidates",
+      "dense roster co-listing"
+    ]
   },
   "cross_corpus_infrastructure": {
     "path": "data/research/clifford-cross-corpus-public-interest-map.json",
@@ -51,9 +95,9 @@
   "principals": {
     "matt-clifford": {
       "corpus_role": "surface-ledger anchor",
-      "scorable_surface_count": 2,
+      "scorable_surface_count": 3,
       "hop_eligible_surface_count": 1,
-      "supported_summary": "The ledger supports Clifford's official AI Opportunities Action Plan role. His Dialog listing is scorable context but not hop-eligible; a prior unsupported Faculty-investor participation has been removed.",
+      "supported_summary": "The ledger supports Clifford's official Action Plan development role and the separately bounded publication-and-response hop to Keir Starmer. His Dialog listing remains scorable context but not hop-eligible; a prior unsupported Faculty-investor participation remains excluded.",
       "prohibited_extension": "Policy authorship or roster listing does not transfer participation into unrelated procurement, capital, or political surfaces."
     },
     "peter-thiel": {
@@ -79,15 +123,27 @@
       "outcome_id": "clifford-starmer-action-plan",
       "evidence_layer": "authoritative_surface_ledger",
       "status": "official_direct_policy_hop",
-      "path": ["matt-clifford", "ai-opportunities-action-plan-2025", "keir-starmer"],
-      "outcome": "Clifford was commissioned to author the AI Opportunities Action Plan; Starmer agreed to take forward all 50 recommendations and Clifford was named the Prime Minister's AI Opportunities Adviser.",
-      "receipt_ids": ["gov-ai-opportunities-action-plan", "gov-pm-ai-blueprint-2025"]
+      "path": [
+        "matt-clifford",
+        "ai-opportunities-action-plan-2025",
+        "keir-starmer"
+      ],
+      "outcome": "Official records place Clifford on the Action Plan commission and development work, then place Clifford and Starmer together only on the 13 January 2025 publication and government-response surface where the government said it would take forward all 50 recommendations.",
+      "receipt_ids": [
+        "gov-ai-opportunities-action-plan-terms-2024-07-26",
+        "gov-ai-opportunities-action-plan",
+        "gov-pm-ai-blueprint-2025"
+      ]
     },
     {
       "outcome_id": "action-plan-state-capacity-program",
       "evidence_layer": "official_document_research_layer",
       "status": "documented_policy_program",
-      "path": ["matt-clifford", "AI Opportunities Action Plan", "UK government implementation program"],
+      "path": [
+        "matt-clifford",
+        "AI Opportunities Action Plan",
+        "UK government implementation program"
+      ],
       "outcome": "The plan recommends sovereign compute, AI Growth Zones, a National Data Library, procurement reform, government as a strategic AI customer, domestic AI champions, and deeper national-security collaboration.",
       "interpretation_limit": "These are documented recommendations and government commitments; each downstream implementation, beneficiary, contract, or causal effect requires its own receipt."
     },
@@ -95,7 +151,10 @@
       "outcome_id": "thiel-palantir-governance",
       "evidence_layer": "primary_public_research_layer",
       "status": "documented_organizational_link",
-      "path": ["peter-thiel", "Palantir"],
+      "path": [
+        "peter-thiel",
+        "Palantir"
+      ],
       "outcome": "Repository research records Thiel as a Palantir co-founder and chair since 2003.",
       "interpretation_limit": "The generic governance role does not establish personal control of a particular subsidiary, award, procurement decision, or government action."
     },
@@ -103,7 +162,10 @@
       "outcome_id": "palantir-state-procurement-footprint",
       "evidence_layer": "official_plus_reported_research_layer",
       "status": "documented_procurement_and_deployment_footprint",
-      "path": ["Palantir", "Maven / Army enterprise agreement / NATO deployment"],
+      "path": [
+        "Palantir",
+        "Maven / Army enterprise agreement / NATO deployment"
+      ],
       "outcome": "The corpus records a reported $480 million Maven prototype, Maven becoming a program of record, an Army enterprise agreement up to $10 billion over ten years, and NATO supply.",
       "interpretation_limit": "These records establish Palantir's state-facing footprint, not that Clifford, Starmer, or Thiel caused any particular award."
     },
@@ -111,16 +173,26 @@
       "outcome_id": "palantir-detachment-201",
       "evidence_layer": "authoritative_surface_ledger",
       "status": "official_personnel_continuity_surface",
-      "path": ["Palantir", "Shyam Sankar", "US Army Detachment 201"],
+      "path": [
+        "Palantir",
+        "Shyam Sankar",
+        "US Army Detachment 201"
+      ],
       "outcome": "Palantir CTO and EVP Shyam Sankar was commissioned into the Army's Detachment 201 technology-modernization channel alongside executives from other major technology companies.",
-      "receipt_ids": ["army-detachment-201"],
+      "receipt_ids": [
+        "army-detachment-201"
+      ],
       "interpretation_limit": "This is a Palantir-Army personnel surface, not a Peter Thiel appointment or a Clifford hop."
     },
     {
       "outcome_id": "palantir-electric-twin-capital",
       "evidence_layer": "reported_surface_ledger",
       "status": "reported_cross_surface_capital_link",
-      "path": ["Louis Mosley (Palantir EVP)", "angel investment", "Electric Twin"],
+      "path": [
+        "Louis Mosley (Palantir EVP)",
+        "angel investment",
+        "Electric Twin"
+      ],
       "outcome": "The ledger records Louis Mosley, identified as a Palantir EVP, as a reported Electric Twin angel investor; Electric Twin was founded by former No. 10 personnel and commercializes synthetic-audience infrastructure.",
       "interpretation_limit": "This is a reported person-to-company investment and occupational descriptor, not Palantir corporate investment, Thiel control, or Clifford coordination."
     },
@@ -128,7 +200,11 @@
       "outcome_id": "clifford-thiel-dialog-context",
       "evidence_layer": "authoritative_context_surface",
       "status": "real_contextual_bridge_non_hop",
-      "path": ["matt-clifford", "Dialog public directory", "peter-thiel"],
+      "path": [
+        "matt-clifford",
+        "Dialog public directory",
+        "peter-thiel"
+      ],
       "outcome": "Clifford is listed in Dialog's public directory while Thiel is reported as a co-founder.",
       "interpretation_limit": "The directory does not prove attendance, a bilateral relationship, agreement, transaction, or coordination."
     }
@@ -137,21 +213,34 @@
     {
       "trail_id": "policy-to-state-capacity-to-procurement-market",
       "status": "structural_corridor_with_open_join",
-      "trail": ["Clifford-authored Action Plan", "Starmer government adoption", "state AI capacity and procurement agenda", "AI and defense supplier market including Palantir"],
+      "trail": [
+        "Clifford-authored Action Plan",
+        "Starmer government adoption",
+        "state AI capacity and procurement agenda",
+        "AI and defense supplier market including Palantir"
+      ],
       "what_survives": "The policy origin, government adoption, recommended state-capacity mechanisms, and Palantir's large state-facing footprint are separately documented outcomes.",
       "open_join": "The corpus does not yet identify a named Action Plan implementation contract, decision, or vehicle that joins Clifford or Starmer specifically to Palantir."
     },
     {
       "trail_id": "thiel-palantir-state-channel",
       "status": "organizational_chain_with_control_limit",
-      "trail": ["Peter Thiel", "Palantir governance", "Palantir procurement and military-personnel channels"],
+      "trail": [
+        "Peter Thiel",
+        "Palantir governance",
+        "Palantir procurement and military-personnel channels"
+      ],
       "what_survives": "Thiel's organizational role and Palantir's government-facing outcomes are documented in separate repository layers.",
       "open_join": "A governance role cannot be transferred into personal authorship, control, or causation of individual contracts or appointments."
     },
     {
       "trail_id": "clifford-thiel-convening-context",
       "status": "contextual_overlap_only",
-      "trail": ["Clifford directory listing", "Dialog", "Thiel co-founder role"],
+      "trail": [
+        "Clifford directory listing",
+        "Dialog",
+        "Thiel co-founder role"
+      ],
       "what_survives": "There is a real shared institutional context.",
       "open_join": "There is no receipted bilateral interaction or material co-participation event."
     }
@@ -229,7 +318,10 @@
   "evaluated_paths": [
     {
       "path_id": "clifford-faculty-investor",
-      "candidate_path": ["matt-clifford", "faculty-investor-employee-2015-2019"],
+      "candidate_path": [
+        "matt-clifford",
+        "faculty-investor-employee-2015-2019"
+      ],
       "disposition": "blocked_unrecoverable_receipt",
       "surviving_fact": "The repository formerly encoded Clifford as a reported Faculty investor.",
       "failed_gate": "independent_receipt_support",
@@ -237,7 +329,11 @@
     },
     {
       "path_id": "clifford-thiel-dialog-roster",
-      "candidate_path": ["matt-clifford", "dialog-society-membership", "peter-thiel"],
+      "candidate_path": [
+        "matt-clifford",
+        "dialog-society-membership",
+        "peter-thiel"
+      ],
       "disposition": "context_only_no_hop",
       "surviving_fact": "Both actors are listed on the bounded Dialog roster surface, with different stated roles.",
       "failed_gate": "eligible_bounded_surface_or_transaction",
@@ -245,7 +341,12 @@
     },
     {
       "path_id": "clifford-thiel-capital-policy",
-      "candidate_path": ["matt-clifford", "UK AI policy or Entrepreneur First", "Thiel-linked fund or company", "peter-thiel"],
+      "candidate_path": [
+        "matt-clifford",
+        "UK AI policy or Entrepreneur First",
+        "Thiel-linked fund or company",
+        "peter-thiel"
+      ],
       "disposition": "not_established_in_existing_corpus",
       "surviving_fact": "Separate Clifford policy/venture roles and Thiel fund/company roles are represented in repository materials.",
       "failed_gate": "source_explicit_material_predicate",
@@ -253,7 +354,11 @@
     },
     {
       "path_id": "thiel-trump-material-crossing",
-      "candidate_path": ["peter-thiel", "capital, company, campaign, appointment, or contract", "donald-trump"],
+      "candidate_path": [
+        "peter-thiel",
+        "capital, company, campaign, appointment, or contract",
+        "donald-trump"
+      ],
       "disposition": "not_established_in_existing_corpus",
       "surviving_fact": "The repository contains separate Thiel topology material and Trump officeholder/disclosure pipelines.",
       "failed_gate": "exact_person_or_legal_entity_identity",
@@ -261,7 +366,11 @@
     },
     {
       "path_id": "clifford-trump-material-crossing",
-      "candidate_path": ["matt-clifford", "policy, capital, campaign, appointment, or contract", "donald-trump"],
+      "candidate_path": [
+        "matt-clifford",
+        "policy, capital, campaign, appointment, or contract",
+        "donald-trump"
+      ],
       "disposition": "not_established_in_existing_corpus",
       "surviving_fact": "Both principals have separately bounded public-interest records in different corpus lanes.",
       "failed_gate": "eligible_bounded_surface_or_transaction",
@@ -269,7 +378,11 @@
     },
     {
       "path_id": "clifford-thiel-trump-triple",
-      "candidate_path": ["matt-clifford", "peter-thiel", "donald-trump"],
+      "candidate_path": [
+        "matt-clifford",
+        "peter-thiel",
+        "donald-trump"
+      ],
       "disposition": "no_material_three_person_path_in_existing_corpus",
       "surviving_fact": "The corpus supports separate public roles, a Clifford-Thiel roster co-listing, and a Trump disclosure pipeline.",
       "failed_gate": "source_explicit_material_predicate",
