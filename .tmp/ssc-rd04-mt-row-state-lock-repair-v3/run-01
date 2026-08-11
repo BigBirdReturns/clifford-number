@@ -1,0 +1,44 @@
+test "$(git diff --name-only "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_CARRIER"
+test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_CARRIER"
+'''
+new_auth = '''EXPECTED_CARRIER="$(printf '%s\\n' "$CARRIER_PATH" "$RUN_PART_ROOT/run-00" "$RUN_PART_ROOT/run-01" "$RUN_PART_ROOT/run-02" "$RUN_PART_ROOT/run-03" | LC_ALL=C sort)"
+test "$(git diff --name-only "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_CARRIER"
+test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_CARRIER"
+'''
+if s.count(old_auth) != 1:
+    raise SystemExit(f'carrier-auth denominator {s.count(old_auth)}')
+s = s.replace(old_auth, new_auth, 1)
+
+target_absence = 'test -z "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH")"\n'
+if s.count(target_absence) != 1:
+    raise SystemExit(f'target-absence denominator {s.count(target_absence)}')
+s = s.replace(
+    target_absence,
+    target_absence + 'test -z "$(git ls-remote --heads origin "$QUALIFIED_PRODUCT_REF")"\n',
+    1,
+)
+
+marker = 'printf \'%s\\n\' qualify > "$OUT/STAGE"\n'
+if s.count(marker) != 1:
+    raise SystemExit(f'qualification marker denominator {s.count(marker)}')
+
+lock_patch = r"""python - <<'PYLOCK'
+import hashlib,json,os
+from pathlib import Path
+
+root=Path.cwd()
+wf=root/os.environ['WORKFLOW_PATH']
+vp=root/'tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.mjs'
+tp=root/'test/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.test.js'
+mp=root/os.environ['MANIFEST_PATH']
+qualified_ref=os.environ['QUALIFIED_PRODUCT_REF']
+
+text=wf.read_text()
+env_anchor='  PREDECESSOR_MATRIX_BLOB: 6ba11a6025021e9df8ac6535be8c42499654c233\n'
+if text.count(env_anchor)!=1:
+    raise SystemExit(f'workflow qualification-ref env denominator {text.count(env_anchor)}')
+text=text.replace(env_anchor,env_anchor+f'  QUALIFIED_PRODUCT_REF: {qualified_ref}\n',1)
+
+event_anchor='''          fi
+
+          test "$(git show -s --format='%P' "$PRODUCT_COMMIT")" = "$CANONICAL_PARENT"

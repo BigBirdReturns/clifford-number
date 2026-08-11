@@ -1,0 +1,29 @@
+set -Eeuo pipefail
+test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"
+EXPECTED_CARRIER="$(printf '%s\n' "$CARRIER_PATH" "$RUN_PART_ROOT/run-00" "$RUN_PART_ROOT/run-01" "$RUN_PART_ROOT/run-02" "$RUN_PART_ROOT/run-03" | LC_ALL=C sort)"
+test "$(git diff --name-only "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_CARRIER"
+test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD | LC_ALL=C sort)" = "$EXPECTED_CARRIER"
+test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" HEAD)"
+git diff --check "$CANONICAL_PARENT" HEAD
+git fetch --no-tags --force origin \
+  "+refs/heads/$SOURCE_PROGRAM_BRANCH:refs/remotes/origin/source-program" \
+  '+refs/heads/main:refs/remotes/origin/main'
+test "$(git rev-parse refs/remotes/origin/source-program)" = "$SOURCE_PROGRAM_COMMIT"
+test "$(git show -s --format='%P' "$SOURCE_PROGRAM_COMMIT")" = "$SOURCE_PROGRAM_PARENT"
+test "$(git rev-parse "refs/remotes/origin/source-program:$SOURCE_PROGRAM_PART_ROOT/part-00")" = "$SOURCE_PART_00_BLOB"
+test "$(git rev-parse "refs/remotes/origin/source-program:$SOURCE_PROGRAM_PART_ROOT/part-01")" = "$SOURCE_PART_01_BLOB"
+test "$(git rev-parse "refs/remotes/origin/source-program:$SOURCE_PROGRAM_PART_ROOT/part-02")" = "$SOURCE_PART_02_BLOB"
+test "$(git rev-parse "refs/remotes/origin/source-program:$SOURCE_PROGRAM_PART_ROOT/part-03")" = "$SOURCE_PART_03_BLOB"
+for n in 00 01 02 03; do
+  git show "refs/remotes/origin/source-program:$SOURCE_PROGRAM_PART_ROOT/part-$n" > "/tmp/mt-object-part-$n"
+done
+cat /tmp/mt-object-part-00 /tmp/mt-object-part-01 /tmp/mt-object-part-02 /tmp/mt-object-part-03 > /tmp/materialize.sh
+test "$(sha256sum /tmp/materialize.sh | awk '{print $1}')" = "$SOURCE_PROGRAM_SHA256"
+python - /tmp/materialize.sh <<'PYPATCH'
+from pathlib import Path
+import sys
+
+p = Path(sys.argv[1])
+s = p.read_text(encoding='utf-8')
+
+old_auth = '''EXPECTED_CARRIER="$(printf '%s\\n' "$CARRIER_PATH" "$PART_ROOT/part-00" "$PART_ROOT/part-01" "$PART_ROOT/part-02" "$PART_ROOT/part-03" | LC_ALL=C sort)"
