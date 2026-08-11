@@ -1,6 +1,11 @@
 name: TEMP rebuild exact Montana V3 post-merge observer history
 
 on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-rebuild-ssc-rd04-mt-v3-postmerge-v2-history.yml'
   push:
     branches:
       - agent/ssc-rd04-mt-v3-postmerge-v2-history-rebuilder
