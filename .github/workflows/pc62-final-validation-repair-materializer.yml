@@ -16,21 +16,21 @@ concurrency:
 env:
   GH_TOKEN: ${{ github.token }}
   GH_REPOSITORY: ${{ github.repository }}
-  SOURCE_PRODUCT: 'a45823ea9cdf8e587472a9ee116cf8487a65fb97'
-  SOURCE_LIBRARY_BLOB: 'e1b853f4dc71b8e102a5517df6ccf5834fc22d6e'
-  SOURCE_LIBRARY_SHA256: '82c57ac5685fd7a851a840b6c11827034ec8e56ef1d91632efc13d5d4c8cd3c4'
-  SOURCE_TEST_BLOB: '034bf4a4dde5cf074d01e4430cd3a6d78b6125c8'
-  SOURCE_TEST_SHA256: 'ddf4184b158b4f7df6fa9111e9501bdef224c28c857112ad064bac068e71bf62'
-  LIBRARY_PATCH_BLOB: 'ad7d83b5a0a07609ea97448a73f545574c419b16'
-  LIBRARY_PATCH_SHA256: 'bb0894424083a85f56105cf84dc91b44868b2304b068ecfa31d579bde81b9e8d'
-  TEST_PATCH_BLOB: '9be3f81e8554c407342c7989952f236f62732446'
-  TEST_PATCH_SHA256: '0c36fbc7b2c62efc4d93e616fe6afc72ece7bebbde6acf64a1814de13d816f04'
-  REPAIRED_LIBRARY_BLOB: 'a7692f871d546ba3f16cfd4bdfa6842e7c246d9e'
-  REPAIRED_LIBRARY_SHA256: '7269818ec94da0a642aed072496466ad0c81f53bf9cfd25d7f064bb02f46d67b'
-  REPAIRED_LIBRARY_BYTES: '33375'
-  REPAIRED_TEST_BLOB: '4633de4e3df3b0286f76d3676738d1af22145ca3'
-  REPAIRED_TEST_SHA256: 'feeafa0f36916997540f4a3d6fae4bfe9ac22d04349ca6a3e678ad53faccd480'
-  REPAIRED_TEST_BYTES: '9034'
+  SOURCE_PRODUCT: '3df0391ed6fb30240423c7df3aa721479668903a'
+  SOURCE_LIBRARY_BLOB: 'a7692f871d546ba3f16cfd4bdfa6842e7c246d9e'
+  SOURCE_LIBRARY_SHA256: '7269818ec94da0a642aed072496466ad0c81f53bf9cfd25d7f064bb02f46d67b'
+  SOURCE_TEST_BLOB: '4633de4e3df3b0286f76d3676738d1af22145ca3'
+  SOURCE_TEST_SHA256: 'feeafa0f36916997540f4a3d6fae4bfe9ac22d04349ca6a3e678ad53faccd480'
+  LIBRARY_PATCH_BLOB: '817eff2294ffb9b5c0dd8bf2f4958b54cd03544b'
+  LIBRARY_PATCH_SHA256: '5282a00fe9c8653240fb98e13c5193ca1ed6a6c7c2b280cbae4baf38cf1f3077'
+  TEST_PATCH_BLOB: 'adc45eee95c98896090b56d765326d653a6012a8'
+  TEST_PATCH_SHA256: 'c93275a5ed8509e9f6084258a20bfcd705450e9d1ed649c2429d6a2a2193f5a4'
+  REPAIRED_LIBRARY_BLOB: '073998e98e15aa033489097fd864944ac005613b'
+  REPAIRED_LIBRARY_SHA256: '51dbe5fd8982aec435145435331fde898ee84eca5d4de0568a67c7cdd3189c58'
+  REPAIRED_LIBRARY_BYTES: '33500'
+  REPAIRED_TEST_BLOB: 'cd4e3304645dd6e76a0b92ca4e34ef711ebe2457'
+  REPAIRED_TEST_SHA256: 'a590770f193d49c90ff3768cfb837c691b28d94e0c22718ef19d1ce5179b03de'
+  REPAIRED_TEST_BYTES: '9470'
   OUT: '/tmp/pc62-final-validation-repair'
   REPLAY: '/tmp/pc62-final-validation-replay'
 
@@ -47,7 +47,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Authenticate sources, apply exact final repair, and publish blobs
+      - name: Authenticate sources, apply exact build-world guard, and publish blobs
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -98,7 +98,7 @@ jobs:
             node tools/validate-no-magic-human-gate.mjs
             node test/no-magic-human-gate.test.js
           } 2>&1 | tee "$OUT/focused-replay.log"
-          grep -Fq 'PC-62 fixture mutations rejected: 61' "$OUT/focused-replay.log"
+          grep -Fq 'PC-62 fixture mutations rejected: 62' "$OUT/focused-replay.log"
           test "$(git -C "$REPLAY" hash-object tools/lib/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs)" = "$REPAIRED_LIBRARY_BLOB"
           test "$(git -C "$REPLAY" hash-object test/preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.test.js)" = "$REPAIRED_TEST_BLOB"
 
@@ -111,7 +111,7 @@ jobs:
           publish_blob "$OUT/after/standalone-lib.mjs" "$REPAIRED_LIBRARY_BLOB" "$OUT/api/publish-library.json"
           publish_blob "$OUT/after/standalone-test.js" "$REPAIRED_TEST_BLOB" "$OUT/api/publish-test.json"
 
-          jq -n --arg schema_version 'pc62-final-validation-repair-materializer@2' --arg source_product "$SOURCE_PRODUCT" --arg library_blob "$REPAIRED_LIBRARY_BLOB" --arg library_sha256 "sha256:$REPAIRED_LIBRARY_SHA256" --arg test_blob "$REPAIRED_TEST_BLOB" --arg test_sha256 "sha256:$REPAIRED_TEST_SHA256" '{schema_version:$schema_version,status:"complete",source_product:$source_product,repaired_blobs:{library:{blob:$library_blob,sha256:$library_sha256},test:{blob:$test_blob,sha256:$test_sha256}},adversarial_mutations:61,non_extensible_web_exotic_mutations:2,malformed_world_shape_mutations:2,validator_returns_error_ledger:true,complete_fixture_path_exercised:true,canonical_json_requires_extensible_containers:true,no_magic_human:true,floor_v60_full_replay_required_at_exact_product_head:true,product_semantics_changed:false,graph_effect:"none"}' > "$OUT/receipt.json"
+          jq -n --arg schema_version 'pc62-final-validation-repair-materializer@3' --arg source_product "$SOURCE_PRODUCT" --arg library_blob "$REPAIRED_LIBRARY_BLOB" --arg library_sha256 "sha256:$REPAIRED_LIBRARY_SHA256" --arg test_blob "$REPAIRED_TEST_BLOB" --arg test_sha256 "sha256:$REPAIRED_TEST_SHA256" '{schema_version:$schema_version,status:"complete",source_product:$source_product,repaired_blobs:{library:{blob:$library_blob,sha256:$library_sha256},test:{blob:$test_blob,sha256:$test_sha256}},adversarial_mutations:62,malformed_build_world_shape_mutations:1,validator_returns_error_ledger:true,complete_build_path_exercised:true,no_magic_human:true,floor_v60_full_replay_required_at_exact_product_head:true,product_semantics_changed:false,graph_effect:"none"}' > "$OUT/receipt.json"
           (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
       - name: Upload final validation repair receipt
         uses: actions/upload-artifact@v4
