@@ -1,0 +1,49 @@
+name: TEMP materialize Electric Twin funding boundary
+
+on:
+  push:
+    branches:
+      - agent/electric-twin-funding-boundary
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/electric-twin-funding-boundary
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Materialize bounded funding and director surfaces
+        run: python .github/materialize-electric-twin-funding-boundary.py mutate
+      - name: Rebuild topology
+        run: npm run compile
+      - name: Reconcile derived public counters
+        run: python .github/materialize-electric-twin-funding-boundary.py reconcile
+      - name: Validate the exact public release
+        run: npm run release:check
+      - name: Commit the transport-free product
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/temp-electric-twin-funding-boundary.yml .github/materialize-electric-twin-funding-boundary.py
+          git add -A
+          if git grep -n 'electric-twin-funding-surface-2023-2026' -- ':!test/compiler.test.js'; then
+            echo 'stale legacy funding-surface identifier remains outside the explicit retirement regression' >&2
+            exit 1
+          fi
+          for path in .github/workflows/temp-electric-twin-funding-boundary.yml .github/materialize-electric-twin-funding-boundary.py; do
+            if [ -e "$path" ] || git ls-files --error-unmatch "$path" >/dev/null 2>&1; then
+              echo "temporary transport remains present or tracked: $path" >&2
+              exit 1
+            fi
+          done
+          git diff --cached --check
+          git commit -m "topology: bound Electric Twin funding and director surfaces"
+          git push origin HEAD:agent/electric-twin-funding-boundary
