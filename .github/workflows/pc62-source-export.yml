@@ -1,0 +1,53 @@
+name: PC-62 exact source export
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/pc62-source-export.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pc62-source-export
+  cancel-in-progress: true
+
+jobs:
+  export:
+    if: github.event.pull_request.head.ref == 'agent/pc62-source-export-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+
+      - name: Export exact qualified main source
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT=/tmp/pc62-source-export
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          expected='bafb00ad4036be2d38cbeeee7573af9f9d10a2be'
+          observed=$(git rev-parse HEAD)
+          test "$observed" = "$expected"
+          tree=$(git rev-parse 'HEAD^{tree}')
+          git archive --format=tar.gz --output="$OUT/clifford-number-bafb00ad.tar.gz" HEAD
+          sha256sum "$OUT/clifford-number-bafb00ad.tar.gz" > "$OUT/SHA256SUMS"
+          printf '%s\n' "$observed" > "$OUT/commit.txt"
+          printf '%s\n' "$tree" > "$OUT/tree.txt"
+          git ls-tree -r --full-tree HEAD > "$OUT/tree-ledger.tsv"
+          jq -n --arg schema_version 'pc62-source-export@1' --arg commit "$observed" --arg tree "$tree" --arg archive 'clifford-number-bafb00ad.tar.gz' --arg digest "$(awk '{print "sha256:"$1}' "$OUT/SHA256SUMS")" '{schema_version:$schema_version,status:"complete",qualified_main:$commit,qualified_tree:$tree,archive:$archive,digest:$digest,graph_effect:"none",product_semantics_changed:false}' > "$OUT/receipt.json"
+
+      - name: Upload exact source export
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc62-source-export
+          path: /tmp/pc62-source-export
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
