@@ -1,0 +1,129 @@
+import { readFileSync } from 'node:fs';
+import {
+  loadPreferenceCustodyV58SourceBundle,
+  preferenceCustodyManifestV59Snapshot,
+  validateManifest as validatePreferenceCustodyManifestV59,
+  validateBuild as validatePreferenceCustodyManifestV59Build
+} from './preference-custody-manifest-v59.mjs';
+import {
+  BUILD_SCHEMA_VERSION as PC62_BUILD_SCHEMA_VERSION,
+  REQUIRED_REFUSAL_RULES as PC62_REFUSAL_RULES,
+  canonicalize,
+  sha256,
+  stableJson,
+  validateBuild as validatePC62Build,
+  validateCanonicalJsonValue,
+  validateFixture as validatePC62Fixture
+} from './preference-linkage-repository-owner-login-normalization-casefold-confusable-adjudication-assurance.mjs';
+
+export const MANIFEST_SCHEMA_VERSION = 'preference-custody-control-manifest-v60@1';
+export const BUILD_SCHEMA_VERSION = 'preference-custody-control-manifest-v60-build@1';
+export const V59_SOURCE_BUNDLE_SCHEMA_VERSION = 'preference-custody-v59-source-bundle@1';
+const EXPECTED_MANIFEST_SHA256 = 'be39860e77298f8680dedc8ccbdddbfd0dab53f246a6deecb5b47750166a5d8a';
+const RESOLVED_FRONTIER = 'linkage_interval_repository_owner_login_unicode_normalization_algorithm_casefold_locale_confusable_skeleton_and_collision_adjudication_governance';
+const SUCCESSOR_FRONTIERS = Object.freeze([
+  'linkage_interval_repository_owner_login_unicode_data_normalization_form_implementation_decomposition_composition_and_equivalence_class_governance',
+  'linkage_interval_repository_owner_login_casefold_locale_script_confusable_mapping_collision_exception_and_appeal_governance'
+]);
+const PRESERVED_ALIAS_NAMESPACE_FRONTIER = 'linkage_interval_repository_owner_login_alias_validity_rename_redirect_recycled_reserved_namespace_and_identity_reuse_governance';
+const PRESERVED_PROFILE_API_FRONTIER = 'linkage_interval_repository_owner_profile_api_url_canonicalization_redirect_endpoint_version_pairing_and_observation_time_governance';
+const PRESERVED_ACCOUNT_FRONTIER = 'linkage_interval_owner_account_type_active_suspended_deleted_ghost_restoration_site_admin_and_metadata_governance';
+const PRESERVED_SIBLINGS = Object.freeze([
+  'linkage_interval_owner_rename_event_predecessor_successor_timestamp_redirect_repository_owner_pair_and_transfer_continuity_governance',
+  'linkage_interval_repository_numeric_node_id_transfer_event_predecessor_successor_timestamp_redirect_and_namespace_governance',
+  'linkage_interval_repository_canonical_url_visibility_fork_parent_source_network_and_redirect_governance',
+  'linkage_interval_default_branch_tag_release_review_time_commit_ref_object_reachability_and_asset_identity_governance'
+]);
+
+const MANIFEST_KEYS = Object.freeze([
+  'schema_version', 'manifest_id', 'issue', 'control_issue', 'captured_at', 'status',
+  'graph_effect', 'counts_toward_thesis_evidence', 'base_floor', 'extension_control',
+  'identification_requirement', 'frontier_transition', 'preserved_alias_namespace_frontier',
+  'preserved_profile_api_frontier', 'preserved_account_frontier',
+  'real_case_requirements_added', 'prohibited_inferences', 'interpretation_contract'
+]);
+const BASE_KEYS = Object.freeze(['manifest_id', 'source_manifest_path', 'expected_build_schema', 'expected_control_count']);
+const EXTENSION_KEYS = Object.freeze([
+  'control_id', 'fixture_id', 'failure_class', 'source_fixture_path',
+  'build_artifact_path', 'expected_build_schema', 'required_refusal_rules'
+]);
+const IDENTIFICATION_KEYS = Object.freeze(['stage', 'required_state', 'refused_inference']);
+const TRANSITION_KEYS = Object.freeze(['resolved_base_frontier', 'successor_frontiers']);
+const INTERPRETATION_KEYS = Object.freeze(['contract_id', 'what_this_is', 'what_this_is_not', 'copy_ready_caveat']);
+const BUILD_KEYS = Object.freeze([
+  'schema_version', 'manifest_id', 'issue', 'control_issue', 'captured_at', 'status',
+  'graph_effect', 'counts_toward_thesis_evidence', 'conclusion_generated',
+  'real_world_evidence_state', 'control_count', 'controls', 'composition',
+  'control_integrity', 'identification_requirements', 'refusal_rule_union',
+  'open_frontiers', 'frontier_transition', 'preserved_alias_namespace_frontier',
+  'preserved_profile_api_frontier', 'preserved_account_frontier', 'promotion_boundary',
+  'custody_chain', 'custody_chain_head_sha256', 'prohibited_inferences', 'interpretation_contract'
+]);
+const COMPOSITION_KEYS = Object.freeze([
+  'base_manifest_id', 'base_schema_version', 'base_control_count', 'extension_control_id',
+  'manifest_snapshot_sha256', 'base_floor_snapshot_sha256', 'extension_snapshot_sha256',
+  'v59_source_bundle_schema_version', 'v59_source_bundle_sha256', 'base_controls_sha256',
+  'base_promotion_requirements_sha256', 'base_refusal_rule_union_sha256',
+  'base_identification_requirements_sha256', 'base_open_frontiers_sha256',
+  'base_prohibited_inferences_sha256', 'base_interpretation_contract_sha256',
+  'base_promotion_requirement_count', 'added_promotion_requirement_count',
+  'final_promotion_requirement_count', 'base_open_frontiers'
+]);
+const INTEGRITY_KEYS = Object.freeze([
+  'base_floor_qualified', 'base_integrity_preserved', 'v59_complete_source_bundle_bound',
+  'all_graph_effect_none', 'no_thesis_evidence_consumption', 'no_real_world_conclusion',
+  'no_preference_change_claim', 'no_intent_inference', 'no_security_compromise_claim',
+  'no_ownership_finding', 'no_impersonation_finding',
+  'all_required_pc62_refusal_rules_present', 'complete_normalization_collision_path_preserved',
+  'unicode_implementation_successor_preserved', 'casefold_confusable_successor_preserved',
+  'alias_namespace_frontier_preserved', 'profile_api_frontier_preserved',
+  'account_lifecycle_frontier_preserved', 'owner_rename_transfer_sibling_preserved',
+  'repository_transfer_event_sibling_preserved', 'canonical_location_fork_sibling_preserved',
+  'branch_tag_release_commit_sibling_preserved', 'all_unresolved_base_frontiers_preserved'
+]);
+const PROMOTION_KEYS = Object.freeze([
+  'promotion_authority', 'promotion_requirement_count', 'real_case_requires',
+  'laboratory_controls_are_real_world_evidence'
+]);
+
+const plain = value => value !== null
+  && typeof value === 'object'
+  && !Array.isArray(value)
+  && Object.getPrototypeOf(value) === Object.prototype;
+const unique = values => [...new Set(values)];
+function exactKeys(value, expected, label, errors) {
+  if (!plain(value)) {
+    errors.push(`${label} must be a plain object`);
+    return;
+  }
+  if (stableJson(Object.keys(value).sort()) !== stableJson([...expected].sort())) {
+    errors.push(`${label} key ledger mismatch`);
+  }
+}
+function isoDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+function seal(event, previous_event_sha256) {
+  const unsigned = { ...canonicalize(event), previous_event_sha256 };
+  return { ...unsigned, event_sha256: sha256(unsigned) };
+}
+function collectDates(value, label, output, seen = new WeakSet()) {
+  if (!value || typeof value !== 'object' || seen.has(value)) return;
+  seen.add(value);
+  if (Object.prototype.hasOwnProperty.call(value, 'captured_at')) {
+    output.push([`${label}.captured_at`, value.captured_at]);
+  }
+  for (const key of Object.keys(value)) collectDates(value[key], `${label}.${key}`, output, seen);
+}
+
+export function loadPreferenceCustodyV59SourceBundle(load = path => JSON.parse(readFileSync(path, 'utf8'))) {
+  return {
+    manifest: load('data/research/preference-custody/control-manifest-v59.json'),
+    baseBuild: load('build/research/preference-custody-laboratory-floor-v58.json'),
+    targetBuild: load('build/research/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.json'),
+    targetFixture: load('data/research/preference-custody/preference-linkage-repository-owner-login-unicode-casefold-alias-reuse-assurance.fixture.json'),
+    baseSources: loadPreferenceCustodyV58SourceBundle(load)
+  };
+}
