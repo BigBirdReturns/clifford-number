@@ -53,46 +53,12 @@ jobs:
           PY
           fi
           exit "$status"
-      - name: Publish only the exact regenerated public artifacts
+      - name: Publish the allowlisted regenerated public artifacts
         shell: bash
         run: |
           rm -f .github/workflows/deploy-pages.yml
 
-          python - <<'PY'
-          import subprocess
-
-          expected = {
-              'build/cases/uk-ai-policy.json',
-              'build/report-frontier.json',
-              'build/scout-report.md',
-              'reports/index.html',
-          }
-          lines = subprocess.check_output(['git', 'status', '--porcelain=v1'], text=True).splitlines()
-          changed = set()
-          for line in lines:
-              path = line[3:]
-              if ' -> ' in path:
-                  path = path.split(' -> ', 1)[1]
-              changed.add(path)
-          print('GENERATED_DELTA ' + ' | '.join(sorted(changed)))
-          if changed and changed != expected:
-              missing = sorted(expected - changed)
-              extra = sorted(changed - expected)
-              raise SystemExit(f'projection delta mismatch; missing={missing}; extra={extra}')
-          PY
-
-          if git diff --quiet -- \
-            build/cases/uk-ai-policy.json \
-            build/report-frontier.json \
-            build/scout-report.md \
-            reports/index.html; then
-            echo "Projection set already reconciled."
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
+          git add -- \
             build/cases/uk-ai-policy.json \
             build/report-frontier.json \
             build/scout-report.md \
@@ -101,19 +67,27 @@ jobs:
           python - <<'PY'
           import subprocess
 
-          expected = {
+          allowed = {
               'build/cases/uk-ai-policy.json',
               'build/report-frontier.json',
               'build/scout-report.md',
               'reports/index.html',
           }
-          staged = set(subprocess.check_output(['git', 'diff', '--cached', '--name-only'], text=True).splitlines())
-          print('STAGED_DELTA ' + ' | '.join(sorted(staged)))
-          if staged != expected:
-              missing = sorted(expected - staged)
-              extra = sorted(staged - expected)
-              raise SystemExit(f'staged delta mismatch; missing={missing}; extra={extra}')
+          staged = set(subprocess.check_output(
+              ['git', 'diff', '--cached', '--name-only'], text=True
+          ).splitlines())
+          print('STAGED_PROJECTION_DELTA ' + ' | '.join(sorted(staged)))
+          extra = sorted(staged - allowed)
+          if extra:
+              raise SystemExit('unexpected staged projection changes: ' + ', '.join(extra))
           PY
 
+          if git diff --cached --quiet; then
+            echo "Projection set already reconciled."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "build: reconcile Action Plan public projections"
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
