@@ -53,49 +53,62 @@ jobs:
           PY
           fi
           exit "$status"
-      - name: Commit every regenerated public artifact and restore read-only CI
+      - name: Commit the exact regenerated public artifacts and restore read-only CI
         shell: bash
         run: |
+          # The release gate creates a transient untracked Pages fixture. It is
+          # test scaffolding, not a repository artifact.
+          rm -f .github/workflows/deploy-pages.yml
+
           python - <<'PY'
-          from pathlib import Path
           import subprocess
 
+          expected = {
+              'build/cases/uk-ai-policy.json',
+              'build/report-frontier.json',
+              'build/scout-report.md',
+              'reports/index.html',
+          }
           lines = subprocess.check_output(['git', 'status', '--porcelain=v1'], text=True).splitlines()
-          changed = []
+          changed = set()
           for line in lines:
               path = line[3:]
               if ' -> ' in path:
                   path = path.split(' -> ', 1)[1]
-              changed.append(path)
-          allowed = lambda path: (
-              path.startswith('build/') or
-              path.startswith('reports/') or
-              path.startswith('data/research/')
-          )
-          unexpected = sorted(path for path in changed if not allowed(path))
+              changed.add(path)
           print('GENERATED_DELTA ' + ' | '.join(sorted(changed)))
-          if unexpected:
-              raise SystemExit('unexpected non-projection changes: ' + ', '.join(unexpected))
+          if changed != expected:
+              missing = sorted(expected - changed)
+              extra = sorted(changed - expected)
+              raise SystemExit(f'projection delta mismatch; missing={missing}; extra={extra}')
           PY
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout origin/main -- .github/workflows/ci.yml
-          git add -A -- build reports data/research .github/workflows/ci.yml
+          git add \
+            .github/workflows/ci.yml \
+            build/cases/uk-ai-policy.json \
+            build/report-frontier.json \
+            build/scout-report.md \
+            reports/index.html
 
           python - <<'PY'
           import subprocess
-          staged = subprocess.check_output(['git', 'diff', '--cached', '--name-only'], text=True).splitlines()
-          allowed = lambda path: (
-              path == '.github/workflows/ci.yml' or
-              path.startswith('build/') or
-              path.startswith('reports/') or
-              path.startswith('data/research/')
-          )
-          unexpected = sorted(path for path in staged if not allowed(path))
-          print('STAGED_DELTA ' + ' | '.join(staged))
-          if unexpected:
-              raise SystemExit('unexpected staged changes: ' + ', '.join(unexpected))
+
+          expected = {
+              '.github/workflows/ci.yml',
+              'build/cases/uk-ai-policy.json',
+              'build/report-frontier.json',
+              'build/scout-report.md',
+              'reports/index.html',
+          }
+          staged = set(subprocess.check_output(['git', 'diff', '--cached', '--name-only'], text=True).splitlines())
+          print('STAGED_DELTA ' + ' | '.join(sorted(staged)))
+          if staged != expected:
+              missing = sorted(expected - staged)
+              extra = sorted(staged - expected)
+              raise SystemExit(f'staged delta mismatch; missing={missing}; extra={extra}')
           PY
 
           git commit -m "build: reconcile Action Plan public projections"
