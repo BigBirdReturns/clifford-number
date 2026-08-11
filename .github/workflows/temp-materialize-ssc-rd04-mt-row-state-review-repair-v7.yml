@@ -1,0 +1,206 @@
+name: TEMP materialize Montana row-state review repair v7
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-mt-row-state-review-repair-v7.yml'
+
+permissions:
+  contents: write
+
+env:
+  SOURCE_PRODUCT: 85fad4f736a3639444edd2c522a67316dbade480
+  SOURCE_CARRIER_BRANCH: agent/ssc-rd04-mt-row-state-review-repair-materializer-v1
+  SOURCE_CARRIER_COMMIT: 3d576b154fad26a1bd87ca6b70300183f97673ec
+  SOURCE_CARRIER_PATH: .github/workflows/temp-materialize-ssc-rd04-mt-row-state-review-repair-v1.yml
+  SOURCE_CARRIER_BLOB: cdbe6947307487a52a9f98f059cfaa7a05a2ecb4
+  CANONICAL_PARENT: 0840358962621b0be3db6864ecec763327f35903
+  TARGET_BRANCH: agent/ssc-rd04-mt-row-state-reconciliation-v2
+  CARRIER_PATH: .github/workflows/temp-materialize-ssc-rd04-mt-row-state-review-repair-v7.yml
+  PRODUCT_WORKFLOW: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation
+  SCHEMA_PATH: schemas/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.schema.json
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/product-manifest.json
+  OUT: /tmp/ssc-rd04-mt-row-state-review-repair-v1
+  WORK: /tmp/ssc-rd04-mt-row-state-review-repair-work-v1
+  WRAPPER_OUT: /tmp/ssc-rd04-mt-row-state-review-repair-wrapper-v7
+  PRODUCT_AUTHOR_NAME: github-actions[bot]
+  PRODUCT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+  PRODUCT_AUTHOR_DATE: '2026-08-10T19:00:00+00:00'
+  PRODUCT_COMMITTER_NAME: github-actions[bot]
+  PRODUCT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+  PRODUCT_COMMITTER_DATE: '2026-08-10T19:00:00+00:00'
+  PRODUCT_MESSAGE: Promote exact Montana derivative row-state reconciliation v2
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned validators
+        run: python -m pip install --disable-pip-version-check jsonschema==4.25.1
+      - name: Execute exact sealed V1 materializer program
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          rm -rf "$WRAPPER_OUT"
+          mkdir -p "$WRAPPER_OUT"
+          printf '%s\n' wrapper-bootstrap > "$WRAPPER_OUT/STAGE"
+          printf '%s\n' 1 > "$WRAPPER_OUT/EXIT_CODE"
+          fail() {
+            local rc=$?
+            trap - ERR
+            printf '%s\n' "$rc" > "$WRAPPER_OUT/EXIT_CODE"
+            if [ -f /tmp/source-carrier.yml ]; then cp /tmp/source-carrier.yml "$WRAPPER_OUT/source-carrier.yml"; fi
+            if [ -f /tmp/materialize.sh ]; then cp /tmp/materialize.sh "$WRAPPER_OUT/materialize.sh"; fi
+            if [ -f /tmp/materializer-console.log ]; then cp /tmp/materializer-console.log "$WRAPPER_OUT/materializer-console.log"; fi
+            if [ -d "$OUT" ]; then mkdir -p "$WRAPPER_OUT/materializer-out"; cp -a "$OUT"/. "$WRAPPER_OUT/materializer-out"/ || true; fi
+            exit "$rc"
+          }
+          trap fail ERR
+
+          printf '%s\n' authenticate-wrapper > "$WRAPPER_OUT/STAGE"
+          test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"
+          test "$(git diff --name-only "$CANONICAL_PARENT" HEAD)" = "$CARRIER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD)" = "$CARRIER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" HEAD)"
+          git diff --check "$CANONICAL_PARENT" HEAD
+          git fetch --no-tags --force origin \
+            "+refs/heads/$SOURCE_CARRIER_BRANCH:refs/remotes/origin/source-carrier" \
+            '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/source-carrier)" = "$SOURCE_CARRIER_COMMIT"
+          test "$(git rev-parse refs/remotes/origin/source-carrier^)" = "$SOURCE_PRODUCT"
+          test "$(git show -s --format='%P' "$SOURCE_PRODUCT")" = "$CANONICAL_PARENT"
+          test "$(git rev-parse "refs/remotes/origin/source-carrier:$SOURCE_CARRIER_PATH")" = "$SOURCE_CARRIER_BLOB"
+          git show "refs/remotes/origin/source-carrier:$SOURCE_CARRIER_PATH" > /tmp/source-carrier.yml
+
+          printf '%s\n' extract-sealed-program > "$WRAPPER_OUT/STAGE"
+          python - /tmp/source-carrier.yml /tmp/materialize.sh <<'PYEXTRACT'
+          from pathlib import Path
+          import sys
+          src,out=map(Path,sys.argv[1:])
+          text=src.read_text(encoding='utf-8')
+          start="      - name: Authenticate carrier and materialize repaired sole-parent product\n"
+          end="      - name: Preserve repair materialization receipt\n"
+          if text.count(start)!=1 or text.count(end)!=1:
+              raise SystemExit(f'materializer marker denominator start={text.count(start)} end={text.count(end)}')
+          section=text.split(start,1)[1].split(end,1)[0]
+          run_marker="        run: |\n"
+          if section.count(run_marker)!=1:
+              raise SystemExit(f'run marker denominator {section.count(run_marker)}')
+          raw=section.split(run_marker,1)[1]
+          lines=raw.splitlines()
+          prefix='          '
+          body=[]
+          anomalies=[]
+          in_checks=False
+          checks_opened=0
+          checks_closed=0
+          preserved_checks_lines=[]
+          for lineno,line in enumerate(lines,1):
+              if in_checks:
+                  if line == "'''":
+                      body.append(line)
+                      in_checks=False
+                      checks_closed+=1
+                  elif line.startswith(prefix):
+                      body.append(line)
+                      preserved_checks_lines.append(lineno)
+                  else:
+                      anomalies.append((lineno,line,'inside_checks'))
+                      body.append(line)
+                  continue
+              if not line:
+                  body.append('')
+              elif line.startswith(prefix):
+                  deindented=line[len(prefix):]
+                  body.append(deindented)
+                  if deindented.startswith("checks='''"):
+                      in_checks=True
+                      checks_opened+=1
+              else:
+                  anomalies.append((lineno,line,'outside_checks'))
+                  body.append(line)
+          if in_checks:
+              raise SystemExit('unterminated checks triple-quoted string')
+          if checks_opened != 1 or checks_closed != 1:
+              raise SystemExit(f'checks-string denominator opened={checks_opened} closed={checks_closed}')
+          if preserved_checks_lines != [40,41,42,43,44,45]:
+              raise SystemExit(f'checks-string preserved-line denominator {preserved_checks_lines!r}')
+          if anomalies:
+              raise SystemExit(f'run block indentation anomaly {anomalies!r}')
+          program='\n'.join(body)+'\n'
+          required_markers=[
+              'set -Eeuo pipefail',
+              'qualified_repaired_product_published',
+              "checks='''          test \"$(git show -s --format='%an' \"$PRODUCT_COMMIT\")\" = 'github-actions[bot]'",
+              "          test \"$(git show -s --format='%ae' \"$PRODUCT_COMMIT\")\" = '41898282+github-actions[bot]@users.noreply.github.com'",
+              'git push origin \"HEAD:refs/heads/$TARGET_BRANCH\"',
+          ]
+          missing=[marker for marker in required_markers if marker not in program]
+          if missing:
+              raise SystemExit(f'extracted program authentication markers absent: {missing!r}')
+          out.write_text(program,encoding='utf-8')
+          PYEXTRACT
+          bash -n /tmp/materialize.sh
+
+          printf '%s\n' rebind-carrier-preflight > "$WRAPPER_OUT/STAGE"
+          python - /tmp/materialize.sh <<'PY'
+          from pathlib import Path
+          import sys
+          p=Path(sys.argv[1])
+          s=p.read_text()
+          replacements={
+            'test "$(git rev-parse HEAD^)" = "$SOURCE_PRODUCT"':'test "$(git rev-parse HEAD^)" = "$CANONICAL_PARENT"',
+            'test "$(git diff --name-only "$SOURCE_PRODUCT" HEAD)" = "$CARRIER_PATH"':'test "$(git diff --name-only "$CANONICAL_PARENT" HEAD)" = "$CARRIER_PATH"',
+            'test "$(git diff --name-only --diff-filter=A "$SOURCE_PRODUCT" HEAD)" = "$CARRIER_PATH"':'test "$(git diff --name-only --diff-filter=A "$CANONICAL_PARENT" HEAD)" = "$CARRIER_PATH"',
+            'test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$SOURCE_PRODUCT" HEAD)"':'test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$CANONICAL_PARENT" HEAD)"',
+            'git diff --check "$SOURCE_PRODUCT" HEAD':'git diff --check "$CANONICAL_PARENT" HEAD',
+          }
+          for old,new in replacements.items():
+              if s.count(old)!=1:
+                  raise SystemExit(f'replacement denominator for {old!r}: {s.count(old)}')
+              s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+          bash -n /tmp/materialize.sh
+
+          printf '%s\n' execute-sealed-materializer > "$WRAPPER_OUT/STAGE"
+          set +e
+          bash /tmp/materialize.sh > /tmp/materializer-console.log 2>&1
+          rc=$?
+          set -e
+          cp /tmp/materializer-console.log "$WRAPPER_OUT/materializer-console.log"
+          cp /tmp/materialize.sh "$WRAPPER_OUT/materialize.sh"
+          if [ -d "$OUT" ]; then mkdir -p "$WRAPPER_OUT/materializer-out"; cp -a "$OUT"/. "$WRAPPER_OUT/materializer-out"/ || true; fi
+          cat /tmp/materializer-console.log
+          test "$rc" = 0
+
+          printf '%s\n' complete > "$WRAPPER_OUT/STAGE"
+          printf '%s\n' 0 > "$WRAPPER_OUT/EXIT_CODE"
+          trap - ERR
+      - name: Preserve exact repair receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-review-repair-materializer-v7
+          path: |
+            ${{ env.OUT }}
+            ${{ env.WRAPPER_OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
