@@ -1,0 +1,32 @@
+name: MSS official portrait probe
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch official award-page image
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mss-official-portrait
+          curl --fail --location --retry 4 --retry-all-errors --connect-timeout 20 \
+            --user-agent 'Historical research image probe/1.0' \
+            --output mss-official-portrait/award-page-image.png \
+            'https://gallantryawards.gov.in/assets/uploads/styles/awardee_img/public/sites/default/files/ms.png'
+          file mss-official-portrait/award-page-image.png
+          sha256sum mss-official-portrait/award-page-image.png
+      - name: Upload image probe
+        uses: actions/upload-artifact@v4
+        with:
+          name: mss-official-portrait-probe
+          path: mss-official-portrait
+          if-no-files-found: error
+          retention-days: 1
