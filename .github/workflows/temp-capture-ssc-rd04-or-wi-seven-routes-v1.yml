@@ -156,8 +156,8 @@ jobs:
                       break
               return b''.join(chunks), total>limit
 
-          opener=urllib.request.build_opener(NoRedirect())
           context=ssl.create_default_context()
+          opener=urllib.request.build_opener(NoRedirect(),urllib.request.HTTPSHandler(context=context))
           results=[]
           physical_requests=0
           for route in routes:
@@ -206,7 +206,7 @@ jobs:
                       )
                       physical_requests+=1
                       try:
-                          response=opener.open(req,timeout=120,context=context)
+                          response=opener.open(req,timeout=120)
                       except urllib.error.HTTPError as exc:
                           response=exc
                       status=int(response.getcode())
@@ -388,7 +388,7 @@ jobs:
               'combined_sha256':combined.hexdigest(),
           }
           (out/'manifest.json').write_text(json.dumps(manifest,indent=2,sort_keys=True)+'\n')
-          files=sorted(p for p in out.rglob('*') if p.is_file() and p.name!='SHA256SUMS')
+          files=sorted(p for p in out.rglob('*') if p.is_file() and p.name not in {'SHA256SUMS','STAGE','EXIT_CODE'})
           (out/'SHA256SUMS').write_text(''.join(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(out).as_posix()}\n" for p in files))
           print(f"manifest_entries={len(entries)} combined_sha256={combined.hexdigest()}")
           PY
