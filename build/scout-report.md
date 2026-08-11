@@ -1,6 +1,6 @@
 # Scout Report
 
-Generated: 2026-08-11T19:00:04.044Z
+Generated: 2026-08-11T20:22:48.342Z
 
 > graph_effect: none. This is a research queue, not graph data.
 
@@ -14,13 +14,13 @@ Findings: 148
 
 **Observed**
 
-Electric Twin appears across 6 surface(s): electric-twin-founder-2023, electric-twin-ethics-board-2026, electric-twin-seed-round-2026-02-11, electric-twin-ben-blume-director-appointment-2025-09-12, electric-twin-newsuk-synthetic-audience, gartner-synthetic-population-category-2026. Secondary types: democratic_input_replacement, model_governance_surface, surface_factory_capital_layer.
+Electric Twin appears across 8 surface(s): electric-twin-incorporation-2023-09-28, electric-twin-ben-warner-director-tenure-2023-09-28, electric-twin-alex-cooper-director-tenure-2023-09-28, electric-twin-ethics-board-2026, electric-twin-seed-round-2026-02-11, electric-twin-ben-blume-director-appointment-2025-09-12, electric-twin-newsuk-synthetic-audience, gartner-synthetic-population-category-2026. Secondary types: democratic_input_replacement, model_governance_surface, surface_factory_capital_layer.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `electric-twin-founder-2023`, `electric-twin-ethics-board-2026`, `electric-twin-seed-round-2026-02-11`, `electric-twin-ben-blume-director-appointment-2025-09-12`, `electric-twin-newsuk-synthetic-audience`, `gartner-synthetic-population-category-2026`
+Refs: `electric-twin-incorporation-2023-09-28`, `electric-twin-ben-warner-director-tenure-2023-09-28`, `electric-twin-alex-cooper-director-tenure-2023-09-28`, `electric-twin-ethics-board-2026`, `electric-twin-seed-round-2026-02-11`, `electric-twin-ben-blume-director-appointment-2025-09-12`, `electric-twin-newsuk-synthetic-audience`, `gartner-synthetic-population-category-2026`
 
 ---
 
@@ -104,13 +104,13 @@ Refs: `ai-opportunities-action-plan-development-2024-2025`, `ai-opportunities-ac
 
 **Observed**
 
-Dr. Ben Warner has 6 surfaces and secondary types democratic_input_replacement, model_governance_surface, public_private_ai_infrastructure. Governance replacement score: 3.
+Dr. Ben Warner has 7 surfaces and secondary types democratic_input_replacement, model_governance_surface, public_private_ai_infrastructure. Governance replacement score: 2.
 
 **Required action**
 
 Check for additional venues where the same surface type recurs. Do not convert recurrence into a hop unless there is a bounded co-participation surface.
 
-Refs: `no10-digital-data-advisory-2019-2021`, `faculty-investor-employee-2015-2019`, `vote-leave-data-science-2016`, `electric-twin-founder-2023`, `electric-twin-newsuk-synthetic-audience`, `gartner-synthetic-population-category-2026`
+Refs: `no10-digital-data-advisory-2019-2021`, `faculty-investor-employee-2015-2019`, `vote-leave-data-science-2016`, `electric-twin-incorporation-2023-09-28`, `electric-twin-ben-warner-director-tenure-2023-09-28`, `electric-twin-newsuk-synthetic-audience`, `gartner-synthetic-population-category-2026`
 
 ---
 
@@ -122,13 +122,13 @@ Refs: `no10-digital-data-advisory-2019-2021`, `faculty-investor-employee-2015-20
 
 **Observed**
 
-Alex Cooper has 1 surfaces and secondary types democratic_input_replacement, model_governance_surface. Governance replacement score: 1.
+Alex Cooper has 2 surfaces and secondary types model_governance_surface. Governance replacement score: 0.
 
 **Required action**
 
 Check for additional venues where the same surface type recurs. Do not convert recurrence into a hop unless there is a bounded co-participation surface.
 
-Refs: `electric-twin-founder-2023`
+Refs: `electric-twin-incorporation-2023-09-28`, `electric-twin-alex-cooper-director-tenure-2023-09-28`
 
 ---
 
@@ -248,13 +248,13 @@ Refs: `strategic-defence-review-development-2024-2025`, `strategic-defence-revie
 
 **Observed**
 
-Dr. Ben Warner participates in 6 surface(s), but no valid shared-surface path to Matt Clifford exists.
+Dr. Ben Warner participates in 7 surface(s), but no valid shared-surface path to Matt Clifford exists.
 
 **Required action**
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `no10-digital-data-advisory-2019-2021`, `faculty-investor-employee-2015-2019`, `vote-leave-data-science-2016`, `electric-twin-founder-2023`, `electric-twin-newsuk-synthetic-audience`, `gartner-synthetic-population-category-2026`
+Refs: `no10-digital-data-advisory-2019-2021`, `faculty-investor-employee-2015-2019`, `vote-leave-data-science-2016`, `electric-twin-incorporation-2023-09-28`, `electric-twin-ben-warner-director-tenure-2023-09-28`, `electric-twin-newsuk-synthetic-audience`, `gartner-synthetic-population-category-2026`
 
 ---
 
@@ -284,13 +284,13 @@ Refs: `faculty-investor-employee-2015-2019`, `vote-leave-data-science-2016`
 
 **Observed**
 
-Alex Cooper participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+Alex Cooper participates in 2 surface(s), but no valid shared-surface path to Matt Clifford exists.
 
 **Required action**
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `electric-twin-founder-2023`
+Refs: `electric-twin-incorporation-2023-09-28`, `electric-twin-alex-cooper-director-tenure-2023-09-28`
 
 ---
 

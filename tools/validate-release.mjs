@@ -220,7 +220,8 @@ const warnerSurfaces = [
   'no10-digital-data-advisory-2019-2021',
   'faculty-investor-employee-2015-2019',
   'vote-leave-data-science-2016',
-  'electric-twin-founder-2023',
+  'electric-twin-incorporation-2023-09-28',
+  'electric-twin-ben-warner-director-tenure-2023-09-28',
   'electric-twin-newsuk-synthetic-audience',
   'gartner-synthetic-population-category-2026',
 ];
@@ -234,9 +235,49 @@ assert(actorScore.get('ben-warner')?.governance_replacement_score > 0, 'Ben Warn
 // Regression fixture 2: Electric Twin surface factory.
 const et = orgScore.get('electric-twin');
 assert(et?.surface_factory === true, 'Electric Twin must be a surface factory');
-for (const sid of ['electric-twin-founder-2023', 'electric-twin-ethics-board-2026', 'electric-twin-seed-round-2026-02-11', 'electric-twin-ben-blume-director-appointment-2025-09-12', 'electric-twin-newsuk-synthetic-audience', 'gartner-synthetic-population-category-2026']) {
+for (const sid of ['electric-twin-incorporation-2023-09-28', 'electric-twin-ben-warner-director-tenure-2023-09-28', 'electric-twin-alex-cooper-director-tenure-2023-09-28', 'electric-twin-ethics-board-2026', 'electric-twin-seed-round-2026-02-11', 'electric-twin-ben-blume-director-appointment-2025-09-12', 'electric-twin-newsuk-synthetic-audience', 'gartner-synthetic-population-category-2026']) {
   assert(et?.surfaces.includes(sid), `Electric Twin missing factory surface ${sid}`);
 }
+
+// Electric Twin legal formation is one dated hop; continuing officer tenures are non-hop observations.
+assert(!surfaceById.has('electric-twin-founder-2023'), 'legacy open-ended Electric Twin founder surface must be retired');
+const etIncorporation = surfaceById.get('electric-twin-incorporation-2023-09-28');
+assert(etIncorporation, 'Electric Twin incorporation surface must compile');
+assert(etIncorporation?.hop_eligible === true, 'Electric Twin incorporation surface must be hop eligible');
+assert(etIncorporation?.time_start === '2023-09-28' && etIncorporation?.time_end === '2023-09-28',
+  'Electric Twin incorporation surface must remain one day');
+assert(sameIdSet(etIncorporation?.receipt_ids, ['companies-house-electric-twin-incorporation-2023-09-28']),
+  'Electric Twin incorporation surface must use the exact Companies House receipt');
+const incorporationActors = (etIncorporation?.participants ?? [])
+  .filter(part => part.participant_type === 'actor').map(part => part.actor_id).sort();
+assert(JSON.stringify(incorporationActors) === JSON.stringify(['alex-cooper', 'ben-warner']),
+  'Electric Twin incorporation must contain exactly the two initial directors');
+const founderEdge = hopGraph.edges.find(edge =>
+  [edge.actor_a, edge.actor_b].sort().join('|') === 'alex-cooper|ben-warner');
+const incorporationBasis = founderEdge?.surfaces.find(basis => basis.surface_id === 'electric-twin-incorporation-2023-09-28');
+assert(incorporationBasis, 'Ben Warner and Alex Cooper must connect through the incorporation record');
+assert(incorporationBasis?.valid_from === '2023-09-28' && incorporationBasis?.valid_until === '2023-09-28',
+  'the initial-director hop must not extend beyond the incorporation date');
+for (const [surfaceId, actorId] of [
+  ['electric-twin-ben-warner-director-tenure-2023-09-28', 'ben-warner'],
+  ['electric-twin-alex-cooper-director-tenure-2023-09-28', 'alex-cooper'],
+]) {
+  const tenure = surfaceById.get(surfaceId);
+  assert(tenure, `missing director-tenure surface ${surfaceId}`);
+  assert(tenure?.hop_eligible === false, `${surfaceId} must remain non-hop`);
+  assert(tenure?.time_start === '2023-09-28' && tenure?.time_end === '2026-08-11',
+    `${surfaceId} must be bounded to the retrieval date`);
+  const actors = (tenure?.participants ?? []).filter(part => part.participant_type === 'actor').map(part => part.actor_id);
+  assert(JSON.stringify(actors) === JSON.stringify([actorId]), `${surfaceId} must contain exactly ${actorId}`);
+  assert(!hopGraph.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === surfaceId)),
+    `${surfaceId} must never create pairwise adjacency`);
+}
+const incorporationReceipt = receiptById.get('companies-house-electric-twin-incorporation-2023-09-28');
+assert(incorporationReceipt?.evidence_class === 'official', 'incorporation receipt must remain official');
+assert(incorporationReceipt?.event_date === '2023-09-28', 'incorporation receipt must preserve the event date');
+assert(incorporationReceipt?.retrieved_at === '2026-08-11', 'incorporation receipt must preserve the retrieval boundary');
+assert(incorporationReceipt?.path === 'receipts/topology/companies-house-electric-twin-incorporation-2023-09-28.md',
+  'incorporation receipt must resolve to the in-repo extract');
 
 // Regression fixture 3: Simon Case governance continuity.
 assert(hasSurface('simon-case', 'simon-case-cabinet-secretary-2020-2024'), 'Simon Case missing Cabinet Secretary surface');
