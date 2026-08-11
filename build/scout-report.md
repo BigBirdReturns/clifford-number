@@ -1,10 +1,10 @@
 # Scout Report
 
-Generated: 2026-08-11T18:37:12.218Z
+Generated: 2026-08-11T19:00:04.044Z
 
 > graph_effect: none. This is a research queue, not graph data.
 
-Findings: 146
+Findings: 148
 
 ## finding-001: Electric Twin behaves as a surface factory
 
@@ -14,13 +14,13 @@ Findings: 146
 
 **Observed**
 
-Electric Twin appears across 5 surface(s): electric-twin-founder-2023, electric-twin-ethics-board-2026, electric-twin-funding-surface-2023-2026, electric-twin-newsuk-synthetic-audience, gartner-synthetic-population-category-2026. Secondary types: democratic_input_replacement, model_governance_surface, surface_factory_capital_layer.
+Electric Twin appears across 6 surface(s): electric-twin-founder-2023, electric-twin-ethics-board-2026, electric-twin-seed-round-2026-02-11, electric-twin-ben-blume-director-appointment-2025-09-12, electric-twin-newsuk-synthetic-audience, gartner-synthetic-population-category-2026. Secondary types: democratic_input_replacement, model_governance_surface, surface_factory_capital_layer.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `electric-twin-founder-2023`, `electric-twin-ethics-board-2026`, `electric-twin-funding-surface-2023-2026`, `electric-twin-newsuk-synthetic-audience`, `gartner-synthetic-population-category-2026`
+Refs: `electric-twin-founder-2023`, `electric-twin-ethics-board-2026`, `electric-twin-seed-round-2026-02-11`, `electric-twin-ben-blume-director-appointment-2025-09-12`, `electric-twin-newsuk-synthetic-audience`, `gartner-synthetic-population-category-2026`
 
 ---
 
@@ -416,7 +416,7 @@ Louis Mosley participates in 1 surface(s), but no valid shared-surface path to M
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `electric-twin-funding-surface-2023-2026`
+Refs: `electric-twin-seed-round-2026-02-11`
 
 ---
 
@@ -434,7 +434,7 @@ Marc Andreessen participates in 1 surface(s), but no valid shared-surface path t
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `electric-twin-funding-surface-2023-2026`
+Refs: `electric-twin-seed-round-2026-02-11`
 
 ---
 
@@ -452,7 +452,7 @@ Cal Henderson participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `electric-twin-funding-surface-2023-2026`
+Refs: `electric-twin-seed-round-2026-02-11`
 
 ---
 
@@ -470,7 +470,7 @@ Tom Shinner participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `electric-twin-funding-surface-2023-2026`
+Refs: `electric-twin-seed-round-2026-02-11`
 
 ---
 
@@ -2526,7 +2526,43 @@ Refs: `dialog-society-membership`
 
 ---
 
-## finding-141: Simon Case Cabinet Secretary / Head of Civil Service surface, 2020-2024 contains broad institution context
+## finding-141: Eric Salama has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Eric Salama participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `electric-twin-seed-round-2026-02-11`
+
+---
+
+## finding-142: Ben Blume has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Ben Blume participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `electric-twin-ben-blume-director-appointment-2025-09-12`
+
+---
+
+## finding-143: Simon Case Cabinet Secretary / Head of Civil Service surface, 2020-2024 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -2544,7 +2580,7 @@ Refs: `simon-case-cabinet-secretary-2020-2024`
 
 ---
 
-## finding-142: Team Barrow public-private development fund surface contains broad institution context
+## finding-144: Team Barrow public-private development fund surface contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -2562,7 +2598,7 @@ Refs: `team-barrow-public-private-fund-2026`
 
 ---
 
-## finding-143: AI Opportunities Action Plan publication and government response, 13 January 2025 contains broad institution context
+## finding-145: AI Opportunities Action Plan publication and government response, 13 January 2025 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -2580,7 +2616,7 @@ Refs: `ai-opportunities-action-plan-2025`
 
 ---
 
-## finding-144: Strategic Defence Review terms and commission, 17 July 2024 contains broad institution context
+## finding-146: Strategic Defence Review terms and commission, 17 July 2024 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -2598,7 +2634,7 @@ Refs: `strategic-defence-review-2024-2025`
 
 ---
 
-## finding-145: Policy creation → procurement corridor → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
+## finding-147: Policy creation → procurement corridor → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
 
 - Type: laundering_chain
 - Priority: high
@@ -2616,7 +2652,7 @@ Refs: `ai-opportunities-action-plan-2025`, `detachment-201-commissioning-2025`, 
 
 ---
 
-## finding-146: Full master doc has been classified, not blindly migrated
+## finding-148: Full master doc has been classified, not blindly migrated
 
 - Type: migration_queue
 - Priority: high
