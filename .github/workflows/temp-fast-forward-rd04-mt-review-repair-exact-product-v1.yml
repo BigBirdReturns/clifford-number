@@ -1,0 +1,185 @@
+name: TEMP fast-forward RD-04 Montana review-repair exact product v1
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-fast-forward-rd04-mt-review-repair-exact-product-v1.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish-product:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned Draft 2020-12 validator
+        run: python -m pip install --disable-pip-version-check --no-input jsonschema==4.25.1
+      - name: Reconstruct, qualify, and fast-forward exact product ref
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export ACTUAL_HEAD_SHA="$(git rev-parse HEAD)"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          export ACTUAL_BASE_SHA="$(git rev-parse refs/remotes/origin/main)"
+          export TARGET_BRANCH='agent/ssc-rd04-mt-row-state-reconciliation-review-repair-v2'
+          export EXPECTED_TARGET_PARENT='0840358962621b0be3db6864ecec763327f35903'
+          export EXPECTED_PRODUCT_COMMIT='2696851018fe0b9641fff849619c6545fd896e6c'
+          export EXPECTED_PRODUCT_TREE='b37fa9923899a44be285e0826b41a306c4bcdfe8'
+
+          ruby -ryaml -rshellwords - <<'RUBY'
+          source_path = '.github/workflows/temp-materialize-rd04-mt-promotion-review-repair-v3.yml'
+          document = YAML.load_file(source_path)
+          environment = document.fetch('env')
+          step = document.fetch('jobs').fetch('construct').fetch('steps').find do |candidate|
+            candidate['name'] == 'Reconstruct, qualify, and create unreachable exact Git object'
+          end
+          raise 'v3 constructor step absent' unless step
+
+          program = step.fetch('run').dup
+          head_assignment = "HEAD_SHA=#{Shellwords.shellescape(ENV.fetch('ACTUAL_HEAD_SHA'))}"
+          base_assignment = "BASE_SHA=#{Shellwords.shellescape(ENV.fetch('ACTUAL_BASE_SHA'))}"
+          raise 'HEAD_SHA assignment absent' unless program.sub!(/^[ \t]*HEAD_SHA=.*$/, head_assignment)
+          raise 'BASE_SHA assignment absent' unless program.sub!(/^[ \t]*BASE_SHA=.*$/, base_assignment)
+          raise 'HEAD_SHA assignment remains ambiguous' unless program.scan(/^[ \t]*HEAD_SHA=/).length == 1
+          raise 'BASE_SHA assignment remains ambiguous' unless program.scan(/^[ \t]*BASE_SHA=/).length == 1
+
+          marker = %q{printf '%s\n' create-remote-object > "$OUT/STAGE"}
+          cut = program.index(marker)
+          raise 'remote-object marker absent' unless cut
+          program = program[0...cut]
+          program << <<'BASH'
+          printf '%s\n' verify-target-ref > "$OUT/STAGE"
+          test "$LOCAL_PRODUCT_COMMIT" = "$EXPECTED_PRODUCT_COMMIT"
+          test "$LOCAL_PRODUCT_TREE" = "$EXPECTED_PRODUCT_TREE"
+          test "$CANONICAL_PARENT" = "$EXPECTED_TARGET_PARENT"
+          test "$(git show -s --format='%P' "$LOCAL_PRODUCT_COMMIT")" = "$EXPECTED_TARGET_PARENT"
+          test "$(git rev-list --count "$EXPECTED_TARGET_PARENT".."$LOCAL_PRODUCT_COMMIT")" = 1
+          test "$(git diff --name-only --diff-filter=A "$EXPECTED_TARGET_PARENT" "$LOCAL_PRODUCT_COMMIT" | LC_ALL=C sort)" = "$(printf '%s\n' "${PATHS[@]}" | LC_ALL=C sort)"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$EXPECTED_TARGET_PARENT" "$LOCAL_PRODUCT_COMMIT")"
+
+          git fetch --no-tags --force origin "+refs/heads/$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
+          PRE_PUSH_REF="$(git rev-parse "refs/remotes/origin/$TARGET_BRANCH")"
+          test "$PRE_PUSH_REF" = "$EXPECTED_TARGET_PARENT"
+
+          printf '%s\n' fast-forward-product-ref > "$OUT/STAGE"
+          git push --porcelain origin "$LOCAL_PRODUCT_COMMIT:refs/heads/$TARGET_BRANCH" | tee "$OUT/push.txt"
+          git fetch --no-tags --force origin "+refs/heads/$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
+          POST_PUSH_REF="$(git rev-parse "refs/remotes/origin/$TARGET_BRANCH")"
+          test "$POST_PUSH_REF" = "$EXPECTED_PRODUCT_COMMIT"
+          test "$(git show -s --format='%P' "$POST_PUSH_REF")" = "$EXPECTED_TARGET_PARENT"
+          test "$(git rev-parse "$POST_PUSH_REF^{tree}")" = "$EXPECTED_PRODUCT_TREE"
+          test "$(git rev-list --count "$EXPECTED_TARGET_PARENT".."$POST_PUSH_REF")" = 1
+          test "$(git diff --name-only --diff-filter=A "$EXPECTED_TARGET_PARENT" "$POST_PUSH_REF" | LC_ALL=C sort)" = "$(printf '%s\n' "${PATHS[@]}" | LC_ALL=C sort)"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$EXPECTED_TARGET_PARENT" "$POST_PUSH_REF")"
+          test "$(git ls-remote --exit-code origin "refs/heads/$TARGET_BRANCH" | cut -f1)" = "$EXPECTED_PRODUCT_COMMIT"
+
+          printf '%s\n' archive-published-product > "$OUT/STAGE"
+          export LOCAL_PRODUCT_COMMIT LOCAL_PRODUCT_TREE HEAD_SHA BASE_SHA PRE_PUSH_REF POST_PUSH_REF
+          mkdir -p "$OUT/product"
+          git archive --format=tar "$POST_PUSH_REF" "${PATHS[@]}" | tar -xf - -C "$OUT/product"
+          printf '%s\n' "${PATHS[@]}" > "$OUT/product-paths.txt"
+          git show -s --format='%H%n%P%n%T%n%an%n%ae%n%aI%n%cn%n%ce%n%cI%n%B' "$POST_PUSH_REF" > "$OUT/product-commit.txt"
+          git cat-file -p "$POST_PUSH_REF" > "$OUT/product-commit-object.txt"
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+
+          root = Path.cwd()
+          out = Path(os.environ['OUT'])
+          manifest = json.load(open(os.environ['MANIFEST_PATH']))
+          receipt = {
+              'state': 'qualified_product_ref_fast_forwarded',
+              'canonical_parent': os.environ['CANONICAL_PARENT'],
+              'canonical_parent_tree': os.environ['CANONICAL_PARENT_TREE'],
+              'source_product': os.environ['SOURCE_PRODUCT'],
+              'carrier_head': os.environ['CARRIER_HEAD'],
+              'materializer_head': os.environ['HEAD_SHA'],
+              'live_main_at_publication': os.environ['BASE_SHA'],
+              'product_branch': os.environ['TARGET_BRANCH'],
+              'pre_push_ref': os.environ['PRE_PUSH_REF'],
+              'product_commit': os.environ['POST_PUSH_REF'],
+              'product_tree': os.environ['LOCAL_PRODUCT_TREE'],
+              'workflow_sha256': hashlib.sha256((root / os.environ['PRODUCT_WORKFLOW']).read_bytes()).hexdigest(),
+              'schema_sha256': hashlib.sha256((root / os.environ['SCHEMA_PATH']).read_bytes()).hexdigest(),
+              'manifest_sha256': hashlib.sha256((root / os.environ['MANIFEST_PATH']).read_bytes()).hexdigest(),
+              'combined_sha256': manifest['combined_sha256'],
+              'permanent_path_count': len(manifest['permanent_paths']),
+              'hashed_file_count': len(manifest['hashed_files']),
+              'schema_negative_refusals': 10,
+              'empty_schema_nodes': 0,
+              'manifest_paths_exact': 13,
+              'remote_ref_updates': 1,
+              'nonforced_fast_forward_updates': 1,
+              'source_requests': 0,
+              'route_executions': 0,
+              'canonical_effects': 0,
+              'outside_human_dependency': False,
+          }
+          if receipt['pre_push_ref'] != receipt['canonical_parent']:
+              raise SystemExit('product branch was not pinned at canonical parent')
+          if receipt['product_commit'] != os.environ['EXPECTED_PRODUCT_COMMIT']:
+              raise SystemExit('published product commit identity mismatch')
+          if receipt['product_tree'] != os.environ['EXPECTED_PRODUCT_TREE']:
+              raise SystemExit('published product tree identity mismatch')
+          if receipt['permanent_path_count'] != 14 or receipt['hashed_file_count'] != 13:
+              raise SystemExit('qualified product denominator drift')
+          (out / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          PY
+          printf '%s\n' complete > "$OUT/STAGE"
+          (cd "$OUT" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS && sha256sum -c SHA256SUMS)
+          BASH
+
+          exports = environment.reject { |key, _| key == 'GH_TOKEN' }.map do |key, value|
+            "export #{key}=#{Shellwords.shellescape(value.to_s)}"
+          end
+          %w[TARGET_BRANCH EXPECTED_TARGET_PARENT EXPECTED_PRODUCT_COMMIT EXPECTED_PRODUCT_TREE].each do |key|
+            exports << "export #{key}=#{Shellwords.shellescape(ENV.fetch(key))}"
+          end
+          File.write('/tmp/rd04-mt-review-repair-fast-forward-v1.sh', exports.join("\n") + "\n" + program)
+          RUBY
+
+          bash -n /tmp/rd04-mt-review-repair-fast-forward-v1.sh
+          set +e
+          bash /tmp/rd04-mt-review-repair-fast-forward-v1.sh
+          rc=$?
+          set -e
+
+          mkdir -p /tmp/rd04-mt-review-repair-constructor-v3
+          cp /tmp/rd04-mt-review-repair-fast-forward-v1.sh /tmp/rd04-mt-review-repair-constructor-v3/fast-forward-generated-program.sh
+          {
+            printf 'actual_head=%s\n' "$ACTUAL_HEAD_SHA"
+            printf 'actual_base=%s\n' "$ACTUAL_BASE_SHA"
+            printf 'target_branch=%s\n' "$TARGET_BRANCH"
+            printf 'expected_target_parent=%s\n' "$EXPECTED_TARGET_PARENT"
+            printf 'expected_product_commit=%s\n' "$EXPECTED_PRODUCT_COMMIT"
+            printf 'expected_product_tree=%s\n' "$EXPECTED_PRODUCT_TREE"
+            printf 'checked_out_head=%s\n' "$(git rev-parse HEAD)"
+            grep -E '^(HEAD_SHA|BASE_SHA)=' /tmp/rd04-mt-review-repair-fast-forward-v1.sh || true
+          } > /tmp/rd04-mt-review-repair-constructor-v3/fast-forward-binding.txt
+          (cd /tmp/rd04-mt-review-repair-constructor-v3 && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
+          exit "$rc"
+      - name: Upload exact product publication custody
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-review-repair-fast-forward-v1
+          path: /tmp/rd04-mt-review-repair-constructor-v3
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
