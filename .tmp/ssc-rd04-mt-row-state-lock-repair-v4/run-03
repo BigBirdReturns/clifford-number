@@ -1,0 +1,45 @@
+    "&&workflow.includes(\"'100644 blob'\"),'workflow external qualification-ref and path-mode control mismatch');\n"
+)
+if text.count(validator_anchor)!=1:
+    raise SystemExit(f'validator insertion denominator {text.count(validator_anchor)}')
+text=text.replace(validator_anchor,validator_assert+validator_anchor,1)
+vp.write_text(text)
+
+text=tp.read_text()
+test_anchor="test('exact product validates'"
+focused_test=(
+    "test('external qualification ref pins the reviewed product object and modes',()=>{"
+    "const w=bytes(rel.workflow).toString();"
+    "assert.match(w,/QUALIFIED_PRODUCT_REF: refs\\/heads\\/lock\\/ssc-rd04-mt-row-state-reconciliation-v4-qualified/);"
+    "assert.match(w,/refs\\/remotes\\/origin\\/qualified-product/);"
+    "assert.match(w,/git rev-parse refs\\/remotes\\/origin\\/qualified-product/);"
+    "assert.match(w,/git ls-tree \\\"\\$PRODUCT_COMMIT\\\"/);"
+    "assert.match(w,/100644 blob/);"
+    "});\n"
+)
+if text.count(test_anchor)!=1:
+    raise SystemExit(f'test insertion denominator {text.count(test_anchor)}')
+text=text.replace(test_anchor,focused_test+test_anchor,1)
+tp.write_text(text)
+
+def sha(data): return hashlib.sha256(data).hexdigest()
+def blob(data): return hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
+manifest=json.loads(mp.read_text())
+records=[]
+for rel in manifest['permanent_paths']:
+    if rel==os.environ['MANIFEST_PATH']:
+        continue
+    data=(root/rel).read_bytes()
+    records.append({'path':rel,'bytes':len(data),'sha256':sha(data),'git_blob':blob(data)})
+manifest['hashed_files']=records
+manifest['hashed_file_count']=len(records)
+manifest['combined_sha256']=sha(''.join(sorted(f"{x['path']}\0{x['sha256']}\0{x['bytes']}\n" for x in records)).encode())
+mp.write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+'\n')
+PYLOCK
+
+"""
+s = s.replace(marker, lock_patch + marker, 1)
+p.write_text(s, encoding='utf-8')
+PYPATCH
+bash -n /tmp/materialize.sh
+bash /tmp/materialize.sh

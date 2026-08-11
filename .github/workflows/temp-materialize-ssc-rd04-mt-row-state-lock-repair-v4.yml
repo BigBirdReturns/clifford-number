@@ -1,0 +1,77 @@
+name: TEMP materialize Montana external qualification-lock repair v4
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-materialize-ssc-rd04-mt-row-state-lock-repair-v4.yml'
+      - '.tmp/ssc-rd04-mt-row-state-lock-repair-v4/**'
+
+permissions:
+  contents: write
+
+env:
+  SOURCE_PROGRAM_BRANCH: agent/ssc-rd04-mt-row-state-object-repair-materializer-v2
+  SOURCE_PROGRAM_COMMIT: 0252d2a79f12f7b2daf4623dd18f8feb2b6a982a
+  SOURCE_PROGRAM_PARENT: 0840358962621b0be3db6864ecec763327f35903
+  SOURCE_PROGRAM_PART_ROOT: .tmp/ssc-rd04-mt-row-state-object-repair-v2
+  SOURCE_PROGRAM_SHA256: 470114f0791fa4f9ced695b0b6111817ee6df4ebbe6aa654949e711d98d59137
+  SOURCE_PART_00_BLOB: e7acdacd4df9c301372d2ac15a8f63040a281d2b
+  SOURCE_PART_01_BLOB: 9c9462825dc85f09f7310e205a2b279415e43507
+  SOURCE_PART_02_BLOB: 69d0762bf2cfb027346deb5554caa7a7d69e97d1
+  SOURCE_PART_03_BLOB: 4414d30a88876468fc4844f40c8c623a0fc6b787
+  SOURCE_BRANCH: agent/ssc-rd04-mt-row-state-reconciliation-v2
+  SOURCE_PRODUCT: e4d363df169e0707eb1e23ba705ea7ac55745717
+  SOURCE_TREE: d849f6bac89a8f81f1dca35c5777478cb1fed07c
+  CANONICAL_PARENT: 0840358962621b0be3db6864ecec763327f35903
+  TARGET_BRANCH: agent/ssc-rd04-mt-row-state-reconciliation-v4
+  QUALIFIED_PRODUCT_REF: refs/heads/lock/ssc-rd04-mt-row-state-reconciliation-v4-qualified
+  CARRIER_PATH: .github/workflows/temp-materialize-ssc-rd04-mt-row-state-lock-repair-v4.yml
+  RUN_PART_ROOT: .tmp/ssc-rd04-mt-row-state-lock-repair-v4
+  WORKFLOW_PATH: .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation.yml
+  PRODUCT_ROOT: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation
+  MANIFEST_PATH: data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-mt-row-state-reconciliation/product-manifest.json
+  OUT: /tmp/ssc-rd04-mt-row-state-lock-repair-v4
+  WORK: /tmp/ssc-rd04-mt-row-state-lock-repair-work-v4
+  PRODUCT_NAME: github-actions[bot]
+  PRODUCT_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+  PRODUCT_DATE: '1786388400 +0000'
+  PRODUCT_MESSAGE: Promote exact Montana derivative row-state reconciliation v4
+  RUN_PROGRAM_SHA256: 4ef3dd941bba93581bf1e1f623bc0d7b369b4409280179a761eeeebdaccb857b
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install --disable-pip-version-check jsonschema==4.25.1
+      - name: Execute checksum-bound external-lock repair program
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          cat "$RUN_PART_ROOT"/run-00 "$RUN_PART_ROOT"/run-01 "$RUN_PART_ROOT"/run-02 "$RUN_PART_ROOT"/run-03 > /tmp/run.sh
+          test "$(sha256sum /tmp/run.sh | awk '{print $1}')" = "$RUN_PROGRAM_SHA256"
+          bash -n /tmp/run.sh
+          bash /tmp/run.sh
+      - name: Preserve exact external-lock repair transaction
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-mt-row-state-lock-repair-v4
+          path: ${{ env.OUT }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
