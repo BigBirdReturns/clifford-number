@@ -1,0 +1,499 @@
+name: TEMP terminalize exact RD-04 Oregon-Wisconsin adjudication product
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/temp-terminalize-ssc-rd04-or-wi-minimum-frontier-v1.yml'
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: temp-terminalize-ssc-rd04-or-wi-minimum-frontier-v1
+  cancel-in-progress: false
+
+jobs:
+  terminalize:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'agent/ssc-rd04-or-wi-minimum-frontier-terminal-controller-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned replay validators
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1' 'PyYAML==6.0.2'
+      - name: Qualify, review, merge, and prove exact adjudication product
+        id: terminalize
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONTROLLER_PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -Eeuo pipefail
+          PARENT='146f5ceb1882d02c7be8d225d49665d63478a7df'
+          CONTROLLER_BRANCH='agent/ssc-rd04-or-wi-minimum-frontier-terminal-controller-v1'
+          CONTROLLER_PATH='.github/workflows/temp-terminalize-ssc-rd04-or-wi-minimum-frontier-v1.yml'
+          PRODUCT_BRANCH='agent/ssc-rd04-or-wi-minimum-frontier-adjudication-v2'
+          PRODUCT_WORKFLOW_PATH='.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication.yml'
+          PRODUCT_ROOT='data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication'
+          PRODUCT_SCHEMA='schemas/status-sovereignty-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication.schema.json'
+          PRODUCT_TEST='test/status-sovereignty-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication.test.js'
+          PRODUCT_BUILDER='tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication.mjs'
+          PRODUCT_VALIDATOR='tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication.mjs'
+          OUT="${RUNNER_TEMP}/ssc-rd04-or-wi-minimum-frontier-terminal-v1"
+          WORK="${RUNNER_TEMP}/ssc-rd04-or-wi-minimum-frontier-terminal-work-v1"
+          mkdir -p "$OUT" "$WORK"
+          stage='bootstrap'
+          printf '1\n' > "$OUT/EXIT_CODE"
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+
+          api_get() {
+            curl --fail-with-body --silent --show-error \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/$1"
+          }
+          api_post() {
+            curl --fail-with-body --silent --show-error \
+              -X POST \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              --data-binary @- \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/$1"
+          }
+          api_put() {
+            curl --fail-with-body --silent --show-error \
+              -X PUT \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              --data-binary @- \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/$1"
+          }
+          graphql() {
+            curl --fail-with-body --silent --show-error \
+              -X POST \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Content-Type: application/json' \
+              --data-binary @- \
+              'https://api.github.com/graphql'
+          }
+          finalize_sums() {
+            (
+              cd "$OUT"
+              find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+            )
+          }
+          write_failure() {
+            local code="$1"
+            jq -n --arg stage "$stage" --argjson code "$code" --arg parent "$PARENT" \
+              '{schema_version:"ssc-rd04-or-wi-terminal-failure@1",state:"failed_closed",failed_or_final_stage:$stage,exit_code:$code,canonical_parent:$parent,merge_created:false,source_requests:0,new_source_admissions:0,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none",authority:"failure_custody_only"}' > "$OUT/failure-receipt.json"
+          }
+          on_error() {
+            local code=$?
+            trap - ERR
+            set +e
+            printf '%s\n' "$code" > "$OUT/EXIT_CODE"
+            printf '%s\n' "$stage" > "$OUT/STAGE"
+            write_failure "$code"
+            finalize_sums
+            exit "$code"
+          }
+          trap on_error ERR
+
+          stage='bind_controller_and_live_main'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          test "$(git rev-parse HEAD^)" = "$PARENT"
+          test "$(git rev-list --count "$PARENT"..HEAD)" -eq 1
+          test "$(git diff --name-only "$PARENT" HEAD)" = "$CONTROLLER_PATH"
+          test "$(git diff --name-only --diff-filter=A "$PARENT" HEAD)" = "$CONTROLLER_PATH"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$PARENT" HEAD)"
+          git diff --check "$PARENT" HEAD
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/main)" = "$PARENT"
+
+          cat > "$OUT/product-paths.txt" <<'PATHS'
+          .github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication.yml
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication/adjudication-summary.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication/capture-custody.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication/field-adjudications.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication/index.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication/product-manifest.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication/promotion-candidate-protocol.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication/review-receipts.json
+          data/intake/status-sovereignty-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication/source-adjudications.json
+          docs/milestones/ssc-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication.md
+          schemas/status-sovereignty-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication.schema.json
+          test/status-sovereignty-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication.test.js
+          tools/build-status-sovereignty-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication.mjs
+          tools/validate-status-sovereignty-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication.mjs
+          PATHS
+          sed -i 's/^          //' "$OUT/product-paths.txt"
+          test "$(wc -l < "$OUT/product-paths.txt" | tr -d ' ')" -eq 14
+          test "$(LC_ALL=C sort "$OUT/product-paths.txt")" = "$(cat "$OUT/product-paths.txt")"
+
+          stage='recover_exact_permanent_product_pr'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          OWNER="${GITHUB_REPOSITORY%%/*}"
+          PRODUCT_PR=''
+          for attempt in $(seq 1 180); do
+            status="$(curl --silent --output "$OUT/product-ref.json" --write-out '%{http_code}' \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/git/ref/heads/$PRODUCT_BRANCH")"
+            if test "$status" = 200; then
+              api_get "pulls?state=open&head=$OWNER:$PRODUCT_BRANCH&base=main&per_page=100" > "$OUT/product-prs.json"
+              PRODUCT_PR="$(jq -r 'sort_by(.created_at) | last | .number // empty' "$OUT/product-prs.json")"
+              test -n "$PRODUCT_PR" && break
+            else
+              test "$status" = 404
+            fi
+            sleep 10
+          done
+          test -n "$PRODUCT_PR"
+          PRODUCT_COMMIT="$(jq -er '.object.sha' "$OUT/product-ref.json")"
+          api_get "pulls/$PRODUCT_PR" > "$OUT/product-pr.json"
+          PRODUCT_PR_NODE="$(jq -er '.node_id' "$OUT/product-pr.json")"
+          jq -e --arg branch "$PRODUCT_BRANCH" --arg sha "$PRODUCT_COMMIT" --arg parent "$PARENT" '.state=="open" and .head.ref==$branch and .head.sha==$sha and .base.ref=="main" and .base.sha==$parent' "$OUT/product-pr.json" >/dev/null
+
+          stage='prove_product_git_topology'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          git fetch --no-tags --force origin "+refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse "refs/remotes/origin/$PRODUCT_BRANCH")" = "$PRODUCT_COMMIT"
+          test "$(git rev-list --count "$PARENT".."$PRODUCT_COMMIT")" -eq 1
+          test "$(git rev-parse "$PRODUCT_COMMIT^")" = "$PARENT"
+          git diff --name-only "$PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort > "$OUT/product-added-paths.txt"
+          git diff --name-only --diff-filter=A "$PARENT" "$PRODUCT_COMMIT" | LC_ALL=C sort > "$OUT/product-additions-only.txt"
+          cmp "$OUT/product-paths.txt" "$OUT/product-added-paths.txt"
+          cmp "$OUT/product-paths.txt" "$OUT/product-additions-only.txt"
+          test -z "$(git diff --name-only --diff-filter=MDTCRUXB "$PARENT" "$PRODUCT_COMMIT")"
+          git diff --check "$PARENT" "$PRODUCT_COMMIT"
+          PRODUCT_TREE="$(git rev-parse "$PRODUCT_COMMIT^{tree}")"
+
+          git show "$PRODUCT_COMMIT:$PRODUCT_WORKFLOW_PATH" > "$OUT/product-workflow.yml"
+          python - "$OUT/product-workflow.yml" "$OUT/workflow-metadata.json" <<'PY'
+          from pathlib import Path
+          import json,sys,yaml
+          value=yaml.safe_load(Path(sys.argv[1]).read_text())
+          name=value.get('name')
+          if not isinstance(name,str) or not name:
+              raise SystemExit('missing product workflow name')
+          artifact_names=[]
+          for job in (value.get('jobs') or {}).values():
+              for step in job.get('steps') or []:
+                  uses=str(step.get('uses',''))
+                  if uses.startswith('actions/upload-artifact@'):
+                      candidate=(step.get('with') or {}).get('name')
+                      if isinstance(candidate,str) and candidate and '${{' not in candidate:
+                          artifact_names.append(candidate)
+          Path(sys.argv[2]).write_text(json.dumps({'workflow_name':name,'artifact_names':sorted(set(artifact_names))},indent=2,sort_keys=True)+'\n')
+          PY
+          PRODUCT_WORKFLOW_NAME="$(jq -er '.workflow_name' "$OUT/workflow-metadata.json")"
+
+          wait_exact_run() {
+            local name="$1" event="$2" label="$3"
+            local run_id=''
+            for attempt in $(seq 1 240); do
+              api_get "actions/runs?head_sha=$PRODUCT_COMMIT&event=$event&per_page=100" > "$OUT/${label}-runs.json"
+              run_id="$(jq -r --arg name "$name" --arg sha "$PRODUCT_COMMIT" --arg event "$event" '[.workflow_runs[] | select(.name==$name and .head_sha==$sha and .event==$event)] | sort_by(.created_at) | last | .id // empty' "$OUT/${label}-runs.json")"
+              if test -n "$run_id"; then
+                status="$(jq -r --argjson id "$run_id" '.workflow_runs[] | select(.id==$id) | .status' "$OUT/${label}-runs.json")"
+                test "$status" != completed || break
+              fi
+              sleep 10
+            done
+            test -n "$run_id"
+            api_get "actions/runs/$run_id" > "$OUT/${label}-run.json"
+            jq -e --arg name "$name" --arg sha "$PRODUCT_COMMIT" --arg event "$event" '.name==$name and .head_sha==$sha and .event==$event and .status=="completed" and .conclusion=="success"' "$OUT/${label}-run.json" >/dev/null
+            printf '%s\n' "$run_id"
+          }
+
+          stage='require_exact_head_product_gates'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          PRODUCT_RUN="$(wait_exact_run "$PRODUCT_WORKFLOW_NAME" pull_request product)"
+          RELEASE_RUN="$(wait_exact_run 'Release checks' pull_request release)"
+          NO_MAGIC_RUN="$(wait_exact_run 'No magic human gate' pull_request no-magic)"
+          api_get "actions/runs/$PRODUCT_RUN/jobs?filter=latest&per_page=100" > "$OUT/product-jobs.json"
+          jq -e '[.jobs[] | select(.status=="completed" and .conclusion=="success")] | length==.total_count' "$OUT/product-jobs.json" >/dev/null
+
+          stage='authenticate_exact_head_product_artifacts'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          api_get "actions/runs/$PRODUCT_RUN/artifacts?per_page=100" > "$OUT/product-artifacts.json"
+          test "$(jq '[.artifacts[] | select(.expired==false)] | length' "$OUT/product-artifacts.json")" -ge 1
+          mkdir -p "$OUT/product-artifacts"
+          while IFS=$'\t' read -r artifact_id artifact_name artifact_digest; do
+            test -n "$artifact_id"
+            target="$OUT/product-artifacts/${artifact_id}.zip"
+            curl --fail-with-body --silent --show-error -L \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > "$target"
+            test "$artifact_digest" = "sha256:$(sha256sum "$target" | awk '{print $1}')"
+            unzip -t "$target" > "$OUT/product-artifacts/${artifact_id}-zip-test.txt"
+            printf '%s\t%s\t%s\n' "$artifact_id" "$artifact_name" "$artifact_digest" >> "$OUT/product-artifact-ledger.tsv"
+          done < <(jq -r '.artifacts[] | select(.expired==false) | [.id,.name,.digest] | @tsv' "$OUT/product-artifacts.json")
+
+          stage='mark_permanent_pr_ready'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          if jq -e '.draft==true' "$OUT/product-pr.json" >/dev/null; then
+            jq -n --arg id "$PRODUCT_PR_NODE" '{query:"mutation($id:ID!){markPullRequestReadyForReview(input:{pullRequestId:$id}){pullRequest{isDraft}}}",variables:{id:$id}}' | graphql > "$OUT/ready-response.json"
+            jq -e '.data.markPullRequestReadyForReview.pullRequest.isDraft==false and (.errors|not)' "$OUT/ready-response.json" >/dev/null
+          fi
+
+          stage='require_terminal_exact_head_review'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          PREFIX="${PRODUCT_COMMIT:0:10}"
+          REVIEW_OK='false'
+          for attempt in $(seq 1 240); do
+            jq -n --arg owner "$OWNER" --arg repo "${GITHUB_REPOSITORY#*/}" --argjson number "$PRODUCT_PR" '{query:"query($owner:String!,$repo:String!,$number:Int!){repository(owner:$owner,name:$repo){pullRequest(number:$number){isDraft reviewThreads(first:100){nodes{isResolved}} reviews(last:100){nodes{author{login} body state commit{oid}}} comments(last:100){nodes{author{login} body}}}}}",variables:{owner:$owner,repo:$repo,number:$number}}' | graphql > "$OUT/review-state.json"
+            python - "$OUT/review-state.json" "$PREFIX" <<'PY'
+          import json,sys
+          value=json.load(open(sys.argv[1]))
+          prefix=sys.argv[2].lower()
+          pr=value['data']['repository']['pullRequest']
+          if pr['isDraft']:
+              raise SystemExit(2)
+          if any(not node['isResolved'] for node in pr['reviewThreads']['nodes']):
+              raise SystemExit(3)
+          bodies=[]
+          for key in ('reviews','comments'):
+              for node in pr[key]['nodes']:
+                  login=((node.get('author') or {}).get('login') or '').lower()
+                  body=(node.get('body') or '').lower()
+                  if 'codex' in login or 'chatgpt' in login or 'openai' in login:
+                      bodies.append(body)
+          clean=any(prefix in body and ("didn't find any major issues" in body or 'did not find any major issues' in body or 'no major issues' in body) for body in bodies)
+          if not clean:
+              raise SystemExit(4)
+          print('terminal_exact_head_review=pass')
+          PY
+            code=$?
+            if test "$code" -eq 0; then REVIEW_OK='true'; break; fi
+            sleep 15
+          done
+          test "$REVIEW_OK" = true
+
+          stage='independent_exact_head_replay'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          git worktree add --detach "$WORK/product" "$PRODUCT_COMMIT"
+          cd "$WORK/product"
+          python - <<'PY'
+          import yaml
+          with open('.github/workflows/status-sovereignty-rd-wave03-rd04-postpromotion-or-wi-minimum-frontier-adjudication.yml') as f:
+              yaml.safe_load(f)
+          print('workflow_yaml=pass')
+          PY
+          node "$PRODUCT_BUILDER" --check > "$OUT/premerge-builder.json"
+          node "$PRODUCT_VALIDATOR" > "$OUT/premerge-validator.json"
+          node --test "$PRODUCT_TEST" > "$OUT/premerge-adversarial.log"
+          python - "$PRODUCT_SCHEMA" "$PRODUCT_ROOT" <<'PY'
+          from pathlib import Path
+          import json,sys
+          from jsonschema import Draft202012Validator
+          schema=json.loads(Path(sys.argv[1]).read_text())
+          Draft202012Validator.check_schema(schema)
+          validator=Draft202012Validator(schema)
+          paths=sorted(Path(sys.argv[2]).glob('*.json'))
+          assert len(paths)==8
+          for path in paths:
+              validator.validate(json.loads(path.read_text()))
+          print('premerge_schema_validation=pass')
+          PY
+          node tools/validate-no-magic-human-gate.mjs > "$OUT/premerge-no-magic-validator.log"
+          node test/no-magic-human-gate.test.js > "$OUT/premerge-no-magic-test.log"
+          npm run release:check > "$OUT/premerge-release.log" 2>&1
+          git reset --hard "$PRODUCT_COMMIT"
+          git clean -fdx
+          node "$PRODUCT_BUILDER" --check > "$OUT/premerge-replay-builder.json"
+          node "$PRODUCT_VALIDATOR" > "$OUT/premerge-replay-validator.json"
+          node --test "$PRODUCT_TEST" > "$OUT/premerge-replay-adversarial.log"
+          cmp "$OUT/premerge-validator.json" "$OUT/premerge-replay-validator.json"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          cd "$GITHUB_WORKSPACE"
+
+          stage='merge_exact_reviewed_product'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+          test "$(git rev-parse refs/remotes/origin/main)" = "$PARENT"
+          api_get "pulls/$PRODUCT_PR" > "$OUT/product-pr-premerge.json"
+          jq -e --arg sha "$PRODUCT_COMMIT" '.state=="open" and .draft==false and .head.sha==$sha and .base.sha=="146f5ceb1882d02c7be8d225d49665d63478a7df"' "$OUT/product-pr-premerge.json" >/dev/null
+          jq -n --arg sha "$PRODUCT_COMMIT" '{sha:$sha,merge_method:"merge",commit_title:"Merge exact Oregon-Wisconsin RD-04 adjudication product",commit_message:"Admit the exact fourteen-path Oregon-Wisconsin minimum-frontier adjudication product after exact-head qualification, closed-schema replay, seventy-three refusals, complete Release qualification, zero unresolved threads, and a terminal clean Codex disposition. Preserve twelve source admissions, six bounded candidates, and zero field, matrix, row, class, cumulative-ledger, publication, adoption, graph, or outside-human effect."}' | api_put "pulls/$PRODUCT_PR/merge" > "$OUT/merge-response.json"
+          jq -e '.merged==true' "$OUT/merge-response.json" >/dev/null
+          MERGE_COMMIT="$(jq -er '.sha' "$OUT/merge-response.json")"
+
+          stage='prove_canonical_merge_topology'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          for attempt in $(seq 1 60); do
+            git fetch --no-tags --force origin '+refs/heads/main:refs/remotes/origin/main'
+            test "$(git rev-parse refs/remotes/origin/main)" = "$MERGE_COMMIT" && break
+            sleep 5
+          done
+          test "$(git rev-parse refs/remotes/origin/main)" = "$MERGE_COMMIT"
+          read -r observed_merge observed_parent observed_product < <(git rev-list --parents -n1 "$MERGE_COMMIT")
+          test "$observed_merge" = "$MERGE_COMMIT"
+          test "$observed_parent" = "$PARENT"
+          test "$observed_product" = "$PRODUCT_COMMIT"
+          test "$(git rev-parse "$MERGE_COMMIT^{tree}")" = "$PRODUCT_TREE"
+          test -z "$(git diff --name-only "$PRODUCT_COMMIT" "$MERGE_COMMIT")"
+
+          wait_push_run() {
+            local name="$1" label="$2"
+            local run_id=''
+            for attempt in $(seq 1 240); do
+              api_get "actions/runs?head_sha=$MERGE_COMMIT&event=push&per_page=100" > "$OUT/${label}-push-runs.json"
+              run_id="$(jq -r --arg name "$name" --arg sha "$MERGE_COMMIT" '[.workflow_runs[] | select(.name==$name and .head_sha==$sha and .event=="push")] | sort_by(.created_at) | last | .id // empty' "$OUT/${label}-push-runs.json")"
+              if test -n "$run_id"; then
+                status="$(jq -r --argjson id "$run_id" '.workflow_runs[] | select(.id==$id) | .status' "$OUT/${label}-push-runs.json")"
+                test "$status" != completed || break
+              fi
+              sleep 10
+            done
+            test -n "$run_id"
+            api_get "actions/runs/$run_id" > "$OUT/${label}-push-run.json"
+            jq -e --arg name "$name" --arg sha "$MERGE_COMMIT" '.name==$name and .head_sha==$sha and .event=="push" and .status=="completed" and .conclusion=="success"' "$OUT/${label}-push-run.json" >/dev/null
+            printf '%s\n' "$run_id"
+          }
+
+          stage='require_native_canonical_push_gates'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          PRODUCT_PUSH_RUN="$(wait_push_run "$PRODUCT_WORKFLOW_NAME" product)"
+          RELEASE_PUSH_RUN="$(wait_push_run 'Release checks' release)"
+          NO_MAGIC_PUSH_RUN="$(wait_push_run 'No magic human gate' no-magic)"
+
+          stage='authenticate_native_canonical_artifact'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          api_get "actions/runs/$PRODUCT_PUSH_RUN/artifacts?per_page=100" > "$OUT/product-push-artifacts.json"
+          test "$(jq '[.artifacts[] | select(.expired==false)] | length' "$OUT/product-push-artifacts.json")" -ge 1
+          mkdir -p "$OUT/product-push-artifacts"
+          while IFS=$'\t' read -r artifact_id artifact_name artifact_digest; do
+            target="$OUT/product-push-artifacts/${artifact_id}.zip"
+            curl --fail-with-body --silent --show-error -L \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > "$target"
+            test "$artifact_digest" = "sha256:$(sha256sum "$target" | awk '{print $1}')"
+            unzip -t "$target" > "$OUT/product-push-artifacts/${artifact_id}-zip-test.txt"
+            printf '%s\t%s\t%s\n' "$artifact_id" "$artifact_name" "$artifact_digest" >> "$OUT/product-push-artifact-ledger.tsv"
+          done < <(jq -r '.artifacts[] | select(.expired==false) | [.id,.name,.digest] | @tsv' "$OUT/product-push-artifacts.json")
+
+          stage='independent_canonical_replay'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          git worktree add --detach "$WORK/merge" "$MERGE_COMMIT"
+          cd "$WORK/merge"
+          node "$PRODUCT_BUILDER" --check > "$OUT/postmerge-builder.json"
+          node "$PRODUCT_VALIDATOR" > "$OUT/postmerge-validator.json"
+          node --test "$PRODUCT_TEST" > "$OUT/postmerge-adversarial.log"
+          node tools/validate-no-magic-human-gate.mjs > "$OUT/postmerge-no-magic-validator.log"
+          node test/no-magic-human-gate.test.js > "$OUT/postmerge-no-magic-test.log"
+          npm run release:check > "$OUT/postmerge-release.log" 2>&1
+          git reset --hard "$MERGE_COMMIT"
+          git clean -fdx
+          node "$PRODUCT_BUILDER" --check > "$OUT/postmerge-replay-builder.json"
+          node "$PRODUCT_VALIDATOR" > "$OUT/postmerge-replay-validator.json"
+          node --test "$PRODUCT_TEST" > "$OUT/postmerge-replay-adversarial.log"
+          cmp "$OUT/postmerge-validator.json" "$OUT/postmerge-replay-validator.json"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          cd "$GITHUB_WORKSPACE"
+
+          stage='complete'
+          printf '%s\n' "$stage" > "$OUT/STAGE"
+          printf '0\n' > "$OUT/EXIT_CODE"
+          jq -n \
+            --arg parent "$PARENT" \
+            --arg product_commit "$PRODUCT_COMMIT" \
+            --arg product_tree "$PRODUCT_TREE" \
+            --argjson product_pr "$PRODUCT_PR" \
+            --arg merge_commit "$MERGE_COMMIT" \
+            --argjson product_run "$PRODUCT_RUN" \
+            --argjson release_run "$RELEASE_RUN" \
+            --argjson no_magic_run "$NO_MAGIC_RUN" \
+            --argjson product_push_run "$PRODUCT_PUSH_RUN" \
+            --argjson release_push_run "$RELEASE_PUSH_RUN" \
+            --argjson no_magic_push_run "$NO_MAGIC_PUSH_RUN" \
+            '{schema_version:"ssc-rd04-or-wi-terminal-receipt@1",state:"canonical_adjudication_merged_and_postmerge_verified",canonical_parent:$parent,product_commit:$product_commit,product_tree:$product_tree,product_pr:$product_pr,canonical_merge:$merge_commit,exact_head_product_run:$product_run,exact_head_release_run:$release_run,exact_head_no_magic_run:$no_magic_run,native_product_push_run:$product_push_run,native_release_push_run:$release_push_run,native_no_magic_push_run:$no_magic_push_run,permanent_paths:14,source_requests:0,source_admissions:12,candidates:6,observed_candidates:3,typed_gap_candidates:3,field_terminalizations:0,matrix_updates:0,row_state_mutations:0,class_closed:false,cumulative_ledger_effect:"none",outside_human_dependency:false,publication_effect:"none",adoption_effect:"none",graph_effect:"none",review_threads_unresolved:0,terminal_exact_head_review:true,release_replay:"passed",clean_replay:"byte_identical",authority:"canonical_source_and_field_adjudication_only"}' > "$OUT/terminal-receipt.json"
+          finalize_sums
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
+          trap - ERR
+
+          cat > "$OUT/terminal-comment.md" <<EOF
+The Oregon-Wisconsin minimum-frontier adjudication product is canonically merged and independently replayed.
+
+\`\`\`text
+product PR             #$PRODUCT_PR
+product commit         $PRODUCT_COMMIT
+product tree           $PRODUCT_TREE
+canonical merge        $MERGE_COMMIT
+exact-head product run $PRODUCT_RUN
+native product run     $PRODUCT_PUSH_RUN
+permanent paths        14 additions
+source admissions      12
+field candidates       6, comprising 3 observed and 3 typed gaps
+field/matrix/row       0 / 0 / 0
+class closed           false
+\`\`\`
+
+The canonical object grants source and field adjudication custody only. Exact-current-cell validation and any later promotion remain separate transactions.
+EOF
+          jq -n --rawfile body "$OUT/terminal-comment.md" '{body:$body}' | api_post 'issues/1017/comments' > "$OUT/issue-comment-response.json"
+          jq -n --rawfile body "$OUT/terminal-comment.md" '{body:$body}' | api_post "issues/$CONTROLLER_PR/comments" > "$OUT/controller-comment-response.json"
+      - name: Preserve canonical terminal receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssc-rd04-or-wi-minimum-frontier-terminal-receipt-v1
+          path: ${{ runner.temp }}/ssc-rd04-or-wi-minimum-frontier-terminal-v1
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90
+          compression-level: 9
+      - name: Require canonical terminal state
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="${RUNNER_TEMP}/ssc-rd04-or-wi-minimum-frontier-terminal-v1"
+          test "${{ steps.terminalize.outcome }}" = success
+          test "$(cat "$OUT/STAGE")" = complete
+          test "$(cat "$OUT/EXIT_CODE")" = 0
+          jq -e '
+            .state=="canonical_adjudication_merged_and_postmerge_verified" and
+            .canonical_parent=="146f5ceb1882d02c7be8d225d49665d63478a7df" and
+            .permanent_paths==14 and
+            .source_requests==0 and
+            .source_admissions==12 and
+            .candidates==6 and
+            .observed_candidates==3 and
+            .typed_gap_candidates==3 and
+            .field_terminalizations==0 and
+            .matrix_updates==0 and
+            .row_state_mutations==0 and
+            .class_closed==false and
+            .review_threads_unresolved==0 and
+            .terminal_exact_head_review==true and
+            .release_replay=="passed" and
+            .clean_replay=="byte_identical" and
+            .outside_human_dependency==false
+          ' "$OUT/terminal-receipt.json" > /dev/null
+          (cd "$OUT" && sha256sum -c SHA256SUMS)
