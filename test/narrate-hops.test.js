@@ -6,7 +6,7 @@ const edge = {
   actor_b: 'dominic-cummings',
   surfaces: [
     {
-      surface_id: 'no10-digital-data-advisory-2019-2021',
+      surface_id: 'bounded-policy-session-2020',
       temporal_status: 'dated',
       valid_from: '2019-12-01',
       valid_until: '2020-12-31',
@@ -25,14 +25,14 @@ const edge = {
 // Vote Leave is the smaller surface, so an all-time narration may prefer it.
 // A time-sliced narration must first exclude bases outside the requested slice.
 const populations = new Map([
-  ['no10-digital-data-advisory-2019-2021', 5],
+  ['bounded-policy-session-2020', 5],
   ['vote-leave-data-science-2016', 3],
 ]);
 const populationOf = id => populations.get(id) ?? 0;
 
 assert.equal(selectNarrationBasis(edge, { populationOf }).surface_id, 'vote-leave-data-science-2016');
 assert.equal(selectNarrationBasis(edge, { asOf: '2020', populationOf }).surface_id,
-  'no10-digital-data-advisory-2019-2021',
+  'bounded-policy-session-2020',
   '2020 narration must not substitute the smaller 2016 surface');
 assert.equal(selectNarrationBasis(edge, { asOf: '2016', populationOf }).surface_id,
   'vote-leave-data-science-2016',

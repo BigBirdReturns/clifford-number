@@ -117,7 +117,7 @@ This release must pass five fixtures before the full database can be trusted:
 3. Simon Case is represented through governance continuity surfaces.
 4. Surface types distinguish hop-eligible, non-hop scorable, context-only, and scout-only surfaces.
 5. Broad institutions never create Clifford Number hops.
-6. Hop bases carry validity windows; disjoint dated participations on a shared surface create no hop (e.g. Rosenfield and Cummings, who were in No. 10 in non-overlapping windows).
+6. Hop bases carry validity windows; disjoint dated participations on a shared surface create no hop, and broad-office role observations remain explicit context rather than pairwise adjacency.
 
 ## Temporal identity layer (provisional)
 

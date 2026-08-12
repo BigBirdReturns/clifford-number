@@ -36,6 +36,7 @@ const cases = [
   ['response invented', (c) => { c.responses.records.push({}); }],
   ['campaign digest', (c) => { c.campaignManifest.combined_sha256 = '0'.repeat(64); }],
   ['status digest', (c) => { c.statusManifest.combined_sha256 = '0'.repeat(64); }],
+  ['historical status receipt', (c) => { c.checkpoint.trigger.checkpoint_status_release_sha256 = '0'.repeat(64); }],
   ['POOF digest', (c) => { c.poofManifest.combined_sha256 = '0'.repeat(64); }],
   ['snapshot candidate', (c) => { c.checkpoint.canonical_snapshot.status_sovereignty.wave_02_reviewer_candidates = 7; }],
   ['snapshot review', (c) => { c.checkpoint.canonical_snapshot.status_sovereignty.wave_02_valid_reviews = 1; }],

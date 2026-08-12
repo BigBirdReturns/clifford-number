@@ -26,7 +26,7 @@ profile is shown as unfinished, never papered over.
   "plain": {
     "who": "One sentence of who this is, written by a human, receipt-supported.",
     "why_here": "One sentence on why they appear in this case.",
-    "receipt_ids": ["official-no10-ben-warner"]
+    "receipt_ids": ["uk-covid-inquiry-ben-warner-decision-forward-planning-2020-03-13-16", "gov-sage-89-ben-warner-no10-2021-05-13"]
   }
 }
 ```
