@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-12T03:26:58.478Z",
+  "generated": "2026-08-12T06:58:18.349Z",
   "anchor_actor_id": "matt-clifford",
   "rule": "Actor-to-actor hops are generated only from shared valid bounded surfaces with explicit participation rows.",
   "temporal_rule": "A hop basis exists only for the window where both participations and the surface overlap. Disjoint dated participations create no hop (rejected_hop_pairs). Bases with an undated participation never support time-sliced claims.",
@@ -70,22 +70,21 @@
       "actor_b": "marc-warner",
       "surfaces": [
         {
-          "surface_id": "faculty-investor-employee-2015-2019",
-          "surface_label": "Faculty employment / investor surface, 2015-2019",
+          "surface_id": "faculty-science-officer-employee-overlap-2018-01-24",
+          "surface_label": "Faculty Science officer / employee overlap, 24 January 2018",
           "surface_type": "employment_investment_surface",
           "secondary_surface_types": [
             "public_private_ai_infrastructure"
           ],
-          "actor_a_role": "Principal / data scientist",
-          "actor_b_role": "CEO / co-founder",
+          "actor_a_role": "Commercial Principal, ASI Data Science, as identified by the dated speaker profile",
+          "actor_b_role": "Director appointed 3 February 2014",
           "evidence_class": "primary_public",
           "receipt_ids": [
-            "warner-surface-audit-2026-06-29",
-            "guardian-faculty-sage",
-            "master-doc-v3"
+            "zebra-ben-warner-asi-commercial-principal-2018-01-24",
+            "companies-house-faculty-science-officers-08873131"
           ],
-          "valid_from": "2015-01-01",
-          "valid_until": "2019-12-31",
+          "valid_from": "2018-01-24",
+          "valid_until": "2018-01-24",
           "temporal_status": "dated"
         },
         {
@@ -110,8 +109,8 @@
       "evidence_weight": 1.25,
       "surface_count": 2,
       "temporal_envelope": {
-        "valid_from": "2015-01-01",
-        "valid_until": "2019-12-31"
+        "valid_from": "2016-01-01",
+        "valid_until": "2018-01-24"
       },
       "temporal_status": "dated"
     },
@@ -120,31 +119,31 @@
       "actor_b": "saul-klein",
       "surfaces": [
         {
-          "surface_id": "faculty-investor-employee-2015-2019",
-          "surface_label": "Faculty employment / investor surface, 2015-2019",
+          "surface_id": "faculty-science-officer-employee-overlap-2018-01-24",
+          "surface_label": "Faculty Science officer / employee overlap, 24 January 2018",
           "surface_type": "employment_investment_surface",
           "secondary_surface_types": [
             "public_private_ai_infrastructure"
           ],
-          "actor_a_role": "Principal / data scientist",
-          "actor_b_role": "reported personal investor",
-          "evidence_class": "reported",
+          "actor_a_role": "Commercial Principal, ASI Data Science, as identified by the dated speaker profile",
+          "actor_b_role": "Director appointed 21 April 2016",
+          "evidence_class": "primary_public",
           "receipt_ids": [
-            "warner-surface-audit-2026-06-29",
-            "guardian-faculty-sage"
+            "zebra-ben-warner-asi-commercial-principal-2018-01-24",
+            "companies-house-faculty-science-officers-08873131"
           ],
-          "valid_from": "2015-01-01",
-          "valid_until": "2019-12-31",
-          "temporal_status": "partially_dated"
+          "valid_from": "2018-01-24",
+          "valid_until": "2018-01-24",
+          "temporal_status": "dated"
         }
       ],
-      "evidence_weight": 2,
+      "evidence_weight": 1.25,
       "surface_count": 1,
       "temporal_envelope": {
-        "valid_from": "2015-01-01",
-        "valid_until": "2019-12-31"
+        "valid_from": "2018-01-24",
+        "valid_until": "2018-01-24"
       },
-      "temporal_status": "undated"
+      "temporal_status": "dated"
     },
     {
       "actor_a": "cal-henderson",
@@ -830,35 +829,114 @@
     },
     {
       "actor_a": "marc-warner",
-      "actor_b": "saul-klein",
+      "actor_b": "matt-clifford",
       "surfaces": [
         {
-          "surface_id": "faculty-investor-employee-2015-2019",
-          "surface_label": "Faculty employment / investor surface, 2015-2019",
+          "surface_id": "faculty-science-director-shareholder-overlap-2024-10-10",
+          "surface_label": "Faculty Science director / shareholder overlap, 10 October 2024",
           "surface_type": "employment_investment_surface",
           "secondary_surface_types": [
             "public_private_ai_infrastructure"
           ],
-          "actor_a_role": "CEO / co-founder",
-          "actor_b_role": "reported personal investor",
-          "evidence_class": "reported",
+          "actor_a_role": "Director appointed 3 February 2014",
+          "actor_b_role": "Direct investor / shareholder declared by DSIT on 10 October 2024",
+          "evidence_class": "official",
           "receipt_ids": [
-            "warner-surface-audit-2026-06-29",
-            "guardian-faculty-sage",
-            "master-doc-v3"
+            "gov-dsit-matt-clifford-faculty-shareholding-2024-10-10",
+            "companies-house-faculty-science-officers-08873131"
           ],
-          "valid_from": "2015-01-01",
-          "valid_until": "2019-12-31",
-          "temporal_status": "partially_dated"
+          "valid_from": "2024-10-10",
+          "valid_until": "2024-10-10",
+          "temporal_status": "dated"
         }
       ],
-      "evidence_weight": 2,
+      "evidence_weight": 1,
       "surface_count": 1,
       "temporal_envelope": {
-        "valid_from": "2015-01-01",
-        "valid_until": "2019-12-31"
+        "valid_from": "2024-10-10",
+        "valid_until": "2024-10-10"
       },
-      "temporal_status": "undated"
+      "temporal_status": "dated"
+    },
+    {
+      "actor_a": "marc-warner",
+      "actor_b": "saul-klein",
+      "surfaces": [
+        {
+          "surface_id": "faculty-science-officer-employee-overlap-2018-01-24",
+          "surface_label": "Faculty Science officer / employee overlap, 24 January 2018",
+          "surface_type": "employment_investment_surface",
+          "secondary_surface_types": [
+            "public_private_ai_infrastructure"
+          ],
+          "actor_a_role": "Director appointed 3 February 2014",
+          "actor_b_role": "Director appointed 21 April 2016",
+          "evidence_class": "primary_public",
+          "receipt_ids": [
+            "zebra-ben-warner-asi-commercial-principal-2018-01-24",
+            "companies-house-faculty-science-officers-08873131"
+          ],
+          "valid_from": "2018-01-24",
+          "valid_until": "2018-01-24",
+          "temporal_status": "dated"
+        },
+        {
+          "surface_id": "faculty-science-director-shareholder-overlap-2024-10-10",
+          "surface_label": "Faculty Science director / shareholder overlap, 10 October 2024",
+          "surface_type": "employment_investment_surface",
+          "secondary_surface_types": [
+            "public_private_ai_infrastructure"
+          ],
+          "actor_a_role": "Director appointed 3 February 2014",
+          "actor_b_role": "Director appointed 21 April 2016",
+          "evidence_class": "official",
+          "receipt_ids": [
+            "gov-dsit-matt-clifford-faculty-shareholding-2024-10-10",
+            "companies-house-faculty-science-officers-08873131"
+          ],
+          "valid_from": "2024-10-10",
+          "valid_until": "2024-10-10",
+          "temporal_status": "dated"
+        }
+      ],
+      "evidence_weight": 1,
+      "surface_count": 2,
+      "temporal_envelope": {
+        "valid_from": "2018-01-24",
+        "valid_until": "2024-10-10"
+      },
+      "temporal_status": "dated"
+    },
+    {
+      "actor_a": "matt-clifford",
+      "actor_b": "saul-klein",
+      "surfaces": [
+        {
+          "surface_id": "faculty-science-director-shareholder-overlap-2024-10-10",
+          "surface_label": "Faculty Science director / shareholder overlap, 10 October 2024",
+          "surface_type": "employment_investment_surface",
+          "secondary_surface_types": [
+            "public_private_ai_infrastructure"
+          ],
+          "actor_a_role": "Direct investor / shareholder declared by DSIT on 10 October 2024",
+          "actor_b_role": "Director appointed 21 April 2016",
+          "evidence_class": "official",
+          "receipt_ids": [
+            "gov-dsit-matt-clifford-faculty-shareholding-2024-10-10",
+            "companies-house-faculty-science-officers-08873131"
+          ],
+          "valid_from": "2024-10-10",
+          "valid_until": "2024-10-10",
+          "temporal_status": "dated"
+        }
+      ],
+      "evidence_weight": 1,
+      "surface_count": 1,
+      "temporal_envelope": {
+        "valid_from": "2024-10-10",
+        "valid_until": "2024-10-10"
+      },
+      "temporal_status": "dated"
     }
   ],
   "shortest_paths": {
@@ -870,19 +948,213 @@
       "hops": []
     },
     "ben-warner": {
-      "number": null,
-      "actor_path": [],
-      "hops": []
+      "number": 2,
+      "actor_path": [
+        "ben-warner",
+        "marc-warner",
+        "matt-clifford"
+      ],
+      "hops": [
+        {
+          "from": "ben-warner",
+          "to": "marc-warner",
+          "shared_surfaces": [
+            {
+              "surface_id": "faculty-science-officer-employee-overlap-2018-01-24",
+              "surface_label": "Faculty Science officer / employee overlap, 24 January 2018",
+              "surface_type": "employment_investment_surface",
+              "secondary_surface_types": [
+                "public_private_ai_infrastructure"
+              ],
+              "actor_a_role": "Commercial Principal, ASI Data Science, as identified by the dated speaker profile",
+              "actor_b_role": "Director appointed 3 February 2014",
+              "evidence_class": "primary_public",
+              "receipt_ids": [
+                "zebra-ben-warner-asi-commercial-principal-2018-01-24",
+                "companies-house-faculty-science-officers-08873131"
+              ],
+              "valid_from": "2018-01-24",
+              "valid_until": "2018-01-24",
+              "temporal_status": "dated"
+            },
+            {
+              "surface_id": "vote-leave-data-science-2016",
+              "surface_label": "Vote Leave data science surface, 2016",
+              "surface_type": "campaign_surface",
+              "secondary_surface_types": [
+                "model_governance_surface"
+              ],
+              "actor_a_role": "Data scientist",
+              "actor_b_role": "Faculty CEO / campaign vendor leader",
+              "evidence_class": "reported",
+              "receipt_ids": [
+                "warner-surface-audit-2026-06-29",
+                "master-doc-v3"
+              ],
+              "valid_from": "2016-01-01",
+              "valid_until": "2016-12-31",
+              "temporal_status": "dated"
+            }
+          ]
+        },
+        {
+          "from": "marc-warner",
+          "to": "matt-clifford",
+          "shared_surfaces": [
+            {
+              "surface_id": "faculty-science-director-shareholder-overlap-2024-10-10",
+              "surface_label": "Faculty Science director / shareholder overlap, 10 October 2024",
+              "surface_type": "employment_investment_surface",
+              "secondary_surface_types": [
+                "public_private_ai_infrastructure"
+              ],
+              "actor_a_role": "Director appointed 3 February 2014",
+              "actor_b_role": "Direct investor / shareholder declared by DSIT on 10 October 2024",
+              "evidence_class": "official",
+              "receipt_ids": [
+                "gov-dsit-matt-clifford-faculty-shareholding-2024-10-10",
+                "companies-house-faculty-science-officers-08873131"
+              ],
+              "valid_from": "2024-10-10",
+              "valid_until": "2024-10-10",
+              "temporal_status": "dated"
+            }
+          ]
+        }
+      ]
     },
     "marc-warner": {
-      "number": null,
-      "actor_path": [],
-      "hops": []
+      "number": 1,
+      "actor_path": [
+        "marc-warner",
+        "matt-clifford"
+      ],
+      "hops": [
+        {
+          "from": "marc-warner",
+          "to": "matt-clifford",
+          "shared_surfaces": [
+            {
+              "surface_id": "faculty-science-director-shareholder-overlap-2024-10-10",
+              "surface_label": "Faculty Science director / shareholder overlap, 10 October 2024",
+              "surface_type": "employment_investment_surface",
+              "secondary_surface_types": [
+                "public_private_ai_infrastructure"
+              ],
+              "actor_a_role": "Director appointed 3 February 2014",
+              "actor_b_role": "Direct investor / shareholder declared by DSIT on 10 October 2024",
+              "evidence_class": "official",
+              "receipt_ids": [
+                "gov-dsit-matt-clifford-faculty-shareholding-2024-10-10",
+                "companies-house-faculty-science-officers-08873131"
+              ],
+              "valid_from": "2024-10-10",
+              "valid_until": "2024-10-10",
+              "temporal_status": "dated"
+            }
+          ]
+        }
+      ]
     },
     "alex-cooper": {
-      "number": null,
-      "actor_path": [],
-      "hops": []
+      "number": 3,
+      "actor_path": [
+        "alex-cooper",
+        "ben-warner",
+        "marc-warner",
+        "matt-clifford"
+      ],
+      "hops": [
+        {
+          "from": "alex-cooper",
+          "to": "ben-warner",
+          "shared_surfaces": [
+            {
+              "surface_id": "electric-twin-incorporation-2023-09-28",
+              "surface_label": "Electric Twin incorporation and initial-director surface, 28 September 2023",
+              "surface_type": "founder_officer_surface",
+              "secondary_surface_types": [
+                "model_governance_surface"
+              ],
+              "actor_a_role": "Initial director appointed on the incorporation date",
+              "actor_b_role": "Initial director appointed on the incorporation date",
+              "evidence_class": "official",
+              "receipt_ids": [
+                "companies-house-electric-twin-incorporation-2023-09-28"
+              ],
+              "valid_from": "2023-09-28",
+              "valid_until": "2023-09-28",
+              "temporal_status": "dated"
+            }
+          ]
+        },
+        {
+          "from": "ben-warner",
+          "to": "marc-warner",
+          "shared_surfaces": [
+            {
+              "surface_id": "faculty-science-officer-employee-overlap-2018-01-24",
+              "surface_label": "Faculty Science officer / employee overlap, 24 January 2018",
+              "surface_type": "employment_investment_surface",
+              "secondary_surface_types": [
+                "public_private_ai_infrastructure"
+              ],
+              "actor_a_role": "Commercial Principal, ASI Data Science, as identified by the dated speaker profile",
+              "actor_b_role": "Director appointed 3 February 2014",
+              "evidence_class": "primary_public",
+              "receipt_ids": [
+                "zebra-ben-warner-asi-commercial-principal-2018-01-24",
+                "companies-house-faculty-science-officers-08873131"
+              ],
+              "valid_from": "2018-01-24",
+              "valid_until": "2018-01-24",
+              "temporal_status": "dated"
+            },
+            {
+              "surface_id": "vote-leave-data-science-2016",
+              "surface_label": "Vote Leave data science surface, 2016",
+              "surface_type": "campaign_surface",
+              "secondary_surface_types": [
+                "model_governance_surface"
+              ],
+              "actor_a_role": "Data scientist",
+              "actor_b_role": "Faculty CEO / campaign vendor leader",
+              "evidence_class": "reported",
+              "receipt_ids": [
+                "warner-surface-audit-2026-06-29",
+                "master-doc-v3"
+              ],
+              "valid_from": "2016-01-01",
+              "valid_until": "2016-12-31",
+              "temporal_status": "dated"
+            }
+          ]
+        },
+        {
+          "from": "marc-warner",
+          "to": "matt-clifford",
+          "shared_surfaces": [
+            {
+              "surface_id": "faculty-science-director-shareholder-overlap-2024-10-10",
+              "surface_label": "Faculty Science director / shareholder overlap, 10 October 2024",
+              "surface_type": "employment_investment_surface",
+              "secondary_surface_types": [
+                "public_private_ai_infrastructure"
+              ],
+              "actor_a_role": "Director appointed 3 February 2014",
+              "actor_b_role": "Direct investor / shareholder declared by DSIT on 10 October 2024",
+              "evidence_class": "official",
+              "receipt_ids": [
+                "gov-dsit-matt-clifford-faculty-shareholding-2024-10-10",
+                "companies-house-faculty-science-officers-08873131"
+              ],
+              "valid_from": "2024-10-10",
+              "valid_until": "2024-10-10",
+              "temporal_status": "dated"
+            }
+          ]
+        }
+      ]
     },
     "simon-case": {
       "number": null,
@@ -890,9 +1162,62 @@
       "hops": []
     },
     "dominic-cummings": {
-      "number": null,
-      "actor_path": [],
-      "hops": []
+      "number": 2,
+      "actor_path": [
+        "dominic-cummings",
+        "marc-warner",
+        "matt-clifford"
+      ],
+      "hops": [
+        {
+          "from": "dominic-cummings",
+          "to": "marc-warner",
+          "shared_surfaces": [
+            {
+              "surface_id": "vote-leave-data-science-2016",
+              "surface_label": "Vote Leave data science surface, 2016",
+              "surface_type": "campaign_surface",
+              "secondary_surface_types": [
+                "model_governance_surface"
+              ],
+              "actor_a_role": "Vote Leave director",
+              "actor_b_role": "Faculty CEO / campaign vendor leader",
+              "evidence_class": "reported",
+              "receipt_ids": [
+                "warner-surface-audit-2026-06-29",
+                "master-doc-v3"
+              ],
+              "valid_from": "2016-01-01",
+              "valid_until": "2016-12-31",
+              "temporal_status": "dated"
+            }
+          ]
+        },
+        {
+          "from": "marc-warner",
+          "to": "matt-clifford",
+          "shared_surfaces": [
+            {
+              "surface_id": "faculty-science-director-shareholder-overlap-2024-10-10",
+              "surface_label": "Faculty Science director / shareholder overlap, 10 October 2024",
+              "surface_type": "employment_investment_surface",
+              "secondary_surface_types": [
+                "public_private_ai_infrastructure"
+              ],
+              "actor_a_role": "Director appointed 3 February 2014",
+              "actor_b_role": "Direct investor / shareholder declared by DSIT on 10 October 2024",
+              "evidence_class": "official",
+              "receipt_ids": [
+                "gov-dsit-matt-clifford-faculty-shareholding-2024-10-10",
+                "companies-house-faculty-science-officers-08873131"
+              ],
+              "valid_from": "2024-10-10",
+              "valid_until": "2024-10-10",
+              "temporal_status": "dated"
+            }
+          ]
+        }
+      ]
     },
     "dan-rosenfield": {
       "number": null,
@@ -910,9 +1235,37 @@
       "hops": []
     },
     "saul-klein": {
-      "number": null,
-      "actor_path": [],
-      "hops": []
+      "number": 1,
+      "actor_path": [
+        "saul-klein",
+        "matt-clifford"
+      ],
+      "hops": [
+        {
+          "from": "saul-klein",
+          "to": "matt-clifford",
+          "shared_surfaces": [
+            {
+              "surface_id": "faculty-science-director-shareholder-overlap-2024-10-10",
+              "surface_label": "Faculty Science director / shareholder overlap, 10 October 2024",
+              "surface_type": "employment_investment_surface",
+              "secondary_surface_types": [
+                "public_private_ai_infrastructure"
+              ],
+              "actor_a_role": "Direct investor / shareholder declared by DSIT on 10 October 2024",
+              "actor_b_role": "Director appointed 21 April 2016",
+              "evidence_class": "official",
+              "receipt_ids": [
+                "gov-dsit-matt-clifford-faculty-shareholding-2024-10-10",
+                "companies-house-faculty-science-officers-08873131"
+              ],
+              "valid_from": "2024-10-10",
+              "valid_until": "2024-10-10",
+              "temporal_status": "dated"
+            }
+          ]
+        }
+      ]
     },
     "ian-hogarth": {
       "number": null,

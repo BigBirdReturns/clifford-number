@@ -230,7 +230,7 @@ for (const pair of hopGraph.rejected_hop_pairs ?? []) {
 // Regression fixture 1: Ben Warner.
 const warnerSurfaces = [
   'ben-warner-no10-digital-data-role-observation-2020-2021',
-  'faculty-investor-employee-2015-2019',
+  'faculty-science-officer-employee-overlap-2018-01-24',
   'vote-leave-data-science-2016',
   'electric-twin-incorporation-2023-09-28',
   'electric-twin-ben-warner-director-tenure-2023-09-28',
@@ -312,7 +312,54 @@ assert(hasSecondary('simon-case', 'governance_continuity_surface'), 'Simon Case 
 // Regression fixture 4: surface discrimination.
 assert(surfaceById.get('electric-twin-newsuk-synthetic-audience')?.hop_eligible === false, 'News UK synthetic audience surface must be non-hop scorable context');
 assert(surfaceById.get('gartner-synthetic-population-category-2026')?.hop_eligible === false, 'Gartner category formation surface must be non-hop scorable context');
-assert(surfaceById.get('faculty-investor-employee-2015-2019')?.hop_eligible === true, 'Faculty investor/employee surface must be hop eligible');
+assert(!surfaceById.has('faculty-investor-employee-2015-2019'), 'unrecoverable Faculty aggregation must be retired');
+assert(surfaceById.get('faculty-science-officer-employee-overlap-2018-01-24')?.hop_eligible === true, 'repaired Faculty officer/employee surface must be hop eligible');
+assert(surfaceById.get('faculty-science-director-shareholder-overlap-2024-10-10')?.hop_eligible === true, 'official Clifford Faculty bridge must be hop eligible');
+
+// Faculty source repair and official Clifford bridge.
+const faculty2018 = surfaceById.get('faculty-science-officer-employee-overlap-2018-01-24');
+assert(faculty2018?.time_start === '2018-01-24' && faculty2018?.time_end === '2018-01-24',
+  'repaired Faculty company surface must remain one day');
+assert(sameIdSet(faculty2018?.receipt_ids, [
+  'zebra-ben-warner-asi-commercial-principal-2018-01-24',
+  'companies-house-faculty-science-officers-08873131',
+]), 'repaired Faculty company surface must use the exact public and official receipts');
+assert(JSON.stringify((faculty2018?.participants ?? []).filter(part => part.participant_type === 'actor')
+  .map(part => part.actor_id).sort()) === JSON.stringify(['ben-warner', 'marc-warner', 'saul-klein']),
+  'repaired Faculty company surface must contain exactly Ben Warner, Marc Warner, and Saul Klein');
+assert(!(faculty2018?.participants ?? []).some(part => part.actor_id === 'matt-clifford'),
+  'Matt Clifford cannot be backdated onto the 2018 Faculty surface');
+assert(!(faculty2018?.receipt_ids ?? []).includes('warner-surface-audit-2026-06-29'),
+  'repaired Faculty company surface must not depend on the lost scratch audit');
+
+const faculty2024 = surfaceById.get('faculty-science-director-shareholder-overlap-2024-10-10');
+assert(faculty2024?.time_start === '2024-10-10' && faculty2024?.time_end === '2024-10-10',
+  'official Clifford Faculty bridge must remain one day');
+assert(sameIdSet(faculty2024?.receipt_ids, [
+  'gov-dsit-matt-clifford-faculty-shareholding-2024-10-10',
+  'companies-house-faculty-science-officers-08873131',
+]), 'official Clifford Faculty bridge must use the exact DSIT and Companies House receipts');
+assert(JSON.stringify((faculty2024?.participants ?? []).filter(part => part.participant_type === 'actor')
+  .map(part => part.actor_id).sort()) === JSON.stringify(['marc-warner', 'matt-clifford', 'saul-klein']),
+  'official Clifford Faculty bridge must contain exactly Clifford, Marc Warner, and Saul Klein');
+for (const actorId of ['marc-warner', 'saul-klein']) {
+  const edge = hopGraph.edges.find(row => [row.actor_a, row.actor_b].sort().join('|') === [actorId, 'matt-clifford'].sort().join('|'));
+  const basis = edge?.surfaces.find(row => row.surface_id === faculty2024?.surface_id);
+  assert(basis?.evidence_class === 'official', `Clifford/${actorId} Faculty basis must remain official`);
+  assert(basis?.valid_from === '2024-10-10' && basis?.valid_until === '2024-10-10',
+    `Clifford/${actorId} Faculty basis must remain bounded to 10 October 2024`);
+}
+const benPath = actorScore.get('ben-warner')?.shortest_path;
+assert(benPath?.number === 2, 'Ben Warner must now have a two-hop all-time route to Clifford');
+assert(benPath?.actor_path?.[0] === 'ben-warner' && benPath?.actor_path?.at(-1) === 'matt-clifford',
+  'Ben Warner shortest path must terminate at the Clifford anchor');
+const facultyOfficerReceipt = receiptById.get('companies-house-faculty-science-officers-08873131');
+assert(facultyOfficerReceipt?.company_number === '08873131', 'Faculty officer receipt must preserve the company number');
+assert(facultyOfficerReceipt?.marc_warner_appointed_at === '2014-02-03', 'Faculty officer receipt must preserve Marc Warner appointment');
+assert(facultyOfficerReceipt?.saul_klein_appointed_at === '2016-04-21', 'Faculty officer receipt must preserve Saul Klein appointment');
+assert(facultyOfficerReceipt?.saul_klein_resigned_at === '2026-03-12', 'Faculty officer receipt must preserve Saul Klein resignation');
+assert(receiptById.get('gov-dsit-matt-clifford-faculty-shareholding-2024-10-10')?.divestment_confirmed_at === '2025-02-24',
+  'Clifford Faculty receipt must preserve the later divestment boundary');
 
 // Regression fixture 5: no broad institution hops.
 const broadOrgIds = new Set(data.organizations.filter(o => o.broad_institution).map(o => o.id));
