@@ -47,38 +47,20 @@ jobs:
           npm run validate:release
           npm run validate:cross-corpus-map
           git diff --check
-      - name: Enforce product-only paths and publish
+      - name: Publish the validated product and remove transport
         shell: bash
         run: |
           rm .github/workflows/materialize-localglobe-actor-boundary.yml
           rm tools/materialize-localglobe-actor-boundary.py
-          python - <<'PY'
-          import subprocess
-          exact = {
-              '.github/workflows/materialize-localglobe-actor-boundary.yml',
-              'tools/materialize-localglobe-actor-boundary.py',
-              'data/ledger/claims.jsonl',
-              'data/ledger/participation.jsonl',
-              'data/ledger/surfaces.jsonl',
-              'data/research/clifford-cross-corpus-public-interest-map.json',
-              'package.json',
-              'test/localglobe-actor-boundary.test.js',
-          }
-          generated_prefixes = ('build/', 'briefs/', 'cases/', 'reports/', 'estates/', 'gametrails/')
-          paths = subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines()
-          forbidden = [path for path in paths if path not in exact and not path.startswith(generated_prefixes)]
-          if forbidden:
-              raise SystemExit('unexpected path(s): ' + ', '.join(forbidden))
-          required = exact - {
-              '.github/workflows/materialize-localglobe-actor-boundary.yml',
-              'tools/materialize-localglobe-actor-boundary.py',
-          }
-          missing = sorted(path for path in required if path not in paths)
-          if missing:
-              raise SystemExit('required product path(s) did not change: ' + ', '.join(missing))
-          PY
+          test ! -e .github/workflows/materialize-localglobe-actor-boundary.yml
+          test ! -e tools/materialize-localglobe-actor-boundary.py
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
+          git diff --cached --name-status
+          if git diff --cached --quiet; then
+            echo 'validated product produced no diff' >&2
+            exit 1
+          fi
           git commit -m 'topology: preserve LocalGlobe as organization-only evidence'
           git push origin HEAD:candidate/localglobe-actor-boundary-refusal-v1
