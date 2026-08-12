@@ -322,11 +322,17 @@ assert(faculty2018?.time_start === '2018-01-24' && faculty2018?.time_end === '20
   'repaired Faculty company surface must remain one day');
 assert(sameIdSet(faculty2018?.receipt_ids, [
   'zebra-ben-warner-asi-commercial-principal-2018-01-24',
+  'faculty-asi-data-science-legal-identity-08873131',
   'companies-house-faculty-science-officers-08873131',
-]), 'repaired Faculty company surface must use the exact public and official receipts');
+]), 'repaired Faculty company surface must use the dated role, explicit identity-join, and official company receipts');
 assert(JSON.stringify((faculty2018?.participants ?? []).filter(part => part.participant_type === 'actor')
   .map(part => part.actor_id).sort()) === JSON.stringify(['ben-warner', 'marc-warner', 'saul-klein']),
   'repaired Faculty company surface must contain exactly Ben Warner, Marc Warner, and Saul Klein');
+const benFaculty2018 = (faculty2018?.participants ?? []).find(part => part.actor_id === 'ben-warner');
+assert(sameIdSet(benFaculty2018?.receipt_ids, [
+  'zebra-ben-warner-asi-commercial-principal-2018-01-24',
+  'faculty-asi-data-science-legal-identity-08873131',
+]), 'Ben Warner Faculty participation must carry both the dated role observation and the explicit legal-entity join');
 assert(!(faculty2018?.participants ?? []).some(part => part.actor_id === 'matt-clifford'),
   'Matt Clifford cannot be backdated onto the 2018 Faculty surface');
 assert(!(faculty2018?.receipt_ids ?? []).includes('warner-surface-audit-2026-06-29'),
@@ -358,6 +364,13 @@ assert(facultyOfficerReceipt?.company_number === '08873131', 'Faculty officer re
 assert(facultyOfficerReceipt?.marc_warner_appointed_at === '2014-02-03', 'Faculty officer receipt must preserve Marc Warner appointment');
 assert(facultyOfficerReceipt?.saul_klein_appointed_at === '2016-04-21', 'Faculty officer receipt must preserve Saul Klein appointment');
 assert(facultyOfficerReceipt?.saul_klein_resigned_at === '2026-03-12', 'Faculty officer receipt must preserve Saul Klein resignation');
+const facultyIdentityReceipt = receiptById.get('faculty-asi-data-science-legal-identity-08873131');
+assert(facultyIdentityReceipt?.brand_name === 'ASI Data Science', 'Faculty identity receipt must preserve the former brand');
+assert(facultyIdentityReceipt?.successor_brand === 'Faculty', 'Faculty identity receipt must preserve the successor brand');
+assert(facultyIdentityReceipt?.legal_entity === 'Faculty Science Limited', 'Faculty identity receipt must preserve the legal entity');
+assert(facultyIdentityReceipt?.company_number === '08873131', 'Faculty identity receipt must preserve the company number');
+assert(facultyIdentityReceipt?.previous_legal_name === 'Advanced Skills Initiative Limited',
+  'Faculty identity receipt must preserve the previous registered name');
 assert(receiptById.get('gov-dsit-matt-clifford-faculty-shareholding-2024-10-10')?.divestment_confirmed_at === '2025-02-24',
   'Clifford Faculty receipt must preserve the later divestment boundary');
 

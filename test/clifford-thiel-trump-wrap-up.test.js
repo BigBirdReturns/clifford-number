@@ -28,6 +28,11 @@ expectFailure('the official 2024 shareholding cannot be backdated onto the 2018 
   });
 }, /cannot be backdated onto the 2018 role surface/);
 
+expectFailure('the ASI Data Science role cannot become a hop without the explicit legal-entity join', bundle => {
+  const surface = bundle.surfaces.find(row => row.surface_id === 'faculty-science-officer-employee-overlap-2018-01-24');
+  surface.receipt_ids = surface.receipt_ids.filter(id => id !== 'faculty-asi-data-science-legal-identity-08873131');
+}, /must carry the explicit ASI Data Science brand-to-company identity receipt/);
+
 expectFailure('Peter cannot receive a fabricated Clifford Number', bundle => {
   bundle.scores.actors.find(row => row.actor_id === 'peter-thiel').clifford_number = 1;
 }, /must not be assigned a Clifford path/);
