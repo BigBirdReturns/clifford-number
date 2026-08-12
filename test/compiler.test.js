@@ -524,11 +524,45 @@ assert.equal(sage89Receipt.event_date, '2021-05-13');
 assert.match(sage89Receipt.notes, /eighty-seven recorded attendees/i);
 assert.equal(receipt('official-no10-ben-warner'), undefined,
   'master-document proxy receipt must be retired after source-native capture');
-const wc = hop.edges.find(edge =>
-  [edge.actor_a, edge.actor_b].sort().join('|') === 'ben-warner|dominic-cummings');
-assert.ok(wc, 'Warner/Cummings may remain connected only through a separate bounded surface');
-assert.ok(wc.surfaces.some(basis => basis.surface_id === 'vote-leave-data-science-2016'));
-assert.ok(!wc.surfaces.some(basis => basis.surface_id.includes('no10') || basis.surface_id.includes('no-10')),
-  'Warner/Cummings edge must carry no No. 10 office basis');
+const voteLeave = surf('vote-leave-data-science-2016');
+assert.ok(voteLeave, 'the Vote Leave / ASI organization-only surface must compile');
+assert.equal(voteLeave.hop_eligible, false);
+assert.equal(voteLeave.hop_refusal_reason, 'organization_only_evidence');
+assert.deepEqual(
+  voteLeave.participants.filter(part => part.participant_type === 'actor').map(part => part.actor_id),
+  ['dominic-cummings'],
+  'the parliamentary transcript must not manufacture Warner actor participation',
+);
+assert.deepEqual(
+  voteLeave.participants.filter(part => part.participant_type === 'organization').map(part => part.organization_id),
+  ['vote-leave'],
+);
+assert.deepEqual(voteLeave.receipt_ids, ['uk-parliament-wylie-vote-leave-asi-2018-03-27']);
+assert.ok((hop.rejected_hop_surfaces ?? []).some(row =>
+  row.surface_id === voteLeave.surface_id && row.reason === 'organization_only_evidence'),
+  'compiled graph must expose the organization-only refusal');
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === voteLeave.surface_id)),
+  'organization-only Vote Leave evidence must never become a hop basis');
+for (const actorId of ['ben-warner', 'marc-warner']) {
+  assert.ok(!voteLeave.participants.some(part => part.actor_id === actorId),
+    `${actorId} must not survive as an inferred Vote Leave participant`);
+  assert.ok(!actor(actorId).surfaces.includes(voteLeave.surface_id),
+    `${actorId} score must not inherit the organization-only Vote Leave surface`);
+}
+for (const pair of [
+  ['ben-warner', 'dominic-cummings'],
+  ['marc-warner', 'dominic-cummings'],
+]) {
+  assert.ok(!hop.edges.some(edge =>
+    [edge.actor_a, edge.actor_b].sort().join('|') === [...pair].sort().join('|')),
+    `${pair.join('/')} must have no direct edge after the organization-only correction`);
+}
+const voteLeaveReceipt = receipt('uk-parliament-wylie-vote-leave-asi-2018-03-27');
+assert.ok(voteLeaveReceipt, 'the official Parliament transcript receipt must exist');
+assert.equal(voteLeaveReceipt.source_document_id, 'HC 363');
+assert.equal(voteLeaveReceipt.event_date, '2018-03-27');
+assert.match(voteLeaveReceipt.notes, /organization-level service relationship/i);
+assert.ok(!voteLeave.receipt_ids.includes('warner-surface-audit-2026-06-29'),
+  'the corrected Vote Leave surface must carry no lost scratch receipt');
 
 console.log('compiler.test: OK');
