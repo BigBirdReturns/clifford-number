@@ -393,6 +393,150 @@ for (const retiredReceiptId of [
   )), `retired receipt remains in a canonical chain: ${retiredReceiptId}`);
 }
 
+// Electric Twin split seed-round evidence must rest on first-party records
+// while institutional participation remains organization-only and graph-inert.
+const electricTwinSeedSurface = surfaceById.get('electric-twin-seed-round-2026-02-11');
+const electricTwinInstitutionalSurface = surfaceById.get(
+  'electric-twin-seed-round-institutional-investors-2026-02-11',
+);
+const electricTwinSeedReceiptIds = [
+  'electric-twin-seed-round-announcement-2026-02-11',
+  'alex-cooper-linkedin-electric-twin-funding-2026-02-12',
+];
+assert(electricTwinSeedSurface, 'Electric Twin named-angel seed-round surface is missing');
+assert(electricTwinSeedSurface?.hop_eligible === true,
+  'Electric Twin named-angel seed-round surface must remain hop eligible');
+assert(electricTwinSeedSurface?.evidence_class === 'primary_public',
+  'Electric Twin named-angel seed-round surface must carry first-party evidence');
+assert(sameIdSet(electricTwinSeedSurface?.receipt_ids, electricTwinSeedReceiptIds),
+  'Electric Twin named-angel seed-round receipts are stale');
+assert(electricTwinInstitutionalSurface,
+  'Electric Twin institutional seed-round refusal surface is missing');
+assert(electricTwinInstitutionalSurface?.hop_eligible === false,
+  'Electric Twin institutional seed-round surface must remain non-hop');
+assert(electricTwinInstitutionalSurface?.hop_refusal_reason === 'organization_only_evidence',
+  'Electric Twin institutional seed-round surface must expose the organization-only refusal');
+assert(electricTwinInstitutionalSurface?.evidence_class === 'primary_public',
+  'Electric Twin institutional seed-round surface must carry first-party evidence');
+assert(sameIdSet(electricTwinInstitutionalSurface?.receipt_ids, electricTwinSeedReceiptIds),
+  'Electric Twin institutional seed-round receipts are stale');
+
+const electricTwinSeedParts =
+  sourcePartsBySurface.get('electric-twin-seed-round-2026-02-11') ?? [];
+const electricTwinInstitutionalParts =
+  sourcePartsBySurface.get('electric-twin-seed-round-institutional-investors-2026-02-11') ?? [];
+const electricTwinActorIds = electricTwinSeedParts
+  .filter(part => part.participant_type === 'actor')
+  .map(part => part.actor_id).sort();
+assert(JSON.stringify(electricTwinActorIds) === JSON.stringify([
+  'cal-henderson',
+  'eric-salama',
+  'louis-mosley',
+  'marc-andreessen',
+  'tom-shinner',
+]), 'Electric Twin named-angel surface must retain exactly five actors');
+for (const participantId of electricTwinActorIds) {
+  const participant = electricTwinSeedParts.find(part => part.actor_id === participantId);
+  assert(participant?.evidence_class === 'primary_public',
+    `Electric Twin angel ${participantId} must carry first-party evidence`);
+}
+for (const participantId of ['cal-henderson', 'eric-salama', 'tom-shinner', 'louis-mosley']) {
+  const participant = electricTwinSeedParts.find(part => part.actor_id === participantId);
+  assert(sameIdSet(participant?.receipt_ids,
+    ['alex-cooper-linkedin-electric-twin-funding-2026-02-12']),
+    `Electric Twin angel ${participantId} receipts are stale`);
+}
+const institutionalActorIds = electricTwinInstitutionalParts
+  .filter(part => part.participant_type === 'actor')
+  .map(part => part.actor_id).sort();
+const institutionalOrganizationIds = electricTwinInstitutionalParts
+  .filter(part => part.participant_type === 'organization')
+  .map(part => part.organization_id).sort();
+assert(JSON.stringify(institutionalActorIds) === JSON.stringify([]),
+  'Electric Twin institutional seed-round evidence must not manufacture actors');
+assert(JSON.stringify(institutionalOrganizationIds) === JSON.stringify([
+  'atomico',
+  'electric-twin',
+  'localglobe',
+  'mercuri',
+  'samos',
+]), 'Electric Twin institutional seed-round surface must retain exactly five organizations');
+for (const organizationId of institutionalOrganizationIds) {
+  const participant = electricTwinInstitutionalParts.find(
+    part => part.organization_id === organizationId
+  );
+  assert(participant?.evidence_class === 'primary_public',
+    `Electric Twin institution ${organizationId} must carry first-party evidence`);
+}
+const samosInstitution = electricTwinInstitutionalParts.find(
+  part => part.organization_id === 'samos'
+);
+assert(sameIdSet(samosInstitution?.receipt_ids,
+  ['alex-cooper-linkedin-electric-twin-funding-2026-02-12']),
+  'Samos institutional participation must use the first-party founder receipt');
+assert(!hasSurface('saul-klein', 'electric-twin-seed-round-2026-02-11'),
+  'Saul Klein must not be substituted for LocalGlobe on the named-angel surface');
+assert(!hasSurface('saul-klein',
+  'electric-twin-seed-round-institutional-investors-2026-02-11'),
+  'Saul Klein must not be projected onto the institutional refusal surface');
+assert((hopGraph.rejected_hop_surfaces ?? []).some(row =>
+  row.surface_id === 'electric-twin-seed-round-institutional-investors-2026-02-11'
+  && row.reason === 'organization_only_evidence'),
+  'Electric Twin institutional refusal must remain publicly visible');
+assert(!hopGraph.edges.some(edge => edge.surfaces.some(basis =>
+  basis.surface_id === 'electric-twin-seed-round-institutional-investors-2026-02-11')),
+  'Electric Twin institutional surface must never become an actor-hop basis');
+
+const electricTwinFounderFundingReceipt =
+  receiptById.get('alex-cooper-linkedin-electric-twin-funding-2026-02-12');
+assert(electricTwinFounderFundingReceipt,
+  'Electric Twin first-party complete participant-list receipt is missing');
+assert(electricTwinFounderFundingReceipt?.evidence_class === 'primary_public',
+  'Electric Twin founder funding receipt must be primary public');
+assert(electricTwinFounderFundingReceipt?.path
+  === 'receipts/topology/alex-cooper-linkedin-electric-twin-funding-2026-02-12.md',
+  'Electric Twin founder funding receipt path is stale');
+assert(electricTwinFounderFundingReceipt?.source_published_at === '2026-02-12',
+  'Electric Twin founder funding source date is stale');
+assert(electricTwinFounderFundingReceipt?.event_date === '2026-02-11',
+  'Electric Twin founder funding event date is stale');
+assert(electricTwinFounderFundingReceipt?.linkedin_activity_id === '7427643696898158594',
+  'Electric Twin founder funding activity ID is stale');
+assert(electricTwinFounderFundingReceipt?.archive?.ref
+  === 'sha256:19d476ed9874693e3e8573d6fe5f5809920c7914b0024c14fc7e54c827ff2eab',
+  'Electric Twin founder funding receipt digest is stale');
+assert(!receiptById.has('tech-eu-electric-twin-seed-round-2026-02-12'),
+  'superseded Tech.eu funding receipt remains canonical');
+
+const electricTwinSeedEdges = hopGraph.edges
+  .filter(edge => edge.surfaces.some(
+    basis => basis.surface_id === 'electric-twin-seed-round-2026-02-11'
+  ));
+const electricTwinSeedBases = electricTwinSeedEdges
+  .flatMap(edge => edge.surfaces)
+  .filter(basis => basis.surface_id === 'electric-twin-seed-round-2026-02-11');
+assert(electricTwinSeedEdges.length === 10,
+  'Electric Twin seed round must compile exactly ten actor-pair edges');
+assert(electricTwinSeedBases.length === 10,
+  'Electric Twin seed round must compile exactly ten actor-pair bases');
+for (const edge of electricTwinSeedEdges) {
+  assert(edge.evidence_weight === 1.25,
+    'Electric Twin seed-round actor edge has stale evidence weight');
+}
+for (const basis of electricTwinSeedBases) {
+  assert(basis.evidence_class === 'primary_public',
+    'Electric Twin seed-round hop basis remains below first-party evidence');
+  assert(sameIdSet(basis.receipt_ids, electricTwinSeedReceiptIds),
+    'Electric Twin seed-round hop basis receipts are stale');
+}
+
+const localGlobeBoundaryClaim =
+  claimById.get('electric-twin-localglobe-saul-klein-actor-boundary-2026-02-12');
+assert(localGlobeBoundaryClaim,
+  'Electric Twin LocalGlobe actor-boundary claim must remain canonical');
+assert(sameIdSet(localGlobeBoundaryClaim?.receipt_ids, electricTwinSeedReceiptIds),
+  'Electric Twin LocalGlobe actor-boundary claim receipts are stale');
+
 const voteLeaveSurface = surfaceById.get('vote-leave-data-science-2016');
 assert(voteLeaveSurface, 'Vote Leave / ASI organization-only surface must compile');
 assert(voteLeaveSurface?.hop_eligible === false,
