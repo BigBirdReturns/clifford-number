@@ -31,9 +31,30 @@ const surf = id => surface.surfaces.find(s => s.surface_id === id);
 const receipt = id => ledgerReceipts.find(row => row.receipt_id === id);
 const claim = id => receiptGraph.claims.find(row => row.claim_id === id);
 
-assert.ok(actor('ben-warner').surfaces.includes('electric-twin-newsuk-synthetic-audience'));
+assert.ok(!actor('ben-warner').surfaces.includes('electric-twin-newsuk-synthetic-audience'),
+  'Ben Warner must not inherit the organization-only News UK deployment');
 assert.ok(actor('ben-warner').secondary_surface_types.includes('democratic_input_replacement'));
-assert.equal(surf('electric-twin-newsuk-synthetic-audience').hop_eligible, false);
+const newsUkDeployment = surf('electric-twin-newsuk-synthetic-audience');
+assert.ok(newsUkDeployment, 'the source-native News UK / Electric Twin deployment must compile');
+assert.equal(newsUkDeployment.hop_eligible, false);
+assert.equal(newsUkDeployment.hop_refusal_reason, 'organization_only_customer_vendor_deployment');
+assert.equal(newsUkDeployment.time_start, '2026-04-27');
+assert.equal(newsUkDeployment.time_end, '2026-04-27');
+assert.deepEqual(newsUkDeployment.secondary_surface_types, ['model_governance_surface']);
+assert.deepEqual(newsUkDeployment.participants.filter(part => part.participant_type === 'actor').map(part => part.actor_id), [],
+  'the first-party launch records must not manufacture Ben Warner or another actor participant');
+assert.deepEqual(newsUkDeployment.participants.filter(part => part.participant_type === 'organization').map(part => part.organization_id).sort(), ['electric-twin', 'news-uk']);
+assert.deepEqual(newsUkDeployment.receipt_ids, ['newsuk-times-exploraition-launch-2026-04-27', 'electric-twin-times-exploraition-launch-2026-04-28']);
+assert.ok((hop.rejected_hop_surfaces ?? []).some(row => row.surface_id === newsUkDeployment.surface_id && row.reason === 'organization_only_customer_vendor_deployment'),
+  'compiled graph must expose the organization-only News UK refusal');
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === newsUkDeployment.surface_id)),
+  'organization-only News UK deployment must never become a hop basis');
+assert.equal(newsUkDeployment.participants.find(part => part.organization_id === 'news-uk').participation_type, 'client_product_operator_observation');
+assert.equal(newsUkDeployment.participants.find(part => part.organization_id === 'electric-twin').participation_type, 'vendor_platform_provider_observation');
+assert.equal(receipt('newsuk-times-exploraition-launch-2026-04-27').decision_support_not_replacement_claim, true);
+assert.equal(receipt('electric-twin-times-exploraition-launch-2026-04-28').no_personal_data_claim, true);
+assert.equal(receipt('sandhu-comment-newsuk-2026-06-29'), undefined,
+  'the superseded lost News UK judgment receipt must be retired');
 assert.equal(surf('gartner-synthetic-population-category-2026').hop_eligible, false);
 assert.equal(surf('faculty-science-officer-employee-overlap-2018-01-24').hop_eligible, true);
 assert.equal(surf('faculty-science-director-shareholder-overlap-2024-10-10').hop_eligible, true);

@@ -233,15 +233,54 @@ const warnerSurfaces = [
   'faculty-science-officer-employee-overlap-2018-01-24',
   'electric-twin-incorporation-2023-09-28',
   'electric-twin-ben-warner-director-tenure-2023-09-28',
-  'electric-twin-newsuk-synthetic-audience',
   'gartner-synthetic-population-category-2026',
 ];
 for (const sid of warnerSurfaces) assert(hasSurface('ben-warner', sid), `Ben Warner missing surface ${sid}`);
-for (const type of ['government_advisory_surface', 'employment_investment_surface', 'founder_officer_surface', 'customer_vendor_surface', 'category_formation_surface']) {
+for (const type of ['government_advisory_surface', 'employment_investment_surface', 'founder_officer_surface', 'category_formation_surface']) {
   assert(hasType('ben-warner', type), `Ben Warner missing surface type ${type}`);
 }
+assert(!hasSurface('ben-warner', 'electric-twin-newsuk-synthetic-audience'),
+  'Ben Warner must not inherit an organization-only News UK deployment');
 assert(hasSecondary('ben-warner', 'democratic_input_replacement'), 'Ben Warner missing democratic_input_replacement recurrence');
 assert(actorScore.get('ben-warner')?.governance_replacement_score > 0, 'Ben Warner governance replacement score must be > 0');
+
+const newsUkDeployment = surfaceById.get('electric-twin-newsuk-synthetic-audience');
+assert(newsUkDeployment, 'source-native News UK / Electric Twin deployment must compile');
+assert(newsUkDeployment?.hop_eligible === false, 'organization-only News UK deployment must remain non-hop');
+assert(newsUkDeployment?.hop_refusal_reason === 'organization_only_customer_vendor_deployment',
+  'News UK deployment must expose the organization-only customer-vendor refusal');
+assert(newsUkDeployment?.time_start === '2026-04-27' && newsUkDeployment?.time_end === '2026-04-27',
+  'News UK deployment must remain a one-day launch observation');
+assert(JSON.stringify(newsUkDeployment?.secondary_surface_types) === JSON.stringify(['model_governance_surface']),
+  'News UK deployment must not classify first-party decision support as proven replacement of real-world research');
+assert(sameIdSet(newsUkDeployment?.receipt_ids, ['newsuk-times-exploraition-launch-2026-04-27', 'electric-twin-times-exploraition-launch-2026-04-28']),
+  'News UK deployment must use the two first-party launch receipts');
+const newsUkActors = (newsUkDeployment?.participants ?? []).filter(part => part.participant_type === 'actor').map(part => part.actor_id);
+assert(newsUkActors.length === 0, 'organization-only News UK deployment must contain no actor participants');
+const newsUkOrganizations = (newsUkDeployment?.participants ?? []).filter(part => part.participant_type === 'organization').map(part => part.organization_id).sort();
+assert(JSON.stringify(newsUkOrganizations) === JSON.stringify(['electric-twin', 'news-uk']),
+  'News UK deployment must contain exactly the client and vendor organizations');
+const newsUkClient = (newsUkDeployment?.participants ?? []).find(part => part.organization_id === 'news-uk');
+assert(newsUkClient?.participation_type === 'client_product_operator_observation',
+  'News UK must retain the client product-operator role');
+const newsUkVendor = (newsUkDeployment?.participants ?? []).find(part => part.organization_id === 'electric-twin');
+assert(newsUkVendor?.participation_type === 'vendor_platform_provider_observation',
+  'Electric Twin must retain the vendor platform-provider role');
+assert(!hopGraph.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === newsUkDeployment?.surface_id)),
+  'organization-only News UK deployment must never become a hop basis');
+assert(!newsUkDeployment?.receipt_ids.includes('warner-linkedin-gartner-2026-06-29'),
+  'News UK deployment must not inherit the unrelated lost Gartner post');
+assert(!receiptById.has('sandhu-comment-newsuk-2026-06-29'),
+  'the superseded lost News UK judgment receipt must be retired');
+const newsUkReceipt = receiptById.get('newsuk-times-exploraition-launch-2026-04-27');
+assert(newsUkReceipt?.event_date === '2026-04-27', 'News UK launch receipt must preserve the launch date');
+assert(newsUkReceipt?.decision_support_not_replacement_claim === true,
+  'News UK launch receipt must preserve the client non-replacement representation');
+const electricTwinNewsUkReceipt = receiptById.get('electric-twin-times-exploraition-launch-2026-04-28');
+assert(electricTwinNewsUkReceipt?.client_launch_date === '2026-04-27',
+  'Electric Twin launch receipt must preserve the client launch date');
+assert(electricTwinNewsUkReceipt?.no_personal_data_claim === true,
+  'Electric Twin launch receipt must preserve the vendor no-personal-data representation');
 
 const voteLeaveSurface = surfaceById.get('vote-leave-data-science-2016');
 assert(voteLeaveSurface, 'Vote Leave / ASI organization-only surface must compile');
