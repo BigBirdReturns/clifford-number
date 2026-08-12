@@ -1,0 +1,311 @@
+name: TEMP publish Electric Twin investor roster v4
+
+"on":
+  push:
+    branches:
+      - agent/electric-twin-investor-roster-transport-v2
+
+permissions:
+  contents: write
+
+concurrency:
+  group: electric-twin-investor-roster-publisher
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out exact full-history transport ref
+        uses: actions/checkout@v4
+        with:
+          ref: agent/electric-twin-investor-roster-transport-v2
+          fetch-depth: 0
+          fetch-tags: false
+          show-progress: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build, qualify, publish, and retire transport
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EXPECTED_MAIN="14538b35f9051d21bb431533f38e0b6a512d3606"
+          PRODUCT_BRANCH="candidate/electric-twin-investor-roster-v1"
+          TRANSPORT_BRANCH="agent/electric-twin-investor-roster-transport-v2"
+          WORKFLOW_PATH=".github/workflows/temp-electric-twin-investor-roster-publish-v4.yml"
+          PAYLOAD_PREFIX=".github/temporary/electric-twin-investor-roster.payload"
+
+          git fetch origin "refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          test "$(git rev-list --count "$EXPECTED_MAIN..HEAD")" = "1"
+
+          python - <<'PY'
+          import subprocess
+
+          expected = {
+              ".github/temporary/electric-twin-investor-roster.payload.1",
+              ".github/temporary/electric-twin-investor-roster.payload.2",
+              ".github/temporary/electric-twin-investor-roster.payload.3",
+              ".github/temporary/electric-twin-investor-roster.payload.4",
+              ".github/workflows/temp-electric-twin-investor-roster-publish-v4.yml",
+          }
+          changed = set(subprocess.check_output(
+              ["git", "diff", "--name-only", "14538b35f9051d21bb431533f38e0b6a512d3606", "HEAD"],
+              text=True,
+          ).splitlines())
+          if changed != expected:
+              raise SystemExit(
+                  "transport commit is not bounded to the workflow and payload fragments: "
+                  + repr({"expected": sorted(expected), "actual": sorted(changed)})
+              )
+          print("transport_paths=" + repr(sorted(changed)))
+          PY
+
+          cat "${PAYLOAD_PREFIX}.1" "${PAYLOAD_PREFIX}.2" "${PAYLOAD_PREFIX}.3" "${PAYLOAD_PREFIX}.4" \
+            > /tmp/electric-twin-investor-roster.payload
+          python - <<'PY'
+          from pathlib import Path
+          import base64
+          import hashlib
+          import zlib
+
+          encoded = Path("/tmp/electric-twin-investor-roster.payload").read_text(encoding="utf-8")
+          if len(encoded) != 8684:
+              raise SystemExit("compressed helper payload length mismatch: " + str(len(encoded)))
+          encoded_sha = hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+          if encoded_sha != "00605ae6e5a31ae410c0ace687423d479e1077ddc063e0966ecd71568b0673e1":
+              raise SystemExit("compressed helper payload hash mismatch: " + encoded_sha)
+          helper = zlib.decompress(base64.b64decode(encoded, validate=True))
+          helper_sha = hashlib.sha256(helper).hexdigest()
+          if helper_sha != "1cd18ba2bb2fe75bc42c4dd451a178d3ec8559b872f6f84f50487464f55bf25d":
+              raise SystemExit("decompressed helper hash mismatch: " + helper_sha)
+          Path("/tmp/apply-electric-twin-investor-roster.py").write_bytes(helper)
+          print("helper_sha256=" + helper_sha)
+          PY
+          python -m py_compile /tmp/apply-electric-twin-investor-roster.py
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -B "$PRODUCT_BRANCH" "$EXPECTED_MAIN"
+          test -z "$(git status --porcelain)"
+
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          hop = json.loads(Path("build/hop-graph.json").read_text(encoding="utf-8"))
+          baseline = {
+              "edge_keys": sorted(
+                  "|".join(sorted((edge["actor_a"], edge["actor_b"])))
+                  for edge in hop.get("edges", [])
+              ),
+              "counts": {
+                  "edges": len(hop.get("edges", [])),
+                  "rejected": len(hop.get("rejected_hop_surfaces", [])),
+              },
+          }
+          Path("/tmp/electric-twin-investor-roster-baseline.json").write_text(
+              json.dumps(baseline, sort_keys=True),
+              encoding="utf-8",
+          )
+          print("baseline=" + json.dumps(baseline["counts"], sort_keys=True))
+          PY
+
+          python /tmp/apply-electric-twin-investor-roster.py apply
+
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("test/compiler.test.js")
+          text = path.read_text(encoding="utf-8")
+          old = """assert.equal(techEuFundingReceipt.event_date, '2026-02-11',
+            'the reporting date must remain separate from the announcement event date');"""
+          new = """assert.equal(techEuFundingReceipt.event_date, '2026-02-12',
+            'the first-party investor roster fixes the complete actor co-listing date');"""
+          if text.count(old) != 1:
+              raise SystemExit("stale Tech.eu event-date fixture missing or duplicated")
+          path.write_text(text.replace(old, new, 1), encoding="utf-8")
+          print("tech_eu_event_fixture=2026-02-12")
+          PY
+
+          npm run compile
+
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          path = Path("data/research/clifford-cross-corpus-public-interest-map.json")
+          document = json.loads(path.read_text(encoding="utf-8"))
+          if document.get("schema_version") != "clifford-cross-corpus-public-interest-map@1":
+              raise SystemExit("cross-corpus projection schema changed")
+
+          inventory = document.get("inventory", {})
+          canonical = inventory.get("canonical", {})
+          expected_preimage = {
+              "actors": 139,
+              "organizations": 25,
+              "surfaces": 22,
+              "participations": 184,
+              "receipts": 55,
+              "compiled_hop_edges": 27,
+          }
+          if canonical != expected_preimage:
+              raise SystemExit(
+                  "cross-corpus canonical inventory preimage changed: "
+                  + repr({"expected": expected_preimage, "actual": canonical})
+              )
+
+          def read_jsonl(file):
+              return [
+                  json.loads(line)
+                  for line in Path(file).read_text(encoding="utf-8").splitlines()
+                  if line.strip()
+              ]
+
+          actors = json.loads(Path("data/canonical/actors.json").read_text(encoding="utf-8"))["actors"]
+          organizations = json.loads(Path("data/canonical/organizations.json").read_text(encoding="utf-8"))["organizations"]
+          surfaces = read_jsonl("data/ledger/surfaces.jsonl")
+          participations = read_jsonl("data/ledger/participation.jsonl")
+          receipts = read_jsonl("data/ledger/receipts.jsonl")
+          hop = json.loads(Path("build/hop-graph.json").read_text(encoding="utf-8"))
+          scout = json.loads(Path("build/scout-report.json").read_text(encoding="utf-8"))
+
+          refreshed = {
+              "actors": len(actors),
+              "organizations": len(organizations),
+              "surfaces": len(surfaces),
+              "participations": len(participations),
+              "receipts": len(receipts),
+              "compiled_hop_edges": len(hop.get("edges", [])),
+          }
+          expected_refreshed = {
+              "actors": 139,
+              "organizations": 25,
+              "surfaces": 22,
+              "participations": 184,
+              "receipts": 57,
+              "compiled_hop_edges": 27,
+          }
+          scout_findings = len(scout.get("findings", []))
+          if refreshed != expected_refreshed or scout_findings != 140:
+              raise SystemExit(
+                  "compiled projection inputs do not match the bounded financing-roster correction: "
+                  + repr({
+                      "expected_canonical": expected_refreshed,
+                      "actual_canonical": refreshed,
+                      "expected_scout_findings": 140,
+                      "actual_scout_findings": scout_findings,
+                  })
+              )
+
+          inventory["canonical"] = refreshed
+          inventory["discovery_queue"]["scout_findings"] = scout_findings
+          fanout_lanes = [
+              lane for lane in document.get("lanes", [])
+              if lane.get("lane_id") == "official-research-fanout"
+          ]
+          if len(fanout_lanes) != 1:
+              raise SystemExit("official-research-fanout lane missing or duplicated")
+          fanout_lanes[0]["counts"]["scout_findings"] = scout_findings
+          document["generated_at"] = "2026-08-12"
+          path.write_text(
+              json.dumps(document, indent=2, ensure_ascii=False) + "\n",
+              encoding="utf-8",
+          )
+          print("cross_corpus_projection=" + json.dumps({
+              "canonical": refreshed,
+              "scout_findings": scout_findings,
+          }, sort_keys=True))
+          PY
+
+          npm run release:check
+          python /tmp/apply-electric-twin-investor-roster.py verify
+
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          baseline = json.loads(
+              Path("/tmp/electric-twin-investor-roster-baseline.json").read_text(encoding="utf-8")
+          )
+          hop = json.loads(Path("build/hop-graph.json").read_text(encoding="utf-8"))
+          edge_keys = sorted(
+              "|".join(sorted((edge["actor_a"], edge["actor_b"])))
+              for edge in hop.get("edges", [])
+          )
+          if edge_keys != baseline["edge_keys"]:
+              raise SystemExit("actor edge set changed during evidence-tier correction")
+          if any(
+              basis.get("surface_id") == "electric-twin-seed-round-2026-02-11"
+              for edge in hop.get("edges", [])
+              for basis in edge.get("surfaces", [])
+          ):
+              raise SystemExit("retired February 11 funding surface remains in a hop basis")
+          print("edge_set_unchanged=true")
+          PY
+
+          git add -A
+          git diff --cached --check
+
+          python - <<'PY'
+          import json
+          import subprocess
+
+          required = {
+              "data/ledger/surfaces.jsonl",
+              "data/ledger/participation.jsonl",
+              "data/ledger/receipts.jsonl",
+              "data/research/clifford-cross-corpus-public-interest-map.json",
+              "receipts/topology/electric-twin-linkedin-funding-investors-2026-02-12.md",
+              "receipts/topology/alex-cooper-linkedin-electric-twin-funding-2026-02-12.md",
+              "test/compiler.test.js",
+              "tools/validate-release.mjs",
+          }
+          allowed_projection = {
+              "data/research/clifford-thiel-trump-wrap-up.json",
+          }
+          raw = subprocess.check_output(["git", "status", "--porcelain=v1", "-z"])
+          changed = []
+          for record in raw.decode("utf-8").split("\0"):
+              if not record:
+                  continue
+              path = record[3:]
+              if " -> " in path:
+                  path = path.split(" -> ", 1)[1]
+              changed.append(path)
+
+          missing = sorted(required - set(changed))
+          unexpected = sorted(
+              path for path in changed
+              if path not in required
+              and path not in allowed_projection
+              and not path.startswith("build/")
+          )
+          if missing:
+              raise SystemExit("missing required product paths: " + ", ".join(missing))
+          if unexpected:
+              raise SystemExit("unexpected non-generated product paths: " + ", ".join(unexpected))
+          if any(path.startswith(".github/") for path in changed):
+              raise SystemExit("workflow transport leaked into product")
+          print("changed_paths=" + json.dumps(sorted(changed)))
+          PY
+
+          git commit -m "topology: bind Electric Twin investor roster to first-party records"
+
+          PRODUCT_SHA="$(git rev-parse HEAD)"
+          PRODUCT_TREE="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          test -z "$(git status --porcelain)"
+
+          echo "product_sha=$PRODUCT_SHA"
+          echo "product_tree=$PRODUCT_TREE"
+          git show --stat --oneline --summary HEAD
+
+          git push --force origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          git push --force origin "$EXPECTED_MAIN:refs/heads/$TRANSPORT_BRANCH"
