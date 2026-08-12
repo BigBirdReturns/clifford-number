@@ -22,7 +22,7 @@ assert.equal(entityId('uk-ai-policy', 'ben warner'), entityId('uk-ai-policy', ' 
 assert.notEqual(entityId('uk-ai-policy', 'Ben Warner'), entityId('other-case', 'Ben Warner'),
   'namespace must affect the entity id');
 assert.equal(
-  claimId('e_cxoy37udrurtowdj47suemrw', 'participates_in', 'no10-digital-data-advisory-2019-2021', 'entity'),
-  'c_2f5hfi6wc3ejytefxym3ty5b');
+  claimId('e_cxoy37udrurtowdj47suemrw', 'participates_in', 'ben-warner-no10-digital-data-role-observation-2020-2021', 'entity'),
+  'c_csbi35yszweri27ktn36f2y4');
 
 console.log('axm-id.test: OK');

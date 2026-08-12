@@ -28,7 +28,7 @@ receipt_ids
 
 Surface-type recurrence is the discovery mechanism. The compiler tracks when the same surface logic recurs across different venues, such as government advisory work, commercial customer infrastructure, category formation, procurement, board/advisory positions, and policy documents.
 
-Example: Ben Warner recurs across No. 10 population-level data machinery, Electric Twin synthetic audience infrastructure, News UK audience substitution, and Gartner category formation. The point is not one secret relationship. The point is a repeated surface logic becoming infrastructure.
+Example: official records place Ben Warner in a No. 10 digital-and-data role, while later records separately place him on Electric Twin, News UK synthetic-audience, and Gartner category surfaces. The recurrence is a chronology for testing. It does not establish that the commercial method originated in government, that public consultation was replaced inside No. 10, or that other No. 10 personnel shared the later surfaces.
 
 ## Non-hop surfaces still matter
 

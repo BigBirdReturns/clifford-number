@@ -381,44 +381,49 @@ assert.equal(activeSdrTermsBasis('2024-07-17').length, 1, 'the terms record supp
 assert.equal(activeSdrTermsBasis('2025-06-02').length, 0, 'final-report publication must not manufacture a later Prime Minister hop');
 assert.equal(shortestPath(topology, 'keir-starmer', 'richard-barrons', { asOf: '2024-07-17' }).number, 1);
 
-// Disjoint dated participations on the same surface must NOT hop. Rosenfield
-// (No.10, 2021) and Cummings (No.10, 2019-2020) shared the surface in
-// different windows, so there is no direct Rosenfield↔Cummings hop.
-const directRosenfieldCummings = hop.edges.some(e =>
-  (e.actor_a === 'dan-rosenfield' && e.actor_b === 'dominic-cummings') ||
-  (e.actor_a === 'dominic-cummings' && e.actor_b === 'dan-rosenfield'));
-assert.ok(!directRosenfieldCummings, 'Rosenfield and Cummings must not hop: disjoint windows on the shared surface');
-assert.ok((hop.rejected_hop_pairs ?? []).some(p =>
-  [p.actor_a, p.actor_b].sort().join('|') === 'dan-rosenfield|dominic-cummings' && p.reason === 'no_temporal_overlap'),
-  'the disjoint Rosenfield/Cummings pair must be recorded in rejected_hop_pairs');
-const rosenfieldCummingsRejection = hop.rejected_hop_pairs.find(p =>
-  p.actor_a === 'dan-rosenfield' && p.actor_b === 'dominic-cummings');
-assert.deepEqual(rosenfieldCummingsRejection.actor_a_window, {
-  valid_from: '2021-01-01', valid_until: '2021-12-31', dated: true
-}, 'Dan Rosenfield must retain his own 2021 participant window after actor IDs are sorted');
-assert.deepEqual(rosenfieldCummingsRejection.actor_b_window, {
-  valid_from: '2019-01-01', valid_until: '2020-12-31', dated: true
-}, 'Dominic Cummings must retain his own 2019-2020 participant window after actor IDs are sorted');
-assert.deepEqual(rosenfieldCummingsRejection.actor_a_receipt_ids, ['warner-surface-audit-2026-06-29']);
-assert.deepEqual(rosenfieldCummingsRejection.actor_b_receipt_ids, ['warner-surface-audit-2026-06-29']);
-assert.deepEqual(rosenfieldCummingsRejection.surface_receipt_ids, ['official-no10-ben-warner', 'warner-surface-audit-2026-06-29']);
-assert.deepEqual(rosenfieldCummingsRejection.receipt_ids, ['official-no10-ben-warner', 'warner-surface-audit-2026-06-29']);
-assert.equal(rosenfieldCummingsRejection.actor_a_window_reverifiable, false);
-assert.equal(rosenfieldCummingsRejection.actor_b_window_reverifiable, false);
-assert.equal(rosenfieldCummingsRejection.evidence_class, 'judgment');
-assert.equal(rosenfieldCummingsRejection.publication_status, 'review_required');
-assert.equal(rosenfieldCummingsRejection.publication_reason, 'actor_window_receipts_not_publicly_reverifiable');
-const no10Participants = surf('no10-digital-data-advisory-2019-2021').participants;
-assert.equal(no10Participants.find(part => part.actor_id === 'dan-rosenfield').evidence_class, 'judgment');
-assert.equal(no10Participants.find(part => part.actor_id === 'dominic-cummings').evidence_class, 'judgment');
-// Overlap window is the intersection, not a union: Warner/Cummings on No.10
-// overlaps only where both were present (Warner 2019-12→2021-05, Cummings
-// 2019→2020) → 2019-12 through 2020-12.
-const wc = hop.edges.find(e =>
-  [e.actor_a, e.actor_b].sort().join('|') === 'ben-warner|dominic-cummings');
-const no10 = wc?.surfaces.find(s => s.surface_id === 'no10-digital-data-advisory-2019-2021');
-assert.ok(no10, 'Warner/Cummings must share the No.10 surface');
-assert.equal(no10.valid_from, '2019-12-01', 'Warner/Cummings overlap starts at the later of the two start dates');
-assert.equal(no10.valid_until, '2020-12-31', 'Warner/Cummings overlap ends at the earlier of the two end dates');
+// Broad institutions are context, not actor-hop surfaces. The former No. 10
+// office aggregation manufactured pairwise edges from reporting-line and
+// roster inferences. It is replaced by a single-actor, source-native role
+// observation with an explicit broad-institution refusal reason.
+assert.equal(surf('no10-digital-data-advisory-2019-2021'), undefined, 'legacy broad No. 10 aggregation must be retired');
+const no10Observation = surf('ben-warner-no10-digital-data-role-observation-2020-2021');
+assert.ok(no10Observation, 'source-native Ben Warner No. 10 role observation must compile');
+assert.equal(no10Observation.hop_eligible, false);
+assert.equal(no10Observation.hop_refusal_reason, 'broad_institution_context_only');
+assert.deepEqual(
+  no10Observation.participants.filter(part => part.participant_type === 'actor').map(part => part.actor_id),
+  ['ben-warner'],
+  'No. 10 role observation must not import inferred colleagues as actor participants',
+);
+assert.deepEqual(
+  no10Observation.participants.filter(part => part.participant_type === 'organization').map(part => part.organization_id),
+  ['no-10'],
+  'No. 10 may remain as broad institutional context only',
+);
+assert.deepEqual(no10Observation.receipt_ids, ['uk-covid-inquiry-ben-warner-decision-forward-planning-2020-03-13-16', 'gov-sage-89-ben-warner-no10-2021-05-13']);
+assert.ok((hop.rejected_hop_surfaces ?? []).some(row =>
+  row.surface_id === 'ben-warner-no10-digital-data-role-observation-2020-2021' && row.reason === 'broad_institution_context_only'),
+  'compiled graph must expose the constitutional broad-institution refusal');
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === 'ben-warner-no10-digital-data-role-observation-2020-2021')),
+  'single-actor No. 10 context must never become a hop basis');
+for (const actorId of ['dominic-cummings', 'dan-rosenfield', 'laura-gilbert', 'ben-henshall']) {
+  assert.ok(!no10Observation.participants.some(part => part.actor_id === actorId),
+    `${actorId} must not survive as an inferred participant on the corrected No. 10 observation`);
+}
+const inquiryRoleReceipt = receipt('uk-covid-inquiry-ben-warner-decision-forward-planning-2020-03-13-16');
+assert.equal(inquiryRoleReceipt.source_document_id, 'INQ000272142');
+assert.equal(inquiryRoleReceipt.event_date_start, '2020-03-13');
+assert.equal(inquiryRoleReceipt.event_date_end, '2020-03-16');
+const sage89Receipt = receipt('gov-sage-89-ben-warner-no10-2021-05-13');
+assert.equal(sage89Receipt.event_date, '2021-05-13');
+assert.match(sage89Receipt.notes, /eighty-seven recorded attendees/i);
+assert.equal(receipt('official-no10-ben-warner'), undefined,
+  'master-document proxy receipt must be retired after source-native capture');
+const wc = hop.edges.find(edge =>
+  [edge.actor_a, edge.actor_b].sort().join('|') === 'ben-warner|dominic-cummings');
+assert.ok(wc, 'Warner/Cummings may remain connected only through a separate bounded surface');
+assert.ok(wc.surfaces.some(basis => basis.surface_id === 'vote-leave-data-science-2016'));
+assert.ok(!wc.surfaces.some(basis => basis.surface_id.includes('no10') || basis.surface_id.includes('no-10')),
+  'Warner/Cummings edge must carry no No. 10 office basis');
 
 console.log('compiler.test: OK');

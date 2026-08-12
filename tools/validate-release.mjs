@@ -96,6 +96,11 @@ function checkDensity(surface, participants, origin) {
 for (const surface of data.surfaces) {
   assert(surface.surface_id && surface.surface_label && surface.surface_type, `surface missing required fields: ${JSON.stringify(surface)}`);
   assert(typeof surface.hop_eligible === 'boolean', `surface ${surface.surface_id} hop_eligible must be boolean`);
+  if (surface.hop_refusal_reason !== undefined) {
+    assert(surface.hop_eligible === false, `surface ${surface.surface_id} cannot declare hop_refusal_reason while hop eligible`);
+    assert(typeof surface.hop_refusal_reason === 'string' && surface.hop_refusal_reason.length > 0,
+      `surface ${surface.surface_id} hop_refusal_reason must be a non-empty string`);
+  }
   assert(surfaceTypeById.has(surface.surface_type), `surface ${surface.surface_id} uses unknown type ${surface.surface_type}`);
   for (const secondary of surface.secondary_surface_types ?? []) assert(surfaceTypeById.has(secondary), `surface ${surface.surface_id} uses unknown secondary type ${secondary}`);
   checkDensity(surface, sourcePartsBySurface.get(surface.surface_id) ?? [], 'ledger');
@@ -110,6 +115,13 @@ for (const surface of surfaceGraph.surfaces) {
   assert(surface.hop_eligible === source?.hop_eligible,
     `compiled surface ${surface.surface_id} hop_eligible is stale (${surface.hop_eligible} != ledger ${source?.hop_eligible})`);
   checkDensity(surface, surface.participants ?? [], 'compiled');
+}
+
+for (const source of data.surfaces.filter(surface => surface.hop_refusal_reason)) {
+  const rejection = (hopGraph.rejected_hop_surfaces ?? []).find(row => row.surface_id === source.surface_id);
+  assert(rejection, `surface ${source.surface_id} declares a refusal reason but is missing from rejected_hop_surfaces`);
+  assert(rejection?.reason === source.hop_refusal_reason,
+    `surface ${source.surface_id} compiled refusal reason is stale (${rejection?.reason} != ${source.hop_refusal_reason})`);
 }
 
 // Every hop must carry its surface basis.
@@ -217,7 +229,7 @@ for (const pair of hopGraph.rejected_hop_pairs ?? []) {
 
 // Regression fixture 1: Ben Warner.
 const warnerSurfaces = [
-  'no10-digital-data-advisory-2019-2021',
+  'ben-warner-no10-digital-data-role-observation-2020-2021',
   'faculty-investor-employee-2015-2019',
   'vote-leave-data-science-2016',
   'electric-twin-incorporation-2023-09-28',

@@ -57,7 +57,7 @@ export function deriveHopEdges({ surfaces, participationBySurface, broadOrgIds, 
     const orgParts = participants.filter(p => p.participant_type === 'organization');
 
     if (!surface.hop_eligible) {
-      rejectedHopSurfaces.push({ surface_id: surface.surface_id, reason: 'surface_not_hop_eligible' });
+      rejectedHopSurfaces.push({ surface_id: surface.surface_id, reason: surface.hop_refusal_reason ?? 'surface_not_hop_eligible' });
       continue;
     }
     const density = assessHopDensity(surface, participants, densityPolicy);

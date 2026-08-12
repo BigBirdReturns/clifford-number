@@ -5,6 +5,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { computeSg12Manifest } from './build-project-stable-ground-sg12.mjs';
+import { computeReleaseManifest as computeStatusSovereigntyManifest } from './build-status-sovereignty-compact.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => JSON.parse(fs.readFileSync(path.join(root, rel), 'utf8'));
@@ -158,7 +159,8 @@ eq(currentRow?.transition_base, trigger.transition_base, 'SG-12 pointer transiti
   eq(candidates.records?.filter((row) => row.invitation_authorized === false).length, 8, 'candidate invitation hold');
   eq(responses.records?.length, 0, 'response zero state');
   eq(campaignManifest.combined_sha256, trigger.checkpoint_campaign_release_sha256, 'campaign current release custody');
-  eq(statusManifest.combined_sha256, trigger.checkpoint_status_release_sha256, 'SSC current release custody');
+  eq(trigger.checkpoint_status_release_sha256, checkpoint.authority_change?.status_release_sha256, 'SSC historical checkpoint custody');
+  eq(JSON.stringify(statusManifest), JSON.stringify(computeStatusSovereigntyManifest()), 'SSC current release exact-byte manifest');
   eq(poofManifest.combined_sha256, trigger.checkpoint_poof_release_sha256, 'POOF current release custody');
   eq(sha256(fs.readFileSync(path.join(root, 'data/research/status-sovereignty-wave-02-second-party-review-candidates.json'))), trigger.candidate_registry_sha256, 'candidate registry exact-byte custody');
   eq(checkpoint.canonical_main?.commit, trigger.transition_commit, 'SG-12 canonical transition commit');
