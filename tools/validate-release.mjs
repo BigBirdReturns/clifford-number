@@ -284,6 +284,26 @@ assert(ethicsBoardReceipt?.event_date === '2026-06-11', 'ethics-board receipt mu
 assert(ethicsBoardReceipt?.former_service_last_day === '2025-03-31', 'ethics-board receipt must preserve the recorded Civil Service departure date');
 assert(ethicsBoardReceipt?.government_contact_or_lobbying === false, 'ethics-board receipt must preserve the no-government-contact condition');
 
+const cabinetSecretaryTenure = surfaceById.get('simon-case-cabinet-secretary-2020-2024');
+assert(cabinetSecretaryTenure, 'source-native Simon Case Cabinet Secretary tenure must compile');
+assert(cabinetSecretaryTenure?.hop_eligible === false, 'single-actor Cabinet Secretary tenure must remain non-hop');
+assert(cabinetSecretaryTenure?.hop_refusal_reason === 'single_actor_government_role_context_only', 'Cabinet Secretary tenure must expose the single-actor government-role refusal');
+assert(cabinetSecretaryTenure?.time_start === '2020-09-09' && cabinetSecretaryTenure?.time_end === '2024-12-15', 'Cabinet Secretary tenure must preserve the exact official interval');
+assert(sameIdSet(cabinetSecretaryTenure?.receipt_ids, ['gov-pm-simon-case-cabinet-secretary-appointment-2020-09-01', 'gov-simon-case-cabinet-secretary-tenure-end-2024-12-15']), 'Cabinet Secretary tenure must use both official boundary receipts');
+const cabinetSecretaryActors = (cabinetSecretaryTenure?.participants ?? []).filter(part => part.participant_type === 'actor').map(part => part.actor_id);
+assert(JSON.stringify(cabinetSecretaryActors) === JSON.stringify(['simon-case']), 'Cabinet Secretary tenure must contain exactly Simon Case as an actor');
+const cabinetSecretaryOrganizations = (cabinetSecretaryTenure?.participants ?? []).filter(part => part.participant_type === 'organization').map(part => part.organization_id);
+assert(JSON.stringify(cabinetSecretaryOrganizations) === JSON.stringify(['cabinet-office']), 'Cabinet Secretary tenure must retain the Cabinet Office as institutional context');
+assert(!hopGraph.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === cabinetSecretaryTenure?.surface_id)), 'single-actor Cabinet Secretary tenure must never become a hop basis');
+assert(!cabinetSecretaryTenure?.receipt_ids.includes('master-doc-v3'), 'source-native Cabinet Secretary tenure must not rely on the master proxy');
+const cabinetAppointmentReceipt = receiptById.get('gov-pm-simon-case-cabinet-secretary-appointment-2020-09-01');
+assert(cabinetAppointmentReceipt?.evidence_class === 'official', 'Cabinet Secretary appointment receipt must remain official');
+assert(cabinetAppointmentReceipt?.appointment_effective_at === '2020-09-09', 'Cabinet Secretary appointment receipt must preserve the exact start date');
+const cabinetTenureEndReceipt = receiptById.get('gov-simon-case-cabinet-secretary-tenure-end-2024-12-15');
+assert(cabinetTenureEndReceipt?.evidence_class === 'official', 'Cabinet Secretary tenure-end receipt must remain official');
+assert(cabinetTenureEndReceipt?.tenure_end === '2024-12-15', 'Cabinet Secretary tenure-end receipt must preserve the exact end date');
+assert(cabinetTenureEndReceipt?.successor_effective_at === '2024-12-16', 'Cabinet Secretary tenure-end receipt must preserve the successor start date');
+
 // Electric Twin legal formation is one dated hop; continuing officer tenures are non-hop observations.
 assert(!surfaceById.has('electric-twin-founder-2023'), 'legacy open-ended Electric Twin founder surface must be retired');
 const etIncorporation = surfaceById.get('electric-twin-incorporation-2023-09-28');

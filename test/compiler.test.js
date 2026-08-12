@@ -63,6 +63,28 @@ assert.equal(ethicsBoardReceipt.role_time_commitment, 'part_time');
 assert.equal(ethicsBoardReceipt.government_contact_or_lobbying, false);
 assert.ok(!ethicsBoardObservation.receipt_ids.includes('times-case-electric-twin-2026'), 'the corrected surface must not inherit the master-only Times reference');
 
+const cabinetSecretaryTenure = surf('simon-case-cabinet-secretary-2020-2024');
+assert.ok(cabinetSecretaryTenure, 'the source-native Simon Case Cabinet Secretary tenure must compile');
+assert.equal(cabinetSecretaryTenure.hop_eligible, false);
+assert.equal(cabinetSecretaryTenure.hop_refusal_reason, 'single_actor_government_role_context_only');
+assert.equal(cabinetSecretaryTenure.time_start, '2020-09-09');
+assert.equal(cabinetSecretaryTenure.time_end, '2024-12-15');
+assert.deepEqual(cabinetSecretaryTenure.participants.filter(part => part.participant_type === 'actor').map(part => part.actor_id), ['simon-case'], 'the official tenure records must not manufacture another actor participant');
+assert.deepEqual(cabinetSecretaryTenure.participants.filter(part => part.participant_type === 'organization').map(part => part.organization_id), ['cabinet-office']);
+assert.deepEqual(cabinetSecretaryTenure.receipt_ids, ['gov-pm-simon-case-cabinet-secretary-appointment-2020-09-01', 'gov-simon-case-cabinet-secretary-tenure-end-2024-12-15']);
+assert.ok((hop.rejected_hop_surfaces ?? []).some(row => row.surface_id === cabinetSecretaryTenure.surface_id && row.reason === 'single_actor_government_role_context_only'), 'compiled graph must expose the single-actor Cabinet Secretary refusal');
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === cabinetSecretaryTenure.surface_id)), 'single-actor Cabinet Secretary tenure must never become a hop basis');
+const cabinetAppointmentReceipt = receipt('gov-pm-simon-case-cabinet-secretary-appointment-2020-09-01');
+assert.ok(cabinetAppointmentReceipt, 'the official Cabinet Secretary appointment receipt must exist');
+assert.equal(cabinetAppointmentReceipt.source_published_at, '2020-09-01');
+assert.equal(cabinetAppointmentReceipt.event_date, '2020-09-09');
+assert.equal(cabinetAppointmentReceipt.appointment_effective_at, '2020-09-09');
+const cabinetTenureEndReceipt = receipt('gov-simon-case-cabinet-secretary-tenure-end-2024-12-15');
+assert.ok(cabinetTenureEndReceipt, 'the official Cabinet Secretary tenure-end receipt must exist');
+assert.equal(cabinetTenureEndReceipt.tenure_end, '2024-12-15');
+assert.equal(cabinetTenureEndReceipt.successor_effective_at, '2024-12-16');
+assert.ok(!cabinetSecretaryTenure.receipt_ids.includes('master-doc-v3'), 'the corrected tenure must not inherit the master proxy');
+
 const surfaceActorIds = new Set(surface.actors.map(a => a.id));
 for (const node of legacyGraph.nodes.filter(n => n.type === 'person')) {
   assert.ok(surfaceActorIds.has(node.id), `${node.label} must be present in the surface app actor index`);
