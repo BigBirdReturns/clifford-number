@@ -1,0 +1,142 @@
+name: TEMP publish exact No. 10 broad-adjacency correction
+
+on:
+  push:
+    branches:
+      - agent/clifford-next-frontier-export-7a4007f
+    paths:
+      - .github/workflows/temp-publish-no10-broad-adjacency-boundary.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      BASE_SHA: 7a4007f62ce84463674ea24cc5e40b4ef5c6025a
+      BASE_TREE: 4a1e2513b32a15b4d71455dccb6d75bce15ab417
+      PRODUCT_TREE: 0b8c934965c649c2977218979bb95abee93ad202
+      PRODUCT_BRANCH: agent/no10-broad-adjacency-boundary-product
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          show-progress: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Authenticate payload and exact parent
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "$BASE_SHA^{commit}"
+          test "$(git rev-parse "$BASE_SHA^{tree}")" = "$BASE_TREE"
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          printf '%s  %s\n' \
+            f57d0a6f8c1f99849b1fa028754c360287c82343966fa9254b1ffe2a14205d68 .github/temporary/no10-broad-adjacency-boundary.part-00.b64 \
+            958612402a9e58ba96fcced110a70a8a65c61468f721c761bf4fa7af50c68ea9 .github/temporary/no10-broad-adjacency-boundary.part-01.b64 \
+            cc58872b7b0f3a97decc4289dcfe9fef3142076e0aa95e09be4c1b8aa464b903 .github/temporary/no10-broad-adjacency-boundary.part-02.b64 \
+            35b28cacfde11588f9964b637b2277d39e926683740a5ee3370320a545416b59 .github/temporary/no10-broad-adjacency-boundary.part-03.b64 \
+            | sha256sum -c -
+          cat .github/temporary/no10-broad-adjacency-boundary.part-0{0,1,2,3}.b64 > /tmp/no10-boundary.patch.gz.b64
+          echo '335db0c2ce495b5b129bb843ab231a843d23ec16d84aea6c9c6f2440ffdfb4df  /tmp/no10-boundary.patch.gz.b64' | sha256sum -c -
+          base64 --decode /tmp/no10-boundary.patch.gz.b64 > /tmp/no10-boundary.patch.gz
+          echo 'daacbbb9957f6f04803215c2d5e8cb176c167faa96cbce18d75c70ee5aa55d0e  /tmp/no10-boundary.patch.gz' | sha256sum -c -
+          gzip -dc /tmp/no10-boundary.patch.gz > /tmp/no10-boundary.patch
+          echo 'f94d38d965da814e38f64f5ea661d5337212cc03caa3786adc6559594db7dee4  /tmp/no10-boundary.patch' | sha256sum -c -
+          git worktree add --detach /tmp/canonical "$BASE_SHA"
+          git worktree add --detach /tmp/product "$BASE_SHA"
+
+      - name: Prove canonical parent is release-clean
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/canonical
+          npm run release:check > /tmp/canonical-release.log 2>&1
+          cp reports/core-thesis/answerable-power/data.json /tmp/canonical-answerable-power.json
+          echo 'CANONICAL_RELEASE_PASS true'
+
+      - name: Apply and qualify exact product
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/product
+          git apply --index /tmp/no10-boundary.patch
+          printf '%s\n' \
+            README.md \
+            data/canonical/actors.json \
+            data/ledger/chains.jsonl \
+            data/ledger/claims.jsonl \
+            data/ledger/participation.jsonl \
+            data/ledger/receipts.jsonl \
+            data/ledger/surfaces.jsonl \
+            data/research/clifford-cross-corpus-public-interest-map.json \
+            docs/plain-language.md \
+            docs/release-architecture.md \
+            receipts/topology/gov-sage-89-ben-warner-no10-2021-05-13.md \
+            receipts/topology/uk-covid-inquiry-ben-warner-decision-forward-planning-2020-03-13-16.md \
+            test/axm-id.test.js \
+            test/compiler.test.js \
+            test/narrate-hops.test.js \
+            tools/lib/hops.mjs \
+            tools/validate-release.mjs \
+            > /tmp/expected-paths.txt
+          git diff --cached --name-only | sort > /tmp/staged-paths.txt
+          sort /tmp/expected-paths.txt -o /tmp/expected-paths.txt
+          diff -u /tmp/expected-paths.txt /tmp/staged-paths.txt
+          npm run release:check > /tmp/product-release.log 2>&1
+          cp reports/core-thesis/answerable-power/data.json /tmp/product-answerable-power.json
+          cmp /tmp/canonical-answerable-power.json /tmp/product-answerable-power.json
+          echo 'PRODUCT_RELEASE_PASS true'
+          echo 'ANSWERABLE_POWER_PROJECTION_STABLE true'
+
+      - name: Create exact one-parent product commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/product
+          git config user.name 'BigBirdReturns'
+          git config user.email 'bigbirdreturns@proton.me'
+          git commit -m 'topology: retire broad No. 10 actor adjacency'
+          test "$(git rev-parse 'HEAD^')" = "$BASE_SHA"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$PRODUCT_TREE"
+          git rev-parse HEAD > /tmp/product-commit.txt
+          git rev-parse 'HEAD^{tree}' > /tmp/product-tree.txt
+          git worktree add --detach /tmp/clean HEAD
+
+      - name: Prove clean checkout and publish product branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/clean
+          npm run release:check > /tmp/clean-release.log 2>&1
+          test "$(git rev-parse 'HEAD^{tree}')" = "$PRODUCT_TREE"
+          cmp /tmp/canonical-answerable-power.json reports/core-thesis/answerable-power/data.json
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          echo "PRODUCT_BRANCH $PRODUCT_BRANCH"
+          echo "PRODUCT_COMMIT $(cat /tmp/product-commit.txt)"
+          echo "PRODUCT_TREE $(cat /tmp/product-tree.txt)"
+          echo 'CLEAN_CHECKOUT_RELEASE_PASS true'
+
+      - name: Upload qualification receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: no10-broad-adjacency-boundary-qualification
+          if-no-files-found: warn
+          path: |
+            /tmp/no10-boundary.patch
+            /tmp/expected-paths.txt
+            /tmp/staged-paths.txt
+            /tmp/canonical-release.log
+            /tmp/product-release.log
+            /tmp/clean-release.log
+            /tmp/canonical-answerable-power.json
+            /tmp/product-answerable-power.json
+            /tmp/product-commit.txt
+            /tmp/product-tree.txt
