@@ -1,0 +1,103 @@
+name: TEMP repair Electric Twin investor-roster regression fixture
+
+on:
+  push:
+    branches:
+      - agent/electric-twin-investor-roster-transport-v1
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out exact fixture-repair transport ref
+        uses: actions/checkout@v4
+        with:
+          ref: agent/electric-twin-investor-roster-transport-v1
+          fetch-depth: 9
+          fetch-tags: false
+          show-progress: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Replay qualified publisher with corrected exact-date fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EXPECTED_MAIN="14538b35f9051d21bb431533f38e0b6a512d3606"
+          EXPECTED_V2="e5beb3d6e0e91111743bae990e9f75e67fcd03e2"
+
+          git fetch origin "refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_V2"
+          test "$(git rev-list --count "$EXPECTED_MAIN..HEAD")" = "7"
+
+          python - <<'PY'
+          from pathlib import Path
+
+          source_path = Path('.github/workflows/temp-electric-twin-investor-roster-publish-v2.yml')
+          source = source_path.read_text(encoding='utf-8')
+          marker = '        run: |\n'
+          if marker not in source:
+              raise SystemExit('v2 publisher run block missing')
+          block = source.split(marker, 1)[1]
+          lines = []
+          for line in block.splitlines():
+              if line.startswith('          '):
+                  lines.append(line[10:])
+              elif not line.strip():
+                  lines.append('')
+              else:
+                  break
+          script = '\n'.join(lines) + '\n'
+
+          replacements = {
+              'EXPECTED_PREVIOUS_TRANSPORT="badf0a46b9ed126b5ba0b7fff91027ded22fcd41"':
+                  'EXPECTED_PREVIOUS_TRANSPORT="e5beb3d6e0e91111743bae990e9f75e67fcd03e2"',
+              'test "$(git rev-list --count "$EXPECTED_MAIN..HEAD")" = "6"':
+                  'test "$(git rev-list --count "$EXPECTED_MAIN..HEAD")" = "7"',
+              '    ".github/workflows/temp-electric-twin-investor-roster-publish-v2.yml",\n':
+                  '    ".github/workflows/temp-electric-twin-investor-roster-publish-v2.yml",\n'
+                  '    ".github/workflows/temp-electric-twin-investor-roster-publish-v3.yml",\n',
+          }
+          for old, new in replacements.items():
+              if script.count(old) != 1:
+                  raise SystemExit('publisher replay replacement count mismatch: ' + repr(old))
+              script = script.replace(old, new, 1)
+
+          apply_line = 'python /tmp/apply-electric-twin-investor-roster.py apply\n'
+          fixture_patch = r'''python - <<'PYFIX'
+          from pathlib import Path
+
+          path = Path("test/compiler.test.js")
+          text = path.read_text(encoding="utf-8")
+          old = """assert.equal(techEuFundingReceipt.event_date, '2026-02-11',
+            'the reporting date must remain separate from the announcement event date');"""
+          new = """assert.equal(techEuFundingReceipt.event_date, '2026-02-12',
+            'the first-party investor roster fixes the complete actor co-listing date');"""
+          if text.count(old) != 1:
+              raise SystemExit("stale Tech.eu event-date fixture missing or duplicated")
+          path.write_text(text.replace(old, new, 1), encoding="utf-8")
+          print("tech_eu_event_fixture=2026-02-12")
+          PYFIX
+          '''
+          fixture_patch = '\n'.join(
+              line[10:] if line.startswith('          ') else line
+              for line in fixture_patch.splitlines()
+          ) + '\n'
+          if script.count(apply_line) != 1:
+              raise SystemExit('helper apply command missing or duplicated')
+          script = script.replace(apply_line, apply_line + fixture_patch, 1)
+
+          replay = Path('/tmp/replay-electric-twin-investor-roster-v3.sh')
+          replay.write_text(script, encoding='utf-8')
+          print('replay_script_lines=' + str(len(script.splitlines())))
+          PY
+
+          bash /tmp/replay-electric-twin-investor-roster-v3.sh
