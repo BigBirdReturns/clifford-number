@@ -1,0 +1,34 @@
+diff --git a/test/project-stable-ground-sg12.test.js b/test/project-stable-ground-sg12.test.js
+index 0aaceee..24e7778 100644
+--- a/test/project-stable-ground-sg12.test.js
++++ b/test/project-stable-ground-sg12.test.js
+@@ -36,6 +36,7 @@ const cases = [
+   ['response invented', (c) => { c.responses.records.push({}); }],
+   ['campaign digest', (c) => { c.campaignManifest.combined_sha256 = '0'.repeat(64); }],
+   ['status digest', (c) => { c.statusManifest.combined_sha256 = '0'.repeat(64); }],
++  ['historical status receipt', (c) => { c.checkpoint.trigger.checkpoint_status_release_sha256 = '0'.repeat(64); }],
+   ['POOF digest', (c) => { c.poofManifest.combined_sha256 = '0'.repeat(64); }],
+   ['snapshot candidate', (c) => { c.checkpoint.canonical_snapshot.status_sovereignty.wave_02_reviewer_candidates = 7; }],
+   ['snapshot review', (c) => { c.checkpoint.canonical_snapshot.status_sovereignty.wave_02_valid_reviews = 1; }],
+diff --git a/tools/validate-project-stable-ground-sg12.mjs b/tools/validate-project-stable-ground-sg12.mjs
+index e0ada65..635fb6f 100644
+--- a/tools/validate-project-stable-ground-sg12.mjs
++++ b/tools/validate-project-stable-ground-sg12.mjs
+@@ -5,6 +5,7 @@ import path from 'node:path';
+ import { spawnSync } from 'node:child_process';
+ import { fileURLToPath } from 'node:url';
+ import { computeSg12Manifest } from './build-project-stable-ground-sg12.mjs';
++import { computeReleaseManifest as computeStatusSovereigntyManifest } from './build-status-sovereignty-compact.mjs';
+ 
+ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+ const read = (rel) => JSON.parse(fs.readFileSync(path.join(root, rel), 'utf8'));
+@@ -158,7 +159,8 @@ eq(currentRow?.transition_base, trigger.transition_base, 'SG-12 pointer transiti
+   eq(candidates.records?.filter((row) => row.invitation_authorized === false).length, 8, 'candidate invitation hold');
+   eq(responses.records?.length, 0, 'response zero state');
+   eq(campaignManifest.combined_sha256, trigger.checkpoint_campaign_release_sha256, 'campaign current release custody');
+-  eq(statusManifest.combined_sha256, trigger.checkpoint_status_release_sha256, 'SSC current release custody');
++  eq(trigger.checkpoint_status_release_sha256, checkpoint.authority_change?.status_release_sha256, 'SSC historical checkpoint custody');
++  eq(JSON.stringify(statusManifest), JSON.stringify(computeStatusSovereigntyManifest()), 'SSC current release exact-byte manifest');
+   eq(poofManifest.combined_sha256, trigger.checkpoint_poof_release_sha256, 'POOF current release custody');
+   eq(sha256(fs.readFileSync(path.join(root, 'data/research/status-sovereignty-wave-02-second-party-review-candidates.json'))), trigger.candidate_registry_sha256, 'candidate registry exact-byte custody');
+   eq(checkpoint.canonical_main?.commit, trigger.transition_commit, 'SG-12 canonical transition commit');
