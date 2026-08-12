@@ -41,6 +41,28 @@ assert.equal(org('electric-twin').surface_factory, true);
 assert.ok(actor('simon-case').surfaces.includes('simon-case-cabinet-secretary-2020-2024'));
 assert.ok(actor('simon-case').surfaces.includes('electric-twin-ethics-board-2026'));
 assert.ok(actor('simon-case').surfaces.includes('team-barrow-public-private-fund-2026'));
+
+const ethicsBoardObservation = surf('electric-twin-ethics-board-2026');
+assert.ok(ethicsBoardObservation, 'the source-native Simon Case ethics-board observation must compile');
+assert.equal(ethicsBoardObservation.hop_eligible, false);
+assert.equal(ethicsBoardObservation.hop_refusal_reason, 'single_actor_advisory_context_only');
+assert.equal(ethicsBoardObservation.time_start, '2026-06-11');
+assert.equal(ethicsBoardObservation.time_end, '2026-06-11');
+assert.deepEqual(ethicsBoardObservation.participants.filter(part => part.participant_type === 'actor').map(part => part.actor_id), ['simon-case'], 'the official appointment record must not manufacture another actor participant');
+assert.deepEqual(ethicsBoardObservation.participants.filter(part => part.participant_type === 'organization').map(part => part.organization_id), ['electric-twin']);
+assert.deepEqual(ethicsBoardObservation.receipt_ids, ['civil-service-commission-simon-case-electric-twin-ethics-board-2026-06-11']);
+assert.ok((hop.rejected_hop_surfaces ?? []).some(row => row.surface_id === ethicsBoardObservation.surface_id && row.reason === 'single_actor_advisory_context_only'), 'compiled graph must expose the single-actor ethics-board refusal');
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === ethicsBoardObservation.surface_id)), 'single-actor ethics-board context must never become a hop basis');
+const ethicsBoardReceipt = receipt('civil-service-commission-simon-case-electric-twin-ethics-board-2026-06-11');
+assert.ok(ethicsBoardReceipt, 'the official ethics-board receipt must exist');
+assert.equal(ethicsBoardReceipt.source_published_at, '2026-06-11');
+assert.equal(ethicsBoardReceipt.event_date, '2026-06-11');
+assert.equal(ethicsBoardReceipt.former_service_last_day, '2025-03-31');
+assert.equal(ethicsBoardReceipt.role_compensation, 'unpaid');
+assert.equal(ethicsBoardReceipt.role_time_commitment, 'part_time');
+assert.equal(ethicsBoardReceipt.government_contact_or_lobbying, false);
+assert.ok(!ethicsBoardObservation.receipt_ids.includes('times-case-electric-twin-2026'), 'the corrected surface must not inherit the master-only Times reference');
+
 const surfaceActorIds = new Set(surface.actors.map(a => a.id));
 for (const node of legacyGraph.nodes.filter(n => n.type === 'person')) {
   assert.ok(surfaceActorIds.has(node.id), `${node.label} must be present in the surface app actor index`);

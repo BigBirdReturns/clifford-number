@@ -1,6 +1,6 @@
 # Scout Report
 
-Generated: 2026-08-12T17:33:25.687Z
+Generated: 2026-08-12T18:02:16.707Z
 
 > graph_effect: none. This is a research queue, not graph data.
 
