@@ -1,0 +1,267 @@
+name: TEMP reconcile Gartner dependent claims and chronology
+
+on:
+  push:
+    branches:
+      - agent/gartner-claim-chain-reconciliation-v1
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gartner-claim-chain-reconciliation
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out exact transport ref
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: false
+          show-progress: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Rebuild, qualify, publish, and retire transport
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EXPECTED_MAIN="b31614a7e2a10a5e488e273ce39c31271399ae4e"
+          BASE_PRODUCT="ff51c00ea9e7d7b37cdd8475c7ee3c6855526f16"
+          EXPECTED_PAYLOAD_PARENT="e813923d24199490944b2fc340636a9bd5abd872"
+          PRODUCT_BRANCH="candidate/gartner-category-source-v1"
+          TRANSPORT_BRANCH="agent/gartner-claim-chain-reconciliation-v1"
+          PAYLOAD=".github/temporary/apply-gartner-claim-chain-reconciliation.py.gz.b64"
+          GZ="$(mktemp)"
+          HELPER="$(mktemp)"
+          PATCH="$(mktemp)"
+          cleanup() {
+            rm -f "$GZ" "$HELPER" "$PATCH"
+          }
+          trap cleanup EXIT
+
+          base_paths=(
+            build/axm-identity.json
+            build/build-hop-report.json
+            build/hop-graph.json
+            build/migration-review.md
+            build/migration-summary.json
+            build/receipt-graph.json
+            build/scores.json
+            build/scout-report.json
+            build/scout-report.md
+            build/surface-graph.json
+            data/ledger/participation.jsonl
+            data/ledger/receipts.jsonl
+            data/ledger/surfaces.jsonl
+            data/research/clifford-cross-corpus-public-interest-map.json
+            receipts/topology/electric-twin-linkedin-gartner-category-2026-06-25.md
+            test/compiler.test.js
+            tools/validate-release.mjs
+          )
+          final_paths=(
+            "${base_paths[@]}"
+            data/ledger/chains.jsonl
+            data/ledger/claims.jsonl
+          )
+
+          assert_status_paths() {
+            local label="$1"
+            shift
+            local observed expected
+            observed="$(mktemp)"
+            expected="$(mktemp)"
+            git status --porcelain=v1 -z |
+              python -c 'import sys; items=[x for x in sys.stdin.buffer.read().split(b"\0") if x]; print("\n".join(sorted(x[3:].decode() for x in items)))' > "$observed"
+            printf '%s\n' "$@" | sort > "$expected"
+            if ! diff -u "$expected" "$observed"; then
+              echo "$label path set drifted" >&2
+              rm -f "$observed" "$expected"
+              exit 1
+            fi
+            rm -f "$observed" "$expected"
+          }
+
+          git fetch origin main candidate/gartner-category-source-v1
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse origin/candidate/gartner-category-source-v1)" = "$BASE_PRODUCT"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_PAYLOAD_PARENT"
+          test "$(git rev-parse HEAD^^)" = "$EXPECTED_MAIN"
+          test "$(git rev-list --count "$EXPECTED_MAIN..HEAD")" = "2"
+
+          python - <<'PY'
+          import subprocess
+          expected = {
+              ".github/temporary/apply-gartner-claim-chain-reconciliation.py.gz.b64",
+              ".github/workflows/temp-gartner-claim-chain-reconciliation.yml",
+          }
+          changed = set(subprocess.check_output(
+              ["git", "diff", "--name-only", "b31614a7e2a10a5e488e273ce39c31271399ae4e", "HEAD"],
+              text=True,
+          ).splitlines())
+          if changed != expected:
+              raise SystemExit("transport boundary drift: " + repr({"expected": sorted(expected), "actual": sorted(changed)}))
+          print("transport_paths=" + repr(sorted(changed)))
+          PY
+
+          printf '%s  %s\n' "27515b3b1cbdbe5baaf5304b485010f2bcf390ef85aa058306f568470ffbd95b" "$PAYLOAD" | sha256sum -c -
+          base64 -d "$PAYLOAD" > "$GZ"
+          printf '%s  %s\n' "aa2c61f7cb1dadc0f3575fa1cdcdf27811a15071621a065ff7e08895b244f102" "$GZ" | sha256sum -c -
+          gzip -dc "$GZ" > "$HELPER"
+          printf '%s  %s\n' "9b5cea6c6abbb8ff0c6ecef4152903b4009cebe8accc2cab53657d7bbc02da70" "$HELPER" | sha256sum -c -
+          python -m py_compile "$HELPER"
+
+          mapfile -t base_changed < <(git diff --name-only "$EXPECTED_MAIN" "$BASE_PRODUCT" | sort)
+          mapfile -t base_expected < <(printf '%s\n' "${base_paths[@]}" | sort)
+          test "${base_changed[*]}" = "${base_expected[*]}"
+          test "$(git rev-parse "$BASE_PRODUCT^")" = "$EXPECTED_MAIN"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -B "$PRODUCT_BRANCH" "$EXPECTED_MAIN"
+          test -z "$(git status --porcelain)"
+
+          git diff --binary "$EXPECTED_MAIN" "$BASE_PRODUCT" -- "${base_paths[@]}" > "$PATCH"
+          git apply "$PATCH"
+          assert_status_paths "qualified Gartner preimage" "${base_paths[@]}"
+
+          python "$HELPER" apply
+          npm run compile
+
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          def rows(path):
+              return [json.loads(line) for line in Path(path).read_text(encoding="utf-8").splitlines() if line.strip()]
+
+          document = json.loads(Path("data/research/clifford-cross-corpus-public-interest-map.json").read_text(encoding="utf-8"))
+          expected_inventory = {
+              "actors": 139,
+              "organizations": 25,
+              "surfaces": 22,
+              "participations": 184,
+              "receipts": 57,
+              "compiled_hop_edges": 27,
+          }
+          if document.get("inventory", {}).get("canonical") != expected_inventory:
+              raise SystemExit("cross-corpus canonical inventory is stale: " + repr(document.get("inventory", {}).get("canonical")))
+          if document.get("inventory", {}).get("discovery_queue", {}).get("scout_findings") != 140:
+              raise SystemExit("cross-corpus scout inventory is stale")
+          lanes = [lane for lane in document.get("lanes", []) if lane.get("lane_id") == "official-research-fanout"]
+          if len(lanes) != 1 or lanes[0].get("counts", {}).get("scout_findings") != 140:
+              raise SystemExit("cross-corpus fanout inventory is stale")
+
+          actual_inventory = {
+              "actors": len(json.loads(Path("data/canonical/actors.json").read_text())["actors"]),
+              "organizations": len(json.loads(Path("data/canonical/organizations.json").read_text())["organizations"]),
+              "surfaces": len(rows("data/ledger/surfaces.jsonl")),
+              "participations": len(rows("data/ledger/participation.jsonl")),
+              "receipts": len(rows("data/ledger/receipts.jsonl")),
+              "compiled_hop_edges": len(json.loads(Path("build/hop-graph.json").read_text()).get("edges", [])),
+          }
+          if actual_inventory != expected_inventory:
+              raise SystemExit("actual canonical inventory drift: " + repr(actual_inventory))
+          if len(rows("data/ledger/claims.jsonl")) != 11 or len(rows("data/ledger/chains.jsonl")) != 1:
+              raise SystemExit("claim or chain cardinality drift")
+          print("inventory=" + json.dumps(actual_inventory, sort_keys=True))
+          PY
+
+          npm run release:check
+          python "$HELPER" verify
+          assert_status_paths "qualified reconciled product" "${final_paths[@]}"
+          git diff --check
+
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          import subprocess
+
+          hop = json.loads(Path("build/hop-graph.json").read_text())
+          surface = json.loads(Path("build/surface-graph.json").read_text())
+          receipt_graph = json.loads(Path("build/receipt-graph.json").read_text())
+          claims = {row["claim_id"]: row for row in receipt_graph.get("claims", [])}
+          old_claim_ids = {
+              "warner-gartner-synthetic-populations-2026-06-29",
+              "electric-twin-newsuk-first-party-data-2026-06-29",
+              "ben-warner-government-commercial-chronology-boundary-2026-08-11",
+          }
+          if old_claim_ids.intersection(claims):
+              raise SystemExit("retired claims survived compilation")
+          for claim_id in [
+              "electric-twin-gartner-category-observation-2026-06-25",
+              "newsuk-electric-twin-times-exploraition-launch-2026-04-27",
+              "ben-warner-government-electric-twin-role-boundary-2026-08-12",
+          ]:
+              if claim_id not in claims:
+                  raise SystemExit("corrected claim missing from receipt graph: " + claim_id)
+
+          baseline = json.loads(subprocess.check_output(
+              ["git", "show", "b31614a7e2a10a5e488e273ce39c31271399ae4e:build/hop-graph.json"],
+              text=True,
+          ))
+          pairs = lambda graph: sorted(
+              tuple(sorted((edge["actor_a"], edge["actor_b"])))
+              for edge in graph.get("edges", [])
+          )
+          if pairs(baseline) != pairs(hop):
+              raise SystemExit("actor-edge pair set changed")
+          terminal = {
+              "surfaces": len(surface.get("surfaces", [])),
+              "participations": sum(len(row.get("participants", [])) for row in surface.get("surfaces", [])),
+              "receipts": len({row["receipt_id"] for row in [json.loads(line) for line in Path("data/ledger/receipts.jsonl").read_text().splitlines() if line.strip()]}),
+              "hop_edges": len(hop.get("edges", [])),
+              "rejected_hop_surfaces": len(hop.get("rejected_hop_surfaces", [])),
+              "rejected_hop_pairs": len(hop.get("rejected_hop_pairs", [])),
+              "scout_findings": len(json.loads(Path("build/scout-report.json").read_text()).get("findings", [])),
+              "source_claims": 11,
+              "source_chains": 1,
+          }
+          expected = {
+              "surfaces": 22,
+              "participations": 184,
+              "receipts": 57,
+              "hop_edges": 27,
+              "rejected_hop_surfaces": 16,
+              "rejected_hop_pairs": 0,
+              "scout_findings": 140,
+              "source_claims": 11,
+              "source_chains": 1,
+          }
+          if terminal != expected:
+              raise SystemExit("terminal counts drift: " + repr(terminal))
+          print("terminal=" + json.dumps(terminal, sort_keys=True))
+          print("edge_set_unchanged=true")
+          PY
+
+          git add -A
+          git diff --cached --check
+          mapfile -t staged < <(git diff --cached --name-only | sort)
+          mapfile -t expected_staged < <(printf '%s\n' "${final_paths[@]}" | sort)
+          test "${staged[*]}" = "${expected_staged[*]}"
+          test -z "$(git ls-files --others --exclude-standard)"
+
+          git commit -m "topology: reconcile Gartner and News UK dependent claims"
+          PRODUCT_SHA="$(git rev-parse HEAD)"
+          PRODUCT_TREE="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          test "$(git diff-tree --no-commit-id --name-only -r HEAD | wc -l | tr -d ' ')" = "19"
+          test "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$BASE_PRODUCT"
+
+          git push --force origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          test "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$PRODUCT_SHA"
+          git push --force origin "$EXPECTED_MAIN:refs/heads/$TRANSPORT_BRANCH"
+
+          printf 'PRODUCT_SHA=%s\n' "$PRODUCT_SHA"
+          printf 'PRODUCT_TREE=%s\n' "$PRODUCT_TREE"
+          printf 'PRODUCT_PATHS=19\n'
+          printf 'RELEASE_PASS=true\n'
+          printf 'REMOTE_REF_PASS=true\n'
