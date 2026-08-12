@@ -1,10 +1,10 @@
 # Scout Report
 
-Generated: 2026-08-12T18:15:05.336Z
+Generated: 2026-08-12T18:27:45.796Z
 
 > graph_effect: none. This is a research queue, not graph data.
 
-Findings: 141
+Findings: 140
 
 ## finding-001: Electric Twin behaves as a surface factory
 
@@ -2454,25 +2454,7 @@ Refs: `electric-twin-ben-blume-director-appointment-2025-09-12`
 
 ---
 
-## finding-137: Team Barrow public-private development fund surface contains broad institution context
-
-- Type: broad_institution_guard
-- Priority: high
-- graph_effect: none
-
-**Observed**
-
-Broad venues present: UK Government. This is acceptable only because hops are generated from actor co-participation, not from the broad institution itself.
-
-**Required action**
-
-Verify this surface is tightly named and bounded. If it is merely an office or agency, mark it hop_eligible=false.
-
-Refs: `team-barrow-public-private-fund-2026`
-
----
-
-## finding-138: AI Opportunities Action Plan publication and government response, 13 January 2025 contains broad institution context
+## finding-137: AI Opportunities Action Plan publication and government response, 13 January 2025 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -2490,7 +2472,7 @@ Refs: `ai-opportunities-action-plan-2025`
 
 ---
 
-## finding-139: Strategic Defence Review terms and commission, 17 July 2024 contains broad institution context
+## finding-138: Strategic Defence Review terms and commission, 17 July 2024 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -2508,7 +2490,7 @@ Refs: `strategic-defence-review-2024-2025`
 
 ---
 
-## finding-140: Policy creation → procurement corridor → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
+## finding-139: Policy creation → procurement corridor → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
 
 - Type: laundering_chain
 - Priority: high
@@ -2526,7 +2508,7 @@ Refs: `ai-opportunities-action-plan-2025`, `detachment-201-commissioning-2025`, 
 
 ---
 
-## finding-141: Full master doc has been classified, not blindly migrated
+## finding-140: Full master doc has been classified, not blindly migrated
 
 - Type: migration_queue
 - Priority: high

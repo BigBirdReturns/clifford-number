@@ -304,6 +304,36 @@ assert(cabinetTenureEndReceipt?.evidence_class === 'official', 'Cabinet Secretar
 assert(cabinetTenureEndReceipt?.tenure_end === '2024-12-15', 'Cabinet Secretary tenure-end receipt must preserve the exact end date');
 assert(cabinetTenureEndReceipt?.successor_effective_at === '2024-12-16', 'Cabinet Secretary tenure-end receipt must preserve the successor start date');
 
+const teamBarrowObservation = surfaceById.get('team-barrow-public-private-fund-2026');
+assert(teamBarrowObservation, 'source-native Team Barrow governance observation must compile');
+assert(teamBarrowObservation?.hop_eligible === false, 'single-actor Team Barrow governance observation must remain non-hop');
+assert(teamBarrowObservation?.hop_refusal_reason === 'single_actor_partnership_governance_context_only', 'Team Barrow must expose the partnership-governance refusal');
+assert(teamBarrowObservation?.time_start === '2025-02-10' && teamBarrowObservation?.time_end === '2026-07-02', 'Team Barrow must preserve the appointment and current-observation bounds');
+assert(sameIdSet(teamBarrowObservation?.receipt_ids, ['gov-mhclg-simon-case-barrow-chair-2025-02-10', 'uk-parliament-plan-for-barrow-statement-2025-02-10', 'westmorland-team-barrow-chair-partnership-2025-02-10', 'civil-service-commission-simon-case-barrow-role-2026-07-02']), 'Team Barrow must carry all four official source receipts');
+const teamBarrowActors = (teamBarrowObservation?.participants ?? []).filter(part => part.participant_type === 'actor').map(part => part.actor_id);
+assert(JSON.stringify(teamBarrowActors) === JSON.stringify(['simon-case']), 'Team Barrow must contain exactly Simon Case as an actor');
+const teamBarrowOrganizations = (teamBarrowObservation?.participants ?? []).filter(part => part.participant_type === 'organization').map(part => part.organization_id).sort();
+assert(JSON.stringify(teamBarrowOrganizations) === JSON.stringify(['bae-systems', 'local-council', 'uk-government']), 'Team Barrow must retain exactly the three source-supported organization contexts');
+const teamBarrowGovernment = (teamBarrowObservation?.participants ?? []).find(part => part.organization_id === 'uk-government');
+assert(teamBarrowGovernment?.participation_type === 'public_funder_and_appointing_authority_observation', 'UK Government must retain the public-funder and appointing-authority role');
+assert(teamBarrowGovernment?.funding_amount_gbp === 200000000, 'Team Barrow government participation must preserve the £200 million amount');
+const teamBarrowBae = (teamBarrowObservation?.participants ?? []).find(part => part.organization_id === 'bae-systems');
+assert(teamBarrowBae?.participation_type === 'industry_partner_observation', 'BAE Systems must remain an industry partner rather than an inferred funder');
+const teamBarrowCouncil = (teamBarrowObservation?.participants ?? []).find(part => part.organization_id === 'local-council');
+assert(teamBarrowCouncil?.participation_type === 'local_government_partner_observation', 'the council must remain a local-government partner rather than an inferred funder');
+assert(!hopGraph.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === teamBarrowObservation?.surface_id)), 'single-actor Team Barrow context must never become a hop basis');
+assert(!teamBarrowObservation?.receipt_ids.includes('master-doc-v3'), 'source-native Team Barrow observation must not rely on the master proxy');
+const teamBarrowGovReceipt = receiptById.get('gov-mhclg-simon-case-barrow-chair-2025-02-10');
+assert(teamBarrowGovReceipt?.appointment_effective_at === '2025-02-10', 'Team Barrow appointment receipt must preserve the exact appointment date');
+assert(teamBarrowGovReceipt?.public_funding_amount_gbp === 200000000, 'Team Barrow appointment receipt must preserve the government funding amount');
+const teamBarrowParliamentReceipt = receiptById.get('uk-parliament-plan-for-barrow-statement-2025-02-10');
+assert(teamBarrowParliamentReceipt?.commons_statement_id === 'HCWS428' && teamBarrowParliamentReceipt?.lords_statement_id === 'HLWS424', 'Team Barrow parliamentary receipt must preserve both statement identifiers');
+const teamBarrowCouncilReceipt = receiptById.get('westmorland-team-barrow-chair-partnership-2025-02-10');
+assert(JSON.stringify(teamBarrowCouncilReceipt?.partnership_organizations) === JSON.stringify(['UK Government', 'Westmorland and Furness Council', 'BAE Systems']), 'Team Barrow council receipt must preserve the exact organization-level partnership');
+const teamBarrowCurrentReceipt = receiptById.get('civil-service-commission-simon-case-barrow-role-2026-07-02');
+assert(teamBarrowCurrentReceipt?.observed_active_through === '2026-07-02', 'Team Barrow current-role receipt must preserve the observation endpoint');
+assert(teamBarrowCurrentReceipt?.continues_to_represent_government === true, 'Team Barrow current-role receipt must preserve the government-representation finding');
+
 // Electric Twin legal formation is one dated hop; continuing officer tenures are non-hop observations.
 assert(!surfaceById.has('electric-twin-founder-2023'), 'legacy open-ended Electric Twin founder surface must be retired');
 const etIncorporation = surfaceById.get('electric-twin-incorporation-2023-09-28');
