@@ -33,7 +33,8 @@ const claim = id => receiptGraph.claims.find(row => row.claim_id === id);
 
 assert.ok(!actor('ben-warner').surfaces.includes('electric-twin-newsuk-synthetic-audience'),
   'Ben Warner must not inherit the organization-only News UK deployment');
-assert.ok(actor('ben-warner').secondary_surface_types.includes('democratic_input_replacement'));
+assert.ok(!actor('ben-warner').secondary_surface_types.includes('democratic_input_replacement'),
+  'Ben Warner must not inherit a democratic-input classification from an organization-only category post');
 const newsUkDeployment = surf('electric-twin-newsuk-synthetic-audience');
 assert.ok(newsUkDeployment, 'the source-native News UK / Electric Twin deployment must compile');
 assert.equal(newsUkDeployment.hop_eligible, false);
@@ -55,7 +56,82 @@ assert.equal(receipt('newsuk-times-exploraition-launch-2026-04-27').decision_sup
 assert.equal(receipt('electric-twin-times-exploraition-launch-2026-04-28').no_personal_data_claim, true);
 assert.equal(receipt('sandhu-comment-newsuk-2026-06-29'), undefined,
   'the superseded lost News UK judgment receipt must be retired');
-assert.equal(surf('gartner-synthetic-population-category-2026').hop_eligible, false);
+const gartnerCategoryObservation = surf('gartner-synthetic-population-category-2026');
+assert.ok(gartnerCategoryObservation, 'the source-native Gartner category observation must compile');
+assert.equal(gartnerCategoryObservation.hop_eligible, false);
+assert.equal(gartnerCategoryObservation.hop_refusal_reason, 'organization_only_category_observation');
+assert.equal(gartnerCategoryObservation.time_start, '2026-06-25');
+assert.equal(gartnerCategoryObservation.time_end, '2026-06-25');
+assert.deepEqual(gartnerCategoryObservation.participants.filter(part => part.participant_type === 'actor').map(part => part.actor_id), [],
+  'the Electric Twin company post must not manufacture Ben Warner or another actor participant');
+assert.deepEqual(gartnerCategoryObservation.participants.filter(part => part.participant_type === 'organization').map(part => part.organization_id).sort(), ['electric-twin', 'gartner']);
+assert.deepEqual(gartnerCategoryObservation.receipt_ids, ['electric-twin-linkedin-gartner-category-2026-06-25']);
+assert.ok((hop.rejected_hop_surfaces ?? []).some(row => row.surface_id === gartnerCategoryObservation.surface_id && row.reason === 'organization_only_category_observation'),
+  'compiled graph must expose the organization-only Gartner category refusal');
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === gartnerCategoryObservation.surface_id)),
+  'organization-only Gartner category context must never become a hop basis');
+assert.equal(gartnerCategoryObservation.participants.find(part => part.organization_id === 'electric-twin').participation_type, 'company_reported_category_subject_observation');
+assert.equal(gartnerCategoryObservation.participants.find(part => part.organization_id === 'gartner').participation_type, 'attributed_category_maker_context');
+const gartnerCategoryReceipt = receipt('electric-twin-linkedin-gartner-category-2026-06-25');
+assert.ok(gartnerCategoryReceipt, 'the recoverable Electric Twin Gartner-category receipt must exist');
+assert.equal(gartnerCategoryReceipt.source_published_at, '2026-06-25');
+assert.equal(gartnerCategoryReceipt.event_date, '2026-06-25');
+assert.equal(gartnerCategoryReceipt.reported_companies_reviewed, 60);
+assert.equal(gartnerCategoryReceipt.reported_companies_selected_to_watch, 33);
+assert.equal(gartnerCategoryReceipt.reported_tier, 'scale_up');
+assert.equal(gartnerCategoryReceipt.underlying_gartner_research_recovered, false);
+assert.equal(gartnerCategoryReceipt.personal_author_identified, false);
+assert.equal(receipt('warner-linkedin-gartner-2026-06-29'), undefined,
+  'the superseded lost Ben Warner paste receipt must be retired');
+
+const sourceNativeGartnerClaim = claim('electric-twin-reported-gartner-category-2026-06-25');
+assert.ok(sourceNativeGartnerClaim,
+  'canonical consumer repair must remove personal Gartner attribution');
+assert.deepEqual(sourceNativeGartnerClaim.actor_ids, []);
+assert.deepEqual(sourceNativeGartnerClaim.organization_ids.sort(), ['electric-twin', 'gartner']);
+assert.deepEqual(sourceNativeGartnerClaim.receipt_ids, ['electric-twin-linkedin-gartner-category-2026-06-25']);
+assert.equal(claim('warner-gartner-synthetic-populations-2026-06-29'), undefined,
+  'the superseded personal Gartner claim must be retired');
+
+const sourceNativeNewsUkClaim = claim('newsuk-times-exploraition-electric-twin-launch-2026-04-27');
+assert.ok(sourceNativeNewsUkClaim, 'the first-party News UK deployment claim must compile');
+assert.deepEqual(sourceNativeNewsUkClaim.actor_ids, []);
+assert.deepEqual(sourceNativeNewsUkClaim.organization_ids.sort(), ['electric-twin', 'news-uk']);
+assert.deepEqual(sourceNativeNewsUkClaim.receipt_ids, [
+  'newsuk-times-exploraition-launch-2026-04-27',
+  'electric-twin-times-exploraition-launch-2026-04-28',
+]);
+assert.equal(claim('electric-twin-newsuk-first-party-data-2026-06-29'), undefined,
+  'the superseded user-judgment News UK claim must be retired');
+
+const correctedWarnerChronology = claim('ben-warner-government-commercial-chronology-boundary-2026-08-11');
+assert.ok(correctedWarnerChronology, 'the Ben Warner chronology boundary must remain visible');
+assert.deepEqual(correctedWarnerChronology.receipt_ids, [
+  'uk-covid-inquiry-ben-warner-decision-forward-planning-2020-03-13-16',
+  'gov-sage-89-ben-warner-no10-2021-05-13',
+]);
+assert.deepEqual(correctedWarnerChronology.surface_ids, [
+  'ben-warner-no10-digital-data-role-observation-2020-2021',
+]);
+assert.match(correctedWarnerChronology.text, /do not place him on the later News UK deployment or Gartner category surfaces/);
+
+const correctedPolicyDeploymentChain = (scores.chains ?? [])
+  .find(row => row.chain_id === 'policy-to-deployment-synthetic-population');
+assert.ok(correctedPolicyDeploymentChain, 'the policy-to-deployment chain must remain compiled');
+const correctedCommercialDeploymentStage = correctedPolicyDeploymentChain.stages
+  .find(stage => stage.order === 4 && stage.stage_category === 'commercial_deployment');
+assert.ok(correctedCommercialDeploymentStage, 'the commercial-deployment stage must remain compiled');
+assert.equal(correctedCommercialDeploymentStage.organization_id, 'electric-twin');
+assert.equal(correctedCommercialDeploymentStage.actor_id, null);
+assert.deepEqual(correctedCommercialDeploymentStage.receipt_ids, [
+  'newsuk-times-exploraition-launch-2026-04-27',
+  'electric-twin-times-exploraition-launch-2026-04-28',
+]);
+assert.ok(!JSON.stringify(correctedPolicyDeploymentChain).includes('warner-linkedin-gartner-2026-06-29'));
+assert.ok(!JSON.stringify(correctedPolicyDeploymentChain).includes('sandhu-comment-newsuk-2026-06-29'));
+
+assert.ok(!actor('ben-warner').surfaces.includes(gartnerCategoryObservation.surface_id),
+  'Ben Warner must not inherit the organization-only Gartner category observation');
 assert.equal(surf('faculty-science-officer-employee-overlap-2018-01-24').hop_eligible, true);
 assert.equal(surf('faculty-science-director-shareholder-overlap-2024-10-10').hop_eligible, true);
 assert.equal(org('electric-twin').surface_factory, true);

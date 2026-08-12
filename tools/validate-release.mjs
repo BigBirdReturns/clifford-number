@@ -22,6 +22,8 @@ const surfaceTypeById = indexBy(data.surfaceTypes, 'id');
 const actorScore = new Map(scores.actors.map(a => [a.actor_id, a]));
 const orgScore = new Map(scores.organizations.map(o => [o.organization_id, o]));
 const receiptById = indexBy(data.receipts, 'receipt_id');
+const claimById = indexBy(data.claims ?? [], 'claim_id');
+const chainById = indexBy(data.chains ?? [], 'chain_id');
 
 const errors = [];
 const warnings = [];
@@ -233,16 +235,17 @@ const warnerSurfaces = [
   'faculty-science-officer-employee-overlap-2018-01-24',
   'electric-twin-incorporation-2023-09-28',
   'electric-twin-ben-warner-director-tenure-2023-09-28',
-  'gartner-synthetic-population-category-2026',
 ];
 for (const sid of warnerSurfaces) assert(hasSurface('ben-warner', sid), `Ben Warner missing surface ${sid}`);
-for (const type of ['government_advisory_surface', 'employment_investment_surface', 'founder_officer_surface', 'category_formation_surface']) {
+for (const type of ['government_advisory_surface', 'employment_investment_surface', 'founder_officer_surface']) {
   assert(hasType('ben-warner', type), `Ben Warner missing surface type ${type}`);
 }
 assert(!hasSurface('ben-warner', 'electric-twin-newsuk-synthetic-audience'),
   'Ben Warner must not inherit an organization-only News UK deployment');
-assert(hasSecondary('ben-warner', 'democratic_input_replacement'), 'Ben Warner missing democratic_input_replacement recurrence');
-assert(actorScore.get('ben-warner')?.governance_replacement_score > 0, 'Ben Warner governance replacement score must be > 0');
+assert(!hasSecondary('ben-warner', 'democratic_input_replacement'),
+  'Ben Warner must not inherit democratic_input_replacement from organization-only category context');
+assert(actorScore.get('ben-warner')?.governance_replacement_score === 0,
+  'Ben Warner governance replacement score must remain zero without an actor-supported replacement surface');
 
 const newsUkDeployment = surfaceById.get('electric-twin-newsuk-synthetic-audience');
 assert(newsUkDeployment, 'source-native News UK / Electric Twin deployment must compile');
@@ -281,6 +284,114 @@ assert(electricTwinNewsUkReceipt?.client_launch_date === '2026-04-27',
   'Electric Twin launch receipt must preserve the client launch date');
 assert(electricTwinNewsUkReceipt?.no_personal_data_claim === true,
   'Electric Twin launch receipt must preserve the vendor no-personal-data representation');
+
+const gartnerCategoryObservation = surfaceById.get('gartner-synthetic-population-category-2026');
+assert(gartnerCategoryObservation, 'source-native Gartner category observation must compile');
+assert(gartnerCategoryObservation?.hop_eligible === false,
+  'organization-only Gartner category observation must remain non-hop');
+assert(gartnerCategoryObservation?.hop_refusal_reason === 'organization_only_category_observation',
+  'Gartner category observation must expose the organization-only refusal');
+assert(gartnerCategoryObservation?.time_start === '2026-06-25'
+  && gartnerCategoryObservation?.time_end === '2026-06-25',
+  'Gartner category observation must remain bounded to the company post date');
+const gartnerActorIds = (gartnerCategoryObservation?.participants ?? [])
+  .filter(part => part.participant_type === 'actor')
+  .map(part => part.actor_id).sort();
+const gartnerOrganizationIds = (gartnerCategoryObservation?.participants ?? [])
+  .filter(part => part.participant_type === 'organization')
+  .map(part => part.organization_id).sort();
+assert(JSON.stringify(gartnerActorIds) === JSON.stringify([]),
+  'Gartner category company post must not manufacture an actor participant');
+assert(JSON.stringify(gartnerOrganizationIds) === JSON.stringify(['electric-twin', 'gartner']),
+  'Gartner category observation must retain exactly Electric Twin and Gartner organization context');
+assert(sameIdSet(gartnerCategoryObservation?.receipt_ids,
+  ['electric-twin-linkedin-gartner-category-2026-06-25']),
+  'Gartner category observation must carry only the recoverable company-post receipt');
+assert(!hasSurface('ben-warner', 'gartner-synthetic-population-category-2026'),
+  'Ben Warner must not inherit an organization-only Gartner category observation');
+assert((hopGraph.rejected_hop_surfaces ?? []).some(row =>
+  row.surface_id === 'gartner-synthetic-population-category-2026'
+  && row.reason === 'organization_only_category_observation'),
+  'Gartner category refusal must remain publicly visible');
+assert(!hopGraph.edges.some(edge => edge.surfaces.some(basis =>
+  basis.surface_id === 'gartner-synthetic-population-category-2026')),
+  'Gartner category observation must never appear in an actor-hop basis');
+const gartnerCategoryReceipt = receiptById.get('electric-twin-linkedin-gartner-category-2026-06-25');
+assert(gartnerCategoryReceipt, 'recoverable Electric Twin Gartner-category receipt must exist');
+assert(gartnerCategoryReceipt?.source_published_at === '2026-06-25',
+  'Gartner category receipt publication date must be exact');
+assert(gartnerCategoryReceipt?.event_date === '2026-06-25',
+  'Gartner category receipt event date must be exact');
+assert(gartnerCategoryReceipt?.reported_companies_reviewed === 60,
+  'Gartner category receipt must preserve the company-reported review denominator');
+assert(gartnerCategoryReceipt?.reported_companies_selected_to_watch === 33,
+  'Gartner category receipt must preserve the company-reported selection count');
+assert(gartnerCategoryReceipt?.reported_tier === 'scale_up',
+  'Gartner category receipt must preserve Electric Twin’s reported tier');
+assert(gartnerCategoryReceipt?.underlying_gartner_research_recovered === false,
+  'Gartner category receipt must preserve the unrecovered-research limitation');
+assert(gartnerCategoryReceipt?.personal_author_identified === false,
+  'company-account post must not be rewritten as personal authorship');
+assert(!receiptById.has('warner-linkedin-gartner-2026-06-29'),
+  'superseded lost Ben Warner paste receipt must be retired');
+
+
+const sourceNativeGartnerClaim = claimById.get('electric-twin-reported-gartner-category-2026-06-25');
+assert(sourceNativeGartnerClaim,
+  'canonical claims must use the recoverable organization-level Gartner receipt');
+assert(JSON.stringify(sourceNativeGartnerClaim?.actor_ids) === JSON.stringify([]),
+  'Gartner category claim must contain no actor attribution');
+assert(sameIdSet(sourceNativeGartnerClaim?.receipt_ids, ['electric-twin-linkedin-gartner-category-2026-06-25']),
+  'Gartner category claim must use the recoverable company receipt');
+assert(!claimById.has('warner-gartner-synthetic-populations-2026-06-29'),
+  'superseded personal Gartner claim must be retired');
+
+const sourceNativeNewsUkClaim = claimById.get('newsuk-times-exploraition-electric-twin-launch-2026-04-27');
+assert(sourceNativeNewsUkClaim, 'first-party News UK deployment claim must exist');
+assert(JSON.stringify(sourceNativeNewsUkClaim?.actor_ids) === JSON.stringify([]),
+  'News UK deployment claim must contain no actor attribution');
+assert(sameIdSet(sourceNativeNewsUkClaim?.receipt_ids, [
+  'newsuk-times-exploraition-launch-2026-04-27',
+  'electric-twin-times-exploraition-launch-2026-04-28',
+]), 'News UK deployment claim must use both first-party launch receipts');
+assert(!claimById.has('electric-twin-newsuk-first-party-data-2026-06-29'),
+  'superseded user-judgment News UK claim must be retired');
+
+const correctedWarnerChronology = claimById.get('ben-warner-government-commercial-chronology-boundary-2026-08-11');
+assert(correctedWarnerChronology, 'Ben Warner chronology boundary must remain visible');
+assert(sameIdSet(correctedWarnerChronology?.receipt_ids, [
+  'uk-covid-inquiry-ben-warner-decision-forward-planning-2020-03-13-16',
+  'gov-sage-89-ben-warner-no10-2021-05-13',
+]), 'Ben Warner chronology must be bounded to the official No. 10 receipts');
+assert(JSON.stringify(correctedWarnerChronology?.surface_ids) === JSON.stringify([
+  'ben-warner-no10-digital-data-role-observation-2020-2021',
+]), 'Ben Warner chronology must not attach him to later organization-only surfaces');
+
+const correctedPolicyDeploymentChain = chainById.get('policy-to-deployment-synthetic-population');
+assert(correctedPolicyDeploymentChain, 'policy-to-deployment chain must remain canonical');
+const correctedCommercialDeploymentStage = correctedPolicyDeploymentChain?.stages?.find(
+  stage => stage.order === 4 && stage.stage_category === 'commercial_deployment'
+);
+assert(correctedCommercialDeploymentStage, 'commercial-deployment chain stage must remain canonical');
+assert(correctedCommercialDeploymentStage?.organization_id === 'electric-twin',
+  'commercial-deployment stage must remain organization-level');
+assert(!correctedCommercialDeploymentStage?.actor_id,
+  'commercial-deployment stage must not manufacture an actor participant');
+assert(sameIdSet(correctedCommercialDeploymentStage?.receipt_ids, [
+  'newsuk-times-exploraition-launch-2026-04-27',
+  'electric-twin-times-exploraition-launch-2026-04-28',
+]), 'commercial-deployment stage must use the first-party News UK launch receipts');
+
+for (const retiredReceiptId of [
+  'warner-linkedin-gartner-2026-06-29',
+  'sandhu-comment-newsuk-2026-06-29',
+]) {
+  assert(!data.claims.some(row => (row.receipt_ids ?? []).includes(retiredReceiptId)),
+    `retired receipt remains in a canonical claim: ${retiredReceiptId}`);
+  assert(!data.chains.some(row => (row.stages ?? []).some(
+    stage => (stage.receipt_ids ?? []).includes(retiredReceiptId)
+  )), `retired receipt remains in a canonical chain: ${retiredReceiptId}`);
+}
 
 const voteLeaveSurface = surfaceById.get('vote-leave-data-science-2016');
 assert(voteLeaveSurface, 'Vote Leave / ASI organization-only surface must compile');
