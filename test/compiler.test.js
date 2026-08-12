@@ -32,6 +32,93 @@ const receipt = id => ledgerReceipts.find(row => row.receipt_id === id);
 const claim = id => receiptGraph.claims.find(row => row.claim_id === id);
 
 
+// LocalGlobe organization-endpoint refusal regression.
+const electricTwinNamedAngelRound = surf('electric-twin-seed-round-2026-02-11');
+const electricTwinInstitutionalRound = surf(
+  'electric-twin-seed-round-institutional-investors-2026-02-11',
+);
+assert.ok(electricTwinNamedAngelRound,
+  'the named-angel Electric Twin seed-round surface must compile');
+assert.equal(electricTwinNamedAngelRound.hop_eligible, true);
+assert.deepEqual(
+  electricTwinNamedAngelRound.participants
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id)
+    .sort(),
+  ['cal-henderson', 'eric-salama', 'louis-mosley', 'marc-andreessen', 'tom-shinner'],
+  'the hop-eligible round must contain only the five named natural-person investors',
+);
+assert.ok(electricTwinInstitutionalRound,
+  'the institutional Electric Twin seed-round refusal surface must compile');
+assert.equal(electricTwinInstitutionalRound.hop_eligible, false);
+assert.equal(
+  electricTwinInstitutionalRound.hop_refusal_reason,
+  'organization_only_evidence',
+);
+assert.deepEqual(
+  electricTwinInstitutionalRound.participants
+    .filter(part => part.participant_type === 'organization')
+    .map(part => part.organization_id)
+    .sort(),
+  ['atomico', 'electric-twin', 'localglobe', 'mercuri', 'samos'],
+  'the refusal surface must preserve the issuer and four institutional investors',
+);
+const institutionalRoundParticipant = id =>
+  electricTwinInstitutionalRound.participants.find(
+    part => part.organization_id === id,
+  );
+for (const id of ['electric-twin', 'atomico', 'localglobe', 'mercuri']) {
+  assert.equal(institutionalRoundParticipant(id).evidence_class, 'primary_public',
+    `${id} must retain company-source institutional evidence`);
+}
+assert.equal(institutionalRoundParticipant('samos').evidence_class, 'reported',
+  'Samos must remain reported institutional evidence');
+assert.deepEqual(
+  electricTwinInstitutionalRound.participants
+    .filter(part => part.participant_type === 'actor'),
+  [],
+  'organization-only evidence must not be rewritten as actor participation',
+);
+assert.ok((hop.rejected_hop_surfaces ?? []).some(
+  row => row.surface_id === electricTwinInstitutionalRound.surface_id
+    && row.reason === 'organization_only_evidence',
+), 'the public graph must expose the organization-only refusal');
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(
+  basis => basis.surface_id === electricTwinInstitutionalRound.surface_id,
+)), 'the institutional surface must never become a hop basis');
+assert.equal(
+  hop.edges
+    .flatMap(edge => edge.surfaces)
+    .filter(basis => basis.surface_id === electricTwinNamedAngelRound.surface_id)
+    .length,
+  10,
+  'five named angel investors must retain exactly ten pairwise hop bases',
+);
+assert.ok(!actor('saul-klein').surfaces.includes(electricTwinNamedAngelRound.surface_id),
+  'Saul Klein must not be substituted for LocalGlobe on the named-angel round');
+assert.ok(!actor('saul-klein').surfaces.includes(electricTwinInstitutionalRound.surface_id),
+  'Saul Klein must not be projected onto the institutional refusal surface');
+assert.deepEqual(
+  actor('saul-klein').surfaces
+    .filter(surfaceId => surfaceId.startsWith('faculty-science-'))
+    .sort(),
+  [
+    'faculty-science-director-shareholder-overlap-2024-10-10',
+    'faculty-science-officer-employee-overlap-2018-01-24',
+  ],
+  'the independently receipted Faculty surfaces must remain intact',
+);
+const localGlobeActorBoundaryClaim = claim(
+  'electric-twin-localglobe-saul-klein-actor-boundary-2026-02-12',
+);
+assert.ok(localGlobeActorBoundaryClaim,
+  'the person-substitution refusal must remain public and graph-inert');
+assert.deepEqual(
+  localGlobeActorBoundaryClaim.surface_ids,
+  ['electric-twin-seed-round-institutional-investors-2026-02-11'],
+);
+
+
 for (const retiredScratchReceipt of [
   'warner-surface-audit-2026-06-29',
   'surface-architecture-spec-2026-06-29',
@@ -484,7 +571,7 @@ assert.equal(surf('electric-twin-funding-surface-2023-2026'), undefined,
   'the legacy multi-year funding surface must be retired');
 const electricTwinSeed = surf('electric-twin-seed-round-2026-02-11');
 assert.ok(electricTwinSeed, 'the source-native Electric Twin seed-round surface must compile');
-assert.equal(electricTwinSeed.surface_label, 'Electric Twin $10m seed round announcement, 11 February 2026');
+assert.equal(electricTwinSeed.surface_label, 'Electric Twin $10m seed round named-angel record, 11 February 2026');
 assert.equal(electricTwinSeed.hop_eligible, true);
 assert.deepEqual(electricTwinSeed.receipt_ids, [
   'electric-twin-seed-round-announcement-2026-02-11',
@@ -508,13 +595,13 @@ const electricTwinSeedOrgs = electricTwinSeed.participants
   .filter(part => part.participant_type === 'organization')
   .map(part => part.organization_id)
   .sort();
-assert.deepEqual(electricTwinSeedOrgs, ['atomico', 'electric-twin', 'localglobe', 'mercuri', 'samos']);
+assert.deepEqual(electricTwinSeedOrgs, ['electric-twin']);
 const seedParticipant = id => electricTwinSeed.participants.find(part =>
   part.actor_id === id || part.organization_id === id);
-for (const id of ['electric-twin', 'atomico', 'localglobe', 'mercuri', 'marc-andreessen']) {
+for (const id of ['electric-twin', 'marc-andreessen']) {
   assert.equal(seedParticipant(id).evidence_class, 'primary_public', `${id} must retain company-source evidence`);
 }
-for (const id of ['samos', 'cal-henderson', 'eric-salama', 'tom-shinner', 'louis-mosley']) {
+for (const id of ['cal-henderson', 'eric-salama', 'tom-shinner', 'louis-mosley']) {
   assert.equal(seedParticipant(id).evidence_class, 'reported', `${id} must remain reported`);
 }
 

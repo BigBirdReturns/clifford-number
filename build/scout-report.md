@@ -1,6 +1,6 @@
 # Scout Report
 
-Generated: 2026-08-12T19:45:18.726Z
+Generated: 2026-08-12T20:44:25.752Z
 
 > graph_effect: none. This is a research queue, not graph data.
 
@@ -14,13 +14,13 @@ Findings: 140
 
 **Observed**
 
-Electric Twin appears across 10 surface(s): electric-twin-incorporation-2023-09-28, electric-twin-ben-warner-director-tenure-2023-09-28, electric-twin-alex-cooper-director-tenure-2023-09-28, electric-twin-ethics-board-2026, electric-twin-seed-round-2026-02-11, electric-twin-ben-blume-director-appointment-2025-09-12, electric-twin-seed2-governance-instrument-2025-09-12, electric-twin-seed2-capital-actions-2025-09-16-2025-09-26, electric-twin-newsuk-synthetic-audience, gartner-synthetic-population-category-2026. Secondary types: democratic_input_replacement, model_governance_surface, surface_factory_capital_layer.
+Electric Twin appears across 11 surface(s): electric-twin-incorporation-2023-09-28, electric-twin-ben-warner-director-tenure-2023-09-28, electric-twin-alex-cooper-director-tenure-2023-09-28, electric-twin-ethics-board-2026, electric-twin-seed-round-2026-02-11, electric-twin-seed-round-institutional-investors-2026-02-11, electric-twin-ben-blume-director-appointment-2025-09-12, electric-twin-seed2-governance-instrument-2025-09-12, electric-twin-seed2-capital-actions-2025-09-16-2025-09-26, electric-twin-newsuk-synthetic-audience, gartner-synthetic-population-category-2026. Secondary types: democratic_input_replacement, model_governance_surface, surface_factory_capital_layer.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `electric-twin-incorporation-2023-09-28`, `electric-twin-ben-warner-director-tenure-2023-09-28`, `electric-twin-alex-cooper-director-tenure-2023-09-28`, `electric-twin-ethics-board-2026`, `electric-twin-seed-round-2026-02-11`, `electric-twin-ben-blume-director-appointment-2025-09-12`, `electric-twin-seed2-governance-instrument-2025-09-12`, `electric-twin-seed2-capital-actions-2025-09-16-2025-09-26`, `electric-twin-newsuk-synthetic-audience`, `gartner-synthetic-population-category-2026`
+Refs: `electric-twin-incorporation-2023-09-28`, `electric-twin-ben-warner-director-tenure-2023-09-28`, `electric-twin-alex-cooper-director-tenure-2023-09-28`, `electric-twin-ethics-board-2026`, `electric-twin-seed-round-2026-02-11`, `electric-twin-seed-round-institutional-investors-2026-02-11`, `electric-twin-ben-blume-director-appointment-2025-09-12`, `electric-twin-seed2-governance-instrument-2025-09-12`, `electric-twin-seed2-capital-actions-2025-09-16-2025-09-26`, `electric-twin-newsuk-synthetic-audience`, `gartner-synthetic-population-category-2026`
 
 ---
 
@@ -2498,7 +2498,7 @@ Refs: `strategic-defence-review-2024-2025`
 
 **Observed**
 
-Chain spans 4/5 stage categories (policy_creation, procurement_capture, personnel_continuity, commercial_deployment); machine_score 0.44; weakest evidence primary_public. It does not create a Clifford hop.
+Chain spans 4/5 stage categories (policy_creation, procurement_capture, personnel_continuity, commercial_deployment); machine_score 0.41; weakest evidence primary_public. It does not create a Clifford hop.
 
 **Required action**
 
