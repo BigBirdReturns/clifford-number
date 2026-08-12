@@ -683,6 +683,18 @@ assert((scores.chains ?? []).some(c => c.laundering_chain_score >= 3), 'expected
 assert(migration.total_rows > 200, `migration parsed too few master rows: ${migration.total_rows}`);
 assert(migration.bucket_counts?.participation_claim > 50, 'migration did not classify enough participation claims from master doc');
 
+
+// Session-local scratch is transport, not durable evidence. A canonical
+// receipt must never depend on an AI-session filesystem path or preserve an
+// unrecoverable local paste as if it were still a live evidentiary object.
+for (const receipt of data.receipts) {
+  const receiptPath = String(receipt.path ?? '');
+  assert(!receiptPath.startsWith('/mnt/data/'),
+    `receipt ${receipt.receipt_id} points at ephemeral session storage: ${receiptPath}`);
+  assert(receipt.archive?.method !== 'unrecoverable_local_paste',
+    `receipt ${receipt.receipt_id} uses unrecoverable_local_paste; recover, rebind, or retire it`);
+}
+
 // Receipt archival gate (BUILD-INSTRUCTIONS 2.5). Missing archive references
 // warn before the cutoff and fail on/after it; a stale in-repo content hash
 // fails immediately.
