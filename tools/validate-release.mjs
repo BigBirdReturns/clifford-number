@@ -266,6 +266,24 @@ for (const sid of ['electric-twin-incorporation-2023-09-28', 'electric-twin-ben-
   assert(et?.surfaces.includes(sid), `Electric Twin missing factory surface ${sid}`);
 }
 
+const ethicsBoardObservation = surfaceById.get('electric-twin-ethics-board-2026');
+assert(ethicsBoardObservation, 'source-native Simon Case ethics-board observation must compile');
+assert(ethicsBoardObservation?.hop_eligible === false, 'single-actor ethics-board observation must remain non-hop');
+assert(ethicsBoardObservation?.hop_refusal_reason === 'single_actor_advisory_context_only', 'ethics-board observation must expose the single-actor refusal');
+assert(ethicsBoardObservation?.time_start === '2026-06-11' && ethicsBoardObservation?.time_end === '2026-06-11', 'ethics-board appointment must remain a one-day public observation');
+assert(sameIdSet(ethicsBoardObservation?.receipt_ids, ['civil-service-commission-simon-case-electric-twin-ethics-board-2026-06-11']), 'ethics-board observation must use the official Civil Service Commission receipt');
+const ethicsBoardActors = (ethicsBoardObservation?.participants ?? []).filter(part => part.participant_type === 'actor').map(part => part.actor_id);
+assert(JSON.stringify(ethicsBoardActors) === JSON.stringify(['simon-case']), 'ethics-board appointment must contain exactly Simon Case as an actor');
+const ethicsBoardOrganizations = (ethicsBoardObservation?.participants ?? []).filter(part => part.participant_type === 'organization').map(part => part.organization_id);
+assert(JSON.stringify(ethicsBoardOrganizations) === JSON.stringify(['electric-twin']), 'ethics-board appointment must retain Electric Twin as company context');
+assert(!hopGraph.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === ethicsBoardObservation?.surface_id)), 'single-actor ethics-board context must never become a hop basis');
+assert(!ethicsBoardObservation?.receipt_ids.includes('times-case-electric-twin-2026'), 'source-native ethics-board observation must not rely on the master-only Times reference');
+const ethicsBoardReceipt = receiptById.get('civil-service-commission-simon-case-electric-twin-ethics-board-2026-06-11');
+assert(ethicsBoardReceipt?.evidence_class === 'official', 'ethics-board receipt must remain official');
+assert(ethicsBoardReceipt?.event_date === '2026-06-11', 'ethics-board receipt must preserve the public observation date');
+assert(ethicsBoardReceipt?.former_service_last_day === '2025-03-31', 'ethics-board receipt must preserve the recorded Civil Service departure date');
+assert(ethicsBoardReceipt?.government_contact_or_lobbying === false, 'ethics-board receipt must preserve the no-government-contact condition');
+
 // Electric Twin legal formation is one dated hop; continuing officer tenures are non-hop observations.
 assert(!surfaceById.has('electric-twin-founder-2023'), 'legacy open-ended Electric Twin founder surface must be retired');
 const etIncorporation = surfaceById.get('electric-twin-incorporation-2023-09-28');
