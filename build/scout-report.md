@@ -1,6 +1,6 @@
 # Scout Report
 
-Generated: 2026-08-12T18:27:45.796Z
+Generated: 2026-08-12T18:40:15.181Z
 
 > graph_effect: none. This is a research queue, not graph data.
 
@@ -104,13 +104,13 @@ Refs: `faculty-science-director-shareholder-overlap-2024-10-10`, `ai-opportuniti
 
 **Observed**
 
-Dr. Ben Warner has 7 surfaces and secondary types democratic_input_replacement, model_governance_surface, public_private_ai_infrastructure, surface_factory_capital_layer. Governance replacement score: 2.
+Dr. Ben Warner has 6 surfaces and secondary types democratic_input_replacement, model_governance_surface, public_private_ai_infrastructure, surface_factory_capital_layer. Governance replacement score: 1.
 
 **Required action**
 
 Check for additional venues where the same surface type recurs. Do not convert recurrence into a hop unless there is a bounded co-participation surface.
 
-Refs: `ben-warner-no10-digital-data-role-observation-2020-2021`, `faculty-science-officer-employee-overlap-2018-01-24`, `electric-twin-incorporation-2023-09-28`, `electric-twin-ben-warner-director-tenure-2023-09-28`, `electric-twin-seed2-governance-instrument-2025-09-12`, `electric-twin-newsuk-synthetic-audience`, `gartner-synthetic-population-category-2026`
+Refs: `ben-warner-no10-digital-data-role-observation-2020-2021`, `faculty-science-officer-employee-overlap-2018-01-24`, `electric-twin-incorporation-2023-09-28`, `electric-twin-ben-warner-director-tenure-2023-09-28`, `electric-twin-seed2-governance-instrument-2025-09-12`, `gartner-synthetic-population-category-2026`
 
 ---
 
@@ -2498,7 +2498,7 @@ Refs: `strategic-defence-review-2024-2025`
 
 **Observed**
 
-Chain spans 4/5 stage categories (policy_creation, procurement_capture, personnel_continuity, commercial_deployment); machine_score 0.43; weakest evidence judgment. It does not create a Clifford hop.
+Chain spans 4/5 stage categories (policy_creation, procurement_capture, personnel_continuity, commercial_deployment); machine_score 0.44; weakest evidence primary_public. It does not create a Clifford hop.
 
 **Required action**
 
