@@ -1,0 +1,33 @@
+diff --git a/tools/validate-pages.mjs b/tools/validate-pages.mjs
+index bee825f..5f69bae 100644
+--- a/tools/validate-pages.mjs
++++ b/tools/validate-pages.mjs
+@@ -358,15 +358,19 @@ if (legacyGraph.subtitle !== 'Seven degrees of UK AI policy topology, with recei
+   console.error('validate-pages failed: stale state-capture framing remains in the public payload');
+   process.exit(1);
+ }
+-const refusal = (hopGraph.rejected_hop_pairs ?? []).find(item => item.actor_a === 'dan-rosenfield' && item.actor_b === 'dominic-cummings');
+-if (refusal?.actor_a_window?.valid_from !== '2021-01-01'
+-  || refusal?.actor_b_window?.valid_from !== '2019-01-01'
+-  || !Array.isArray(refusal?.receipt_ids)
+-  || refusal.receipt_ids.length === 0
+-  || refusal.publication_status !== 'review_required'
+-  || refusal.actor_a_window_reverifiable !== false
+-  || refusal.actor_b_window_reverifiable !== false) {
+-  console.error('validate-pages failed: Rosenfield/Cummings refusal is misattributed or improperly promoted');
++const obsoleteNo10PairRefusal = (hopGraph.rejected_hop_pairs ?? []).find(item =>
++  item.surface_id === 'no10-digital-data-advisory-2019-2021'
++  && item.actor_a === 'dan-rosenfield'
++  && item.actor_b === 'dominic-cummings');
++const no10ContextRefusal = (hopGraph.rejected_hop_surfaces ?? []).find(item =>
++  item.surface_id === 'ben-warner-no10-digital-data-role-observation-2020-2021');
++const no10ContextPromoted = (hopGraph.edges ?? []).some(edge =>
++  (edge.surfaces ?? []).some(surface =>
++    surface.surface_id === 'ben-warner-no10-digital-data-role-observation-2020-2021'));
++if (obsoleteNo10PairRefusal !== undefined
++  || no10ContextRefusal?.reason !== 'broad_institution_context_only'
++  || no10ContextPromoted) {
++  console.error('validate-pages failed: No. 10 broad-office context is missing, misclassified, or still creating actor adjacency');
+   process.exit(1);
+ }
+ console.log(`validate-pages: OK (${required.length} required artifacts)`);
