@@ -121,6 +121,142 @@ assert.deepEqual(
   ['electric-twin-seed-round-institutional-investors-2026-02-11'],
 );
 
+// Centre for Human Progress formal officer surface and adviser-boundary regression.
+const centreFormationSurface = surf('centre-human-progress-director-appointments-2025-08-05');
+const centreActorIds = [
+  'ben-warner',
+  'dennis-snower',
+  'michael-muthukrishna',
+  'sonja-vogt',
+  'stephanie-salgado-muthukrishna',
+];
+assert.ok(centreFormationSurface,
+  'the Centre for Human Progress same-day director surface must compile');
+assert.equal(centreFormationSurface.hop_eligible, true);
+assert.equal(centreFormationSurface.evidence_class, 'official');
+assert.equal(centreFormationSurface.time_start, '2025-08-05');
+assert.equal(centreFormationSurface.time_end, '2025-08-05');
+assert.deepEqual(
+  centreFormationSurface.participants
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id)
+    .sort(),
+  centreActorIds,
+  'the complete five-person official director roster must remain intact',
+);
+assert.deepEqual(
+  centreFormationSurface.participants
+    .filter(part => part.participant_type === 'organization')
+    .map(part => part.organization_id),
+  ['centre-for-human-progress'],
+);
+assert.deepEqual(
+  centreFormationSurface.receipt_ids,
+  ['companies-house-centre-human-progress-directors-16630851'],
+);
+assert.equal(
+  hop.edges
+    .flatMap(edge => edge.surfaces)
+    .filter(basis => basis.surface_id === centreFormationSurface.surface_id)
+    .length,
+  10,
+  'five same-day director appointments must create exactly ten formal officer bases',
+);
+const centreBenMichaelEdge = hop.edges.find(edge =>
+  [edge.actor_a, edge.actor_b].sort().join('|') === 'ben-warner|michael-muthukrishna');
+assert.ok(centreBenMichaelEdge,
+  'Ben Warner and Michael Muthukrishna must connect on the official officer surface');
+const centreBenMichaelBasis = centreBenMichaelEdge.surfaces.find(
+  basis => basis.surface_id === centreFormationSurface.surface_id,
+);
+assert.ok(centreBenMichaelBasis);
+assert.equal(centreBenMichaelBasis.evidence_class, 'official');
+assert.equal(centreBenMichaelBasis.valid_from, '2025-08-05');
+assert.equal(centreBenMichaelBasis.valid_until, '2025-08-05');
+for (const actorId of centreActorIds) {
+  assert.ok(actor(actorId)?.surfaces.includes(centreFormationSurface.surface_id),
+    `${actorId} must retain the formal Centre officer surface`);
+}
+for (const actorId of [
+  'dennis-snower',
+  'sonja-vogt',
+  'stephanie-salgado-muthukrishna',
+]) {
+  assert.deepEqual(actor(actorId)?.surfaces, [centreFormationSurface.surface_id],
+    `${actorId} must not inherit an Electric Twin or validation surface`);
+}
+
+const muthukrishnaAdviserSurface = surf(
+  'electric-twin-muthukrishna-science-adviser-observations-2024-2026',
+);
+assert.ok(muthukrishnaAdviserSurface,
+  'the source-native Michael Muthukrishna adviser chronology must compile');
+assert.equal(muthukrishnaAdviserSurface.hop_eligible, false);
+assert.equal(
+  muthukrishnaAdviserSurface.hop_refusal_reason,
+  'single_actor_advisory_context_only',
+);
+assert.equal(muthukrishnaAdviserSurface.time_start, '2024-11-03');
+assert.equal(muthukrishnaAdviserSurface.time_end, '2026-08-12');
+assert.deepEqual(
+  muthukrishnaAdviserSurface.participants
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id),
+  ['michael-muthukrishna'],
+  'public adviser-role observations must not manufacture a second actor',
+);
+assert.deepEqual(
+  muthukrishnaAdviserSurface.participants
+    .filter(part => part.participant_type === 'organization')
+    .map(part => part.organization_id),
+  ['electric-twin'],
+);
+assert.ok(!muthukrishnaAdviserSurface.participants.some(part => part.actor_id === 'ben-warner'),
+  'Centre co-directorship must not be copied onto the Electric Twin adviser chronology');
+assert.ok((hop.rejected_hop_surfaces ?? []).some(row =>
+  row.surface_id === muthukrishnaAdviserSurface.surface_id
+    && row.reason === 'single_actor_advisory_context_only'),
+  'the compiled graph must expose the single-actor adviser refusal');
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(
+  basis => basis.surface_id === muthukrishnaAdviserSurface.surface_id,
+)), 'the adviser chronology must never become a hop basis');
+
+const centreOfficerReceipt = receipt('companies-house-centre-human-progress-directors-16630851');
+assert.ok(centreOfficerReceipt, 'the official Centre officer receipt must exist');
+assert.equal(centreOfficerReceipt.company_number, '16630851');
+assert.equal(centreOfficerReceipt.event_date, '2025-08-05');
+assert.equal(centreOfficerReceipt.active_officers_at_retrieval, 5);
+assert.equal(centreOfficerReceipt.resigned_officers_at_retrieval, 0);
+assert.deepEqual([...centreOfficerReceipt.director_actor_ids].sort(), centreActorIds);
+assert.equal(
+  centreOfficerReceipt.archive?.ref,
+  'sha256:ca9783a742f55e58492546ca0d02be4bc8e9ac2a1fbb479d98cbf719688751f8',
+);
+const muthukrishnaAdviserReceipt = receipt(
+  'electric-twin-lse-muthukrishna-adviser-observations-2024-2026',
+);
+assert.ok(muthukrishnaAdviserReceipt, 'the adviser chronology receipt must exist');
+assert.equal(muthukrishnaAdviserReceipt.first_observed_at, '2024-11-03');
+assert.equal(muthukrishnaAdviserReceipt.last_retrieved_at, '2026-08-12');
+assert.equal(muthukrishnaAdviserReceipt.continuous_tenure_asserted, false);
+assert.equal(muthukrishnaAdviserReceipt.validation_protocol_recovered, false);
+assert.equal(
+  muthukrishnaAdviserReceipt.archive?.ref,
+  'sha256:26c4cde9ad87ea498b49068605bb63a6878b827c1a8c386bf7185c9950bf32b4',
+);
+
+const centreOfficerClaim = claim('centre-human-progress-five-director-appointments-2025-08-05');
+assert.ok(centreOfficerClaim, 'the five-director official claim must remain public');
+assert.deepEqual([...centreOfficerClaim.actor_ids].sort(), centreActorIds);
+assert.deepEqual(centreOfficerClaim.surface_ids, [centreFormationSurface.surface_id]);
+const muthukrishnaAdviserClaim = claim(
+  'electric-twin-muthukrishna-adviser-role-observations-2024-2026',
+);
+assert.ok(muthukrishnaAdviserClaim,
+  'the bounded adviser-role chronology must remain public and graph-inert');
+assert.deepEqual(muthukrishnaAdviserClaim.actor_ids, ['michael-muthukrishna']);
+assert.deepEqual(muthukrishnaAdviserClaim.surface_ids, [muthukrishnaAdviserSurface.surface_id]);
+
 
 for (const retiredScratchReceipt of [
   'warner-surface-audit-2026-06-29',
