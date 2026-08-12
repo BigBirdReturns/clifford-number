@@ -1,0 +1,252 @@
+name: TEMP publish Electric Twin first-party investor roster
+
+on:
+  push:
+    branches:
+      - agent/electric-twin-investor-roster-transport-v1
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out exact transport ref
+        uses: actions/checkout@v4
+        with:
+          ref: agent/electric-twin-investor-roster-transport-v1
+          fetch-depth: 3
+          fetch-tags: false
+          show-progress: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build, qualify, publish, and retire transport
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EXPECTED_MAIN="14538b35f9051d21bb431533f38e0b6a512d3606"
+          PRODUCT_BRANCH="candidate/electric-twin-investor-roster-v1"
+          TRANSPORT_BRANCH="agent/electric-twin-investor-roster-transport-v1"
+          WORKFLOW_PATH=".github/workflows/temp-electric-twin-investor-roster-publish.yml"
+
+          git fetch origin "refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          test "$(git rev-list --count "$EXPECTED_MAIN..HEAD")" = "1"
+          test "$(git diff --name-only "$EXPECTED_MAIN" HEAD)" = "$WORKFLOW_PATH"
+
+          python - <<'PY'
+          from pathlib import Path
+          import base64
+          import zlib
+
+          payload = "eNrtXW1z4zaS/n5/hSM5FxkF/ZDpy87sZJ7x7Vg7zva4ep2OFJuQJVBkKRXqcv73b9vSApCQktpKp91yFe2WNK3u6u7u6BF+fLFqOknp3u8kOr4UyX4UDOTkpPlIp/DYEDxQPIyMmR5tdws0dmAyelTMjg8kt2pskWJ2f3htLi4fX5+KpZzv3jB3PyqMcllE71/s5aW7V+3WsDd32bH+Nfp5C3zy4+8nZ4wmKV/nIYCZHYX8YvxbApN1aJ3qPSLGfZOMAJV1RsmQz+Ork5Ge/6MVoJw+P+F0tXwPg1F+5UROlZ7D0HnPc5gNbl+93f7o/Prk9nXHz1OQyIhkzf9G68pIrnAqTrZ3A/a8wyAfjD4Y7h4efjP+8+H7w5wk+fHj47l4r8T4WLYaEwXw2e2tCs7fm47Ovpx+3Png8Pb86vzs5xsxi6f0oCF7CFoYSGa5LxZ4MPH1z8tP3t+eHJ5Oxm0uq8L+CCXkQx8m7vOjbqD3IcAHWPvkDc+JLIbX7Vcfbd3g/7/73pU+GFv7F6jnv2zX7l+Pqlw3EyRiVnj1Tbdw9WDqH4hLGGrRQXdSzJ5m6ql9gRqxk8tqARrC9xO4nnxKCA/GpDabTALOUxux2y9gOYy4bxrK/qM5EpHtZcIZpfhjTnWkP4+HKwC4jq+CVG8t0LsFFxKyAlFyX+yDK0dFjnxBVI4AG1WFfBc5+C4hHvG23Whcn2WInOR3KGm0BWoLpi8IFZHHcrh7DzjvBFXHgcSL4j09ux9qkS8Lq1r28I7WgX8aL8F3i9feC/HSD+9gCcH+GxtRGJ2w8o6eg0lLtC6iOKI3fT5fKkT7grseAGjtOLjABGI8dZsDf/3+vPw7+DDTs4+f3XRSn1oQSkCe1De5fVmw78akAFjbjO+w4oWscRrZUb0kFaN4t/6j6dvv/J0eJLNxJxa/7pqGiv7TNjTjLQ8Yt+4I5G98nHeJBs1mJxwHM5izcNsvbkQdR2p0LaQWsgErmi8Dxu0kGUb86XEWJ8H5OxnqVEQ8M8+28Tx6EGw35z6CvRAEH5TfGzqOkKcQTQUN9VkE5EoMMSPmE9wu2J86CW2GqC5ozu7P8N+wDlM2ZrnhacN6DJASRwHxIJScgP6FAFnlHpx/L11/cnlhQ3kVQz1KmkAb5w+weQg+MyVB6y2Z3SW64r8GPkEZQ9mKKN7NfZ5J1uKcfYs+okvloucrFA0B8bDRA/9n64L0Z2WqA84TVHRxzRpZBX/kTXN8E7vPJuDAb69bm/HZOYhVwRxrySUA71PgMD0OHpsvxt5XLG/TOCc0UkhkpzBAnEAXZiwd2B2+ZuoMGIArCB3rwvNmvMCjTYWQ01SHgUPBKaPHH2FXAKkFv27/MkDNk54BjmTs7F9+8/i0+RvCHqD9XPkJxBkpHGexE04OsZcDc5aqaRgO/hi9OCv8w5tkqAybFbAXMXdy+H1wvTD7ZmsGPAdy5MRnJL3ZpI1cfqIiIhKmHDYjVeDdgDcJqEU4lrz7G2Vb2sV+XeCtPd5lI8UoM9jHrmB8HE0qelGaL3PoDOnMZSlYB1cp24fxEtAp5SOdoBx4snF+tiOFspFTCRNq6HmEDjrvBqS9p6pPrcMZqlXEltIVFhns26qQHBvFbgMw2SAw2QfhZvhj40QstGgSDxVw1WKd6dVL0e8VhlAqwXkIN0TMHhq9Qhxp5nqYVSotAEKsfBGe+8mZu7gmdYElYkTGppAF7av7etEqA1XzJvUVQwva6eRVEfOLf6blh69nl2w3yLaqtvVzXTcfb9MOeF/VPTUcZZ98VJwllnYpYyR83KdgCcAH8PfzrWA8ltiW6SJn3bVYQf4yeNPI/7i9W6vw5z3jB+nYYmBrDfa8NVRk0/EmqzTYE0uE6xZqABsAXiDUcxK5BBFYXVdClwwFb5oB3kXOUuzl0A30Lu4OHIWw+1PpJNBGVCjQWtEfYNVgYtqgDe2oVubtYdd9kmFbQbXcE9IgmeLCSv1k5+TgUYqFBHm5qU8M2S+2/5wYbhQ81CVR2UNVEmVBEGDFrA5YkCfug0G8vsPAgyK5yjnYfBU6MgucYcBjnqK/TgGFC6M7OD03SvV2u7HQQcgLIaq1EPH30IhJVhE0hDThzGMxF3YvOgL9RnhR/UhQRfHxNrWS+Mfw5REvQbKC/tvFXK9Z1HAyEDu8c7VXijApjJb4UorW8JTo4Uqtl4Iy6FGIWyARxfpfWdsldo7sEEsr2Ir0AzEfUsnU4QuBrFBW23WL6TQ3gL1JQp55rN1rgfbBZtNWBrBzEO6w6p1ycQS1e4xs3NN4KxUgHYb6Ks1fGk7/SMh3IRW3jyUXlT1SJzcprubcCrKkj6Y3E9UI5jTXQUplzst4rRlrIBKzuZ1PcQw9QRhIaExnISeDG4aPe2rQTwHTQHN00zz2xdEteX3+6fnp+dDrcI6lDeDooXUGOgqmwL5ANuH+VAg7GmSFuKEOcyPjUdEJeCzBpcQAh3wLEm4JIs1RcsBKUxXcvbwwIg7wChgrKCXzmgHsZdIDw5wAn2sD3owQ8Mjo/Aqw4HyUqwClb79d+s5CPNGJUcI5i9HmAo9KXFI5/48WlBjDpYDYg10R+yoDIznajTYJnsGZGDdzPDKvAmRg7EegHN5TyheYlmsNsQGqByz/hj3SHNEmShXsk8iGW1RBz3HKsaQMeg7WKdmF6BO4Q4+caKrGtQ8AbGVNehZH2DGhnlbZZwwBZeoEmQjlJbIC+YaCytoDSu+crCHUtkc1jnz+vTHxF8ZysEP9SxZ1GTj0w8b4Q7EWLzP1lDsEnJXo1xXzG4IMYR+ey4cv0n8xajBw1H4xAUU5+cmBT/K7d/OQV2J1F5jD12dRfGT0USnMXDyY//j2B+s7hrqoPHj0I5KkSwxvXLkLDio5is4yi59F0XNaP1gPfQOfPZRQlrPexAjhPk99GdG3EH4aI4ScP4j/eP5li2O5yODFkpPdw/Qr5JpKg3rc4TQynfoLFeOVyWYDF/qnuej7tXnWjGoXkTCbw/WIrxB7a3v7tbYw2TK2Q1x4J3xY8S71g3YeM6ZalZ/iCU8Vw45yXZUtXxoVSADb4PQS7BAbq1juSpRnm/PZd5JFyDF1caZiRce/XJjAjeUavplSG1ew89cFy4nnwiM0M3ZfeHFsjJDe6ZyYXM8IZxHTcPGQGgUKJUAzfMhm+NklxgLwJPg8o4ojqeVqJxdVhtLUcjFg8CAeYJ2eR6ViKfaT24ObGujDV8b5vPXx9cnFDiBtbdheXCzFiMZuE6sDg3hfnBA0kEz5Ko3RkvY32RDVHdEtWmrY6/Mv0cZIxgXo0BGlPYkzDKrDlJuQqjXSmVvpmsb1niuyVHapm+AO0MeKcpd9QlPvxUEP4YX0xydZGxnAG2iNhV5VQopwLaPnELax5L4m2Js4SmMRvF9OIFsWHKQQQSYu6qzdtsgMyXlaOPcuaGBD/wSVgDXEMlaD4JaHyC0KOs/0CqULms4Y1AAcWEC3tUbFKQQYGix2t8yTVKhy9dgmjzpxDqhtF5HjRu9iBh7xCx5i6nUpoIOFS/U5cKBQVNa5MXXiMw2g1qMDsBT5zrJfZWNJq0bbiOfe8VtcFtqrVGU4a0Bz7LSnkZAc9muHdriMd8DwqwoCk8XcFeh31CjOnhN/2ZrJuI9Xo9Gr9UN5K3ie2OTKReBwTCxgpJ1+TJVrHtbL5C1Z5kdFdLeHftug1Agtow4nle6vA4lF/47r8ndZ8pkpO2Dt7kSIqvLC2bw5+N/tKbxQBNg6xvF8RbK3sPrEKJvjo5DK3WvNSCxK+pR2+MUOwFyCUCFYo5kn0B2bSFE/RHImPK5T8Pt7s0yei8GZPFu/sy7/JvoLgZx8vyi/JklXi3jEc9hNRuhB2gORx1U9h1EKZ00bglNKwrDvlzXQq6LGFGiJ5WE4k4DiMn/nZE+zsmxzIuUQ9yU0DPz05Xv2e5vY5/6BDZxUtJjtP/O0dXV2cptEQbeegHy57Z5BvxUAvWaUXJx5Zb/lSwNO+LKPVFGU+y/b68e7ZEj0/uyAmG9IzM05bsge/rn6X/ih3uqj4pZmDKykubXNCtXKO6mMMjFBApkZNMqgjkln0EXi+mfBTGxW9X6+sPtApsIkNsdoDEoJmPI4KrDlquOe5cTwbjiV3YRcKY2f0rcyWexlaqoLq2Z0jRe0IsgJN5NmofJTmFwiimGuPrApDCzDHjsqTCmx9jbEgZcBvQhTiucmtAFwrIlQ4P4A70lHFeKs5we8ay5c58bD8RGrJ3v6JLBugy5kCJvIpYm5chvBRnS9muVfJ0yLTCdxxP9e7PjFFR1hU5R1t9fzhcZHWAxILxkQ43zRQVS0qRVoATU7Ow0oKTbXuC+Os37ZawIG2i8RvPuVF0xYv9a6wWxu8WdTCM3td91O9WZXfOlfXaAbkZlCVQsQFrMl2B/NvI2HPqPhnmRmCVfEzDCrdcd7RKnYis2RxP4FTTLX7X87/NikUTwVXyEK1iG3PpRnCRxAY/0UD7F+CX+Uc5ekUSQ1kq7jXbNwEzda/MABb7/CUguHjpy2lYUdlCnfEwYcR1Wwf0kecDWQtlmQ6TkJD77uehsdP7pgamnvTx7PKC7RXO7e4ZWXfaer7tMt1OOoCthEtZFXpzgr7j9VeO3WwsdO4eKxZhTbIdyv0qf4xTHJdB8M7TZN8WiSTjz2KtE8X69pDJxc+DDvAsl9rZmkwipSFhGAw8tq5Nwo+k4nKVGNPEQKmRGfCdpYsFmDZZFsxiyj1hXo5w/j/AwOwaUAA1K0o/VKW4YjyQ9vArZIuoB1bJYjxsC4QOXDHGN6re00w/ftEfGfDYyb3KL5zvm86XucrikNxzyhHNI0G/CcPjz4e3f6H9yL9Tb7BoTy09d3fkxcL4cHevKVE1FcQUllJRYuc2cud+uY7SE3FWaqR11U2w2X4R5PW+Xs5M1AZvZzd8bJ7OcDvnC1ZzXWktahRLKe2pBc4l9U4zDSpDaUj7J8D3GuxIkCZi+nPlsEPz1VZn/VuvSc9uXPX9OyeAO6M9XF7P/hpz8tVPQlNcc9mcUY+vGfscfTiSJd+D9VHpH0mW3U8BhEDqyXk83y1YAtUrHRAYtObnQiR1hRdvdcVEni7W9XX1FyGR59aqaQjUSI43cG29jgk+Ro1gy2/AcKZEQ5bG0wB1yke7+B4I+LgnSGO7dcbxuADc/WH+C8lGr/Pr7q3x/LWNF0L//0vCQxkf03t5LNHT1iQnlGwPWZYTxjH5WcP3hJc4HdKLxO12k8C1JsAKSvQnoLvRKI9sLhvnczSKnlQG9HMFi2zRuHupgOEieD33dgkxMboqBqRBq6Id7C6ETC4ryvXGi6+N3yfCni9XxbnD0tRC9F8TFdBGe5DZaYFDtAxXYVuMoCGz9Q6XKgD/HmNtbDS4JGa5AvI+7B+swHFdgn/lpjkIJ6CqCHk8v27G4g+vgK9HjnYInMW2IVUjwIvXnjht6KY7AwMSA2fQ9CvoZKe5w/pfjR5RWqDiXtni+Ax07JxHCh3sHUUfhu5EeAJoMd1DT4ovc4NgqfBEpRvB6X3Pjy1dvhx/VpFTDyLl1KiYwmJ7frzG6odOwO1r8PZ/D/+egitZFt36F+GL4+RNVbNttVIf4NkHO0kY+Kum20KcbWDE95fw73AFtaVUmqePYZZPDRZ7lR3Lpe5TpzU3S+FG0LDfh4Wo/3L0BZzPXZMBPYoU2kcrvwWQf0k0iEx4KLBud4xgUlVe7N1HYMcr5SxFLfAW4w57d7lEA1aDQS9nxBkbvXQyu1pAOQJzNrqKiLkkCB33X67Kew+Q9thx4K+Tn2+uT+EHkCevyOw2xHWn0PtBN5iIFdvrPXR9UppTpUA0vQwuCz8TXH0sccR0lPndI9P28/GRCMqwDSEEdjfmBxyk7jzUDEYUgQwv6W5XPLTB8mx0YzzqGn5qq48NGXVOwQDxTH9LcEfLqt/OEHZNhzj0OBJnoE8CBbCR2v1P/F1yhZY0bTMioKW15Sp3vi0ZSRUED9QprAi8QydNThRB1KT4X6np/s4j0NM6P8EG0SEedne7URpug61NB8N1hfGKuRlAvkFIkvGfIBvED2fH4w5gjt9UQld+JsQwYPzBHMbh30IW1szw2vgQehoc/WFFO8sJ4Ow04MXlsAzYWcCb/K2eS+PoHQ1SFtIQIed2h9rpAgz4nL6/nViUQUxocTpYXGGpd2Gz8iT3EQQ7kYsZ6FQA3gRJY75X+MuQ/WDaxJyixjVY2nvqMW3LiYvWTSo+xMTl9QX0zBZSoZ6LhOJn6O4wYxGyQ+qD8yE7/1xX3IMoBdg2z7GFOjKUp7cIWt8CDvCGdRbGpucIytLGYI91X8dKT2qv06C5w+p2LOa3N2CTq9nFNCWhBzH4lXLbpbqEFTHG3olFN1bhYs2m/SZlh6cOmGHg4FlhV9edBhNPTJ+mAk91VOmnQo+RbHnCZe4pxo+Tnz8e/66uL25QVTaG3Kr3PyywqANP6K6MFikU4d0PboC/vABihcx2qM6Z5Nr5vmQLoIcH6GbI3+qX/ZhhaMeWRhEjn1N1Be0wNgmJmwnmQqBhXf5Fvf62NgLf+kI/y8bJK+Vhx2nA22kG+c7Vd5krabASsXYWkrZNDLHz6GPNYi99m+iIcd3ypqAqlbQ5ocQGrZfJmlTVZdFqB58iMcne8CB/cRxHQ/3ZlKZbELBQ3V6qxA+fFl/Nn2gQizj3dd/NTrcjJt8f1kt9aBJy1Tgaw/mZqtmnDbwaE7A6Q1AZs5mfrTyBxlgCFOy1ulOzdjxqDWtw7VZr5dtjv0z1vCZ1BnvFmJ4pBzWKuzi4b8Znl0e9ccN24d38vaM2joMM+vIoJ3DbxZZKzY2dLbCHWb6vfKFusnf99Kcoc1dOrVwSm7YzW2HQG2x0xlJJbb/ZRCaaWJ+8pkEsX06Vds/Mztjvwp1x8EtEYUSO7AN+ViM9UwzpFqktm5swgsPG6XvNdV0nczMXRiQmr7+LDFmvnryqjWn60GfDJySC8i5MBuxV9DtyA/qwpV2ynbKUmbqJKI3OitWHx4u5Kk1KF6cpiJ4Is44qUIKWagJKdgU1YVy+pe30S5htdnrr9Oe6NdgTeVVbL4cN5p2xvNx+vOLPA3blbOYvFLJGMEhVDmE3wIHLrcuw5d7OGpW0F/3AZs6HtJg+bAvT9j7/eZyTUFsbj7kzr+VtyEJ1Kzp6R1T/Rpyd7TJTtHs7z0v2/CI5/+A+jg7+PfuCLpYU/aWR2UsaZtUOQh5PL9uZ3oGe5w1yLMW3IcBjbBu2CaxZjv71P+vjmD/EUpGUX57KQZb60n4NP/4d1H8dJA=="
+          Path("/tmp/apply-electric-twin-investor-roster.py").write_bytes(
+              zlib.decompress(base64.b64decode(payload))
+          )
+          PY
+          python -m py_compile /tmp/apply-electric-twin-investor-roster.py
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -B "$PRODUCT_BRANCH" "$EXPECTED_MAIN"
+          test -z "$(git status --porcelain)"
+
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          hop = json.loads(Path("build/hop-graph.json").read_text(encoding="utf-8"))
+          baseline = {
+              "edge_keys": sorted(
+                  "|".join(sorted((edge["actor_a"], edge["actor_b"])))
+                  for edge in hop.get("edges", [])
+              ),
+              "counts": {
+                  "edges": len(hop.get("edges", [])),
+                  "rejected": len(hop.get("rejected_hop_surfaces", [])),
+              },
+          }
+          Path("/tmp/electric-twin-investor-roster-baseline.json").write_text(
+              json.dumps(baseline, sort_keys=True),
+              encoding="utf-8",
+          )
+          print("baseline=" + json.dumps(baseline["counts"], sort_keys=True))
+          PY
+
+          python /tmp/apply-electric-twin-investor-roster.py apply
+          npm run compile
+
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          path = Path("data/research/clifford-cross-corpus-public-interest-map.json")
+          document = json.loads(path.read_text(encoding="utf-8"))
+          if document.get("schema_version") != "clifford-cross-corpus-public-interest-map@1":
+              raise SystemExit("cross-corpus projection schema changed")
+
+          inventory = document.get("inventory", {})
+          canonical = inventory.get("canonical", {})
+          expected_preimage = {
+              "actors": 139,
+              "organizations": 25,
+              "surfaces": 22,
+              "participations": 184,
+              "receipts": 55,
+              "compiled_hop_edges": 27,
+          }
+          if canonical != expected_preimage:
+              raise SystemExit(
+                  "cross-corpus canonical inventory preimage changed: "
+                  + repr({"expected": expected_preimage, "actual": canonical})
+              )
+
+          def read_jsonl(file):
+              return [
+                  json.loads(line)
+                  for line in Path(file).read_text(encoding="utf-8").splitlines()
+                  if line.strip()
+              ]
+
+          actors = json.loads(Path("data/canonical/actors.json").read_text(encoding="utf-8"))["actors"]
+          organizations = json.loads(Path("data/canonical/organizations.json").read_text(encoding="utf-8"))["organizations"]
+          surfaces = read_jsonl("data/ledger/surfaces.jsonl")
+          participations = read_jsonl("data/ledger/participation.jsonl")
+          receipts = read_jsonl("data/ledger/receipts.jsonl")
+          hop = json.loads(Path("build/hop-graph.json").read_text(encoding="utf-8"))
+          scout = json.loads(Path("build/scout-report.json").read_text(encoding="utf-8"))
+
+          refreshed = {
+              "actors": len(actors),
+              "organizations": len(organizations),
+              "surfaces": len(surfaces),
+              "participations": len(participations),
+              "receipts": len(receipts),
+              "compiled_hop_edges": len(hop.get("edges", [])),
+          }
+          expected_refreshed = {
+              "actors": 139,
+              "organizations": 25,
+              "surfaces": 22,
+              "participations": 184,
+              "receipts": 57,
+              "compiled_hop_edges": 27,
+          }
+          scout_findings = len(scout.get("findings", []))
+          if refreshed != expected_refreshed or scout_findings != 140:
+              raise SystemExit(
+                  "compiled projection inputs do not match the bounded financing-roster correction: "
+                  + repr({
+                      "expected_canonical": expected_refreshed,
+                      "actual_canonical": refreshed,
+                      "expected_scout_findings": 140,
+                      "actual_scout_findings": scout_findings,
+                  })
+              )
+
+          inventory["canonical"] = refreshed
+          inventory["discovery_queue"]["scout_findings"] = scout_findings
+          for lane in document.get("lanes", []):
+              if lane.get("lane_id") == "official-research-fanout":
+                  lane["counts"]["scout_findings"] = scout_findings
+          document["generated_at"] = "2026-08-12"
+          path.write_text(
+              json.dumps(document, indent=2, ensure_ascii=False) + "\n",
+              encoding="utf-8",
+          )
+          print("cross_corpus_projection=" + json.dumps({
+              "canonical": refreshed,
+              "scout_findings": scout_findings,
+          }, sort_keys=True))
+          PY
+
+          npm run release:check
+          python /tmp/apply-electric-twin-investor-roster.py verify
+
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          baseline = json.loads(Path("/tmp/electric-twin-investor-roster-baseline.json").read_text(encoding="utf-8"))
+          hop = json.loads(Path("build/hop-graph.json").read_text(encoding="utf-8"))
+          edge_keys = sorted(
+              "|".join(sorted((edge["actor_a"], edge["actor_b"])))
+              for edge in hop.get("edges", [])
+          )
+          if edge_keys != baseline["edge_keys"]:
+              raise SystemExit("actor edge set changed during evidence-tier correction")
+          if any(
+              basis.get("surface_id") == "electric-twin-seed-round-2026-02-11"
+              for edge in hop.get("edges", [])
+              for basis in edge.get("surfaces", [])
+          ):
+              raise SystemExit("retired February 11 funding surface remains in a hop basis")
+          print("edge_set_unchanged=true")
+          PY
+
+          git add -A
+          git diff --cached --check
+
+          python - <<'PY'
+          import json
+          import subprocess
+
+          required = {
+              "data/ledger/surfaces.jsonl",
+              "data/ledger/participation.jsonl",
+              "data/ledger/receipts.jsonl",
+              "data/research/clifford-cross-corpus-public-interest-map.json",
+              "receipts/topology/electric-twin-linkedin-funding-investors-2026-02-12.md",
+              "receipts/topology/alex-cooper-linkedin-electric-twin-funding-2026-02-12.md",
+              "test/compiler.test.js",
+              "tools/validate-release.mjs",
+          }
+          allowed_projection = {
+              "data/research/clifford-thiel-trump-wrap-up.json",
+          }
+          raw = subprocess.check_output(["git", "status", "--porcelain=v1", "-z"])
+          changed = []
+          for record in raw.decode("utf-8").split("\0"):
+              if not record:
+                  continue
+              path = record[3:]
+              if " -> " in path:
+                  path = path.split(" -> ", 1)[1]
+              changed.append(path)
+
+          missing = sorted(required - set(changed))
+          unexpected = sorted(
+              path for path in changed
+              if path not in required
+              and path not in allowed_projection
+              and not path.startswith("build/")
+          )
+          if missing:
+              raise SystemExit("missing required product paths: " + ", ".join(missing))
+          if unexpected:
+              raise SystemExit("unexpected non-generated product paths: " + ", ".join(unexpected))
+          if any(path.startswith(".github/") for path in changed):
+              raise SystemExit("workflow transport leaked into product")
+          print("changed_paths=" + json.dumps(sorted(changed)))
+          PY
+
+          git commit -m "topology: bind Electric Twin investor roster to first-party records"
+
+          PRODUCT_SHA="$(git rev-parse HEAD)"
+          PRODUCT_TREE="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          test -z "$(git status --porcelain)"
+
+          echo "product_sha=$PRODUCT_SHA"
+          echo "product_tree=$PRODUCT_TREE"
+          git show --stat --oneline --summary HEAD
+
+          git push --force origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          git push --force origin "$EXPECTED_MAIN:refs/heads/$TRANSPORT_BRANCH"
