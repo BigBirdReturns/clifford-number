@@ -1,0 +1,149 @@
+name: Materialize public surface-hop reconvergence v1
+
+on:
+  push:
+    branches:
+      - candidate/public-surface-hop-reconvergence-v1
+
+permissions:
+  contents: write
+
+concurrency:
+  group: materialize-public-surface-hop-reconvergence-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      BASE_SHA: 85521c546a8cbf6e514e0c83637c61e4ba879ee7
+      BASE_TREE: a410432cff65fd090a2d76d58ce987c784da6438
+      PRODUCT_BRANCH: candidate/public-surface-hop-reconvergence-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: candidate/public-surface-hop-reconvergence-v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify exact canonical lease and snapshot graph state
+        shell: bash
+        run: |
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$BASE_SHA"
+          test "$(git merge-base "$BASE_SHA" HEAD)" = "$BASE_SHA"
+          test "$(git rev-parse "$BASE_SHA^{tree}")" = "$BASE_TREE"
+          cp build/hop-graph.json /tmp/base-hop-graph.json
+          git ls-tree -r "$BASE_SHA" -- \
+            data/ledger/claims.jsonl \
+            data/ledger/participation.jsonl \
+            data/ledger/receipts.jsonl \
+            data/ledger/surfaces.jsonl > /tmp/base-ledger-tree.txt
+      - name: Apply bounded public-product reconvergence
+        run: python tools/materialize-public-surface-hop-reconvergence.py
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Verify exact public-product effect
+        shell: bash
+        run: |
+          node --check app.js
+          git diff --check
+          git diff --exit-code "$BASE_SHA" -- \
+            data/ledger/claims.jsonl \
+            data/ledger/participation.jsonl \
+            data/ledger/receipts.jsonl \
+            data/ledger/surfaces.jsonl \
+            build/hop-graph.json
+          test ! -e dist/graph.json
+          python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          base = json.loads(Path('/tmp/base-hop-graph.json').read_text(encoding='utf-8'))
+          current = json.loads(Path('build/hop-graph.json').read_text(encoding='utf-8'))
+          assert current == base, 'hop graph changed during public-shell transaction'
+          assert len(current['edges']) == 27, len(current['edges'])
+          assert len(current.get('rejected_hop_surfaces', [])) == 17, len(current.get('rejected_hop_surfaces', []))
+
+          expected = {
+              '.github/workflows/materialize-public-surface-hop-reconvergence-v1.yml',
+              'app.js',
+              'index.html',
+              'test/ui-contract.test.js',
+              'tools/build-pages.mjs',
+              'tools/build-standalone.mjs',
+              'tools/materialize-public-surface-hop-reconvergence.py',
+              'tools/validate-pages.mjs',
+          }
+          paths = set(subprocess.check_output(
+              ['git', 'diff', '--name-only', '85521c546a8cbf6e514e0c83637c61e4ba879ee7'],
+              text=True,
+          ).splitlines())
+          assert paths == expected, f'working path denominator drifted: {sorted(paths ^ expected)}'
+
+          app = Path('app.js').read_text(encoding='utf-8')
+          html = Path('index.html').read_text(encoding='utf-8')
+          pages = Path('tools/build-pages.mjs').read_text(encoding='utf-8')
+          standalone = Path('tools/build-standalone.mjs').read_text(encoding='utf-8')
+          assert "loadJson('graph.json')" not in app
+          assert 'state.legacyGraph' not in app
+          assert 'function researchNetworkModel' not in app
+          assert 'Legacy Edge Number' not in app
+          assert "networkMode: 'hops'" in app
+          assert 'data-network-mode="research"' not in html
+          assert 'data-network-focus="dialog"' not in html
+          assert 'data-network-mode="hops"' in html
+          assert 'data-network-focus="matt-clifford"' in html
+          assert "'graph.json'" not in pages
+          assert "  'graph.json'," not in standalone
+          print('exact public surface-hop effect verified')
+          PY
+      - name: Publish one clean product commit
+        shell: bash
+        run: |
+          rm .github/workflows/materialize-public-surface-hop-reconvergence-v1.yml
+          rm tools/materialize-public-surface-hop-reconvergence.py
+          git add -A
+          python - <<'PY'
+          import subprocess
+
+          required = {
+              'app.js',
+              'index.html',
+              'test/ui-contract.test.js',
+              'tools/build-pages.mjs',
+              'tools/build-standalone.mjs',
+              'tools/validate-pages.mjs',
+          }
+          paths = set(subprocess.check_output(
+              ['git', 'diff', '--cached', '--name-only', '85521c546a8cbf6e514e0c83637c61e4ba879ee7'],
+              text=True,
+          ).splitlines())
+          if paths != required:
+              raise SystemExit('product path denominator drifted: ' + ', '.join(sorted(paths ^ required)))
+          print(f'bounded product paths: {len(paths)}')
+          PY
+          TREE=$(git write-tree)
+          if git ls-tree -r --name-only "$TREE" | grep -E '(^\.github/workflows/materialize-public-surface-hop-reconvergence-v1\.yml$|^tools/materialize-public-surface-hop-reconvergence\.py$)'; then
+            echo 'transport file remained in product tree' >&2
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          PRODUCT=$(printf '%s\n' 'product: make surface-hop topology the public data plane' | git commit-tree "$TREE" -p "$BASE_SHA")
+          git push --force-with-lease=refs/heads/$PRODUCT_BRANCH:${GITHUB_SHA} origin "$PRODUCT":refs/heads/$PRODUCT_BRANCH
+          {
+            echo '## Public surface-hop reconvergence product'
+            echo
+            echo "- parent: \`$BASE_SHA\`"
+            echo "- product: \`$PRODUCT\`"
+            echo "- tree: \`$TREE\`"
+            echo '- product paths: `6`'
+            echo '- source-ledger changes: `0`'
+            echo '- actor-hop changes: `0`'
+            echo '- public generic graph payload: `absent`'
+            echo '- public network mode: `verified_surface_hops_only`'
+          } >> "$GITHUB_STEP_SUMMARY"
