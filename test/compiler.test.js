@@ -35,7 +35,8 @@ assert.ok(actor('ben-warner').surfaces.includes('electric-twin-newsuk-synthetic-
 assert.ok(actor('ben-warner').secondary_surface_types.includes('democratic_input_replacement'));
 assert.equal(surf('electric-twin-newsuk-synthetic-audience').hop_eligible, false);
 assert.equal(surf('gartner-synthetic-population-category-2026').hop_eligible, false);
-assert.equal(surf('faculty-investor-employee-2015-2019').hop_eligible, true);
+assert.equal(surf('faculty-science-officer-employee-overlap-2018-01-24').hop_eligible, true);
+assert.equal(surf('faculty-science-director-shareholder-overlap-2024-10-10').hop_eligible, true);
 assert.equal(org('electric-twin').surface_factory, true);
 assert.ok(actor('simon-case').surfaces.includes('simon-case-cabinet-secretary-2020-2024'));
 assert.ok(actor('simon-case').surfaces.includes('electric-twin-ethics-board-2026'));
@@ -123,6 +124,97 @@ assert.equal(actionPlanBasis.valid_from, '2025-01-13');
 assert.equal(actionPlanBasis.valid_until, '2025-01-13');
 assert.deepEqual(actionPlanBasis.receipt_ids, ['gov-ai-opportunities-action-plan', 'gov-pm-ai-blueprint-2025']);
 const topology = buildAdjacency(hop.edges);
+
+// The former multi-year Faculty aggregation depended on a lost scratch audit
+// and an undated investor inference. It is replaced by two source-native,
+// exact-date company surfaces: one repairs the Warner/Klein company basis and
+// the other admits the previously blocked Clifford shareholding bridge.
+assert.equal(surf('faculty-investor-employee-2015-2019'), undefined,
+  'the unrecoverable 2015-2019 Faculty aggregation must be retired');
+const faculty2018 = surf('faculty-science-officer-employee-overlap-2018-01-24');
+assert.ok(faculty2018, 'the exact 2018 Faculty officer/employee surface must compile');
+assert.equal(faculty2018.surface_label,
+  'Faculty Science officer / employee overlap, 24 January 2018');
+assert.equal(faculty2018.time_start, '2018-01-24');
+assert.equal(faculty2018.time_end, '2018-01-24');
+assert.equal(faculty2018.evidence_class, 'primary_public');
+assert.deepEqual(faculty2018.receipt_ids, [
+  'zebra-ben-warner-asi-commercial-principal-2018-01-24',
+  'companies-house-faculty-science-officers-08873131',
+]);
+assert.deepEqual(
+  faculty2018.participants.filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id).sort(),
+  ['ben-warner', 'marc-warner', 'saul-klein'],
+);
+assert.ok(!faculty2018.receipt_ids.includes('warner-surface-audit-2026-06-29'),
+  'the repaired Faculty surface must carry no lost scratch receipt');
+assert.ok(!faculty2018.participants.some(part => part.actor_id === 'matt-clifford'),
+  'the 2024 Clifford shareholding must not be backdated onto the 2018 company surface');
+for (const pair of [
+  ['ben-warner', 'marc-warner'],
+  ['ben-warner', 'saul-klein'],
+  ['marc-warner', 'saul-klein'],
+]) {
+  const edge = hop.edges.find(row => [row.actor_a, row.actor_b].sort().join('|') === [...pair].sort().join('|'));
+  const basis = edge?.surfaces.find(row => row.surface_id === faculty2018.surface_id);
+  assert.ok(basis, `${pair.join('/')} must carry the exact 2018 Faculty basis`);
+  assert.equal(basis.valid_from, '2018-01-24');
+  assert.equal(basis.valid_until, '2018-01-24');
+  assert.equal(basis.temporal_status, 'dated');
+  assert.equal(basis.evidence_class, 'primary_public');
+  assert.deepEqual(basis.receipt_ids, faculty2018.receipt_ids);
+}
+
+const faculty2024 = surf('faculty-science-director-shareholder-overlap-2024-10-10');
+assert.ok(faculty2024, 'the official Clifford-to-Faculty bridge must compile');
+assert.equal(faculty2024.surface_label,
+  'Faculty Science director / shareholder overlap, 10 October 2024');
+assert.equal(faculty2024.time_start, '2024-10-10');
+assert.equal(faculty2024.time_end, '2024-10-10');
+assert.equal(faculty2024.evidence_class, 'official');
+assert.deepEqual(faculty2024.receipt_ids, [
+  'gov-dsit-matt-clifford-faculty-shareholding-2024-10-10',
+  'companies-house-faculty-science-officers-08873131',
+]);
+assert.deepEqual(
+  faculty2024.participants.filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id).sort(),
+  ['marc-warner', 'matt-clifford', 'saul-klein'],
+);
+for (const actorId of ['marc-warner', 'saul-klein']) {
+  const edge = hop.edges.find(row => [row.actor_a, row.actor_b].sort().join('|') === [actorId, 'matt-clifford'].sort().join('|'));
+  const basis = edge?.surfaces.find(row => row.surface_id === faculty2024.surface_id);
+  assert.ok(basis, `Matt Clifford and ${actorId} must carry the official Faculty bridge`);
+  assert.equal(basis.valid_from, '2024-10-10');
+  assert.equal(basis.valid_until, '2024-10-10');
+  assert.equal(basis.temporal_status, 'dated');
+  assert.equal(basis.evidence_class, 'official');
+  assert.deepEqual(basis.receipt_ids, faculty2024.receipt_ids);
+}
+assert.equal(shortestPath(topology, 'marc-warner', 'matt-clifford', { asOf: '2024-10-09' }).number, null,
+  'the shareholding declaration must not backdate the company hop');
+assert.equal(shortestPath(topology, 'marc-warner', 'matt-clifford', { asOf: '2024-10-10' }).number, 1);
+assert.equal(shortestPath(topology, 'marc-warner', 'matt-clifford', { asOf: '2024-10-11' }).number, null,
+  'the one-day declaration observation must not become an open-ended shareholding interval');
+assert.equal(shortestPath(topology, 'saul-klein', 'matt-clifford', { asOf: '2024-10-10' }).number, 1);
+assert.equal(shortestPath(topology, 'ben-warner', 'matt-clifford').number, 2,
+  'the all-time topology must now join Ben Warner to Clifford through a receipted Faculty director');
+assert.equal(shortestPath(topology, 'ben-warner', 'matt-clifford', { asOf: '2024-10-10' }).number, null,
+  'the all-time two-hop route must not masquerade as contemporaneous in 2024');
+
+const facultyOfficerReceipt = receipt('companies-house-faculty-science-officers-08873131');
+assert.equal(facultyOfficerReceipt.company_number, '08873131');
+assert.equal(facultyOfficerReceipt.marc_warner_appointed_at, '2014-02-03');
+assert.equal(facultyOfficerReceipt.saul_klein_appointed_at, '2016-04-21');
+assert.equal(facultyOfficerReceipt.saul_klein_resigned_at, '2026-03-12');
+const benFacultyReceipt = receipt('zebra-ben-warner-asi-commercial-principal-2018-01-24');
+assert.equal(benFacultyReceipt.event_date, '2018-01-24');
+assert.match(benFacultyReceipt.notes, /one-day role observation/i);
+const cliffordFacultyReceipt = receipt('gov-dsit-matt-clifford-faculty-shareholding-2024-10-10');
+assert.equal(cliffordFacultyReceipt.event_date, '2024-10-10');
+assert.equal(cliffordFacultyReceipt.divestment_confirmed_at, '2025-02-24');
+assert.match(cliffordFacultyReceipt.notes, /one-day shareholding observation/i);
 
 
 // Electric Twin legal formation is a one-day co-participation event, not an open-ended founder relationship.

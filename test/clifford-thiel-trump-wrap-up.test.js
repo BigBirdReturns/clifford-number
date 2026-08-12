@@ -20,13 +20,13 @@ expectFailure('the principal trail cannot drop the Austin-Israel corpus', bundle
     .filter(id => id !== 'austin-israel-defense-vc-corridor');
 }, /must link cross-corpus lane austin-israel-defense-vc-corridor/);
 
-expectFailure('unsupported Faculty shortcut cannot return', bundle => {
+expectFailure('the official 2024 shareholding cannot be backdated onto the 2018 role surface', bundle => {
   bundle.participation.push({
-    surface_id: 'faculty-investor-employee-2015-2019',
+    surface_id: 'faculty-science-officer-employee-overlap-2018-01-24',
     actor_id: 'matt-clifford',
     participant_type: 'actor',
   });
-}, /unsupported Matt Clifford Faculty participation must remain excluded/);
+}, /cannot be backdated onto the 2018 role surface/);
 
 expectFailure('Peter cannot receive a fabricated Clifford Number', bundle => {
   bundle.scores.actors.find(row => row.actor_id === 'peter-thiel').clifford_number = 1;

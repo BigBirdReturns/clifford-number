@@ -60,8 +60,22 @@ export function validateCliffordThielTrumpWrapUp(bundle) {
       errors.push(`Dialog participation missing for ${actorId}`);
     }
   }
-  if (participation.some(row => row.surface_id === 'faculty-investor-employee-2015-2019' && row.actor_id === 'matt-clifford')) {
-    errors.push('unsupported Matt Clifford Faculty participation must remain excluded from the authoritative ledger');
+  if (participation.some(row => row.surface_id === 'faculty-science-officer-employee-overlap-2018-01-24' && row.actor_id === 'matt-clifford')) {
+    errors.push('Matt Clifford Faculty participation cannot be backdated onto the 2018 role surface');
+  }
+  for (const actorId of ['matt-clifford', 'marc-warner', 'saul-klein']) {
+    if (!participation.some(row => row.surface_id === 'faculty-science-director-shareholder-overlap-2024-10-10' && row.actor_id === actorId)) {
+      errors.push(`official Faculty bridge participation missing for ${actorId}`);
+    }
+  }
+  for (const actorId of ['marc-warner', 'saul-klein']) {
+    if (!(hopGraph.edges ?? []).some(edge =>
+      new Set([edge.actor_a, edge.actor_b]).has('matt-clifford')
+      && new Set([edge.actor_a, edge.actor_b]).has(actorId)
+      && edge.surfaces?.some(surface => surface.surface_id === 'faculty-science-director-shareholder-overlap-2024-10-10')
+    )) {
+      errors.push(`compiled Clifford-${actorId} official Faculty hop is missing`);
+    }
   }
   if (!participation.some(row => row.surface_id === 'ai-opportunities-action-plan-2025' && row.actor_id === 'matt-clifford')) {
     errors.push('official Matt Clifford Action Plan participation is missing');
@@ -119,6 +133,7 @@ export function validateCliffordThielTrumpWrapUp(bundle) {
   const outcomes = new Map((wrap.surviving_outcomes ?? []).map(row => [row.outcome_id, row]));
   for (const outcomeId of [
     'clifford-starmer-action-plan',
+    'clifford-faculty-official-overlap',
     'action-plan-state-capacity-program',
     'thiel-palantir-governance',
     'palantir-state-procurement-footprint',
@@ -130,6 +145,8 @@ export function validateCliffordThielTrumpWrapUp(bundle) {
   }
   const cliffordStarmer = outcomes.get('clifford-starmer-action-plan');
   if (cliffordStarmer?.status !== 'official_direct_policy_hop') errors.push('Clifford-Starmer Action Plan outcome must remain an official direct policy hop');
+  const cliffordFaculty = outcomes.get('clifford-faculty-official-overlap');
+  if (cliffordFaculty?.status !== 'official_direct_company_hop') errors.push('Clifford-Faculty outcome must remain an official direct company hop');
   const compositeTrails = new Map((wrap.composite_trails ?? []).map(row => [row.trail_id, row]));
   if (compositeTrails.get('policy-to-state-capacity-to-procurement-market')?.status !== 'structural_corridor_with_open_join') {
     errors.push('policy-to-procurement trail must preserve both the structural corridor and its open join');
@@ -148,7 +165,7 @@ export function validateCliffordThielTrumpWrapUp(bundle) {
   }
   if (![...discoverySignals.values()].some(signal => signal.evidence_state === 'inferred')) errors.push('public-interest evidence trail must visibly preserve inferred structural signals');
   const required = {
-    'clifford-faculty-investor': 'blocked_unrecoverable_receipt',
+    'clifford-faculty-investor': 'official_bounded_company_hop',
     'clifford-thiel-dialog-roster': 'context_only_no_hop',
     'clifford-thiel-capital-policy': 'not_established_in_existing_corpus',
     'thiel-trump-material-crossing': 'not_established_in_existing_corpus',

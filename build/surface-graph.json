@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-12T03:26:58.478Z",
+  "generated": "2026-08-12T06:58:18.349Z",
   "surfaces": [
     {
       "surface_id": "ben-warner-no10-digital-data-role-observation-2020-2021",
@@ -57,65 +57,163 @@
       ]
     },
     {
-      "surface_id": "faculty-investor-employee-2015-2019",
-      "surface_label": "Faculty employment / investor surface, 2015-2019",
+      "surface_id": "faculty-science-officer-employee-overlap-2018-01-24",
+      "surface_label": "Faculty Science officer / employee overlap, 24 January 2018",
       "surface_type": "employment_investment_surface",
       "secondary_surface_types": [
         "public_private_ai_infrastructure"
       ],
       "hop_eligible": true,
       "scorable": true,
-      "status": "corrected_after_receipt_audit",
+      "status": "source_native_repair",
       "bounded_by": [
-        "employment record",
-        "company history",
-        "reported investor surface"
+        "dated Ben Warner speaker profile",
+        "Companies House officer appointments",
+        "exact one-day overlap"
       ],
-      "time_start": "2015",
-      "time_end": "2019",
+      "time_start": "2018-01-24",
+      "time_end": "2018-01-24",
+      "evidence_class": "primary_public",
       "receipt_ids": [
-        "warner-surface-audit-2026-06-29",
-        "guardian-faculty-sage"
+        "zebra-ben-warner-asi-commercial-principal-2018-01-24",
+        "companies-house-faculty-science-officers-08873131"
       ],
-      "notes": "Faculty employee/founder and separately reported-investor surface. Matt Clifford's prior investor participation was removed from the authoritative ledger because it rested on an unrecoverable analysis note and was not supported by the master investor list; the candidate is preserved in the Clifford-Thiel-Trump wrap-up.",
+      "notes": "Replaces the former 2015-2019 Faculty aggregation that relied on a lost scratch audit and an undated reported-investor row. The exact public observation places Ben Warner at ASI Data Science while Companies House places Marc Warner and Saul Klein as directors of the same legal entity on 24 January 2018. It proves formal same-company co-participation only, not a meeting, transaction, influence, agreement, coordination, motive, wrongdoing, or common purpose.",
       "participants": [
         {
-          "surface_id": "faculty-investor-employee-2015-2019",
+          "surface_id": "faculty-science-officer-employee-overlap-2018-01-24",
           "participant_type": "actor",
           "actor_id": "ben-warner",
-          "role": "Principal / data scientist",
-          "participation_type": "employee",
-          "time_start": "2015",
-          "time_end": "2019",
-          "evidence_class": "official",
-          "receipt_ids": [
-            "warner-surface-audit-2026-06-29"
-          ]
-        },
-        {
-          "surface_id": "faculty-investor-employee-2015-2019",
-          "participant_type": "actor",
-          "actor_id": "marc-warner",
-          "role": "CEO / co-founder",
-          "participation_type": "founder_officer",
-          "time_start": "2014",
-          "time_end": "2026",
+          "role": "Commercial Principal, ASI Data Science, as identified by the dated speaker profile",
+          "participation_type": "employee_role_observation",
+          "time_start": "2018-01-24",
+          "time_end": "2018-01-24",
           "evidence_class": "primary_public",
           "receipt_ids": [
-            "master-doc-v3"
-          ]
+            "zebra-ben-warner-asi-commercial-principal-2018-01-24"
+          ],
+          "notes": "One-day public role observation only; no full employment interval is asserted."
         },
         {
-          "surface_id": "faculty-investor-employee-2015-2019",
+          "surface_id": "faculty-science-officer-employee-overlap-2018-01-24",
+          "participant_type": "actor",
+          "actor_id": "marc-warner",
+          "role": "Director appointed 3 February 2014",
+          "participation_type": "director",
+          "time_start": "2018-01-24",
+          "time_end": "2018-01-24",
+          "evidence_class": "official",
+          "receipt_ids": [
+            "companies-house-faculty-science-officers-08873131"
+          ],
+          "notes": "Exact-date slice of the formal officer interval."
+        },
+        {
+          "surface_id": "faculty-science-officer-employee-overlap-2018-01-24",
           "participant_type": "actor",
           "actor_id": "saul-klein",
-          "role": "reported personal investor",
-          "participation_type": "investor",
-          "time_start": "",
-          "time_end": "",
-          "evidence_class": "reported",
+          "role": "Director appointed 21 April 2016",
+          "participation_type": "director",
+          "time_start": "2018-01-24",
+          "time_end": "2018-01-24",
+          "evidence_class": "official",
           "receipt_ids": [
-            "warner-surface-audit-2026-06-29"
+            "companies-house-faculty-science-officers-08873131"
+          ],
+          "notes": "Exact-date slice of the formal officer interval; the former undated reported-investor row is retired."
+        },
+        {
+          "surface_id": "faculty-science-officer-employee-overlap-2018-01-24",
+          "participant_type": "organization",
+          "organization_id": "faculty",
+          "role": "Faculty Science Limited, then registered as Advanced Skills Initiative Limited",
+          "participation_type": "company",
+          "time_start": "2018-01-24",
+          "time_end": "2018-01-24",
+          "evidence_class": "official",
+          "receipt_ids": [
+            "companies-house-faculty-science-officers-08873131"
+          ]
+        }
+      ]
+    },
+    {
+      "surface_id": "faculty-science-director-shareholder-overlap-2024-10-10",
+      "surface_label": "Faculty Science director / shareholder overlap, 10 October 2024",
+      "surface_type": "employment_investment_surface",
+      "secondary_surface_types": [
+        "public_private_ai_infrastructure"
+      ],
+      "hop_eligible": true,
+      "scorable": true,
+      "status": "official_source_bridge",
+      "bounded_by": [
+        "official DSIT outside-interests declaration",
+        "Companies House officer appointments",
+        "exact one-day overlap"
+      ],
+      "time_start": "2024-10-10",
+      "time_end": "2024-10-10",
+      "evidence_class": "official",
+      "receipt_ids": [
+        "gov-dsit-matt-clifford-faculty-shareholding-2024-10-10",
+        "companies-house-faculty-science-officers-08873131"
+      ],
+      "notes": "Official records place Matt Clifford as a Faculty Science shareholder and Marc Warner and Saul Klein as directors on the same exact company surface on 10 October 2024. The record creates a formal company hop only. It does not prove contact, attendance, operational participation, influence over company or government decisions, procurement involvement, agreement, coordination, motive, wrongdoing, or common purpose. Clifford's later divestment prevents an open-ended holding interval.",
+      "participants": [
+        {
+          "surface_id": "faculty-science-director-shareholder-overlap-2024-10-10",
+          "participant_type": "actor",
+          "actor_id": "matt-clifford",
+          "role": "Direct investor / shareholder declared by DSIT on 10 October 2024",
+          "participation_type": "shareholder_observation",
+          "time_start": "2024-10-10",
+          "time_end": "2024-10-10",
+          "evidence_class": "official",
+          "receipt_ids": [
+            "gov-dsit-matt-clifford-faculty-shareholding-2024-10-10"
+          ],
+          "notes": "Exact public observation date only; acquisition date is not inferred and full divestment was later confirmed on 24 February 2025."
+        },
+        {
+          "surface_id": "faculty-science-director-shareholder-overlap-2024-10-10",
+          "participant_type": "actor",
+          "actor_id": "marc-warner",
+          "role": "Director appointed 3 February 2014",
+          "participation_type": "director",
+          "time_start": "2024-10-10",
+          "time_end": "2024-10-10",
+          "evidence_class": "official",
+          "receipt_ids": [
+            "companies-house-faculty-science-officers-08873131"
+          ],
+          "notes": "Exact-date slice of the formal officer interval."
+        },
+        {
+          "surface_id": "faculty-science-director-shareholder-overlap-2024-10-10",
+          "participant_type": "actor",
+          "actor_id": "saul-klein",
+          "role": "Director appointed 21 April 2016",
+          "participation_type": "director",
+          "time_start": "2024-10-10",
+          "time_end": "2024-10-10",
+          "evidence_class": "official",
+          "receipt_ids": [
+            "companies-house-faculty-science-officers-08873131"
+          ],
+          "notes": "Exact-date slice of the formal officer interval."
+        },
+        {
+          "surface_id": "faculty-science-director-shareholder-overlap-2024-10-10",
+          "participant_type": "organization",
+          "organization_id": "faculty",
+          "role": "Faculty Science Limited",
+          "participation_type": "company",
+          "time_start": "2024-10-10",
+          "time_end": "2024-10-10",
+          "evidence_class": "official",
+          "receipt_ids": [
+            "companies-house-faculty-science-officers-08873131"
           ]
         }
       ]
