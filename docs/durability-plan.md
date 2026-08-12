@@ -176,7 +176,7 @@ above serves this endstate; the additional one is *temporal self-description*:
 receipts must carry access dates and archived snapshots so a historian can
 distinguish "what the source said when cited" from "what the URL serves now."
 
-## 3. Current fragility audit (specific, verified)
+## 3. Baseline fragility audit (June 2026; historical)
 
 1. **Receipts pointing at session-scratch files.** 4 of 17 receipt rows in
    `data/ledger/receipts.jsonl` cite paths like `/mnt/data/Pasted text(152).txt`
@@ -205,6 +205,26 @@ distinguish "what the source said when cited" from "what the URL serves now."
    schemas, the surface-type taxonomy semantics, or the hop-eligibility rules
    exists apart from executable code and scattered docs.
 8. **Bus factor 1**, with no succession statement and no second keyholder.
+
+
+## 3A. Receipt-custody reconciliation (12 August 2026)
+
+The baseline above recorded four canonical receipt rows that depended on
+vanished AI-session scratch files. That defect is now terminally reconciled.
+The News UK deployment and Gartner category observations were rebound to
+recoverable first-party records. The remaining analysis-note and
+architecture-note rows had no surface, participation, claim, chain, score,
+or hop consumer and were retired rather than retained as unverifiable
+evidence.
+
+After this transaction the live receipt ledger contains 55 rows, zero
+`/mnt/data/` paths, and zero `unrecoverable_local_paste` archive methods.
+The historical loss remains visible in git history and in this dated
+reconciliation, while the release validator now rejects any recurrence of
+session-local evidence paths or unrecoverable-paste receipt state. The
+operative surface and hop rules survive in the canonical ledgers,
+compiler, release validator, tests, and methodology documents rather than
+in a vanished scratch attachment.
 
 ## 4. The plan
 

@@ -31,6 +31,22 @@ const surf = id => surface.surfaces.find(s => s.surface_id === id);
 const receipt = id => ledgerReceipts.find(row => row.receipt_id === id);
 const claim = id => receiptGraph.claims.find(row => row.claim_id === id);
 
+
+for (const retiredScratchReceipt of [
+  'warner-surface-audit-2026-06-29',
+  'surface-architecture-spec-2026-06-29',
+]) {
+  assert.equal(receipt(retiredScratchReceipt), undefined,
+    `${retiredScratchReceipt} must remain retired after canonical-consumer audit`);
+}
+assert.ok(!ledgerReceipts.some(row => String(row.path ?? '').startsWith('/mnt/data/')),
+  'canonical receipts must not point at AI-session scratch storage');
+assert.ok(!ledgerReceipts.some(row => row.archive?.method === 'unrecoverable_local_paste'),
+  'canonical receipts must not preserve unrecoverable local pastes as live evidence');
+assert.equal(receiptGraph.receipts.length, ledgerReceipts.length,
+  'compiled receipt graph must match the canonical receipt ledger');
+
+
 assert.ok(!actor('ben-warner').surfaces.includes('electric-twin-newsuk-synthetic-audience'),
   'Ben Warner must not inherit the organization-only News UK deployment');
 assert.ok(!actor('ben-warner').secondary_surface_types.includes('democratic_input_replacement'),
