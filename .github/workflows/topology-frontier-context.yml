@@ -1,0 +1,40 @@
+name: topology-frontier-context
+
+on:
+  push:
+    branches:
+      - agent/topology-frontier-audit-v1
+
+permissions:
+  contents: read
+
+jobs:
+  context:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Print obsolete receipt fixture contexts
+        shell: bash
+        run: |
+          set -euo pipefail
+          for id in \
+            master-doc-v3 \
+            times-case-electric-twin-2026 \
+            businesscloud-electric-twin-founders \
+            companies-house-electric-twin \
+            guardian-faculty-sage
+          do
+            printf '\n===== %s =====\n' "$id"
+            grep -RFn -C 8 --exclude='receipts.jsonl' --exclude='receipt-graph.json' --exclude='topology-frontier-context.yml' -- "$id" test tools package.json data docs build || true
+          done
+
+      - name: Print receipt retirement controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -n -C 12 -- 'retiredScratchReceipt' test/compiler.test.js || true
+          grep -n -C 12 -- 'Session-local scratch' tools/validate-release.mjs || true
