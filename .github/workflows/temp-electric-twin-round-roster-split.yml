@@ -24,12 +24,12 @@ jobs:
         with:
           node-version: 24
 
-      - name: Rebuild, qualify, publish, and retire transport
+      - name: Reconcile current main, qualify, publish, and retire transport
         shell: bash
         run: |
           set -euo pipefail
 
-          EXPECTED_MAIN="14538b35f9051d21bb431533f38e0b6a512d3606"
+          EXPECTED_MAIN="9648cf04896ceeb449fc6455093c40550ac1c30c"
           EXPECTED_OLD_PRODUCT="6bc32f87e34120a02aabc2afe6fab2cedccee690"
           PRODUCT_BRANCH="candidate/electric-twin-funding-primary-source-v1"
           TRANSPORT_BRANCH="agent/electric-twin-funding-primary-source-transport-v1"
@@ -57,23 +57,34 @@ jobs:
           import subprocess
 
           def rows(path):
-              return [json.loads(line) for line in Path(path).read_text(encoding='utf-8').splitlines() if line.strip()]
+              return [
+                  json.loads(line)
+                  for line in Path(path).read_text(encoding='utf-8').splitlines()
+                  if line.strip()
+              ]
 
           old_receipt = 'tech-eu-electric-twin-seed-round-2026-02-12'
           new_receipt = 'alex-cooper-linkedin-electric-twin-investor-roster-2026-02-12'
+          company_receipt = 'electric-twin-seed-round-announcement-2026-02-11'
           round_surface_id = 'electric-twin-seed-round-2026-02-11'
           roster_surface_id = 'electric-twin-investor-roster-observation-2026-02-12'
+          institution_surface_id = 'electric-twin-seed-round-institutional-investors-2026-02-11'
+          boundary_claim_id = 'electric-twin-localglobe-saul-klein-actor-boundary-2026-02-12'
 
           surfaces = rows('data/ledger/surfaces.jsonl')
           participation = rows('data/ledger/participation.jsonl')
           receipts = rows('data/ledger/receipts.jsonl')
+          claims = rows('data/ledger/claims.jsonl')
           hop = json.loads(Path('build/hop-graph.json').read_text(encoding='utf-8'))
           surface_graph = json.loads(Path('build/surface-graph.json').read_text(encoding='utf-8'))
           receipt_graph = json.loads(Path('build/receipt-graph.json').read_text(encoding='utf-8'))
           scout = json.loads(Path('build/scout-report.json').read_text(encoding='utf-8'))
-          public_map = json.loads(Path('data/research/clifford-cross-corpus-public-interest-map.json').read_text(encoding='utf-8'))
+          public_map = json.loads(
+              Path('data/research/clifford-cross-corpus-public-interest-map.json')
+              .read_text(encoding='utf-8')
+          )
           baseline = json.loads(subprocess.check_output(
-              ['git', 'show', '14538b35f9051d21bb431533f38e0b6a512d3606:build/hop-graph.json'],
+              ['git', 'show', '9648cf04896ceeb449fc6455093c40550ac1c30c:build/hop-graph.json'],
               text=True,
           ))
 
@@ -105,31 +116,97 @@ jobs:
               'compiled_hop_edges': 27,
           }
 
+          source_surface_ids = [row['surface_id'] for row in surfaces]
+          assert source_surface_ids.count(round_surface_id) == 1
+          assert source_surface_ids.count(roster_surface_id) == 1
+          assert institution_surface_id not in source_surface_ids
+
           receipt_ids = [row['receipt_id'] for row in receipts]
           assert old_receipt not in receipt_ids
           assert receipt_ids.count(new_receipt) == 1
-          assert not Path('receipts/topology/tech-eu-electric-twin-seed-round-2026-02-12.md').exists()
-          assert Path('receipts/topology/alex-cooper-linkedin-electric-twin-investor-roster-2026-02-12.md').exists()
-          compiled_receipt_ids = [row['receipt_id'] for row in receipt_graph.get('receipts', [])]
+          assert not Path(
+              'receipts/topology/tech-eu-electric-twin-seed-round-2026-02-12.md'
+          ).exists()
+          assert Path(
+              'receipts/topology/alex-cooper-linkedin-electric-twin-investor-roster-2026-02-12.md'
+          ).exists()
+          compiled_receipt_ids = [
+              row['receipt_id'] for row in receipt_graph.get('receipts', [])
+          ]
           assert old_receipt not in compiled_receipt_ids
           assert compiled_receipt_ids.count(new_receipt) == 1
 
-          surface_by_id = {row['surface_id']: row for row in surface_graph.get('surfaces', [])}
+          surface_by_id = {
+              row['surface_id']: row for row in surface_graph.get('surfaces', [])
+          }
+          assert institution_surface_id not in surface_by_id
           round_surface = surface_by_id[round_surface_id]
           roster_surface = surface_by_id[roster_surface_id]
           assert round_surface['hop_eligible'] is False
-          assert round_surface['hop_refusal_reason'] == 'single_named_actor_on_round_specific_source'
-          assert round_surface['receipt_ids'] == ['electric-twin-seed-round-announcement-2026-02-11']
-          round_actors = [row['actor_id'] for row in round_surface.get('participants', []) if row.get('participant_type') == 'actor']
+          assert (
+              round_surface['hop_refusal_reason']
+              == 'single_named_actor_on_round_specific_source'
+          )
+          assert round_surface['receipt_ids'] == [company_receipt]
+          round_actors = [
+              row['actor_id']
+              for row in round_surface.get('participants', [])
+              if row.get('participant_type') == 'actor'
+          ]
           assert round_actors == ['marc-andreessen']
           assert roster_surface['hop_eligible'] is True
           assert roster_surface['surface_type'] == 'employment_investment_surface'
-          assert roster_surface['secondary_surface_types'] == ['directory_roster_surface', 'surface_factory_capital_layer']
+          assert roster_surface['secondary_surface_types'] == [
+              'directory_roster_surface',
+              'surface_factory_capital_layer',
+          ]
           assert roster_surface['time_start'] == roster_surface['time_end'] == '2026-02-12'
           assert roster_surface['receipt_ids'] == [new_receipt]
-          roster_actors = sorted(row['actor_id'] for row in roster_surface.get('participants', []) if row.get('participant_type') == 'actor')
-          assert roster_actors == ['cal-henderson', 'eric-salama', 'louis-mosley', 'marc-andreessen', 'tom-shinner']
+          roster_actors = sorted(
+              row['actor_id']
+              for row in roster_surface.get('participants', [])
+              if row.get('participant_type') == 'actor'
+          )
+          assert roster_actors == [
+              'cal-henderson',
+              'eric-salama',
+              'louis-mosley',
+              'marc-andreessen',
+              'tom-shinner',
+          ]
           assert len(roster_surface.get('participants', [])) == 10
+
+          boundary_claims = [
+              row for row in claims if row.get('claim_id') == boundary_claim_id
+          ]
+          assert len(boundary_claims) == 1
+          boundary_claim = boundary_claims[0]
+          assert boundary_claim['receipt_ids'] == [company_receipt, new_receipt]
+          assert boundary_claim['surface_ids'] == [
+              round_surface_id,
+              roster_surface_id,
+          ]
+          assert sorted(boundary_claim['actor_ids']) == [
+              'cal-henderson',
+              'eric-salama',
+              'louis-mosley',
+              'marc-andreessen',
+              'saul-klein',
+              'tom-shinner',
+          ]
+          assert sorted(boundary_claim['organization_ids']) == [
+              'atomico',
+              'electric-twin',
+              'localglobe',
+              'mercuri',
+              'samos',
+          ]
+          compiled_boundary_claims = [
+              row
+              for row in receipt_graph.get('claims', [])
+              if row.get('claim_id') == boundary_claim_id
+          ]
+          assert compiled_boundary_claims == [boundary_claim]
 
           round_bases = [
               basis
@@ -145,12 +222,25 @@ jobs:
           ]
           assert round_bases == []
           assert len(roster_bases) == 10
-          assert all(basis.get('evidence_class') == 'primary_public' for basis in roster_bases)
-          assert all(basis.get('receipt_ids') == [new_receipt] for basis in roster_bases)
-          assert all(basis.get('valid_from') == basis.get('valid_until') == '2026-02-12' for basis in roster_bases)
+          assert all(
+              basis.get('evidence_class') == 'primary_public'
+              for basis in roster_bases
+          )
+          assert all(
+              basis.get('receipt_ids') == [new_receipt]
+              for basis in roster_bases
+          )
+          assert all(
+              basis.get('valid_from') == basis.get('valid_until') == '2026-02-12'
+              for basis in roster_bases
+          )
           roster_edges = [
-              edge for edge in hop.get('edges', [])
-              if any(basis.get('surface_id') == roster_surface_id for basis in edge.get('surfaces', []))
+              edge
+              for edge in hop.get('edges', [])
+              if any(
+                  basis.get('surface_id') == roster_surface_id
+                  for basis in edge.get('surfaces', [])
+              )
           ]
           assert len(roster_edges) == 10
           assert all(edge.get('evidence_weight') == 1.25 for edge in roster_edges)
@@ -160,10 +250,13 @@ jobs:
               for edge in graph.get('edges', [])
           )
           assert pairs(hop) == pairs(baseline)
+
           print('terminal=' + json.dumps(terminal, sort_keys=True))
           print('edge_set_unchanged=true')
           print('round_specific_hop_refused=true')
           print('roster_actor_bases=10')
+          print('institution_companion_retired=true')
+          print('boundary_claim_rebound=true')
           PY
 
           git diff --check
@@ -184,6 +277,7 @@ jobs:
               'build/scout-report.json',
               'build/scout-report.md',
               'build/surface-graph.json',
+              'data/ledger/claims.jsonl',
               'data/ledger/participation.jsonl',
               'data/ledger/receipts.jsonl',
               'data/ledger/surfaces.jsonl',
@@ -194,7 +288,8 @@ jobs:
               'tools/validate-release.mjs',
           }
           changed = set(subprocess.check_output(
-              ['git', 'diff', '--cached', '--name-only'], text=True
+              ['git', 'diff', '--cached', '--name-only'],
+              text=True,
           ).splitlines())
           if changed != expected:
               raise SystemExit(repr({
@@ -211,7 +306,7 @@ jobs:
           PRODUCT_SHA="$(git rev-parse HEAD)"
           PRODUCT_TREE="$(git rev-parse HEAD^{tree})"
           test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
-          test "$(git diff-tree --no-commit-id --name-only -r HEAD | wc -l | tr -d ' ')" = "18"
+          test "$(git diff-tree --no-commit-id --name-only -r HEAD | wc -l | tr -d ' ')" = "19"
           test "$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')" = "$EXPECTED_OLD_PRODUCT"
 
           git push --force origin "HEAD:refs/heads/$PRODUCT_BRANCH"
@@ -220,8 +315,10 @@ jobs:
 
           printf 'PRODUCT_SHA=%s\n' "$PRODUCT_SHA"
           printf 'PRODUCT_TREE=%s\n' "$PRODUCT_TREE"
-          printf 'PRODUCT_PATHS=18\n'
+          printf 'PRODUCT_PATHS=19\n'
           printf 'RELEASE_PASS=true\n'
           printf 'EDGE_SET_UNCHANGED=true\n'
           printf 'ROUND_SPECIFIC_HOP_REFUSED=true\n'
+          printf 'INSTITUTION_COMPANION_RETIRED=true\n'
+          printf 'BOUNDARY_CLAIM_REBOUND=true\n'
           printf 'TRANSPORT_RETIRED=true\n'
