@@ -85,6 +85,30 @@ assert.equal(cabinetTenureEndReceipt.tenure_end, '2024-12-15');
 assert.equal(cabinetTenureEndReceipt.successor_effective_at, '2024-12-16');
 assert.ok(!cabinetSecretaryTenure.receipt_ids.includes('master-doc-v3'), 'the corrected tenure must not inherit the master proxy');
 
+const teamBarrowObservation = surf('team-barrow-public-private-fund-2026');
+assert.ok(teamBarrowObservation, 'the source-native Team Barrow governance observation must compile');
+assert.equal(teamBarrowObservation.hop_eligible, false);
+assert.equal(teamBarrowObservation.hop_refusal_reason, 'single_actor_partnership_governance_context_only');
+assert.equal(teamBarrowObservation.time_start, '2025-02-10');
+assert.equal(teamBarrowObservation.time_end, '2026-07-02');
+assert.deepEqual(teamBarrowObservation.participants.filter(part => part.participant_type === 'actor').map(part => part.actor_id), ['simon-case'], 'the organization-level partnership must not manufacture another actor participant');
+assert.deepEqual(teamBarrowObservation.participants.filter(part => part.participant_type === 'organization').map(part => part.organization_id).sort(), ['bae-systems', 'local-council', 'uk-government']);
+assert.deepEqual(teamBarrowObservation.receipt_ids, ['gov-mhclg-simon-case-barrow-chair-2025-02-10', 'uk-parliament-plan-for-barrow-statement-2025-02-10', 'westmorland-team-barrow-chair-partnership-2025-02-10', 'civil-service-commission-simon-case-barrow-role-2026-07-02']);
+assert.ok((hop.rejected_hop_surfaces ?? []).some(row => row.surface_id === teamBarrowObservation.surface_id && row.reason === 'single_actor_partnership_governance_context_only'), 'compiled graph must expose the Team Barrow partnership-governance refusal');
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === teamBarrowObservation.surface_id)), 'single-actor Team Barrow context must never become a hop basis');
+const teamBarrowGovernment = teamBarrowObservation.participants.find(part => part.organization_id === 'uk-government');
+assert.equal(teamBarrowGovernment.participation_type, 'public_funder_and_appointing_authority_observation');
+assert.equal(teamBarrowGovernment.funding_amount_gbp, 200000000);
+assert.equal(teamBarrowObservation.participants.find(part => part.organization_id === 'bae-systems').participation_type, 'industry_partner_observation');
+assert.equal(teamBarrowObservation.participants.find(part => part.organization_id === 'local-council').participation_type, 'local_government_partner_observation');
+assert.equal(receipt('gov-mhclg-simon-case-barrow-chair-2025-02-10').public_funding_amount_gbp, 200000000);
+assert.equal(receipt('uk-parliament-plan-for-barrow-statement-2025-02-10').commons_statement_id, 'HCWS428');
+assert.equal(receipt('uk-parliament-plan-for-barrow-statement-2025-02-10').lords_statement_id, 'HLWS424');
+assert.deepEqual(receipt('westmorland-team-barrow-chair-partnership-2025-02-10').partnership_organizations, ['UK Government', 'Westmorland and Furness Council', 'BAE Systems']);
+assert.equal(receipt('civil-service-commission-simon-case-barrow-role-2026-07-02').observed_active_through, '2026-07-02');
+assert.equal(receipt('civil-service-commission-simon-case-barrow-role-2026-07-02').continues_to_represent_government, true);
+assert.ok(!teamBarrowObservation.receipt_ids.includes('master-doc-v3'), 'the corrected Team Barrow observation must not inherit the master proxy');
+
 const surfaceActorIds = new Set(surface.actors.map(a => a.id));
 for (const node of legacyGraph.nodes.filter(n => n.type === 'person')) {
   assert.ok(surfaceActorIds.has(node.id), `${node.label} must be present in the surface app actor index`);
