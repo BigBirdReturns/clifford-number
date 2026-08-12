@@ -1,0 +1,73 @@
+name: Diagnose public surface-hop reconvergence v1
+
+on:
+  push:
+    branches:
+      - candidate/public-surface-hop-reconvergence-v1
+
+permissions:
+  contents: write
+
+concurrency:
+  group: diagnose-public-surface-hop-reconvergence-v1
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: candidate/public-surface-hop-reconvergence-v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Reproduce and capture the first failing contract
+        shell: bash
+        run: |
+          python tools/run-public-surface-hop-reconvergence-v2.py
+          mkdir -p diagnostics
+          LOG=/tmp/public-surface-hop-reconvergence.log
+          : > "$LOG"
+          status=0
+          run_check() {
+            label="$1"
+            shift
+            {
+              echo
+              echo "===== $label ====="
+              printf 'command:'
+              printf ' %q' "$@"
+              echo
+            } >> "$LOG"
+            set +e
+            "$@" >> "$LOG" 2>&1
+            code=$?
+            set -e
+            echo "exit_status=$code" >> "$LOG"
+            if [ "$code" -ne 0 ] && [ "$status" -eq 0 ]; then
+              status="$code"
+            fi
+          }
+          run_check "node syntax" node --check app.js
+          run_check "UI contract" node test/ui-contract.test.js
+          run_check "Pages build" node tools/build-pages.mjs
+          run_check "Standalone build" node tools/build-standalone.mjs
+          run_check "Pages validation" node tools/validate-pages.mjs
+          run_check "Complete release gate" npm run release:check
+          {
+            echo "diagnostic_exit_status=$status"
+            echo "branch_head_before_diagnostic=$(git rev-parse HEAD)"
+            echo "canonical_main=$(git ls-remote origin refs/heads/main | cut -f1)"
+          } > diagnostics/public-surface-hop-reconvergence.status
+          grep -nEi '(^|[^a-z])(error|failed|failure|assertion|err_[a-z_]+|not found|unexpected|drift)([^a-z]|$)' "$LOG" | tail -n 300 > diagnostics/public-surface-hop-reconvergence.errors || true
+          tail -n 1400 "$LOG" > diagnostics/public-surface-hop-reconvergence.log
+          git add diagnostics/public-surface-hop-reconvergence.*
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'diagnostic: capture public surface-hop release failure'
+          git push --force-with-lease=refs/heads/candidate/public-surface-hop-reconvergence-v1:${GITHUB_SHA} origin HEAD:refs/heads/candidate/public-surface-hop-reconvergence-v1
+          exit "$status"
