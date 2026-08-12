@@ -30,7 +30,7 @@ jobs:
         with:
           node-version: 20
 
-      - name: Authenticate exact parent and source patch
+      - name: Authenticate exact parent and source patches
         shell: bash
         run: |
           set -euo pipefail
@@ -52,6 +52,42 @@ jobs:
           echo 'daacbbb9957f6f04803215c2d5e8cb176c167faa96cbce18d75c70ee5aa55d0e  /tmp/no10-boundary.patch.gz' | sha256sum -c -
           gzip -dc /tmp/no10-boundary.patch.gz > /tmp/no10-boundary.patch
           echo 'f94d38d965da814e38f64f5ea661d5337212cc03caa3786adc6559594db7dee4  /tmp/no10-boundary.patch' | sha256sum -c -
+          cat > /tmp/no10-pages-validator.patch <<'PATCH'
+          diff --git a/tools/validate-pages.mjs b/tools/validate-pages.mjs
+          index bee825f..5f69bae 100644
+          --- a/tools/validate-pages.mjs
+          +++ b/tools/validate-pages.mjs
+          @@ -358,15 +358,19 @@ if (legacyGraph.subtitle !== 'Seven degrees of UK AI policy topology, with recei
+             console.error('validate-pages failed: stale state-capture framing remains in the public payload');
+             process.exit(1);
+           }
+          -const refusal = (hopGraph.rejected_hop_pairs ?? []).find(item => item.actor_a === 'dan-rosenfield' && item.actor_b === 'dominic-cummings');
+          -if (refusal?.actor_a_window?.valid_from !== '2021-01-01'
+          -  || refusal?.actor_b_window?.valid_from !== '2019-01-01'
+          -  || !Array.isArray(refusal?.receipt_ids)
+          -  || refusal.receipt_ids.length === 0
+          -  || refusal.publication_status !== 'review_required'
+          -  || refusal.actor_a_window_reverifiable !== false
+          -  || refusal.actor_b_window_reverifiable !== false) {
+          -  console.error('validate-pages failed: Rosenfield/Cummings refusal is misattributed or improperly promoted');
+          +const obsoleteNo10PairRefusal = (hopGraph.rejected_hop_pairs ?? []).find(item =>
+          +  item.surface_id === 'no10-digital-data-advisory-2019-2021'
+          +  && item.actor_a === 'dan-rosenfield'
+          +  && item.actor_b === 'dominic-cummings');
+          +const no10ContextRefusal = (hopGraph.rejected_hop_surfaces ?? []).find(item =>
+          +  item.surface_id === 'ben-warner-no10-digital-data-role-observation-2020-2021');
+          +const no10ContextPromoted = (hopGraph.edges ?? []).some(edge =>
+          +  (edge.surfaces ?? []).some(surface =>
+          +    surface.surface_id === 'ben-warner-no10-digital-data-role-observation-2020-2021'));
+          +if (obsoleteNo10PairRefusal !== undefined
+          +  || no10ContextRefusal?.reason !== 'broad_institution_context_only'
+          +  || no10ContextPromoted) {
+          +  console.error('validate-pages failed: No. 10 broad-office context is missing, misclassified, or still creating actor adjacency');
+             process.exit(1);
+           }
+           console.log(`validate-pages: OK (${required.length} required artifacts)`);
+          PATCH
+          echo 'dbe6ef6fe6116da0da9cc468b9a0eae1f49952409c79bdc0b863f45a4941f139  /tmp/no10-pages-validator.patch' | sha256sum -c -
           git worktree add --detach /tmp/canonical "$BASE_SHA"
           git worktree add --detach /tmp/product "$BASE_SHA"
 
@@ -70,6 +106,7 @@ jobs:
           set -euo pipefail
           cd /tmp/product
           git apply --index /tmp/no10-boundary.patch
+          git apply --index /tmp/no10-pages-validator.patch
           cat > /tmp/source-paths.txt <<'PATHS'
           README.md
           data/canonical/actors.json
@@ -87,6 +124,7 @@ jobs:
           test/compiler.test.js
           test/narrate-hops.test.js
           tools/lib/hops.mjs
+          tools/validate-pages.mjs
           tools/validate-release.mjs
           PATHS
           sort /tmp/source-paths.txt -o /tmp/source-paths.txt
@@ -123,14 +161,26 @@ jobs:
           const participation = fs.readFileSync('data/ledger/participation.jsonl', 'utf8').trim().split('\n').length;
           const receipts = fs.readFileSync('data/ledger/receipts.jsonl', 'utf8').trim().split('\n').length;
           const surfaces = fs.readFileSync('data/ledger/surfaces.jsonl', 'utf8').trim().split('\n').length;
+          const obsoletePair = (hops.rejected_hop_pairs ?? []).find(item =>
+            item.surface_id === 'no10-digital-data-advisory-2019-2021'
+            && item.actor_a === 'dan-rosenfield'
+            && item.actor_b === 'dominic-cummings');
+          const contextRefusal = (hops.rejected_hop_surfaces ?? []).find(item =>
+            item.surface_id === 'ben-warner-no10-digital-data-role-observation-2020-2021');
+          const contextEdge = hops.edges.some(edge => (edge.surfaces ?? []).some(surface =>
+            surface.surface_id === 'ben-warner-no10-digital-data-role-observation-2020-2021'));
           if (hops.edges.length !== 27) throw new Error(`expected 27 hop edges, got ${hops.edges.length}`);
           if (scout.findings.length !== 144) throw new Error(`expected 144 scout findings, got ${scout.findings.length}`);
           if (participation !== 183) throw new Error(`expected 183 participation rows, got ${participation}`);
           if (receipts !== 44) throw new Error(`expected 44 receipts, got ${receipts}`);
           if (surfaces !== 21) throw new Error(`expected 21 surfaces, got ${surfaces}`);
+          if (obsoletePair !== undefined) throw new Error('obsolete Rosenfield/Cummings No. 10 refusal survived');
+          if (contextRefusal?.reason !== 'broad_institution_context_only') throw new Error('No. 10 context refusal is missing or stale');
+          if (contextEdge) throw new Error('No. 10 context was promoted into an actor edge');
           NODE
           echo 'PRODUCT_RELEASE_PASS true'
           echo 'ANSWERABLE_POWER_PROJECTION_STABLE true'
+          echo 'BROAD_INSTITUTION_REFUSAL_PASS true'
 
       - name: Create one-parent product commit
         shell: bash
@@ -204,6 +254,7 @@ jobs:
           if-no-files-found: warn
           path: |
             /tmp/no10-boundary.patch
+            /tmp/no10-pages-validator.patch
             /tmp/source-paths.txt
             /tmp/generated-paths.txt
             /tmp/product-paths.txt
