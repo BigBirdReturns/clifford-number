@@ -1,0 +1,48 @@
+name: TEMP export exact canonical main for next topology frontier
+
+on:
+  push:
+    branches:
+      - agent/clifford-next-frontier-export-7a4007f
+    paths:
+      - .github/workflows/temp-clifford-next-frontier-export.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      BASE_SHA: 7a4007f62ce84463674ea24cc5e40b4ef5c6025a
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Export exact canonical tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "$BASE_SHA^{commit}"
+          test "$(git rev-parse "$BASE_SHA^{tree}")" = "4a1e2513b32a15b4d71455dccb6d75bce15ab417"
+          git worktree add --detach /tmp/clifford-main "$BASE_SHA"
+          cd /tmp/clifford-main
+          printf '%s\n' "$BASE_SHA" > .canonical-commit
+          git rev-parse 'HEAD^{tree}' > .canonical-tree
+          rm -rf .git
+          tar -czf /tmp/clifford-main-7a4007f.tar.gz .
+          sha256sum /tmp/clifford-main-7a4007f.tar.gz > /tmp/clifford-main-7a4007f.tar.gz.sha256
+
+      - name: Upload exact canonical snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: clifford-main-7a4007f
+          path: |
+            /tmp/clifford-main-7a4007f.tar.gz
+            /tmp/clifford-main-7a4007f.tar.gz.sha256
+          if-no-files-found: error
+          compression-level: 0
