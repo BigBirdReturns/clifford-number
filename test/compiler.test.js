@@ -67,12 +67,15 @@ const institutionalRoundParticipant = id =>
   electricTwinInstitutionalRound.participants.find(
     part => part.organization_id === id,
   );
-for (const id of ['electric-twin', 'atomico', 'localglobe', 'mercuri']) {
+for (const id of ['electric-twin', 'atomico', 'localglobe', 'mercuri', 'samos']) {
   assert.equal(institutionalRoundParticipant(id).evidence_class, 'primary_public',
-    `${id} must retain company-source institutional evidence`);
+    `${id} must retain first-party institutional evidence`);
 }
-assert.equal(institutionalRoundParticipant('samos').evidence_class, 'reported',
-  'Samos must remain reported institutional evidence');
+assert.deepEqual(
+  institutionalRoundParticipant('samos').receipt_ids,
+  ['alex-cooper-linkedin-electric-twin-funding-2026-02-12'],
+  'Samos must use the first-party founder receipt without creating an actor endpoint',
+);
 assert.deepEqual(
   electricTwinInstitutionalRound.participants
     .filter(part => part.participant_type === 'actor'),
@@ -575,7 +578,7 @@ assert.equal(electricTwinSeed.surface_label, 'Electric Twin $10m seed round name
 assert.equal(electricTwinSeed.hop_eligible, true);
 assert.deepEqual(electricTwinSeed.receipt_ids, [
   'electric-twin-seed-round-announcement-2026-02-11',
-  'tech-eu-electric-twin-seed-round-2026-02-12'
+  'alex-cooper-linkedin-electric-twin-funding-2026-02-12'
 ]);
 assert.ok(!electricTwinSeed.receipt_ids.includes('master-doc-v3'),
   'the funding surface must no longer rest on the master-summary receipt');
@@ -598,35 +601,49 @@ const electricTwinSeedOrgs = electricTwinSeed.participants
 assert.deepEqual(electricTwinSeedOrgs, ['electric-twin']);
 const seedParticipant = id => electricTwinSeed.participants.find(part =>
   part.actor_id === id || part.organization_id === id);
-for (const id of ['electric-twin', 'marc-andreessen']) {
-  assert.equal(seedParticipant(id).evidence_class, 'primary_public', `${id} must retain company-source evidence`);
+for (const id of ['electric-twin', 'marc-andreessen', 'cal-henderson', 'eric-salama', 'tom-shinner', 'louis-mosley']) {
+  assert.equal(seedParticipant(id).evidence_class, 'primary_public', `${id} must retain first-party evidence`);
 }
 for (const id of ['cal-henderson', 'eric-salama', 'tom-shinner', 'louis-mosley']) {
-  assert.equal(seedParticipant(id).evidence_class, 'reported', `${id} must remain reported`);
+  assert.deepEqual(
+    seedParticipant(id).receipt_ids,
+    ['alex-cooper-linkedin-electric-twin-funding-2026-02-12'],
+    `${id} must use the first-party founder receipt`,
+  );
 }
 
 const electricTwinAnnouncementReceipt = receipt('electric-twin-seed-round-announcement-2026-02-11');
-const techEuFundingReceipt = receipt('tech-eu-electric-twin-seed-round-2026-02-12');
+const alexCooperFundingReceipt = receipt('alex-cooper-linkedin-electric-twin-funding-2026-02-12');
 assert.equal(electricTwinAnnouncementReceipt.path,
   'receipts/topology/electric-twin-seed-round-announcement-2026-02-11.md');
 assert.equal(electricTwinAnnouncementReceipt.source_published_at, '2026-02-11');
 assert.equal(electricTwinAnnouncementReceipt.event_date, '2026-02-11');
-assert.equal(techEuFundingReceipt.source_published_at, '2026-02-12');
-assert.equal(techEuFundingReceipt.event_date, '2026-02-11',
-  'the reporting date must remain separate from the announcement event date');
+assert.ok(alexCooperFundingReceipt, 'the first-party founder funding receipt must exist');
+assert.equal(alexCooperFundingReceipt.path,
+  'receipts/topology/alex-cooper-linkedin-electric-twin-funding-2026-02-12.md');
+assert.equal(alexCooperFundingReceipt.source_published_at, '2026-02-12');
+assert.equal(alexCooperFundingReceipt.event_date, '2026-02-11',
+  'the source date must remain separate from the announcement event date');
+assert.equal(
+  alexCooperFundingReceipt.archive.ref,
+  'sha256:19d476ed9874693e3e8573d6fe5f5809920c7914b0024c14fc7e54c827ff2eab',
+);
+assert.equal(receipt('tech-eu-electric-twin-seed-round-2026-02-12'), undefined,
+  'the superseded Tech.eu receipt must remain retired');
 
 const andreessenSalama = hop.edges.find(edge =>
   [edge.actor_a, edge.actor_b].sort().join('|') === 'eric-salama|marc-andreessen');
-assert.ok(andreessenSalama, 'the reported angels must share the bounded announced round');
+assert.ok(andreessenSalama, 'the first-party named angels must share the bounded announced round');
 const electricTwinFundingBasis = andreessenSalama.surfaces.find(basis =>
   basis.surface_id === 'electric-twin-seed-round-2026-02-11');
 assert.ok(electricTwinFundingBasis);
-assert.equal(electricTwinFundingBasis.evidence_class, 'reported');
+assert.equal(electricTwinFundingBasis.evidence_class, 'primary_public');
+assert.equal(andreessenSalama.evidence_weight, 1.25);
 assert.equal(electricTwinFundingBasis.valid_from, '2026-02-11');
 assert.equal(electricTwinFundingBasis.valid_until, '2026-02-11');
 assert.deepEqual(electricTwinFundingBasis.receipt_ids, [
   'electric-twin-seed-round-announcement-2026-02-11',
-  'tech-eu-electric-twin-seed-round-2026-02-12'
+  'alex-cooper-linkedin-electric-twin-funding-2026-02-12'
 ]);
 assert.equal(shortestPath(topology, 'marc-andreessen', 'eric-salama', { asOf: '2026-02-10' }).number, null,
   'the funding announcement must not backdate investor adjacency');
