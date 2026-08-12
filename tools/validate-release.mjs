@@ -508,6 +508,139 @@ assert(electricTwinFounderFundingReceipt?.archive?.ref
 assert(!receiptById.has('tech-eu-electric-twin-seed-round-2026-02-12'),
   'superseded Tech.eu funding receipt remains canonical');
 
+// Centre for Human Progress is admitted as one complete, exact-date formal
+// officer surface. The separate Electric Twin science-adviser chronology remains
+// single-actor and cannot inherit Ben Warner or any validation-study participant.
+const centreFormationSurface = surfaceById.get(
+  'centre-human-progress-director-appointments-2025-08-05',
+);
+const centreActorIds = [
+  'ben-warner',
+  'dennis-snower',
+  'michael-muthukrishna',
+  'sonja-vogt',
+  'stephanie-salgado-muthukrishna',
+];
+assert(centreFormationSurface,
+  'Centre for Human Progress same-day director surface is missing');
+assert(centreFormationSurface?.hop_eligible === true,
+  'Centre for Human Progress director surface must remain hop eligible');
+assert(centreFormationSurface?.evidence_class === 'official',
+  'Centre for Human Progress director surface must remain official');
+assert(centreFormationSurface?.time_start === '2025-08-05'
+  && centreFormationSurface?.time_end === '2025-08-05',
+  'Centre for Human Progress director surface must remain one day');
+assert(sameIdSet(centreFormationSurface?.receipt_ids,
+  ['companies-house-centre-human-progress-directors-16630851']),
+  'Centre for Human Progress director receipt is stale');
+const centreParts = sourcePartsBySurface.get(
+  'centre-human-progress-director-appointments-2025-08-05',
+) ?? [];
+assert(JSON.stringify(centreParts.filter(part => part.participant_type === 'actor')
+  .map(part => part.actor_id).sort()) === JSON.stringify(centreActorIds),
+  'Centre for Human Progress must preserve the complete five-person official roster');
+assert(JSON.stringify(centreParts.filter(part => part.participant_type === 'organization')
+  .map(part => part.organization_id)) === JSON.stringify(['centre-for-human-progress']),
+  'Centre for Human Progress surface must preserve its exact company context');
+assert(hopGraph.edges.flatMap(edge => edge.surfaces)
+  .filter(basis => basis.surface_id === centreFormationSurface?.surface_id).length === 10,
+  'five Centre directors must compile exactly ten formal officer bases');
+const centreBenMichaelEdge = hopGraph.edges.find(edge =>
+  [edge.actor_a, edge.actor_b].sort().join('|') === 'ben-warner|michael-muthukrishna');
+const centreBenMichaelBasis = centreBenMichaelEdge?.surfaces.find(
+  basis => basis.surface_id === centreFormationSurface?.surface_id,
+);
+assert(centreBenMichaelBasis?.evidence_class === 'official',
+  'Ben Warner/Michael Muthukrishna Centre basis must remain official');
+assert(centreBenMichaelBasis?.valid_from === '2025-08-05'
+  && centreBenMichaelBasis?.valid_until === '2025-08-05',
+  'Ben Warner/Michael Muthukrishna Centre basis must remain exact-date bounded');
+for (const actorId of centreActorIds) {
+  assert(hasSurface(actorId, centreFormationSurface?.surface_id),
+    `${actorId} is missing the formal Centre officer surface`);
+}
+for (const actorId of ['dennis-snower', 'sonja-vogt', 'stephanie-salgado-muthukrishna']) {
+  assert(JSON.stringify(actorScore.get(actorId)?.surfaces) === JSON.stringify([
+    centreFormationSurface?.surface_id,
+  ]), `${actorId} must not inherit an Electric Twin or validation surface`);
+}
+
+const adviserSurface = surfaceById.get(
+  'electric-twin-muthukrishna-science-adviser-observations-2024-2026',
+);
+assert(adviserSurface, 'Michael Muthukrishna adviser chronology is missing');
+assert(adviserSurface?.hop_eligible === false,
+  'Michael Muthukrishna adviser chronology must remain non-hop');
+assert(adviserSurface?.hop_refusal_reason === 'single_actor_advisory_context_only',
+  'Michael Muthukrishna adviser chronology must expose the single-actor refusal');
+assert(adviserSurface?.time_start === '2024-11-03'
+  && adviserSurface?.time_end === '2026-08-12',
+  'Michael Muthukrishna adviser chronology must preserve first and last observations');
+const adviserParts = sourcePartsBySurface.get(adviserSurface?.surface_id) ?? [];
+assert(JSON.stringify(adviserParts.filter(part => part.participant_type === 'actor')
+  .map(part => part.actor_id)) === JSON.stringify(['michael-muthukrishna']),
+  'adviser-role observations must not manufacture a second actor');
+assert(JSON.stringify(adviserParts.filter(part => part.participant_type === 'organization')
+  .map(part => part.organization_id)) === JSON.stringify(['electric-twin']),
+  'adviser-role observations must preserve Electric Twin as company context');
+assert(!adviserParts.some(part => part.actor_id === 'ben-warner'),
+  'Centre co-directorship must not leak Ben Warner onto the adviser chronology');
+assert((hopGraph.rejected_hop_surfaces ?? []).some(row =>
+  row.surface_id === adviserSurface?.surface_id
+    && row.reason === 'single_actor_advisory_context_only'),
+  'Michael Muthukrishna adviser refusal must remain publicly visible');
+assert(!hopGraph.edges.some(edge => edge.surfaces.some(
+  basis => basis.surface_id === adviserSurface?.surface_id,
+)), 'Michael Muthukrishna adviser chronology must never create actor adjacency');
+
+const centreOfficerReceipt = receiptById.get(
+  'companies-house-centre-human-progress-directors-16630851',
+);
+assert(centreOfficerReceipt?.company_number === '16630851',
+  'Centre officer receipt must preserve the company number');
+assert(centreOfficerReceipt?.event_date === '2025-08-05',
+  'Centre officer receipt must preserve the appointment date');
+assert(centreOfficerReceipt?.active_officers_at_retrieval === 5
+  && centreOfficerReceipt?.resigned_officers_at_retrieval === 0,
+  'Centre officer receipt must preserve the complete official denominator');
+assert(sameIdSet(centreOfficerReceipt?.director_actor_ids, centreActorIds),
+  'Centre officer receipt actor denominator is stale');
+assert(centreOfficerReceipt?.archive?.ref
+  === 'sha256:ca9783a742f55e58492546ca0d02be4bc8e9ac2a1fbb479d98cbf719688751f8',
+  'Centre officer receipt digest is stale');
+const adviserReceipt = receiptById.get(
+  'electric-twin-lse-muthukrishna-adviser-observations-2024-2026',
+);
+assert(adviserReceipt?.first_observed_at === '2024-11-03'
+  && adviserReceipt?.last_retrieved_at === '2026-08-12',
+  'adviser receipt observation bounds are stale');
+assert(adviserReceipt?.continuous_tenure_asserted === false,
+  'adviser receipt must refuse continuous-tenure inference');
+assert(adviserReceipt?.validation_protocol_recovered === false,
+  'adviser receipt must preserve the unrecovered validation protocol');
+assert(adviserReceipt?.archive?.ref
+  === 'sha256:26c4cde9ad87ea498b49068605bb63a6878b827c1a8c386bf7185c9950bf32b4',
+  'adviser receipt digest is stale');
+
+const centreOfficerClaim = claimById.get(
+  'centre-human-progress-five-director-appointments-2025-08-05',
+);
+assert(centreOfficerClaim, 'Centre five-director official claim must remain canonical');
+assert(sameIdSet(centreOfficerClaim?.actor_ids, centreActorIds),
+  'Centre five-director claim actor denominator is stale');
+assert(JSON.stringify(centreOfficerClaim?.surface_ids) === JSON.stringify([
+  centreFormationSurface?.surface_id,
+]), 'Centre five-director claim surface binding is stale');
+const adviserClaim = claimById.get(
+  'electric-twin-muthukrishna-adviser-role-observations-2024-2026',
+);
+assert(adviserClaim, 'Michael Muthukrishna adviser claim must remain canonical');
+assert(JSON.stringify(adviserClaim?.actor_ids) === JSON.stringify(['michael-muthukrishna']),
+  'Michael Muthukrishna adviser claim must contain one actor');
+assert(JSON.stringify(adviserClaim?.surface_ids) === JSON.stringify([
+  adviserSurface?.surface_id,
+]), 'Michael Muthukrishna adviser claim surface binding is stale');
+
 const electricTwinSeedEdges = hopGraph.edges
   .filter(edge => edge.surfaces.some(
     basis => basis.surface_id === 'electric-twin-seed-round-2026-02-11'
