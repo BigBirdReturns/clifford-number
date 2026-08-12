@@ -1,6 +1,6 @@
 # Migration Review
 
-Generated: 2026-08-12T06:58:18.293Z
+Generated: 2026-08-12T15:31:01.279Z
 
 This file is generated from `docs/clifford-number-master.md`. It is not graph data. It is the review queue for moving existing claims into the surface-hop ledgers.
 

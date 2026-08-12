@@ -140,6 +140,7 @@ assert.equal(faculty2018.time_end, '2018-01-24');
 assert.equal(faculty2018.evidence_class, 'primary_public');
 assert.deepEqual(faculty2018.receipt_ids, [
   'zebra-ben-warner-asi-commercial-principal-2018-01-24',
+  'faculty-asi-data-science-legal-identity-08873131',
   'companies-house-faculty-science-officers-08873131',
 ]);
 assert.deepEqual(
@@ -147,6 +148,11 @@ assert.deepEqual(
     .map(part => part.actor_id).sort(),
   ['ben-warner', 'marc-warner', 'saul-klein'],
 );
+const benFacultyParticipation = faculty2018.participants.find(part => part.actor_id === 'ben-warner');
+assert.deepEqual(benFacultyParticipation?.receipt_ids, [
+  'zebra-ben-warner-asi-commercial-principal-2018-01-24',
+  'faculty-asi-data-science-legal-identity-08873131',
+], 'Ben Warner participation must carry both the dated role observation and the explicit brand-to-company join');
 assert.ok(!faculty2018.receipt_ids.includes('warner-surface-audit-2026-06-29'),
   'the repaired Faculty surface must carry no lost scratch receipt');
 assert.ok(!faculty2018.participants.some(part => part.actor_id === 'matt-clifford'),
@@ -211,6 +217,13 @@ assert.equal(facultyOfficerReceipt.saul_klein_resigned_at, '2026-03-12');
 const benFacultyReceipt = receipt('zebra-ben-warner-asi-commercial-principal-2018-01-24');
 assert.equal(benFacultyReceipt.event_date, '2018-01-24');
 assert.match(benFacultyReceipt.notes, /one-day role observation/i);
+const facultyIdentityReceipt = receipt('faculty-asi-data-science-legal-identity-08873131');
+assert.equal(facultyIdentityReceipt.brand_name, 'ASI Data Science');
+assert.equal(facultyIdentityReceipt.successor_brand, 'Faculty');
+assert.equal(facultyIdentityReceipt.legal_entity, 'Faculty Science Limited');
+assert.equal(facultyIdentityReceipt.company_number, '08873131');
+assert.equal(facultyIdentityReceipt.previous_legal_name, 'Advanced Skills Initiative Limited');
+assert.match(facultyIdentityReceipt.notes, /without relying on a canonical alias/i);
 const cliffordFacultyReceipt = receipt('gov-dsit-matt-clifford-faculty-shareholding-2024-10-10');
 assert.equal(cliffordFacultyReceipt.event_date, '2024-10-10');
 assert.equal(cliffordFacultyReceipt.divestment_confirmed_at, '2025-02-24');

@@ -9,7 +9,7 @@ Retrieved: 2026-08-11
 
 The contemporaneous speaker profile is headed “Dr Ben Warner, Commercial Principal, ASI Data Science.” Its biography states that Ben Warner was a commercial principal at ASI Data Science and describes his work leading data-science projects and designing AI roadmaps.
 
-This extract preserves one dated public observation of Warner's ASI Data Science role on 24 January 2018. Companies House records that the legal entity now named Faculty Science Limited was then registered as Advanced Skills Initiative Limited.
+This extract preserves one dated public observation of Warner's ASI Data Science role on 24 January 2018. The profile itself does not identify a registered company number or legal entity. The separate receipt `faculty-asi-data-science-legal-identity-08873131` resolves the ASI Data Science brand label to Faculty Science Limited, company 08873131, through first-party Faculty records and the official Companies House register.
 
 ## Limits
 

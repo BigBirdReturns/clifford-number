@@ -5,6 +5,7 @@ export function loadCliffordThielTrumpWrapUp() {
     wrap: readJson('data/research/clifford-thiel-trump-wrap-up.json'),
     surfaces: readJsonl('data/ledger/surfaces.jsonl'),
     participation: readJsonl('data/ledger/participation.jsonl'),
+    receipts: readJsonl('data/ledger/receipts.jsonl'),
     hopGraph: readJson('build/hop-graph.json'),
     scores: readJson('build/scores.json'),
     cohort: readJson('data/canonical/us-presidential-officeholder-cohort.json'),
@@ -17,7 +18,7 @@ export function loadCliffordThielTrumpWrapUp() {
 
 export function validateCliffordThielTrumpWrapUp(bundle) {
   const errors = [];
-  const { wrap, surfaces, participation, hopGraph, scores, cohort, coverage, dispositionMatrix, predicateRegistry, candidates } = bundle;
+  const { wrap, surfaces, participation, receipts, hopGraph, scores, cohort, coverage, dispositionMatrix, predicateRegistry, candidates } = bundle;
   if (wrap.schema_version !== 'clifford-thiel-trump-wrap-up@1') errors.push('wrap-up schema mismatch');
   if (wrap.scope !== 'Repository evidence only; no new external acquisition.') errors.push('wrap-up must remain repository-only');
   if (wrap.discovery_contract?.mode !== 'discovery_not_adjudication' || wrap.discovery_contract?.conclusion_generated !== false) {
@@ -62,6 +63,40 @@ export function validateCliffordThielTrumpWrapUp(bundle) {
   }
   if (participation.some(row => row.surface_id === 'faculty-science-officer-employee-overlap-2018-01-24' && row.actor_id === 'matt-clifford')) {
     errors.push('Matt Clifford Faculty participation cannot be backdated onto the 2018 role surface');
+  }
+  const facultyIdentityReceiptId = 'faculty-asi-data-science-legal-identity-08873131';
+  const faculty2018 = surfaces.find(row => row.surface_id === 'faculty-science-officer-employee-overlap-2018-01-24');
+  if (!faculty2018?.receipt_ids?.includes(facultyIdentityReceiptId)) {
+    errors.push('2018 Faculty surface must carry the explicit ASI Data Science brand-to-company identity receipt');
+  }
+  const benFaculty2018 = participation.find(row =>
+    row.surface_id === 'faculty-science-officer-employee-overlap-2018-01-24'
+    && row.actor_id === 'ben-warner');
+  if (!benFaculty2018?.receipt_ids?.includes(facultyIdentityReceiptId)) {
+    errors.push('Ben Warner 2018 Faculty participation must carry the explicit brand-to-company identity receipt');
+  }
+  const facultyCompany2018 = participation.find(row =>
+    row.surface_id === 'faculty-science-officer-employee-overlap-2018-01-24'
+    && row.organization_id === 'faculty');
+  if (!facultyCompany2018?.receipt_ids?.includes(facultyIdentityReceiptId)) {
+    errors.push('Faculty 2018 company participation must carry the explicit brand-to-company identity receipt');
+  }
+  const facultyIdentityReceipt = receipts?.find(row => row.receipt_id === facultyIdentityReceiptId);
+  if (facultyIdentityReceipt?.brand_name !== 'ASI Data Science'
+      || facultyIdentityReceipt?.successor_brand !== 'Faculty'
+      || facultyIdentityReceipt?.legal_entity !== 'Faculty Science Limited'
+      || facultyIdentityReceipt?.company_number !== '08873131'
+      || facultyIdentityReceipt?.previous_legal_name !== 'Advanced Skills Initiative Limited') {
+    errors.push('ASI Data Science identity receipt must resolve the former brand to Faculty Science Limited company 08873131');
+  }
+  for (const actorId of ['marc-warner', 'saul-klein']) {
+    const edge = (hopGraph.edges ?? []).find(row =>
+      new Set([row.actor_a, row.actor_b]).has('ben-warner')
+      && new Set([row.actor_a, row.actor_b]).has(actorId));
+    const basis = edge?.surfaces?.find(row => row.surface_id === 'faculty-science-officer-employee-overlap-2018-01-24');
+    if (!basis?.receipt_ids?.includes(facultyIdentityReceiptId)) {
+      errors.push(`compiled Ben Warner-${actorId} Faculty hop must carry the explicit brand-to-company identity receipt`);
+    }
   }
   for (const actorId of ['matt-clifford', 'marc-warner', 'saul-klein']) {
     if (!participation.some(row => row.surface_id === 'faculty-science-director-shareholder-overlap-2024-10-10' && row.actor_id === actorId)) {

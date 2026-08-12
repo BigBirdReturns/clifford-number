@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-12T06:58:18.349Z",
+  "generated": "2026-08-12T15:31:01.322Z",
   "surfaces": [
     {
       "surface_id": "ben-warner-no10-digital-data-role-observation-2020-2021",
@@ -65,10 +65,12 @@
       ],
       "hop_eligible": true,
       "scorable": true,
-      "status": "source_native_repair",
+      "status": "source_resolved_brand_legal_identity_join",
       "bounded_by": [
         "dated Ben Warner speaker profile",
-        "Companies House officer appointments",
+        "first-party Faculty / ASI Data Science rebrand identity",
+        "Faculty Science Limited legal-controller statement",
+        "Companies House company identity and officer appointments",
         "exact one-day overlap"
       ],
       "time_start": "2018-01-24",
@@ -76,9 +78,10 @@
       "evidence_class": "primary_public",
       "receipt_ids": [
         "zebra-ben-warner-asi-commercial-principal-2018-01-24",
+        "faculty-asi-data-science-legal-identity-08873131",
         "companies-house-faculty-science-officers-08873131"
       ],
-      "notes": "Replaces the former 2015-2019 Faculty aggregation that relied on a lost scratch audit and an undated reported-investor row. The exact public observation places Ben Warner at ASI Data Science while Companies House places Marc Warner and Saul Klein as directors of the same legal entity on 24 January 2018. It proves formal same-company co-participation only, not a meeting, transaction, influence, agreement, coordination, motive, wrongdoing, or common purpose.",
+      "notes": "Replaces the former 2015-2019 Faculty aggregation that relied on a lost scratch audit and an undated reported-investor row. The dated profile places Ben Warner at ASI Data Science; a dedicated first-party and official identity receipt resolves that brand label to Faculty Science Limited, company 08873131; and Companies House places Marc Warner and Saul Klein as directors of that same company on 24 January 2018. The surface proves formal same-company co-participation only. It does not prove a meeting, transaction, influence, agreement, coordination, motive, wrongdoing, or common purpose.",
       "participants": [
         {
           "surface_id": "faculty-science-officer-employee-overlap-2018-01-24",
@@ -90,9 +93,10 @@
           "time_end": "2018-01-24",
           "evidence_class": "primary_public",
           "receipt_ids": [
-            "zebra-ben-warner-asi-commercial-principal-2018-01-24"
+            "zebra-ben-warner-asi-commercial-principal-2018-01-24",
+            "faculty-asi-data-science-legal-identity-08873131"
           ],
-          "notes": "One-day public role observation only; no full employment interval is asserted."
+          "notes": "One-day public role observation only; the separate identity receipt resolves the ASI Data Science brand to company 08873131, but no full employment interval is asserted."
         },
         {
           "surface_id": "faculty-science-officer-employee-overlap-2018-01-24",
@@ -132,8 +136,10 @@
           "time_end": "2018-01-24",
           "evidence_class": "official",
           "receipt_ids": [
+            "faculty-asi-data-science-legal-identity-08873131",
             "companies-house-faculty-science-officers-08873131"
-          ]
+          ],
+          "notes": "The source-composed identity receipt binds the ASI Data Science brand to Faculty Science Limited, company 08873131; Companies House supplies the legal-name history."
         }
       ]
     },
@@ -4012,7 +4018,11 @@
       "id": "faculty",
       "label": "Faculty / Faculty Science / ASI Data Science",
       "kind": "company",
-      "surface_factory": true
+      "surface_factory": true,
+      "identity_status": "source_resolved",
+      "receipt_ids": [
+        "faculty-asi-data-science-legal-identity-08873131"
+      ]
     },
     {
       "id": "no-10",
@@ -4733,7 +4743,11 @@
     {
       "alias": "ASI Data Science",
       "canonical_id": "faculty",
-      "kind": "organization"
+      "kind": "organization",
+      "identity_status": "source_resolved",
+      "receipt_ids": [
+        "faculty-asi-data-science-legal-identity-08873131"
+      ]
     },
     {
       "alias": "UK AI Security Institute",
