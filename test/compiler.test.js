@@ -20,6 +20,7 @@ const hop = JSON.parse(fs.readFileSync('build/hop-graph.json', 'utf8'));
 const surface = JSON.parse(fs.readFileSync('build/surface-graph.json', 'utf8'));
 const scores = JSON.parse(fs.readFileSync('build/scores.json', 'utf8'));
 const migration = JSON.parse(fs.readFileSync('build/migration-summary.json', 'utf8'));
+const receiptGraph = JSON.parse(fs.readFileSync('build/receipt-graph.json', 'utf8'));
 const legacyGraph = JSON.parse(fs.readFileSync('graph.json', 'utf8'));
 const ledgerReceipts = fs.readFileSync('data/ledger/receipts.jsonl', 'utf8').split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
 assert.equal(legacyGraph.subtitle, 'Seven degrees of UK AI policy topology, with receipts.');
@@ -28,6 +29,7 @@ const actor = id => scores.actors.find(a => a.actor_id === id);
 const org = id => scores.organizations.find(o => o.organization_id === id);
 const surf = id => surface.surfaces.find(s => s.surface_id === id);
 const receipt = id => ledgerReceipts.find(row => row.receipt_id === id);
+const claim = id => receiptGraph.claims.find(row => row.claim_id === id);
 
 assert.ok(actor('ben-warner').surfaces.includes('electric-twin-newsuk-synthetic-audience'));
 assert.ok(actor('ben-warner').secondary_surface_types.includes('democratic_input_replacement'));
@@ -271,6 +273,70 @@ assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id =
 const benBlumeReceipt = receipt('companies-house-electric-twin-ben-blume-director-2025-09-12');
 assert.equal(benBlumeReceipt.event_date, '2025-09-12');
 assert.equal(benBlumeReceipt.evidence_class, 'official');
+
+// September 2025 corporate filings preserve governance rights and capital mechanics without inventing allottees.
+const electricTwinGovernance = surf('electric-twin-seed2-governance-instrument-2025-09-12');
+assert.ok(electricTwinGovernance, 'the September governance instrument must compile');
+assert.equal(electricTwinGovernance.hop_eligible, false);
+assert.equal(electricTwinGovernance.time_start, '2025-09-12');
+assert.equal(electricTwinGovernance.time_end, '2025-09-12');
+assert.deepEqual(
+  electricTwinGovernance.participants.filter(part => part.participant_type === 'actor').map(part => part.actor_id).sort(),
+  ['alex-cooper', 'ben-warner']
+);
+assert.deepEqual(
+  electricTwinGovernance.participants.filter(part => part.participant_type === 'organization').map(part => part.organization_id).sort(),
+  ['atomico', 'electric-twin', 'localglobe']
+);
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === electricTwinGovernance.surface_id)),
+  'the governance instrument must never create actor adjacency');
+
+const electricTwinCapitalActions = surf('electric-twin-seed2-capital-actions-2025-09-16-2025-09-26');
+assert.ok(electricTwinCapitalActions, 'the September capital-action sequence must compile');
+assert.equal(electricTwinCapitalActions.hop_eligible, false);
+assert.deepEqual(
+  electricTwinCapitalActions.participants.map(part => part.organization_id ?? part.actor_id),
+  ['electric-twin'],
+  'unidentified allottees must not be manufactured as participants'
+);
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === electricTwinCapitalActions.surface_id)),
+  'issuer-only capital actions must never create actor adjacency');
+
+const articlesReceipt = receipt('companies-house-electric-twin-articles-2025-09-12');
+const resolutionsReceipt = receipt('companies-house-electric-twin-written-resolutions-2025-09-12');
+const sh01Seed2Sixteen = receipt('companies-house-electric-twin-sh01-seed2-2025-09-16');
+const sh01Seed2Seventeen = receipt('companies-house-electric-twin-sh01-seed2-2025-09-17');
+const sh01Seed2TwentySix = receipt('companies-house-electric-twin-sh01-seed2-2025-09-26');
+const sh08Seed1 = receipt('companies-house-electric-twin-sh08-seed1-2025-09-16');
+const sh10Rights = receipt('companies-house-electric-twin-sh10-rights-2025-09-12');
+for (const row of [articlesReceipt, resolutionsReceipt, sh01Seed2Sixteen, sh01Seed2Seventeen, sh01Seed2TwentySix, sh08Seed1, sh10Rights]) {
+  assert.ok(row, 'every September filing must have a canonical receipt');
+  assert.equal(row.evidence_class, 'official');
+  assert.match(row.source_pdf_sha256, /^[0-9a-f]{64}$/);
+  assert.equal(row.publisher, 'Companies House');
+}
+assert.equal(articlesReceipt.event_date, '2025-09-12');
+assert.equal(articlesReceipt.source_published_at, '2025-09-23');
+assert.equal(resolutionsReceipt.event_date, '2025-09-12');
+assert.equal(sh01Seed2Sixteen.source_filing_code, 'XEBSKAZE');
+assert.equal(sh01Seed2Seventeen.source_filing_code, 'XEBVCAMW');
+assert.equal(sh01Seed2TwentySix.source_filing_code, 'XEC3EZXL');
+assert.equal(sh08Seed1.event_date, '2025-09-16');
+assert.equal(sh10Rights.event_date, '2025-09-12');
+
+assert.ok(claim('electric-twin-seed2-board-rights-2025-09-12'));
+assert.ok(claim('electric-twin-seed2-investor-rights-2025-09-12'));
+assert.ok(claim('electric-twin-seed2-allotment-sequence-2025-09'));
+const unidentifiedAllottees = claim('electric-twin-seed2-allottees-unidentified-2025-09');
+assert.ok(unidentifiedAllottees);
+assert.deepEqual(unidentifiedAllottees.actor_ids, []);
+assert.deepEqual(unidentifiedAllottees.organization_ids, ['electric-twin']);
+assert.ok(!unidentifiedAllottees.text.match(/Atomico|LocalGlobe|Mercuri|Samos|Andreessen|Henderson|Salama|Shinner|Mosley/),
+  'the SH01 non-identification claim must not smuggle the announced roster into the filed allotments');
+
+const benBlumeGovernanceParticipant = electricTwinGovernance.participants.find(part => part.actor_id === 'ben-blume');
+assert.equal(benBlumeGovernanceParticipant, undefined,
+  'the articles do not identify Ben Blume as an Atomico or LocalGlobe appointee');
 
 // The previously undisclosed $4m pre-seed remains undated and has no promoted participant surface.
 assert.ok(!surface.surfaces.some(row => /pre.?seed/i.test(row.surface_id)),

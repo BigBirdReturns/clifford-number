@@ -235,7 +235,7 @@ assert(actorScore.get('ben-warner')?.governance_replacement_score > 0, 'Ben Warn
 // Regression fixture 2: Electric Twin surface factory.
 const et = orgScore.get('electric-twin');
 assert(et?.surface_factory === true, 'Electric Twin must be a surface factory');
-for (const sid of ['electric-twin-incorporation-2023-09-28', 'electric-twin-ben-warner-director-tenure-2023-09-28', 'electric-twin-alex-cooper-director-tenure-2023-09-28', 'electric-twin-ethics-board-2026', 'electric-twin-seed-round-2026-02-11', 'electric-twin-ben-blume-director-appointment-2025-09-12', 'electric-twin-newsuk-synthetic-audience', 'gartner-synthetic-population-category-2026']) {
+for (const sid of ['electric-twin-incorporation-2023-09-28', 'electric-twin-ben-warner-director-tenure-2023-09-28', 'electric-twin-alex-cooper-director-tenure-2023-09-28', 'electric-twin-ethics-board-2026', 'electric-twin-seed-round-2026-02-11', 'electric-twin-ben-blume-director-appointment-2025-09-12', 'electric-twin-seed2-governance-instrument-2025-09-12', 'electric-twin-seed2-capital-actions-2025-09-16-2025-09-26', 'electric-twin-newsuk-synthetic-audience', 'gartner-synthetic-population-category-2026']) {
   assert(et?.surfaces.includes(sid), `Electric Twin missing factory surface ${sid}`);
 }
 
@@ -278,6 +278,18 @@ assert(incorporationReceipt?.event_date === '2023-09-28', 'incorporation receipt
 assert(incorporationReceipt?.retrieved_at === '2026-08-11', 'incorporation receipt must preserve the retrieval boundary');
 assert(incorporationReceipt?.path === 'receipts/topology/companies-house-electric-twin-incorporation-2023-09-28.md',
   'incorporation receipt must resolve to the in-repo extract');
+
+assert(surfaceById.get('electric-twin-seed2-governance-instrument-2025-09-12')?.hop_eligible === false,
+  'Electric Twin September governance instrument must remain non-hop');
+assert(surfaceById.get('electric-twin-seed2-capital-actions-2025-09-16-2025-09-26')?.hop_eligible === false,
+  'Electric Twin September capital actions must remain non-hop');
+for (const sid of ['electric-twin-seed2-governance-instrument-2025-09-12', 'electric-twin-seed2-capital-actions-2025-09-16-2025-09-26']) {
+  assert(!hopGraph.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === sid)),
+    `Electric Twin filing surface ${sid} must never create a hop`);
+}
+const septemberCapitalParts = sourcePartsBySurface.get('electric-twin-seed2-capital-actions-2025-09-16-2025-09-26') ?? [];
+assert(septemberCapitalParts.length === 1 && septemberCapitalParts[0].organization_id === 'electric-twin',
+  'unidentified September allottees must not become canonical participants');
 
 // Regression fixture 3: Simon Case governance continuity.
 assert(hasSurface('simon-case', 'simon-case-cabinet-secretary-2020-2024'), 'Simon Case missing Cabinet Secretary surface');
