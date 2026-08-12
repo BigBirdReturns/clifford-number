@@ -231,18 +231,33 @@ for (const pair of hopGraph.rejected_hop_pairs ?? []) {
 const warnerSurfaces = [
   'ben-warner-no10-digital-data-role-observation-2020-2021',
   'faculty-science-officer-employee-overlap-2018-01-24',
-  'vote-leave-data-science-2016',
   'electric-twin-incorporation-2023-09-28',
   'electric-twin-ben-warner-director-tenure-2023-09-28',
   'electric-twin-newsuk-synthetic-audience',
   'gartner-synthetic-population-category-2026',
 ];
 for (const sid of warnerSurfaces) assert(hasSurface('ben-warner', sid), `Ben Warner missing surface ${sid}`);
-for (const type of ['government_advisory_surface', 'employment_investment_surface', 'campaign_surface', 'founder_officer_surface', 'customer_vendor_surface', 'category_formation_surface']) {
+for (const type of ['government_advisory_surface', 'employment_investment_surface', 'founder_officer_surface', 'customer_vendor_surface', 'category_formation_surface']) {
   assert(hasType('ben-warner', type), `Ben Warner missing surface type ${type}`);
 }
 assert(hasSecondary('ben-warner', 'democratic_input_replacement'), 'Ben Warner missing democratic_input_replacement recurrence');
 assert(actorScore.get('ben-warner')?.governance_replacement_score > 0, 'Ben Warner governance replacement score must be > 0');
+
+const voteLeaveSurface = surfaceById.get('vote-leave-data-science-2016');
+assert(voteLeaveSurface, 'Vote Leave / ASI organization-only surface must compile');
+assert(voteLeaveSurface?.hop_eligible === false,
+  'Vote Leave / ASI organization-only surface must remain non-hop');
+assert(voteLeaveSurface?.hop_refusal_reason === 'organization_only_evidence',
+  'Vote Leave / ASI surface must expose the organization-only refusal');
+const voteLeaveActorIds = (voteLeaveSurface?.participants ?? [])
+  .filter(part => part.participant_type === 'actor')
+  .map(part => part.actor_id).sort();
+assert(JSON.stringify(voteLeaveActorIds) === JSON.stringify(['dominic-cummings']),
+  'Vote Leave / ASI source may retain Dominic Cummings campaign context but must not infer Warner participation');
+assert(!hasSurface('ben-warner', 'vote-leave-data-science-2016'),
+  'Ben Warner must not inherit the organization-only Vote Leave source');
+assert(!hasSurface('marc-warner', 'vote-leave-data-science-2016'),
+  'Marc Warner must not inherit the organization-only Vote Leave source');
 
 // Regression fixture 2: Electric Twin surface factory.
 const et = orgScore.get('electric-twin');

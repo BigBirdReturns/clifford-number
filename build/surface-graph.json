@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-12T15:31:01.322Z",
+  "generated": "2026-08-12T17:33:25.555Z",
   "surfaces": [
     {
       "surface_id": "ben-warner-no10-digital-data-role-observation-2020-2021",
@@ -226,77 +226,55 @@
     },
     {
       "surface_id": "vote-leave-data-science-2016",
-      "surface_label": "Vote Leave data science surface, 2016",
+      "surface_label": "Vote Leave / ASI Data Science service relationship, 2016",
       "surface_type": "campaign_surface",
       "secondary_surface_types": [
         "model_governance_surface"
       ],
-      "hop_eligible": true,
+      "hop_eligible": false,
+      "hop_refusal_reason": "organization_only_evidence",
       "scorable": true,
-      "status": "seeded_from_master",
+      "status": "rebounded_to_official_organization_only_testimony",
       "bounded_by": [
-        "campaign role reporting",
-        "Faculty / ASI data science service history"
+        "27 March 2018 UK Parliament oral evidence",
+        "Christopher Wylie statement that ASI Data Science worked for Vote Leave",
+        "source names the organizations but does not identify Ben Warner or Marc Warner as campaign participants"
       ],
       "time_start": "2016",
       "time_end": "2016",
+      "evidence_class": "official",
       "receipt_ids": [
-        "warner-surface-audit-2026-06-29",
-        "master-doc-v3"
+        "uk-parliament-wylie-vote-leave-asi-2018-03-27"
       ],
-      "notes": "Campaign data operation surface linking Warner, Faculty/ASI, Marc Warner, and Dominic Cummings.",
+      "notes": "Official parliamentary testimony supports an organization-level service relationship between ASI Data Science and Vote Leave. It does not identify Ben Warner or Marc Warner as campaign participants or establish a bounded period of personal co-participation with Dominic Cummings. The surface retains campaign context but creates no actor adjacency.",
       "participants": [
         {
           "surface_id": "vote-leave-data-science-2016",
           "participant_type": "actor",
-          "actor_id": "ben-warner",
-          "role": "Data scientist",
-          "participation_type": "data_science_operator",
-          "time_start": "2016",
-          "time_end": "2016",
-          "evidence_class": "reported",
-          "receipt_ids": [
-            "warner-surface-audit-2026-06-29"
-          ]
-        },
-        {
-          "surface_id": "vote-leave-data-science-2016",
-          "participant_type": "actor",
-          "actor_id": "marc-warner",
-          "role": "Faculty CEO / campaign vendor leader",
-          "participation_type": "vendor_officer",
-          "time_start": "2016",
-          "time_end": "2016",
-          "evidence_class": "reported",
-          "receipt_ids": [
-            "warner-surface-audit-2026-06-29"
-          ]
-        },
-        {
-          "surface_id": "vote-leave-data-science-2016",
-          "participant_type": "actor",
           "actor_id": "dominic-cummings",
-          "role": "Vote Leave director",
-          "participation_type": "campaign_director",
+          "role": "Vote Leave campaign leadership context named in the parliamentary testimony",
+          "participation_type": "campaign_leadership_context",
           "time_start": "2016",
           "time_end": "2016",
           "evidence_class": "official",
           "receipt_ids": [
-            "warner-surface-audit-2026-06-29"
-          ]
+            "uk-parliament-wylie-vote-leave-asi-2018-03-27"
+          ],
+          "notes": "The testimony names Dominic Cummings in Vote Leave context, but does not pair him with Ben Warner or Marc Warner as personal co-participants."
         },
         {
           "surface_id": "vote-leave-data-science-2016",
           "participant_type": "organization",
           "organization_id": "vote-leave",
-          "role": "campaign",
+          "role": "Campaign organization described as using ASI Data Science",
           "participation_type": "campaign_entity",
           "time_start": "2016",
           "time_end": "2016",
           "evidence_class": "official",
           "receipt_ids": [
-            "warner-surface-audit-2026-06-29"
-          ]
+            "uk-parliament-wylie-vote-leave-asi-2018-03-27"
+          ],
+          "notes": "Organization-level campaign context only; no named Warner actor participation is inferred."
         }
       ]
     },
