@@ -1,0 +1,201 @@
+name: topology-frontier-audit
+
+on:
+  push:
+    branches:
+      - agent/topology-frontier-audit-v1
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          show-progress: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Reverse-reference current topology receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from __future__ import annotations
+
+          import collections
+          import json
+          import pathlib
+          import subprocess
+
+          ROOT = pathlib.Path('.')
+
+          def jsonl(path: str):
+              return [
+                  json.loads(line)
+                  for line in pathlib.Path(path).read_text(encoding='utf-8').splitlines()
+                  if line.strip()
+              ]
+
+          receipts = jsonl('data/ledger/receipts.jsonl')
+          surfaces = jsonl('data/ledger/surfaces.jsonl')
+          participation = jsonl('data/ledger/participation.jsonl')
+          claims = jsonl('data/ledger/claims.jsonl')
+          hop = json.loads(pathlib.Path('build/hop-graph.json').read_text(encoding='utf-8'))
+          scout = json.loads(pathlib.Path('build/scout-report.json').read_text(encoding='utf-8'))
+
+          canonical_files = [
+              pathlib.Path('data/ledger/surfaces.jsonl'),
+              pathlib.Path('data/ledger/participation.jsonl'),
+              pathlib.Path('data/ledger/claims.jsonl'),
+          ]
+
+          tracked_raw = subprocess.check_output(['git', 'ls-files', '-z'])
+          tracked = [pathlib.Path(item.decode()) for item in tracked_raw.split(b'\0') if item]
+
+          def readable(path: pathlib.Path) -> str | None:
+              try:
+                  return path.read_text(encoding='utf-8')
+              except (UnicodeDecodeError, OSError):
+                  return None
+
+          searchable = {}
+          for path in tracked:
+              if path == pathlib.Path('data/ledger/receipts.jsonl'):
+                  continue
+              text = readable(path)
+              if text is not None:
+                  searchable[path] = text
+
+          canonical_text = {path: path.read_text(encoding='utf-8') for path in canonical_files}
+
+          receipt_rows = {row['receipt_id']: row for row in receipts}
+          canonical_refs = collections.defaultdict(list)
+          enforcement_refs = collections.defaultdict(list)
+          other_refs = collections.defaultdict(list)
+
+          for receipt_id in receipt_rows:
+              needle = f'"{receipt_id}"'
+              for path, text in canonical_text.items():
+                  if needle in text:
+                      canonical_refs[receipt_id].append(str(path))
+              for path, text in searchable.items():
+                  if needle not in text or path in canonical_files:
+                      continue
+                  p = str(path)
+                  if p.startswith('test/') or p.startswith('tools/') or p == 'package.json':
+                      enforcement_refs[receipt_id].append(p)
+                  elif p.startswith('build/') or p.startswith('receipts/') or p == 'docs/clifford-number-master.md':
+                      continue
+                  else:
+                      other_refs[receipt_id].append(p)
+
+          legacy_rows = []
+          unconsumed_rows = []
+          for receipt_id, row in receipt_rows.items():
+              legacy = (
+                  row.get('path') == 'docs/clifford-number-master.md'
+                  or row.get('source_type') in {
+                      'master_document',
+                      'journalism_reference_from_master',
+                      'company_registry_reference_from_master',
+                  }
+              )
+              refs = sorted(set(canonical_refs[receipt_id]))
+              other = sorted(set(other_refs[receipt_id]))
+              enforcement = sorted(set(enforcement_refs[receipt_id]))
+              record = {
+                  'receipt_id': receipt_id,
+                  'evidence_class': row.get('evidence_class'),
+                  'source_type': row.get('source_type'),
+                  'path': row.get('path'),
+                  'canonical_refs': refs,
+                  'other_refs': other,
+                  'enforcement_refs': enforcement,
+              }
+              if legacy:
+                  legacy_rows.append(record)
+              if not refs and not other:
+                  unconsumed_rows.append(record)
+
+          actor_rows_by_surface = collections.defaultdict(list)
+          org_rows_by_surface = collections.defaultdict(list)
+          for row in participation:
+              if row.get('participant_type') == 'actor':
+                  actor_rows_by_surface[row['surface_id']].append(row)
+              elif row.get('participant_type') == 'organization':
+                  org_rows_by_surface[row['surface_id']].append(row)
+
+          hop_surface_ids = {
+              basis['surface_id']
+              for edge in hop.get('edges', [])
+              for basis in edge.get('surfaces', [])
+          }
+
+          print('CURRENT_COUNTS=' + json.dumps({
+              'actors': len(json.loads(pathlib.Path('data/canonical/actors.json').read_text(encoding='utf-8'))),
+              'organizations': len(json.loads(pathlib.Path('data/canonical/organizations.json').read_text(encoding='utf-8'))),
+              'surfaces': len(surfaces),
+              'participations': len(participation),
+              'receipts': len(receipts),
+              'claims': len(claims),
+              'hop_edges': len(hop.get('edges', [])),
+              'rejected_hop_surfaces': len(hop.get('rejected_hop_surfaces', [])),
+              'rejected_hop_pairs': len(hop.get('rejected_hop_pairs', [])),
+              'scout_findings': len(scout.get('findings', [])),
+          }, sort_keys=True))
+
+          print('LEGACY_MASTER_RECEIPTS=' + json.dumps(legacy_rows, sort_keys=True))
+          print('UNCONSUMED_RECEIPTS=' + json.dumps(unconsumed_rows, sort_keys=True))
+
+          admitted = []
+          for surface in surfaces:
+              if not surface.get('hop_eligible'):
+                  continue
+              sid = surface['surface_id']
+              admitted.append({
+                  'surface_id': sid,
+                  'actor_count': len(actor_rows_by_surface[sid]),
+                  'organization_count': len(org_rows_by_surface[sid]),
+                  'actor_ids': sorted(row['actor_id'] for row in actor_rows_by_surface[sid]),
+                  'receipt_ids': surface.get('receipt_ids', []),
+                  'evidence_classes': sorted({row.get('evidence_class') for row in actor_rows_by_surface[sid]}),
+                  'compiled': sid in hop_surface_ids,
+                  'time_start': surface.get('time_start'),
+                  'time_end': surface.get('time_end'),
+              })
+          print('ADMITTED_SURFACES=' + json.dumps(admitted, sort_keys=True))
+
+          missing_refusal = [
+              surface['surface_id']
+              for surface in surfaces
+              if not surface.get('hop_eligible')
+              and len(actor_rows_by_surface[surface['surface_id']]) >= 2
+              and not surface.get('hop_refusal_reason')
+          ]
+          print('MULTIACTOR_NONHOP_WITHOUT_REFUSAL=' + json.dumps(missing_refusal))
+
+          high_findings = [
+              {
+                  'id': row.get('id'),
+                  'type': row.get('type'),
+                  'title': row.get('title'),
+                  'refs': row.get('refs', []),
+              }
+              for row in scout.get('findings', [])
+              if row.get('priority') == 'high'
+          ]
+          print('HIGH_SCOUT_FINDINGS=' + json.dumps(high_findings, sort_keys=True))
+          PY
+
+      - name: Verify canonical main release gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run release:check
