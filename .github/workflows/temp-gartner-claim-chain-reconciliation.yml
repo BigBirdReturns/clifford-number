@@ -37,9 +37,11 @@ jobs:
           EXPECTED_MAIN="b31614a7e2a10a5e488e273ce39c31271399ae4e"
           BASE_PRODUCT="ff51c00ea9e7d7b37cdd8475c7ee3c6855526f16"
           EXPECTED_PAYLOAD_PARENT="e813923d24199490944b2fc340636a9bd5abd872"
+          EXPECTED_FAILED_WORKFLOW="63737e626ef69eb6c5c6a8a5e81fa525e782919a"
           PRODUCT_BRANCH="candidate/gartner-category-source-v1"
           TRANSPORT_BRANCH="agent/gartner-claim-chain-reconciliation-v1"
           PAYLOAD=".github/temporary/apply-gartner-claim-chain-reconciliation.py.gz.b64"
+          PAYLOAD_BLOB="809ecfeeb7f4ded3b5aff8840a28e01bd16dde31"
           GZ="$(mktemp)"
           HELPER="$(mktemp)"
           PATCH="$(mktemp)"
@@ -93,9 +95,10 @@ jobs:
           git fetch origin main candidate/gartner-category-source-v1
           test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
           test "$(git rev-parse origin/candidate/gartner-category-source-v1)" = "$BASE_PRODUCT"
-          test "$(git rev-parse HEAD^)" = "$EXPECTED_PAYLOAD_PARENT"
-          test "$(git rev-parse HEAD^^)" = "$EXPECTED_MAIN"
-          test "$(git rev-list --count "$EXPECTED_MAIN..HEAD")" = "2"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_FAILED_WORKFLOW"
+          test "$(git rev-parse HEAD^^)" = "$EXPECTED_PAYLOAD_PARENT"
+          test "$(git rev-parse HEAD^^^)" = "$EXPECTED_MAIN"
+          test "$(git rev-list --count "$EXPECTED_MAIN..HEAD")" = "3"
 
           python - <<'PY'
           import subprocess
@@ -112,7 +115,8 @@ jobs:
           print("transport_paths=" + repr(sorted(changed)))
           PY
 
-          printf '%s  %s\n' "27515b3b1cbdbe5baaf5304b485010f2bcf390ef85aa058306f568470ffbd95b" "$PAYLOAD" | sha256sum -c -
+          test "$(git hash-object "$PAYLOAD")" = "$PAYLOAD_BLOB"
+          test "$(git rev-parse "$EXPECTED_PAYLOAD_PARENT:$PAYLOAD")" = "$PAYLOAD_BLOB"
           base64 -d "$PAYLOAD" > "$GZ"
           printf '%s  %s\n' "aa2c61f7cb1dadc0f3575fa1cdcdf27811a15071621a065ff7e08895b244f102" "$GZ" | sha256sum -c -
           gzip -dc "$GZ" > "$HELPER"
