@@ -1,0 +1,49 @@
+name: TEMP export exact canonical main for No. 10 rebase
+
+on:
+  push:
+    branches:
+      - agent/no10-broad-adjacency-rebase-11dd282
+    paths:
+      - .github/workflows/temp-no10-rebase-export.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      BASE_SHA: 11dd282b7dadd5b7751c1bc9ad12af03449f2185
+      BASE_TREE: c4cf7c27cf5b6f7d5ee57b219a3f3dac29448934
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Export exact canonical tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "$BASE_SHA^{commit}"
+          test "$(git rev-parse "$BASE_SHA^{tree}")" = "$BASE_TREE"
+          git worktree add --detach /tmp/clifford-main "$BASE_SHA"
+          cd /tmp/clifford-main
+          printf '%s\n' "$BASE_SHA" > .canonical-commit
+          git rev-parse 'HEAD^{tree}' > .canonical-tree
+          rm -rf .git
+          tar -czf /tmp/clifford-main-11dd282.tar.gz .
+          sha256sum /tmp/clifford-main-11dd282.tar.gz > /tmp/clifford-main-11dd282.tar.gz.sha256
+
+      - name: Upload exact canonical snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: clifford-main-11dd282
+          path: |
+            /tmp/clifford-main-11dd282.tar.gz
+            /tmp/clifford-main-11dd282.tar.gz.sha256
+          if-no-files-found: error
+          compression-level: 0
