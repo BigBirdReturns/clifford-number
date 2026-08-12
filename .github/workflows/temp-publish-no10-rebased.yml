@@ -19,6 +19,7 @@ jobs:
       BASE_SHA: 11dd282b7dadd5b7751c1bc9ad12af03449f2185
       BASE_TREE: c4cf7c27cf5b6f7d5ee57b219a3f3dac29448934
       PAYLOAD_BRANCH: agent/clifford-next-frontier-export-7a4007f
+      CONTROLLER_BRANCH: agent/no10-broad-adjacency-rebase-11dd282
       PRODUCT_BRANCH: agent/no10-broad-adjacency-boundary-product
     steps:
       - uses: actions/checkout@v4
@@ -30,221 +31,14 @@ jobs:
         with:
           node-version: 20
 
-      - name: Authenticate exact parent and source patches
+      - name: Authenticate and execute bounded publisher
         shell: bash
         run: |
           set -euo pipefail
-          git cat-file -e "$BASE_SHA^{commit}"
-          test "$(git rev-parse "$BASE_SHA^{tree}")" = "$BASE_TREE"
-          test "$(git rev-parse origin/main)" = "$BASE_SHA"
-          for index in 00 01 02 03; do
-            git show "origin/$PAYLOAD_BRANCH:.github/temporary/no10-broad-adjacency-boundary.part-${index}.b64" > "/tmp/part-${index}.b64"
-          done
-          printf '%s  %s\n' \
-            f57d0a6f8c1f99849b1fa028754c360287c82343966fa9254b1ffe2a14205d68 /tmp/part-00.b64 \
-            958612402a9e58ba96fcced110a70a8a65c61468f721c761bf4fa7af50c68ea9 /tmp/part-01.b64 \
-            cc58872b7b0f3a97decc4289dcfe9fef3142076e0aa95e09be4c1b8aa464b903 /tmp/part-02.b64 \
-            35b28cacfde11588f9964b637b2277d39e926683740a5ee3370320a545416b59 /tmp/part-03.b64 \
-            | sha256sum -c -
-          cat /tmp/part-{00,01,02,03}.b64 > /tmp/no10-boundary.patch.gz.b64
-          echo '335db0c2ce495b5b129bb843ab231a843d23ec16d84aea6c9c6f2440ffdfb4df  /tmp/no10-boundary.patch.gz.b64' | sha256sum -c -
-          base64 --decode /tmp/no10-boundary.patch.gz.b64 > /tmp/no10-boundary.patch.gz
-          echo 'daacbbb9957f6f04803215c2d5e8cb176c167faa96cbce18d75c70ee5aa55d0e  /tmp/no10-boundary.patch.gz' | sha256sum -c -
-          gzip -dc /tmp/no10-boundary.patch.gz > /tmp/no10-boundary.patch
-          echo 'f94d38d965da814e38f64f5ea661d5337212cc03caa3786adc6559594db7dee4  /tmp/no10-boundary.patch' | sha256sum -c -
-          cat > /tmp/no10-pages-validator.patch <<'PATCH'
-          diff --git a/tools/validate-pages.mjs b/tools/validate-pages.mjs
-          index bee825f..5f69bae 100644
-          --- a/tools/validate-pages.mjs
-          +++ b/tools/validate-pages.mjs
-          @@ -358,15 +358,19 @@ if (legacyGraph.subtitle !== 'Seven degrees of UK AI policy topology, with recei
-             console.error('validate-pages failed: stale state-capture framing remains in the public payload');
-             process.exit(1);
-           }
-          -const refusal = (hopGraph.rejected_hop_pairs ?? []).find(item => item.actor_a === 'dan-rosenfield' && item.actor_b === 'dominic-cummings');
-          -if (refusal?.actor_a_window?.valid_from !== '2021-01-01'
-          -  || refusal?.actor_b_window?.valid_from !== '2019-01-01'
-          -  || !Array.isArray(refusal?.receipt_ids)
-          -  || refusal.receipt_ids.length === 0
-          -  || refusal.publication_status !== 'review_required'
-          -  || refusal.actor_a_window_reverifiable !== false
-          -  || refusal.actor_b_window_reverifiable !== false) {
-          -  console.error('validate-pages failed: Rosenfield/Cummings refusal is misattributed or improperly promoted');
-          +const obsoleteNo10PairRefusal = (hopGraph.rejected_hop_pairs ?? []).find(item =>
-          +  item.surface_id === 'no10-digital-data-advisory-2019-2021'
-          +  && item.actor_a === 'dan-rosenfield'
-          +  && item.actor_b === 'dominic-cummings');
-          +const no10ContextRefusal = (hopGraph.rejected_hop_surfaces ?? []).find(item =>
-          +  item.surface_id === 'ben-warner-no10-digital-data-role-observation-2020-2021');
-          +const no10ContextPromoted = (hopGraph.edges ?? []).some(edge =>
-          +  (edge.surfaces ?? []).some(surface =>
-          +    surface.surface_id === 'ben-warner-no10-digital-data-role-observation-2020-2021'));
-          +if (obsoleteNo10PairRefusal !== undefined
-          +  || no10ContextRefusal?.reason !== 'broad_institution_context_only'
-          +  || no10ContextPromoted) {
-          +  console.error('validate-pages failed: No. 10 broad-office context is missing, misclassified, or still creating actor adjacency');
-             process.exit(1);
-           }
-           console.log(`validate-pages: OK (${required.length} required artifacts)`);
-          PATCH
-          echo 'dbe6ef6fe6116da0da9cc468b9a0eae1f49952409c79bdc0b863f45a4941f139  /tmp/no10-pages-validator.patch' | sha256sum -c -
-          git worktree add --detach /tmp/canonical "$BASE_SHA"
-          git worktree add --detach /tmp/product "$BASE_SHA"
-
-      - name: Prove canonical parent is release-clean
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd /tmp/canonical
-          npm run release:check > /tmp/canonical-release.log 2>&1
-          cp reports/core-thesis/answerable-power/data.json /tmp/canonical-answerable-power.json
-          echo 'CANONICAL_RELEASE_PASS true'
-
-      - name: Apply source correction and qualify complete product
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd /tmp/product
-          git apply --index /tmp/no10-boundary.patch
-          git apply --index /tmp/no10-pages-validator.patch
-          cat > /tmp/source-paths.txt <<'PATHS'
-          README.md
-          data/canonical/actors.json
-          data/ledger/chains.jsonl
-          data/ledger/claims.jsonl
-          data/ledger/participation.jsonl
-          data/ledger/receipts.jsonl
-          data/ledger/surfaces.jsonl
-          data/research/clifford-cross-corpus-public-interest-map.json
-          docs/plain-language.md
-          docs/release-architecture.md
-          receipts/topology/gov-sage-89-ben-warner-no10-2021-05-13.md
-          receipts/topology/uk-covid-inquiry-ben-warner-decision-forward-planning-2020-03-13-16.md
-          test/axm-id.test.js
-          test/compiler.test.js
-          test/narrate-hops.test.js
-          tools/lib/hops.mjs
-          tools/validate-pages.mjs
-          tools/validate-release.mjs
-          PATHS
-          sort /tmp/source-paths.txt -o /tmp/source-paths.txt
-          git diff --cached --name-only | sort > /tmp/staged-source-paths.txt
-          diff -u /tmp/source-paths.txt /tmp/staged-source-paths.txt
-          npm run release:check > /tmp/product-release.log 2>&1
-          cp reports/core-thesis/answerable-power/data.json /tmp/product-answerable-power.json
-          cmp /tmp/canonical-answerable-power.json /tmp/product-answerable-power.json
-          cat > /tmp/generated-paths.txt <<'PATHS'
-          build/axm-identity.json
-          build/build-hop-report.json
-          build/hop-graph.json
-          build/migration-review.md
-          build/migration-summary.json
-          build/receipt-graph.json
-          build/scores.json
-          build/scout-report.json
-          build/scout-report.md
-          build/surface-graph.json
-          PATHS
-          sort /tmp/generated-paths.txt -o /tmp/generated-paths.txt
-          git diff --name-only | sort > /tmp/observed-generated-paths.txt
-          diff -u /tmp/generated-paths.txt /tmp/observed-generated-paths.txt
-          test -z "$(git ls-files --others --exclude-standard)"
-          git add --pathspec-from-file=/tmp/generated-paths.txt
-          cat /tmp/source-paths.txt /tmp/generated-paths.txt | sort > /tmp/product-paths.txt
-          git diff --cached --name-only | sort > /tmp/staged-product-paths.txt
-          diff -u /tmp/product-paths.txt /tmp/staged-product-paths.txt
-          git diff --cached --check
-          node - <<'NODE'
-          const fs = require('fs');
-          const hops = JSON.parse(fs.readFileSync('build/hop-graph.json', 'utf8'));
-          const scout = JSON.parse(fs.readFileSync('build/scout-report.json', 'utf8'));
-          const participation = fs.readFileSync('data/ledger/participation.jsonl', 'utf8').trim().split('\n').length;
-          const receipts = fs.readFileSync('data/ledger/receipts.jsonl', 'utf8').trim().split('\n').length;
-          const surfaces = fs.readFileSync('data/ledger/surfaces.jsonl', 'utf8').trim().split('\n').length;
-          const obsoletePair = (hops.rejected_hop_pairs ?? []).find(item =>
-            item.surface_id === 'no10-digital-data-advisory-2019-2021'
-            && item.actor_a === 'dan-rosenfield'
-            && item.actor_b === 'dominic-cummings');
-          const contextRefusal = (hops.rejected_hop_surfaces ?? []).find(item =>
-            item.surface_id === 'ben-warner-no10-digital-data-role-observation-2020-2021');
-          const contextEdge = hops.edges.some(edge => (edge.surfaces ?? []).some(surface =>
-            surface.surface_id === 'ben-warner-no10-digital-data-role-observation-2020-2021'));
-          if (hops.edges.length !== 27) throw new Error(`expected 27 hop edges, got ${hops.edges.length}`);
-          if (scout.findings.length !== 144) throw new Error(`expected 144 scout findings, got ${scout.findings.length}`);
-          if (participation !== 183) throw new Error(`expected 183 participation rows, got ${participation}`);
-          if (receipts !== 44) throw new Error(`expected 44 receipts, got ${receipts}`);
-          if (surfaces !== 21) throw new Error(`expected 21 surfaces, got ${surfaces}`);
-          if (obsoletePair !== undefined) throw new Error('obsolete Rosenfield/Cummings No. 10 refusal survived');
-          if (contextRefusal?.reason !== 'broad_institution_context_only') throw new Error('No. 10 context refusal is missing or stale');
-          if (contextEdge) throw new Error('No. 10 context was promoted into an actor edge');
-          NODE
-          echo 'PRODUCT_RELEASE_PASS true'
-          echo 'ANSWERABLE_POWER_PROJECTION_STABLE true'
-          echo 'BROAD_INSTITUTION_REFUSAL_PASS true'
-
-      - name: Create one-parent product commit
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd /tmp/product
-          git config user.name 'BigBirdReturns'
-          git config user.email 'bigbirdreturns@proton.me'
-          git commit -m 'topology: retire broad No. 10 actor adjacency'
-          test "$(git rev-parse 'HEAD^')" = "$BASE_SHA"
-          git rev-parse HEAD > /tmp/product-commit.txt
-          git rev-parse 'HEAD^{tree}' > /tmp/product-tree.txt
-          git worktree add --detach /tmp/clean HEAD
-
-      - name: Prove clean-checkout semantic reproduction and publish
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd /tmp/clean
-          npm run release:check > /tmp/clean-release.log 2>&1
-          cmp /tmp/canonical-answerable-power.json reports/core-thesis/answerable-power/data.json
-          git diff --name-only | sort > /tmp/clean-generated-paths.txt
-          diff -u /tmp/generated-paths.txt /tmp/clean-generated-paths.txt
-          test -z "$(git ls-files --others --exclude-standard)"
-          python - <<'PY'
-          import json
-          import re
-          import subprocess
-          from pathlib import Path
-
-          json_paths = [
-              'build/axm-identity.json',
-              'build/build-hop-report.json',
-              'build/hop-graph.json',
-              'build/migration-summary.json',
-              'build/receipt-graph.json',
-              'build/scores.json',
-              'build/scout-report.json',
-              'build/surface-graph.json',
-          ]
-          markdown_paths = [
-              'build/migration-review.md',
-              'build/scout-report.md',
-          ]
-          for relative in json_paths:
-              committed = json.loads(subprocess.check_output(['git', 'show', f'HEAD:{relative}'], text=True))
-              rebuilt = json.loads(Path(relative).read_text())
-              committed.pop('generated', None)
-              rebuilt.pop('generated', None)
-              if committed != rebuilt:
-                  raise SystemExit(f'non-temporal generated drift: {relative}')
-          for relative in markdown_paths:
-              committed = subprocess.check_output(['git', 'show', f'HEAD:{relative}'], text=True)
-              rebuilt = Path(relative).read_text()
-              normalize = lambda value: re.sub(r'^Generated: .*$', 'Generated: <normalized>', value, count=1, flags=re.MULTILINE)
-              if normalize(committed) != normalize(rebuilt):
-                  raise SystemExit(f'non-temporal generated drift: {relative}')
-          PY
-          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
-          echo "PRODUCT_BRANCH $PRODUCT_BRANCH"
-          echo "PRODUCT_COMMIT $(cat /tmp/product-commit.txt)"
-          echo "PRODUCT_TREE $(cat /tmp/product-tree.txt)"
-          echo 'CLEAN_CHECKOUT_RELEASE_PASS true'
-          echo 'GENERATED_STATE_SEMANTIC_REPRODUCTION true'
+          git show "origin/$CONTROLLER_BRANCH:.github/temporary/no10-publish.sh" > /tmp/no10-publish.sh
+          echo '61301f2f61a37b23082e7f01bdd0fe4dd2110677e0d84420e14e3e1089ecb6ed  /tmp/no10-publish.sh' | sha256sum -c -
+          bash -n /tmp/no10-publish.sh
+          bash /tmp/no10-publish.sh
 
       - name: Upload qualification receipts
         if: always()
@@ -255,8 +49,10 @@ jobs:
           path: |
             /tmp/no10-boundary.patch
             /tmp/no10-pages-validator.patch
+            /tmp/no10-sg12-custody-repair.patch
             /tmp/source-paths.txt
             /tmp/generated-paths.txt
+            /tmp/temporal-generated-paths.txt
             /tmp/product-paths.txt
             /tmp/staged-product-paths.txt
             /tmp/canonical-release.log
