@@ -7,7 +7,7 @@ from pathlib import Path
 repo_path = Path('tools/temp-materialize-topology-frontier.py')
 source = None
 for commit in subprocess.check_output(
-    ['git', 'rev-list', '--first-parent', 'HEAD'],
+    ['git', 'rev-list', '--first-parent', 'HEAD^'],
     text=True,
 ).splitlines():
     try:
@@ -17,7 +17,9 @@ for commit in subprocess.check_output(
         )
     except subprocess.CalledProcessError:
         continue
-    if b'def inherited_payload(name):' in candidate and b'FRONTIER_GZ_B64' in candidate:
+    if candidate.startswith(
+        b'#!/usr/bin/env python3\nimport base64\nimport gzip\nimport json\nimport re\nimport subprocess\nfrom pathlib import Path\n'
+    ):
         source = candidate
         break
 if source is None:
