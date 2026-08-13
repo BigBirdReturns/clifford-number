@@ -1,4 +1,4 @@
-name: TEMP publish Electric Twin Virgin MADFest topology v2
+name: TEMP rebind Electric Twin Virgin MADFest topology
 
 on:
   push:
@@ -19,10 +19,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Qualify and publish one clean product commit
+      - name: Rebind, qualify, and publish one clean product commit
         shell: bash
         env:
           CANDIDATE_BRANCH: candidate/electric-twin-virgin-madfest-topology-v1
+          EXPECTED_OLD_CANDIDATE: e3a8919f7e26fc0fefb210ad3add2843e992150c
         run: |
           set -euo pipefail
           base64 -d .github/temporary/apply-electric-twin-virgin-madfest-v1.mjs.gz.b64 \
@@ -32,7 +33,7 @@ jobs:
 
           git fetch --no-tags origin main
           BASE_SHA="$(git rev-parse origin/main)"
-          test -z "$(git ls-remote origin "refs/heads/$CANDIDATE_BRANCH")"
+          test "$(git ls-remote origin "refs/heads/$CANDIDATE_BRANCH" | awk '{print $1}')" = "$EXPECTED_OLD_CANDIDATE"
           rm -rf /tmp/electric-twin-virgin-madfest-product
           git worktree add --detach /tmp/electric-twin-virgin-madfest-product "$BASE_SHA"
           cd /tmp/electric-twin-virgin-madfest-product
@@ -144,20 +145,21 @@ jobs:
 
           git fetch --no-tags origin main
           test "$(git rev-parse origin/main)" = "$BASE_SHA"
-          test -z "$(git ls-remote origin "refs/heads/$CANDIDATE_BRANCH")"
+          test "$(git ls-remote origin "refs/heads/$CANDIDATE_BRANCH" | awk '{print $1}')" = "$EXPECTED_OLD_CANDIDATE"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'topology: admit Electric Twin and Virgin MADFest session'
           test "$(git rev-list --count "$BASE_SHA"..HEAD)" = '1'
           test "$(git rev-parse HEAD^)" = "$BASE_SHA"
-          git push origin "HEAD:refs/heads/$CANDIDATE_BRANCH"
+          git push --force-with-lease="refs/heads/$CANDIDATE_BRANCH:$EXPECTED_OLD_CANDIDATE" origin "HEAD:refs/heads/$CANDIDATE_BRANCH"
           {
-            echo '## Qualified Electric Twin × Virgin MAD//Fest product'
+            echo '## Rebound Electric Twin × Virgin MAD//Fest product'
             echo
             echo '```text'
             echo "commit $(git rev-parse HEAD)"
             echo "tree   $(git rev-parse HEAD^{tree})"
             echo "parent $(git rev-parse HEAD^)"
+            echo "replaced $EXPECTED_OLD_CANDIDATE"
             echo 'delta  actors +2 | organizations +1 | surfaces +1 | participation +5 | receipts +1 | claims +2 | edges +3 | refusals +0'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
