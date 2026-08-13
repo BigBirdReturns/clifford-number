@@ -1,0 +1,67 @@
+name: TEMP Dialog ref cleanup 1964
+
+on:
+  push:
+    branches:
+      - temp/dialog-ref-cleanup-1964
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  cleanup:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+      - name: Remove proven-obsolete Dialog execution refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          MAIN_SHA=$(git rev-parse origin/main)
+          branches=(
+            candidate/dialog-directory-boundary-v1
+            candidate/dialog-directory-boundary-v2
+            candidate/dialog-directory-boundary-v3
+            candidate/dialog-directory-boundary-v4
+            candidate/dialog-directory-boundary-v5
+            candidate/dialog-directory-boundary-v6
+            candidate/dialog-directory-boundary-v7
+            candidate/dialog-directory-boundary-v8
+            candidate/dialog-directory-boundary-v9
+            candidate/dialog-directory-boundary-v10
+            candidate/dialog-directory-boundary-v11
+            candidate/dialog-directory-boundary-v12
+            candidate/dialog-directory-boundary-v13
+            candidate/dialog-directory-boundary-v14
+            candidate/dialog-directory-boundary-product
+            candidate/dialog-directory-boundary-exec
+          )
+          for branch in "${branches[@]}"; do
+            if ! git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+              continue
+            fi
+            open_prs=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$branch" --state open --json number --jq 'length')
+            test "$open_prs" = 0
+            safe=${branch//\//-}
+            git fetch --no-tags origin "refs/heads/$branch:refs/cleanup/$safe"
+            SHA=$(git rev-parse "refs/cleanup/$safe")
+            git merge-base --is-ancestor "$SHA" "$MAIN_SHA"
+            gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch" >/dev/null
+            echo "deleted $branch at $SHA"
+          done
+      - name: Delete this one-shot cleanup ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch=temp/dialog-ref-cleanup-1964
+          gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch" >/dev/null
+          echo "deleted $branch"
