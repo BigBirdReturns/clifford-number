@@ -1,0 +1,122 @@
+name: TEMP retire merged Electric Twin refs
+
+on:
+  push:
+    branches:
+      - agent/electric-twin-ethics-source-transport-v1
+
+permissions:
+  contents: write
+
+jobs:
+  retirement:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Verify and delete exact merged or transport-only refs
+        shell: bash
+        env:
+          EXPECTED_MAIN: a3978c6b74eb2493b74701ca9c57bbfae895b812
+          EXPECTED_MAIN_TREE: 6ea79bc93a5e0bf9190ca57d068ca2ba43535343
+          CLEANUP_BRANCH: agent/electric-twin-ethics-source-transport-v1
+        run: |
+          set -euo pipefail
+
+          ref_sha() {
+            git ls-remote origin "refs/heads/$1" | awk '{print $1}'
+          }
+
+          declare -A expected=(
+            ["candidate/electric-twin-ethics-source-v1"]="5dd2b9e3bee3b644ed93412ba13f2d77f9aa6789"
+            ["candidate/electric-twin-funding-primary-source-v1"]="9ca3e3054ef44e19672f8d080b4e8bf364315e47"
+            ["agent/electric-twin-founder-boundary"]="3293c8def3c280d1269b18f977529c4cd11c6e19"
+            ["agent/electric-twin-funding-boundary"]="9302e647cb95d5ea632f2f9a4f0ee285a2b86d42"
+            ["agent/electric-twin-funding-primary-source-transport-v1"]="7f4d331f080f5abed8803282dd7c3009bcf13e27"
+            ["agent/electric-twin-investor-roster-transport-v1"]="af80648499b502eb9884c7b0d9fca4cef0dd2d2c"
+            ["agent/electric-twin-investor-roster-transport-v2"]="172f75d975c5b203f0861233a1b1e05558e863c5"
+            ["agent/electric-twin-september-2025-filings"]="7a4007f62ce84463674ea24cc5e40b4ef5c6025a"
+            ["agent/electric-twin-september-2025-filings-product"]="7a4007f62ce84463674ea24cc5e40b4ef5c6025a"
+          )
+
+          ancestor_branches=(
+            candidate/electric-twin-ethics-source-v1
+            candidate/electric-twin-funding-primary-source-v1
+            agent/electric-twin-founder-boundary
+            agent/electric-twin-funding-boundary
+            agent/electric-twin-september-2025-filings
+            agent/electric-twin-september-2025-filings-product
+          )
+
+          transport_branches=(
+            agent/electric-twin-funding-primary-source-transport-v1
+            agent/electric-twin-investor-roster-transport-v1
+            agent/electric-twin-investor-roster-transport-v2
+          )
+
+          test "$(ref_sha main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse "$EXPECTED_MAIN^{tree}")" = "$EXPECTED_MAIN_TREE"
+          test "$(ref_sha "$CLEANUP_BRANCH")" = "$GITHUB_SHA"
+          test "$(git rev-parse "$GITHUB_SHA^")" = "$EXPECTED_MAIN"
+
+          mapfile -t cleanup_paths < <(git diff --name-only "$EXPECTED_MAIN" "$GITHUB_SHA")
+          test "${#cleanup_paths[@]}" -eq 1
+          test "${cleanup_paths[0]}" = ".github/workflows/temp-electric-twin-ref-retirement-v1.yml"
+
+          for branch in "${!expected[@]}"; do
+            test "$(ref_sha "$branch")" = "${expected[$branch]}"
+          done
+
+          for branch in "${ancestor_branches[@]}"; do
+            git merge-base --is-ancestor "${expected[$branch]}" "$EXPECTED_MAIN"
+          done
+
+          verify_transport_only() {
+            local branch="$1"
+            local sha="${expected[$branch]}"
+            local merge_base path
+            merge_base="$(git merge-base "$sha" "$EXPECTED_MAIN")"
+            mapfile -t paths < <(git diff --name-only "$merge_base" "$sha")
+            test "${#paths[@]}" -gt 0
+            for path in "${paths[@]}"; do
+              case "$path" in
+                .github/temporary/*|.github/workflows/temp-electric-twin-*.yml)
+                  ;;
+                *)
+                  echo "refusing non-transport path on $branch: $path" >&2
+                  exit 1
+                  ;;
+              esac
+            done
+          }
+
+          for branch in "${transport_branches[@]}"; do
+            verify_transport_only "$branch"
+          done
+
+          delete_branches=(
+            candidate/electric-twin-ethics-source-v1
+            candidate/electric-twin-funding-primary-source-v1
+            agent/electric-twin-founder-boundary
+            agent/electric-twin-funding-boundary
+            agent/electric-twin-funding-primary-source-transport-v1
+            agent/electric-twin-investor-roster-transport-v1
+            agent/electric-twin-investor-roster-transport-v2
+            agent/electric-twin-september-2025-filings
+            agent/electric-twin-september-2025-filings-product
+            "$CLEANUP_BRANCH"
+          )
+
+          for branch in "${delete_branches[@]}"; do
+            git push origin --delete "$branch"
+          done
+
+          for branch in "${delete_branches[@]}"; do
+            test -z "$(ref_sha "$branch")"
+          done
+
+          test "$(ref_sha main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse "$EXPECTED_MAIN^{tree}")" = "$EXPECTED_MAIN_TREE"
