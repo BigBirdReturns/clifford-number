@@ -1,0 +1,369 @@
+name: Materialize Dialog directory boundary on current main v2
+
+on:
+  push:
+    branches:
+      - agent/dialog-directory-boundary-current-main-v1
+
+permissions:
+  contents: write
+
+concurrency:
+  group: materialize-dialog-directory-boundary-current-main-v2
+  cancel-in-progress: false
+
+env:
+  SOURCE_BASE_SHA: 4b86a2c7c4ad637ba9754ea6dab8452eb2a4c9ea
+  PRODUCT_BRANCH: candidate/dialog-directory-boundary-v14
+  MATERIALIZER_PATH: tools/materialize-dialog-directory-boundary-v1.py
+  WORKFLOW_PATH: .github/workflows/materialize-dialog-directory-boundary-current-main-v1.yml
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/dialog-directory-boundary-current-main-v1
+          fetch-depth: 0
+          show-progress: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Capture bounded transport and current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+
+          actual_paths="$(git diff --name-only "$SOURCE_BASE_SHA"...HEAD | sort)"
+          expected_paths="$(printf '%s\n' "$MATERIALIZER_PATH" "$WORKFLOW_PATH" | sort)"
+          if [ "$actual_paths" != "$expected_paths" ]; then
+            echo 'transport branch contains an unexpected path set' >&2
+            echo '--- actual ---' >&2
+            printf '%s\n' "$actual_paths" >&2
+            echo '--- expected ---' >&2
+            printf '%s\n' "$expected_paths" >&2
+            exit 1
+          fi
+
+          cp "$MATERIALIZER_PATH" /tmp/materialize-dialog-directory-boundary-v1.py
+          BASE_SHA="$(git rev-parse origin/main)"
+          PRODUCT_LEASE="$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | cut -f1)"
+          test -n "$PRODUCT_LEASE"
+          echo "BASE_SHA=$BASE_SHA" >> "$GITHUB_ENV"
+          echo "PRODUCT_LEASE=$PRODUCT_LEASE" >> "$GITHUB_ENV"
+          git checkout --detach "$BASE_SHA"
+
+      - name: Capture canonical topology baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run compile
+          cp data/ledger/surfaces.jsonl /tmp/dialog-base-surfaces.jsonl
+          cp data/ledger/participation.jsonl /tmp/dialog-base-participation.jsonl
+          cp data/ledger/receipts.jsonl /tmp/dialog-base-receipts.jsonl
+          cp data/ledger/claims.jsonl /tmp/dialog-base-claims.jsonl
+          cp build/hop-graph.json /tmp/dialog-base-hop-graph.json
+          git reset --hard "$BASE_SHA"
+
+      - name: Reconcile actual Dialog denominator
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp /tmp/materialize-dialog-directory-boundary-v1.py "$MATERIALIZER_PATH"
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('tools/materialize-dialog-directory-boundary-v1.py')
+          text = path.read_text(encoding='utf-8')
+
+          def replace_once(old: str, new: str) -> None:
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'expected one patch seam, observed {count}: {old[:80]!r}')
+              text = text.replace(old, new, 1)
+
+          # Current main contains 112 actor listings, three officer observations,
+          # and one Dialog organization-context row. The earlier transport assumed
+          # 113 actor listings and therefore failed closed before changing data.
+          stale_count = text.count('113')
+          if stale_count != 9:
+              raise SystemExit(f'unexpected stale 113-count in materializer: {stale_count}')
+          text = text.replace('113', '112')
+
+          replace_once(
+              '    officers = [row for row in rows if row.get("participation_type") == "society_officer"]\n'
+              '    if len(rows) != 116 or len(listings) != 112 or len(officers) != 3:\n'
+              '        raise SystemExit(\n'
+              '            f"unexpected Dialog denominator: total={len(rows)} listings={len(listings)} officers={len(officers)}"\n'
+              '        )\n',
+              '    officers = [row for row in rows if row.get("participation_type") == "society_officer"]\n'
+              '    organizations = [row for row in rows if row.get("participant_type") == "organization"]\n'
+              '    if len(rows) != 116 or len(listings) != 112 or len(officers) != 3 or len(organizations) != 1:\n'
+              '        raise SystemExit(\n'
+              '            f"unexpected Dialog denominator: total={len(rows)} listings={len(listings)} "\n'
+              '            f"officers={len(officers)} organizations={len(organizations)}"\n'
+              '        )\n',
+          )
+          replace_once(
+              '    if officer_roles != EXPECTED_OFFICERS:\n'
+              '        raise SystemExit(f"unexpected Dialog officer rows: {officer_roles}")\n'
+              '    if not any(row.get("actor_id") == "matt-clifford" for row in listings):\n',
+              '    if officer_roles != EXPECTED_OFFICERS:\n'
+              '        raise SystemExit(f"unexpected Dialog officer rows: {officer_roles}")\n'
+              '    if [row.get("organization_id") for row in organizations] != ["dialog"]:\n'
+              '        raise SystemExit(f"unexpected Dialog organization rows: {organizations}")\n'
+              '    if not any(row.get("actor_id") == "matt-clifford" for row in listings):\n',
+          )
+          replace_once(
+              '    officer_rows = [row for row in old_rows if row.get("participation_type") == "society_officer"]\n'
+              '    first = next(i for i, row in enumerate(participation) if row.get("surface_id") == OLD)\n',
+              '    officer_rows = [row for row in old_rows if row.get("participation_type") == "society_officer"]\n'
+              '    organization_rows = [row for row in old_rows if row.get("participant_type") == "organization"]\n'
+              '    first = next(i for i, row in enumerate(participation) if row.get("surface_id") == OLD)\n',
+          )
+          replace_once(
+              '    invitation_row = {\n',
+              '    new_organization_rows = []\n'
+              '    for source in organization_rows:\n'
+              '        row = dict(source)\n'
+              '        row["surface_id"] = DIRECTORY\n'
+              '        row["role"] = "Dialog organization named as the public-directory host"\n'
+              '        row["participation_type"] = "organization_context"\n'
+              '        row["time_start"] = OBSERVED_AT\n'
+              '        row["time_end"] = OBSERVED_AT\n'
+              '        row["evidence_class"] = "primary_public"\n'
+              '        row["receipt_ids"] = ["dialog-directory-extract", "wired-dialog-leak"]\n'
+              '        row["notes"] = "Organization context only; Dialog cannot occupy an actor endpoint."\n'
+              '        new_organization_rows.append(row)\n'
+              '\n'
+              '    invitation_row = {\n',
+          )
+          replace_once(
+              '    retained[first:first] = new_listing_rows + new_officer_rows + [invitation_row]\n',
+              '    retained[first:first] = (\n'
+              '        new_listing_rows + new_organization_rows + new_officer_rows + [invitation_row]\n'
+              '    )\n',
+          )
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Apply bounded Dialog source transaction
+        shell: bash
+        run: |
+          set -euo pipefail
+          python "$MATERIALIZER_PATH"
+          rm "$MATERIALIZER_PATH"
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - name: Verify exact Dialog effect
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          OLD = 'dialog-society-membership'
+          DIRECTORY = 'dialog-public-directory-exposure-2026-06-16'
+          LEADERSHIP = 'dialog-leadership-role-observations-2026-06-16'
+          INVITATION = 'dialog-matt-clifford-invitation-nonattendance-2026-06-16'
+          CLAIM = 'dialog-matt-clifford-peter-thiel-boundary-2026-06-16'
+
+          def jsonl(path):
+              return [
+                  json.loads(line)
+                  for line in Path(path).read_text(encoding='utf-8').splitlines()
+                  if line.strip()
+              ]
+
+          base_surfaces = jsonl('/tmp/dialog-base-surfaces.jsonl')
+          base_parts = jsonl('/tmp/dialog-base-participation.jsonl')
+          base_receipts = jsonl('/tmp/dialog-base-receipts.jsonl')
+          base_claims = jsonl('/tmp/dialog-base-claims.jsonl')
+          base_hop = json.loads(Path('/tmp/dialog-base-hop-graph.json').read_text(encoding='utf-8'))
+
+          surfaces = jsonl('data/ledger/surfaces.jsonl')
+          parts = jsonl('data/ledger/participation.jsonl')
+          receipts = jsonl('data/ledger/receipts.jsonl')
+          claims = jsonl('data/ledger/claims.jsonl')
+          hop = json.loads(Path('build/hop-graph.json').read_text(encoding='utf-8'))
+          public_map = json.loads(
+              Path('data/research/clifford-cross-corpus-public-interest-map.json')
+              .read_text(encoding='utf-8')
+          )
+
+          assert len(surfaces) == len(base_surfaces) + 2
+          assert len(parts) == len(base_parts) + 1
+          assert len(receipts) == len(base_receipts) - 1
+          assert len(claims) == len(base_claims) + 1
+          assert not any(row.get('surface_id') == OLD for row in surfaces)
+          assert not any(row.get('surface_id') == OLD for row in parts)
+          assert not any(row.get('receipt_id') == 'dialog-human-layer' for row in receipts)
+
+          by_surface = {row['surface_id']: row for row in surfaces}
+          directory = by_surface[DIRECTORY]
+          leadership = by_surface[LEADERSHIP]
+          invitation = by_surface[INVITATION]
+          assert directory['hop_eligible'] is False
+          assert directory['hop_refusal_reason'] == 'dense_directory_listing_not_shared_participation'
+          assert directory['time_start'] == directory['time_end'] == '2026-06-16'
+          directory_rows = [row for row in parts if row['surface_id'] == DIRECTORY]
+          directory_actors = [row for row in directory_rows if row.get('participant_type') == 'actor']
+          directory_orgs = [row for row in directory_rows if row.get('participant_type') == 'organization']
+          assert len(directory_rows) == 113
+          assert len(directory_actors) == 112
+          assert [row.get('organization_id') for row in directory_orgs] == ['dialog']
+          assert 'matt-clifford' in {row.get('actor_id') for row in directory_actors}
+          assert {row['actor_id'] for row in parts if row['surface_id'] == LEADERSHIP} == {
+              'peter-thiel', 'auren-hoffman', 'raffi-grinberg'
+          }
+          assert leadership['hop_refusal_reason'] == 'reported_role_observations_not_shared_event'
+          assert [row['actor_id'] for row in parts if row['surface_id'] == INVITATION] == [
+              'matt-clifford'
+          ]
+          assert invitation['hop_refusal_reason'] == 'invitation_without_attendance_or_membership'
+          assert any(row['claim_id'] == CLAIM for row in claims)
+
+          rejected = {row['surface_id']: row['reason'] for row in hop['rejected_hop_surfaces']}
+          assert rejected[DIRECTORY] == directory['hop_refusal_reason']
+          assert rejected[LEADERSHIP] == leadership['hop_refusal_reason']
+          assert rejected[INVITATION] == invitation['hop_refusal_reason']
+
+          def pairs(graph):
+              return sorted((row['actor_a'], row['actor_b']) for row in graph['edges'])
+
+          assert pairs(hop) == pairs(base_hop), 'Dialog split changed actor-edge pair set'
+          for edge in hop['edges']:
+              assert not any(
+                  basis['surface_id'] in {DIRECTORY, LEADERSHIP, INVITATION}
+                  for basis in edge['surfaces']
+              )
+
+          receipt_by_id = {row['receipt_id']: row for row in receipts}
+          for receipt_id, file_path in [
+              ('wired-dialog-leak', 'receipts/topology/wired-dialog-leak-2026-06-16.md'),
+              ('dialog-directory-extract', 'receipts/topology/dialog-directory-extract-2026-06-16.md'),
+          ]:
+              observed = hashlib.sha256(Path(file_path).read_bytes()).hexdigest()
+              assert receipt_by_id[receipt_id]['archive']['ref'] == f'sha256:{observed}'
+              assert receipt_by_id[receipt_id]['path'] == file_path
+          assert receipt_by_id['wired-dialog-leak']['matt_clifford_reported_never_attended'] is True
+          assert receipt_by_id['dialog-directory-extract']['directory_listing_count'] == 112
+
+          canonical = public_map['inventory']['canonical']
+          assert canonical['surfaces'] == len(surfaces)
+          assert canonical['participations'] == len(parts)
+          assert canonical['receipts'] == len(receipts)
+          assert canonical['compiled_hop_edges'] == len(hop['edges'])
+
+          print(json.dumps({
+              'surfaces': len(surfaces),
+              'participations': len(parts),
+              'receipts': len(receipts),
+              'claims': len(claims),
+              'directory_actor_listings': len(directory_actors),
+              'directory_organization_contexts': len(directory_orgs),
+              'actor_edges': len(hop['edges']),
+              'rejected_hop_surfaces': len(hop['rejected_hop_surfaces']),
+          }, indent=2))
+          PY
+          git diff --check
+
+      - name: Publish one clean current-main product commit
+        id: publish
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          remote_main="$(git ls-remote origin refs/heads/main | cut -f1)"
+          test "$remote_main" = "$BASE_SHA"
+          current_product="$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | cut -f1)"
+          test "$current_product" = "$PRODUCT_LEASE"
+
+          git add -A
+          python - <<'PY'
+          import os
+          import subprocess
+
+          required = {
+              'data/ledger/claims.jsonl',
+              'data/ledger/participation.jsonl',
+              'data/ledger/receipts.jsonl',
+              'data/ledger/surfaces.jsonl',
+              'data/research/clifford-cross-corpus-public-interest-map.json',
+              'receipts/topology/dialog-directory-extract-2026-06-16.md',
+              'receipts/topology/wired-dialog-leak-2026-06-16.md',
+              'test/compiler.test.js',
+              'tools/validate-release.mjs',
+          }
+          generated_prefixes = (
+              'build/', 'briefs/', 'cases/', 'reports/', 'estates/', 'gametrails/',
+          )
+          base = os.environ['BASE_SHA']
+          paths = subprocess.check_output(
+              ['git', 'diff', '--cached', '--name-only', base], text=True,
+          ).splitlines()
+          missing = sorted(required - set(paths))
+          if missing:
+              raise SystemExit('required product path(s) did not change: ' + ', '.join(missing))
+          forbidden = sorted(
+              path for path in paths
+              if path not in required and not path.startswith(generated_prefixes)
+          )
+          if forbidden:
+              raise SystemExit('unexpected product path(s): ' + ', '.join(forbidden))
+          transport = [
+              path for path in paths
+              if path.startswith('.github/workflows/')
+              or 'materialize-dialog-directory-boundary' in path
+          ]
+          if transport:
+              raise SystemExit('transport leaked into product: ' + ', '.join(transport))
+          print(f'bounded product paths: {len(paths)}')
+          PY
+
+          git diff --cached --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          TREE="$(git write-tree)"
+          PRODUCT="$(printf '%s\n' 'topology: split Dialog directory, roles, and non-attendance' \
+            | git commit-tree "$TREE" -p "$BASE_SHA")"
+
+          test "$(git rev-parse "$PRODUCT^")" = "$BASE_SHA"
+          if git ls-tree -r --name-only "$PRODUCT" \
+            | grep -E '(^\.github/workflows/materialize-dialog-directory-boundary-current-main-v1\.yml$|^tools/materialize-dialog-directory-boundary-v1\.py$)'; then
+            echo 'transport file remained in product tree' >&2
+            exit 1
+          fi
+
+          echo "product_sha=$PRODUCT" >> "$GITHUB_OUTPUT"
+          echo "product_tree=$TREE" >> "$GITHUB_OUTPUT"
+          git push --force-with-lease="refs/heads/$PRODUCT_BRANCH:$PRODUCT_LEASE" \
+            origin "$PRODUCT:refs/heads/$PRODUCT_BRANCH"
+
+      - name: Report exact product
+        shell: bash
+        run: |
+          {
+            echo '## Dialog directory-boundary product'
+            echo
+            echo "- parent: \`$BASE_SHA\`"
+            echo "- product: \`${{ steps.publish.outputs.product_sha }}\`"
+            echo "- tree: \`${{ steps.publish.outputs.product_tree }}\`"
+            echo '- legacy composite: retired'
+            echo '- directory actor listings: `112`'
+            echo '- preserved organization context: `dialog`'
+            echo '- replacement surfaces: `3`'
+            echo '- actor-edge pair set: unchanged'
+            echo '- target PR: `#1965`'
+          } >> "$GITHUB_STEP_SUMMARY"
