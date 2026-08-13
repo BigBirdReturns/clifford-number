@@ -1225,6 +1225,85 @@ assert.match(voteLeaveReceipt.notes, /organization-level service relationship/i)
 assert.ok(!voteLeave.receipt_ids.includes('warner-surface-audit-2026-06-29'),
   'the corrected Vote Leave surface must carry no lost scratch receipt');
 
+
+// Anduril UK deep-and-wide official topology regression.
+const andurilUkLegal = org('anduril-industries-uk-ltd');
+assert.ok(andurilUkLegal, 'exact Anduril UK legal entity must compile');
+const andurilUkLegalSource = JSON.parse(fs.readFileSync('data/canonical/organizations.json', 'utf8')).organizations.find(row => row.id === 'anduril-industries-uk-ltd');
+assert.equal(andurilUkLegalSource?.company_number, '12316056');
+
+const andurilOfficerSurface = surf('anduril-uk-co-director-appointments-2024-07-31');
+assert.ok(andurilOfficerSurface);
+assert.equal(andurilOfficerSurface.hop_eligible, true);
+assert.equal(andurilOfficerSurface.time_start, '2024-07-31');
+assert.equal(andurilOfficerSurface.time_end, '2024-07-31');
+assert.deepEqual(andurilOfficerSurface.participants.filter(part => part.participant_type === 'actor').map(part => part.actor_id).sort(), ['maury-shenk', 'rich-drake']);
+const shenkDrakeEdge = hop.edges.find(edge => [edge.actor_a, edge.actor_b].sort().join('|') === 'maury-shenk|rich-drake');
+assert.ok(shenkDrakeEdge?.surfaces.some(basis => basis.surface_id === andurilOfficerSurface.surface_id && basis.valid_from === '2024-07-31' && basis.valid_until === '2024-07-31'));
+
+const talosNamedSurface = surf('anduril-talos-phase-3-named-principals-2023-11-02');
+assert.ok(talosNamedSurface);
+assert.equal(talosNamedSurface.hop_eligible, true);
+assert.deepEqual(talosNamedSurface.participants.filter(part => part.participant_type === 'actor').map(part => part.actor_id).sort(), ['dan-sawyers', 'greg-kausner']);
+const sawyersKausnerEdge = hop.edges.find(edge => [edge.actor_a, edge.actor_b].sort().join('|') === 'dan-sawyers|greg-kausner');
+assert.ok(sawyersKausnerEdge?.surfaces.some(basis => basis.surface_id === talosNamedSurface.surface_id && basis.valid_from === '2023-11-02' && basis.valid_until === '2023-11-02'));
+
+const ukraineNamedSurface = surf('anduril-ukraine-drone-deal-named-principals-2025-03-06');
+assert.ok(ukraineNamedSurface);
+assert.equal(ukraineNamedSurface.hop_eligible, true);
+assert.deepEqual(ukraineNamedSurface.participants.filter(part => part.participant_type === 'actor').map(part => part.actor_id).sort(), ['john-healey', 'rich-drake']);
+const drakeHealeyEdge = hop.edges.find(edge => [edge.actor_a, edge.actor_b].sort().join('|') === 'john-healey|rich-drake');
+assert.ok(drakeHealeyEdge?.surfaces.some(basis => basis.surface_id === ukraineNamedSurface.surface_id && basis.valid_from === '2025-03-06' && basis.valid_until === '2025-03-06'));
+
+const drakeCliffordRoute = shortestPath(topology, 'rich-drake', 'matt-clifford');
+assert.equal(drakeCliffordRoute.number, 3);
+assert.deepEqual(drakeCliffordRoute.actor_path, ['rich-drake', 'john-healey', 'keir-starmer', 'matt-clifford']);
+for (const date of ['2024-07-17', '2025-01-13', '2025-03-06']) {
+  assert.equal(shortestPath(topology, 'rich-drake', 'matt-clifford', { asOf: date }).number, null,
+    'the cross-date Rich Drake to Matt Clifford route must not masquerade as contemporaneous');
+}
+const shenkCliffordRoute = shortestPath(topology, 'maury-shenk', 'matt-clifford');
+assert.equal(shenkCliffordRoute.number, 4);
+assert.deepEqual(shenkCliffordRoute.actor_path, ['maury-shenk', 'rich-drake', 'john-healey', 'keir-starmer', 'matt-clifford']);
+assert.ok(!hop.edges.some(edge => [edge.actor_a, edge.actor_b].sort().join('|') === 'matt-clifford|rich-drake'),
+  'the widened chronology must not manufacture a direct Clifford/Drake edge');
+
+for (const [surfaceId, refusal] of [
+  ['anduril-ai-fight-tonight-award-2021-07-31', 'organization_only_procurement_instrument'],
+  ['anduril-talos-phase-2-award-2021-08-02', 'organization_only_procurement_instrument'],
+  ['anduril-copci-border-force-contract-2022-06-21', 'organization_only_procurement_instrument'],
+  ['anduril-project-entrelezar-award-2023-10-09', 'supplier_identity_reference_conflict'],
+  ['anduril-ddad-framework-2026-01-09', 'organization_only_multi_supplier_framework'],
+  ['anduril-project-nyx-seven-supplier-shortlist-2026-01-24', 'organization_only_competitive_shortlist'],
+  ['anduril-project-nyx-four-supplier-downselect-2026-05-15', 'organization_only_competitive_shortlist'],
+]) {
+  const sourceSurface = surf(surfaceId);
+  assert.ok(sourceSurface, `${surfaceId} must compile`);
+  assert.equal(sourceSurface.hop_eligible, false);
+  assert.equal(sourceSurface.hop_refusal_reason, refusal);
+  assert.ok((hop.rejected_hop_surfaces ?? []).some(row => row.surface_id === surfaceId && row.reason === refusal));
+  assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === surfaceId)));
+}
+
+const andurilCompanyReceipt = receipt('companies-house-anduril-industries-uk-12316056');
+assert.equal(andurilCompanyReceipt.company_number, '12316056');
+assert.equal(andurilCompanyReceipt.rich_drake_appointed_at, '2024-07-31');
+assert.equal(andurilCompanyReceipt.maury_shenk_appointed_at, '2024-07-31');
+assert.equal(andurilCompanyReceipt.archive.ref, 'sha256:6d2a1b4cdf9b7453d922756a92fb93e8fb8e1ae6ac2da656c8cb318669085eea');
+const talos3Receipt = receipt('gov-mod-anduril-talos-phase-3-contract-2023-11-02');
+assert.deepEqual([...talos3Receipt.named_actor_ids].sort(), ['dan-sawyers', 'greg-kausner']);
+assert.equal(talos3Receipt.archive.ref, 'sha256:6660b2890c6756ad9016bf2d4b90d4a132a32f01c22a9ea1b55cc1c436da876a');
+const ukraineReceipt = receipt('gov-mod-anduril-ukraine-drone-deal-2025-03-06');
+assert.deepEqual([...ukraineReceipt.named_actor_ids].sort(), ['john-healey', 'rich-drake']);
+assert.equal(ukraineReceipt.rich_drake_present_at_healey_visit_established, false);
+assert.equal(ukraineReceipt.archive.ref, 'sha256:3665b9dfa78010a228068df32fae92a3c710e536d554ae2871b2b334f2fa86ca');
+const entrelezarReceipt = receipt('contracts-finder-anduril-project-entrelezar-2023-10-09');
+assert.equal(entrelezarReceipt.supplier_identity_resolved, false);
+assert.equal(entrelezarReceipt.supplier_reference_company_number, '12316056');
+assert.equal(entrelezarReceipt.archive.ref, 'sha256:79d95a713860977a55c76363b3b06abfe0e2f4c9f6139c5a1b3d923533ecf338');
+assert.ok(claim('rich-drake-to-matt-clifford-three-hop-all-time-route-2026-08-12'));
+assert.ok(claim('anduril-uk-official-procurement-chronology-2021-2026'));
+
 console.log('compiler.test: OK');
 
 
@@ -1267,7 +1346,7 @@ assert.equal(andurilMeetingReceipt.archive?.ref, 'sha256:6319116d831d2edd8356e3f
 assert.equal(cliffordAppointmentReceipt.anduril_named, false);
 assert.equal(cliffordAppointmentReceipt.archive?.ref, 'sha256:3f49abb5313850e2e79477225c38ce34956c42ddec30519147e0a8fde331cfd2');
 assert.equal(andurilTalosReceipt.matt_clifford_named, false);
-assert.equal(andurilTalosReceipt.archive?.ref, 'sha256:e14ea1515884929c137d1a9592d965aa70510fe5a761780fb6f569f69a94758e');
+assert.equal(andurilTalosReceipt.archive?.ref, 'sha256:6660b2890c6756ad9016bf2d4b90d4a132a32f01c22a9ea1b55cc1c436da876a');
 const cliffordAndurilMeetingBoundary = claim('matt-clifford-anduril-separate-summit-events-boundary-2026-08-12');
 const cliffordAndurilTalosBoundary = claim('matt-clifford-anduril-talos-procurement-boundary-2026-08-12');
 assert.ok(cliffordAndurilMeetingBoundary, 'separate summit-event boundary must remain public');
