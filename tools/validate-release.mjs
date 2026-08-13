@@ -1209,3 +1209,67 @@ console.log('validate-release: OK');
 console.log(`  surfaces: ${data.surfaces.length}`);
 console.log(`  hop edges: ${hopGraph.edges.length}`);
 console.log(`  master rows classified: ${migration.total_rows}`);
+
+
+// Matt Clifford × Anduril exact-event and procurement-boundary release contract.
+const andurilOrganization = orgScore.get('anduril-industries');
+assert(andurilOrganization, 'Anduril Industries source-scoped organization is missing');
+const cliffordSummitAppointment = surfaceById.get('ai-safety-summit-representative-appointment-2023-08-10');
+const andurilSummitRoundtable = surfaceById.get('dsit-techuk-anduril-ai-safety-roundtable-2023-10-17');
+const cliffordInvestorRoundtable = surfaceById.get('dsit-matt-clifford-ai-investor-roundtable-2023-10-25');
+const andurilTalosObservation = surfaceById.get('anduril-talos-phase-3-contract-observation-2023-11-02');
+for (const row of [cliffordSummitAppointment, andurilSummitRoundtable, cliffordInvestorRoundtable, andurilTalosObservation]) {
+  assert(row, 'Clifford-Anduril boundary surface is missing');
+  assert(row?.hop_eligible === false, `${row?.surface_id} must remain non-hop`);
+  assert((hopGraph.rejected_hop_surfaces ?? []).some(rejection => rejection.surface_id === row?.surface_id),
+    `${row?.surface_id} refusal must remain public`);
+  assert(!hopGraph.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === row?.surface_id)),
+    `${row?.surface_id} must never become a hop basis`);
+}
+assert(cliffordSummitAppointment?.hop_refusal_reason === 'single_actor_appointment_context',
+  'Clifford summit appointment refusal reason drift');
+assert(andurilSummitRoundtable?.hop_refusal_reason === 'organization_only_multi_party_roundtable',
+  'Anduril summit roundtable refusal reason drift');
+assert(andurilSummitRoundtable?.time_start === '2023-10-17' && andurilSummitRoundtable?.time_end === '2023-10-17',
+  'Anduril summit roundtable must remain one-day bounded');
+assert(andurilSummitRoundtable?.roster_entry_count === 16,
+  'Anduril summit roundtable source roster denominator drift');
+const andurilRoundtableParts = sourcePartsBySurface.get(andurilSummitRoundtable?.surface_id) ?? [];
+assert(andurilRoundtableParts.filter(part => part.participant_type === 'actor').length === 0,
+  'Anduril summit roundtable must not manufacture a natural-person endpoint');
+assert(sameIdSet(andurilRoundtableParts.filter(part => part.participant_type === 'organization').map(part => part.organization_id), ['anduril-industries','dsit']),
+  'Anduril summit roundtable scoped organization set drift');
+assert(cliffordInvestorRoundtable?.hop_refusal_reason === 'single_actor_multi_party_roundtable',
+  'Clifford investor roundtable refusal reason drift');
+const cliffordRoundtableParts = sourcePartsBySurface.get(cliffordInvestorRoundtable?.surface_id) ?? [];
+assert(sameIdSet(cliffordRoundtableParts.filter(part => part.participant_type === 'actor').map(part => part.actor_id), ['matt-clifford']),
+  'Clifford investor roundtable actor set drift');
+assert(!cliffordRoundtableParts.some(part => part.organization_id === 'anduril-industries'),
+  'Anduril must not be projected into Clifford’s separate roundtable');
+assert(andurilTalosObservation?.hop_refusal_reason === 'organization_only_procurement_instrument',
+  'TALOS organization-only refusal reason drift');
+const andurilTalosParts = sourcePartsBySurface.get(andurilTalosObservation?.surface_id) ?? [];
+assert(andurilTalosParts.filter(part => part.participant_type === 'actor').length === 0,
+  'TALOS observation must not manufacture actor participation');
+assert(sameIdSet(andurilTalosParts.filter(part => part.participant_type === 'organization').map(part => part.organization_id), ['anduril-industries','mod']),
+  'TALOS organization set drift');
+const andurilMeetingReceipt = receiptById.get('gov-dsit-clifford-anduril-separate-summit-roundtables-2023-10-17-25');
+const cliffordAppointmentReceipt = receiptById.get('gov-matt-clifford-ai-safety-summit-representative-2023-08-10');
+const andurilTalosReceipt = receiptById.get('gov-mod-anduril-talos-phase-3-contract-2023-11-02');
+assert(andurilMeetingReceipt?.same_recorded_event === false, 'separate DSIT event boundary drift');
+assert(andurilMeetingReceipt?.archive?.ref === 'sha256:6319116d831d2edd8356e3f9b73acb49399acddc5ff79632917429896fa04203', 'DSIT meeting-register receipt digest drift');
+assert(cliffordAppointmentReceipt?.anduril_named === false, 'Clifford appointment receipt must not name Anduril');
+assert(cliffordAppointmentReceipt?.archive?.ref === 'sha256:3f49abb5313850e2e79477225c38ce34956c42ddec30519147e0a8fde331cfd2', 'Clifford appointment receipt digest drift');
+assert(andurilTalosReceipt?.matt_clifford_named === false, 'TALOS receipt must not name Matt Clifford');
+assert(andurilTalosReceipt?.archive?.ref === 'sha256:e14ea1515884929c137d1a9592d965aa70510fe5a761780fb6f569f69a94758e', 'TALOS receipt digest drift');
+const cliffordAndurilMeetingBoundary = claimById.get('matt-clifford-anduril-separate-summit-events-boundary-2026-08-12');
+const cliffordAndurilTalosBoundary = claimById.get('matt-clifford-anduril-talos-procurement-boundary-2026-08-12');
+assert(cliffordAndurilMeetingBoundary, 'separate Clifford-Anduril summit-event boundary claim is missing');
+assert(cliffordAndurilTalosBoundary, 'Clifford-Anduril TALOS boundary claim is missing');
+assert(sameIdSet(cliffordAndurilMeetingBoundary?.actor_ids, ['matt-clifford']),
+  'Clifford-Anduril summit boundary actor set drift');
+assert((cliffordAndurilMeetingBoundary?.organization_ids ?? []).includes('anduril-industries'),
+  'Clifford-Anduril summit boundary must identify Anduril organization context');
+assert(!hopGraph.edges.some(edge => [edge.actor_a, edge.actor_b].includes('matt-clifford')
+  && edge.surfaces.some(basis => basis.surface_id.includes('anduril'))),
+  'Anduril organization context must not manufacture a Matt Clifford actor edge');

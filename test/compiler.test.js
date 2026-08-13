@@ -1175,3 +1175,54 @@ assert.ok(!voteLeave.receipt_ids.includes('warner-surface-audit-2026-06-29'),
   'the corrected Vote Leave surface must carry no lost scratch receipt');
 
 console.log('compiler.test: OK');
+
+
+// Matt Clifford × Anduril exact-event and procurement-boundary regression.
+const andurilOrg = org('anduril-industries');
+assert.ok(andurilOrg, 'Anduril Industries must exist as a source-scoped organization');
+const cliffordSummitAppointment = surf('ai-safety-summit-representative-appointment-2023-08-10');
+const andurilSummitRoundtable = surf('dsit-techuk-anduril-ai-safety-roundtable-2023-10-17');
+const cliffordInvestorRoundtable = surf('dsit-matt-clifford-ai-investor-roundtable-2023-10-25');
+const andurilTalosObservation = surf('anduril-talos-phase-3-contract-observation-2023-11-02');
+for (const surfaceRow of [cliffordSummitAppointment, andurilSummitRoundtable, cliffordInvestorRoundtable, andurilTalosObservation]) {
+  assert.ok(surfaceRow, 'every Clifford-Anduril boundary surface must compile');
+  assert.equal(surfaceRow.hop_eligible, false, `${surfaceRow.surface_id} must remain graph inert`);
+  assert.ok((hop.rejected_hop_surfaces ?? []).some(row => row.surface_id === surfaceRow.surface_id),
+    `${surfaceRow.surface_id} refusal must remain public`);
+  assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === surfaceRow.surface_id)),
+    `${surfaceRow.surface_id} must never create actor adjacency`);
+}
+assert.equal(cliffordSummitAppointment.hop_refusal_reason, 'single_actor_appointment_context');
+assert.equal(andurilSummitRoundtable.hop_refusal_reason, 'organization_only_multi_party_roundtable');
+assert.equal(andurilSummitRoundtable.time_start, '2023-10-17');
+assert.equal(andurilSummitRoundtable.time_end, '2023-10-17');
+assert.equal(andurilSummitRoundtable.roster_entry_count, 16);
+assert.deepEqual(andurilSummitRoundtable.participants.filter(p => p.participant_type === 'actor'), []);
+assert.deepEqual(andurilSummitRoundtable.participants.filter(p => p.participant_type === 'organization').map(p => p.organization_id).sort(), ['anduril-industries','dsit']);
+assert.equal(cliffordInvestorRoundtable.hop_refusal_reason, 'single_actor_multi_party_roundtable');
+assert.equal(cliffordInvestorRoundtable.time_start, '2023-10-25');
+assert.equal(cliffordInvestorRoundtable.time_end, '2023-10-25');
+assert.equal(cliffordInvestorRoundtable.roster_entry_count, 9);
+assert.deepEqual(cliffordInvestorRoundtable.participants.filter(p => p.participant_type === 'actor').map(p => p.actor_id), ['matt-clifford']);
+assert.ok(!cliffordInvestorRoundtable.participants.some(p => p.organization_id === 'anduril-industries'));
+assert.equal(andurilTalosObservation.hop_refusal_reason, 'organization_only_procurement_instrument');
+assert.deepEqual(andurilTalosObservation.participants.filter(p => p.participant_type === 'actor'), []);
+assert.deepEqual(andurilTalosObservation.participants.filter(p => p.participant_type === 'organization').map(p => p.organization_id).sort(), ['anduril-industries','mod']);
+const andurilMeetingReceipt = receipt('gov-dsit-clifford-anduril-separate-summit-roundtables-2023-10-17-25');
+const cliffordAppointmentReceipt = receipt('gov-matt-clifford-ai-safety-summit-representative-2023-08-10');
+const andurilTalosReceipt = receipt('gov-mod-anduril-talos-phase-3-contract-2023-11-02');
+assert.equal(andurilMeetingReceipt.same_recorded_event, false);
+assert.equal(andurilMeetingReceipt.archive?.ref, 'sha256:6319116d831d2edd8356e3f9b73acb49399acddc5ff79632917429896fa04203');
+assert.equal(cliffordAppointmentReceipt.anduril_named, false);
+assert.equal(cliffordAppointmentReceipt.archive?.ref, 'sha256:3f49abb5313850e2e79477225c38ce34956c42ddec30519147e0a8fde331cfd2');
+assert.equal(andurilTalosReceipt.matt_clifford_named, false);
+assert.equal(andurilTalosReceipt.archive?.ref, 'sha256:e14ea1515884929c137d1a9592d965aa70510fe5a761780fb6f569f69a94758e');
+const cliffordAndurilMeetingBoundary = claim('matt-clifford-anduril-separate-summit-events-boundary-2026-08-12');
+const cliffordAndurilTalosBoundary = claim('matt-clifford-anduril-talos-procurement-boundary-2026-08-12');
+assert.ok(cliffordAndurilMeetingBoundary, 'separate summit-event boundary must remain public');
+assert.ok(cliffordAndurilTalosBoundary, 'TALOS procurement boundary must remain public');
+assert.deepEqual(cliffordAndurilMeetingBoundary.actor_ids, ['matt-clifford']);
+assert.ok(cliffordAndurilMeetingBoundary.organization_ids.includes('anduril-industries'));
+assert.ok(!hop.edges.some(edge => [edge.actor_a, edge.actor_b].includes('matt-clifford')
+  && edge.surfaces.some(basis => basis.surface_id.includes('anduril'))),
+  'Anduril organization context must not manufacture a Matt Clifford actor edge');
