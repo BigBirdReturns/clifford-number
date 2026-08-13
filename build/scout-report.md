@@ -1,6 +1,6 @@
 # Scout Report
 
-Generated: 2026-08-13T03:41:56.906Z
+Generated: 2026-08-13T05:09:42.604Z
 
 > graph_effect: none. This is a research queue, not graph data.
 
@@ -86,13 +86,13 @@ Review whether each surface is correctly bounded. Add missing customer, investor
 
 **Observed**
 
-Dialog appears across 1 surface(s): dialog-society-membership. Secondary types: governance_continuity_surface.
+Dialog appears across 1 surface(s): dialog-public-directory-exposure-2026-06-16. Secondary types: governance_continuity_surface.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -122,13 +122,13 @@ Refs: `strategic-defence-review-development-2024-2025`, `strategic-defence-revie
 
 **Observed**
 
-Matt Clifford has 6 surfaces and secondary types governance_continuity_surface, government_advisory_surface, policy_to_procurement_surface, public_private_ai_infrastructure. Governance replacement score: 0.
+Matt Clifford has 7 surfaces and secondary types governance_continuity_surface, government_advisory_surface, policy_to_procurement_surface, public_private_ai_infrastructure. Governance replacement score: 0.
 
 **Required action**
 
 Check for additional venues where the same surface type recurs. Do not convert recurrence into a hop unless there is a bounded co-participation surface.
 
-Refs: `faculty-science-director-shareholder-overlap-2024-10-10`, `ai-opportunities-action-plan-development-2024-2025`, `ai-opportunities-action-plan-2025`, `dialog-society-membership`, `ai-safety-summit-representative-appointment-2023-08-10`, `dsit-matt-clifford-ai-investor-roundtable-2023-10-25`
+Refs: `faculty-science-director-shareholder-overlap-2024-10-10`, `ai-opportunities-action-plan-development-2024-2025`, `ai-opportunities-action-plan-2025`, `dialog-public-directory-exposure-2026-06-16`, `dialog-matt-clifford-invitation-nonattendance-2026-06-16`, `ai-safety-summit-representative-appointment-2023-08-10`, `dsit-matt-clifford-ai-investor-roundtable-2023-10-25`
 
 ---
 
@@ -434,7 +434,7 @@ Peter Thiel participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-leadership-role-observations-2026-06-16`
 
 ---
 
@@ -452,7 +452,7 @@ Auren Hoffman participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-leadership-role-observations-2026-06-16`
 
 ---
 
@@ -470,7 +470,7 @@ Raffi Grinberg participates in 1 surface(s), but no valid shared-surface path to
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-leadership-role-observations-2026-06-16`
 
 ---
 
@@ -488,7 +488,7 @@ Joe Lonsdale participates in 1 surface(s), but no valid shared-surface path to M
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -506,7 +506,7 @@ Ted Cruz participates in 1 surface(s), but no valid shared-surface path to Matt 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -524,7 +524,7 @@ Jim Himes participates in 1 surface(s), but no valid shared-surface path to Matt
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -542,7 +542,7 @@ Dan Driscoll participates in 1 surface(s), but no valid shared-surface path to M
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -560,7 +560,7 @@ Alexus Grynkewich participates in 1 surface(s), but no valid shared-surface path
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -578,7 +578,7 @@ Randy Kroszner participates in 1 surface(s), but no valid shared-surface path to
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -596,7 +596,7 @@ Scott Bessent participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -614,7 +614,7 @@ Cory Booker participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -632,7 +632,7 @@ Elon Musk participates in 1 surface(s), but no valid shared-surface path to Matt
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -650,7 +650,7 @@ Joseph Gordon-Levitt participates in 1 surface(s), but no valid shared-surface p
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -668,7 +668,7 @@ Sophia Bush participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -686,7 +686,7 @@ Ezra Klein participates in 1 surface(s), but no valid shared-surface path to Mat
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -704,7 +704,7 @@ Jonathan Levin participates in 1 surface(s), but no valid shared-surface path to
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -722,7 +722,7 @@ Sam Harris participates in 1 surface(s), but no valid shared-surface path to Mat
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -740,7 +740,7 @@ Bryan Johnson participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -758,7 +758,7 @@ Sarah Bond participates in 1 surface(s), but no valid shared-surface path to Mat
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -776,7 +776,7 @@ Scott Cook participates in 1 surface(s), but no valid shared-surface path to Mat
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -794,7 +794,7 @@ Lisa Gevelber participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -812,7 +812,7 @@ Shmuel Abramzon participates in 1 surface(s), but no valid shared-surface path t
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -830,7 +830,7 @@ Josh Brolin participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -848,7 +848,7 @@ Reid Hoffman participates in 1 surface(s), but no valid shared-surface path to M
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -866,7 +866,7 @@ Wes Moore participates in 1 surface(s), but no valid shared-surface path to Matt
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -884,7 +884,7 @@ Jared Polis participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -902,7 +902,7 @@ Lisa Monaco participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -920,7 +920,7 @@ Robert Hur participates in 1 surface(s), but no valid shared-surface path to Mat
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -938,7 +938,7 @@ Preet Bharara participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -956,7 +956,7 @@ Rachel Brand participates in 1 surface(s), but no valid shared-surface path to M
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -974,7 +974,7 @@ Mitch Daniels participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -992,7 +992,7 @@ Julian Castro participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1010,7 +1010,7 @@ Peggy Hamburg participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1028,7 +1028,7 @@ Reema Al-Saud participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1046,7 +1046,7 @@ Turki Al Faisal Al Saud participates in 1 surface(s), but no valid shared-surfac
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1064,7 +1064,7 @@ Sheikh Nawaf Saud Nasir Al-Sabah participates in 1 surface(s), but no valid shar
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1082,7 +1082,7 @@ Kaja Kallas participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1100,7 +1100,7 @@ Tarō Kōno participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1118,7 +1118,7 @@ Jens Spahn participates in 1 surface(s), but no valid shared-surface path to Mat
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1136,7 +1136,7 @@ Tom Tugendhat participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1154,7 +1154,7 @@ Shahid Khaqan Abbasi participates in 1 surface(s), but no valid shared-surface p
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1172,7 +1172,7 @@ Ali Jehangir Siddiqui participates in 1 surface(s), but no valid shared-surface 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1190,7 +1190,7 @@ Shivon Zilis participates in 1 surface(s), but no valid shared-surface path to M
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1208,7 +1208,7 @@ Stan McChrystal participates in 1 surface(s), but no valid shared-surface path t
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1226,7 +1226,7 @@ Jonathan Ross participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1244,7 +1244,7 @@ Pete Shadbolt participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1262,7 +1262,7 @@ Scott Stephenson participates in 1 surface(s), but no valid shared-surface path 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1280,7 +1280,7 @@ Barry Silbert participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1298,7 +1298,7 @@ Charlie Songhurst participates in 1 surface(s), but no valid shared-surface path
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1316,7 +1316,7 @@ Tom Lue participates in 1 surface(s), but no valid shared-surface path to Matt C
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1334,7 +1334,7 @@ Fatima Kardar participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1352,7 +1352,7 @@ Neal Mohan participates in 1 surface(s), but no valid shared-surface path to Mat
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1370,7 +1370,7 @@ Greg Brockman participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1388,7 +1388,7 @@ Jason Kwon participates in 1 surface(s), but no valid shared-surface path to Mat
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1406,7 +1406,7 @@ Adam D'Angelo participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1424,7 +1424,7 @@ Manuel Bronstein participates in 1 surface(s), but no valid shared-surface path 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1442,7 +1442,7 @@ Severin Hacker participates in 1 surface(s), but no valid shared-surface path to
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1460,7 +1460,7 @@ Wences Casares participates in 1 surface(s), but no valid shared-surface path to
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1478,7 +1478,7 @@ Immad Akhund participates in 1 surface(s), but no valid shared-surface path to M
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1496,7 +1496,7 @@ Henry Kravis participates in 1 surface(s), but no valid shared-surface path to M
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1514,7 +1514,7 @@ Pete Briger participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1532,7 +1532,7 @@ Peter Brown participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1550,7 +1550,7 @@ Karen Karniol-Tambour participates in 1 surface(s), but no valid shared-surface 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1568,7 +1568,7 @@ Mike Novogratz participates in 1 surface(s), but no valid shared-surface path to
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1586,7 +1586,7 @@ Bob Jain participates in 1 surface(s), but no valid shared-surface path to Matt 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1604,7 +1604,7 @@ Gaurva Kapadia participates in 1 surface(s), but no valid shared-surface path to
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1622,7 +1622,7 @@ Micky Malka participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1640,7 +1640,7 @@ Chamath Palihapitiya participates in 1 surface(s), but no valid shared-surface p
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1658,7 +1658,7 @@ Jared Kushner participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1676,7 +1676,7 @@ John Arnold participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1694,7 +1694,7 @@ Robert Rubin participates in 1 surface(s), but no valid shared-surface path to M
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1712,7 +1712,7 @@ Lawrence Summers participates in 1 surface(s), but no valid shared-surface path 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1730,7 +1730,7 @@ Eric Schmidt participates in 1 surface(s), but no valid shared-surface path to M
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1748,7 +1748,7 @@ Susan Athey participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1766,7 +1766,7 @@ Steven Pinker participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1784,7 +1784,7 @@ Tyler Cowen participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1802,7 +1802,7 @@ Adam Grant participates in 1 surface(s), but no valid shared-surface path to Mat
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1820,7 +1820,7 @@ Jonathan Haidt participates in 1 surface(s), but no valid shared-surface path to
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1838,7 +1838,7 @@ Anne-Marie Slaughter participates in 1 surface(s), but no valid shared-surface p
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1856,7 +1856,7 @@ Leonard Leo participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1874,7 +1874,7 @@ Grover Norquist participates in 1 surface(s), but no valid shared-surface path t
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1892,7 +1892,7 @@ Nick Thompson participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1910,7 +1910,7 @@ Bret Stephens participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1928,7 +1928,7 @@ Tim Ferriss participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1946,7 +1946,7 @@ Mike Cannon-Brookes participates in 1 surface(s), but no valid shared-surface pa
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1964,7 +1964,7 @@ Marcos Galperin participates in 1 surface(s), but no valid shared-surface path t
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -1982,7 +1982,7 @@ Demet Mutlu participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2000,7 +2000,7 @@ Cesar Carvalho participates in 1 surface(s), but no valid shared-surface path to
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2018,7 +2018,7 @@ Howie Liu participates in 1 surface(s), but no valid shared-surface path to Matt
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2036,7 +2036,7 @@ Scott Belsky participates in 1 surface(s), but no valid shared-surface path to M
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2054,7 +2054,7 @@ Steve Ells participates in 1 surface(s), but no valid shared-surface path to Mat
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2072,7 +2072,7 @@ Nicolas Berggruen participates in 1 surface(s), but no valid shared-surface path
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2090,7 +2090,7 @@ Matt Cohler participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2108,7 +2108,7 @@ Will Scharf participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2126,7 +2126,7 @@ Mario Schlosser participates in 1 surface(s), but no valid shared-surface path t
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2144,7 +2144,7 @@ Astro Teller participates in 1 surface(s), but no valid shared-surface path to M
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2162,7 +2162,7 @@ Strauss Zelnick participates in 1 surface(s), but no valid shared-surface path t
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2180,7 +2180,7 @@ Benj Pasek participates in 1 surface(s), but no valid shared-surface path to Mat
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2198,7 +2198,7 @@ Drew Scott participates in 1 surface(s), but no valid shared-surface path to Mat
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2216,7 +2216,7 @@ Kim Scott participates in 1 surface(s), but no valid shared-surface path to Matt
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2234,7 +2234,7 @@ Rick Warren participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2252,7 +2252,7 @@ Gretchen Rubin participates in 1 surface(s), but no valid shared-surface path to
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2270,7 +2270,7 @@ Charles Duhigg participates in 1 surface(s), but no valid shared-surface path to
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2288,7 +2288,7 @@ Daniel Pink participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2306,7 +2306,7 @@ Tom Goldstein participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2324,7 +2324,7 @@ Neal Katyal participates in 1 surface(s), but no valid shared-surface path to Ma
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2342,7 +2342,7 @@ Garry Kasparov participates in 1 surface(s), but no valid shared-surface path to
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2360,7 +2360,7 @@ Atul Gawande participates in 1 surface(s), but no valid shared-surface path to M
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2378,7 +2378,7 @@ Bob Cialdini participates in 1 surface(s), but no valid shared-surface path to M
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2396,7 +2396,7 @@ John Townsend participates in 1 surface(s), but no valid shared-surface path to 
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2414,7 +2414,7 @@ Tim Urban participates in 1 surface(s), but no valid shared-surface path to Matt
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2432,7 +2432,7 @@ Thasunda Brown Duckett participates in 1 surface(s), but no valid shared-surface
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2450,7 +2450,7 @@ Vas Narasimhan participates in 1 surface(s), but no valid shared-surface path to
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 
@@ -2468,7 +2468,7 @@ Elizabeth Blackburn participates in 1 surface(s), but no valid shared-surface pa
 
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
-Refs: `dialog-society-membership`
+Refs: `dialog-public-directory-exposure-2026-06-16`
 
 ---
 

@@ -32,6 +32,57 @@ const receipt = id => ledgerReceipts.find(row => row.receipt_id === id);
 const claim = id => receiptGraph.claims.find(row => row.claim_id === id);
 
 
+// Dialog directory, role, and invitation boundary regression.
+assert.equal(surf('dialog-society-membership'), undefined,
+  'the mixed open-ended Dialog composite must be retired');
+const dialogDirectory = surf('dialog-public-directory-exposure-2026-06-16');
+const dialogLeadership = surf('dialog-leadership-role-observations-2026-06-16');
+const dialogInvitation = surf('dialog-matt-clifford-invitation-nonattendance-2026-06-16');
+assert.ok(dialogDirectory && dialogLeadership && dialogInvitation,
+  'all three bounded Dialog propositions must compile');
+assert.equal(dialogDirectory.hop_eligible, false);
+assert.equal(dialogDirectory.hop_refusal_reason, 'dense_directory_listing_not_shared_participation');
+assert.equal(dialogDirectory.time_start, '2026-06-16');
+assert.equal(dialogDirectory.time_end, '2026-06-16');
+const dialogDirectoryActors = dialogDirectory.participants
+  .filter(part => part.participant_type === 'actor')
+  .map(part => part.actor_id);
+assert.equal(dialogDirectoryActors.length, 112);
+assert.ok(dialogDirectoryActors.includes('matt-clifford'));
+assert.deepEqual(
+  dialogLeadership.participants.filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id).sort(),
+  ['auren-hoffman', 'peter-thiel', 'raffi-grinberg'],
+);
+assert.equal(dialogLeadership.hop_eligible, false);
+assert.equal(dialogLeadership.hop_refusal_reason, 'reported_role_observations_not_shared_event');
+assert.deepEqual(
+  dialogInvitation.participants.filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id),
+  ['matt-clifford'],
+);
+assert.equal(dialogInvitation.hop_eligible, false);
+assert.equal(dialogInvitation.hop_refusal_reason, 'invitation_without_attendance_or_membership');
+for (const dialogSurface of [dialogDirectory, dialogLeadership, dialogInvitation]) {
+  assert.ok((hop.rejected_hop_surfaces ?? []).some(row =>
+    row.surface_id === dialogSurface.surface_id
+      && row.reason === dialogSurface.hop_refusal_reason));
+  assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis =>
+    basis.surface_id === dialogSurface.surface_id)));
+}
+const dialogBoundaryClaim = claim('dialog-matt-clifford-peter-thiel-boundary-2026-06-16');
+assert.ok(dialogBoundaryClaim,
+  'the Clifford/Thiel Dialog refusal must remain public');
+assert.deepEqual([...dialogBoundaryClaim.actor_ids].sort(), ['matt-clifford', 'peter-thiel']);
+assert.equal(receipt('dialog-human-layer'), undefined,
+  'the local Dialog analysis note must not remain a live canonical receipt');
+assert.equal(receipt('wired-dialog-leak').source_published_at, '2026-06-16');
+assert.equal(receipt('wired-dialog-leak').matt_clifford_reported_invited, true);
+assert.equal(receipt('wired-dialog-leak').matt_clifford_reported_never_attended, true);
+assert.equal(receipt('wired-dialog-leak').archive.ref, 'sha256:5648e648af1db7c30a679adb918f5f2c5122e832ca57b3c612f219c380c652a6');
+assert.equal(receipt('dialog-directory-extract').directory_listing_count, 112);
+assert.equal(receipt('dialog-directory-extract').archive.ref, 'sha256:02bb38b250f66b6cc355176fd3d4d375bcb695b1a351bbc88ca0e37ac5200956');
+
 // LocalGlobe organization-endpoint refusal regression.
 const electricTwinNamedAngelRound = surf('electric-twin-seed-round-2026-02-11');
 const electricTwinInstitutionalRound = surf(
