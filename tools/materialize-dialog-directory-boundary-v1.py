@@ -128,7 +128,7 @@ def recover_and_patch_materializer() -> Path:
     )
     text = replace_once(text, old, new)
 
-    target = Path('/tmp/dialog-bounded-materializer.py')
+    target = Path(SOURCE_PATH)
     target.write_text(text, encoding='utf-8')
     return target
 
@@ -174,7 +174,16 @@ def run_release_diagnostics() -> None:
 
 def main() -> None:
     target = recover_and_patch_materializer()
-    subprocess.run([sys.executable, str(target)], check=True)
+    result = subprocess.run([sys.executable, str(target)], text=True, capture_output=True)
+    if result.stdout:
+        print(result.stdout, end='' if result.stdout.endswith('\n') else '\n')
+    if result.stderr:
+        print(result.stderr, end='' if result.stderr.endswith('\n') else '\n', file=sys.stderr)
+    if result.returncode:
+        detail = (result.stdout + "\n" + result.stderr).strip()
+        tail = detail[-12000:] if detail else f"exit code {result.returncode} with no output"
+        print(f"::error title=Dialog source transaction::{annotation_escape(tail)}")
+        raise SystemExit(result.returncode)
     run_release_diagnostics()
 
 
