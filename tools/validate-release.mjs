@@ -1577,3 +1577,79 @@ assert((cliffordAndurilMeetingBoundary?.organization_ids ?? []).includes('anduri
 assert(!hopGraph.edges.some(edge => [edge.actor_a, edge.actor_b].includes('matt-clifford')
   && edge.surfaces.some(basis => basis.surface_id.includes('anduril'))),
   'Anduril organization context must not manufacture a Matt Clifford actor edge');
+
+
+// Frontier AI Taskforce External Advisory Board exact appointment release contract.
+{
+  const frontierBoard = surfaceById.get('frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07');
+  const frontierBoardActors = ["matt-clifford","yoshua-bengio","anne-keast-butler","alex-van-someren","matt-collins-national-security","paul-christiano","helen-stokes-lampard"].sort();
+  assert(frontierBoard?.hop_eligible === true,
+    'Frontier AI Taskforce board appointment surface must remain hop eligible');
+  assert(frontierBoard?.surface_type === 'board_advisory_surface',
+    'Frontier AI Taskforce board appointment surface type drift');
+  assert(frontierBoard?.evidence_class === 'official',
+    'Frontier AI Taskforce board appointment evidence drift');
+  assert(frontierBoard?.time_start === '2023-09-07' && frontierBoard?.time_end === '2023-09-07',
+    'Frontier AI Taskforce board appointment must remain one day');
+  assert(frontierBoard?.roster_entry_count === 7,
+    'Frontier AI Taskforce board roster denominator drift');
+  const frontierBoardParts = sourcePartsBySurface.get('frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07') ?? [];
+  assert(sameIdSet(
+    frontierBoardParts.filter(part => part.participant_type === 'actor').map(part => part.actor_id),
+    frontierBoardActors,
+  ), 'Frontier AI Taskforce board actor denominator drift');
+  assert(sameIdSet(
+    frontierBoardParts.filter(part => part.participant_type === 'organization').map(part => part.organization_id),
+    ['aisi', 'dsit'],
+  ), 'Frontier AI Taskforce board organization denominator drift');
+  assert(frontierBoardParts.find(part => part.actor_id === 'matt-clifford')?.participation_type
+    === 'external_advisory_board_vice_chair_appointment',
+    'Matt Clifford board vice-chair role drift');
+  const frontierBoardEdges = hopGraph.edges.filter(edge =>
+    edge.surfaces.some(basis => basis.surface_id === 'frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07'));
+  assert(frontierBoardEdges.length === 21,
+    'seven Frontier AI Taskforce board appointees must compile twenty-one bases');
+  assert(frontierBoardEdges.every(edge => edge.surfaces.some(basis =>
+    basis.surface_id === 'frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07'
+      && basis.valid_from === '2023-09-07'
+      && basis.valid_until === '2023-09-07'
+      && basis.evidence_class === 'official')),
+    'every Frontier AI Taskforce board basis must remain exact-date and official');
+  for (const actorId of frontierBoardActors.filter(id => id !== 'matt-clifford')) {
+    assert(data.actors.some(row => row.id === actorId), 'missing Frontier AI Taskforce actor ' + actorId);
+    assert(hopGraph.edges.some(edge =>
+      [edge.actor_a, edge.actor_b].sort().join('|') === [actorId, 'matt-clifford'].sort().join('|')
+        && edge.surfaces.some(basis => basis.surface_id === 'frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07')),
+      actorId + ' must retain a direct board-appointment basis to Matt Clifford');
+  }
+  assert(!frontierBoardParts.some(part => ['ian-hogarth', 'yarin-gal', 'david-kreuger'].includes(part.actor_id)),
+    'non-board roles must remain outside the seven-person board cohort');
+  const frontierBoardReceipt = receiptById.get('gov-frontier-ai-taskforce-external-advisory-board-2023-09-07');
+  assert(frontierBoardReceipt?.archive?.ref
+    === 'sha256:be863ec337a09a6f695bc5905a44cd811022ca3b15931bcaed74fbeec943576e',
+    'Frontier AI Taskforce board receipt digest drift');
+  assert(sameIdSet(frontierBoardReceipt?.board_member_actor_ids, frontierBoardActors),
+    'Frontier AI Taskforce board receipt actor denominator drift');
+  assert(frontierBoardReceipt?.board_member_count === 7,
+    'Frontier AI Taskforce board receipt count drift');
+  assert(frontierBoardReceipt?.vice_chair_actor_id === 'matt-clifford',
+    'Frontier AI Taskforce vice-chair identity drift');
+  assert(frontierBoardReceipt?.members_join_as_individuals === true,
+    'Frontier AI Taskforce board must remain individual rather than employer representation');
+  assert(frontierBoardReceipt?.active_contribution_to_all_meetings_stated === true,
+    'Frontier AI Taskforce board terms contribution field drift');
+  assert(frontierBoardReceipt?.first_meeting_date_established === false,
+    'Frontier AI Taskforce receipt must not invent a first meeting date');
+  assert(frontierBoardReceipt?.continuous_tenure_established === false,
+    'Frontier AI Taskforce receipt must not invent continuous tenure');
+  assert(frontierBoardReceipt?.employer_representation_established === false,
+    'Frontier AI Taskforce receipt must not convert employers into board participants');
+  assert(frontierBoardReceipt?.procurement_participation_established === false,
+    'Frontier AI Taskforce receipt must not invent procurement participation');
+  const frontierBoardClaim = claimById.get('frontier-ai-taskforce-external-advisory-board-cohort-2023-09-07');
+  assert(frontierBoardClaim, 'Frontier AI Taskforce board cohort claim is missing');
+  assert(sameIdSet(frontierBoardClaim?.actor_ids, frontierBoardActors),
+    'Frontier AI Taskforce claim actor denominator drift');
+  assert(sameIdSet(frontierBoardClaim?.organization_ids, ['aisi', 'dsit']),
+    'Frontier AI Taskforce claim organization denominator drift');
+}
