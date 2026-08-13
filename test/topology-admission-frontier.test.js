@@ -80,10 +80,55 @@ assert.equal(valid.report.counts.admitted_surfaces, 1);
 assert.equal(valid.report.counts.context_only_surfaces_without_explicit_refusal, 1);
 assert.equal(valid.report.counts.expected_actor_pair_bases, 1);
 assert.equal(valid.report.counts.compiled_actor_pair_bases, 1);
+assert.equal(valid.report.counts.temporally_refused_actor_pairs, 0);
+assert.equal(valid.report.counts.covered_actor_pair_bases, 1);
+assert.equal(valid.report.counts.missing_actor_pair_bases, 0);
 assert.deepEqual(valid.report.admitted_surfaces[0].actor_ids, ['actor-a', 'actor-b']);
 assert.deepEqual(valid.report.admitted_surfaces[0].organization_ids, ['organization-x']);
 assert.equal(valid.report.admitted_surfaces[0].compiled_actor_pair_count, 1);
 assert.equal(valid.report.context_only_surfaces_without_explicit_refusal[0].actor_count, 0);
+
+const temporalRefusal = fixture();
+temporalRefusal.hopGraph.edges = [];
+temporalRefusal.hopGraph.rejected_hop_pairs = [
+  {
+    surface_id: 'bounded-event',
+    actor_a: 'actor-a',
+    actor_b: 'actor-b',
+    reason: 'no_temporal_overlap',
+    actor_a_window: {
+      valid_from: '2026-01-01',
+      valid_until: '2026-01-01',
+      dated: true,
+    },
+    actor_b_window: {
+      valid_from: '2026-01-02',
+      valid_until: '2026-01-02',
+      dated: true,
+    },
+    surface_window: {
+      valid_from: '2026-01-01',
+      valid_until: '2026-01-02',
+      dated: true,
+    },
+    receipt_ids: ['receipt-event', 'receipt-a', 'receipt-b'],
+    publication_status: 'verified',
+  },
+];
+const temporalRefusalResult = analyzeTopologyAdmissionFrontier(temporalRefusal);
+assert.deepEqual(temporalRefusalResult.errors, []);
+assert.equal(temporalRefusalResult.report.counts.compiled_actor_pair_bases, 0);
+assert.equal(temporalRefusalResult.report.counts.temporally_refused_actor_pairs, 1);
+assert.equal(temporalRefusalResult.report.counts.covered_actor_pair_bases, 1);
+assert.equal(temporalRefusalResult.report.counts.missing_actor_pair_bases, 0);
+assert.deepEqual(
+  temporalRefusalResult.report.admitted_surfaces[0].missing_actor_pair_keys,
+  [],
+);
+assert.equal(
+  temporalRefusalResult.report.admitted_surfaces[0].temporal_refusals[0].reason,
+  'no_temporal_overlap',
+);
 
 const missingRefusal = fixture();
 missingRefusal.surfaces.push({
