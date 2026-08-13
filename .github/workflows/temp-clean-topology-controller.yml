@@ -6,7 +6,7 @@ on:
       - agent/topology-admission-frontier-clean-controller-v1
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   materialize:
@@ -16,18 +16,16 @@ jobs:
         with:
           fetch-depth: 0
           show-progress: false
-          persist-credentials: true
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Materialize, validate, and publish clean product
+      - name: Materialize and validate clean product
         shell: bash
         env:
-          GITHUB_TOKEN: ${{ github.token }}
           SOURCE_SHA: 51b8a8d1ed342fc7ee157e31f3a41645bb0f1d00
           EXPECTED_TARGET_HEAD: 55ffac16851697ff9cf8492bc9f989e28a0d2a47
           TARGET_BRANCH: agent/topology-admission-frontier-v1
-          CONTROLLER_BRANCH: agent/topology-admission-frontier-clean-controller-v1
         run: |
           set -euo pipefail
           cp tools/temp-clean-topology-controller.py /tmp/temp-clean-topology-controller.py
@@ -37,9 +35,7 @@ jobs:
             test/topology-admission-frontier.test.js
           do
             curl --fail --silent --show-error --location \
-              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-              -H 'Accept: application/vnd.github.raw+json' \
-              "https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/${path}?ref=${SOURCE_SHA}" \
+              "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${SOURCE_SHA}/${path}" \
               -o "/tmp/source-files/${path}"
           done
           python - <<'PY'
@@ -56,6 +52,8 @@ jobs:
 
           git fetch --no-tags origin main "$TARGET_BRANCH"
           base_sha="$(git rev-parse origin/main)"
+          test "$base_sha" = 'fd34ca0a2726ff6972ccbc32ea7e5e13101b161b'
+          test "$(git rev-parse "origin/${TARGET_BRANCH}")" = "$EXPECTED_TARGET_HEAD"
           git checkout --detach "$base_sha"
           python /tmp/temp-clean-topology-controller.py
 
@@ -70,8 +68,6 @@ jobs:
           node test/topology-admission-frontier.test.js
           npm run release:check
 
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add \
             .github/workflows/ci.yml \
             data/ledger/surfaces.jsonl \
@@ -96,8 +92,31 @@ jobs:
           test "$(git ls-files -s tools/compile.mjs | awk '{print $1}')" = '100755'
           test "$(git ls-files -s tools/build-topology-admission-frontier.mjs | awk '{print $1}')" = '100755'
 
-          git commit -m 'topology: bind admission to exact participant stints'
-          git push \
-            --force-with-lease="refs/heads/${TARGET_BRANCH}:${EXPECTED_TARGET_HEAD}" \
-            origin "HEAD:refs/heads/${TARGET_BRANCH}"
-          git push origin --delete "$CONTROLLER_BRANCH"
+          rm -rf topology-product
+          mkdir -p topology-product
+          while IFS= read -r path; do
+            mkdir -p "topology-product/$(dirname "$path")"
+            cp -p "$path" "topology-product/$path"
+          done <<< "$expected_paths"
+
+          {
+            printf 'base_sha=%s\n' "$base_sha"
+            printf 'expected_target_head=%s\n' "$EXPECTED_TARGET_HEAD"
+            printf 'source_sha=%s\n' "$SOURCE_SHA"
+            printf 'paths:\n%s\n' "$expected_paths"
+            printf 'modes_and_hashes:\n'
+            while IFS= read -r path; do
+              stat -c '%a %n' "$path"
+              sha256sum "$path"
+            done <<< "$expected_paths"
+          } > topology-product-manifest.txt
+          git diff --cached --binary --full-index > topology-product.patch
+          tar --numeric-owner --owner=0 --group=0 -czf topology-product.tar.gz \
+            topology-product topology-product-manifest.txt topology-product.patch
+      - name: Upload validated product tree
+        uses: actions/upload-artifact@v4
+        with:
+          name: topology-admission-frontier-validated-tree
+          path: topology-product.tar.gz
+          if-no-files-found: error
+          retention-days: 1
