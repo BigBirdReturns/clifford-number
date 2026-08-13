@@ -1420,6 +1420,68 @@ assert.equal(entrelezarReceipt.archive.ref, 'sha256:79d95a713860977a55c76363b3b0
 assert.ok(claim('rich-drake-to-matt-clifford-three-hop-all-time-route-2026-08-12'));
 assert.ok(claim('anduril-uk-official-procurement-chronology-2021-2026'));
 
+
+// Atlantic Bastion official launch-publication regression.
+{
+  const surface = surf('atlantic-bastion-launch-publication-2025-12-08');
+  assert.ok(surface, 'Atlantic Bastion launch surface must compile');
+  assert.equal(surface.hop_eligible, true);
+  assert.equal(surface.time_start, '2025-12-08');
+  assert.equal(surface.time_end, '2025-12-08');
+  assert.equal(surface.evidence_class, 'official');
+  const actorIds = surface.participants
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id)
+    .sort();
+  assert.deepEqual(actorIds, [
+    'amelia-gould-helsing',
+    'gwyn-jenkins',
+    'john-healey',
+    'rich-drake',
+    'scott-jamieson-bae',
+  ]);
+  const pairKey = edge => [edge.actor_a, edge.actor_b].sort().join('|');
+  const launchEdges = hop.edges.filter(edge =>
+    edge.surfaces.some(basis => basis.surface_id === 'atlantic-bastion-launch-publication-2025-12-08'));
+  assert.equal(launchEdges.length, 10, 'five named launch participants must compile to ten exact publication bases');
+  const expectedPairs = [];
+  for (let i = 0; i < actorIds.length; i++) {
+    for (let j = i + 1; j < actorIds.length; j++) expectedPairs.push([actorIds[i], actorIds[j]].sort().join('|'));
+  }
+  assert.deepEqual(launchEdges.map(pairKey).sort(), expectedPairs.sort());
+  const healeyDrake = hop.edges.find(edge => pairKey(edge) === 'john-healey|rich-drake');
+  assert.ok(healeyDrake?.surfaces.some(basis =>
+    basis.surface_id === 'atlantic-bastion-launch-publication-2025-12-08'
+      && basis.valid_from === '2025-12-08'
+      && basis.valid_until === '2025-12-08'));
+  for (const actorId of ['gwyn-jenkins', 'scott-jamieson-bae', 'amelia-gould-helsing']) {
+    assert.equal(shortestPath(topology, actorId, 'matt-clifford').number, 3,
+      `${actorId} must have a three-hop all-time route to Matt Clifford`);
+    assert.equal(shortestPath(topology, actorId, 'matt-clifford', { asOf: '2025-12-08' }).number, null,
+      `${actorId} route must be refused as contemporaneous on the launch date`);
+    assert.ok(!hop.edges.some(edge => pairKey(edge) === [actorId, 'matt-clifford'].sort().join('|')),
+      `${actorId} must not receive a direct Matt Clifford edge`);
+  }
+  const context = surf('atlantic-bastion-industry-program-context-2025-12-08');
+  assert.ok(context, 'Atlantic Bastion wider programme context must compile');
+  assert.equal(context.hop_eligible, false);
+  assert.equal(context.hop_refusal_reason, 'organization_only_multi_party_program_context');
+  assert.equal(context.roster_entry_count, 20);
+  assert.equal(context.proposal_count, 26);
+  assert.ok((hop.rejected_hop_surfaces ?? []).some(row =>
+    row.surface_id === 'atlantic-bastion-industry-program-context-2025-12-08'
+      && row.reason === 'organization_only_multi_party_program_context'));
+  assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === 'atlantic-bastion-industry-program-context-2025-12-08')));
+  const sourceReceipt = receipt('gov-mod-atlantic-bastion-launch-2025-12-08');
+  assert.equal(sourceReceipt.archive.ref, 'sha256:fbdc504cf86258811277a259578e9e217108bd5fc0033b82c0c5d242f93db059');
+  assert.deepEqual([...sourceReceipt.named_actor_ids].sort(), actorIds);
+  assert.equal(sourceReceipt.all_named_actors_same_physical_event_established, false);
+  assert.equal(sourceReceipt.matt_clifford_named, false);
+  assert.ok(claim('atlantic-bastion-named-launch-publication-cohort-2025-12-08'));
+  assert.ok(claim('atlantic-bastion-industry-denominator-boundary-2025-12-08'));
+  assert.ok(claim('matt-clifford-atlantic-bastion-boundary-2025-12-08'));
+}
+
 console.log('compiler.test: OK');
 
 
