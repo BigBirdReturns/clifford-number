@@ -1,4 +1,4 @@
-name: Materialize Dialog directory boundary on current main v2
+name: Materialize Dialog directory boundary on current main v3
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: materialize-dialog-directory-boundary-current-main-v2
+  group: materialize-dialog-directory-boundary-current-main-v3
   cancel-in-progress: false
 
 env:
@@ -33,7 +33,7 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Capture bounded transport and current main
+      - name: Capture exact transport, live main, and candidate lease
         shell: bash
         run: |
           set -euo pipefail
@@ -50,7 +50,7 @@ jobs:
             exit 1
           fi
 
-          cp "$MATERIALIZER_PATH" /tmp/materialize-dialog-directory-boundary-v1.py
+          cp "$MATERIALIZER_PATH" /tmp/dialog-transaction.py
           BASE_SHA="$(git rev-parse origin/main)"
           PRODUCT_LEASE="$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | cut -f1)"
           test -n "$PRODUCT_LEASE"
@@ -70,101 +70,15 @@ jobs:
           cp build/hop-graph.json /tmp/dialog-base-hop-graph.json
           git reset --hard "$BASE_SHA"
 
-      - name: Reconcile actual Dialog denominator
+      - name: Apply transaction and run complete release gate
         shell: bash
         run: |
           set -euo pipefail
-          cp /tmp/materialize-dialog-directory-boundary-v1.py "$MATERIALIZER_PATH"
-          python - <<'PY'
-          from pathlib import Path
-
-          path = Path('tools/materialize-dialog-directory-boundary-v1.py')
-          text = path.read_text(encoding='utf-8')
-
-          def replace_once(old: str, new: str) -> None:
-              global text
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'expected one patch seam, observed {count}: {old[:80]!r}')
-              text = text.replace(old, new, 1)
-
-          # Current main contains 112 actor listings, three officer observations,
-          # and one Dialog organization-context row. The earlier transport assumed
-          # 113 actor listings and therefore failed closed before changing data.
-          stale_count = text.count('113')
-          if stale_count != 9:
-              raise SystemExit(f'unexpected stale 113-count in materializer: {stale_count}')
-          text = text.replace('113', '112')
-
-          replace_once(
-              '    officers = [row for row in rows if row.get("participation_type") == "society_officer"]\n'
-              '    if len(rows) != 116 or len(listings) != 112 or len(officers) != 3:\n'
-              '        raise SystemExit(\n'
-              '            f"unexpected Dialog denominator: total={len(rows)} listings={len(listings)} officers={len(officers)}"\n'
-              '        )\n',
-              '    officers = [row for row in rows if row.get("participation_type") == "society_officer"]\n'
-              '    organizations = [row for row in rows if row.get("participant_type") == "organization"]\n'
-              '    if len(rows) != 116 or len(listings) != 112 or len(officers) != 3 or len(organizations) != 1:\n'
-              '        raise SystemExit(\n'
-              '            f"unexpected Dialog denominator: total={len(rows)} listings={len(listings)} "\n'
-              '            f"officers={len(officers)} organizations={len(organizations)}"\n'
-              '        )\n',
-          )
-          replace_once(
-              '    if officer_roles != EXPECTED_OFFICERS:\n'
-              '        raise SystemExit(f"unexpected Dialog officer rows: {officer_roles}")\n'
-              '    if not any(row.get("actor_id") == "matt-clifford" for row in listings):\n',
-              '    if officer_roles != EXPECTED_OFFICERS:\n'
-              '        raise SystemExit(f"unexpected Dialog officer rows: {officer_roles}")\n'
-              '    if [row.get("organization_id") for row in organizations] != ["dialog"]:\n'
-              '        raise SystemExit(f"unexpected Dialog organization rows: {organizations}")\n'
-              '    if not any(row.get("actor_id") == "matt-clifford" for row in listings):\n',
-          )
-          replace_once(
-              '    officer_rows = [row for row in old_rows if row.get("participation_type") == "society_officer"]\n'
-              '    first = next(i for i, row in enumerate(participation) if row.get("surface_id") == OLD)\n',
-              '    officer_rows = [row for row in old_rows if row.get("participation_type") == "society_officer"]\n'
-              '    organization_rows = [row for row in old_rows if row.get("participant_type") == "organization"]\n'
-              '    first = next(i for i, row in enumerate(participation) if row.get("surface_id") == OLD)\n',
-          )
-          replace_once(
-              '    invitation_row = {\n',
-              '    new_organization_rows = []\n'
-              '    for source in organization_rows:\n'
-              '        row = dict(source)\n'
-              '        row["surface_id"] = DIRECTORY\n'
-              '        row["role"] = "Dialog organization named as the public-directory host"\n'
-              '        row["participation_type"] = "organization_context"\n'
-              '        row["time_start"] = OBSERVED_AT\n'
-              '        row["time_end"] = OBSERVED_AT\n'
-              '        row["evidence_class"] = "primary_public"\n'
-              '        row["receipt_ids"] = ["dialog-directory-extract", "wired-dialog-leak"]\n'
-              '        row["notes"] = "Organization context only; Dialog cannot occupy an actor endpoint."\n'
-              '        new_organization_rows.append(row)\n'
-              '\n'
-              '    invitation_row = {\n',
-          )
-          replace_once(
-              '    retained[first:first] = new_listing_rows + new_officer_rows + [invitation_row]\n',
-              '    retained[first:first] = (\n'
-              '        new_listing_rows + new_organization_rows + new_officer_rows + [invitation_row]\n'
-              '    )\n',
-          )
-
-          path.write_text(text, encoding='utf-8')
-          PY
-
-      - name: Apply bounded Dialog source transaction
-        shell: bash
-        run: |
-          set -euo pipefail
+          cp /tmp/dialog-transaction.py "$MATERIALIZER_PATH"
           python "$MATERIALIZER_PATH"
           rm "$MATERIALIZER_PATH"
 
-      - name: Run complete repository release gate
-        run: npm run release:check
-
-      - name: Verify exact Dialog effect
+      - name: Verify exact Dialog topology, receipts, and regression effect
         shell: bash
         run: |
           set -euo pipefail
@@ -217,6 +131,7 @@ jobs:
           assert directory['hop_eligible'] is False
           assert directory['hop_refusal_reason'] == 'dense_directory_listing_not_shared_participation'
           assert directory['time_start'] == directory['time_end'] == '2026-06-16'
+
           directory_rows = [row for row in parts if row['surface_id'] == DIRECTORY]
           directory_actors = [row for row in directory_rows if row.get('participant_type') == 'actor']
           directory_orgs = [row for row in directory_rows if row.get('participant_type') == 'organization']
@@ -224,13 +139,17 @@ jobs:
           assert len(directory_actors) == 112
           assert [row.get('organization_id') for row in directory_orgs] == ['dialog']
           assert 'matt-clifford' in {row.get('actor_id') for row in directory_actors}
+          assert all(row.get('actor_id') is None for row in directory_orgs)
+
           assert {row['actor_id'] for row in parts if row['surface_id'] == LEADERSHIP} == {
               'peter-thiel', 'auren-hoffman', 'raffi-grinberg'
           }
+          assert leadership['hop_eligible'] is False
           assert leadership['hop_refusal_reason'] == 'reported_role_observations_not_shared_event'
           assert [row['actor_id'] for row in parts if row['surface_id'] == INVITATION] == [
               'matt-clifford'
           ]
+          assert invitation['hop_eligible'] is False
           assert invitation['hop_refusal_reason'] == 'invitation_without_attendance_or_membership'
           assert any(row['claim_id'] == CLAIM for row in claims)
 
@@ -257,8 +176,13 @@ jobs:
               observed = hashlib.sha256(Path(file_path).read_bytes()).hexdigest()
               assert receipt_by_id[receipt_id]['archive']['ref'] == f'sha256:{observed}'
               assert receipt_by_id[receipt_id]['path'] == file_path
+          assert receipt_by_id['wired-dialog-leak']['matt_clifford_reported_invited'] is True
           assert receipt_by_id['wired-dialog-leak']['matt_clifford_reported_never_attended'] is True
           assert receipt_by_id['dialog-directory-extract']['directory_listing_count'] == 112
+
+          density_text = Path('test/density.test.js').read_text(encoding='utf-8')
+          assert OLD not in density_text
+          assert DIRECTORY in density_text
 
           canonical = public_map['inventory']['canonical']
           assert canonical['surfaces'] == len(surfaces)
@@ -304,6 +228,7 @@ jobs:
               'receipts/topology/dialog-directory-extract-2026-06-16.md',
               'receipts/topology/wired-dialog-leak-2026-06-16.md',
               'test/compiler.test.js',
+              'test/density.test.js',
               'tools/validate-release.mjs',
           }
           generated_prefixes = (
@@ -360,6 +285,7 @@ jobs:
             echo "- parent: \`$BASE_SHA\`"
             echo "- product: \`${{ steps.publish.outputs.product_sha }}\`"
             echo "- tree: \`${{ steps.publish.outputs.product_tree }}\`"
+            echo '- complete release gate: passed'
             echo '- legacy composite: retired'
             echo '- directory actor listings: `112`'
             echo '- preserved organization context: `dialog`'
