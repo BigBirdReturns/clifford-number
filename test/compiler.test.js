@@ -1606,3 +1606,101 @@ assert.ok(!hop.edges.some(edge => [edge.actor_a, edge.actor_b].includes('matt-cl
   assert.deepEqual([...frontierBoardClaim.actor_ids].sort(), frontierBoardActors);
   assert.deepEqual(frontierBoardClaim.surface_ids, ['frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07']);
 }
+
+// Electric Twin × Virgin exact MAD//Fest shared-stage regression.
+{
+  const madfestSurface = surf('electric-twin-virgin-madfest-session-2026-07-08');
+  const madfestActorIds = ['ben-warner', 'james-tyrrell', 'michael-barber-virgin'].sort();
+  const madfestOrganizationIds = ['electric-twin', 'virgin'].sort();
+  assert.ok(madfestSurface, 'the exact Electric Twin / Virgin MAD//Fest session must compile');
+  assert.equal(madfestSurface.surface_type, 'customer_vendor_surface');
+  assert.deepEqual(
+    [...madfestSurface.secondary_surface_types].sort(),
+    ['category_formation_surface', 'model_governance_surface'],
+  );
+  assert.equal(madfestSurface.hop_eligible, true);
+  assert.equal(madfestSurface.evidence_class, 'primary_public');
+  assert.equal(madfestSurface.time_start, '2026-07-08');
+  assert.equal(madfestSurface.time_end, '2026-07-08');
+  assert.deepEqual(
+    madfestSurface.participants
+      .filter(part => part.participant_type === 'actor')
+      .map(part => part.actor_id)
+      .sort(),
+    madfestActorIds,
+  );
+  assert.deepEqual(
+    madfestSurface.participants
+      .filter(part => part.participant_type === 'organization')
+      .map(part => part.organization_id)
+      .sort(),
+    madfestOrganizationIds,
+  );
+  assert.deepEqual(madfestSurface.receipt_ids, ['madfest-electric-twin-virgin-session-2026-07-08']);
+
+  const pairKeyMadfest = edge => [edge.actor_a, edge.actor_b].sort().join('|');
+  const expectedMadfestPairs = [
+    'ben-warner|james-tyrrell',
+    'ben-warner|michael-barber-virgin',
+    'james-tyrrell|michael-barber-virgin',
+  ].sort();
+  const madfestEdges = hop.edges.filter(edge =>
+    edge.surfaces.some(basis =>
+      basis.surface_id === 'electric-twin-virgin-madfest-session-2026-07-08'));
+  assert.equal(madfestEdges.length, 3,
+    'three confirmed speakers must create exactly three shared-session bases');
+  assert.deepEqual(madfestEdges.map(pairKeyMadfest).sort(), expectedMadfestPairs);
+  for (const edge of madfestEdges) {
+    const basis = edge.surfaces.find(row =>
+      row.surface_id === 'electric-twin-virgin-madfest-session-2026-07-08');
+    assert.ok(basis);
+    assert.equal(basis.evidence_class, 'primary_public');
+    assert.equal(basis.valid_from, '2026-07-08');
+    assert.equal(basis.valid_until, '2026-07-08');
+    assert.deepEqual(basis.receipt_ids, ['madfest-electric-twin-virgin-session-2026-07-08']);
+  }
+
+  const madfestReceipt = receipt('madfest-electric-twin-virgin-session-2026-07-08');
+  assert.ok(madfestReceipt);
+  assert.equal(madfestReceipt.post_event_linkedin_activity_id, '7481323614089420800');
+  assert.equal(madfestReceipt.pre_event_linkedin_activity_id, '7477684891963531264');
+  assert.equal(madfestReceipt.shared_stage_confirmed, true);
+  assert.equal(madfestReceipt.agenda_listing_alone_treated_as_attendance, false);
+  assert.equal(madfestReceipt.virgin_identity_scope, 'source_name_only');
+  assert.equal(madfestReceipt.virgin_legal_entity_resolved, false);
+  assert.equal(madfestReceipt.contract_terms_established, false);
+  assert.equal(
+    madfestReceipt.archive?.ref,
+    'sha256:5cbbcb8f7fa18c0c29e2f97dea26ebb1608b02a28463c1af5e48a7b6e5451c13',
+  );
+
+  const sourceOrganizations = JSON.parse(
+    fs.readFileSync('data/canonical/organizations.json', 'utf8'),
+  ).organizations;
+  const virginSource = sourceOrganizations.find(row => row.id === 'virgin');
+  assert.ok(virginSource);
+  assert.equal(virginSource.identity_status, 'source_name_scope');
+  assert.match(virginSource.notes, /does not resolve/i);
+
+  const madfestTopology = buildAdjacency(hop.edges);
+  for (const actorId of ['james-tyrrell', 'michael-barber-virgin']) {
+    assert.equal(actor(actorId)?.clifford_number, 3,
+      `${actorId} must inherit a three-hop all-time route through Ben Warner`);
+    assert.deepEqual(
+      shortestPath(madfestTopology, actorId, 'matt-clifford').actor_path,
+      [actorId, 'ben-warner', 'marc-warner', 'matt-clifford'],
+    );
+    assert.equal(
+      shortestPath(madfestTopology, actorId, 'matt-clifford', { asOf: '2026-07-08' }).number,
+      null,
+      `${actorId} must not receive a contemporaneous route from cross-date surfaces`,
+    );
+    assert.ok(!hop.edges.some(edge =>
+      pairKeyMadfest(edge) === [actorId, 'matt-clifford'].sort().join('|')),
+      `${actorId} must not receive an unsupported direct Matt Clifford edge`);
+    assert.deepEqual(actor(actorId)?.surfaces, ['electric-twin-virgin-madfest-session-2026-07-08']);
+  }
+
+  assert.ok(claim('electric-twin-virgin-madfest-shared-stage-2026-07-08'));
+  assert.ok(claim('electric-twin-virgin-madfest-identity-and-contract-boundary-2026-07-08'));
+}
