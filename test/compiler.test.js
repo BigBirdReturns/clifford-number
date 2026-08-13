@@ -32,12 +32,379 @@ const receipt = id => ledgerReceipts.find(row => row.receipt_id === id);
 const claim = id => receiptGraph.claims.find(row => row.claim_id === id);
 
 
-for (const retiredScratchReceipt of [
+// Dialog directory, role, and invitation boundary regression.
+assert.equal(surf('dialog-society-membership'), undefined,
+  'the mixed open-ended Dialog composite must be retired');
+const dialogDirectory = surf('dialog-public-directory-exposure-2026-06-16');
+const dialogLeadership = surf('dialog-leadership-role-observations-2026-06-16');
+const dialogInvitation = surf('dialog-matt-clifford-invitation-nonattendance-2026-06-16');
+assert.ok(dialogDirectory && dialogLeadership && dialogInvitation,
+  'all three bounded Dialog propositions must compile');
+assert.equal(dialogDirectory.hop_eligible, false);
+assert.equal(dialogDirectory.hop_refusal_reason, 'dense_directory_listing_not_shared_participation');
+assert.equal(dialogDirectory.time_start, '2026-06-16');
+assert.equal(dialogDirectory.time_end, '2026-06-16');
+const dialogDirectoryActors = dialogDirectory.participants
+  .filter(part => part.participant_type === 'actor')
+  .map(part => part.actor_id);
+assert.equal(dialogDirectoryActors.length, 112);
+assert.ok(dialogDirectoryActors.includes('matt-clifford'));
+assert.deepEqual(
+  dialogLeadership.participants.filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id).sort(),
+  ['auren-hoffman', 'peter-thiel', 'raffi-grinberg'],
+);
+assert.equal(dialogLeadership.hop_eligible, false);
+assert.equal(dialogLeadership.hop_refusal_reason, 'reported_role_observations_not_shared_event');
+assert.deepEqual(
+  dialogInvitation.participants.filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id),
+  ['matt-clifford'],
+);
+assert.equal(dialogInvitation.hop_eligible, false);
+assert.equal(dialogInvitation.hop_refusal_reason, 'invitation_without_attendance_or_membership');
+for (const dialogSurface of [dialogDirectory, dialogLeadership, dialogInvitation]) {
+  assert.ok((hop.rejected_hop_surfaces ?? []).some(row =>
+    row.surface_id === dialogSurface.surface_id
+      && row.reason === dialogSurface.hop_refusal_reason));
+  assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis =>
+    basis.surface_id === dialogSurface.surface_id)));
+}
+const dialogBoundaryClaim = claim('dialog-matt-clifford-peter-thiel-boundary-2026-06-16');
+assert.ok(dialogBoundaryClaim,
+  'the Clifford/Thiel Dialog refusal must remain public');
+assert.deepEqual([...dialogBoundaryClaim.actor_ids].sort(), ['matt-clifford', 'peter-thiel']);
+assert.equal(receipt('dialog-human-layer'), undefined,
+  'the local Dialog analysis note must not remain a live canonical receipt');
+assert.equal(receipt('wired-dialog-leak').source_published_at, '2026-06-16');
+assert.equal(receipt('wired-dialog-leak').matt_clifford_reported_invited, true);
+assert.equal(receipt('wired-dialog-leak').matt_clifford_reported_never_attended, true);
+assert.equal(receipt('wired-dialog-leak').archive.ref, 'sha256:5648e648af1db7c30a679adb918f5f2c5122e832ca57b3c612f219c380c652a6');
+assert.equal(receipt('dialog-directory-extract').directory_listing_count, 112);
+assert.equal(receipt('dialog-directory-extract').archive.ref, 'sha256:02bb38b250f66b6cc355176fd3d4d375bcb695b1a351bbc88ca0e37ac5200956');
+
+// LocalGlobe organization-endpoint refusal regression.
+const electricTwinNamedAngelRound = surf('electric-twin-seed-round-2026-02-11');
+const electricTwinInstitutionalRound = surf(
+  'electric-twin-seed-round-institutional-investors-2026-02-11',
+);
+assert.ok(electricTwinNamedAngelRound,
+  'the named-angel Electric Twin seed-round surface must compile');
+assert.equal(electricTwinNamedAngelRound.hop_eligible, true);
+assert.deepEqual(
+  electricTwinNamedAngelRound.participants
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id)
+    .sort(),
+  ['cal-henderson', 'eric-salama', 'louis-mosley', 'marc-andreessen', 'tom-shinner'],
+  'the hop-eligible round must contain only the five named natural-person investors',
+);
+assert.ok(electricTwinInstitutionalRound,
+  'the institutional Electric Twin seed-round refusal surface must compile');
+assert.equal(electricTwinInstitutionalRound.hop_eligible, false);
+assert.equal(
+  electricTwinInstitutionalRound.hop_refusal_reason,
+  'organization_only_evidence',
+);
+assert.deepEqual(
+  electricTwinInstitutionalRound.participants
+    .filter(part => part.participant_type === 'organization')
+    .map(part => part.organization_id)
+    .sort(),
+  ['atomico', 'electric-twin', 'localglobe', 'mercuri', 'samos'],
+  'the refusal surface must preserve the issuer and four institutional investors',
+);
+const institutionalRoundParticipant = id =>
+  electricTwinInstitutionalRound.participants.find(
+    part => part.organization_id === id,
+  );
+for (const id of ['electric-twin', 'atomico', 'localglobe', 'mercuri', 'samos']) {
+  assert.equal(institutionalRoundParticipant(id).evidence_class, 'primary_public',
+    `${id} must retain first-party institutional evidence`);
+}
+assert.deepEqual(
+  institutionalRoundParticipant('samos').receipt_ids,
+  ['alex-cooper-linkedin-electric-twin-funding-2026-02-12'],
+  'Samos must use the first-party founder receipt without creating an actor endpoint',
+);
+assert.deepEqual(
+  electricTwinInstitutionalRound.participants
+    .filter(part => part.participant_type === 'actor'),
+  [],
+  'organization-only evidence must not be rewritten as actor participation',
+);
+assert.ok((hop.rejected_hop_surfaces ?? []).some(
+  row => row.surface_id === electricTwinInstitutionalRound.surface_id
+    && row.reason === 'organization_only_evidence',
+), 'the public graph must expose the organization-only refusal');
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(
+  basis => basis.surface_id === electricTwinInstitutionalRound.surface_id,
+)), 'the institutional surface must never become a hop basis');
+assert.equal(
+  hop.edges
+    .flatMap(edge => edge.surfaces)
+    .filter(basis => basis.surface_id === electricTwinNamedAngelRound.surface_id)
+    .length,
+  10,
+  'five named angel investors must retain exactly ten pairwise hop bases',
+);
+assert.ok(!actor('saul-klein').surfaces.includes(electricTwinNamedAngelRound.surface_id),
+  'Saul Klein must not be substituted for LocalGlobe on the named-angel round');
+assert.ok(!actor('saul-klein').surfaces.includes(electricTwinInstitutionalRound.surface_id),
+  'Saul Klein must not be projected onto the institutional refusal surface');
+assert.deepEqual(
+  actor('saul-klein').surfaces
+    .filter(surfaceId => surfaceId.startsWith('faculty-science-'))
+    .sort(),
+  [
+    'faculty-science-director-shareholder-overlap-2024-10-10',
+    'faculty-science-officer-employee-overlap-2018-01-24',
+  ],
+  'the independently receipted Faculty surfaces must remain intact',
+);
+const localGlobeActorBoundaryClaim = claim(
+  'electric-twin-localglobe-saul-klein-actor-boundary-2026-02-12',
+);
+assert.ok(localGlobeActorBoundaryClaim,
+  'the person-substitution refusal must remain public and graph-inert');
+assert.deepEqual(
+  localGlobeActorBoundaryClaim.surface_ids,
+  ['electric-twin-seed-round-institutional-investors-2026-02-11'],
+);
+
+// Centre for Human Progress formal officer surface and adviser-boundary regression.
+const centreFormationSurface = surf('centre-human-progress-director-appointments-2025-08-05');
+const centreActorIds = [
+  'ben-warner',
+  'dennis-snower',
+  'michael-muthukrishna',
+  'sonja-vogt',
+  'stephanie-salgado-muthukrishna',
+];
+assert.ok(centreFormationSurface,
+  'the Centre for Human Progress same-day director surface must compile');
+assert.equal(centreFormationSurface.hop_eligible, true);
+assert.equal(centreFormationSurface.evidence_class, 'official');
+assert.equal(centreFormationSurface.time_start, '2025-08-05');
+assert.equal(centreFormationSurface.time_end, '2025-08-05');
+assert.deepEqual(
+  centreFormationSurface.participants
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id)
+    .sort(),
+  centreActorIds,
+  'the complete five-person official director roster must remain intact',
+);
+assert.deepEqual(
+  centreFormationSurface.participants
+    .filter(part => part.participant_type === 'organization')
+    .map(part => part.organization_id),
+  ['centre-for-human-progress'],
+);
+assert.deepEqual(
+  centreFormationSurface.receipt_ids,
+  ['companies-house-centre-human-progress-directors-16630851'],
+);
+assert.equal(
+  hop.edges
+    .flatMap(edge => edge.surfaces)
+    .filter(basis => basis.surface_id === centreFormationSurface.surface_id)
+    .length,
+  10,
+  'five same-day director appointments must create exactly ten formal officer bases',
+);
+const centreBenMichaelEdge = hop.edges.find(edge =>
+  [edge.actor_a, edge.actor_b].sort().join('|') === 'ben-warner|michael-muthukrishna');
+assert.ok(centreBenMichaelEdge,
+  'Ben Warner and Michael Muthukrishna must connect on the official officer surface');
+const centreBenMichaelBasis = centreBenMichaelEdge.surfaces.find(
+  basis => basis.surface_id === centreFormationSurface.surface_id,
+);
+assert.ok(centreBenMichaelBasis);
+assert.equal(centreBenMichaelBasis.evidence_class, 'official');
+assert.equal(centreBenMichaelBasis.valid_from, '2025-08-05');
+assert.equal(centreBenMichaelBasis.valid_until, '2025-08-05');
+for (const actorId of centreActorIds) {
+  assert.ok(actor(actorId)?.surfaces.includes(centreFormationSurface.surface_id),
+    `${actorId} must retain the formal Centre officer surface`);
+}
+for (const actorId of [
+  'dennis-snower',
+  'sonja-vogt',
+  'stephanie-salgado-muthukrishna',
+]) {
+  assert.deepEqual(actor(actorId)?.surfaces, [centreFormationSurface.surface_id],
+    `${actorId} must not inherit an Electric Twin or validation surface`);
+}
+
+const muthukrishnaAdviserSurface = surf(
+  'electric-twin-muthukrishna-science-adviser-observations-2024-2026',
+);
+assert.ok(muthukrishnaAdviserSurface,
+  'the source-native Michael Muthukrishna adviser chronology must compile');
+assert.equal(muthukrishnaAdviserSurface.hop_eligible, false);
+assert.equal(
+  muthukrishnaAdviserSurface.hop_refusal_reason,
+  'single_actor_advisory_context_only',
+);
+assert.equal(muthukrishnaAdviserSurface.time_start, '2024-11-03');
+assert.equal(muthukrishnaAdviserSurface.time_end, '2026-08-12');
+assert.deepEqual(
+  muthukrishnaAdviserSurface.participants
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id),
+  ['michael-muthukrishna'],
+  'public adviser-role observations must not manufacture a second actor',
+);
+assert.deepEqual(
+  muthukrishnaAdviserSurface.participants
+    .filter(part => part.participant_type === 'organization')
+    .map(part => part.organization_id),
+  ['electric-twin'],
+);
+assert.ok(!muthukrishnaAdviserSurface.participants.some(part => part.actor_id === 'ben-warner'),
+  'Centre co-directorship must not be copied onto the Electric Twin adviser chronology');
+assert.ok((hop.rejected_hop_surfaces ?? []).some(row =>
+  row.surface_id === muthukrishnaAdviserSurface.surface_id
+    && row.reason === 'single_actor_advisory_context_only'),
+  'the compiled graph must expose the single-actor adviser refusal');
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(
+  basis => basis.surface_id === muthukrishnaAdviserSurface.surface_id,
+)), 'the adviser chronology must never become a hop basis');
+
+const centreOfficerReceipt = receipt('companies-house-centre-human-progress-directors-16630851');
+assert.ok(centreOfficerReceipt, 'the official Centre officer receipt must exist');
+assert.equal(centreOfficerReceipt.company_number, '16630851');
+assert.equal(centreOfficerReceipt.event_date, '2025-08-05');
+assert.equal(centreOfficerReceipt.active_officers_at_retrieval, 5);
+assert.equal(centreOfficerReceipt.resigned_officers_at_retrieval, 0);
+assert.deepEqual([...centreOfficerReceipt.director_actor_ids].sort(), centreActorIds);
+assert.equal(
+  centreOfficerReceipt.archive?.ref,
+  'sha256:ca9783a742f55e58492546ca0d02be4bc8e9ac2a1fbb479d98cbf719688751f8',
+);
+const muthukrishnaAdviserReceipt = receipt(
+  'electric-twin-lse-muthukrishna-adviser-observations-2024-2026',
+);
+assert.ok(muthukrishnaAdviserReceipt, 'the adviser chronology receipt must exist');
+assert.equal(muthukrishnaAdviserReceipt.first_observed_at, '2024-11-03');
+assert.equal(muthukrishnaAdviserReceipt.last_retrieved_at, '2026-08-12');
+assert.equal(muthukrishnaAdviserReceipt.continuous_tenure_asserted, false);
+assert.equal(muthukrishnaAdviserReceipt.validation_protocol_recovered, false);
+assert.equal(
+  muthukrishnaAdviserReceipt.archive?.ref,
+  'sha256:26c4cde9ad87ea498b49068605bb63a6878b827c1a8c386bf7185c9950bf32b4',
+);
+
+const centreOfficerClaim = claim('centre-human-progress-five-director-appointments-2025-08-05');
+assert.ok(centreOfficerClaim, 'the five-director official claim must remain public');
+assert.deepEqual([...centreOfficerClaim.actor_ids].sort(), centreActorIds);
+assert.deepEqual(centreOfficerClaim.surface_ids, [centreFormationSurface.surface_id]);
+const muthukrishnaAdviserClaim = claim(
+  'electric-twin-muthukrishna-adviser-role-observations-2024-2026',
+);
+assert.ok(muthukrishnaAdviserClaim,
+  'the bounded adviser-role chronology must remain public and graph-inert');
+assert.deepEqual(muthukrishnaAdviserClaim.actor_ids, ['michael-muthukrishna']);
+assert.deepEqual(muthukrishnaAdviserClaim.surface_ids, [muthukrishnaAdviserSurface.surface_id]);
+
+
+// Electric Twin accuracy-methodology authorship and independent-validation boundary.
+const accuracyMethodologySurface = surf(
+  'electric-twin-accuracy-methodology-publication-2026-02-11',
+);
+const accuracyAuthorIds = ['andrew-bailey-electric-twin', 'ben-warner'];
+assert.ok(accuracyMethodologySurface,
+  'the first-party Electric Twin accuracy-methodology article must compile');
+assert.equal(accuracyMethodologySurface.hop_eligible, true);
+assert.equal(accuracyMethodologySurface.evidence_class, 'primary_public');
+assert.equal(accuracyMethodologySurface.time_start, '2026-02-11');
+assert.equal(accuracyMethodologySurface.time_end, '2026-02-11');
+assert.deepEqual(
+  accuracyMethodologySurface.participants
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id)
+    .sort(),
+  accuracyAuthorIds,
+  'the publication surface must contain only the two named authors',
+);
+assert.deepEqual(
+  accuracyMethodologySurface.participants
+    .filter(part => part.participant_type === 'organization')
+    .map(part => part.organization_id),
+  ['electric-twin'],
+);
+assert.ok(!accuracyMethodologySurface.participants.some(
+  part => part.actor_id === 'michael-muthukrishna',
+), 'the LSE attribution must not manufacture Michael Muthukrishna study participation');
+const accuracyAuthorEdge = hop.edges.find(edge =>
+  [edge.actor_a, edge.actor_b].sort().join('|')
+    === 'andrew-bailey-electric-twin|ben-warner');
+assert.ok(accuracyAuthorEdge,
+  'Ben Warner and Andrew Bailey must connect through the named article authorship');
+const accuracyAuthorBasis = accuracyAuthorEdge.surfaces.find(
+  basis => basis.surface_id === accuracyMethodologySurface.surface_id,
+);
+assert.ok(accuracyAuthorBasis);
+assert.equal(accuracyAuthorBasis.evidence_class, 'primary_public');
+assert.equal(accuracyAuthorBasis.valid_from, '2026-02-11');
+assert.equal(accuracyAuthorBasis.valid_until, '2026-02-11');
+assert.equal(
+  hop.edges.flatMap(edge => edge.surfaces)
+    .filter(basis => basis.surface_id === accuracyMethodologySurface.surface_id).length,
+  1,
+  'two named authors must create exactly one publication basis',
+);
+assert.deepEqual(
+  actor('andrew-bailey-electric-twin')?.surfaces,
+  [accuracyMethodologySurface.surface_id],
+  'the disambiguated Andrew Bailey actor must not inherit another surface',
+);
+assert.ok(!hop.edges.some(edge =>
+  [edge.actor_a, edge.actor_b].includes('michael-muthukrishna')
+  && edge.surfaces.some(basis => basis.surface_id === accuracyMethodologySurface.surface_id)
+), 'the accuracy article must not create a Muthukrishna edge');
+
+const accuracyMethodologyReceipt = receipt('electric-twin-accuracy-methodology-2026-02-11');
+assert.ok(accuracyMethodologyReceipt,
+  'the first-party accuracy-methodology receipt must exist');
+assert.deepEqual(
+  accuracyMethodologyReceipt.author_actor_ids,
+  ['ben-warner', 'andrew-bailey-electric-twin'],
+);
+assert.equal(accuracyMethodologyReceipt.reported_one_minus_mae, 0.955);
+assert.equal(accuracyMethodologyReceipt.reported_ndam, 0.92);
+assert.equal(accuracyMethodologyReceipt.reported_persona_count, 11000);
+assert.equal(accuracyMethodologyReceipt.external_validator_named_in_article, false);
+assert.equal(accuracyMethodologyReceipt.independent_study_object_recovered, false);
+assert.equal(
+  accuracyMethodologyReceipt.archive?.ref,
+  'sha256:0aeb99e82338eb5846182fecd804e6b73e6274c942b01aa49369221f028ad0f5',
+);
+const accuracyMethodologyClaim = claim(
+  'electric-twin-accuracy-methodology-authors-2026-02-11',
+);
+assert.ok(accuracyMethodologyClaim);
+assert.deepEqual([...accuracyMethodologyClaim.actor_ids].sort(), accuracyAuthorIds);
+const independentValidationBoundaryClaim = claim(
+  'electric-twin-independent-validation-publication-boundary-2026-02-11',
+);
+assert.ok(independentValidationBoundaryClaim,
+  'the independent-validation participation boundary must remain public');
+assert.deepEqual(independentValidationBoundaryClaim.actor_ids, ['michael-muthukrishna']);
+assert.deepEqual(independentValidationBoundaryClaim.surface_ids, [accuracyMethodologySurface.surface_id]);
+
+for (const retiredReceipt of [
   'warner-surface-audit-2026-06-29',
   'surface-architecture-spec-2026-06-29',
+  'master-doc-v3',
+  'times-case-electric-twin-2026',
+  'businesscloud-electric-twin-founders',
+  'companies-house-electric-twin',
+  'guardian-faculty-sage',
 ]) {
-  assert.equal(receipt(retiredScratchReceipt), undefined,
-    `${retiredScratchReceipt} must remain retired after canonical-consumer audit`);
+  assert.equal(receipt(retiredReceipt), undefined,
+    `${retiredReceipt} must remain retired after canonical-consumer audit`);
 }
 assert.ok(!ledgerReceipts.some(row => String(row.path ?? '').startsWith('/mnt/data/')),
   'canonical receipts must not point at AI-session scratch storage');
@@ -248,9 +615,223 @@ assert.ok(synthChain, 'synthetic-population laundering chain must be scored');
 assert.equal(synthChain.clifford_number, null, 'a laundering chain must not carry a Clifford Number');
 assert.ok(synthChain.laundering_chain_score >= 4, 'synthetic-population chain must span >= 4 stage categories');
 assert.equal(synthChain.connector_surfaces_all_non_hop, true, 'chain connector surfaces must be non-hop');
-// The Detachment 201 connector surface exists, is non-hop, and never becomes a hop basis.
-assert.equal(surf('detachment-201-commissioning-2025').hop_eligible, false, 'Detachment 201 surface must be non-hop');
-assert.ok(!hop.edges.some(e => e.surfaces.some(b => b.surface_id === 'detachment-201-commissioning-2025')), 'Detachment 201 must never be a hop basis');
+// Detachment 201 keeps organization-level program context separate from the exact named commissioning cohort.
+const detachmentProgramContext = surf('detachment-201-program-context-2025');
+assert.ok(detachmentProgramContext, 'Detachment 201 program context must compile');
+assert.equal(detachmentProgramContext.hop_eligible, false);
+assert.equal(detachmentProgramContext.hop_refusal_reason, 'organization_only_program_context');
+assert.equal(detachmentProgramContext.time_start, '2025-06-13');
+assert.deepEqual(
+  detachmentProgramContext.participants
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id),
+  [],
+  'the organization-level program context must not manufacture actor participants',
+);
+assert.deepEqual(
+  detachmentProgramContext.participants
+    .filter(part => part.participant_type === 'organization')
+    .map(part => part.organization_id),
+  ['us-army'],
+  'the program context must preserve only the Army as the program institution',
+);
+assert.ok((hop.rejected_hop_surfaces ?? []).some(row =>
+  row.surface_id === detachmentProgramContext.surface_id
+    && row.reason === 'organization_only_program_context'),
+  'the public graph must expose the Detachment 201 program-context refusal');
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(
+  basis => basis.surface_id === detachmentProgramContext.surface_id,
+)), 'the program context must never become a hop basis');
+
+const detachmentCommissioning = surf('detachment-201-commissioning-2025');
+const detachmentCommissionedActors = [
+  'andrew-bosworth',
+  'bob-mcgrew',
+  'kevin-weil',
+  'shyam-sankar',
+];
+assert.ok(detachmentCommissioning, 'the exact Detachment 201 commissioning surface must compile');
+assert.equal(detachmentCommissioning.hop_eligible, true);
+assert.equal(detachmentCommissioning.surface_type, 'government_advisory_surface');
+assert.equal(detachmentCommissioning.evidence_class, 'official');
+assert.equal(detachmentCommissioning.time_start, '2025-06-13');
+assert.equal(detachmentCommissioning.time_end, '2025-06-13');
+assert.deepEqual(
+  detachmentCommissioning.participants
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id)
+    .sort(),
+  detachmentCommissionedActors,
+  'the exact event must preserve the complete four-officer official roster',
+);
+assert.deepEqual(
+  detachmentCommissioning.participants
+    .filter(part => part.participant_type === 'organization')
+    .map(part => part.organization_id),
+  ['us-army'],
+  'the exact event must preserve the Army as commissioning institution',
+);
+assert.deepEqual(detachmentCommissioning.receipt_ids, ['army-detachment-201']);
+assert.equal(
+  hop.edges
+    .flatMap(edge => edge.surfaces)
+    .filter(basis => basis.surface_id === detachmentCommissioning.surface_id)
+    .length,
+  6,
+  'four commissioned officers must create exactly six same-day formal bases',
+);
+const detachmentSankarWeil = hop.edges.find(edge =>
+  [edge.actor_a, edge.actor_b].sort().join('|') === 'kevin-weil|shyam-sankar');
+assert.ok(detachmentSankarWeil, 'Shyam Sankar and Kevin Weil must connect on the official commissioning event');
+const detachmentSankarWeilBasis = detachmentSankarWeil.surfaces.find(
+  basis => basis.surface_id === detachmentCommissioning.surface_id,
+);
+assert.equal(detachmentSankarWeilBasis?.evidence_class, 'official');
+assert.equal(detachmentSankarWeilBasis?.valid_from, '2025-06-13');
+assert.equal(detachmentSankarWeilBasis?.valid_until, '2025-06-13');
+for (const actorId of detachmentCommissionedActors) {
+  assert.ok(actor(actorId)?.surfaces.includes(detachmentCommissioning.surface_id),
+    `${actorId} must retain the exact Detachment 201 commissioning surface`);
+}
+const detachmentReceipt = receipt('army-detachment-201');
+assert.ok(detachmentReceipt, 'the exact official Detachment 201 receipt must exist');
+assert.equal(detachmentReceipt.path,
+  'receipts/topology/us-army-detachment-201-inaugural-commissioning-2025-06-13.md');
+assert.equal(detachmentReceipt.event_date, '2025-06-13');
+assert.equal(detachmentReceipt.named_cohort_size, 4);
+assert.deepEqual([...detachmentReceipt.commissioned_actor_ids].sort(), detachmentCommissionedActors);
+assert.equal(detachmentReceipt.procurement_award_established, false);
+assert.equal(detachmentReceipt.continuous_joint_work_established, false);
+assert.equal(
+  detachmentReceipt.archive?.ref,
+  'sha256:4744b11929e9fc0e3a280bf43830d6bb337a6cc342664824a6c69239dd87a0fe',
+);
+const detachmentClaim = claim('detachment-201-inaugural-four-officer-commissioning-2025-06-13');
+assert.ok(detachmentClaim, 'the exact four-officer commissioning claim must remain public');
+assert.deepEqual([...detachmentClaim.actor_ids].sort(), detachmentCommissionedActors);
+assert.deepEqual(detachmentClaim.surface_ids, [detachmentCommissioning.surface_id]);
+assert.equal(receipt('reuters-defense-procurement'), undefined,
+  'the generic Reuters homepage proxy must remain retired after the official Detachment 201 repair');
+const detachmentChainStage = synthChain.stages.find(stage =>
+  stage.stage_category === 'military_advisory_integration');
+assert.equal(detachmentChainStage?.surface_id, detachmentProgramContext.surface_id);
+assert.deepEqual(detachmentChainStage?.receipt_ids, ['army-detachment-201']);
+
+// Detachment 201 Cohort 2 is a separate exact commissioning act. The event
+// contains the three commissioned officers and Daniel P. Driscoll under the
+// distinct source-stated role of oath administrator.
+const detachmentSecondCohort = surf('detachment-201-second-cohort-commissioning-2026-06-10');
+const detachmentSecondCohortCommissionedActors = [
+  'dane-knecht',
+  'sam-pullara',
+  'serkan-piantino',
+];
+const detachmentSecondCohortEventActors = [
+  'dan-driscoll',
+  ...detachmentSecondCohortCommissionedActors,
+].sort();
+const detachmentSecondCohortExpectedPairs = [
+  'dan-driscoll|dane-knecht',
+  'dan-driscoll|sam-pullara',
+  'dan-driscoll|serkan-piantino',
+  'dane-knecht|sam-pullara',
+  'dane-knecht|serkan-piantino',
+  'sam-pullara|serkan-piantino',
+];
+assert.ok(detachmentSecondCohort, 'the exact Detachment 201 Cohort 2 commissioning surface must compile');
+assert.equal(detachmentSecondCohort.hop_eligible, true);
+assert.equal(detachmentSecondCohort.surface_type, 'government_advisory_surface');
+assert.equal(detachmentSecondCohort.evidence_class, 'official');
+assert.equal(detachmentSecondCohort.time_start, '2026-06-10');
+assert.equal(detachmentSecondCohort.time_end, '2026-06-10');
+const detachmentSecondCohortParts = detachmentSecondCohort.participants;
+assert.deepEqual(
+  detachmentSecondCohortParts
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id)
+    .sort(),
+  detachmentSecondCohortEventActors,
+  'the event must preserve all four directly named natural-person participants',
+);
+assert.deepEqual(
+  detachmentSecondCohortParts
+    .filter(part => part.participation_type === 'commissioned_officer')
+    .map(part => part.actor_id)
+    .sort(),
+  detachmentSecondCohortCommissionedActors,
+  'the commissioned-officer subset must remain exactly the three-person Cohort 2 roster',
+);
+const detachmentSecondCohortOathAdministrator = detachmentSecondCohortParts.find(
+  part => part.actor_id === 'dan-driscoll',
+);
+assert.equal(detachmentSecondCohortOathAdministrator?.participation_type, 'oath_administrator');
+assert.deepEqual(
+  detachmentSecondCohortParts
+    .filter(part => part.participant_type === 'organization')
+    .map(part => part.organization_id),
+  ['us-army'],
+  'the exact event must preserve only the Army as organization participant',
+);
+assert.deepEqual(detachmentSecondCohort.receipt_ids, ['army-detachment-201-second-cohort-2026-06-10']);
+const detachmentSecondCohortBases = hop.edges
+  .flatMap(edge => edge.surfaces)
+  .filter(basis => basis.surface_id === detachmentSecondCohort.surface_id);
+assert.equal(detachmentSecondCohortBases.length, 6,
+  'four directly named event actors must create exactly six same-day formal bases');
+const detachmentSecondCohortActualPairs = hop.edges
+  .filter(edge => edge.surfaces.some(basis => basis.surface_id === detachmentSecondCohort.surface_id))
+  .map(edge => [edge.actor_a, edge.actor_b].sort().join('|'))
+  .sort();
+assert.deepEqual(detachmentSecondCohortActualPairs, detachmentSecondCohortExpectedPairs);
+for (const basis of detachmentSecondCohortBases) {
+  assert.equal(basis.evidence_class, 'official');
+  assert.equal(basis.valid_from, '2026-06-10');
+  assert.equal(basis.valid_until, '2026-06-10');
+}
+for (const actorId of detachmentSecondCohortEventActors) {
+  assert.ok(actor(actorId)?.surfaces.includes(detachmentSecondCohort.surface_id),
+    `${actorId} must retain the exact Cohort 2 commissioning surface`);
+}
+for (const actorId of detachmentCommissionedActors) {
+  assert.ok(!actor(actorId)?.surfaces.includes(detachmentSecondCohort.surface_id),
+    `${actorId} must remain on the separate inaugural commissioning surface`);
+}
+for (const actorId of detachmentSecondCohortCommissionedActors) {
+  assert.ok(!actor(actorId)?.surfaces.includes(detachmentCommissioning.surface_id),
+    `${actorId} must not be projected backward onto the inaugural commissioning event`);
+}
+const detachmentSecondCohortReceipt = receipt('army-detachment-201-second-cohort-2026-06-10');
+assert.ok(detachmentSecondCohortReceipt, 'the exact official Cohort 2 receipt must exist');
+assert.equal(detachmentSecondCohortReceipt.path,
+  'receipts/topology/us-army-detachment-201-second-cohort-commissioning-2026-06-10.md');
+assert.equal(detachmentSecondCohortReceipt.event_date, '2026-06-10');
+assert.equal(detachmentSecondCohortReceipt.named_cohort_size, 3);
+assert.equal(detachmentSecondCohortReceipt.named_event_actor_size, 4);
+assert.deepEqual(
+  [...detachmentSecondCohortReceipt.commissioned_actor_ids].sort(),
+  detachmentSecondCohortCommissionedActors,
+);
+assert.deepEqual(
+  [...detachmentSecondCohortReceipt.ceremony_actor_ids].sort(),
+  detachmentSecondCohortEventActors,
+);
+assert.equal(detachmentSecondCohortReceipt.oath_administrator_actor_id, 'dan-driscoll');
+assert.equal(detachmentSecondCohortReceipt.oath_administrator_in_event_actor_set, true);
+assert.equal(detachmentSecondCohortReceipt.oath_administrator_in_commissioned_cohort, false);
+assert.equal(detachmentSecondCohortReceipt.first_cohort_project_allocation_established, false);
+assert.equal(detachmentSecondCohortReceipt.second_cohort_specific_project_assignment_established, false);
+assert.equal(detachmentSecondCohortReceipt.procurement_award_established, false);
+assert.equal(detachmentSecondCohortReceipt.continuous_joint_work_established, false);
+assert.equal(
+  detachmentSecondCohortReceipt.archive?.ref,
+  'sha256:030425b612ff083e35ef03bd05abba72670769c25f19664de38578dcf21de81d',
+);
+const detachmentSecondCohortClaim = claim(
+  'detachment-201-cohort-2-commissioning-ceremony-2026-06-10',
+);
+assert.ok(detachmentSecondCohortClaim, 'the exact Cohort 2 commissioning claim must remain public');
+assert.deepEqual([...detachmentSecondCohortClaim.actor_ids].sort(), detachmentSecondCohortEventActors);
+assert.deepEqual(detachmentSecondCohortClaim.surface_ids, [detachmentSecondCohort.surface_id]);
 // machine_score and surface_type_recurrence are real, separate dimensions.
 assert.ok(actor('ben-warner').machine_score > 0, 'Ben Warner must have a machine_score');
 assert.ok(Object.keys(actor('ben-warner').surface_type_recurrence).length > 0, 'Ben Warner must show surface-type recurrence');
@@ -484,11 +1065,11 @@ assert.equal(surf('electric-twin-funding-surface-2023-2026'), undefined,
   'the legacy multi-year funding surface must be retired');
 const electricTwinSeed = surf('electric-twin-seed-round-2026-02-11');
 assert.ok(electricTwinSeed, 'the source-native Electric Twin seed-round surface must compile');
-assert.equal(electricTwinSeed.surface_label, 'Electric Twin $10m seed round announcement, 11 February 2026');
+assert.equal(electricTwinSeed.surface_label, 'Electric Twin $10m seed round named-angel record, 11 February 2026');
 assert.equal(electricTwinSeed.hop_eligible, true);
 assert.deepEqual(electricTwinSeed.receipt_ids, [
   'electric-twin-seed-round-announcement-2026-02-11',
-  'tech-eu-electric-twin-seed-round-2026-02-12'
+  'alex-cooper-linkedin-electric-twin-funding-2026-02-12'
 ]);
 assert.ok(!electricTwinSeed.receipt_ids.includes('master-doc-v3'),
   'the funding surface must no longer rest on the master-summary receipt');
@@ -508,38 +1089,52 @@ const electricTwinSeedOrgs = electricTwinSeed.participants
   .filter(part => part.participant_type === 'organization')
   .map(part => part.organization_id)
   .sort();
-assert.deepEqual(electricTwinSeedOrgs, ['atomico', 'electric-twin', 'localglobe', 'mercuri', 'samos']);
+assert.deepEqual(electricTwinSeedOrgs, ['electric-twin']);
 const seedParticipant = id => electricTwinSeed.participants.find(part =>
   part.actor_id === id || part.organization_id === id);
-for (const id of ['electric-twin', 'atomico', 'localglobe', 'mercuri', 'marc-andreessen']) {
-  assert.equal(seedParticipant(id).evidence_class, 'primary_public', `${id} must retain company-source evidence`);
+for (const id of ['electric-twin', 'marc-andreessen', 'cal-henderson', 'eric-salama', 'tom-shinner', 'louis-mosley']) {
+  assert.equal(seedParticipant(id).evidence_class, 'primary_public', `${id} must retain first-party evidence`);
 }
-for (const id of ['samos', 'cal-henderson', 'eric-salama', 'tom-shinner', 'louis-mosley']) {
-  assert.equal(seedParticipant(id).evidence_class, 'reported', `${id} must remain reported`);
+for (const id of ['cal-henderson', 'eric-salama', 'tom-shinner', 'louis-mosley']) {
+  assert.deepEqual(
+    seedParticipant(id).receipt_ids,
+    ['alex-cooper-linkedin-electric-twin-funding-2026-02-12'],
+    `${id} must use the first-party founder receipt`,
+  );
 }
 
 const electricTwinAnnouncementReceipt = receipt('electric-twin-seed-round-announcement-2026-02-11');
-const techEuFundingReceipt = receipt('tech-eu-electric-twin-seed-round-2026-02-12');
+const alexCooperFundingReceipt = receipt('alex-cooper-linkedin-electric-twin-funding-2026-02-12');
 assert.equal(electricTwinAnnouncementReceipt.path,
   'receipts/topology/electric-twin-seed-round-announcement-2026-02-11.md');
 assert.equal(electricTwinAnnouncementReceipt.source_published_at, '2026-02-11');
 assert.equal(electricTwinAnnouncementReceipt.event_date, '2026-02-11');
-assert.equal(techEuFundingReceipt.source_published_at, '2026-02-12');
-assert.equal(techEuFundingReceipt.event_date, '2026-02-11',
-  'the reporting date must remain separate from the announcement event date');
+assert.ok(alexCooperFundingReceipt, 'the first-party founder funding receipt must exist');
+assert.equal(alexCooperFundingReceipt.path,
+  'receipts/topology/alex-cooper-linkedin-electric-twin-funding-2026-02-12.md');
+assert.equal(alexCooperFundingReceipt.source_published_at, '2026-02-12');
+assert.equal(alexCooperFundingReceipt.event_date, '2026-02-11',
+  'the source date must remain separate from the announcement event date');
+assert.equal(
+  alexCooperFundingReceipt.archive.ref,
+  'sha256:19d476ed9874693e3e8573d6fe5f5809920c7914b0024c14fc7e54c827ff2eab',
+);
+assert.equal(receipt('tech-eu-electric-twin-seed-round-2026-02-12'), undefined,
+  'the superseded Tech.eu receipt must remain retired');
 
 const andreessenSalama = hop.edges.find(edge =>
   [edge.actor_a, edge.actor_b].sort().join('|') === 'eric-salama|marc-andreessen');
-assert.ok(andreessenSalama, 'the reported angels must share the bounded announced round');
+assert.ok(andreessenSalama, 'the first-party named angels must share the bounded announced round');
 const electricTwinFundingBasis = andreessenSalama.surfaces.find(basis =>
   basis.surface_id === 'electric-twin-seed-round-2026-02-11');
 assert.ok(electricTwinFundingBasis);
-assert.equal(electricTwinFundingBasis.evidence_class, 'reported');
+assert.equal(electricTwinFundingBasis.evidence_class, 'primary_public');
+assert.equal(andreessenSalama.evidence_weight, 1.25);
 assert.equal(electricTwinFundingBasis.valid_from, '2026-02-11');
 assert.equal(electricTwinFundingBasis.valid_until, '2026-02-11');
 assert.deepEqual(electricTwinFundingBasis.receipt_ids, [
   'electric-twin-seed-round-announcement-2026-02-11',
-  'tech-eu-electric-twin-seed-round-2026-02-12'
+  'alex-cooper-linkedin-electric-twin-funding-2026-02-12'
 ]);
 assert.equal(shortestPath(topology, 'marc-andreessen', 'eric-salama', { asOf: '2026-02-10' }).number, null,
   'the funding announcement must not backdate investor adjacency');
@@ -746,4 +1341,366 @@ assert.match(voteLeaveReceipt.notes, /organization-level service relationship/i)
 assert.ok(!voteLeave.receipt_ids.includes('warner-surface-audit-2026-06-29'),
   'the corrected Vote Leave surface must carry no lost scratch receipt');
 
+
+// Anduril UK deep-and-wide official topology regression.
+const andurilUkLegal = org('anduril-industries-uk-ltd');
+assert.ok(andurilUkLegal, 'exact Anduril UK legal entity must compile');
+const andurilUkLegalSource = JSON.parse(fs.readFileSync('data/canonical/organizations.json', 'utf8')).organizations.find(row => row.id === 'anduril-industries-uk-ltd');
+assert.equal(andurilUkLegalSource?.company_number, '12316056');
+
+const andurilOfficerSurface = surf('anduril-uk-co-director-appointments-2024-07-31');
+assert.ok(andurilOfficerSurface);
+assert.equal(andurilOfficerSurface.hop_eligible, true);
+assert.equal(andurilOfficerSurface.time_start, '2024-07-31');
+assert.equal(andurilOfficerSurface.time_end, '2024-07-31');
+assert.deepEqual(andurilOfficerSurface.participants.filter(part => part.participant_type === 'actor').map(part => part.actor_id).sort(), ['maury-shenk', 'rich-drake']);
+const shenkDrakeEdge = hop.edges.find(edge => [edge.actor_a, edge.actor_b].sort().join('|') === 'maury-shenk|rich-drake');
+assert.ok(shenkDrakeEdge?.surfaces.some(basis => basis.surface_id === andurilOfficerSurface.surface_id && basis.valid_from === '2024-07-31' && basis.valid_until === '2024-07-31'));
+
+const talosNamedSurface = surf('anduril-talos-phase-3-named-principals-2023-11-02');
+assert.ok(talosNamedSurface);
+assert.equal(talosNamedSurface.hop_eligible, true);
+assert.deepEqual(talosNamedSurface.participants.filter(part => part.participant_type === 'actor').map(part => part.actor_id).sort(), ['dan-sawyers', 'greg-kausner']);
+const sawyersKausnerEdge = hop.edges.find(edge => [edge.actor_a, edge.actor_b].sort().join('|') === 'dan-sawyers|greg-kausner');
+assert.ok(sawyersKausnerEdge?.surfaces.some(basis => basis.surface_id === talosNamedSurface.surface_id && basis.valid_from === '2023-11-02' && basis.valid_until === '2023-11-02'));
+
+const ukraineNamedSurface = surf('anduril-ukraine-drone-deal-named-principals-2025-03-06');
+assert.ok(ukraineNamedSurface);
+assert.equal(ukraineNamedSurface.hop_eligible, true);
+assert.deepEqual(ukraineNamedSurface.participants.filter(part => part.participant_type === 'actor').map(part => part.actor_id).sort(), ['john-healey', 'rich-drake']);
+const drakeHealeyEdge = hop.edges.find(edge => [edge.actor_a, edge.actor_b].sort().join('|') === 'john-healey|rich-drake');
+assert.ok(drakeHealeyEdge?.surfaces.some(basis => basis.surface_id === ukraineNamedSurface.surface_id && basis.valid_from === '2025-03-06' && basis.valid_until === '2025-03-06'));
+
+const drakeCliffordRoute = shortestPath(topology, 'rich-drake', 'matt-clifford');
+assert.equal(drakeCliffordRoute.number, 3);
+assert.deepEqual(drakeCliffordRoute.actor_path, ['rich-drake', 'john-healey', 'keir-starmer', 'matt-clifford']);
+for (const date of ['2024-07-17', '2025-01-13', '2025-03-06']) {
+  assert.equal(shortestPath(topology, 'rich-drake', 'matt-clifford', { asOf: date }).number, null,
+    'the cross-date Rich Drake to Matt Clifford route must not masquerade as contemporaneous');
+}
+const shenkCliffordRoute = shortestPath(topology, 'maury-shenk', 'matt-clifford');
+assert.equal(shenkCliffordRoute.number, 4);
+assert.deepEqual(shenkCliffordRoute.actor_path, ['maury-shenk', 'rich-drake', 'john-healey', 'keir-starmer', 'matt-clifford']);
+assert.ok(!hop.edges.some(edge => [edge.actor_a, edge.actor_b].sort().join('|') === 'matt-clifford|rich-drake'),
+  'the widened chronology must not manufacture a direct Clifford/Drake edge');
+
+for (const [surfaceId, refusal] of [
+  ['anduril-ai-fight-tonight-award-2021-07-31', 'organization_only_procurement_instrument'],
+  ['anduril-talos-phase-2-award-2021-08-02', 'organization_only_procurement_instrument'],
+  ['anduril-copci-border-force-contract-2022-06-21', 'organization_only_procurement_instrument'],
+  ['anduril-project-entrelezar-award-2023-10-09', 'supplier_identity_reference_conflict'],
+  ['anduril-ddad-framework-2026-01-09', 'organization_only_multi_supplier_framework'],
+  ['anduril-project-nyx-seven-supplier-shortlist-2026-01-24', 'organization_only_competitive_shortlist'],
+  ['anduril-project-nyx-four-supplier-downselect-2026-05-15', 'organization_only_competitive_shortlist'],
+]) {
+  const sourceSurface = surf(surfaceId);
+  assert.ok(sourceSurface, `${surfaceId} must compile`);
+  assert.equal(sourceSurface.hop_eligible, false);
+  assert.equal(sourceSurface.hop_refusal_reason, refusal);
+  assert.ok((hop.rejected_hop_surfaces ?? []).some(row => row.surface_id === surfaceId && row.reason === refusal));
+  assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === surfaceId)));
+}
+
+const andurilCompanyReceipt = receipt('companies-house-anduril-industries-uk-12316056');
+assert.equal(andurilCompanyReceipt.company_number, '12316056');
+assert.equal(andurilCompanyReceipt.rich_drake_appointed_at, '2024-07-31');
+assert.equal(andurilCompanyReceipt.maury_shenk_appointed_at, '2024-07-31');
+assert.equal(andurilCompanyReceipt.archive.ref, 'sha256:6d2a1b4cdf9b7453d922756a92fb93e8fb8e1ae6ac2da656c8cb318669085eea');
+const talos3Receipt = receipt('gov-mod-anduril-talos-phase-3-contract-2023-11-02');
+assert.deepEqual([...talos3Receipt.named_actor_ids].sort(), ['dan-sawyers', 'greg-kausner']);
+assert.equal(talos3Receipt.archive.ref, 'sha256:6660b2890c6756ad9016bf2d4b90d4a132a32f01c22a9ea1b55cc1c436da876a');
+const ukraineReceipt = receipt('gov-mod-anduril-ukraine-drone-deal-2025-03-06');
+assert.deepEqual([...ukraineReceipt.named_actor_ids].sort(), ['john-healey', 'rich-drake']);
+assert.equal(ukraineReceipt.rich_drake_present_at_healey_visit_established, false);
+assert.equal(ukraineReceipt.archive.ref, 'sha256:3665b9dfa78010a228068df32fae92a3c710e536d554ae2871b2b334f2fa86ca');
+const entrelezarReceipt = receipt('contracts-finder-anduril-project-entrelezar-2023-10-09');
+assert.equal(entrelezarReceipt.supplier_identity_resolved, false);
+assert.equal(entrelezarReceipt.supplier_reference_company_number, '12316056');
+assert.equal(entrelezarReceipt.archive.ref, 'sha256:79d95a713860977a55c76363b3b06abfe0e2f4c9f6139c5a1b3d923533ecf338');
+assert.ok(claim('rich-drake-to-matt-clifford-three-hop-all-time-route-2026-08-12'));
+assert.ok(claim('anduril-uk-official-procurement-chronology-2021-2026'));
+
+
+// Atlantic Bastion official launch-publication regression.
+{
+  const surface = surf('atlantic-bastion-launch-publication-2025-12-08');
+  assert.ok(surface, 'Atlantic Bastion launch surface must compile');
+  assert.equal(surface.hop_eligible, true);
+  assert.equal(surface.time_start, '2025-12-08');
+  assert.equal(surface.time_end, '2025-12-08');
+  assert.equal(surface.evidence_class, 'official');
+  const actorIds = surface.participants
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id)
+    .sort();
+  assert.deepEqual(actorIds, [
+    'amelia-gould-helsing',
+    'gwyn-jenkins',
+    'john-healey',
+    'rich-drake',
+    'scott-jamieson-bae',
+  ]);
+  const pairKey = edge => [edge.actor_a, edge.actor_b].sort().join('|');
+  const launchEdges = hop.edges.filter(edge =>
+    edge.surfaces.some(basis => basis.surface_id === 'atlantic-bastion-launch-publication-2025-12-08'));
+  assert.equal(launchEdges.length, 10, 'five named launch participants must compile to ten exact publication bases');
+  const expectedPairs = [];
+  for (let i = 0; i < actorIds.length; i++) {
+    for (let j = i + 1; j < actorIds.length; j++) expectedPairs.push([actorIds[i], actorIds[j]].sort().join('|'));
+  }
+  assert.deepEqual(launchEdges.map(pairKey).sort(), expectedPairs.sort());
+  const healeyDrake = hop.edges.find(edge => pairKey(edge) === 'john-healey|rich-drake');
+  assert.ok(healeyDrake?.surfaces.some(basis =>
+    basis.surface_id === 'atlantic-bastion-launch-publication-2025-12-08'
+      && basis.valid_from === '2025-12-08'
+      && basis.valid_until === '2025-12-08'));
+  for (const actorId of ['gwyn-jenkins', 'scott-jamieson-bae', 'amelia-gould-helsing']) {
+    assert.equal(shortestPath(topology, actorId, 'matt-clifford').number, 3,
+      `${actorId} must have a three-hop all-time route to Matt Clifford`);
+    assert.equal(shortestPath(topology, actorId, 'matt-clifford', { asOf: '2025-12-08' }).number, null,
+      `${actorId} route must be refused as contemporaneous on the launch date`);
+    assert.ok(!hop.edges.some(edge => pairKey(edge) === [actorId, 'matt-clifford'].sort().join('|')),
+      `${actorId} must not receive a direct Matt Clifford edge`);
+  }
+  const context = surf('atlantic-bastion-industry-program-context-2025-12-08');
+  assert.ok(context, 'Atlantic Bastion wider programme context must compile');
+  assert.equal(context.hop_eligible, false);
+  assert.equal(context.hop_refusal_reason, 'organization_only_multi_party_program_context');
+  assert.equal(context.roster_entry_count, 20);
+  assert.equal(context.proposal_count, 26);
+  assert.ok((hop.rejected_hop_surfaces ?? []).some(row =>
+    row.surface_id === 'atlantic-bastion-industry-program-context-2025-12-08'
+      && row.reason === 'organization_only_multi_party_program_context'));
+  assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === 'atlantic-bastion-industry-program-context-2025-12-08')));
+  const sourceReceipt = receipt('gov-mod-atlantic-bastion-launch-2025-12-08');
+  assert.equal(sourceReceipt.archive.ref, 'sha256:fbdc504cf86258811277a259578e9e217108bd5fc0033b82c0c5d242f93db059');
+  assert.deepEqual([...sourceReceipt.named_actor_ids].sort(), actorIds);
+  assert.equal(sourceReceipt.all_named_actors_same_physical_event_established, false);
+  assert.equal(sourceReceipt.matt_clifford_named, false);
+  assert.ok(claim('atlantic-bastion-named-launch-publication-cohort-2025-12-08'));
+  assert.ok(claim('atlantic-bastion-industry-denominator-boundary-2025-12-08'));
+  assert.ok(claim('matt-clifford-atlantic-bastion-boundary-2025-12-08'));
+}
+
 console.log('compiler.test: OK');
+
+
+// Matt Clifford × Anduril exact-event and procurement-boundary regression.
+const andurilOrg = org('anduril-industries');
+assert.ok(andurilOrg, 'Anduril Industries must exist as a source-scoped organization');
+const cliffordSummitAppointment = surf('ai-safety-summit-representative-appointment-2023-08-10');
+const andurilSummitRoundtable = surf('dsit-techuk-anduril-ai-safety-roundtable-2023-10-17');
+const cliffordInvestorRoundtable = surf('dsit-matt-clifford-ai-investor-roundtable-2023-10-25');
+const andurilTalosObservation = surf('anduril-talos-phase-3-contract-observation-2023-11-02');
+for (const surfaceRow of [cliffordSummitAppointment, andurilSummitRoundtable, cliffordInvestorRoundtable, andurilTalosObservation]) {
+  assert.ok(surfaceRow, 'every Clifford-Anduril boundary surface must compile');
+  assert.equal(surfaceRow.hop_eligible, false, `${surfaceRow.surface_id} must remain graph inert`);
+  assert.ok((hop.rejected_hop_surfaces ?? []).some(row => row.surface_id === surfaceRow.surface_id),
+    `${surfaceRow.surface_id} refusal must remain public`);
+  assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === surfaceRow.surface_id)),
+    `${surfaceRow.surface_id} must never create actor adjacency`);
+}
+assert.equal(cliffordSummitAppointment.hop_refusal_reason, 'single_actor_appointment_context');
+assert.equal(andurilSummitRoundtable.hop_refusal_reason, 'organization_only_multi_party_roundtable');
+assert.equal(andurilSummitRoundtable.time_start, '2023-10-17');
+assert.equal(andurilSummitRoundtable.time_end, '2023-10-17');
+assert.equal(andurilSummitRoundtable.roster_entry_count, 16);
+assert.deepEqual(andurilSummitRoundtable.participants.filter(p => p.participant_type === 'actor'), []);
+assert.deepEqual(andurilSummitRoundtable.participants.filter(p => p.participant_type === 'organization').map(p => p.organization_id).sort(), ['anduril-industries','dsit']);
+assert.equal(cliffordInvestorRoundtable.hop_refusal_reason, 'single_actor_multi_party_roundtable');
+assert.equal(cliffordInvestorRoundtable.time_start, '2023-10-25');
+assert.equal(cliffordInvestorRoundtable.time_end, '2023-10-25');
+assert.equal(cliffordInvestorRoundtable.roster_entry_count, 9);
+assert.deepEqual(cliffordInvestorRoundtable.participants.filter(p => p.participant_type === 'actor').map(p => p.actor_id), ['matt-clifford']);
+assert.ok(!cliffordInvestorRoundtable.participants.some(p => p.organization_id === 'anduril-industries'));
+assert.equal(andurilTalosObservation.hop_refusal_reason, 'organization_only_procurement_instrument');
+assert.deepEqual(andurilTalosObservation.participants.filter(p => p.participant_type === 'actor'), []);
+assert.deepEqual(andurilTalosObservation.participants.filter(p => p.participant_type === 'organization').map(p => p.organization_id).sort(), ['anduril-industries','mod']);
+const andurilMeetingReceipt = receipt('gov-dsit-clifford-anduril-separate-summit-roundtables-2023-10-17-25');
+const cliffordAppointmentReceipt = receipt('gov-matt-clifford-ai-safety-summit-representative-2023-08-10');
+const andurilTalosReceipt = receipt('gov-mod-anduril-talos-phase-3-contract-2023-11-02');
+assert.equal(andurilMeetingReceipt.same_recorded_event, false);
+assert.equal(andurilMeetingReceipt.archive?.ref, 'sha256:6319116d831d2edd8356e3f9b73acb49399acddc5ff79632917429896fa04203');
+assert.equal(cliffordAppointmentReceipt.anduril_named, false);
+assert.equal(cliffordAppointmentReceipt.archive?.ref, 'sha256:3f49abb5313850e2e79477225c38ce34956c42ddec30519147e0a8fde331cfd2');
+assert.equal(andurilTalosReceipt.matt_clifford_named, false);
+assert.equal(andurilTalosReceipt.archive?.ref, 'sha256:6660b2890c6756ad9016bf2d4b90d4a132a32f01c22a9ea1b55cc1c436da876a');
+const cliffordAndurilMeetingBoundary = claim('matt-clifford-anduril-separate-summit-events-boundary-2026-08-12');
+const cliffordAndurilTalosBoundary = claim('matt-clifford-anduril-talos-procurement-boundary-2026-08-12');
+assert.ok(cliffordAndurilMeetingBoundary, 'separate summit-event boundary must remain public');
+assert.ok(cliffordAndurilTalosBoundary, 'TALOS procurement boundary must remain public');
+assert.deepEqual(cliffordAndurilMeetingBoundary.actor_ids, ['matt-clifford']);
+assert.ok(cliffordAndurilMeetingBoundary.organization_ids.includes('anduril-industries'));
+assert.ok(!hop.edges.some(edge => [edge.actor_a, edge.actor_b].includes('matt-clifford')
+  && edge.surfaces.some(basis => basis.surface_id.includes('anduril'))),
+  'Anduril organization context must not manufacture a Matt Clifford actor edge');
+
+
+// Frontier AI Taskforce External Advisory Board exact appointment regression.
+{
+  const frontierBoardSurface = surf('frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07');
+  const frontierBoardActors = ["matt-clifford","yoshua-bengio","anne-keast-butler","alex-van-someren","matt-collins-national-security","paul-christiano","helen-stokes-lampard"].sort();
+  assert.ok(frontierBoardSurface, 'Frontier AI Taskforce board appointment surface must compile');
+  assert.equal(frontierBoardSurface.hop_eligible, true);
+  assert.equal(frontierBoardSurface.surface_type, 'board_advisory_surface');
+  assert.equal(frontierBoardSurface.evidence_class, 'official');
+  assert.equal(frontierBoardSurface.time_start, '2023-09-07');
+  assert.equal(frontierBoardSurface.time_end, '2023-09-07');
+  assert.equal(frontierBoardSurface.roster_entry_count, 7);
+  const frontierBoardParts = frontierBoardSurface.participants;
+  assert.deepEqual(
+    frontierBoardParts.filter(part => part.participant_type === 'actor').map(part => part.actor_id).sort(),
+    frontierBoardActors,
+  );
+  assert.deepEqual(
+    frontierBoardParts.filter(part => part.participant_type === 'organization').map(part => part.organization_id).sort(),
+    ['aisi', 'dsit'],
+  );
+  assert.equal(
+    frontierBoardParts.find(part => part.actor_id === 'matt-clifford')?.participation_type,
+    'external_advisory_board_vice_chair_appointment',
+  );
+  for (const actorId of frontierBoardActors.filter(id => id !== 'matt-clifford')) {
+    assert.equal(
+      frontierBoardParts.find(part => part.actor_id === actorId)?.participation_type,
+      'external_advisory_board_member_appointment',
+    );
+  }
+  const frontierPairKey = edge => [edge.actor_a, edge.actor_b].sort().join('|');
+  const frontierBoardEdges = hop.edges.filter(edge =>
+    edge.surfaces.some(basis => basis.surface_id === 'frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07'));
+  assert.equal(frontierBoardEdges.length, 21, 'seven board appointees must create exactly twenty-one appointment bases');
+  const expectedFrontierPairs = [];
+  for (let i = 0; i < frontierBoardActors.length; i++) {
+    for (let j = i + 1; j < frontierBoardActors.length; j++) {
+      expectedFrontierPairs.push([frontierBoardActors[i], frontierBoardActors[j]].sort().join('|'));
+    }
+  }
+  assert.deepEqual(frontierBoardEdges.map(frontierPairKey).sort(), expectedFrontierPairs.sort());
+  for (const edge of frontierBoardEdges) {
+    const basis = edge.surfaces.find(row => row.surface_id === 'frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07');
+    assert.equal(basis.evidence_class, 'official');
+    assert.equal(basis.valid_from, '2023-09-07');
+    assert.equal(basis.valid_until, '2023-09-07');
+  }
+  for (const actorId of frontierBoardActors.filter(id => id !== 'matt-clifford')) {
+    assert.equal(shortestPath(topology, actorId, 'matt-clifford').number, 1,
+      actorId + ' must have one exact board-appointment hop to Matt Clifford');
+  }
+  assert.ok(!frontierBoardParts.some(part => ['ian-hogarth', 'yarin-gal', 'david-kreuger'].includes(part.actor_id)),
+    'non-board roles named elsewhere in the announcement must not enter the board cohort');
+  const frontierBoardReceipt = receipt('gov-frontier-ai-taskforce-external-advisory-board-2023-09-07');
+  assert.ok(frontierBoardReceipt);
+  assert.equal(frontierBoardReceipt.archive.ref, 'sha256:be863ec337a09a6f695bc5905a44cd811022ca3b15931bcaed74fbeec943576e');
+  assert.deepEqual([...frontierBoardReceipt.board_member_actor_ids].sort(), frontierBoardActors);
+  assert.equal(frontierBoardReceipt.board_member_count, 7);
+  assert.equal(frontierBoardReceipt.vice_chair_actor_id, 'matt-clifford');
+  assert.equal(frontierBoardReceipt.members_join_as_individuals, true);
+  assert.equal(frontierBoardReceipt.active_contribution_to_all_meetings_stated, true);
+  assert.equal(frontierBoardReceipt.first_meeting_date_established, false);
+  assert.equal(frontierBoardReceipt.continuous_tenure_established, false);
+  assert.equal(frontierBoardReceipt.employer_representation_established, false);
+  assert.equal(frontierBoardReceipt.procurement_participation_established, false);
+  const frontierBoardClaim = claim('frontier-ai-taskforce-external-advisory-board-cohort-2023-09-07');
+  assert.ok(frontierBoardClaim);
+  assert.deepEqual([...frontierBoardClaim.actor_ids].sort(), frontierBoardActors);
+  assert.deepEqual(frontierBoardClaim.surface_ids, ['frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07']);
+}
+
+// Electric Twin × Virgin exact MAD//Fest shared-stage regression.
+{
+  const madfestSurface = surf('electric-twin-virgin-madfest-session-2026-07-08');
+  const madfestActorIds = ['ben-warner', 'james-tyrrell', 'michael-barber-virgin'].sort();
+  const madfestOrganizationIds = ['electric-twin', 'virgin'].sort();
+  assert.ok(madfestSurface, 'the exact Electric Twin / Virgin MAD//Fest session must compile');
+  assert.equal(madfestSurface.surface_type, 'customer_vendor_surface');
+  assert.deepEqual(
+    [...madfestSurface.secondary_surface_types].sort(),
+    ['category_formation_surface', 'model_governance_surface'],
+  );
+  assert.equal(madfestSurface.hop_eligible, true);
+  assert.equal(madfestSurface.evidence_class, 'primary_public');
+  assert.equal(madfestSurface.time_start, '2026-07-08');
+  assert.equal(madfestSurface.time_end, '2026-07-08');
+  assert.deepEqual(
+    madfestSurface.participants
+      .filter(part => part.participant_type === 'actor')
+      .map(part => part.actor_id)
+      .sort(),
+    madfestActorIds,
+  );
+  assert.deepEqual(
+    madfestSurface.participants
+      .filter(part => part.participant_type === 'organization')
+      .map(part => part.organization_id)
+      .sort(),
+    madfestOrganizationIds,
+  );
+  assert.deepEqual(madfestSurface.receipt_ids, ['madfest-electric-twin-virgin-session-2026-07-08']);
+
+  const pairKeyMadfest = edge => [edge.actor_a, edge.actor_b].sort().join('|');
+  const expectedMadfestPairs = [
+    'ben-warner|james-tyrrell',
+    'ben-warner|michael-barber-virgin',
+    'james-tyrrell|michael-barber-virgin',
+  ].sort();
+  const madfestEdges = hop.edges.filter(edge =>
+    edge.surfaces.some(basis =>
+      basis.surface_id === 'electric-twin-virgin-madfest-session-2026-07-08'));
+  assert.equal(madfestEdges.length, 3,
+    'three confirmed speakers must create exactly three shared-session bases');
+  assert.deepEqual(madfestEdges.map(pairKeyMadfest).sort(), expectedMadfestPairs);
+  for (const edge of madfestEdges) {
+    const basis = edge.surfaces.find(row =>
+      row.surface_id === 'electric-twin-virgin-madfest-session-2026-07-08');
+    assert.ok(basis);
+    assert.equal(basis.evidence_class, 'primary_public');
+    assert.equal(basis.valid_from, '2026-07-08');
+    assert.equal(basis.valid_until, '2026-07-08');
+    assert.deepEqual(basis.receipt_ids, ['madfest-electric-twin-virgin-session-2026-07-08']);
+  }
+
+  const madfestReceipt = receipt('madfest-electric-twin-virgin-session-2026-07-08');
+  assert.ok(madfestReceipt);
+  assert.equal(madfestReceipt.post_event_linkedin_activity_id, '7481323614089420800');
+  assert.equal(madfestReceipt.pre_event_linkedin_activity_id, '7477684891963531264');
+  assert.equal(madfestReceipt.shared_stage_confirmed, true);
+  assert.equal(madfestReceipt.agenda_listing_alone_treated_as_attendance, false);
+  assert.equal(madfestReceipt.virgin_identity_scope, 'source_name_only');
+  assert.equal(madfestReceipt.virgin_legal_entity_resolved, false);
+  assert.equal(madfestReceipt.contract_terms_established, false);
+  assert.equal(
+    madfestReceipt.archive?.ref,
+    'sha256:5cbbcb8f7fa18c0c29e2f97dea26ebb1608b02a28463c1af5e48a7b6e5451c13',
+  );
+
+  const sourceOrganizations = JSON.parse(
+    fs.readFileSync('data/canonical/organizations.json', 'utf8'),
+  ).organizations;
+  const virginSource = sourceOrganizations.find(row => row.id === 'virgin');
+  assert.ok(virginSource);
+  assert.equal(virginSource.identity_status, 'source_name_scope');
+  assert.match(virginSource.notes, /does not resolve/i);
+
+  const madfestTopology = buildAdjacency(hop.edges);
+  for (const actorId of ['james-tyrrell', 'michael-barber-virgin']) {
+    assert.equal(actor(actorId)?.clifford_number, 3,
+      `${actorId} must inherit a three-hop all-time route through Ben Warner`);
+    assert.deepEqual(
+      shortestPath(madfestTopology, actorId, 'matt-clifford').actor_path,
+      [actorId, 'ben-warner', 'marc-warner', 'matt-clifford'],
+    );
+    assert.equal(
+      shortestPath(madfestTopology, actorId, 'matt-clifford', { asOf: '2026-07-08' }).number,
+      null,
+      `${actorId} must not receive a contemporaneous route from cross-date surfaces`,
+    );
+    assert.ok(!hop.edges.some(edge =>
+      pairKeyMadfest(edge) === [actorId, 'matt-clifford'].sort().join('|')),
+      `${actorId} must not receive an unsupported direct Matt Clifford edge`);
+    assert.deepEqual(actor(actorId)?.surfaces, ['electric-twin-virgin-madfest-session-2026-07-08']);
+  }
+
+  assert.ok(claim('electric-twin-virgin-madfest-shared-stage-2026-07-08'));
+  assert.ok(claim('electric-twin-virgin-madfest-identity-and-contract-boundary-2026-07-08'));
+}

@@ -53,13 +53,45 @@ export function validateCliffordThielTrumpWrapUp(bundle) {
     if (legend.get(evidenceState)?.visible !== true) errors.push(`rendering legend must keep ${evidenceState} signals visible`);
   }
 
-  const dialog = surfaces.find(row => row.surface_id === 'dialog-society-membership');
-  if (!dialog) errors.push('Dialog surface missing');
-  else if (dialog.hop_eligible !== false) errors.push('Dialog dense roster must remain non-hop context');
-  for (const actorId of ['matt-clifford', 'peter-thiel']) {
-    if (!participation.some(row => row.surface_id === 'dialog-society-membership' && row.actor_id === actorId)) {
-      errors.push(`Dialog participation missing for ${actorId}`);
-    }
+  const dialogDirectory = surfaces.find(row => row.surface_id === 'dialog-public-directory-exposure-2026-06-16');
+  const dialogLeadership = surfaces.find(row => row.surface_id === 'dialog-leadership-role-observations-2026-06-16');
+  const dialogInvitation = surfaces.find(row => row.surface_id === 'dialog-matt-clifford-invitation-nonattendance-2026-06-16');
+  if (!dialogDirectory) errors.push('Dialog directory surface missing');
+  else if (dialogDirectory.hop_eligible !== false) errors.push('Dialog directory must remain non-hop context');
+  else if (dialogDirectory.hop_refusal_reason !== 'dense_directory_listing_not_shared_participation') {
+    errors.push('Dialog directory must expose the dense-listing refusal');
+  }
+  if (!dialogLeadership) errors.push('Dialog leadership observation surface missing');
+  else if (dialogLeadership.hop_eligible !== false) errors.push('Dialog leadership roles must remain non-hop observations');
+  else if (dialogLeadership.hop_refusal_reason !== 'reported_role_observations_not_shared_event') {
+    errors.push('Dialog leadership surface must expose the shared-event refusal');
+  }
+  if (!dialogInvitation) errors.push('Dialog invitation/non-attendance surface missing');
+  else if (dialogInvitation.hop_eligible !== false) errors.push('Dialog invitation/non-attendance must remain non-hop');
+  else if (dialogInvitation.hop_refusal_reason !== 'invitation_without_attendance_or_membership') {
+    errors.push('Dialog invitation surface must expose the non-attendance refusal');
+  }
+  if (!participation.some(row => row.surface_id === 'dialog-public-directory-exposure-2026-06-16' && row.actor_id === 'matt-clifford')) {
+    errors.push('Dialog directory listing missing for matt-clifford');
+  }
+  if (!participation.some(row => row.surface_id === 'dialog-leadership-role-observations-2026-06-16' && row.actor_id === 'peter-thiel')) {
+    errors.push('Dialog leadership observation missing for peter-thiel');
+  }
+  if (!participation.some(row => row.surface_id === 'dialog-matt-clifford-invitation-nonattendance-2026-06-16' && row.actor_id === 'matt-clifford')) {
+    errors.push('Dialog invitation/non-attendance observation missing for matt-clifford');
+  }
+  if (participation.some(row => row.surface_id === 'dialog-public-directory-exposure-2026-06-16' && row.actor_id === 'peter-thiel')) {
+    errors.push('Peter Thiel leadership role cannot be rewritten as a directory listing');
+  }
+  const dialogOrganization = participation.find(row => row.surface_id === 'dialog-public-directory-exposure-2026-06-16'
+    && row.participant_type === 'organization' && row.organization_id === 'dialog');
+  if (!dialogOrganization) errors.push('Dialog directory organization context missing');
+  else if (dialogOrganization.actor_id !== undefined && dialogOrganization.actor_id !== null) {
+    errors.push('Dialog organization context cannot occupy an actor endpoint');
+  }
+  const dialogSurfaceIds = new Set(['dialog-public-directory-exposure-2026-06-16', 'dialog-leadership-role-observations-2026-06-16', 'dialog-matt-clifford-invitation-nonattendance-2026-06-16']);
+  if ((hopGraph.edges ?? []).some(edge => edge.surfaces?.some(surface => dialogSurfaceIds.has(surface.surface_id)))) {
+    errors.push('Dialog refusal surfaces cannot appear on compiled hop edges');
   }
   if (participation.some(row => row.surface_id === 'faculty-science-officer-employee-overlap-2018-01-24' && row.actor_id === 'matt-clifford')) {
     errors.push('Matt Clifford Faculty participation cannot be backdated onto the 2018 role surface');

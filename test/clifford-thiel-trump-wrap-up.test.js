@@ -11,9 +11,14 @@ function expectFailure(label, mutate, pattern) {
   assert.match(errors.join('\n'), pattern, label);
 }
 
-expectFailure('dense Dialog roster cannot become a hop', bundle => {
-  bundle.surfaces.find(row => row.surface_id === 'dialog-society-membership').hop_eligible = true;
-}, /Dialog dense roster must remain non-hop context/);
+expectFailure('Dialog directory listing cannot become a hop', bundle => {
+  bundle.surfaces.find(row => row.surface_id === 'dialog-public-directory-exposure-2026-06-16').hop_eligible = true;
+}, /Dialog directory must remain non-hop context/);
+
+expectFailure('Dialog organization context cannot become an actor endpoint', bundle => {
+  bundle.participation.find(row => row.surface_id === 'dialog-public-directory-exposure-2026-06-16'
+    && row.organization_id === 'dialog').actor_id = 'peter-thiel';
+}, /organization context cannot occupy an actor endpoint/);
 
 expectFailure('the principal trail cannot drop the Austin-Israel corpus', bundle => {
   bundle.wrap.cross_corpus_infrastructure.required_lane_ids = bundle.wrap.cross_corpus_infrastructure.required_lane_ids
@@ -38,7 +43,7 @@ expectFailure('Peter cannot receive a fabricated Clifford Number', bundle => {
 }, /must not be assigned a Clifford path/);
 
 expectFailure('Trump cannot be silently inserted into the surface ledger', bundle => {
-  bundle.participation.push({ surface_id: 'dialog-society-membership', actor_id: 'donald-trump' });
+  bundle.participation.push({ surface_id: 'dialog-public-directory-exposure-2026-06-16', actor_id: 'donald-trump' });
 }, /cannot be claimed as a surface-ledger participant/);
 
 expectFailure('crossing count cannot be promoted without changing the recorded state', bundle => {
