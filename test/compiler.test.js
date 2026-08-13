@@ -258,12 +258,17 @@ assert.deepEqual(muthukrishnaAdviserClaim.actor_ids, ['michael-muthukrishna']);
 assert.deepEqual(muthukrishnaAdviserClaim.surface_ids, [muthukrishnaAdviserSurface.surface_id]);
 
 
-for (const retiredScratchReceipt of [
+for (const retiredReceipt of [
   'warner-surface-audit-2026-06-29',
   'surface-architecture-spec-2026-06-29',
+  'master-doc-v3',
+  'times-case-electric-twin-2026',
+  'businesscloud-electric-twin-founders',
+  'companies-house-electric-twin',
+  'guardian-faculty-sage',
 ]) {
-  assert.equal(receipt(retiredScratchReceipt), undefined,
-    `${retiredScratchReceipt} must remain retired after canonical-consumer audit`);
+  assert.equal(receipt(retiredReceipt), undefined,
+    `${retiredReceipt} must remain retired after canonical-consumer audit`);
 }
 assert.ok(!ledgerReceipts.some(row => String(row.path ?? '').startsWith('/mnt/data/')),
   'canonical receipts must not point at AI-session scratch storage');
