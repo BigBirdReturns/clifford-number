@@ -439,6 +439,75 @@ assert.equal(receipt('newsuk-times-exploraition-launch-2026-04-27').decision_sup
 assert.equal(receipt('electric-twin-times-exploraition-launch-2026-04-28').no_personal_data_claim, true);
 assert.equal(receipt('sandhu-comment-newsuk-2026-06-29'), undefined,
   'the superseded lost News UK judgment receipt must be retired');
+const lebaraDeployment = surf('electric-twin-lebara-customer-use-2026-03-11');
+assert.ok(lebaraDeployment,
+  'the first-party Electric Twin / Lebara customer-use observation must compile');
+assert.equal(lebaraDeployment.hop_eligible, false);
+assert.equal(
+  lebaraDeployment.hop_refusal_reason,
+  'organization_only_customer_vendor_deployment',
+);
+assert.equal(lebaraDeployment.time_start, '2026-03-11');
+assert.equal(lebaraDeployment.time_end, '2026-03-11');
+assert.equal(lebaraDeployment.evidence_class, 'primary_public');
+assert.deepEqual(lebaraDeployment.secondary_surface_types, ['model_governance_surface']);
+assert.deepEqual(
+  lebaraDeployment.participants
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id),
+  [],
+  'the vendor-side Lebara observation must not manufacture an actor participant',
+);
+assert.deepEqual(
+  lebaraDeployment.participants
+    .filter(part => part.participant_type === 'organization')
+    .map(part => part.organization_id)
+    .sort(),
+  ['electric-twin', 'lebara'],
+  'the Lebara observation must preserve exactly the vendor and source-name client',
+);
+assert.equal(
+  lebaraDeployment.participants.find(
+    part => part.organization_id === 'electric-twin',
+  ).participation_type,
+  'vendor_platform_provider_observation',
+);
+assert.equal(
+  lebaraDeployment.participants.find(
+    part => part.organization_id === 'lebara',
+  ).participation_type,
+  'vendor_reported_client_user_observation',
+);
+assert.deepEqual(lebaraDeployment.receipt_ids, ['electric-twin-lebara-customer-use-2026-03-11']);
+assert.ok((hop.rejected_hop_surfaces ?? []).some(row =>
+  row.surface_id === lebaraDeployment.surface_id
+    && row.reason === 'organization_only_customer_vendor_deployment'
+), 'the compiled graph must expose the organization-only Lebara refusal');
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(
+  basis => basis.surface_id === lebaraDeployment.surface_id,
+)), 'organization-only Lebara customer use must never become a hop basis');
+assert.ok(!actor('ben-warner').surfaces.includes(lebaraDeployment.surface_id),
+  'Ben Warner must not inherit the organization-only Lebara customer use');
+assert.ok(org('lebara')?.surfaces.includes(lebaraDeployment.surface_id),
+  'Lebara must retain its source-name customer-use surface');
+const lebaraReceiptRow = receipt('electric-twin-lebara-customer-use-2026-03-11');
+assert.ok(lebaraReceiptRow, 'the first-party Lebara receipt must exist');
+assert.equal(lebaraReceiptRow.source_published_at, '2026-03-11');
+assert.equal(lebaraReceiptRow.event_date, '2026-03-11');
+assert.equal(lebaraReceiptRow.client_side_confirmation_recovered, false);
+assert.equal(lebaraReceiptRow.precise_legal_entity_resolved, false);
+assert.deepEqual(lebaraReceiptRow.named_client_actor_ids, []);
+assert.equal(lebaraReceiptRow.archive.ref, 'sha256:1fbffa9e72d9842f37bfd7bd9eb3c37f1432cf000bc3f04eb5cd579622cec09a');
+const lebaraSourceClaim = claim('electric-twin-lebara-customer-use-2026-03-11');
+assert.ok(lebaraSourceClaim,
+  'the first-party Lebara customer-use claim must compile');
+assert.deepEqual(lebaraSourceClaim.actor_ids, []);
+assert.deepEqual(
+  [...lebaraSourceClaim.organization_ids].sort(),
+  ['electric-twin', 'lebara'],
+);
+assert.deepEqual(lebaraSourceClaim.receipt_ids, ['electric-twin-lebara-customer-use-2026-03-11']);
+
 const gartnerCategoryObservation = surf('gartner-synthetic-population-category-2026');
 assert.ok(gartnerCategoryObservation, 'the source-native Gartner category observation must compile');
 assert.equal(gartnerCategoryObservation.hop_eligible, false);
