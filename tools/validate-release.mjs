@@ -1214,6 +1214,70 @@ assert(sameIdSet(independentValidationBoundaryClaim?.surface_ids, [
   'electric-twin-accuracy-methodology-publication-2026-02-11',
 ]), 'the boundary claim must remain tied to the article surface');
 
+
+// Anduril UK deep-and-wide official topology release gate.
+{
+  const company = data.organizations.find(row => row.id === 'anduril-industries-uk-ltd');
+  assert(company, 'exact Anduril UK legal entity is missing');
+  assert(company?.company_number === '12316056', 'Anduril UK company number is stale');
+  const officerSurface = surfaceById.get('anduril-uk-co-director-appointments-2024-07-31');
+  const talosNamed = surfaceById.get('anduril-talos-phase-3-named-principals-2023-11-02');
+  const ukraineNamed = surfaceById.get('anduril-ukraine-drone-deal-named-principals-2025-03-06');
+  for (const sourceSurface of [officerSurface, talosNamed, ukraineNamed]) {
+    assert(sourceSurface?.hop_eligible === true, `named Anduril surface ${sourceSurface?.surface_id} must be hop eligible`);
+    assert(sourceSurface?.time_start === sourceSurface?.time_end, `named Anduril surface ${sourceSurface?.surface_id} must remain one day`);
+    assert(sourceSurface?.evidence_class === 'official', `named Anduril surface ${sourceSurface?.surface_id} must retain official evidence`);
+  }
+  const hasBasis = (left, right, surfaceId) => hopGraph.edges.some(edge =>
+    [edge.actor_a, edge.actor_b].sort().join('|') === [left, right].sort().join('|')
+      && edge.surfaces.some(basis => basis.surface_id === surfaceId));
+  assert(hasBasis('rich-drake', 'maury-shenk', 'anduril-uk-co-director-appointments-2024-07-31'),
+    'Drake/Shenk same-day officer basis is missing');
+  assert(hasBasis('dan-sawyers', 'greg-kausner', 'anduril-talos-phase-3-named-principals-2023-11-02'),
+    'Sawyers/Kausner TALOS announcement basis is missing');
+  assert(hasBasis('john-healey', 'rich-drake', 'anduril-ukraine-drone-deal-named-principals-2025-03-06'),
+    'Healey/Drake Ukraine deal announcement basis is missing');
+  assert(hasBasis('john-healey', 'keir-starmer', 'strategic-defence-review-2024-2025'),
+    'existing Healey/Starmer official bridge is missing');
+  assert(hasBasis('keir-starmer', 'matt-clifford', 'ai-opportunities-action-plan-2025'),
+    'existing Starmer/Clifford official bridge is missing');
+  assert(!hopGraph.edges.some(edge => [edge.actor_a, edge.actor_b].sort().join('|') === 'matt-clifford|rich-drake'),
+    'Anduril widening must not create a direct Clifford/Drake edge');
+  for (const [surfaceId, reason] of [
+    ['anduril-ai-fight-tonight-award-2021-07-31', 'organization_only_procurement_instrument'],
+    ['anduril-talos-phase-2-award-2021-08-02', 'organization_only_procurement_instrument'],
+    ['anduril-copci-border-force-contract-2022-06-21', 'organization_only_procurement_instrument'],
+    ['anduril-project-entrelezar-award-2023-10-09', 'supplier_identity_reference_conflict'],
+    ['anduril-ddad-framework-2026-01-09', 'organization_only_multi_supplier_framework'],
+    ['anduril-project-nyx-seven-supplier-shortlist-2026-01-24', 'organization_only_competitive_shortlist'],
+    ['anduril-project-nyx-four-supplier-downselect-2026-05-15', 'organization_only_competitive_shortlist'],
+  ]) {
+    const sourceSurface = surfaceById.get(surfaceId);
+    assert(sourceSurface?.hop_eligible === false, `${surfaceId} must remain non-hop`);
+    assert(sourceSurface?.hop_refusal_reason === reason, `${surfaceId} refusal reason is stale`);
+    assert((hopGraph.rejected_hop_surfaces ?? []).some(row => row.surface_id === surfaceId && row.reason === reason),
+      `${surfaceId} refusal is missing from the public graph`);
+    assert(!hopGraph.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === surfaceId)),
+      `${surfaceId} must not manufacture actor adjacency`);
+  }
+  const companyReceipt = receiptById.get('companies-house-anduril-industries-uk-12316056');
+  assert(companyReceipt?.archive?.ref === 'sha256:6d2a1b4cdf9b7453d922756a92fb93e8fb8e1ae6ac2da656c8cb318669085eea', 'Anduril UK company extract hash is stale');
+  const talosReceipt = receiptById.get('gov-mod-anduril-talos-phase-3-contract-2023-11-02');
+  assert(sameIdSet(talosReceipt?.named_actor_ids, ['dan-sawyers', 'greg-kausner']), 'TALOS named principals are stale');
+  assert(talosReceipt?.archive?.ref === 'sha256:6660b2890c6756ad9016bf2d4b90d4a132a32f01c22a9ea1b55cc1c436da876a', 'TALOS Phase 3 extract hash is stale');
+  const droneReceipt = receiptById.get('gov-mod-anduril-ukraine-drone-deal-2025-03-06');
+  assert(sameIdSet(droneReceipt?.named_actor_ids, ['john-healey', 'rich-drake']), 'Ukraine deal named principals are stale');
+  assert(droneReceipt?.rich_drake_present_at_healey_visit_established === false, 'receipt must not invent Drake attendance at the Healey visit');
+  assert(droneReceipt?.archive?.ref === 'sha256:3665b9dfa78010a228068df32fae92a3c710e536d554ae2871b2b334f2fa86ca', 'Ukraine deal extract hash is stale');
+  const conflictReceipt = receiptById.get('contracts-finder-anduril-project-entrelezar-2023-10-09');
+  assert(conflictReceipt?.supplier_identity_resolved === false, 'ENTRELEZAR supplier conflict must remain unresolved');
+  assert(conflictReceipt?.archive?.ref === 'sha256:79d95a713860977a55c76363b3b06abfe0e2f4c9f6139c5a1b3d923533ecf338', 'ENTRELEZAR extract hash is stale');
+  assert(claimById.get('rich-drake-to-matt-clifford-three-hop-all-time-route-2026-08-12'),
+    'public Rich Drake to Matt Clifford route claim is missing');
+  assert(claimById.get('anduril-uk-official-procurement-chronology-2021-2026'),
+    'public Anduril UK procurement chronology claim is missing');
+}
+
 // Session-local scratch is transport, not durable evidence. A canonical
 // receipt must never depend on an AI-session filesystem path or preserve an
 // unrecoverable local paste as if it were still a live evidentiary object.
@@ -1315,7 +1379,7 @@ assert(andurilMeetingReceipt?.archive?.ref === 'sha256:6319116d831d2edd8356e3f9b
 assert(cliffordAppointmentReceipt?.anduril_named === false, 'Clifford appointment receipt must not name Anduril');
 assert(cliffordAppointmentReceipt?.archive?.ref === 'sha256:3f49abb5313850e2e79477225c38ce34956c42ddec30519147e0a8fde331cfd2', 'Clifford appointment receipt digest drift');
 assert(andurilTalosReceipt?.matt_clifford_named === false, 'TALOS receipt must not name Matt Clifford');
-assert(andurilTalosReceipt?.archive?.ref === 'sha256:e14ea1515884929c137d1a9592d965aa70510fe5a761780fb6f569f69a94758e', 'TALOS receipt digest drift');
+assert(andurilTalosReceipt?.archive?.ref === 'sha256:6660b2890c6756ad9016bf2d4b90d4a132a32f01c22a9ea1b55cc1c436da876a', 'TALOS receipt digest drift');
 const cliffordAndurilMeetingBoundary = claimById.get('matt-clifford-anduril-separate-summit-events-boundary-2026-08-12');
 const cliffordAndurilTalosBoundary = claimById.get('matt-clifford-anduril-talos-procurement-boundary-2026-08-12');
 assert(cliffordAndurilMeetingBoundary, 'separate Clifford-Anduril summit-event boundary claim is missing');
