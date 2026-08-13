@@ -1534,3 +1534,75 @@ assert.ok(cliffordAndurilMeetingBoundary.organization_ids.includes('anduril-indu
 assert.ok(!hop.edges.some(edge => [edge.actor_a, edge.actor_b].includes('matt-clifford')
   && edge.surfaces.some(basis => basis.surface_id.includes('anduril'))),
   'Anduril organization context must not manufacture a Matt Clifford actor edge');
+
+
+// Frontier AI Taskforce External Advisory Board exact appointment regression.
+{
+  const frontierBoardSurface = surf('frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07');
+  const frontierBoardActors = ["matt-clifford","yoshua-bengio","anne-keast-butler","alex-van-someren","matt-collins-national-security","paul-christiano","helen-stokes-lampard"].sort();
+  assert.ok(frontierBoardSurface, 'Frontier AI Taskforce board appointment surface must compile');
+  assert.equal(frontierBoardSurface.hop_eligible, true);
+  assert.equal(frontierBoardSurface.surface_type, 'board_advisory_surface');
+  assert.equal(frontierBoardSurface.evidence_class, 'official');
+  assert.equal(frontierBoardSurface.time_start, '2023-09-07');
+  assert.equal(frontierBoardSurface.time_end, '2023-09-07');
+  assert.equal(frontierBoardSurface.roster_entry_count, 7);
+  const frontierBoardParts = frontierBoardSurface.participants;
+  assert.deepEqual(
+    frontierBoardParts.filter(part => part.participant_type === 'actor').map(part => part.actor_id).sort(),
+    frontierBoardActors,
+  );
+  assert.deepEqual(
+    frontierBoardParts.filter(part => part.participant_type === 'organization').map(part => part.organization_id).sort(),
+    ['aisi', 'dsit'],
+  );
+  assert.equal(
+    frontierBoardParts.find(part => part.actor_id === 'matt-clifford')?.participation_type,
+    'external_advisory_board_vice_chair_appointment',
+  );
+  for (const actorId of frontierBoardActors.filter(id => id !== 'matt-clifford')) {
+    assert.equal(
+      frontierBoardParts.find(part => part.actor_id === actorId)?.participation_type,
+      'external_advisory_board_member_appointment',
+    );
+  }
+  const frontierPairKey = edge => [edge.actor_a, edge.actor_b].sort().join('|');
+  const frontierBoardEdges = hop.edges.filter(edge =>
+    edge.surfaces.some(basis => basis.surface_id === 'frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07'));
+  assert.equal(frontierBoardEdges.length, 21, 'seven board appointees must create exactly twenty-one appointment bases');
+  const expectedFrontierPairs = [];
+  for (let i = 0; i < frontierBoardActors.length; i++) {
+    for (let j = i + 1; j < frontierBoardActors.length; j++) {
+      expectedFrontierPairs.push([frontierBoardActors[i], frontierBoardActors[j]].sort().join('|'));
+    }
+  }
+  assert.deepEqual(frontierBoardEdges.map(frontierPairKey).sort(), expectedFrontierPairs.sort());
+  for (const edge of frontierBoardEdges) {
+    const basis = edge.surfaces.find(row => row.surface_id === 'frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07');
+    assert.equal(basis.evidence_class, 'official');
+    assert.equal(basis.valid_from, '2023-09-07');
+    assert.equal(basis.valid_until, '2023-09-07');
+  }
+  for (const actorId of frontierBoardActors.filter(id => id !== 'matt-clifford')) {
+    assert.equal(shortestPath(topology, actorId, 'matt-clifford').number, 1,
+      actorId + ' must have one exact board-appointment hop to Matt Clifford');
+  }
+  assert.ok(!frontierBoardParts.some(part => ['ian-hogarth', 'yarin-gal', 'david-kreuger'].includes(part.actor_id)),
+    'non-board roles named elsewhere in the announcement must not enter the board cohort');
+  const frontierBoardReceipt = receipt('gov-frontier-ai-taskforce-external-advisory-board-2023-09-07');
+  assert.ok(frontierBoardReceipt);
+  assert.equal(frontierBoardReceipt.archive.ref, 'sha256:be863ec337a09a6f695bc5905a44cd811022ca3b15931bcaed74fbeec943576e');
+  assert.deepEqual([...frontierBoardReceipt.board_member_actor_ids].sort(), frontierBoardActors);
+  assert.equal(frontierBoardReceipt.board_member_count, 7);
+  assert.equal(frontierBoardReceipt.vice_chair_actor_id, 'matt-clifford');
+  assert.equal(frontierBoardReceipt.members_join_as_individuals, true);
+  assert.equal(frontierBoardReceipt.active_contribution_to_all_meetings_stated, true);
+  assert.equal(frontierBoardReceipt.first_meeting_date_established, false);
+  assert.equal(frontierBoardReceipt.continuous_tenure_established, false);
+  assert.equal(frontierBoardReceipt.employer_representation_established, false);
+  assert.equal(frontierBoardReceipt.procurement_participation_established, false);
+  const frontierBoardClaim = claim('frontier-ai-taskforce-external-advisory-board-cohort-2023-09-07');
+  assert.ok(frontierBoardClaim);
+  assert.deepEqual([...frontierBoardClaim.actor_ids].sort(), frontierBoardActors);
+  assert.deepEqual(frontierBoardClaim.surface_ids, ['frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07']);
+}

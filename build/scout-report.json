@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-13T19:47:52.561Z",
+  "generated": "2026-08-13T20:52:02.092Z",
   "graph_effect": "none",
   "findings": [
     {
@@ -44,7 +44,7 @@
       "type": "surface_factory",
       "priority": "medium",
       "title": "Department for Science, Innovation and Technology (DSIT) behaves as a surface factory",
-      "observed": "Department for Science, Innovation and Technology (DSIT) appears across 5 surface(s): ai-opportunities-action-plan-development-2024-2025, ai-opportunities-action-plan-2025, ai-safety-summit-representative-appointment-2023-08-10, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17, dsit-matt-clifford-ai-investor-roundtable-2023-10-25. Secondary types: governance_continuity_surface, government_advisory_surface, policy_to_procurement_surface.",
+      "observed": "Department for Science, Innovation and Technology (DSIT) appears across 6 surface(s): ai-opportunities-action-plan-development-2024-2025, ai-opportunities-action-plan-2025, ai-safety-summit-representative-appointment-2023-08-10, dsit-techuk-anduril-ai-safety-roundtable-2023-10-17, dsit-matt-clifford-ai-investor-roundtable-2023-10-25, frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07. Secondary types: governance_continuity_surface, government_advisory_surface, model_governance_surface, policy_to_procurement_surface.",
       "action": "Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.",
       "graph_effect": "none",
       "refs": [
@@ -52,7 +52,8 @@
         "ai-opportunities-action-plan-2025",
         "ai-safety-summit-representative-appointment-2023-08-10",
         "dsit-techuk-anduril-ai-safety-roundtable-2023-10-17",
-        "dsit-matt-clifford-ai-investor-roundtable-2023-10-25"
+        "dsit-matt-clifford-ai-investor-roundtable-2023-10-25",
+        "frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07"
       ]
     },
     {
@@ -170,7 +171,7 @@
       "type": "surface_type_recurrence",
       "priority": "medium",
       "title": "Matt Clifford shows recurring surface logic",
-      "observed": "Matt Clifford has 7 surfaces and secondary types governance_continuity_surface, government_advisory_surface, policy_to_procurement_surface, public_private_ai_infrastructure. Governance replacement score: 0.",
+      "observed": "Matt Clifford has 8 surfaces and secondary types governance_continuity_surface, government_advisory_surface, model_governance_surface, policy_to_procurement_surface, public_private_ai_infrastructure. Governance replacement score: 0.",
       "action": "Check for additional venues where the same surface type recurs. Do not convert recurrence into a hop unless there is a bounded co-participation surface.",
       "graph_effect": "none",
       "refs": [
@@ -180,7 +181,8 @@
         "dialog-public-directory-exposure-2026-06-16",
         "dialog-matt-clifford-invitation-nonattendance-2026-06-16",
         "ai-safety-summit-representative-appointment-2023-08-10",
-        "dsit-matt-clifford-ai-investor-roundtable-2023-10-25"
+        "dsit-matt-clifford-ai-investor-roundtable-2023-10-25",
+        "frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07"
       ]
     },
     {
@@ -1997,6 +1999,18 @@
     },
     {
       "id": "finding-161",
+      "type": "broad_institution_guard",
+      "priority": "high",
+      "title": "Frontier AI Taskforce External Advisory Board appointments, 7 September 2023 contains broad institution context",
+      "observed": "Broad venues present: AI Security Institute / AI Safety Institute, Department for Science, Innovation and Technology (DSIT). This is acceptable only because hops are generated from actor co-participation, not from the broad institution itself.",
+      "action": "Verify this surface is tightly named and bounded. If it is merely an office or agency, mark it hop_eligible=false.",
+      "graph_effect": "none",
+      "refs": [
+        "frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07"
+      ]
+    },
+    {
+      "id": "finding-162",
       "type": "laundering_chain",
       "priority": "high",
       "title": "Policy creation → military advisory integration → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop",
@@ -2011,7 +2025,7 @@
       ]
     },
     {
-      "id": "finding-162",
+      "id": "finding-163",
       "type": "migration_queue",
       "priority": "high",
       "title": "Full master doc has been classified, not blindly migrated",
