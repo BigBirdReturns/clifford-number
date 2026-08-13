@@ -716,6 +716,122 @@ const detachmentChainStage = synthChain.stages.find(stage =>
   stage.stage_category === 'military_advisory_integration');
 assert.equal(detachmentChainStage?.surface_id, detachmentProgramContext.surface_id);
 assert.deepEqual(detachmentChainStage?.receipt_ids, ['army-detachment-201']);
+
+// Detachment 201 Cohort 2 is a separate exact commissioning act. The event
+// contains the three commissioned officers and Daniel P. Driscoll under the
+// distinct source-stated role of oath administrator.
+const detachmentSecondCohort = surf('detachment-201-second-cohort-commissioning-2026-06-10');
+const detachmentSecondCohortCommissionedActors = [
+  'dane-knecht',
+  'sam-pullara',
+  'serkan-piantino',
+];
+const detachmentSecondCohortEventActors = [
+  'dan-driscoll',
+  ...detachmentSecondCohortCommissionedActors,
+].sort();
+const detachmentSecondCohortExpectedPairs = [
+  'dan-driscoll|dane-knecht',
+  'dan-driscoll|sam-pullara',
+  'dan-driscoll|serkan-piantino',
+  'dane-knecht|sam-pullara',
+  'dane-knecht|serkan-piantino',
+  'sam-pullara|serkan-piantino',
+];
+assert.ok(detachmentSecondCohort, 'the exact Detachment 201 Cohort 2 commissioning surface must compile');
+assert.equal(detachmentSecondCohort.hop_eligible, true);
+assert.equal(detachmentSecondCohort.surface_type, 'government_advisory_surface');
+assert.equal(detachmentSecondCohort.evidence_class, 'official');
+assert.equal(detachmentSecondCohort.time_start, '2026-06-10');
+assert.equal(detachmentSecondCohort.time_end, '2026-06-10');
+const detachmentSecondCohortParts = detachmentSecondCohort.participants;
+assert.deepEqual(
+  detachmentSecondCohortParts
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id)
+    .sort(),
+  detachmentSecondCohortEventActors,
+  'the event must preserve all four directly named natural-person participants',
+);
+assert.deepEqual(
+  detachmentSecondCohortParts
+    .filter(part => part.participation_type === 'commissioned_officer')
+    .map(part => part.actor_id)
+    .sort(),
+  detachmentSecondCohortCommissionedActors,
+  'the commissioned-officer subset must remain exactly the three-person Cohort 2 roster',
+);
+const detachmentSecondCohortOathAdministrator = detachmentSecondCohortParts.find(
+  part => part.actor_id === 'dan-driscoll',
+);
+assert.equal(detachmentSecondCohortOathAdministrator?.participation_type, 'oath_administrator');
+assert.deepEqual(
+  detachmentSecondCohortParts
+    .filter(part => part.participant_type === 'organization')
+    .map(part => part.organization_id),
+  ['us-army'],
+  'the exact event must preserve only the Army as organization participant',
+);
+assert.deepEqual(detachmentSecondCohort.receipt_ids, ['army-detachment-201-second-cohort-2026-06-10']);
+const detachmentSecondCohortBases = hop.edges
+  .flatMap(edge => edge.surfaces)
+  .filter(basis => basis.surface_id === detachmentSecondCohort.surface_id);
+assert.equal(detachmentSecondCohortBases.length, 6,
+  'four directly named event actors must create exactly six same-day formal bases');
+const detachmentSecondCohortActualPairs = hop.edges
+  .filter(edge => edge.surfaces.some(basis => basis.surface_id === detachmentSecondCohort.surface_id))
+  .map(edge => [edge.actor_a, edge.actor_b].sort().join('|'))
+  .sort();
+assert.deepEqual(detachmentSecondCohortActualPairs, detachmentSecondCohortExpectedPairs);
+for (const basis of detachmentSecondCohortBases) {
+  assert.equal(basis.evidence_class, 'official');
+  assert.equal(basis.valid_from, '2026-06-10');
+  assert.equal(basis.valid_until, '2026-06-10');
+}
+for (const actorId of detachmentSecondCohortEventActors) {
+  assert.ok(actor(actorId)?.surfaces.includes(detachmentSecondCohort.surface_id),
+    `${actorId} must retain the exact Cohort 2 commissioning surface`);
+}
+for (const actorId of detachmentCommissionedActors) {
+  assert.ok(!actor(actorId)?.surfaces.includes(detachmentSecondCohort.surface_id),
+    `${actorId} must remain on the separate inaugural commissioning surface`);
+}
+for (const actorId of detachmentSecondCohortCommissionedActors) {
+  assert.ok(!actor(actorId)?.surfaces.includes(detachmentCommissioning.surface_id),
+    `${actorId} must not be projected backward onto the inaugural commissioning event`);
+}
+const detachmentSecondCohortReceipt = receipt('army-detachment-201-second-cohort-2026-06-10');
+assert.ok(detachmentSecondCohortReceipt, 'the exact official Cohort 2 receipt must exist');
+assert.equal(detachmentSecondCohortReceipt.path,
+  'receipts/topology/us-army-detachment-201-second-cohort-commissioning-2026-06-10.md');
+assert.equal(detachmentSecondCohortReceipt.event_date, '2026-06-10');
+assert.equal(detachmentSecondCohortReceipt.named_cohort_size, 3);
+assert.equal(detachmentSecondCohortReceipt.named_event_actor_size, 4);
+assert.deepEqual(
+  [...detachmentSecondCohortReceipt.commissioned_actor_ids].sort(),
+  detachmentSecondCohortCommissionedActors,
+);
+assert.deepEqual(
+  [...detachmentSecondCohortReceipt.ceremony_actor_ids].sort(),
+  detachmentSecondCohortEventActors,
+);
+assert.equal(detachmentSecondCohortReceipt.oath_administrator_actor_id, 'dan-driscoll');
+assert.equal(detachmentSecondCohortReceipt.oath_administrator_in_event_actor_set, true);
+assert.equal(detachmentSecondCohortReceipt.oath_administrator_in_commissioned_cohort, false);
+assert.equal(detachmentSecondCohortReceipt.first_cohort_project_allocation_established, false);
+assert.equal(detachmentSecondCohortReceipt.second_cohort_specific_project_assignment_established, false);
+assert.equal(detachmentSecondCohortReceipt.procurement_award_established, false);
+assert.equal(detachmentSecondCohortReceipt.continuous_joint_work_established, false);
+assert.equal(
+  detachmentSecondCohortReceipt.archive?.ref,
+  'sha256:030425b612ff083e35ef03bd05abba72670769c25f19664de38578dcf21de81d',
+);
+const detachmentSecondCohortClaim = claim(
+  'detachment-201-cohort-2-commissioning-ceremony-2026-06-10',
+);
+assert.ok(detachmentSecondCohortClaim, 'the exact Cohort 2 commissioning claim must remain public');
+assert.deepEqual([...detachmentSecondCohortClaim.actor_ids].sort(), detachmentSecondCohortEventActors);
+assert.deepEqual(detachmentSecondCohortClaim.surface_ids, [detachmentSecondCohort.surface_id]);
 // machine_score and surface_type_recurrence are real, separate dimensions.
 assert.ok(actor('ben-warner').machine_score > 0, 'Ben Warner must have a machine_score');
 assert.ok(Object.keys(actor('ben-warner').surface_type_recurrence).length > 0, 'Ben Warner must show surface-type recurrence');

@@ -330,6 +330,129 @@ assert(detachmentChainStage?.surface_id === detachmentProgramContext?.surface_id
 assert(sameIdSet(detachmentChainStage?.receipt_ids, ['army-detachment-201']),
   'Detachment chain stage must use only the exact official Army receipt');
 
+// Detachment 201 Cohort 2 is a separate exact commissioning act. Directly
+// named roles are preserved without conflating the oath administrator with the
+// three-person commissioned cohort.
+const detachmentSecondCohort = surfaceById.get(
+  'detachment-201-second-cohort-commissioning-2026-06-10',
+);
+const detachmentSecondCohortCommissionedActorIds = [
+  'dane-knecht',
+  'sam-pullara',
+  'serkan-piantino',
+];
+const detachmentSecondCohortEventActorIds = [
+  'dan-driscoll',
+  ...detachmentSecondCohortCommissionedActorIds,
+].sort();
+const detachmentSecondCohortExpectedPairs = [
+  'dan-driscoll|dane-knecht',
+  'dan-driscoll|sam-pullara',
+  'dan-driscoll|serkan-piantino',
+  'dane-knecht|sam-pullara',
+  'dane-knecht|serkan-piantino',
+  'sam-pullara|serkan-piantino',
+];
+assert(detachmentSecondCohort, 'Detachment 201 Cohort 2 commissioning surface is missing');
+assert(detachmentSecondCohort?.hop_eligible === true,
+  'Detachment 201 Cohort 2 commissioning surface must remain hop eligible');
+assert(detachmentSecondCohort?.surface_type === 'government_advisory_surface',
+  'Detachment 201 Cohort 2 commissioning surface has the wrong type');
+assert(detachmentSecondCohort?.evidence_class === 'official',
+  'Detachment 201 Cohort 2 commissioning surface must remain official');
+assert(detachmentSecondCohort?.time_start === '2026-06-10'
+  && detachmentSecondCohort?.time_end === '2026-06-10',
+  'Detachment 201 Cohort 2 commissioning surface must remain one-day bounded');
+const detachmentSecondCohortParts = sourcePartsBySurface.get(
+  detachmentSecondCohort?.surface_id,
+) ?? [];
+assert(sameIdSet(detachmentSecondCohortParts
+  .filter(part => part.participant_type === 'actor').map(part => part.actor_id),
+  detachmentSecondCohortEventActorIds),
+  'Detachment 201 Cohort 2 event actor denominator is stale');
+assert(sameIdSet(detachmentSecondCohortParts
+  .filter(part => part.participation_type === 'commissioned_officer').map(part => part.actor_id),
+  detachmentSecondCohortCommissionedActorIds),
+  'Detachment 201 Cohort 2 commissioned-officer denominator is stale');
+assert(detachmentSecondCohortParts.find(part => part.actor_id === 'dan-driscoll')
+  ?.participation_type === 'oath_administrator',
+  'Daniel P. Driscoll must remain the role-discriminated oath administrator');
+assert(JSON.stringify(detachmentSecondCohortParts
+  .filter(part => part.participant_type === 'organization').map(part => part.organization_id))
+  === JSON.stringify(['us-army']),
+  'Detachment 201 Cohort 2 institution denominator is stale');
+const detachmentSecondCohortBases = hopGraph.edges.flatMap(edge => edge.surfaces)
+  .filter(basis => basis.surface_id === detachmentSecondCohort?.surface_id);
+assert(detachmentSecondCohortBases.length === 6,
+  'four directly named Cohort 2 event actors must compile exactly six formal bases');
+const detachmentSecondCohortActualPairs = hopGraph.edges
+  .filter(edge => edge.surfaces.some(basis => basis.surface_id === detachmentSecondCohort?.surface_id))
+  .map(edge => [edge.actor_a, edge.actor_b].sort().join('|'))
+  .sort();
+assert(JSON.stringify(detachmentSecondCohortActualPairs)
+  === JSON.stringify(detachmentSecondCohortExpectedPairs),
+  'Detachment 201 Cohort 2 pair set is stale');
+for (const basis of detachmentSecondCohortBases) {
+  assert(basis.evidence_class === 'official',
+    'every Cohort 2 basis must remain official');
+  assert(basis.valid_from === '2026-06-10' && basis.valid_until === '2026-06-10',
+    'every Cohort 2 basis must remain exact-date bounded');
+}
+for (const actorId of detachmentSecondCohortEventActorIds) {
+  assert(hasSurface(actorId, detachmentSecondCohort?.surface_id),
+    `${actorId} is missing the exact Detachment 201 Cohort 2 surface`);
+}
+for (const actorId of detachmentCommissionedActorIds) {
+  assert(!hasSurface(actorId, detachmentSecondCohort?.surface_id),
+    `${actorId} must remain on the separate inaugural commissioning event`);
+}
+for (const actorId of detachmentSecondCohortCommissionedActorIds) {
+  assert(!hasSurface(actorId, detachmentCommissioning?.surface_id),
+    `${actorId} must not be projected onto the inaugural commissioning event`);
+}
+const detachmentSecondCohortReceipt = receiptById.get(
+  'army-detachment-201-second-cohort-2026-06-10',
+);
+assert(detachmentSecondCohortReceipt?.path
+  === 'receipts/topology/us-army-detachment-201-second-cohort-commissioning-2026-06-10.md',
+  'Detachment 201 Cohort 2 source extract path is stale');
+assert(detachmentSecondCohortReceipt?.event_date === '2026-06-10'
+  && detachmentSecondCohortReceipt?.named_cohort_size === 3
+  && detachmentSecondCohortReceipt?.named_event_actor_size === 4,
+  'Detachment 201 Cohort 2 receipt date or role denominators are stale');
+assert(sameIdSet(
+  detachmentSecondCohortReceipt?.commissioned_actor_ids,
+  detachmentSecondCohortCommissionedActorIds,
+), 'Detachment 201 Cohort 2 receipt commissioned-officer set is stale');
+assert(sameIdSet(
+  detachmentSecondCohortReceipt?.ceremony_actor_ids,
+  detachmentSecondCohortEventActorIds,
+), 'Detachment 201 Cohort 2 receipt event actor set is stale');
+assert(detachmentSecondCohortReceipt?.oath_administrator_actor_id === 'dan-driscoll'
+  && detachmentSecondCohortReceipt?.oath_administrator_in_event_actor_set === true
+  && detachmentSecondCohortReceipt?.oath_administrator_in_commissioned_cohort === false,
+  'Detachment 201 Cohort 2 receipt must preserve the oath-administrator role boundary');
+assert(detachmentSecondCohortReceipt?.first_cohort_project_allocation_established === false,
+  'Detachment 201 Cohort 2 receipt must refuse allocation of program work to named Cohort 1 officers');
+assert(detachmentSecondCohortReceipt?.second_cohort_specific_project_assignment_established === false,
+  'Detachment 201 Cohort 2 receipt must refuse specific-project assignment inference');
+assert(detachmentSecondCohortReceipt?.procurement_award_established === false,
+  'Detachment 201 Cohort 2 receipt must refuse procurement-award inference');
+assert(detachmentSecondCohortReceipt?.continuous_joint_work_established === false,
+  'Detachment 201 Cohort 2 receipt must refuse continuing-joint-work inference');
+assert(detachmentSecondCohortReceipt?.archive?.ref
+  === 'sha256:030425b612ff083e35ef03bd05abba72670769c25f19664de38578dcf21de81d',
+  'Detachment 201 Cohort 2 receipt digest is stale');
+const detachmentSecondCohortClaim = claimById.get(
+  'detachment-201-cohort-2-commissioning-ceremony-2026-06-10',
+);
+assert(detachmentSecondCohortClaim,
+  'Detachment 201 Cohort 2 exact commissioning claim is missing');
+assert(sameIdSet(detachmentSecondCohortClaim?.actor_ids, detachmentSecondCohortEventActorIds),
+  'Detachment 201 Cohort 2 claim actor denominator is stale');
+assert(sameIdSet(detachmentSecondCohortClaim?.surface_ids, [detachmentSecondCohort?.surface_id]),
+  'Detachment 201 Cohort 2 claim surface binding is stale');
+
 // Dialog directory, role, and invitation boundary.
 assert(!surfaceById.has('dialog-society-membership'),
   'the mixed open-ended Dialog composite must be retired');
