@@ -635,6 +635,68 @@ assert(sameIdSet(sourceNativeNewsUkClaim?.receipt_ids, [
 assert(!claimById.has('electric-twin-newsuk-first-party-data-2026-06-29'),
   'superseded user-judgment News UK claim must be retired');
 
+const lebaraDeployment = surfaceById.get('electric-twin-lebara-customer-use-2026-03-11');
+assert(lebaraDeployment, 'first-party Electric Twin / Lebara customer-use observation must compile');
+assert(lebaraDeployment?.hop_eligible === false,
+  'organization-only Lebara customer-use observation must remain non-hop');
+assert(lebaraDeployment?.hop_refusal_reason === 'organization_only_customer_vendor_deployment',
+  'Lebara customer-use observation must expose the organization-only customer-vendor refusal');
+assert(lebaraDeployment?.time_start === '2026-03-11'
+  && lebaraDeployment?.time_end === '2026-03-11',
+  'Lebara customer-use observation must remain a one-day public observation');
+assert(lebaraDeployment?.evidence_class === 'primary_public',
+  'Lebara customer-use observation must retain first-party evidence');
+assert(JSON.stringify(lebaraDeployment?.secondary_surface_types)
+  === JSON.stringify(['model_governance_surface']),
+  'Lebara customer use must not be classified as proven replacement of real-world research');
+assert(sameIdSet(lebaraDeployment?.receipt_ids, ['electric-twin-lebara-customer-use-2026-03-11']),
+  'Lebara customer-use observation must use the first-party Electric Twin receipt');
+const lebaraActors = (lebaraDeployment?.participants ?? [])
+  .filter(part => part.participant_type === 'actor')
+  .map(part => part.actor_id);
+assert(lebaraActors.length === 0,
+  'organization-only Lebara customer use must contain no actor participants');
+const lebaraOrganizations = (lebaraDeployment?.participants ?? [])
+  .filter(part => part.participant_type === 'organization')
+  .map(part => part.organization_id).sort();
+assert(JSON.stringify(lebaraOrganizations) === JSON.stringify(['electric-twin', 'lebara']),
+  'Lebara customer-use observation must retain exactly the vendor and source-name client');
+const lebaraVendor = (lebaraDeployment?.participants ?? [])
+  .find(part => part.organization_id === 'electric-twin');
+assert(lebaraVendor?.participation_type === 'vendor_platform_provider_observation',
+  'Electric Twin must retain the vendor platform-provider role');
+const lebaraClient = (lebaraDeployment?.participants ?? [])
+  .find(part => part.organization_id === 'lebara');
+assert(lebaraClient?.participation_type === 'vendor_reported_client_user_observation',
+  'Lebara must remain a vendor-reported client user');
+assert(!hopGraph.edges.some(edge => edge.surfaces.some(
+  basis => basis.surface_id === lebaraDeployment?.surface_id
+)), 'organization-only Lebara customer use must never become a hop basis');
+assert(!hasSurface('ben-warner', lebaraDeployment?.surface_id),
+  'Ben Warner must not inherit the organization-only Lebara customer-use observation');
+const lebaraReceiptRow = receiptById.get('electric-twin-lebara-customer-use-2026-03-11');
+assert(lebaraReceiptRow, 'Lebara first-party customer-use receipt must exist');
+assert(lebaraReceiptRow?.source_published_at === '2026-03-11',
+  'Lebara receipt must preserve the publication date');
+assert(lebaraReceiptRow?.event_date === '2026-03-11',
+  'Lebara receipt must preserve the public observation date');
+assert(lebaraReceiptRow?.client_side_confirmation_recovered === false,
+  'Lebara receipt must preserve the absent client-side confirmation');
+assert(lebaraReceiptRow?.precise_legal_entity_resolved === false,
+  'Lebara receipt must preserve the unresolved legal-entity boundary');
+assert(JSON.stringify(lebaraReceiptRow?.named_client_actor_ids) === JSON.stringify([]),
+  'Lebara receipt must contain no named client actors');
+assert(lebaraReceiptRow?.archive?.ref === 'sha256:1fbffa9e72d9842f37bfd7bd9eb3c37f1432cf000bc3f04eb5cd579622cec09a',
+  'Lebara receipt digest is stale');
+const lebaraSourceClaim = claimById.get('electric-twin-lebara-customer-use-2026-03-11');
+assert(lebaraSourceClaim, 'Lebara first-party customer-use claim must exist');
+assert(JSON.stringify(lebaraSourceClaim?.actor_ids) === JSON.stringify([]),
+  'Lebara customer-use claim must contain no actor attribution');
+assert(sameIdSet(lebaraSourceClaim?.organization_ids, ['electric-twin', 'lebara']),
+  'Lebara customer-use claim must bind the vendor and source-name client');
+assert(sameIdSet(lebaraSourceClaim?.receipt_ids, ['electric-twin-lebara-customer-use-2026-03-11']),
+  'Lebara customer-use claim must use the first-party receipt');
+
 const correctedWarnerChronology = claimById.get('ben-warner-government-commercial-chronology-boundary-2026-08-11');
 assert(correctedWarnerChronology, 'Ben Warner chronology boundary must remain visible');
 assert(sameIdSet(correctedWarnerChronology?.receipt_ids, [
@@ -967,7 +1029,7 @@ assert(!hasSurface('marc-warner', 'vote-leave-data-science-2016'),
 // Regression fixture 2: Electric Twin surface factory.
 const et = orgScore.get('electric-twin');
 assert(et?.surface_factory === true, 'Electric Twin must be a surface factory');
-for (const sid of ['electric-twin-incorporation-2023-09-28', 'electric-twin-ben-warner-director-tenure-2023-09-28', 'electric-twin-alex-cooper-director-tenure-2023-09-28', 'electric-twin-ethics-board-2026', 'electric-twin-seed-round-2026-02-11', 'electric-twin-ben-blume-director-appointment-2025-09-12', 'electric-twin-seed2-governance-instrument-2025-09-12', 'electric-twin-seed2-capital-actions-2025-09-16-2025-09-26', 'electric-twin-newsuk-synthetic-audience', 'gartner-synthetic-population-category-2026']) {
+for (const sid of ['electric-twin-incorporation-2023-09-28', 'electric-twin-ben-warner-director-tenure-2023-09-28', 'electric-twin-alex-cooper-director-tenure-2023-09-28', 'electric-twin-ethics-board-2026', 'electric-twin-seed-round-2026-02-11', 'electric-twin-ben-blume-director-appointment-2025-09-12', 'electric-twin-seed2-governance-instrument-2025-09-12', 'electric-twin-seed2-capital-actions-2025-09-16-2025-09-26', 'electric-twin-newsuk-synthetic-audience', 'electric-twin-lebara-customer-use-2026-03-11', 'gartner-synthetic-population-category-2026']) {
   assert(et?.surfaces.includes(sid), `Electric Twin missing factory surface ${sid}`);
 }
 
