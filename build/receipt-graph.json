@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-13T03:41:56.808Z",
+  "generated": "2026-08-13T05:09:42.509Z",
   "receipts": [
     {
       "receipt_id": "electric-twin-linkedin-gartner-category-2026-06-25",
@@ -254,16 +254,29 @@
     },
     {
       "receipt_id": "wired-dialog-leak",
-      "label": "WIRED — Leak Exposes Members of Peter Thiel's Secretive Dialog Society (16 Jun 2026)",
-      "source_type": "journalism_reference",
+      "label": "WIRED — Dialog directory exposure, reported roles, and Clifford non-attendance (16 Jun 2026)",
+      "source_type": "journalism_source_extract",
       "evidence_class": "reported",
-      "path": "https://www.wired.com/story/leak-exposes-members-of-peter-thiels-secretive-dialog-society",
-      "notes": "Primary reporting on the leaked Dialog membership roster.",
+      "path": "receipts/topology/wired-dialog-leak-2026-06-16.md",
+      "source_url": "https://www.wired.com/story/leak-exposes-members-of-peter-thiels-secretive-dialog-society",
+      "publisher": "WIRED",
+      "source_published_at": "2026-06-16",
+      "event_date": "2026-06-16",
+      "reported_role_actor_ids": [
+        "peter-thiel",
+        "auren-hoffman",
+        "raffi-grinberg"
+      ],
+      "matt_clifford_reported_invited": true,
+      "matt_clifford_reported_never_attended": true,
+      "retrieved_at": "2026-08-12",
+      "notes": "Journalism extract supporting the reported leadership roles and Matt Clifford invitation/non-attendance boundary. It does not establish membership, attendance, interpersonal contact, agreement, influence, or coordination.",
       "archive": {
-        "method": "internet_archive",
-        "ref": "http://web.archive.org/web/20260706181627/https://www.wired.com/story/leak-exposes-members-of-peter-thiels-secretive-dialog-society",
-        "captured": "20260706181627",
-        "checked": "2026-07-06"
+        "method": "in_repo_content_hash",
+        "ref": "sha256:5648e648af1db7c30a679adb918f5f2c5122e832ca57b3c612f219c380c652a6",
+        "captured": "2026-08-12",
+        "checked": "2026-08-12",
+        "note": "Hash covers the in-repository structured extract; source_url preserves the public article route."
       }
     },
     {
@@ -282,30 +295,24 @@
     },
     {
       "receipt_id": "dialog-directory-extract",
-      "label": "dialog.org HTML source public directory extract (Jun 2026)",
-      "source_type": "primary_public_extract",
+      "label": "Dialog — public-directory listing extract observed through 16 Jun 2026",
+      "source_type": "primary_public_directory_extract",
       "evidence_class": "primary_public",
-      "path": "https://dialog.org/",
-      "notes": "Directory listing extracted from the public site source.",
-      "archive": {
-        "method": "internet_archive",
-        "ref": "http://web.archive.org/web/20231227143602/https://dialog.org/",
-        "captured": "20231227143602",
-        "checked": "2026-07-06"
-      }
-    },
-    {
-      "receipt_id": "dialog-human-layer",
-      "label": "Field Autopsy No. 04 — Dialog: The Human Layer (local analysis note)",
-      "source_type": "analysis_note",
-      "evidence_class": "judgment",
-      "path": "receipts/dialog-human-layer.md",
-      "notes": "Local analysis of the Dialog roster as the human connective layer.",
+      "path": "receipts/topology/dialog-directory-extract-2026-06-16.md",
+      "source_url": "https://dialog.org/",
+      "publisher": "Dialog",
+      "source_observed_at": "2026-06-16",
+      "event_date": "2026-06-16",
+      "directory_listing_count": 112,
+      "reported_role_rows_excluded": 3,
+      "retrieved_at": "2026-08-12",
+      "notes": "Hash-bound extract of the source-addressed directory rows already preserved in the canonical ledger. Listing semantics do not establish membership, attendance, or pairwise participation.",
       "archive": {
         "method": "in_repo_content_hash",
-        "ref": "sha256:edd4afe6f7f9d05273d7785c39ba45679f232f211b5bb5a7df1b54e5159f899a",
-        "captured": null,
-        "checked": "2026-07-06"
+        "ref": "sha256:02bb38b250f66b6cc355176fd3d4d375bcb695b1a351bbc88ca0e37ac5200956",
+        "captured": "2026-08-12",
+        "checked": "2026-08-12",
+        "note": "Hash covers the in-repository roster extract; source_url preserves the public directory route."
       }
     },
     {
@@ -1569,6 +1576,30 @@
       ],
       "date": "2026-08-12",
       "limits": "The source denominator is the cited published public record. It does not prove that no unpublished instrument exists, nor does it establish operational effectiveness, later acceptance, common purpose, motive, wrongdoing, or causation."
+    },
+    {
+      "claim_id": "dialog-matt-clifford-peter-thiel-boundary-2026-06-16",
+      "text": "The exposed Dialog directory lists Matt Clifford and WIRED reports Peter Thiel as a co-founder, but the same reporting records Clifford's statement that he had been invited and had not attended. The compiler therefore refuses to use Dialog as a Matt Clifford–Peter Thiel hop.",
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak",
+        "wired-dialog-misconfig"
+      ],
+      "evidence_class": "judgment",
+      "actor_ids": [
+        "matt-clifford",
+        "peter-thiel"
+      ],
+      "organization_ids": [
+        "dialog"
+      ],
+      "surface_ids": [
+        "dialog-public-directory-exposure-2026-06-16",
+        "dialog-leadership-role-observations-2026-06-16",
+        "dialog-matt-clifford-invitation-nonattendance-2026-06-16"
+      ],
+      "date": "2026-06-16",
+      "limits": "This records directory, reported-role, invitation, and non-attendance propositions. It does not prove that Matt Clifford was never a member, that he had no other contact with Peter Thiel or another listed person, or that no undisclosed Dialog event occurred."
     }
   ],
   "surface_receipt_links": [
@@ -1717,12 +1748,23 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "receipt_ids": [
-        "wired-dialog-leak",
-        "wired-dialog-misconfig",
         "dialog-directory-extract",
-        "dialog-human-layer"
+        "wired-dialog-leak",
+        "wired-dialog-misconfig"
+      ]
+    },
+    {
+      "surface_id": "dialog-leadership-role-observations-2026-06-16",
+      "receipt_ids": [
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "surface_id": "dialog-matt-clifford-invitation-nonattendance-2026-06-16",
+      "receipt_ids": [
+        "wired-dialog-leak"
       ]
     },
     {
@@ -2192,7 +2234,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "matt-clifford",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2200,29 +2242,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
-      "participant_id": "peter-thiel",
-      "receipt_ids": [
-        "wired-dialog-leak"
-      ]
-    },
-    {
-      "surface_id": "dialog-society-membership",
-      "participant_id": "auren-hoffman",
-      "receipt_ids": [
-        "wired-dialog-leak"
-      ]
-    },
-    {
-      "surface_id": "dialog-society-membership",
-      "participant_id": "raffi-grinberg",
-      "receipt_ids": [
-        "dialog-directory-extract",
-        "wired-dialog-leak"
-      ]
-    },
-    {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "joe-lonsdale",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2230,7 +2250,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "ted-cruz",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2238,7 +2258,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "jim-himes",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2246,7 +2266,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "dan-driscoll",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2254,7 +2274,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "alexus-grynkewich",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2262,7 +2282,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "randy-kroszner",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2270,7 +2290,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "scott-bessent",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2278,7 +2298,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "cory-booker",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2286,7 +2306,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "elon-musk",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2294,7 +2314,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "joseph-gordon-levitt",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2302,7 +2322,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "sophia-bush",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2310,7 +2330,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "ezra-klein",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2318,7 +2338,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "jonathan-levin",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2326,7 +2346,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "sam-harris",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2334,7 +2354,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "bryan-johnson",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2342,7 +2362,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "sarah-bond",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2350,7 +2370,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "scott-cook",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2358,7 +2378,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "lisa-gevelber",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2366,7 +2386,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "shmuel-abramzon",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2374,7 +2394,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "josh-brolin",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2382,7 +2402,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "reid-hoffman",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2390,7 +2410,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "wes-moore",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2398,7 +2418,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "jared-polis",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2406,7 +2426,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "lisa-monaco",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2414,7 +2434,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "robert-hur",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2422,7 +2442,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "preet-bharara",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2430,7 +2450,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "rachel-brand",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2438,7 +2458,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "mitch-daniels",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2446,7 +2466,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "julian-castro",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2454,7 +2474,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "peggy-hamburg",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2462,7 +2482,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "reema-al-saud",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2470,7 +2490,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "turki-al-faisal-al-saud",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2478,7 +2498,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "sheikh-nawaf-saud-nasir-al-sabah",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2486,7 +2506,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "kaja-kallas",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2494,7 +2514,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "taro-kono",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2502,7 +2522,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "jens-spahn",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2510,7 +2530,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "tom-tugendhat",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2518,7 +2538,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "shahid-khaqan-abbasi",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2526,7 +2546,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "ali-jehangir-siddiqui",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2534,7 +2554,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "shivon-zilis",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2542,7 +2562,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "stan-mcchrystal",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2550,7 +2570,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "jonathan-ross",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2558,7 +2578,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "pete-shadbolt",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2566,7 +2586,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "scott-stephenson",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2574,7 +2594,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "barry-silbert",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2582,7 +2602,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "charlie-songhurst",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2590,7 +2610,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "tom-lue",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2598,7 +2618,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "fatima-kardar",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2606,7 +2626,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "neal-mohan",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2614,7 +2634,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "greg-brockman",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2622,7 +2642,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "jason-kwon",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2630,7 +2650,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "adam-d-angelo",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2638,7 +2658,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "manuel-bronstein",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2646,7 +2666,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "severin-hacker",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2654,7 +2674,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "wences-casares",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2662,7 +2682,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "immad-akhund",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2670,7 +2690,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "henry-kravis",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2678,7 +2698,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "pete-briger",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2686,7 +2706,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "peter-brown",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2694,7 +2714,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "karen-karniol-tambour",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2702,7 +2722,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "mike-novogratz",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2710,7 +2730,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "bob-jain",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2718,7 +2738,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "gaurva-kapadia",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2726,7 +2746,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "micky-malka",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2734,7 +2754,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "chamath-palihapitiya",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2742,7 +2762,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "jared-kushner",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2750,7 +2770,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "john-arnold",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2758,7 +2778,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "robert-rubin",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2766,7 +2786,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "lawrence-summers",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2774,7 +2794,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "eric-schmidt",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2782,7 +2802,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "susan-athey",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2790,7 +2810,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "steven-pinker",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2798,7 +2818,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "tyler-cowen",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2806,7 +2826,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "adam-grant",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2814,7 +2834,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "jonathan-haidt",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2822,7 +2842,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "anne-marie-slaughter",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2830,7 +2850,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "leonard-leo",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2838,7 +2858,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "grover-norquist",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2846,7 +2866,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "nick-thompson",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2854,7 +2874,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "bret-stephens",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2862,7 +2882,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "tim-ferriss",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2870,7 +2890,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "mike-cannon-brookes",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2878,7 +2898,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "marcos-galperin",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2886,7 +2906,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "demet-mutlu",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2894,7 +2914,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "cesar-carvalho",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2902,7 +2922,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "howie-liu",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2910,7 +2930,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "scott-belsky",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2918,7 +2938,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "steve-ells",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2926,7 +2946,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "nicolas-berggruen",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2934,7 +2954,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "matt-cohler",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2942,7 +2962,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "will-scharf",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2950,7 +2970,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "mario-schlosser",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2958,7 +2978,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "astro-teller",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2966,7 +2986,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "strauss-zelnick",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2974,7 +2994,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "benj-pasek",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2982,7 +3002,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "drew-scott",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2990,7 +3010,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "kim-scott",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -2998,7 +3018,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "rick-warren",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -3006,7 +3026,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "gretchen-rubin",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -3014,7 +3034,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "charles-duhigg",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -3022,7 +3042,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "daniel-pink",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -3030,7 +3050,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "tom-goldstein",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -3038,7 +3058,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "neal-katyal",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -3046,7 +3066,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "garry-kasparov",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -3054,7 +3074,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "atul-gawande",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -3062,7 +3082,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "bob-cialdini",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -3070,7 +3090,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "john-townsend",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -3078,7 +3098,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "tim-urban",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -3086,7 +3106,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "thasunda-brown-duckett",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -3094,7 +3114,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "vas-narasimhan",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -3102,7 +3122,7 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "elizabeth-blackburn",
       "receipt_ids": [
         "dialog-directory-extract",
@@ -3110,8 +3130,37 @@
       ]
     },
     {
-      "surface_id": "dialog-society-membership",
+      "surface_id": "dialog-public-directory-exposure-2026-06-16",
       "participant_id": "dialog",
+      "receipt_ids": [
+        "dialog-directory-extract",
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "surface_id": "dialog-leadership-role-observations-2026-06-16",
+      "participant_id": "peter-thiel",
+      "receipt_ids": [
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "surface_id": "dialog-leadership-role-observations-2026-06-16",
+      "participant_id": "auren-hoffman",
+      "receipt_ids": [
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "surface_id": "dialog-leadership-role-observations-2026-06-16",
+      "participant_id": "raffi-grinberg",
+      "receipt_ids": [
+        "wired-dialog-leak"
+      ]
+    },
+    {
+      "surface_id": "dialog-matt-clifford-invitation-nonattendance-2026-06-16",
+      "participant_id": "matt-clifford",
       "receipt_ids": [
         "wired-dialog-leak"
       ]

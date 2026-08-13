@@ -330,6 +330,60 @@ assert(detachmentChainStage?.surface_id === detachmentProgramContext?.surface_id
 assert(sameIdSet(detachmentChainStage?.receipt_ids, ['army-detachment-201']),
   'Detachment chain stage must use only the exact official Army receipt');
 
+// Dialog directory, role, and invitation boundary.
+assert(!surfaceById.has('dialog-society-membership'),
+  'the mixed open-ended Dialog composite must be retired');
+const dialogDirectory = surfaceById.get('dialog-public-directory-exposure-2026-06-16');
+const dialogLeadership = surfaceById.get('dialog-leadership-role-observations-2026-06-16');
+const dialogInvitation = surfaceById.get('dialog-matt-clifford-invitation-nonattendance-2026-06-16');
+assert(dialogDirectory && dialogLeadership && dialogInvitation,
+  'all three bounded Dialog propositions must compile');
+assert(dialogDirectory?.hop_eligible === false
+  && dialogDirectory?.hop_refusal_reason === 'dense_directory_listing_not_shared_participation',
+  'Dialog directory must expose its dense listing refusal');
+assert(dialogDirectory?.time_start === '2026-06-16' && dialogDirectory?.time_end === '2026-06-16',
+  'Dialog directory must be an exact-date observation');
+assert((dialogDirectory?.participants ?? []).filter(part => part.participant_type === 'actor').length === 112,
+  'Dialog directory listing denominator must remain 112');
+assert((dialogDirectory?.participants ?? []).some(part => part.actor_id === 'matt-clifford'),
+  'Matt Clifford directory listing must remain visible');
+assert(sameIdSet(
+  (dialogLeadership?.participants ?? []).filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id),
+  ['auren-hoffman', 'peter-thiel', 'raffi-grinberg'],
+), 'Dialog leadership observation must retain exactly the three reported roles');
+assert(dialogLeadership?.hop_eligible === false
+  && dialogLeadership?.hop_refusal_reason === 'reported_role_observations_not_shared_event',
+  'reported Dialog roles must not become a shared-event hop');
+assert(sameIdSet(
+  (dialogInvitation?.participants ?? []).filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id),
+  ['matt-clifford'],
+), 'Dialog invitation/non-attendance surface must contain only Matt Clifford');
+assert(dialogInvitation?.hop_eligible === false
+  && dialogInvitation?.hop_refusal_reason === 'invitation_without_attendance_or_membership',
+  'Dialog invitation must preserve the non-attendance refusal');
+for (const dialogSurface of [dialogDirectory, dialogLeadership, dialogInvitation]) {
+  assert((hopGraph.rejected_hop_surfaces ?? []).some(row =>
+    row.surface_id === dialogSurface?.surface_id
+      && row.reason === dialogSurface?.hop_refusal_reason),
+    `Dialog refusal ${dialogSurface?.surface_id} must remain public`);
+  assert(!hopGraph.edges.some(edge => edge.surfaces.some(basis =>
+    basis.surface_id === dialogSurface?.surface_id)),
+    `Dialog surface ${dialogSurface?.surface_id} must never become a hop basis`);
+}
+const dialogBoundaryClaim = claimById.get('dialog-matt-clifford-peter-thiel-boundary-2026-06-16');
+assert(dialogBoundaryClaim,
+  'the Clifford/Thiel Dialog boundary claim must remain canonical');
+assert(sameIdSet(dialogBoundaryClaim?.actor_ids, ['matt-clifford', 'peter-thiel']),
+  'Dialog boundary claim actor set is stale');
+assert(!receiptById.has('dialog-human-layer'),
+  'local Dialog analysis note must not remain a live canonical receipt');
+assert(receiptById.get('wired-dialog-leak')?.archive?.ref === 'sha256:5648e648af1db7c30a679adb918f5f2c5122e832ca57b3c612f219c380c652a6',
+  'WIRED Dialog extract hash is stale');
+assert(receiptById.get('dialog-directory-extract')?.archive?.ref === 'sha256:02bb38b250f66b6cc355176fd3d4d375bcb695b1a351bbc88ca0e37ac5200956',
+  'Dialog directory extract hash is stale');
+
 // Regression fixture 1: Ben Warner.
 const warnerSurfaces = [
   'ben-warner-no10-digital-data-role-observation-2020-2021',
