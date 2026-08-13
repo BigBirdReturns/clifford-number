@@ -1,0 +1,58 @@
+name: TEMP materialize topology refusal metadata
+
+on:
+  push:
+    branches:
+      - agent/topology-admission-frontier-v1
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/topology-admission-frontier-v1
+          fetch-depth: 0
+          show-progress: false
+      - name: Add exact refusal metadata
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('data/ledger/surfaces.jsonl')
+          reasons = {
+              'electric-twin-seed2-governance-instrument-2025-09-12':
+                  'governance_instrument_rights_not_exercised_shared_participation',
+              'strategic-defence-review-development-2024-2025':
+                  'workstream_span_not_bounded_shared_participation',
+          }
+          changed = set()
+          rendered = []
+          for source_line in path.read_text(encoding='utf-8').splitlines():
+              row = json.loads(source_line)
+              reason = reasons.get(row.get('surface_id'))
+              if reason:
+                  replacement = {}
+                  for key, value in row.items():
+                      replacement[key] = value
+                      if key == 'hop_eligible':
+                          replacement['hop_refusal_reason'] = reason
+                  row = replacement
+                  changed.add(row['surface_id'])
+              rendered.append(json.dumps(row, ensure_ascii=False, separators=(',', ':')))
+          if changed != set(reasons):
+              raise SystemExit(f'refusal migration denominator mismatch: {sorted(changed)}')
+          path.write_text('\n'.join(rendered) + '\n', encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/ledger/surfaces.jsonl
+          git diff --cached --exit-code && exit 1 || true
+          git commit -m 'temp: materialize topology refusal metadata [skip ci]'
+          git push origin HEAD:agent/topology-admission-frontier-v1
