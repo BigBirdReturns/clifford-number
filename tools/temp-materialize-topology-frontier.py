@@ -2,7 +2,16 @@
 import runpy
 import subprocess
 import sys
+import traceback
 from pathlib import Path
+
+
+def emit_failure(detail):
+    text = detail.strip() or 'materializer failed without diagnostic output'
+    escaped = text[-3500:].replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+    print(text, file=sys.stderr, flush=True)
+    print(f'::error title=topology materialization::{escaped}', flush=True)
+
 
 repo_path = Path('tools/temp-materialize-topology-frontier.py')
 source = None
@@ -23,10 +32,17 @@ for commit in subprocess.check_output(
         source = candidate
         break
 if source is None:
-    raise SystemExit('full topology materializer not found in first-parent ancestry')
+    emit_failure('full topology materializer not found in first-parent ancestry')
+    raise SystemExit(1)
 repo_path.write_bytes(source)
-subprocess.run(
-    [sys.executable, 'tools/temp-repair-topology-payload.py'],
-    check=True,
-)
-runpy.run_path(str(repo_path), run_name='__main__')
+try:
+    subprocess.run(
+        [sys.executable, 'tools/temp-repair-topology-payload.py'],
+        check=True,
+    )
+    runpy.run_path(str(repo_path), run_name='__main__')
+except BaseException as exc:
+    emit_failure(''.join(traceback.format_exception(type(exc), exc, exc.__traceback__)))
+    raise
+
+print('temporary topology wrapper completed materialization', flush=True)
