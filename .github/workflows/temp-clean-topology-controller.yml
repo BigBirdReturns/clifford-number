@@ -6,7 +6,7 @@ on:
       - agent/topology-admission-frontier-clean-controller-v1
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   materialize:
@@ -16,16 +16,17 @@ jobs:
         with:
           fetch-depth: 0
           show-progress: false
-          persist-credentials: false
+          persist-credentials: true
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Materialize and validate clean product
+      - name: Materialize, validate, and publish payload
         shell: bash
         env:
           SOURCE_SHA: 51b8a8d1ed342fc7ee157e31f3a41645bb0f1d00
           EXPECTED_TARGET_HEAD: 55ffac16851697ff9cf8492bc9f989e28a0d2a47
           TARGET_BRANCH: agent/topology-admission-frontier-v1
+          PAYLOAD_BRANCH: agent/topology-admission-frontier-clean-payload-v1
         run: |
           set -euo pipefail
           cp tools/temp-clean-topology-controller.py /tmp/temp-clean-topology-controller.py
@@ -98,21 +99,30 @@ jobs:
             mkdir -p "topology-product/$(dirname "$path")"
             cp -p "$path" "topology-product/$path"
           done <<< "$expected_paths"
-
-          {
-            printf 'base_sha=%s\n' "$base_sha"
-            printf 'expected_target_head=%s\n' "$EXPECTED_TARGET_HEAD"
-            printf 'source_sha=%s\n' "$SOURCE_SHA"
-            printf 'paths:\n%s\n' "$expected_paths"
-            printf 'modes_and_hashes:\n'
-            while IFS= read -r path; do
-              stat -c '%a %n' "$path"
-              sha256sum "$path"
-            done <<< "$expected_paths"
-          } > topology-product-manifest.txt
           git diff --cached --binary --full-index > topology-product.patch
           tar --numeric-owner --owner=0 --group=0 -czf topology-product.tar.gz \
-            topology-product topology-product-manifest.txt topology-product.patch
+            topology-product topology-product.patch
+
+          git restore --staged .github/workflows/ci.yml
+          expected_payload_paths="$(cat <<'EOF'
+          data/ledger/surfaces.jsonl
+          test/hop-stints.test.js
+          test/topology-admission-frontier.test.js
+          tools/build-topology-admission-frontier.mjs
+          tools/compile.mjs
+          tools/lib/hops.mjs
+          EOF
+          )"
+          actual_payload_paths="$(git diff --cached --name-only)"
+          test "$actual_payload_paths" = "$expected_payload_paths"
+          test "$(git diff --name-only -- .github/workflows/ci.yml)" = '.github/workflows/ci.yml'
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'topology: stage validated exact-stint payload'
+          test "$(git rev-parse HEAD^)" = "$base_sha"
+          test "$(git diff-tree --no-commit-id --name-only -r HEAD)" = "$expected_payload_paths"
+          git push origin "HEAD:refs/heads/${PAYLOAD_BRANCH}"
       - name: Upload validated product tree
         uses: actions/upload-artifact@v4
         with:
