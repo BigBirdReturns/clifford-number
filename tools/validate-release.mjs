@@ -229,6 +229,107 @@ for (const pair of hopGraph.rejected_hop_pairs ?? []) {
   }
 }
 
+// Detachment 201 source-native split: broad program context is graph-inert,
+// while the exact four-officer commissioning event is a dated official hop surface.
+const detachmentProgramContext = surfaceById.get('detachment-201-program-context-2025');
+assert(detachmentProgramContext, 'Detachment 201 program context is missing');
+assert(detachmentProgramContext?.hop_eligible === false,
+  'Detachment 201 program context must remain non-hop');
+assert(detachmentProgramContext?.hop_refusal_reason === 'organization_only_program_context',
+  'Detachment 201 program context must expose the organization-only refusal');
+assert(detachmentProgramContext?.time_start === '2025-06-13',
+  'Detachment 201 program context must preserve the official launch date');
+const detachmentProgramParts = sourcePartsBySurface.get(detachmentProgramContext?.surface_id) ?? [];
+assert(detachmentProgramParts.filter(part => part.participant_type === 'actor').length === 0,
+  'Detachment 201 program context must not manufacture actor participants');
+assert(JSON.stringify(detachmentProgramParts.filter(part => part.participant_type === 'organization')
+  .map(part => part.organization_id)) === JSON.stringify(['us-army']),
+  'Detachment 201 program context must preserve the Army as the sole program institution');
+assert((hopGraph.rejected_hop_surfaces ?? []).some(row =>
+  row.surface_id === detachmentProgramContext?.surface_id
+    && row.reason === 'organization_only_program_context'),
+  'Detachment 201 program-context refusal must remain public');
+assert(!hopGraph.edges.some(edge => edge.surfaces.some(
+  basis => basis.surface_id === detachmentProgramContext?.surface_id,
+)), 'Detachment 201 program context must never create actor adjacency');
+
+const detachmentCommissioning = surfaceById.get('detachment-201-commissioning-2025');
+const detachmentCommissionedActorIds = [
+  'andrew-bosworth',
+  'bob-mcgrew',
+  'kevin-weil',
+  'shyam-sankar',
+];
+assert(detachmentCommissioning, 'Detachment 201 exact commissioning surface is missing');
+assert(detachmentCommissioning?.hop_eligible === true,
+  'Detachment 201 exact commissioning surface must remain hop eligible');
+assert(detachmentCommissioning?.surface_type === 'government_advisory_surface',
+  'Detachment 201 exact commissioning surface has the wrong type');
+assert(detachmentCommissioning?.evidence_class === 'official',
+  'Detachment 201 exact commissioning surface must remain official');
+assert(detachmentCommissioning?.time_start === '2025-06-13'
+  && detachmentCommissioning?.time_end === '2025-06-13',
+  'Detachment 201 exact commissioning surface must remain one-day bounded');
+const detachmentCommissioningParts = sourcePartsBySurface.get(detachmentCommissioning?.surface_id) ?? [];
+assert(sameIdSet(detachmentCommissioningParts
+  .filter(part => part.participant_type === 'actor').map(part => part.actor_id),
+  detachmentCommissionedActorIds),
+  'Detachment 201 exact commissioning actor denominator is stale');
+assert(JSON.stringify(detachmentCommissioningParts
+  .filter(part => part.participant_type === 'organization').map(part => part.organization_id))
+  === JSON.stringify(['us-army']),
+  'Detachment 201 exact commissioning institution is stale');
+assert(hopGraph.edges.flatMap(edge => edge.surfaces)
+  .filter(basis => basis.surface_id === detachmentCommissioning?.surface_id).length === 6,
+  'four Detachment 201 officers must compile exactly six formal bases');
+const detachmentSankarWeilEdge = hopGraph.edges.find(edge =>
+  [edge.actor_a, edge.actor_b].sort().join('|') === 'kevin-weil|shyam-sankar');
+const detachmentSankarWeilBasis = detachmentSankarWeilEdge?.surfaces.find(
+  basis => basis.surface_id === detachmentCommissioning?.surface_id,
+);
+assert(detachmentSankarWeilBasis?.evidence_class === 'official',
+  'Shyam Sankar/Kevin Weil Detachment basis must remain official');
+assert(detachmentSankarWeilBasis?.valid_from === '2025-06-13'
+  && detachmentSankarWeilBasis?.valid_until === '2025-06-13',
+  'Shyam Sankar/Kevin Weil Detachment basis must remain exact-date bounded');
+for (const actorId of detachmentCommissionedActorIds) {
+  assert(hasSurface(actorId, detachmentCommissioning?.surface_id),
+    `${actorId} is missing the exact Detachment 201 commissioning surface`);
+}
+const detachmentReceipt = receiptById.get('army-detachment-201');
+assert(detachmentReceipt?.path
+  === 'receipts/topology/us-army-detachment-201-inaugural-commissioning-2025-06-13.md',
+  'Detachment 201 exact source extract path is stale');
+assert(detachmentReceipt?.event_date === '2025-06-13'
+  && detachmentReceipt?.named_cohort_size === 4,
+  'Detachment 201 receipt date or cohort denominator is stale');
+assert(sameIdSet(detachmentReceipt?.commissioned_actor_ids, detachmentCommissionedActorIds),
+  'Detachment 201 receipt actor denominator is stale');
+assert(detachmentReceipt?.procurement_award_established === false,
+  'Detachment 201 receipt must refuse procurement-award inference');
+assert(detachmentReceipt?.continuous_joint_work_established === false,
+  'Detachment 201 receipt must refuse continuing-joint-work inference');
+assert(detachmentReceipt?.archive?.ref
+  === 'sha256:4744b11929e9fc0e3a280bf43830d6bb337a6cc342664824a6c69239dd87a0fe',
+  'Detachment 201 receipt digest is stale');
+const detachmentClaim = claimById.get(
+  'detachment-201-inaugural-four-officer-commissioning-2025-06-13',
+);
+assert(detachmentClaim, 'Detachment 201 exact commissioning claim is missing');
+assert(sameIdSet(detachmentClaim?.actor_ids, detachmentCommissionedActorIds),
+  'Detachment 201 claim actor denominator is stale');
+assert(sameIdSet(detachmentClaim?.surface_ids, [detachmentCommissioning?.surface_id]),
+  'Detachment 201 claim surface binding is stale');
+assert(!receiptById.has('reuters-defense-procurement'),
+  'generic Reuters homepage proxy must remain retired after the official Detachment 201 repair');
+const syntheticPopulationChain = chainById.get('policy-to-deployment-synthetic-population');
+const detachmentChainStage = syntheticPopulationChain?.stages.find(stage =>
+  stage.stage_category === 'military_advisory_integration');
+assert(detachmentChainStage?.surface_id === detachmentProgramContext?.surface_id,
+  'policy-to-deployment chain must use the graph-inert Detachment program context');
+assert(sameIdSet(detachmentChainStage?.receipt_ids, ['army-detachment-201']),
+  'Detachment chain stage must use only the exact official Army receipt');
+
 // Regression fixture 1: Ben Warner.
 const warnerSurfaces = [
   'ben-warner-no10-digital-data-role-observation-2020-2021',

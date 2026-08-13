@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-13T00:55:22.558Z",
+  "generated": "2026-08-13T02:20:33.166Z",
   "surfaces": [
     {
       "surface_id": "ben-warner-no10-digital-data-role-observation-2020-2021",
@@ -1275,37 +1275,77 @@
       ]
     },
     {
-      "surface_id": "detachment-201-commissioning-2025",
-      "surface_label": "Detachment 201 Executive Innovation Corps commissioning surface, 2025",
+      "surface_id": "detachment-201-program-context-2025",
+      "surface_label": "Detachment 201 organization-level military advisory program context, from 13 June 2025",
       "surface_type": "laundering_chain_connector",
       "secondary_surface_types": [
         "defence_industrial_surface",
         "policy_to_procurement_surface"
       ],
       "hop_eligible": false,
+      "hop_refusal_reason": "organization_only_program_context",
       "scorable": true,
-      "status": "non_hop_chain_context",
+      "status": "split_from_named_commissioning_event",
       "bounded_by": [
-        "US Army public affairs announcement",
-        "named commissioning cohort",
-        "public-role/appointment facts only"
+        "13 June 2025 U.S. Army launch record",
+        "Army Reserve senior-adviser program description",
+        "exact four-officer commissioning held on a separate surface"
       ],
-      "time_start": "2025-06",
+      "time_start": "2025-06-13",
       "time_end": "",
+      "evidence_class": "official",
       "receipt_ids": [
-        "army-detachment-201",
-        "reuters-defense-procurement"
+        "army-detachment-201"
       ],
-      "notes": "Non-hop chain connector. Senior technology-company executives commissioned as US Army Reserve officers. Sits at the procurement-corridor stage of the policy-to-deployment chain. It does NOT create a Clifford hop: there is no bounded surface with shared Clifford participation, only policy lineage and procurement corridor.",
+      "notes": "Organization-level program context for the U.S. Army’s Executive Innovation Corps. It records the military advisory channel but creates no actor adjacency. The exact four-person commissioning event is separately bounded and does not establish procurement awards, company participation, data or intellectual-property transfer, preferred-vendor status, or continuing joint work.",
+      "participants": [
+        {
+          "surface_id": "detachment-201-program-context-2025",
+          "participant_type": "organization",
+          "organization_id": "us-army",
+          "role": "program institution for the Executive Innovation Corps",
+          "participation_type": "organization_level_program_context",
+          "time_start": "2025-06-13",
+          "time_end": "",
+          "evidence_class": "official",
+          "receipt_ids": [
+            "army-detachment-201"
+          ]
+        }
+      ]
+    },
+    {
+      "surface_id": "detachment-201-commissioning-2025",
+      "surface_label": "Detachment 201 inaugural four-officer commissioning, 13 June 2025",
+      "surface_type": "government_advisory_surface",
+      "secondary_surface_types": [
+        "defence_industrial_surface",
+        "policy_to_procurement_surface"
+      ],
+      "hop_eligible": true,
+      "scorable": true,
+      "status": "official_named_four_officer_commissioning",
+      "bounded_by": [
+        "13 June 2025 U.S. Army Public Affairs article naming all four new lieutenant colonels",
+        "U.S. Army Reserve oath and group-photo record",
+        "one-day formal commissioning event"
+      ],
+      "time_start": "2025-06-13",
+      "time_end": "2025-06-13",
+      "evidence_class": "official",
+      "receipt_ids": [
+        "army-detachment-201"
+      ],
+      "notes": "Exact-date formal commissioning surface for Shyam Sankar, Andrew Bosworth, Kevin Weil, and Bob McGrew. It proves that the four were commissioned into the same Army Reserve unit on the stated date. It does not establish friendship, agreement, procurement, employer coordination, technology transfer, continuing joint work, motive, wrongdoing, common purpose, or causation, and it does not place Matt Clifford on the event.",
       "participants": [
         {
           "surface_id": "detachment-201-commissioning-2025",
           "participant_type": "organization",
           "organization_id": "us-army",
-          "role": "commissioning institution / Executive Innovation Corps",
+          "role": "commissioning institution and Army Reserve unit",
           "participation_type": "venue",
-          "time_start": "2025-06",
-          "time_end": "",
+          "time_start": "2025-06-13",
+          "time_end": "2025-06-13",
           "evidence_class": "official",
           "receipt_ids": [
             "army-detachment-201"
@@ -1313,12 +1353,12 @@
         },
         {
           "surface_id": "detachment-201-commissioning-2025",
-          "participant_type": "organization",
-          "organization_id": "palantir",
-          "role": "employer of commissioned executive(s)",
-          "participation_type": "named_company",
-          "time_start": "2025-06",
-          "time_end": "",
+          "participant_type": "actor",
+          "actor_id": "shyam-sankar",
+          "role": "Army Reserve lieutenant colonel commissioned into Detachment 201; source-stated civilian role: Palantir Chief Technology Officer",
+          "participation_type": "commissioned_officer",
+          "time_start": "2025-06-13",
+          "time_end": "2025-06-13",
           "evidence_class": "official",
           "receipt_ids": [
             "army-detachment-201"
@@ -1326,12 +1366,38 @@
         },
         {
           "surface_id": "detachment-201-commissioning-2025",
-          "participant_type": "organization",
-          "organization_id": "openai",
-          "role": "employer of commissioned executive(s)",
-          "participation_type": "named_company",
-          "time_start": "2025-06",
-          "time_end": "",
+          "participant_type": "actor",
+          "actor_id": "andrew-bosworth",
+          "role": "Army Reserve lieutenant colonel commissioned into Detachment 201; source-stated civilian role: Meta Chief Technology Officer",
+          "participation_type": "commissioned_officer",
+          "time_start": "2025-06-13",
+          "time_end": "2025-06-13",
+          "evidence_class": "official",
+          "receipt_ids": [
+            "army-detachment-201"
+          ]
+        },
+        {
+          "surface_id": "detachment-201-commissioning-2025",
+          "participant_type": "actor",
+          "actor_id": "kevin-weil",
+          "role": "Army Reserve lieutenant colonel commissioned into Detachment 201; source-stated civilian role: OpenAI Chief Product Officer",
+          "participation_type": "commissioned_officer",
+          "time_start": "2025-06-13",
+          "time_end": "2025-06-13",
+          "evidence_class": "official",
+          "receipt_ids": [
+            "army-detachment-201"
+          ]
+        },
+        {
+          "surface_id": "detachment-201-commissioning-2025",
+          "participant_type": "actor",
+          "actor_id": "bob-mcgrew",
+          "role": "Army Reserve lieutenant colonel commissioned into Detachment 201; source-stated civilian role: Thinking Machines Lab adviser and former OpenAI Chief Research Officer",
+          "participation_type": "commissioned_officer",
+          "time_start": "2025-06-13",
+          "time_end": "2025-06-13",
           "evidence_class": "official",
           "receipt_ids": [
             "army-detachment-201"
@@ -4155,37 +4221,49 @@
       "id": "shyam-sankar",
       "label": "Shyam Sankar",
       "kind": "person",
-      "source": "legacy_graph",
-      "legacy_type": "person",
-      "description": "CTO & EVP, Palantir; Army Reserve Lt. Colonel, Detachment 201.",
-      "tags": []
+      "plain": {
+        "who": "A technology executive whom U.S. Army Public Affairs identifies as Palantir’s Chief Technology Officer and as one of four officers commissioned into Detachment 201 on 13 June 2025.",
+        "why_here": "The official Army record supports one exact-date formal commissioning surface with the other three inaugural officers, without implying a procurement award, company control, or continuing joint work.",
+        "receipt_ids": [
+          "army-detachment-201"
+        ]
+      }
     },
     {
       "id": "andrew-bosworth",
-      "label": "Andrew \"Boz\" Bosworth",
+      "label": "Andrew “Boz” Bosworth",
       "kind": "person",
-      "source": "legacy_graph",
-      "legacy_type": "person",
-      "description": "CTO, Meta (Reality Labs); Army Reserve Lt. Colonel, Detachment 201.",
-      "tags": []
+      "plain": {
+        "who": "A technology executive whom U.S. Army Public Affairs identifies as Meta’s Chief Technology Officer and as one of four officers commissioned into Detachment 201 on 13 June 2025.",
+        "why_here": "The official Army record supports one exact-date formal commissioning surface with the other three inaugural officers, without extending the event into an employment, procurement, or policy relationship.",
+        "receipt_ids": [
+          "army-detachment-201"
+        ]
+      }
     },
     {
       "id": "kevin-weil",
       "label": "Kevin Weil",
       "kind": "person",
-      "source": "legacy_graph",
-      "legacy_type": "person",
-      "description": "Chief Product Officer, OpenAI; Army Reserve Lt. Colonel, Detachment 201.",
-      "tags": []
+      "plain": {
+        "who": "A technology executive whom U.S. Army Public Affairs identifies as OpenAI’s Chief Product Officer and as one of four officers commissioned into Detachment 201 on 13 June 2025.",
+        "why_here": "The official Army record supports one exact-date formal commissioning surface with the other three inaugural officers, without proving a contract, preferred-vendor status, or subsequent coordination.",
+        "receipt_ids": [
+          "army-detachment-201"
+        ]
+      }
     },
     {
       "id": "bob-mcgrew",
       "label": "Bob McGrew",
       "kind": "person",
-      "source": "legacy_graph",
-      "legacy_type": "person",
-      "description": "Former Chief Research Officer, OpenAI; adviser, Thinking Machines Lab; Army Reserve Lt. Colonel, Detachment 201.",
-      "tags": []
+      "plain": {
+        "who": "A technology executive whom U.S. Army Public Affairs identifies as an adviser at Thinking Machines Lab, a former OpenAI Chief Research Officer, and one of four officers commissioned into Detachment 201 on 13 June 2025.",
+        "why_here": "The official Army record supports one exact-date formal commissioning surface with the other three inaugural officers, without establishing an employer transaction, technology transfer, or continuing joint work.",
+        "receipt_ids": [
+          "army-detachment-201"
+        ]
+      }
     },
     {
       "id": "alex-karp",
@@ -5157,6 +5235,36 @@
     {
       "alias": "Andrew Bailey, Research Engineer, Electric Twin",
       "canonical_id": "andrew-bailey-electric-twin",
+      "kind": "actor"
+    },
+    {
+      "alias": "Shyam Sankar, Palantir CTO",
+      "canonical_id": "shyam-sankar",
+      "kind": "actor"
+    },
+    {
+      "alias": "Andrew Bosworth",
+      "canonical_id": "andrew-bosworth",
+      "kind": "actor"
+    },
+    {
+      "alias": "Andrew “Boz” Bosworth",
+      "canonical_id": "andrew-bosworth",
+      "kind": "actor"
+    },
+    {
+      "alias": "Andrew \"Boz\" Bosworth",
+      "canonical_id": "andrew-bosworth",
+      "kind": "actor"
+    },
+    {
+      "alias": "Kevin Weil, OpenAI CPO",
+      "canonical_id": "kevin-weil",
+      "kind": "actor"
+    },
+    {
+      "alias": "Bob McGrew, former OpenAI CRO",
+      "canonical_id": "bob-mcgrew",
       "kind": "actor"
     },
     {
