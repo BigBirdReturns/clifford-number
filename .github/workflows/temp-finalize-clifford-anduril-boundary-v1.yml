@@ -1,0 +1,232 @@
+name: TEMP finalize Clifford-Anduril bounded non-link
+
+on:
+  push:
+    branches:
+      - agent/temp-clifford-anduril-boundary-finalizer-v1
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out finalizer carrier
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Resolve the exact product pull request
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          product='candidate/clifford-anduril-boundary-v1'
+          pr=''
+
+          for attempt in $(seq 1 120); do
+            pr=$(gh pr list --repo "$repo" --state all --head "$product" --json number --jq '.[0].number // empty')
+            if test -n "$pr"; then break; fi
+            if git ls-remote --exit-code --heads origin "$product" >/dev/null 2>&1; then
+              body='This pull request publishes the already-qualified Matt Clifford × Anduril bounded non-link. Official records preserve separate summit-related meetings and a TALOS award naming Strategic Command and jHub, without placing Matt Clifford and Anduril on one shared bounded mechanism. The actor graph remains unchanged at 44 edges.'
+              gh pr create --repo "$repo" --base main --head "$product" --title 'Topology: close Matt Clifford × Anduril as a bounded non-link' --body "$body" >/tmp/pr-url
+              pr=$(gh pr list --repo "$repo" --state open --head "$product" --json number --jq '.[0].number // empty')
+              break
+            fi
+            sleep 5
+          done
+
+          if test -z "$pr"; then
+            echo 'No product pull request or product branch appeared.' >&2
+            exit 1
+          fi
+          echo "PR_NUMBER=$pr" >> "$GITHUB_ENV"
+
+      - name: Verify the immutable product boundary
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          canonical='a76da0afd258cd9a3aa77f0a93633172469509dd'
+          product='candidate/clifford-anduril-boundary-v1'
+          state=$(gh pr view "$PR_NUMBER" --repo "$repo" --json state,mergedAt --jq '.state')
+          head=$(gh pr view "$PR_NUMBER" --repo "$repo" --json headRefOid --jq '.headRefOid')
+          echo "PRODUCT_HEAD=$head" >> "$GITHUB_ENV"
+
+          if test "$state" = 'OPEN'; then
+            git fetch --no-tags origin main "$product"
+            test "$(git rev-parse origin/main)" = "$canonical"
+            test "$(git rev-parse origin/$product^)" = "$canonical"
+            mapfile -t paths < <(git diff --name-only "$canonical" "origin/$product" --)
+            test "${#paths[@]}" -eq 22
+            if printf '%s\n' "${paths[@]}" | grep -E '^\.github/(workflows|temporary)/'; then
+              echo 'transport entered the product denominator' >&2
+              exit 1
+            fi
+            git checkout --detach "origin/$product"
+            node <<'NODE'
+            const fs = require('node:fs');
+            const hop = JSON.parse(fs.readFileSync('build/hop-graph.json', 'utf8'));
+            if (hop.edges.length !== 44) throw new Error(`expected 44 actor-hop edges, found ${hop.edges.length}`);
+            const surfaces = fs.readFileSync('data/ledger/surfaces.jsonl','utf8').split(/\r?\n/).filter(Boolean).map(JSON.parse);
+            const relevant = surfaces.filter(row => JSON.stringify(row).toLowerCase().includes('anduril') && row.hop_eligible === false);
+            if (relevant.length < 4) throw new Error(`expected at least four explicit Anduril boundary surfaces, found ${relevant.length}`);
+            NODE
+          fi
+
+      - name: Wait for exact-head admission checks
+        if: env.PRODUCT_HEAD != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          state=$(gh pr view "$PR_NUMBER" --repo "$repo" --json state --jq '.state')
+          if test "$state" != 'OPEN'; then exit 0; fi
+
+          for attempt in $(seq 1 150); do
+            gh api "repos/$repo/actions/runs?head_sha=$PRODUCT_HEAD&per_page=100" > /tmp/runs.json
+            verdict=$(node <<'NODE'
+            const fs=require('node:fs');
+            const runs=JSON.parse(fs.readFileSync('/tmp/runs.json','utf8')).workflow_runs;
+            const expected=['Release checks','Thesis state-market receipt custody','No magic human gate'];
+            const latest=new Map();
+            for (const run of runs) {
+              if (!expected.includes(run.name)) continue;
+              const prior=latest.get(run.name);
+              if (!prior || run.run_number > prior.run_number) latest.set(run.name,run);
+            }
+            if (expected.some(name => !latest.has(name))) process.stdout.write('waiting');
+            else if (expected.some(name => latest.get(name).status === 'completed' && !['success','neutral','skipped'].includes(latest.get(name).conclusion))) process.stdout.write('failed');
+            else if (expected.every(name => latest.get(name).status === 'completed' && ['success','neutral','skipped'].includes(latest.get(name).conclusion))) process.stdout.write('passed');
+            else process.stdout.write('waiting');
+            NODE
+            )
+            case "$verdict" in
+              passed) break ;;
+              failed) echo 'An exact-head admission check failed.' >&2; cat /tmp/runs.json; exit 1 ;;
+              waiting) sleep 6 ;;
+            esac
+            if test "$attempt" -eq 150; then echo 'Timed out waiting for exact-head checks.' >&2; exit 1; fi
+          done
+
+      - name: Refuse unresolved review objections
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          state=$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json state --jq '.state')
+          if test "$state" != 'OPEN'; then exit 0; fi
+          gh api graphql -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100){nodes{isResolved}} reviews(first:100){nodes{state}}}}}' -F owner='BigBirdReturns' -F name='clifford-number' -F number="$PR_NUMBER" > /tmp/review.json
+          node <<'NODE'
+          const fs=require('node:fs');
+          const pr=JSON.parse(fs.readFileSync('/tmp/review.json','utf8')).data.repository.pullRequest;
+          const unresolved=pr.reviewThreads.nodes.filter(row => !row.isResolved);
+          const changes=pr.reviews.nodes.filter(row => row.state === 'CHANGES_REQUESTED');
+          if (unresolved.length || changes.length) throw new Error(`unresolved review objections: threads=${unresolved.length}, change_requests=${changes.length}`);
+          NODE
+
+      - name: Merge the exact qualified head
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          state=$(gh pr view "$PR_NUMBER" --repo "$repo" --json state --jq '.state')
+          if test "$state" = 'OPEN'; then
+            gh api --method PUT "repos/$repo/pulls/$PR_NUMBER/merge" \
+              -f sha="$PRODUCT_HEAD" \
+              -f merge_method='merge' \
+              -f commit_title='Topology: close Matt Clifford × Anduril as a bounded non-link' \
+              -f commit_message='Preserve four exact official event surfaces and three receipts while refusing to combine separate meetings or a programme-level award into a Matt Clifford-Anduril hop. The actor graph remains unchanged at 44 edges.' > /tmp/merge.json
+            test "$(jq -r '.merged' /tmp/merge.json)" = 'true'
+          fi
+          merge=$(gh pr view "$PR_NUMBER" --repo "$repo" --json mergeCommit --jq '.mergeCommit.oid')
+          test -n "$merge"
+          echo "MERGE_SHA=$merge" >> "$GITHUB_ENV"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$merge"
+          tree=$(git rev-parse "$PRODUCT_HEAD^{tree}")
+          test "$(git rev-parse "$merge^{tree}")" = "$tree"
+
+      - name: Verify canonical deployment
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          retried=''
+          for attempt in $(seq 1 150); do
+            gh api "repos/$repo/actions/runs?head_sha=$MERGE_SHA&per_page=100" > /tmp/post.json
+            status=$(node <<'NODE'
+            const fs=require('node:fs');
+            const runs=JSON.parse(fs.readFileSync('/tmp/post.json','utf8')).workflow_runs;
+            const expected=['No magic human gate','Deploy surface-hop app to GitHub Pages'];
+            const latest=new Map();
+            for (const run of runs) {
+              if (!expected.includes(run.name)) continue;
+              const prior=latest.get(run.name);
+              if (!prior || run.run_number > prior.run_number) latest.set(run.name,run);
+            }
+            if (expected.some(name => !latest.has(name))) process.stdout.write('waiting');
+            else if (expected.every(name => latest.get(name).status === 'completed' && ['success','neutral','skipped'].includes(latest.get(name).conclusion))) process.stdout.write('passed');
+            else if (expected.some(name => latest.get(name).status === 'completed' && !['success','neutral','skipped'].includes(latest.get(name).conclusion))) process.stdout.write('failed');
+            else process.stdout.write('waiting');
+            NODE
+            )
+            if test "$status" = 'passed'; then break; fi
+            if test "$status" = 'failed' && test -z "$retried"; then
+              while read -r id; do gh api --method POST "repos/$repo/actions/runs/$id/rerun-failed-jobs" || true; done < <(jq -r '.workflow_runs[] | select(.status=="completed" and (.conclusion != "success" and .conclusion != "neutral" and .conclusion != "skipped")) | .id' /tmp/post.json)
+              retried='yes'
+            elif test "$status" = 'failed'; then
+              cat /tmp/post.json
+              exit 1
+            fi
+            sleep 8
+            if test "$attempt" -eq 150; then echo 'Timed out waiting for canonical deployment.' >&2; exit 1; fi
+          done
+
+      - name: Publish terminal issue receipts and remove transaction refs
+        if: env.MERGE_SHA != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          message=$(cat <<EOF
+          Canonical disposition: bounded non-link.
+
+          PR #$PR_NUMBER merged as \`$MERGE_SHA\` from exact product \`$PRODUCT_HEAD\`. Official records preserve separate summit-related meetings and the TALOS award actors without placing Matt Clifford and Anduril on one shared bounded mechanism. Four explicit non-hop surfaces and three official receipts are public. The compiled actor graph remains at 44 edges.
+
+          A future route requires one dated instrument and direct participation receipts for both endpoints. The current record does not establish private contact, influence, procurement authority, agreement, coordination, motive, wrongdoing, common purpose, or causation.
+          EOF
+          )
+          gh issue comment 324 --repo "$repo" --body "$message"
+          gh issue close 324 --repo "$repo" --reason completed || true
+          gh issue comment 308 --repo "$repo" --body "$message"
+
+          for ref in \
+            candidate/clifford-anduril-boundary-v1 \
+            agent/temp-clifford-anduril-boundary-publisher-v1 \
+            agent/temp-export-main-a76da0-v1 \
+            agent/temp-clifford-anduril-boundary-finalizer-v1; do
+            git push origin --delete "$ref" || true
+          done
