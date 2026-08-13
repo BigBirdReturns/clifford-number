@@ -1498,6 +1498,83 @@ for (const receipt of data.receipts) {
   }
 }
 
+// Electric Twin × Virgin source-native MAD//Fest stage-session boundary.
+const madfestSession = surfaceById.get('electric-twin-virgin-madfest-session-2026-07-08');
+const madfestReceipt = receiptById.get('madfest-electric-twin-virgin-session-2026-07-08');
+const madfestActorIds = ['ben-warner', 'james-tyrrell', 'michael-barber-virgin'].sort();
+assert(madfestSession, 'Electric Twin / Virgin MAD//Fest session is missing');
+assert(madfestSession?.surface_type === 'customer_vendor_surface',
+  'MAD//Fest session must remain a bounded customer/vendor event surface');
+assert(madfestSession?.hop_eligible === true,
+  'confirmed three-speaker MAD//Fest session must remain hop eligible');
+assert(madfestSession?.evidence_class === 'primary_public',
+  'MAD//Fest session must retain primary-public evidence');
+assert(madfestSession?.time_start === '2026-07-08' && madfestSession?.time_end === '2026-07-08',
+  'MAD//Fest session must remain exact-date bounded');
+const madfestParts = sourcePartsBySurface.get(madfestSession?.surface_id) ?? [];
+assert(sameIdSet(
+  madfestParts.filter(part => part.participant_type === 'actor').map(part => part.actor_id),
+  madfestActorIds,
+), 'MAD//Fest actor denominator must remain exactly Ben Warner, James Tyrrell, and Michael Barber');
+assert(sameIdSet(
+  madfestParts.filter(part => part.participant_type === 'organization').map(part => part.organization_id),
+  ['electric-twin', 'virgin'],
+), 'MAD//Fest organization denominator must remain Electric Twin and source-name Virgin');
+assert(madfestParts.every(part =>
+  part.time_start === '2026-07-08'
+    && part.time_end === '2026-07-08'
+    && part.evidence_class === 'primary_public'
+    && sameIdSet(part.receipt_ids, ['madfest-electric-twin-virgin-session-2026-07-08'])),
+  'every MAD//Fest participant must retain the exact date, evidence class, and receipt');
+const madfestBases = hopGraph.edges.filter(edge =>
+  edge.surfaces.some(basis => basis.surface_id === madfestSession?.surface_id));
+assert(madfestBases.length === 3,
+  'three MAD//Fest speakers must produce exactly three pairwise bases');
+assert(sameIdSet(
+  madfestBases.map(edge => [edge.actor_a, edge.actor_b].sort().join('|')),
+  [
+    'ben-warner|james-tyrrell',
+    'ben-warner|michael-barber-virgin',
+    'james-tyrrell|michael-barber-virgin',
+  ],
+), 'MAD//Fest pair set drifted');
+for (const edge of madfestBases) {
+  const basis = edge.surfaces.find(row => row.surface_id === madfestSession?.surface_id);
+  assert(basis?.valid_from === '2026-07-08' && basis?.valid_until === '2026-07-08',
+    'every MAD//Fest basis must remain one-day');
+  assert(basis?.evidence_class === 'primary_public',
+    'every MAD//Fest basis must remain primary-public');
+}
+assert(madfestReceipt?.shared_stage_confirmed === true,
+  'post-event Electric Twin shared-stage confirmation must remain explicit');
+assert(madfestReceipt?.agenda_listing_alone_treated_as_attendance === false,
+  'advance agenda listing must not be represented as attendance by itself');
+assert(madfestReceipt?.virgin_identity_scope === 'source_name_only'
+  && madfestReceipt?.virgin_legal_entity_resolved === false,
+  'Virgin must remain source-name scoped without a manufactured legal-entity join');
+assert(madfestReceipt?.contract_terms_established === false
+  && madfestReceipt?.private_contact_established === false
+  && madfestReceipt?.continuous_joint_work_established === false,
+  'MAD//Fest receipt must preserve the contract, private-contact, and continuing-work refusals');
+assert(madfestReceipt?.archive?.ref ===
+  'sha256:5cbbcb8f7fa18c0c29e2f97dea26ebb1608b02a28463c1af5e48a7b6e5451c13',
+  'MAD//Fest receipt digest drift');
+for (const actorId of ['james-tyrrell', 'michael-barber-virgin']) {
+  assert(sameIdSet(
+    data.participation
+      .filter(part => part.participant_type === 'actor' && part.actor_id === actorId)
+      .map(part => part.surface_id),
+    ['electric-twin-virgin-madfest-session-2026-07-08'],
+  ), `${actorId} must not inherit any surface beyond the exact MAD//Fest session`);
+  assert(!hopGraph.edges.some(edge =>
+    [edge.actor_a, edge.actor_b].sort().join('|') === [actorId, 'matt-clifford'].sort().join('|')),
+    `${actorId} must not receive a direct Matt Clifford edge`);
+}
+assert(claimById.has('electric-twin-virgin-madfest-shared-stage-2026-07-08'),
+  'MAD//Fest shared-stage claim is missing');
+assert(claimById.has('electric-twin-virgin-madfest-identity-and-contract-boundary-2026-07-08'),
+  'MAD//Fest identity and contract boundary claim is missing');
+
 if (errors.length) {
   console.error('validate-release failed:');
   for (const err of errors) console.error(`- ${err}`);

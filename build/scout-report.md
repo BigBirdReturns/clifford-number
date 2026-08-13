@@ -1,6 +1,6 @@
 # Scout Report
 
-Generated: 2026-08-13T20:52:02.091Z
+Generated: 2026-08-13T21:09:38.262Z
 
 > graph_effect: none. This is a research queue, not graph data.
 
@@ -14,13 +14,13 @@ Findings: 163
 
 **Observed**
 
-Electric Twin appears across 13 surface(s): electric-twin-incorporation-2023-09-28, electric-twin-ben-warner-director-tenure-2023-09-28, electric-twin-alex-cooper-director-tenure-2023-09-28, electric-twin-ethics-board-2026, electric-twin-seed-round-2026-02-11, electric-twin-seed-round-institutional-investors-2026-02-11, electric-twin-ben-blume-director-appointment-2025-09-12, electric-twin-seed2-governance-instrument-2025-09-12, electric-twin-seed2-capital-actions-2025-09-16-2025-09-26, electric-twin-newsuk-synthetic-audience, gartner-synthetic-population-category-2026, electric-twin-muthukrishna-science-adviser-observations-2024-2026, electric-twin-accuracy-methodology-publication-2026-02-11. Secondary types: category_formation_surface, democratic_input_replacement, model_governance_surface, surface_factory_capital_layer.
+Electric Twin appears across 14 surface(s): electric-twin-incorporation-2023-09-28, electric-twin-ben-warner-director-tenure-2023-09-28, electric-twin-alex-cooper-director-tenure-2023-09-28, electric-twin-ethics-board-2026, electric-twin-seed-round-2026-02-11, electric-twin-seed-round-institutional-investors-2026-02-11, electric-twin-ben-blume-director-appointment-2025-09-12, electric-twin-seed2-governance-instrument-2025-09-12, electric-twin-seed2-capital-actions-2025-09-16-2025-09-26, electric-twin-newsuk-synthetic-audience, gartner-synthetic-population-category-2026, electric-twin-muthukrishna-science-adviser-observations-2024-2026, electric-twin-accuracy-methodology-publication-2026-02-11, electric-twin-virgin-madfest-session-2026-07-08. Secondary types: category_formation_surface, democratic_input_replacement, model_governance_surface, surface_factory_capital_layer.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-Refs: `electric-twin-incorporation-2023-09-28`, `electric-twin-ben-warner-director-tenure-2023-09-28`, `electric-twin-alex-cooper-director-tenure-2023-09-28`, `electric-twin-ethics-board-2026`, `electric-twin-seed-round-2026-02-11`, `electric-twin-seed-round-institutional-investors-2026-02-11`, `electric-twin-ben-blume-director-appointment-2025-09-12`, `electric-twin-seed2-governance-instrument-2025-09-12`, `electric-twin-seed2-capital-actions-2025-09-16-2025-09-26`, `electric-twin-newsuk-synthetic-audience`, `gartner-synthetic-population-category-2026`, `electric-twin-muthukrishna-science-adviser-observations-2024-2026`, `electric-twin-accuracy-methodology-publication-2026-02-11`
+Refs: `electric-twin-incorporation-2023-09-28`, `electric-twin-ben-warner-director-tenure-2023-09-28`, `electric-twin-alex-cooper-director-tenure-2023-09-28`, `electric-twin-ethics-board-2026`, `electric-twin-seed-round-2026-02-11`, `electric-twin-seed-round-institutional-investors-2026-02-11`, `electric-twin-ben-blume-director-appointment-2025-09-12`, `electric-twin-seed2-governance-instrument-2025-09-12`, `electric-twin-seed2-capital-actions-2025-09-16-2025-09-26`, `electric-twin-newsuk-synthetic-audience`, `gartner-synthetic-population-category-2026`, `electric-twin-muthukrishna-science-adviser-observations-2024-2026`, `electric-twin-accuracy-methodology-publication-2026-02-11`, `electric-twin-virgin-madfest-session-2026-07-08`
 
 ---
 
@@ -212,13 +212,13 @@ Refs: `faculty-science-director-shareholder-overlap-2024-10-10`, `ai-opportuniti
 
 **Observed**
 
-Dr. Ben Warner has 7 surfaces and secondary types category_formation_surface, model_governance_surface, public_private_ai_infrastructure, surface_factory_capital_layer. Governance replacement score: 0.
+Dr. Ben Warner has 8 surfaces and secondary types category_formation_surface, model_governance_surface, public_private_ai_infrastructure, surface_factory_capital_layer. Governance replacement score: 0.
 
 **Required action**
 
 Check for additional venues where the same surface type recurs. Do not convert recurrence into a hop unless there is a bounded co-participation surface.
 
-Refs: `ben-warner-no10-digital-data-role-observation-2020-2021`, `faculty-science-officer-employee-overlap-2018-01-24`, `electric-twin-incorporation-2023-09-28`, `electric-twin-ben-warner-director-tenure-2023-09-28`, `electric-twin-seed2-governance-instrument-2025-09-12`, `centre-human-progress-director-appointments-2025-08-05`, `electric-twin-accuracy-methodology-publication-2026-02-11`
+Refs: `ben-warner-no10-digital-data-role-observation-2020-2021`, `faculty-science-officer-employee-overlap-2018-01-24`, `electric-twin-incorporation-2023-09-28`, `electric-twin-ben-warner-director-tenure-2023-09-28`, `electric-twin-seed2-governance-instrument-2025-09-12`, `centre-human-progress-director-appointments-2025-08-05`, `electric-twin-accuracy-methodology-publication-2026-02-11`, `electric-twin-virgin-madfest-session-2026-07-08`
 
 ---
 
