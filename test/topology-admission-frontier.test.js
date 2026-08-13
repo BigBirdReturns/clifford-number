@@ -117,7 +117,7 @@ const missingPairBasis = fixture();
 missingPairBasis.hopGraph.edges = [];
 const missingPairResult = analyzeTopologyAdmissionFrontier(missingPairBasis);
 assert.ok(missingPairResult.errors.includes(
-  'hop-eligible surface bounded-event is missing compiled pair basis actor-a|actor-b',
+  'hop-eligible surface bounded-event is missing compiled or temporally refused pair actor-a|actor-b',
 ));
 
 const unreceiptedActor = fixture();
