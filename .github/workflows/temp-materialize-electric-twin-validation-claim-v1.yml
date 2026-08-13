@@ -1,0 +1,142 @@
+name: TEMP materialize Electric Twin validation claim
+
+on:
+  push:
+    branches:
+      - agent/electric-twin-validation-claim-transport-v1
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Materialize qualified product
+        env:
+          CANDIDATE_BRANCH: candidate/electric-twin-validation-claim-v1
+          EXPECTED_MAIN: ba13251aaabc7166abdbf16bd1b2a67bb0354ad7
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d .github/temporary/apply-electric-twin-validation-claim-v1.mjs.gz.b64 \
+            | gzip -d > /tmp/apply-electric-twin-validation-claim-v1.mjs
+          echo '96a184a6b11e555f88715c63a2f4cf6a879dbbfbfa6657bfebf53e42db714009  /tmp/apply-electric-twin-validation-claim-v1.mjs' | sha256sum -c -
+          node --check /tmp/apply-electric-twin-validation-claim-v1.mjs
+
+          git fetch --no-tags origin main
+          BASE_SHA="$(git rev-parse origin/main)"
+          test "$BASE_SHA" = "$EXPECTED_MAIN"
+          test -z "$(git ls-remote origin "refs/heads/$CANDIDATE_BRANCH")"
+
+          rm -rf /tmp/electric-twin-validation-claim-product
+          git worktree add --detach /tmp/electric-twin-validation-claim-product "$BASE_SHA"
+          cd /tmp/electric-twin-validation-claim-product
+          git checkout -B "$CANDIDATE_BRANCH"
+          test -z "$(git status --porcelain)"
+
+          node /tmp/apply-electric-twin-validation-claim-v1.mjs
+          npm run release:check
+
+          git add -A
+          git diff --cached --check
+          test -z "$(git diff --cached --diff-filter=D --name-only)"
+          cat > /tmp/expected-paths <<'PATHS'
+          build/axm-identity.json
+          build/build-hop-report.json
+          build/hop-graph.json
+          build/migration-review.md
+          build/migration-summary.json
+          build/receipt-graph.json
+          build/scores.json
+          build/scout-report.json
+          build/scout-report.md
+          build/surface-graph.json
+          data/ledger/claims.jsonl
+          data/ledger/participation.jsonl
+          data/ledger/receipts.jsonl
+          data/ledger/surfaces.jsonl
+          data/research/clifford-cross-corpus-public-interest-map.json
+          receipts/topology/ben-warner-electric-twin-muthukrishna-preregistered-study-claim-2026-06-02.md
+          test/compiler.test.js
+          tools/validate-release.mjs
+          PATHS
+          sort -o /tmp/expected-paths /tmp/expected-paths
+          git diff --cached --name-only | sort > /tmp/actual-paths
+          diff -u /tmp/expected-paths /tmp/actual-paths
+          if grep -E '(^|/)\.github(/|$)' /tmp/actual-paths; then
+            echo 'transport path entered permanent product' >&2
+            exit 1
+          fi
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { buildAdjacency, shortestPath } from './tools/lib/hops.mjs';
+          const json = path => JSON.parse(fs.readFileSync(path, 'utf8'));
+          const jsonl = path => fs.readFileSync(path, 'utf8').split(/\r?\n/).filter(Boolean).map(JSON.parse);
+          const surfaceId = 'electric-twin-muthukrishna-validation-claim-2026-06-02';
+          const receiptId = 'ben-warner-electric-twin-muthukrishna-preregistered-study-claim-2026-06-02';
+          const hop = json('build/hop-graph.json');
+          const surfaces = jsonl('data/ledger/surfaces.jsonl');
+          const parts = jsonl('data/ledger/participation.jsonl').filter(row => row.surface_id === surfaceId);
+          const receipt = jsonl('data/ledger/receipts.jsonl').find(row => row.receipt_id === receiptId);
+          const surface = surfaces.find(row => row.surface_id === surfaceId);
+          if (!surface || surface.hop_eligible !== false
+              || surface.hop_refusal_reason !== 'named_collaboration_claim_without_recovered_study_object') {
+            throw new Error('validation-claim surface qualification drift');
+          }
+          const actorIds = parts.filter(row => row.participant_type === 'actor').map(row => row.actor_id);
+          const orgIds = parts.filter(row => row.participant_type === 'organization').map(row => row.organization_id);
+          if (JSON.stringify(actorIds) !== JSON.stringify(['ben-warner'])) {
+            throw new Error('validation-claim actor denominator drift');
+          }
+          if (JSON.stringify(orgIds) !== JSON.stringify(['electric-twin'])) {
+            throw new Error('validation-claim organization denominator drift');
+          }
+          if (hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === surfaceId))) {
+            throw new Error('validation claim created a hop');
+          }
+          const benMichael = hop.edges.find(edge =>
+            [edge.actor_a, edge.actor_b].sort().join('|') === 'ben-warner|michael-muthukrishna');
+          if (!benMichael || benMichael.surfaces.some(basis => basis.surface_id === surfaceId)) {
+            throw new Error('Ben/Michael edge was widened by the public claim');
+          }
+          if (receipt?.archive?.ref !== 'sha256:619bde0b908e95dacb54aecb8fbebebc42b42c96f28a87ebae64c1259073d65a') {
+            throw new Error('validation-claim receipt digest drift');
+          }
+          const topology = buildAdjacency(hop.edges);
+          if (shortestPath(topology, 'michael-muthukrishna', 'matt-clifford').number !== 2) {
+            throw new Error('Michael Muthukrishna all-time route drift');
+          }
+          NODE
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          test -z "$(git ls-remote origin "refs/heads/$CANDIDATE_BRANCH")"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'topology: preserve Electric Twin validation claim boundary'
+          test "$(git rev-list --count "$BASE_SHA"..HEAD)" = '1'
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          git push --force-with-lease="refs/heads/$CANDIDATE_BRANCH:" \
+            origin "HEAD:refs/heads/$CANDIDATE_BRANCH"
+
+          {
+            echo '## Electric Twin validation-claim product'
+            echo
+            echo '```text'
+            echo "commit $(git rev-parse HEAD)"
+            echo "tree   $(git rev-parse HEAD^{tree})"
+            echo "parent $(git rev-parse HEAD^)"
+            echo 'delta  surfaces +1 | participation +2 | receipts +1 | claims +2 | edges +0'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
