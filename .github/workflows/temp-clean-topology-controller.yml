@@ -23,6 +23,7 @@ jobs:
       - name: Materialize, validate, and publish clean product
         shell: bash
         env:
+          GITHUB_TOKEN: ${{ github.token }}
           SOURCE_SHA: 51b8a8d1ed342fc7ee157e31f3a41645bb0f1d00
           EXPECTED_TARGET_HEAD: 55ffac16851697ff9cf8492bc9f989e28a0d2a47
           TARGET_BRANCH: agent/topology-admission-frontier-v1
@@ -30,8 +31,30 @@ jobs:
         run: |
           set -euo pipefail
           cp tools/temp-clean-topology-controller.py /tmp/temp-clean-topology-controller.py
+          mkdir -p /tmp/source-files/tools /tmp/source-files/test
+          for path in \
+            tools/build-topology-admission-frontier.mjs \
+            test/topology-admission-frontier.test.js
+          do
+            curl --fail --silent --show-error --location \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              -H 'Accept: application/vnd.github.raw+json' \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/${path}?ref=${SOURCE_SHA}" \
+              -o "/tmp/source-files/${path}"
+          done
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('/tmp/temp-clean-topology-controller.py')
+          text = path.read_text(encoding='utf-8')
+          old = "    data = subprocess.check_output(['git', 'show', f'{source_sha}:{path}'])\n"
+          new = "    data = Path('/tmp/source-files', path).read_bytes()\n"
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f'source-loader denominator mismatch: {count}')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
           git fetch --no-tags origin main "$TARGET_BRANCH"
-          git cat-file -e "${SOURCE_SHA}^{commit}"
           base_sha="$(git rev-parse origin/main)"
           git checkout --detach "$base_sha"
           python /tmp/temp-clean-topology-controller.py
