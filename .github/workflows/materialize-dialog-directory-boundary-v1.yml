@@ -1,0 +1,305 @@
+name: Materialize Dialog directory boundary v1
+
+on:
+  push:
+    branches:
+      - candidate/dialog-directory-boundary-v1
+
+permissions:
+  contents: write
+
+concurrency:
+  group: materialize-dialog-directory-boundary-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      BASE_SHA: a76da0afd258cd9a3aa77f0a93633172469509dd
+      BASE_TREE: e84f6ed423bbb2c7f8a184fe7e7904e1365f7adc
+      PRODUCT_BRANCH: candidate/dialog-directory-boundary-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: candidate/dialog-directory-boundary-v1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify exact current-main lease and snapshot actor edges
+        shell: bash
+        run: |
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$BASE_SHA"
+          test "$(git rev-parse "$BASE_SHA^{tree}")" = "$BASE_TREE"
+          test "$(git merge-base "$BASE_SHA" HEAD)" = "$BASE_SHA"
+          cp build/hop-graph.json /tmp/base-hop-graph.json
+
+      - name: Apply bounded Dialog source transaction
+        shell: bash
+        run: |
+          python - <<'PY'
+          import ast
+          import base64
+          import gzip
+          from pathlib import Path
+
+          path = Path('tools/materialize-dialog-directory-boundary-v1.py')
+          module = ast.parse(path.read_text(encoding='utf-8'))
+          payload = None
+          for node in module.body:
+              if isinstance(node, ast.Assign) and any(
+                  isinstance(target, ast.Name) and target.id == 'payload'
+                  for target in node.targets
+              ):
+                  payload = ast.literal_eval(node.value)
+                  break
+          if payload is None:
+              raise SystemExit('compressed Dialog materializer payload is missing')
+          source = gzip.decompress(base64.b64decode(payload)).decode('utf-8')
+          replacements = {
+              '"actors": 144,': '"actors": 148,',
+              '"surfaces": 26,': '"surfaces": 27,',
+              '"participations": 196,': '"participations": 199,',
+              '"receipts": 53,': '"receipts": 52,',
+              '"compiled_hop_edges": 38,': '"compiled_hop_edges": 44,',
+              'if len(surfaces) != 27:': 'if len(surfaces) != 28:',
+              'f"expected 27 surfaces, observed {len(surfaces)}"': 'f"expected 28 surfaces, observed {len(surfaces)}"',
+              'if len(participation) != 196:': 'if len(participation) != 199:',
+              'f"expected 196 participation rows, observed {len(participation)}"': 'f"expected 199 participation rows, observed {len(participation)}"',
+              'if len(receipts) != 54:': 'if len(receipts) != 53:',
+              'f"expected 54 receipts, observed {len(receipts)}"': 'f"expected 53 receipts, observed {len(receipts)}"',
+              'if len(claims) != 17:': 'if len(claims) != 18:',
+              'f"expected 17 claims, observed {len(claims)}"': 'f"expected 18 claims, observed {len(claims)}"',
+          }
+          for before, after in replacements.items():
+              if source.count(before) != 1:
+                  raise SystemExit(
+                      f'unexpected Dialog materializer replacement count for {before!r}: '
+                      f'{source.count(before)}'
+                  )
+              source = source.replace(before, after, 1)
+          namespace = {'__file__': str(path.resolve()), '__name__': '__main__'}
+          exec(compile(source, str(path), 'exec'), namespace)
+          PY
+
+      - name: Run complete repository release gate
+        shell: bash
+        run: |
+          set +e
+          npm run release:check 2>&1 | tee /tmp/dialog-release.log
+          status=${PIPESTATUS[0]}
+          printf '%s\n' "$status" > /tmp/dialog-release.status
+          exit 0
+
+      - name: Publish bounded release diagnostic
+        if: always()
+        shell: bash
+        run: |
+          status=$(cat /tmp/dialog-release.status 2>/dev/null || printf '99')
+          if [ "$status" = "0" ]; then
+            exit 0
+          fi
+          mkdir -p diagnostics
+          cp /tmp/dialog-release.log diagnostics/dialog-directory-boundary-release.log
+          printf '%s\n' "$status" > diagnostics/dialog-directory-boundary-release.status
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diagnostics/dialog-directory-boundary-release.log diagnostics/dialog-directory-boundary-release.status
+          git commit -m 'diagnostic: capture Dialog directory-boundary release failure'
+          git push origin HEAD:refs/heads/$PRODUCT_BRANCH
+          exit 1
+
+      - name: Verify exact public topology effect
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          def jsonl(path):
+              return [
+                  json.loads(line)
+                  for line in Path(path).read_text(encoding='utf-8').splitlines()
+                  if line.strip()
+              ]
+
+          surfaces = jsonl('data/ledger/surfaces.jsonl')
+          participations = jsonl('data/ledger/participation.jsonl')
+          receipts = jsonl('data/ledger/receipts.jsonl')
+          claims = jsonl('data/ledger/claims.jsonl')
+          hop = json.loads(Path('build/hop-graph.json').read_text(encoding='utf-8'))
+          base_hop = json.loads(Path('/tmp/base-hop-graph.json').read_text(encoding='utf-8'))
+          public_map = json.loads(
+              Path('data/research/clifford-cross-corpus-public-interest-map.json')
+              .read_text(encoding='utf-8')
+          )
+
+          assert len(surfaces) == 28, len(surfaces)
+          assert len(participations) == 199, len(participations)
+          assert len(receipts) == 53, len(receipts)
+          assert len(claims) == 18, len(claims)
+          assert len(hop['edges']) == 44, len(hop['edges'])
+          assert public_map['inventory']['canonical'] == {
+              'actors': 148,
+              'organizations': 26,
+              'surfaces': 28,
+              'participations': 199,
+              'receipts': 53,
+              'compiled_hop_edges': 44,
+          }
+
+          surface_by_id = {row['surface_id']: row for row in surfaces}
+          assert 'dialog-society-membership' not in surface_by_id
+          directory = surface_by_id['dialog-public-directory-observation-2026-06-16']
+          roles = surface_by_id['dialog-organizational-role-observations-2026-06-16']
+          assert directory['hop_eligible'] is False
+          assert directory['hop_refusal_reason'] == 'mixed_role_directory_not_membership_or_attendance'
+          assert directory['time_start'] == directory['time_end'] == '2026-06-16'
+          assert roles['hop_eligible'] is False
+          assert roles['hop_refusal_reason'] == 'organizational_role_context_not_shared_event'
+
+          directory_parts = [
+              row for row in participations
+              if row['surface_id'] == directory['surface_id']
+              and row['participant_type'] == 'actor'
+          ]
+          role_parts = [
+              row for row in participations
+              if row['surface_id'] == roles['surface_id']
+              and row['participant_type'] == 'actor'
+          ]
+          assert len(directory_parts) == 113, len(directory_parts)
+          assert sorted(row['actor_id'] for row in role_parts) == [
+              'auren-hoffman', 'peter-thiel', 'raffi-grinberg'
+          ]
+          matt = next(row for row in directory_parts if row['actor_id'] == 'matt-clifford')
+          assert matt['participation_type'] == 'directory_listing_with_reported_invitation_refusal'
+          assert matt['reported_invited'] is True
+          assert matt['reported_attendance'] is False
+          assert not any(row.get('surface_id') == 'dialog-society-membership' for row in participations)
+
+          receipt_by_id = {row['receipt_id']: row for row in receipts}
+          assert 'dialog-human-layer' not in receipt_by_id
+          wired = receipt_by_id['wired-dialog-directory-role-boundary-2026-06-18']
+          clifford = receipt_by_id['ibtimes-matt-clifford-dialog-invitation-2026-06-18']
+          assert wired['public_directory_name_count'] == 113
+          assert wired['directory_can_include_nonmembers'] is True
+          assert wired['directory_distinct_from_retreat_registration'] is True
+          assert clifford['invited'] is True
+          assert clifford['reported_attendance'] is False
+          assert clifford['original_public_post_archived'] is False
+
+          for row in [wired, clifford]:
+              path = Path(row['path'])
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              assert row['archive']['ref'] == f'sha256:{digest}'
+
+          claim = next(
+              row for row in claims
+              if row['claim_id'] == 'dialog-clifford-thiel-directory-boundary-2026-06-18'
+          )
+          assert sorted(claim['actor_ids']) == ['matt-clifford', 'peter-thiel']
+          assert sorted(claim['surface_ids']) == sorted([
+              directory['surface_id'], roles['surface_id']
+          ])
+
+          rejected = {
+              row['surface_id']: row['reason']
+              for row in hop.get('rejected_hop_surfaces', [])
+          }
+          assert rejected[directory['surface_id']] == directory['hop_refusal_reason']
+          assert rejected[roles['surface_id']] == roles['hop_refusal_reason']
+          assert not any(
+              basis['surface_id'] in {directory['surface_id'], roles['surface_id']}
+              for edge in hop['edges']
+              for basis in edge['surfaces']
+          )
+
+          def pairs(graph):
+              return sorted((row['actor_a'], row['actor_b']) for row in graph['edges'])
+          assert pairs(hop) == pairs(base_hop), 'actor-edge pair set changed'
+          print('exact Dialog topology effect verified')
+          PY
+          git diff --check
+
+      - name: Publish one clean product commit
+        shell: bash
+        run: |
+          rm .github/workflows/materialize-dialog-directory-boundary-v1.yml
+          rm tools/materialize-dialog-directory-boundary-v1.py
+          git add -A
+          python - <<'PY'
+          import subprocess
+
+          required = {
+              'data/ledger/claims.jsonl',
+              'data/ledger/participation.jsonl',
+              'data/ledger/receipts.jsonl',
+              'data/ledger/surfaces.jsonl',
+              'data/research/clifford-cross-corpus-public-interest-map.json',
+              'receipts/topology/ibtimes-matt-clifford-dialog-invitation-2026-06-18.md',
+              'receipts/topology/wired-dialog-directory-role-boundary-2026-06-18.md',
+              'test/compiler.test.js',
+              'tools/validate-release.mjs',
+          }
+          generated_prefixes = (
+              'build/',
+              'briefs/',
+              'cases/',
+              'reports/',
+              'estates/',
+              'gametrails/',
+          )
+          paths = subprocess.check_output(
+              ['git', 'diff', '--cached', '--name-only', 'a76da0afd258cd9a3aa77f0a93633172469509dd'],
+              text=True,
+          ).splitlines()
+          missing = sorted(required - set(paths))
+          if missing:
+              raise SystemExit('required product path(s) did not change: ' + ', '.join(missing))
+          forbidden = sorted(
+              path for path in paths
+              if path not in required and not path.startswith(generated_prefixes)
+          )
+          if forbidden:
+              raise SystemExit('unexpected product path(s): ' + ', '.join(forbidden))
+          transport = [
+              path for path in paths
+              if path.startswith('.github/workflows/')
+              or 'materialize-dialog-directory-boundary' in path
+              or path.startswith('diagnostics/')
+          ]
+          if transport:
+              raise SystemExit('transport leaked into product: ' + ', '.join(transport))
+          print(f'bounded product paths: {len(paths)}')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          TREE=$(git write-tree)
+          if git ls-tree -r --name-only "$TREE" | grep -E '(^\.github/workflows/materialize-dialog-directory-boundary-v1\.yml$|^tools/materialize-dialog-directory-boundary-v1\.py$|^diagnostics/dialog-directory-boundary-release\.)'; then
+            echo 'transport file remained in product tree' >&2
+            exit 1
+          fi
+          PRODUCT=$(printf '%s\n' 'topology: distinguish Dialog directory, roles, and invitation' | git commit-tree "$TREE" -p "$BASE_SHA")
+          git push --force-with-lease=refs/heads/$PRODUCT_BRANCH:${GITHUB_SHA} origin "$PRODUCT":refs/heads/$PRODUCT_BRANCH
+          {
+            echo '## Dialog directory-boundary product'
+            echo
+            echo "- parent: \`$BASE_SHA\`"
+            echo "- product: \`$PRODUCT\`"
+            echo "- tree: \`$TREE\`"
+            echo '- public-directory rows: `113`'
+            echo '- organizational-role rows: `3`'
+            echo '- surfaces: `28`'
+            echo '- participations: `199`'
+            echo '- receipts: `53`'
+            echo '- claims: `18`'
+            echo '- actor edges: `44`'
+          } >> "$GITHUB_STEP_SUMMARY"
