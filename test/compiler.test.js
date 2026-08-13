@@ -564,9 +564,107 @@ assert.ok(synthChain, 'synthetic-population laundering chain must be scored');
 assert.equal(synthChain.clifford_number, null, 'a laundering chain must not carry a Clifford Number');
 assert.ok(synthChain.laundering_chain_score >= 4, 'synthetic-population chain must span >= 4 stage categories');
 assert.equal(synthChain.connector_surfaces_all_non_hop, true, 'chain connector surfaces must be non-hop');
-// The Detachment 201 connector surface exists, is non-hop, and never becomes a hop basis.
-assert.equal(surf('detachment-201-commissioning-2025').hop_eligible, false, 'Detachment 201 surface must be non-hop');
-assert.ok(!hop.edges.some(e => e.surfaces.some(b => b.surface_id === 'detachment-201-commissioning-2025')), 'Detachment 201 must never be a hop basis');
+// Detachment 201 keeps organization-level program context separate from the exact named commissioning cohort.
+const detachmentProgramContext = surf('detachment-201-program-context-2025');
+assert.ok(detachmentProgramContext, 'Detachment 201 program context must compile');
+assert.equal(detachmentProgramContext.hop_eligible, false);
+assert.equal(detachmentProgramContext.hop_refusal_reason, 'organization_only_program_context');
+assert.equal(detachmentProgramContext.time_start, '2025-06-13');
+assert.deepEqual(
+  detachmentProgramContext.participants
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id),
+  [],
+  'the organization-level program context must not manufacture actor participants',
+);
+assert.deepEqual(
+  detachmentProgramContext.participants
+    .filter(part => part.participant_type === 'organization')
+    .map(part => part.organization_id),
+  ['us-army'],
+  'the program context must preserve only the Army as the program institution',
+);
+assert.ok((hop.rejected_hop_surfaces ?? []).some(row =>
+  row.surface_id === detachmentProgramContext.surface_id
+    && row.reason === 'organization_only_program_context'),
+  'the public graph must expose the Detachment 201 program-context refusal');
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(
+  basis => basis.surface_id === detachmentProgramContext.surface_id,
+)), 'the program context must never become a hop basis');
+
+const detachmentCommissioning = surf('detachment-201-commissioning-2025');
+const detachmentCommissionedActors = [
+  'andrew-bosworth',
+  'bob-mcgrew',
+  'kevin-weil',
+  'shyam-sankar',
+];
+assert.ok(detachmentCommissioning, 'the exact Detachment 201 commissioning surface must compile');
+assert.equal(detachmentCommissioning.hop_eligible, true);
+assert.equal(detachmentCommissioning.surface_type, 'government_advisory_surface');
+assert.equal(detachmentCommissioning.evidence_class, 'official');
+assert.equal(detachmentCommissioning.time_start, '2025-06-13');
+assert.equal(detachmentCommissioning.time_end, '2025-06-13');
+assert.deepEqual(
+  detachmentCommissioning.participants
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id)
+    .sort(),
+  detachmentCommissionedActors,
+  'the exact event must preserve the complete four-officer official roster',
+);
+assert.deepEqual(
+  detachmentCommissioning.participants
+    .filter(part => part.participant_type === 'organization')
+    .map(part => part.organization_id),
+  ['us-army'],
+  'the exact event must preserve the Army as commissioning institution',
+);
+assert.deepEqual(detachmentCommissioning.receipt_ids, ['army-detachment-201']);
+assert.equal(
+  hop.edges
+    .flatMap(edge => edge.surfaces)
+    .filter(basis => basis.surface_id === detachmentCommissioning.surface_id)
+    .length,
+  6,
+  'four commissioned officers must create exactly six same-day formal bases',
+);
+const detachmentSankarWeil = hop.edges.find(edge =>
+  [edge.actor_a, edge.actor_b].sort().join('|') === 'kevin-weil|shyam-sankar');
+assert.ok(detachmentSankarWeil, 'Shyam Sankar and Kevin Weil must connect on the official commissioning event');
+const detachmentSankarWeilBasis = detachmentSankarWeil.surfaces.find(
+  basis => basis.surface_id === detachmentCommissioning.surface_id,
+);
+assert.equal(detachmentSankarWeilBasis?.evidence_class, 'official');
+assert.equal(detachmentSankarWeilBasis?.valid_from, '2025-06-13');
+assert.equal(detachmentSankarWeilBasis?.valid_until, '2025-06-13');
+for (const actorId of detachmentCommissionedActors) {
+  assert.ok(actor(actorId)?.surfaces.includes(detachmentCommissioning.surface_id),
+    `${actorId} must retain the exact Detachment 201 commissioning surface`);
+}
+const detachmentReceipt = receipt('army-detachment-201');
+assert.ok(detachmentReceipt, 'the exact official Detachment 201 receipt must exist');
+assert.equal(detachmentReceipt.path,
+  'receipts/topology/us-army-detachment-201-inaugural-commissioning-2025-06-13.md');
+assert.equal(detachmentReceipt.event_date, '2025-06-13');
+assert.equal(detachmentReceipt.named_cohort_size, 4);
+assert.deepEqual([...detachmentReceipt.commissioned_actor_ids].sort(), detachmentCommissionedActors);
+assert.equal(detachmentReceipt.procurement_award_established, false);
+assert.equal(detachmentReceipt.continuous_joint_work_established, false);
+assert.equal(
+  detachmentReceipt.archive?.ref,
+  'sha256:4744b11929e9fc0e3a280bf43830d6bb337a6cc342664824a6c69239dd87a0fe',
+);
+const detachmentClaim = claim('detachment-201-inaugural-four-officer-commissioning-2025-06-13');
+assert.ok(detachmentClaim, 'the exact four-officer commissioning claim must remain public');
+assert.deepEqual([...detachmentClaim.actor_ids].sort(), detachmentCommissionedActors);
+assert.deepEqual(detachmentClaim.surface_ids, [detachmentCommissioning.surface_id]);
+assert.equal(receipt('reuters-defense-procurement'), undefined,
+  'the generic Reuters homepage proxy must remain retired after the official Detachment 201 repair');
+const detachmentChainStage = synthChain.stages.find(stage =>
+  stage.stage_category === 'military_advisory_integration');
+assert.equal(detachmentChainStage?.surface_id, detachmentProgramContext.surface_id);
+assert.deepEqual(detachmentChainStage?.receipt_ids, ['army-detachment-201']);
 // machine_score and surface_type_recurrence are real, separate dimensions.
 assert.ok(actor('ben-warner').machine_score > 0, 'Ben Warner must have a machine_score');
 assert.ok(Object.keys(actor('ben-warner').surface_type_recurrence).length > 0, 'Ben Warner must show surface-type recurrence');

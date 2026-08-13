@@ -1,10 +1,10 @@
 # Scout Report
 
-Generated: 2026-08-13T00:55:22.658Z
+Generated: 2026-08-13T02:20:33.260Z
 
 > graph_effect: none. This is a research queue, not graph data.
 
-Findings: 141
+Findings: 146
 
 ## finding-001: Electric Twin behaves as a surface factory
 
@@ -2472,7 +2472,79 @@ Refs: `electric-twin-ben-blume-director-appointment-2025-09-12`
 
 ---
 
-## finding-138: AI Opportunities Action Plan publication and government response, 13 January 2025 contains broad institution context
+## finding-138: Shyam Sankar has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Shyam Sankar participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `detachment-201-commissioning-2025`
+
+---
+
+## finding-139: Andrew “Boz” Bosworth has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Andrew “Boz” Bosworth participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `detachment-201-commissioning-2025`
+
+---
+
+## finding-140: Kevin Weil has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Kevin Weil participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `detachment-201-commissioning-2025`
+
+---
+
+## finding-141: Bob McGrew has surfaces but no Clifford path
+
+- Type: island_with_surfaces
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Bob McGrew participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
+
+**Required action**
+
+Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
+
+Refs: `detachment-201-commissioning-2025`
+
+---
+
+## finding-142: AI Opportunities Action Plan publication and government response, 13 January 2025 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -2490,7 +2562,25 @@ Refs: `ai-opportunities-action-plan-2025`
 
 ---
 
-## finding-139: Strategic Defence Review terms and commission, 17 July 2024 contains broad institution context
+## finding-143: Detachment 201 inaugural four-officer commissioning, 13 June 2025 contains broad institution context
+
+- Type: broad_institution_guard
+- Priority: high
+- graph_effect: none
+
+**Observed**
+
+Broad venues present: US Army (Detachment 201, Executive Innovation Corps). This is acceptable only because hops are generated from actor co-participation, not from the broad institution itself.
+
+**Required action**
+
+Verify this surface is tightly named and bounded. If it is merely an office or agency, mark it hop_eligible=false.
+
+Refs: `detachment-201-commissioning-2025`
+
+---
+
+## finding-144: Strategic Defence Review terms and commission, 17 July 2024 contains broad institution context
 
 - Type: broad_institution_guard
 - Priority: high
@@ -2508,7 +2598,7 @@ Refs: `strategic-defence-review-2024-2025`
 
 ---
 
-## finding-140: Policy creation → procurement corridor → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
+## finding-145: Policy creation → military advisory integration → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
 
 - Type: laundering_chain
 - Priority: high
@@ -2516,17 +2606,17 @@ Refs: `strategic-defence-review-2024-2025`
 
 **Observed**
 
-Chain spans 4/5 stage categories (policy_creation, procurement_capture, personnel_continuity, commercial_deployment); machine_score 0.35; weakest evidence primary_public. It does not create a Clifford hop.
+Chain spans 4/5 stage categories (policy_creation, military_advisory_integration, personnel_continuity, commercial_deployment); machine_score 0.35; weakest evidence primary_public. It does not create a Clifford hop.
 
 **Required action**
 
 Strengthen the weakest stage receipts (e.g. confirm procurement award IDs/amounts/dates) before any UI weight upgrade. Never convert a chain into a hop without a bounded shared-participation surface.
 
-Refs: `ai-opportunities-action-plan-2025`, `detachment-201-commissioning-2025`, `ben-warner-no10-digital-data-role-observation-2020-2021`, `electric-twin-newsuk-synthetic-audience`
+Refs: `ai-opportunities-action-plan-2025`, `detachment-201-program-context-2025`, `ben-warner-no10-digital-data-role-observation-2020-2021`, `electric-twin-newsuk-synthetic-audience`
 
 ---
 
-## finding-141: Full master doc has been classified, not blindly migrated
+## finding-146: Full master doc has been classified, not blindly migrated
 
 - Type: migration_queue
 - Priority: high
