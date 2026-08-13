@@ -1464,6 +1464,57 @@ assert(sameIdSet(independentValidationBoundaryClaim?.surface_ids, [
     'Atlantic Bastion Matt Clifford boundary claim is missing');
 }
 
+
+// Entrepreneur First official cofounder observation release gate.
+{
+  const efSurface = surfaceById.get('entrepreneur-first-cofounder-observation-2018-07-05');
+  assert(efSurface?.surface_type === 'founder_officer_surface',
+    'Entrepreneur First cofounder surface type is stale');
+  assert(efSurface?.hop_eligible === true,
+    'Entrepreneur First cofounder observation must remain hop eligible');
+  assert(efSurface?.evidence_class === 'official',
+    'Entrepreneur First cofounder observation must retain official evidence');
+  assert(efSurface?.time_start === '2018-07-05' && efSurface?.time_end === '2018-07-05',
+    'Entrepreneur First cofounder observation must remain one day');
+  const efParts = data.participation.filter(row => row.surface_id === 'entrepreneur-first-cofounder-observation-2018-07-05');
+  assert(sameIdSet(
+    efParts.filter(row => row.participant_type === 'actor').map(row => row.actor_id),
+    ['alice-bentinck', 'matt-clifford'],
+  ), 'Entrepreneur First actor denominator must remain Alice Bentinck and Matt Clifford');
+  assert(sameIdSet(
+    efParts.filter(row => row.participant_type === 'organization').map(row => row.organization_id),
+    ['entrepreneur-first'],
+  ), 'Entrepreneur First organization denominator is stale');
+  const efPairKey = ['alice-bentinck', 'matt-clifford'].sort().join('|');
+  const efEdge = hopGraph.edges.find(edge => [edge.actor_a, edge.actor_b].sort().join('|') === efPairKey);
+  assert(efEdge, 'Entrepreneur First cofounder edge is missing');
+  const efBases = efEdge.surfaces.filter(basis => basis.surface_id === 'entrepreneur-first-cofounder-observation-2018-07-05');
+  assert(efBases.length === 1, 'Entrepreneur First surface must retain exactly one pair basis');
+  assert(efBases[0]?.valid_from === '2018-07-05' && efBases[0]?.valid_until === '2018-07-05',
+    'Entrepreneur First pair basis must remain exact-date bounded');
+  assert(efBases[0]?.evidence_class === 'official',
+    'Entrepreneur First pair basis must retain official evidence');
+  assert(data.actors.some(row => row.id === 'alice-bentinck'),
+    'Alice Bentinck canonical actor is missing');
+  assert(data.organizations.some(row => row.id === 'entrepreneur-first'),
+    'Entrepreneur First canonical organization is missing');
+  const efReceipt = receiptById.get('gov-uk-france-ai-data-entrepreneur-first-cofounders-2018-07-05');
+  assert(efReceipt?.archive?.ref === 'sha256:61b789474e442854b3613ba017f05e5e6d46f417916ec35b75e05ee40165111e',
+    'Entrepreneur First cofounder receipt digest is stale');
+  assert(sameIdSet(efReceipt?.named_actor_ids, ['alice-bentinck', 'matt-clifford']),
+    'Entrepreneur First receipt actor denominator is stale');
+  assert(efReceipt?.reported_foundation_year === 2011,
+    'Entrepreneur First source-reported foundation year is stale');
+  assert(efReceipt?.exact_foundation_date_established === false,
+    'Entrepreneur First receipt must not invent an exact founding date');
+  assert(efReceipt?.continuous_shared_management_established === false,
+    'Entrepreneur First receipt must not invent continuous shared management');
+  assert(efReceipt?.current_ownership_established === false,
+    'Entrepreneur First receipt must not invent current ownership');
+  assert(claimById.get('entrepreneur-first-cofounders-official-observation-2018-07-05'),
+    'Entrepreneur First official cofounder claim is missing');
+}
+
 // Session-local scratch is transport, not durable evidence. A canonical
 // receipt must never depend on an AI-session filesystem path or preserve an
 // unrecoverable local paste as if it were still a live evidentiary object.

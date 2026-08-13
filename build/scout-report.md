@@ -1,6 +1,6 @@
 # Scout Report
 
-Generated: 2026-08-13T21:09:38.262Z
+Generated: 2026-08-13T21:51:23.149Z
 
 > graph_effect: none. This is a research queue, not graph data.
 
@@ -78,7 +78,7 @@ Refs: `team-barrow-public-private-fund-2026`, `atlantic-bastion-launch-publicati
 
 ---
 
-## finding-005: Entrepreneur First is marked as a surface factory but has not been decomposed yet
+## finding-005: Entrepreneur First behaves as a surface factory
 
 - Type: surface_factory
 - Priority: medium
@@ -86,13 +86,13 @@ Refs: `team-barrow-public-private-fund-2026`, `atlantic-bastion-launch-publicati
 
 **Observed**
 
-Entrepreneur First is a known factory candidate in canonical data, but no bounded surfaces have been added to the ledger yet.
+Entrepreneur First appears across 1 surface(s): entrepreneur-first-cofounder-observation-2018-07-05. Secondary types: public_private_ai_infrastructure, surface_factory_capital_layer.
 
 **Required action**
 
 Review whether each surface is correctly bounded. Add missing customer, investor, board, filing, deployment, and procurement surfaces as separate rows rather than broad organization edges.
 
-
+Refs: `entrepreneur-first-cofounder-observation-2018-07-05`
 
 ---
 
@@ -194,13 +194,13 @@ Refs: `anduril-uk-co-director-appointments-2024-07-31`, `anduril-ukraine-drone-d
 
 **Observed**
 
-Matt Clifford has 8 surfaces and secondary types governance_continuity_surface, government_advisory_surface, model_governance_surface, policy_to_procurement_surface, public_private_ai_infrastructure. Governance replacement score: 0.
+Matt Clifford has 9 surfaces and secondary types governance_continuity_surface, government_advisory_surface, model_governance_surface, policy_to_procurement_surface, public_private_ai_infrastructure, surface_factory_capital_layer. Governance replacement score: 0.
 
 **Required action**
 
 Check for additional venues where the same surface type recurs. Do not convert recurrence into a hop unless there is a bounded co-participation surface.
 
-Refs: `faculty-science-director-shareholder-overlap-2024-10-10`, `ai-opportunities-action-plan-development-2024-2025`, `ai-opportunities-action-plan-2025`, `dialog-public-directory-exposure-2026-06-16`, `dialog-matt-clifford-invitation-nonattendance-2026-06-16`, `ai-safety-summit-representative-appointment-2023-08-10`, `dsit-matt-clifford-ai-investor-roundtable-2023-10-25`, `frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07`
+Refs: `faculty-science-director-shareholder-overlap-2024-10-10`, `ai-opportunities-action-plan-development-2024-2025`, `ai-opportunities-action-plan-2025`, `dialog-public-directory-exposure-2026-06-16`, `dialog-matt-clifford-invitation-nonattendance-2026-06-16`, `ai-safety-summit-representative-appointment-2023-08-10`, `dsit-matt-clifford-ai-investor-roundtable-2023-10-25`, `frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07`, `entrepreneur-first-cofounder-observation-2018-07-05`
 
 ---
 

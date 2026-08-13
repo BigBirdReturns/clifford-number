@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-13T21:09:37.919Z",
+  "generated": "2026-08-13T21:51:23.033Z",
   "anchor_actor_id": "matt-clifford",
   "rule": "Actor-to-actor hops are generated only from shared valid bounded surfaces with explicit participation rows.",
   "temporal_rule": "A hop basis exists only for the window where both participations and the surface overlap. Disjoint dated participations create no hop (rejected_hop_pairs). Bases with an undated participation never support time-sliced claims.",
@@ -223,6 +223,37 @@
       "temporal_envelope": {
         "valid_from": "2023-09-07",
         "valid_until": "2023-09-07"
+      },
+      "temporal_status": "dated"
+    },
+    {
+      "actor_a": "alice-bentinck",
+      "actor_b": "matt-clifford",
+      "surfaces": [
+        {
+          "surface_id": "entrepreneur-first-cofounder-observation-2018-07-05",
+          "surface_label": "Entrepreneur First cofounder observation, 5 July 2018",
+          "surface_type": "founder_officer_surface",
+          "secondary_surface_types": [
+            "public_private_ai_infrastructure",
+            "surface_factory_capital_layer"
+          ],
+          "actor_a_role": "Named Entrepreneur First cofounder in the official GOV.UK profile",
+          "actor_b_role": "Named Entrepreneur First cofounder in the official GOV.UK profile",
+          "evidence_class": "official",
+          "receipt_ids": [
+            "gov-uk-france-ai-data-entrepreneur-first-cofounders-2018-07-05"
+          ],
+          "valid_from": "2018-07-05",
+          "valid_until": "2018-07-05",
+          "temporal_status": "dated"
+        }
+      ],
+      "evidence_weight": 1,
+      "surface_count": 1,
+      "temporal_envelope": {
+        "valid_from": "2018-07-05",
+        "valid_until": "2018-07-05"
       },
       "temporal_status": "dated"
     },
@@ -5145,6 +5176,39 @@
               ],
               "valid_from": "2024-10-10",
               "valid_until": "2024-10-10",
+              "temporal_status": "dated"
+            }
+          ]
+        }
+      ]
+    },
+    "alice-bentinck": {
+      "number": 1,
+      "actor_path": [
+        "alice-bentinck",
+        "matt-clifford"
+      ],
+      "hops": [
+        {
+          "from": "alice-bentinck",
+          "to": "matt-clifford",
+          "shared_surfaces": [
+            {
+              "surface_id": "entrepreneur-first-cofounder-observation-2018-07-05",
+              "surface_label": "Entrepreneur First cofounder observation, 5 July 2018",
+              "surface_type": "founder_officer_surface",
+              "secondary_surface_types": [
+                "public_private_ai_infrastructure",
+                "surface_factory_capital_layer"
+              ],
+              "actor_a_role": "Named Entrepreneur First cofounder in the official GOV.UK profile",
+              "actor_b_role": "Named Entrepreneur First cofounder in the official GOV.UK profile",
+              "evidence_class": "official",
+              "receipt_ids": [
+                "gov-uk-france-ai-data-entrepreneur-first-cofounders-2018-07-05"
+              ],
+              "valid_from": "2018-07-05",
+              "valid_until": "2018-07-05",
               "temporal_status": "dated"
             }
           ]

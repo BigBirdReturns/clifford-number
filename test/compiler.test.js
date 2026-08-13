@@ -1482,6 +1482,51 @@ assert.ok(claim('anduril-uk-official-procurement-chronology-2021-2026'));
   assert.ok(claim('matt-clifford-atlantic-bastion-boundary-2025-12-08'));
 }
 
+
+// Entrepreneur First official cofounder observation regression.
+{
+  const efSurface = surf('entrepreneur-first-cofounder-observation-2018-07-05');
+  assert.ok(efSurface, 'Entrepreneur First cofounder observation must compile');
+  assert.equal(efSurface.surface_type, 'founder_officer_surface');
+  assert.equal(efSurface.hop_eligible, true);
+  assert.equal(efSurface.evidence_class, 'official');
+  assert.equal(efSurface.time_start, '2018-07-05');
+  assert.equal(efSurface.time_end, '2018-07-05');
+  const efActorIds = efSurface.participants
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id)
+    .sort();
+  assert.deepEqual(efActorIds, ['alice-bentinck', 'matt-clifford']);
+  assert.deepEqual(
+    efSurface.participants
+      .filter(part => part.participant_type === 'organization')
+      .map(part => part.organization_id),
+    ['entrepreneur-first'],
+  );
+  const efPairKey = ['alice-bentinck', 'matt-clifford'].sort().join('|');
+  const efEdge = hop.edges.find(edge => [edge.actor_a, edge.actor_b].sort().join('|') === efPairKey);
+  assert.ok(efEdge, 'official cofounder observation must create the Alice Bentinck–Matt Clifford edge');
+  const efBases = efEdge.surfaces.filter(basis => basis.surface_id === 'entrepreneur-first-cofounder-observation-2018-07-05');
+  assert.equal(efBases.length, 1, 'Entrepreneur First surface must create exactly one pair basis');
+  assert.equal(efBases[0].evidence_class, 'official');
+  assert.equal(efBases[0].valid_from, '2018-07-05');
+  assert.equal(efBases[0].valid_until, '2018-07-05');
+  assert.equal(shortestPath(topology, 'alice-bentinck', 'matt-clifford').number, 1);
+  assert.equal(shortestPath(topology, 'alice-bentinck', 'matt-clifford', { asOf: '2018-07-04' }).number, null);
+  assert.equal(shortestPath(topology, 'alice-bentinck', 'matt-clifford', { asOf: '2018-07-05' }).number, 1);
+  assert.equal(shortestPath(topology, 'alice-bentinck', 'matt-clifford', { asOf: '2018-07-06' }).number, null);
+  assert.ok(actor('alice-bentinck')?.surfaces.includes('entrepreneur-first-cofounder-observation-2018-07-05'));
+  const efReceipt = receipt('gov-uk-france-ai-data-entrepreneur-first-cofounders-2018-07-05');
+  assert.ok(efReceipt, 'official Entrepreneur First cofounder receipt must exist');
+  assert.equal(efReceipt.archive.ref, 'sha256:61b789474e442854b3613ba017f05e5e6d46f417916ec35b75e05ee40165111e');
+  assert.deepEqual([...efReceipt.named_actor_ids].sort(), ['alice-bentinck', 'matt-clifford']);
+  assert.equal(efReceipt.reported_foundation_year, 2011);
+  assert.equal(efReceipt.exact_foundation_date_established, false);
+  assert.equal(efReceipt.continuous_shared_management_established, false);
+  assert.equal(efReceipt.current_ownership_established, false);
+  assert.ok(claim('entrepreneur-first-cofounders-official-observation-2018-07-05'));
+}
+
 console.log('compiler.test: OK');
 
 
