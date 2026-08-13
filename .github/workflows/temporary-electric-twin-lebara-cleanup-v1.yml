@@ -1,0 +1,76 @@
+name: TEMP retire Electric Twin Lebara transaction refs
+
+on:
+  push:
+    branches:
+      - agent/electric-twin-lebara-customer-use-cleanup-v1
+
+permissions:
+  contents: write
+
+jobs:
+  retire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          show-progress: false
+      - name: Verify canonical admission and delete exact transaction refs
+        shell: bash
+        env:
+          EXPECTED_MAIN: fd34ca0a2726ff6972ccbc32ea7e5e13101b161b
+          EXPECTED_MAIN_TREE: 3ae98d1c020eca0a2e9477e26ba8c5ac4e28365a
+          EXPECTED_BASE: 5ded974a9b102f940e647dfcc616f4f7ae692fca
+          EXPECTED_CANDIDATE: 54e9c9beda6f594e67604526096cbdfdb7c90a6f
+          EXPECTED_TRANSPORT: ec1a06831eee570aff972aff2bce22ce7295c469
+          CANDIDATE_BRANCH: candidate/electric-twin-lebara-customer-use-v1
+          TRANSPORT_BRANCH: agent/electric-twin-lebara-customer-use-materializer-v1
+          PUBLISHER_BRANCH: agent/electric-twin-lebara-customer-use-cleanup-publisher-v1
+        run: |
+          set -euo pipefail
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse origin/main^{tree})" = "$EXPECTED_MAIN_TREE"
+          test "$(git rev-parse origin/main^1)" = "$EXPECTED_BASE"
+          test "$(git rev-parse origin/main^2)" = "$EXPECTED_CANDIDATE"
+          test "$(git rev-parse "$EXPECTED_CANDIDATE^{tree}")" = "$EXPECTED_MAIN_TREE"
+
+          cleanup_actual="$(git ls-remote origin "refs/heads/$GITHUB_REF_NAME" | awk '{print $1}')"
+          candidate_actual="$(git ls-remote origin "refs/heads/$CANDIDATE_BRANCH" | awk '{print $1}')"
+          transport_actual="$(git ls-remote origin "refs/heads/$TRANSPORT_BRANCH" | awk '{print $1}')"
+          publisher_actual="$(git ls-remote origin "refs/heads/$PUBLISHER_BRANCH" | awk '{print $1}')"
+          publisher_parent="$(git rev-parse "${GITHUB_SHA}^2")"
+
+          test "$cleanup_actual" = "$GITHUB_SHA"
+          test "$(git rev-parse "${GITHUB_SHA}^1")" = "$EXPECTED_MAIN"
+          test "$candidate_actual" = "$EXPECTED_CANDIDATE"
+          test "$transport_actual" = "$EXPECTED_TRANSPORT"
+          test "$publisher_actual" = "$publisher_parent"
+
+          git push origin --delete "$CANDIDATE_BRANCH"
+          git push origin --delete "$TRANSPORT_BRANCH"
+          git push origin --delete "$PUBLISHER_BRANCH"
+          test -z "$(git ls-remote origin "refs/heads/$CANDIDATE_BRANCH")"
+          test -z "$(git ls-remote origin "refs/heads/$TRANSPORT_BRANCH")"
+          test -z "$(git ls-remote origin "refs/heads/$PUBLISHER_BRANCH")"
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse origin/main^{tree})" = "$EXPECTED_MAIN_TREE"
+
+          {
+            echo '## Electric Twin × Lebara cleanup'
+            echo
+            echo '```text'
+            echo "main      $EXPECTED_MAIN"
+            echo "tree      $EXPECTED_MAIN_TREE"
+            echo "candidate deleted $CANDIDATE_BRANCH"
+            echo "transport deleted $TRANSPORT_BRANCH"
+            echo "publisher deleted $PUBLISHER_BRANCH"
+            echo "cleanup   deleting $GITHUB_REF_NAME at $GITHUB_SHA"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          git push origin --delete "$GITHUB_REF_NAME"
