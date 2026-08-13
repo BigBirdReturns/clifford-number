@@ -961,6 +961,104 @@ assert(migration.total_rows > 200, `migration parsed too few master rows: ${migr
 assert(migration.bucket_counts?.participation_claim > 50, 'migration did not classify enough participation claims from master doc');
 
 
+
+// Electric Twin accuracy-methodology article: exact authorship is admissible;
+// a validation attribution cannot add an unnamed external participant or
+// substitute an adviser title for a dated study row.
+const accuracyMethodologySurface = surfaceById.get(
+  'electric-twin-accuracy-methodology-publication-2026-02-11',
+);
+assert(accuracyMethodologySurface,
+  'Electric Twin accuracy-methodology publication surface is missing');
+assert(accuracyMethodologySurface?.hop_eligible === true,
+  'the exact two-author publication surface must remain hop eligible');
+assert(accuracyMethodologySurface?.evidence_class === 'primary_public',
+  'the publication surface must retain first-party evidence');
+assert(accuracyMethodologySurface?.time_start === '2026-02-11'
+  && accuracyMethodologySurface?.time_end === '2026-02-11',
+  'the publication surface must remain bounded to 11 February 2026');
+const accuracyMethodologyActors = (accuracyMethodologySurface?.participants ?? [])
+  .filter(part => part.participant_type === 'actor')
+  .map(part => part.actor_id)
+  .sort();
+assert(sameIdSet(accuracyMethodologyActors, [
+  'andrew-bailey-electric-twin',
+  'ben-warner',
+]), 'the publication surface must contain exactly the two named authors');
+assert(!(accuracyMethodologySurface?.participants ?? []).some(
+  part => part.actor_id === 'michael-muthukrishna',
+), 'LSE attribution or an adviser title must not manufacture Muthukrishna participation');
+assert(sameIdSet(
+  (accuracyMethodologySurface?.participants ?? [])
+    .filter(part => part.participant_type === 'organization')
+    .map(part => part.organization_id),
+  ['electric-twin'],
+), 'Electric Twin must remain the sole organization on the publication surface');
+const accuracyMethodologyBases = hopGraph.edges.flatMap(edge =>
+  edge.surfaces
+    .filter(basis => basis.surface_id === accuracyMethodologySurface?.surface_id)
+    .map(basis => ({ edge, basis }))
+);
+assert(accuracyMethodologyBases.length === 1,
+  'the exact two-author publication must create one and only one hop basis');
+const accuracyMethodologyBase = accuracyMethodologyBases[0];
+assert(sameIdSet([
+  accuracyMethodologyBase?.edge.actor_a,
+  accuracyMethodologyBase?.edge.actor_b,
+], ['andrew-bailey-electric-twin', 'ben-warner']),
+  'the accuracy-publication basis must connect only Ben Warner and Andrew Bailey');
+assert(accuracyMethodologyBase?.basis.evidence_class === 'primary_public',
+  'the accuracy-publication basis must retain first-party evidence');
+assert(accuracyMethodologyBase?.basis.valid_from === '2026-02-11'
+  && accuracyMethodologyBase?.basis.valid_until === '2026-02-11',
+  'the accuracy-publication basis must remain one day');
+assert(actorScore.get('andrew-bailey-electric-twin')?.surfaces.length === 1
+  && actorScore.get('andrew-bailey-electric-twin')?.surfaces[0]
+    === accuracyMethodologySurface?.surface_id,
+  'the disambiguated Andrew Bailey actor must not inherit unrelated surfaces');
+
+const accuracyMethodologyReceipt = receiptById.get(
+  'electric-twin-accuracy-methodology-2026-02-11',
+);
+assert(accuracyMethodologyReceipt,
+  'Electric Twin accuracy-methodology receipt is missing');
+assert(sameIdSet(accuracyMethodologyReceipt?.author_actor_ids, [
+  'andrew-bailey-electric-twin',
+  'ben-warner',
+]), 'the accuracy receipt must preserve the two named authors');
+assert(accuracyMethodologyReceipt?.reported_one_minus_mae === 0.955,
+  'the receipt must preserve the vendor-reported 1-MAE result');
+assert(accuracyMethodologyReceipt?.reported_ndam === 0.92,
+  'the receipt must preserve the vendor-reported NDAM result');
+assert(accuracyMethodologyReceipt?.reported_persona_count === 11000,
+  'the receipt must preserve the vendor-reported persona denominator');
+assert(accuracyMethodologyReceipt?.external_validator_named_in_article === false,
+  'the receipt must preserve that the article names no external validator');
+assert(accuracyMethodologyReceipt?.independent_study_object_recovered === false,
+  'the receipt must preserve the missing independent study object');
+assert(accuracyMethodologyReceipt?.archive?.ref
+  === 'sha256:0aeb99e82338eb5846182fecd804e6b73e6274c942b01aa49369221f028ad0f5',
+  'the accuracy-methodology extract hash must remain exact');
+const accuracyMethodologyClaim = claimById.get(
+  'electric-twin-accuracy-methodology-authors-2026-02-11',
+);
+assert(accuracyMethodologyClaim,
+  'accuracy-methodology authorship claim is missing');
+assert(sameIdSet(accuracyMethodologyClaim?.actor_ids, [
+  'andrew-bailey-electric-twin',
+  'ben-warner',
+]), 'the authorship claim must retain the exact author set');
+const independentValidationBoundaryClaim = claimById.get(
+  'electric-twin-independent-validation-publication-boundary-2026-02-11',
+);
+assert(independentValidationBoundaryClaim,
+  'independent-validation participation boundary is missing');
+assert(sameIdSet(independentValidationBoundaryClaim?.actor_ids, ['michael-muthukrishna']),
+  'the boundary claim must identify the proposed but unsupported actor endpoint');
+assert(sameIdSet(independentValidationBoundaryClaim?.surface_ids, [
+  'electric-twin-accuracy-methodology-publication-2026-02-11',
+]), 'the boundary claim must remain tied to the article surface');
+
 // Session-local scratch is transport, not durable evidence. A canonical
 // receipt must never depend on an AI-session filesystem path or preserve an
 // unrecoverable local paste as if it were still a live evidentiary object.

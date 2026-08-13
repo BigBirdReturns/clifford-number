@@ -258,6 +258,91 @@ assert.deepEqual(muthukrishnaAdviserClaim.actor_ids, ['michael-muthukrishna']);
 assert.deepEqual(muthukrishnaAdviserClaim.surface_ids, [muthukrishnaAdviserSurface.surface_id]);
 
 
+// Electric Twin accuracy-methodology authorship and independent-validation boundary.
+const accuracyMethodologySurface = surf(
+  'electric-twin-accuracy-methodology-publication-2026-02-11',
+);
+const accuracyAuthorIds = ['andrew-bailey-electric-twin', 'ben-warner'];
+assert.ok(accuracyMethodologySurface,
+  'the first-party Electric Twin accuracy-methodology article must compile');
+assert.equal(accuracyMethodologySurface.hop_eligible, true);
+assert.equal(accuracyMethodologySurface.evidence_class, 'primary_public');
+assert.equal(accuracyMethodologySurface.time_start, '2026-02-11');
+assert.equal(accuracyMethodologySurface.time_end, '2026-02-11');
+assert.deepEqual(
+  accuracyMethodologySurface.participants
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id)
+    .sort(),
+  accuracyAuthorIds,
+  'the publication surface must contain only the two named authors',
+);
+assert.deepEqual(
+  accuracyMethodologySurface.participants
+    .filter(part => part.participant_type === 'organization')
+    .map(part => part.organization_id),
+  ['electric-twin'],
+);
+assert.ok(!accuracyMethodologySurface.participants.some(
+  part => part.actor_id === 'michael-muthukrishna',
+), 'the LSE attribution must not manufacture Michael Muthukrishna study participation');
+const accuracyAuthorEdge = hop.edges.find(edge =>
+  [edge.actor_a, edge.actor_b].sort().join('|')
+    === 'andrew-bailey-electric-twin|ben-warner');
+assert.ok(accuracyAuthorEdge,
+  'Ben Warner and Andrew Bailey must connect through the named article authorship');
+const accuracyAuthorBasis = accuracyAuthorEdge.surfaces.find(
+  basis => basis.surface_id === accuracyMethodologySurface.surface_id,
+);
+assert.ok(accuracyAuthorBasis);
+assert.equal(accuracyAuthorBasis.evidence_class, 'primary_public');
+assert.equal(accuracyAuthorBasis.valid_from, '2026-02-11');
+assert.equal(accuracyAuthorBasis.valid_until, '2026-02-11');
+assert.equal(
+  hop.edges.flatMap(edge => edge.surfaces)
+    .filter(basis => basis.surface_id === accuracyMethodologySurface.surface_id).length,
+  1,
+  'two named authors must create exactly one publication basis',
+);
+assert.deepEqual(
+  actor('andrew-bailey-electric-twin')?.surfaces,
+  [accuracyMethodologySurface.surface_id],
+  'the disambiguated Andrew Bailey actor must not inherit another surface',
+);
+assert.ok(!hop.edges.some(edge =>
+  [edge.actor_a, edge.actor_b].includes('michael-muthukrishna')
+  && edge.surfaces.some(basis => basis.surface_id === accuracyMethodologySurface.surface_id)
+), 'the accuracy article must not create a Muthukrishna edge');
+
+const accuracyMethodologyReceipt = receipt('electric-twin-accuracy-methodology-2026-02-11');
+assert.ok(accuracyMethodologyReceipt,
+  'the first-party accuracy-methodology receipt must exist');
+assert.deepEqual(
+  accuracyMethodologyReceipt.author_actor_ids,
+  ['ben-warner', 'andrew-bailey-electric-twin'],
+);
+assert.equal(accuracyMethodologyReceipt.reported_one_minus_mae, 0.955);
+assert.equal(accuracyMethodologyReceipt.reported_ndam, 0.92);
+assert.equal(accuracyMethodologyReceipt.reported_persona_count, 11000);
+assert.equal(accuracyMethodologyReceipt.external_validator_named_in_article, false);
+assert.equal(accuracyMethodologyReceipt.independent_study_object_recovered, false);
+assert.equal(
+  accuracyMethodologyReceipt.archive?.ref,
+  'sha256:0aeb99e82338eb5846182fecd804e6b73e6274c942b01aa49369221f028ad0f5',
+);
+const accuracyMethodologyClaim = claim(
+  'electric-twin-accuracy-methodology-authors-2026-02-11',
+);
+assert.ok(accuracyMethodologyClaim);
+assert.deepEqual([...accuracyMethodologyClaim.actor_ids].sort(), accuracyAuthorIds);
+const independentValidationBoundaryClaim = claim(
+  'electric-twin-independent-validation-publication-boundary-2026-02-11',
+);
+assert.ok(independentValidationBoundaryClaim,
+  'the independent-validation participation boundary must remain public');
+assert.deepEqual(independentValidationBoundaryClaim.actor_ids, ['michael-muthukrishna']);
+assert.deepEqual(independentValidationBoundaryClaim.surface_ids, [accuracyMethodologySurface.surface_id]);
+
 for (const retiredReceipt of [
   'warner-surface-audit-2026-06-29',
   'surface-architecture-spec-2026-06-29',

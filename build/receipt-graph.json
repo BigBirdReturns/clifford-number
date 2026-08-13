@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-13T00:07:39.049Z",
+  "generated": "2026-08-13T00:55:22.564Z",
   "receipts": [
     {
       "receipt_id": "electric-twin-linkedin-gartner-category-2026-06-25",
@@ -1063,6 +1063,48 @@
         "checked": "2026-08-12",
         "note": "Hash covers the in-repo adjudicated chronology; all three live public routes are preserved in the extract."
       }
+    },
+    {
+      "receipt_id": "electric-twin-accuracy-methodology-2026-02-11",
+      "label": "Electric Twin — accuracy methodology article and named authors (11 Feb 2026)",
+      "source_type": "first_party_methodology_article_extract",
+      "evidence_class": "primary_public",
+      "path": "receipts/topology/electric-twin-accuracy-methodology-2026-02-11.md",
+      "source_url": "https://www.electrictwin.com/blog/how-accurate-are-synthetic-audiences",
+      "publisher": "Electric Twin",
+      "source_published_at": "2026-02-11",
+      "event_date": "2026-02-11",
+      "retrieved_at": "2026-08-12",
+      "named_authors": [
+        "Dr Ben Warner",
+        "Andrew Bailey"
+      ],
+      "author_actor_ids": [
+        "ben-warner",
+        "andrew-bailey-electric-twin"
+      ],
+      "ben_warner_role": "Co-Founder",
+      "andrew_bailey_role": "Research Engineer",
+      "reported_one_minus_mae": 0.955,
+      "reported_ndam": 0.92,
+      "reported_persona_count": 11000,
+      "reported_geographies": [
+        "United Kingdom",
+        "United States"
+      ],
+      "header_independent_validation_attribution": "LSE",
+      "external_validator_named_in_article": false,
+      "independent_study_object_recovered": false,
+      "question_level_results_recovered": false,
+      "white_paper_recovered": false,
+      "notes": "First-party methodology and authorship record. It supports the named publication participants and vendor-reported method and metrics; it does not independently validate those metrics or identify Michael Muthukrishna or another external validator as a participant in a dated study.",
+      "archive": {
+        "method": "in_repo_content_hash",
+        "ref": "sha256:0aeb99e82338eb5846182fecd804e6b73e6274c942b01aa49369221f028ad0f5",
+        "captured": "2026-08-12",
+        "checked": "2026-08-12",
+        "note": "Hash covers the in-repo structured extract; source_url preserves the first-party article route."
+      }
     }
   ],
   "claims": [
@@ -1337,6 +1379,45 @@
       ],
       "date": "2026-08-12",
       "limits": "These are first and last public role observations. They do not establish an exact appointment date, uninterrupted tenure, contract, reporting line, control of test design or holdout data, question-level results, an independently reproducible validation protocol, or the procedural meaning of independent validation."
+    },
+    {
+      "claim_id": "electric-twin-accuracy-methodology-authors-2026-02-11",
+      "text": "Electric Twin published an accuracy-methodology article on 11 February 2026 naming Dr Ben Warner and research engineer Andrew Bailey as its authors. The article describes held-out evaluation data and reports 95.5 percent under 1-MAE and 92 percent under NDAM across 11,000 UK and US personas.",
+      "receipt_ids": [
+        "electric-twin-accuracy-methodology-2026-02-11"
+      ],
+      "evidence_class": "primary_public",
+      "actor_ids": [
+        "ben-warner",
+        "andrew-bailey-electric-twin"
+      ],
+      "organization_ids": [
+        "electric-twin"
+      ],
+      "surface_ids": [
+        "electric-twin-accuracy-methodology-publication-2026-02-11"
+      ],
+      "date": "2026-02-11",
+      "limits": "These are first-party authorship, method-description, and metric claims. They do not independently verify the metrics, publish the white paper or question-level results, establish individual prediction, or show control over every product or study decision."
+    },
+    {
+      "claim_id": "electric-twin-independent-validation-publication-boundary-2026-02-11",
+      "text": "The Electric Twin article header attributes independent validation to LSE, while the article names Ben Warner and Andrew Bailey as authors and does not name Michael Muthukrishna or another external validator as a participant in a dated validation study.",
+      "receipt_ids": [
+        "electric-twin-accuracy-methodology-2026-02-11"
+      ],
+      "evidence_class": "judgment",
+      "actor_ids": [
+        "michael-muthukrishna"
+      ],
+      "organization_ids": [
+        "electric-twin"
+      ],
+      "surface_ids": [
+        "electric-twin-accuracy-methodology-publication-2026-02-11"
+      ],
+      "date": "2026-02-11",
+      "limits": "This is a boundary on the contents of the article. It does not prove that Michael Muthukrishna or LSE performed no validation elsewhere, nor does an adviser title establish study participation, protocol custody, or independence."
     }
   ],
   "surface_receipt_links": [
@@ -1511,6 +1592,12 @@
       "surface_id": "electric-twin-muthukrishna-science-adviser-observations-2024-2026",
       "receipt_ids": [
         "electric-twin-lse-muthukrishna-adviser-observations-2024-2026"
+      ]
+    },
+    {
+      "surface_id": "electric-twin-accuracy-methodology-publication-2026-02-11",
+      "receipt_ids": [
+        "electric-twin-accuracy-methodology-2026-02-11"
       ]
     }
   ],
@@ -3006,6 +3093,27 @@
       "participant_id": "electric-twin",
       "receipt_ids": [
         "electric-twin-lse-muthukrishna-adviser-observations-2024-2026"
+      ]
+    },
+    {
+      "surface_id": "electric-twin-accuracy-methodology-publication-2026-02-11",
+      "participant_id": "ben-warner",
+      "receipt_ids": [
+        "electric-twin-accuracy-methodology-2026-02-11"
+      ]
+    },
+    {
+      "surface_id": "electric-twin-accuracy-methodology-publication-2026-02-11",
+      "participant_id": "andrew-bailey-electric-twin",
+      "receipt_ids": [
+        "electric-twin-accuracy-methodology-2026-02-11"
+      ]
+    },
+    {
+      "surface_id": "electric-twin-accuracy-methodology-publication-2026-02-11",
+      "participant_id": "electric-twin",
+      "receipt_ids": [
+        "electric-twin-accuracy-methodology-2026-02-11"
       ]
     }
   ]
