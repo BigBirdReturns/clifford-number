@@ -1,4 +1,4 @@
-name: TEMP materialize topology admission frontier
+name: TEMP materialize exact-stint topology frontier
 
 on:
   push:
@@ -18,136 +18,25 @@ jobs:
           ref: agent/topology-admission-frontier-v1
           fetch-depth: 0
           show-progress: false
-      - name: Materialize reviewed product files
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Materialize and validate product files
         shell: bash
-        env:
-          FRONTIER_GZ_B64: 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
-          FRONTIER_TEST_GZ_B64: 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
         run: |
-          python - <<'PYCODE'
-          import base64
-          import gzip
-          import os
-          from pathlib import Path
-
-          def replace_once(path, old, new):
-              target = Path(path)
-              text = target.read_text(encoding='utf-8')
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'{path} patch denominator mismatch: expected 1, found {count}')
-              target.write_text(text.replace(old, new, 1), encoding='utf-8')
-
-          Path('tools/build-topology-admission-frontier.mjs').write_bytes(
-              gzip.decompress(base64.b64decode(os.environ['FRONTIER_GZ_B64']))
-          )
-          Path('test/topology-admission-frontier.test.js').write_bytes(
-              gzip.decompress(base64.b64decode(os.environ['FRONTIER_TEST_GZ_B64']))
-          )
-
-          replace_once(
-              'tools/compile.mjs',
-              "  ['build-hop-graph', 'tools/build-hop-graph.mjs'],\n  ['score-deniability', 'tools/score-deniability.mjs'],",
-              "  ['build-hop-graph', 'tools/build-hop-graph.mjs'],\n  ['build-topology-admission-frontier', 'tools/build-topology-admission-frontier.mjs'],\n  ['score-deniability', 'tools/score-deniability.mjs'],",
-          )
-
-          replace_once(
-              '.github/workflows/ci.yml',
-              '          exit "$status"\n',
-              '          exit "$status"\n'
-              '      - name: Run topology admission frontier mutation tests\n'
-              '        run: node test/topology-admission-frontier.test.js\n',
-          )
-
-          replace_once(
-              'tools/lib/hops.mjs',
-              "      const aWin = windowOf(a);\n"
-              "      const bWin = windowOf(b);\n"
-              "      const overlap = intersectAll([\n",
-              "      const aWin = windowOf(a);\n"
-              "      const bWin = windowOf(b);\n"
-              "      const actorAPart = ids[0] === a.actor_id ? a : b;\n"
-              "      const actorBPart = ids[1] === a.actor_id ? a : b;\n"
-              "      const actorAWindow = ids[0] === a.actor_id ? aWin : bWin;\n"
-              "      const actorBWindow = ids[1] === a.actor_id ? aWin : bWin;\n"
-              "      const actorAReceiptIds = uniq(actorAPart.receipt_ids ?? []);\n"
-              "      const actorBReceiptIds = uniq(actorBPart.receipt_ids ?? []);\n"
-              "      const surfaceReceiptIds = uniq(surface.receipt_ids ?? []);\n"
-              "      const overlap = intersectAll([\n",
-          )
-
-          replace_once(
-              'tools/lib/hops.mjs',
-              "        const actorAPart = ids[0] === a.actor_id ? a : b;\n"
-              "        const actorBPart = ids[1] === b.actor_id ? b : a;\n"
-              "        const actorAWindow = ids[0] === a.actor_id ? aWin : bWin;\n"
-              "        const actorBWindow = ids[1] === b.actor_id ? bWin : aWin;\n"
-              "        const actorAReceiptIds = uniq(actorAPart.receipt_ids ?? []);\n"
-              "        const actorBReceiptIds = uniq(actorBPart.receipt_ids ?? []);\n"
-              "        const surfaceReceiptIds = uniq(surface.receipt_ids ?? []);\n",
-              "",
-          )
-
-          replace_once(
-              'tools/lib/hops.mjs',
-              "      const receipts = uniq([...(surface.receipt_ids ?? []), ...(a.receipt_ids ?? []), ...(b.receipt_ids ?? [])]);\n",
-              "      const receipts = uniq([...surfaceReceiptIds, ...actorAReceiptIds, ...actorBReceiptIds]);\n",
-          )
-
-          replace_once(
-              'tools/lib/hops.mjs',
-              "        actor_a_role: ids[0] === a.actor_id ? a.role : b.role,\n"
-              "        actor_b_role: ids[1] === b.actor_id ? b.role : a.role,\n"
-              "        evidence_class: weakestEvidence([surface.evidence_class, a.evidence_class, b.evidence_class]),\n",
-              "        actor_a_role: actorAPart.role,\n"
-              "        actor_b_role: actorBPart.role,\n"
-              "        actor_a_participation: {\n"
-              "          actor_id: actorAPart.actor_id,\n"
-              "          role: actorAPart.role ?? null,\n"
-              "          participation_type: actorAPart.participation_type ?? null,\n"
-              "          evidence_class: actorAPart.evidence_class ?? null,\n"
-              "          window: actorAWindow,\n"
-              "          receipt_ids: actorAReceiptIds,\n"
-              "        },\n"
-              "        actor_b_participation: {\n"
-              "          actor_id: actorBPart.actor_id,\n"
-              "          role: actorBPart.role ?? null,\n"
-              "          participation_type: actorBPart.participation_type ?? null,\n"
-              "          evidence_class: actorBPart.evidence_class ?? null,\n"
-              "          window: actorBWindow,\n"
-              "          receipt_ids: actorBReceiptIds,\n"
-              "        },\n"
-              "        evidence_class: weakestEvidence([surface.evidence_class, actorAPart.evidence_class, actorBPart.evidence_class]),\n",
-          )
-
-          replace_once(
-              'tools/lib/hops.mjs',
-              "      const ew = evidenceWeight(weakestEvidence([surface.evidence_class, a.evidence_class, b.evidence_class]));\n",
-              "      const ew = evidenceWeight(weakestEvidence([surface.evidence_class, actorAPart.evidence_class, actorBPart.evidence_class]));\n",
-          )
-
-          replace_once(
-              'test/hop-stints.test.js',
-              "], 'both legitimate stints must survive as separate hop-basis windows');\n",
-              "], 'both legitimate stints must survive as separate hop-basis windows');\n"
-              "for (const basis of result.edges[0].surfaces) {\n"
-              "  assert.equal(basis.actor_a_participation.actor_id, 'actor-a');\n"
-              "  assert.equal(basis.actor_b_participation.actor_id, 'actor-b');\n"
-              "  assert.deepEqual(basis.actor_a_participation.receipt_ids, ['r1']);\n"
-              "  assert.deepEqual(basis.actor_b_participation.receipt_ids, ['r1']);\n"
-              "  assert.equal(basis.actor_a_participation.window.dated, true);\n"
-              "  assert.equal(basis.actor_b_participation.window.dated, true);\n"
-              "}\n",
-          )
-          PYCODE
+          python tools/temp-materialize-topology-frontier.py
           chmod +x tools/compile.mjs tools/build-topology-admission-frontier.mjs
           node --check tools/build-topology-admission-frontier.mjs
-          node --check test/topology-admission-frontier.test.js
+          node --check tools/lib/hops.mjs
+          node test/hop-stints.test.js
+          node test/topology-admission-frontier.test.js
+          npm run compile
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .github/workflows/ci.yml tools/compile.mjs tools/lib/hops.mjs \
-            tools/build-topology-admission-frontier.mjs test/hop-stints.test.js \
+          git add .github/workflows/ci.yml data/ledger/surfaces.jsonl \
+            tools/compile.mjs tools/build-topology-admission-frontier.mjs \
+            tools/lib/hops.mjs test/hop-stints.test.js \
             test/topology-admission-frontier.test.js
           git diff --cached --exit-code && exit 1 || true
-          git commit -m 'temp: materialize reviewed topology frontier [skip ci]'
+          git commit -m 'topology: compile exact-stint admission frontier [skip ci]'
           git push origin HEAD:agent/topology-admission-frontier-v1
