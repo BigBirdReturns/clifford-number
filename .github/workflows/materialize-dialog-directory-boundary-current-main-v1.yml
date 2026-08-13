@@ -1,4 +1,4 @@
-name: Materialize Dialog directory boundary on current main v3
+name: Materialize Dialog directory boundary on current main v4
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: materialize-dialog-directory-boundary-current-main-v3
+  group: materialize-dialog-directory-boundary-current-main-v4
   cancel-in-progress: false
 
 env:
@@ -78,7 +78,7 @@ jobs:
           python "$MATERIALIZER_PATH"
           rm "$MATERIALIZER_PATH"
 
-      - name: Verify exact Dialog topology, receipts, and regression effect
+      - name: Verify exact Dialog topology, receipts, and dependent records
         shell: bash
         run: |
           set -euo pipefail
@@ -115,6 +115,10 @@ jobs:
               Path('data/research/clifford-cross-corpus-public-interest-map.json')
               .read_text(encoding='utf-8')
           )
+          wrap = json.loads(
+              Path('data/research/clifford-thiel-trump-wrap-up.json')
+              .read_text(encoding='utf-8')
+          )
 
           assert len(surfaces) == len(base_surfaces) + 2
           assert len(parts) == len(base_parts) + 1
@@ -139,6 +143,7 @@ jobs:
           assert len(directory_actors) == 112
           assert [row.get('organization_id') for row in directory_orgs] == ['dialog']
           assert 'matt-clifford' in {row.get('actor_id') for row in directory_actors}
+          assert 'peter-thiel' not in {row.get('actor_id') for row in directory_actors}
           assert all(row.get('actor_id') is None for row in directory_orgs)
 
           assert {row['actor_id'] for row in parts if row['surface_id'] == LEADERSHIP} == {
@@ -184,11 +189,27 @@ jobs:
           assert OLD not in density_text
           assert DIRECTORY in density_text
 
+          wrap_text = Path('tools/lib/clifford-thiel-trump-wrap-up.mjs').read_text(encoding='utf-8')
+          wrap_test_text = Path('test/clifford-thiel-trump-wrap-up.test.js').read_text(encoding='utf-8')
+          assert OLD not in wrap_text
+          assert OLD not in wrap_test_text
+          for surface_id in (DIRECTORY, LEADERSHIP, INVITATION):
+              assert surface_id in wrap_text
+          dialog_path = next(row for row in wrap['evaluated_paths'] if row['path_id'] == 'clifford-thiel-dialog-roster')
+          assert dialog_path['candidate_path'] == [
+              'matt-clifford', DIRECTORY, LEADERSHIP, 'peter-thiel'
+          ]
+          assert OLD not in json.dumps(wrap)
+          dialog_outcome = next(row for row in wrap['surviving_outcomes'] if row['outcome_id'] == 'clifford-thiel-dialog-context')
+          assert dialog_outcome['status'] == 'separate_observations_non_hop'
+
           canonical = public_map['inventory']['canonical']
           assert canonical['surfaces'] == len(surfaces)
           assert canonical['participations'] == len(parts)
           assert canonical['receipts'] == len(receipts)
           assert canonical['compiled_hop_edges'] == len(hop['edges'])
+          core_lane = next(row for row in public_map['lanes'] if row['lane_id'] == 'clifford-policy-dialog-core')
+          assert 'separate graph-inert Dialog observations' in core_lane['what_the_data_shows']
 
           print(json.dumps({
               'surfaces': len(surfaces),
@@ -199,6 +220,7 @@ jobs:
               'directory_organization_contexts': len(directory_orgs),
               'actor_edges': len(hop['edges']),
               'rejected_hop_surfaces': len(hop['rejected_hop_surfaces']),
+              'wrap_up_rebound': True,
           }, indent=2))
           PY
           git diff --check
@@ -225,10 +247,13 @@ jobs:
               'data/ledger/receipts.jsonl',
               'data/ledger/surfaces.jsonl',
               'data/research/clifford-cross-corpus-public-interest-map.json',
+              'data/research/clifford-thiel-trump-wrap-up.json',
               'receipts/topology/dialog-directory-extract-2026-06-16.md',
               'receipts/topology/wired-dialog-leak-2026-06-16.md',
+              'test/clifford-thiel-trump-wrap-up.test.js',
               'test/compiler.test.js',
               'test/density.test.js',
+              'tools/lib/clifford-thiel-trump-wrap-up.mjs',
               'tools/validate-release.mjs',
           }
           generated_prefixes = (
@@ -291,5 +316,6 @@ jobs:
             echo '- preserved organization context: `dialog`'
             echo '- replacement surfaces: `3`'
             echo '- actor-edge pair set: unchanged'
+            echo '- dependent wrap-up record and validator: rebound'
             echo '- target PR: `#1965`'
           } >> "$GITHUB_STEP_SUMMARY"
