@@ -1401,6 +1401,69 @@ assert(sameIdSet(independentValidationBoundaryClaim?.surface_ids, [
     'public Anduril UK procurement chronology claim is missing');
 }
 
+
+// Atlantic Bastion official launch-publication release gate.
+{
+  const launch = surfaceById.get('atlantic-bastion-launch-publication-2025-12-08');
+  assert(launch?.hop_eligible === true, 'Atlantic Bastion named launch surface must remain hop eligible');
+  assert(launch?.time_start === '2025-12-08' && launch?.time_end === '2025-12-08',
+    'Atlantic Bastion named launch surface must remain one day');
+  assert(launch?.evidence_class === 'official', 'Atlantic Bastion named launch surface must retain official evidence');
+  const launchActorIds = data.participation
+    .filter(row => row.surface_id === 'atlantic-bastion-launch-publication-2025-12-08' && row.participant_type === 'actor')
+    .map(row => row.actor_id)
+    .sort();
+  assert(sameIdSet(launchActorIds, [
+    'john-healey',
+    'gwyn-jenkins',
+    'rich-drake',
+    'scott-jamieson-bae',
+    'amelia-gould-helsing',
+  ]), 'Atlantic Bastion named participant denominator is stale');
+  const pairKey = edge => [edge.actor_a, edge.actor_b].sort().join('|');
+  const launchEdges = hopGraph.edges.filter(edge =>
+    edge.surfaces.some(basis => basis.surface_id === 'atlantic-bastion-launch-publication-2025-12-08'));
+  assert(launchEdges.length === 10, 'Atlantic Bastion five-person publication must compile ten exact bases');
+  assert(launchEdges.every(edge =>
+    edge.surfaces.some(basis =>
+      basis.surface_id === 'atlantic-bastion-launch-publication-2025-12-08'
+        && basis.valid_from === '2025-12-08'
+        && basis.valid_until === '2025-12-08')),
+    'Atlantic Bastion bases must remain one-day official publication bases');
+  for (const actorId of ['gwyn-jenkins', 'scott-jamieson-bae', 'amelia-gould-helsing']) {
+    assert(data.actors.some(row => row.id === actorId), `missing Atlantic Bastion actor ${actorId}`);
+    assert(!hopGraph.edges.some(edge => pairKey(edge) === [actorId, 'matt-clifford'].sort().join('|')),
+      `${actorId} must not receive a direct Matt Clifford edge`);
+  }
+  const context = surfaceById.get('atlantic-bastion-industry-program-context-2025-12-08');
+  assert(context?.hop_eligible === false, 'Atlantic Bastion wider programme context must remain non-hop');
+  assert(context?.hop_refusal_reason === 'organization_only_multi_party_program_context',
+    'Atlantic Bastion wider programme refusal reason is stale');
+  assert((hopGraph.rejected_hop_surfaces ?? []).some(row =>
+    row.surface_id === 'atlantic-bastion-industry-program-context-2025-12-08'
+      && row.reason === 'organization_only_multi_party_program_context'),
+    'Atlantic Bastion wider programme refusal is missing from the public graph');
+  assert(!hopGraph.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === 'atlantic-bastion-industry-program-context-2025-12-08')),
+    'Atlantic Bastion wider programme context must not manufacture actor adjacency');
+  const sourceReceipt = receiptById.get('gov-mod-atlantic-bastion-launch-2025-12-08');
+  assert(sourceReceipt?.archive?.ref === 'sha256:fbdc504cf86258811277a259578e9e217108bd5fc0033b82c0c5d242f93db059',
+    'Atlantic Bastion receipt digest is stale');
+  assert(sameIdSet(sourceReceipt?.named_actor_ids, launchActorIds),
+    'Atlantic Bastion receipt actor denominator is stale');
+  assert(sourceReceipt?.all_named_actors_same_physical_event_established === false,
+    'Atlantic Bastion receipt must not invent universal physical co-attendance');
+  assert(sourceReceipt?.matt_clifford_named === false,
+    'Atlantic Bastion receipt must not name Matt Clifford');
+  assert(data.organizations.some(row => row.id === 'helsing'),
+    'Helsing source-name organization is missing');
+  assert(claimById.get('atlantic-bastion-named-launch-publication-cohort-2025-12-08'),
+    'Atlantic Bastion launch cohort claim is missing');
+  assert(claimById.get('atlantic-bastion-industry-denominator-boundary-2025-12-08'),
+    'Atlantic Bastion wider denominator boundary claim is missing');
+  assert(claimById.get('matt-clifford-atlantic-bastion-boundary-2025-12-08'),
+    'Atlantic Bastion Matt Clifford boundary claim is missing');
+}
+
 // Session-local scratch is transport, not durable evidence. A canonical
 // receipt must never depend on an AI-session filesystem path or preserve an
 // unrecoverable local paste as if it were still a live evidentiary object.
