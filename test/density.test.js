@@ -5,11 +5,11 @@ import { deriveHopEdges } from '../tools/lib/hops.mjs';
 
 const data = loadAll();
 const policy = data.densityPolicy;
-const dialog = data.surfaces.find(s => s.surface_id === 'dialog-society-membership');
+const dialog = data.surfaces.find(s => s.surface_id === 'dialog-public-directory-exposure-2026-06-16');
 const directoryType = data.surfaceTypes.find(t => t.id === 'directory_roster_surface');
 const dialogParts = data.participation.filter(p => p.surface_id === dialog.surface_id);
 
-assert.equal(dialog.hop_eligible, false, 'the 115-person Dialog roster must remain non-hop');
+assert.equal(dialog.hop_eligible, false, 'the 112-actor Dialog public directory must remain non-hop');
 assert.equal(directoryType.hop_eligible_default, false, 'new directory/roster surfaces must default to non-hop');
 assert.ok(countDistinctActorParticipants(dialogParts) > policy.max_hop_actor_count,
   'Dialog must exercise the configured density boundary');
