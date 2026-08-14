@@ -1,0 +1,55 @@
+name: TEMP M-04B DOD cloud ATO route materializer repair v2
+
+on:
+  push:
+    branches:
+      - agent/m04b-dod-cloud-ato-route-materializer-v1
+    paths:
+      - '.github/workflows/temp-m04b-dod-cloud-ato-route-materializer-repair-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m04b-dod-cloud-ato-route-materializer-v1
+          fetch-depth: 0
+
+      - name: Repair exact base selection and dependent-package cardinality
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/temp-m04b-dod-cloud-ato-route-materializer-v1.yml')
+          text = path.read_text()
+          replacements = [
+              ('base_sha="$(git rev-parse "${GITHUB_SHA}^")"', 'base_sha="f20fb65c3dce9801b0b4490eb68f3b0ba7906c56"'),
+              ('assert.equal(dodCloudAtoPackages.length, 2);', 'assert.equal(dodCloudAtoPackages.length, 8);'),
+              ('assert.equal(dependent.length, 2);', 'assert.equal(dependent.length, 8);'),
+          ]
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'expected one occurrence of {old!r}, found {count}')
+              text = text.replace(old, new)
+          path.write_text(text)
+          PY
+          git diff --check
+          git diff -- .github/workflows/temp-m04b-dod-cloud-ato-route-materializer-v1.yml
+
+      - name: Publish repaired materializer
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/temp-m04b-dod-cloud-ato-route-materializer-v1.yml
+          git commit -m 'Repair DOD cloud ATO route materializer'
+          git push origin HEAD:refs/heads/agent/m04b-dod-cloud-ato-route-materializer-v1
