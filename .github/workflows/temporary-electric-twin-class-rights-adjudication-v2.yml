@@ -1,9 +1,9 @@
-name: TEMP adjudicate Electric Twin class rights v3
+name: TEMP adjudicate Electric Twin class rights v4
 
 on:
   push:
     branches:
-      - agent/electric-twin-class-rights-adjudication-v3
+      - agent/electric-twin-class-rights-adjudication-v4
 
 permissions:
   contents: write
@@ -16,7 +16,7 @@ jobs:
       - name: Check out exact transport ref
         uses: actions/checkout@v4
         with:
-          ref: agent/electric-twin-class-rights-adjudication-v3
+          ref: agent/electric-twin-class-rights-adjudication-v4
           fetch-depth: 0
           show-progress: false
 
@@ -28,16 +28,18 @@ jobs:
           TRANSPORT_BASE="ba5d1edd42e23f2a00b19a7522a04ae04a0ee8c4"
           PAYLOAD_COMMIT="361e1ccc7845aa83cdf4ed71bf6d5b3c67e8e44e"
           V2_WORKFLOW_COMMIT="116c0de5abcf19bf8910468ce6cea184ac3a88a7"
+          V3_WORKFLOW_COMMIT="06d854c1517d03f9c86e0241b723c8637067a5af"
           PAYLOAD_BLOB="86bd5affe1e380188b0fbf9fcf47bd6235d57a98"
-          TRANSPORT_BRANCH="agent/electric-twin-class-rights-adjudication-v3"
-          PRODUCT_BRANCH="candidate/electric-twin-class-rights-adjudication-v3"
-          WORKTREE="/tmp/electric-twin-class-rights-adjudication-v3"
+          TRANSPORT_BRANCH="agent/electric-twin-class-rights-adjudication-v4"
+          PRODUCT_BRANCH="candidate/electric-twin-class-rights-adjudication-v4"
+          WORKTREE="/tmp/electric-twin-class-rights-adjudication-v4"
           PAYLOAD=".github/temporary/electric-twin-class-rights-adjudication-v1.py.gz.b64"
 
-          test "$(git rev-parse HEAD^)" = "$V2_WORKFLOW_COMMIT"
-          test "$(git rev-parse HEAD^^)" = "$PAYLOAD_COMMIT"
-          test "$(git rev-parse HEAD^^^)" = "$TRANSPORT_BASE"
-          test "$(git rev-list --count "$TRANSPORT_BASE"..HEAD)" = "3"
+          test "$(git rev-parse HEAD^)" = "$V3_WORKFLOW_COMMIT"
+          test "$(git rev-parse HEAD^^)" = "$V2_WORKFLOW_COMMIT"
+          test "$(git rev-parse HEAD^^^)" = "$PAYLOAD_COMMIT"
+          test "$(git rev-parse HEAD^^^^)" = "$TRANSPORT_BASE"
+          test "$(git rev-list --count "$TRANSPORT_BASE"..HEAD)" = "4"
           test "$(git hash-object "$PAYLOAD")" = "$PAYLOAD_BLOB"
 
           base64 -d "$PAYLOAD" | gzip -d > /tmp/electric-twin-class-rights-adjudicate.py
@@ -108,16 +110,31 @@ jobs:
           echo "Changed paths after qualification:"
           git status --short
 
-          unexpected="$(git status --porcelain | awk '{print $2}' | grep -Ev '^(build/|data/ledger/(claims|receipts|surfaces)\.jsonl$|data/research/clifford-cross-corpus-public-interest-map\.json$|package\.json$|receipts/topology/companies-house-electric-twin-(articles|sh10-rights)-2025-09-12\.md$|test/electric-twin-class-rights\.test\.js$|tools/validate-electric-twin-class-rights\.mjs$)' || true)"
+          # Full qualification deterministically refreshes these exact release
+          # manifests and report projections on the current canonical base.
+          # Admit those named outputs, while retaining a closed world for all
+          # evidence, source, test, and implementation paths.
+          unexpected="$(git status --porcelain | awk '{print $2}' | grep -Ev '^(build/|data/ledger/(claims|receipts|surfaces)\.jsonl$|data/research/clifford-cross-corpus-public-interest-map\.json$|data/project/(poof-clifford-ecology|project-stable-ground-sg12|status-sovereignty|status-sovereignty-wave-02-second-party-review)-release-manifest\.json$|package\.json$|receipts/topology/companies-house-electric-twin-(articles|sh10-rights)-2025-09-12\.md$|reports/core-thesis/(poof-clifford-ecology/release-manifest\.json|stable-ground/sg12/(checkpoint\.json|index\.html)|status-sovereignty/(data\.json|index\.html|wave-02-second-party-review/(data\.json|index\.html)))$|test/electric-twin-class-rights\.test\.js$|tools/validate-electric-twin-class-rights\.mjs$)' || true)"
           test -z "$unexpected" || { echo "Unexpected changed paths:"; printf '%s\n' "$unexpected"; exit 1; }
 
           git add build \
             data/ledger/claims.jsonl \
             data/ledger/receipts.jsonl \
             data/ledger/surfaces.jsonl \
+            data/project/poof-clifford-ecology-release-manifest.json \
+            data/project/project-stable-ground-sg12-release-manifest.json \
+            data/project/status-sovereignty-release-manifest.json \
+            data/project/status-sovereignty-wave-02-second-party-review-release-manifest.json \
             package.json \
             receipts/topology/companies-house-electric-twin-articles-2025-09-12.md \
             receipts/topology/companies-house-electric-twin-sh10-rights-2025-09-12.md \
+            reports/core-thesis/poof-clifford-ecology/release-manifest.json \
+            reports/core-thesis/stable-ground/sg12/checkpoint.json \
+            reports/core-thesis/stable-ground/sg12/index.html \
+            reports/core-thesis/status-sovereignty/data.json \
+            reports/core-thesis/status-sovereignty/index.html \
+            reports/core-thesis/status-sovereignty/wave-02-second-party-review/data.json \
+            reports/core-thesis/status-sovereignty/wave-02-second-party-review/index.html \
             test/electric-twin-class-rights.test.js \
             tools/validate-electric-twin-class-rights.mjs
           if test -f data/research/clifford-cross-corpus-public-interest-map.json; then
@@ -125,7 +142,8 @@ jobs:
           fi
 
           git diff --cached --check
-          test -z "$(git diff --cached --diff-filter=D --name-only)"
+          unexpected_deletions="$(git diff --cached --diff-filter=D --name-only | grep -Ev '^build/core-thesis/security-state-organism/dispatch-receipt\.json$' || true)"
+          test -z "$unexpected_deletions" || { echo "Unexpected staged deletions:"; printf '%s\n' "$unexpected_deletions"; exit 1; }
           for required in \
             data/ledger/claims.jsonl \
             data/ledger/receipts.jsonl \
@@ -153,7 +171,7 @@ jobs:
           git push --force origin "$EXPECTED_MAIN:refs/heads/$TRANSPORT_BRANCH"
 
           {
-            echo "## Electric Twin class-rights adjudication v3"
+            echo "## Electric Twin class-rights adjudication v4"
             echo
             echo '```text'
             echo "product_branch  $PRODUCT_BRANCH"
