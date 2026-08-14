@@ -211,6 +211,13 @@ export function classifyFailure({status,error,oversized,redirectUrl,redirect_unr
   return 'unclassified';
 }
 
+export function executionContractFailures(summary){
+  const failures=[];
+  if(summary?.execution_complete!==true)failures.push('the frozen 96-route orbit did not complete');
+  if(summary?.unclassified_failures!==0)failures.push(`${summary?.unclassified_failures??'unknown'} failures were not classified`);
+  return failures;
+}
+
 class HostGate{
   constructor(){this.chains=new Map();this.lastStart=new Map()}
   async run(host,minimumIntervalMs,operation){
