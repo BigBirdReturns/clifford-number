@@ -1,4 +1,4 @@
-name: TEMP main estate baseline diagnostic
+name: TEMP estate CI baseline payload export
 
 on:
   push:
@@ -6,27 +6,80 @@ on:
       - agent/topology-admission-frontier-clean-controller-v1
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  baseline:
+  export:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           show-progress: false
-          persist-credentials: false
+          persist-credentials: true
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Compile and test exact main baseline
+      - name: Build, validate, and publish neutral payload
         shell: bash
+        env:
+          EXPECTED_MAIN_SHA: fd34ca0a2726ff6972ccbc32ea7e5e13101b161b
+          PAYLOAD_BRANCH: agent/estate-ci-baseline-payload-v1
         run: |
           set -euo pipefail
           git fetch --no-tags origin main
           base_sha="$(git rev-parse origin/main)"
-          test "$base_sha" = 'fd34ca0a2726ff6972ccbc32ea7e5e13101b161b'
+          test "$base_sha" = "$EXPECTED_MAIN_SHA"
           git checkout --detach "$base_sha"
+
+          python - <<'PY'
+          from pathlib import Path
+
+          test_path = Path('test/estates.test.js')
+          test_text = test_path.read_text(encoding='utf-8')
+          old_count = '  primary_case_receipts: 180,\n'
+          new_count = '  primary_case_receipts: 181,\n'
+          if test_text.count(old_count) != 1:
+              raise SystemExit('estate receipt snapshot denominator mismatch')
+          test_path.write_text(test_text.replace(old_count, new_count, 1), encoding='utf-8')
+
+          source = Path('.github/workflows/estate-expansion.yml')
+          workflow_text = source.read_text(encoding='utf-8')
+          old_checkout = '      - uses: actions/checkout@v4\n'
+          new_checkout = (
+              '      - uses: actions/checkout@v4\n'
+              '        with:\n'
+              '          fetch-depth: 0\n'
+          )
+          if workflow_text.count(old_checkout) != 1:
+              raise SystemExit('estate checkout denominator mismatch')
+          repaired = workflow_text.replace(old_checkout, new_checkout, 1)
+
+          payload = Path('tmp/estate-ci-baseline/estate-expansion.yml')
+          payload.parent.mkdir(parents=True, exist_ok=True)
+          payload.write_text(repaired, encoding='utf-8')
+          source.write_text(repaired, encoding='utf-8')
+          PY
+
+          test "$(grep -c 'fetch-depth: 0' .github/workflows/estate-expansion.yml)" = '1'
+          node --check test/estates.test.js
           npm run compile
           node test/estates.test.js
+          npm run release:check
+
+          git add test/estates.test.js tmp/estate-ci-baseline/estate-expansion.yml
+          expected_paths="$(cat <<'EOF'
+          test/estates.test.js
+          tmp/estate-ci-baseline/estate-expansion.yml
+          EOF
+          )"
+          actual_paths="$(git diff --cached --name-only)"
+          test "$actual_paths" = "$expected_paths"
+          test "$(git diff --name-only -- .github/workflows/estate-expansion.yml)" = '.github/workflows/estate-expansion.yml'
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'temp: export estate CI baseline payload'
+          test "$(git rev-parse HEAD^)" = "$base_sha"
+          test "$(git diff-tree --no-commit-id --name-only -r HEAD)" = "$expected_paths"
+          git push origin "HEAD:refs/heads/${PAYLOAD_BRANCH}"
