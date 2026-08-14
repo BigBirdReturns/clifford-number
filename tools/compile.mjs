@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 const steps = [
   ['ingest-master', 'tools/ingest-master.mjs'],
   ['build-hop-graph', 'tools/build-hop-graph.mjs'],
+  ['build-topology-admission-frontier', 'tools/build-topology-admission-frontier.mjs'],
   ['score-deniability', 'tools/score-deniability.mjs'],
   ['scout-surfaces', 'tools/scout-surfaces.mjs'],
   ['compile-cases', 'tools/compile-cases.mjs'],
