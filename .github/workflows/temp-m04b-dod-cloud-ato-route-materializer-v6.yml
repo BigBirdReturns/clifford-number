@@ -1,0 +1,280 @@
+name: TEMP M-04B DOD cloud ATO route materializer v6
+
+on:
+  push:
+    branches:
+      - agent/m04b-dod-cloud-ato-route-materializer-v1
+    paths:
+      - '.github/workflows/temp-m04b-dod-cloud-ato-route-materializer-v6.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-m04b-dod-cloud-ato-route-materializer-v6
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    env:
+      BASE_SHA: f20fb65c3dce9801b0b4490eb68f3b0ba7906c56
+      PRODUCT_BRANCH: candidate/m04b-dod-cloud-ato-route-v1
+      SOURCE_URL: https://public.cyber.mil/dccs/cso/
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Prepare immutable product branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          test "$(git rev-parse FETCH_HEAD)" = "$BASE_SHA"
+          if git ls-remote --exit-code --heads origin "$PRODUCT_BRANCH" >/dev/null 2>&1; then
+            echo "Refusing to overwrite existing product branch: $PRODUCT_BRANCH" >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch --force-create "$PRODUCT_BRANCH" "$BASE_SHA"
+          python - <<'PY'
+          import subprocess
+          leaked = subprocess.check_output(
+              ['git', 'ls-files', '.github/workflows/temp-m04b*'], text=True
+          ).splitlines()
+          assert not leaked, f'transport workflows leaked into product branch: {leaked}'
+          PY
+
+      - name: Resolve route and install regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          routes_path = Path('data/intake/security-state-organism-source-routes.json')
+          test_path = Path('test/security-state-organism.test.js')
+          url = 'https://public.cyber.mil/dccs/cso/'
+          note = (
+              'The DoD Cyber Exchange Current Authorized CSOs register is an authoritative public system locator. '
+              'A responsive provider or program record from that register is still required before any authorization '
+              'claim may be promoted. Route presence is acquisition infrastructure, not evidence of a relationship, '
+              'event, transfer, consequence, or proposition.'
+          )
+
+          document = json.loads(routes_path.read_text())
+          matches = [row for row in document['routes'] if row['route_id'] == 'DOD-CLOUD-ATO']
+          assert len(matches) == 1
+          route = matches[0]
+          assert route['locator_status'] == 'unresolved_locator'
+          assert route['url'] is None
+          assert route['locators'] == []
+          assert route['acquisition_query'] == 'Resolve an authoritative public locator for DOD CLOUD ATO before acquisition.'
+
+          route.update({
+              'locator_status': 'candidate_system_locator',
+              'url': url,
+              'locators': [{
+                  'url': url,
+                  'scope': 'system_or_first_party_entrypoint',
+                  'verification_state': 'bounded_system_locator_requires_record_level_acquisition',
+                  'evidence_ids': [],
+              }],
+              'acquisition_query': None,
+              'notes': note,
+          })
+
+          states = {}
+          for row in document['routes']:
+              states[row['locator_status']] = states.get(row['locator_status'], 0) + 1
+          document['counts'] = {
+              'routes': len(document['routes']),
+              'source_bounded_locators': states.get('source_bounded_locator', 0),
+              'candidate_system_locators': states.get('candidate_system_locator', 0),
+              'candidate_first_party_locators': states.get('candidate_first_party_locator', 0),
+              'unresolved_locators': states.get('unresolved_locator', 0),
+          }
+          assert document['counts'] == {
+              'routes': 82,
+              'source_bounded_locators': 10,
+              'candidate_system_locators': 49,
+              'candidate_first_party_locators': 10,
+              'unresolved_locators': 13,
+          }
+          routes_path.write_text(json.dumps(document, indent=2) + '\n')
+
+          source = test_path.read_text()
+          marker = "const dodCloudAto = routes.routes.find((x) => x.route_id === 'DOD-CLOUD-ATO');"
+          anchor = "const evidenceById = new Map(evidence.records.map((x) => [x.evidence_id, x]));"
+          assert marker not in source
+          assert source.count(anchor) == 1
+          block = f"""const dodCloudAto = routes.routes.find((x) => x.route_id === 'DOD-CLOUD-ATO');
+          assert.ok(dodCloudAto, 'DOD-CLOUD-ATO');
+          assert.equal(dodCloudAto.locator_status, 'candidate_system_locator');
+          assert.equal(dodCloudAto.url, {json.dumps(url)});
+          assert.deepEqual(dodCloudAto.locators, [{{
+            url: {json.dumps(url)},
+            scope: 'system_or_first_party_entrypoint',
+            verification_state: 'bounded_system_locator_requires_record_level_acquisition',
+            evidence_ids: [],
+          }}]);
+          assert.equal(dodCloudAto.acquisition_query, null);
+          assert.equal(dodCloudAto.notes, {json.dumps(note)});
+          const dodCloudAtoPackages = work.packages.filter((x) => x.source_route_ids.includes('DOD-CLOUD-ATO'));
+          assert.equal(dodCloudAtoPackages.length, 8);
+          for (const packet of dodCloudAtoPackages) {{
+            assert.equal(packet.boundaries.promotes_to, 'candidate_only', packet.package_id);
+            assert.equal(packet.boundaries.graph_effect, 'none', packet.package_id);
+            assert.equal(packet.boundaries.conclusion_generated, false, packet.package_id);
+            assert.equal(packet.boundaries.estate_completion_claimed, false, packet.package_id);
+          }}
+
+          """
+          block = '\n'.join(line.removeprefix('          ') for line in block.splitlines()) + '\n'
+          test_path.write_text(source.replace(anchor, block + anchor))
+          PY
+
+      - name: Run focused security-state checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-security-state-organism.mjs
+          node tools/validate-security-state-organism.mjs
+          node test/security-state-organism.test.js
+          M04B_REPOSITORY="$GITHUB_REPOSITORY" node tools/dispatch-security-state-organism.mjs --dry-run
+
+      - name: Run complete release gate
+        run: npm run release:check
+
+      - name: Rebuild and verify bounded final state
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-security-state-organism.mjs
+          node tools/validate-security-state-organism.mjs
+          node test/security-state-organism.test.js
+          M04B_REPOSITORY="$GITHUB_REPOSITORY" node tools/dispatch-security-state-organism.mjs --dry-run
+          git show "$BASE_SHA:build/core-thesis/security-state-organism/manifest.json" > /tmp/base-manifest.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          read = lambda path: json.loads(Path(path).read_text())
+          routes = read('data/intake/security-state-organism-source-routes.json')
+          work = read('data/project/security-state-work-packages.json')
+          before = read('/tmp/base-manifest.json')
+          after = read('build/core-thesis/security-state-organism/manifest.json')
+          public = read('reports/core-thesis/security-state-organism/data.json')
+          receipt = read('build/core-thesis/security-state-organism/dispatch-receipt.json')
+          url = 'https://public.cyber.mil/dccs/cso/'
+          route = next(row for row in routes['routes'] if row['route_id'] == 'DOD-CLOUD-ATO')
+
+          expected_counts = {
+              'routes': 82,
+              'source_bounded_locators': 10,
+              'candidate_system_locators': 49,
+              'candidate_first_party_locators': 10,
+              'unresolved_locators': 13,
+          }
+          assert routes['counts'] == expected_counts
+          assert route['locator_status'] == 'candidate_system_locator'
+          assert route['url'] == url
+          assert route['locators'][0]['evidence_ids'] == []
+          assert route['acquisition_query'] is None
+          assert after['counts']['source_route_states'] == {
+              'candidate_first_party_locator': 10,
+              'candidate_system_locator': 49,
+              'source_bounded_locator': 10,
+              'unresolved_locator': 13,
+          }
+          for key, value in before['counts'].items():
+              if key != 'source_route_states':
+                  assert after['counts'][key] == value, key
+          assert next(row for row in public['routes'] if row['route_id'] == 'DOD-CLOUD-ATO')['url'] == url
+          assert receipt['source_fingerprint'] == after['source_fingerprint']
+          assert receipt['mode'] == 'dry-run'
+
+          dependent = [packet for packet in work['packages'] if 'DOD-CLOUD-ATO' in packet['source_route_ids']]
+          assert len(dependent) == 8
+          for packet in dependent:
+              boundaries = packet['boundaries']
+              assert boundaries['promotes_to'] == 'candidate_only', packet['package_id']
+              assert boundaries['graph_effect'] == 'none', packet['package_id']
+              assert boundaries['conclusion_generated'] is False, packet['package_id']
+              assert boundaries['estate_completion_claimed'] is False, packet['package_id']
+          print(json.dumps({
+              'route_id': route['route_id'],
+              'counts': expected_counts,
+              'dependent_packages': [packet['package_id'] for packet in dependent],
+              'source_fingerprint': after['source_fingerprint'],
+          }, indent=2))
+          PY
+
+      - name: Validate product path ledger in Python
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          import subprocess
+
+          base = os.environ['BASE_SHA']
+          changed = subprocess.check_output(
+              ['git', 'diff', '--name-only', base], text=True
+          ).splitlines()
+          print('\n'.join(changed))
+          assert changed, 'no product changes were generated'
+          required = {
+              'data/intake/security-state-organism-source-routes.json',
+              'test/security-state-organism.test.js',
+          }
+          missing = required - set(changed)
+          assert not missing, f'missing required paths: {sorted(missing)}'
+          unexpected = [
+              path for path in changed
+              if path not in required
+              and not path.startswith('build/core-thesis/security-state-organism/')
+              and not path.startswith('reports/core-thesis/security-state-organism/')
+          ]
+          assert not unexpected, f'out-of-scope paths: {unexpected}'
+          assert not [path for path in changed if path.startswith('.github/')]
+          PY
+
+      - name: Commit and publish product branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- \
+            data/intake/security-state-organism-source-routes.json \
+            test/security-state-organism.test.js \
+            build/core-thesis/security-state-organism \
+            reports/core-thesis/security-state-organism
+          python - <<'PY'
+          import os
+          import subprocess
+
+          base = os.environ['BASE_SHA']
+          changed = set(subprocess.check_output(
+              ['git', 'diff', '--name-only', base], text=True
+          ).splitlines())
+          staged = set(subprocess.check_output(
+              ['git', 'diff', '--cached', '--name-only'], text=True
+          ).splitlines())
+          assert staged, 'nothing staged'
+          assert staged == changed, f'staging mismatch: unstaged={sorted(changed - staged)}, extra={sorted(staged - changed)}'
+          assert not [path for path in staged if path.startswith('.github/')]
+          PY
+          git diff --cached --check
+          git commit -m 'Resolve DOD cloud ATO source route'
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          {
+            echo "product_branch=$PRODUCT_BRANCH"
+            echo "product_commit=$(git rev-parse HEAD)"
+          } >> "$GITHUB_STEP_SUMMARY"
