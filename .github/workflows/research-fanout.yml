@@ -79,11 +79,253 @@ jobs:
           FINGERPRINT: ${{ matrix.fingerprint }}
         shell: bash
         run: |
+          set -euo pipefail
+
           title="[research fan-out] ${BATCH_ID}"
-          number="$(gh issue list --repo "$GH_REPO" --state open --limit 200 --json number,title --jq ".[] | select(.title == \"$title\") | .number" | head -n 1)"
+          matches_file="$(mktemp)"
+          page_file="$(mktemp)"
+          trap 'rm -f "$matches_file" "$page_file"' EXIT
+
+          page=1
+          while [ "$page" -le 1000 ]; do
+            gh api "repos/${GH_REPO}/issues?state=open&per_page=100&page=${page}" > "$page_file"
+            count="$(jq 'length' "$page_file")"
+            jq -r --arg title "$title" \
+              '.[] | select(has("pull_request") | not) | select(.title == $title) | .number' \
+              "$page_file" >> "$matches_file"
+            if [ "$count" -lt 100 ]; then
+              break
+            fi
+            page=$((page + 1))
+          done
+          if [ "$page" -gt 1000 ]; then
+            printf 'refusing incomplete open-issue census after 1000 pages\n' >&2
+            exit 1
+          fi
+
+          mapfile -t matches < <(sort -n -u "$matches_file")
+          if [ "${#matches[@]}" -gt 1 ]; then
+            printf 'refusing duplicate open issue title: %s (%s)\n' "$title" "${matches[*]}" >&2
+            exit 1
+          fi
+
+          number="${matches[0]:-}"
           printf '\n<!-- fanout-fingerprint:%s -->\n' "$FINGERPRINT" >> "$BODY_PATH"
           if [ -n "$number" ]; then
             gh issue edit "$number" --repo "$GH_REPO" --body-file "$BODY_PATH"
           else
             gh issue create --repo "$GH_REPO" --title "$title" --body-file "$BODY_PATH"
           fi
+
+  audit:
+    needs:
+      - prepare
+      - dispatch
+    if: ${{ always() && needs.prepare.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      issues: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: research-fanout
+          path: build/research-fanout
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Fetch the complete open issue ledger
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          printf '[]\n' > /tmp/open-items.json
+          page_file="$(mktemp)"
+          next_file="$(mktemp)"
+          trap 'rm -f "$page_file" "$next_file"' EXIT
+
+          page=1
+          while [ "$page" -le 1000 ]; do
+            gh api "repos/${GH_REPO}/issues?state=open&per_page=100&page=${page}" > "$page_file"
+            count="$(jq 'length' "$page_file")"
+            jq -s '.[0] + .[1]' /tmp/open-items.json "$page_file" > "$next_file"
+            mv "$next_file" /tmp/open-items.json
+            if [ "$count" -lt 100 ]; then
+              break
+            fi
+            page=$((page + 1))
+          done
+          if [ "$page" -gt 1000 ]; then
+            printf 'refusing incomplete open-issue census after 1000 pages\n' >&2
+            exit 1
+          fi
+          printf 'open issue and pull-request records: %s\n' "$(jq 'length' /tmp/open-items.json)"
+      - name: Reconcile the current manifest with durable issues
+        env:
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          DISPATCH_RESULT: ${{ needs.dispatch.result }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+
+          const prefix = '[research fan-out] ';
+          const normalize = value => String(value ?? '').replace(/\r\n/g, '\n').trimEnd();
+          const sha256 = value => crypto.createHash('sha256').update(String(value)).digest('hex');
+          const compareTitle = (a, b) => a.title < b.title ? -1 : a.title > b.title ? 1 : 0;
+          const corpusDigest = rows => sha256(rows
+            .slice()
+            .sort(compareTitle)
+            .map(row => `${row.title}\u0000${row.fingerprint}\u0000${normalize(row.body)}`)
+            .join('\u0001'));
+
+          const manifest = JSON.parse(fs.readFileSync('build/research-fanout/manifest.json', 'utf8'));
+          const openItems = JSON.parse(fs.readFileSync('/tmp/open-items.json', 'utf8'));
+          const issues = openItems.filter(item => !item.pull_request);
+          const batches = Array.isArray(manifest.batches) ? manifest.batches : [];
+          const matrix = Array.isArray(manifest.matrix?.include) ? manifest.matrix.include : [];
+          const errors = [];
+          const expected = new Map();
+
+          if (process.env.DISPATCH_RESULT !== 'success') {
+            errors.push(`dispatch result: ${process.env.DISPATCH_RESULT}`);
+          }
+          if (manifest.schema_version !== 'research-fanout-manifest@1') {
+            errors.push(`manifest schema: expected research-fanout-manifest@1, got ${manifest.schema_version}`);
+          }
+          if (matrix.length !== batches.length) {
+            errors.push(`matrix count: expected ${batches.length}, got ${matrix.length}`);
+          }
+
+          for (const batch of batches) {
+            const title = `${prefix}${batch.batch_id}`;
+            if (expected.has(title)) {
+              errors.push(`duplicate manifest title: ${title}`);
+              continue;
+            }
+            if (!fs.existsSync(batch.markdown_path)) {
+              errors.push(`missing manifest packet: ${batch.markdown_path}`);
+              continue;
+            }
+            const body = `${normalize(fs.readFileSync(batch.markdown_path, 'utf8'))}\n\n<!-- fanout-fingerprint:${batch.fingerprint} -->`;
+            expected.set(title, {
+              title,
+              fingerprint: batch.fingerprint,
+              body,
+            });
+          }
+
+          const openFanoutIssues = issues.filter(issue => String(issue.title ?? '').startsWith(prefix));
+          const issuesByTitle = new Map();
+          for (const issue of openFanoutIssues) {
+            const rows = issuesByTitle.get(issue.title) ?? [];
+            rows.push(issue);
+            issuesByTitle.set(issue.title, rows);
+          }
+
+          const actualRows = [];
+          for (const [title, expectedRow] of expected) {
+            const rows = issuesByTitle.get(title) ?? [];
+            if (rows.length !== 1) {
+              errors.push(`${title}: expected one open issue, got ${rows.length}`);
+              continue;
+            }
+            const body = normalize(rows[0].body);
+            const markers = [...body.matchAll(/<!-- fanout-fingerprint:([a-f0-9]{20}) -->/g)];
+            if (markers.length !== 1) {
+              errors.push(`${title}: expected one fingerprint marker, got ${markers.length}`);
+            }
+            const actualFingerprint = markers[0]?.[1] ?? '';
+            if (actualFingerprint !== expectedRow.fingerprint) {
+              errors.push(`${title}: fingerprint mismatch`);
+            }
+            if (body !== expectedRow.body) {
+              errors.push(`${title}: body mismatch`);
+            }
+            actualRows.push({
+              title,
+              fingerprint: actualFingerprint,
+              body,
+            });
+          }
+
+          const unexpectedTitles = [...issuesByTitle.keys()]
+            .filter(title => !expected.has(title))
+            .sort();
+          const expectedRows = [...expected.values()];
+          const expectedDigest = corpusDigest(expectedRows);
+          const actualDigest = corpusDigest(actualRows);
+          if (expectedDigest !== actualDigest) {
+            errors.push(`current corpus digest mismatch: ${expectedDigest} != ${actualDigest}`);
+          }
+
+          const report = {
+            schema_version: 'research-fanout-issue-reconciliation@1',
+            repository: process.env.GH_REPO,
+            workflow_run_id: Number(process.env.RUN_ID),
+            workflow_run_attempt: Number(process.env.RUN_ATTEMPT),
+            dispatch_result: process.env.DISPATCH_RESULT,
+            manifest_schema: manifest.schema_version,
+            manifest_generated_at: manifest.generated,
+            expected_batches: expected.size,
+            matrix_entries: matrix.length,
+            matched_batches: actualRows.length,
+            open_fanout_issues: openFanoutIssues.length,
+            unique_open_fanout_titles: issuesByTitle.size,
+            unexpected_open_fanout_issues: unexpectedTitles.length,
+            unexpected_open_fanout_titles: unexpectedTitles,
+            expected_digest: expectedDigest,
+            actual_digest: actualDigest,
+            errors,
+            status: errors.length ? 'failed' : 'passed',
+          };
+
+          fs.writeFileSync(
+            'build/research-fanout/issue-reconciliation.json',
+            `${JSON.stringify(report, null, 2)}\n`,
+          );
+
+          const summary = [
+            '## Research fan-out issue reconciliation',
+            '',
+            `- Dispatch result: **${report.dispatch_result}**`,
+            `- Expected / matched batches: **${report.expected_batches} / ${report.matched_batches}**`,
+            `- Open fan-out issues / unique titles: **${report.open_fanout_issues} / ${report.unique_open_fanout_titles}**`,
+            `- Unexpected historical open titles: **${report.unexpected_open_fanout_issues}**`,
+            `- Expected digest: \`${report.expected_digest}\``,
+            `- Actual digest: \`${report.actual_digest}\``,
+            `- Result: **${report.status.toUpperCase()}**`,
+          ];
+          if (errors.length) summary.push('', '### Errors', '', ...errors.map(error => `- ${error}`));
+          if (unexpectedTitles.length) summary.push('', '### Historical titles outside the current manifest', '', ...unexpectedTitles.map(title => `- ${title}`));
+          fs.writeFileSync(
+            'build/research-fanout/issue-reconciliation.md',
+            `${summary.join('\n')}\n`,
+          );
+
+          console.log(
+            `ISSUE_RECONCILIATION_${report.status.toUpperCase()} expected=${report.expected_batches} matched=${report.matched_batches} open=${report.open_fanout_issues} digest=${report.actual_digest}`,
+          );
+          NODE
+
+          cat build/research-fanout/issue-reconciliation.md >> "$GITHUB_STEP_SUMMARY"
+          test "$(jq -r '.status' build/research-fanout/issue-reconciliation.json)" = 'passed'
+      - name: Upload issue reconciliation receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: research-fanout-issue-reconciliation
+          path: |
+            build/research-fanout/issue-reconciliation.json
+            build/research-fanout/issue-reconciliation.md
+          if-no-files-found: warn
+          retention-days: 30
