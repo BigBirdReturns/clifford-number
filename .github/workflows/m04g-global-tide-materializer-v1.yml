@@ -1,0 +1,246 @@
+name: TEMP materialize M-04G global tide
+
+on:
+  push:
+    branches:
+      - agent/m04g-global-tide-materializer-v1
+    paths:
+      - .github/workflows/m04g-global-tide-materializer-v1.yml
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build and qualify exact candidate
+        shell: bash
+        env:
+          EXPECTED_BASE: e02e2fafcdfdf8360d53b3cfdb498dddde26d6e6
+          CANDIDATE_BRANCH: agent/m04g-global-tide-v1
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_BASE"
+          git checkout --detach "$EXPECTED_BASE"
+
+          python - <<'PY'
+          from pathlib import Path
+
+          lib_path = Path('tools/lib/m04g-source-ecology-v2.mjs')
+          test_path = Path('test/m05-answerable-power-sprint-03-leg-07.test.js')
+          lib = lib_path.read_text()
+          test = test_path.read_text()
+
+          anchor = """export function executionContractFailures(summary){
+            const failures=[];
+            if(summary?.execution_complete!==true)failures.push('the frozen 96-route orbit did not complete');
+            if(summary?.unclassified_failures!==0)failures.push(`${summary?.unclassified_failures??'unknown'} failures were not classified`);
+            return failures;
+          }
+          """
+          addition = anchor + """
+          function routeMatchesGlobalTide(route,tide){
+            const match=String(tide?.match||'').trim();
+            if(!match)return false;
+            try{return hostMatches(new URL(route.url).hostname,match)}catch{return false}
+          }
+
+          export function planGlobalTides(routes,policy){
+            const assigned=new Set();
+            const tides=[];
+            for(const definition of policy.global_tides||[]){
+              if(definition?.mode!=='globally_serialized')continue;
+              const matched=routes.filter((route)=>!assigned.has(route.route_id)&&routeMatchesGlobalTide(route,definition));
+              if(!matched.length)continue;
+              if(definition.route_results_back_to_original_basins===false)throw new Error(`Global tide ${definition.tide_id||definition.match} cannot preserve basin routing`);
+              const requestRoute=matched.find((route)=>route.basin_id==='G01-GLOBAL-MULTILATERAL')||matched[0];
+              for(const route of matched)assigned.add(route.route_id);
+              tides.push({
+                tide_id:definition.tide_id||`GLOBAL-TIDE-${tides.length+1}`,
+                mode:definition.mode,
+                match:definition.match,
+                request_route_id:requestRoute.route_id,
+                request_url:requestRoute.url,
+                route_ids:matched.map((route)=>route.route_id),
+                routes:matched,
+                definition
+              });
+            }
+            return {tides,ordinary_routes:routes.filter((route)=>!assigned.has(route.route_id))};
+          }
+
+          export function fanOutGlobalTideObservation(tide,sharedObservation){
+            return tide.routes.map((route)=>{
+              const requestProjection=route.route_id===tide.request_route_id;
+              const routeSuccess=sharedObservation.route_success===true;
+              const sharedContentSha256=sharedObservation.result?.content_sha256||null;
+              return {
+                ...sharedObservation,
+                route_id:route.route_id,
+                basin_id:route.basin_id,
+                hydrology_class:route.hydrology_class,
+                original_url:route.url,
+                content_success:requestProjection?sharedObservation.content_success:false,
+                metadata_only:routeSuccess&&!requestProjection,
+                result:sharedObservation.result?{
+                  ...sharedObservation.result,
+                  content_success:requestProjection?sharedObservation.result.content_success:false,
+                  metadata_only:routeSuccess&&!requestProjection,
+                  content_sha256:requestProjection?sharedContentSha256:null,
+                  summary:requestProjection
+                    ?sharedObservation.result.summary
+                    :'Shared global-tide metadata only; basin-specific content relevance was not established.'
+                }:sharedObservation.result,
+                candidate_results:requestProjection
+                  ?sharedObservation.candidate_results
+                  :(sharedObservation.candidate_results||[]).map((candidate)=>({
+                    ...candidate,
+                    content_success:false,
+                    metadata_only:routeSuccess,
+                    content_sha256:null,
+                    summary:'Shared global-tide metadata only; basin-specific content relevance was not established.'
+                  })),
+                global_tide:{
+                  tide_id:tide.tide_id,
+                  mode:tide.mode,
+                  request_route_id:tide.request_route_id,
+                  request_url:tide.request_url,
+                  routed_route_count:tide.route_ids.length,
+                  shared_result:true,
+                  logical_projection:!requestProjection,
+                  source_content_sha256:sharedContentSha256,
+                  basin_specific_relevance_established:requestProjection&&sharedObservation.content_success===true
+                }
+              };
+            });
+          }
+          """
+          if lib.count(anchor) != 1:
+              raise SystemExit('execution-contract anchor mismatch')
+          lib = lib.replace(anchor, addition, 1)
+
+          old_execution = """  const gate=new HostGate();
+            const observations=await mapLimit(discovery.routes,policy.execution.global_concurrency,(route)=>executeRoute(route,policy,gate));
+          """
+          new_execution = """  const gate=new HostGate();
+            const tidePlan=planGlobalTides(discovery.routes,policy);
+            const observationByRouteId=new Map();
+            const globalTideReceipts=[];
+            for(const tide of tidePlan.tides){
+              const requestRoute=tide.routes.find((route)=>route.route_id===tide.request_route_id);
+              const sharedObservation=await executeRoute(requestRoute,policy,gate);
+              for(const observation of fanOutGlobalTideObservation(tide,sharedObservation))observationByRouteId.set(observation.route_id,observation);
+              globalTideReceipts.push({
+                tide_id:tide.tide_id,
+                mode:tide.mode,
+                request_route_id:tide.request_route_id,
+                request_url:tide.request_url,
+                routed_route_ids:tide.route_ids,
+                logical_route_count:tide.route_ids.length,
+                physical_route_executions:1,
+                route_success:sharedObservation.route_success,
+                content_success:sharedObservation.content_success,
+                content_projection_count:sharedObservation.content_success?1:0,
+                metadata_projection_count:sharedObservation.route_success?Math.max(0,tide.route_ids.length-1):0,
+                failure:sharedObservation.failure||null,
+                basin_specific_relevance_established:false
+              });
+            }
+            const ordinaryObservations=await mapLimit(tidePlan.ordinary_routes,policy.execution.global_concurrency,(route)=>executeRoute(route,policy,gate));
+            for(const observation of ordinaryObservations)observationByRouteId.set(observation.route_id,observation);
+            const observations=discovery.routes.map((route)=>observationByRouteId.get(route.route_id));
+            if(observations.some((row)=>!row))throw new Error('Global tide routing failed to preserve the frozen route denominator');
+          """
+          if lib.count(old_execution) != 1:
+              raise SystemExit('orbit execution anchor mismatch')
+          lib = lib.replace(old_execution, new_execution, 1)
+
+          old_receipt = "const receiptCore={schema_version:'m04g-source-ecology-v2-orbit@1',generated_at:new Date().toISOString(),registry_file:discovery.registry_file,registry_path:discovery.registry_path,policy_sha256:sha256(JSON.stringify(policy)),route_ids:discovery.routes.map((row)=>row.route_id),summary,by_basin:byBasin,failure_counts:failureCounts};"
+          new_receipt = "const receiptCore={schema_version:'m04g-source-ecology-v2-orbit@1',generated_at:new Date().toISOString(),registry_file:discovery.registry_file,registry_path:discovery.registry_path,policy_sha256:sha256(JSON.stringify(policy)),route_ids:discovery.routes.map((row)=>row.route_id),summary,by_basin:byBasin,failure_counts:failureCounts,global_tides:globalTideReceipts};"
+          if lib.count(old_receipt) != 1:
+              raise SystemExit('receipt anchor mismatch')
+          lib = lib.replace(old_receipt, new_receipt, 1)
+          lib_path.write_text(lib)
+
+          old_import = "import { classifyFailure, executionContractFailures } from '../tools/lib/m04g-source-ecology-v2.mjs';"
+          new_import = "import { classifyFailure, executionContractFailures, fanOutGlobalTideObservation, planGlobalTides } from '../tools/lib/m04g-source-ecology-v2.mjs';"
+          if test.count(old_import) != 1:
+              raise SystemExit('test import anchor mismatch')
+          test = test.replace(old_import, new_import, 1)
+
+          old_discovery = "const discovery=JSON.parse(fs.readFileSync(path.join(root,'build/m04g-source-ecology-v2-test/m04g-source-ecology-v2-discovery.json'),'utf8'));"
+          new_discovery = old_discovery + "\nconst policy=JSON.parse(fs.readFileSync(path.join(root,'data/project/m04g-source-ecology-v2-policy.json'),'utf8'));"
+          if test.count(old_discovery) != 1:
+              raise SystemExit('test discovery anchor mismatch')
+          test = test.replace(old_discovery, new_discovery, 1)
+
+          old_assert = "assert.ok(discovery.routes.some((row)=>/gdelt/i.test(row.url)||/gdelt/i.test(row.route_id)));"
+          new_assert = old_assert + """
+          const tidePlan=planGlobalTides(discovery.routes,policy);
+          assert.equal(tidePlan.tides.length,1);
+          assert.equal(tidePlan.ordinary_routes.length,84);
+          const [gdeltTide]=tidePlan.tides;
+          assert.equal(gdeltTide.tide_id,'GDELT-GLOBAL-SERIAL');
+          assert.equal(gdeltTide.request_route_id,'M04G-GP001');
+          assert.equal(gdeltTide.route_ids.length,12);
+          assert.equal(new Set([...gdeltTide.route_ids,...tidePlan.ordinary_routes.map((row)=>row.route_id)]).size,96);
+          const routedTide=fanOutGlobalTideObservation(gdeltTide,{
+            route_id:gdeltTide.request_route_id,
+            basin_id:'G01-GLOBAL-MULTILATERAL',
+            hydrology_class:'ocean_discovery',
+            original_url:gdeltTide.request_url,
+            route_success:true,
+            content_success:true,
+            metadata_only:false,
+            fallback_used:false,
+            selected_candidate:0,
+            result:{requested_url:gdeltTide.request_url,content_sha256:'fixture'},
+            candidate_results:[]
+          });
+          assert.equal(routedTide.length,12);
+          assert.equal(new Set(routedTide.map((row)=>row.route_id)).size,12);
+          assert.deepEqual(routedTide.map((row)=>row.route_id),gdeltTide.route_ids);
+          assert.ok(routedTide.every((row)=>row.global_tide.shared_result===true));
+          assert.ok(routedTide.every((row)=>row.global_tide.request_route_id==='M04G-GP001'));
+          assert.equal(routedTide.filter((row)=>row.content_success).length,1);
+          assert.equal(routedTide.filter((row)=>row.metadata_only).length,11);
+          assert.equal(routedTide.find((row)=>row.route_id==='M04G-GP001').global_tide.basin_specific_relevance_established,true);
+          assert.ok(routedTide.filter((row)=>row.route_id!=='M04G-GP001').every((row)=>row.global_tide.basin_specific_relevance_established===false));
+          assert.ok(routedTide.filter((row)=>row.route_id!=='M04G-GP001').every((row)=>row.global_tide.logical_projection===true));
+          assert.ok(routedTide.filter((row)=>row.route_id!=='M04G-GP001').every((row)=>row.result.content_sha256===null));
+          assert.ok(routedTide.filter((row)=>row.route_id!=='M04G-GP001').every((row)=>row.result.content_success===false));
+          assert.ok(routedTide.filter((row)=>row.route_id!=='M04G-GP001').every((row)=>row.candidate_results.every((candidate)=>candidate.content_success===false)));
+          assert.ok(routedTide.every((row)=>row.result.requested_url===gdeltTide.request_url));
+          """
+          if test.count(old_assert) != 1:
+              raise SystemExit('test assertion anchor mismatch')
+          test = test.replace(old_assert, new_assert, 1)
+          test_path.write_text(test)
+          PY
+
+          node --check tools/lib/m04g-source-ecology-v2.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07.test.js
+          node test/m05-answerable-power-sprint-03-leg-07.test.js
+          npm run release:check
+          git diff --check
+
+          mapfile -t changed < <(git diff --name-only)
+          test "${#changed[@]}" -eq 2
+          test "${changed[0]}" = "test/m05-answerable-power-sprint-03-leg-07.test.js"
+          test "${changed[1]}" = "tools/lib/m04g-source-ecology-v2.mjs"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$CANDIDATE_BRANCH"
+          git add test/m05-answerable-power-sprint-03-leg-07.test.js tools/lib/m04g-source-ecology-v2.mjs
+          git commit -m 'Repair M-04G global tide execution'
+          git push origin "HEAD:refs/heads/$CANDIDATE_BRANCH"
