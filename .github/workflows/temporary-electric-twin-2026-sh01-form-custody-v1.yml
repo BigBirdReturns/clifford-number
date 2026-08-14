@@ -1,0 +1,208 @@
+name: TEMP capture Electric Twin 2026 SH01 form custody
+
+"on":
+  push:
+    branches:
+      - agent/electric-twin-2026-sh01-form-custody-v1
+
+permissions:
+  contents: write
+
+concurrency:
+  group: electric-twin-2026-sh01-form-custody
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out exact transport ref
+        uses: actions/checkout@v4
+        with:
+          ref: agent/electric-twin-2026-sh01-form-custody-v1
+          fetch-depth: 0
+          fetch-tags: false
+          show-progress: false
+
+      - name: Capture official PDFs, text, page images, and custody manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EXPECTED_MAIN="ff7f9ad9a0160f5c929010c63c92bafcc44396b9"
+          TRANSPORT_BRANCH="agent/electric-twin-2026-sh01-form-custody-v1"
+          DIAGNOSTIC_BRANCH="diagnostic/electric-twin-2026-sh01-form-custody-v1"
+          OUT="data/research/electric-twin-2026-sh01-form-custody"
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          test "$(git rev-list --count "$EXPECTED_MAIN"..HEAD)" = "1"
+
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends poppler-utils
+
+          rm -rf /tmp/electric-twin-2026-sh01-custody
+          git worktree add --detach /tmp/electric-twin-2026-sh01-custody "$EXPECTED_MAIN"
+          cd /tmp/electric-twin-2026-sh01-custody
+          git checkout -B "$DIAGNOSTIC_BRANCH"
+          rm -rf "$OUT"
+          mkdir -p "$OUT/pdfs" "$OUT/text" "$OUT/pages"
+
+          capture() {
+            slug="$1"
+            document_id="$2"
+            filing_date="$3"
+            allotment_date="$4"
+            nominal_capital="$5"
+            url="https://find-and-update.company-information.service.gov.uk/company/15173006/filing-history/${document_id}/document?download=1&format=pdf"
+            pdf="$OUT/pdfs/${slug}.pdf"
+            txt="$OUT/text/${slug}.txt"
+            info="$OUT/text/${slug}.pdfinfo.txt"
+            pages="$OUT/pages/${slug}"
+
+            curl --fail --location \
+              --retry 6 --retry-all-errors --connect-timeout 20 \
+              --user-agent "clifford-number public-record custody/1.0" \
+              "$url" --output "$pdf"
+
+            test "$(head -c 4 "$pdf")" = "%PDF"
+            pdfinfo "$pdf" > "$info"
+            pdftotext -layout -enc UTF-8 "$pdf" "$txt"
+            test -s "$txt"
+            pdftoppm -png -r 120 "$pdf" "$pages" >/dev/null 2>&1
+
+            sha256sum "$pdf" | awk '{print $1}' > "$OUT/text/${slug}.sha256"
+            printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+              "$slug" "$document_id" "$filing_date" "$allotment_date" "$nominal_capital" "$url" \
+              >> "$OUT/documents.tsv"
+          }
+
+          printf 'slug\tdocument_id\tfiling_date\tallotment_date\tresulting_nominal_capital_gbp\tsource_url\n' > "$OUT/documents.tsv"
+
+          capture "2026-01-27-allotment-2026-01-13" \
+            "MzUwMTY1NjkwOWFkaXF6a2N4" "2026-01-27" "2026-01-13" "3.658437"
+          capture "2026-04-14-allotment-2026-03-06" \
+            "MzUxNjAzMDU2NmFkaXF6a2N4" "2026-04-14" "2026-03-06" "3.661921"
+          capture "2026-04-14-allotment-2026-04-02" \
+            "MzUxNjAzMTgxNGFkaXF6a2N4" "2026-04-14" "2026-04-02" "3.667047"
+          capture "2026-07-15-allotment-2026-07-09" \
+            "MzUzMjkwODI2OWFkaXF6a2N4" "2026-07-15" "2026-07-09" "3.672047"
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import csv
+          import hashlib
+          import json
+          import re
+
+          root = Path("data/research/electric-twin-2026-sh01-form-custody")
+          rows = list(csv.DictReader((root / "documents.tsv").open(), delimiter="\t"))
+          docs = []
+          for row in rows:
+              slug = row["slug"]
+              pdf = root / "pdfs" / f"{slug}.pdf"
+              text_path = root / "text" / f"{slug}.txt"
+              info_path = root / "text" / f"{slug}.pdfinfo.txt"
+              text = text_path.read_text(encoding="utf-8", errors="replace")
+              info = info_path.read_text(encoding="utf-8", errors="replace")
+              page_match = re.search(r"^Pages:\s+(\d+)\s*$", info, re.MULTILINE)
+              relevant = [
+                  line.rstrip()
+                  for line in text.splitlines()
+                  if re.search(
+                      r"allot|share|class|nominal|paid|unpaid|consideration|cash|ordinary|seed|preferred|total",
+                      line,
+                      re.IGNORECASE,
+                  )
+              ]
+              docs.append({
+                  **row,
+                  "sha256": hashlib.sha256(pdf.read_bytes()).hexdigest(),
+                  "bytes": pdf.stat().st_size,
+                  "pages": int(page_match.group(1)) if page_match else None,
+                  "text_path": str(text_path),
+                  "pdf_path": str(pdf),
+                  "page_image_prefix": str(root / "pages" / slug),
+                  "relevant_text_lines": relevant,
+              })
+
+          manifest = {
+              "schema_version": "electric-twin-2026-sh01-form-custody@1",
+              "company_name": "Electric Twin Ltd",
+              "company_number": "15173006",
+              "capture_date": "2026-08-14",
+              "source_type": "official_companies_house_filing_pdf",
+              "graph_effect": "none",
+              "promotion_status": "diagnostic_source_custody_only",
+              "documents": docs,
+              "adjudication_boundary": (
+                  "This diagnostic branch preserves the four official SH01 PDFs, deterministic text "
+                  "extractions, and rendered page images. No allottee, investor, beneficial owner, "
+                  "governance right, or person-level participation may be inferred unless the form "
+                  "itself expressly supplies that endpoint."
+              ),
+          }
+          (root / "manifest.json").write_text(
+              json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
+              encoding="utf-8",
+          )
+
+          summary_lines = [
+              "# Electric Twin 2026 SH01 form-custody diagnostic",
+              "",
+              "Official Companies House PDFs for company 15173006.",
+              "",
+              "| Filing | Allotment | Resulting nominal capital | Pages | SHA-256 |",
+              "|---|---|---:|---:|---|",
+          ]
+          for doc in docs:
+              summary_lines.append(
+                  f"| {doc['filing_date']} | {doc['allotment_date']} | "
+                  f"GBP {doc['resulting_nominal_capital_gbp']} | {doc['pages']} | "
+                  f"`{doc['sha256']}` |"
+              )
+          summary_lines += [
+              "",
+              "This branch is diagnostic custody only. The forms must be reviewed before any "
+              "canonical claim, participant, ownership, or topology change.",
+              "",
+          ]
+          (root / "README.md").write_text("\n".join(summary_lines), encoding="utf-8")
+          print(json.dumps({
+              "documents": len(docs),
+              "pdf_bytes": sum(doc["bytes"] for doc in docs),
+              "pages": sum(doc["pages"] or 0 for doc in docs),
+          }, sort_keys=True))
+          PY
+
+          git add "$OUT"
+          git diff --cached --check
+          test -z "$(git diff --cached --diff-filter=D --name-only)"
+          test "$(find "$OUT/pdfs" -name '*.pdf' | wc -l)" = "4"
+          test "$(find "$OUT/text" -name '*.txt' | wc -l)" -ge "12"
+          test "$(find "$OUT/pages" -name '*.png' | wc -l)" = "16"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "research: capture Electric Twin 2026 SH01 form custody"
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+
+          git push --force origin "HEAD:refs/heads/$DIAGNOSTIC_BRANCH"
+          git push --force origin "$EXPECTED_MAIN:refs/heads/$TRANSPORT_BRANCH"
+
+          {
+            echo "## Electric Twin 2026 SH01 custody"
+            echo
+            echo '```text'
+            echo "diagnostic_branch $DIAGNOSTIC_BRANCH"
+            echo "commit            $(git rev-parse HEAD)"
+            echo "tree              $(git rev-parse HEAD^{tree})"
+            echo "parent            $(git rev-parse HEAD^)"
+            echo "pdfs              $(find "$OUT/pdfs" -name '*.pdf' | wc -l)"
+            echo "page_images       $(find "$OUT/pages" -name '*.png' | wc -l)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
