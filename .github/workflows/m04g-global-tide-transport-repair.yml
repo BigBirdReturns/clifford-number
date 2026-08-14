@@ -1,0 +1,51 @@
+name: TEMP repair M-04G global-tide qualifier transport
+
+on:
+  push:
+    branches:
+      - agent/m04g-global-tide-materializer-v1
+    paths:
+      - .github/workflows/m04g-global-tide-transport-repair.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Insert standing fixture-build prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('.github/workflows/m04g-global-tide-materializer-v1.yml')
+          text = path.read_text()
+          old = """          node --check tools/lib/m04g-source-ecology-v2.mjs
+                    node --check test/m05-answerable-power-sprint-03-leg-07.test.js
+                    node test/m05-answerable-power-sprint-03-leg-07.test.js
+                    npm run release:check
+          """
+          new = """          node --check tools/lib/m04g-source-ecology-v2.mjs
+                    node --check test/m05-answerable-power-sprint-03-leg-07.test.js
+                    node tools/build-m05-answerable-power-sprint-03-leg-07.mjs
+                    node tools/validate-m05-answerable-power-sprint-03-leg-07.mjs
+                    node test/m05-answerable-power-sprint-03-leg-07.test.js
+                    npm run release:check
+          """
+          if text.count(old) != 1:
+              raise SystemExit('qualifier prerequisite anchor mismatch')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          git diff --check
+          grep -Fq 'node tools/build-m05-answerable-power-sprint-03-leg-07.mjs' .github/workflows/m04g-global-tide-materializer-v1.yml
+          grep -Fq 'node tools/validate-m05-answerable-power-sprint-03-leg-07.mjs' .github/workflows/m04g-global-tide-materializer-v1.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/m04g-global-tide-materializer-v1.yml
+          git commit -m 'Repair M-04G global-tide qualifier prerequisites'
+          git push origin HEAD:agent/m04g-global-tide-materializer-v1
