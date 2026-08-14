@@ -58,7 +58,7 @@ Does this estate supply independently receipted organs, lineage transitions, tra
 ## Source routes
 
 - `ANDURIL-OFFICIAL` — ANDURIL OFFICIAL · `candidate_first_party_locator` · https://www.anduril.com/
-- `DOD-CLOUD-ATO` — DOD CLOUD ATO · `unresolved_locator` · locator unresolved
+- `DOD-CLOUD-ATO` — DOD CLOUD ATO · `candidate_system_locator` · https://public.cyber.mil/dccs/cso/
 - `DOD-TEST-EVALUATION` — DOD TEST EVALUATION · `candidate_system_locator` · https://www.dote.osd.mil/
 - `FEDRAMP-MARKETPLACE` — FEDRAMP MARKETPLACE · `candidate_system_locator` · https://marketplace.fedramp.gov/
 - `IDF-OFFICIAL` — IDF OFFICIAL · `candidate_system_locator` · https://www.idf.il/en/

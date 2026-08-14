@@ -6,9 +6,9 @@
   "counts": {
     "routes": 82,
     "source_bounded_locators": 10,
-    "candidate_system_locators": 48,
+    "candidate_system_locators": 49,
     "candidate_first_party_locators": 10,
-    "unresolved_locators": 14
+    "unresolved_locators": 13
   },
   "routes": [
     {
@@ -103,9 +103,16 @@
       "label": "DOD CLOUD ATO",
       "venue": "U.S. official or primary-public system",
       "jurisdiction": "United States",
-      "locator_status": "unresolved_locator",
-      "url": null,
-      "locators": [],
+      "locator_status": "candidate_system_locator",
+      "url": "https://public.cyber.mil/dccs/cso/",
+      "locators": [
+        {
+          "url": "https://public.cyber.mil/dccs/cso/",
+          "scope": "system_or_first_party_entrypoint",
+          "verification_state": "bounded_system_locator_requires_record_level_acquisition",
+          "evidence_ids": []
+        }
+      ],
       "access": "public_web",
       "evidence_classes": [
         "identity",
@@ -117,8 +124,8 @@
         "consequences",
         "counterpower"
       ],
-      "acquisition_query": "Resolve an authoritative public locator for DOD CLOUD ATO before acquisition.",
-      "notes": "Route presence is acquisition infrastructure, not evidence of a relationship, event, transfer, consequence, or proposition."
+      "acquisition_query": null,
+      "notes": "The DoD Cyber Exchange Current Authorized CSOs register is an authoritative public system locator. A responsive provider or program record from that register is still required before any authorization claim may be promoted. Route presence is acquisition infrastructure, not evidence of a relationship, event, transfer, consequence, or proposition."
     },
     {
       "route_id": "DOD-TEST-EVALUATION",

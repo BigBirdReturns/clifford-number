@@ -47,7 +47,7 @@ What exact two-sided records establish or falsify fedstart third-party governmen
 
 ## Source routes
 
-- `DOD-CLOUD-ATO` — DOD CLOUD ATO · `unresolved_locator` · locator unresolved
+- `DOD-CLOUD-ATO` — DOD CLOUD ATO · `candidate_system_locator` · https://public.cyber.mil/dccs/cso/
 - `FEDRAMP-MARKETPLACE` — FEDRAMP MARKETPLACE · `candidate_system_locator` · https://marketplace.fedramp.gov/
 - `PALANTIR-FEDSTART` — PALANTIR FEDSTART · `source_bounded_locator` · https://www.palantir.com/offerings/fedstart/
 - `PALANTIR-OFFICIAL` — PALANTIR OFFICIAL · `candidate_first_party_locator` · https://www.palantir.com/

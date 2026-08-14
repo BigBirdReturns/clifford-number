@@ -48,7 +48,7 @@ What exact legal, financial, technical, personnel, public-gate, deployment, cons
 
 ## Source routes
 
-- `DOD-CLOUD-ATO` — DOD CLOUD ATO · `unresolved_locator` · locator unresolved
+- `DOD-CLOUD-ATO` — DOD CLOUD ATO · `candidate_system_locator` · https://public.cyber.mil/dccs/cso/
 - `FEDRAMP-MARKETPLACE` — FEDRAMP MARKETPLACE · `candidate_system_locator` · https://marketplace.fedramp.gov/
 - `PALANTIR-FEDSTART` — PALANTIR FEDSTART · `source_bounded_locator` · https://www.palantir.com/offerings/fedstart/
 
