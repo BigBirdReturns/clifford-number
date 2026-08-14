@@ -56,6 +56,98 @@ if text.count(old_path_boundary) != 1:
     raise SystemExit('expected exactly one stale product-path boundary')
 text = text.replace(old_path_boundary, new_path_boundary)
 
+baseline_anchor = '''test -z "$(git status --porcelain)"
+
+node /tmp/apply-newsuk-times-exploraition-launch-principals-v1.mjs
+'''
+baseline_block = '''test -z "$(git status --porcelain)"
+
+python3 - <<'PY_BASELINE'
+import json
+from pathlib import Path
+
+
+def read_json(path):
+    return json.loads(Path(path).read_text())
+
+
+def count_jsonl(path):
+    return sum(1 for line in Path(path).read_text().splitlines() if line.strip())
+
+baseline = {
+    'actors': len(read_json('data/canonical/actors.json')['actors']),
+    'organizations': len(read_json('data/canonical/organizations.json')['organizations']),
+    'surfaces': count_jsonl('data/ledger/surfaces.jsonl'),
+    'participations': count_jsonl('data/ledger/participation.jsonl'),
+    'receipts': count_jsonl('data/ledger/receipts.jsonl'),
+    'claims': count_jsonl('data/ledger/claims.jsonl'),
+    'hop_edges': len(read_json('build/hop-graph.json').get('edges', [])),
+}
+Path('/tmp/newsuk-times-exploraition-base-counts.json').write_text(
+    json.dumps(baseline, indent=2, sort_keys=True) + '\n'
+)
+print('base denominator: ' + ' | '.join(
+    f'{key} {value}' for key, value in baseline.items()
+))
+PY_BASELINE
+
+node /tmp/apply-newsuk-times-exploraition-launch-principals-v1.mjs
+'''
+if text.count(baseline_anchor) != 1:
+    raise SystemExit('expected exactly one pre-apply baseline anchor')
+text = text.replace(baseline_anchor, baseline_block)
+
+old_count_block = '''const scores = json('build/scores.json');
+
+assert(actors.length === 169, `actor count drift: ${actors.length}`);
+assert(organizations.length === 32, `organization count drift: ${organizations.length}`);
+assert(surfaces.length === 51, `surface count drift: ${surfaces.length}`);
+assert(parts.length === 275, `participation count drift: ${parts.length}`);
+assert(receipts.length === 70, `receipt count drift: ${receipts.length}`);
+assert(claims.length === 38, `claim count drift: ${claims.length}`);
+assert(hop.edges.length === 90, `hop edge count drift: ${hop.edges.length}`);
+'''
+new_count_block = '''const scores = json('build/scores.json');
+const baseline = json('/tmp/newsuk-times-exploraition-base-counts.json');
+const expectedDelta = Object.freeze({
+  actors: 2,
+  organizations: 0,
+  surfaces: 1,
+  participations: 5,
+  receipts: 1,
+  claims: 2,
+  hop_edges: 3,
+});
+const actualCounts = {
+  actors: actors.length,
+  organizations: organizations.length,
+  surfaces: surfaces.length,
+  participations: parts.length,
+  receipts: receipts.length,
+  claims: claims.length,
+  hop_edges: hop.edges.length,
+};
+for (const [key, delta] of Object.entries(expectedDelta)) {
+  const expected = baseline[key] + delta;
+  assert(actualCounts[key] === expected,
+    `${key} delta drift: base ${baseline[key]} + ${delta} != ${actualCounts[key]}`);
+}
+'''
+if text.count(old_count_block) != 1:
+    raise SystemExit('expected exactly one stale absolute denominator block')
+text = text.replace(old_count_block, new_count_block)
+
+receipt_copy_anchor = '''cp /tmp/expected-paths "$RECEIPT_DIR/expected-paths.txt"
+cp /tmp/actual-paths "$RECEIPT_DIR/actual-paths.txt"
+'''
+receipt_copy_block = '''cp /tmp/expected-paths "$RECEIPT_DIR/expected-paths.txt"
+cp /tmp/actual-paths "$RECEIPT_DIR/actual-paths.txt"
+cp /tmp/newsuk-times-exploraition-base-counts.json "$RECEIPT_DIR/base-counts.json"
+'''
+if text.count(receipt_copy_anchor) != 1:
+    raise SystemExit('expected exactly one receipt-copy anchor')
+text = text.replace(receipt_copy_anchor, receipt_copy_block)
+
 start_marker = 'base64 -d .github/tmp/apply-newsuk-times-exploraition-launch-principals-v1.mjs.gz.b64'
 end_marker = "echo '4ed77e65c75fd05b940298e5e921a3655c7ac5636bc59d7b1bf992e742a6ef12  /tmp/apply-newsuk-times-exploraition-launch-principals-v1.mjs'"
 start = text.find(start_marker)
