@@ -824,6 +824,93 @@ assert(sameIdSet(lebaraSourceClaim?.organization_ids, ['electric-twin', 'lebara'
 assert(sameIdSet(lebaraSourceClaim?.receipt_ids, ['electric-twin-lebara-customer-use-2026-03-11']),
   'Lebara customer-use claim must use the first-party receipt');
 
+const capitalFilingSequence = surfaceById.get('electric-twin-capital-allotment-observations-2026-01-13-2026-07-09');
+assert(capitalFilingSequence, 'Electric Twin 2026 capital filing-history sequence must compile');
+assert(capitalFilingSequence?.hop_eligible === false,
+  'Electric Twin 2026 capital filing-history sequence must remain non-hop');
+assert(capitalFilingSequence?.hop_refusal_reason === 'issuer_only_capital_filing_sequence',
+  'Electric Twin 2026 capital sequence must expose the issuer-only refusal');
+assert(capitalFilingSequence?.surface_type === 'employment_investment_surface',
+  'Electric Twin 2026 capital sequence must retain the capital surface type');
+assert(JSON.stringify(capitalFilingSequence?.secondary_surface_types)
+  === JSON.stringify(['surface_factory_capital_layer']),
+  'Electric Twin 2026 capital sequence secondary classification drift');
+assert(capitalFilingSequence?.time_start === '2026-01-13'
+  && capitalFilingSequence?.time_end === '2026-07-09',
+  'Electric Twin 2026 capital sequence date bounds drift');
+assert(capitalFilingSequence?.evidence_class === 'official',
+  'Electric Twin 2026 capital sequence must remain official');
+assert(sameIdSet(capitalFilingSequence?.receipt_ids, ['companies-house-electric-twin-2026-capital-allotment-filing-history']),
+  'Electric Twin 2026 capital sequence receipt binding drift');
+const capitalActors = (capitalFilingSequence?.participants ?? [])
+  .filter(part => part.participant_type === 'actor')
+  .map(part => part.actor_id);
+assert(capitalActors.length === 0,
+  'issuer-only Electric Twin 2026 capital sequence must contain no actors');
+const capitalOrganizations = (capitalFilingSequence?.participants ?? [])
+  .filter(part => part.participant_type === 'organization')
+  .map(part => part.organization_id);
+assert(JSON.stringify(capitalOrganizations) === JSON.stringify(['electric-twin']),
+  'Electric Twin must be the sole organization on the 2026 capital sequence');
+const capitalIssuer = (capitalFilingSequence?.participants ?? [])
+  .find(part => part.organization_id === 'electric-twin');
+assert(capitalIssuer?.participation_type === 'issuer_capital_filing_sequence_observation',
+  'Electric Twin 2026 capital issuer role drift');
+assert(!hopGraph.edges.some(edge => edge.surfaces.some(
+  basis => basis.surface_id === capitalFilingSequence?.surface_id
+)), 'Electric Twin 2026 capital filing history must never become a hop basis');
+assert((hopGraph.rejected_hop_surfaces ?? []).some(row =>
+  row.surface_id === capitalFilingSequence?.surface_id
+    && row.reason === 'issuer_only_capital_filing_sequence'),
+  'Electric Twin 2026 capital refusal must remain public');
+const capitalReceiptRow = receiptById.get('companies-house-electric-twin-2026-capital-allotment-filing-history');
+assert(capitalReceiptRow, 'Electric Twin 2026 capital filing-history receipt must exist');
+assert(capitalReceiptRow?.company_number === '15173006',
+  'Electric Twin 2026 capital receipt company number drift');
+assert(JSON.stringify(capitalReceiptRow?.filing_observations)
+  === JSON.stringify([
+  {
+    "allotment_date": "2026-01-13",
+    "filed_at": "2026-01-27",
+    "resulting_total_nominal_capital_gbp": 3.658437
+  },
+  {
+    "allotment_date": "2026-03-06",
+    "filed_at": "2026-04-14",
+    "resulting_total_nominal_capital_gbp": 3.661921
+  },
+  {
+    "allotment_date": "2026-04-02",
+    "filed_at": "2026-04-14",
+    "resulting_total_nominal_capital_gbp": 3.667047
+  },
+  {
+    "allotment_date": "2026-07-09",
+    "filed_at": "2026-07-15",
+    "resulting_total_nominal_capital_gbp": 3.672047
+  }
+]),
+  'Electric Twin 2026 capital receipt observations drift');
+assert(capitalReceiptRow?.sh01_forms_reproduced === false,
+  'Electric Twin 2026 capital receipt must preserve the form-retrieval boundary');
+assert(capitalReceiptRow?.share_classes_recovered === false
+  && capitalReceiptRow?.share_quantities_recovered === false
+  && capitalReceiptRow?.consideration_terms_recovered === false
+  && capitalReceiptRow?.allottees_identified === false,
+  'Electric Twin 2026 capital receipt must preserve the unresolved capital fields');
+assert(JSON.stringify(capitalReceiptRow?.named_actor_ids) === JSON.stringify([]),
+  'Electric Twin 2026 capital receipt must contain no actor endpoint');
+assert(capitalReceiptRow?.archive?.ref === 'sha256:2ea4eb21581b79621f05b20248b2347e7c3081ff6a5f094f7cd285f13a06a460',
+  'Electric Twin 2026 capital receipt digest is stale');
+const capitalClaimRow = claimById.get('electric-twin-2026-capital-allotment-filing-history');
+assert(capitalClaimRow, 'Electric Twin 2026 capital filing-history claim must exist');
+assert(JSON.stringify(capitalClaimRow?.actor_ids) === JSON.stringify([]),
+  'Electric Twin 2026 capital claim must contain no actor attribution');
+assert(sameIdSet(capitalClaimRow?.organization_ids, ['electric-twin']),
+  'Electric Twin 2026 capital claim organization binding drift');
+assert(sameIdSet(capitalClaimRow?.receipt_ids, ['companies-house-electric-twin-2026-capital-allotment-filing-history']),
+  'Electric Twin 2026 capital claim receipt binding drift');
+
 const correctedWarnerChronology = claimById.get('ben-warner-government-commercial-chronology-boundary-2026-08-11');
 assert(correctedWarnerChronology, 'Ben Warner chronology boundary must remain visible');
 assert(sameIdSet(correctedWarnerChronology?.receipt_ids, [
@@ -1156,7 +1243,7 @@ assert(!hasSurface('marc-warner', 'vote-leave-data-science-2016'),
 // Regression fixture 2: Electric Twin surface factory.
 const et = orgScore.get('electric-twin');
 assert(et?.surface_factory === true, 'Electric Twin must be a surface factory');
-for (const sid of ['electric-twin-incorporation-2023-09-28', 'electric-twin-ben-warner-director-tenure-2023-09-28', 'electric-twin-alex-cooper-director-tenure-2023-09-28', 'electric-twin-ethics-board-2026', 'electric-twin-seed-round-2026-02-11', 'electric-twin-ben-blume-director-appointment-2025-09-12', 'electric-twin-seed2-governance-instrument-2025-09-12', 'electric-twin-seed2-capital-actions-2025-09-16-2025-09-26', 'electric-twin-newsuk-synthetic-audience', 'newsuk-times-exploraition-launch-publication-principals-2026-04-27', 'electric-twin-lebara-customer-use-2026-03-11', 'gartner-synthetic-population-category-2026']) {
+for (const sid of ['electric-twin-incorporation-2023-09-28', 'electric-twin-ben-warner-director-tenure-2023-09-28', 'electric-twin-alex-cooper-director-tenure-2023-09-28', 'electric-twin-ethics-board-2026', 'electric-twin-seed-round-2026-02-11', 'electric-twin-ben-blume-director-appointment-2025-09-12', 'electric-twin-seed2-governance-instrument-2025-09-12', 'electric-twin-seed2-capital-actions-2025-09-16-2025-09-26', 'electric-twin-capital-allotment-observations-2026-01-13-2026-07-09', 'electric-twin-newsuk-synthetic-audience', 'newsuk-times-exploraition-launch-publication-principals-2026-04-27', 'electric-twin-lebara-customer-use-2026-03-11', 'gartner-synthetic-population-category-2026']) {
   assert(et?.surfaces.includes(sid), `Electric Twin missing factory surface ${sid}`);
 }
 
