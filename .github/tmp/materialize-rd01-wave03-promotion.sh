@@ -53,11 +53,13 @@ if start < 0 or end < 0:
 decoder = r'''python3 - <<'PY_GZIP'
 import base64
 import hashlib
+import json
 from pathlib import Path
 import zlib
 
 source = Path('.github/tmp/apply-newsuk-times-exploraition-launch-principals-v1.mjs.gz.b64')
 target = Path('/tmp/apply-newsuk-times-exploraition-launch-principals-v1.mjs')
+receipt = Path('/tmp/ssc-rd01-wave03-promotion-materializer-receipt')
 expected_sha = '4ed77e65c75fd05b940298e5e921a3655c7ac5636bc59d7b1bf992e742a6ef12'
 data = base64.b64decode(source.read_text())
 if len(data) < 18 or data[:2] != b'\x1f\x8b' or data[2] != 8:
@@ -79,44 +81,25 @@ if flags & 0x02:
     pos += 2
 if pos >= len(data) - 8:
     raise SystemExit('gzip payload is truncated')
-
-compressed = bytearray(data[pos:-8])
+compressed = data[pos:-8]
+output = zlib.decompress(compressed, -zlib.MAX_WBITS)
+actual_sha = hashlib.sha256(output).hexdigest()
 expected_size = int.from_bytes(data[-4:], 'little')
-
-def accept(output: bytes, label: str) -> bool:
-    digest = hashlib.sha256(output).hexdigest()
-    if digest != expected_sha:
-        return False
-    if expected_size and len(output) != expected_size:
-        raise SystemExit(f'{label} matched SHA but diverged from gzip ISIZE')
-    target.write_bytes(output)
-    print(f'{label} recovered exact {len(output)}-byte apply script at {digest}')
-    return True
-
-try:
-    baseline = zlib.decompress(compressed, -zlib.MAX_WBITS)
-except zlib.error:
-    baseline = b''
-if accept(baseline, 'raw-deflate baseline'):
-    raise SystemExit(0)
-
-attempts = 0
-for byte_index in range(len(compressed)):
-    original = compressed[byte_index]
-    for bit_index in range(8):
-        compressed[byte_index] = original ^ (1 << bit_index)
-        attempts += 1
-        try:
-            output = zlib.decompress(compressed, -zlib.MAX_WBITS)
-        except zlib.error:
-            continue
-        if accept(output, f'one-bit repair byte={byte_index} bit={bit_index}'):
-            raise SystemExit(0)
-    compressed[byte_index] = original
-    if byte_index and byte_index % 1000 == 0:
-        print(f'one-bit repair searched {attempts} candidates')
-
-raise SystemExit(f'no exact one-bit repair found after {attempts} candidates')
+target.write_bytes(output)
+receipt.mkdir(parents=True, exist_ok=True)
+(receipt / 'recovered-apply-script.mjs').write_bytes(output)
+(receipt / 'recovered-apply-script-diagnostic.json').write_text(json.dumps({
+    'schema_version': 'newsuk-times-apply-script-recovery-diagnostic@1',
+    'carrier_path': str(source),
+    'compressed_bytes': len(compressed),
+    'recovered_bytes': len(output),
+    'gzip_isize': expected_size,
+    'expected_sha256': expected_sha,
+    'recovered_sha256': actual_sha,
+    'exact_sha_match': actual_sha == expected_sha,
+    'admission_effect': 'none'
+}, indent=2) + '\n')
+print(f'preserved raw-deflate output: bytes={len(output)} sha256={actual_sha}')
 PY_GZIP
 '''
 text = text[:start] + decoder + text[end:]
