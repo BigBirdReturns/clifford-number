@@ -65,7 +65,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
       - name: Reconcile the live research issue
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        if: always() && hashFiles('build/m04g-source-ecology-v2-live/m04g-source-ecology-v2-receipt.json') != ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -77,6 +77,7 @@ jobs:
           console.log('');
           console.log('```text');
           console.log(`run:                  ${process.env.GITHUB_RUN_ID}`);
+          console.log(`event:                ${process.env.GITHUB_EVENT_NAME}`);
           console.log(`head:                 ${process.env.GITHUB_SHA}`);
           console.log(`selected routes:      ${s.selected}`);
           console.log(`route successes:      ${s.route_successes}`);
@@ -93,6 +94,9 @@ jobs:
           console.log('');
           console.log('The same 96-route denominator is preserved. Metadata-only results do not count as content. Failed and blocked routes remain in the denominator. Source health does not set evidentiary sufficiency or answer effectiveness.');
           NODE
+          if [ "$(node --input-type=module -e "import fs from 'node:fs'; const r=JSON.parse(fs.readFileSync('build/m04g-source-ecology-v2-live/m04g-source-ecology-v2-receipt.json','utf8')); process.stdout.write(String(r.summary.coverage_healthy));")" = "false" ]; then
+            gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/345" -f state=open >/dev/null
+          fi
           gh issue comment 345 --body-file /tmp/m04g-v2-comment.md
       - name: Enforce the frozen health contract
         run: |

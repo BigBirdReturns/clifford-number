@@ -194,7 +194,7 @@ export function routePolicy(route, policy){
   };
 }
 
-export function classifyFailure({status,error,oversized,redirectUrl}){
+export function classifyFailure({status,error,oversized,redirectUrl,redirect_unresolved}){
   const message=String(error?.message||error||'').toLowerCase();
   const code=String(error?.cause?.code||error?.code||'').toUpperCase();
   if(oversized)return 'oversized_response';
@@ -202,7 +202,7 @@ export function classifyFailure({status,error,oversized,redirectUrl}){
   if(status===401)return 'authentication_required';
   if(status===403)return 'access_blocked';
   if(status>=500)return 'upstream_failure';
-  if(status>=300&&status<400&&redirectUrl)return 'redirect_unresolved';
+  if(redirect_unresolved||redirectUrl||(status>=300&&status<400))return 'redirect_unresolved';
   if(code==='ENOTFOUND'||code==='EAI_AGAIN'||message.includes('getaddrinfo'))return 'dns_failure';
   if(code.includes('CERT')||message.includes('certificate')||message.includes('tls'))return 'tls_failure';
   if(message.includes('abort')||message.includes('timeout'))return 'timeout';
