@@ -94,19 +94,19 @@ export function deriveHopEdges({ surfaces, participationBySurface, broadOrgIds, 
       const ids = [a.actor_id, b.actor_id].sort();
       const aWin = windowOf(a);
       const bWin = windowOf(b);
+      const actorAPart = ids[0] === a.actor_id ? a : b;
+      const actorBPart = ids[1] === a.actor_id ? a : b;
+      const actorAWindow = ids[0] === a.actor_id ? aWin : bWin;
+      const actorBWindow = ids[1] === a.actor_id ? aWin : bWin;
+      const actorAReceiptIds = uniq(actorAPart.receipt_ids ?? []);
+      const actorBReceiptIds = uniq(actorBPart.receipt_ids ?? []);
+      const surfaceReceiptIds = uniq(surface.receipt_ids ?? []);
       const overlap = intersectAll([
         surfaceWin.dated ? surfaceWin : UNBOUNDED,
         aWin.dated ? aWin : UNBOUNDED,
         bWin.dated ? bWin : UNBOUNDED,
       ]);
       if (overlap === null) {
-        const actorAPart = ids[0] === a.actor_id ? a : b;
-        const actorBPart = ids[1] === b.actor_id ? b : a;
-        const actorAWindow = ids[0] === a.actor_id ? aWin : bWin;
-        const actorBWindow = ids[1] === b.actor_id ? bWin : aWin;
-        const actorAReceiptIds = uniq(actorAPart.receipt_ids ?? []);
-        const actorBReceiptIds = uniq(actorBPart.receipt_ids ?? []);
-        const surfaceReceiptIds = uniq(surface.receipt_ids ?? []);
         const actorAWindowReverifiable = participantWindowIsReverifiable(actorAPart, receiptById);
         const actorBWindowReverifiable = participantWindowIsReverifiable(actorBPart, receiptById);
         const publicationStatus = actorAWindowReverifiable && actorBWindowReverifiable ? 'verified' : 'review_required';
@@ -145,21 +145,37 @@ export function deriveHopEdges({ surfaces, participationBySurface, broadOrgIds, 
         });
       }
       const edge = hopEdgeMap.get(key);
-      const receipts = uniq([...(surface.receipt_ids ?? []), ...(a.receipt_ids ?? []), ...(b.receipt_ids ?? [])]);
+      const receipts = uniq([...surfaceReceiptIds, ...actorAReceiptIds, ...actorBReceiptIds]);
       edge.surfaces.push({
         surface_id: surface.surface_id,
         surface_label: surface.surface_label,
         surface_type: surface.surface_type,
         secondary_surface_types: surface.secondary_surface_types ?? [],
-        actor_a_role: ids[0] === a.actor_id ? a.role : b.role,
-        actor_b_role: ids[1] === b.actor_id ? b.role : a.role,
-        evidence_class: weakestEvidence([surface.evidence_class, a.evidence_class, b.evidence_class]),
+        actor_a_role: actorAPart.role,
+        actor_b_role: actorBPart.role,
+        actor_a_participation: {
+          actor_id: actorAPart.actor_id,
+          role: actorAPart.role ?? null,
+          participation_type: actorAPart.participation_type ?? null,
+          evidence_class: actorAPart.evidence_class ?? null,
+          window: actorAWindow,
+          receipt_ids: actorAReceiptIds,
+        },
+        actor_b_participation: {
+          actor_id: actorBPart.actor_id,
+          role: actorBPart.role ?? null,
+          participation_type: actorBPart.participation_type ?? null,
+          evidence_class: actorBPart.evidence_class ?? null,
+          window: actorBWindow,
+          receipt_ids: actorBReceiptIds,
+        },
+        evidence_class: weakestEvidence([surface.evidence_class, actorAPart.evidence_class, actorBPart.evidence_class]),
         receipt_ids: receipts,
         valid_from: overlap.valid_from,
         valid_until: overlap.valid_until,
         temporal_status: basisTemporalStatus(aWin.dated, bWin.dated, surfaceWin.dated),
       });
-      const ew = evidenceWeight(weakestEvidence([surface.evidence_class, a.evidence_class, b.evidence_class]));
+      const ew = evidenceWeight(weakestEvidence([surface.evidence_class, actorAPart.evidence_class, actorBPart.evidence_class]));
       edge.evidence_weight = Math.min(edge.evidence_weight, ew);
     }
   }

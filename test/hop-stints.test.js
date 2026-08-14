@@ -38,6 +38,14 @@ assert.deepEqual(result.edges[0].surfaces.map(b => [b.valid_from, b.valid_until]
   ['2020-01-01', '2020-12-31'],
   ['2022-01-01', '2022-12-31'],
 ], 'both legitimate stints must survive as separate hop-basis windows');
+for (const basis of result.edges[0].surfaces) {
+  assert.equal(basis.actor_a_participation.actor_id, 'actor-a');
+  assert.equal(basis.actor_b_participation.actor_id, 'actor-b');
+  assert.deepEqual(basis.actor_a_participation.receipt_ids, ['r1']);
+  assert.deepEqual(basis.actor_b_participation.receipt_ids, ['r1']);
+  assert.equal(basis.actor_a_participation.window.dated, true);
+  assert.equal(basis.actor_b_participation.window.dated, true);
+}
 assert.ok(!result.edges.some(e => e.actor_a === e.actor_b), 'multiple stints must never create a self-hop');
 assert.ok(!result.rejectedHopPairs.some(p => p.actor_a === p.actor_b), 'multiple stints must never create a rejected self-pair');
 
