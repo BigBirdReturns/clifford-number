@@ -867,41 +867,61 @@ const capitalReceiptRow = receiptById.get('companies-house-electric-twin-2026-ca
 assert(capitalReceiptRow, 'Electric Twin 2026 capital filing-history receipt must exist');
 assert(capitalReceiptRow?.company_number === '15173006',
   'Electric Twin 2026 capital receipt company number drift');
-assert(JSON.stringify(capitalReceiptRow?.filing_observations)
-  === JSON.stringify([
-  {
-    "allotment_date": "2026-01-13",
-    "filed_at": "2026-01-27",
-    "resulting_total_nominal_capital_gbp": 3.658437
-  },
-  {
-    "allotment_date": "2026-03-06",
-    "filed_at": "2026-04-14",
-    "resulting_total_nominal_capital_gbp": 3.661921
-  },
-  {
-    "allotment_date": "2026-04-02",
-    "filed_at": "2026-04-14",
-    "resulting_total_nominal_capital_gbp": 3.667047
-  },
-  {
-    "allotment_date": "2026-07-09",
-    "filed_at": "2026-07-15",
-    "resulting_total_nominal_capital_gbp": 3.672047
-  }
-]),
-  'Electric Twin 2026 capital receipt observations drift');
-assert(capitalReceiptRow?.sh01_forms_reproduced === false,
-  'Electric Twin 2026 capital receipt must preserve the form-retrieval boundary');
-assert(capitalReceiptRow?.share_classes_recovered === false
-  && capitalReceiptRow?.share_quantities_recovered === false
-  && capitalReceiptRow?.consideration_terms_recovered === false
-  && capitalReceiptRow?.allottees_identified === false,
-  'Electric Twin 2026 capital receipt must preserve the unresolved capital fields');
+assert(JSON.stringify(capitalReceiptRow?.filing_observations) === JSON.stringify([
+  { allotment_date: '2026-01-13', filed_at: '2026-01-27', resulting_total_nominal_capital_gbp: 3.658437 },
+  { allotment_date: '2026-03-06', filed_at: '2026-04-14', resulting_total_nominal_capital_gbp: 3.661921 },
+  { allotment_date: '2026-04-02', filed_at: '2026-04-14', resulting_total_nominal_capital_gbp: 3.667047 },
+  { allotment_date: '2026-07-09', filed_at: '2026-07-15', resulting_total_nominal_capital_gbp: 3.672047 },
+]), 'Electric Twin 2026 capital receipt filing observations drift');
+assert(capitalReceiptRow?.sh01_forms_recovered === true
+  && capitalReceiptRow?.sh01_forms_reproduced === false
+  && capitalReceiptRow?.source_pdf_custody_recovered === true
+  && capitalReceiptRow?.form_fields_extracted === true,
+  'Electric Twin 2026 SH01 source-recovery boundary drift');
+assert(capitalReceiptRow?.share_classes_recovered === true
+  && capitalReceiptRow?.share_quantities_recovered === true
+  && capitalReceiptRow?.paid_unpaid_fields_recovered === true
+  && capitalReceiptRow?.consideration_terms_recovered === true,
+  'Electric Twin 2026 SH01 issuer-side form fields must remain recovered');
+assert(capitalReceiptRow?.aggregate_paid_amounts_are_derived === true,
+  'Electric Twin 2026 aggregate paid amounts must remain marked as arithmetic derivations');
+assert(capitalReceiptRow?.class_rights_promoted === false,
+  'Electric Twin 2026 SH01 forms must not duplicate class-rights promotion');
+assert(capitalReceiptRow?.allottees_identified === false
+  && capitalReceiptRow?.beneficial_owners_identified === false
+  && capitalReceiptRow?.investor_identities_identified === false,
+  'Electric Twin 2026 SH01 forms must preserve the unidentified-recipient boundary');
 assert(JSON.stringify(capitalReceiptRow?.named_actor_ids) === JSON.stringify([]),
-  'Electric Twin 2026 capital receipt must contain no actor endpoint');
-assert(capitalReceiptRow?.archive?.ref === 'sha256:2ea4eb21581b79621f05b20248b2347e7c3081ff6a5f094f7cd285f13a06a460',
-  'Electric Twin 2026 capital receipt digest is stale');
+  'Electric Twin 2026 SH01 receipt must contain no named actor attribution');
+const capitalFormObservations = capitalReceiptRow?.form_observations ?? [];
+assert(capitalFormObservations.length === 4,
+  'Electric Twin 2026 SH01 receipt must preserve four recovered forms');
+assert(JSON.stringify(capitalFormObservations.map(row => [
+  row.allotment_period_start,
+  row.allotment_period_end,
+  row.source_filing_code,
+  row.allotted_share_class,
+  row.shares_allotted,
+  row.nominal_value_per_share_gbp,
+  row.amount_paid_per_share_gbp,
+  row.amount_unpaid_per_share_gbp,
+  row.consideration_basis,
+  row.derived_aggregate_amount_paid_gbp,
+  row.resulting_statement_of_capital?.total_shares,
+])) === JSON.stringify([
+  ['2025-11-21', '2026-01-13', 'XEULYX00', 'SEED 2 PREFERRED', 70138, '0.000001', '9.27', '0', 'cash_only_as_filed', '650179.26', 3658437],
+  ['2026-03-06', '2026-03-06', 'XEZZWEZC', 'ORDINARY', 3484, '0.000001', '1.425', '0', 'cash_only_as_filed', '4964.700', 3661921],
+  ['2026-04-02', '2026-04-02', 'XEZZWKLD', 'ORDINARY', 5126, '0.000001', '1.425', '0', 'cash_only_as_filed', '7304.550', 3667047],
+  ['2026-07-09', '2026-07-09', 'XF6CYCQQ', 'ORDINARY', 5000, '0.000001', '1.425', '0', 'cash_only_as_filed', '7125.000', 3672047],
+]), 'Electric Twin 2026 SH01 form-level observations drift');
+assert(capitalFormObservations.every(row =>
+  /^[0-9a-f]{64}$/.test(row.source_pdf_sha256)
+    && row.source_pdf_pages === 4
+    && !Object.hasOwn(row, 'allottee')
+    && !Object.hasOwn(row, 'investor_id')
+), 'Electric Twin 2026 SH01 custody or recipient boundary drift');
+assert(capitalReceiptRow?.archive?.ref === 'sha256:82969688e8654a4cf48892e48d7a65155a8f927119499648325e219059da0964',
+  'Electric Twin 2026 SH01 adjudication receipt hash drift');
 const capitalClaimRow = claimById.get('electric-twin-2026-capital-allotment-filing-history');
 assert(capitalClaimRow, 'Electric Twin 2026 capital filing-history claim must exist');
 assert(JSON.stringify(capitalClaimRow?.actor_ids) === JSON.stringify([]),
@@ -910,6 +930,9 @@ assert(sameIdSet(capitalClaimRow?.organization_ids, ['electric-twin']),
   'Electric Twin 2026 capital claim organization binding drift');
 assert(sameIdSet(capitalClaimRow?.receipt_ids, ['companies-house-electric-twin-2026-capital-allotment-filing-history']),
   'Electric Twin 2026 capital claim receipt binding drift');
+assert(capitalClaimRow?.limits?.includes('arithmetic derivations')
+  && capitalClaimRow?.limits?.includes('do not identify allottees'),
+  'Electric Twin 2026 capital claim must preserve derivation and recipient boundaries');
 
 const correctedWarnerChronology = claimById.get('ben-warner-government-commercial-chronology-boundary-2026-08-11');
 assert(correctedWarnerChronology, 'Ben Warner chronology boundary must remain visible');

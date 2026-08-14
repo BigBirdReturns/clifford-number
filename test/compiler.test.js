@@ -655,39 +655,61 @@ const capitalReceiptRow = receipt('companies-house-electric-twin-2026-capital-al
 assert.ok(capitalReceiptRow, 'Electric Twin 2026 capital receipt must exist');
 assert.equal(capitalReceiptRow.company_number, '15173006');
 assert.deepEqual(capitalReceiptRow.filing_observations, [
-  {
-    "allotment_date": "2026-01-13",
-    "filed_at": "2026-01-27",
-    "resulting_total_nominal_capital_gbp": 3.658437
-  },
-  {
-    "allotment_date": "2026-03-06",
-    "filed_at": "2026-04-14",
-    "resulting_total_nominal_capital_gbp": 3.661921
-  },
-  {
-    "allotment_date": "2026-04-02",
-    "filed_at": "2026-04-14",
-    "resulting_total_nominal_capital_gbp": 3.667047
-  },
-  {
-    "allotment_date": "2026-07-09",
-    "filed_at": "2026-07-15",
-    "resulting_total_nominal_capital_gbp": 3.672047
-  }
+  { allotment_date: '2026-01-13', filed_at: '2026-01-27', resulting_total_nominal_capital_gbp: 3.658437 },
+  { allotment_date: '2026-03-06', filed_at: '2026-04-14', resulting_total_nominal_capital_gbp: 3.661921 },
+  { allotment_date: '2026-04-02', filed_at: '2026-04-14', resulting_total_nominal_capital_gbp: 3.667047 },
+  { allotment_date: '2026-07-09', filed_at: '2026-07-15', resulting_total_nominal_capital_gbp: 3.672047 },
 ]);
+assert.equal(capitalReceiptRow.sh01_forms_recovered, true);
 assert.equal(capitalReceiptRow.sh01_forms_reproduced, false);
-assert.equal(capitalReceiptRow.share_classes_recovered, false);
-assert.equal(capitalReceiptRow.share_quantities_recovered, false);
-assert.equal(capitalReceiptRow.consideration_terms_recovered, false);
+assert.equal(capitalReceiptRow.source_pdf_custody_recovered, true);
+assert.equal(capitalReceiptRow.form_fields_extracted, true);
+assert.equal(capitalReceiptRow.share_classes_recovered, true);
+assert.equal(capitalReceiptRow.share_quantities_recovered, true);
+assert.equal(capitalReceiptRow.paid_unpaid_fields_recovered, true);
+assert.equal(capitalReceiptRow.consideration_terms_recovered, true);
+assert.equal(capitalReceiptRow.aggregate_paid_amounts_are_derived, true);
+assert.equal(capitalReceiptRow.class_rights_promoted, false);
 assert.equal(capitalReceiptRow.allottees_identified, false);
+assert.equal(capitalReceiptRow.beneficial_owners_identified, false);
+assert.equal(capitalReceiptRow.investor_identities_identified, false);
 assert.deepEqual(capitalReceiptRow.named_actor_ids, []);
-assert.equal(capitalReceiptRow.archive.ref, 'sha256:2ea4eb21581b79621f05b20248b2347e7c3081ff6a5f094f7cd285f13a06a460');
+assert.equal(capitalReceiptRow.underlying_allotment_period_start, '2025-11-21');
+assert.deepEqual(
+  capitalReceiptRow.form_observations.map(row => ({
+    period: [row.allotment_period_start, row.allotment_period_end],
+    filed_at: row.filed_at,
+    source_filing_code: row.source_filing_code,
+    share_class: row.allotted_share_class,
+    shares_allotted: row.shares_allotted,
+    nominal: row.nominal_value_per_share_gbp,
+    paid: row.amount_paid_per_share_gbp,
+    unpaid: row.amount_unpaid_per_share_gbp,
+    consideration: row.consideration_basis,
+    derived_paid: row.derived_aggregate_amount_paid_gbp,
+    resulting_total_shares: row.resulting_statement_of_capital.total_shares,
+  })),
+  [
+    { period: ['2025-11-21', '2026-01-13'], filed_at: '2026-01-27', source_filing_code: 'XEULYX00', share_class: 'SEED 2 PREFERRED', shares_allotted: 70138, nominal: '0.000001', paid: '9.27', unpaid: '0', consideration: 'cash_only_as_filed', derived_paid: '650179.26', resulting_total_shares: 3658437 },
+    { period: ['2026-03-06', '2026-03-06'], filed_at: '2026-04-14', source_filing_code: 'XEZZWEZC', share_class: 'ORDINARY', shares_allotted: 3484, nominal: '0.000001', paid: '1.425', unpaid: '0', consideration: 'cash_only_as_filed', derived_paid: '4964.700', resulting_total_shares: 3661921 },
+    { period: ['2026-04-02', '2026-04-02'], filed_at: '2026-04-14', source_filing_code: 'XEZZWKLD', share_class: 'ORDINARY', shares_allotted: 5126, nominal: '0.000001', paid: '1.425', unpaid: '0', consideration: 'cash_only_as_filed', derived_paid: '7304.550', resulting_total_shares: 3667047 },
+    { period: ['2026-07-09', '2026-07-09'], filed_at: '2026-07-15', source_filing_code: 'XF6CYCQQ', share_class: 'ORDINARY', shares_allotted: 5000, nominal: '0.000001', paid: '1.425', unpaid: '0', consideration: 'cash_only_as_filed', derived_paid: '7125.000', resulting_total_shares: 3672047 },
+  ],
+);
+assert.ok(capitalReceiptRow.form_observations.every(row =>
+  /^[0-9a-f]{64}$/.test(row.source_pdf_sha256)
+    && row.source_pdf_pages === 4
+    && !Object.hasOwn(row, 'allottee')
+    && !Object.hasOwn(row, 'investor_id')
+));
+assert.equal(capitalReceiptRow.archive.ref, 'sha256:82969688e8654a4cf48892e48d7a65155a8f927119499648325e219059da0964');
 const capitalClaimRow = claim('electric-twin-2026-capital-allotment-filing-history');
 assert.ok(capitalClaimRow, 'Electric Twin 2026 capital filing-history claim must compile');
 assert.deepEqual(capitalClaimRow.actor_ids, []);
 assert.deepEqual(capitalClaimRow.organization_ids, ['electric-twin']);
 assert.deepEqual(capitalClaimRow.receipt_ids, ['companies-house-electric-twin-2026-capital-allotment-filing-history']);
+assert.match(capitalClaimRow.limits, /arithmetic derivations/);
+assert.match(capitalClaimRow.limits, /do not identify allottees/);
 
 const gartnerCategoryObservation = surf('gartner-synthetic-population-category-2026');
 assert.ok(gartnerCategoryObservation, 'the source-native Gartner category observation must compile');
