@@ -635,6 +635,133 @@ assert(sameIdSet(sourceNativeNewsUkClaim?.receipt_ids, [
 assert(!claimById.has('electric-twin-newsuk-first-party-data-2026-06-29'),
   'superseded user-judgment News UK claim must be retired');
 
+// News UK Times ExplorAItion source-native launch-publication principals.
+const newsUkLaunchPrincipals = surfaceById.get('newsuk-times-exploraition-launch-publication-principals-2026-04-27');
+const newsUkLaunchReceipt = receiptById.get('newsuk-times-exploraition-launch-publication-principals-2026-04-27');
+const newsUkLaunchActorIds = ['alex-cooper', 'caroline-tredget-news-uk', 'luke-costello-news-uk'].sort();
+const newsUkLaunchOrganizationIds = ['electric-twin', 'news-uk'].sort();
+const newsUkLaunchExpectedPairs = [
+  'alex-cooper|caroline-tredget-news-uk',
+  'alex-cooper|luke-costello-news-uk',
+  'caroline-tredget-news-uk|luke-costello-news-uk',
+].sort();
+assert(newsUkLaunchPrincipals,
+  'Times ExplorAItion named launch-publication principals surface is missing');
+assert(newsUkLaunchPrincipals?.surface_type === 'customer_vendor_surface',
+  'Times ExplorAItion launch principals must remain a customer/vendor publication surface');
+assert(newsUkLaunchPrincipals?.hop_eligible === true,
+  'three named Times ExplorAItion launch principals must remain hop eligible');
+assert(newsUkLaunchPrincipals?.time_start === '2026-04-27'
+  && newsUkLaunchPrincipals?.time_end === '2026-04-27',
+  'Times ExplorAItion launch-principals surface must remain exact-date bounded');
+assert(newsUkLaunchPrincipals?.evidence_class === 'primary_public',
+  'Times ExplorAItion launch-principals surface must retain first-party client evidence');
+assert(JSON.stringify(newsUkLaunchPrincipals?.secondary_surface_types)
+  === JSON.stringify(['model_governance_surface']),
+  'Times ExplorAItion launch-principals secondary type is stale');
+assert(sameIdSet(newsUkLaunchPrincipals?.receipt_ids, ['newsuk-times-exploraition-launch-publication-principals-2026-04-27']),
+  'Times ExplorAItion launch-principals receipt binding is stale');
+const newsUkLaunchParts = sourcePartsBySurface.get('newsuk-times-exploraition-launch-publication-principals-2026-04-27') ?? [];
+assert(sameIdSet(
+  newsUkLaunchParts
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id),
+  newsUkLaunchActorIds,
+), 'Times ExplorAItion launch publication must retain exactly three named actors');
+assert(sameIdSet(
+  newsUkLaunchParts
+    .filter(part => part.participant_type === 'organization')
+    .map(part => part.organization_id),
+  newsUkLaunchOrganizationIds,
+), 'Times ExplorAItion launch publication must retain the client and vendor organizations');
+assert(newsUkLaunchParts.find(part => part.actor_id === 'caroline-tredget-news-uk')
+  ?.participation_type === 'client_launch_publication_spokesperson',
+  'Caroline Tredget must retain the client launch-publication role');
+assert(newsUkLaunchParts.find(part => part.actor_id === 'luke-costello-news-uk')
+  ?.participation_type === 'client_launch_publication_spokesperson',
+  'Luke Costello must retain the client launch-publication role');
+assert(newsUkLaunchParts.find(part => part.actor_id === 'alex-cooper')
+  ?.participation_type === 'vendor_launch_publication_spokesperson',
+  'Alex Cooper must retain the vendor launch-publication role');
+const newsUkLaunchEdges = hopGraph.edges.filter(edge =>
+  edge.surfaces.some(basis => basis.surface_id === 'newsuk-times-exploraition-launch-publication-principals-2026-04-27'));
+const newsUkLaunchBases = newsUkLaunchEdges
+  .flatMap(edge => edge.surfaces)
+  .filter(basis => basis.surface_id === 'newsuk-times-exploraition-launch-publication-principals-2026-04-27');
+assert(newsUkLaunchEdges.length === 3,
+  'three Times ExplorAItion launch principals must compile exactly three edges');
+assert(newsUkLaunchBases.length === 3,
+  'three Times ExplorAItion launch principals must compile exactly three bases');
+assert(JSON.stringify(newsUkLaunchEdges.map(edge =>
+  [edge.actor_a, edge.actor_b].sort().join('|')).sort())
+  === JSON.stringify(newsUkLaunchExpectedPairs),
+  'Times ExplorAItion launch-principals pair set drifted');
+for (const edge of newsUkLaunchEdges) {
+  assert(edge.evidence_weight === 1.25,
+    'Times ExplorAItion launch-principals edge evidence weight is stale');
+}
+for (const basis of newsUkLaunchBases) {
+  assert(basis.evidence_class === 'primary_public',
+    'Times ExplorAItion launch-principals basis must retain first-party evidence');
+  assert(sameIdSet(basis.receipt_ids, ['newsuk-times-exploraition-launch-publication-principals-2026-04-27']),
+    'Times ExplorAItion launch-principals basis receipt is stale');
+  assert(basis.valid_from === '2026-04-27'
+    && basis.valid_until === '2026-04-27'
+    && basis.temporal_status === 'dated',
+    'Times ExplorAItion launch-principals basis must remain exact-date bounded');
+}
+const newsUkDeploymentParts =
+  sourcePartsBySurface.get('electric-twin-newsuk-synthetic-audience') ?? [];
+assert(newsUkDeploymentParts.filter(part =>
+  part.participant_type === 'actor').length === 0,
+  'the organization-only News UK deployment must remain actor-free');
+assert(newsUkLaunchReceipt,
+  'Times ExplorAItion launch-principals receipt is missing');
+assert(newsUkLaunchReceipt?.source_published_at === '2026-04-27'
+  && newsUkLaunchReceipt?.event_date === '2026-04-27',
+  'Times ExplorAItion launch-principals receipt date is stale');
+assert(sameIdSet(newsUkLaunchReceipt?.named_actor_ids, newsUkLaunchActorIds),
+  'Times ExplorAItion launch-principals receipt actor denominator is stale');
+assert(newsUkLaunchReceipt?.attributed_statement_count === 3,
+  'Times ExplorAItion launch-principals receipt must preserve three attributed statements');
+assert(newsUkLaunchReceipt?.publication_coappearance_only === true,
+  'Times ExplorAItion launch-principals receipt must preserve publication-only scope');
+assert(newsUkLaunchReceipt?.physical_coattendance_established === false
+  && newsUkLaunchReceipt?.shared_meeting_established === false,
+  'Times ExplorAItion launch-principals receipt must not manufacture attendance or a meeting');
+assert(newsUkLaunchReceipt?.complete_project_roster_established === false
+  && newsUkLaunchReceipt?.contract_terms_established === false
+  && newsUkLaunchReceipt?.continuing_joint_work_established === false,
+  'Times ExplorAItion launch-principals receipt boundary is stale');
+assert(newsUkLaunchReceipt?.archive?.ref === 'sha256:302c2ab0a817973d7fd925e97f9c3ed39a8911ecfb05bc00e463d50ae99c8a87',
+  'Times ExplorAItion launch-principals receipt digest is stale');
+const newsUkLaunchClaim = claimById.get('newsuk-times-exploraition-three-principal-launch-publication-2026-04-27');
+const newsUkLaunchBoundaryClaim = claimById.get('newsuk-times-exploraition-launch-publication-boundary-2026-04-27');
+assert(newsUkLaunchClaim && newsUkLaunchBoundaryClaim,
+  'Times ExplorAItion launch-principals claims must remain canonical');
+for (const claim of [newsUkLaunchClaim, newsUkLaunchBoundaryClaim]) {
+  assert(sameIdSet(claim?.actor_ids, newsUkLaunchActorIds),
+    'Times ExplorAItion launch-principals claim actor set is stale');
+  assert(sameIdSet(claim?.organization_ids, newsUkLaunchOrganizationIds),
+    'Times ExplorAItion launch-principals claim organization set is stale');
+  assert(JSON.stringify(claim?.surface_ids) === JSON.stringify(['newsuk-times-exploraition-launch-publication-principals-2026-04-27']),
+    'Times ExplorAItion launch-principals claim surface binding is stale');
+  assert(sameIdSet(claim?.receipt_ids, ['newsuk-times-exploraition-launch-publication-principals-2026-04-27']),
+    'Times ExplorAItion launch-principals claim receipt binding is stale');
+}
+for (const actorId of ['caroline-tredget-news-uk', 'luke-costello-news-uk']) {
+  assert(sameIdSet(
+    data.participation
+      .filter(part => part.participant_type === 'actor' && part.actor_id === actorId)
+      .map(part => part.surface_id),
+    ['newsuk-times-exploraition-launch-publication-principals-2026-04-27'],
+  ), `${actorId} must not inherit any surface beyond the exact launch publication`);
+  assert(!hopGraph.edges.some(edge =>
+    [edge.actor_a, edge.actor_b].sort().join('|')
+      === [actorId, 'matt-clifford'].sort().join('|')),
+    `${actorId} must not receive a direct Matt Clifford edge`);
+}
+
 const lebaraDeployment = surfaceById.get('electric-twin-lebara-customer-use-2026-03-11');
 assert(lebaraDeployment, 'first-party Electric Twin / Lebara customer-use observation must compile');
 assert(lebaraDeployment?.hop_eligible === false,
@@ -1029,7 +1156,7 @@ assert(!hasSurface('marc-warner', 'vote-leave-data-science-2016'),
 // Regression fixture 2: Electric Twin surface factory.
 const et = orgScore.get('electric-twin');
 assert(et?.surface_factory === true, 'Electric Twin must be a surface factory');
-for (const sid of ['electric-twin-incorporation-2023-09-28', 'electric-twin-ben-warner-director-tenure-2023-09-28', 'electric-twin-alex-cooper-director-tenure-2023-09-28', 'electric-twin-ethics-board-2026', 'electric-twin-seed-round-2026-02-11', 'electric-twin-ben-blume-director-appointment-2025-09-12', 'electric-twin-seed2-governance-instrument-2025-09-12', 'electric-twin-seed2-capital-actions-2025-09-16-2025-09-26', 'electric-twin-newsuk-synthetic-audience', 'electric-twin-lebara-customer-use-2026-03-11', 'gartner-synthetic-population-category-2026']) {
+for (const sid of ['electric-twin-incorporation-2023-09-28', 'electric-twin-ben-warner-director-tenure-2023-09-28', 'electric-twin-alex-cooper-director-tenure-2023-09-28', 'electric-twin-ethics-board-2026', 'electric-twin-seed-round-2026-02-11', 'electric-twin-ben-blume-director-appointment-2025-09-12', 'electric-twin-seed2-governance-instrument-2025-09-12', 'electric-twin-seed2-capital-actions-2025-09-16-2025-09-26', 'electric-twin-newsuk-synthetic-audience', 'newsuk-times-exploraition-launch-publication-principals-2026-04-27', 'electric-twin-lebara-customer-use-2026-03-11', 'gartner-synthetic-population-category-2026']) {
   assert(et?.surfaces.includes(sid), `Electric Twin missing factory surface ${sid}`);
 }
 

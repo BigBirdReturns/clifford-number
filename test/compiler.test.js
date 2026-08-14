@@ -439,6 +439,103 @@ assert.equal(receipt('newsuk-times-exploraition-launch-2026-04-27').decision_sup
 assert.equal(receipt('electric-twin-times-exploraition-launch-2026-04-28').no_personal_data_claim, true);
 assert.equal(receipt('sandhu-comment-newsuk-2026-06-29'), undefined,
   'the superseded lost News UK judgment receipt must be retired');
+// News UK Times ExplorAItion exact launch-publication principals regression.
+{
+  const launchSurface = surf('newsuk-times-exploraition-launch-publication-principals-2026-04-27');
+  const launchActorIds = ['alex-cooper', 'caroline-tredget-news-uk', 'luke-costello-news-uk'].sort();
+  const launchOrganizationIds = ['electric-twin', 'news-uk'].sort();
+  const launchExpectedPairs = [
+    'alex-cooper|caroline-tredget-news-uk',
+    'alex-cooper|luke-costello-news-uk',
+    'caroline-tredget-news-uk|luke-costello-news-uk',
+  ].sort();
+  assert.ok(launchSurface,
+    'the exact Times ExplorAItion launch-publication principals surface must compile');
+  assert.equal(launchSurface.surface_type, 'customer_vendor_surface');
+  assert.deepEqual(launchSurface.secondary_surface_types, ['model_governance_surface']);
+  assert.equal(launchSurface.hop_eligible, true);
+  assert.equal(launchSurface.evidence_class, 'primary_public');
+  assert.equal(launchSurface.time_start, '2026-04-27');
+  assert.equal(launchSurface.time_end, '2026-04-27');
+  assert.deepEqual(
+    launchSurface.participants
+      .filter(part => part.participant_type === 'actor')
+      .map(part => part.actor_id).sort(),
+    launchActorIds,
+  );
+  assert.deepEqual(
+    launchSurface.participants
+      .filter(part => part.participant_type === 'organization')
+      .map(part => part.organization_id).sort(),
+    launchOrganizationIds,
+  );
+  assert.deepEqual(launchSurface.receipt_ids, ['newsuk-times-exploraition-launch-publication-principals-2026-04-27']);
+  const launchEdges = hop.edges.filter(edge =>
+    edge.surfaces.some(basis => basis.surface_id === launchSurface.surface_id));
+  const launchBases = launchEdges
+    .flatMap(edge => edge.surfaces)
+    .filter(basis => basis.surface_id === launchSurface.surface_id);
+  assert.equal(launchEdges.length, 3);
+  assert.equal(launchBases.length, 3);
+  assert.deepEqual(
+    launchEdges.map(edge =>
+      [edge.actor_a, edge.actor_b].sort().join('|')).sort(),
+    launchExpectedPairs,
+  );
+  for (const edge of launchEdges) assert.equal(edge.evidence_weight, 1.25);
+  for (const basis of launchBases) {
+    assert.equal(basis.evidence_class, 'primary_public');
+    assert.deepEqual(basis.receipt_ids, ['newsuk-times-exploraition-launch-publication-principals-2026-04-27']);
+    assert.equal(basis.valid_from, '2026-04-27');
+    assert.equal(basis.valid_until, '2026-04-27');
+    assert.equal(basis.temporal_status, 'dated');
+  }
+  assert.deepEqual(
+    surf('electric-twin-newsuk-synthetic-audience').participants
+      .filter(part => part.participant_type === 'actor'),
+    [],
+    'the pre-existing News UK deployment must remain organization-only',
+  );
+  const launchReceipt = receipt('newsuk-times-exploraition-launch-publication-principals-2026-04-27');
+  assert.ok(launchReceipt);
+  assert.equal(launchReceipt.source_published_at, '2026-04-27');
+  assert.equal(launchReceipt.event_date, '2026-04-27');
+  assert.deepEqual([...launchReceipt.named_actor_ids].sort(), launchActorIds);
+  assert.equal(launchReceipt.attributed_statement_count, 3);
+  assert.equal(launchReceipt.publication_coappearance_only, true);
+  assert.equal(launchReceipt.physical_coattendance_established, false);
+  assert.equal(launchReceipt.shared_meeting_established, false);
+  assert.equal(launchReceipt.complete_project_roster_established, false);
+  assert.equal(launchReceipt.contract_terms_established, false);
+  assert.equal(launchReceipt.continuing_joint_work_established, false);
+  assert.equal(launchReceipt.archive.ref, 'sha256:302c2ab0a817973d7fd925e97f9c3ed39a8911ecfb05bc00e463d50ae99c8a87');
+  for (const claimId of ['newsuk-times-exploraition-three-principal-launch-publication-2026-04-27', 'newsuk-times-exploraition-launch-publication-boundary-2026-04-27']) {
+    const row = claim(claimId);
+    assert.ok(row);
+    assert.deepEqual([...row.actor_ids].sort(), launchActorIds);
+    assert.deepEqual([...row.organization_ids].sort(), launchOrganizationIds);
+    assert.deepEqual(row.surface_ids, ['newsuk-times-exploraition-launch-publication-principals-2026-04-27']);
+    assert.deepEqual(row.receipt_ids, ['newsuk-times-exploraition-launch-publication-principals-2026-04-27']);
+  }
+  const topology = buildAdjacency(hop.edges);
+  for (const actorId of ['caroline-tredget-news-uk', 'luke-costello-news-uk']) {
+    assert.deepEqual(actor(actorId).surfaces, ['newsuk-times-exploraition-launch-publication-principals-2026-04-27']);
+    assert.equal(actor(actorId).clifford_number, 4);
+    const route = shortestPath(topology, actorId, 'matt-clifford');
+    assert.equal(route.number, 4);
+    assert.deepEqual(route.actor_path.slice(0, 3),
+      [actorId, 'alex-cooper', 'ben-warner']);
+    assert.equal(route.actor_path.at(-1), 'matt-clifford');
+    assert.equal(
+      shortestPath(topology, actorId, 'matt-clifford', {
+        asOf: '2026-04-27',
+      }).number,
+      null,
+      `${actorId} must not receive a false contemporaneous route`,
+    );
+  }
+}
+
 const lebaraDeployment = surf('electric-twin-lebara-customer-use-2026-03-11');
 assert.ok(lebaraDeployment,
   'the first-party Electric Twin / Lebara customer-use observation must compile');
