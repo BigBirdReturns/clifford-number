@@ -28,17 +28,24 @@ if [[ -z "$ORIGINAL_COMMIT" ]]; then
 fi
 
 echo "replaying original materializer from $ORIGINAL_COMMIT"
+git fetch --no-tags origin main
+CURRENT_BASE="$(git rev-parse origin/main)"
+echo "binding materializer to canonical main $CURRENT_BASE"
 
-python3 - "$ORIGINAL" "$PATCHED" <<'PY'
+python3 - "$ORIGINAL" "$PATCHED" "$CURRENT_BASE" <<'PY'
 from pathlib import Path
+import re
 import sys
 
 source_path = Path(sys.argv[1])
 target_path = Path(sys.argv[2])
+current_base = sys.argv[3]
+if not re.fullmatch(r'[0-9a-f]{40}', current_base):
+    raise SystemExit(f'invalid canonical base SHA: {current_base!r}')
 text = source_path.read_text()
 
 old_base = 'export EXPECTED_BASE=fd34ca0a2726ff6972ccbc32ea7e5e13101b161b'
-new_base = 'export EXPECTED_BASE=c95d225ce313215fdeec62263bf985546b7bcee1'
+new_base = f'export EXPECTED_BASE={current_base}'
 if text.count(old_base) != 1:
     raise SystemExit('expected exactly one stale base pin')
 text = text.replace(old_base, new_base)
