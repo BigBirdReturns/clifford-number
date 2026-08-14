@@ -8,7 +8,135 @@ const surfaceGraph = readJson('build/surface-graph.json');
 const hopGraph = readJson('build/hop-graph.json');
 const scores = readJson('build/scores.json');
 const migration = fs.existsSync(path.join(root, 'build/migration-summary.json')) ? readJson('build/migration-summary.json') : null;
+const broadInstitutionReviews = readJson('data/research/broad-institution-surface-reviews.json');
 
+function sorted(values) {
+  return [...values].sort();
+}
+
+function assertExactIds(actual, expected, label) {
+  const actualIds = sorted(actual);
+  const expectedIds = sorted(expected);
+  if (JSON.stringify(actualIds) !== JSON.stringify(expectedIds)) {
+    throw new Error(`${label}: expected ${expectedIds.join(', ')}, found ${actualIds.join(', ')}`);
+  }
+}
+
+function validateBroadInstitutionReviews(registry) {
+  if (registry.schema_version !== 'broad-institution-surface-reviews@1') {
+    throw new Error(`unsupported broad-institution review schema: ${registry.schema_version}`);
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(registry.registry_created_at ?? '')) {
+    throw new Error('broad-institution review registry requires registry_created_at as YYYY-MM-DD');
+  }
+  if (registry.graph_effect !== 'none') {
+    throw new Error('broad-institution review registry must carry graph_effect none');
+  }
+  if (!Array.isArray(registry.reviews) || !registry.reviews.length) {
+    throw new Error('broad-institution review registry must contain reviews');
+  }
+
+  const surfaceById = new Map(surfaceGraph.surfaces.map(surface => [surface.surface_id, surface]));
+  const canonicalBroadOrgIds = new Set(data.organizations
+    .filter(organization => organization.broad_institution)
+    .map(organization => organization.id));
+  const reviewedSurfaceIds = new Set();
+
+  for (const review of registry.reviews) {
+    const label = `broad-institution review ${review.surface_id}`;
+    if (!review.surface_id || reviewedSurfaceIds.has(review.surface_id)) {
+      throw new Error(`${label}: missing or duplicate surface_id`);
+    }
+    if (!Number.isInteger(review.source_issue) || review.source_issue < 1) {
+      throw new Error(`${label}: source_issue must be a positive issue number`);
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(review.reviewed_at ?? '')) {
+      throw new Error(`${label}: reviewed_at must use YYYY-MM-DD`);
+    }
+    if (review.graph_effect !== 'none') {
+      throw new Error(`${label}: graph_effect must be none`);
+    }
+    if (review.status !== 'verified_named_actor_surface') {
+      throw new Error(`${label}: unsupported status ${review.status}`);
+    }
+    if (review.decision !== 'retain_hop_eligible') {
+      throw new Error(`${label}: unsupported decision ${review.decision}`);
+    }
+    if (review.required_bounds !== 'exact_one_day') {
+      throw new Error(`${label}: required_bounds must be exact_one_day`);
+    }
+    if (review.required_actor_receipt_scope !== 'direct_source_named') {
+      throw new Error(`${label}: required_actor_receipt_scope must be direct_source_named`);
+    }
+    if (!/^[a-f0-9]{20}$/.test(review.finding_fingerprint ?? '')) {
+      throw new Error(`${label}: finding_fingerprint must be a 20-character lowercase hex digest`);
+    }
+    if (!Array.isArray(review.expected_actor_ids) || review.expected_actor_ids.length < 2) {
+      throw new Error(`${label}: expected_actor_ids must contain at least two actors`);
+    }
+    if (uniq(review.expected_actor_ids).length !== review.expected_actor_ids.length) {
+      throw new Error(`${label}: expected_actor_ids contains duplicates`);
+    }
+    if (!Array.isArray(review.expected_broad_organization_ids)
+      || !review.expected_broad_organization_ids.length) {
+      throw new Error(`${label}: expected_broad_organization_ids must not be empty`);
+    }
+    if (uniq(review.expected_broad_organization_ids).length
+      !== review.expected_broad_organization_ids.length) {
+      throw new Error(`${label}: expected_broad_organization_ids contains duplicates`);
+    }
+
+    const surface = surfaceById.get(review.surface_id);
+    if (!surface) throw new Error(`${label}: surface does not exist`);
+    if (!surface.hop_eligible) throw new Error(`${label}: reviewed surface is no longer hop eligible`);
+    if (!surface.time_start || surface.time_start !== surface.time_end) {
+      throw new Error(`${label}: reviewed surface must remain an exact one-day object`);
+    }
+    if (!(surface.receipt_ids ?? []).length) {
+      throw new Error(`${label}: reviewed surface lacks direct receipt coverage`);
+    }
+
+    const actorParticipants = (surface.participants ?? [])
+      .filter(participant => participant.participant_type === 'actor');
+    const broadOrganizationParticipants = (surface.participants ?? [])
+      .filter(participant => participant.participant_type === 'organization')
+      .filter(participant => canonicalBroadOrgIds.has(participant.organization_id));
+
+    assertExactIds(
+      actorParticipants.map(participant => participant.actor_id),
+      review.expected_actor_ids,
+      `${label} actor roster`,
+    );
+    assertExactIds(
+      broadOrganizationParticipants.map(participant => participant.organization_id),
+      review.expected_broad_organization_ids,
+      `${label} broad-organization roster`,
+    );
+
+    const surfaceReceiptIds = new Set(surface.receipt_ids ?? []);
+    for (const participant of actorParticipants) {
+      const participantReceiptIds = participant.receipt_ids ?? [];
+      if (!participantReceiptIds.length) {
+        throw new Error(`${label}: actor ${participant.actor_id} lacks a direct receipt`);
+      }
+      if (!participantReceiptIds.some(receiptId => surfaceReceiptIds.has(receiptId))) {
+        throw new Error(`${label}: actor ${participant.actor_id} has no receipt on the reviewed surface object`);
+      }
+      if (participant.evidence_class !== 'official') {
+        throw new Error(`${label}: actor ${participant.actor_id} is not supported by official evidence`);
+      }
+      if (participant.time_start !== surface.time_start || participant.time_end !== surface.time_end) {
+        throw new Error(`${label}: actor ${participant.actor_id} is not bounded to the reviewed one-day object`);
+      }
+    }
+
+    reviewedSurfaceIds.add(review.surface_id);
+  }
+
+  return reviewedSurfaceIds;
+}
+
+const reviewedBroadInstitutionSurfaceIds = validateBroadInstitutionReviews(broadInstitutionReviews);
 const findings = [];
 function add(type, priority, title, observed, action, refs = []) {
   findings.push({ id: `finding-${String(findings.length + 1).padStart(3, '0')}`, type, priority, title, observed, action, graph_effect: 'none', refs });
@@ -57,15 +185,19 @@ for (const [actorId, pathObj] of Object.entries(hopGraph.shortest_paths)) {
   }
 }
 
-const broadNames = new Set(data.organizations.filter(o => o.broad_institution).map(o => o.label));
 for (const surface of surfaceGraph.surfaces) {
-  const broadParticipants = (surface.participants ?? []).filter(p => p.participant_type === 'organization').map(p => data.organizations.find(o => o.id === p.organization_id)).filter(o => o?.broad_institution);
-  if (broadParticipants.length && surface.hop_eligible) {
+  const broadParticipants = (surface.participants ?? [])
+    .filter(participant => participant.participant_type === 'organization')
+    .map(participant => data.organizations.find(organization => organization.id === participant.organization_id))
+    .filter(organization => organization?.broad_institution);
+  if (broadParticipants.length
+    && surface.hop_eligible
+    && !reviewedBroadInstitutionSurfaceIds.has(surface.surface_id)) {
     add(
       'broad_institution_guard',
       'high',
       `${surface.surface_label} contains broad institution context`,
-      `Broad venues present: ${broadParticipants.map(o => o.label).join(', ')}. This is acceptable only because hops are generated from actor co-participation, not from the broad institution itself.`,
+      `Broad venues present: ${broadParticipants.map(organization => organization.label).join(', ')}. This is acceptable only because hops are generated from actor co-participation, not from the broad institution itself.`,
       'Verify this surface is tightly named and bounded. If it is merely an office or agency, mark it hop_eligible=false.',
       [surface.surface_id],
     );
@@ -94,12 +226,26 @@ if (migration) {
   );
 }
 
+const generated = new Date().toISOString();
+const broadInstitutionReviewSummary = {
+  schema_version: broadInstitutionReviews.schema_version,
+  registry_created_at: broadInstitutionReviews.registry_created_at,
+  source_issues: [...new Set(broadInstitutionReviews.reviews.map(review => review.source_issue))]
+    .sort((a, b) => a - b),
+  review_dates: sorted(uniq(broadInstitutionReviews.reviews.map(review => review.reviewed_at))),
+  registry_path: 'data/research/broad-institution-surface-reviews.json',
+  reviewed_surface_count: reviewedBroadInstitutionSurfaceIds.size,
+  reviewed_surface_ids: sorted(reviewedBroadInstitutionSurfaceIds),
+  graph_effect: 'none',
+};
 const md = [
   '# Scout Report',
   '',
-  `Generated: ${new Date().toISOString()}`,
+  `Generated: ${generated}`,
   '',
   '> graph_effect: none. This is a research queue, not graph data.',
+  '',
+  `Broad-institution reviews: ${reviewedBroadInstitutionSurfaceIds.size}`,
   '',
   `Findings: ${findings.length}`,
   '',
@@ -126,5 +272,10 @@ const md = [
 ].join('\n');
 
 fs.writeFileSync(path.join(root, 'build/scout-report.md'), md + '\n');
-fs.writeFileSync(path.join(root, 'build/scout-report.json'), JSON.stringify({ generated: new Date().toISOString(), graph_effect: 'none', findings }, null, 2) + '\n');
-console.log(`scout-surfaces: ${findings.length} findings.`);
+fs.writeFileSync(path.join(root, 'build/scout-report.json'), JSON.stringify({
+  generated,
+  graph_effect: 'none',
+  broad_institution_reviews: broadInstitutionReviewSummary,
+  findings,
+}, null, 2) + '\n');
+console.log(`scout-surfaces: ${findings.length} findings; ${reviewedBroadInstitutionSurfaceIds.size} reviewed broad-institution surfaces.`);

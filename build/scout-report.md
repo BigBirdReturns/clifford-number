@@ -1,10 +1,12 @@
 # Scout Report
 
-Generated: 2026-08-14T17:26:21.399Z
+Generated: 2026-08-14T19:04:31.368Z
 
 > graph_effect: none. This is a research queue, not graph data.
 
-Findings: 164
+Broad-institution reviews: 9
+
+Findings: 155
 
 ## finding-001: Electric Twin behaves as a surface factory
 
@@ -2760,169 +2762,7 @@ Refs: `detachment-201-second-cohort-commissioning-2026-06-10`
 
 ---
 
-## finding-154: AI Opportunities Action Plan publication and government response, 13 January 2025 contains broad institution context
-
-- Type: broad_institution_guard
-- Priority: high
-- graph_effect: none
-
-**Observed**
-
-Broad venues present: Department for Science, Innovation and Technology (DSIT). This is acceptable only because hops are generated from actor co-participation, not from the broad institution itself.
-
-**Required action**
-
-Verify this surface is tightly named and bounded. If it is merely an office or agency, mark it hop_eligible=false.
-
-Refs: `ai-opportunities-action-plan-2025`
-
----
-
-## finding-155: Detachment 201 inaugural four-officer commissioning, 13 June 2025 contains broad institution context
-
-- Type: broad_institution_guard
-- Priority: high
-- graph_effect: none
-
-**Observed**
-
-Broad venues present: US Army (Detachment 201, Executive Innovation Corps). This is acceptable only because hops are generated from actor co-participation, not from the broad institution itself.
-
-**Required action**
-
-Verify this surface is tightly named and bounded. If it is merely an office or agency, mark it hop_eligible=false.
-
-Refs: `detachment-201-commissioning-2025`
-
----
-
-## finding-156: Strategic Defence Review terms and commission, 17 July 2024 contains broad institution context
-
-- Type: broad_institution_guard
-- Priority: high
-- graph_effect: none
-
-**Observed**
-
-Broad venues present: Ministry of Defence (MoD). This is acceptable only because hops are generated from actor co-participation, not from the broad institution itself.
-
-**Required action**
-
-Verify this surface is tightly named and bounded. If it is merely an office or agency, mark it hop_eligible=false.
-
-Refs: `strategic-defence-review-2024-2025`
-
----
-
-## finding-157: Programme TALOS Phase 3 named public principals, 2 November 2023 contains broad institution context
-
-- Type: broad_institution_guard
-- Priority: high
-- graph_effect: none
-
-**Observed**
-
-Broad venues present: Ministry of Defence (MoD). This is acceptable only because hops are generated from actor co-participation, not from the broad institution itself.
-
-**Required action**
-
-Verify this surface is tightly named and bounded. If it is merely an office or agency, mark it hop_eligible=false.
-
-Refs: `anduril-talos-phase-3-named-principals-2023-11-02`
-
----
-
-## finding-158: UK–Anduril Ukraine drone deal named public principals, 6 March 2025 contains broad institution context
-
-- Type: broad_institution_guard
-- Priority: high
-- graph_effect: none
-
-**Observed**
-
-Broad venues present: Ministry of Defence (MoD). This is acceptable only because hops are generated from actor co-participation, not from the broad institution itself.
-
-**Required action**
-
-Verify this surface is tightly named and bounded. If it is merely an office or agency, mark it hop_eligible=false.
-
-Refs: `anduril-ukraine-drone-deal-named-principals-2025-03-06`
-
----
-
-## finding-159: Detachment 201 Cohort 2 commissioning ceremony, 10 June 2026 contains broad institution context
-
-- Type: broad_institution_guard
-- Priority: high
-- graph_effect: none
-
-**Observed**
-
-Broad venues present: US Army (Detachment 201, Executive Innovation Corps). This is acceptable only because hops are generated from actor co-participation, not from the broad institution itself.
-
-**Required action**
-
-Verify this surface is tightly named and bounded. If it is merely an office or agency, mark it hop_eligible=false.
-
-Refs: `detachment-201-second-cohort-commissioning-2026-06-10`
-
----
-
-## finding-160: Atlantic Bastion official launch publication, 8 December 2025 contains broad institution context
-
-- Type: broad_institution_guard
-- Priority: high
-- graph_effect: none
-
-**Observed**
-
-Broad venues present: Ministry of Defence (MoD). This is acceptable only because hops are generated from actor co-participation, not from the broad institution itself.
-
-**Required action**
-
-Verify this surface is tightly named and bounded. If it is merely an office or agency, mark it hop_eligible=false.
-
-Refs: `atlantic-bastion-launch-publication-2025-12-08`
-
----
-
-## finding-161: Frontier AI Taskforce External Advisory Board appointments, 7 September 2023 contains broad institution context
-
-- Type: broad_institution_guard
-- Priority: high
-- graph_effect: none
-
-**Observed**
-
-Broad venues present: AI Security Institute / AI Safety Institute, Department for Science, Innovation and Technology (DSIT). This is acceptable only because hops are generated from actor co-participation, not from the broad institution itself.
-
-**Required action**
-
-Verify this surface is tightly named and bounded. If it is merely an office or agency, mark it hop_eligible=false.
-
-Refs: `frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07`
-
----
-
-## finding-162: Ben Warner email to Imran Shafi and Dominic Cummings on contain-to-delay triggers, 8 March 2020 contains broad institution context
-
-- Type: broad_institution_guard
-- Priority: high
-- graph_effect: none
-
-**Observed**
-
-Broad venues present: No. 10 Downing Street. This is acceptable only because hops are generated from actor co-participation, not from the broad institution itself.
-
-**Required action**
-
-Verify this surface is tightly named and bounded. If it is merely an office or agency, mark it hop_eligible=false.
-
-Refs: `ben-warner-cummings-shafi-contain-delay-email-2020-03-08`
-
----
-
-## finding-163: Policy creation → military advisory integration → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
+## finding-154: Policy creation → military advisory integration → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
 
 - Type: laundering_chain
 - Priority: high
@@ -2940,7 +2780,7 @@ Refs: `ai-opportunities-action-plan-2025`, `detachment-201-program-context-2025`
 
 ---
 
-## finding-164: Full master doc has been classified, not blindly migrated
+## finding-155: Full master doc has been classified, not blindly migrated
 
 - Type: migration_queue
 - Priority: high
