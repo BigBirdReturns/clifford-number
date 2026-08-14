@@ -605,6 +605,90 @@ assert.deepEqual(
 );
 assert.deepEqual(lebaraSourceClaim.receipt_ids, ['electric-twin-lebara-customer-use-2026-03-11']);
 
+const capitalFilingSequence = surf('electric-twin-capital-allotment-observations-2026-01-13-2026-07-09');
+assert.ok(capitalFilingSequence,
+  'the official Electric Twin 2026 capital filing-history sequence must compile');
+assert.equal(capitalFilingSequence.hop_eligible, false);
+assert.equal(
+  capitalFilingSequence.hop_refusal_reason,
+  'issuer_only_capital_filing_sequence',
+);
+assert.equal(capitalFilingSequence.surface_type, 'employment_investment_surface');
+assert.deepEqual(
+  capitalFilingSequence.secondary_surface_types,
+  ['surface_factory_capital_layer'],
+);
+assert.equal(capitalFilingSequence.time_start, '2026-01-13');
+assert.equal(capitalFilingSequence.time_end, '2026-07-09');
+assert.equal(capitalFilingSequence.evidence_class, 'official');
+assert.deepEqual(
+  capitalFilingSequence.participants
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id),
+  [],
+  'issuer-only capital filing history must not manufacture actor participants',
+);
+assert.deepEqual(
+  capitalFilingSequence.participants
+    .filter(part => part.participant_type === 'organization')
+    .map(part => part.organization_id),
+  ['electric-twin'],
+  'Electric Twin must be the sole organization on the 2026 capital sequence',
+);
+assert.equal(
+  capitalFilingSequence.participants[0].participation_type,
+  'issuer_capital_filing_sequence_observation',
+);
+assert.deepEqual(capitalFilingSequence.receipt_ids, ['companies-house-electric-twin-2026-capital-allotment-filing-history']);
+assert.ok((hop.rejected_hop_surfaces ?? []).some(row =>
+  row.surface_id === capitalFilingSequence.surface_id
+    && row.reason === 'issuer_only_capital_filing_sequence'
+), 'compiled graph must expose the issuer-only Electric Twin capital refusal');
+assert.ok(!hop.edges.some(edge => edge.surfaces.some(
+  basis => basis.surface_id === capitalFilingSequence.surface_id,
+)), 'Electric Twin 2026 capital filing history must never become a hop basis');
+assert.ok(!scores.actors.some(row => row.surfaces.includes(capitalFilingSequence.surface_id)),
+  'an actor inherited the Electric Twin 2026 capital filing history');
+assert.ok(org('electric-twin')?.surfaces.includes(capitalFilingSequence.surface_id),
+  'Electric Twin organization score must retain the 2026 capital filing sequence');
+const capitalReceiptRow = receipt('companies-house-electric-twin-2026-capital-allotment-filing-history');
+assert.ok(capitalReceiptRow, 'Electric Twin 2026 capital receipt must exist');
+assert.equal(capitalReceiptRow.company_number, '15173006');
+assert.deepEqual(capitalReceiptRow.filing_observations, [
+  {
+    "allotment_date": "2026-01-13",
+    "filed_at": "2026-01-27",
+    "resulting_total_nominal_capital_gbp": 3.658437
+  },
+  {
+    "allotment_date": "2026-03-06",
+    "filed_at": "2026-04-14",
+    "resulting_total_nominal_capital_gbp": 3.661921
+  },
+  {
+    "allotment_date": "2026-04-02",
+    "filed_at": "2026-04-14",
+    "resulting_total_nominal_capital_gbp": 3.667047
+  },
+  {
+    "allotment_date": "2026-07-09",
+    "filed_at": "2026-07-15",
+    "resulting_total_nominal_capital_gbp": 3.672047
+  }
+]);
+assert.equal(capitalReceiptRow.sh01_forms_reproduced, false);
+assert.equal(capitalReceiptRow.share_classes_recovered, false);
+assert.equal(capitalReceiptRow.share_quantities_recovered, false);
+assert.equal(capitalReceiptRow.consideration_terms_recovered, false);
+assert.equal(capitalReceiptRow.allottees_identified, false);
+assert.deepEqual(capitalReceiptRow.named_actor_ids, []);
+assert.equal(capitalReceiptRow.archive.ref, 'sha256:2ea4eb21581b79621f05b20248b2347e7c3081ff6a5f094f7cd285f13a06a460');
+const capitalClaimRow = claim('electric-twin-2026-capital-allotment-filing-history');
+assert.ok(capitalClaimRow, 'Electric Twin 2026 capital filing-history claim must compile');
+assert.deepEqual(capitalClaimRow.actor_ids, []);
+assert.deepEqual(capitalClaimRow.organization_ids, ['electric-twin']);
+assert.deepEqual(capitalClaimRow.receipt_ids, ['companies-house-electric-twin-2026-capital-allotment-filing-history']);
+
 const gartnerCategoryObservation = surf('gartner-synthetic-population-category-2026');
 assert.ok(gartnerCategoryObservation, 'the source-native Gartner category observation must compile');
 assert.equal(gartnerCategoryObservation.hop_eligible, false);
