@@ -1,10 +1,10 @@
 # Scout Report
 
-Generated: 2026-08-13T22:33:57.294Z
+Generated: 2026-08-14T02:32:08.322Z
 
 > graph_effect: none. This is a research queue, not graph data.
 
-Findings: 163
+Findings: 164
 
 ## finding-001: Electric Twin behaves as a surface factory
 
@@ -212,13 +212,13 @@ Refs: `faculty-science-director-shareholder-overlap-2024-10-10`, `ai-opportuniti
 
 **Observed**
 
-Dr. Ben Warner has 8 surfaces and secondary types category_formation_surface, model_governance_surface, public_private_ai_infrastructure, surface_factory_capital_layer. Governance replacement score: 0.
+Dr. Ben Warner has 9 surfaces and secondary types category_formation_surface, governance_continuity_surface, model_governance_surface, public_private_ai_infrastructure, surface_factory_capital_layer. Governance replacement score: 0.
 
 **Required action**
 
 Check for additional venues where the same surface type recurs. Do not convert recurrence into a hop unless there is a bounded co-participation surface.
 
-Refs: `ben-warner-no10-digital-data-role-observation-2020-2021`, `faculty-science-officer-employee-overlap-2018-01-24`, `electric-twin-incorporation-2023-09-28`, `electric-twin-ben-warner-director-tenure-2023-09-28`, `electric-twin-seed2-governance-instrument-2025-09-12`, `centre-human-progress-director-appointments-2025-08-05`, `electric-twin-accuracy-methodology-publication-2026-02-11`, `electric-twin-virgin-madfest-session-2026-07-08`
+Refs: `ben-warner-no10-digital-data-role-observation-2020-2021`, `faculty-science-officer-employee-overlap-2018-01-24`, `electric-twin-incorporation-2023-09-28`, `electric-twin-ben-warner-director-tenure-2023-09-28`, `electric-twin-seed2-governance-instrument-2025-09-12`, `centre-human-progress-director-appointments-2025-08-05`, `electric-twin-accuracy-methodology-publication-2026-02-11`, `electric-twin-virgin-madfest-session-2026-07-08`, `ben-warner-cummings-shafi-contain-delay-email-2020-03-08`
 
 ---
 
@@ -276,7 +276,25 @@ Refs: `electric-twin-ethics-board-2026`, `simon-case-cabinet-secretary-2020-2024
 
 ---
 
-## finding-016: Saul Klein shows recurring surface logic
+## finding-016: Dominic Cummings shows recurring surface logic
+
+- Type: surface_type_recurrence
+- Priority: medium
+- graph_effect: none
+
+**Observed**
+
+Dominic Cummings has 2 surfaces and secondary types governance_continuity_surface, model_governance_surface. Governance replacement score: 0.
+
+**Required action**
+
+Check for additional venues where the same surface type recurs. Do not convert recurrence into a hop unless there is a bounded co-participation surface.
+
+Refs: `vote-leave-data-science-2016`, `ben-warner-cummings-shafi-contain-delay-email-2020-03-08`
+
+---
+
+## finding-017: Saul Klein shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -294,7 +312,7 @@ Refs: `faculty-science-officer-employee-overlap-2018-01-24`, `faculty-science-di
 
 ---
 
-## finding-017: John Healey shows recurring surface logic
+## finding-018: John Healey shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -312,7 +330,7 @@ Refs: `strategic-defence-review-development-2024-2025`, `strategic-defence-revie
 
 ---
 
-## finding-018: George Robertson shows recurring surface logic
+## finding-019: George Robertson shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -330,7 +348,7 @@ Refs: `strategic-defence-review-development-2024-2025`, `strategic-defence-revie
 
 ---
 
-## finding-019: Richard Barrons shows recurring surface logic
+## finding-020: Richard Barrons shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -348,7 +366,7 @@ Refs: `strategic-defence-review-development-2024-2025`, `strategic-defence-revie
 
 ---
 
-## finding-020: Dr Fiona Hill shows recurring surface logic
+## finding-021: Dr Fiona Hill shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -366,7 +384,7 @@ Refs: `strategic-defence-review-development-2024-2025`, `strategic-defence-revie
 
 ---
 
-## finding-021: Dr. Michael Muthukrishna shows recurring surface logic
+## finding-022: Dr. Michael Muthukrishna shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -384,7 +402,7 @@ Refs: `centre-human-progress-director-appointments-2025-08-05`, `electric-twin-m
 
 ---
 
-## finding-022: Dr Rich Drake shows recurring surface logic
+## finding-023: Dr Rich Drake shows recurring surface logic
 
 - Type: surface_type_recurrence
 - Priority: medium
@@ -402,7 +420,7 @@ Refs: `anduril-uk-co-director-appointments-2024-07-31`, `anduril-ukraine-drone-d
 
 ---
 
-## finding-023: Sir Simon Case / Lord Case has surfaces but no Clifford path
+## finding-024: Sir Simon Case / Lord Case has surfaces but no Clifford path
 
 - Type: island_with_surfaces
 - Priority: medium
@@ -417,24 +435,6 @@ Sir Simon Case / Lord Case participates in 3 surface(s), but no valid shared-sur
 Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
 
 Refs: `electric-twin-ethics-board-2026`, `simon-case-cabinet-secretary-2020-2024`, `team-barrow-public-private-fund-2026`
-
----
-
-## finding-024: Dominic Cummings has surfaces but no Clifford path
-
-- Type: island_with_surfaces
-- Priority: medium
-- graph_effect: none
-
-**Observed**
-
-Dominic Cummings participates in 1 surface(s), but no valid shared-surface path to Matt Clifford exists.
-
-**Required action**
-
-Scout for bounded surfaces shared with actors already on the Clifford spine. Do not use broad institutions as bridges.
-
-Refs: `vote-leave-data-science-2016`
 
 ---
 
@@ -2904,7 +2904,25 @@ Refs: `frontier-ai-taskforce-external-advisory-board-appointments-2023-09-07`
 
 ---
 
-## finding-162: Policy creation → military advisory integration → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
+## finding-162: Ben Warner email to Imran Shafi and Dominic Cummings on contain-to-delay triggers, 8 March 2020 contains broad institution context
+
+- Type: broad_institution_guard
+- Priority: high
+- graph_effect: none
+
+**Observed**
+
+Broad venues present: No. 10 Downing Street. This is acceptable only because hops are generated from actor co-participation, not from the broad institution itself.
+
+**Required action**
+
+Verify this surface is tightly named and bounded. If it is merely an office or agency, mark it hop_eligible=false.
+
+Refs: `ben-warner-cummings-shafi-contain-delay-email-2020-03-08`
+
+---
+
+## finding-163: Policy creation → military advisory integration → personnel continuity → commercial deployment is a scored laundering chain with no Clifford hop
 
 - Type: laundering_chain
 - Priority: high
@@ -2922,7 +2940,7 @@ Refs: `ai-opportunities-action-plan-2025`, `detachment-201-program-context-2025`
 
 ---
 
-## finding-163: Full master doc has been classified, not blindly migrated
+## finding-164: Full master doc has been classified, not blindly migrated
 
 - Type: migration_queue
 - Priority: high

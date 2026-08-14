@@ -1577,6 +1577,62 @@ assert(sameIdSet(independentValidationBoundaryClaim?.surface_ids, [
     'Entrepreneur First official cofounder claim is missing');
 }
 
+
+// Ben Warner / Dominic Cummings exact email-routing release gate.
+{
+  const emailSurface = surfaceById.get('ben-warner-cummings-shafi-contain-delay-email-2020-03-08');
+  assert(emailSurface?.hop_eligible === true, 'contain-to-delay email surface must remain hop eligible');
+  assert(emailSurface?.time_start === '2020-03-08' && emailSurface?.time_end === '2020-03-08',
+    'contain-to-delay email surface must remain exact-date bounded');
+  assert(emailSurface?.evidence_class === 'official',
+    'contain-to-delay email surface must retain official evidence');
+  const emailParts = sourcePartsBySurface.get('ben-warner-cummings-shafi-contain-delay-email-2020-03-08') ?? [];
+  assert(sameIdSet(
+    emailParts.filter(part => part.participant_type === 'actor').map(part => part.actor_id),
+    ['ben-warner', 'dominic-cummings', 'imran-shafi'],
+  ), 'contain-to-delay email actor denominator is stale');
+  assert(sameIdSet(
+    emailParts.filter(part => part.participant_type === 'organization').map(part => part.organization_id),
+    ['no-10'],
+  ), 'contain-to-delay email institutional context is stale');
+  const pairKey = edge => [edge.actor_a, edge.actor_b].sort().join('|');
+  const emailEdges = hopGraph.edges.filter(edge =>
+    edge.surfaces.some(basis => basis.surface_id === 'ben-warner-cummings-shafi-contain-delay-email-2020-03-08'));
+  assert(emailEdges.length === 3, 'contain-to-delay email must compile three exact actor bases');
+  assert(sameIdSet(emailEdges.map(pairKey), [
+    'ben-warner|dominic-cummings',
+    'ben-warner|imran-shafi',
+    'dominic-cummings|imran-shafi',
+  ]), 'contain-to-delay email edge denominator is stale');
+  assert(emailEdges.every(edge => edge.surfaces.some(basis =>
+    basis.surface_id === 'ben-warner-cummings-shafi-contain-delay-email-2020-03-08'
+      && basis.valid_from === '2020-03-08'
+      && basis.valid_until === '2020-03-08'
+      && basis.evidence_class === 'official')),
+    'contain-to-delay email bases must remain one-day and official');
+  assert(data.actors.some(row => row.id === 'imran-shafi'), 'Imran Shafi actor is missing');
+  const sourceReceipt = receiptById.get('uk-covid-inquiry-ben-warner-cummings-shafi-email-2020-03-08');
+  assert(sourceReceipt?.document_id === 'INQ000195879', 'contain-to-delay Inquiry document id is stale');
+  assert(sourceReceipt?.sender_actor_id === 'ben-warner', 'contain-to-delay sender is stale');
+  assert(sameIdSet(sourceReceipt?.recipient_actor_ids, ['dominic-cummings', 'imran-shafi']),
+    'contain-to-delay recipients are stale');
+  assert(sourceReceipt?.archive?.ref === 'sha256:698acebeb0b95b957d518eba7569215062568040a70575e9203ddaff89683b77',
+    'contain-to-delay receipt digest is stale');
+  assert(sourceReceipt?.catalogue_metadata_only === true && sourceReceipt?.email_body_used_for_claims === false,
+    'contain-to-delay claim must remain catalogue-metadata bounded');
+  assert(sourceReceipt?.policy_agreement_established === false,
+    'contain-to-delay receipt must not invent policy agreement');
+  const voteLeave = surfaceById.get('vote-leave-data-science-2016');
+  assert(voteLeave?.hop_eligible === false && voteLeave?.hop_refusal_reason === 'organization_only_evidence',
+    'Vote Leave organization-only refusal is stale');
+  assert(!hopGraph.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === 'vote-leave-data-science-2016')),
+    'later No. 10 email must not reactivate the Vote Leave campaign surface');
+  assert(claimById.get('ben-warner-cummings-shafi-contain-delay-email-2020-03-08'),
+    'contain-to-delay email claim is missing');
+  assert(claimById.get('vote-leave-campaign-to-covid-email-boundary-2020-03-08'),
+    'campaign-to-email boundary claim is missing');
+}
+
 // Session-local scratch is transport, not durable evidence. A canonical
 // receipt must never depend on an AI-session filesystem path or preserve an
 // unrecoverable local paste as if it were still a live evidentiary object.

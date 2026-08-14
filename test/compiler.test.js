@@ -1395,7 +1395,6 @@ for (const actorId of ['ben-warner', 'marc-warner']) {
     `${actorId} score must not inherit the organization-only Vote Leave surface`);
 }
 for (const pair of [
-  ['ben-warner', 'dominic-cummings'],
   ['marc-warner', 'dominic-cummings'],
 ]) {
   assert.ok(!hop.edges.some(edge =>
@@ -1817,4 +1816,54 @@ assert.ok(!hop.edges.some(edge => [edge.actor_a, edge.actor_b].includes('matt-cl
 
   assert.ok(claim('electric-twin-virgin-madfest-shared-stage-2026-07-08'));
   assert.ok(claim('electric-twin-virgin-madfest-identity-and-contract-boundary-2026-07-08'));
+}
+
+
+// Ben Warner / Dominic Cummings exact email-routing regression.
+{
+  const emailSurface = surf('ben-warner-cummings-shafi-contain-delay-email-2020-03-08');
+  assert.ok(emailSurface, 'contain-to-delay email surface must compile');
+  assert.equal(emailSurface.hop_eligible, true);
+  assert.equal(emailSurface.time_start, '2020-03-08');
+  assert.equal(emailSurface.time_end, '2020-03-08');
+  assert.equal(emailSurface.evidence_class, 'official');
+  const actorIds = emailSurface.participants
+    .filter(part => part.participant_type === 'actor')
+    .map(part => part.actor_id)
+    .sort();
+  assert.deepEqual(actorIds, ['ben-warner', 'dominic-cummings', 'imran-shafi']);
+  const pairKey = edge => [edge.actor_a, edge.actor_b].sort().join('|');
+  const emailEdges = hop.edges.filter(edge =>
+    edge.surfaces.some(basis => basis.surface_id === 'ben-warner-cummings-shafi-contain-delay-email-2020-03-08'));
+  assert.equal(emailEdges.length, 3, 'three named email actors must compile to three exact bases');
+  assert.deepEqual(emailEdges.map(pairKey).sort(), [
+    'ben-warner|dominic-cummings',
+    'ben-warner|imran-shafi',
+    'dominic-cummings|imran-shafi',
+  ]);
+  assert.ok(emailEdges.every(edge => edge.surfaces.some(basis =>
+    basis.surface_id === 'ben-warner-cummings-shafi-contain-delay-email-2020-03-08'
+      && basis.valid_from === '2020-03-08'
+      && basis.valid_until === '2020-03-08'
+      && basis.evidence_class === 'official')));
+  assert.equal(shortestPath(topology, 'ben-warner', 'dominic-cummings', { asOf: '2020-03-07' }).number, null);
+  assert.equal(shortestPath(topology, 'ben-warner', 'dominic-cummings', { asOf: '2020-03-08' }).number, 1);
+  assert.equal(shortestPath(topology, 'ben-warner', 'dominic-cummings', { asOf: '2020-03-09' }).number, null);
+  assert.equal(shortestPath(topology, 'dominic-cummings', 'matt-clifford').number, 3);
+  assert.equal(shortestPath(topology, 'imran-shafi', 'matt-clifford').number, 3);
+  assert.equal(shortestPath(topology, 'dominic-cummings', 'matt-clifford', { asOf: '2020-03-08' }).number, null);
+  const voteLeave = surf('vote-leave-data-science-2016');
+  assert.equal(voteLeave.hop_eligible, false);
+  assert.equal(voteLeave.hop_refusal_reason, 'organization_only_evidence');
+  assert.ok(!hop.edges.some(edge => edge.surfaces.some(basis => basis.surface_id === 'vote-leave-data-science-2016')));
+  const sourceReceipt = receipt('uk-covid-inquiry-ben-warner-cummings-shafi-email-2020-03-08');
+  assert.equal(sourceReceipt.document_id, 'INQ000195879');
+  assert.equal(sourceReceipt.sender_actor_id, 'ben-warner');
+  assert.deepEqual([...sourceReceipt.recipient_actor_ids].sort(), ['dominic-cummings', 'imran-shafi']);
+  assert.equal(sourceReceipt.archive.ref, 'sha256:698acebeb0b95b957d518eba7569215062568040a70575e9203ddaff89683b77');
+  assert.equal(sourceReceipt.catalogue_metadata_only, true);
+  assert.equal(sourceReceipt.email_body_used_for_claims, false);
+  assert.equal(sourceReceipt.policy_agreement_established, false);
+  assert.ok(claim('ben-warner-cummings-shafi-contain-delay-email-2020-03-08'));
+  assert.ok(claim('vote-leave-campaign-to-covid-email-boundary-2020-03-08'));
 }
