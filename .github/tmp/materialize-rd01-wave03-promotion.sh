@@ -81,25 +81,40 @@ if flags & 0x02:
     pos += 2
 if pos >= len(data) - 8:
     raise SystemExit('gzip payload is truncated')
+
 compressed = data[pos:-8]
-output = zlib.decompress(compressed, -zlib.MAX_WBITS)
-actual_sha = hashlib.sha256(output).hexdigest()
-expected_size = int.from_bytes(data[-4:], 'little')
-target.write_bytes(output)
+raw = zlib.decompress(compressed, -zlib.MAX_WBITS)
+raw_sha = hashlib.sha256(raw).hexdigest()
+corrupt_token = b'phfsical'
+correct_token = b'physical'
+occurrences = raw.count(corrupt_token)
+if occurrences != 12:
+    raise SystemExit(f'expected 12 propagated corrupt tokens, found {occurrences}')
+repaired = raw.replace(corrupt_token, correct_token)
+repaired_sha = hashlib.sha256(repaired).hexdigest()
+if repaired_sha != expected_sha:
+    raise SystemExit(f'deterministic repair did not recover expected source SHA: {repaired_sha}')
+if len(repaired) != int.from_bytes(data[-4:], 'little'):
+    raise SystemExit('repaired source size diverged from gzip ISIZE')
+
+target.write_bytes(repaired)
 receipt.mkdir(parents=True, exist_ok=True)
-(receipt / 'recovered-apply-script.mjs').write_bytes(output)
-(receipt / 'recovered-apply-script-diagnostic.json').write_text(json.dumps({
-    'schema_version': 'newsuk-times-apply-script-recovery-diagnostic@1',
+(receipt / 'corrupt-apply-script.mjs').write_bytes(raw)
+(receipt / 'apply-script-recovery.json').write_text(json.dumps({
+    'schema_version': 'newsuk-times-apply-script-recovery@1',
     'carrier_path': str(source),
     'compressed_bytes': len(compressed),
-    'recovered_bytes': len(output),
-    'gzip_isize': expected_size,
+    'source_bytes': len(repaired),
+    'raw_sha256': raw_sha,
+    'corrupt_token': corrupt_token.decode(),
+    'replacement_token': correct_token.decode(),
+    'replacement_count': occurrences,
+    'repaired_sha256': repaired_sha,
     'expected_sha256': expected_sha,
-    'recovered_sha256': actual_sha,
-    'exact_sha_match': actual_sha == expected_sha,
+    'exact_sha_match': True,
     'admission_effect': 'none'
 }, indent=2) + '\n')
-print(f'preserved raw-deflate output: bytes={len(output)} sha256={actual_sha}')
+print(f'deterministic source repair: {occurrences} tokens, sha256={repaired_sha}')
 PY_GZIP
 '''
 text = text[:start] + decoder + text[end:]
