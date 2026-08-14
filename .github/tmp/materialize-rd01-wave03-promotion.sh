@@ -43,6 +43,12 @@ if text.count(old_base) != 1:
     raise SystemExit('expected exactly one stale base pin')
 text = text.replace(old_base, new_base)
 
+old_path_boundary = 'build/surface-graph.json\ndata/canonical/actors.json'
+new_path_boundary = 'build/surface-graph.json\nbuild/topology-admission-frontier.json\ndata/canonical/actors.json'
+if text.count(old_path_boundary) != 1:
+    raise SystemExit('expected exactly one stale product-path boundary')
+text = text.replace(old_path_boundary, new_path_boundary)
+
 start_marker = 'base64 -d .github/tmp/apply-newsuk-times-exploraition-launch-principals-v1.mjs.gz.b64'
 end_marker = "echo '4ed77e65c75fd05b940298e5e921a3655c7ac5636bc59d7b1bf992e742a6ef12  /tmp/apply-newsuk-times-exploraition-launch-principals-v1.mjs'"
 start = text.find(start_marker)
