@@ -3,13 +3,31 @@ set -euo pipefail
 
 ORIGINAL=/tmp/materialize-rd01-wave03-promotion-original.sh
 PATCHED=/tmp/materialize-rd01-wave03-promotion-current-main.sh
-SOURCE_COMMIT="${GITHUB_HEAD_SHA:-}"
+CANDIDATE=/tmp/materialize-rd01-wave03-promotion-candidate.sh
+OLD_BASE_LINE='export EXPECTED_BASE=fd34ca0a2726ff6972ccbc32ea7e5e13101b161b'
 
-if [[ -z "$SOURCE_COMMIT" ]]; then
-  SOURCE_COMMIT="$(git rev-parse HEAD)"
+if git cat-file -e 'HEAD^2^{commit}' 2>/dev/null; then
+  BRANCH_HEAD="$(git rev-parse HEAD^2)"
+else
+  BRANCH_HEAD="$(git rev-parse HEAD)"
 fi
 
-git show "${SOURCE_COMMIT}^:.github/tmp/materialize-rd01-wave03-promotion.sh" > "$ORIGINAL"
+ORIGINAL_COMMIT=''
+while IFS= read -r commit; do
+  if git show "${commit}:.github/tmp/materialize-rd01-wave03-promotion.sh" > "$CANDIDATE" 2>/dev/null \
+    && grep -Fxq "$OLD_BASE_LINE" "$CANDIDATE"; then
+    ORIGINAL_COMMIT="$commit"
+    mv "$CANDIDATE" "$ORIGINAL"
+    break
+  fi
+done < <(git rev-list --first-parent "$BRANCH_HEAD")
+
+if [[ -z "$ORIGINAL_COMMIT" ]]; then
+  echo 'original materializer with stale base pin was not found in branch ancestry' >&2
+  exit 1
+fi
+
+echo "replaying original materializer from $ORIGINAL_COMMIT"
 
 python3 - "$ORIGINAL" "$PATCHED" <<'PY'
 from pathlib import Path
