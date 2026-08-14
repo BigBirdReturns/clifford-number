@@ -1,0 +1,226 @@
+name: TEMP M-04B DOD cloud ATO route materializer v1
+
+on:
+  push:
+    branches:
+      - agent/m04b-dod-cloud-ato-route-materializer-v1
+    paths:
+      - '.github/workflows/temp-m04b-dod-cloud-ato-route-materializer-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-m04b-dod-cloud-ato-route-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    env:
+      PRODUCT_BRANCH: candidate/m04b-dod-cloud-ato-route-v1
+      SOURCE_URL: https://public.cyber.mil/dccs/cso/
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Prepare exact product branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          base_sha="$(git rev-parse "${GITHUB_SHA}^")"
+          expected_base="f20fb65c3dce9801b0b4490eb68f3b0ba7906c56"
+          if [[ "$base_sha" != "$expected_base" ]]; then
+            echo "Transport parent drift: expected $expected_base, got $base_sha" >&2
+            exit 1
+          fi
+          if git ls-remote --exit-code --heads origin "$PRODUCT_BRANCH" >/dev/null 2>&1; then
+            echo "Refusing to overwrite existing product branch: $PRODUCT_BRANCH" >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch --force-create "$PRODUCT_BRANCH" "$base_sha"
+          if [[ -e .github/workflows/temp-m04b-dod-cloud-ato-route-materializer-v1.yml ]]; then
+            echo "Transport workflow leaked into product branch" >&2
+            exit 1
+          fi
+
+      - name: Resolve the bounded source route and install regression coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+
+          const routesPath = 'data/intake/security-state-organism-source-routes.json';
+          const testPath = 'test/security-state-organism.test.js';
+          const sourceUrl = process.env.SOURCE_URL;
+          const routeNote = 'The DoD Cyber Exchange Current Authorized CSOs register is an authoritative public system locator. A responsive provider or program record from that register is still required before any authorization claim may be promoted. Route presence is acquisition infrastructure, not evidence of a relationship, event, transfer, consequence, or proposition.';
+
+          const routes = JSON.parse(fs.readFileSync(routesPath, 'utf8'));
+          const route = routes.routes.find((row) => row.route_id === 'DOD-CLOUD-ATO');
+          assert.ok(route, 'DOD-CLOUD-ATO route must exist');
+          assert.equal(route.locator_status, 'unresolved_locator', 'DOD-CLOUD-ATO must begin unresolved');
+          assert.equal(route.url, null, 'DOD-CLOUD-ATO must begin without a URL');
+          assert.deepEqual(route.locators, [], 'DOD-CLOUD-ATO must begin without locators');
+          assert.equal(route.acquisition_query, 'Resolve an authoritative public locator for DOD CLOUD ATO before acquisition.');
+
+          route.locator_status = 'candidate_system_locator';
+          route.url = sourceUrl;
+          route.locators = [{
+            url: sourceUrl,
+            scope: 'system_or_first_party_entrypoint',
+            verification_state: 'bounded_system_locator_requires_record_level_acquisition',
+            evidence_ids: [],
+          }];
+          route.acquisition_query = null;
+          route.notes = routeNote;
+
+          const stateCounts = routes.routes.reduce((counts, row) => {
+            counts[row.locator_status] = (counts[row.locator_status] ?? 0) + 1;
+            return counts;
+          }, {});
+          routes.counts = {
+            routes: routes.routes.length,
+            source_bounded_locators: stateCounts.source_bounded_locator ?? 0,
+            candidate_system_locators: stateCounts.candidate_system_locator ?? 0,
+            candidate_first_party_locators: stateCounts.candidate_first_party_locator ?? 0,
+            unresolved_locators: stateCounts.unresolved_locator ?? 0,
+          };
+          assert.deepEqual(routes.counts, {
+            routes: 82,
+            source_bounded_locators: 10,
+            candidate_system_locators: 49,
+            candidate_first_party_locators: 10,
+            unresolved_locators: 13,
+          });
+          fs.writeFileSync(routesPath, `${JSON.stringify(routes, null, 2)}\n`);
+
+          let testSource = fs.readFileSync(testPath, 'utf8');
+          const marker = "const dodCloudAto = routes.routes.find((x) => x.route_id === 'DOD-CLOUD-ATO');";
+          assert.equal(testSource.includes(marker), false, 'DOD-CLOUD-ATO regression already exists');
+          const anchor = "const evidenceById = new Map(evidence.records.map((x) => [x.evidence_id, x]));";
+          assert.equal(testSource.split(anchor).length - 1, 1, 'regression insertion anchor drift');
+          const regression = `${marker}\nassert.ok(dodCloudAto, 'DOD-CLOUD-ATO');\nassert.equal(dodCloudAto.locator_status, 'candidate_system_locator');\nassert.equal(dodCloudAto.url, '${sourceUrl}');\nassert.deepEqual(dodCloudAto.locators, [{\n  url: '${sourceUrl}',\n  scope: 'system_or_first_party_entrypoint',\n  verification_state: 'bounded_system_locator_requires_record_level_acquisition',\n  evidence_ids: [],\n}]);\nassert.equal(dodCloudAto.acquisition_query, null);\nassert.equal(dodCloudAto.notes, '${routeNote.replaceAll("'", "\\'")}');\nconst dodCloudAtoPackages = work.packages.filter((x) => x.source_route_ids.includes('DOD-CLOUD-ATO'));\nassert.equal(dodCloudAtoPackages.length, 2);\nfor (const packet of dodCloudAtoPackages) {\n  assert.equal(packet.boundaries.promotes_to, 'candidate_only', packet.package_id);\n  assert.equal(packet.boundaries.graph_effect, 'none', packet.package_id);\n  assert.equal(packet.boundaries.conclusion_generated, false, packet.package_id);\n  assert.equal(packet.boundaries.estate_completion_claimed, false, packet.package_id);\n}\n\n`;
+          testSource = testSource.replace(anchor, `${regression}${anchor}`);
+          fs.writeFileSync(testPath, testSource);
+          NODE
+
+      - name: Run focused build, validation, regression, and dispatcher dry run
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-security-state-organism.mjs
+          node tools/validate-security-state-organism.mjs
+          node test/security-state-organism.test.js
+          M04B_REPOSITORY="$GITHUB_REPOSITORY" node tools/dispatch-security-state-organism.mjs --dry-run
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - name: Rebuild final security-state products and verify bounded state
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-security-state-organism.mjs
+          node tools/validate-security-state-organism.mjs
+          node test/security-state-organism.test.js
+          M04B_REPOSITORY="$GITHUB_REPOSITORY" node tools/dispatch-security-state-organism.mjs --dry-run
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+
+          const read = (path) => JSON.parse(fs.readFileSync(path, 'utf8'));
+          const routes = read('data/intake/security-state-organism-source-routes.json');
+          const work = read('data/project/security-state-work-packages.json');
+          const manifest = read('build/core-thesis/security-state-organism/manifest.json');
+          const publicData = read('reports/core-thesis/security-state-organism/data.json');
+          const receipt = read('build/core-thesis/security-state-organism/dispatch-receipt.json');
+          const route = routes.routes.find((row) => row.route_id === 'DOD-CLOUD-ATO');
+
+          assert.deepEqual(routes.counts, {
+            routes: 82,
+            source_bounded_locators: 10,
+            candidate_system_locators: 49,
+            candidate_first_party_locators: 10,
+            unresolved_locators: 13,
+          });
+          assert.equal(route.locator_status, 'candidate_system_locator');
+          assert.equal(route.url, process.env.SOURCE_URL);
+          assert.deepEqual(route.locators[0].evidence_ids, []);
+          assert.deepEqual(manifest.counts.source_route_states, {
+            candidate_first_party_locator: 10,
+            candidate_system_locator: 49,
+            source_bounded_locator: 10,
+            unresolved_locator: 13,
+          });
+          assert.equal(publicData.routes.find((row) => row.route_id === 'DOD-CLOUD-ATO').url, process.env.SOURCE_URL);
+          assert.equal(receipt.source_fingerprint, manifest.source_fingerprint);
+          assert.equal(receipt.mode, 'dry-run');
+
+          const dependent = work.packages.filter((packet) => packet.source_route_ids.includes('DOD-CLOUD-ATO'));
+          assert.equal(dependent.length, 2);
+          for (const packet of dependent) {
+            assert.equal(packet.boundaries.promotes_to, 'candidate_only', packet.package_id);
+            assert.equal(packet.boundaries.graph_effect, 'none', packet.package_id);
+            assert.equal(packet.boundaries.conclusion_generated, false, packet.package_id);
+            assert.equal(packet.boundaries.estate_completion_claimed, false, packet.package_id);
+          }
+          console.log(JSON.stringify({
+            route_id: route.route_id,
+            locator_status: route.locator_status,
+            url: route.url,
+            counts: routes.counts,
+            dependent_packages: dependent.map((packet) => packet.package_id),
+            source_fingerprint: manifest.source_fingerprint,
+          }, null, 2));
+          NODE
+
+      - name: Refuse scope drift and transport leakage
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t changed < <(git diff --name-only)
+          printf '%s\n' "${changed[@]}"
+          [[ ${#changed[@]} -gt 0 ]]
+          printf '%s\n' "${changed[@]}" | grep -Fx 'data/intake/security-state-organism-source-routes.json'
+          printf '%s\n' "${changed[@]}" | grep -Fx 'test/security-state-organism.test.js'
+          for path in "${changed[@]}"; do
+            case "$path" in
+              data/intake/security-state-organism-source-routes.json|test/security-state-organism.test.js|build/core-thesis/security-state-organism/*|reports/core-thesis/security-state-organism/*)
+                ;;
+              *)
+                echo "Out-of-scope path: $path" >&2
+                exit 1
+                ;;
+            esac
+          done
+          if printf '%s\n' "${changed[@]}" | grep -q '^\.github/'; then
+            echo 'Transport content entered the product diff' >&2
+            exit 1
+          fi
+
+      - name: Commit and publish product branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- \
+            data/intake/security-state-organism-source-routes.json \
+            test/security-state-organism.test.js \
+            build/core-thesis/security-state-organism \
+            reports/core-thesis/security-state-organism
+          if git diff --cached --name-only | grep -q '^\.github/'; then
+            echo 'Refusing to commit transport content' >&2
+            exit 1
+          fi
+          git commit -m 'Resolve DOD cloud ATO source route'
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          echo "product_branch=$PRODUCT_BRANCH" >> "$GITHUB_STEP_SUMMARY"
+          echo "product_commit=$(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
