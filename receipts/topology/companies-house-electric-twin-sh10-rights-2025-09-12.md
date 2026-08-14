@@ -1,22 +1,27 @@
-# Electric Twin SH10 rights variation dated 12 September 2025
+# Companies House: Electric Twin SH10 rights variation dated 12 September 2025
 
-- Source URL: https://find-and-update.company-information.service.gov.uk/company/15173006/filing-history/MzQ4MjUyMzM1NGFkaXF6a2N4/document?download=0&format=pdf
-- Publisher: Companies House
-- Company: ELECTRIC TWIN LTD
-- Company number: 15173006
-- Rights-variation date: 2025-09-12
-- Filed: 2025-09-24
-- Retrieved: 2026-08-11
-- Evidence class: official
-- Source PDF SHA-256: `64dfc352383793e504d74906c000424d985cfde432cfb81ced58f9e1e8b20cb9`
-- Source PDF pages: 4
+- **Publisher:** Companies House
+- **Company:** Electric Twin Ltd
+- **Company number:** 15173006
+- **Instrument:** SH10 notice of particulars of variation of rights attached to shares
+- **Rights-variation date:** 12 September 2025
+- **Filed:** 24 September 2025
+- **Retrieved:** 11 August 2026
+- **Evidence class:** official
+- **Companies House document ID:** `MzQ4MjUyMzM1NGFkaXF6a2N4`
+- **Source PDF pages:** 4
+- **Source PDF SHA-256:** `64dfc352383793e504d74906c000424d985cfde432cfb81ced58f9e1e8b20cb9`
 
-## Source-bounded observations
+## Ordinary rights
 
-The SH10 states that Ordinary shares retain full rights regarding voting and dividends. On a liquidation or return of capital, the form records the same distribution order later reproduced in the SH01 statements: one penny in aggregate to any Deferred class; then Seed Preferred holders receive the greater of the applicable Preference Amount and the as-converted Ordinary distribution, with pro rata allocation by aggregate Preference Amount if assets are insufficient; then the residual balance goes to Ordinary holders pro rata.
+The SH10 states that Ordinary shares retain full rights regarding voting and dividends.
 
-The form records 12 September 2025 as the date of variation and is signed on behalf of the company by W Edwards for CC Secretaries Limited.
+## Liquidation and return-of-capital waterfall
 
-## Boundaries
+The form records a three-stage distribution order on a liquidation or return of capital. First, one penny in aggregate is paid to any Deferred class. Second, Seed Preferred holders receive the greater of the applicable Preference Amount and the distribution available on an as-converted Ordinary basis. If the assets available at that stage are insufficient, allocation among Seed Preferred holders is pro rata by aggregate Preference Amount. Third, the residual balance is distributed to Ordinary holders pro rata.
 
-The SH10 records class-right particulars. It does not identify particular Seed Preferred holders, quantify any person's ownership, establish that a liquidation or exit occurred, or supply the unfiled Subscription Agreement or Shareholders' Agreement.
+The form records the variation date as 12 September 2025. It is signed on behalf of the company by W Edwards for CC Secretaries Limited. The signatory is retained as document-authentication metadata and is not promoted as a topology actor.
+
+## Adjudication boundary
+
+The SH10 records class-right particulars. It does not identify any Seed Preferred holder, allottee, beneficial owner, investor principal, controller, or source of funds. It does not show that a liquidation, exit, or return of capital occurred. It does not supply the referenced Shareholders' Agreement or Subscription Agreement. The instrument remains graph-neutral and does not establish exercise of any class right or interpersonal relationship.
