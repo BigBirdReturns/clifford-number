@@ -1,0 +1,146 @@
+name: TEMP adjudicate Electric Twin class rights v2
+
+on:
+  push:
+    branches:
+      - agent/electric-twin-class-rights-adjudication-v2
+
+permissions:
+  contents: write
+
+jobs:
+  adjudicate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out exact transport ref
+        uses: actions/checkout@v4
+        with:
+          ref: agent/electric-twin-class-rights-adjudication-v2
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Adjudicate rights, qualify product, and publish candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TRANSPORT_BASE="ba5d1edd42e23f2a00b19a7522a04ae04a0ee8c4"
+          PAYLOAD_COMMIT="361e1ccc7845aa83cdf4ed71bf6d5b3c67e8e44e"
+          PAYLOAD_BLOB="86bd5affe1e380188b0fbf9fcf47bd6235d57a98"
+          TRANSPORT_BRANCH="agent/electric-twin-class-rights-adjudication-v2"
+          PRODUCT_BRANCH="candidate/electric-twin-class-rights-adjudication-v2"
+          WORKTREE="/tmp/electric-twin-class-rights-adjudication-v2"
+          PAYLOAD=".github/temporary/electric-twin-class-rights-adjudication-v1.py.gz.b64"
+
+          test "$(git rev-parse HEAD^)" = "$PAYLOAD_COMMIT"
+          test "$(git rev-parse HEAD^^)" = "$TRANSPORT_BASE"
+          test "$(git rev-list --count "$TRANSPORT_BASE"..HEAD)" = "2"
+          test "$(git hash-object "$PAYLOAD")" = "$PAYLOAD_BLOB"
+
+          base64 -d "$PAYLOAD" | gzip -d > /tmp/electric-twin-class-rights-adjudicate.py
+          python3 -m py_compile /tmp/electric-twin-class-rights-adjudicate.py
+
+          git fetch --no-tags origin main
+          EXPECTED_MAIN="$(git rev-parse origin/main)"
+
+          rm -rf "$WORKTREE"
+          git worktree add --detach "$WORKTREE" "$EXPECTED_MAIN"
+          cd "$WORKTREE"
+          git checkout -B "$PRODUCT_BRANCH"
+          python3 /tmp/electric-twin-class-rights-adjudicate.py
+
+          # The v1 materializer added machine-readable instrument contracts but
+          # omitted the issuer company number at the two receipt roots, while
+          # its dedicated validator correctly required that field. Repair only
+          # that receipt-schema seam. The official document routes and the
+          # human-readable receipts already identify company 15173006.
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('data/ledger/receipts.jsonl')
+          rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+          targets = {
+              'companies-house-electric-twin-articles-2025-09-12',
+              'companies-house-electric-twin-sh10-rights-2025-09-12',
+          }
+          found = set()
+          for row in rows:
+              receipt_id = row.get('receipt_id')
+              if receipt_id not in targets:
+                  continue
+              found.add(receipt_id)
+              prior = row.get('company_number')
+              if prior not in (None, '15173006'):
+                  raise SystemExit(f'unexpected company_number for {receipt_id}: {prior!r}')
+              row['company_number'] = '15173006'
+          if found != targets:
+              raise SystemExit(f'class-rights receipt set drifted: {sorted(found)}')
+          path.write_text('\n'.join(json.dumps(row, separators=(',', ':'), ensure_ascii=False) for row in rows) + '\n')
+          PY
+
+          if ! npm run release:check; then
+            echo "Dedicated class-rights validator source after materialization:"
+            nl -ba tools/validate-electric-twin-class-rights.mjs | sed -n '1,140p'
+            exit 1
+          fi
+
+          echo "Changed paths after qualification:"
+          git status --short
+
+          unexpected="$(git status --porcelain | awk '{print $2}' | grep -Ev '^(build/|data/ledger/(claims|receipts|surfaces)\.jsonl$|data/research/clifford-cross-corpus-public-interest-map\.json$|package\.json$|receipts/topology/companies-house-electric-twin-(articles|sh10-rights)-2025-09-12\.md$|test/electric-twin-class-rights\.test\.js$|tools/validate-electric-twin-class-rights\.mjs$)' || true)"
+          test -z "$unexpected" || { echo "Unexpected changed paths:"; printf '%s\n' "$unexpected"; exit 1; }
+
+          git add build \
+            data/ledger/claims.jsonl \
+            data/ledger/receipts.jsonl \
+            data/ledger/surfaces.jsonl \
+            package.json \
+            receipts/topology/companies-house-electric-twin-articles-2025-09-12.md \
+            receipts/topology/companies-house-electric-twin-sh10-rights-2025-09-12.md \
+            test/electric-twin-class-rights.test.js \
+            tools/validate-electric-twin-class-rights.mjs
+          if test -f data/research/clifford-cross-corpus-public-interest-map.json; then
+            git add data/research/clifford-cross-corpus-public-interest-map.json
+          fi
+
+          git diff --cached --check
+          test -z "$(git diff --cached --diff-filter=D --name-only)"
+          for required in \
+            data/ledger/claims.jsonl \
+            data/ledger/receipts.jsonl \
+            data/ledger/surfaces.jsonl \
+            package.json \
+            receipts/topology/companies-house-electric-twin-articles-2025-09-12.md \
+            receipts/topology/companies-house-electric-twin-sh10-rights-2025-09-12.md \
+            test/electric-twin-class-rights.test.js \
+            tools/validate-electric-twin-class-rights.mjs; do
+            git diff --cached --name-only | grep -Fx "$required"
+          done
+
+          git restore --worktree -- .
+          test -z "$(git diff --name-only)"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "research: adjudicate Electric Twin class rights"
+
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+
+          git push --force origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          git push --force origin "$EXPECTED_MAIN:refs/heads/$TRANSPORT_BRANCH"
+
+          {
+            echo "## Electric Twin class-rights adjudication v2"
+            echo
+            echo '```text'
+            echo "product_branch  $PRODUCT_BRANCH"
+            echo "commit          $(git rev-parse HEAD)"
+            echo "tree            $(git rev-parse HEAD^{tree})"
+            echo "parent          $(git rev-parse HEAD^)"
+            echo "changed_files   $(git diff --name-only HEAD^ HEAD | wc -l)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
