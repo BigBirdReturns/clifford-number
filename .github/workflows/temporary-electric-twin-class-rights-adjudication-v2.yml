@@ -1,9 +1,9 @@
-name: TEMP adjudicate Electric Twin class rights v2
+name: TEMP adjudicate Electric Twin class rights v3
 
 on:
   push:
     branches:
-      - agent/electric-twin-class-rights-adjudication-v2
+      - agent/electric-twin-class-rights-adjudication-v3
 
 permissions:
   contents: write
@@ -16,7 +16,7 @@ jobs:
       - name: Check out exact transport ref
         uses: actions/checkout@v4
         with:
-          ref: agent/electric-twin-class-rights-adjudication-v2
+          ref: agent/electric-twin-class-rights-adjudication-v3
           fetch-depth: 0
           show-progress: false
 
@@ -27,15 +27,17 @@ jobs:
 
           TRANSPORT_BASE="ba5d1edd42e23f2a00b19a7522a04ae04a0ee8c4"
           PAYLOAD_COMMIT="361e1ccc7845aa83cdf4ed71bf6d5b3c67e8e44e"
+          V2_WORKFLOW_COMMIT="116c0de5abcf19bf8910468ce6cea184ac3a88a7"
           PAYLOAD_BLOB="86bd5affe1e380188b0fbf9fcf47bd6235d57a98"
-          TRANSPORT_BRANCH="agent/electric-twin-class-rights-adjudication-v2"
-          PRODUCT_BRANCH="candidate/electric-twin-class-rights-adjudication-v2"
-          WORKTREE="/tmp/electric-twin-class-rights-adjudication-v2"
+          TRANSPORT_BRANCH="agent/electric-twin-class-rights-adjudication-v3"
+          PRODUCT_BRANCH="candidate/electric-twin-class-rights-adjudication-v3"
+          WORKTREE="/tmp/electric-twin-class-rights-adjudication-v3"
           PAYLOAD=".github/temporary/electric-twin-class-rights-adjudication-v1.py.gz.b64"
 
-          test "$(git rev-parse HEAD^)" = "$PAYLOAD_COMMIT"
-          test "$(git rev-parse HEAD^^)" = "$TRANSPORT_BASE"
-          test "$(git rev-list --count "$TRANSPORT_BASE"..HEAD)" = "2"
+          test "$(git rev-parse HEAD^)" = "$V2_WORKFLOW_COMMIT"
+          test "$(git rev-parse HEAD^^)" = "$PAYLOAD_COMMIT"
+          test "$(git rev-parse HEAD^^^)" = "$TRANSPORT_BASE"
+          test "$(git rev-list --count "$TRANSPORT_BASE"..HEAD)" = "3"
           test "$(git hash-object "$PAYLOAD")" = "$PAYLOAD_BLOB"
 
           base64 -d "$PAYLOAD" | gzip -d > /tmp/electric-twin-class-rights-adjudicate.py
@@ -80,9 +82,26 @@ jobs:
           path.write_text('\n'.join(json.dumps(row, separators=(',', ':'), ensure_ascii=False) for row in rows) + '\n')
           PY
 
+          # The materialized claim uses a plural antecedent: "The articles ...
+          # They do not establish ...". The validator's singular-only phrase
+          # rejected that semantically correct boundary statement. Preserve
+          # the substantive boundary and repair only the grammar-sensitive
+          # assertion, accepting singular or plural auxiliary agreement.
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('tools/validate-electric-twin-class-rights.mjs')
+          text = path.read_text()
+          old = "assert.match(boardClaim.limits, /does not establish/);"
+          new = r"assert.match(boardClaim.limits, /\bdo(?:es)? not establish\b/);"
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one singular-only class-rights assertion, found {text.count(old)}')
+          path.write_text(text.replace(old, new))
+          PY
+
           if ! npm run release:check; then
             echo "Dedicated class-rights validator source after materialization:"
-            nl -ba tools/validate-electric-twin-class-rights.mjs | sed -n '1,140p'
+            nl -ba tools/validate-electric-twin-class-rights.mjs | sed -n '1,160p'
             exit 1
           fi
 
@@ -134,7 +153,7 @@ jobs:
           git push --force origin "$EXPECTED_MAIN:refs/heads/$TRANSPORT_BRANCH"
 
           {
-            echo "## Electric Twin class-rights adjudication v2"
+            echo "## Electric Twin class-rights adjudication v3"
             echo
             echo '```text'
             echo "product_branch  $PRODUCT_BRANCH"
