@@ -60,7 +60,7 @@ baseline_anchor = '''test -z "$(git status --porcelain)"
 
 node /tmp/apply-newsuk-times-exploraition-launch-principals-v1.mjs
 '''
-baseline_block = '''test -z "$(git status --porcelain)"
+baseline_block = r'''test -z "$(git status --porcelain)"
 
 python3 - <<'PY_BASELINE'
 import json
