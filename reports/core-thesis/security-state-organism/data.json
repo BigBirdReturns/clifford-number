@@ -1,6 +1,6 @@
 {
   "schema_version": "security-state-organism-public@2",
-  "source_fingerprint": "060fa507d0daf850f770f1090f50840143a6a36ce30e03e688557ae21b2ab6a2",
+  "source_fingerprint": "b2b36a3b89d128759daf9d91580dfe530036d4d2d7f85cd4a6d3a5166fa6fb28",
   "program": {
     "schema_version": "security-state-organism-program@2",
     "program_id": "m04b-security-state-organism-evidence",
@@ -384,9 +384,9 @@
     "source_routes": 82,
     "source_route_states": {
       "candidate_first_party_locator": 10,
-      "candidate_system_locator": 48,
+      "candidate_system_locator": 49,
       "source_bounded_locator": 10,
-      "unresolved_locator": 14
+      "unresolved_locator": 13
     },
     "estates": 24,
     "organs": 15,
@@ -4521,9 +4521,16 @@
       "label": "DOD CLOUD ATO",
       "venue": "U.S. official or primary-public system",
       "jurisdiction": "United States",
-      "locator_status": "unresolved_locator",
-      "url": null,
-      "locators": [],
+      "locator_status": "candidate_system_locator",
+      "url": "https://public.cyber.mil/dccs/cso/",
+      "locators": [
+        {
+          "url": "https://public.cyber.mil/dccs/cso/",
+          "scope": "system_or_first_party_entrypoint",
+          "verification_state": "bounded_system_locator_requires_record_level_acquisition",
+          "evidence_ids": []
+        }
+      ],
       "access": "public_web",
       "evidence_classes": [
         "identity",
@@ -4535,8 +4542,8 @@
         "consequences",
         "counterpower"
       ],
-      "acquisition_query": "Resolve an authoritative public locator for DOD CLOUD ATO before acquisition.",
-      "notes": "Route presence is acquisition infrastructure, not evidence of a relationship, event, transfer, consequence, or proposition."
+      "acquisition_query": null,
+      "notes": "The DoD Cyber Exchange Current Authorized CSOs register is an authoritative public system locator. A responsive provider or program record from that register is still required before any authorization claim may be promoted. Route presence is acquisition infrastructure, not evidence of a relationship, event, transfer, consequence, or proposition."
     },
     {
       "route_id": "DOD-TEST-EVALUATION",

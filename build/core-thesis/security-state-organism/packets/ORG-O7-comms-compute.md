@@ -59,7 +59,7 @@ Which exact actors, rights, records, inputs, outputs, dependencies, and counterw
 ## Source routes
 
 - `ANDURIL-OFFICIAL` — ANDURIL OFFICIAL · `candidate_first_party_locator` · https://www.anduril.com/
-- `DOD-CLOUD-ATO` — DOD CLOUD ATO · `unresolved_locator` · locator unresolved
+- `DOD-CLOUD-ATO` — DOD CLOUD ATO · `candidate_system_locator` · https://public.cyber.mil/dccs/cso/
 - `EU-DSA` — EU DSA · `candidate_system_locator` · https://digital-strategy.ec.europa.eu/en/policies/digital-services-act-package
 - `FEDRAMP-MARKETPLACE` — FEDRAMP MARKETPLACE · `candidate_system_locator` · https://marketplace.fedramp.gov/
 - `IDF-OFFICIAL` — IDF OFFICIAL · `candidate_system_locator` · https://www.idf.il/en/

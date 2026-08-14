@@ -75,6 +75,27 @@ for (const route of routes.routes.filter((x) => x.locator_status === 'unresolved
   assert.ok(route.acquisition_query, route.route_id);
 }
 
+const dodCloudAto = routes.routes.find((x) => x.route_id === 'DOD-CLOUD-ATO');
+assert.ok(dodCloudAto, 'DOD-CLOUD-ATO');
+assert.equal(dodCloudAto.locator_status, 'candidate_system_locator');
+assert.equal(dodCloudAto.url, "https://public.cyber.mil/dccs/cso/");
+assert.deepEqual(dodCloudAto.locators, [{
+  url: "https://public.cyber.mil/dccs/cso/",
+  scope: 'system_or_first_party_entrypoint',
+  verification_state: 'bounded_system_locator_requires_record_level_acquisition',
+  evidence_ids: [],
+}]);
+assert.equal(dodCloudAto.acquisition_query, null);
+assert.equal(dodCloudAto.notes, "The DoD Cyber Exchange Current Authorized CSOs register is an authoritative public system locator. A responsive provider or program record from that register is still required before any authorization claim may be promoted. Route presence is acquisition infrastructure, not evidence of a relationship, event, transfer, consequence, or proposition.");
+const dodCloudAtoPackages = work.packages.filter((x) => x.source_route_ids.includes('DOD-CLOUD-ATO'));
+assert.equal(dodCloudAtoPackages.length, 8);
+for (const packet of dodCloudAtoPackages) {
+  assert.equal(packet.boundaries.promotes_to, 'candidate_only', packet.package_id);
+  assert.equal(packet.boundaries.graph_effect, 'none', packet.package_id);
+  assert.equal(packet.boundaries.conclusion_generated, false, packet.package_id);
+  assert.equal(packet.boundaries.estate_completion_claimed, false, packet.package_id);
+}
+
 const evidenceById = new Map(evidence.records.map((x) => [x.evidence_id, x]));
 for (const packet of work.packages) for (const id of packet.evidence_record_ids) {
   assert.ok(evidenceById.has(id), `${packet.package_id}:${id}`);

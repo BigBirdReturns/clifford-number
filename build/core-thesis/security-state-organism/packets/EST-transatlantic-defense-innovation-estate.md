@@ -69,7 +69,7 @@ Does this estate supply independently receipted organs, lineage transitions, tra
 
 - `ANDURIL-OFFICIAL` — ANDURIL OFFICIAL · `candidate_first_party_locator` · https://www.anduril.com/
 - `DIU-OFFICIAL` — DIU OFFICIAL · `candidate_system_locator` · https://www.diu.mil/
-- `DOD-CLOUD-ATO` — DOD CLOUD ATO · `unresolved_locator` · locator unresolved
+- `DOD-CLOUD-ATO` — DOD CLOUD ATO · `candidate_system_locator` · https://public.cyber.mil/dccs/cso/
 - `EU-TED` — EU TED · `candidate_system_locator` · https://ted.europa.eu/
 - `FEDRAMP-MARKETPLACE` — FEDRAMP MARKETPLACE · `candidate_system_locator` · https://marketplace.fedramp.gov/
 - `IDF-OFFICIAL` — IDF OFFICIAL · `candidate_system_locator` · https://www.idf.il/en/

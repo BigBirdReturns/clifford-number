@@ -85,7 +85,7 @@ Does this estate supply independently receipted organs, lineage transitions, tra
 - `A16Z-OFFICIAL` — A16Z OFFICIAL · `candidate_first_party_locator` · https://a16z.com/american-dynamism/
 - `ANDURIL-OFFICIAL` — ANDURIL OFFICIAL · `candidate_first_party_locator` · https://www.anduril.com/
 - `DIU-OFFICIAL` — DIU OFFICIAL · `candidate_system_locator` · https://www.diu.mil/
-- `DOD-CLOUD-ATO` — DOD CLOUD ATO · `unresolved_locator` · locator unresolved
+- `DOD-CLOUD-ATO` — DOD CLOUD ATO · `candidate_system_locator` · https://public.cyber.mil/dccs/cso/
 - `DOD-TEST-EVALUATION` — DOD TEST EVALUATION · `candidate_system_locator` · https://www.dote.osd.mil/
 - `EIGHT-VC-OFFICIAL` — EIGHT VC OFFICIAL · `candidate_first_party_locator` · https://www.8vc.com/
 - `EREBOR-FDIC` — EREBOR FDIC · `source_bounded_locator` · https://www.fdic.gov/news/press-releases/2025/fdic-approves-deposit-insurance-application-erebor-bank-na-columbus-ohio
