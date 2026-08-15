@@ -1,0 +1,186 @@
+{
+  "schema_version": "electric-twin-register-of-members-custody@1",
+  "acquisition_id": "ET-ROM-2025-09-01",
+  "issue": 2138,
+  "prepared_at": "2026-08-15",
+  "status": "prepared_not_sent",
+  "canonical_baseline": {
+    "branch": "main",
+    "commit": "23e79de6851ed7c7e32dd83b52e7813d9d917e3e",
+    "tree": "67f7a5aa72dccc7a2047db8f9d139c08cfcd4e12"
+  },
+  "canonical_source_receipts": [
+    {
+      "role": "confirmation-date registered-holder state",
+      "path": "receipts/topology/companies-house-electric-twin-cs01-shareholders-2025-09-27.md",
+      "blob_sha1": "fa9a74b5e614461be8920909f0bd6c3f17352bce",
+      "source_pdf_sha256": "2017a4fb95f4aca753b2780168d789e11ad289aa86a1dcb9f051b48ff8d3408f"
+    },
+    {
+      "role": "allotment authority and eligible-member cohort",
+      "path": "receipts/topology/companies-house-electric-twin-written-resolutions-2025-09-12.md",
+      "blob_sha1": "dc95c80cc42439c9d5fa2f3db93379b1cd7e5a9a"
+    },
+    {
+      "role": "replacement articles and class-rights instrument",
+      "path": "receipts/topology/companies-house-electric-twin-articles-2025-09-12.md",
+      "blob_sha1": "6eaf79c1d2a4e84d1f5837e8246f34d283c0d553"
+    },
+    {
+      "role": "issuer-level allotment on 16 September 2025",
+      "path": "receipts/topology/companies-house-electric-twin-sh01-seed2-2025-09-16.md",
+      "blob_sha1": "45454f5e6aeaace1b8f890fcaa8649546fd1ceab"
+    },
+    {
+      "role": "issuer-level allotment on 17 September 2025",
+      "path": "receipts/topology/companies-house-electric-twin-sh01-seed2-2025-09-17.md",
+      "blob_sha1": "5dc7e7e32df650681ed96ce45029264a523f7a7f"
+    },
+    {
+      "role": "issuer-level allotment on 26 September 2025",
+      "path": "receipts/topology/companies-house-electric-twin-sh01-seed2-2025-09-26.md",
+      "blob_sha1": "22027278f8a33cccf785bd08d79159e0019bf2a6"
+    }
+  ],
+  "official_routes": [
+    {
+      "role": "current company and registered-office metadata",
+      "url": "https://find-and-update.company-information.service.gov.uk/company/15173006"
+    },
+    {
+      "role": "filing-history and SAIL-notice review route",
+      "url": "https://find-and-update.company-information.service.gov.uk/company/15173006/filing-history"
+    },
+    {
+      "role": "statutory request requirements",
+      "url": "https://www.legislation.gov.uk/ukpga/2006/46/section/116"
+    },
+    {
+      "role": "company response or court-application period",
+      "url": "https://www.legislation.gov.uk/ukpga/2006/46/section/117"
+    },
+    {
+      "role": "register-of-members location guidance",
+      "url": "https://changestoukcompanylaw.campaign.gov.uk/changes-to-company-registers/"
+    }
+  ],
+  "dispatch_preconditions": {
+    "requester_full_name_inserted": false,
+    "requester_postal_address_inserted": false,
+    "requester_email_inserted": false,
+    "request_date_inserted": false,
+    "disclosure_recipients_particularized": false,
+    "registered_office_rechecked_on_dispatch_date": false,
+    "sail_or_other_inspection_location_rechecked": false,
+    "final_statutory_request_sha256_recorded": false,
+    "final_voluntary_request_sha256_recorded": false,
+    "dispatch_authorized_in_separate_record": false
+  },
+  "required_outbound_artifacts": [
+    {
+      "artifact_type": "statutory_request_source",
+      "required": true,
+      "exact_bytes_required": true,
+      "sha256_required": true,
+      "byte_length_required": true
+    },
+    {
+      "artifact_type": "statutory_request_rendered_pdf",
+      "required": true,
+      "exact_bytes_required": true,
+      "sha256_required": true,
+      "byte_length_required": true
+    },
+    {
+      "artifact_type": "voluntary_request_source",
+      "required": true,
+      "exact_bytes_required": true,
+      "sha256_required": true,
+      "byte_length_required": true
+    },
+    {
+      "artifact_type": "voluntary_request_rendered_pdf",
+      "required": true,
+      "exact_bytes_required": true,
+      "sha256_required": true,
+      "byte_length_required": true
+    },
+    {
+      "artifact_type": "postal_proof_of_dispatch",
+      "required": true,
+      "exact_bytes_required": true,
+      "sha256_required": true
+    },
+    {
+      "artifact_type": "postal_delivery_confirmation",
+      "required": true,
+      "exact_bytes_required": true,
+      "sha256_required": true
+    },
+    {
+      "artifact_type": "routing_email_rfc822_source",
+      "required": false,
+      "exact_bytes_required": true,
+      "full_headers_required": true,
+      "sha256_required": true
+    }
+  ],
+  "required_inbound_artifacts": [
+    "original email source with complete headers",
+    "original attachments",
+    "postal correspondence as received",
+    "inspection appointment terms",
+    "fee notice",
+    "register extract or copy",
+    "court application or asserted improper-purpose notice",
+    "routing or clarification response",
+    "voluntarily supplied transaction instrument"
+  ],
+  "hash_contract": {
+    "algorithm": "sha256",
+    "hash_original_bytes_before_conversion": true,
+    "record_byte_length": true,
+    "record_mime_type": true,
+    "record_received_or_sent_timestamp_with_timezone": true,
+    "record_custodian": true,
+    "record_source_channel": true,
+    "retain_derivatives_separately": true,
+    "derivative_never_replaces_original": true
+  },
+  "deadline_custody": {
+    "confirmed_receipt_required": true,
+    "receipt_timestamp": null,
+    "calculated_five_working_day_response_point": null,
+    "calculation_method_must_be_recorded": true,
+    "company_court_application_is_disposition_not_allotment_evidence": true
+  },
+  "redaction_contract": {
+    "preserve_unredacted_original_in_restricted_custody_if_lawfully_received": true,
+    "public_derivative_may_remove": [
+      "private residential addresses",
+      "bank details",
+      "signatures",
+      "personal contact details",
+      "subscription prices where unnecessary to the adjudicated claim",
+      "unrelated commercial terms"
+    ],
+    "public_derivative_must_preserve_when_source_supports": [
+      "corporate registered name",
+      "issuer",
+      "share class",
+      "quantity",
+      "relevant date",
+      "express transaction mechanism",
+      "document identity and custody hash"
+    ],
+    "redaction_log_required": true
+  },
+  "current_artifacts": [],
+  "current_response_state": "none",
+  "canonical_effect": {
+    "allottee_delta": "none",
+    "beneficial_owner_delta": "none",
+    "rights_exercise_delta": "none",
+    "actor_hop_delta": "none"
+  }
+}
