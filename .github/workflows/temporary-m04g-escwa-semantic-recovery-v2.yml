@@ -1,0 +1,160 @@
+name: TEMP M-04G ESCWA semantic recovery v2
+
+on:
+  push:
+    branches:
+      - agent/m04g-escwa-semantic-recovery-v2
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out probe branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Ensure PDF text extractor
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v pdftotext >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y poppler-utils
+          fi
+          pdftotext -v 2>&1 | head -n 1
+
+      - name: Probe original routes, exact UN records, and official PDFs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/bodies qualification/text
+          cat > /tmp/m04g-escwa-semantic-probe.mjs <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import crypto from 'node:crypto';
+          import {execFileSync} from 'node:child_process';
+
+          const outDir='qualification';
+          const entries=[
+            {key:'gp051-original',route_id:'M04G-GP051',role:'original_route',url:'http://www.unescwa.org/file/323820/download'},
+            {key:'gp051-docs',route_id:'M04G-GP051',role:'official_record',url:'https://docs.un.org/E/ESCWA/EDID/2015/3',symbol:'E/ESCWA/EDID/2015/3',title:'ARAB DEVELOPMENT OUTLOOK : VISION 2030'},
+            {key:'gp051-dl-pdf',route_id:'M04G-GP051',role:'official_pdf',url:'https://digitallibrary.un.org/record/1324292/files/E_ESCWA_EDID_2015_3-EN.pdf',symbol:'E/ESCWA/EDID/2015/3',title:'ARAB DEVELOPMENT OUTLOOK : VISION 2030'},
+            {key:'gp051-escwa-pdf',route_id:'M04G-GP051',role:'official_pdf',url:'https://unescwa.org/sites/default/files/pubs/pdf/arab-development-outlook-vision-2030-english_0.pdf',symbol:'E/ESCWA/EDID/2015/3',title:'ARAB DEVELOPMENT OUTLOOK : VISION 2030'},
+            {key:'gp051-archive-pdf',route_id:'M04G-GP051',role:'official_archive_pdf',url:'https://archive.unescwa.org/sites/www.unescwa.org/files/publications/files/arab-development-outlook-vision-2030-english_0.pdf',symbol:'E/ESCWA/EDID/2015/3',title:'ARAB DEVELOPMENT OUTLOOK : VISION 2030'},
+            {key:'gp056-original',route_id:'M04G-GP056',role:'original_route',url:'http://www.unescwa.org/publications/survey-economic-social-developments-arab-region-2022-2023'},
+            {key:'gp056-docs',route_id:'M04G-GP056',role:'official_record',url:'https://docs.un.org/E/ESCWA/CL3.SEP/2023/4',symbol:'E/ESCWA/CL3.SEP/2023/4',title:'Survey of economic and social developments in the Arab region 2022-2023'},
+            {key:'gp056-dl-pdf',route_id:'M04G-GP056',role:'official_pdf',url:'https://digitallibrary.un.org/record/4043890/files/1402635_EN.pdf',symbol:'E/ESCWA/CL3.SEP/2023/4',title:'Survey of economic and social developments in the Arab region 2022-2023'},
+            {key:'gp056-escwa-page',route_id:'M04G-GP056',role:'official_publication_page',url:'https://unescwa.org/publications/survey-economic-social-developments-arab-region-2022-2023',symbol:'E/ESCWA/CL3.SEP/2023/4',title:'Survey of economic and social developments in the Arab region 2022-2023'}
+          ];
+
+          const sha256=(buffer)=>crypto.createHash('sha256').update(buffer).digest('hex');
+          const normalize=(value)=>value.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,' ').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;|&#160;/gi,' ').replace(/&amp;/gi,'&').replace(/\s+/g,' ').trim();
+          const safe=(value)=>value.replace(/[^a-z0-9._-]+/gi,'-');
+          function windows(text,patterns){
+            const found=[];
+            for(const pattern of patterns){
+              const match=pattern.exec(text);
+              if(match){
+                const start=Math.max(0,match.index-220);
+                const end=Math.min(text.length,match.index+match[0].length+360);
+                found.push(text.slice(start,end));
+              }
+            }
+            return [...new Set(found)].slice(0,8);
+          }
+          function semantics(routeId,text){
+            if(routeId==='M04G-GP051'){
+              const physician=/\b(?:doctor|doctors|physician|physicians|medical doctors?)\b/i.test(text);
+              const density=/(?:per\s+(?:1,?000|one thousand|thousand)|(?:1,?000|one thousand|thousand)\s+(?:people|persons|population))/i.test(text);
+              const horizon=/\b2030\b/i.test(text);
+              return {physician,density,horizon,matched:physician&&density&&horizon,windows:windows(text,[/\b(?:doctor|doctors|physician|physicians|medical doctors?)\b/i,/(?:per\s+(?:1,?000|one thousand|thousand)|(?:1,?000|one thousand|thousand)\s+(?:people|persons|population))/i,/\b2030\b/i])};
+            }
+            const population=/\bpopulation\b/i.test(text);
+            const doubling=/\b(?:double|doubles|doubled|doubling)\b/i.test(text);
+            const years=/\b(?:year|years)\b/i.test(text);
+            return {population,doubling,years,matched:population&&doubling&&years,windows:windows(text,[/\bpopulation\b/i,/\b(?:double|doubles|doubled|doubling)\b/i,/\b(?:year|years)\b/i])};
+          }
+
+          const results=[];
+          for(const entry of entries){
+            const started_at=new Date().toISOString();
+            const row={...entry,started_at};
+            try{
+              const response=await fetch(entry.url,{redirect:'follow',headers:{'user-agent':'Mozilla/5.0 (compatible; Clifford-M04G-Semantic-Probe/2.0; +https://github.com/BigBirdReturns/clifford-number)','accept':'text/html,application/pdf;q=0.9,*/*;q=0.8'},signal:AbortSignal.timeout(180000)});
+              const body=Buffer.from(await response.arrayBuffer());
+              const contentType=response.headers.get('content-type')||'';
+              const bodyPath=path.join(outDir,'bodies',safe(entry.key));
+              fs.writeFileSync(bodyPath,body);
+              row.status=response.status;
+              row.ok=response.ok;
+              row.final_url=response.url;
+              row.content_type=contentType;
+              row.bytes=body.length;
+              row.content_sha256=sha256(body);
+              row.headers=Object.fromEntries([...response.headers.entries()].filter(([name])=>['content-type','content-length','etag','last-modified','content-disposition','location'].includes(name.toLowerCase())));
+              const pdf=body.subarray(0,5).toString()==='%PDF-'||/application\/pdf/i.test(contentType);
+              row.pdf=pdf;
+              let text='';
+              if(pdf){
+                const pdfPath=`${bodyPath}.pdf`;
+                fs.renameSync(bodyPath,pdfPath);
+                row.body_path=pdfPath;
+                try{
+                  text=execFileSync('pdftotext',['-layout',pdfPath,'-'],{encoding:'utf8',maxBuffer:64*1024*1024,timeout:120000});
+                  row.pdf_text_ok=true;
+                }catch(error){
+                  row.pdf_text_ok=false;
+                  row.pdf_text_error=String(error.message||error).slice(0,1000);
+                }
+              }else{
+                row.body_path=bodyPath;
+                text=normalize(body.toString('utf8'));
+              }
+              const textPath=path.join(outDir,'text',`${safe(entry.key)}.txt`);
+              fs.writeFileSync(textPath,text);
+              row.text_path=textPath;
+              row.text_bytes=Buffer.byteLength(text);
+              row.text_sha256=sha256(Buffer.from(text));
+              row.record_identity_match=Boolean(entry.symbol&&(text.includes(entry.symbol)||text.includes(entry.symbol.replaceAll('/','_'))));
+              row.title_match=Boolean(entry.title&&text.toLowerCase().includes(entry.title.toLowerCase()));
+              row.semantic=semantics(entry.route_id,text);
+              row.text_prefix=text.slice(0,1200);
+            }catch(error){
+              row.ok=false;
+              row.error=String(error.stack||error.message||error).slice(0,4000);
+            }
+            row.completed_at=new Date().toISOString();
+            results.push(row);
+            console.log(JSON.stringify({key:row.key,status:row.status||null,final_url:row.final_url||null,bytes:row.bytes||0,pdf:row.pdf||false,identity:row.record_identity_match||false,title:row.title_match||false,semantic:row.semantic?.matched||false,error:row.error||null}));
+          }
+
+          const byRoute=Object.fromEntries(['M04G-GP051','M04G-GP056'].map((routeId)=>[routeId,results.filter((row)=>row.route_id===routeId)]));
+          const selected={};
+          for(const [routeId,rows] of Object.entries(byRoute)){
+            const officialRecord=rows.find((row)=>row.role==='official_record'&&row.ok&&row.record_identity_match);
+            const semanticPdf=rows.find((row)=>row.pdf&&row.ok&&row.semantic?.matched);
+            selected[routeId]=officialRecord&&semanticPdf?{record:{url:officialRecord.url,final_url:officialRecord.final_url,symbol:officialRecord.symbol,title:officialRecord.title,status:officialRecord.status,bytes:officialRecord.bytes,content_sha256:officialRecord.content_sha256},semantic_pdf:{url:semanticPdf.url,final_url:semanticPdf.final_url,status:semanticPdf.status,bytes:semanticPdf.bytes,content_sha256:semanticPdf.content_sha256,text_sha256:semanticPdf.text_sha256,semantic:semanticPdf.semantic}}:null;
+          }
+          const payload={schema_version:'m04g-escwa-semantic-recovery-probe@2',workflow_run_id:process.env.GITHUB_RUN_ID,commit_sha:process.env.GITHUB_SHA,observed_at:new Date().toISOString(),requirements:{distinct_record_urls:true,distinct_symbols:true,distinct_response_hashes:true,record_identity_required:true,semantic_pdf_required:true},selected,results};
+          fs.writeFileSync(path.join(outDir,'m04g-escwa-semantic-recovery-probe.json'),JSON.stringify(payload,null,2)+'\n');
+          fs.writeFileSync(path.join(outDir,'m04g-escwa-semantic-recovery-probe.sha256'),`${sha256(fs.readFileSync(path.join(outDir,'m04g-escwa-semantic-recovery-probe.json')))}  m04g-escwa-semantic-recovery-probe.json\n`);
+          console.log(JSON.stringify({selected,probe_sha256:fs.readFileSync(path.join(outDir,'m04g-escwa-semantic-recovery-probe.sha256'),'utf8').trim()},null,2));
+          NODE
+          node /tmp/m04g-escwa-semantic-probe.mjs
+
+      - name: Upload semantic recovery receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-escwa-semantic-recovery-${{ github.run_id }}
+          path: qualification/
+          if-no-files-found: error
+          retention-days: 30
