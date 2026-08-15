@@ -1,4 +1,4 @@
-name: TEMP M-04G UNESCWA archive probe v1
+name: TEMP M-04G ESCWA official-mirror probe v2
 
 on:
   push:
@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: 24
 
-      - name: Probe bounded official ESCWA surfaces
+      - name: Probe bounded official UN mirror surfaces
         shell: bash
         run: |
           set -euo pipefail
@@ -29,39 +29,45 @@ jobs:
 
           const candidates = [
             {
-              url: 'https://www.unescwa.org/publications/escwa-annual-report-2016',
-              source_class: 'official_publication_record'
+              url: 'https://digitallibrary.un.org/collection/ESCWA?ln=en',
+              source_class: 'official_un_digital_library_collection'
             },
             {
-              url: 'https://www.unescwa.org/node/996',
-              source_class: 'official_document_record'
+              url: 'https://digitallibrary.un.org/search?as=1&f1=author&ln=en&m1=e&p1=UN.+ESCWA&rm=&sf=title&so=a',
+              source_class: 'official_un_digital_library_author_index'
             },
             {
-              url: 'https://www.unescwa.org/sites/default/files/pubs/pdf/annual-report-2016-english.pdf',
-              source_class: 'official_publication_pdf'
+              url: 'https://digitallibrary.un.org/record/4038335',
+              source_class: 'official_un_digital_library_record'
             },
             {
-              url: 'https://archive.unescwa.org/publications',
-              source_class: 'official_archive_repository'
+              url: 'https://digitallibrary.un.org/record/4038335/files/1398124_EN.pdf',
+              source_class: 'official_un_digital_library_pdf'
             },
             {
-              url: 'https://archive.unescwa.org/our-work/7790/publications',
-              source_class: 'official_archive_publication_index'
+              url: 'https://digitallibrary.un.org/record/3894973',
+              source_class: 'official_un_digital_library_catalogue_record'
             },
             {
-              url: 'https://archive.unescwa.org/publications/escwa-annual-report-2009',
-              source_class: 'official_archive_publication_record'
+              url: 'https://docs.un.org/E/ESCWA/30/14',
+              source_class: 'official_un_ods_record'
             },
             {
-              url: 'https://archive.unescwa.org/publications/socioeconomic-impact-covid-19-policy-briefs',
-              source_class: 'official_archive_publication_bundle'
+              url: 'https://docs.un.org/E/ESCWA/OES/2021/INF.1',
+              source_class: 'official_un_ods_record'
             },
             {
-              url: 'https://archive.unescwa.org/Publications/annual-report-2015',
-              source_class: 'official_archive_publication_record'
+              url: 'https://documents.un.org/',
+              source_class: 'official_un_document_repository'
             }
           ];
 
+          const allowedHosts = new Set([
+            'digitallibrary.un.org',
+            'docs.un.org',
+            'documents.un.org',
+            'daccess-ods.un.org'
+          ]);
           const maxBytes = 524288;
           const timeoutMs = 30000;
           const userAgent = 'CliffordNumber-M04G/2.0 (+https://github.com/BigBirdReturns/clifford-number)';
@@ -73,7 +79,8 @@ jobs:
             /captcha/i,
             /cloudflare/i,
             /request blocked/i,
-            /forbidden/i
+            /forbidden/i,
+            /sign in to continue/i
           ];
 
           async function readBounded(response) {
@@ -108,10 +115,10 @@ jobs:
               });
               const body = await readBounded(response);
               const contentType = String(response.headers.get('content-type') || '').toLowerCase();
-              const sample = body.subarray(0, Math.min(body.length, 16000)).toString('utf8');
+              const sample = body.subarray(0, Math.min(body.length, 20000)).toString('utf8');
               const finalUrl = response.url || candidate.url;
               const finalHost = new URL(finalUrl).hostname.toLowerCase();
-              const hostAccepted = finalHost === 'unescwa.org' || finalHost.endsWith('.unescwa.org');
+              const hostAccepted = allowedHosts.has(finalHost);
               const challenge = rejectionPatterns.find((pattern) => pattern.test(sample));
               const accepted = response.ok
                 && finalUrl.startsWith('https://')
@@ -164,10 +171,10 @@ jobs:
           }
           const accepted = results.filter((row) => row.accepted);
           const output = {
-            schema_version: 'm04g-unescwa-archive-probe@1',
+            schema_version: 'm04g-escwa-official-mirror-probe@2',
             generated_at: new Date().toISOString(),
             guardrails: {
-              official_unescwa_hosts_only: true,
+              official_un_hosts_only: [...allowedHosts],
               https_only: true,
               method: 'GET',
               max_bytes: maxBytes,
@@ -181,10 +188,10 @@ jobs:
             selected: accepted[0] || null,
             results
           };
-          fs.writeFileSync('probe-output/m04g-unescwa-archive-probe.json', JSON.stringify(output, null, 2) + '\n');
+          fs.writeFileSync('probe-output/m04g-escwa-official-mirror-probe.json', JSON.stringify(output, null, 2) + '\n');
           fs.writeFileSync(
-            'probe-output/m04g-unescwa-archive-probe.sha256',
-            `${crypto.createHash('sha256').update(JSON.stringify(output)).digest('hex')}  m04g-unescwa-archive-probe.json\n`
+            'probe-output/m04g-escwa-official-mirror-probe.sha256',
+            `${crypto.createHash('sha256').update(JSON.stringify(output)).digest('hex')}  m04g-escwa-official-mirror-probe.json\n`
           );
           console.log(JSON.stringify(output, null, 2));
           if (!accepted.length) process.exitCode = 2;
@@ -194,7 +201,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: m04g-unescwa-archive-probe-${{ github.run_id }}
+          name: m04g-escwa-official-mirror-probe-${{ github.run_id }}
           path: probe-output/
           if-no-files-found: error
           retention-days: 30
