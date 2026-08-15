@@ -1,9 +1,10 @@
-name: TEMP M-04G ESCWA original-route recovery v5
+name: TEMP M-04G ESCWA bounded original-route recovery v6
 
 on:
   push:
     branches:
       - agent/m04g-escwa-original-route-recovery-v5
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -11,157 +12,181 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
-      - name: Install PDF text extractor
-        shell: bash
-        run: |
-          set -euo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y poppler-utils
-          pdftotext -v 2>&1 | head -n 1
+      - name: Check out probe source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Recover exact historical route bodies
+      - name: Initialize recovery receipts
         shell: bash
-        env:
-          PYTHONUNBUFFERED: "1"
         run: |
           set -euo pipefail
           mkdir -p qualification/bodies qualification/text qualification/cdx
-          cat > /tmp/m04g-escwa-original-route-recovery.py <<'PY'
-          import gzip
+          printf '%s\n' '{"status":"initialized","product_files_modified":false}' > qualification/initialization.json
+
+      - name: Install PDF text extractor
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 180s bash -c 'sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils'
+          pdftotext -v 2>&1 | head -n 1
+
+      - name: Build bounded v6 controller
+        shell: bash
+        env:
+          RUN_ID: ${{ github.run_id }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
           import hashlib
-          import html
           import json
+          import os
           import pathlib
           import re
           import subprocess
-          import time
-          import urllib.error
-          import urllib.parse
-          import urllib.request
+          import textwrap
 
-          ROOT = pathlib.Path("qualification")
-          UA = "Clifford-M04G-ESCWA-Original-Route-Recovery/5.0 (+https://github.com/BigBirdReturns/clifford-number)"
-          ROUTES = {
-              "M04G-GP051": [
-                  "http://www.unescwa.org/file/323820/download",
-                  "https://www.unescwa.org/file/323820/download",
-                  "http://unescwa.org/file/323820/download",
-                  "https://unescwa.org/file/323820/download",
-              ],
-              "M04G-GP056": [
-                  "http://www.unescwa.org/publications/survey-economic-social-developments-arab-region-2022-2023",
-                  "https://www.unescwa.org/publications/survey-economic-social-developments-arab-region-2022-2023",
-                  "http://unescwa.org/publications/survey-economic-social-developments-arab-region-2022-2023",
-                  "https://unescwa.org/publications/survey-economic-social-developments-arab-region-2022-2023",
-              ],
-          }
-          ALLOWED_HOST_SUFFIXES = (
-              "unescwa.org",
-              "documents.un.org",
-              "docs.un.org",
-              "digitallibrary.un.org",
+          source_sha = "668185452e5ecc1c23f0c44d098cd3c1462c8052"
+          workflow_path = ".github/workflows/temporary-m04g-escwa-original-route-recovery-v5.yml"
+          source = subprocess.check_output(
+              ["git", "show", f"{source_sha}:{workflow_path}"],
+              text=True,
           )
+          match = re.search(
+              r"cat > /tmp/m04g-escwa-original-route-recovery\.py <<'PY'\n(.*?)\n          PY",
+              source,
+              re.S,
+          )
+          if not match:
+              raise SystemExit("source controller heredoc not found")
+          script = textwrap.dedent(match.group(1))
+          replacements = []
 
-          def sha256(data):
-              return hashlib.sha256(data).hexdigest()
+          def replace_once(old, new, label):
+              global script
+              count = script.count(old)
+              if count != 1:
+                  raise SystemExit(f"{label}: expected one match, found {count}")
+              script = script.replace(old, new, 1)
+              replacements.append(label)
 
-          def safe(value):
-              return re.sub(r"[^A-Za-z0-9._-]+", "-", value).strip("-")[:180]
+          replace_once(
+              '"workflow_run_id": "${' + '{ github.run_id }}",',
+              f'"workflow_run_id": {json.dumps(os.environ["RUN_ID"])},',
+              "render_run_id",
+          )
+          replace_once(
+              '"commit_sha": "${' + '{ github.sha }}",',
+              f'"commit_sha": {json.dumps(os.environ["COMMIT_SHA"])},',
+              "render_commit_sha",
+          )
+          replace_once(
+              '"schema_version": "m04g-escwa-original-route-recovery@5",',
+              '"schema_version": "m04g-escwa-original-route-recovery@6",',
+              "schema_v6",
+          )
+          replace_once(
+              'for attempt in range(3):',
+              'for attempt in range(1):',
+              "single_attempt_fetch",
+          )
+          for old, new, label in (
+              ('timeout=120', 'timeout=8', "bound_120_second_calls"),
+              ('timeout=90', 'timeout=8', "bound_90_second_calls"),
+              ('timeout=180', 'timeout=8', "bound_180_second_calls"),
+          ):
+              count = script.count(old)
+              if count < 1:
+                  raise SystemExit(f"{label}: no matches")
+              script = script.replace(old, new)
+              replacements.append(f"{label}:{count}")
 
-          def fetch(url, *, timeout=90, headers=None, byte_range=None):
-              merged = {
-                  "User-Agent": UA,
-                  "Accept": "text/html,application/pdf,application/json;q=0.9,*/*;q=0.8",
-              }
-              if headers:
-                  merged.update(headers)
-              if byte_range:
-                  merged["Range"] = byte_range
-              request = urllib.request.Request(url, headers=merged)
-              last = None
-              for attempt in range(3):
-                  try:
-                      with urllib.request.urlopen(request, timeout=timeout) as response:
-                          body = response.read()
-                          return {
-                              "ok": 200 <= response.status < 400,
-                              "status": response.status,
-                              "url": response.geturl(),
-                              "headers": {k.lower(): v for k, v in response.headers.items()},
-                              "body": body,
-                          }
-                  except urllib.error.HTTPError as error:
-                      body = error.read()
-                      last = {
-                          "ok": False,
-                          "status": error.code,
-                          "url": error.geturl(),
-                          "headers": {k.lower(): v for k, v in error.headers.items()},
-                          "body": body,
-                          "error": f"HTTPError: {error}",
-                      }
-                      if error.code not in (429, 500, 502, 503, 504):
-                          return last
-                  except Exception as error:
-                      last = {
-                          "ok": False,
-                          "status": None,
-                          "url": url,
-                          "headers": {},
-                          "body": b"",
-                          "error": f"{type(error).__name__}: {error}",
-                      }
-                  time.sleep(1.5 * (attempt + 1))
-              return last
-
-          def html_to_text(raw):
-              text = raw.decode("utf-8", errors="replace")
-              text = re.sub(r"(?is)<script\b[^>]*>.*?</script>", " ", text)
-              text = re.sub(r"(?is)<style\b[^>]*>.*?</style>", " ", text)
-              text = re.sub(r"(?s)<[^>]+>", " ", text)
-              return re.sub(r"\s+", " ", html.unescape(text)).strip()
-
-          def pdf_to_text(raw, key):
-              pdf_path = ROOT / "bodies" / f"{key}.pdf"
-              txt_path = ROOT / "text" / f"{key}.txt"
-              pdf_path.write_bytes(raw)
-              completed = subprocess.run(
-                  ["pdftotext", "-layout", str(pdf_path), str(txt_path)],
-                  capture_output=True,
-                  text=True,
-                  timeout=180,
-              )
-              if completed.returncode != 0:
-                  return "", f"pdftotext exit {completed.returncode}: {completed.stderr[:1000]}"
-              return txt_path.read_text(errors="replace"), None
-
-          def semantic(route_id, text):
-              compact = re.sub(r"\s+", " ", text)
-              if route_id == "M04G-GP051":
-                  term_re = re.compile(r"\b(?:physician|physicians|doctor|doctors|medical doctor|medical doctors)\b", re.I)
-                  density_re = re.compile(
-                      r"(?:\bper\s+(?:1[\s,]?000|one\s+thousand|thousand)\b|\b(?:1[\s,]?000|one\s+thousand|thousand)\s+(?:people|persons|population|inhabitants)\b)",
-                      re.I,
+          replace_once(
+              '                  indexes = json.loads(collinfo["body"])[:28]',
+              '''                  all_indexes = json.loads(collinfo["body"])
+                  indexes = []
+                  for target_year in ("2026", "2023", "2015"):
+                      candidate = next(
+                          (
+                              row for row in all_indexes
+                              if f"CC-MAIN-{target_year}" in row.get("id", "")
+                          ),
+                          None,
+                      )
+                      if candidate and candidate not in indexes:
+                          indexes.append(candidate)''',
+              "target_common_crawl_years",
+          )
+          replace_once(
+              '              for url in urls:',
+              '              for url in urls[:2]:',
+              "two_canonical_route_variants",
+          )
+          replace_once(
+              '                  for capture in wayback["rows"][-16:]:',
+              '''                  wayback_rows = wayback["rows"]
+                  sampled_wayback = (
+                      wayback_rows[:1]
+                      + wayback_rows[len(wayback_rows) // 2:len(wayback_rows) // 2 + 1]
+                      + wayback_rows[-1:]
                   )
-                  term_matches = list(term_re.finditer(compact))
-                  density_matches = list(density_re.finditer(compact))
-                  pairs = []
-                  for tm in term_matches:
-                      for dm in density_matches:
-                          distance = abs(tm.start() - dm.start())
-                          if distance <= 1800:
-                              start = max(0, min(tm.start(), dm.start()) - 450)
-                              end = min(len(compact), max(tm.end(), dm.end()) + 900)
-                              window = compact[start:end]
+                  for capture in list({
+                      (row.get("timestamp"), row.get("digest")): row
+                      for row in sampled_wayback
+                  }.values()):''',
+              "sample_three_wayback_eras",
+          )
+          replace_once(
+              '                  for capture in cc["rows"][-12:]:',
+              '                  for capture in cc["rows"][-3:]:',
+              "three_common_crawl_bodies",
+          )
+          replace_once(
+              '              for timestamp, link in list(dict.fromkeys(linked_targets))[:24]:',
+              '              for timestamp, link in list(dict.fromkeys(linked_targets))[:3]:',
+              "three_linked_targets",
+          )
+          replace_once(
+              '                  for candidate in candidates:',
+              '                  for candidate in candidates[:1]:',
+              "one_linked_candidate",
+          )
+          replace_once(
+              '                  "limit": "100",',
+              '                  "limit": "32",',
+              "bounded_wayback_metadata",
+          )
+          replace_once(
+              '''                              window = compact[start:end]
                               pairs.append({
                                   "distance": distance,
                                   "window": window,
-                                  "contains_2030": bool(re.search(r"\b2030\b", window)),
-                              })
-                  pairs.sort(key=lambda row: (not row["contains_2030"], row["distance"]))
-                  has_2030 = bool(re.search(r"\b2030\b", compact))
+                                  "contains_2030": bool(re.search(r"\\b2030\\b", window)),
+                              })''',
+              '''                              window = compact[start:end]
+                              value_start = max(0, min(tm.start(), dm.start()) - 120)
+                              value_end = min(len(compact), max(tm.end(), dm.end()) + 120)
+                              value_window = compact[value_start:value_end]
+                              values = re.findall(
+                                  r"(?<![\\d,])(?:0?\\.\\d+|[1-9]\\d?(?:\\.\\d+)?)(?![\\d,])",
+                                  value_window,
+                              )
+                              pairs.append({
+                                  "distance": distance,
+                                  "window": window,
+                                  "contains_2030": bool(re.search(r"\\b2030\\b", window)),
+                                  "contains_density_value": bool(values),
+                                  "density_values": values[:8],
+                              })''',
+              "gp051_density_value_gate",
+          )
+          replace_once(
+              '''                  pairs.sort(key=lambda row: (not row["contains_2030"], row["distance"]))
+                  has_2030 = bool(re.search(r"\\b2030\\b", compact))
                   return {
                       "matched": bool(pairs) and has_2030,
                       "health_term_count": len(term_matches),
@@ -169,326 +194,106 @@ jobs:
                       "has_2030": has_2030,
                       "nearest_distance": pairs[0]["distance"] if pairs else None,
                       "windows": [row["window"] for row in pairs[:8]],
-                  }
-              pop_re = re.compile(r"\bpopulation\b", re.I)
-              double_re = re.compile(r"\b(?:double|doubles|doubled|doubling)\b(?![\s-]*digit)", re.I)
-              year_re = re.compile(r"\b(?:year|years)\b", re.I)
-              pops = list(pop_re.finditer(compact))
-              doubles = list(double_re.finditer(compact))
-              years = list(year_re.finditer(compact))
-              triples = []
-              for dm in doubles:
-                  nearest_pop = min(pops, key=lambda pm: abs(pm.start() - dm.start()), default=None)
-                  nearest_year = min(years, key=lambda ym: abs(ym.start() - dm.start()), default=None)
-                  if not nearest_pop or not nearest_year:
-                      continue
-                  pop_distance = abs(nearest_pop.start() - dm.start())
-                  year_distance = abs(nearest_year.start() - dm.start())
-                  if pop_distance <= 900 and year_distance <= 900:
-                      start = max(0, min(nearest_pop.start(), dm.start(), nearest_year.start()) - 450)
-                      end = min(len(compact), max(nearest_pop.end(), dm.end(), nearest_year.end()) + 900)
-                      triples.append({
-                          "distance": max(pop_distance, year_distance),
-                          "window": compact[start:end],
-                      })
-              triples.sort(key=lambda row: row["distance"])
-              return {
-                  "matched": bool(triples),
-                  "population_count": len(pops),
-                  "exact_doubling_count": len(doubles),
-                  "year_count": len(years),
-                  "nearest_distance": triples[0]["distance"] if triples else None,
-                  "windows": [row["window"] for row in triples[:8]],
-              }
-
-          def extract_links(raw, base_url):
-              text = raw.decode("utf-8", errors="replace")
-              links = []
-              for match in re.finditer(r'''(?is)\bhref\s*=\s*["']([^"'#]+)["']''', text):
-                  href = html.unescape(match.group(1)).strip()
-                  absolute = urllib.parse.urljoin(base_url, href)
-                  parsed = urllib.parse.urlparse(absolute)
-                  host = (parsed.hostname or "").lower()
-                  if host and any(host == suffix or host.endswith("." + suffix) for suffix in ALLOWED_HOST_SUFFIXES):
-                      if (
-                          absolute.lower().endswith(".pdf")
-                          or "/download" in absolute.lower()
-                          or "documents.un.org" in host
-                          or "docs.un.org" in host
-                          or "digitallibrary.un.org" in host
-                      ):
-                          links.append(absolute)
-              return list(dict.fromkeys(links))[:20]
-
-          def inspect_body(route_id, key, source, response):
-              raw = response.get("body", b"")
-              content_type = response.get("headers", {}).get("content-type", "")
-              is_pdf = raw.startswith(b"%PDF-") or "application/pdf" in content_type.lower()
-              text_error = None
-              if is_pdf:
-                  text, text_error = pdf_to_text(raw, key)
-              else:
-                  body_path = ROOT / "bodies" / f"{key}.html"
-                  body_path.write_bytes(raw)
-                  text = html_to_text(raw)
-                  (ROOT / "text" / f"{key}.txt").write_text(text)
-              row = {
-                  "route_id": route_id,
-                  "key": key,
-                  "source": source,
-                  "requested_url": source.get("requested_url"),
-                  "status": response.get("status"),
-                  "final_url": response.get("url"),
-                  "content_type": content_type,
-                  "bytes": len(raw),
-                  "content_sha256": sha256(raw) if raw else None,
-                  "pdf": is_pdf,
-                  "text_bytes": len(text.encode("utf-8")),
-                  "text_sha256": sha256(text.encode("utf-8")) if text else None,
-                  "text_error": text_error,
-                  "semantic": semantic(route_id, text),
-                  "text_prefix": re.sub(r"\s+", " ", text[:1600]),
-              }
-              if not is_pdf:
-                  row["official_links"] = extract_links(raw, response.get("url") or source.get("requested_url") or "")
-              return row
-
-          def query_wayback(url):
-              params = {
-                  "url": url,
-                  "output": "json",
-                  "fl": "timestamp,original,statuscode,mimetype,digest,length",
-                  "filter": "statuscode:200",
-                  "collapse": "digest",
-                  "limit": "100",
-              }
-              endpoint = "https://web.archive.org/cdx/search/cdx?" + urllib.parse.urlencode(params)
-              response = fetch(endpoint, timeout=120, headers={"Accept": "application/json"})
-              if not response["ok"]:
-                  return {"endpoint": endpoint, "error": response.get("error"), "status": response.get("status"), "rows": []}
-              try:
-                  data = json.loads(response["body"])
-                  headers = data[0]
-                  rows = [dict(zip(headers, values)) for values in data[1:]]
-                  return {"endpoint": endpoint, "rows": rows}
-              except Exception as error:
-                  return {"endpoint": endpoint, "error": f"{type(error).__name__}: {error}", "rows": []}
-
-          def query_common_crawl(url, indexes):
-              rows = []
-              errors = []
-              for index in indexes:
-                  endpoint = index["cdx-api"] + "?" + urllib.parse.urlencode({
-                      "url": url,
-                      "output": "json",
-                      "filter": "status:200",
-                      "collapse": "digest",
-                  })
-                  response = fetch(endpoint, timeout=90, headers={"Accept": "application/json"})
-                  if not response["ok"]:
-                      errors.append({"index": index["id"], "status": response.get("status"), "error": response.get("error")})
-                      continue
-                  for line in response["body"].decode("utf-8", errors="replace").splitlines():
-                      if not line.strip():
-                          continue
-                      try:
-                          row = json.loads(line)
-                          row["index"] = index["id"]
-                          rows.append(row)
-                      except json.JSONDecodeError:
-                          continue
-              deduped = {}
-              for row in rows:
-                  key = (row.get("digest"), row.get("url"), row.get("filename"), row.get("offset"))
-                  deduped[key] = row
-              return {"rows": list(deduped.values()), "errors": errors}
-
-          def common_crawl_body(row):
-              try:
-                  offset = int(row["offset"])
-                  length = int(row["length"])
-                  url = "https://data.commoncrawl.org/" + row["filename"]
-                  response = fetch(url, timeout=180, byte_range=f"bytes={offset}-{offset + length - 1}")
-                  if not response["ok"]:
-                      return response
-                  decompressed = gzip.decompress(response["body"])
-                  first = decompressed.find(b"\r\n\r\n")
-                  if first < 0:
-                      first = decompressed.find(b"\n\n")
-                      sep = 2
-                  else:
-                      sep = 4
-                  remainder = decompressed[first + sep:] if first >= 0 else decompressed
-                  second = remainder.find(b"\r\n\r\n")
-                  if second < 0:
-                      second = remainder.find(b"\n\n")
-                      sep2 = 2
-                  else:
-                      sep2 = 4
-                  body = remainder[second + sep2:] if second >= 0 else remainder
-                  headers = {}
-                  if second >= 0:
-                      header_text = remainder[:second].decode("latin-1", errors="replace")
-                      for line in header_text.splitlines()[1:]:
-                          if ":" in line:
-                              name, value = line.split(":", 1)
-                              headers[name.lower().strip()] = value.strip()
+                  }''',
+              '''                  qualifying_pairs = [
+                      row for row in pairs
+                      if row["contains_2030"] and row["contains_density_value"]
+                  ]
+                  qualifying_pairs.sort(key=lambda row: row["distance"])
+                  has_2030 = bool(re.search(r"\\b2030\\b", compact))
                   return {
-                      "ok": True,
-                      "status": int(row.get("status", 200)),
-                      "url": row.get("url"),
-                      "headers": headers,
-                      "body": body,
-                  }
-              except Exception as error:
-                  return {
-                      "ok": False,
-                      "status": None,
-                      "url": row.get("url"),
-                      "headers": {},
-                      "body": b"",
-                      "error": f"{type(error).__name__}: {error}",
-                  }
-
-          collinfo = fetch("https://index.commoncrawl.org/collinfo.json", timeout=120, headers={"Accept": "application/json"})
-          indexes = []
-          if collinfo["ok"]:
-              try:
-                  indexes = json.loads(collinfo["body"])[:28]
-              except Exception:
-                  indexes = []
-
-          output = {
-              "schema_version": "m04g-escwa-original-route-recovery@5",
-              "workflow_run_id": "${{ github.run_id }}",
-              "commit_sha": "${{ github.sha }}",
-              "requirements": {
-                  "official_or_archived_original_route": True,
-                  "gp051_health_workforce_density_and_2030": True,
-                  "gp056_population_doubling_and_years": True,
-                  "reject_double_digit_false_positive": True,
-                  "product_files_modified": False,
-              },
-              "common_crawl_indexes": [row.get("id") for row in indexes],
-              "routes": {},
-              "selected": {},
-          }
-
-          for route_id, urls in ROUTES.items():
-              route = {"wayback_queries": [], "common_crawl_queries": [], "observations": []}
-              seen_bodies = set()
-              linked_targets = []
-              for url in urls:
-                  wayback = query_wayback(url)
-                  route["wayback_queries"].append({"url": url, **wayback})
-                  for capture in wayback["rows"][-16:]:
-                      replay = f"https://web.archive.org/web/{capture['timestamp']}id_/{capture['original']}"
-                      response = fetch(replay, timeout=180)
-                      digest_key = sha256(response.get("body", b"")) if response.get("body") else None
-                      if not response["ok"] or not digest_key or digest_key in seen_bodies:
-                          if not response["ok"]:
-                              route["observations"].append({
-                                  "route_id": route_id,
-                                  "source": {"kind": "wayback", "requested_url": replay, "capture": capture},
-                                  "status": response.get("status"),
-                                  "error": response.get("error"),
-                              })
-                          continue
-                      seen_bodies.add(digest_key)
-                      key = safe(f"{route_id}-wayback-{capture['timestamp']}-{len(route['observations'])}")
-                      row = inspect_body(
-                          route_id,
-                          key,
-                          {"kind": "wayback", "requested_url": replay, "capture": capture},
-                          response,
-                      )
-                      route["observations"].append(row)
-                      for link in row.get("official_links", []):
-                          linked_targets.append((capture["timestamp"], link))
-                  cc = query_common_crawl(url, indexes)
-                  route["common_crawl_queries"].append({
-                      "url": url,
-                      "rows": cc["rows"],
-                      "errors": cc["errors"],
-                  })
-                  for capture in cc["rows"][-12:]:
-                      response = common_crawl_body(capture)
-                      digest_key = sha256(response.get("body", b"")) if response.get("body") else None
-                      if not response["ok"] or not digest_key or digest_key in seen_bodies:
-                          continue
-                      seen_bodies.add(digest_key)
-                      key = safe(f"{route_id}-cc-{capture.get('timestamp','na')}-{len(route['observations'])}")
-                      row = inspect_body(
-                          route_id,
-                          key,
-                          {"kind": "common_crawl", "requested_url": capture.get("url"), "capture": capture},
-                          response,
-                      )
-                      route["observations"].append(row)
-                      for link in row.get("official_links", []):
-                          linked_targets.append((capture.get("timestamp", ""), link))
-
-              for timestamp, link in list(dict.fromkeys(linked_targets))[:24]:
-                  candidates = [link]
-                  if timestamp:
-                      candidates.insert(0, f"https://web.archive.org/web/{timestamp}id_/{link}")
-                  for candidate in candidates:
-                      response = fetch(candidate, timeout=180)
-                      digest_key = sha256(response.get("body", b"")) if response.get("body") else None
-                      if not response["ok"] or not digest_key or digest_key in seen_bodies:
-                          continue
-                      seen_bodies.add(digest_key)
-                      key = safe(f"{route_id}-linked-{timestamp or 'live'}-{len(route['observations'])}")
-                      row = inspect_body(
-                          route_id,
-                          key,
-                          {"kind": "linked_official", "requested_url": candidate, "discovered_link": link, "capture_timestamp": timestamp},
-                          response,
-                      )
-                      route["observations"].append(row)
-
-              matches = [
-                  row for row in route["observations"]
-                  if isinstance(row, dict) and row.get("semantic", {}).get("matched")
-              ]
-              matches.sort(
-                  key=lambda row: (
-                      0 if row.get("pdf") else 1,
-                      row.get("semantic", {}).get("nearest_distance") or 10**9,
-                      -int(row.get("text_bytes") or 0),
-                  )
-              )
-              output["routes"][route_id] = route
-              output["selected"][route_id] = matches[0] if matches else None
-              print(json.dumps({
-                  "route_id": route_id,
-                  "wayback_captures": sum(len(row.get("rows", [])) for row in route["wayback_queries"]),
-                  "common_crawl_captures": sum(len(row.get("rows", [])) for row in route["common_crawl_queries"]),
-                  "observations": len(route["observations"]),
-                  "semantic_matches": len(matches),
-                  "selected": matches[0].get("final_url") if matches else None,
-              }))
-
-          out_path = ROOT / "m04g-escwa-original-route-recovery.json"
-          out_path.write_text(json.dumps(output, indent=2) + "\n")
-          (ROOT / "m04g-escwa-original-route-recovery.sha256").write_text(
-              sha256(out_path.read_bytes()) + "  " + out_path.name + "\n"
+                      "matched": bool(qualifying_pairs),
+                      "health_term_count": len(term_matches),
+                      "density_term_count": len(density_matches),
+                      "has_2030": has_2030,
+                      "nearest_distance": qualifying_pairs[0]["distance"] if qualifying_pairs else None,
+                      "windows": [row["window"] for row in qualifying_pairs[:8]],
+                      "density_values": [row["density_values"] for row in qualifying_pairs[:8]],
+                  }''',
+              "gp051_same_window_admission",
           )
-          print(json.dumps({
-              "selected": {
-                  route: (row.get("final_url") if row else None)
-                  for route, row in output["selected"].items()
-              },
-              "probe_sha256": sha256(out_path.read_bytes()),
-          }, indent=2))
-          PY
-          python3 /tmp/m04g-escwa-original-route-recovery.py
+          replace_once(
+              '              year_re = re.compile(r"\\b(?:year|years)\\b", re.I)',
+              '              year_re = re.compile(r"\\b(?:[1-9]\\d{0,2}(?:\\.\\d+)?)\\s+(?:year|years)\\b", re.I)',
+              "gp056_numeric_year_interval",
+          )
+          replace_once(
+              '                  "gp051_health_workforce_density_and_2030": True,',
+              '                  "gp051_value_health_density_and_2030_same_window": True,',
+              "gp051_requirement_label",
+          )
+          replace_once(
+              '                  "gp056_population_doubling_and_years": True,',
+              '                  "gp056_population_doubling_and_numeric_year_interval": True,',
+              "gp056_requirement_label",
+          )
 
-      - name: Upload original-route recovery receipts
+          transformed = pathlib.Path("/tmp/m04g-escwa-original-route-recovery-v6.py")
+          transformed.write_text(script)
+          compile(script, str(transformed), "exec")
+          receipt = {
+              "schema": "m04g-escwa-controller-transform@1",
+              "source_commit": source_sha,
+              "source_workflow": workflow_path,
+              "source_sha256": hashlib.sha256(match.group(1).encode()).hexdigest(),
+              "transformed_sha256": hashlib.sha256(script.encode()).hexdigest(),
+              "replacements": replacements,
+              "product_files_modified": False,
+          }
+          pathlib.Path("qualification/controller-transform.json").write_text(
+              json.dumps(receipt, indent=2) + "\n"
+          )
+          print(json.dumps(receipt, indent=2))
+          PY
+
+      - name: Run bounded v6 controller
+        id: bounded_probe
+        shell: bash
+        run: |
+          set -uo pipefail
+          set +e
+          timeout --signal=TERM --kill-after=15s 11m \
+            python3 /tmp/m04g-escwa-original-route-recovery-v6.py \
+            2>&1 | tee qualification/probe.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -ne 0 ]; then
+            PROBE_STATUS="$status" python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+
+          root = pathlib.Path("qualification")
+          files = []
+          for path in sorted(root.rglob("*")):
+              if path.is_file():
+                  data = path.read_bytes()
+                  files.append({
+                      "path": str(path),
+                      "bytes": len(data),
+                      "sha256": hashlib.sha256(data).hexdigest(),
+                  })
+          receipt = {
+              "schema": "m04g-escwa-bounded-failure@1",
+              "exit_status": int(os.environ["PROBE_STATUS"]),
+              "timed_out": os.environ["PROBE_STATUS"] in ("124", "137"),
+              "files_recovered": files,
+              "product_files_modified": False,
+          }
+          (root / "bounded-run-failure.json").write_text(
+              json.dumps(receipt, indent=2) + "\n"
+          )
+          print(json.dumps(receipt, indent=2))
+          PY
+          fi
+          exit "$status"
+
+      - name: Upload bounded original-route recovery receipts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: m04g-escwa-original-route-recovery-${{ github.run_id }}
+          name: m04g-escwa-bounded-recovery-${{ github.run_id }}
           path: qualification/
           if-no-files-found: error
           retention-days: 30
