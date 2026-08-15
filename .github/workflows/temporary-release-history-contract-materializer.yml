@@ -1,0 +1,83 @@
+name: TEMP materialize release-history contract
+
+on:
+  push:
+    branches:
+      - repair/k0-full-history-postmerge-v1
+    paths:
+      - '.github/workflows/temporary-release-history-contract-materializer.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact repair branch shallowly
+        uses: actions/checkout@v4
+        with:
+          ref: repair/k0-full-history-postmerge-v1
+          fetch-depth: 1
+          show-progress: false
+      - name: Bind history acquisition into release check
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BRANCH="repair/k0-full-history-postmerge-v1"
+          PACKAGE="package.json"
+          TEST="test/ensure-release-history.test.js"
+          TOOL="tools/ensure-release-history.mjs"
+
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          node "$TEST"
+
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const path = 'package.json';
+          const pkg = JSON.parse(fs.readFileSync(path, 'utf8'));
+          const ensureCommand = 'node tools/ensure-release-history.mjs';
+          const testCommand = 'node test/ensure-release-history.test.js';
+          const releaseCommand = 'npm run ensure:release-history && npm run check';
+
+          if (!pkg.scripts || typeof pkg.scripts !== 'object') {
+            throw new Error('package scripts object is missing');
+          }
+          if (!['npm run check', releaseCommand].includes(pkg.scripts['release:check'])) {
+            throw new Error(`release:check drifted: ${JSON.stringify(pkg.scripts['release:check'])}`);
+          }
+          pkg.scripts['ensure:release-history'] = ensureCommand;
+          pkg.scripts['release:check'] = releaseCommand;
+
+          const testSteps = String(pkg.scripts.test || '').split(' && ').filter(Boolean);
+          if (!testSteps.includes(testCommand)) testSteps.push(testCommand);
+          pkg.scripts.test = testSteps.join(' && ');
+
+          fs.writeFileSync(path, `${JSON.stringify(pkg, null, 2)}\n`);
+          NODE
+
+          node "$TEST"
+          npm run release:check
+
+          expected="$PACKAGE"
+          actual="$(git status --porcelain | cut -c4- | sort)"
+          test "$actual" = "$expected" || {
+            echo "Unexpected release-history materialization paths:"
+            git status --short
+            exit 1
+          }
+
+          git diff --check
+          git add -- "$PACKAGE"
+          test -z "$(git diff --name-only)"
+          test "$(git diff --cached --name-only)" = "$expected"
+          git diff --cached --check
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "ci: make release checks history-complete"
+
+          git fetch --no-tags origin "$BRANCH"
+          test "$(git rev-parse "origin/$BRANCH")" = "$GITHUB_SHA"
+          git push origin "HEAD:refs/heads/$BRANCH"
