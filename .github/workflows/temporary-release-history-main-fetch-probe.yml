@@ -1,0 +1,45 @@
+name: TEMP release history main-fetch probe
+
+on:
+  push:
+    branches:
+      - diagnostic/release-history-main-fetch-v1
+    paths:
+      - '.github/workflows/temporary-release-history-main-fetch-probe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out diagnostic branch shallowly
+        uses: actions/checkout@v4
+        with:
+          ref: diagnostic/release-history-main-fetch-v1
+          fetch-depth: 1
+          show-progress: false
+      - name: Fetch complete main history and run release gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "before_shallow=$(git rev-parse --is-shallow-repository)"
+          git fetch --no-tags --prune --quiet --depth=2147483647 \
+            origin +refs/heads/main:refs/remotes/origin/main
+          echo "after_shallow=$(git rev-parse --is-shallow-repository)"
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const cp = require('node:child_process');
+          const checkpoint = JSON.parse(fs.readFileSync('data/project/project-stable-ground-sg05.json', 'utf8'));
+          const shas = new Set([
+            checkpoint.trigger.transition_base,
+            checkpoint.trigger.transition_commit,
+            ...checkpoint.preserved_history.map((row) => row.merge_commit).filter(Boolean)
+          ]);
+          for (const sha of shas) {
+            cp.execFileSync('git', ['cat-file', '-e', `${sha}^{commit}`], { stdio: 'inherit' });
+          }
+          console.log(`release-history probe: ${shas.size} SG-05 commits present`);
+          NODE
+          npm run release:check
