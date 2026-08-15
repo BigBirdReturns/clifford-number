@@ -71,7 +71,30 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for index in 00 01 02 03 04 05 06; do
+
+          for index in 00 01 02; do
+            "/tmp/m04g-commoncrawl-step-${index}.sh"
+          done
+
+          # Prove the deterministic materializer is bounded before the release
+          # suite regenerates tracked build products.
+          /tmp/m04g-commoncrawl-step-04.sh
+
+          /tmp/m04g-commoncrawl-step-03.sh
+
+          # The complete release suite intentionally regenerates tracked build
+          # products. Restore those products to the frozen canonical tree, then
+          # re-run the exact boundary guard before live qualification.
+          mapfile -t generated < <(git diff --name-only "$EXPECTED_MAIN" -- build)
+          if (( ${#generated[@]} )); then
+            printf 'restoring release-generated path: %s\n' "${generated[@]}"
+          fi
+          git restore --source="$EXPECTED_MAIN" --worktree -- build
+          git clean -fd -- build
+
+          /tmp/m04g-commoncrawl-step-04.sh
+
+          for index in 05 06; do
             "/tmp/m04g-commoncrawl-step-${index}.sh"
           done
 
@@ -79,7 +102,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: m04g-commoncrawl-fallback-${{ github.run_id }}
-          path: /tmp/m04g-commonCrawl-fallback-live/
+          path: /tmp/m04g-commoncrawl-fallback-live/
           if-no-files-found: error
           retention-days: 30
 
