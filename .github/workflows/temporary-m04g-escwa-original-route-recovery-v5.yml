@@ -118,10 +118,10 @@ jobs:
 
           def html_to_text(raw):
               text = raw.decode("utf-8", errors="replace")
-              text = re.sub(r"(?is)<script\\b[^>]*>.*?</script>", " ", text)
-              text = re.sub(r"(?is)<style\\b[^>]*>.*?</style>", " ", text)
+              text = re.sub(r"(?is)<script\b[^>]*>.*?</script>", " ", text)
+              text = re.sub(r"(?is)<style\b[^>]*>.*?</style>", " ", text)
               text = re.sub(r"(?s)<[^>]+>", " ", text)
-              return re.sub(r"\\s+", " ", html.unescape(text)).strip()
+              return re.sub(r"\s+", " ", html.unescape(text)).strip()
 
           def pdf_to_text(raw, key):
               pdf_path = ROOT / "bodies" / f"{key}.pdf"
@@ -138,11 +138,11 @@ jobs:
               return txt_path.read_text(errors="replace"), None
 
           def semantic(route_id, text):
-              compact = re.sub(r"\\s+", " ", text)
+              compact = re.sub(r"\s+", " ", text)
               if route_id == "M04G-GP051":
-                  term_re = re.compile(r"\\b(?:physician|physicians|doctor|doctors|medical doctor|medical doctors)\\b", re.I)
+                  term_re = re.compile(r"\b(?:physician|physicians|doctor|doctors|medical doctor|medical doctors)\b", re.I)
                   density_re = re.compile(
-                      r"(?:\\bper\\s+(?:1[\\s,]?000|one\\s+thousand|thousand)\\b|\\b(?:1[\\s,]?000|one\\s+thousand|thousand)\\s+(?:people|persons|population|inhabitants)\\b)",
+                      r"(?:\bper\s+(?:1[\s,]?000|one\s+thousand|thousand)\b|\b(?:1[\s,]?000|one\s+thousand|thousand)\s+(?:people|persons|population|inhabitants)\b)",
                       re.I,
                   )
                   term_matches = list(term_re.finditer(compact))
@@ -158,10 +158,10 @@ jobs:
                               pairs.append({
                                   "distance": distance,
                                   "window": window,
-                                  "contains_2030": bool(re.search(r"\\b2030\\b", window)),
+                                  "contains_2030": bool(re.search(r"\b2030\b", window)),
                               })
                   pairs.sort(key=lambda row: (not row["contains_2030"], row["distance"]))
-                  has_2030 = bool(re.search(r"\\b2030\\b", compact))
+                  has_2030 = bool(re.search(r"\b2030\b", compact))
                   return {
                       "matched": bool(pairs) and has_2030,
                       "health_term_count": len(term_matches),
@@ -170,9 +170,9 @@ jobs:
                       "nearest_distance": pairs[0]["distance"] if pairs else None,
                       "windows": [row["window"] for row in pairs[:8]],
                   }
-              pop_re = re.compile(r"\\bpopulation\\b", re.I)
-              double_re = re.compile(r"\\b(?:double|doubles|doubled|doubling)\\b(?![\\s-]*digit)", re.I)
-              year_re = re.compile(r"\\b(?:year|years)\\b", re.I)
+              pop_re = re.compile(r"\bpopulation\b", re.I)
+              double_re = re.compile(r"\b(?:double|doubles|doubled|doubling)\b(?![\s-]*digit)", re.I)
+              year_re = re.compile(r"\b(?:year|years)\b", re.I)
               pops = list(pop_re.finditer(compact))
               doubles = list(double_re.finditer(compact))
               years = list(year_re.finditer(compact))
@@ -204,7 +204,7 @@ jobs:
           def extract_links(raw, base_url):
               text = raw.decode("utf-8", errors="replace")
               links = []
-              for match in re.finditer(r"(?is)\\bhref\\s*=\\s*[\\\"']([^\\\"'#]+)[\\\"']", text):
+              for match in re.finditer(r'''(?is)\bhref\s*=\s*["']([^"'#]+)["']''', text):
                   href = html.unescape(match.group(1)).strip()
                   absolute = urllib.parse.urljoin(base_url, href)
                   parsed = urllib.parse.urlparse(absolute)
@@ -247,7 +247,7 @@ jobs:
                   "text_sha256": sha256(text.encode("utf-8")) if text else None,
                   "text_error": text_error,
                   "semantic": semantic(route_id, text),
-                  "text_prefix": re.sub(r"\\s+", " ", text[:1600]),
+                  "text_prefix": re.sub(r"\s+", " ", text[:1600]),
               }
               if not is_pdf:
                   row["official_links"] = extract_links(raw, response.get("url") or source.get("requested_url") or "")
@@ -312,16 +312,16 @@ jobs:
                   if not response["ok"]:
                       return response
                   decompressed = gzip.decompress(response["body"])
-                  first = decompressed.find(b"\\r\\n\\r\\n")
+                  first = decompressed.find(b"\r\n\r\n")
                   if first < 0:
-                      first = decompressed.find(b"\\n\\n")
+                      first = decompressed.find(b"\n\n")
                       sep = 2
                   else:
                       sep = 4
                   remainder = decompressed[first + sep:] if first >= 0 else decompressed
-                  second = remainder.find(b"\\r\\n\\r\\n")
+                  second = remainder.find(b"\r\n\r\n")
                   if second < 0:
-                      second = remainder.find(b"\\n\\n")
+                      second = remainder.find(b"\n\n")
                       sep2 = 2
                   else:
                       sep2 = 4
@@ -470,9 +470,9 @@ jobs:
               }))
 
           out_path = ROOT / "m04g-escwa-original-route-recovery.json"
-          out_path.write_text(json.dumps(output, indent=2) + "\\n")
+          out_path.write_text(json.dumps(output, indent=2) + "\n")
           (ROOT / "m04g-escwa-original-route-recovery.sha256").write_text(
-              sha256(out_path.read_bytes()) + "  " + out_path.name + "\\n"
+              sha256(out_path.read_bytes()) + "  " + out_path.name + "\n"
           )
           print(json.dumps({
               "selected": {
