@@ -1,4 +1,4 @@
-name: TEMP M-04G ESCWA bounded original-route recovery v6
+name: TEMP M-04G ESCWA bounded original-route recovery v7
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - name: Check out probe source
         uses: actions/checkout@v4
@@ -34,266 +34,209 @@ jobs:
           timeout 180s bash -c 'sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils'
           pdftotext -v 2>&1 | head -n 1
 
-      - name: Build bounded v6 controller
+      - name: Decode and validate bounded v7 controller
         shell: bash
-        env:
-          RUN_ID: ${{ github.run_id }}
-          COMMIT_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
+          import base64
+          import gzip
           import hashlib
-          import json
-          import os
           import pathlib
-          import re
-          import subprocess
-          import textwrap
 
-          source_sha = "668185452e5ecc1c23f0c44d098cd3c1462c8052"
-          workflow_path = ".github/workflows/temporary-m04g-escwa-original-route-recovery-v5.yml"
-          source = subprocess.check_output(
-              ["git", "show", f"{source_sha}:{workflow_path}"],
-              text=True,
-          )
-          match = re.search(
-              r"cat > /tmp/m04g-escwa-original-route-recovery\.py <<'PY'\n(.*?)\n          PY",
-              source,
-              re.S,
-          )
-          if not match:
-              raise SystemExit("source controller heredoc not found")
-          script = textwrap.dedent(match.group(1))
-          replacements = []
-
-          def replace_once(old, new, label):
-              global script
-              count = script.count(old)
-              if count != 1:
-                  raise SystemExit(f"{label}: expected one match, found {count}")
-              script = script.replace(old, new, 1)
-              replacements.append(label)
-
-          replace_once(
-              '"workflow_run_id": "${' + '{ github.run_id }}",',
-              f'"workflow_run_id": {json.dumps(os.environ["RUN_ID"])},',
-              "render_run_id",
-          )
-          replace_once(
-              '"commit_sha": "${' + '{ github.sha }}",',
-              f'"commit_sha": {json.dumps(os.environ["COMMIT_SHA"])},',
-              "render_commit_sha",
-          )
-          replace_once(
-              '"schema_version": "m04g-escwa-original-route-recovery@5",',
-              '"schema_version": "m04g-escwa-original-route-recovery@6",',
-              "schema_v6",
-          )
-          replace_once(
-              'for attempt in range(3):',
-              'for attempt in range(1):',
-              "single_attempt_fetch",
-          )
-          for old, new, label in (
-              ('timeout=120', 'timeout=8', "bound_120_second_calls"),
-              ('timeout=90', 'timeout=8', "bound_90_second_calls"),
-              ('timeout=180', 'timeout=8', "bound_180_second_calls"),
-          ):
-              count = script.count(old)
-              if count < 1:
-                  raise SystemExit(f"{label}: no matches")
-              script = script.replace(old, new)
-              replacements.append(f"{label}:{count}")
-
-          replace_once(
-              '                  indexes = json.loads(collinfo["body"])[:28]',
-              '''                  all_indexes = json.loads(collinfo["body"])
-                  indexes = []
-                  for target_year in ("2026", "2023", "2015"):
-                      candidate = next(
-                          (
-                              row for row in all_indexes
-                              if f"CC-MAIN-{target_year}" in row.get("id", "")
-                          ),
-                          None,
-                      )
-                      if candidate and candidate not in indexes:
-                          indexes.append(candidate)''',
-              "target_common_crawl_years",
-          )
-          replace_once(
-              '              for url in urls:',
-              '              for url in urls[:2]:',
-              "two_canonical_route_variants",
-          )
-          replace_once(
-              '                  for capture in wayback["rows"][-16:]:',
-              '''                  wayback_rows = wayback["rows"]
-                  sampled_wayback = (
-                      wayback_rows[:1]
-                      + wayback_rows[len(wayback_rows) // 2:len(wayback_rows) // 2 + 1]
-                      + wayback_rows[-1:]
-                  )
-                  for capture in list({
-                      (row.get("timestamp"), row.get("digest")): row
-                      for row in sampled_wayback
-                  }.values()):''',
-              "sample_three_wayback_eras",
-          )
-          replace_once(
-              '                  for capture in cc["rows"][-12:]:',
-              '                  for capture in cc["rows"][-3:]:',
-              "three_common_crawl_bodies",
-          )
-          replace_once(
-              '              for timestamp, link in list(dict.fromkeys(linked_targets))[:24]:',
-              '              for timestamp, link in list(dict.fromkeys(linked_targets))[:3]:',
-              "three_linked_targets",
-          )
-          replace_once(
-              '                  for candidate in candidates:',
-              '                  for candidate in candidates[:1]:',
-              "one_linked_candidate",
-          )
-          replace_once(
-              '                  "limit": "100",',
-              '                  "limit": "32",',
-              "bounded_wayback_metadata",
-          )
-          replace_once(
-              '''                              window = compact[start:end]
-                              pairs.append({
-                                  "distance": distance,
-                                  "window": window,
-                                  "contains_2030": bool(re.search(r"\\b2030\\b", window)),
-                              })''',
-              '''                              window = compact[start:end]
-                              value_start = max(0, min(tm.start(), dm.start()) - 120)
-                              value_end = min(len(compact), max(tm.end(), dm.end()) + 120)
-                              value_window = compact[value_start:value_end]
-                              values = re.findall(
-                                  r"(?<![\\d,])(?:0?\\.\\d+|[1-9]\\d?(?:\\.\\d+)?)(?![\\d,])",
-                                  value_window,
-                              )
-                              pairs.append({
-                                  "distance": distance,
-                                  "window": window,
-                                  "contains_2030": bool(re.search(r"\\b2030\\b", window)),
-                                  "contains_density_value": bool(values),
-                                  "density_values": values[:8],
-                              })''',
-              "gp051_density_value_gate",
-          )
-          replace_once(
-              '''                  pairs.sort(key=lambda row: (not row["contains_2030"], row["distance"]))
-                  has_2030 = bool(re.search(r"\\b2030\\b", compact))
-                  return {
-                      "matched": bool(pairs) and has_2030,
-                      "health_term_count": len(term_matches),
-                      "density_term_count": len(density_matches),
-                      "has_2030": has_2030,
-                      "nearest_distance": pairs[0]["distance"] if pairs else None,
-                      "windows": [row["window"] for row in pairs[:8]],
-                  }''',
-              '''                  qualifying_pairs = [
-                      row for row in pairs
-                      if row["contains_2030"] and row["contains_density_value"]
-                  ]
-                  qualifying_pairs.sort(key=lambda row: row["distance"])
-                  has_2030 = bool(re.search(r"\\b2030\\b", compact))
-                  return {
-                      "matched": bool(qualifying_pairs),
-                      "health_term_count": len(term_matches),
-                      "density_term_count": len(density_matches),
-                      "has_2030": has_2030,
-                      "nearest_distance": qualifying_pairs[0]["distance"] if qualifying_pairs else None,
-                      "windows": [row["window"] for row in qualifying_pairs[:8]],
-                      "density_values": [row["density_values"] for row in qualifying_pairs[:8]],
-                  }''',
-              "gp051_same_window_admission",
-          )
-          replace_once(
-              '              year_re = re.compile(r"\\b(?:year|years)\\b", re.I)',
-              '              year_re = re.compile(r"\\b(?:[1-9]\\d{0,2}(?:\\.\\d+)?)\\s+(?:year|years)\\b", re.I)',
-              "gp056_numeric_year_interval",
-          )
-          replace_once(
-              '                  "gp051_health_workforce_density_and_2030": True,',
-              '                  "gp051_value_health_density_and_2030_same_window": True,',
-              "gp051_requirement_label",
-          )
-          replace_once(
-              '                  "gp056_population_doubling_and_years": True,',
-              '                  "gp056_population_doubling_and_numeric_year_interval": True,',
-              "gp056_requirement_label",
-          )
-
-          transformed = pathlib.Path("/tmp/m04g-escwa-original-route-recovery-v6.py")
-          transformed.write_text(script)
-          compile(script, str(transformed), "exec")
-          receipt = {
-              "schema": "m04g-escwa-controller-transform@1",
-              "source_commit": source_sha,
-              "source_workflow": workflow_path,
-              "source_sha256": hashlib.sha256(match.group(1).encode()).hexdigest(),
-              "transformed_sha256": hashlib.sha256(script.encode()).hexdigest(),
-              "replacements": replacements,
-              "product_files_modified": False,
-          }
-          pathlib.Path("qualification/controller-transform.json").write_text(
-              json.dumps(receipt, indent=2) + "\n"
-          )
-          print(json.dumps(receipt, indent=2))
+          encoded = """
+          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
+          """
+          raw = gzip.decompress(base64.b64decode("".join(encoded.split())))
+          expected = "0f88a33bbe407b01b68ad68b7d8742a4ede8f1266879acfe3d0407544af8be5d"
+          actual = hashlib.sha256(raw).hexdigest()
+          if actual != expected:
+              raise SystemExit(f"controller digest mismatch: {actual}")
+          target = pathlib.Path("/tmp/m04g-escwa-original-route-recovery-v7.py")
+          target.write_bytes(raw)
+          pathlib.Path("qualification/controller.py").write_bytes(raw)
+          pathlib.Path("qualification/controller.sha256").write_text(f"{actual}  controller.py\n")
+          print(f"decoded {len(raw)} bytes with sha256 {actual}")
           PY
+          python3 -m py_compile /tmp/m04g-escwa-original-route-recovery-v7.py
 
-      - name: Run bounded v6 controller
-        id: bounded_probe
+      - name: Run bounded v7 controller
         shell: bash
+        env:
+          PYTHONUNBUFFERED: "1"
         run: |
           set -uo pipefail
           set +e
-          timeout --signal=TERM --kill-after=15s 11m \
-            python3 /tmp/m04g-escwa-original-route-recovery-v6.py \
+          timeout --signal=TERM --kill-after=15s 10m \
+            python3 /tmp/m04g-escwa-original-route-recovery-v7.py \
             2>&1 | tee qualification/probe.log
           status=${PIPESTATUS[0]}
           set -e
-          if [ "$status" -ne 0 ]; then
-            PROBE_STATUS="$status" python3 - <<'PY'
+          PROBE_STATUS="$status" python3 - <<'PY'
           import hashlib
           import json
           import os
           import pathlib
 
           root = pathlib.Path("qualification")
-          files = []
-          for path in sorted(root.rglob("*")):
-              if path.is_file():
-                  data = path.read_bytes()
-                  files.append({
-                      "path": str(path),
-                      "bytes": len(data),
-                      "sha256": hashlib.sha256(data).hexdigest(),
-                  })
+          controller = root / "controller.py"
+          ledger = root / "ledger.json"
           receipt = {
-              "schema": "m04g-escwa-bounded-failure@1",
+              "schema": "m04g-escwa-bounded-run-status@1",
               "exit_status": int(os.environ["PROBE_STATUS"]),
               "timed_out": os.environ["PROBE_STATUS"] in ("124", "137"),
-              "files_recovered": files,
+              "ledger_exists": ledger.exists(),
+              "controller_sha256": hashlib.sha256(controller.read_bytes()).hexdigest() if controller.exists() else None,
               "product_files_modified": False,
           }
-          (root / "bounded-run-failure.json").write_text(
-              json.dumps(receipt, indent=2) + "\n"
-          )
+          (root / "run-status.json").write_text(json.dumps(receipt, indent=2) + "\n")
           print(json.dumps(receipt, indent=2))
           PY
-          fi
-          exit "$status"
+          exit 0
+
+      - name: Render bounded recovery summary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+
+          root = pathlib.Path("qualification")
+          ledger_path = root / "ledger.json"
+          status_path = root / "run-status.json"
+          lines = ["# M-04G ESCWA bounded recovery v7", ""]
+          if status_path.exists():
+              status = json.loads(status_path.read_text())
+              lines.append(f"Controller exit status: `{status.get('exit_status')}`")
+              lines.append("")
+          if ledger_path.exists():
+              ledger = json.loads(ledger_path.read_text())
+              lines.append(f"Candidate authorized: `{ledger.get('candidate_authorized')}`")
+              lines.append("")
+              for route_id, selected in ledger.get("selected", {}).items():
+                  if selected:
+                      lines.append(
+                          f"- `{route_id}` selected `{selected.get('content_sha256')}` from `{selected.get('final_url')}`"
+                      )
+                  else:
+                      lines.append(f"- `{route_id}` has no qualifying selection")
+              lines.append("")
+              for reason in ledger.get("candidate_authorization_reasons", []):
+                  lines.append(f"- {reason}")
+          else:
+              lines.append("No ledger was produced; inspect the uploaded controller and probe log.")
+          summary = "\n".join(lines) + "\n"
+          print(summary)
+          summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary_path:
+              pathlib.Path(summary_path).write_text(summary)
+          PY
 
       - name: Upload bounded original-route recovery receipts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: m04g-escwa-bounded-recovery-${{ github.run_id }}
+          name: m04g-escwa-bounded-recovery-v7-${{ github.run_id }}
           path: qualification/
           if-no-files-found: error
           retention-days: 30
