@@ -17,6 +17,10 @@ jobs:
     env:
       EXPECTED_MAIN: e02e2fafcdfdf8360d53b3cfdb498dddde26d6e6
       EXPECTED_TREE: de62918a1154692d3e4bf149b3f886c6aff5527f
+      QUALIFIER_TRANSPORT: 8caefdc150e949603398a736fcc3cd260b912338
+      QUALIFIER_BLOB: 9f6fa985f5e7aca26f48ad0188cec8933937dffa
+      QUALIFIER_WORKFLOW: .github/workflows/temporary-m04g-commoncrawl-fallback-qualifier-v1.yml
+      WRAPPER_PATH: .github/workflows/temporary-m04g-commoncrawl-fallback-full-history-wrapper-v1.yml
       CANDIDATE_BRANCH: candidate/m04g-commoncrawl-fallback-v1
       EXPECTED_ROUTE_DENOMINATOR: "96"
       EXPECTED_BASIN_DENOMINATOR: "12"
@@ -36,9 +40,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          source_workflow=.github/workflows/temporary-m04g-commoncrawl-fallback-qualifier-v1.yml
-          test -f "$source_workflow"
-          cp "$source_workflow" /tmp/m04g-commoncrawl-source-qualifier.yml
+
+          git merge-base --is-ancestor "$QUALIFIER_TRANSPORT" HEAD
+          test "$(git rev-parse "$QUALIFIER_TRANSPORT^")" = "$EXPECTED_MAIN"
+          test "$(git rev-parse "$QUALIFIER_TRANSPORT:$QUALIFIER_WORKFLOW")" = "$QUALIFIER_BLOB"
+
+          mapfile -t transport_delta < <(git diff --name-only "$QUALIFIER_TRANSPORT"..HEAD)
+          test "${#transport_delta[@]}" -eq 1
+          test "${transport_delta[0]}" = "$WRAPPER_PATH"
+
+          git show "$QUALIFIER_TRANSPORT:$QUALIFIER_WORKFLOW" > /tmp/m04g-commoncrawl-source-qualifier.yml
           ruby -ryaml - <<'RUBY'
           source = YAML.load_file('/tmp/m04g-commoncrawl-source-qualifier.yml', aliases: true)
           steps = source.fetch('jobs').fetch('qualify').fetch('steps')
@@ -71,6 +82,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
+          git checkout --detach "$QUALIFIER_TRANSPORT"
+          test "$(git rev-parse HEAD)" = "$QUALIFIER_TRANSPORT"
 
           for index in 00 01 02; do
             "/tmp/m04g-commoncrawl-step-${index}.sh"
