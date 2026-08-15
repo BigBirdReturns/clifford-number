@@ -32,7 +32,11 @@
     "default_max_bytes": 524288,
     "large_document_max_bytes": 2097152,
     "attempts": 3,
-    "retry_backoff_ms": [1500, 5000, 12000],
+    "retry_backoff_ms": [
+      1500,
+      5000,
+      12000
+    ],
     "respect_retry_after": true,
     "follow_safe_https_redirects": true,
     "refuse_https_downgrade": true,
@@ -50,91 +54,242 @@
     }
   ],
   "host_policies": [
-    {"match": "gdelt", "max_concurrency": 1, "minimum_interval_ms": 6500, "timeout_ms": 30000, "attempts": 4},
-    {"match": "anao.gov.au", "max_concurrency": 1, "minimum_interval_ms": 1000, "timeout_ms": 45000, "attempts": 2},
-    {"match": "naa.gov.au", "max_concurrency": 1, "minimum_interval_ms": 1000, "timeout_ms": 45000, "attempts": 2},
-    {"match": "cag.gov.in", "max_concurrency": 1, "minimum_interval_ms": 1000, "timeout_ms": 45000, "attempts": 2},
-    {"match": "unescwa.org", "max_concurrency": 1, "minimum_interval_ms": 1500, "timeout_ms": 30000, "attempts": 2},
-    {"match": "sci.gov.in", "max_concurrency": 1, "minimum_interval_ms": 1500, "timeout_ms": 30000, "attempts": 2},
-    {"match": "tenders.gov.au", "max_concurrency": 1, "minimum_interval_ms": 1500, "timeout_ms": 30000, "attempts": 2}
+    {
+      "match": "gdelt",
+      "max_concurrency": 1,
+      "minimum_interval_ms": 6500,
+      "timeout_ms": 30000,
+      "attempts": 4
+    },
+    {
+      "match": "index.commoncrawl.org",
+      "max_concurrency": 1,
+      "minimum_interval_ms": 1500,
+      "timeout_ms": 30000,
+      "attempts": 1
+    },
+    {
+      "match": "anao.gov.au",
+      "max_concurrency": 1,
+      "minimum_interval_ms": 1000,
+      "timeout_ms": 45000,
+      "attempts": 2
+    },
+    {
+      "match": "naa.gov.au",
+      "max_concurrency": 1,
+      "minimum_interval_ms": 1000,
+      "timeout_ms": 45000,
+      "attempts": 2
+    },
+    {
+      "match": "cag.gov.in",
+      "max_concurrency": 1,
+      "minimum_interval_ms": 1000,
+      "timeout_ms": 45000,
+      "attempts": 2
+    },
+    {
+      "match": "unescwa.org",
+      "max_concurrency": 1,
+      "minimum_interval_ms": 1500,
+      "timeout_ms": 30000,
+      "attempts": 2
+    },
+    {
+      "match": "sci.gov.in",
+      "max_concurrency": 1,
+      "minimum_interval_ms": 1500,
+      "timeout_ms": 30000,
+      "attempts": 2
+    },
+    {
+      "match": "tenders.gov.au",
+      "max_concurrency": 1,
+      "minimum_interval_ms": 1500,
+      "timeout_ms": 30000,
+      "attempts": 2
+    }
   ],
   "host_fallbacks": [
     {
+      "match": "index.commoncrawl.org",
+      "fallbacks": [
+        {
+          "url": "https://index.commoncrawl.org/collinfo.json",
+          "method": "GET",
+          "source_class": "public_index_catalog",
+          "max_bytes": 524288
+        }
+      ]
+    },
+    {
       "match": "unescwa.org",
       "fallbacks": [
-        {"url": "https://www.unescwa.org/publications", "method": "GET", "source_class": "official_document_repository"},
-        {"url": "https://www.unescwa.org/sitemap.xml", "method": "GET", "source_class": "official_sitemap"}
+        {
+          "url": "https://www.unescwa.org/publications",
+          "method": "GET",
+          "source_class": "official_document_repository"
+        },
+        {
+          "url": "https://www.unescwa.org/sitemap.xml",
+          "method": "GET",
+          "source_class": "official_sitemap"
+        }
       ]
     },
     {
       "match": "moj.gov.sa",
       "fallbacks": [
-        {"url": "https://www.moj.gov.sa/English/MediaCenter/News/Pages/default.aspx", "method": "GET", "source_class": "official_news_repository"},
-        {"url": "https://www.moj.gov.sa/English/Pages/default.aspx", "method": "HEAD", "source_class": "official_metadata_fingerprint"}
+        {
+          "url": "https://www.moj.gov.sa/English/MediaCenter/News/Pages/default.aspx",
+          "method": "GET",
+          "source_class": "official_news_repository"
+        },
+        {
+          "url": "https://www.moj.gov.sa/English/Pages/default.aspx",
+          "method": "HEAD",
+          "source_class": "official_metadata_fingerprint"
+        }
       ]
     },
     {
       "match": "gov.il",
       "fallbacks": [
-        {"url": "https://www.gov.il/en/departments/news", "method": "GET", "source_class": "official_news_repository"},
-        {"url": "https://www.gov.il/en", "method": "HEAD", "source_class": "official_metadata_fingerprint"}
+        {
+          "url": "https://www.gov.il/en/departments/news",
+          "method": "GET",
+          "source_class": "official_news_repository"
+        },
+        {
+          "url": "https://www.gov.il/en",
+          "method": "HEAD",
+          "source_class": "official_metadata_fingerprint"
+        }
       ]
     },
     {
       "match": "india.gov.in",
       "fallbacks": [
-        {"url": "https://www.india.gov.in/news_lists", "method": "GET", "source_class": "official_news_repository"},
-        {"url": "https://www.india.gov.in/sitemap", "method": "GET", "source_class": "official_sitemap"}
+        {
+          "url": "https://www.india.gov.in/news_lists",
+          "method": "GET",
+          "source_class": "official_news_repository"
+        },
+        {
+          "url": "https://www.india.gov.in/sitemap",
+          "method": "GET",
+          "source_class": "official_sitemap"
+        }
       ]
     },
     {
       "match": "egazette",
       "fallbacks": [
-        {"url": "https://egazette.gov.in/", "method": "GET", "source_class": "official_gazette_replacement_host"},
-        {"url": "https://egazette.gov.in/WriteReadData/", "method": "HEAD", "source_class": "official_metadata_fingerprint"}
+        {
+          "url": "https://egazette.gov.in/",
+          "method": "GET",
+          "source_class": "official_gazette_replacement_host"
+        },
+        {
+          "url": "https://egazette.gov.in/WriteReadData/",
+          "method": "HEAD",
+          "source_class": "official_metadata_fingerprint"
+        }
       ],
       "manual_aquifer_after_failure": true
     },
     {
       "match": "sci.gov.in",
       "fallbacks": [
-        {"url": "https://www.sci.gov.in/judgements-judgement-date/", "method": "GET", "source_class": "official_judgment_repository"},
-        {"url": "https://www.sci.gov.in/", "method": "HEAD", "source_class": "official_metadata_fingerprint"}
+        {
+          "url": "https://www.sci.gov.in/judgements-judgement-date/",
+          "method": "GET",
+          "source_class": "official_judgment_repository"
+        },
+        {
+          "url": "https://www.sci.gov.in/",
+          "method": "HEAD",
+          "source_class": "official_metadata_fingerprint"
+        }
       ]
     },
     {
       "match": "cag.gov.in",
       "fallbacks": [
-        {"url": "https://cag.gov.in/en/audit-report", "method": "GET", "source_class": "official_audit_repository", "max_bytes": 2097152},
-        {"url": "https://cag.gov.in/en", "method": "HEAD", "source_class": "official_metadata_fingerprint"}
+        {
+          "url": "https://cag.gov.in/en/audit-report",
+          "method": "GET",
+          "source_class": "official_audit_repository",
+          "max_bytes": 2097152
+        },
+        {
+          "url": "https://cag.gov.in/en",
+          "method": "HEAD",
+          "source_class": "official_metadata_fingerprint"
+        }
       ]
     },
     {
       "match": "austlii.edu.au",
       "fallbacks": [
-        {"url": "https://www.austlii.edu.au/cgi-bin/viewdb/au/cases/", "method": "GET", "source_class": "public_legal_repository"},
-        {"url": "https://www.austlii.edu.au/", "method": "HEAD", "source_class": "public_metadata_fingerprint"}
+        {
+          "url": "https://www.austlii.edu.au/cgi-bin/viewdb/au/cases/",
+          "method": "GET",
+          "source_class": "public_legal_repository"
+        },
+        {
+          "url": "https://www.austlii.edu.au/",
+          "method": "HEAD",
+          "source_class": "public_metadata_fingerprint"
+        }
       ]
     },
     {
       "match": "tenders.gov.au",
       "fallbacks": [
-        {"url": "https://www.tenders.gov.au/Cn/CnSearch", "method": "GET", "source_class": "official_procurement_search"},
-        {"url": "https://www.tenders.gov.au/", "method": "HEAD", "source_class": "official_metadata_fingerprint"}
+        {
+          "url": "https://www.tenders.gov.au/Cn/CnSearch",
+          "method": "GET",
+          "source_class": "official_procurement_search"
+        },
+        {
+          "url": "https://www.tenders.gov.au/",
+          "method": "HEAD",
+          "source_class": "official_metadata_fingerprint"
+        }
       ]
     },
     {
       "match": "anao.gov.au",
       "fallbacks": [
-        {"url": "https://www.anao.gov.au/work", "method": "GET", "source_class": "official_audit_repository", "timeout_ms": 45000},
-        {"url": "https://www.anao.gov.au/", "method": "HEAD", "source_class": "official_metadata_fingerprint"}
+        {
+          "url": "https://www.anao.gov.au/work",
+          "method": "GET",
+          "source_class": "official_audit_repository",
+          "timeout_ms": 45000
+        },
+        {
+          "url": "https://www.anao.gov.au/",
+          "method": "HEAD",
+          "source_class": "official_metadata_fingerprint"
+        }
       ]
     },
     {
       "match": "naa.gov.au",
       "fallbacks": [
-        {"url": "https://www.naa.gov.au/explore-collection", "method": "GET", "source_class": "official_archive_repository", "timeout_ms": 45000},
-        {"url": "https://www.naa.gov.au/", "method": "HEAD", "source_class": "official_metadata_fingerprint"}
+        {
+          "url": "https://www.naa.gov.au/explore-collection",
+          "method": "GET",
+          "source_class": "official_archive_repository",
+          "timeout_ms": 45000
+        },
+        {
+          "url": "https://www.naa.gov.au/",
+          "method": "HEAD",
+          "source_class": "official_metadata_fingerprint"
+        }
       ]
     }
   ],
