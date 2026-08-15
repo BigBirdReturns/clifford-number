@@ -20,6 +20,13 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Install PDF inspection tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends poppler-utils
+
       - name: Acquire and validate official CS01 object
         shell: bash
         run: |
@@ -100,6 +107,7 @@ jobs:
           cat "$OUT/metadata.json"
 
       - name: Retain source, text, and page renders
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: electric-twin-cs01-2025-09-29
