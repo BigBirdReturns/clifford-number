@@ -1,0 +1,90 @@
+name: TEMP full-history M-04G Common Crawl qualifier
+
+on:
+  push:
+    branches:
+      - agent/m04g-commoncrawl-fallback-materializer-v1
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  qualify-full-history:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      EXPECTED_MAIN: e02e2fafcdfdf8360d53b3cfdb498dddde26d6e6
+      EXPECTED_TREE: de62918a1154692d3e4bf149b3f886c6aff5527f
+      CANDIDATE_BRANCH: candidate/m04g-commoncrawl-fallback-v1
+      EXPECTED_ROUTE_DENOMINATOR: "96"
+      EXPECTED_BASIN_DENOMINATOR: "12"
+      BASELINE_ROUTE_SUCCESSES: "51"
+      BASELINE_CONTENT_SUCCESSES: "51"
+      BASELINE_HEALTHY_BASINS: "7"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Extract guarded run steps from the content-hashed qualifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_workflow=.github/workflows/temporary-m04g-commoncrawl-fallback-qualifier-v1.yml
+          test -f "$source_workflow"
+          cp "$source_workflow" /tmp/m04g-commoncrawl-source-qualifier.yml
+          ruby -ryaml - <<'RUBY'
+          source = YAML.load_file('/tmp/m04g-commoncrawl-source-qualifier.yml', aliases: true)
+          steps = source.fetch('jobs').fetch('qualify').fetch('steps')
+          names = [
+            'Verify exact transport parent and canonical base',
+            'Reset to exact canonical product base',
+            'Apply deterministic policy repair',
+            'Validate focused contract and complete release suite',
+            'Enforce exact two-file product boundary',
+            'Run live orbit against repaired policy',
+            'Verify fallback recovery and unchanged contract',
+            'Publish clean candidate and draft pull request'
+          ]
+          extracted = {}
+          steps.each do |step|
+            name = step['name']
+            extracted[name] = step['run'] if names.include?(name)
+          end
+          missing = names.reject { |name| extracted.key?(name) }
+          abort("missing guarded step(s): #{missing.join(', ')}") unless missing.empty?
+          names.each_with_index do |name, index|
+            path = format('/tmp/m04g-commoncrawl-step-%02d.sh', index)
+            File.write(path, "#!/usr/bin/env bash\n#{extracted.fetch(name)}\n")
+            File.chmod(0o700, path)
+          end
+          RUBY
+          test "$(find /tmp -maxdepth 1 -name 'm04g-commoncrawl-step-*.sh' | wc -l)" -eq 8
+
+      - name: Run exact qualification steps with full Git history
+        shell: bash
+        run: |
+          set -euo pipefail
+          for index in 00 01 02 03 04 05 06; do
+            "/tmp/m04g-commoncrawl-step-${index}.sh"
+          done
+
+      - name: Upload qualification receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-commoncrawl-fallback-${{ github.run_id }}
+          path: /tmp/m04g-commonCrawl-fallback-live/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish clean candidate and draft pull request
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: /tmp/m04g-commoncrawl-step-07.sh

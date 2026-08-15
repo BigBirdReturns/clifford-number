@@ -1,0 +1,208 @@
+name: TEMP M-04G Common Crawl fallback qualifier
+
+on:
+  push:
+    branches:
+      - agent/m04g-commoncrawl-fallback-materializer-v1
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      EXPECTED_MAIN: e02e2fafcdfdf8360d53b3cfdb498dddde26d6e6
+      EXPECTED_TREE: de62918a1154692d3e4bf149b3f886c6aff5527f
+      CANDIDATE_BRANCH: candidate/m04g-commoncrawl-fallback-v1
+      EXPECTED_ROUTE_DENOMINATOR: "96"
+      EXPECTED_BASIN_DENOMINATOR: "12"
+      BASELINE_ROUTE_SUCCESSES: "51"
+      BASELINE_CONTENT_SUCCESSES: "51"
+      BASELINE_HEALTHY_BASINS: "7"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Verify exact transport parent and canonical base
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse origin/main^{tree})" = "$EXPECTED_TREE"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          test -z "$(git ls-remote origin "refs/heads/$CANDIDATE_BRANCH")"
+
+      - name: Reset to exact canonical product base
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout --detach "$EXPECTED_MAIN"
+          test "$(git rev-parse HEAD^{tree})" = "$EXPECTED_TREE"
+
+      - name: Apply deterministic policy repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/materializer.b64 <<'PAYLOAD'
+          H4sIAAAAAAAC/9VXXW/bNhR996/gsgfZqCw5adNmKVys6Npuw7ANaN+SQqWpa5stRaokFcdo8993SUqybMtugu1leUhsXvLwfh6e
+          /PhDWhmdzrhMQd4QqXIY8KJU2hJqDOCfuVYFiZzhMqykxmrObPS82Tg33U1zs7GU1C67NvcdrQOmpLFEK2XJlJRaMTAmYat8OHpe
+          20olOFv/7c5PPUzySXE5dEdiEuXU0hTPfQJm02LyZDE2qtIMxsCUUIv1+OZsHBCST0bJqIW1YOwhUGdDsPMxlWYFms4EIAh+GptS
+          c2nHk8djAYvx5FnitiKyw93yF2F/f/fXn0lJtYHh3CQaaP6GC3i3lmy4iQlvq+z8Iho5gJDVBL5UVNR7EsOWUNDsBrThSuL2o0H+
+          fOo8qXFygPJ1FysHqQouqVU6Jl8HhMBtiXmDPNOqwkguyU9P4+7yjBoucfn0LN7fnZWgw45LcuHspQa89waCPeM5nrS6AmejQqhV
+          bchBgMVgLsmcCtMx51zjBdmN4gyyWSU+Z+i44HJR7xzcbYLbStISqLDLDAtgNWU2WQg1o6K+zlTMdVWmqYWYTJJn5w9Dcd9B2j2c
+          p/fF0WjFyPIsGNZ1WmNM66Ztlgr7sWkdV5uCWra8JBGXOdwmTBWFkkzTlUiUXkSx33HrLmGV1iDZGsvkV7nkRVVk2KdYDPS/cAU8
+          n0yc0fICMCl+7fFkEhaptVCU1m0b3DXzgQkXM8o+P9Cn5hiCXeFX4o+5n0oLPLi0tjSXadoLkDJf7bkKoxrXJwuwS5Xj4bev37eL
+          YQAyJrAAaCqrGbqZediMISfgWGwAME+zte/v87MnZxcXfv0Of39w8dYBwy03Fnvt16YQHIwjh7qmuJqV9XIy5wKTO0QEpIzViExf
+          IIWtEp8eMp1OO9UMi4PdVvHjtH9hIkAukBXQ7EsTvfIpIq9cjjxqwy9UOEZZBxQTDVpiW+B42d9cIg57L3O/YXjA+8hjdJhEKhuI
+          ZAMek/EpstHbX17/8X7bMcmWSmMbGmzyhQPpdcKU+AE6gOQR9i9G3cndaK84b5r22omtbbvvl2a7sb9fnvbK47VpYI/Up9/hSpol
+          n9vhtl+HnoMOhSc7fBwjex9gpN5TWyz0wLs23B+Ti3sc76P/OJD6vU8ffB2OA/2v3wYUDivNLfQqBy8wnASTCz5f16aYyEqImJyN
+          cKCia694BphwL3hwanalSKODWiHS8IgGJ9xehmmeYr+fdNenx9TNtp6KwgmD9K5hbJdguEl3lVW6p6yCXItbeXQtT9qUqs/e74RL
+          JqoczLDr7KhWcLWnPYRUp8JD4CZBkYgwwC5IvPOdPPKPxklX4z0kBw/WqVuBDzZMGDKA49NUhpxs9VnODVOoFtdJ6KSGtVw/HU3h
+          DnCbxXa9J5E7LjlW/nhvb+rTQQR4Em1fwvX04MMV3qzpi5bUkdMP6JE+Jdx7W/w1CJtDumZXaJ3GfSLLa6yOwAr6qhVXp3d9ITev
+          y/TQa/ZfRtxc9r14NyLu6qvTbQ+TbbVeC3JtS6cdkGkbfRbk2d0Hl6qP/XO606Zxp/v23kwnAvxhH+4w3Rve6zC96WJEvn0jVx9G
+          nTfei+mofs3n/NZWGgi2cD0MTFXSklzj0x31yYedi3u6rvdW/49W5Lpg3AiJdv7+/eVNAxy5utUx97l3/33aPCfuU93xSkCClR5G
+          L0tUfZCTGeLk+HdLQdX9sFFSVObIwQv8r9J4+mkLnbhG/weqIqCcsBAAAA==
+          PAYLOAD
+          python - <<'PY'
+          import base64, gzip, pathlib
+          payload = base64.b64decode(pathlib.Path('/tmp/materializer.b64').read_bytes())
+          pathlib.Path('/tmp/apply.mjs').write_bytes(gzip.decompress(payload))
+          PY
+          node --check /tmp/apply.mjs
+          node /tmp/apply.mjs
+
+      - name: Validate focused contract and complete release suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-m05-answerable-power-sprint-03-leg-07.mjs
+          node tools/validate-m05-answerable-power-sprint-03-leg-07.mjs
+          node test/m05-answerable-power-sprint-03-leg-07.test.js
+          npm run release:check
+
+      - name: Enforce exact two-file product boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t changed < <(git diff --name-only "$EXPECTED_MAIN" --)
+          printf '%s\n' "${changed[@]}"
+          test "${#changed[@]}" -eq 2
+          expected=$'data/project/m04g-source-ecology-v2-policy.json\ntest/m05-answerable-power-sprint-03-leg-07.test.js'
+          actual="$(printf '%s\n' "${changed[@]}" | sort)"
+          test "$actual" = "$expected"
+          test -z "$(git diff --name-only --diff-filter=D "$EXPECTED_MAIN" --)"
+          git diff --check
+
+      - name: Run live orbit against repaired policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/m04g-commoncrawl-fallback-live
+          node tools/run-m04g-source-ecology-v2.mjs             --output-dir /tmp/m04g-commoncrawl-fallback-live
+
+      - name: Verify fallback recovery and unchanged contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+
+          const policy=JSON.parse(fs.readFileSync(
+            'data/project/m04g-source-ecology-v2-policy.json','utf8'
+          ));
+          const receipt=JSON.parse(fs.readFileSync(
+            '/tmp/m04g-commoncrawl-fallback-live/m04g-source-ecology-v2-receipt.json','utf8'
+          ));
+          const observations=JSON.parse(fs.readFileSync(
+            '/tmp/m04g-commoncrawl-fallback-live/m04g-source-ecology-v2-observations.json','utf8'
+          ));
+          const summary=receipt.summary;
+
+          assert.equal(policy.denominator.expected_routes,96);
+          assert.equal(policy.denominator.expected_basins,12);
+          assert.equal(policy.denominator.expected_routes_per_basin,8);
+          assert.equal(policy.denominator.allow_route_deletion,false);
+          assert.equal(policy.denominator.allow_direct_voice_bulk_polling,false);
+          assert.equal(policy.health_contract.global_route_success_rate,0.75);
+          assert.equal(policy.health_contract.global_content_success_rate,0.65);
+          assert.equal(policy.health_contract.required_healthy_basins,12);
+
+          assert.equal(summary.selected,96);
+          assert.equal(summary.execution_complete,true);
+          assert.equal(summary.unclassified_failures,0);
+
+          const commonCrawl=observations.filter(
+            (row)=>row.original_url==='https://index.commoncrawl.org/'
+          );
+          assert.equal(commonCrawl.length,12);
+          assert.equal(commonCrawl.filter((row)=>row.route_success).length,12);
+          assert.equal(commonCrawl.filter((row)=>row.content_success).length,12);
+          assert.ok(commonCrawl.some((row)=>row.fallback_used));
+
+          assert.ok(
+            summary.route_successes>=Number(process.env.BASELINE_ROUTE_SUCCESSES)+1,
+            `route successes did not improve: ${summary.route_successes}`
+          );
+          assert.ok(
+            summary.content_successes>=Number(process.env.BASELINE_CONTENT_SUCCESSES)+1,
+            `content successes did not improve: ${summary.content_successes}`
+          );
+          assert.ok(
+            summary.healthy_basins>=Number(process.env.BASELINE_HEALTHY_BASINS),
+            `healthy-basin count regressed: ${summary.healthy_basins}`
+          );
+
+          console.log(JSON.stringify({
+            summary,
+            common_crawl_routes:commonCrawl.length,
+            common_crawl_route_successes:commonCrawl.filter((row)=>row.route_success).length,
+            common_crawl_content_successes:commonCrawl.filter((row)=>row.content_success).length,
+            common_crawl_fallback_uses:commonCrawl.filter((row)=>row.fallback_used).length,
+            proof_sha256:receipt.proof_sha256
+          },null,2));
+          NODE
+
+      - name: Upload qualification receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-commoncrawl-fallback-${{ github.run_id }}
+          path: /tmp/m04g-commoncrawl-fallback-live/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish clean candidate and draft pull request
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$CANDIDATE_BRANCH"
+          git add             data/project/m04g-source-ecology-v2-policy.json             test/m05-answerable-power-sprint-03-leg-07.test.js
+          git commit -m "Repair Common Crawl source-ecology fallback"
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          git push origin "HEAD:refs/heads/$CANDIDATE_BRANCH"
+
+          cat > /tmp/pr-body.md <<'BODY'
+          This pull request is a bounded M-04G source-health repair for the frozen Common Crawl discovery routes. The operating actors are the 12 preserved Common Crawl route IDs, the host policy, the official `collinfo.json` catalog fallback, and issue #345 as the continuing ecological ledger.
+
+          The canonical live orbit completed all 96 routes but seven of the twelve identical `index.commoncrawl.org` probes failed with upstream or transport failures. Common Crawl's own documentation identifies `collinfo.json` as the programmatic list of monthly indexes and advises clients to cache and pace requests because the index service is strictly rate-limited. The repair therefore gives this host one attempt at the existing route, serializes requests at a 1.5 second floor, and uses the official catalog only after the existing route fails.
+
+          The change preserves every route ID, all 12 basins, the 96-route denominator, source classes, failure taxonomy, the 75 percent route threshold, the 65 percent content threshold, the twelve-basin requirement, and the separation between reachability, evidentiary sufficiency, and answer effectiveness. Focused regression assertions bind the new host and fallback policy. Hosted qualification requires all twelve Common Crawl routes to return content, zero unclassified failures, an improvement over the canonical 51-route and 51-content baseline, and no healthy-basin regression.
+
+          The controlling question is whether an official, rate-conscious catalog fallback can repair unstable discovery-route execution without changing what the source ecology measures.
+          BODY
+
+          gh pr create             --draft             --base main             --head "$CANDIDATE_BRANCH"             --title "Repair Common Crawl source-ecology fallback"             --body-file /tmp/pr-body.md
