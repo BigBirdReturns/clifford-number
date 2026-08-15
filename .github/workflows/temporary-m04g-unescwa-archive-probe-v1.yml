@@ -1,0 +1,200 @@
+name: TEMP M-04G UNESCWA archive probe v1
+
+on:
+  push:
+    branches:
+      - agent/m04g-unescwa-archive-probe-v1
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Probe bounded official ESCWA surfaces
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p probe-output
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import crypto from 'node:crypto';
+
+          const candidates = [
+            {
+              url: 'https://www.unescwa.org/publications/escwa-annual-report-2016',
+              source_class: 'official_publication_record'
+            },
+            {
+              url: 'https://www.unescwa.org/node/996',
+              source_class: 'official_document_record'
+            },
+            {
+              url: 'https://www.unescwa.org/sites/default/files/pubs/pdf/annual-report-2016-english.pdf',
+              source_class: 'official_publication_pdf'
+            },
+            {
+              url: 'https://archive.unescwa.org/publications',
+              source_class: 'official_archive_repository'
+            },
+            {
+              url: 'https://archive.unescwa.org/our-work/7790/publications',
+              source_class: 'official_archive_publication_index'
+            },
+            {
+              url: 'https://archive.unescwa.org/publications/escwa-annual-report-2009',
+              source_class: 'official_archive_publication_record'
+            },
+            {
+              url: 'https://archive.unescwa.org/publications/socioeconomic-impact-covid-19-policy-briefs',
+              source_class: 'official_archive_publication_bundle'
+            },
+            {
+              url: 'https://archive.unescwa.org/Publications/annual-report-2015',
+              source_class: 'official_archive_publication_record'
+            }
+          ];
+
+          const maxBytes = 524288;
+          const timeoutMs = 30000;
+          const userAgent = 'CliffordNumber-M04G/2.0 (+https://github.com/BigBirdReturns/clifford-number)';
+          const acceptedTypes = /^(text\/html|application\/json|application\/(?:[^;]+\+)?xml|text\/xml|text\/plain|application\/pdf)(?:;|$)/i;
+          const rejectionPatterns = [
+            /access denied/i,
+            /attention required/i,
+            /verify (?:that )?you are human/i,
+            /captcha/i,
+            /cloudflare/i,
+            /request blocked/i,
+            /forbidden/i
+          ];
+
+          async function readBounded(response) {
+            if (!response.body) return Buffer.alloc(0);
+            const chunks = [];
+            let total = 0;
+            for await (const chunk of response.body) {
+              const buffer = Buffer.from(chunk);
+              total += buffer.length;
+              if (total > maxBytes) {
+                try { await response.body.cancel(); } catch {}
+                throw new Error(`response exceeded ${maxBytes} bytes`);
+              }
+              chunks.push(buffer);
+            }
+            return Buffer.concat(chunks);
+          }
+
+          async function probe(candidate) {
+            const started = Date.now();
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(new Error(`timeout after ${timeoutMs}ms`)), timeoutMs);
+            try {
+              const response = await fetch(candidate.url, {
+                method: 'GET',
+                redirect: 'follow',
+                signal: controller.signal,
+                headers: {
+                  'user-agent': userAgent,
+                  accept: 'text/html,application/json,application/xml,text/xml,text/plain,application/pdf,*/*;q=0.1'
+                }
+              });
+              const body = await readBounded(response);
+              const contentType = String(response.headers.get('content-type') || '').toLowerCase();
+              const sample = body.subarray(0, Math.min(body.length, 16000)).toString('utf8');
+              const finalUrl = response.url || candidate.url;
+              const finalHost = new URL(finalUrl).hostname.toLowerCase();
+              const hostAccepted = finalHost === 'unescwa.org' || finalHost.endsWith('.unescwa.org');
+              const challenge = rejectionPatterns.find((pattern) => pattern.test(sample));
+              const accepted = response.ok
+                && finalUrl.startsWith('https://')
+                && hostAccepted
+                && acceptedTypes.test(contentType)
+                && body.length >= 1024
+                && !challenge;
+              return {
+                ...candidate,
+                status: response.status,
+                final_url: finalUrl,
+                final_host: finalHost,
+                content_type: contentType,
+                bytes: body.length,
+                content_sha256: body.length ? crypto.createHash('sha256').update(body).digest('hex') : null,
+                elapsed_ms: Date.now() - started,
+                accepted,
+                rejection: accepted ? null : (
+                  !response.ok ? `http_${response.status}`
+                    : !hostAccepted ? 'cross_host_redirect'
+                      : !acceptedTypes.test(contentType) ? 'content_type_mismatch'
+                        : body.length < 1024 ? 'thin_content'
+                          : challenge ? `challenge_pattern:${challenge.source}`
+                            : 'guardrail_rejection'
+                )
+              };
+            } catch (error) {
+              return {
+                ...candidate,
+                status: null,
+                final_url: candidate.url,
+                final_host: new URL(candidate.url).hostname.toLowerCase(),
+                content_type: null,
+                bytes: 0,
+                content_sha256: null,
+                elapsed_ms: Date.now() - started,
+                accepted: false,
+                rejection: error?.name === 'AbortError' ? 'timeout' : 'transport_failure',
+                error: String(error?.stack || error)
+              };
+            } finally {
+              clearTimeout(timer);
+            }
+          }
+
+          const results = [];
+          for (const candidate of candidates) {
+            results.push(await probe(candidate));
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+          }
+          const accepted = results.filter((row) => row.accepted);
+          const output = {
+            schema_version: 'm04g-unescwa-archive-probe@1',
+            generated_at: new Date().toISOString(),
+            guardrails: {
+              official_unescwa_hosts_only: true,
+              https_only: true,
+              method: 'GET',
+              max_bytes: maxBytes,
+              timeout_ms: timeoutMs,
+              minimum_interval_ms: 1500,
+              reject_login_or_challenge: true,
+              minimum_content_bytes: 1024
+            },
+            candidate_count: results.length,
+            accepted_count: accepted.length,
+            selected: accepted[0] || null,
+            results
+          };
+          fs.writeFileSync('probe-output/m04g-unescwa-archive-probe.json', JSON.stringify(output, null, 2) + '\n');
+          fs.writeFileSync(
+            'probe-output/m04g-unescwa-archive-probe.sha256',
+            `${crypto.createHash('sha256').update(JSON.stringify(output)).digest('hex')}  m04g-unescwa-archive-probe.json\n`
+          );
+          console.log(JSON.stringify(output, null, 2));
+          if (!accepted.length) process.exitCode = 2;
+          NODE
+
+      - name: Upload probe receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-unescwa-archive-probe-${{ github.run_id }}
+          path: probe-output/
+          if-no-files-found: error
+          retention-days: 30
