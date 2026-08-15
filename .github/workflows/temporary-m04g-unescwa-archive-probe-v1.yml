@@ -1,4 +1,4 @@
-name: TEMP M-04G ESCWA official-mirror probe v2
+name: TEMP M-04G ESCWA semantic mirror probe v3
 
 on:
   push:
@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: 24
 
-      - name: Probe bounded official UN mirror surfaces
+      - name: Probe semantically bound official UN mirror surfaces
         shell: bash
         run: |
           set -euo pipefail
@@ -30,35 +30,48 @@ jobs:
           const candidates = [
             {
               url: 'https://digitallibrary.un.org/collection/ESCWA?ln=en',
-              source_class: 'official_un_digital_library_collection'
+              source_class: 'official_un_digital_library_collection',
+              required_markers: ['ESCWA']
             },
             {
               url: 'https://digitallibrary.un.org/search?as=1&f1=author&ln=en&m1=e&p1=UN.+ESCWA&rm=&sf=title&so=a',
-              source_class: 'official_un_digital_library_author_index'
+              source_class: 'official_un_digital_library_author_index',
+              required_markers: ['ESCWA']
             },
             {
-              url: 'https://digitallibrary.un.org/record/4038335',
-              source_class: 'official_un_digital_library_record'
+              url: 'https://digitallibrary.un.org/record/4038335?ln=en&of=recjson',
+              source_class: 'official_un_digital_library_record_json',
+              required_markers: ['ESCWA', '2017']
             },
             {
-              url: 'https://digitallibrary.un.org/record/4038335/files/1398124_EN.pdf',
-              source_class: 'official_un_digital_library_pdf'
-            },
-            {
-              url: 'https://digitallibrary.un.org/record/3894973',
-              source_class: 'official_un_digital_library_catalogue_record'
+              url: 'https://digitallibrary.un.org/record/4038335?ln=en&of=xm',
+              source_class: 'official_un_digital_library_record_xml',
+              required_markers: ['ESCWA', '2017']
             },
             {
               url: 'https://docs.un.org/E/ESCWA/30/14',
-              source_class: 'official_un_ods_record'
+              source_class: 'official_un_ods_commission_record',
+              required_markers: ['E/ESCWA/30/14']
             },
             {
-              url: 'https://docs.un.org/E/ESCWA/OES/2021/INF.1',
-              source_class: 'official_un_ods_record'
+              url: 'https://docs.un.org/E/ESCWA/DOC/36',
+              source_class: 'official_un_ods_document_catalogue',
+              required_markers: ['E/ESCWA/DOC/36']
+            },
+            {
+              url: 'https://docs.un.org/E/ESCWA/CSS/2018/2',
+              source_class: 'official_un_ods_publication_catalogue',
+              required_markers: ['E/ESCWA/CSS/2018/2']
+            },
+            {
+              url: 'https://docs.un.org/E/ESCWA/OES/2017/1',
+              source_class: 'official_un_ods_annual_report',
+              required_markers: ['E/ESCWA/OES/2017/1']
             },
             {
               url: 'https://documents.un.org/',
-              source_class: 'official_un_document_repository'
+              source_class: 'official_un_document_repository',
+              required_markers: ['Official Document System', 'ESCWA']
             }
           ];
 
@@ -80,7 +93,13 @@ jobs:
             /cloudflare/i,
             /request blocked/i,
             /forbidden/i,
-            /sign in to continue/i
+            /sign in to continue/i,
+            /making sure you(?:'|’)re not a bot/i,
+            /proof[- ]of[- ]work/i,
+            /protected by anubis/i,
+            /checking your browser/i,
+            /please enable javascript/i,
+            /challenge platform/i
           ];
 
           async function readBounded(response) {
@@ -99,6 +118,19 @@ jobs:
             return Buffer.concat(chunks);
           }
 
+          function visibleSample(body) {
+            return body.subarray(0, Math.min(body.length, 24000))
+              .toString('utf8')
+              .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+              .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+              .replace(/<[^>]+>/g, ' ')
+              .replace(/&nbsp;/gi, ' ')
+              .replace(/&amp;/gi, '&')
+              .replace(/\s+/g, ' ')
+              .trim()
+              .slice(0, 1200);
+          }
+
           async function probe(candidate) {
             const started = Date.now();
             const controller = new AbortController();
@@ -115,17 +147,20 @@ jobs:
               });
               const body = await readBounded(response);
               const contentType = String(response.headers.get('content-type') || '').toLowerCase();
-              const sample = body.subarray(0, Math.min(body.length, 20000)).toString('utf8');
+              const rawSample = body.subarray(0, Math.min(body.length, 24000)).toString('utf8');
+              const sample = visibleSample(body);
               const finalUrl = response.url || candidate.url;
               const finalHost = new URL(finalUrl).hostname.toLowerCase();
               const hostAccepted = allowedHosts.has(finalHost);
-              const challenge = rejectionPatterns.find((pattern) => pattern.test(sample));
-              const accepted = response.ok
+              const challenge = rejectionPatterns.find((pattern) => pattern.test(rawSample) || pattern.test(sample));
+              const missingMarkers = candidate.required_markers.filter((marker) => !rawSample.toLowerCase().includes(marker.toLowerCase()) && !sample.toLowerCase().includes(marker.toLowerCase()));
+              const accepted = response.status === 200
                 && finalUrl.startsWith('https://')
                 && hostAccepted
                 && acceptedTypes.test(contentType)
                 && body.length >= 1024
-                && !challenge;
+                && !challenge
+                && missingMarkers.length === 0;
               return {
                 ...candidate,
                 status: response.status,
@@ -135,14 +170,17 @@ jobs:
                 bytes: body.length,
                 content_sha256: body.length ? crypto.createHash('sha256').update(body).digest('hex') : null,
                 elapsed_ms: Date.now() - started,
+                sample,
+                missing_markers: missingMarkers,
                 accepted,
                 rejection: accepted ? null : (
-                  !response.ok ? `http_${response.status}`
+                  response.status !== 200 ? `http_${response.status}`
                     : !hostAccepted ? 'cross_host_redirect'
                       : !acceptedTypes.test(contentType) ? 'content_type_mismatch'
                         : body.length < 1024 ? 'thin_content'
                           : challenge ? `challenge_pattern:${challenge.source}`
-                            : 'guardrail_rejection'
+                            : missingMarkers.length ? `missing_markers:${missingMarkers.join(',')}`
+                              : 'guardrail_rejection'
                 )
               };
             } catch (error) {
@@ -155,6 +193,8 @@ jobs:
                 bytes: 0,
                 content_sha256: null,
                 elapsed_ms: Date.now() - started,
+                sample: null,
+                missing_markers: candidate.required_markers,
                 accepted: false,
                 rejection: error?.name === 'AbortError' ? 'timeout' : 'transport_failure',
                 error: String(error?.stack || error)
@@ -171,9 +211,10 @@ jobs:
           }
           const accepted = results.filter((row) => row.accepted);
           const output = {
-            schema_version: 'm04g-escwa-official-mirror-probe@2',
+            schema_version: 'm04g-escwa-semantic-mirror-probe@3',
             generated_at: new Date().toISOString(),
             guardrails: {
+              exact_http_200_required: true,
               official_un_hosts_only: [...allowedHosts],
               https_only: true,
               method: 'GET',
@@ -181,17 +222,18 @@ jobs:
               timeout_ms: timeoutMs,
               minimum_interval_ms: 1500,
               reject_login_or_challenge: true,
-              minimum_content_bytes: 1024
+              minimum_content_bytes: 1024,
+              require_candidate_markers: true
             },
             candidate_count: results.length,
             accepted_count: accepted.length,
             selected: accepted[0] || null,
             results
           };
-          fs.writeFileSync('probe-output/m04g-escwa-official-mirror-probe.json', JSON.stringify(output, null, 2) + '\n');
+          fs.writeFileSync('probe-output/m04g-escwa-semantic-mirror-probe.json', JSON.stringify(output, null, 2) + '\n');
           fs.writeFileSync(
-            'probe-output/m04g-escwa-official-mirror-probe.sha256',
-            `${crypto.createHash('sha256').update(JSON.stringify(output)).digest('hex')}  m04g-escwa-official-mirror-probe.json\n`
+            'probe-output/m04g-escwa-semantic-mirror-probe.sha256',
+            `${crypto.createHash('sha256').update(JSON.stringify(output)).digest('hex')}  m04g-escwa-semantic-mirror-probe.json\n`
           );
           console.log(JSON.stringify(output, null, 2));
           if (!accepted.length) process.exitCode = 2;
@@ -201,7 +243,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: m04g-escwa-official-mirror-probe-${{ github.run_id }}
+          name: m04g-escwa-semantic-mirror-probe-${{ github.run_id }}
           path: probe-output/
           if-no-files-found: error
           retention-days: 30
