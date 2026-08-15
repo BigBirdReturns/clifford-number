@@ -1,0 +1,386 @@
+name: TEMP materialize M-04G GDELT global tide
+
+on:
+  push:
+    branches:
+      - agent/m04g-gdelt-global-tide-materializer-v1
+    paths:
+      - '.github/workflows/temp-m04g-gdelt-global-tide-materializer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify exact controller base
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "c7d91194620feb00c6bff2469950897ecce9f656"
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "c7d91194620feb00c6bff2469950897ecce9f656"
+      - name: Apply bounded global-tide product
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          policy_path = Path('data/project/m04g-source-ecology-v2-policy.json')
+          policy = json.loads(policy_path.read_text())
+          tides = [row for row in policy.get('global_tides', []) if row.get('tide_id') == 'GDELT-GLOBAL-SERIAL']
+          if len(tides) != 1:
+              raise SystemExit(f'expected one GDELT tide, found {len(tides)}')
+          tide = tides[0]
+          expected_tide = {
+              'tide_id': 'GDELT-GLOBAL-SERIAL',
+              'match': 'gdelt',
+              'mode': 'globally_serialized',
+              'max_concurrency': 1,
+              'minimum_interval_ms': 6500,
+              'deduplicate_identical_requests': True,
+              'route_results_back_to_original_basins': True,
+          }
+          if tide != expected_tide:
+              raise SystemExit(f'GDELT tide drifted: {tide!r}')
+          tide['minimum_interval_ms'] = 15000
+          tide['attempts'] = 2
+          tide['shared_rate_limit_cooldown_ms'] = 60000
+
+          gdelt_hosts = [row for row in policy.get('host_policies', []) if row.get('match') == 'gdelt']
+          if len(gdelt_hosts) != 1:
+              raise SystemExit(f'expected one GDELT host policy, found {len(gdelt_hosts)}')
+          if gdelt_hosts[0].get('attempts') != 4:
+              raise SystemExit(f'GDELT host attempts drifted: {gdelt_hosts[0].get("attempts")!r}')
+          policy_path.write_text(json.dumps(policy, indent=2) + '\n')
+
+          lib_path = Path('tools/lib/m04g-source-ecology-v2.mjs')
+          text = lib_path.read_text()
+          old = """function hostMatches(host, match){
+            return host.toLowerCase().includes(String(match).toLowerCase());
+          }
+
+          export function routePolicy(route, policy){
+            const host=new URL(route.url).hostname;
+            const hostPolicy=policy.host_policies.find((row)=>hostMatches(host,row.match))||{};
+            const fallbackPolicy=policy.host_fallbacks.find((row)=>hostMatches(host,row.match));
+            return {
+              host,
+              attempts:hostPolicy.attempts||policy.execution.attempts,
+          """
+          new = """function hostMatches(host, match){
+            return host.toLowerCase().includes(String(match).toLowerCase());
+          }
+
+          export function matchingGlobalTide(route,policy){
+            const href=String(route?.url||'');
+            const host=new URL(href).hostname;
+            const matches=(policy.global_tides||[]).filter((row)=>row.mode==='globally_serialized'&&(hostMatches(host,row.match)||hostMatches(href,row.match)));
+            if(matches.length>1)throw new Error(`Route ${route.route_id} matches multiple global tides`);
+            return matches[0]||null;
+          }
+
+          export function routePolicy(route, policy){
+            const host=new URL(route.url).hostname;
+            const hostPolicy=policy.host_policies.find((row)=>hostMatches(host,row.match))||{};
+            const tidePolicy=matchingGlobalTide(route,policy)||{};
+            const fallbackPolicy=policy.host_fallbacks.find((row)=>hostMatches(host,row.match));
+            return {
+              host,
+              attempts:tidePolicy.attempts||hostPolicy.attempts||policy.execution.attempts,
+          """
+          if text.count(old) != 1:
+              raise SystemExit(f'routePolicy anchor drifted: {text.count(old)}')
+          text = text.replace(old, new)
+
+          anchor = """async function mapLimit(items,limit,fn){
+          """
+          insertion = """function globalTideResult(result,route,tide,index,size,deduplicated){
+            return {
+              ...result,
+              route_id:route.route_id,
+              basin_id:route.basin_id,
+              hydrology_class:route.hydrology_class,
+              original_url:route.url,
+              global_tide_id:tide.tide_id,
+              global_tide_mode:tide.mode,
+              global_tide_position:index+1,
+              global_tide_size:size,
+              global_tide_deduplicated:Boolean(deduplicated)
+            };
+          }
+
+          export function planGlobalTides(routes,policy){
+            const tides=(policy.global_tides||[]).filter((row)=>row.mode==='globally_serialized');
+            const groups=tides.map((tide)=>({tide,routes:[]}));
+            const standardRoutes=[];
+            for(const route of routes){
+              const tide=matchingGlobalTide(route,policy);
+              if(!tide){standardRoutes.push(route);continue}
+              const group=groups.find((row)=>row.tide===tide);
+              group.routes.push(route);
+            }
+            for(const group of groups){
+              if(group.routes.length===0)throw new Error(`Global tide ${group.tide.tide_id||group.tide.match} matched no frozen routes`);
+              if(Number(group.tide.max_concurrency||1)!==1)throw new Error(`Global tide ${group.tide.tide_id||group.tide.match} must have max_concurrency 1`);
+            }
+            const planned=groups.reduce((sum,row)=>sum+row.routes.length,0)+standardRoutes.length;
+            if(planned!==routes.length)throw new Error(`Global tide plan lost routes: ${planned}/${routes.length}`);
+            return {global_tides:groups,standard_routes:standardRoutes};
+          }
+
+          export async function runGlobalTideRoutes(routes,tide,execute,{sleepFn=sleep,nowFn=()=>Date.now()}={}){
+            const minimumInterval=Math.max(0,Number(tide.minimum_interval_ms||0));
+            const cooldown=Math.max(0,Number(tide.shared_rate_limit_cooldown_ms||0));
+            const deduplicate=tide.deduplicate_identical_requests===true;
+            const cache=new Map();
+            const results=[];
+            let lastStart=null;
+            for(let index=0;index<routes.length;index++){
+              const route=routes[index];
+              const signature=`${route.method||'GET'} ${route.url}`;
+              if(deduplicate&&cache.has(signature)){
+                results.push(globalTideResult(cache.get(signature),route,tide,index,routes.length,true));
+                continue;
+              }
+              if(lastStart!==null){
+                const wait=Math.max(0,lastStart+minimumInterval-nowFn());
+                if(wait)await sleepFn(wait);
+              }
+              lastStart=nowFn();
+              const result=await execute(route);
+              if(deduplicate)cache.set(signature,result);
+              results.push(globalTideResult(result,route,tide,index,routes.length,false));
+              if(index<routes.length-1&&!result.route_success&&result.failure==='rate_limited'&&cooldown){
+                await sleepFn(cooldown);
+              }
+            }
+            return results;
+          }
+
+          async function executeOrbitRoutes(routes,policy,gate){
+            const plan=planGlobalTides(routes,policy);
+            const standardPromise=mapLimit(plan.standard_routes,policy.execution.global_concurrency,(route)=>executeRoute(route,policy,gate));
+            const tidePromises=plan.global_tides.map((group)=>runGlobalTideRoutes(group.routes,group.tide,(route)=>executeRoute(route,policy,gate)));
+            const [standardResults,...tideResults]=await Promise.all([standardPromise,...tidePromises]);
+            const byId=new Map([...standardResults,...tideResults.flat()].map((row)=>[row.route_id,row]));
+            if(byId.size!==routes.length)throw new Error(`Global tide execution returned ${byId.size}/${routes.length} routes`);
+            return routes.map((route)=>{
+              const result=byId.get(route.route_id);
+              if(!result)throw new Error(`Missing orbit result for ${route.route_id}`);
+              return result;
+            });
+          }
+
+          async function mapLimit(items,limit,fn){
+          """
+          if text.count(anchor) != 1:
+              raise SystemExit(f'mapLimit anchor drifted: {text.count(anchor)}')
+          text = text.replace(anchor, insertion)
+
+          old_run = """  const gate=new HostGate();
+            const observations=await mapLimit(discovery.routes,policy.execution.global_concurrency,(route)=>executeRoute(route,policy,gate));
+          """
+          new_run = """  const gate=new HostGate();
+            const observations=await executeOrbitRoutes(discovery.routes,policy,gate);
+          """
+          if text.count(old_run) != 1:
+              raise SystemExit(f'orbit execution anchor drifted: {text.count(old_run)}')
+          text = text.replace(old_run, new_run)
+          lib_path.write_text(text)
+
+          validator_path = Path('tools/validate-m05-answerable-power-sprint-03-leg-07.mjs')
+          validator = validator_path.read_text()
+          old_validator = """if(policy.global_tides.length<1||policy.global_tides[0].mode!=='globally_serialized')fail('global tide serialization missing');
+          """
+          new_validator = """const gdeltTide=policy.global_tides.find((row)=>row.tide_id==='GDELT-GLOBAL-SERIAL');
+          if(!gdeltTide||gdeltTide.mode!=='globally_serialized'||gdeltTide.max_concurrency!==1||gdeltTide.minimum_interval_ms!==15000||gdeltTide.attempts!==2||gdeltTide.shared_rate_limit_cooldown_ms!==60000||gdeltTide.route_results_back_to_original_basins!==true)fail('global tide serialization missing or weakened');
+          """
+          if validator.count(old_validator) != 1:
+              raise SystemExit(f'validator anchor drifted: {validator.count(old_validator)}')
+          validator_path.write_text(validator.replace(old_validator, new_validator))
+          PY
+
+          cat > test/m05-answerable-power-sprint-03-leg-07.test.js <<'EOF'
+          #!/usr/bin/env node
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { spawnSync } from 'node:child_process';
+          import { fileURLToPath } from 'node:url';
+          import { classifyFailure, executionContractFailures, planGlobalTides, runGlobalTideRoutes } from '../tools/lib/m04g-source-ecology-v2.mjs';
+
+          const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+          const run=(args)=>{const result=spawnSync(process.execPath,args,{cwd:root,encoding:'utf8'});if(result.status!==0){console.error(result.stdout);console.error(result.stderr);throw new Error(`${args.join(' ')} failed`)}return result.stdout};
+          run(['tools/build-m05-answerable-power-sprint-03-leg-07.mjs']);
+          run(['tools/validate-m05-answerable-power-sprint-03-leg-07.mjs']);
+          run(['tools/run-m04g-source-ecology-v2.mjs','--discover-only','--output-dir','build/m04g-source-ecology-v2-test']);
+          const report=JSON.parse(fs.readFileSync(path.join(root,'reports/core-thesis/answerable-power/sprint-03-leg-07.json'),'utf8'));
+          const policy=JSON.parse(fs.readFileSync(path.join(root,'data/project/m04g-source-ecology-v2-policy.json'),'utf8'));
+          const discovery=JSON.parse(fs.readFileSync(path.join(root,'build/m04g-source-ecology-v2-test/m04g-source-ecology-v2-discovery.json'),'utf8'));
+          assert.equal(report.counts.routes,96);
+          assert.equal(report.counts.basins,12);
+          assert.deepEqual(report.counts.routes_per_basin,[8]);
+          assert.equal(report.counts.repair_legs,5);
+          assert.equal(report.counts.regression_domains,5);
+          assert.equal(discovery.routes.length,96);
+          assert.equal(discovery.basins.length,12);
+          const commonCrawlHostPolicy=policy.host_policies.find((row)=>row.match==='index.commoncrawl.org');
+          assert.deepEqual(commonCrawlHostPolicy,{match:'index.commoncrawl.org',max_concurrency:1,minimum_interval_ms:1500,timeout_ms:30000,attempts:1});
+          const commonCrawlFallback=policy.host_fallbacks.find((row)=>row.match==='index.commoncrawl.org');
+          assert.deepEqual(commonCrawlFallback,{match:'index.commoncrawl.org',fallbacks:[{url:'https://index.commoncrawl.org/collinfo.json',method:'GET',source_class:'public_index_catalog',max_bytes:524288}]});
+          const gdeltTide=policy.global_tides.find((row)=>row.tide_id==='GDELT-GLOBAL-SERIAL');
+          assert.deepEqual(gdeltTide,{
+            tide_id:'GDELT-GLOBAL-SERIAL',
+            match:'gdelt',
+            mode:'globally_serialized',
+            max_concurrency:1,
+            minimum_interval_ms:15000,
+            deduplicate_identical_requests:true,
+            route_results_back_to_original_basins:true,
+            attempts:2,
+            shared_rate_limit_cooldown_ms:60000
+          });
+          const tidePlan=planGlobalTides(discovery.routes,policy);
+          assert.equal(tidePlan.global_tides.length,1);
+          assert.equal(tidePlan.global_tides[0].routes.length,12);
+          assert.equal(tidePlan.standard_routes.length,84);
+          assert.deepEqual(
+            tidePlan.global_tides[0].routes.map((row)=>row.route_id),
+            discovery.routes.filter((row)=>/gdelt/i.test(row.url)||/gdelt/i.test(row.route_id)).map((row)=>row.route_id)
+          );
+
+          let clock=0;
+          let active=0;
+          let maxActive=0;
+          const starts=[];
+          const sleeps=[];
+          const syntheticRoutes=[
+            {route_id:'GDELT-A',basin_id:'G01',hydrology_class:'ocean_discovery',url:'https://api.gdeltproject.org/a',method:'GET'},
+            {route_id:'GDELT-B',basin_id:'G02',hydrology_class:'ocean_discovery',url:'https://api.gdeltproject.org/b',method:'GET'},
+            {route_id:'GDELT-C',basin_id:'G03',hydrology_class:'ocean_discovery',url:'https://api.gdeltproject.org/c',method:'GET'}
+          ];
+          const syntheticResults=await runGlobalTideRoutes(
+            syntheticRoutes,
+            gdeltTide,
+            async(route)=>{
+              active++;
+              maxActive=Math.max(maxActive,active);
+              starts.push({route_id:route.route_id,at:clock});
+              active--;
+              if(route.route_id==='GDELT-A')return {route_id:route.route_id,basin_id:route.basin_id,hydrology_class:route.hydrology_class,original_url:route.url,route_success:false,content_success:false,metadata_only:false,failure:'rate_limited'};
+              return {route_id:route.route_id,basin_id:route.basin_id,hydrology_class:route.hydrology_class,original_url:route.url,route_success:true,content_success:true,metadata_only:false};
+            },
+            {sleepFn:async(ms)=>{sleeps.push(ms);clock+=ms},nowFn:()=>clock}
+          );
+          assert.equal(maxActive,1);
+          assert.deepEqual(starts,[{route_id:'GDELT-A',at:0},{route_id:'GDELT-B',at:60000},{route_id:'GDELT-C',at:75000}]);
+          assert.deepEqual(sleeps,[60000,15000]);
+          assert.deepEqual(syntheticResults.map((row)=>row.global_tide_position),[1,2,3]);
+          assert.ok(syntheticResults.every((row)=>row.global_tide_id==='GDELT-GLOBAL-SERIAL'&&row.global_tide_size===3&&row.global_tide_deduplicated===false));
+
+          let duplicateExecutions=0;
+          const duplicateResults=await runGlobalTideRoutes(
+            [
+              {route_id:'D1',basin_id:'G01',hydrology_class:'ocean_discovery',url:'https://api.gdeltproject.org/shared',method:'GET'},
+              {route_id:'D2',basin_id:'G02',hydrology_class:'ocean_discovery',url:'https://api.gdeltproject.org/shared',method:'GET'}
+            ],
+            {...gdeltTide,minimum_interval_ms:0,shared_rate_limit_cooldown_ms:0},
+            async(route)=>{duplicateExecutions++;return {route_id:route.route_id,basin_id:route.basin_id,hydrology_class:route.hydrology_class,original_url:route.url,route_success:true,content_success:true,metadata_only:false}},
+            {sleepFn:async()=>{},nowFn:()=>0}
+          );
+          assert.equal(duplicateExecutions,1);
+          assert.equal(duplicateResults[0].global_tide_deduplicated,false);
+          assert.equal(duplicateResults[1].global_tide_deduplicated,true);
+          assert.equal(duplicateResults[1].route_id,'D2');
+          assert.equal(duplicateResults[1].basin_id,'G02');
+
+          assert.ok(discovery.routes.some((row)=>/gdelt/i.test(row.url)||/gdelt/i.test(row.route_id)));
+          assert.equal(classifyFailure({status:307,redirect_unresolved:true}),'redirect_unresolved');
+          assert.equal(classifyFailure({status:307}),'redirect_unresolved');
+          assert.equal(classifyFailure({status:310,error:new Error('redirect limit exceeded')}),'redirect_unresolved');
+          assert.equal(classifyFailure({status:403}),'access_blocked');
+          assert.equal(classifyFailure({status:429}),'rate_limited');
+          assert.deepEqual(executionContractFailures({execution_complete:true,unclassified_failures:0,coverage_healthy:false}),[]);
+          assert.deepEqual(executionContractFailures({execution_complete:true,unclassified_failures:0,coverage_healthy:true}),[]);
+          assert.deepEqual(executionContractFailures({execution_complete:false,unclassified_failures:0}),['the frozen 96-route orbit did not complete']);
+          assert.deepEqual(executionContractFailures({execution_complete:true,unclassified_failures:2}),['2 failures were not classified']);
+          assert.equal(report.current_result.live_v2_orbit_observed,false);
+          assert.equal(report.current_result.coverage_healthy,false);
+          assert.equal(report.current_result.composed_answer_observed,false);
+          assert.equal(report.current_result.works_standard_met,false);
+          assert.equal(report.boundaries.source_health_proves_evidentiary_sufficiency,false);
+          assert.equal(report.boundaries.source_health_proves_answer_effectiveness,false);
+          console.log('m05-answerable-power-sprint-03-leg-07.test: OK');
+          EOF
+
+          node --check tools/lib/m04g-source-ecology-v2.mjs
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07.test.js
+          git diff --check
+      - name: Run focused contract and full release gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          node test/m05-answerable-power-sprint-03-leg-07.test.js
+          npm run release:check
+          node test/m05-answerable-power-sprint-03-leg-07.test.js
+          git diff --check
+      - name: Package exact product working tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          out=/tmp/m04g-gdelt-global-tide-product
+          rm -rf "$out"
+          mkdir -p "$out/files"
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import shutil
+          import stat
+          import subprocess
+          from pathlib import Path
+
+          base = 'c7d91194620feb00c6bff2469950897ecce9f656'
+          out = Path('/tmp/m04g-gdelt-global-tide-product')
+          paths = [row for row in subprocess.check_output(['git','diff','--name-only'], text=True).splitlines() if row]
+          if not paths:
+              raise SystemExit('materializer produced no product changes')
+          if any(path.startswith('.github/') for path in paths):
+              raise SystemExit(f'transport path entered product working tree: {paths}')
+          entries = []
+          for rel in paths:
+              src = Path(rel)
+              if not src.exists():
+                  entries.append({'path':rel,'status':'deleted'})
+                  continue
+              dst = out / 'files' / rel
+              dst.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(src, dst)
+              data = src.read_bytes()
+              mode = '100755' if src.stat().st_mode & stat.S_IXUSR else '100644'
+              entries.append({'path':rel,'status':'modified','mode':mode,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()})
+          manifest = {'schema_version':'m04g-gdelt-global-tide-product@1','base_sha':base,'controller_sha':subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip(),'paths':paths,'entries':entries}
+          (out/'manifest.json').write_text(json.dumps(manifest, indent=2)+'\n')
+          subprocess.run(['git','diff','--binary'], check=True, stdout=(out/'product.patch').open('wb'))
+          (out/'status.txt').write_text(subprocess.check_output(['git','status','--short'], text=True))
+          PY
+          cat "$out/manifest.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: m04g-gdelt-global-tide-product-${{ github.run_id }}
+          path: /tmp/m04g-gdelt-global-tide-product/
+          if-no-files-found: error
+          retention-days: 30
