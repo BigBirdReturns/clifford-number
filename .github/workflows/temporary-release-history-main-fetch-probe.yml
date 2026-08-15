@@ -1,4 +1,4 @@
-name: TEMP release history main-fetch probe
+name: TEMP release history merge-ref probe
 
 on:
   push:
@@ -14,20 +14,23 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out diagnostic branch shallowly
+      - name: Check out PR merge ref shallowly
         uses: actions/checkout@v4
         with:
-          ref: diagnostic/release-history-main-fetch-v1
+          ref: refs/pull/2132/merge
           fetch-depth: 1
           show-progress: false
-      - name: Fetch complete main history and run release gate
+      - name: Fetch complete main and merge-ref history, then run release gate
         shell: bash
         run: |
           set -euo pipefail
           echo "before_shallow=$(git rev-parse --is-shallow-repository)"
           git fetch --no-tags --prune --quiet --depth=2147483647 \
-            origin +refs/heads/main:refs/remotes/origin/main
+            origin \
+            +refs/heads/main:refs/remotes/origin/main \
+            +refs/pull/2132/merge:refs/remotes/pull/2132/merge
           echo "after_shallow=$(git rev-parse --is-shallow-repository)"
+          test "$(git rev-parse --is-shallow-repository)" = false
           node - <<'NODE'
           const fs = require('node:fs');
           const cp = require('node:child_process');
@@ -40,6 +43,6 @@ jobs:
           for (const sha of shas) {
             cp.execFileSync('git', ['cat-file', '-e', `${sha}^{commit}`], { stdio: 'inherit' });
           }
-          console.log(`release-history probe: ${shas.size} SG-05 commits present`);
+          console.log(`release-history merge-ref probe: ${shas.size} SG-05 commits present`);
           NODE
           npm run release:check
