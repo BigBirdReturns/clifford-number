@@ -1,0 +1,76 @@
+name: TEMP M-04G ESCWA ODS English payload probe v3
+
+on:
+  push:
+    branches:
+      - agent/m04g-escwa-docs-en-probe-v3
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe ODS English links and extract payload metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification
+          if ! command -v pdftotext >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y poppler-utils
+          fi
+          cat > /tmp/probe.sh <<'SH'
+          set -u
+          key="$1"
+          url="$2"
+          mkdir -p "qualification/$key"
+          set +e
+          curl -sS -L --retry 2 --connect-timeout 20 --max-time 180 \
+            -A 'Mozilla/5.0 (compatible; Clifford-M04G-ODS-Probe/3.0)' \
+            -H 'Accept: application/pdf,text/html;q=0.9,*/*;q=0.8' \
+            -D "qualification/$key/headers.txt" \
+            -o "qualification/$key/body" \
+            -w '%{http_code}\n%{url_effective}\n%{content_type}\n%{size_download}\n%{num_redirects}\n' \
+            "$url" > "qualification/$key/meta.txt"
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > "qualification/$key/curl-exit.txt"
+          sha256sum "qualification/$key/body" > "qualification/$key/body.sha256"
+          file "qualification/$key/body" > "qualification/$key/file.txt"
+          if head -c 5 "qualification/$key/body" | grep -q '%PDF-'; then
+            mv "qualification/$key/body" "qualification/$key/body.pdf"
+            pdftotext -layout "qualification/$key/body.pdf" "qualification/$key/body.txt" || true
+          else
+            python3 - "$key" <<'PY'
+          import html, pathlib, re, sys
+          key=sys.argv[1]
+          p=pathlib.Path('qualification')/key/'body'
+          raw=p.read_text(errors='replace')
+          (p.parent/'body.txt').write_text(re.sub(r'\s+',' ',re.sub(r'<[^>]+>',' ',html.unescape(raw))).strip())
+          links=sorted(set(re.findall(r'(?:href|src)=["\']([^"\']+)',raw,re.I)))
+          (p.parent/'links.txt').write_text('\n'.join(links)+'\n')
+          PY
+          fi
+          SH
+          bash /tmp/probe.sh gp051 'https://docs.un.org/en/E/ESCWA/EDID/2015/3'
+          bash /tmp/probe.sh gp056 'https://docs.un.org/en/E/ESCWA/CL3.SEP/2023/4'
+          for key in gp051 gp056; do
+            echo "=== $key ==="
+            cat "qualification/$key/meta.txt"
+            cat "qualification/$key/file.txt"
+            cat "qualification/$key/body.sha256"
+            sed -n '1,80p' "qualification/$key/links.txt" 2>/dev/null || true
+            sed -n '1,40p' "qualification/$key/body.txt" 2>/dev/null || true
+          done
+      - name: Upload ODS payload receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-escwa-ods-en-${{ github.run_id }}
+          path: qualification/
+          if-no-files-found: error
+          retention-days: 30
