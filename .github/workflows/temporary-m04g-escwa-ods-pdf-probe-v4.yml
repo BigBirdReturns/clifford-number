@@ -1,0 +1,79 @@
+name: TEMP M-04G ESCWA exact ODS PDF probe v4
+
+on:
+  push:
+    branches:
+      - agent/m04g-escwa-ods-pdf-probe-v4
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Fetch exact ODS PDFs and extract route semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification
+          sudo apt-get update -qq
+          sudo apt-get install -y poppler-utils
+          cat > /tmp/probe.sh <<'SH'
+          set -euo pipefail
+          key="$1"; url="$2"
+          mkdir -p "qualification/$key"
+          curl -sS -L --retry 2 --connect-timeout 20 --max-time 180 \
+            -A 'Mozilla/5.0 (compatible; Clifford-M04G-ODS-PDF-Probe/4.0)' \
+            -H 'Accept: application/pdf,*/*;q=0.8' \
+            -D "qualification/$key/headers.txt" \
+            -o "qualification/$key/document.pdf" \
+            -w '%{http_code}\n%{url_effective}\n%{content_type}\n%{size_download}\n%{num_redirects}\n' \
+            "$url" > "qualification/$key/meta.txt"
+          sha256sum "qualification/$key/document.pdf" > "qualification/$key/document.sha256"
+          file "qualification/$key/document.pdf" > "qualification/$key/file.txt"
+          head -c 5 "qualification/$key/document.pdf" | grep -q '%PDF-'
+          pdftotext -layout "qualification/$key/document.pdf" "qualification/$key/document.txt"
+          sha256sum "qualification/$key/document.txt" > "qualification/$key/text.sha256"
+          SH
+          bash /tmp/probe.sh gp051 'https://documents.un.org/api/symbol/access?s=E/ESCWA/EDID/2015/3&l=en&t=pdf'
+          bash /tmp/probe.sh gp056 'https://documents.un.org/api/symbol/access?s=E/ESCWA/CL3.SEP/2023/4&l=en&t=pdf'
+          python3 - <<'PY'
+          import hashlib, json, pathlib, re
+          out={"schema_version":"m04g-escwa-exact-ods-pdf-probe@4","routes":{}}
+          specs={
+            "M04G-GP051":("gp051",[r"doctor",r"physician",r"1[, ]?000",r"2030"]),
+            "M04G-GP056":("gp056",[r"population",r"doubl",r"year"]),
+          }
+          for route,(key,patterns) in specs.items():
+            base=pathlib.Path('qualification')/key
+            text=(base/'document.txt').read_text(errors='replace')
+            windows=[]
+            flags={}
+            for pattern in patterns:
+              m=re.search(pattern,text,re.I)
+              flags[pattern]=bool(m)
+              if m:
+                windows.append(re.sub(r'\s+',' ',text[max(0,m.start()-350):min(len(text),m.end()+650)]).strip())
+            meta=(base/'meta.txt').read_text().splitlines()
+            pdf=(base/'document.pdf').read_bytes()
+            txt=(base/'document.txt').read_bytes()
+            out['routes'][route]={
+              "status":int(meta[0]),"final_url":meta[1],"content_type":meta[2],"bytes":int(float(meta[3])),"redirects":int(meta[4]),
+              "pdf_sha256":hashlib.sha256(pdf).hexdigest(),"text_sha256":hashlib.sha256(txt).hexdigest(),
+              "semantic_flags":flags,"all_patterns_present":all(flags.values()),"windows":list(dict.fromkeys(windows))[:8]
+            }
+          p=pathlib.Path('qualification/m04g-escwa-exact-ods-pdf-probe.json')
+          p.write_text(json.dumps(out,indent=2)+'\n')
+          pathlib.Path('qualification/m04g-escwa-exact-ods-pdf-probe.sha256').write_text(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.name+'\n')
+          print(json.dumps(out,indent=2))
+          PY
+      - name: Upload exact ODS PDF receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-escwa-exact-ods-pdf-${{ github.run_id }}
+          path: qualification/
+          if-no-files-found: error
+          retention-days: 30
