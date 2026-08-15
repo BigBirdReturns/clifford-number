@@ -1,6 +1,6 @@
 {
   "schema_version": "clifford-topology-admission-frontier@1",
-  "generated": "2026-08-14T22:41:08.019Z",
+  "generated": "2026-08-15T18:19:43.623Z",
   "graph_effect": "audit_only",
   "rules": {
     "actor_endpoint_rule": "Only canonical actors may occupy actor_a or actor_b.",
@@ -9,9 +9,9 @@
     "organization_rule": "Organization participation is preserved as context and cannot satisfy an actor endpoint or actor-pair denominator."
   },
   "counts": {
-    "surfaces": 53,
+    "surfaces": 54,
     "admitted_surfaces": 19,
-    "refused_surfaces": 29,
+    "refused_surfaces": 30,
     "context_only_surfaces_without_explicit_refusal": 5,
     "multi_actor_nonhop_without_refusal": 0,
     "expected_actor_pair_bases": 95,
@@ -21,7 +21,7 @@
     "missing_actor_pair_bases": 0,
     "compiled_basis_rows": 95,
     "actor_hop_edges": 93,
-    "rejected_hop_surfaces": 34,
+    "rejected_hop_surfaces": 35,
     "rejected_hop_pair_rows": 0,
     "errors": 0
   },
@@ -7553,6 +7553,41 @@
       "evidence_class": "primary_public",
       "time_start": "2026-04-27",
       "time_end": "2026-04-27"
+    },
+    {
+      "surface_id": "electric-twin-registered-shareholdings-2025-09-27",
+      "surface_label": "Electric Twin registered shareholder state, 27 September 2025",
+      "surface_type": "employment_investment_surface",
+      "hop_eligible": false,
+      "hop_refusal_reason": "registered_shareholder_state_not_shared_actor_participation",
+      "actor_ids": [
+        "alex-cooper",
+        "ben-warner"
+      ],
+      "organization_ids": [
+        "atomico",
+        "electric-twin",
+        "localglobe",
+        "mercuri"
+      ],
+      "actor_count": 2,
+      "organization_count": 4,
+      "expected_actor_pair_count": 1,
+      "compiled_actor_pair_count": 0,
+      "temporally_refused_actor_pair_count": 0,
+      "covered_actor_pair_count": 0,
+      "compiled_basis_count": 0,
+      "missing_actor_pair_keys": [
+        "alex-cooper|ben-warner"
+      ],
+      "temporal_refusals": [],
+      "receipt_ids": [
+        "companies-house-electric-twin-articles-2025-09-12",
+        "companies-house-electric-twin-cs01-shareholders-2025-09-27"
+      ],
+      "evidence_class": "official",
+      "time_start": "2025-09-27",
+      "time_end": "2025-09-27"
     },
     {
       "surface_id": "electric-twin-seed-round-institutional-investors-2026-02-11",
