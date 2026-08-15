@@ -1,4 +1,4 @@
-name: TEMP M-04G ESCWA semantic mirror probe v3
+name: TEMP M-04G ESCWA route-fallback materializer v1
 
 on:
   push:
@@ -6,244 +6,115 @@ on:
       - agent/m04g-unescwa-archive-probe-v1
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  probe:
+  materialize:
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
+    timeout-minutes: 45
+    env:
+      EXPECTED_MAIN: c7d91194620feb00c6bff2469950897ecce9f656
+      EXPECTED_MAIN_TREE: 9afb558ddf195e37817ff9cbe2a94b3917bde436
+      CANDIDATE_BRANCH: candidate/m04g-escwa-route-fallback-v1
     steps:
+      - name: Check out full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 24
 
-      - name: Probe semantically bound official UN mirror surfaces
+      - name: Verify transport provenance and capture materializer
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p probe-output
-          node --input-type=module <<'NODE'
-          import fs from 'node:fs';
-          import crypto from 'node:crypto';
+          git fetch --no-tags origin main
+          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
+          test "$(git rev-parse origin/main^{tree})" = "$EXPECTED_MAIN_TREE"
+          test "$(git merge-base HEAD origin/main)" = "$EXPECTED_MAIN"
+          mapfile -t paths < <(git diff --name-only "$EXPECTED_MAIN"...HEAD | sort)
+          printf '%s\n' "${paths[@]}"
+          test "${#paths[@]}" -eq 2
+          expected=$'.github/scripts/m04g-escwa-route-fallback-transport.mjs\n.github/workflows/temporary-m04g-unescwa-archive-probe-v1.yml'
+          test "$(printf '%s\n' "${paths[@]}")" = "$expected"
+          test -z "$(git ls-remote origin "refs/heads/$CANDIDATE_BRANCH")"
+          cp .github/scripts/m04g-escwa-route-fallback-transport.mjs /tmp/m04g-escwa-route-fallback-transport.mjs
+          node --check /tmp/m04g-escwa-route-fallback-transport.mjs
 
-          const candidates = [
-            {
-              url: 'https://digitallibrary.un.org/collection/ESCWA?ln=en',
-              source_class: 'official_un_digital_library_collection',
-              required_markers: ['ESCWA']
-            },
-            {
-              url: 'https://digitallibrary.un.org/search?as=1&f1=author&ln=en&m1=e&p1=UN.+ESCWA&rm=&sf=title&so=a',
-              source_class: 'official_un_digital_library_author_index',
-              required_markers: ['ESCWA']
-            },
-            {
-              url: 'https://digitallibrary.un.org/record/4038335?ln=en&of=recjson',
-              source_class: 'official_un_digital_library_record_json',
-              required_markers: ['ESCWA', '2017']
-            },
-            {
-              url: 'https://digitallibrary.un.org/record/4038335?ln=en&of=xm',
-              source_class: 'official_un_digital_library_record_xml',
-              required_markers: ['ESCWA', '2017']
-            },
-            {
-              url: 'https://docs.un.org/E/ESCWA/30/14',
-              source_class: 'official_un_ods_commission_record',
-              required_markers: ['E/ESCWA/30/14']
-            },
-            {
-              url: 'https://docs.un.org/E/ESCWA/DOC/36',
-              source_class: 'official_un_ods_document_catalogue',
-              required_markers: ['E/ESCWA/DOC/36']
-            },
-            {
-              url: 'https://docs.un.org/E/ESCWA/CSS/2018/2',
-              source_class: 'official_un_ods_publication_catalogue',
-              required_markers: ['E/ESCWA/CSS/2018/2']
-            },
-            {
-              url: 'https://docs.un.org/E/ESCWA/OES/2017/1',
-              source_class: 'official_un_ods_annual_report',
-              required_markers: ['E/ESCWA/OES/2017/1']
-            },
-            {
-              url: 'https://documents.un.org/',
-              source_class: 'official_un_document_repository',
-              required_markers: ['Official Document System', 'ESCWA']
-            }
-          ];
+      - name: Reset to exact canonical product base
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout --detach "$EXPECTED_MAIN"
+          test "$(git rev-parse HEAD^{tree})" = "$EXPECTED_MAIN_TREE"
+          test "$(git hash-object data/project/m04g-global-circulation-polls.json)" = 33ebf45abaff435c6172f3213129645778e13a7a
+          test "$(git hash-object tools/lib/m04g-source-ecology-v2.mjs)" = 934db56b046a734dd74db0a974fc49ce12833a87
+          test "$(git hash-object test/m05-answerable-power-sprint-03-leg-07.test.js)" = 5767c2e8b1616504b0b3eebe6c721a3adf9eec51
 
-          const allowedHosts = new Set([
-            'digitallibrary.un.org',
-            'docs.un.org',
-            'documents.un.org',
-            'daccess-ods.un.org'
-          ]);
-          const maxBytes = 524288;
-          const timeoutMs = 30000;
-          const userAgent = 'CliffordNumber-M04G/2.0 (+https://github.com/BigBirdReturns/clifford-number)';
-          const acceptedTypes = /^(text\/html|application\/json|application\/(?:[^;]+\+)?xml|text\/xml|text\/plain|application\/pdf)(?:;|$)/i;
-          const rejectionPatterns = [
-            /access denied/i,
-            /attention required/i,
-            /verify (?:that )?you are human/i,
-            /captcha/i,
-            /cloudflare/i,
-            /request blocked/i,
-            /forbidden/i,
-            /sign in to continue/i,
-            /making sure you(?:'|’)re not a bot/i,
-            /proof[- ]of[- ]work/i,
-            /protected by anubis/i,
-            /checking your browser/i,
-            /please enable javascript/i,
-            /challenge platform/i
-          ];
+      - name: Apply and qualify deterministic product
+        shell: bash
+        run: |
+          set -euo pipefail
+          node /tmp/m04g-escwa-route-fallback-transport.mjs apply
+          node --check tools/lib/m04g-source-ecology-v2.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07.test.js
+          node test/m05-answerable-power-sprint-03-leg-07.test.js
+          npm run release:check
 
-          async function readBounded(response) {
-            if (!response.body) return Buffer.alloc(0);
-            const chunks = [];
-            let total = 0;
-            for await (const chunk of response.body) {
-              const buffer = Buffer.from(chunk);
-              total += buffer.length;
-              if (total > maxBytes) {
-                try { await response.body.cancel(); } catch {}
-                throw new Error(`response exceeded ${maxBytes} bytes`);
-              }
-              chunks.push(buffer);
-            }
-            return Buffer.concat(chunks);
-          }
+      - name: Restore generated outputs and enforce product boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t drift < <(git diff --name-only "$EXPECTED_MAIN" --)
+          for path in "${drift[@]}"; do
+            case "$path" in
+              data/project/m04g-global-circulation-polls.json|tools/lib/m04g-source-ecology-v2.mjs|test/m05-answerable-power-sprint-03-leg-07.test.js) ;;
+              *) git checkout "$EXPECTED_MAIN" -- "$path" ;;
+            esac
+          done
+          mapfile -t changed < <(git diff --name-only "$EXPECTED_MAIN" -- | sort)
+          expected=$'data/project/m04g-global-circulation-polls.json\ntest/m05-answerable-power-sprint-03-leg-07.test.js\ntools/lib/m04g-source-ecology-v2.mjs'
+          test "${#changed[@]}" -eq 3
+          test "$(printf '%s\n' "${changed[@]}")" = "$expected"
+          test -z "$(git diff --name-only --diff-filter=D "$EXPECTED_MAIN" --)"
+          git diff --check
 
-          function visibleSample(body) {
-            return body.subarray(0, Math.min(body.length, 24000))
-              .toString('utf8')
-              .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-              .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-              .replace(/<[^>]+>/g, ' ')
-              .replace(/&nbsp;/gi, ' ')
-              .replace(/&amp;/gi, '&')
-              .replace(/\s+/g, ' ')
-              .trim()
-              .slice(0, 1200);
-          }
+      - name: Force both route-specific fallbacks
+        shell: bash
+        run: |
+          set -euo pipefail
+          node /tmp/m04g-escwa-route-fallback-transport.mjs forced
 
-          async function probe(candidate) {
-            const started = Date.now();
-            const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(new Error(`timeout after ${timeoutMs}ms`)), timeoutMs);
-            try {
-              const response = await fetch(candidate.url, {
-                method: 'GET',
-                redirect: 'follow',
-                signal: controller.signal,
-                headers: {
-                  'user-agent': userAgent,
-                  accept: 'text/html,application/json,application/xml,text/xml,text/plain,application/pdf,*/*;q=0.1'
-                }
-              });
-              const body = await readBounded(response);
-              const contentType = String(response.headers.get('content-type') || '').toLowerCase();
-              const rawSample = body.subarray(0, Math.min(body.length, 24000)).toString('utf8');
-              const sample = visibleSample(body);
-              const finalUrl = response.url || candidate.url;
-              const finalHost = new URL(finalUrl).hostname.toLowerCase();
-              const hostAccepted = allowedHosts.has(finalHost);
-              const challenge = rejectionPatterns.find((pattern) => pattern.test(rawSample) || pattern.test(sample));
-              const missingMarkers = candidate.required_markers.filter((marker) => !rawSample.toLowerCase().includes(marker.toLowerCase()) && !sample.toLowerCase().includes(marker.toLowerCase()));
-              const accepted = response.status === 200
-                && finalUrl.startsWith('https://')
-                && hostAccepted
-                && acceptedTypes.test(contentType)
-                && body.length >= 1024
-                && !challenge
-                && missingMarkers.length === 0;
-              return {
-                ...candidate,
-                status: response.status,
-                final_url: finalUrl,
-                final_host: finalHost,
-                content_type: contentType,
-                bytes: body.length,
-                content_sha256: body.length ? crypto.createHash('sha256').update(body).digest('hex') : null,
-                elapsed_ms: Date.now() - started,
-                sample,
-                missing_markers: missingMarkers,
-                accepted,
-                rejection: accepted ? null : (
-                  response.status !== 200 ? `http_${response.status}`
-                    : !hostAccepted ? 'cross_host_redirect'
-                      : !acceptedTypes.test(contentType) ? 'content_type_mismatch'
-                        : body.length < 1024 ? 'thin_content'
-                          : challenge ? `challenge_pattern:${challenge.source}`
-                            : missingMarkers.length ? `missing_markers:${missingMarkers.join(',')}`
-                              : 'guardrail_rejection'
-                )
-              };
-            } catch (error) {
-              return {
-                ...candidate,
-                status: null,
-                final_url: candidate.url,
-                final_host: new URL(candidate.url).hostname.toLowerCase(),
-                content_type: null,
-                bytes: 0,
-                content_sha256: null,
-                elapsed_ms: Date.now() - started,
-                sample: null,
-                missing_markers: candidate.required_markers,
-                accepted: false,
-                rejection: error?.name === 'AbortError' ? 'timeout' : 'transport_failure',
-                error: String(error?.stack || error)
-              };
-            } finally {
-              clearTimeout(timer);
-            }
-          }
+      - name: Run and verify live 96-route orbit
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf qualification/live
+          node tools/run-m04g-source-ecology-v2.mjs --output-dir qualification/live
+          node /tmp/m04g-escwa-route-fallback-transport.mjs verify-live
 
-          const results = [];
-          for (const candidate of candidates) {
-            results.push(await probe(candidate));
-            await new Promise((resolve) => setTimeout(resolve, 1500));
-          }
-          const accepted = results.filter((row) => row.accepted);
-          const output = {
-            schema_version: 'm04g-escwa-semantic-mirror-probe@3',
-            generated_at: new Date().toISOString(),
-            guardrails: {
-              exact_http_200_required: true,
-              official_un_hosts_only: [...allowedHosts],
-              https_only: true,
-              method: 'GET',
-              max_bytes: maxBytes,
-              timeout_ms: timeoutMs,
-              minimum_interval_ms: 1500,
-              reject_login_or_challenge: true,
-              minimum_content_bytes: 1024,
-              require_candidate_markers: true
-            },
-            candidate_count: results.length,
-            accepted_count: accepted.length,
-            selected: accepted[0] || null,
-            results
-          };
-          fs.writeFileSync('probe-output/m04g-escwa-semantic-mirror-probe.json', JSON.stringify(output, null, 2) + '\n');
-          fs.writeFileSync(
-            'probe-output/m04g-escwa-semantic-mirror-probe.sha256',
-            `${crypto.createHash('sha256').update(JSON.stringify(output)).digest('hex')}  m04g-escwa-semantic-mirror-probe.json\n`
-          );
-          console.log(JSON.stringify(output, null, 2));
-          if (!accepted.length) process.exitCode = 2;
-          NODE
+      - name: Publish clean one-parent candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git switch -c "$CANDIDATE_BRANCH"
+          git add data/project/m04g-global-circulation-polls.json tools/lib/m04g-source-ecology-v2.mjs test/m05-answerable-power-sprint-03-leg-07.test.js
+          git commit -m 'Repair ESCWA route-specific official-record fallbacks'
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_MAIN"
+          test "$(git diff-tree --no-commit-id --name-only -r HEAD | sort | wc -l)" -eq 3
+          git push origin "HEAD:refs/heads/$CANDIDATE_BRANCH"
+          node /tmp/m04g-escwa-route-fallback-transport.mjs publication
 
-      - name: Upload probe receipt
+      - name: Upload qualification receipts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: m04g-escwa-semantic-mirror-probe-${{ github.run_id }}
-          path: probe-output/
+          name: m04g-escwa-route-fallback-${{ github.run_id }}
+          path: qualification/
           if-no-files-found: error
           retention-days: 30
