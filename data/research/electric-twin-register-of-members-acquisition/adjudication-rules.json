@@ -1,0 +1,142 @@
+{
+  "schema_version": "electric-twin-allottee-adjudication@1",
+  "acquisition_id": "ET-ROM-2025-09-01",
+  "issue": 2138,
+  "status": "active_fail_closed_rules",
+  "current_canonical_state": {
+    "cs01_holder_snapshot": "established_as_at_2025-09-27",
+    "sh01_allottees_unidentified": true,
+    "beneficial_owners_unidentified": true,
+    "actor_hop_delta": "none"
+  },
+  "objects_must_remain_distinct": [
+    {
+      "object": "issuer_action",
+      "source_examples": [
+        "SH01",
+        "board allotment resolution"
+      ],
+      "minimum_meaning": "the issuer allotted a stated class and quantity on a stated date"
+    },
+    {
+      "object": "registered_title",
+      "source_examples": [
+        "register of members",
+        "CS01 shareholder table"
+      ],
+      "minimum_meaning": "the named person or vehicle was registered with a stated holding at a stated time"
+    },
+    {
+      "object": "original_subscription_or_allottee_identity",
+      "source_examples": [
+        "register-of-allotments entry",
+        "subscription schedule",
+        "closing schedule",
+        "allotment schedule",
+        "transaction-specific board record"
+      ],
+      "minimum_meaning": "the source expressly connects a named person or vehicle to a particular allotment event"
+    },
+    {
+      "object": "beneficial_ownership",
+      "source_examples": [
+        "beneficial-owner declaration",
+        "nominee agreement",
+        "trust or custody instrument"
+      ],
+      "minimum_meaning": "the source expressly identifies the beneficial interest rather than registered title alone"
+    }
+  ],
+  "promotion_gate": {
+    "allottee_identity_required_fields": [
+      "issuer",
+      "named person or legal vehicle",
+      "share class",
+      "quantity",
+      "allotment date or uniquely identified allotment event",
+      "express allotment, subscription, or equivalent transaction mechanism",
+      "source-addressable instrument identity"
+    ],
+    "all_fields_must_be_in_one_instrument_or_explicitly_linked_instruments": true,
+    "numerical_congruence_is_sufficient": false,
+    "date_proximity_is_sufficient": false,
+    "later_registered_holding_is_sufficient": false,
+    "round_level_investor_announcement_is_sufficient": false,
+    "class_rights_or_major_investor_status_is_sufficient": false
+  },
+  "admissible_outcome_states": [
+    {
+      "state": "transaction_specific_allottee_identified",
+      "canonical_effect": "a bounded SH01 allottee field may be proposed for review",
+      "required_condition": "promotion_gate satisfied without unresolved nominee, transfer, aggregation, or identity ambiguity"
+    },
+    {
+      "state": "registered_holder_history_strengthened_only",
+      "canonical_effect": "holder chronology may be extended; SH01 allottee remains unidentified",
+      "required_condition": "register supplies holder, class, quantity, or entry date without an express allotment mechanism"
+    },
+    {
+      "state": "transfer_or_register_movement_identified",
+      "canonical_effect": "record the movement mechanism; do not attribute the earlier allotment unless separately established",
+      "required_condition": "source expressly records a transfer, rectification, aggregation, split, or other register movement"
+    },
+    {
+      "state": "nominee_or_beneficial_owner_ambiguity",
+      "canonical_effect": "preserve registered title and ambiguity; no beneficial-owner or original-allottee claim",
+      "required_condition": "source identifies or leaves open a nominee, custody, trust, or beneficial-interest distinction"
+    },
+    {
+      "state": "partial_or_ambiguous_response",
+      "canonical_effect": "retain exact response and unresolved fields; no promotion",
+      "required_condition": "response lacks one or more promotion-gate fields or contains contradictory particulars"
+    },
+    {
+      "state": "company_application_to_court",
+      "canonical_effect": "record procedural disposition only",
+      "required_condition": "company states or documents an application concerning the request"
+    },
+    {
+      "state": "refusal_confidentiality_or_improper_purpose_asserted",
+      "canonical_effect": "record the stated disposition only",
+      "required_condition": "company refuses, asserts confidentiality, or challenges purpose"
+    },
+    {
+      "state": "route_failure_or_no_response",
+      "canonical_effect": "record acquisition failure state only",
+      "required_condition": "delivery fails, routing remains unresolved, or no response is received by the recorded checkpoint"
+    }
+  ],
+  "contradiction_rules": [
+    "A later CS01 quantity that matches an earlier SH01 quantity does not resolve whether the holding arose by allotment, transfer, nominee arrangement, or another movement.",
+    "A date entered as a member does not resolve the transaction mechanism unless the register or linked instrument says so.",
+    "An entity named in a public funding announcement may be an investor at round level without being the legal subscriber or registered allottee on a particular issue.",
+    "An eligible member named in written resolutions is not thereby a recipient of a later allotment.",
+    "A qualifying registered holding under the articles does not prove that any governance right was exercised."
+  ],
+  "identity_rules": {
+    "legal_vehicle_name_must_be_preserved_exactly": true,
+    "fund_brand_may_not_replace_legal_vehicle_without_source_link": true,
+    "mercuri_gp_llp_may_not_be_silently_equated_with_mercuri_ii_lp": true,
+    "atomico_vehicle_aggregation_may_be_used_only_for_date_bounded_threshold_analysis": true,
+    "aggregation_may_not_replace_vehicle_level_transaction_attribution": true
+  },
+  "canonical_mutation_rules": {
+    "no_direct_main_write": true,
+    "candidate_branch_required": true,
+    "checksum_bound_receipt_required": true,
+    "targeted_validator_required": true,
+    "full_release_check_required": true,
+    "adversarial_test_must_preserve_allottees_unidentified_when_gate_not_met": true,
+    "actor_hop_from_holder_state_forbidden": true
+  },
+  "prohibited_inferences": [
+    "matching quantity proves allottee identity",
+    "registered holder proves beneficial owner",
+    "date of membership proves date or mechanism of allotment",
+    "round participation proves legal subscriber vehicle",
+    "major investor status proves exercise of a class or governance right",
+    "refusal or silence proves concealment, wrongdoing, or absence of records",
+    "a procedural court application proves any fact about the allotments"
+  ],
+  "control_question": "Does the obtained source expressly name the person or vehicle as allottee for a uniquely identified September 2025 issue, or does it establish only resulting registered title or another register movement?"
+}
