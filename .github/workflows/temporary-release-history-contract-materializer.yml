@@ -28,7 +28,7 @@ jobs:
           BRANCH="repair/k0-full-history-postmerge-v1"
           PACKAGE="package.json"
           TEST="test/ensure-release-history.test.js"
-          TOOL="tools/ensure-release-history.mjs"
+          QUALIFIED_PACKAGE="/tmp/release-history-qualified-package.json"
 
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           node "$TEST"
@@ -58,12 +58,19 @@ jobs:
           NODE
 
           node "$TEST"
+          cp "$PACKAGE" "$QUALIFIED_PACKAGE"
+          qualified_sha="$(sha256sum "$QUALIFIED_PACKAGE" | cut -d' ' -f1)"
           npm run release:check
+
+          git restore --staged --worktree -- .
+          cp "$QUALIFIED_PACKAGE" "$PACKAGE"
+          test "$(sha256sum "$PACKAGE" | cut -d' ' -f1)" = "$qualified_sha"
+          node "$TEST"
 
           expected="$PACKAGE"
           actual="$(git status --porcelain | cut -c4- | sort)"
           test "$actual" = "$expected" || {
-            echo "Unexpected release-history materialization paths:"
+            echo "Unexpected release-history materialization paths after restoration:"
             git status --short
             exit 1
           }
