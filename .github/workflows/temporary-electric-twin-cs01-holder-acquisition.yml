@@ -1,0 +1,108 @@
+name: TEMP Electric Twin CS01 holder acquisition
+
+on:
+  push:
+    branches:
+      - agent/electric-twin-cs01-holder-acquisition-v1
+    paths:
+      - '.github/workflows/temporary-electric-twin-cs01-holder-acquisition.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out acquisition branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Acquire and validate official CS01 object
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          OUT=/tmp/electric-twin-cs01-2025-09-29
+          PDF="$OUT/source.pdf"
+          TEXT="$OUT/text.txt"
+          PAGES="$OUT/pages"
+          URL='https://find-and-update.company-information.service.gov.uk/company/15173006/filing-history/MzQ4MzAzNTU3OGFkaXF6a2N4/document?download=1&format=pdf'
+
+          rm -rf "$OUT"
+          mkdir -p "$PAGES"
+
+          curl \
+            --fail \
+            --location \
+            --retry 5 \
+            --retry-all-errors \
+            --connect-timeout 20 \
+            --max-time 180 \
+            --user-agent 'Mozilla/5.0 (compatible; CliffordNumberEvidenceAcquisition/1.0)' \
+            --dump-header "$OUT/response-headers.txt" \
+            --write-out '%{http_code}\n%{content_type}\n%{size_download}\n' \
+            "$URL" \
+            --output "$PDF" \
+            > "$OUT/curl-result.txt"
+
+          test "$(head -c 5 "$PDF")" = '%PDF-'
+
+          PAGE_COUNT="$(pdfinfo "$PDF" | awk -F: '/^Pages:/ {gsub(/[[:space:]]/, "", $2); print $2}')"
+          test "$PAGE_COUNT" = '8'
+
+          pdftotext -layout "$PDF" "$TEXT"
+          grep -q '15173006' "$TEXT"
+          grep -qi 'confirmation statement' "$TEXT"
+
+          pdftoppm -png -r 180 "$PDF" "$PAGES/page" >/dev/null
+          test "$(find "$PAGES" -maxdepth 1 -type f -name 'page-*.png' | wc -l | tr -d ' ')" = '8'
+
+          SHA256="$(sha256sum "$PDF" | awk '{print $1}')"
+          BYTES="$(stat -c '%s' "$PDF")"
+          RETRIEVED_AT="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+
+          python3 - "$OUT/metadata.json" "$SHA256" "$BYTES" "$PAGE_COUNT" "$RETRIEVED_AT" "$GITHUB_SHA" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          path, sha256, size_bytes, pages, retrieved_at, workflow_sha = sys.argv[1:]
+          payload = {
+              "schema_version": "companies-house-document-acquisition@1",
+              "publisher": "Companies House",
+              "company_name": "ELECTRIC TWIN LTD",
+              "company_number": "15173006",
+              "filing_type": "CS01",
+              "confirmation_date": "2025-09-27",
+              "filed_date": "2025-09-29",
+              "document_id": "MzQ4MzAzNTU3OGFkaXF6a2N4",
+              "source_url": "https://find-and-update.company-information.service.gov.uk/company/15173006/filing-history/MzQ4MzAzNTU3OGFkaXF6a2N4/document?download=1&format=pdf",
+              "source_pdf_sha256": sha256,
+              "source_pdf_bytes": int(size_bytes),
+              "source_pdf_pages": int(pages),
+              "retrieved_at": retrieved_at,
+              "workflow_commit": workflow_sha,
+              "artifact_contents": [
+                  "source.pdf",
+                  "text.txt",
+                  "metadata.json",
+                  "response-headers.txt",
+                  "curl-result.txt",
+                  "pages/page-1.png through pages/page-8.png"
+              ]
+          }
+          Path(path).write_text(json.dumps(payload, indent=2) + "\n")
+          PY
+
+          cat "$OUT/metadata.json"
+
+      - name: Retain source, text, and page renders
+        uses: actions/upload-artifact@v4
+        with:
+          name: electric-twin-cs01-2025-09-29
+          path: /tmp/electric-twin-cs01-2025-09-29
+          if-no-files-found: error
+          retention-days: 7
