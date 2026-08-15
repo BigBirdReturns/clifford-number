@@ -11,6 +11,15 @@ if (run.status !== 0) {
 }
 assert.equal(run.status, 0, 'Electric Twin class-rights validator failed');
 
+const finalizerRun = spawnSync(process.execPath, ['test/electric-twin-register-request-finalizer.test.js'], {
+  encoding: 'utf8',
+});
+if (finalizerRun.status !== 0) {
+  console.error(finalizerRun.stdout);
+  console.error(finalizerRun.stderr);
+}
+assert.equal(finalizerRun.status, 0, 'Electric Twin register-request finalizer test failed');
+
 const receipts = fs.readFileSync('data/ledger/receipts.jsonl', 'utf8')
   .split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
 const surfaces = fs.readFileSync('data/ledger/surfaces.jsonl', 'utf8')
