@@ -24,4 +24,16 @@ assert.equal(surface('electric-twin-seed2-governance-instrument-2025-09-12').hop
 assert.equal(surface('electric-twin-capital-allotment-observations-2026-01-13-2026-07-09').status,
   'official_sh01_form_sequence_allottees_unidentified');
 
+const cs01 = receipt('companies-house-electric-twin-cs01-shareholders-2025-09-27');
+assert.equal(cs01.source_document_id, 'MzQ4MzAzNTU3OGFkaXF6a2N4');
+assert.equal(cs01.source_pdf_sha256, '2017a4fb95f4aca753b2780168d789e11ad289aa86a1dcb9f051b48ff8d3408f');
+assert.equal(cs01.registered_shareholdings.length, 18);
+assert.equal(cs01.grouped_registered_holdings.atomico.total_equity_shares, 604294);
+assert.equal(cs01.grouped_registered_holdings.localglobe.total_equity_shares, 680137);
+assert.equal(cs01.qualifying_holdings_established, true);
+assert.equal(cs01.rights_exercise_established, false);
+assert.equal(cs01.allottees_identified, false);
+assert.equal(cs01.transaction_join_established, false);
+assert.equal(surface('electric-twin-registered-shareholdings-2025-09-27').hop_eligible, false);
+
 console.log('electric-twin-class-rights.test: OK');
