@@ -32,10 +32,17 @@ function assertNoNetworkSurface(filePath, allowedImports) {
   assert.ok(imports.length > 0, `${filePath} must declare imports explicitly`);
   assert.ok(imports.every((specifier) => allowedImports.has(specifier)), `${filePath} imports an unapproved module`);
   assert.equal(/\bimport\s*\(/u.test(source), false, `${filePath} must not use dynamic import`);
+  assert.equal(/\bfetch\s*\(/u.test(source), false, `${filePath} must not call fetch`);
   const forbiddenGlobalFetch = ['globalThis', '.fetch', '('].join('');
   const forbiddenEnvironmentRead = ['process', '.env'].join('');
   assert.equal(source.includes(forbiddenGlobalFetch), false, `${filePath} must not call global fetch`);
   assert.equal(source.includes(forbiddenEnvironmentRead), false, `${filePath} must not read requester data from environment variables`);
+}
+
+function assertNoWallClock(filePath) {
+  const source = readUtf8(filePath);
+  assert.equal(/\bDate\s*\(|Date\.now\s*\(|performance\.now\s*\(|process\.hrtime\s*\(/u.test(source), false,
+    `${filePath} must not use the wall clock`);
 }
 
 export function validateTrackedElectricTwinRequestPacket() {
@@ -75,11 +82,18 @@ export function validateTrackedElectricTwinRequestPacket() {
     actor_hop_delta: 'none',
   });
 
+  const outboundArtifacts = new Map(custody.required_outbound_artifacts.map((row) => [row.artifact_type, row]));
+  assert.equal(outboundArtifacts.get('statutory_request_rendered_pdf')?.required, true);
+  assert.equal(outboundArtifacts.get('statutory_request_rendered_pdf')?.sha256_required, true);
+  assert.equal(outboundArtifacts.get('voluntary_request_rendered_pdf')?.required, true);
+  assert.equal(outboundArtifacts.get('voluntary_request_rendered_pdf')?.sha256_required, true);
+
   for (const token of REQUIRED_TEMPLATE_TOKENS) assert.ok(template.includes(token));
   for (const heading of REQUIRED_TEMPLATE_HEADINGS) assert.ok(template.includes(heading));
   assert.match(template, /No follow-up, public escalation, or source-subject contact is authorized/u);
   assert.match(readme, /tools\/finalize-electric-twin-register-request\.mjs/u);
-  assert.match(readme, /does not render a PDF/u);
+  assert.match(readme, /tools\/render-electric-twin-register-request-pdfs\.mjs/u);
+  assert.match(readme, /does not make either request dispatch-ready/u);
   assert.match(gitignore, /^data\/local\/$/mu);
   assert.match(gitignore, /^build\/source-acquisition\/$/mu);
 
@@ -97,6 +111,21 @@ export function validateTrackedElectricTwinRequestPacket() {
     './lib/electric-twin-register-request-core.mjs',
     './validate-electric-twin-register-request-packet.mjs',
   ]));
+  assertNoNetworkSurface('tools/lib/deterministic-text-pdf.mjs', new Set([
+    'node:assert/strict',
+  ]));
+  assertNoNetworkSurface('tools/lib/electric-twin-register-request-pdf-core.mjs', new Set([
+    'node:assert/strict', 'node:crypto', 'node:fs', 'node:path',
+    './electric-twin-register-request-core.mjs',
+    './deterministic-text-pdf.mjs',
+  ]));
+  assertNoNetworkSurface('tools/render-electric-twin-register-request-pdfs.mjs', new Set([
+    'node:assert/strict', 'node:path', 'node:url',
+    './lib/electric-twin-register-request-pdf-core.mjs',
+  ]));
+  assertNoWallClock('tools/lib/deterministic-text-pdf.mjs');
+  assertNoWallClock('tools/lib/electric-twin-register-request-pdf-core.mjs');
+  assertNoWallClock('tools/render-electric-twin-register-request-pdfs.mjs');
 
   return {
     acquisition_id: ACQUISITION_ID,
