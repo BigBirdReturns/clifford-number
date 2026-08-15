@@ -1,0 +1,127 @@
+name: TEMP Electric Twin CS01 holder custody
+
+on:
+  push:
+    branches:
+      - agent/electric-twin-cs01-holder-custody-v1
+    paths:
+      - '.github/workflows/temporary-electric-twin-cs01-holder-custody.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact probe branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/electric-twin-cs01-holder-custody-v1
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Install PDF inspection tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq poppler-utils
+
+      - name: Acquire and verify official CS01
+        shell: bash
+        env:
+          SOURCE_URL: https://find-and-update.company-information.service.gov.uk/company/15173006/filing-history/MzQ4MzAzNTU3OGFkaXF6a2N4/document?download=0&format=pdf
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/electric-twin-cs01-2025-09-29"
+          mkdir -p "$OUT/pages"
+
+          curl \
+            --fail \
+            --location \
+            --retry 5 \
+            --retry-all-errors \
+            --connect-timeout 20 \
+            --max-time 180 \
+            --user-agent 'Mozilla/5.0 (compatible; evidence-custody/1.0)' \
+            "$SOURCE_URL" \
+            --output "$OUT/15173006_cs01_2025-09-29.pdf"
+
+          test "$(pdfinfo "$OUT/15173006_cs01_2025-09-29.pdf" | awk -F: '/^Pages:/ {gsub(/[[:space:]]/, "", $2); print $2}')" = "8"
+          sha256sum "$OUT/15173006_cs01_2025-09-29.pdf" | tee "$OUT/pdf.sha256"
+
+          pdftotext -f 5 -l 6 -layout "$OUT/15173006_cs01_2025-09-29.pdf" "$OUT/shareholders-pages-5-6.txt"
+          pdftoppm -f 5 -l 6 -png -r 150 "$OUT/15173006_cs01_2025-09-29.pdf" "$OUT/pages/page" >/dev/null
+          sha256sum "$OUT"/pages/*.png | tee "$OUT/pages.sha256"
+
+          python3 - "$OUT/shareholders-pages-5-6.txt" <<'PY'
+          from pathlib import Path
+          import sys
+
+          text = Path(sys.argv[1]).read_text(errors='strict')
+          expected = [
+              ('5614', 'ORDINARY', 'VARUN CHANDRA'),
+              ('1000000', 'ORDINARY', 'ALEXANDER VAUGHAN COOPER'),
+              ('46315', 'ORDINARY', 'ROBERT CRANBORNE'),
+              ('23859', 'ORDINARY', 'SHAN DRUMMOND'),
+              ('2807', 'ORDINARY', 'THOMAS RAYMOND LE FEUVRE POCOCK'),
+              ('21052', 'ORDINARY', 'ERIC RALPH SALAMA'),
+              ('2807', 'ORDINARY', 'FREDERICK SAYERS'),
+              ('5614', 'ORDINARY', 'ANKUSH KAMAL KANT SHAH'),
+              ('1000000', 'ORDINARY', 'BEN WARNER'),
+              ('28070', 'SEED 1 PREFERRED', 'GC&H INVESTMENT MANAGEMENT LLC'),
+              ('631578', 'SEED 1 PREFERRED', 'LOCALGLOBE XII, L.P.'),
+              ('70175', 'SEED 1 PREFERRED', 'MERCURI GP LLP'),
+              ('2807', 'SEED 1 PREFERRED', 'MILLTOWN VENTURES LIMITED'),
+              ('8421', 'SEED 1 PREFERRED', 'SLL INVESTCONSULT GMBH'),
+              ('20972', 'SEED 2 PREFERRED', 'ATOMICO VENTURE VI (PARALLEL) S.C.A., SICAV-RAIF'),
+              ('583322', 'SEED 2 PREFERRED', 'ATOMICO VENTURE VI SCSP'),
+              ('48559', 'SEED 2 PREFERRED', 'LOCALGLOBE XII, L.P.'),
+              ('86327', 'SEED 2 PREFERRED', 'MERCURI GP LLP'),
+          ]
+
+          compact = ' '.join(text.split())
+          for quantity, share_class, holder in expected:
+              needle = f'{quantity} {share_class} shares held as at the date of this confirmation statement Name: {holder}'
+              if needle not in compact:
+                  raise SystemExit(f'missing exact holder row: {needle}')
+
+          ordinary = sum(int(q) for q, c, _ in expected if c == 'ORDINARY')
+          seed1 = sum(int(q) for q, c, _ in expected if c == 'SEED 1 PREFERRED')
+          seed2 = sum(int(q) for q, c, _ in expected if c == 'SEED 2 PREFERRED')
+          total = ordinary + seed1 + seed2
+          assert (ordinary, seed1, seed2, total) == (2108068, 741051, 739180, 3588299)
+
+          atomico_seed2 = sum(int(q) for q, c, h in expected if c == 'SEED 2 PREFERRED' and h.startswith('ATOMICO VENTURE VI'))
+          localglobe_seed2 = sum(int(q) for q, c, h in expected if c == 'SEED 2 PREFERRED' and h == 'LOCALGLOBE XII, L.P.')
+          mercuri_seed2 = sum(int(q) for q, c, h in expected if c == 'SEED 2 PREFERRED' and h == 'MERCURI GP LLP')
+          assert (atomico_seed2, mercuri_seed2, localglobe_seed2) == (604294, 86327, 48559)
+
+          print('holder rows: 18')
+          print(f'class totals: ordinary={ordinary} seed1={seed1} seed2={seed2} total={total}')
+          print(f'seed2 registered holdings: atomico={atomico_seed2} mercuri={mercuri_seed2} localglobe={localglobe_seed2}')
+          print('allottee attribution: not established by CS01')
+          PY
+
+          cat "$OUT/shareholders-pages-5-6.txt"
+
+          {
+            echo "source_url=$SOURCE_URL"
+            echo "company_number=15173006"
+            echo "document_id=MzQ4MzAzNTU3OGFkaXF6a2N4"
+            echo "filed_at=2025-09-29"
+            echo "confirmation_date=2025-09-27"
+            echo "source_pdf_pages=8"
+            echo "uploaded_page_5_sha256=d4be3b14176b3691db2f99333dfdd901b9121a65f4c79f3c6874377229a8581f"
+            echo "uploaded_page_6_sha256=5785c2aa39064ba0b524eda7dc29d446c0a7914ce0f9f9ba258e1c6985d54afb"
+          } > "$OUT/custody-metadata.txt"
+
+      - name: Upload custody bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: electric-twin-cs01-holder-custody
+          path: ${{ runner.temp }}/electric-twin-cs01-2025-09-29
+          if-no-files-found: error
+          retention-days: 30
