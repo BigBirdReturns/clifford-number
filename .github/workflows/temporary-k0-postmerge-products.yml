@@ -1,0 +1,79 @@
+name: TEMP materialize post-merge K0 products
+
+on:
+  push:
+    branches:
+      - repair/k0-full-history-postmerge-v1
+    paths:
+      - '.github/workflows/temporary-k0-postmerge-products.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/k0-full-history-postmerge-v1
+          fetch-depth: 0
+          show-progress: false
+      - name: Qualify and publish only regenerated K0 products
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BRANCH="repair/k0-full-history-postmerge-v1"
+          K0_MANIFEST="data/project/k0-epistemic-admissibility-release-manifest.json"
+          K0_REPORT="reports/core-thesis/answerable-power/k0.json"
+          K0_HTML="reports/core-thesis/answerable-power/k0.html"
+
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+
+          node tools/build-k0-epistemic-admissibility.mjs
+          node tools/validate-k0-epistemic-admissibility.mjs
+          node test/k0-epistemic-admissibility.test.js
+          npm run release:check
+
+          OUT="/tmp/k0-postmerge-products"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          cp "$K0_MANIFEST" "$OUT/k0-manifest.json"
+          cp "$K0_REPORT" "$OUT/k0-report.json"
+          cp "$K0_HTML" "$OUT/k0.html"
+
+          git restore --staged --worktree -- .
+          cp "$OUT/k0-manifest.json" "$K0_MANIFEST"
+          cp "$OUT/k0-report.json" "$K0_REPORT"
+          cp "$OUT/k0.html" "$K0_HTML"
+
+          node tools/build-k0-epistemic-admissibility.mjs
+          node tools/validate-k0-epistemic-admissibility.mjs
+          node test/k0-epistemic-admissibility.test.js
+
+          expected="$(printf '%s\n' \
+            "$K0_MANIFEST" \
+            "$K0_HTML" \
+            "$K0_REPORT" | sort)"
+          actual="$(git status --porcelain | cut -c4- | sort)"
+          test "$actual" = "$expected" || {
+            echo "Unexpected K0 product paths:"
+            git status --short
+            exit 1
+          }
+
+          git diff --check
+          git add -- "$K0_MANIFEST" "$K0_HTML" "$K0_REPORT"
+          test -z "$(git diff --name-only)"
+          test "$(git diff --cached --name-only | sort)" = "$expected"
+          git diff --cached --check
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "build: rebind K0 products to full-history gate"
+
+          git fetch --no-tags origin "$BRANCH"
+          test "$(git rev-parse "origin/$BRANCH")" = "$GITHUB_SHA"
+          git push origin "HEAD:refs/heads/$BRANCH"
