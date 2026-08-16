@@ -1,0 +1,112 @@
+name: Temporary M04G last-two fast parallel probe v2
+
+on:
+  push:
+    branches:
+      - agent/m04g-last-two-fast-probe-v2
+    paths:
+      - .github/workflows/temporary-m04g-last-two-fast-parallel-probe-v2.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporary-m04g-last-two-fast-parallel-probe-v2-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout isolated parallel probe branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Derive and verify parallel probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum .github/probes/m04g_last_two_first_party_probe_v1.mjs | awk '{print $1}')" \
+            = "9c36a953014976008708b037e34a1fca507d987af570c6b2bc3f851f8a6299e4"
+          mkdir -p .tmp/m04g-last-two-fast-parallel-probe-v2
+          python - <<'PY'
+          from pathlib import Path
+          src = Path('.github/probes/m04g_last_two_first_party_probe_v1.mjs').read_text()
+          src = src.replace(
+              'for (let requestAttempt = 1; requestAttempt <= 2; requestAttempt += 1) {',
+              'for (let requestAttempt = 1; requestAttempt <= 1; requestAttempt += 1) {'
+          )
+          old = '''const routeResults = [];
+          for (const route of routes) {
+            const candidateResults = [];
+            let selected = null;
+            for (let index = 0; index < route.candidates.length; index += 1) {
+              const result = await fetchCandidate(route, route.candidates[index], index);
+              candidateResults.push(result);
+              if (result.success) {
+                selected = result;
+                break;
+              }
+            }
+            routeResults.push({ ...route, route_success: Boolean(selected), content_success: Boolean(selected), selected, candidate_results: candidateResults });
+          }
+          '''
+          new = '''const routeResults = await Promise.all(routes.map(async (route) => {
+            const candidateResults = [];
+            let selected = null;
+            for (let index = 0; index < route.candidates.length; index += 1) {
+              const result = await fetchCandidate(route, route.candidates[index], index);
+              candidateResults.push(result);
+              if (result.success) {
+                selected = result;
+                break;
+              }
+            }
+            return { ...route, route_success: Boolean(selected), content_success: Boolean(selected), selected, candidate_results: candidateResults };
+          }));
+          '''
+          if old not in src:
+              raise SystemExit('route loop anchor missing')
+          src = src.replace(old, new)
+          src = src.replace('m04g-last-two-first-party-probe@1', 'm04g-last-two-first-party-parallel-probe@2')
+          src = src.replace('m04g-last-two-first-party-probe-receipt@1', 'm04g-last-two-first-party-parallel-probe-receipt@2')
+          src = src.replace('# M04G last-two first-party probe', '# M04G last-two first-party parallel probe')
+          src = src.replace('CliffordNumber-M04G/2.7 residual-first-party-probe', 'CliffordNumber-M04G/2.8 parallel-residual-probe')
+          Path('.tmp/m04g-last-two-fast-parallel-probe-v2/probe.mjs').write_text(src)
+          PY
+          test "$(sha256sum .tmp/m04g-last-two-fast-parallel-probe-v2/probe.mjs | awk '{print $1}')" \
+            = "ee9ff97a868c687e6999190993c03811a7e789f1b2c8bba3e73583762fd100dd"
+          node --check .tmp/m04g-last-two-fast-parallel-probe-v2/probe.mjs
+
+      - name: Execute bounded parallel replay
+        run: >-
+          node .tmp/m04g-last-two-fast-parallel-probe-v2/probe.mjs
+          qualification/m04g-last-two-fast-parallel-probe-v2
+
+      - name: Preserve derived source receipt
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/m04g-last-two-fast-parallel-probe-v2/source
+          if [[ -f .tmp/m04g-last-two-fast-parallel-probe-v2/probe.mjs ]]; then
+            cp .tmp/m04g-last-two-fast-parallel-probe-v2/probe.mjs \
+              qualification/m04g-last-two-fast-parallel-probe-v2/source/m04g_last_two_first_party_probe_v2.mjs
+          fi
+          sha256sum .github/probes/m04g_last_two_first_party_probe_v1.mjs \
+            > qualification/m04g-last-two-fast-parallel-probe-v2/source/base-source.sha256
+
+      - name: Upload complete parallel receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-last-two-fast-parallel-probe-v2-${{ github.run_id }}
+          path: qualification/m04g-last-two-fast-parallel-probe-v2
+          if-no-files-found: error
+          retention-days: 30
