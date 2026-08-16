@@ -56,6 +56,16 @@ if (responseRun.status !== 0) {
 }
 assert.equal(responseRun.status, 0, 'Electric Twin register-request response custody test failed');
 
+const responseAdjudicationRun = spawnSync(process.execPath, ['test/electric-twin-register-request-response-adjudication.test.js'], {
+  encoding: 'utf8',
+});
+if (responseAdjudicationRun.status !== 0) {
+  console.error(responseAdjudicationRun.stdout);
+  console.error(responseAdjudicationRun.stderr);
+}
+assert.equal(responseAdjudicationRun.status, 0,
+  'Electric Twin register-request response adjudication test failed');
+
 const receipts = fs.readFileSync('data/ledger/receipts.jsonl', 'utf8')
   .split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
 const surfaces = fs.readFileSync('data/ledger/surfaces.jsonl', 'utf8')

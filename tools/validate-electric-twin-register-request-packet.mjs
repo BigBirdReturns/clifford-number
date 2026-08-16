@@ -25,6 +25,10 @@ import {
   RESPONSE_INPUT_SCHEMA,
   validateResponseInput,
 } from './lib/electric-twin-register-request-response-core.mjs';
+import {
+  RESPONSE_ADJUDICATION_INPUT_SCHEMA,
+  validateResponseAdjudicationInput,
+} from './lib/electric-twin-register-request-response-adjudication-core.mjs';
 
 function readUtf8(filePath) {
   return fs.readFileSync(filePath, 'utf8');
@@ -66,6 +70,7 @@ export function validateTrackedElectricTwinRequestPacket() {
   const dispatchExample = readJson(`${PACKET_ROOT}/dispatch-input.example.json`);
   const deliveryExample = readJson(`${PACKET_ROOT}/delivery-input.example.json`);
   const responseExample = readJson(`${PACKET_ROOT}/response-input.example.json`);
+  const responseAdjudicationExample = readJson(`${PACKET_ROOT}/response-adjudication-input.example.json`);
   const ledger = parseJsonl(`${PACKET_ROOT}/response-ledger.jsonl`);
   const template = readUtf8(TEMPLATE_PATH);
   const readme = readUtf8(`${PACKET_ROOT}/README.md`);
@@ -78,6 +83,7 @@ export function validateTrackedElectricTwinRequestPacket() {
   assert.equal(dispatchExample.acquisition_id, ACQUISITION_ID);
   assert.equal(deliveryExample.acquisition_id, ACQUISITION_ID);
   assert.equal(responseExample.acquisition_id, ACQUISITION_ID);
+  assert.equal(responseAdjudicationExample.acquisition_id, ACQUISITION_ID);
   assert.equal(request.status, 'prepared_not_sent');
   assert.equal(custody.status, 'prepared_not_sent');
   assert.equal(request.graph_effect, 'none');
@@ -89,6 +95,28 @@ export function validateTrackedElectricTwinRequestPacket() {
   assert.equal(adjudication.current_canonical_state.sh01_allottees_unidentified, true);
   assert.equal(adjudication.current_canonical_state.beneficial_owners_unidentified, true);
   assert.equal(adjudication.current_canonical_state.actor_hop_delta, 'none');
+  assert.equal(adjudication.response_review_contract.output_state,
+    'response_adjudication_recorded_canonical_promotion_blocked');
+  assert.equal(adjudication.response_review_contract.second_party_review_required, true);
+  assert.equal(adjudication.response_review_contract.canonical_mutation_authorized_by_this_gate, false);
+  assert.equal(adjudication.response_review_contract.semantic_correctness_verified_by_tool, false);
+  assert.equal(
+    adjudication.response_review_contract.procedural_outcome_requires_matching_disposition_kind,
+    true,
+  );
+  assert.deepEqual(adjudication.response_review_contract.procedural_disposition_kinds_by_outcome, {
+    company_application_to_court: ['company_application_to_court'],
+    refusal_confidentiality_or_improper_purpose_asserted: [
+      'refusal',
+      'confidentiality_asserted',
+      'improper_purpose_asserted',
+    ],
+  });
+  assert.equal(
+    adjudication.response_review_contract.review_timestamp_calendar_and_clock_components_must_be_valid,
+    true,
+  );
+  assert.equal(adjudication.response_review_contract.canonical_effect, 'none');
   assert.ok(ledger.length >= 1, 'response ledger must contain the prepared event');
   assert.equal(ledger.at(-1).status, 'prepared_not_sent');
   assert.equal(ledger.at(-1).dispatch_authorized, false);
@@ -124,9 +152,12 @@ export function validateTrackedElectricTwinRequestPacket() {
   assert.match(readme, /tools\/record-electric-twin-register-request-dispatch\.mjs/u);
   assert.match(readme, /tools\/record-electric-twin-register-request-delivery\.mjs/u);
   assert.match(readme, /tools\/record-electric-twin-register-request-response\.mjs/u);
+  assert.match(readme, /tools\/adjudicate-electric-twin-register-request-response\.mjs/u);
   assert.match(readme, /postal_dispatch_evidence_recorded_delivery_unconfirmed/u);
   assert.match(readme, /postal_delivery_evidence_recorded_operational_checkpoint_calculated/u);
   assert.match(readme, /response_evidence_recorded_unadjudicated/u);
+  assert.match(readme, /response_adjudication_recorded_canonical_promotion_blocked/u);
+  assert.match(readme, /Second-party review remains required and incomplete/u);
   assert.match(readme, /chronology relation/u);
   assert.match(readme, /legal deadline/u);
   assert.match(readme, /does not make either request dispatch-ready/u);
@@ -157,6 +188,12 @@ export function validateTrackedElectricTwinRequestPacket() {
   assert.equal(responseExample.response_route, 'email');
   assert.equal(responseExample.primary_disposition, 'electronic_copy_offered');
   assert.throws(() => validateResponseInput(responseExample), /placeholder/u);
+
+  assert.equal(responseAdjudicationExample.schema_version, RESPONSE_ADJUDICATION_INPUT_SCHEMA);
+  assert.equal(responseAdjudicationExample.review_status, 'review_completed');
+  assert.equal(responseAdjudicationExample.outcome_state, 'partial_or_ambiguous_response');
+  assert.equal(responseAdjudicationExample.canonical_mutation_authorized, false);
+  assert.throws(() => validateResponseAdjudicationInput(responseAdjudicationExample), /placeholder/u);
 
   assertNoNetworkSurface('tools/lib/electric-twin-register-request-core.mjs', new Set([
     'node:assert/strict', 'node:crypto', 'node:fs', 'node:path',
@@ -208,6 +245,15 @@ export function validateTrackedElectricTwinRequestPacket() {
     'node:assert/strict', 'node:path', 'node:url',
     './lib/electric-twin-register-request-response-core.mjs',
   ]));
+  assertNoNetworkSurface('tools/lib/electric-twin-register-request-response-adjudication-core.mjs', new Set([
+    'node:assert/strict', 'node:crypto', 'node:fs', 'node:path',
+    './electric-twin-register-request-core.mjs',
+    './electric-twin-register-request-response-core.mjs',
+  ]));
+  assertNoNetworkSurface('tools/adjudicate-electric-twin-register-request-response.mjs', new Set([
+    'node:assert/strict', 'node:path', 'node:url',
+    './lib/electric-twin-register-request-response-adjudication-core.mjs',
+  ]));
   assertNoWallClock('tools/lib/deterministic-text-pdf.mjs');
   assertNoWallClock('tools/lib/electric-twin-register-request-pdf-core.mjs');
   assertNoWallClock('tools/render-electric-twin-register-request-pdfs.mjs');
@@ -217,6 +263,8 @@ export function validateTrackedElectricTwinRequestPacket() {
   assertNoWallClock('tools/record-electric-twin-register-request-delivery.mjs');
   assertNoWallClock('tools/lib/electric-twin-register-request-response-core.mjs');
   assertNoWallClock('tools/record-electric-twin-register-request-response.mjs');
+  assertNoWallClock('tools/lib/electric-twin-register-request-response-adjudication-core.mjs');
+  assertNoWallClock('tools/adjudicate-electric-twin-register-request-response.mjs');
 
   return {
     acquisition_id: ACQUISITION_ID,
