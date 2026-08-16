@@ -31,7 +31,7 @@ jobs:
           PAYLOAD=.github/probes/m04g-residual-replacement-probe-v4.mjs.gz.b64
           SCRIPT=/tmp/m04g-residual-replacement-probe-v4.mjs
           OUT=qualification/m04g-residual-replacement-probe-v4
-          echo "6e7fee506af542836acee18f4b0f8e28a46a4afc00fbfbbdc9cfd62171652118  ${PAYLOAD}" | sha256sum -c -
+          sha256sum "${PAYLOAD}"
           base64 --decode "${PAYLOAD}" | gunzip > "${SCRIPT}"
           echo "0cd6afa403672df650f6bc7911b2743b1d2bc63ab139fc45b339accb87928dc1  ${SCRIPT}" | sha256sum -c -
           rm -rf "${OUT}"
