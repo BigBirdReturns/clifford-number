@@ -1,0 +1,42 @@
+name: TEMP M-04G additional official fallback probe v1
+
+on:
+  push:
+    branches:
+      - agent/m04g-six-route-official-fallback-probe-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out bounded probe
+        uses: actions/checkout@v4
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Run additional official fallback probe
+        run: node .github/probes/m04g_additional_official_fallback_probe_v1.mjs qualification
+      - name: Render probe summary
+        if: always() && hashFiles('qualification/ledger.json') != ''
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const ledger=JSON.parse(fs.readFileSync('qualification/ledger.json','utf8'));
+          const lines=['# M-04G additional official fallback probe','',`- Routes probed: ${ledger.summary.routes_probed}`,`- Successful routes: ${ledger.summary.route_successes}`,`- At least one candidate: ${ledger.summary.candidate_authorized}`,''];
+          for(const row of ledger.selected)lines.push(`- ${row.route_id}: ${row.final_url} (${row.bytes} bytes; ${row.body_sha256})`);
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join('\n')+'\n');
+          NODE
+      - name: Upload additional fallback receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-additional-official-fallback-probe-v1-${{ github.run_id }}
+          path: qualification/
+          if-no-files-found: error
+          retention-days: 30
