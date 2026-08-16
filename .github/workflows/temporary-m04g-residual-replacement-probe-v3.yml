@@ -1,0 +1,58 @@
+name: TEMP M-04G residual replacement probe v3
+
+on:
+  push:
+    branches:
+      - agent/m04g-residual-official-fallback-probe-v1
+    paths:
+      - .github/probes/m04g-residual-replacement-probe-v3.mjs.gz.b64
+      - .github/workflows/temporary-m04g-residual-replacement-probe-v3.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporary-m04g-residual-replacement-probe-v3-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out probe branch
+        uses: actions/checkout@v4
+
+      - name: Verify and run bounded replacement probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          PAYLOAD=.github/probes/m04g-residual-replacement-probe-v3.mjs.gz.b64
+          SCRIPT=/tmp/m04g-residual-replacement-probe-v3.mjs
+          OUT=qualification/m04g-residual-replacement-probe-v3
+          echo "ce0877f4a42e10001e54d5bcb7d26aa9199dec72cc5d43fa5351efa0752ff95e  ${PAYLOAD}" | sha256sum -c -
+          base64 --decode "${PAYLOAD}" | gunzip > "${SCRIPT}"
+          echo "1814743b9ea3f8b66e7b0a0552063a5c58fadaff7e4e2c1c608b4ee44322914b  ${SCRIPT}" | sha256sum -c -
+          rm -rf "${OUT}"
+          node "${SCRIPT}" "${OUT}"
+
+      - name: Publish receipt summary
+        if: always()
+        shell: bash
+        run: |
+          SUMMARY=qualification/m04g-residual-replacement-probe-v3/summary.md
+          if [ -f "${SUMMARY}" ]; then
+            cat "${SUMMARY}" >> "${GITHUB_STEP_SUMMARY}"
+          else
+            printf '%s\n' '# M-04G replacement probe failed before receipt materialization' >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
+      - name: Upload bounded replacement ledger
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-residual-replacement-probe-v3-${{ github.run_id }}
+          path: qualification/m04g-residual-replacement-probe-v3
+          if-no-files-found: error
+          retention-days: 30
