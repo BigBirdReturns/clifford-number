@@ -1,0 +1,52 @@
+ync(path.join(outputDir,'m04g-source-ecology-v2-basin-health.json'),JSON.stringify(byBasin,null,2)+'\\n');\n    fs.writeFileSync(path.join(outputDir,'m04g-source-ecology-v2-global-tides.json'),JSON.stringify(globalTideResult.receipts,null,2)+'\\n');\n    for(const artifact of globalTideResult.artifacts){\n      if(artifact.compressed.length)fs.writeFileSync(path.join(outputDir,artifact.receipt.artifacts.compressed),artifact.compressed);\n      if(artifact.decompressed.length)fs.writeFileSync(path.join(outputDir,artifact.receipt.artifacts.decompressed),artifact.decompressed);\n    }\n    fs.writeFileSync(path.join(outputDir,'m04g-source-ecology-v2-receipt.json'),JSON.stringify(receipt,null,2)+'\\n');\n",
+        'global tide artifacts',
+    )
+    text = replace_once(
+        text,
+        "  return {discovery,observations,failures,byBasin,summary,receipt};\n}",
+        "  return {discovery,observations,failures,byBasin,summary,receipt,global_tides:globalTideResult.receipts};\n}",
+        'orbit return',
+    )
+    path.write_text(text)
+
+
+def patch_test(root: Path) -> None:
+    path = root / TEST_PATH
+    text = path.read_text()
+    text = replace_once(
+        text,
+        "import path from 'node:path';\n",
+        "import path from 'node:path';\nimport zlib from 'node:zlib';\n",
+        'test zlib import',
+    )
+    text = replace_once(
+        text,
+        "import { classifyFailure, executionContractFailures } from '../tools/lib/m04g-source-ecology-v2.mjs';\n",
+        "import { buildGlobalTideRequest, classifyFailure, executionContractFailures, parseGdeltTocPayload, partitionRoutesByGlobalTides } from '../tools/lib/m04g-source-ecology-v2.mjs';\n",
+        'test helper imports',
+    )
+    anchor = "assert.deepEqual(commonCrawlFallback,{match:'index.commoncrawl.org',fallbacks:[{url:'https://index.commoncrawl.org/collinfo.json',method:'GET',source_class:'public_index_catalog',max_bytes:524288}]});\n"
+    addition = r'''const gdeltTide=policy.global_tides.find((row)=>row.tide_id==='GDELT-GLOBAL-SERIAL');
+assert.deepEqual(gdeltTide,{
+  tide_id:'GDELT-GLOBAL-SERIAL',
+  match:'gdelt',
+  mode:'globally_serialized',
+  expected_routes:12,
+  expected_basins:12,
+  max_concurrency:1,
+  minimum_interval_ms:6500,
+  timeout_ms:30000,
+  heartbeat_minutes:15,
+  publication_guard_minutes:15,
+  heartbeat_offset_minutes:1,
+  url_template:'https://storage.googleapis.com/data.gdeltproject.org/gdeltv5/weblegacy/ngrams/{timestamp}.toc.json.gz',
+  record_format:'jsonl_gzip',
+  minimum_locator_records:1,
+  max_compressed_bytes:16777216,
+  max_decompressed_bytes:67108864,
+  deduplicate_identical_requests:true,
+  route_results_back_to_original_basins:true,
+  fallback_to_original_routes:false,
+  promotion_ceiling:'locator_only'
+});
+const tidePartition=partitionRoutesByGlobalTi

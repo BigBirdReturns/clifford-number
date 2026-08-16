@@ -1,26 +1,25 @@
-name: TEMP M-04G GDELT global tide materializer v1
+name: TEMP M-04G GDELT global tide materializer v2
 
 on:
   push:
     branches:
       - agent/m04g-global-gdelt-tide-probe-v1
     paths:
-      - '.github/probes/m04g_global_gdelt_tide_materializer_v1.part-*'
+      - '.github/probes/m04g_global_gdelt_tide_materializer_v2.part-*'
+      - '.github/probes/m04g_global_gdelt_tide_runner_v2.part-*'
       - '.github/workflows/temporary-m04g-global-gdelt-materializer-v1.yml'
 
 permissions:
   contents: write
 
 concurrency:
-  group: m04g-gdelt-global-tide-materializer-v1
+  group: m04g-gdelt-global-tide-materializer-v2
   cancel-in-progress: false
 
 jobs:
   materialize:
     runs-on: ubuntu-24.04
     timeout-minutes: 55
-    env:
-      CANDIDATE_BRANCH: candidate/m04g-gdelt-global-tide-v1
     steps:
       - name: Check out controller branch
         uses: actions/checkout@v4
@@ -32,261 +31,21 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Preserve and verify materializer controller
+      - name: Reconstruct and run bounded materializer
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p qualification/controller
-          cat .github/probes/m04g_global_gdelt_tide_materializer_v1.part-* > /tmp/m04g-global-gdelt-materializer-v1.py
-          controller_sha="$(sha256sum /tmp/m04g-global-gdelt-materializer-v1.py | awk '{print $1}')"
-          test "$controller_sha" = "5504f46cfda3d07f2aa877f0b378469fbbf50ad6ece3efdbd4781ec6f19cffdb"
-          python3 -m py_compile /tmp/m04g-global-gdelt-materializer-v1.py
-          printf '%s  %s\n' "$controller_sha" m04g-global-gdelt-materializer-v1.py > qualification/controller/controller.sha256
-
-      - name: Reserve current canonical main
-        shell: bash
-        run: |
-          set -euo pipefail
-          git fetch origin main
-          base_sha="$(git rev-parse origin/main)"
-          printf 'BASE_SHA=%s\n' "$base_sha" >> "$GITHUB_ENV"
-          printf '%s\n' "$base_sha" > qualification/base-sha.txt
-          git checkout --detach "$base_sha"
-          git status --short
-
-      - name: Run focused baseline and live baseline orbit
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p qualification/baseline/live
-          node tools/build-m05-answerable-power-sprint-03-leg-07.mjs
-          node tools/validate-m05-answerable-power-sprint-03-leg-07.mjs
-          node test/m05-answerable-power-sprint-03-leg-07.test.js
-          node tools/run-m04g-source-ecology-v2.mjs --output-dir qualification/baseline/live
-
-      - name: Apply bounded three-file runtime repair
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 /tmp/m04g-global-gdelt-materializer-v1.py --root . | tee qualification/materializer-output.json
-          mapfile -t changed < <(git diff --name-only | sort)
-          expected=(
-            data/project/m04g-source-ecology-v2-policy.json
-            test/m05-answerable-power-sprint-03-leg-07.test.js
-            tools/lib/m04g-source-ecology-v2.mjs
-          )
-          test "${#changed[@]}" -eq "${#expected[@]}"
-          for i in "${!expected[@]}"; do test "${changed[$i]}" = "${expected[$i]}"; done
-          git diff --check
-
-      - name: Run focused candidate and live candidate orbit
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p qualification/candidate/live
-          node tools/build-m05-answerable-power-sprint-03-leg-07.mjs
-          node tools/validate-m05-answerable-power-sprint-03-leg-07.mjs
-          node test/m05-answerable-power-sprint-03-leg-07.test.js
-          node tools/run-m04g-source-ecology-v2.mjs --output-dir qualification/candidate/live
-
-      - name: Adjudicate one-request tide and preserved denominator
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import gzip
-          import hashlib
-          import json
-          from pathlib import Path
-
-          root = Path('qualification')
-          baseline_receipt = json.loads((root/'baseline/live/m04g-source-ecology-v2-receipt.json').read_text())
-          baseline_observations = json.loads((root/'baseline/live/m04g-source-ecology-v2-observations.json').read_text())
-          candidate_receipt = json.loads((root/'candidate/live/m04g-source-ecology-v2-receipt.json').read_text())
-          candidate_observations = json.loads((root/'candidate/live/m04g-source-ecology-v2-observations.json').read_text())
-          candidate_dir = root/'candidate/live'
-
-          baseline_ids = baseline_receipt['route_ids']
-          candidate_ids = candidate_receipt['route_ids']
-          if baseline_ids != candidate_ids or len(candidate_ids) != 96 or len(set(candidate_ids)) != 96:
-              raise SystemExit('frozen 96-route identity/order changed')
-
-          tides = candidate_receipt.get('global_tides') or []
-          if len(tides) != 1:
-              raise SystemExit(f'expected one global tide receipt, found {len(tides)}')
-          tide = tides[0]
-          required = {
-              'tide_id': tide.get('tide_id') == 'GDELT-GLOBAL-SERIAL',
-              'success': tide.get('success') is True,
-              'network_request_count': tide.get('network_request_count') == 1,
-              'fallback_route_request_count': tide.get('fallback_route_request_count') == 0,
-              'route_count': len(tide.get('route_ids') or []) == 12,
-              'basin_count': len(set(tide.get('basin_ids') or [])) == 12,
-              'route_successes': tide.get('route_successes') == 12,
-              'content_successes': tide.get('content_successes') == 12,
-              'locator_records': int(tide.get('locator_record_count') or 0) > 0,
-              'compressed_hash': bool(tide.get('compressed_sha256')),
-              'decompressed_hash': bool(tide.get('decompressed_sha256')),
-          }
-          if not all(required.values()):
-              raise SystemExit(f'global tide gate failed: {required}')
-
-          compressed_path = candidate_dir/tide['artifacts']['compressed']
-          decompressed_path = candidate_dir/tide['artifacts']['decompressed']
-          compressed = compressed_path.read_bytes()
-          decompressed = decompressed_path.read_bytes()
-          if hashlib.sha256(compressed).hexdigest() != tide['compressed_sha256']:
-              raise SystemExit('compressed tide hash mismatch')
-          if hashlib.sha256(decompressed).hexdigest() != tide['decompressed_sha256']:
-              raise SystemExit('decompressed tide hash mismatch')
-          if gzip.decompress(compressed) != decompressed:
-              raise SystemExit('compressed and decompressed tide artifacts disagree')
-          records = [json.loads(line) for line in decompressed.decode('utf-8').splitlines() if line]
-          if len(records) != tide['locator_record_count']:
-              raise SystemExit('locator record count mismatch')
-          if not all(isinstance(row.get('ID'), int) and isinstance(row.get('date'), str) and str(row.get('url','')).startswith(('http://','https://')) for row in records):
-              raise SystemExit('invalid GDELT locator record admitted')
-
-          candidate_by_id = {row['route_id']: row for row in candidate_observations}
-          gdelt_rows = [candidate_by_id[route_id] for route_id in tide['route_ids']]
-          if not all(row.get('route_success') and row.get('content_success') and row.get('global_tide_used') and row.get('global_tide_id') == tide['tide_id'] for row in gdelt_rows):
-              raise SystemExit('one or more preserved GDELT route projections failed')
-          if len({row['result'].get('content_sha256') for row in gdelt_rows}) != 1:
-              raise SystemExit('GDELT projections do not share one transport hash')
-          if len({row['result'].get('deterministic_routing_key') for row in gdelt_rows}) != 12:
-              raise SystemExit('GDELT projection routing keys are not unique')
-          if any(row.get('global_tide_used') for row in candidate_observations if row['route_id'] not in tide['route_ids']):
-              raise SystemExit('global tide captured a non-GDELT route')
-
-          baseline_gdelt = [row for row in baseline_observations if 'api.gdeltproject.org' in row.get('original_url','')]
-          baseline_attempts = sum(len(attempts) for row in baseline_gdelt for result in row.get('candidate_results',[]) for attempts in [result.get('attempts',[])])
-          baseline_successes = sum(bool(row.get('route_success')) for row in baseline_gdelt)
-          summary = candidate_receipt['summary']
-          if summary.get('selected') != 96 or summary.get('execution_complete') is not True or summary.get('unclassified_failures') != 0:
-              raise SystemExit(f'candidate execution contract failed: {summary}')
-
-          decision = {
-              'schema': 'm04g-gdelt-global-tide-materialization@1',
-              'base_sha': Path('qualification/base-sha.txt').read_text().strip(),
-              'candidate_authorized': True,
-              'frozen_route_ids_preserved': True,
-              'global_tide': tide,
-              'baseline': {
-                  'summary': baseline_receipt['summary'],
-                  'gdelt_route_successes': baseline_successes,
-                  'gdelt_network_attempts': baseline_attempts,
-              },
-              'candidate': {
-                  'summary': summary,
-                  'gdelt_route_successes': 12,
-                  'gdelt_network_requests': 1,
-              },
-              'boundaries': {
-                  'denominator_changed': False,
-                  'thresholds_changed': False,
-                  'failure_taxonomy_changed': False,
-                  'locator_content_treated_as_evidence': False,
-                  'evidentiary_sufficiency_promoted': False,
-                  'answer_effectiveness_promoted': False,
-              },
-          }
-          (root/'decision.json').write_text(json.dumps(decision, indent=2)+'\n')
-          print(json.dumps(decision, indent=2))
-          PY
-
-      - name: Run complete release suite
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm run release:check
-
-      - name: Restore exact three-file candidate boundary
-        shell: bash
-        run: |
-          set -euo pipefail
-          tar -cf /tmp/m04g-gdelt-candidate-files.tar \
-            data/project/m04g-source-ecology-v2-policy.json \
-            tools/lib/m04g-source-ecology-v2.mjs \
-            test/m05-answerable-power-sprint-03-leg-07.test.js
-          git reset --hard "$BASE_SHA"
-          tar -xf /tmp/m04g-gdelt-candidate-files.tar
-          mapfile -t changed < <(git diff --name-only | sort)
-          expected=(
-            data/project/m04g-source-ecology-v2-policy.json
-            test/m05-answerable-power-sprint-03-leg-07.test.js
-            tools/lib/m04g-source-ecology-v2.mjs
-          )
-          test "${#changed[@]}" -eq "${#expected[@]}"
-          for i in "${!expected[@]}"; do test "${changed[$i]}" = "${expected[$i]}"; done
-          git diff --check
-          git diff --stat | tee qualification/candidate-diff-stat.txt
-
-      - name: Publish candidate branch
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name BigBirdReturns
-          git config user.email bigbirdreturns@proton.me
-          git switch -c "$CANDIDATE_BRANCH"
-          git add \
-            data/project/m04g-source-ecology-v2-policy.json \
-            tools/lib/m04g-source-ecology-v2.mjs \
-            test/m05-answerable-power-sprint-03-leg-07.test.js
-          git commit -m 'Repair GDELT global tide execution'
-          candidate_sha="$(git rev-parse HEAD)"
-          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
-          test "$(git diff-tree --no-commit-id --name-only -r HEAD | wc -l | tr -d ' ')" = 3
-          git push origin "HEAD:refs/heads/$CANDIDATE_BRANCH"
-          printf '%s\n' "$candidate_sha" > qualification/candidate-sha.txt
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-          path=Path('qualification/decision.json')
-          decision=json.loads(path.read_text())
-          decision['candidate_sha']=Path('qualification/candidate-sha.txt').read_text().strip()
-          decision['candidate_branch']='candidate/m04g-gdelt-global-tide-v1'
-          path.write_text(json.dumps(decision,indent=2)+'\n')
-          PY
-
-      - name: Render qualification summary
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import json
-          import os
-          from pathlib import Path
-          q=Path('qualification')
-          lines=['# M-04G GDELT global tide materializer v1','']
-          if (q/'decision.json').exists():
-              d=json.loads((q/'decision.json').read_text())
-              lines += [
-                  f"- Candidate authorized: `{d.get('candidate_authorized')}`",
-                  f"- Base SHA: `{d.get('base_sha')}`",
-                  f"- Candidate SHA: `{d.get('candidate_sha')}`",
-                  f"- Candidate branch: `{d.get('candidate_branch')}`",
-                  f"- Baseline GDELT successes: `{d.get('baseline',{}).get('gdelt_route_successes')}/12`",
-                  f"- Baseline GDELT network attempts: `{d.get('baseline',{}).get('gdelt_network_attempts')}`",
-                  f"- Candidate GDELT successes: `{d.get('candidate',{}).get('gdelt_route_successes')}/12`",
-                  f"- Candidate GDELT network requests: `{d.get('candidate',{}).get('gdelt_network_requests')}`",
-                  f"- Candidate route successes: `{d.get('candidate',{}).get('summary',{}).get('route_successes')}/96`",
-                  f"- Candidate content successes: `{d.get('candidate',{}).get('summary',{}).get('content_successes')}/96`",
-                  f"- Candidate healthy basins: `{d.get('candidate',{}).get('summary',{}).get('healthy_basins')}/12`",
-              ]
-          else:
-              lines.append('- No qualification decision was produced.')
-          summary='\n'.join(lines)+'\n'
-          print(summary)
-          if os.environ.get('GITHUB_STEP_SUMMARY'):
-              Path(os.environ['GITHUB_STEP_SUMMARY']).write_text(summary)
-          PY
+          cat .github/probes/m04g_global_gdelt_tide_runner_v2.part-* > /tmp/m04g-global-gdelt-runner-v2.sh
+          runner_sha="$(sha256sum /tmp/m04g-global-gdelt-runner-v2.sh | awk '{print $1}')"
+          test "$runner_sha" = "9aeb689fe9355a9cae4d23edce30fc01bf9e5d1b99ef048d882f68e6233accbe"
+          chmod +x /tmp/m04g-global-gdelt-runner-v2.sh
+          /tmp/m04g-global-gdelt-runner-v2.sh
 
       - name: Upload materialization receipts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: m04g-gdelt-global-tide-materializer-v1-${{ github.run_id }}
+          name: m04g-gdelt-global-tide-materializer-v2-${{ github.run_id }}
           path: qualification/
           if-no-files-found: error
           retention-days: 30

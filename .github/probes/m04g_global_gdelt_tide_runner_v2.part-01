@@ -1,0 +1,59 @@
+ -t changed < <(git diff --name-only | sort)
+expected=(
+  data/project/m04g-source-ecology-v2-policy.json
+  test/m05-answerable-power-sprint-03-leg-07.test.js
+  tools/lib/m04g-source-ecology-v2.mjs
+)
+test "${#changed[@]}" -eq "${#expected[@]}"
+for i in "${!expected[@]}"; do test "${changed[$i]}" = "${expected[$i]}"; done
+git diff --check
+
+mkdir -p "$QUALIFICATION_DIR/candidate/live"
+node tools/build-m05-answerable-power-sprint-03-leg-07.mjs
+node tools/validate-m05-answerable-power-sprint-03-leg-07.mjs
+node test/m05-answerable-power-sprint-03-leg-07.test.js
+node tools/run-m04g-source-ecology-v2.mjs --output-dir "$QUALIFICATION_DIR/candidate/live"
+
+python3 - <<'PY'
+import gzip
+import hashlib
+import json
+from pathlib import Path
+
+root = Path('qualification')
+baseline_receipt = json.loads((root/'baseline/live/m04g-source-ecology-v2-receipt.json').read_text())
+baseline_observations = json.loads((root/'baseline/live/m04g-source-ecology-v2-observations.json').read_text())
+candidate_receipt = json.loads((root/'candidate/live/m04g-source-ecology-v2-receipt.json').read_text())
+candidate_observations = json.loads((root/'candidate/live/m04g-source-ecology-v2-observations.json').read_text())
+candidate_dir = root/'candidate/live'
+
+baseline_ids = baseline_receipt['route_ids']
+candidate_ids = candidate_receipt['route_ids']
+if baseline_ids != candidate_ids or len(candidate_ids) != 96 or len(set(candidate_ids)) != 96:
+    raise SystemExit('frozen 96-route identity/order changed')
+
+tides = candidate_receipt.get('global_tides') or []
+if len(tides) != 1:
+    raise SystemExit(f'expected one global tide receipt, found {len(tides)}')
+tide = tides[0]
+required = {
+    'tide_id': tide.get('tide_id') == 'GDELT-GLOBAL-SERIAL',
+    'success': tide.get('success') is True,
+    'network_request_count': tide.get('network_request_count') == 1,
+    'fallback_route_request_count': tide.get('fallback_route_request_count') == 0,
+    'route_count': len(tide.get('route_ids') or []) == 12,
+    'basin_count': len(set(tide.get('basin_ids') or [])) == 12,
+    'route_successes': tide.get('route_successes') == 12,
+    'content_successes': tide.get('content_successes') == 12,
+    'locator_records': int(tide.get('locator_record_count') or 0) > 0,
+    'compressed_hash': bool(tide.get('compressed_sha256')),
+    'decompressed_hash': bool(tide.get('decompressed_sha256')),
+    'heartbeat_minutes': tide.get('heartbeat_minutes') == 15,
+    'publication_guard_minutes': tide.get('publication_guard_minutes') == 15,
+    'heartbeat_offset_minutes': tide.get('heartbeat_offset_minutes') == 1,
+    'target_age': 840 <= int(tide.get('target_age_seconds') or -1) < 1800,
+}
+if not all(required.values()):
+    raise SystemExit(f'global tide gate failed: {required}')
+
+compressed_path = candidate_dir/tide['artifacts']['co

@@ -1,0 +1,43 @@
+mpressed']
+decompressed_path = candidate_dir/tide['artifacts']['decompressed']
+compressed = compressed_path.read_bytes()
+decompressed = decompressed_path.read_bytes()
+if hashlib.sha256(compressed).hexdigest() != tide['compressed_sha256']:
+    raise SystemExit('compressed tide hash mismatch')
+if hashlib.sha256(decompressed).hexdigest() != tide['decompressed_sha256']:
+    raise SystemExit('decompressed tide hash mismatch')
+if gzip.decompress(compressed) != decompressed:
+    raise SystemExit('compressed and decompressed tide artifacts disagree')
+records = [json.loads(line) for line in decompressed.decode('utf-8').splitlines() if line]
+if len(records) != tide['locator_record_count']:
+    raise SystemExit('locator record count mismatch')
+if not all(isinstance(row.get('ID'), int) and row['ID'] > 0 and isinstance(row.get('date'), str) and str(row.get('url','')).startswith(('http://','https://')) for row in records):
+    raise SystemExit('invalid GDELT locator record admitted')
+
+candidate_by_id = {row['route_id']: row for row in candidate_observations}
+gdelt_rows = [candidate_by_id[route_id] for route_id in tide['route_ids']]
+if not all(row.get('route_success') and row.get('content_success') and row.get('global_tide_used') and row.get('global_tide_id') == tide['tide_id'] for row in gdelt_rows):
+    raise SystemExit('one or more preserved GDELT route projections failed')
+if len({row['result'].get('content_sha256') for row in gdelt_rows}) != 1:
+    raise SystemExit('GDELT projections do not share one transport hash')
+if len({row['result'].get('deterministic_routing_key') for row in gdelt_rows}) != 12:
+    raise SystemExit('GDELT projection routing keys are not unique')
+if any(row.get('global_tide_used') for row in candidate_observations if row['route_id'] not in tide['route_ids']):
+    raise SystemExit('global tide captured a non-GDELT route')
+
+baseline_gdelt = [row for row in baseline_observations if 'api.gdeltproject.org' in row.get('original_url','')]
+if len(baseline_gdelt) != 12:
+    raise SystemExit(f'baseline exposed {len(baseline_gdelt)} GDELT routes; expected 12')
+baseline_attempts = sum(len(result.get('attempts',[])) for row in baseline_gdelt for result in row.get('candidate_results',[]))
+baseline_successes = sum(bool(row.get('route_success')) for row in baseline_gdelt)
+summary = candidate_receipt['summary']
+if summary.get('selected') != 96 or summary.get('execution_complete') is not True or summary.get('unclassified_failures') != 0:
+    raise SystemExit(f'candidate execution contract failed: {summary}')
+
+decision = {
+    'schema': 'm04g-gdelt-global-tide-materialization@2',
+    'base_sha': Path('qualification/base-sha.txt').read_text().strip(),
+    'candidate_authorized': True,
+    'frozen_route_ids_preserved': True,
+    'global_tide': tide,
+    'bas

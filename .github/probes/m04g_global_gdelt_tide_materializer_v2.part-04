@@ -1,0 +1,64 @@
+al_url:route.url,route_success:false,content_success:false,metadata_only:false,fallback_used:false,global_tide_used:true,global_tide_id:tide.tide_id,failure:failure||'unclassified',candidate_results:[result]};
+  });
+  const receipt={
+    tide_id:tide.tide_id,
+    mode:tide.mode,
+    match:tide.match,
+    network_request_count:1,
+    fallback_route_request_count:0,
+    route_ids:routes.map((route)=>route.route_id),
+    basin_ids:routes.map((route)=>route.basin_id),
+    target_minute_utc:request.target_minute_utc,
+    target_age_seconds:request.target_age_seconds,
+    heartbeat_minutes:request.heartbeat_minutes,
+    publication_guard_minutes:request.publication_guard_minutes,
+    heartbeat_offset_minutes:request.heartbeat_offset_minutes,
+    requested_url:request.url,
+    status:transport.status,
+    final_url:transport.final_url,
+    headers:transport.headers,
+    compressed_bytes:transport.body?.length||0,
+    compressed_sha256:parsed?.compressed_sha256||null,
+    decompressed_bytes:parsed?.decompressed.length||0,
+    decompressed_sha256:parsed?.decompressed_sha256||null,
+    locator_record_count:parsed?.records.length||0,
+    route_successes:observations.filter((row)=>row.route_success).length,
+    content_successes:observations.filter((row)=>row.content_success).length,
+    success,
+    failure,
+    parse_error:parseError,
+    artifacts:artifactFiles
+  };
+  return {observations,receipt,compressed:parsed?transport.body:Buffer.alloc(0),decompressed:parsed?.decompressed||Buffer.alloc(0)};
+}
+
+async function executeGlobalTides(assignments,policy,gate,nowMs){
+  const observations=[];
+  const receipts=[];
+  const artifacts=[];
+  for(const assignment of assignments){
+    const result=await executeGlobalTide(assignment,policy,gate,nowMs);
+    observations.push(...result.observations);
+    receipts.push(result.receipt);
+    artifacts.push({receipt:result.receipt,compressed:result.compressed,decompressed:result.decompressed});
+  }
+  return {observations,receipts,artifacts};
+}
+'''
+
+
+def patch_library(root: Path) -> None:
+    path = root / LIB_PATH
+    text = path.read_text()
+    text = replace_once(
+        text,
+        "import path from 'node:path';\n",
+        "import path from 'node:path';\nimport zlib from 'node:zlib';\n",
+        'zlib import',
+    )
+    text = replace_once(text, '\nclass HostGate{\n', f'\n{GLOBAL_TIDE_CODE}\nclass HostGate{{\n', 'global tide implementation')
+    text = replace_once(
+        text,
+        "headers:{'user-agent':userAgent,'accept':'text/html,application/json,application/xml,text/xml,text/plain,application/pdf,*/*;q=0.1'}",
+        "headers:{'user-agent':userAgent,'accept':'application/gzip,application/octet-stream,text/html,application/json,application/xml,text/xml,text/plain,application/pdf,*/*;q=0.1'}",
+        'global 

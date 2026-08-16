@@ -1,0 +1,40 @@
+asins||basins.size);
+    if(basins.size!==expectedBasins)throw new Error(`Global tide ${tide.tide_id} matched ${basins.size} basins; expected ${expectedBasins}`);
+    if(tide.route_results_back_to_original_basins!==true)throw new Error(`Global tide ${tide.tide_id} must route results back to the original basins`);
+    if(tide.fallback_to_original_routes!==false)throw new Error(`Global tide ${tide.tide_id} must explicitly refuse basin-specific fallback requests`);
+    const ceiling=String(tide.promotion_ceiling||'locator_only');
+    for(const route of matched){
+      if(route.raw?.promotion_ceiling!==ceiling)throw new Error(`Global tide ${tide.tide_id} would change the promotion ceiling for ${route.route_id}`);
+      assigned.set(route.route_id,tide.tide_id);
+    }
+    tides.push({tide,routes:matched});
+  }
+  return {
+    tides,
+    ordinary_routes:routes.filter((route)=>!assigned.has(route.route_id)),
+    route_assignments:Object.fromEntries([...assigned].sort(([a],[b])=>a.localeCompare(b)))
+  };
+}
+
+const pad2=(value)=>String(value).padStart(2,'0');
+
+export function buildGlobalTideRequest(tide,nowMs=Date.now()){
+  if(tide.record_format!=='jsonl_gzip')throw new Error(`Unsupported global tide format for ${tide.tide_id}: ${tide.record_format}`);
+  const template=String(tide.url_template||'');
+  if(!template.includes('{timestamp}'))throw new Error(`Global tide ${tide.tide_id} URL template must contain {timestamp}`);
+  const heartbeatMinutes=Number(tide.heartbeat_minutes||0);
+  const publicationGuardMinutes=Number(tide.publication_guard_minutes||0);
+  const heartbeatOffsetMinutes=Number(tide.heartbeat_offset_minutes||0);
+  if(!Number.isInteger(heartbeatMinutes)||heartbeatMinutes<=0)throw new Error(`Global tide ${tide.tide_id} has an invalid heartbeat_minutes value`);
+  if(!Number.isInteger(publicationGuardMinutes)||publicationGuardMinutes<heartbeatMinutes)throw new Error(`Global tide ${tide.tide_id} publication_guard_minutes must cover at least one heartbeat`);
+  if(!Number.isInteger(heartbeatOffsetMinutes)||heartbeatOffsetMinutes<0||heartbeatOffsetMinutes>=heartbeatMinutes)throw new Error(`Global tide ${tide.tide_id} has an invalid heartbeat_offset_minutes value`);
+  const clock=Number(nowMs);
+  if(!Number.isFinite(clock))throw new Error(`Global tide ${tide.tide_id} received an invalid clock value`);
+  const heartbeatMs=heartbeatMinutes*60_000;
+  const guardedMs=clock-publicationGuardMinutes*60_000;
+  const heartbeatStartMs=Math.floor(guardedMs/heartbeatMs)*heartbeatMs;
+  const target=new Date(heartbeatStartMs+heartbeatOffsetMinutes*60_000);
+  target.setUTCSeconds(0,0);
+  const timestamp=`${target.getUTCFullYear()}${pad2(target.getUTCMonth()+1)}${pad2(target.getUTCDate())}${pad2(target.getUTCHours())}${pad2(target.getUTCMinutes())}00`;
+  return {
+    tide

@@ -1,0 +1,68 @@
+eline': {
+        'summary': baseline_receipt['summary'],
+        'gdelt_route_successes': baseline_successes,
+        'gdelt_network_attempts': baseline_attempts,
+    },
+    'candidate': {
+        'summary': summary,
+        'gdelt_route_successes': 12,
+        'gdelt_network_requests': 1,
+    },
+    'boundaries': {
+        'denominator_changed': False,
+        'thresholds_changed': False,
+        'failure_taxonomy_changed': False,
+        'locator_content_treated_as_evidence': False,
+        'evidentiary_sufficiency_promoted': False,
+        'answer_effectiveness_promoted': False,
+    },
+}
+(root/'decision.json').write_text(json.dumps(decision, indent=2)+'\n')
+print(json.dumps(decision, indent=2))
+PY
+
+npm run release:check
+
+tar -cf /tmp/m04g-gdelt-candidate-files.tar \
+  data/project/m04g-source-ecology-v2-policy.json \
+  tools/lib/m04g-source-ecology-v2.mjs \
+  test/m05-answerable-power-sprint-03-leg-07.test.js
+git reset --hard "$BASE_SHA"
+tar -xf /tmp/m04g-gdelt-candidate-files.tar
+mapfile -t changed < <(git diff --name-only | sort)
+expected=(
+  data/project/m04g-source-ecology-v2-policy.json
+  test/m05-answerable-power-sprint-03-leg-07.test.js
+  tools/lib/m04g-source-ecology-v2.mjs
+)
+test "${#changed[@]}" -eq "${#expected[@]}"
+for i in "${!expected[@]}"; do test "${changed[$i]}" = "${expected[$i]}"; done
+git diff --check
+git diff --stat | tee "$QUALIFICATION_DIR/candidate-diff-stat.txt"
+
+if git ls-remote --exit-code --heads origin "$CANDIDATE_BRANCH" >/dev/null 2>&1; then
+  echo "refusing to overwrite existing $CANDIDATE_BRANCH" >&2
+  exit 1
+fi
+git config user.name BigBirdReturns
+git config user.email bigbirdreturns@proton.me
+git switch -c "$CANDIDATE_BRANCH"
+git add \
+  data/project/m04g-source-ecology-v2-policy.json \
+  tools/lib/m04g-source-ecology-v2.mjs \
+  test/m05-answerable-power-sprint-03-leg-07.test.js
+git commit -m 'Repair GDELT global tide execution'
+candidate_sha="$(git rev-parse HEAD)"
+test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+test "$(git diff-tree --no-commit-id --name-only -r HEAD | wc -l | tr -d ' ')" = 3
+git push origin "HEAD:refs/heads/$CANDIDATE_BRANCH"
+printf '%s\n' "$candidate_sha" > "$QUALIFICATION_DIR/candidate-sha.txt"
+python3 - <<'PY'
+import json
+from pathlib import Path
+path=Path('qualification/decision.json')
+decision=json.loads(path.read_text())
+decision['candidate_sha']=Path('qualification/candidate-sha.txt').read_text().strip()
+decision['candidate_branch']='candidate/m04g-gdelt-global-tide-v1'
+path.write_text(json.dumps(decision,indent=2)+'\n')
+PY

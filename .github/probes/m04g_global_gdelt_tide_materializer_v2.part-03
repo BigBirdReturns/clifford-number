@@ -1,0 +1,46 @@
+thRedirects(request.url,{method:'GET',timeoutMs,maxBytes:maxCompressedBytes,userAgent:'CliffordNumber-M04G-GDELT-Tide/1.0 (+https://github.com/BigBirdReturns/clifford-number)'}));
+  let parsed=null;
+  let failure=null;
+  let parseError=null;
+  if(!transport.ok)failure=transport.https_downgrade?'https_downgrade_refused':(transport.status===404?'upstream_failure':classifyFailure(transport));
+  else{
+    try{parsed=parseGdeltTocPayload(transport.body,tide)}
+    catch(error){failure=error.failure||'parse_failure';parseError=String(error?.message||error)}
+  }
+  const success=Boolean(transport.ok&&parsed);
+  const stem=globalTideFileStem(tide.tide_id);
+  const artifactFiles={compressed:`m04g-source-ecology-v2-${stem}.json.gz`,decompressed:`m04g-source-ecology-v2-${stem}.json`};
+  const attempt={attempt:1,url:request.url,method:'GET',started_at,status:transport.status,final_url:transport.final_url,failure,metadata_only:false,bytes:transport.body?.length||0,global_tide_id:tide.tide_id};
+  const summary=parsed?JSON.stringify(parsed.records.slice(0,3).map((record)=>({ID:record.ID,date:record.date,lang:record.lang||null,title:record.title||null,url:record.url}))).slice(0,600):null;
+  const shared={
+    success,
+    content_success:success,
+    metadata_only:false,
+    status:transport.status,
+    requested_url:request.url,
+    final_url:transport.final_url,
+    method:'GET',
+    headers:transport.headers,
+    bytes:transport.body?.length||0,
+    content_sha256:parsed?.compressed_sha256||null,
+    decompressed_bytes:parsed?.decompressed.length||0,
+    decompressed_sha256:parsed?.decompressed_sha256||null,
+    locator_record_count:parsed?.records.length||0,
+    summary,
+    failure,
+    parse_error:parseError,
+    attempts:[attempt],
+    global_tide_id:tide.tide_id,
+    global_tide_target_minute_utc:request.target_minute_utc,
+    global_tide_target_age_seconds:request.target_age_seconds,
+    global_tide_heartbeat_minutes:request.heartbeat_minutes,
+    global_tide_publication_guard_minutes:request.publication_guard_minutes,
+    global_tide_heartbeat_offset_minutes:request.heartbeat_offset_minutes,
+    global_tide_artifacts:artifactFiles
+  };
+  const observations=routes.map((route)=>{
+    const result={...shared,original_query:new URL(route.url).searchParams.get('query'),deterministic_routing_key:`${route.basin_id}:${route.route_id}`};
+    if(success){
+      return {route_id:route.route_id,basin_id:route.basin_id,hydrology_class:route.hydrology_class,original_url:route.url,route_success:true,content_success:true,metadata_only:false,fallback_used:false,selected_candidate:0,global_tide_used:true,global_tide_id:tide.tide_id,result,candidate_results:[result]};
+    }
+    return {route_id:route.route_id,basin_id:route.basin_id,hydrology_class:route.hydrology_class,origin

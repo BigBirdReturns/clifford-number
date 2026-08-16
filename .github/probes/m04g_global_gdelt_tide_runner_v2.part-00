@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CANDIDATE_BRANCH="candidate/m04g-gdelt-global-tide-v1"
+QUALIFICATION_DIR="qualification"
+PATCHER="/tmp/m04g-global-gdelt-materializer-v2.py"
+PATCHER_SHA256="17d48edb682830d8b25d6390beedec0c1e69cfcd35db490932df088d4acfcca3"
+
+render_summary() {
+  python3 - <<'PY' || true
+import json
+import os
+from pathlib import Path
+q=Path('qualification')
+lines=['# M-04G GDELT global tide materializer v2','']
+if (q/'decision.json').exists():
+    d=json.loads((q/'decision.json').read_text())
+    lines += [
+        f"- Candidate authorized: `{d.get('candidate_authorized')}`",
+        f"- Base SHA: `{d.get('base_sha')}`",
+        f"- Candidate SHA: `{d.get('candidate_sha')}`",
+        f"- Candidate branch: `{d.get('candidate_branch')}`",
+        f"- Baseline GDELT successes: `{d.get('baseline',{}).get('gdelt_route_successes')}/12`",
+        f"- Baseline GDELT network attempts: `{d.get('baseline',{}).get('gdelt_network_attempts')}`",
+        f"- Candidate GDELT successes: `{d.get('candidate',{}).get('gdelt_route_successes')}/12`",
+        f"- Candidate GDELT network requests: `{d.get('candidate',{}).get('gdelt_network_requests')}`",
+        f"- Candidate route successes: `{d.get('candidate',{}).get('summary',{}).get('route_successes')}/96`",
+        f"- Candidate content successes: `{d.get('candidate',{}).get('summary',{}).get('content_successes')}/96`",
+        f"- Candidate healthy basins: `{d.get('candidate',{}).get('summary',{}).get('healthy_basins')}/12`",
+    ]
+else:
+    lines.append('- No qualification decision was produced.')
+summary='\n'.join(lines)+'\n'
+print(summary)
+if os.environ.get('GITHUB_STEP_SUMMARY'):
+    Path(os.environ['GITHUB_STEP_SUMMARY']).write_text(summary)
+PY
+}
+
+finish() {
+  status=$?
+  trap - EXIT
+  render_summary
+  exit "$status"
+}
+trap finish EXIT
+
+mkdir -p "$QUALIFICATION_DIR/controller"
+cat .github/probes/m04g_global_gdelt_tide_materializer_v2.part-* > "$PATCHER"
+controller_sha="$(sha256sum "$PATCHER" | awk '{print $1}')"
+test "$controller_sha" = "$PATCHER_SHA256"
+python3 -m py_compile "$PATCHER"
+printf '%s  %s\n' "$controller_sha" m04g-global-gdelt-materializer-v2.py > "$QUALIFICATION_DIR/controller/controller.sha256"
+
+git fetch origin main
+BASE_SHA="$(git rev-parse origin/main)"
+export BASE_SHA
+printf '%s\n' "$BASE_SHA" > "$QUALIFICATION_DIR/base-sha.txt"
+git checkout --detach "$BASE_SHA"
+git status --short
+
+mkdir -p "$QUALIFICATION_DIR/baseline/live"
+node tools/build-m05-answerable-power-sprint-03-leg-07.mjs
+node tools/validate-m05-answerable-power-sprint-03-leg-07.mjs
+node test/m05-answerable-power-sprint-03-leg-07.test.js
+node tools/run-m04g-source-ecology-v2.mjs --output-dir "$QUALIFICATION_DIR/baseline/live"
+
+python3 "$PATCHER" --root . | tee "$QUALIFICATION_DIR/materializer-output.json"
+mapfile

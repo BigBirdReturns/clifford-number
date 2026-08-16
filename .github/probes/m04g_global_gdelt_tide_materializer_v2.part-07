@@ -1,0 +1,42 @@
+des(discovery.routes,policy);
+assert.equal(tidePartition.tides.length,1);
+assert.equal(tidePartition.tides[0].routes.length,12);
+assert.equal(new Set(tidePartition.tides[0].routes.map((row)=>row.basin_id)).size,12);
+assert.equal(tidePartition.ordinary_routes.length,84);
+assert.equal(Object.keys(tidePartition.route_assignments).length,12);
+const fixedTideRequest=buildGlobalTideRequest(gdeltTide,Date.parse('2026-08-16T04:24:48Z'));
+assert.equal(fixedTideRequest.target_minute_utc,'2026-08-16T04:01:00.000Z');
+assert.equal(fixedTideRequest.target_age_seconds,1428);
+assert.equal(fixedTideRequest.heartbeat_minutes,15);
+assert.equal(fixedTideRequest.publication_guard_minutes,15);
+assert.equal(fixedTideRequest.heartbeat_offset_minutes,1);
+assert.equal(fixedTideRequest.url,'https://storage.googleapis.com/data.gdeltproject.org/gdeltv5/weblegacy/ngrams/20260816040100.toc.json.gz');
+const fixtureRecords=[
+  {ID:1,date:'2026-08-16T03:46:00.000Z',lang:'en',title:'Fixture one',url:'https://example.test/one'},
+  {ID:2,date:'2026-08-16T03:46:00.000Z',lang:'fr',title:'Fixture two',url:'https://example.test/two'}
+];
+const fixtureCompressed=zlib.gzipSync(Buffer.from(`${fixtureRecords.map((row)=>JSON.stringify(row)).join('\n')}\n`,'utf8'));
+const parsedFixture=parseGdeltTocPayload(fixtureCompressed,gdeltTide);
+assert.equal(parsedFixture.records.length,2);
+assert.deepEqual(parsedFixture.records,fixtureRecords);
+assert.equal(parsedFixture.decompressed.toString('utf8'),`${fixtureRecords.map((row)=>JSON.stringify(row)).join('\n')}\n`);
+assert.throws(()=>parseGdeltTocPayload(zlib.gzipSync(Buffer.from('{"ID":1,"date":"2026-08-16T03:46:00.000Z","url":"not-a-url"}\n')),gdeltTide),/valid locator records/u);
+'''
+    text = replace_once(text, anchor, anchor + addition, 'test global tide assertions')
+    path.write_text(text)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--root', default='.')
+    args = parser.parse_args()
+    root = Path(args.root).resolve()
+    patch_policy(root)
+    patch_library(root)
+    patch_test(root)
+    changed = [str(POLICY_PATH), str(LIB_PATH), str(TEST_PATH)]
+    print(json.dumps({'changed_files': changed}, indent=2))
+
+
+if __name__ == '__main__':
+    main()

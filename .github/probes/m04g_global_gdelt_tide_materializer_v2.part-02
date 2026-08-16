@@ -1,0 +1,57 @@
+_id:tide.tide_id,
+    target_minute_utc:target.toISOString(),
+    target_age_seconds:Math.floor((clock-target.getTime())/1000),
+    heartbeat_minutes:heartbeatMinutes,
+    publication_guard_minutes:publicationGuardMinutes,
+    heartbeat_offset_minutes:heartbeatOffsetMinutes,
+    timestamp,
+    url:template.replace('{timestamp}',timestamp),
+    method:'GET'
+  };
+}
+
+function globalTideError(message,failure='parse_failure'){
+  const error=new Error(message);
+  error.failure=failure;
+  return error;
+}
+
+export function parseGdeltTocPayload(compressed,tide){
+  if(!Buffer.isBuffer(compressed)||!compressed.length)throw globalTideError('GDELT global tide returned no compressed content');
+  const maxDecompressedBytes=Number(tide.max_decompressed_bytes||67_108_864);
+  let decompressed;
+  try{
+    decompressed=zlib.gunzipSync(compressed,{maxOutputLength:maxDecompressedBytes});
+  }catch(error){
+    const failure=String(error?.code||'').includes('BUFFER_TOO_LARGE')?'oversized_response':'parse_failure';
+    throw globalTideError(`GDELT global tide GZIP decode failed: ${error?.message||error}`,failure);
+  }
+  const lines=decompressed.toString('utf8').split(/\r?\n/u).filter(Boolean);
+  let records;
+  try{records=lines.map((line)=>JSON.parse(line))}
+  catch(error){throw globalTideError(`GDELT global tide JSONL parse failed: ${error?.message||error}`)}
+  const validRecords=records.filter((record)=>Number.isInteger(record?.ID)&&record.ID>0&&typeof record?.date==='string'&&typeof record?.url==='string'&&/^https?:\/\//iu.test(record.url));
+  const minimumRecords=Number(tide.minimum_locator_records||1);
+  if(validRecords.length<minimumRecords)throw globalTideError(`GDELT global tide contained ${validRecords.length} valid locator records; required ${minimumRecords}`);
+  if(validRecords.length!==records.length)throw globalTideError(`GDELT global tide contained ${validRecords.length}/${records.length} valid locator records`);
+  return {
+    compressed_sha256:sha256(compressed),
+    decompressed,
+    decompressed_sha256:sha256(decompressed),
+    records:validRecords
+  };
+}
+
+function globalTideFileStem(tideId){
+  return String(tideId).toLowerCase().replace(/[^a-z0-9]+/gu,'-').replace(/^-|-$/gu,'');
+}
+
+async function executeGlobalTide(assignment,policy,gate,nowMs){
+  const {tide,routes}=assignment;
+  const request=buildGlobalTideRequest(tide,nowMs);
+  const host=new URL(request.url).hostname;
+  const timeoutMs=Number(tide.timeout_ms||policy.execution.default_timeout_ms);
+  const maxCompressedBytes=Number(tide.max_compressed_bytes||policy.execution.default_max_bytes);
+  const minimumIntervalMs=Number(tide.minimum_interval_ms||policy.execution.default_host_interval_ms);
+  const started_at=new Date().toISOString();
+  const transport=await gate.run(host,minimumIntervalMs,()=>fetchWi
