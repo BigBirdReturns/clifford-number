@@ -1,0 +1,304 @@
+name: Temporary M-04G route threshold closure materializer v3
+
+on:
+  push:
+    branches:
+      - candidate/m04g-residual-official-fallback-v2
+    paths:
+      - '.github/materializers/m04g-threshold-closure-materializer-v3.mjs'
+      - '.github/workflows/temporary-m04g-threshold-closure-materializer-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-m04g-threshold-closure-materializer-v3
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      BASE_SHA: 23ec13c560ac08aeed0942c75c9f516e76aca3bc
+      TARGET_BRANCH: candidate/m04g-residual-official-fallback-v2
+    steps:
+      - name: Check out bounded candidate
+        uses: actions/checkout@v4
+        with:
+          ref: candidate/m04g-residual-official-fallback-v2
+          fetch-depth: 0
+
+      - name: Use Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify bounded branch and base
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME}" = "${TARGET_BRANCH}"
+          test "$(git merge-base HEAD "${BASE_SHA}")" = "${BASE_SHA}"
+          test "$(git rev-parse "${BASE_SHA}^{commit}")" = "${BASE_SHA}"
+          printf '%s\n' \
+            .github/materializers/m04g-residual-official-fallback-materializer-v2.mjs \
+            .github/materializers/m04g-substantive-official-fallback-materializer-v1.mjs \
+            .github/materializers/m04g-threshold-closure-materializer-v3.mjs \
+            .github/workflows/temporary-m04g-residual-official-fallback-materializer-v2.yml \
+            .github/workflows/temporary-m04g-substantive-official-fallback-materializer-v1.yml \
+            .github/workflows/temporary-m04g-threshold-closure-materializer-v3.yml \
+            | sort > /tmp/expected-temporary-paths
+          git diff --name-only "${BASE_SHA}" | sort > /tmp/actual-temporary-paths
+          diff -u /tmp/expected-temporary-paths /tmp/actual-temporary-paths
+          echo "TEMP_HEAD=$(git rev-parse HEAD)" >> "${GITHUB_ENV}"
+
+      - name: Apply three bounded source repairs
+        shell: bash
+        run: |
+          set -euo pipefail
+          node .github/materializers/m04g-substantive-official-fallback-materializer-v1.mjs
+          node .github/materializers/m04g-residual-official-fallback-materializer-v2.mjs
+          node .github/materializers/m04g-threshold-closure-materializer-v3.mjs
+          node --check tools/lib/m04g-source-ecology-v2.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07.test.js
+
+      - name: Run focused deterministic qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-m05-answerable-power-sprint-03-leg-07.mjs
+          node tools/validate-m05-answerable-power-sprint-03-leg-07.mjs
+          node test/m05-answerable-power-sprint-03-leg-07.test.js
+
+      - name: Run frozen 96-route live orbit
+        run: node tools/run-m04g-source-ecology-v2.mjs --output-dir qualification/m04g-source-ecology-v2-live
+
+      - name: Adjudicate frozen contract and closure mechanism
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+
+          const receipt=JSON.parse(fs.readFileSync('qualification/m04g-source-ecology-v2-live/m04g-source-ecology-v2-receipt.json','utf8'));
+          const observations=JSON.parse(fs.readFileSync('qualification/m04g-source-ecology-v2-live/m04g-source-ecology-v2-observations.json','utf8'));
+          const targetHosts=new Map([
+            ['M04G-GP005','oecd.org'],
+            ['M04G-GP011','federalregister.gov'],
+            ['M04G-GP012','regulations.gov'],
+            ['M04G-GP013','congress.gov'],
+            ['M04G-GP014','usaspending.gov'],
+            ['M04G-GP015','sec.gov'],
+            ['M04G-GP021','mercosur.int'],
+            ['M04G-GP027','europa.eu'],
+            ['M04G-GP032','europa.eu'],
+            ['M04G-GP044','echr.coe.int'],
+            ['M04G-GP046','kmu.gov.ua'],
+            ['M04G-GP047','prozorro.gov.ua'],
+            ['M04G-GP051','un.org'],
+            ['M04G-GP054','u.ae'],
+            ['M04G-GP056','un.org'],
+            ['M04G-GP075','e-gov.go.jp'],
+            ['M04G-GP080','archives.go.jp'],
+            ['M04G-GP083','asean.org'],
+            ['M04G-GP086','gebiz.gov.sg'],
+            ['M04G-GP092','legislation.gov.au'],
+            ['M04G-GP093','data.gov.au']
+          ]);
+          const closureIds=new Set(['M04G-GP015','M04G-GP046']);
+          const classifierIds=new Set(['M04G-GP080','M04G-GP086']);
+          const failures=[];
+          const s=receipt.summary;
+
+          if(s.selected!==96)failures.push(`selected ${s.selected}/96`);
+          if(s.route_successes<72)failures.push(`route successes ${s.route_successes}/72`);
+          if(s.content_successes<63)failures.push(`content successes ${s.content_successes}/63`);
+          if(s.healthy_basins!==12)failures.push(`healthy basins ${s.healthy_basins}/12`);
+          if(s.unclassified_failures!==0)failures.push(`unclassified failures ${s.unclassified_failures}`);
+          if(s.coverage_healthy!==true)failures.push('coverage_healthy is not true');
+          if(receipt.route_ids.length!==96||new Set(receipt.route_ids).size!==96)failures.push('frozen route identity drift');
+          if(receipt.by_basin.some((row)=>!row.healthy||row.route_successes<4||row.content_successes<4))failures.push('one or more basins missed the frozen four-of-eight floor');
+
+          const targeted=[];
+          const targetedFailures=[];
+          for(const [routeId,hostSuffix] of targetHosts){
+            const row=observations.find((entry)=>entry.route_id===routeId);
+            if(!row){
+              failures.push(`${routeId} missing`);
+              continue;
+            }
+            const classifiedFailure=row.failure||row.result?.failure||null;
+            if(!row.route_success){
+              if(!classifiedFailure)failures.push(`${routeId} failed without a classified failure`);
+              targetedFailures.push({route_id:routeId,basin_id:row.basin_id,failure:classifiedFailure,rejection_reason:row.result?.rejection_reason||null});
+              continue;
+            }
+            const finalUrl=row.result?.final_url||'';
+            let finalHost='';
+            try{finalHost=new URL(finalUrl).hostname}catch{}
+            if(!row.content_success)failures.push(`${routeId} route success lacked admitted content`);
+            if(row.metadata_only===true||row.result?.metadata_only===true)failures.push(`${routeId} returned metadata only`);
+            if(!(finalHost===hostSuffix||finalHost.endsWith(`.${hostSuffix}`)))failures.push(`${routeId} escaped ${hostSuffix}: ${finalHost||'none'}`);
+            if(!row.result?.content_sha256)failures.push(`${routeId} lacks a content hash`);
+            targeted.push({
+              route_id:routeId,
+              basin_id:row.basin_id,
+              final_url:finalUrl,
+              source_class:row.result?.source_class||null,
+              bytes:row.result?.bytes||0,
+              content_sha256:row.result?.content_sha256||null,
+              fallback_used:row.fallback_used,
+              selected_candidate:row.selected_candidate
+            });
+          }
+
+          const closureSuccesses=targeted.filter((row)=>closureIds.has(row.route_id));
+          const classifierSuccesses=targeted.filter((row)=>classifierIds.has(row.route_id));
+          if(closureSuccesses.length<1)failures.push('neither SEC nor Ukraine Cabinet threshold closure route succeeded');
+          if(classifierSuccesses.length<1)failures.push('neither live HTML-classifier route succeeded');
+          if(targeted.length<18)failures.push(`targeted substantive successes ${targeted.length}/18`);
+          if(new Set(targeted.map((row)=>row.content_sha256)).size!==targeted.length)failures.push('targeted recovery body hashes are not distinct');
+
+          const core={
+            schema_version:'m04g-threshold-closure-decision@3',
+            generated_at:new Date().toISOString(),
+            workflow_run_id:process.env.GITHUB_RUN_ID,
+            commit_sha:process.env.GITHUB_SHA,
+            base_sha:process.env.BASE_SHA,
+            receipt_proof_sha256:receipt.proof_sha256,
+            summary:s,
+            by_basin:receipt.by_basin,
+            targeted,
+            targeted_failures:targetedFailures,
+            closure_successes:closureSuccesses,
+            classifier_successes:classifierSuccesses,
+            qualification_evidence:{
+              residual_probe_v1:{
+                run_id:'31967582090',
+                artifact_digest:'sha256:2c6cd0bcc35a0d7293395a6e5faa5d1aafb8926e4dd0b13b379b4220df853e2a',
+                proof_sha256:'1345e6a1ca14f8ce7e61d6fb954c38e4af00a6d9a07bb1d80c465d32be82f30a'
+              },
+              replacement_probe_v4:{
+                run_id:'31968534553',
+                artifact_digest:'sha256:8d2e1f3cca611cfdfa332771bea2738169abb5ed597613fe2e66aca5489c47e1',
+                proof_sha256:'9b1c226dab84925c5474519604cb2a405e504b58159d53d968bccde001c24b6c'
+              },
+              sec_probe_v1:{
+                run_id:'31963508436',
+                artifact_digest:'sha256:ce4f6a944f2dfd0b3a8fe453ce12c02ad5d24afcc0731310ffb7d5364808b483',
+                content_sha256:'9ce67c0a62345214dd42434cbacfa70dad226e679c6ce752281578b1cfd2fac4'
+              },
+              kmu_oecd_probe_v1:{
+                run_id:'31969788350',
+                artifact_digest:'sha256:7bd59679a1603596594608ac7221f0c76ff514c6b69a13edeb6a4a92b5846cea',
+                proof_sha256:'010462f566ee5951d5ed9a44715ed3747d52b7c5b25726e8c82f1c6f87fd39fe',
+                content_sha256:'307a10752cf75e5f25d9c174e6d90ad18b5f65b60ecf5b6db18b408a9a06c785'
+              },
+              failed_composite_v2:{
+                run_id:'31969376616',
+                artifact_digest:'sha256:f46e2ea390a965f308f62208ccaf0bc0e142d7ccea884b7399cbcd8f803bbd1b',
+                receipt_proof_sha256:'8982e7e0dde55c4248d91fb2ef53f8018027cea593e81d4aad48487623b511b3',
+                decision_sha256:'f2fcf821cedfef22a31eeb4237ae48f8ab3bd9fb889a15c1c9107c5e91913454'
+              }
+            },
+            authorized:failures.length===0,
+            authorization_failures:failures,
+            qualified_blobs:{
+              policy_sha256:crypto.createHash('sha256').update(fs.readFileSync('data/project/m04g-source-ecology-v2-policy.json')).digest('hex'),
+              library_sha256:crypto.createHash('sha256').update(fs.readFileSync('tools/lib/m04g-source-ecology-v2.mjs')).digest('hex'),
+              regression_sha256:crypto.createHash('sha256').update(fs.readFileSync('test/m05-answerable-power-sprint-03-leg-07.test.js')).digest('hex')
+            },
+            boundaries:{
+              denominator_changed:false,
+              route_identity_changed:false,
+              thresholds_changed:false,
+              access_control_bypassed:false,
+              metadata_counted_as_content:false,
+              evidentiary_sufficiency_claimed:false,
+              answer_effectiveness_claimed:false,
+              issue_345_may_close_before_merge:false
+            }
+          };
+          const decision={...core,decision_sha256:crypto.createHash('sha256').update(JSON.stringify(core)).digest('hex')};
+          fs.writeFileSync('qualification/m04g-threshold-closure-decision-v3.json',`${JSON.stringify(decision,null,2)}\n`);
+          console.log(JSON.stringify({summary:s,closure_successes:closureSuccesses,classifier_successes:classifierSuccesses,targeted_success_count:targeted.length,targeted_failures:targetedFailures,authorization_failures:failures,decision_sha256:decision.decision_sha256},null,2));
+          if(failures.length){
+            console.error(failures.join('\n'));
+            process.exit(2);
+          }
+          NODE
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - name: Upload qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-threshold-closure-qualification-v3-${{ github.run_id }}
+          path: qualification/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Collapse to exact three-path product commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/m04g-qualified/tools/lib /tmp/m04g-qualified/data/project /tmp/m04g-qualified/test
+          cp tools/lib/m04g-source-ecology-v2.mjs /tmp/m04g-qualified/tools/lib/
+          cp data/project/m04g-source-ecology-v2-policy.json /tmp/m04g-qualified/data/project/
+          cp test/m05-answerable-power-sprint-03-leg-07.test.js /tmp/m04g-qualified/test/
+
+          git reset --hard "${BASE_SHA}"
+          cp /tmp/m04g-qualified/tools/lib/m04g-source-ecology-v2.mjs tools/lib/
+          cp /tmp/m04g-qualified/data/project/m04g-source-ecology-v2-policy.json data/project/
+          cp /tmp/m04g-qualified/test/m05-answerable-power-sprint-03-leg-07.test.js test/
+
+          cmp /tmp/m04g-qualified/tools/lib/m04g-source-ecology-v2.mjs tools/lib/m04g-source-ecology-v2.mjs
+          cmp /tmp/m04g-qualified/data/project/m04g-source-ecology-v2-policy.json data/project/m04g-source-ecology-v2-policy.json
+          cmp /tmp/m04g-qualified/test/m05-answerable-power-sprint-03-leg-07.test.js test/m05-answerable-power-sprint-03-leg-07.test.js
+
+          node tools/build-m05-answerable-power-sprint-03-leg-07.mjs
+          node tools/validate-m05-answerable-power-sprint-03-leg-07.mjs
+          node test/m05-answerable-power-sprint-03-leg-07.test.js
+          git checkout "${BASE_SHA}" -- \
+            reports/core-thesis/answerable-power/sprint-03-leg-07.json \
+            reports/core-thesis/answerable-power/sprint-03-leg-07.html
+
+          printf '%s\n' \
+            data/project/m04g-source-ecology-v2-policy.json \
+            test/m05-answerable-power-sprint-03-leg-07.test.js \
+            tools/lib/m04g-source-ecology-v2.mjs \
+            | sort > /tmp/expected-paths
+          git diff --name-only "${BASE_SHA}" | sort > /tmp/actual-paths
+          diff -u /tmp/expected-paths /tmp/actual-paths
+          git diff --check
+
+          git config user.name "BigBirdReturns"
+          git config user.email "bigbirdreturns@proton.me"
+          git add \
+            data/project/m04g-source-ecology-v2-policy.json \
+            test/m05-answerable-power-sprint-03-leg-07.test.js \
+            tools/lib/m04g-source-ecology-v2.mjs
+          git commit -m "Repair M-04G residual official fallbacks"
+          test "$(git rev-list --count "${BASE_SHA}..HEAD")" = "1"
+          git push \
+            --force-with-lease="refs/heads/${TARGET_BRANCH}:${TEMP_HEAD}" \
+            origin "HEAD:refs/heads/${TARGET_BRANCH}"
+
+      - name: Record materialized product
+        shell: bash
+        run: |
+          {
+            echo "## M-04G threshold closure product"
+            echo
+            echo "- Base: \`${BASE_SHA}\`"
+            echo "- Product: \`$(git rev-parse HEAD)\`"
+            echo "- Branch: \`${TARGET_BRANCH}\`"
+            echo "- Paths: 3"
+            echo "- Frozen denominator: 96"
+            echo "- Temporary materializers retained: false"
+          } >> "${GITHUB_STEP_SUMMARY}"
