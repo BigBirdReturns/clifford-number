@@ -718,3 +718,137 @@ export function recordResponseCustody({ deliveryDir, inputPath } = {}) {
     canonical_effect: 'none',
   };
 }
+
+function resolveResponseContext(directory) {
+  const responseDirectory = path.resolve(directory);
+  assertPrivateDirectory(responseDirectory, 'response directory');
+  const responseContainer = path.dirname(responseDirectory);
+  assert.equal(path.basename(responseContainer), RESPONSE_DIRECTORY_NAME,
+    'response directory must be an immutable child of a response/ custody directory');
+  const deliveryDirectory = path.dirname(responseContainer);
+  const context = resolveDeliveryContext(deliveryDirectory);
+  return {
+    ...context,
+    responseDirectory,
+    relativeResponseDirectory: normalizeRelative(responseDirectory),
+  };
+}
+
+function validateResponseManifest(
+  manifest,
+  context,
+  sourceManifestRecord,
+  pdfManifestRecord,
+  dispatchManifestRecord,
+  deliveryManifestRecord,
+) {
+  assert.equal(manifest?.schema_version, RESPONSE_CUSTODY_SCHEMA, 'unexpected response-custody schema');
+  assert.equal(manifest?.acquisition_id, ACQUISITION_ID, 'response-custody acquisition_id mismatch');
+  assert.equal(manifest?.state, 'response_evidence_recorded_unadjudicated',
+    'response custody is not in the expected unadjudicated state');
+  assert.equal(manifest?.channel, deliveryManifestRecord.value.channel,
+    'response manifest channel does not match delivery custody');
+  assert.equal(manifest?.source_finalization?.directory, context.relativeSourceDirectory,
+    'response manifest source directory mismatch');
+  assert.equal(manifest?.source_finalization?.bytes, sourceManifestRecord.bytes.length,
+    'response manifest source-manifest byte length mismatch');
+  assert.equal(manifest?.source_finalization?.sha256, sha256(sourceManifestRecord.bytes),
+    'response manifest source-manifest SHA-256 mismatch');
+  assert.equal(manifest?.pdf_rendering?.bytes, pdfManifestRecord.bytes.length,
+    'response manifest PDF-manifest byte length mismatch');
+  assert.equal(manifest?.pdf_rendering?.sha256, sha256(pdfManifestRecord.bytes),
+    'response manifest PDF-manifest SHA-256 mismatch');
+  assert.equal(manifest?.dispatch_custody?.directory, context.relativeDispatchDirectory,
+    'response manifest dispatch directory mismatch');
+  assert.equal(manifest?.dispatch_custody?.bytes, dispatchManifestRecord.bytes.length,
+    'response manifest dispatch-manifest byte length mismatch');
+  assert.equal(manifest?.dispatch_custody?.sha256, sha256(dispatchManifestRecord.bytes),
+    'response manifest dispatch-manifest SHA-256 mismatch');
+  assert.equal(manifest?.delivery_custody?.directory, context.relativeDeliveryDirectory,
+    'response manifest delivery directory mismatch');
+  assert.equal(manifest?.delivery_custody?.bytes, deliveryManifestRecord.bytes.length,
+    'response manifest delivery-manifest byte length mismatch');
+  assert.equal(manifest?.delivery_custody?.sha256, sha256(deliveryManifestRecord.bytes),
+    'response manifest delivery-manifest SHA-256 mismatch');
+  assert.ok(Array.isArray(manifest.evidence_files) && manifest.evidence_files.length >= 1,
+    'response manifest must contain response evidence files');
+  assert.equal(manifest?.response?.response_status, 'response_received');
+  assert.match(manifest?.response?.received_at ?? '',
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/u,
+    'response manifest must contain a UTC received_at timestamp');
+  assert.match(manifest?.response?.received_local_date ?? '', /^\d{4}-\d{2}-\d{2}$/u,
+    'response manifest must contain a local receipt date');
+  assert.equal(manifest?.checkpoint_relation?.chronology_only, true);
+  assert.equal(manifest?.checkpoint_relation?.legal_timeliness_adjudicated, false);
+  assert.equal(manifest?.controls?.source_chain_verified, true);
+  assert.equal(manifest?.controls?.dispatch_manifest_verified, true);
+  assert.equal(manifest?.controls?.dispatch_proof_files_verified, true);
+  assert.equal(manifest?.controls?.delivery_manifest_verified, true);
+  assert.equal(manifest?.controls?.delivery_evidence_files_verified, true);
+  assert.equal(manifest?.controls?.response_evidence_copied, true);
+  assert.equal(manifest?.controls?.response_authenticity_verified_by_tool, false);
+  assert.equal(manifest?.controls?.sender_identity_verified_by_tool, false);
+  assert.equal(manifest?.controls?.legal_timeliness_adjudicated, false);
+  assert.equal(manifest?.controls?.legal_response_deadline_calculated, false);
+  assert.equal(manifest?.controls?.legal_response_deadline, null);
+  assert.equal(manifest?.controls?.statutory_compliance_adjudicated, false);
+  assert.equal(manifest?.controls?.allottee_identity_adjudicated, false);
+  assert.equal(manifest?.controls?.beneficial_ownership_adjudicated, false);
+  assert.equal(manifest?.controls?.rights_exercise_adjudicated, false);
+  assert.equal(manifest?.controls?.actor_hop_adjudicated, false);
+  assert.equal(manifest?.controls?.canonical_effect, 'none');
+  return manifest;
+}
+
+export function verifyResponseCustodyChain({ responseDir } = {}) {
+  assert.equal(typeof responseDir, 'string', '--response-dir is required');
+  const context = resolveResponseContext(responseDir);
+  const sourceManifestRecord = readPrivateJson(
+    path.join(context.sourceDirectory, SOURCE_MANIFEST_NAME), SOURCE_MANIFEST_NAME);
+  const sourceManifest = validateSourceManifest(sourceManifestRecord.value);
+  const pdfManifestRecord = readPrivateJson(
+    path.join(context.sourceDirectory, PDF_MANIFEST_NAME), PDF_MANIFEST_NAME);
+  const pdfManifest = validatePdfManifest(pdfManifestRecord.value, sourceManifestRecord.bytes, sourceManifest);
+  const dispatchManifestRecord = readPrivateJson(
+    path.join(context.dispatchDirectory, DISPATCH_MANIFEST_NAME), DISPATCH_MANIFEST_NAME);
+  const dispatchManifest = validateDispatchManifest(
+    dispatchManifestRecord.value, context, sourceManifestRecord, pdfManifestRecord);
+  const deliveryManifestRecord = readPrivateJson(
+    path.join(context.deliveryDirectory, DELIVERY_MANIFEST_NAME), DELIVERY_MANIFEST_NAME);
+  const deliveryManifest = validateDeliveryManifest(
+    deliveryManifestRecord.value,
+    context,
+    sourceManifestRecord,
+    pdfManifestRecord,
+    dispatchManifestRecord,
+  );
+  const responseManifestRecord = readPrivateJson(
+    path.join(context.responseDirectory, RESPONSE_MANIFEST_NAME), RESPONSE_MANIFEST_NAME);
+  const responseManifest = validateResponseManifest(
+    responseManifestRecord.value,
+    context,
+    sourceManifestRecord,
+    pdfManifestRecord,
+    dispatchManifestRecord,
+    deliveryManifestRecord,
+  );
+
+  verifySourceAndPdfFiles(context, sourceManifest, pdfManifest);
+  verifyCustodyEvidence(context.dispatchDirectory, dispatchManifest.evidence_files, 'dispatch evidence');
+  verifyCustodyEvidence(context.deliveryDirectory, deliveryManifest.evidence_files, 'delivery evidence');
+  verifyCustodyEvidence(context.responseDirectory, responseManifest.evidence_files, 'response evidence');
+
+  return {
+    context,
+    sourceManifestRecord,
+    sourceManifest,
+    pdfManifestRecord,
+    pdfManifest,
+    dispatchManifestRecord,
+    dispatchManifest,
+    deliveryManifestRecord,
+    deliveryManifest,
+    responseManifestRecord,
+    responseManifest,
+  };
+}

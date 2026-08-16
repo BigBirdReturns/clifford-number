@@ -109,6 +109,25 @@ The response recorder rehashes the source manifest, both request sources, the PD
 
 The response state is `response_evidence_recorded_unadjudicated`. A disposition such as electronic-copy offered, fee requested, inspection offered, court application asserted, or voluntary transaction record supplied remains a custodian classification rather than a verified legal or evidentiary conclusion. A claimed transaction-document category remains a review lead. The tool does not authenticate the sender, verify document semantics, adjudicate statutory compliance, calculate a legal deadline, decide whether a response was timely, infer no response, decide the merits of a court application, or promote allottee identity, beneficial ownership, rights exercise, or an actor hop. A later reviewed adjudication must inspect the original response bytes and preserve every ambiguity.
 
+## Private response-adjudication checkpoint
+
+After a response has been preserved, copy `response-adjudication-input.example.json` to a permission-restricted file under `data/local/` and inspect every original response artifact. Each finding must identify the copied response artifact by exact path and SHA-256 digest, provide a source-addressable page, line range, byte range, message part, document section, or table row, and classify the proposition under the active fail-closed rules.
+
+```sh
+chmod 600 data/local/electric-twin-register-of-members-response-adjudication.json
+node tools/adjudicate-electric-twin-register-request-response.mjs \
+  --response-dir build/source-acquisition/electric-twin-register-of-members/<immutable-run-id>/dispatch/<dispatch-event>/delivery/<delivery-event>/response/<response-event> \
+  --input data/local/electric-twin-register-of-members-response-adjudication.json
+```
+
+The adjudication checkpoint re-verifies the complete source, PDF, dispatch, delivery, and response chain, requires every response artifact to be source-addressed by at least one reviewed finding, binds the review to `adjudication-rules.json`, and writes `inbound-response-adjudication.json` under a new immutable private `adjudication/` child. Its state is `response_adjudication_recorded_canonical_promotion_blocked`.
+
+A `procedural_disposition` finding must also carry a structured `procedural_disposition_kind`. The `company_application_to_court` outcome accepts only the matching court-application kind. The refusal outcome accepts only `refusal`, `confidentiality_asserted`, or `improper_purpose_asserted`, so free-text assertions cannot cross-label those immutable outcomes.
+
+The supplied `reviewed_at` value must be a calendar-valid UTC timestamp with valid month, day, hour, minute, and second components. The recorder rejects JavaScript-normalizable literals such as a nonexistent February date or `24:00:00`, so the timestamp preserved in the immutable manifest is the same temporal value used by the chronology gate.
+
+The tool records a human review assertion. It does not verify the semantic correctness of a source address or finding, authenticate the sender, adjudicate legal timeliness or statutory compliance, decide court merits, or mutate canonical claims. Even an outcome classified as `transaction_specific_allottee_identified` remains a candidate requiring independent review, checksum-bound source custody, a targeted validator, the complete release gate, and a separate canonical pull request. Second-party review remains required and incomplete, and the canonical effect remains none.
+
 A response that supplies only a registered name, date entered as a member, class, or resulting quantity may strengthen the dated holder history. It does not prove that the holding arose from a specific allotment rather than a transfer, nominee arrangement, aggregation, rectification, or another register movement. Allottee identity may be promoted only when one source-addressable instrument expressly links the issuer, named person or vehicle, share class, quantity, and allotment event, or supplies an equivalent transaction-specific entry.
 
 Evidence tier: official, first-party, and repository-native. The venues are Companies House, Electric Twin’s statutory register, and any voluntarily supplied transaction instrument. The immediate target is a source-addressable historical member entry followed, where available, by a transaction-specific allotment record. The upside is a lawful separation of issuer action, registered title, and original subscription. The downside is that the register may record only resulting legal title. The principal failure mode is converting numerical or temporal correspondence into allotment identity without an explicit mechanism.
