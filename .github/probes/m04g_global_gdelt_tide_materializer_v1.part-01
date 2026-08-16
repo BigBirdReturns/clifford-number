@@ -1,0 +1,84 @@
+}
+
+export function parseGdeltTocPayload(compressed,tide){
+  if(!Buffer.isBuffer(compressed)||!compressed.length)throw globalTideError('GDELT global tide returned no compressed content');
+  const maxDecompressedBytes=Number(tide.max_decompressed_bytes||67_108_864);
+  let decompressed;
+  try{
+    decompressed=zlib.gunzipSync(compressed,{maxOutputLength:maxDecompressedBytes});
+  }catch(error){
+    const failure=String(error?.code||'').includes('BUFFER_TOO_LARGE')?'oversized_response':'parse_failure';
+    throw globalTideError(`GDELT global tide GZIP decode failed: ${error?.message||error}`,failure);
+  }
+  const lines=decompressed.toString('utf8').split(/\r?\n/u).filter(Boolean);
+  let records;
+  try{records=lines.map((line)=>JSON.parse(line))}
+  catch(error){throw globalTideError(`GDELT global tide JSONL parse failed: ${error?.message||error}`)}
+  const validRecords=records.filter((record)=>Number.isInteger(record?.ID)&&record.ID>0&&typeof record?.date==='string'&&typeof record?.url==='string'&&/^https?:\/\//iu.test(record.url));
+  const minimumRecords=Number(tide.minimum_locator_records||1);
+  if(validRecords.length<minimumRecords)throw globalTideError(`GDELT global tide contained ${validRecords.length} valid locator records; required ${minimumRecords}`);
+  if(validRecords.length!==records.length)throw globalTideError(`GDELT global tide contained ${validRecords.length}/${records.length} valid locator records`);
+  return {
+    compressed_sha256:sha256(compressed),
+    decompressed,
+    decompressed_sha256:sha256(decompressed),
+    records:validRecords
+  };
+}
+
+function globalTideFileStem(tideId){
+  return String(tideId).toLowerCase().replace(/[^a-z0-9]+/gu,'-').replace(/^-|-$/gu,'');
+}
+
+async function executeGlobalTide(assignment,policy,gate,nowMs){
+  const {tide,routes}=assignment;
+  const request=buildGlobalTideRequest(tide,nowMs);
+  const host=new URL(request.url).hostname;
+  const timeoutMs=Number(tide.timeout_ms||policy.execution.default_timeout_ms);
+  const maxCompressedBytes=Number(tide.max_compressed_bytes||policy.execution.default_max_bytes);
+  const minimumIntervalMs=Number(tide.minimum_interval_ms||policy.execution.default_host_interval_ms);
+  const started_at=new Date().toISOString();
+  const transport=await gate.run(host,minimumIntervalMs,()=>fetchWithRedirects(request.url,{method:'GET',timeoutMs,maxBytes:maxCompressedBytes,userAgent:'CliffordNumber-M04G-GDELT-Tide/1.0 (+https://github.com/BigBirdReturns/clifford-number)'}));
+  let parsed=null;
+  let failure=null;
+  let parseError=null;
+  if(!transport.ok)failure=transport.https_downgrade?'https_downgrade_refused':classifyFailure(transport);
+  else{
+    try{parsed=parseGdeltTocPayload(transport.body,tide)}
+    catch(error){failure=error.failure||'parse_failure';parseError=String(error?.message||error)}
+  }
+  const success=Boolean(transport.ok&&parsed);
+  const stem=globalTideFileStem(tide.tide_id);
+  const artifactFiles={compressed:`m04g-source-ecology-v2-${stem}.json.gz`,decompressed:`m04g-source-ecology-v2-${stem}.json`};
+  const attempt={attempt:1,url:request.url,method:'GET',started_at,status:transport.status,final_url:transport.final_url,failure,metadata_only:false,bytes:transport.body?.length||0,global_tide_id:tide.tide_id};
+  const summary=parsed?JSON.stringify(parsed.records.slice(0,3).map((record)=>({ID:record.ID,date:record.date,lang:record.lang||null,title:record.title||null,url:record.url}))).slice(0,600):null;
+  const shared={
+    success,
+    content_success:success,
+    metadata_only:false,
+    status:transport.status,
+    requested_url:request.url,
+    final_url:transport.final_url,
+    method:'GET',
+    headers:transport.headers,
+    bytes:transport.body?.length||0,
+    content_sha256:parsed?.compressed_sha256||null,
+    decompressed_bytes:parsed?.decompressed.length||0,
+    decompressed_sha256:parsed?.decompressed_sha256||null,
+    locator_record_count:parsed?.records.length||0,
+    summary,
+    failure,
+    parse_error:parseError,
+    attempts:[attempt],
+    global_tide_id:tide.tide_id,
+    global_tide_target_minute_utc:request.target_minute_utc,
+    global_tide_artifacts:artifactFiles
+  };
+  const observations=routes.map((route)=>{
+    const result={...shared,original_query:new URL(route.url).searchParams.get('query'),deterministic_routing_key:`${route.basin_id}:${route.route_id}`};
+    if(success){
+      return {route_id:route.route_id,basin_id:route.basin_id,hydrology_class:route.hydrology_class,original_url:route.url,route_success:true,content_success:true,metadata_only:false,fallback_used:false,selected_candidate:0,global_tide_used:true,global_tide_id:tide.tide_id,result,candidate_results:[result]};
+    }
+    return {route_id:route.route_id,basin_id:route.basin_id,hydrology_class:route.hydrology_class,original_url:route.url,route_success:false,content_success:false,metadata_only:false,fallback_used:false,global_tide_used:true,global_tide_id:tide.tide_id,failure:failure||'unclassified',candidate_results:[result]};
+  });
+  con
