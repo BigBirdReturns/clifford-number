@@ -1,0 +1,112 @@
+name: TEMP M-04G official fallback materializer v1
+
+on:
+  push:
+    branches:
+      - agent/m04g-six-route-official-fallback-probe-v1
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Check out controller branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Materialize and qualify bounded candidate
+        id: materialize
+        continue-on-error: true
+        run: node .github/probes/m04g_official_fallback_materializer_v1.mjs
+      - name: Open or update draft pull request
+        if: always() && hashFiles('qualification/outcome.env') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          source qualification/outcome.env
+          if [ "$STATUS" != success ]; then exit 0; fi
+          node --input-type=module <<'NODE' > /tmp/m04g-official-fallback-pr.md
+          import fs from 'node:fs';
+          const d=JSON.parse(fs.readFileSync('qualification/decision.json','utf8'));
+          console.log('This pull request is a bounded M-04G source-health candidate. It preserves the frozen 96-route denominator and does not promote reachability into evidentiary sufficiency or answer effectiveness.');
+          console.log('');
+          console.log(`The materializer selected ${d.selected.length} runtime-equivalent official fallbacks after rejecting every candidate that failed transport, content, redirect, or challenge-page admission. The closed ESCWA semantic substitutions were not reintroduced. The candidate changes only the source-ecology policy and its focused regression test.`);
+          console.log('');
+          console.log('```text');
+          console.log(`qualification run:        ${d.run_id}`);
+          console.log(`base SHA:                 ${d.base_sha}`);
+          console.log(`candidate SHA:            ${d.candidate_sha}`);
+          console.log(`baseline route/content:   ${d.baseline.route_successes} / ${d.baseline.content_successes}`);
+          console.log(`candidate route/content:  ${d.candidate.route_successes} / ${d.candidate.content_successes}`);
+          console.log(`baseline healthy basins:  ${d.baseline.healthy_basins} / 12`);
+          console.log(`candidate healthy basins: ${d.candidate.healthy_basins} / 12`);
+          console.log(`coverage healthy:         ${d.candidate.coverage_healthy}`);
+          console.log(`unclassified failures:    ${d.candidate.unclassified_failures}`);
+          console.log(`receipt proof SHA-256:    ${d.candidate_receipt_proof}`);
+          console.log('```');
+          console.log('');
+          console.log('Selected route bindings:');
+          console.log('');
+          for(const row of d.selected)console.log(`- \`${row.route_id}\` → \`${row.fallback.url}\` (${row.fallback.source_class}; preflight ${row.status}; ${row.body_sha256})`);
+          console.log('');
+          console.log('The evidence tier is two hosted probe censuses, runtime-equivalent preflight, deterministic repository validation, the complete release suite, and a checksum-bound live orbit; the venue is canonical GitHub Actions and the named official services; the target is route and coverage health; the upside is source-native recovery without denominator changes; the downside is continuing external-service variance; and the failure mode is treating mechanically healthy sources as claim-level evidence.');
+          console.log('');
+          console.log('The controlling question is whether this exact two-file candidate should be admitted while evidentiary sufficiency and answer effectiveness remain separately false.');
+          NODE
+          pr_number="$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$CANDIDATE_BRANCH" --state open --json number --jq '.[0].number // empty')"
+          if [ -z "$pr_number" ]; then
+            gh pr create --repo "$GITHUB_REPOSITORY" --draft --base main --head "$CANDIDATE_BRANCH" --title "Repair official fallback route coverage" --body-file /tmp/m04g-official-fallback-pr.md > /tmp/pr-url.txt
+            pr_number="$(gh pr view --repo "$GITHUB_REPOSITORY" "$CANDIDATE_BRANCH" --json number --jq .number)"
+          else
+            gh pr edit --repo "$GITHUB_REPOSITORY" "$pr_number" --title "Repair official fallback route coverage" --body-file /tmp/m04g-official-fallback-pr.md
+          fi
+          echo "PR_NUMBER=$pr_number" >> qualification/outcome.env
+      - name: Reconcile issue 345
+        if: always() && hashFiles('qualification/outcome.env') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          source qualification/outcome.env
+          if [ "$STATUS" = success ]; then
+            cat > /tmp/issue-comment.md <<EOF2
+          ## M-04G official fallback candidate materialized
+
+          The bounded materializer qualified candidate \`$CANDIDATE_SHA\` from canonical base \`$BASE_SHA\` and opened draft PR #${PR_NUMBER:-unknown}. Runtime-equivalent preflight admitted $SELECTED_COUNT official fallbacks; the live 96-route orbit produced $ROUTE_SUCCESSES route successes, $CONTENT_SUCCESSES content successes, $HEALTHY_BASINS healthy basins, zero unclassified failures, and proof SHA-256 \`$PROOF_SHA256\`.
+
+          The candidate preserves the denominator, route identities, thresholds, failure taxonomy, direct-voice prohibition, and the separation among source health, evidentiary sufficiency, and answer effectiveness. The previously refused ESCWA symbol substitutions are absent.
+
+          The controlling question is whether the exact two-file candidate should advance through review while claim-level adjudication remains outside this source-health decision.
+          EOF2
+          else
+            cat > /tmp/issue-comment.md <<EOF2
+          ## M-04G official fallback materializer refusal
+
+          Run \`${GITHUB_RUN_ID}\` refused candidate publication from base \`${BASE_SHA:-unknown}\`: ${REASON:-unknown failure}. No product branch or pull request was authorized by this run, and the frozen denominator and thresholds remain unchanged.
+          EOF2
+          fi
+          gh issue comment 345 --repo "$GITHUB_REPOSITORY" --body-file /tmp/issue-comment.md
+      - name: Upload qualification receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-official-fallback-materializer-v1-${{ github.run_id }}
+          path: qualification/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Enforce materializer outcome
+        if: always()
+        run: |
+          source qualification/outcome.env
+          test "$STATUS" = success
