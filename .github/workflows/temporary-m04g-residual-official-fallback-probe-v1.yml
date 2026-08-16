@@ -1,0 +1,49 @@
+name: TEMP M-04G residual official fallback probe v1
+
+on:
+  push:
+    branches:
+      - agent/m04g-residual-official-fallback-probe-v1
+    paths:
+      - .github/probes/m04g-residual-official-fallback-probe-v1.mjs.gz.b64
+      - .github/workflows/temporary-m04g-residual-official-fallback-probe-v1.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporary-m04g-residual-official-fallback-probe-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out probe branch
+        uses: actions/checkout@v4
+
+      - name: Run bounded residual official fallback probe
+        run: |
+          rm -rf qualification/m04g-residual-official-fallback-probe-v1
+          base64 --decode .github/probes/m04g-residual-official-fallback-probe-v1.mjs.gz.b64 | gunzip > /tmp/m04g-residual-official-fallback-probe-v1.mjs
+          node /tmp/m04g-residual-official-fallback-probe-v1.mjs qualification/m04g-residual-official-fallback-probe-v1
+
+      - name: Publish receipt summary
+        if: always()
+        run: |
+          if [ -f qualification/m04g-residual-official-fallback-probe-v1/summary.md ]; then
+            cat qualification/m04g-residual-official-fallback-probe-v1/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf '%s\n' '# M-04G residual probe failed before receipt materialization' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload bounded qualification ledger
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-residual-official-fallback-probe-v1-${{ github.run_id }}
+          path: qualification/m04g-residual-official-fallback-probe-v1
+          if-no-files-found: error
+          retention-days: 30
