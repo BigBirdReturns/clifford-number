@@ -168,5 +168,22 @@
     },
     "review_timestamp_calendar_and_clock_components_must_be_valid": true
   },
+  "second_party_review_contract": {
+    "input_schema": "electric-twin-register-request-response-second-party-review-input@1",
+    "output_schema": "electric-twin-register-request-response-second-party-review@1",
+    "output_state": "response_second_party_review_recorded_canonical_promotion_blocked",
+    "first_review_manifest_must_be_reverified": true,
+    "full_source_to_response_chain_must_be_reverified": true,
+    "every_first_review_finding_must_be_assessed_exactly_once": true,
+    "every_response_artifact_must_be_independently_source_addressed": true,
+    "independent_judgment_assertion_required": true,
+    "independence_verified_by_tool": false,
+    "first_review_event_must_differ": true,
+    "second_review_may_confirm_narrow_reject_or_remain_unresolved": true,
+    "second_party_review_completed_by_this_gate": true,
+    "canonical_mutation_authorized_by_this_gate": false,
+    "semantic_correctness_verified_by_tool": false,
+    "canonical_effect": "none"
+  },
   "control_question": "Does the obtained source expressly name the person or vehicle as allottee for a uniquely identified September 2025 issue, or does it establish only resulting registered title or another register movement?"
 }
