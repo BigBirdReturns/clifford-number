@@ -1,0 +1,63 @@
+name: Temporary M04G last-two first-party probe v1
+
+on:
+  push:
+    branches:
+      - agent/m04g-residual-first-party-probe-v1
+    paths:
+      - .github/probes/m04g_last_two_first_party_probe_v1.mjs
+      - .github/workflows/temporary-m04g-last-two-first-party-probe-v1.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporary-m04g-last-two-first-party-probe-v1-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout isolated probe branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify probe source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum .github/probes/m04g_last_two_first_party_probe_v1.mjs | awk '{print $1}')" \
+            = "9c36a953014976008708b037e34a1fca507d987af570c6b2bc3f851f8a6299e4"
+          node --check .github/probes/m04g_last_two_first_party_probe_v1.mjs
+
+      - name: Execute bounded last-two probe
+        run: >-
+          node .github/probes/m04g_last_two_first_party_probe_v1.mjs
+          qualification/m04g-last-two-first-party-probe-v1
+
+      - name: Preserve source receipt
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/m04g-last-two-first-party-probe-v1/source
+          cp .github/probes/m04g_last_two_first_party_probe_v1.mjs \
+            qualification/m04g-last-two-first-party-probe-v1/source/
+          sha256sum .github/probes/m04g_last_two_first_party_probe_v1.mjs \
+            > qualification/m04g-last-two-first-party-probe-v1/source/probe.sha256
+
+      - name: Upload complete probe receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-last-two-first-party-probe-v1-${{ github.run_id }}
+          path: qualification/m04g-last-two-first-party-probe-v1
+          if-no-files-found: error
+          retention-days: 30
