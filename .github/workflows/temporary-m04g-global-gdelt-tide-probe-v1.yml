@@ -1,4 +1,4 @@
-name: TEMP M-04G GDELT global tide probe v1
+name: TEMP M-04G GDELT global tide probe v2
 
 on:
   push:
@@ -14,7 +14,7 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-24.04
-    timeout-minutes: 8
+    timeout-minutes: 6
     steps:
       - name: Check out bounded probe
         uses: actions/checkout@v4
@@ -24,32 +24,31 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Run one-request GDELT global tide probe
+      - name: Run one-request GDELT update-inventory probe
         run: node .github/probes/m04g_global_gdelt_tide_probe_v1.mjs
       - name: Render probe summary
         if: always()
         shell: bash
         run: |
           set -euo pipefail
-          if [ ! -f build/m04g-gdelt-global-tide-probe-v1/ledger.json ]; then
-            printf '%s\n' '# M-04G GDELT global tide probe' '' 'No ledger was produced.' >> "$GITHUB_STEP_SUMMARY"
+          if [ ! -f build/m04g-gdelt-global-tide-probe-v2/ledger.json ]; then
+            printf '%s\n' '# M-04G GDELT global tide probe v2' '' 'No ledger was produced.' >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
-          const ledger=JSON.parse(fs.readFileSync('build/m04g-gdelt-global-tide-probe-v1/ledger.json','utf8'));
+          const ledger=JSON.parse(fs.readFileSync('build/m04g-gdelt-global-tide-probe-v2/ledger.json','utf8'));
           const lines=[
-            '# M-04G GDELT global tide probe',
+            '# M-04G GDELT global tide probe v2',
             '',
             `- Candidate authorized: ${ledger.candidate_authorized}`,
             `- Network requests: ${ledger.network_request_count}`,
             `- Response status: ${ledger.response.status}`,
             `- Response bytes: ${ledger.response.bytes}`,
             `- Response SHA-256: ${ledger.response.sha256}`,
-            `- Articles: ${ledger.response.article_count}`,
+            `- Valid locator rows: ${ledger.response.valid_locator_count}`,
             `- Route projections: ${ledger.route_successes}/12`,
             `- Content projections: ${ledger.content_successes}/12`,
-            `- Non-empty semantic projections: ${ledger.semantic_projections_nonempty}/12`,
           ];
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,`${lines.join('\n')}\n`);
           NODE
@@ -57,7 +56,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: m04g-gdelt-global-tide-probe-v1-${{ github.run_id }}
-          path: build/m04g-gdelt-global-tide-probe-v1/
+          name: m04g-gdelt-global-tide-probe-v2-${{ github.run_id }}
+          path: build/m04g-gdelt-global-tide-probe-v2/
           if-no-files-found: error
           retention-days: 30
