@@ -1,0 +1,343 @@
+{
+  "schema_version": "m05-source-health-evidence-state-regression@1",
+  "object_class": "bounded_cross_domain_evidence_state_regression",
+  "program_id": "M-05",
+  "hydrology_program_id": "M-04G",
+  "sprint_id": "M05-SPRINT-03",
+  "source_leg_id": "S03-L7",
+  "issue": 345,
+  "as_of": "2026-08-16",
+  "status": "candidate_regression_contract",
+  "title": "Source-health to evidence-state admission regression",
+  "question": "Does a mechanically healthy source ecology change any claim-level evidence or answer-effectiveness state without the separate claim, authority, scope, counterevidence, outcome, durability, and works-standard receipts required by M-05?",
+  "canonical_base": {
+    "branch": "main",
+    "sha": "50a8590c1714ea8923a0b12a27ab8c14f40fbb81",
+    "merge_pull_request": 2149,
+    "merged_candidate_sha": "f85e9dd684d5ead1c2ec643225947e9fe579de3c"
+  },
+  "source_health_receipt": {
+    "qualification_run": 31964583533,
+    "artifact_name": "m04g-combined-source-health-materializer-v2-31964583533",
+    "artifact_sha256": "5c4b0dd5f7cbb64bc4522851064f051d089c4a0494d877f8cbeb0abaa7b1f33e",
+    "base_sha": "23ec13c560ac08aeed0942c75c9f516e76aca3bc",
+    "candidate_sha": "f85e9dd684d5ead1c2ec643225947e9fe579de3c",
+    "candidate_receipt_sha256": "e54605c2e7f9d3b2d9113e38a39eb6d50b6afc09a8443741056ba44d9a8dca33",
+    "common_crawl_body_sha256": "eac053eb9d810c1ca519c99e7fdcf3c24a8042809becbbf6c6854a5795c1d52a",
+    "common_crawl_bytes": 34675,
+    "selected_official_fallbacks": 8,
+    "changed_paths": [
+      "data/project/m04g-source-ecology-v2-policy.json",
+      "test/m05-answerable-power-sprint-03-leg-07.test.js",
+      "tools/lib/m04g-source-ecology-v2.mjs"
+    ],
+    "observed": {
+      "selected_routes": 96,
+      "route_successes": 76,
+      "content_successes": 76,
+      "healthy_basins": 12,
+      "unclassified_failures": 0,
+      "route_healthy": true,
+      "content_healthy": true,
+      "coverage_healthy": true,
+      "evidentiary_sufficiency": false,
+      "answer_effectiveness": false
+    }
+  },
+  "frozen_transport_contract": {
+    "selected_routes": 96,
+    "basins": 12,
+    "routes_per_basin": 8,
+    "minimum_route_success_rate": 0.75,
+    "minimum_content_success_rate": 0.65,
+    "required_healthy_basins": 12,
+    "maximum_unclassified_failures": 0,
+    "route_identifiers_preserved": true,
+    "basin_assignments_preserved": true,
+    "failure_taxonomy_preserved": true,
+    "direct_voice_bulk_polling_allowed": false,
+    "locator_only_receipts_may_promote_to_claim_evidence": false
+  },
+  "evidence_admission_contract": {
+    "allowed_source_classes": [
+      "official_primary_record",
+      "official_adjudicative_record",
+      "source_native_primary_record"
+    ],
+    "required_boolean_gates": [
+      "source_addressed_receipt",
+      "exact_claim_binding",
+      "identity_scope_bound",
+      "temporal_scope_bound",
+      "predicate_scope_bound",
+      "substantive_content",
+      "counterevidence_reviewed",
+      "promotion_authority"
+    ],
+    "required_promotion_ceiling": "claim_evidence",
+    "source_health_alone_is_sufficient": false,
+    "official_host_alone_is_sufficient": false,
+    "content_success_alone_is_sufficient": false
+  },
+  "answer_effectiveness_contract": {
+    "minimum_observed_domains": 3,
+    "minimum_observed_jurisdictions": 2,
+    "required_dimensions": [
+      "pre_action_timing",
+      "evidence_access",
+      "independent_authority",
+      "effective_remedy",
+      "durability",
+      "practical_exit_or_governance"
+    ],
+    "observed_outcome_required": true,
+    "composed_durable_answer_required": true,
+    "formal_policy_alone_is_sufficient": false,
+    "appeal_without_stay_is_sufficient": false,
+    "human_in_loop_alone_is_sufficient": false,
+    "vendor_replacement_without_operational_continuity_is_sufficient": false
+  },
+  "domain_observations": [
+    {
+      "domain_id": "APC-ADMIN-01",
+      "domain": "administrative benefits and debt",
+      "jurisdiction": "unassigned",
+      "observation_class": "official_repository_content_without_claim_binding",
+      "fixture_only": false,
+      "promotes_to": "none",
+      "source_health": {"coverage_healthy": true, "route_healthy": true, "content_healthy": true},
+      "evidence": {
+        "source_class": "official_repository_content",
+        "promotion_ceiling": "repository_content",
+        "source_addressed_receipt": true,
+        "exact_claim_binding": false,
+        "identity_scope_bound": false,
+        "temporal_scope_bound": false,
+        "predicate_scope_bound": false,
+        "substantive_content": true,
+        "counterevidence_reviewed": false,
+        "promotion_authority": false
+      },
+      "answer": {"observed_domains": 0, "observed_jurisdictions": 0, "observed_outcome": false, "composed_durable_answer": false, "dimensions": {}},
+      "expected": {"claim_evidence_admissible": false, "answer_effective": false}
+    },
+    {
+      "domain_id": "APC-COERCION-01",
+      "domain": "surveillance and enforcement",
+      "jurisdiction": "unassigned",
+      "observation_class": "official_case_law_api_content_without_predicate_scope",
+      "fixture_only": false,
+      "promotes_to": "none",
+      "source_health": {"coverage_healthy": true, "route_healthy": true, "content_healthy": true},
+      "evidence": {
+        "source_class": "official_adjudicative_record",
+        "promotion_ceiling": "repository_content",
+        "source_addressed_receipt": true,
+        "exact_claim_binding": false,
+        "identity_scope_bound": false,
+        "temporal_scope_bound": false,
+        "predicate_scope_bound": false,
+        "substantive_content": true,
+        "counterevidence_reviewed": false,
+        "promotion_authority": false
+      },
+      "answer": {"observed_domains": 0, "observed_jurisdictions": 0, "observed_outcome": false, "composed_durable_answer": false, "dimensions": {}},
+      "expected": {"claim_evidence_admissible": false, "answer_effective": false}
+    },
+    {
+      "domain_id": "APC-WORK-01",
+      "domain": "workplace monitoring",
+      "jurisdiction": "unassigned",
+      "observation_class": "official_feed_content_without_claim_binding",
+      "fixture_only": false,
+      "promotes_to": "none",
+      "source_health": {"coverage_healthy": true, "route_healthy": true, "content_healthy": true},
+      "evidence": {
+        "source_class": "official_feed",
+        "promotion_ceiling": "repository_content",
+        "source_addressed_receipt": true,
+        "exact_claim_binding": false,
+        "identity_scope_bound": false,
+        "temporal_scope_bound": false,
+        "predicate_scope_bound": false,
+        "substantive_content": true,
+        "counterevidence_reviewed": false,
+        "promotion_authority": false
+      },
+      "answer": {"observed_domains": 0, "observed_jurisdictions": 0, "observed_outcome": false, "composed_durable_answer": false, "dimensions": {}},
+      "expected": {"claim_evidence_admissible": false, "answer_effective": false}
+    },
+    {
+      "domain_id": "APC-EXIT-01",
+      "domain": "public-platform exit",
+      "jurisdiction": "unassigned",
+      "observation_class": "official_portal_content_without_outcome_receipt",
+      "fixture_only": false,
+      "promotes_to": "none",
+      "source_health": {"coverage_healthy": true, "route_healthy": true, "content_healthy": true},
+      "evidence": {
+        "source_class": "official_primary_record",
+        "promotion_ceiling": "repository_content",
+        "source_addressed_receipt": true,
+        "exact_claim_binding": false,
+        "identity_scope_bound": false,
+        "temporal_scope_bound": false,
+        "predicate_scope_bound": false,
+        "substantive_content": true,
+        "counterevidence_reviewed": false,
+        "promotion_authority": false
+      },
+      "answer": {"observed_domains": 0, "observed_jurisdictions": 0, "observed_outcome": false, "composed_durable_answer": false, "dimensions": {}},
+      "expected": {"claim_evidence_admissible": false, "answer_effective": false}
+    },
+    {
+      "domain_id": "APC-VALUE-01",
+      "domain": "public residual rights and value recovery",
+      "jurisdiction": "unassigned",
+      "observation_class": "common_crawl_locator_only",
+      "fixture_only": false,
+      "promotes_to": "none",
+      "source_health": {"coverage_healthy": true, "route_healthy": true, "content_healthy": true},
+      "evidence": {
+        "source_class": "public_index_catalog",
+        "promotion_ceiling": "locator_only",
+        "source_addressed_receipt": true,
+        "exact_claim_binding": false,
+        "identity_scope_bound": false,
+        "temporal_scope_bound": false,
+        "predicate_scope_bound": false,
+        "substantive_content": false,
+        "counterevidence_reviewed": false,
+        "promotion_authority": false
+      },
+      "answer": {"observed_domains": 0, "observed_jurisdictions": 0, "observed_outcome": false, "composed_durable_answer": false, "dimensions": {}},
+      "expected": {"claim_evidence_admissible": false, "answer_effective": false}
+    }
+  ],
+  "controls": [
+    {
+      "control_id": "NC-LOCATOR-ONLY",
+      "control_class": "negative_locator_control",
+      "fixture_only": true,
+      "promotes_to": "none",
+      "source_health": {"coverage_healthy": true, "route_healthy": true, "content_healthy": true},
+      "evidence": {
+        "source_class": "public_index_catalog",
+        "promotion_ceiling": "locator_only",
+        "source_addressed_receipt": true,
+        "exact_claim_binding": false,
+        "identity_scope_bound": false,
+        "temporal_scope_bound": false,
+        "predicate_scope_bound": false,
+        "substantive_content": false,
+        "counterevidence_reviewed": false,
+        "promotion_authority": false
+      },
+      "answer": {"observed_domains": 0, "observed_jurisdictions": 0, "observed_outcome": false, "composed_durable_answer": false, "dimensions": {}},
+      "expected": {"claim_evidence_admissible": false, "answer_effective": false}
+    },
+    {
+      "control_id": "NC-REPOSITORY-CONTENT",
+      "control_class": "negative_repository_content_control",
+      "fixture_only": true,
+      "promotes_to": "none",
+      "source_health": {"coverage_healthy": true, "route_healthy": true, "content_healthy": true},
+      "evidence": {
+        "source_class": "official_adjudicative_record",
+        "promotion_ceiling": "repository_content",
+        "source_addressed_receipt": true,
+        "exact_claim_binding": false,
+        "identity_scope_bound": false,
+        "temporal_scope_bound": false,
+        "predicate_scope_bound": false,
+        "substantive_content": true,
+        "counterevidence_reviewed": false,
+        "promotion_authority": false
+      },
+      "answer": {"observed_domains": 0, "observed_jurisdictions": 0, "observed_outcome": false, "composed_durable_answer": false, "dimensions": {}},
+      "expected": {"claim_evidence_admissible": false, "answer_effective": false}
+    },
+    {
+      "control_id": "PC-CLAIM-BOUND-PRIMARY",
+      "control_class": "positive_claim_evidence_control",
+      "fixture_only": true,
+      "promotes_to": "none",
+      "source_health": {"coverage_healthy": false, "route_healthy": false, "content_healthy": false},
+      "evidence": {
+        "source_class": "official_adjudicative_record",
+        "promotion_ceiling": "claim_evidence",
+        "source_addressed_receipt": true,
+        "exact_claim_binding": true,
+        "identity_scope_bound": true,
+        "temporal_scope_bound": true,
+        "predicate_scope_bound": true,
+        "substantive_content": true,
+        "counterevidence_reviewed": true,
+        "promotion_authority": true
+      },
+      "answer": {"observed_domains": 1, "observed_jurisdictions": 1, "observed_outcome": false, "composed_durable_answer": false, "dimensions": {}},
+      "expected": {"claim_evidence_admissible": true, "answer_effective": false}
+    },
+    {
+      "control_id": "PC-OBSERVED-DURABLE-ANSWER",
+      "control_class": "positive_answer_effectiveness_control",
+      "fixture_only": true,
+      "promotes_to": "none",
+      "source_health": {"coverage_healthy": false, "route_healthy": false, "content_healthy": false},
+      "evidence": {
+        "source_class": "source_native_primary_record",
+        "promotion_ceiling": "claim_evidence",
+        "source_addressed_receipt": true,
+        "exact_claim_binding": true,
+        "identity_scope_bound": true,
+        "temporal_scope_bound": true,
+        "predicate_scope_bound": true,
+        "substantive_content": true,
+        "counterevidence_reviewed": true,
+        "promotion_authority": true
+      },
+      "answer": {
+        "observed_domains": 3,
+        "observed_jurisdictions": 2,
+        "observed_outcome": true,
+        "composed_durable_answer": true,
+        "dimensions": {
+          "pre_action_timing": true,
+          "evidence_access": true,
+          "independent_authority": true,
+          "effective_remedy": true,
+          "durability": true,
+          "practical_exit_or_governance": true
+        }
+      },
+      "expected": {"claim_evidence_admissible": true, "answer_effective": true}
+    }
+  ],
+  "expected_repository_state": {
+    "source_health_healthy": true,
+    "domain_observations_evaluated": 5,
+    "admissible_domain_evidence_records": 0,
+    "effective_domain_answers": 0,
+    "cross_domain_regression_completed": false,
+    "evidentiary_sufficiency": false,
+    "answer_effectiveness": false
+  },
+  "boundaries": {
+    "changes_route_denominator": false,
+    "changes_basin_denominator": false,
+    "changes_health_thresholds": false,
+    "changes_route_identifiers": false,
+    "changes_basin_assignments": false,
+    "changes_failure_taxonomy": false,
+    "performs_network_execution": false,
+    "source_health_proves_evidentiary_sufficiency": false,
+    "source_health_proves_answer_effectiveness": false,
+    "fixture_control_promotes_repository_state": false,
+    "cross_domain_regression_completed": false,
+    "promotes_to": "candidate_only",
+    "graph_effect": "none",
+    "conclusion_generated": false,
+    "project_complete": false
+  },
+  "controlling_question": "Which claim-bound, source-addressed receipts across at least three domains and two jurisdictions can satisfy the frozen M-05 evidence and observed-outcome gates without treating locator or repository health as the answer?"
+}
