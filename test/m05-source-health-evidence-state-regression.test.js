@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {
@@ -15,7 +16,13 @@ import {
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const contract=JSON.parse(fs.readFileSync(path.join(root,'data/project/m05-source-health-evidence-state-regression.json'),'utf8'));
-const run=spawnSync(process.execPath,['tools/validate-m05-source-health-evidence-state-regression.mjs'],{cwd:root,encoding:'utf8'});
+const audit=JSON.parse(fs.readFileSync(path.join(root,'data/project/m05-answerable-power-sprint-03-leg-07-real-receipt-admission-audit.json'),'utf8'));
+const runValidator=(auditPath)=>spawnSync(process.execPath,['tools/validate-m05-source-health-evidence-state-regression.mjs'],{
+  cwd:root,
+  encoding:'utf8',
+  env:auditPath?{...process.env,M05_REAL_RECEIPT_AUDIT_PATH:auditPath}:process.env
+});
+const run=runValidator();
 if(run.status!==0){console.error(run.stdout);console.error(run.stderr);throw new Error('validator failed')}
 
 const control=(id)=>structuredClone(contract.controls.find((row)=>row.control_id===id));
@@ -155,4 +162,76 @@ assert.equal(repository.evidentiary_sufficiency,false);
 assert.equal(repository.answer_effectiveness,false);
 assert.ok(repository.domains.every((row)=>row.repository_promotion_allowed===false));
 
-console.log(`m05-source-health-evidence-state-regression.test: OK (${EVIDENCE_BOOLEAN_GATES.length} evidence-gate mutations; ${EVIDENCE_SUFFICIENCY_GUARDS.length+ANSWER_SUFFICIENCY_GUARDS.length} fail-closed contract guards; ${ANSWER_DIMENSIONS.length} answer-dimension mutations; 3 completion-path regressions)`);
+const auditObservations=audit.domain_audits.map((row)=>contract.domain_observations.find((candidate)=>candidate.domain_id===row.source_observation_id));
+const auditContract={...contract,domain_observations:auditObservations};
+const audited=evaluateRegression(auditContract);
+assert.equal(audit.schema_version,'m05-answerable-power-s03-l7-real-receipt-admission-audit@1');
+assert.equal(audit.domain_audits.length,5);
+assert.equal(audited.domain_observations_evaluated,5);
+assert.equal(audited.admissible_domain_evidence_records,0);
+assert.equal(audited.effective_domain_answers,0);
+assert.equal(audited.cross_domain_regression_completed,false);
+assert.equal(audited.evidentiary_sufficiency,false);
+assert.equal(audited.answer_effectiveness,false);
+assert.deepEqual(audit.current_result,{
+  audited_domains:5,
+  claim_admissible_domains:0,
+  answer_effective_domains:0,
+  qualifying_jurisdictions:0,
+  cross_domain_regression_completed:false,
+  evidentiary_sufficiency:false,
+  answer_effectiveness:false,
+  issue_345_may_close:false
+});
+for(const row of audit.domain_audits){
+  const observation=contract.domain_observations.find((candidate)=>candidate.domain_id===row.source_observation_id);
+  const evaluated=evaluateObservation(observation,contract);
+  assert.equal(evaluated.claim_evidence_admissible,false,`${row.domain_id} must remain below claim admission`);
+  assert.equal(evaluated.answer_effective,false,`${row.domain_id} must remain below answer effectiveness`);
+  assert.equal(evaluated.repository_promotion_allowed,false,`${row.domain_id} must not promote repository state`);
+  assert.ok(row.missing_evidence_receipts.length>0,`${row.domain_id} must retain a missing-evidence ledger`);
+  assert.ok(row.missing_answer_dimensions.length>0,`${row.domain_id} must retain a missing-answer ledger`);
+  assert.equal(row.current_state.jurisdiction_contributes_to_answer,false,`${row.domain_id} must not leak a control jurisdiction into the works standard`);
+  assert.equal(row.current_state.control_transfer_allowed,false,`${row.domain_id} must not transfer control evidence to a target domain`);
+}
+const syntheticAuditObservation=contract.controls.find((row)=>row.control_id===audit.synthetic_complete_receipt_control_id);
+const syntheticAuditControl=evaluateObservation(syntheticAuditObservation,contract);
+assert.equal(syntheticAuditControl.claim_evidence_admissible,true);
+assert.equal(syntheticAuditControl.answer_effective,true);
+assert.equal(syntheticAuditControl.repository_promotion_allowed,false);
+
+const expectAuditFailure=(label,mutate,pattern)=>{
+  const mutation=structuredClone(audit);
+  mutate(mutation);
+  const tempDir=fs.mkdtempSync(path.join(os.tmpdir(),'m05-real-receipt-audit-'));
+  const tempPath=path.join(tempDir,'audit.json');
+  try{
+    fs.writeFileSync(tempPath,`${JSON.stringify(mutation,null,2)}\n`,'utf8');
+    const result=runValidator(tempPath);
+    assert.notEqual(result.status,0,`${label} mutation must fail the validator`);
+    assert.match(`${result.stdout}\n${result.stderr}`,pattern,`${label} mutation must fail for the expected reason`);
+  }finally{
+    fs.rmSync(tempDir,{recursive:true,force:true});
+  }
+};
+
+expectAuditFailure('canonical base',(row)=>{row.canonical_base.sha='0'.repeat(40)},/audit canonical base drift/u);
+expectAuditFailure('project blob',(row)=>{row.domain_audits[0].project_binding.blob_sha='0'.repeat(40)},/APC-ADMIN-01 project binding drift/u);
+expectAuditFailure('report blob',(row)=>{row.domain_audits[1].report_binding.blob_sha='0'.repeat(40)},/APC-COERCION-01 report binding drift/u);
+expectAuditFailure('report fingerprint',(row)=>{row.domain_audits[2].report_binding.fingerprint='0'.repeat(64)},/APC-WORK-01 report fingerprint drift/u);
+expectAuditFailure('pilot ceiling',(row)=>{row.domain_audits[3].pilot_ceiling='unbounded_R5'},/APC-EXIT-01 pilot ceiling drift/u);
+expectAuditFailure('missing evidence ledger',(row)=>{row.domain_audits[0].missing_evidence_receipts=[]},/APC-ADMIN-01 missing evidence receipt ledger/u);
+expectAuditFailure('missing answer ledger',(row)=>{row.domain_audits[1].missing_answer_dimensions=[]},/APC-COERCION-01 missing answer dimension ledger/u);
+expectAuditFailure('claim state promotion',(row)=>{row.domain_audits[2].current_state.claim_evidence_admissible=true},/APC-WORK-01 audit state claim_evidence_admissible must remain false/u);
+expectAuditFailure('jurisdiction leakage',(row)=>{row.domain_audits[3].current_state.jurisdiction_contributes_to_answer=true},/APC-EXIT-01 audit state jurisdiction_contributes_to_answer must remain false/u);
+expectAuditFailure('control transfer',(row)=>{row.domain_audits[4].current_state.control_transfer_allowed=true},/APC-VALUE-01 audit state control_transfer_allowed must remain false/u);
+expectAuditFailure('next receipt focus',(row)=>{row.domain_audits[0].next_receipt_focus=[]},/APC-ADMIN-01 next receipt focus incomplete/u);
+expectAuditFailure('synthetic discrimination',(row)=>{row.synthetic_complete_receipt_control_id='PC-CLAIM-BOUND-PRIMARY'},/synthetic complete receipt control identity drift/u);
+expectAuditFailure('false cross-domain completion',(row)=>{row.current_result.cross_domain_regression_completed=true},/audit current result cross_domain_regression_completed drift/u);
+expectAuditFailure('false issue closure',(row)=>{row.boundaries.issue_345_may_close=true},/audit boundary issue_345_may_close must remain false/u);
+expectAuditFailure('admission boundary transfer',(row)=>{row.admission_contract_binding.control_evidence_can_transfer_to_target_domain=true},/audit admission boundary weakened/u);
+expectAuditFailure('canonical pilot observation substitution',(row)=>{
+  row.domain_audits[0].source_observation_id='PC-OBSERVED-DURABLE-ANSWER';
+},/APC-ADMIN-01 source observation binding drift/u);
+
+console.log(`m05-source-health-evidence-state-regression.test: OK (${EVIDENCE_BOOLEAN_GATES.length} evidence-gate mutations; ${EVIDENCE_SUFFICIENCY_GUARDS.length+ANSWER_SUFFICIENCY_GUARDS.length} fail-closed contract guards; ${ANSWER_DIMENSIONS.length} answer-dimension mutations; 3 completion-path regressions; 5 bound pilot audits; 16 real-receipt audit mutations)`);

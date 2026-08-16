@@ -1,0 +1,337 @@
+{
+  "schema_version": "m05-answerable-power-s03-l7-real-receipt-admission-audit@1",
+  "object_class": "bounded_real_receipt_admission_audit",
+  "program_id": "M-05",
+  "hydrology_program_id": "M-04G",
+  "sprint_id": "M05-SPRINT-03",
+  "leg_id": "S03-L7",
+  "issue": 345,
+  "as_of": "2026-08-16",
+  "status": "real_receipt_admission_audit_frozen",
+  "title": "Real-receipt admission audit across the five Sprint 03 APC domains",
+  "question": "Which source-addressed, subject-bound, decision-bound, time-bound, predicate-bound, independently enforceable, outcome-bearing receipts are still required before the mechanically healthy source ecology can support claim admission or an observed cross-domain answer?",
+  "canonical_base": {
+    "branch": "main",
+    "sha": "cb528c25deef376995123e1c6a35455568b90ec3",
+    "source_health_regression_pull_request": 2150,
+    "source_health_regression_candidate_sha": "074233c8890d6b4b18a613aa4905eedf1def1218",
+    "source_health_regression_merge_sha": "cb528c25deef376995123e1c6a35455568b90ec3"
+  },
+  "admission_contract_binding": {
+    "path": "data/project/m05-source-health-evidence-state-regression.json",
+    "schema_version": "m05-source-health-evidence-state-regression@1",
+    "evaluator": "tools/lib/m05-source-health-evidence-state-regression.mjs",
+    "validator": "tools/validate-m05-source-health-evidence-state-regression.mjs",
+    "minimum_domains": 3,
+    "minimum_jurisdictions": 2,
+    "source_health_can_promote_claim_evidence": false,
+    "control_evidence_can_transfer_to_target_domain": false
+  },
+  "required_real_receipt_fields": [
+    "subject_identity",
+    "decision_system",
+    "decision_time",
+    "consequence_predicate",
+    "source_addressed_primary_record",
+    "independent_authority",
+    "observed_outcome",
+    "remedy",
+    "durability",
+    "practical_exit_or_governance"
+  ],
+  "real_receipt_field_meanings": {
+    "subject_identity": "named person, bounded class, constituency, or public actor",
+    "decision_system": "exact institution, vendor, data, model, user, and action chain",
+    "decision_time": "timestamped action, contest, remedy, and follow-up chronology",
+    "consequence_predicate": "exact rule, threshold, inference, capability, dependency, or trigger",
+    "source_addressed_primary_record": "stable source identity, URL, checksum, claim scope, and counterevidence disposition",
+    "independent_authority": "actor with binding stay, evidence, reversal, correction, deletion, compensation, prohibition, or enforcement power",
+    "observed_outcome": "operated subject-level or denominator-level result",
+    "remedy": "binding relief joined to action, injury, downstream records, and residual harm",
+    "durability": "follow-up through appeal, implementation, updates, substitution, turnover, and successors",
+    "practical_exit_or_governance": "operating capacity or affected-party authority over material system decisions"
+  },
+  "domain_audits": [
+    {
+      "domain_id": "APC-ADMIN-01",
+      "leg_id": "S03-L2",
+      "issue": 340,
+      "pull_request": 348,
+      "merge_commit": "34a6fbb9e93ed869907d038e47261e9d1e14ca65",
+      "project_binding": {
+        "path": "data/project/m05-answerable-power-sprint-03-leg-02-administrative-benefits.json",
+        "blob_sha": "3eff4c1adf9269ee552797b046718e371a56c2d2"
+      },
+      "report_binding": {
+        "path": "reports/core-thesis/answerable-power/sprint-03-leg-02.json",
+        "blob_sha": "45af1cba753b1a4f48e5ad205a0085436a4d324d",
+        "fingerprint": "cd33225ff94dbfc56cc75e2de86ba4b4601401a71f20cfdacc5e73eba2f2c737"
+      },
+      "support_surfaces": [
+        "data/project/m05-answerable-power-sprint-03-leg-01-constitution.json",
+        "data/project/m05-answerable-power-benchmark-wave-01.json",
+        "data/intake/m04f-epistemic-jurisdiction-wave-03.json",
+        "data/intake/m04f-epistemic-jurisdiction-sources-04.json"
+      ],
+      "pilot_ceiling": "R4_bounded_administrative_control",
+      "observed_controls": [
+        "K.W.: notice, injunction, and prior-budget restoration.",
+        "Robodebt: retrospective reconstruction, debt reversal, settlement, and compensation."
+      ],
+      "missing_evidence_receipts": [
+        "pre_action_reproducible_calculation_packet",
+        "automatic_stay_and_institutional_proof_burden",
+        "person_level_restoration_deletion_and_successor_denominator"
+      ],
+      "missing_answer_dimensions": [
+        "beneficiary_co_governance",
+        "durable_public_operating_substitution",
+        "R7_contribution_right_realization_distribution"
+      ],
+      "current_state": {
+        "claim_evidence_admissible": false,
+        "answer_effective": false,
+        "jurisdiction_contributes_to_answer": false,
+        "pilot_promoted": false,
+        "control_transfer_allowed": false
+      },
+      "next_receipt_focus": [
+        "named_recipient_and_exact_action_chain",
+        "timestamped_contest_stay_and_remedy",
+        "observed_restoration_deletion_and_nonrecurrence",
+        "successor_governance_or_public_operation"
+      ],
+      "source_observation_id": "APC-ADMIN-01"
+    },
+    {
+      "domain_id": "APC-COERCION-01",
+      "leg_id": "S03-L3",
+      "issue": 341,
+      "pull_request": 349,
+      "merge_commit": "697bf8f5a31742638daa6c110e4069d84132d407",
+      "project_binding": {
+        "path": "data/project/m05-answerable-power-sprint-03-leg-03-surveillance-enforcement.json",
+        "blob_sha": "d9ff5559b8c3bdcc876ab48dc61ca757b0122ef9"
+      },
+      "report_binding": {
+        "path": "reports/core-thesis/answerable-power/sprint-03-leg-03.json",
+        "blob_sha": "7e07000d7adab233195066e24034033b64423fd5",
+        "fingerprint": "03acd073c89fabb98c2616f574a101b5d613efa10435e974894cec5fefac9db3"
+      },
+      "support_surfaces": [
+        "data/project/m05-answerable-power-sprint-03-leg-01-constitution.json",
+        "data/project/m05-answerable-power-sprint-02-palantir-person-chain.json",
+        "data/intake/m04f-epistemic-jurisdiction-wave-03.json",
+        "data/intake/m04f-epistemic-jurisdiction-sources-04.json"
+      ],
+      "pilot_ceiling": "R4_bounded_person_and_system_control",
+      "observed_controls": [
+        "ELITE chain: later evidence, release activity, burden shift, and arrest-practice limits.",
+        "SyRI: proportionality review and system prohibition."
+      ],
+      "missing_evidence_receipts": [
+        "complete_person_level_action_packet",
+        "delayed_notice_emergency_and_retention_record",
+        "correction_deletion_compensation_and_successor_receipts"
+      ],
+      "missing_answer_dimensions": [
+        "pre_action_independent_restraint",
+        "represented_community_co_governance",
+        "durable_system_exit_with_successor_review"
+      ],
+      "current_state": {
+        "claim_evidence_admissible": false,
+        "answer_effective": false,
+        "jurisdiction_contributes_to_answer": false,
+        "pilot_promoted": false,
+        "control_transfer_allowed": false
+      },
+      "next_receipt_focus": [
+        "named_person_and_data_to_field_action_chain",
+        "timestamped_authorization_intervention_and_notice",
+        "observed_release_deletion_compensation_or_prohibition",
+        "vendor_agency_responsibility_and_successor_control"
+      ],
+      "source_observation_id": "APC-COERCION-01"
+    },
+    {
+      "domain_id": "APC-WORK-01",
+      "leg_id": "S03-L4",
+      "issue": 342,
+      "pull_request": 350,
+      "merge_commit": "ad9f5c31da06d47e7ce4bc6d1105720f39e6598d",
+      "project_binding": {
+        "path": "data/project/m05-answerable-power-sprint-03-leg-04-workplace-co-governance.json",
+        "blob_sha": "986a50d42d61e1942d89c90e65c36d08bab2b058"
+      },
+      "report_binding": {
+        "path": "reports/core-thesis/answerable-power/sprint-03-leg-04.json",
+        "blob_sha": "5b2106d1c4fd152a4263f8e7ab81b13c4a61e064",
+        "fingerprint": "bc2b1a5fb5b60ab12eae8b34848bedda343909568f406ae3891f8a00e20bcf25"
+      },
+      "support_surfaces": [
+        "data/project/m05-answerable-power-sprint-03-leg-01-constitution.json",
+        "data/project/m05-answerable-power-sprint-02-r6-works-council.json",
+        "data/intake/m05-answerable-power-sprint-02-leg-05-r6-sources.json"
+      ],
+      "pilot_ceiling": "R6_bounded_collective_co_governance_control",
+      "observed_controls": [
+        "German works councils: binding function-bounded co-determination and cessation.",
+        "Central-tenant and listening cases: governance-level allocation and capability anti-bypass."
+      ],
+      "missing_evidence_receipts": [
+        "deployment_specific_agreement_veto_and_outcome",
+        "worker_notice_telemetry_access_deletion_and_remedy",
+        "update_outsourcing_cloud_and_successor_outcomes"
+      ],
+      "missing_answer_dimensions": [
+        "individual_R4_rights",
+        "observed_R5_substitution",
+        "worker_R7_and_cross_jurisdiction_transfer"
+      ],
+      "current_state": {
+        "claim_evidence_admissible": false,
+        "answer_effective": false,
+        "jurisdiction_contributes_to_answer": false,
+        "pilot_promoted": false,
+        "control_transfer_allowed": false
+      },
+      "next_receipt_focus": [
+        "named_workforce_and_exact_monitoring_function",
+        "timestamped_bargaining_deployment_and_contest",
+        "observed_disablement_correction_deletion_or_compensation",
+        "durability_through_updates_outsourcing_and_successors"
+      ],
+      "source_observation_id": "APC-WORK-01"
+    },
+    {
+      "domain_id": "APC-EXIT-01",
+      "leg_id": "S03-L5",
+      "issue": 343,
+      "pull_request": 351,
+      "merge_commit": "60aa6cbd4b7096903ce68e8fea9830098d3dd6a1",
+      "project_binding": {
+        "path": "data/project/m05-answerable-power-sprint-03-leg-05-public-platform-exit.json",
+        "blob_sha": "e0002da8f65c46acd00a84251a6d141487daf8b8"
+      },
+      "report_binding": {
+        "path": "reports/core-thesis/answerable-power/sprint-03-leg-05.json",
+        "blob_sha": "79641e8393b04bbe00f6fed12458c91d1eb14a29",
+        "fingerprint": "47b225e03c49a4b7f66312540ec1bf882d8aff54da73c05e613f643d68c8495b"
+      },
+      "support_surfaces": [
+        "data/project/m05-answerable-power-sprint-03-leg-01-constitution.json",
+        "data/project/m05-answerable-power-sprint-01.json",
+        "data/intake/m05-answerable-power-sprint-01-sources.json",
+        "data/intake/m04f-epistemic-jurisdiction-sources-04.json"
+      ],
+      "pilot_ceiling": "R5_bounded_public_substitution_control",
+      "observed_controls": [
+        "Homes for Ukraine Share: bounded in-house migration and supplier exit.",
+        "NHS and NGC2: transition, continuing-platform, plurality, and integration controls."
+      ],
+      "missing_evidence_receipts": [
+        "independent_end_to_end_migration_audit",
+        "residual_custody_deletion_IP_support_and_fallback_reconciliation",
+        "affected_person_continuity_correction_and_performance_denominator"
+      ],
+      "missing_answer_dimensions": [
+        "durable_independent_operation",
+        "affected_party_post_exit_governance",
+        "distributed_savings_IP_learning_and_capacity"
+      ],
+      "current_state": {
+        "claim_evidence_admissible": false,
+        "answer_effective": false,
+        "jurisdiction_contributes_to_answer": false,
+        "pilot_promoted": false,
+        "control_transfer_allowed": false
+      },
+      "next_receipt_focus": [
+        "exact_incumbent_replacement_and_dependency_map",
+        "timestamped_cutover_incident_rollback_and_exit",
+        "observed_continuity_independent_operation_and_deletion",
+        "durability_through_turnover_failure_and_successor_procurement"
+      ],
+      "source_observation_id": "APC-EXIT-01"
+    },
+    {
+      "domain_id": "APC-VALUE-01",
+      "leg_id": "S03-L6",
+      "issue": 344,
+      "pull_request": 353,
+      "merge_commit": "960c51d11b3210d2b1083fce6a49c5ad5fc6ca86",
+      "project_binding": {
+        "path": "data/project/m05-answerable-power-sprint-03-leg-06-value-recovery-transfer.json",
+        "blob_sha": "4cbe648c7d5b03e020e7f87aff7b9f4f3f11a076"
+      },
+      "report_binding": {
+        "path": "reports/core-thesis/answerable-power/sprint-03-leg-06.json",
+        "blob_sha": "83d1d62c9ad9c20cada0614bf4e838990999d73d",
+        "fingerprint": "1ccba692fe3bc0d748fd4a46d933f72a58c9d75a6d52e2481545455b909f470c"
+      },
+      "support_surfaces": [
+        "data/project/m05-answerable-power-sprint-03-leg-01-constitution.json",
+        "data/intake/m05-answerable-power-sprint-02-leg-06-r7-sources.json",
+        "data/intake/m05-answerable-power-sprint-03-leg-06-value-recovery-sources.json#bfa45646f49c9903fa5de77c57c5eb54b28dc30c",
+        "data/intake/m04f-epistemic-jurisdiction-sources-04.json"
+      ],
+      "pilot_ceiling": "R7_architecture_transfer_candidate_with_TARP_control",
+      "observed_controls": [
+        "TARP CPP: contribution, residual right, and realization control.",
+        "NIF, NSSIF, and CHIPS: residual-right architectures with realization and distribution open."
+      ],
+      "missing_evidence_receipts": [
+        "executed_target_sector_contribution_and_residual_right",
+        "observed_exercise_or_realization",
+        "public_and_affected_party_distribution_ledger"
+      ],
+      "missing_answer_dimensions": [
+        "target_sector_realized_public_return",
+        "affected_party_residual_distribution",
+        "durable_exercise_distribution_and_exit"
+      ],
+      "current_state": {
+        "claim_evidence_admissible": false,
+        "answer_effective": false,
+        "jurisdiction_contributes_to_answer": false,
+        "pilot_promoted": false,
+        "control_transfer_allowed": false
+      },
+      "next_receipt_focus": [
+        "named_contributor_recipient_rights_holder_and_beneficiary",
+        "exact_instrument_and_enforceable_residual_predicate",
+        "observed_realization_and_distribution",
+        "durability_through_dilution_sale_writeoff_and_successors"
+      ],
+      "source_observation_id": "APC-VALUE-01"
+    }
+  ],
+  "synthetic_complete_receipt_control_id": "PC-OBSERVED-DURABLE-ANSWER",
+  "current_result": {
+    "audited_domains": 5,
+    "claim_admissible_domains": 0,
+    "answer_effective_domains": 0,
+    "qualifying_jurisdictions": 0,
+    "cross_domain_regression_completed": false,
+    "evidentiary_sufficiency": false,
+    "answer_effectiveness": false,
+    "issue_345_may_close": false
+  },
+  "boundaries": {
+    "changes_pilot_artifacts": false,
+    "changes_source_health_contract": false,
+    "changes_evidence_or_answer_thresholds": false,
+    "source_health_promotes_claim_evidence": false,
+    "control_evidence_transfers_to_target_domain": false,
+    "synthetic_fixture_promotes_repository_state": false,
+    "cross_domain_regression_completed": false,
+    "evidentiary_sufficiency": false,
+    "answer_effectiveness": false,
+    "issue_345_may_close": false,
+    "promotes_to": "candidate_only",
+    "graph_effect": "none",
+    "conclusion_generated": false,
+    "project_complete": false
+  }
+}
