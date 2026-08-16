@@ -1,0 +1,109 @@
+name: TEMP M-04G seven-route official fallback materializer v1
+
+on:
+  push:
+    branches:
+      - agent/m04g-six-route-official-fallback-probe-v1
+    paths:
+      - '.github/probes/m04g_official_fallback_patcher_v1.mjs.gz.b64'
+      - '.github/probes/m04g_official_fallback_materializer_v1.sh.gz.b64'
+      - '.github/workflows/temporary-m04g-seven-route-official-fallback-materializer-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - name: Check out materializer source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Decode and verify materializer controllers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64
+          import gzip
+          import hashlib
+          import pathlib
+
+          payloads = {
+              '/tmp/m04g_official_fallback_patcher_v1.mjs': {
+                  'source': '.github/probes/m04g_official_fallback_patcher_v1.mjs.gz.b64',
+                  'sha256': '5828ac75f4da04f4bde21598abd8750daf1ad987bc666c4acaf024f26cee8640',
+              },
+              '/tmp/m04g_official_fallback_materializer_v1.sh': {
+                  'source': '.github/probes/m04g_official_fallback_materializer_v1.sh.gz.b64',
+                  'sha256': '8b70f76438fc6e08a7f93ce826f2fd3deef06e06be21d8840af2b88ff5e1ad8f',
+              },
+          }
+          for target, spec in payloads.items():
+              encoded = pathlib.Path(spec['source']).read_text()
+              raw = gzip.decompress(base64.b64decode(''.join(encoded.split())))
+              actual = hashlib.sha256(raw).hexdigest()
+              if actual != spec['sha256']:
+                  raise SystemExit(f'payload digest mismatch for {target}: {actual}')
+              path = pathlib.Path(target)
+              path.write_bytes(raw)
+              path.chmod(0o755)
+              print(f'decoded {target} {actual} {len(raw)}')
+          PY
+          node --check /tmp/m04g_official_fallback_patcher_v1.mjs
+          bash -n /tmp/m04g_official_fallback_materializer_v1.sh
+
+      - name: Run bounded materializer
+        shell: bash
+        run: |
+          set +e
+          mkdir -p qualification
+          PATCHER_OVERRIDE=/tmp/m04g_official_fallback_patcher_v1.mjs \
+            bash /tmp/m04g_official_fallback_materializer_v1.sh
+          status=$?
+          printf '%s\n' "$status" > qualification/controller-exit-status.txt
+          exit 0
+
+      - name: Render materializer summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f qualification/materializer-result.json ]; then
+            node --input-type=module <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          import fs from 'node:fs';
+          const r=JSON.parse(fs.readFileSync('qualification/materializer-result.json','utf8'));
+          const s=r.candidate_receipt?.summary||{};
+          console.log('# M-04G seven-route official fallback materializer');
+          console.log('');
+          console.log(`- State: ${r.state}`);
+          console.log(`- Phase: ${r.phase}`);
+          console.log(`- Base SHA: ${r.base_sha}`);
+          console.log(`- Candidate SHA: ${r.candidate_sha}`);
+          console.log(`- Candidate published: ${r.candidate_published}`);
+          console.log(`- Route successes: ${s.route_successes??'n/a'}`);
+          console.log(`- Content successes: ${s.content_successes??'n/a'}`);
+          console.log(`- Healthy basins: ${s.healthy_basins??'n/a'}`);
+          console.log(`- Coverage healthy: ${s.coverage_healthy??'n/a'}`);
+          console.log(`- Proof SHA-256: ${r.proof_sha256}`);
+          NODE
+          else
+            printf '%s\n' '# M-04G seven-route official fallback materializer' '' 'No materializer result was produced.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload materializer receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-seven-route-official-fallback-materializer-v1-${{ github.run_id }}
+          path: qualification/
+          if-no-files-found: error
+          retention-days: 30
