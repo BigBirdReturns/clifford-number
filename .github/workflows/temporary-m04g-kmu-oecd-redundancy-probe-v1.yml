@@ -1,0 +1,226 @@
+name: TEMP M-04G KMU and OECD redundancy probe v1
+
+on:
+  push:
+    branches:
+      - agent/m04g-residual-official-fallback-probe-v1
+    paths:
+      - .github/workflows/temporary-m04g-kmu-oecd-redundancy-probe-v1.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporary-m04g-kmu-oecd-redundancy-probe-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run bounded first-party redundancy probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=qualification/m04g-kmu-oecd-redundancy-probe-v1
+          rm -rf "${OUT}"
+          mkdir -p "${OUT}/bodies"
+          node --input-type=module - "${OUT}" <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          import path from 'node:path';
+
+          const out=path.resolve(process.argv[2]);
+          const candidates=[
+            {
+              candidate_id:'GP046-KMU-2M',
+              route_id:'M04G-GP046',
+              basin_id:'G06-EASTERN-EUROPE-EURASIA',
+              url:'https://www.kmu.gov.ua/',
+              hosts:['kmu.gov.ua'],
+              max_bytes:2097152,
+              source_class:'official_ukraine_cabinet_large_document'
+            },
+            {
+              candidate_id:'GP005-OECD-AUS-CLI-CSV',
+              route_id:'M04G-GP005',
+              basin_id:'G01-GLOBAL-MULTILATERAL',
+              url:'https://sdmx.oecd.org/public/rest/data/OECD.SDD.STES,DSD_STES@DF_CLI/AUS.M.LI...AA...H?startPeriod=2025-01&dimensionAtObservation=AllDimensions&format=csvfilewithlabels',
+              hosts:['oecd.org'],
+              max_bytes:1048576,
+              source_class:'official_oecd_sdmx_country_data'
+            },
+            {
+              candidate_id:'GP005-OECD-USA-CLI-CSV',
+              route_id:'M04G-GP005',
+              basin_id:'G01-GLOBAL-MULTILATERAL',
+              url:'https://sdmx.oecd.org/public/rest/data/OECD.SDD.STES,DSD_STES@DF_CLI/USA.M.LI...AA...H?startPeriod=2025-01&dimensionAtObservation=AllDimensions&format=csvfilewithlabels',
+              hosts:['oecd.org'],
+              max_bytes:1048576,
+              source_class:'official_oecd_sdmx_country_data'
+            },
+            {
+              candidate_id:'GP005-OECD-AUS-CLI-JSON',
+              route_id:'M04G-GP005',
+              basin_id:'G01-GLOBAL-MULTILATERAL',
+              url:'https://sdmx.oecd.org/public/rest/data/OECD.SDD.STES,DSD_STES@DF_CLI/AUS.M.LI...AA...H?startPeriod=2025-01&dimensionAtObservation=AllDimensions&format=jsondata',
+              hosts:['oecd.org'],
+              max_bytes:1048576,
+              source_class:'official_oecd_sdmx_country_data'
+            }
+          ];
+          const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+          const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+          const hostAllowed=(value,hosts)=>hosts.some(host=>{const actual=new URL(value).hostname.toLowerCase();return actual===host||actual.endsWith(`.${host}`)});
+          const visibleHtml=html=>html
+            .replace(/<(script|style|noscript|svg|template)\b[^>]*>[\s\S]*?<\/\1>/giu,' ')
+            .replace(/<!--([\s\S]*?)-->/g,' ')
+            .replace(/<[^>]+>/g,' ')
+            .replace(/&nbsp;/giu,' ')
+            .replace(/&amp;/giu,'&')
+            .replace(/\s+/g,' ')
+            .trim();
+          const challengeMarkers=['cf-chl-','cloudflare ray id','just a moment','access denied','request blocked','captcha','incapsula'];
+
+          async function readBounded(response,maxBytes,controller){
+            const chunks=[];
+            let total=0;
+            for await(const chunk of response.body){
+              const buffer=Buffer.from(chunk);
+              total+=buffer.length;
+              if(total>maxBytes){controller.abort();throw Object.assign(new Error('response exceeded byte ceiling'),{failure:'oversized_response'})}
+              chunks.push(buffer);
+            }
+            return Buffer.concat(chunks);
+          }
+
+          function classify(body,contentType){
+            const text=body.toString('utf8').trim();
+            const lower=text.toLowerCase();
+            if(contentType.includes('html')||/<html\b/iu.test(text.slice(0,1000))){
+              const visible=visibleHtml(text);
+              const marker=challengeMarkers.find(value=>visible.toLowerCase().includes(value));
+              if(marker)return {content_success:false,failure:'challenge_or_access_page',visible_characters:visible.length,rejection_reason:`visible challenge marker: ${marker}`};
+              return visible.length>=300
+                ? {content_success:true,failure:null,visible_characters:visible.length,rejection_reason:null}
+                : {content_success:false,failure:'insufficient_visible_content',visible_characters:visible.length,rejection_reason:`only ${visible.length} visible characters`};
+            }
+            if(contentType.includes('json')||/^[\[{]/u.test(text)){
+              try{
+                const parsed=JSON.parse(text);
+                const populated=Array.isArray(parsed)?parsed.length>0:Boolean(parsed&&Object.keys(parsed).length);
+                return populated?{content_success:true,failure:null,rejection_reason:null}:{content_success:false,failure:'insufficient_content',rejection_reason:'empty JSON payload'};
+              }catch{return {content_success:false,failure:'parse_failure',rejection_reason:'invalid JSON payload'}}
+            }
+            if(contentType.includes('csv')||text.includes(',')){
+              const lines=text.split(/\r?\n/u).filter(Boolean);
+              return lines.length>=2&&text.length>=300
+                ? {content_success:true,failure:null,rejection_reason:null,rows:lines.length}
+                : {content_success:false,failure:'insufficient_content',rejection_reason:`CSV payload has ${lines.length} rows and ${text.length} characters`,rows:lines.length};
+            }
+            return text.length>=300
+              ? {content_success:true,failure:null,rejection_reason:null}
+              : {content_success:false,failure:'insufficient_content',rejection_reason:`payload has ${text.length} characters`};
+          }
+
+          async function probe(candidate){
+            let current=candidate.url;
+            const redirects=[];
+            for(let count=0;count<=5;count++){
+              const controller=new AbortController();
+              const timer=setTimeout(()=>controller.abort(),30000);
+              let response;
+              try{
+                response=await fetch(current,{
+                  redirect:'manual',
+                  signal:controller.signal,
+                  headers:{
+                    'user-agent':'CliffordNumber-M04G/2.8 bounded official redundancy probe (+https://github.com/BigBirdReturns/clifford-number; contact through repository issues)',
+                    accept:'application/json,text/csv,text/html,application/xml,text/xml,*/*;q=.1'
+                  }
+                });
+              }catch(error){
+                clearTimeout(timer);
+                return {...candidate,success:false,failure:String(error).includes('Abort')?'timeout':'transport_failure',error:String(error)};
+              }
+              clearTimeout(timer);
+              if(response.status>=300&&response.status<400){
+                const location=response.headers.get('location');
+                if(!location)return {...candidate,success:false,status:response.status,failure:'redirect_unresolved'};
+                const next=new URL(location,current).toString();
+                if(!next.startsWith('https://'))return {...candidate,success:false,status:response.status,failure:'https_downgrade_refused',redirect_target:next};
+                if(!hostAllowed(next,candidate.hosts))return {...candidate,success:false,status:response.status,failure:'redirect_outside_official_host',redirect_target:next};
+                redirects.push({status:response.status,from:current,to:next});
+                current=next;
+                continue;
+              }
+              if(response.status!==200)return {...candidate,success:false,status:response.status,final_url:current,failure:response.status===403?'access_blocked':response.status>=500?'upstream_failure':'http_failure'};
+              let body;
+              const bodyTimer=setTimeout(()=>controller.abort(),30000);
+              try{body=await readBounded(response,candidate.max_bytes,controller)}catch(error){return {...candidate,success:false,status:response.status,final_url:current,failure:error.failure||'read_failure',error:String(error)}}finally{clearTimeout(bodyTimer)}
+              const content_type=String(response.headers.get('content-type')||'').toLowerCase();
+              const decision=classify(body,content_type);
+              const body_sha256=sha(body);
+              const extension=content_type.includes('json')?'json':content_type.includes('csv')?'csv':'html';
+              const body_path=path.join(out,'bodies',`${candidate.candidate_id}-${body_sha256}.${extension}`);
+              fs.writeFileSync(body_path,body);
+              return {...candidate,status:response.status,final_url:current,redirects,bytes:body.length,content_type,body_sha256,body_path:path.relative(out,body_path),success:decision.content_success,...decision};
+            }
+            return {...candidate,success:false,failure:'redirect_limit_exceeded'};
+          }
+
+          const results=[];
+          for(const candidate of candidates){
+            results.push(await probe(candidate));
+            await sleep(2000);
+          }
+          const successes=results.filter(row=>row.success);
+          const core={
+            schema_version:'m04g-kmu-oecd-redundancy-probe@1',
+            generated_at:new Date().toISOString(),
+            workflow_run_id:process.env.GITHUB_RUN_ID||null,
+            commit_sha:process.env.GITHUB_SHA||null,
+            branch:process.env.GITHUB_REF_NAME||null,
+            product_files_modified:false,
+            summary:{candidates_probed:results.length,substantive_successes:successes.length,kmu_successes:successes.filter(row=>row.route_id==='M04G-GP046').length,oecd_successes:successes.filter(row=>row.route_id==='M04G-GP005').length},
+            successes,
+            candidates:results,
+            boundaries:{https_only:true,safe_redirects:true,max_concurrency:1,max_redirects:5,max_bytes:2097152,metadata_counted_as_content:false,thresholds_changed:false,route_identity_changed:false}
+          };
+          const ledger={...core,proof_sha256:sha(JSON.stringify(core))};
+          fs.writeFileSync(path.join(out,'ledger.json'),`${JSON.stringify(ledger,null,2)}\n`);
+          fs.writeFileSync(path.join(out,'summary.md'),[
+            '# M-04G KMU and OECD redundancy probe v1','',
+            `- Candidates probed: ${results.length}`,
+            `- Substantive successes: ${successes.length}`,
+            `- KMU successes: ${ledger.summary.kmu_successes}`,
+            `- OECD successes: ${ledger.summary.oecd_successes}`,
+            `- Proof SHA-256: ${ledger.proof_sha256}`,'',
+            ...results.map(row=>`- \`${row.candidate_id}\`: ${row.success?'SUCCESS':'FAIL'}; status \`${row.status??'none'}\`; failure \`${row.failure??'none'}\`; bytes \`${row.bytes??0}\`; hash \`${row.body_sha256??'none'}\``)
+          ].join('\n')+'\n');
+          console.log(JSON.stringify(ledger.summary,null,2));
+          NODE
+
+      - name: Publish receipt summary
+        if: always()
+        shell: bash
+        run: |
+          SUMMARY=qualification/m04g-kmu-oecd-redundancy-probe-v1/summary.md
+          if [ -f "${SUMMARY}" ]; then
+            cat "${SUMMARY}" >> "${GITHUB_STEP_SUMMARY}"
+          else
+            printf '%s\n' '# M-04G KMU/OECD probe failed before receipt materialization' >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
+      - name: Upload bounded qualification ledger
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-kmu-oecd-redundancy-probe-v1-${{ github.run_id }}
+          path: qualification/m04g-kmu-oecd-redundancy-probe-v1
+          if-no-files-found: error
+          retention-days: 30
