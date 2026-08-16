@@ -16,9 +16,11 @@ The packet contains:
 - `response-ledger.jsonl`, which begins with the prepared-but-unsent state and must receive one append-only row for every later custody event.
 - `adjudication-rules.json`, which defines the minimum transaction-specific evidence required before any allottee field can change.
 - `requester-input.example.json`, which defines the private local input shape without containing requester particulars or authorization.
+- `dispatch-input.example.json`, which defines the private postal-dispatch evidence input shape without authorizing or performing dispatch.
 - `docs/requests/electric-twin-section-116-register-of-members-request.md`, which contains separate statutory and voluntary request templates.
 - `tools/finalize-electric-twin-register-request.mjs`, which validates private local inputs and produces separately hashed source documents without sending them.
 - `tools/render-electric-twin-register-request-pdfs.mjs`, which verifies a finalized source directory and creates deterministic private PDFs plus a non-identifying custody manifest without sending them.
+- `tools/record-electric-twin-register-request-dispatch.mjs`, which verifies an authorized outbound PDF and copies exact evidence of an externally performed postal dispatch without contacting the company.
 
 The statutory request must not be sent until the requester’s real full name, postal address, email address, date, and intended disclosure recipients have been inserted. A public contact route does not confer authority to send. Any dispatch requires a custody-bearing postal method to the registered office and may be copied by email only for routing. The voluntary request for a redacted allotment or closing instrument remains separate from the statutory register request.
 
@@ -53,7 +55,23 @@ node tools/render-electric-twin-register-request-pdfs.mjs \
 
 The renderer rehashes both source files against `outbound-source-manifest.json`, rejects placeholders, altered bytes, symlink paths, non-private files, the acquisition root itself, and every existing PDF or rendering-manifest path. It creates separate A4 PDFs using a deterministic built-in Courier text renderer, embeds no wall-clock creation timestamp, uses no browser runtime or external font, and records the exact PDF byte lengths, page counts, source hashes, and SHA-256 digests in `outbound-pdf-manifest.json`.
 
-The PDFs contain the requester particulars because they are the actual private outbound documents. The PDF manifest does not repeat those particulars. All files remain under the ignored private acquisition directory with group and world access removed. PDF rendering does not make either request dispatch-ready, send a message, perform postal service, create proof of receipt, or calculate a response deadline. Any postal proof, delivery confirmation, routing email, company response, inspection record, or later derivative remains a separate custody event that must retain original bytes and enter `response-ledger.jsonl` through a reviewed repository change.
+The PDFs contain the requester particulars because they are the actual private outbound documents. The PDF manifest does not repeat those particulars. All files remain under the ignored private acquisition directory with group and world access removed. PDF rendering does not make either request dispatch-ready, send a message, perform postal service, create proof of receipt, or calculate a response deadline.
+
+## Local postal-dispatch custody gate
+
+This gate is used only after a person has performed a separately authorized postal dispatch outside the repository tools. Copy `dispatch-input.example.json` to a permission-restricted file under `data/local/`, replace every placeholder, identify the exact channel, and supply the authorization record already bound into `outbound-source-manifest.json`. Place the original postal receipt, carrier export, label, or other dispatch evidence under `data/local/` without converting or editing it.
+
+```sh
+chmod 600 data/local/electric-twin-register-of-members-dispatch.json
+chmod 600 data/local/electric-twin-register-of-members/postal-proof.pdf
+node tools/record-electric-twin-register-request-dispatch.mjs \
+  --source-dir build/source-acquisition/electric-twin-register-of-members/<immutable-run-id> \
+  --input data/local/electric-twin-register-of-members-dispatch.json
+```
+
+The recorder rehashes both source documents, both PDF manifests, and the selected outbound PDF before accepting evidence. It requires the matching statutory or voluntary dispatch authorization to be true, requires the private input’s authorization record to match the source manifest, rejects symlinked or non-private proof files, verifies supported file signatures, and copies the exact proof bytes into a new immutable `dispatch/` child directory. The resulting `outbound-dispatch-manifest.json` records the source and PDF custody chain, the outbound document hash, proof hashes, declared dispatch timestamp, service metadata, and a hash of the tracking reference without repeating the raw tracking reference or requester name, address, or email.
+
+The recorder has no network, email, postal, or messaging capability and cannot perform or authenticate a dispatch. Its state is `postal_dispatch_evidence_recorded_delivery_unconfirmed`. It records an external dispatch assertion and preserved proof, while keeping carrier authenticity unverified, delivery unconfirmed, the receipt timestamp null, and the response deadline uncalculated. Delivery confirmation, routing email, company response, inspection record, court application, and any canonical response-ledger update remain separate custody and review events.
 
 A response that supplies only a registered name, date entered as a member, class, or resulting quantity may strengthen the dated holder history. It does not prove that the holding arose from a specific allotment rather than a transfer, nominee arrangement, aggregation, rectification, or another register movement. Allottee identity may be promoted only when one source-addressable instrument expressly links the issuer, named person or vehicle, share class, quantity, and allotment event, or supplies an equivalent transaction-specific entry.
 
