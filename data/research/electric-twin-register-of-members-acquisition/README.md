@@ -19,12 +19,16 @@ The packet contains:
 - `dispatch-input.example.json`, which defines the private postal-dispatch evidence input shape without authorizing or performing dispatch.
 - `delivery-input.example.json`, which defines the private delivery-evidence and working-day-calendar input shape without establishing receipt or a legal deadline.
 - `response-input.example.json`, which defines the private response-evidence and unverified-disposition input shape without adjudicating authenticity, timeliness, compliance, or transaction meaning.
+- `response-adjudication-input.example.json`, which defines the first private source-addressed review without authorizing canonical promotion.
+- `response-second-party-review-input.example.json`, which binds an independent review to the exact first-review manifest and every preserved response artifact.
 - `docs/requests/electric-twin-section-116-register-of-members-request.md`, which contains separate statutory and voluntary request templates.
 - `tools/finalize-electric-twin-register-request.mjs`, which validates private local inputs and produces separately hashed source documents without sending them.
 - `tools/render-electric-twin-register-request-pdfs.mjs`, which verifies a finalized source directory and creates deterministic private PDFs plus a non-identifying custody manifest without sending them.
 - `tools/record-electric-twin-register-request-dispatch.mjs`, which verifies an authorized outbound PDF and copies exact evidence of an externally performed postal dispatch without contacting the company.
 - `tools/record-electric-twin-register-request-delivery.mjs`, which verifies the dispatch chain, preserves exact delivery evidence, and calculates a bounded operational response checkpoint without adjudicating statutory receipt or a legal deadline.
 - `tools/record-electric-twin-register-request-response.mjs`, which verifies the complete source-to-delivery chain, preserves exact response bytes, and records only unverified response dispositions for later review.
+- `tools/adjudicate-electric-twin-register-request-response.mjs`, which records a first source-addressed human review while keeping canonical promotion blocked.
+- `tools/second-party-review-electric-twin-register-request-response.mjs`, which independently assesses every first-review finding while preserving a separate promotion gate.
 
 The statutory request must not be sent until the requester’s real full name, postal address, email address, date, and intended disclosure recipients have been inserted. A public contact route does not confer authority to send. Any dispatch requires a custody-bearing postal method to the registered office and may be copied by email only for routing. The voluntary request for a redacted allotment or closing instrument remains separate from the statutory register request.
 
@@ -127,6 +131,21 @@ A `procedural_disposition` finding must also carry a structured `procedural_disp
 The supplied `reviewed_at` value must be a calendar-valid UTC timestamp with valid month, day, hour, minute, and second components. The recorder rejects JavaScript-normalizable literals such as a nonexistent February date or `24:00:00`, so the timestamp preserved in the immutable manifest is the same temporal value used by the chronology gate.
 
 The tool records a human review assertion. It does not verify the semantic correctness of a source address or finding, authenticate the sender, adjudicate legal timeliness or statutory compliance, decide court merits, or mutate canonical claims. Even an outcome classified as `transaction_specific_allottee_identified` remains a candidate requiring independent review, checksum-bound source custody, a targeted validator, the complete release gate, and a separate canonical pull request. Second-party review remains required and incomplete, and the canonical effect remains none.
+
+## Private second-party review checkpoint
+
+After a first response adjudication has been recorded, copy `response-second-party-review-input.example.json` to a permission-restricted file under `data/local/`. The second reviewer must inspect the first-review manifest and every original response artifact independently, bind the input to the exact first-review manifest byte length and SHA-256 digest, and assess every first-review finding exactly once.
+
+```sh
+chmod 600 data/local/electric-twin-register-of-members-response-second-party-review.json
+node tools/second-party-review-electric-twin-register-request-response.mjs \
+  --adjudication-dir build/source-acquisition/electric-twin-register-of-members/<immutable-run-id>/dispatch/<dispatch-event>/delivery/<delivery-event>/response/<response-event>/adjudication/<first-review-event> \
+  --input data/local/electric-twin-register-of-members-response-second-party-review.json
+```
+
+The gate re-verifies the complete source, PDF, dispatch, delivery, response, first-review, and tracked-rules chain. Each independent finding assessment must identify the same response artifact and digest as the first review while supplying its own source address and rationale. The overall assessment is derived from the complete finding set: all confirmed findings produce `confirmed`; all rejected findings produce `rejected`; any set containing an unresolved finding produces `unresolved`; and every remaining mixed or narrowed set produces `narrowed`. A rejected finding may therefore coexist with confirmed or narrowed findings under a narrowed aggregate, or with an unresolved finding under an unresolved aggregate, while no mixed set may masquerade as wholly rejected. A confirmed finding preserves the first review's ambiguity ledger; an unresolved finding must retain at least one explicit ambiguity.
+
+The output is written as `inbound-response-second-party-review.json` under a new immutable private `second-party-review/` child. Its state is `response_second_party_review_recorded_canonical_promotion_blocked`. The tool records an independence assertion but cannot verify reviewer identity or independence. It does not verify semantic correctness, authenticate the sender, adjudicate legal timeliness or statutory compliance, decide court merits, or authorize canonical mutation. Even a second-party confirmation of a transaction-specific first review remains a candidate requiring a separate checksum-bound promotion product, targeted validator, complete release gate, and canonical pull request.
 
 A response that supplies only a registered name, date entered as a member, class, or resulting quantity may strengthen the dated holder history. It does not prove that the holding arose from a specific allotment rather than a transfer, nominee arrangement, aggregation, rectification, or another register movement. Allottee identity may be promoted only when one source-addressable instrument expressly links the issuer, named person or vehicle, share class, quantity, and allotment event, or supplies an equivalent transaction-specific entry.
 

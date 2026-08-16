@@ -1,0 +1,38 @@
+{
+  "schema_version": "electric-twin-register-request-response-second-party-review-input@1",
+  "acquisition_id": "ET-ROM-2025-09-01",
+  "review_status": "second_party_review_completed",
+  "reviewed_at": "[UTC ISO-8601 TIMESTAMP]",
+  "review_event_record": "[OPAQUE INDEPENDENT REVIEW EVENT ID]",
+  "reviewer_role": "independent_repository_evidence_reviewer",
+  "independence_attestation": {
+    "original_response_bytes_inspected": true,
+    "all_response_artifacts_reviewed": true,
+    "first_review_manifest_inspected": true,
+    "independent_judgment_asserted": true
+  },
+  "first_review_manifest_sha256": "[FIRST REVIEW MANIFEST SHA-256]",
+  "first_review_manifest_bytes": 1,
+  "overall_assessment": "unresolved",
+  "canonical_recommendation": "preserve_ambiguity_no_promotion",
+  "finding_assessments": [
+    {
+      "finding_id": "[FIRST REVIEW FINDING ID]",
+      "assessment": "unresolved",
+      "source_artifact_path": "[COPIED RESPONSE ARTIFACT FILENAME]",
+      "source_artifact_sha256": "[COPIED RESPONSE ARTIFACT SHA-256]",
+      "source_address": {
+        "kind": "message_part",
+        "locator": "[INDEPENDENT SOURCE-ADDRESSABLE LOCATION]"
+      },
+      "rationale": "[INDEPENDENT REVIEW RATIONALE]",
+      "remaining_ambiguities": [
+        "[REMAINING AMBIGUITY]"
+      ]
+    }
+  ],
+  "review_notes": "[BOUNDED INDEPENDENT REVIEW NOTES]",
+  "second_party_review_required": true,
+  "second_party_review_completed": true,
+  "canonical_mutation_authorized": false
+}

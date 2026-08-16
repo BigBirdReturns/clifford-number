@@ -66,6 +66,18 @@ if (responseAdjudicationRun.status !== 0) {
 assert.equal(responseAdjudicationRun.status, 0,
   'Electric Twin register-request response adjudication test failed');
 
+const responseSecondPartyReviewRun = spawnSync(
+  process.execPath,
+  ['test/electric-twin-register-request-response-second-party-review.test.js'],
+  { encoding: 'utf8' },
+);
+if (responseSecondPartyReviewRun.status !== 0) {
+  console.error(responseSecondPartyReviewRun.stdout);
+  console.error(responseSecondPartyReviewRun.stderr);
+}
+assert.equal(responseSecondPartyReviewRun.status, 0,
+  'Electric Twin register-request response second-party review test failed');
+
 const receipts = fs.readFileSync('data/ledger/receipts.jsonl', 'utf8')
   .split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
 const surfaces = fs.readFileSync('data/ledger/surfaces.jsonl', 'utf8')
