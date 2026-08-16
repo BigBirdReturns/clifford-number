@@ -259,7 +259,13 @@ export function partitionRoutesByGlobalTides(routes,policy){
 const pad2=(value)=>String(value).padStart(2,'0');
 
 export function buildGlobalTideRequest(tide,nowMs=Date.now()){
-  if(tide.record_format!=='jsonl_gzip')throw new Error(`Unsupported global tide format for ${tide.tide_id}: ${tide.record_format}`);
+  const format=String(tide.record_format||'');
+  if(format==='json_catalog'){
+    const url=String(tide.url||'');
+    if(!/^https:\/\//u.test(url))throw new Error(`Global tide ${tide.tide_id} requires an HTTPS catalog URL`);
+    return {tide_id:tide.tide_id,target_minute_utc:null,target_age_seconds:null,heartbeat_minutes:null,publication_guard_minutes:null,heartbeat_offset_minutes:null,timestamp:null,url,method:'GET'};
+  }
+  if(format!=='jsonl_gzip')throw new Error(`Unsupported global tide format for ${tide.tide_id}: ${format}`);
   const template=String(tide.url_template||'');
   if(!template.includes('{timestamp}'))throw new Error(`Global tide ${tide.tide_id} URL template must contain {timestamp}`);
   const heartbeatMinutes=Number(tide.heartbeat_minutes||0);
@@ -276,17 +282,7 @@ export function buildGlobalTideRequest(tide,nowMs=Date.now()){
   const target=new Date(heartbeatStartMs+heartbeatOffsetMinutes*60_000);
   target.setUTCSeconds(0,0);
   const timestamp=`${target.getUTCFullYear()}${pad2(target.getUTCMonth()+1)}${pad2(target.getUTCDate())}${pad2(target.getUTCHours())}${pad2(target.getUTCMinutes())}00`;
-  return {
-    tide_id:tide.tide_id,
-    target_minute_utc:target.toISOString(),
-    target_age_seconds:Math.floor((clock-target.getTime())/1000),
-    heartbeat_minutes:heartbeatMinutes,
-    publication_guard_minutes:publicationGuardMinutes,
-    heartbeat_offset_minutes:heartbeatOffsetMinutes,
-    timestamp,
-    url:template.replace('{timestamp}',timestamp),
-    method:'GET'
-  };
+  return {tide_id:tide.tide_id,target_minute_utc:target.toISOString(),target_age_seconds:Math.floor((clock-target.getTime())/1000),heartbeat_minutes:heartbeatMinutes,publication_guard_minutes:publicationGuardMinutes,heartbeat_offset_minutes:heartbeatOffsetMinutes,timestamp,url:template.replace('{timestamp}',timestamp),method:'GET'};
 }
 
 function globalTideError(message,failure='parse_failure'){
@@ -321,6 +317,23 @@ export function parseGdeltTocPayload(compressed,tide){
   };
 }
 
+export function parseCommonCrawlCatalogPayload(content,tide){
+  if(!Buffer.isBuffer(content)||!content.length)throw globalTideError('Common Crawl global tide returned no catalog content');
+  let records;
+  try{records=JSON.parse(content.toString('utf8'))}catch(error){throw globalTideError(`Common Crawl catalog parse failed: ${error?.message||error}`)}
+  const minimumRecords=Number(tide.minimum_locator_records||1);
+  if(!Array.isArray(records)||records.length<minimumRecords)throw globalTideError(`Common Crawl catalog contained ${Array.isArray(records)?records.length:0} records; required ${minimumRecords}`);
+  const valid=records.filter((record)=>typeof record?.id==='string'&&record.id&&[record['cdx-api'],record['timegate-api'],record.index].some((value)=>typeof value==='string'&&/^https?:\/\//u.test(value)));
+  if(valid.length!==records.length)throw globalTideError(`Common Crawl catalog contained ${valid.length}/${records.length} valid records`);
+  const normalized=Buffer.from(JSON.stringify(valid,null,2)+'\n','utf8');
+  return {compressed_sha256:sha256(content),decompressed:normalized,decompressed_sha256:sha256(normalized),records:valid};
+}
+function parseGlobalTidePayload(content,tide){return tide.record_format==='json_catalog'?parseCommonCrawlCatalogPayload(content,tide):parseGdeltTocPayload(content,tide);}
+function summarizeGlobalTideRecord(record){
+  if(Number.isInteger(record?.ID))return {ID:record.ID,date:record.date,lang:record.lang||null,title:record.title||null,url:record.url};
+  return {id:record?.id||null,name:record?.name||null,index:record?.index||null,cdx_api:record?.['cdx-api']||null,timegate_api:record?.['timegate-api']||null};
+}
+
 function globalTideFileStem(tideId){
   return String(tideId).toLowerCase().replace(/[^a-z0-9]+/gu,'-').replace(/^-|-$/gu,'');
 }
@@ -333,20 +346,20 @@ async function executeGlobalTide(assignment,policy,gate,nowMs){
   const maxCompressedBytes=Number(tide.max_compressed_bytes||policy.execution.default_max_bytes);
   const minimumIntervalMs=Number(tide.minimum_interval_ms||policy.execution.default_host_interval_ms);
   const started_at=new Date().toISOString();
-  const transport=await gate.run(host,minimumIntervalMs,()=>fetchWithRedirects(request.url,{method:'GET',timeoutMs,maxBytes:maxCompressedBytes,userAgent:'CliffordNumber-M04G-GDELT-Tide/1.0 (+https://github.com/BigBirdReturns/clifford-number)'}));
+  const transport=await gate.run(host,minimumIntervalMs,()=>fetchWithRedirects(request.url,{method:'GET',timeoutMs,maxBytes:maxCompressedBytes,userAgent:'CliffordNumber-M04G-Global-Tide/1.0 (+https://github.com/BigBirdReturns/clifford-number)'}));
   let parsed=null;
   let failure=null;
   let parseError=null;
   if(!transport.ok)failure=transport.https_downgrade?'https_downgrade_refused':(transport.status===404?'upstream_failure':classifyFailure(transport));
   else{
-    try{parsed=parseGdeltTocPayload(transport.body,tide)}
+    try{parsed=parseGlobalTidePayload(transport.body,tide)}
     catch(error){failure=error.failure||'parse_failure';parseError=String(error?.message||error)}
   }
   const success=Boolean(transport.ok&&parsed);
   const stem=globalTideFileStem(tide.tide_id);
-  const artifactFiles={compressed:`m04g-source-ecology-v2-${stem}.json.gz`,decompressed:`m04g-source-ecology-v2-${stem}.json`};
+  const artifactFiles=tide.record_format==='json_catalog'?{compressed:`m04g-source-ecology-v2-${stem}-catalog.json`,decompressed:`m04g-source-ecology-v2-${stem}-catalog.normalized.json`}:{compressed:`m04g-source-ecology-v2-${stem}.json.gz`,decompressed:`m04g-source-ecology-v2-${stem}.json`};
   const attempt={attempt:1,url:request.url,method:'GET',started_at,status:transport.status,final_url:transport.final_url,failure,metadata_only:false,bytes:transport.body?.length||0,global_tide_id:tide.tide_id};
-  const summary=parsed?JSON.stringify(parsed.records.slice(0,3).map((record)=>({ID:record.ID,date:record.date,lang:record.lang||null,title:record.title||null,url:record.url}))).slice(0,600):null;
+  const summary=parsed?JSON.stringify(parsed.records.slice(0,3).map(summarizeGlobalTideRecord)).slice(0,600):null;
   const shared={
     success,
     content_success:success,
