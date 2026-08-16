@@ -1,0 +1,74 @@
+st receipt={
+    tide_id:tide.tide_id,
+    mode:tide.mode,
+    match:tide.match,
+    network_request_count:1,
+    fallback_route_request_count:0,
+    route_ids:routes.map((route)=>route.route_id),
+    basin_ids:routes.map((route)=>route.basin_id),
+    target_minute_utc:request.target_minute_utc,
+    requested_url:request.url,
+    status:transport.status,
+    final_url:transport.final_url,
+    headers:transport.headers,
+    compressed_bytes:transport.body?.length||0,
+    compressed_sha256:parsed?.compressed_sha256||null,
+    decompressed_bytes:parsed?.decompressed.length||0,
+    decompressed_sha256:parsed?.decompressed_sha256||null,
+    locator_record_count:parsed?.records.length||0,
+    route_successes:observations.filter((row)=>row.route_success).length,
+    content_successes:observations.filter((row)=>row.content_success).length,
+    success,
+    failure,
+    parse_error:parseError,
+    artifacts:artifactFiles
+  };
+  return {observations,receipt,compressed:transport.body||Buffer.alloc(0),decompressed:parsed?.decompressed||Buffer.alloc(0)};
+}
+
+async function executeGlobalTides(assignments,policy,gate,nowMs){
+  const observations=[];
+  const receipts=[];
+  const artifacts=[];
+  for(const assignment of assignments){
+    const result=await executeGlobalTide(assignment,policy,gate,nowMs);
+    observations.push(...result.observations);
+    receipts.push(result.receipt);
+    artifacts.push({receipt:result.receipt,compressed:result.compressed,decompressed:result.decompressed});
+  }
+  return {observations,receipts,artifacts};
+}
+'''
+
+
+def patch_library(root: Path) -> None:
+    path = root / LIB_PATH
+    text = path.read_text()
+    text = replace_once(
+        text,
+        "import path from 'node:path';\n",
+        "import path from 'node:path';\nimport zlib from 'node:zlib';\n",
+        'zlib import',
+    )
+    text = replace_once(text, '\nclass HostGate{\n', f'\n{GLOBAL_TIDE_CODE}\nclass HostGate{{\n', 'global tide implementation')
+    text = replace_once(
+        text,
+        "headers:{'user-agent':userAgent,'accept':'text/html,application/json,application/xml,text/xml,text/plain,application/pdf,*/*;q=0.1'}",
+        "headers:{'user-agent':userAgent,'accept':'application/gzip,application/octet-stream,text/html,application/json,application/xml,text/xml,text/plain,application/pdf,*/*;q=0.1'}",
+        'global tide accept header',
+    )
+    text = replace_once(
+        text,
+        "export async function runSourceEcologyOrbit(root,policy,{outputDir,live=true}={}){\n  const discovery=discoverFrozenRoutes(root,{expectedRoutes:policy.denominator.expected_routes,expectedBasins:policy.denominator.expected_basins,expectedPerBasin:policy.denominator.expected_routes_per_basin});\n  if(!live)return {discovery,policy};\n  const gate=new HostGate();\n  const observations=await mapLimit(discovery.routes,policy.execution.global_concurrency,(route)=>executeRoute(route,policy,gate));\n",
+        "export async function runSourceEcologyOrbit(root,policy,{outputDir,live=true,nowMs=Date.now()}={}){\n  const discovery=discoverFrozenRoutes(root,{expectedRoutes:policy.denominator.expected_routes,expectedBasins:policy.denominator.expected_basins,expectedPerBasin:policy.denominator.expected_routes_per_basin});\n  if(!live)return {discovery,policy};\n  const gate=new HostGate();\n  const partition=partitionRoutesByGlobalTides(discovery.routes,policy);\n  const globalTideResult=await executeGlobalTides(partition.tides,policy,gate,nowMs);\n  const ordinaryObservations=await mapLimit(partition.ordinary_routes,policy.execution.global_concurrency,(route)=>executeRoute(route,policy,gate));\n  const observationMap=new Map([...globalTideResult.observations,...ordinaryObservations].map((row)=>[row.route_id,row]));\n  const observations=discovery.routes.map((route)=>observationMap.get(route.route_id));\n  if(observations.some((row)=>!row))throw new Error('Global tide partition did not return one observation for every frozen route');\n",
+        'orbit partition',
+    )
+    text = replace_once(
+        text,
+        "  const receiptCore={schema_version:'m04g-source-ecology-v2-orbit@1',generated_at:new Date().toISOString(),registry_file:discovery.registry_file,registry_path:discovery.registry_path,policy_sha256:sha256(JSON.stringify(policy)),route_ids:discovery.routes.map((row)=>row.route_id),summary,by_basin:byBasin,failure_counts:failureCounts};\n",
+        "  const receiptCore={schema_version:'m04g-source-ecology-v2-orbit@1',generated_at:new Date().toISOString(),registry_file:discovery.registry_file,registry_path:discovery.registry_path,policy_sha256:sha256(JSON.stringify(policy)),route_ids:discovery.routes.map((row)=>row.route_id),summary,by_basin:byBasin,failure_counts:failureCounts,global_tides:globalTideResult.receipts};\n",
+        'receipt global tide ledger',
+    )
+    text = replace_once(
+        text,
+        "    fs.writeFileSync(path.join(outputDir,'m04g-source-ecology-v2-basin-health.json'),JSON.stringify(byBasin,null,2)+'\\n');\n    
