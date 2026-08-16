@@ -1,0 +1,58 @@
+name: TEMP M-04G residual replacement probe v4
+
+on:
+  push:
+    branches:
+      - agent/m04g-residual-official-fallback-probe-v1
+    paths:
+      - .github/probes/m04g-residual-replacement-probe-v4.mjs.gz.b64
+      - .github/workflows/temporary-m04g-residual-replacement-probe-v4.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporary-m04g-residual-replacement-probe-v4-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out probe branch
+        uses: actions/checkout@v4
+
+      - name: Verify and run corrected bounded probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          PAYLOAD=.github/probes/m04g-residual-replacement-probe-v4.mjs.gz.b64
+          SCRIPT=/tmp/m04g-residual-replacement-probe-v4.mjs
+          OUT=qualification/m04g-residual-replacement-probe-v4
+          echo "6e7fee506af542836acee18f4b0f8e28a46a4afc00fbfbbdc9cfd62171652118  ${PAYLOAD}" | sha256sum -c -
+          base64 --decode "${PAYLOAD}" | gunzip > "${SCRIPT}"
+          echo "0cd6afa403672df650f6bc7911b2743b1d2bc63ab139fc45b339accb87928dc1  ${SCRIPT}" | sha256sum -c -
+          rm -rf "${OUT}"
+          node "${SCRIPT}" "${OUT}"
+
+      - name: Publish receipt summary
+        if: always()
+        shell: bash
+        run: |
+          SUMMARY=qualification/m04g-residual-replacement-probe-v4/summary.md
+          if [ -f "${SUMMARY}" ]; then
+            cat "${SUMMARY}" >> "${GITHUB_STEP_SUMMARY}"
+          else
+            printf '%s\n' '# M-04G corrected replacement probe failed before receipt materialization' >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
+      - name: Upload corrected bounded ledger
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-residual-replacement-probe-v4-${{ github.run_id }}
+          path: qualification/m04g-residual-replacement-probe-v4
+          if-no-files-found: error
+          retention-days: 30
