@@ -1,0 +1,154 @@
+name: TEMP M-04G combined source-health materializer v2
+
+on:
+  push:
+    branches:
+      - agent/m04g-six-route-official-fallback-probe-v1
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out controller branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Materialize and qualify combined candidate
+        id: materialize
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 --decode .github/probes/m04g_combined_source_health_materializer_v2.mjs.gz.b64 | gzip -d > /tmp/m04g_combined_source_health_materializer_v2.mjs
+          printf '%s  %s\n' '629d1995e97adc8ff31bd1544e290b3123fa542d52eaaaaecf8e2f625fea2a5a' '/tmp/m04g_combined_source_health_materializer_v2.mjs' | sha256sum --check --status
+          node --check /tmp/m04g_combined_source_health_materializer_v2.mjs
+          node /tmp/m04g_combined_source_health_materializer_v2.mjs
+
+      - name: Open or update draft pull request
+        if: always() && hashFiles('qualification/outcome.env') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          source qualification/outcome.env
+          if [ "$STATUS" != success ]; then
+            exit 0
+          fi
+
+          node --input-type=module <<'NODE' > /tmp/m04g-combined-source-health-pr.md
+          import fs from 'node:fs';
+          const d=JSON.parse(fs.readFileSync('qualification/decision.json','utf8'));
+          const cc=d.common_crawl_preflight;
+          console.log('This pull request is a bounded M-04G source-health candidate. It preserves the frozen 96-route denominator and does not promote route reachability into evidentiary sufficiency or answer effectiveness.');
+          console.log('');
+          console.log('The operating actors are the twelve preserved Common Crawl `ocean_discovery` routes, one official Common Crawl catalog object, the clean source-native fallback routes admitted by runtime-equivalent preflight, the remaining ordinary routes, and issue #345 as the continuing ecological ledger.');
+          console.log('');
+          console.log('The mechanism removes the twelve Common Crawl projections from per-route execution, performs one bounded GET of `collinfo.json`, validates every catalog record, and returns twelve deterministic locator-only receipts under their original route IDs and basin assignments. The policy also binds only those official fallbacks that survived the production user agent, redirect, content, challenge-page, and byte-limit checks. The previously refused ESCWA document substitutions are absent.');
+          console.log('');
+          console.log('```text');
+          console.log(`qualification run:              ${d.run_id}`);
+          console.log(`base SHA:                       ${d.base_sha}`);
+          console.log(`candidate SHA:                  ${d.candidate_sha}`);
+          console.log(`selected official fallbacks:    ${d.selected.length}`);
+          console.log(`Common Crawl catalog status:    ${cc.status}`);
+          console.log(`Common Crawl catalog bytes:     ${cc.bytes}`);
+          console.log(`Common Crawl catalog SHA-256:   ${cc.body_sha256}`);
+          console.log(`baseline route/content:         ${d.baseline.route_successes} / ${d.baseline.content_successes}`);
+          console.log(`candidate route/content:        ${d.candidate.route_successes} / ${d.candidate.content_successes}`);
+          console.log(`baseline healthy basins:        ${d.baseline.healthy_basins} / 12`);
+          console.log(`candidate healthy basins:       ${d.candidate.healthy_basins} / 12`);
+          console.log(`candidate unclassified failures:${d.candidate.unclassified_failures}`);
+          console.log(`candidate coverage healthy:     ${d.candidate.coverage_healthy}`);
+          console.log(`candidate receipt proof:        ${d.candidate_receipt_proof}`);
+          console.log('```');
+          console.log('');
+          console.log('The candidate changes exactly three paths:');
+          console.log('');
+          for(const file of d.changed_files)console.log(`- \`${file}\``);
+          console.log('');
+          console.log('Selected official route bindings:');
+          console.log('');
+          for(const row of d.selected)console.log(`- \`${row.route_id}\` → \`${row.fallback.url}\` (${row.fallback.source_class}; HTTP ${row.status}; ${row.body_sha256})`);
+          console.log('');
+          console.log('The evidence tier is two hosted probe censuses, runtime-equivalent preflight, deterministic repository validation, the complete release suite, and checksum-bound baseline and candidate orbits. The venue is canonical GitHub Actions and the named official services. The target is route, content, and coverage health. The upside is source-native recovery without denominator or threshold changes. The downside is continuing external-service variance. The failure mode is treating mechanically healthy locator or repository content as claim-level evidence.');
+          console.log('');
+          console.log('The controlling question is whether this exact three-file execution repair should be admitted while evidentiary sufficiency and answer effectiveness remain separately false.');
+          NODE
+
+          pr_number="$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$CANDIDATE_BRANCH" --state open --json number --jq '.[0].number // empty')"
+          if [ -z "$pr_number" ]; then
+            gh pr create \
+              --repo "$GITHUB_REPOSITORY" \
+              --draft \
+              --base main \
+              --head "$CANDIDATE_BRANCH" \
+              --title "Repair Common Crawl tide and official fallback coverage" \
+              --body-file /tmp/m04g-combined-source-health-pr.md
+            pr_number="$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$CANDIDATE_BRANCH" --state open --json number --jq '.[0].number // empty')"
+          else
+            gh pr edit \
+              --repo "$GITHUB_REPOSITORY" \
+              "$pr_number" \
+              --title "Repair Common Crawl tide and official fallback coverage" \
+              --body-file /tmp/m04g-combined-source-health-pr.md
+          fi
+          test -n "$pr_number"
+          printf "PR_NUMBER='%s'\n" "$pr_number" >> qualification/outcome.env
+
+      - name: Reconcile issue 345
+        if: always() && hashFiles('qualification/outcome.env') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          source qualification/outcome.env
+          if [ "$STATUS" = success ]; then
+            cat > /tmp/m04g-combined-source-health-issue.md <<EOF
+          ## M-04G combined source-health candidate materialized
+
+          The bounded materializer qualified candidate \`$CANDIDATE_SHA\` from canonical base \`$BASE_SHA\` and opened draft PR #${PR_NUMBER:-unknown}. One official Common Crawl catalog object, SHA-256 \`$COMMON_CRAWL_SHA256\`, was projected into all twelve preserved discovery routes, and $SELECTED_COUNT runtime-equivalent official fallbacks were bound without reintroducing the refused ESCWA substitutions.
+
+          The live 96-route candidate orbit produced $ROUTE_SUCCESSES route successes, $CONTENT_SUCCESSES content successes, $HEALTHY_BASINS healthy basins, zero unclassified failures, and proof SHA-256 \`$PROOF_SHA256\`. The denominator, route identities, thresholds, failure taxonomy, direct-voice prohibition, and separation among source health, evidentiary sufficiency, and answer effectiveness remain unchanged.
+
+          The controlling question is whether the exact three-file candidate should advance through review while claim-level adjudication remains outside this source-health decision.
+          EOF
+          else
+            cat > /tmp/m04g-combined-source-health-issue.md <<EOF
+          ## M-04G combined source-health materializer refusal
+
+          Run \`${GITHUB_RUN_ID}\` refused candidate publication from base \`${BASE_SHA:-unknown}\`: ${REASON:-unknown failure}. No product branch or pull request was authorized by this run, and the frozen denominator and thresholds remain unchanged.
+          EOF
+          fi
+          gh issue comment 345 --repo "$GITHUB_REPOSITORY" --body-file /tmp/m04g-combined-source-health-issue.md
+
+      - name: Upload qualification receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-combined-source-health-materializer-v2-${{ github.run_id }}
+          path: qualification/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Enforce materializer outcome
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          source qualification/outcome.env
+          test "$STATUS" = success
