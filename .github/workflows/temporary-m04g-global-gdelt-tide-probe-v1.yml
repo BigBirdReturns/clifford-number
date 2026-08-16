@@ -1,0 +1,63 @@
+name: TEMP M-04G GDELT global tide probe v1
+
+on:
+  push:
+    branches:
+      - agent/m04g-global-gdelt-tide-probe-v1
+    paths:
+      - '.github/probes/m04g_global_gdelt_tide_probe_v1.mjs'
+      - '.github/workflows/temporary-m04g-global-gdelt-tide-probe-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Check out bounded probe
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Run one-request GDELT global tide probe
+        run: node .github/probes/m04g_global_gdelt_tide_probe_v1.mjs
+      - name: Render probe summary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f build/m04g-gdelt-global-tide-probe-v1/ledger.json ]; then
+            printf '%s\n' '# M-04G GDELT global tide probe' '' 'No ledger was produced.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const ledger=JSON.parse(fs.readFileSync('build/m04g-gdelt-global-tide-probe-v1/ledger.json','utf8'));
+          const lines=[
+            '# M-04G GDELT global tide probe',
+            '',
+            `- Candidate authorized: ${ledger.candidate_authorized}`,
+            `- Network requests: ${ledger.network_request_count}`,
+            `- Response status: ${ledger.response.status}`,
+            `- Response bytes: ${ledger.response.bytes}`,
+            `- Response SHA-256: ${ledger.response.sha256}`,
+            `- Articles: ${ledger.response.article_count}`,
+            `- Route projections: ${ledger.route_successes}/12`,
+            `- Content projections: ${ledger.content_successes}/12`,
+            `- Non-empty semantic projections: ${ledger.semantic_projections_nonempty}/12`,
+          ];
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,`${lines.join('\n')}\n`);
+          NODE
+      - name: Upload GDELT tide receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-gdelt-global-tide-probe-v1-${{ github.run_id }}
+          path: build/m04g-gdelt-global-tide-probe-v1/
+          if-no-files-found: error
+          retention-days: 30
