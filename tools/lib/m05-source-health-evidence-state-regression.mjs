@@ -9,6 +9,12 @@ export const EVIDENCE_BOOLEAN_GATES=[
   'promotion_authority'
 ];
 
+export const EVIDENCE_SUFFICIENCY_GUARDS=[
+  'source_health_alone_is_sufficient',
+  'official_host_alone_is_sufficient',
+  'content_success_alone_is_sufficient'
+];
+
 export const ANSWER_DIMENSIONS=[
   'pre_action_timing',
   'evidence_access',
@@ -16,6 +22,13 @@ export const ANSWER_DIMENSIONS=[
   'effective_remedy',
   'durability',
   'practical_exit_or_governance'
+];
+
+export const ANSWER_SUFFICIENCY_GUARDS=[
+  'formal_policy_alone_is_sufficient',
+  'appeal_without_stay_is_sufficient',
+  'human_in_loop_alone_is_sufficient',
+  'vendor_replacement_without_operational_continuity_is_sufficient'
 ];
 
 const isTrue=(value)=>value===true;
@@ -36,6 +49,9 @@ export function evaluateObservation(observation,contract){
   for(const gate of evidenceContract.required_boolean_gates){
     if(!isTrue(evidence[gate]))evidenceFailures.push(gate);
   }
+  for(const guard of EVIDENCE_SUFFICIENCY_GUARDS){
+    if(evidenceContract[guard]!==false)evidenceFailures.push(`contract_guard:${guard}`);
+  }
 
   const claimEvidenceAdmissible=evidenceFailures.length===0;
   const answerFailures=[];
@@ -46,6 +62,9 @@ export function evaluateObservation(observation,contract){
   if(answerContract.composed_durable_answer_required&&!isTrue(answer.composed_durable_answer))answerFailures.push('composed_durable_answer');
   for(const dimension of answerContract.required_dimensions){
     if(!isTrue(answer.dimensions?.[dimension]))answerFailures.push(`dimension:${dimension}`);
+  }
+  for(const guard of ANSWER_SUFFICIENCY_GUARDS){
+    if(answerContract[guard]!==false)answerFailures.push(`contract_guard:${guard}`);
   }
 
   const answerEffective=answerFailures.length===0;
@@ -68,7 +87,13 @@ export function evaluateRegression(contract){
   const domains=contract.domain_observations.map((row)=>evaluateObservation(row,contract));
   const controls=contract.controls.map((row)=>evaluateObservation(row,contract));
   const admissibleDomainEvidence=domains.filter((row)=>row.claim_evidence_admissible&&row.repository_promotion_allowed);
-  const effectiveDomainAnswers=domains.filter((row)=>row.answer_effective&&row.repository_promotion_allowed);
+  const effectiveDomainAnswerEntries=domains
+    .map((evaluation,index)=>({evaluation,observation:contract.domain_observations[index]}))
+    .filter(({evaluation})=>evaluation.answer_effective&&evaluation.repository_promotion_allowed);
+  const effectiveDomainAnswers=effectiveDomainAnswerEntries.map(({evaluation})=>evaluation);
+  const effectiveJurisdictions=new Set(effectiveDomainAnswerEntries
+    .map(({observation})=>observation.jurisdiction)
+    .filter((value)=>value&&value!=='unassigned'));
   const sourceHealthHealthy=
     contract.source_health_receipt.observed.route_healthy===true&&
     contract.source_health_receipt.observed.content_healthy===true&&
@@ -81,11 +106,8 @@ export function evaluateRegression(contract){
     admissible_domain_evidence_records:admissibleDomainEvidence.length,
     effective_domain_answers:effectiveDomainAnswers.length,
     cross_domain_regression_completed:
-      admissibleDomainEvidence.length>=contract.answer_effectiveness_contract.minimum_observed_domains&&
-      new Set(contract.domain_observations
-        .filter((row,index)=>domains[index].repository_promotion_allowed)
-        .map((row)=>row.jurisdiction)
-        .filter((value)=>value&&value!=='unassigned')).size>=contract.answer_effectiveness_contract.minimum_observed_jurisdictions,
+      effectiveDomainAnswers.length>=contract.answer_effectiveness_contract.minimum_observed_domains&&
+      effectiveJurisdictions.size>=contract.answer_effectiveness_contract.minimum_observed_jurisdictions,
     evidentiary_sufficiency:admissibleDomainEvidence.length>0,
     answer_effectiveness:effectiveDomainAnswers.length>0,
     domains,

@@ -2,7 +2,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {evaluateObservation,evaluateRegression} from './lib/m05-source-health-evidence-state-regression.mjs';
+import {
+  ANSWER_DIMENSIONS,
+  ANSWER_SUFFICIENCY_GUARDS,
+  EVIDENCE_BOOLEAN_GATES,
+  EVIDENCE_SUFFICIENCY_GUARDS,
+  evaluateObservation,
+  evaluateRegression
+} from './lib/m05-source-health-evidence-state-regression.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const read=(rel)=>JSON.parse(fs.readFileSync(path.join(root,rel),'utf8'));
@@ -46,6 +53,26 @@ if(frozen.selected_routes!==96||frozen.basins!==12||frozen.routes_per_basin!==8)
 if(frozen.minimum_route_success_rate!==0.75||frozen.minimum_content_success_rate!==0.65||frozen.required_healthy_basins!==12||frozen.maximum_unclassified_failures!==0)fail('frozen threshold drift');
 if(frozen.route_identifiers_preserved!==true||frozen.basin_assignments_preserved!==true||frozen.failure_taxonomy_preserved!==true)fail('transport identity boundary weakened');
 if(frozen.direct_voice_bulk_polling_allowed!==false||frozen.locator_only_receipts_may_promote_to_claim_evidence!==false)fail('access or promotion boundary weakened');
+
+const evidenceContract=contract.evidence_admission_contract;
+if(!same(evidenceContract.allowed_source_classes,[
+  'official_primary_record',
+  'official_adjudicative_record',
+  'source_native_primary_record'
+]))fail('evidence source-class contract drift');
+if(!same(evidenceContract.required_boolean_gates,EVIDENCE_BOOLEAN_GATES))fail('evidence boolean-gate contract drift');
+if(evidenceContract.required_promotion_ceiling!=='claim_evidence')fail('evidence promotion ceiling drift');
+for(const guard of EVIDENCE_SUFFICIENCY_GUARDS){
+  if(evidenceContract[guard]!==false)fail(`evidence sufficiency guard ${guard} weakened`);
+}
+
+const answerContract=contract.answer_effectiveness_contract;
+if(answerContract.minimum_observed_domains!==3||answerContract.minimum_observed_jurisdictions!==2)fail('answer denominator drift');
+if(!same(answerContract.required_dimensions,ANSWER_DIMENSIONS))fail('answer dimension contract drift');
+if(answerContract.observed_outcome_required!==true||answerContract.composed_durable_answer_required!==true)fail('answer outcome or composition gate weakened');
+for(const guard of ANSWER_SUFFICIENCY_GUARDS){
+  if(answerContract[guard]!==false)fail(`answer sufficiency guard ${guard} weakened`);
+}
 
 const domainIds=contract.domain_observations.map((row)=>row.domain_id);
 if(!same(domainIds,['APC-ADMIN-01','APC-COERCION-01','APC-WORK-01','APC-EXIT-01','APC-VALUE-01']))fail('cross-domain denominator drift');
