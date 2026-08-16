@@ -1,0 +1,300 @@
+name: Temporary M-04G substantive official fallback materializer v2
+
+on:
+  push:
+    branches:
+      - candidate/m04g-substantive-official-fallback-v2
+    paths:
+      - '.github/materializers/m04g-substantive-official-fallback-materializer-v2.mjs'
+      - '.github/workflows/temporary-m04g-substantive-official-fallback-materializer-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-m04g-substantive-official-fallback-materializer-v2
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      BASE_SHA: 23ec13c560ac08aeed0942c75c9f516e76aca3bc
+      TARGET_BRANCH: candidate/m04g-substantive-official-fallback-v2
+    steps:
+      - name: Checkout bounded candidate branch
+        uses: actions/checkout@v4
+        with:
+          ref: candidate/m04g-substantive-official-fallback-v2
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify bounded branch and base
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME}" = "${TARGET_BRANCH}"
+          test "$(git merge-base HEAD "${BASE_SHA}")" = "${BASE_SHA}"
+          test "$(git rev-parse "${BASE_SHA}^{commit}")" = "${BASE_SHA}"
+          printf '%s\n' \
+            .github/materializers/m04g-substantive-official-fallback-materializer-v1.mjs \
+            .github/materializers/m04g-substantive-official-fallback-materializer-v2.mjs \
+            .github/workflows/temporary-m04g-substantive-official-fallback-materializer-v1.yml \
+            .github/workflows/temporary-m04g-substantive-official-fallback-materializer-v2.yml \
+            | sort > /tmp/expected-temporary-paths
+          git diff --name-only "${BASE_SHA}" | sort > /tmp/actual-temporary-paths
+          diff -u /tmp/expected-temporary-paths /tmp/actual-temporary-paths
+          echo "TEMP_HEAD=$(git rev-parse HEAD)" >> "${GITHUB_ENV}"
+
+      - name: Apply permanent source, policy, and regression repair
+        run: node .github/materializers/m04g-substantive-official-fallback-materializer-v2.mjs
+
+      - name: Run focused deterministic qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/build-m05-answerable-power-sprint-03-leg-07.mjs
+          node tools/validate-m05-answerable-power-sprint-03-leg-07.mjs
+          node test/m05-answerable-power-sprint-03-leg-07.test.js
+
+      - name: Run frozen 96-route live orbit
+        run: node tools/run-m04g-source-ecology-v2.mjs --output-dir qualification/m04g-source-ecology-v2-live
+
+      - name: Print targeted route diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+
+          const receipt=JSON.parse(fs.readFileSync('qualification/m04g-source-ecology-v2-live/m04g-source-ecology-v2-receipt.json','utf8'));
+          const observations=JSON.parse(fs.readFileSync('qualification/m04g-source-ecology-v2-live/m04g-source-ecology-v2-observations.json','utf8'));
+          const targetIds=new Set([
+            'M04G-GP005','M04G-GP011','M04G-GP012','M04G-GP013','M04G-GP014','M04G-GP020',
+            'M04G-GP021','M04G-GP027','M04G-GP029','M04G-GP044','M04G-GP046','M04G-GP047',
+            'M04G-GP054','M04G-GP055','M04G-GP075','M04G-GP078','M04G-GP083','M04G-GP092'
+          ]);
+          const targeted=observations
+            .filter((row)=>targetIds.has(row.route_id))
+            .map((row)=>({
+              route_id:row.route_id,
+              basin_id:row.basin_id,
+              route_success:row.route_success,
+              content_success:row.content_success,
+              fallback_used:row.fallback_used,
+              selected_candidate:row.selected_candidate,
+              requested_url:row.result?.requested_url||null,
+              final_url:row.result?.final_url||null,
+              method:row.result?.method||null,
+              final_method:row.result?.final_method||null,
+              source_class:row.result?.source_class||null,
+              bytes:row.result?.bytes||0,
+              content_sha256:row.result?.content_sha256||null,
+              request_body_sha256:row.result?.request_body_sha256||null,
+              failure:row.failure||row.result?.failure||null,
+              rejection_reason:row.result?.rejection_reason||null
+            }));
+          console.log(JSON.stringify({summary:receipt.summary,by_basin:receipt.by_basin,targeted},null,2));
+          NODE
+
+      - name: Adjudicate substantive official fallback transaction
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+
+          const receipt=JSON.parse(fs.readFileSync('qualification/m04g-source-ecology-v2-live/m04g-source-ecology-v2-receipt.json','utf8'));
+          const observations=JSON.parse(fs.readFileSync('qualification/m04g-source-ecology-v2-live/m04g-source-ecology-v2-observations.json','utf8'));
+          const expected=new Map([
+            ['M04G-GP005',{host_suffix:'oecd.org',method:'GET',requested_url:'https://sdmx.oecd.org/public/rest/data/OECD.SDD.STES,DSD_STES@DF_CLI/.M.LI...AA...H?startPeriod=2023-02&dimensionAtObservation=AllDimensions&format=csvfilewithlabels'}],
+            ['M04G-GP011',{host_suffix:'federalregister.gov',method:'GET',requested_url:'https://www.federalregister.gov/api/v1/documents.json?per_page=5&order=newest'}],
+            ['M04G-GP012',{host_suffix:'regulations.gov',method:'GET',requested_url:'https://api.regulations.gov/v4/documents?filter%5BsearchTerm%5D=artificial%20intelligence&page%5Bsize%5D=5&api_key=DEMO_KEY'}],
+            ['M04G-GP013',{host_suffix:'congress.gov',method:'GET',requested_url:'https://www.congress.gov/rss/most-viewed-bills.xml'}],
+            ['M04G-GP014',{host_suffix:'usaspending.gov',method:'POST',requested_url:'https://api.usaspending.gov/api/v2/search/spending_by_award/'}],
+            ['M04G-GP020',{host_suffix:'iadb.org',method:'GET',requested_url:'https://data.iadb.org/dataset/summary-dataset-water-and-sanitation-tariffs-in-latin-america'}],
+            ['M04G-GP021',{host_suffix:'mercosur.int',method:'GET',requested_url:'https://www.mercosur.int/feed/'}],
+            ['M04G-GP027',{host_suffix:'europa.eu',method:'POST',requested_url:'https://publications.europa.eu/webapi/rdf/sparql'}],
+            ['M04G-GP029',{host_suffix:'europa.eu',method:'POST',requested_url:'https://api.ted.europa.eu/v3/notices/search'}],
+            ['M04G-GP044',{host_suffix:'echr.coe.int',method:'GET',requested_url:'https://hudoc.echr.coe.int/app/query/results?query=contentsitename%3AECHR&select=itemid%2Cdocname%2Cdocumentcollectionid2&sort=&start=0&length=10'}],
+            ['M04G-GP046',{host_suffix:'kmu.gov.ua',method:'GET',requested_url:'https://www.kmu.gov.ua/'}],
+            ['M04G-GP047',{host_suffix:'prozorro.gov.ua',method:'GET',requested_url:'https://public-api.prozorro.gov.ua/api/0/tenders?opt_fields=status,dateCreated,procuringEntity'}],
+            ['M04G-GP054',{host_suffix:'u.ae',method:'GET',requested_url:'https://u.ae/'}],
+            ['M04G-GP055',{host_suffix:'gov.il',method:'GET',requested_url:'https://data.gov.il/api/3/action/package_search?q=government&rows=5'}],
+            ['M04G-GP075',{host_suffix:'e-gov.go.jp',method:'GET',requested_url:'https://laws.e-gov.go.jp/api/1/lawdata/405AC0000000088'}],
+            ['M04G-GP078',{host_suffix:'korea.net',method:'GET',requested_url:'https://french.korea.net/koreanet/rss/news/2'}],
+            ['M04G-GP083',{host_suffix:'asean.org',method:'GET',requested_url:'https://asean.org/feed/'}],
+            ['M04G-GP092',{host_suffix:'legislation.gov.au',method:'GET',requested_url:'https://www.legislation.gov.au/'}]
+          ]);
+          const failures=[];
+          const s=receipt.summary;
+          if(s.selected!==96)failures.push(`selected ${s.selected}/96`);
+          if(s.route_successes<72)failures.push(`route successes ${s.route_successes}/72`);
+          if(s.content_successes<63)failures.push(`content successes ${s.content_successes}/63`);
+          if(s.healthy_basins!==12)failures.push(`healthy basins ${s.healthy_basins}/12`);
+          if(s.unclassified_failures!==0)failures.push(`unclassified failures ${s.unclassified_failures}`);
+          if(s.coverage_healthy!==true)failures.push('coverage_healthy is not true');
+          if(receipt.route_ids.length!==96||new Set(receipt.route_ids).size!==96)failures.push('frozen route identity drift');
+
+          const selected=[];
+          for(const [routeId,contract] of expected){
+            const row=observations.find((entry)=>entry.route_id===routeId);
+            if(!row){failures.push(`${routeId} missing`);continue}
+            const requestedUrl=row.result?.requested_url||'';
+            const finalUrl=row.result?.final_url||'';
+            let finalHost='';
+            try{finalHost=new URL(finalUrl).hostname}catch{}
+            if(!row.route_success||!row.content_success)failures.push(`${routeId} did not return admitted content`);
+            if(row.fallback_used!==true||Number(row.selected_candidate||0)<1)failures.push(`${routeId} did not use its bounded fallback`);
+            if(requestedUrl!==contract.requested_url)failures.push(`${routeId} selected ${requestedUrl||'none'} instead of ${contract.requested_url}`);
+            if(row.result?.method!==contract.method)failures.push(`${routeId} used ${row.result?.method||'none'} instead of ${contract.method}`);
+            if(!(finalHost===contract.host_suffix||finalHost.endsWith(`.${contract.host_suffix}`)))failures.push(`${routeId} escaped ${contract.host_suffix}: ${finalHost||'none'}`);
+            if(!row.result?.content_sha256)failures.push(`${routeId} lacks a content hash`);
+            if(contract.method==='POST'&&!row.result?.request_body_sha256)failures.push(`${routeId} lacks a request body hash`);
+            selected.push({
+              route_id:routeId,
+              basin_id:row.basin_id,
+              requested_url:requestedUrl,
+              final_url:finalUrl,
+              method:row.result?.method||null,
+              final_method:row.result?.final_method||null,
+              source_class:row.result?.source_class||null,
+              bytes:row.result?.bytes||0,
+              content_sha256:row.result?.content_sha256||null,
+              request_body_sha256:row.result?.request_body_sha256||null,
+              selected_candidate:row.selected_candidate
+            });
+          }
+          if(new Set(selected.map((row)=>row.requested_url)).size!==selected.length)failures.push('selected fallback URLs are not distinct');
+          if(new Set(selected.map((row)=>row.content_sha256)).size!==selected.length)failures.push('selected fallback body hashes are not distinct');
+          const basinsBelowFloor=receipt.by_basin.filter((row)=>!row.healthy||row.route_successes<4||row.content_successes<4);
+          if(basinsBelowFloor.length)failures.push(`basins below frozen floor: ${basinsBelowFloor.map((row)=>row.basin_id).join(',')}`);
+
+          const core={
+            schema_version:'m04g-substantive-official-fallback-decision@2',
+            generated_at:new Date().toISOString(),
+            workflow_run_id:process.env.GITHUB_RUN_ID,
+            commit_sha:process.env.GITHUB_SHA,
+            base_sha:process.env.BASE_SHA,
+            receipt_proof_sha256:receipt.proof_sha256,
+            summary:s,
+            selected,
+            authorized:failures.length===0,
+            authorization_failures:failures,
+            qualification_inputs:{
+              residual_probe:{run_id:'31968340268',artifact_digest:'sha256:2b6c2444a8fb8271e71355616050d7188e9ae4d845066411ff8e1ce70a4482c4'},
+              last_two_parallel_probe:{run_id:'31969254954',artifact_digest:'sha256:3ed484b970dac779ebfcedd5cc777dcdb65664fbd78659d0e1902bcd2a5806c3'},
+              duplicate_hudoc_candidate_replaced_by_native_kmu_route:true
+            },
+            qualified_blobs:{
+              policy_sha256:crypto.createHash('sha256').update(fs.readFileSync('data/project/m04g-source-ecology-v2-policy.json')).digest('hex'),
+              library_sha256:crypto.createHash('sha256').update(fs.readFileSync('tools/lib/m04g-source-ecology-v2.mjs')).digest('hex'),
+              regression_sha256:crypto.createHash('sha256').update(fs.readFileSync('test/m05-answerable-power-sprint-03-leg-07.test.js')).digest('hex')
+            },
+            boundaries:{
+              denominator_changed:false,
+              route_identity_changed:false,
+              thresholds_changed:false,
+              content_classifier_weakened:false,
+              access_control_bypassed:false,
+              metadata_counted_as_content:false,
+              evidentiary_sufficiency_claimed:false,
+              answer_effectiveness_claimed:false,
+              issue_345_may_close_before_merge:false
+            }
+          };
+          const decision={...core,decision_sha256:crypto.createHash('sha256').update(JSON.stringify(core)).digest('hex')};
+          fs.writeFileSync('qualification/m04g-substantive-official-fallback-decision-v2.json',`${JSON.stringify(decision,null,2)}\n`);
+          console.log(JSON.stringify({summary:s,selected,authorization_failures:failures,decision_sha256:decision.decision_sha256},null,2));
+          if(failures.length){
+            console.error(failures.join('\n'));
+            process.exit(2);
+          }
+          NODE
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - name: Upload qualification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-substantive-official-fallback-v2-qualification-${{ github.run_id }}
+          path: qualification/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Collapse to exact three-path product commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/m04g-qualified-v2/tools/lib /tmp/m04g-qualified-v2/data/project /tmp/m04g-qualified-v2/test
+          cp tools/lib/m04g-source-ecology-v2.mjs /tmp/m04g-qualified-v2/tools/lib/
+          cp data/project/m04g-source-ecology-v2-policy.json /tmp/m04g-qualified-v2/data/project/
+          cp test/m05-answerable-power-sprint-03-leg-07.test.js /tmp/m04g-qualified-v2/test/
+          sha256sum \
+            /tmp/m04g-qualified-v2/tools/lib/m04g-source-ecology-v2.mjs \
+            /tmp/m04g-qualified-v2/data/project/m04g-source-ecology-v2-policy.json \
+            /tmp/m04g-qualified-v2/test/m05-answerable-power-sprint-03-leg-07.test.js \
+            > /tmp/m04g-qualified-v2.sha256
+
+          git reset --hard "${BASE_SHA}"
+          git clean -fd
+          cp /tmp/m04g-qualified-v2/tools/lib/m04g-source-ecology-v2.mjs tools/lib/
+          cp /tmp/m04g-qualified-v2/data/project/m04g-source-ecology-v2-policy.json data/project/
+          cp /tmp/m04g-qualified-v2/test/m05-answerable-power-sprint-03-leg-07.test.js test/
+
+          cmp /tmp/m04g-qualified-v2/tools/lib/m04g-source-ecology-v2.mjs tools/lib/m04g-source-ecology-v2.mjs
+          cmp /tmp/m04g-qualified-v2/data/project/m04g-source-ecology-v2-policy.json data/project/m04g-source-ecology-v2-policy.json
+          cmp /tmp/m04g-qualified-v2/test/m05-answerable-power-sprint-03-leg-07.test.js test/m05-answerable-power-sprint-03-leg-07.test.js
+          node tools/build-m05-answerable-power-sprint-03-leg-07.mjs
+          node tools/validate-m05-answerable-power-sprint-03-leg-07.mjs
+          node test/m05-answerable-power-sprint-03-leg-07.test.js
+          git checkout "${BASE_SHA}" -- \
+            reports/core-thesis/answerable-power/sprint-03-leg-07.json \
+            reports/core-thesis/answerable-power/sprint-03-leg-07.html
+          git clean -fd build qualification
+
+          printf '%s\n' \
+            data/project/m04g-source-ecology-v2-policy.json \
+            test/m05-answerable-power-sprint-03-leg-07.test.js \
+            tools/lib/m04g-source-ecology-v2.mjs \
+            | sort > /tmp/expected-paths
+          git diff --name-only "${BASE_SHA}" | sort > /tmp/actual-paths
+          diff -u /tmp/expected-paths /tmp/actual-paths
+          git diff --check
+
+          git config user.name "BigBirdReturns"
+          git config user.email "bigbirdreturns@proton.me"
+          git add \
+            data/project/m04g-source-ecology-v2-policy.json \
+            test/m05-answerable-power-sprint-03-leg-07.test.js \
+            tools/lib/m04g-source-ecology-v2.mjs
+          git commit -m "Repair M-04G substantive official fallbacks v2"
+          test "$(git rev-list --count "${BASE_SHA}..HEAD")" = "1"
+          git push \
+            --force-with-lease="refs/heads/${TARGET_BRANCH}:${TEMP_HEAD}" \
+            origin "HEAD:refs/heads/${TARGET_BRANCH}"
+
+      - name: Record materialized product
+        shell: bash
+        run: |
+          {
+            echo "## M-04G substantive official fallback product v2"
+            echo
+            echo "- Base: \`${BASE_SHA}\`"
+            echo "- Product: \`$(git rev-parse HEAD)\`"
+            echo "- Branch: \`${TARGET_BRANCH}\`"
+            echo "- Paths: 3"
+            echo "- Frozen routes: 96"
+            echo "- Required route successes: 72"
+            echo "- Required content successes: 63"
+            echo "- Temporary materializers retained: false"
+          } >> "${GITHUB_STEP_SUMMARY}"
