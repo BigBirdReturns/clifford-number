@@ -64,6 +64,25 @@
       "route_results_back_to_original_basins": true,
       "fallback_to_original_routes": false,
       "promotion_ceiling": "locator_only"
+    },
+    {
+      "tide_id": "COMMON-CRAWL-GLOBAL-SERIAL",
+      "match": "index.commoncrawl.org",
+      "mode": "globally_serialized",
+      "expected_routes": 12,
+      "expected_basins": 12,
+      "max_concurrency": 1,
+      "minimum_interval_ms": 1500,
+      "timeout_ms": 30000,
+      "url": "https://index.commoncrawl.org/collinfo.json",
+      "record_format": "json_catalog",
+      "minimum_locator_records": 1,
+      "max_compressed_bytes": 524288,
+      "max_decompressed_bytes": 2097152,
+      "deduplicate_identical_requests": true,
+      "route_results_back_to_original_basins": true,
+      "fallback_to_original_routes": false,
+      "promotion_ceiling": "locator_only"
     }
   ],
   "host_policies": [
@@ -247,14 +266,10 @@
       "match": "austlii.edu.au",
       "fallbacks": [
         {
-          "url": "https://www.austlii.edu.au/cgi-bin/viewdb/au/cases/",
+          "url": "https://www.legislation.gov.au/",
           "method": "GET",
-          "source_class": "public_legal_repository"
-        },
-        {
-          "url": "https://www.austlii.edu.au/",
-          "method": "HEAD",
-          "source_class": "public_metadata_fingerprint"
+          "source_class": "official_legislation_repository_replacement",
+          "max_bytes": 2097152
         }
       ]
     },
@@ -302,6 +317,83 @@
           "url": "https://www.naa.gov.au/",
           "method": "HEAD",
           "source_class": "official_metadata_fingerprint"
+        }
+      ]
+    },
+    {
+      "match": "u.ae",
+      "fallbacks": [
+        {
+          "url": "https://u.ae/",
+          "method": "GET",
+          "source_class": "official_portal_large_document",
+          "max_bytes": 2097152
+        }
+      ]
+    },
+    {
+      "match": "congress.gov",
+      "fallbacks": [
+        {
+          "url": "https://www.congress.gov/rss/most-viewed-bills.xml",
+          "method": "GET",
+          "source_class": "official_legislation_feed",
+          "max_bytes": 524288
+        }
+      ]
+    },
+    {
+      "match": "asean.org",
+      "fallbacks": [
+        {
+          "url": "https://asean.org/feed/",
+          "method": "GET",
+          "source_class": "official_feed",
+          "max_bytes": 1048576
+        }
+      ]
+    },
+    {
+      "match": "kenyalaw.org",
+      "fallbacks": [
+        {
+          "url": "https://new.kenyalaw.org/",
+          "method": "GET",
+          "source_class": "official_legal_repository_replacement",
+          "max_bytes": 2097152
+        }
+      ]
+    },
+    {
+      "match": "echr.coe.int",
+      "fallbacks": [
+        {
+          "url": "https://hudoc.echr.coe.int/app/query/results?query=contentsitename%3AECHR&select=itemid%2Cdocname%2Cdocumentcollectionid2&sort=&start=0&length=10",
+          "method": "GET",
+          "source_class": "official_case_law_api",
+          "max_bytes": 2097152
+        }
+      ]
+    },
+    {
+      "match": "mercosur.int",
+      "fallbacks": [
+        {
+          "url": "https://www.mercosur.int/feed/",
+          "method": "GET",
+          "source_class": "official_feed",
+          "max_bytes": 1048576
+        }
+      ]
+    },
+    {
+      "match": "regulations.gov",
+      "fallbacks": [
+        {
+          "url": "https://api.regulations.gov/v4/documents?filter%5BsearchTerm%5D=artificial%20intelligence&page%5Bsize%5D=5&api_key=DEMO_KEY",
+          "method": "GET",
+          "source_class": "official_regulatory_api",
+          "max_bytes": 2097152
         }
       ]
     }

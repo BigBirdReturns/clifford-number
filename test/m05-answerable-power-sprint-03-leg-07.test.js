@@ -5,7 +5,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { buildGlobalTideRequest, classifyFailure, executionContractFailures, parseGdeltTocPayload, partitionRoutesByGlobalTides } from '../tools/lib/m04g-source-ecology-v2.mjs';
+import { buildGlobalTideRequest, classifyFailure, executionContractFailures, parseCommonCrawlCatalogPayload, parseGdeltTocPayload, partitionRoutesByGlobalTides } from '../tools/lib/m04g-source-ecology-v2.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const run=(args)=>{const result=spawnSync(process.execPath,args,{cwd:root,encoding:'utf8'});if(result.status!==0){console.error(result.stdout);console.error(result.stderr);throw new Error(`${args.join(' ')} failed`)}return result.stdout};
@@ -49,12 +49,45 @@ assert.deepEqual(gdeltTide,{
   fallback_to_original_routes:false,
   promotion_ceiling:'locator_only'
 });
+
+const commonCrawlTide=policy.global_tides.find((row)=>row.tide_id==='COMMON-CRAWL-GLOBAL-SERIAL');
+assert.deepEqual(commonCrawlTide,{
+  "tide_id": "COMMON-CRAWL-GLOBAL-SERIAL",
+  "match": "index.commoncrawl.org",
+  "mode": "globally_serialized",
+  "expected_routes": 12,
+  "expected_basins": 12,
+  "max_concurrency": 1,
+  "minimum_interval_ms": 1500,
+  "timeout_ms": 30000,
+  "url": "https://index.commoncrawl.org/collinfo.json",
+  "record_format": "json_catalog",
+  "minimum_locator_records": 1,
+  "max_compressed_bytes": 524288,
+  "max_decompressed_bytes": 2097152,
+  "deduplicate_identical_requests": true,
+  "route_results_back_to_original_basins": true,
+  "fallback_to_original_routes": false,
+  "promotion_ceiling": "locator_only"
+});
+const commonCrawlRequest=buildGlobalTideRequest(commonCrawlTide,Date.parse('2026-08-16T04:24:48Z'));
+assert.equal(commonCrawlRequest.url,'https://index.commoncrawl.org/collinfo.json');
+assert.equal(commonCrawlRequest.target_minute_utc,null);
+const catalogFixture=Buffer.from(JSON.stringify([{id:'CC-MAIN-2026-30',name:'July 2026 Index','cdx-api':'https://index.commoncrawl.org/CC-MAIN-2026-30-index','timegate-api':'https://index.commoncrawl.org/CC-MAIN-2026-30','index':'https://data.commoncrawl.org/cc-index/table/cc-main/warc/cdx=CC-MAIN-2026-30'}]));
+const parsedCatalog=parseCommonCrawlCatalogPayload(catalogFixture,commonCrawlTide);
+assert.equal(parsedCatalog.records.length,1);
+assert.equal(parsedCatalog.records[0].id,'CC-MAIN-2026-30');
+
 const tidePartition=partitionRoutesByGlobalTides(discovery.routes,policy);
-assert.equal(tidePartition.tides.length,1);
-assert.equal(tidePartition.tides[0].routes.length,12);
-assert.equal(new Set(tidePartition.tides[0].routes.map((row)=>row.basin_id)).size,12);
-assert.equal(tidePartition.ordinary_routes.length,84);
-assert.equal(Object.keys(tidePartition.route_assignments).length,12);
+assert.equal(tidePartition.tides.length,2);
+const gdeltAssignment=tidePartition.tides.find((row)=>row.tide.tide_id==='GDELT-GLOBAL-SERIAL');
+const commonCrawlAssignment=tidePartition.tides.find((row)=>row.tide.tide_id==='COMMON-CRAWL-GLOBAL-SERIAL');
+assert.equal(gdeltAssignment.routes.length,12);
+assert.equal(commonCrawlAssignment.routes.length,12);
+assert.equal(new Set(gdeltAssignment.routes.map((row)=>row.basin_id)).size,12);
+assert.equal(new Set(commonCrawlAssignment.routes.map((row)=>row.basin_id)).size,12);
+assert.equal(tidePartition.ordinary_routes.length,72);
+assert.equal(Object.keys(tidePartition.route_assignments).length,24);
 const fixedTideRequest=buildGlobalTideRequest(gdeltTide,Date.parse('2026-08-16T04:24:48Z'));
 assert.equal(fixedTideRequest.target_minute_utc,'2026-08-16T04:01:00.000Z');
 assert.equal(fixedTideRequest.target_age_seconds,1428);
@@ -88,4 +121,102 @@ assert.equal(report.current_result.composed_answer_observed,false);
 assert.equal(report.current_result.works_standard_met,false);
 assert.equal(report.boundaries.source_health_proves_evidentiary_sufficiency,false);
 assert.equal(report.boundaries.source_health_proves_answer_effectiveness,false);
+
+const officialFallbackCensusRepairs=[
+  {
+    "match": "u.ae",
+    "fallbacks": [
+      {
+        "url": "https://u.ae/",
+        "method": "GET",
+        "source_class": "official_portal_large_document",
+        "max_bytes": 2097152
+      }
+    ]
+  },
+  {
+    "match": "congress.gov",
+    "fallbacks": [
+      {
+        "url": "https://www.congress.gov/rss/most-viewed-bills.xml",
+        "method": "GET",
+        "source_class": "official_legislation_feed",
+        "max_bytes": 524288
+      }
+    ]
+  },
+  {
+    "match": "asean.org",
+    "fallbacks": [
+      {
+        "url": "https://asean.org/feed/",
+        "method": "GET",
+        "source_class": "official_feed",
+        "max_bytes": 1048576
+      }
+    ]
+  },
+  {
+    "match": "kenyalaw.org",
+    "fallbacks": [
+      {
+        "url": "https://new.kenyalaw.org/",
+        "method": "GET",
+        "source_class": "official_legal_repository_replacement",
+        "max_bytes": 2097152
+      }
+    ]
+  },
+  {
+    "match": "echr.coe.int",
+    "fallbacks": [
+      {
+        "url": "https://hudoc.echr.coe.int/app/query/results?query=contentsitename%3AECHR&select=itemid%2Cdocname%2Cdocumentcollectionid2&sort=&start=0&length=10",
+        "method": "GET",
+        "source_class": "official_case_law_api",
+        "max_bytes": 2097152
+      }
+    ]
+  },
+  {
+    "match": "mercosur.int",
+    "fallbacks": [
+      {
+        "url": "https://www.mercosur.int/feed/",
+        "method": "GET",
+        "source_class": "official_feed",
+        "max_bytes": 1048576
+      }
+    ]
+  },
+  {
+    "match": "regulations.gov",
+    "fallbacks": [
+      {
+        "url": "https://api.regulations.gov/v4/documents?filter%5BsearchTerm%5D=artificial%20intelligence&page%5Bsize%5D=5&api_key=DEMO_KEY",
+        "method": "GET",
+        "source_class": "official_regulatory_api",
+        "max_bytes": 2097152
+      }
+    ]
+  },
+  {
+    "match": "austlii.edu.au",
+    "fallbacks": [
+      {
+        "url": "https://www.legislation.gov.au/",
+        "method": "GET",
+        "source_class": "official_legislation_repository_replacement",
+        "max_bytes": 2097152
+      }
+    ]
+  }
+];
+assert.ok(officialFallbackCensusRepairs.length>=6);
+assert.ok(officialFallbackCensusRepairs.some((row)=>row.match==='u.ae'));
+assert.equal(officialFallbackCensusRepairs.some((row)=>row.match==='unescwa.org'),false);
+for(const expectedFallback of officialFallbackCensusRepairs){
+  assert.deepEqual(policy.host_fallbacks.find((row)=>row.match===expectedFallback.match),expectedFallback);
+}
+
 console.log('m05-answerable-power-sprint-03-leg-07.test: OK');
