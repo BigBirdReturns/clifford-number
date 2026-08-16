@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import zlib from 'node:zlib';
 
 const URL_KEYS=['url','primary_url','request_url','endpoint','href'];
 const ID_KEYS=['poll_id','route_id','source_route_id','source_id','id'];
@@ -218,6 +219,212 @@ export function executionContractFailures(summary){
   return failures;
 }
 
+
+function routeMatchesGlobalTide(route,tide){
+  const match=String(tide?.match||'').trim().toLowerCase();
+  if(!match)return false;
+  return `${route.route_id} ${route.url}`.toLowerCase().includes(match);
+}
+
+export function partitionRoutesByGlobalTides(routes,policy){
+  const assigned=new Map();
+  const tides=[];
+  for(const tide of policy.global_tides||[]){
+    if(tide.mode!=='globally_serialized')continue;
+    const matched=routes.filter((route)=>routeMatchesGlobalTide(route,tide));
+    if(!matched.length)continue;
+    const duplicate=matched.find((route)=>assigned.has(route.route_id));
+    if(duplicate)throw new Error(`Global tide overlap for ${duplicate.route_id}: ${assigned.get(duplicate.route_id)} and ${tide.tide_id}`);
+    const expectedRoutes=Number(tide.expected_routes||matched.length);
+    if(matched.length!==expectedRoutes)throw new Error(`Global tide ${tide.tide_id} matched ${matched.length} routes; expected ${expectedRoutes}`);
+    const basins=new Set(matched.map((route)=>route.basin_id));
+    const expectedBasins=Number(tide.expected_basins||basins.size);
+    if(basins.size!==expectedBasins)throw new Error(`Global tide ${tide.tide_id} matched ${basins.size} basins; expected ${expectedBasins}`);
+    if(tide.route_results_back_to_original_basins!==true)throw new Error(`Global tide ${tide.tide_id} must route results back to the original basins`);
+    if(tide.fallback_to_original_routes!==false)throw new Error(`Global tide ${tide.tide_id} must explicitly refuse basin-specific fallback requests`);
+    const ceiling=String(tide.promotion_ceiling||'locator_only');
+    for(const route of matched){
+      if(route.raw?.promotion_ceiling!==ceiling)throw new Error(`Global tide ${tide.tide_id} would change the promotion ceiling for ${route.route_id}`);
+      assigned.set(route.route_id,tide.tide_id);
+    }
+    tides.push({tide,routes:matched});
+  }
+  return {
+    tides,
+    ordinary_routes:routes.filter((route)=>!assigned.has(route.route_id)),
+    route_assignments:Object.fromEntries([...assigned].sort(([a],[b])=>a.localeCompare(b)))
+  };
+}
+
+const pad2=(value)=>String(value).padStart(2,'0');
+
+export function buildGlobalTideRequest(tide,nowMs=Date.now()){
+  if(tide.record_format!=='jsonl_gzip')throw new Error(`Unsupported global tide format for ${tide.tide_id}: ${tide.record_format}`);
+  const template=String(tide.url_template||'');
+  if(!template.includes('{timestamp}'))throw new Error(`Global tide ${tide.tide_id} URL template must contain {timestamp}`);
+  const heartbeatMinutes=Number(tide.heartbeat_minutes||0);
+  const publicationGuardMinutes=Number(tide.publication_guard_minutes||0);
+  const heartbeatOffsetMinutes=Number(tide.heartbeat_offset_minutes||0);
+  if(!Number.isInteger(heartbeatMinutes)||heartbeatMinutes<=0)throw new Error(`Global tide ${tide.tide_id} has an invalid heartbeat_minutes value`);
+  if(!Number.isInteger(publicationGuardMinutes)||publicationGuardMinutes<heartbeatMinutes)throw new Error(`Global tide ${tide.tide_id} publication_guard_minutes must cover at least one heartbeat`);
+  if(!Number.isInteger(heartbeatOffsetMinutes)||heartbeatOffsetMinutes<0||heartbeatOffsetMinutes>=heartbeatMinutes)throw new Error(`Global tide ${tide.tide_id} has an invalid heartbeat_offset_minutes value`);
+  const clock=Number(nowMs);
+  if(!Number.isFinite(clock))throw new Error(`Global tide ${tide.tide_id} received an invalid clock value`);
+  const heartbeatMs=heartbeatMinutes*60_000;
+  const guardedMs=clock-publicationGuardMinutes*60_000;
+  const heartbeatStartMs=Math.floor(guardedMs/heartbeatMs)*heartbeatMs;
+  const target=new Date(heartbeatStartMs+heartbeatOffsetMinutes*60_000);
+  target.setUTCSeconds(0,0);
+  const timestamp=`${target.getUTCFullYear()}${pad2(target.getUTCMonth()+1)}${pad2(target.getUTCDate())}${pad2(target.getUTCHours())}${pad2(target.getUTCMinutes())}00`;
+  return {
+    tide_id:tide.tide_id,
+    target_minute_utc:target.toISOString(),
+    target_age_seconds:Math.floor((clock-target.getTime())/1000),
+    heartbeat_minutes:heartbeatMinutes,
+    publication_guard_minutes:publicationGuardMinutes,
+    heartbeat_offset_minutes:heartbeatOffsetMinutes,
+    timestamp,
+    url:template.replace('{timestamp}',timestamp),
+    method:'GET'
+  };
+}
+
+function globalTideError(message,failure='parse_failure'){
+  const error=new Error(message);
+  error.failure=failure;
+  return error;
+}
+
+export function parseGdeltTocPayload(compressed,tide){
+  if(!Buffer.isBuffer(compressed)||!compressed.length)throw globalTideError('GDELT global tide returned no compressed content');
+  const maxDecompressedBytes=Number(tide.max_decompressed_bytes||67_108_864);
+  let decompressed;
+  try{
+    decompressed=zlib.gunzipSync(compressed,{maxOutputLength:maxDecompressedBytes});
+  }catch(error){
+    const failure=String(error?.code||'').includes('BUFFER_TOO_LARGE')?'oversized_response':'parse_failure';
+    throw globalTideError(`GDELT global tide GZIP decode failed: ${error?.message||error}`,failure);
+  }
+  const lines=decompressed.toString('utf8').split(/\r?\n/u).filter(Boolean);
+  let records;
+  try{records=lines.map((line)=>JSON.parse(line))}
+  catch(error){throw globalTideError(`GDELT global tide JSONL parse failed: ${error?.message||error}`)}
+  const validRecords=records.filter((record)=>Number.isInteger(record?.ID)&&record.ID>0&&typeof record?.date==='string'&&typeof record?.url==='string'&&/^https?:\/\//iu.test(record.url));
+  const minimumRecords=Number(tide.minimum_locator_records||1);
+  if(validRecords.length<minimumRecords)throw globalTideError(`GDELT global tide contained ${validRecords.length} valid locator records; required ${minimumRecords}`);
+  if(validRecords.length!==records.length)throw globalTideError(`GDELT global tide contained ${validRecords.length}/${records.length} valid locator records`);
+  return {
+    compressed_sha256:sha256(compressed),
+    decompressed,
+    decompressed_sha256:sha256(decompressed),
+    records:validRecords
+  };
+}
+
+function globalTideFileStem(tideId){
+  return String(tideId).toLowerCase().replace(/[^a-z0-9]+/gu,'-').replace(/^-|-$/gu,'');
+}
+
+async function executeGlobalTide(assignment,policy,gate,nowMs){
+  const {tide,routes}=assignment;
+  const request=buildGlobalTideRequest(tide,nowMs);
+  const host=new URL(request.url).hostname;
+  const timeoutMs=Number(tide.timeout_ms||policy.execution.default_timeout_ms);
+  const maxCompressedBytes=Number(tide.max_compressed_bytes||policy.execution.default_max_bytes);
+  const minimumIntervalMs=Number(tide.minimum_interval_ms||policy.execution.default_host_interval_ms);
+  const started_at=new Date().toISOString();
+  const transport=await gate.run(host,minimumIntervalMs,()=>fetchWithRedirects(request.url,{method:'GET',timeoutMs,maxBytes:maxCompressedBytes,userAgent:'CliffordNumber-M04G-GDELT-Tide/1.0 (+https://github.com/BigBirdReturns/clifford-number)'}));
+  let parsed=null;
+  let failure=null;
+  let parseError=null;
+  if(!transport.ok)failure=transport.https_downgrade?'https_downgrade_refused':(transport.status===404?'upstream_failure':classifyFailure(transport));
+  else{
+    try{parsed=parseGdeltTocPayload(transport.body,tide)}
+    catch(error){failure=error.failure||'parse_failure';parseError=String(error?.message||error)}
+  }
+  const success=Boolean(transport.ok&&parsed);
+  const stem=globalTideFileStem(tide.tide_id);
+  const artifactFiles={compressed:`m04g-source-ecology-v2-${stem}.json.gz`,decompressed:`m04g-source-ecology-v2-${stem}.json`};
+  const attempt={attempt:1,url:request.url,method:'GET',started_at,status:transport.status,final_url:transport.final_url,failure,metadata_only:false,bytes:transport.body?.length||0,global_tide_id:tide.tide_id};
+  const summary=parsed?JSON.stringify(parsed.records.slice(0,3).map((record)=>({ID:record.ID,date:record.date,lang:record.lang||null,title:record.title||null,url:record.url}))).slice(0,600):null;
+  const shared={
+    success,
+    content_success:success,
+    metadata_only:false,
+    status:transport.status,
+    requested_url:request.url,
+    final_url:transport.final_url,
+    method:'GET',
+    headers:transport.headers,
+    bytes:transport.body?.length||0,
+    content_sha256:parsed?.compressed_sha256||null,
+    decompressed_bytes:parsed?.decompressed.length||0,
+    decompressed_sha256:parsed?.decompressed_sha256||null,
+    locator_record_count:parsed?.records.length||0,
+    summary,
+    failure,
+    parse_error:parseError,
+    attempts:[attempt],
+    global_tide_id:tide.tide_id,
+    global_tide_target_minute_utc:request.target_minute_utc,
+    global_tide_target_age_seconds:request.target_age_seconds,
+    global_tide_heartbeat_minutes:request.heartbeat_minutes,
+    global_tide_publication_guard_minutes:request.publication_guard_minutes,
+    global_tide_heartbeat_offset_minutes:request.heartbeat_offset_minutes,
+    global_tide_artifacts:artifactFiles
+  };
+  const observations=routes.map((route)=>{
+    const result={...shared,original_query:new URL(route.url).searchParams.get('query'),deterministic_routing_key:`${route.basin_id}:${route.route_id}`};
+    if(success){
+      return {route_id:route.route_id,basin_id:route.basin_id,hydrology_class:route.hydrology_class,original_url:route.url,route_success:true,content_success:true,metadata_only:false,fallback_used:false,selected_candidate:0,global_tide_used:true,global_tide_id:tide.tide_id,result,candidate_results:[result]};
+    }
+    return {route_id:route.route_id,basin_id:route.basin_id,hydrology_class:route.hydrology_class,original_url:route.url,route_success:false,content_success:false,metadata_only:false,fallback_used:false,global_tide_used:true,global_tide_id:tide.tide_id,failure:failure||'unclassified',candidate_results:[result]};
+  });
+  const receipt={
+    tide_id:tide.tide_id,
+    mode:tide.mode,
+    match:tide.match,
+    network_request_count:1,
+    fallback_route_request_count:0,
+    route_ids:routes.map((route)=>route.route_id),
+    basin_ids:routes.map((route)=>route.basin_id),
+    target_minute_utc:request.target_minute_utc,
+    target_age_seconds:request.target_age_seconds,
+    heartbeat_minutes:request.heartbeat_minutes,
+    publication_guard_minutes:request.publication_guard_minutes,
+    heartbeat_offset_minutes:request.heartbeat_offset_minutes,
+    requested_url:request.url,
+    status:transport.status,
+    final_url:transport.final_url,
+    headers:transport.headers,
+    compressed_bytes:transport.body?.length||0,
+    compressed_sha256:parsed?.compressed_sha256||null,
+    decompressed_bytes:parsed?.decompressed.length||0,
+    decompressed_sha256:parsed?.decompressed_sha256||null,
+    locator_record_count:parsed?.records.length||0,
+    route_successes:observations.filter((row)=>row.route_success).length,
+    content_successes:observations.filter((row)=>row.content_success).length,
+    success,
+    failure,
+    parse_error:parseError,
+    artifacts:artifactFiles
+  };
+  return {observations,receipt,compressed:parsed?transport.body:Buffer.alloc(0),decompressed:parsed?.decompressed||Buffer.alloc(0)};
+}
+
+async function executeGlobalTides(assignments,policy,gate,nowMs){
+  const observations=[];
+  const receipts=[];
+  const artifacts=[];
+  for(const assignment of assignments){
+    const result=await executeGlobalTide(assignment,policy,gate,nowMs);
+    observations.push(...result.observations);
+    receipts.push(result.receipt);
+    artifacts.push({receipt:result.receipt,compressed:result.compressed,decompressed:result.decompressed});
+  }
+  return {observations,receipts,artifacts};
+}
+
 class HostGate{
   constructor(){this.chains=new Map();this.lastStart=new Map()}
   async run(host,minimumIntervalMs,operation){
@@ -263,7 +470,7 @@ async function fetchWithRedirects(url,{method,timeoutMs,maxBytes,userAgent}){
     const controller=new AbortController();
     const timer=setTimeout(()=>controller.abort(new Error(`timeout after ${timeoutMs}ms`)),timeoutMs);
     try{
-      const response=await fetch(current,{method,redirect:'manual',signal:controller.signal,headers:{'user-agent':userAgent,'accept':'text/html,application/json,application/xml,text/xml,text/plain,application/pdf,*/*;q=0.1'}});
+      const response=await fetch(current,{method,redirect:'manual',signal:controller.signal,headers:{'user-agent':userAgent,'accept':'application/gzip,application/octet-stream,text/html,application/json,application/xml,text/xml,text/plain,application/pdf,*/*;q=0.1'}});
       if(response.status>=300&&response.status<400){
         const location=response.headers.get('location');
         if(!location)return {ok:false,status:response.status,final_url:current,redirect_unresolved:true,headers:Object.fromEntries(response.headers)};
@@ -390,11 +597,16 @@ function isDiscoveryOrArchive(row){
   return value.includes('ocean')||value.includes('discover')||value.includes('archive')||value.includes('aquifer');
 }
 
-export async function runSourceEcologyOrbit(root,policy,{outputDir,live=true}={}){
+export async function runSourceEcologyOrbit(root,policy,{outputDir,live=true,nowMs=Date.now()}={}){
   const discovery=discoverFrozenRoutes(root,{expectedRoutes:policy.denominator.expected_routes,expectedBasins:policy.denominator.expected_basins,expectedPerBasin:policy.denominator.expected_routes_per_basin});
   if(!live)return {discovery,policy};
   const gate=new HostGate();
-  const observations=await mapLimit(discovery.routes,policy.execution.global_concurrency,(route)=>executeRoute(route,policy,gate));
+  const partition=partitionRoutesByGlobalTides(discovery.routes,policy);
+  const globalTideResult=await executeGlobalTides(partition.tides,policy,gate,nowMs);
+  const ordinaryObservations=await mapLimit(partition.ordinary_routes,policy.execution.global_concurrency,(route)=>executeRoute(route,policy,gate));
+  const observationMap=new Map([...globalTideResult.observations,...ordinaryObservations].map((row)=>[row.route_id,row]));
+  const observations=discovery.routes.map((route)=>observationMap.get(route.route_id));
+  if(observations.some((row)=>!row))throw new Error('Global tide partition did not return one observation for every frozen route');
   const byBasin=[];
   for(const basin of discovery.basins){
     const rows=observations.filter((row)=>row.basin_id===basin.basin_id);
@@ -430,15 +642,20 @@ export async function runSourceEcologyOrbit(root,policy,{outputDir,live=true}={}
     answer_effectiveness:false
   };
   summary.coverage_healthy=summary.execution_complete&&summary.route_healthy&&summary.content_healthy&&summary.healthy_basins>=policy.health_contract.required_healthy_basins&&summary.unclassified_failures===0;
-  const receiptCore={schema_version:'m04g-source-ecology-v2-orbit@1',generated_at:new Date().toISOString(),registry_file:discovery.registry_file,registry_path:discovery.registry_path,policy_sha256:sha256(JSON.stringify(policy)),route_ids:discovery.routes.map((row)=>row.route_id),summary,by_basin:byBasin,failure_counts:failureCounts};
+  const receiptCore={schema_version:'m04g-source-ecology-v2-orbit@1',generated_at:new Date().toISOString(),registry_file:discovery.registry_file,registry_path:discovery.registry_path,policy_sha256:sha256(JSON.stringify(policy)),route_ids:discovery.routes.map((row)=>row.route_id),summary,by_basin:byBasin,failure_counts:failureCounts,global_tides:globalTideResult.receipts};
   const receipt={...receiptCore,proof_sha256:sha256(JSON.stringify(receiptCore))};
   if(outputDir){
     fs.mkdirSync(outputDir,{recursive:true});
     fs.writeFileSync(path.join(outputDir,'m04g-source-ecology-v2-observations.json'),JSON.stringify(observations,null,2)+'\n');
     fs.writeFileSync(path.join(outputDir,'m04g-source-ecology-v2-failures.json'),JSON.stringify(failures,null,2)+'\n');
     fs.writeFileSync(path.join(outputDir,'m04g-source-ecology-v2-basin-health.json'),JSON.stringify(byBasin,null,2)+'\n');
+    fs.writeFileSync(path.join(outputDir,'m04g-source-ecology-v2-global-tides.json'),JSON.stringify(globalTideResult.receipts,null,2)+'\n');
+    for(const artifact of globalTideResult.artifacts){
+      if(artifact.compressed.length)fs.writeFileSync(path.join(outputDir,artifact.receipt.artifacts.compressed),artifact.compressed);
+      if(artifact.decompressed.length)fs.writeFileSync(path.join(outputDir,artifact.receipt.artifacts.decompressed),artifact.decompressed);
+    }
     fs.writeFileSync(path.join(outputDir,'m04g-source-ecology-v2-receipt.json'),JSON.stringify(receipt,null,2)+'\n');
     fs.writeFileSync(path.join(outputDir,'m04g-source-ecology-v2-proof.sha256'),`${receipt.proof_sha256}  m04g-source-ecology-v2-receipt.json\n`);
   }
-  return {discovery,observations,failures,byBasin,summary,receipt};
+  return {discovery,observations,failures,byBasin,summary,receipt,global_tides:globalTideResult.receipts};
 }
