@@ -17,10 +17,12 @@ The packet contains:
 - `adjudication-rules.json`, which defines the minimum transaction-specific evidence required before any allottee field can change.
 - `requester-input.example.json`, which defines the private local input shape without containing requester particulars or authorization.
 - `dispatch-input.example.json`, which defines the private postal-dispatch evidence input shape without authorizing or performing dispatch.
+- `delivery-input.example.json`, which defines the private delivery-evidence and working-day-calendar input shape without establishing receipt or a legal deadline.
 - `docs/requests/electric-twin-section-116-register-of-members-request.md`, which contains separate statutory and voluntary request templates.
 - `tools/finalize-electric-twin-register-request.mjs`, which validates private local inputs and produces separately hashed source documents without sending them.
 - `tools/render-electric-twin-register-request-pdfs.mjs`, which verifies a finalized source directory and creates deterministic private PDFs plus a non-identifying custody manifest without sending them.
 - `tools/record-electric-twin-register-request-dispatch.mjs`, which verifies an authorized outbound PDF and copies exact evidence of an externally performed postal dispatch without contacting the company.
+- `tools/record-electric-twin-register-request-delivery.mjs`, which verifies the dispatch chain, preserves exact delivery evidence, and calculates a bounded operational response checkpoint without adjudicating statutory receipt or a legal deadline.
 
 The statutory request must not be sent until the requester’s real full name, postal address, email address, date, and intended disclosure recipients have been inserted. A public contact route does not confer authority to send. Any dispatch requires a custody-bearing postal method to the registered office and may be copied by email only for routing. The voluntary request for a redacted allotment or closing instrument remains separate from the statutory register request.
 
@@ -71,7 +73,23 @@ node tools/record-electric-twin-register-request-dispatch.mjs \
 
 The recorder rehashes both source documents, both PDF manifests, and the selected outbound PDF before accepting evidence. It requires the matching statutory or voluntary dispatch authorization to be true, requires the private input’s authorization record to match the source manifest, rejects symlinked or non-private proof files, verifies supported file signatures, and copies the exact proof bytes into a new immutable `dispatch/` child directory. The resulting `outbound-dispatch-manifest.json` records the source and PDF custody chain, the outbound document hash, proof hashes, declared dispatch timestamp, service metadata, and a hash of the tracking reference without repeating the raw tracking reference or requester name, address, or email.
 
-The recorder has no network, email, postal, or messaging capability and cannot perform or authenticate a dispatch. Its state is `postal_dispatch_evidence_recorded_delivery_unconfirmed`. It records an external dispatch assertion and preserved proof, while keeping carrier authenticity unverified, delivery unconfirmed, the receipt timestamp null, and the response deadline uncalculated. Delivery confirmation, routing email, company response, inspection record, court application, and any canonical response-ledger update remain separate custody and review events.
+The recorder has no network, email, postal, or messaging capability and cannot perform or authenticate a dispatch. Its state is `postal_dispatch_evidence_recorded_delivery_unconfirmed`. It records an external dispatch assertion and preserved proof, while keeping carrier authenticity unverified, delivery unconfirmed, the receipt timestamp null, and the response deadline uncalculated.
+
+## Local delivery and operational response-checkpoint gate
+
+This gate is used only after a carrier or other source has produced delivery evidence for a previously recorded dispatch. Copy `delivery-input.example.json` to a permission-restricted file under `data/local/`, replace every placeholder, preserve the original delivery confirmation without conversion, and supply the same raw tracking reference used for the dispatch record.
+
+```sh
+chmod 600 data/local/electric-twin-register-of-members-delivery.json
+chmod 600 data/local/electric-twin-register-of-members/delivery-confirmation.pdf
+node tools/record-electric-twin-register-request-delivery.mjs \
+  --dispatch-dir build/source-acquisition/electric-twin-register-of-members/<immutable-run-id>/dispatch/<dispatch-event> \
+  --input data/local/electric-twin-register-of-members-delivery.json
+```
+
+The delivery recorder rehashes the source manifest, both request sources, the PDF manifest, both request PDFs, the dispatch manifest, and every dispatch-proof file. It requires the channel, service provider, and tracking-reference digest to match the dispatch custody record, rejects a delivery timestamp earlier than dispatch, and copies the exact delivery-evidence bytes into a new immutable `delivery/` child directory. The resulting `outbound-delivery-manifest.json` records the custody chain and a custodian-supplied England and Wales working-day calendar without repeating requester particulars or the raw tracking reference.
+
+The tool counts five eligible dates after the supplied local receipt date, treating the first eligible date after receipt as day one, excluding Saturdays, Sundays, and the explicitly supplied non-working dates. Its state is `postal_delivery_evidence_recorded_operational_checkpoint_calculated`. The resulting date is an operational review checkpoint only. The tool does not authenticate the carrier, verify the local-date conversion, adjudicate statutory receipt, establish an exact expiry time, or calculate a legal deadline. Calendar completeness and legal effect require separate review. A company response, inspection appointment, court application, fee request, refusal, or canonical response-ledger mutation remains a distinct custody and adjudication event.
 
 A response that supplies only a registered name, date entered as a member, class, or resulting quantity may strengthen the dated holder history. It does not prove that the holding arose from a specific allotment rather than a transfer, nominee arrangement, aggregation, rectification, or another register movement. Allottee identity may be promoted only when one source-addressable instrument expressly links the issuer, named person or vehicle, share class, quantity, and allotment event, or supplies an equivalent transaction-specific entry.
 

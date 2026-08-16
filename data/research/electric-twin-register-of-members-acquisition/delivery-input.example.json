@@ -1,0 +1,32 @@
+{
+  "schema_version": "electric-twin-register-request-delivery-input@1",
+  "acquisition_id": "ET-ROM-2025-09-01",
+  "channel": "statutory_register_request",
+  "delivery_status": "delivered",
+  "confirmed_delivered_at": "[UTC ISO-8601 TIMESTAMP]",
+  "confirmed_receipt_local_date": "[YYYY-MM-DD]",
+  "receipt_time_zone": "Europe/London",
+  "delivery_event_record": "[OPAQUE LOCAL DELIVERY EVENT ID]",
+  "tracking_reference": "[TRACKING REFERENCE]",
+  "service_provider": "[POSTAL SERVICE PROVIDER]",
+  "delivery_location_class": "registered_office",
+  "evidence_artifacts": [
+    {
+      "role": "carrier_delivery_confirmation",
+      "path": "data/local/electric-twin-register-of-members/delivery-confirmation.pdf",
+      "mime_type": "application/pdf"
+    }
+  ],
+  "working_day_calendar": {
+    "jurisdiction": "England and Wales",
+    "time_zone": "Europe/London",
+    "calendar_record": "[OPAQUE LOCAL WORKING-DAY CALENDAR ID]",
+    "reviewed_at": "[YYYY-MM-DD]",
+    "source_urls": [
+      "https://www.legislation.gov.uk/ukpga/2006/46/section/117",
+      "https://www.gov.uk/bank-holidays"
+    ],
+    "counting_rule": "first_eligible_day_after_receipt_is_day_1",
+    "non_working_dates": []
+  }
+}
