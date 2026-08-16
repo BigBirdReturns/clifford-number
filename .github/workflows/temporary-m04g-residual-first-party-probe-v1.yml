@@ -1,0 +1,74 @@
+name: Temporary M04G residual first-party probe v1
+
+on:
+  push:
+    branches:
+      - agent/m04g-residual-first-party-probe-v1
+    paths:
+      - .github/probes/m04g_residual_first_party_probe_v1.mjs.gz.b64
+      - .github/workflows/temporary-m04g-residual-first-party-probe-v1.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporary-m04g-residual-first-party-probe-v1-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout frozen branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Decode and verify probe source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .tmp/m04g-residual-first-party-probe-v1
+          base64 --decode .github/probes/m04g_residual_first_party_probe_v1.mjs.gz.b64 \
+            > .tmp/m04g-residual-first-party-probe-v1/probe.mjs.gz
+          test "$(sha256sum .tmp/m04g-residual-first-party-probe-v1/probe.mjs.gz | awk '{print $1}')" \
+            = "2744f3c1fc3fe3e31c81da0b9007d1b98ba937d1f43c02316bb633b0be9bf8ae"
+          gzip --decompress --stdout .tmp/m04g-residual-first-party-probe-v1/probe.mjs.gz \
+            > .tmp/m04g-residual-first-party-probe-v1/probe.mjs
+          test "$(sha256sum .tmp/m04g-residual-first-party-probe-v1/probe.mjs | awk '{print $1}')" \
+            = "b890e529a341daedfa4c22a00d49d149d1efa3ed4e3bb922af631dab8f8df765"
+          node --check .tmp/m04g-residual-first-party-probe-v1/probe.mjs
+          cp .tmp/m04g-residual-first-party-probe-v1/probe.mjs \
+            .tmp/m04g-residual-first-party-probe-v1/m04g_residual_first_party_probe_v1.mjs
+
+      - name: Execute bounded residual probe
+        run: >-
+          node .tmp/m04g-residual-first-party-probe-v1/probe.mjs
+          qualification/m04g-residual-first-party-probe-v1
+
+      - name: Preserve decoded source with receipts
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/m04g-residual-first-party-probe-v1/source
+          if [[ -f .tmp/m04g-residual-first-party-probe-v1/m04g_residual_first_party_probe_v1.mjs ]]; then
+            cp .tmp/m04g-residual-first-party-probe-v1/m04g_residual_first_party_probe_v1.mjs \
+              qualification/m04g-residual-first-party-probe-v1/source/
+          fi
+          sha256sum .github/probes/m04g_residual_first_party_probe_v1.mjs.gz.b64 \
+            > qualification/m04g-residual-first-party-probe-v1/source/payload.sha256
+
+      - name: Upload complete probe receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m04g-residual-first-party-probe-v1-${{ github.run_id }}
+          path: qualification/m04g-residual-first-party-probe-v1
+          if-no-files-found: error
+          retention-days: 30
