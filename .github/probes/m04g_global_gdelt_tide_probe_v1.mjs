@@ -6,9 +6,10 @@ import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const outputDir = path.resolve(repoRoot, process.env.M04G_GDELT_OUTPUT_DIR || 'build/m04g-gdelt-global-tide-probe-v3');
+const outputDir = path.resolve(repoRoot, process.env.M04G_GDELT_OUTPUT_DIR || 'build/m04g-gdelt-global-tide-probe-v4');
 fs.mkdirSync(outputDir, { recursive: true });
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
+const pad = value => String(value).padStart(2, '0');
 
 const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'data/project/m04g-global-circulation-polls.json'), 'utf8'));
 const gdeltRoutes = registry.polls
@@ -19,9 +20,15 @@ if (!gdeltRoutes.every(route => route.hydrology_class === 'ocean_discovery' && r
   throw new Error('every preserved GDELT route must remain ocean_discovery with a locator_only ceiling');
 }
 
-const target = new Date(Date.now() - 5 * 60 * 1000);
+const heartbeatMinutes = 15;
+const publicationGuardMinutes = 15;
+const heartbeatOffsetMinutes = 1;
+const heartbeatMs = heartbeatMinutes * 60_000;
+const nowMs = Date.now();
+const guardedMs = nowMs - publicationGuardMinutes * 60_000;
+const heartbeatStartMs = Math.floor(guardedMs / heartbeatMs) * heartbeatMs;
+const target = new Date(heartbeatStartMs + heartbeatOffsetMinutes * 60_000);
 target.setUTCSeconds(0, 0);
-const pad = value => String(value).padStart(2, '0');
 const stamp = `${target.getUTCFullYear()}${pad(target.getUTCMonth() + 1)}${pad(target.getUTCDate())}${pad(target.getUTCHours())}${pad(target.getUTCMinutes())}00`;
 const tideId = 'GDELT-GLOBAL-SERIAL';
 const tideUrl = `https://storage.googleapis.com/data.gdeltproject.org/gdeltv5/weblegacy/ngrams/${stamp}.toc.json.gz`;
@@ -44,7 +51,7 @@ try {
     signal: controller.signal,
     headers: {
       accept: 'application/gzip,application/octet-stream,*/*;q=0.1',
-      'user-agent': 'CliffordNumber-M04G-GDELT-Tide-Probe/3.0 (+https://github.com/BigBirdReturns/clifford-number)',
+      'user-agent': 'CliffordNumber-M04G-GDELT-Tide-Probe/4.0 (+https://github.com/BigBirdReturns/clifford-number)',
     },
   });
   status = response.status;
@@ -67,18 +74,18 @@ try {
   clearTimeout(timer);
 }
 
-const compressedSha256 = compressed.length ? sha256(compressed) : null;
+const compressedSha256 = status === 200 && compressed.length ? sha256(compressed) : null;
 const decompressedSha256 = decompressed.length ? sha256(decompressed) : null;
-if (compressed.length) fs.writeFileSync(path.join(outputDir, 'global-tide-toc.json.gz'), compressed);
+if (compressedSha256) fs.writeFileSync(path.join(outputDir, 'global-tide-toc.json.gz'), compressed);
 if (decompressed.length) fs.writeFileSync(path.join(outputDir, 'global-tide-toc.json'), decompressed);
-const validRecords = records.filter(record => Number.isInteger(record?.ID) && typeof record?.url === 'string' && /^https?:\/\//iu.test(record.url));
+const validRecords = records.filter(record => Number.isInteger(record?.ID) && record.ID > 0 && typeof record?.date === 'string' && typeof record?.url === 'string' && /^https?:\/\//iu.test(record.url));
 const transportHealthy = status === 200 && compressed.length > 0 && !responseError;
 const locatorHealthy = transportHealthy && !parseError && records.length > 0 && records.length === validRecords.length;
 
 const projections = gdeltRoutes.map(route => {
   const originalQuery = new URL(route.request.url).searchParams.get('query');
   const projection = {
-    schema_version: 'm04g-gdelt-global-tide-projection@3',
+    schema_version: 'm04g-gdelt-global-tide-projection@4',
     tide_id: tideId,
     route_id: route.poll_id,
     basin_id: route.basin_id,
@@ -88,10 +95,13 @@ const projections = gdeltRoutes.map(route => {
     original_route_url: route.request.url,
     global_tide_url: tideUrl,
     target_minute_utc: target.toISOString(),
+    heartbeat_minutes: heartbeatMinutes,
+    publication_guard_minutes: publicationGuardMinutes,
+    heartbeat_offset_minutes: heartbeatOffsetMinutes,
     compressed_sha256: compressedSha256,
     decompressed_sha256: decompressedSha256,
     deterministic_routing_key: `${route.basin_id}:${route.poll_id}`,
-    routing_rule: 'one official five-minute-delayed GDELT TOC is copied into each preserved locator-only route receipt without a basin-specific network request',
+    routing_rule: 'one official GDELT TOC from a deterministically closed 15-minute heartbeat is copied into each preserved locator-only route receipt without a basin-specific network request',
     locator_records: validRecords,
   };
   const bytes = Buffer.from(`${JSON.stringify(projection, null, 2)}\n`, 'utf8');
@@ -114,16 +124,16 @@ const routeSuccesses = projections.filter(row => row.route_success).length;
 const contentSuccesses = projections.filter(row => row.content_success).length;
 const candidateAuthorized = Boolean(locatorHealthy && compressedSha256 && decompressedSha256 && routeSuccesses === 12 && contentSuccesses === 12);
 const reasons = [];
-if (!transportHealthy) reasons.push('the single recommended GDELT TOC request did not return bounded HTTP 200 content');
+if (!transportHealthy) reasons.push('the single closed-heartbeat GDELT TOC request did not return bounded HTTP 200 content');
 if (parseError) reasons.push(`the GZIP TOC could not be parsed: ${parseError}`);
 if (!locatorHealthy) reasons.push(`the TOC contained ${validRecords.length}/${records.length} valid locator records; at least one valid record is required`);
 if (!compressedSha256 || !decompressedSha256) reasons.push('the GZIP and decompressed TOC hashes are incomplete');
 if (routeSuccesses !== 12) reasons.push(`only ${routeSuccesses}/12 preserved route projections are healthy`);
 if (contentSuccesses !== 12) reasons.push(`only ${contentSuccesses}/12 preserved route projections contain bounded content`);
-if (candidateAuthorized) reasons.push('one hash-bound official GDELT TOC produced twelve deterministic locator-only projections without changing the denominator, route identities, basin assignments, or promotion ceilings');
+if (candidateAuthorized) reasons.push('one hash-bound official GDELT TOC from a closed heartbeat produced twelve deterministic locator-only projections without changing the denominator, route identities, basin assignments, or promotion ceilings');
 
 const ledger = {
-  schema_version: 'm04g-gdelt-global-tide-probe@3',
+  schema_version: 'm04g-gdelt-global-tide-probe@4',
   generated_at: new Date().toISOString(),
   started_at: startedAt,
   repository_product_files_modified: false,
@@ -133,6 +143,12 @@ const ledger = {
   tide_id: tideId,
   tide_url: tideUrl,
   target_minute_utc: target.toISOString(),
+  scheduling: {
+    heartbeat_minutes: heartbeatMinutes,
+    publication_guard_minutes: publicationGuardMinutes,
+    heartbeat_offset_minutes: heartbeatOffsetMinutes,
+    target_age_seconds_at_request: Math.floor((Date.parse(startedAt) - target.getTime()) / 1000),
+  },
   response: {
     status,
     final_url: finalUrl,
@@ -169,6 +185,7 @@ console.log(JSON.stringify({
   candidate_authorized: ledger.candidate_authorized,
   response_status: status,
   target_minute_utc: ledger.target_minute_utc,
+  target_age_seconds_at_request: ledger.scheduling.target_age_seconds_at_request,
   compressed_bytes: compressed.length,
   compressed_sha256: compressedSha256,
   locator_record_count: validRecords.length,
