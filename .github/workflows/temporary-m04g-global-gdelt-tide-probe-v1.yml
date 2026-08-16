@@ -1,4 +1,4 @@
-name: TEMP M-04G GDELT global tide probe v2
+name: TEMP M-04G GDELT global tide probe v3
 
 on:
   push:
@@ -24,29 +24,30 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Run one-request GDELT update-inventory probe
+      - name: Run one-request GDELT recommended TOC probe
         run: node .github/probes/m04g_global_gdelt_tide_probe_v1.mjs
       - name: Render probe summary
         if: always()
         shell: bash
         run: |
           set -euo pipefail
-          if [ ! -f build/m04g-gdelt-global-tide-probe-v2/ledger.json ]; then
-            printf '%s\n' '# M-04G GDELT global tide probe v2' '' 'No ledger was produced.' >> "$GITHUB_STEP_SUMMARY"
+          if [ ! -f build/m04g-gdelt-global-tide-probe-v3/ledger.json ]; then
+            printf '%s\n' '# M-04G GDELT global tide probe v3' '' 'No ledger was produced.' >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
-          const ledger=JSON.parse(fs.readFileSync('build/m04g-gdelt-global-tide-probe-v2/ledger.json','utf8'));
+          const ledger=JSON.parse(fs.readFileSync('build/m04g-gdelt-global-tide-probe-v3/ledger.json','utf8'));
           const lines=[
-            '# M-04G GDELT global tide probe v2',
+            '# M-04G GDELT global tide probe v3',
             '',
             `- Candidate authorized: ${ledger.candidate_authorized}`,
             `- Network requests: ${ledger.network_request_count}`,
+            `- Target minute: ${ledger.target_minute_utc}`,
             `- Response status: ${ledger.response.status}`,
-            `- Response bytes: ${ledger.response.bytes}`,
-            `- Response SHA-256: ${ledger.response.sha256}`,
-            `- Valid locator rows: ${ledger.response.valid_locator_count}`,
+            `- Compressed bytes: ${ledger.response.compressed_bytes}`,
+            `- Compressed SHA-256: ${ledger.response.compressed_sha256}`,
+            `- Locator records: ${ledger.response.locator_record_count}`,
             `- Route projections: ${ledger.route_successes}/12`,
             `- Content projections: ${ledger.content_successes}/12`,
           ];
@@ -56,7 +57,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: m04g-gdelt-global-tide-probe-v2-${{ github.run_id }}
-          path: build/m04g-gdelt-global-tide-probe-v2/
+          name: m04g-gdelt-global-tide-probe-v3-${{ github.run_id }}
+          path: build/m04g-gdelt-global-tide-probe-v3/
           if-no-files-found: error
           retention-days: 30
