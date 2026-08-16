@@ -5,7 +5,6 @@ on:
     branches:
       - agent/m04g-residual-official-fallback-probe-v1
     paths:
-      - .github/probes/m04g-residual-replacement-probe-v4.mjs.gz.b64
       - .github/workflows/temporary-m04g-residual-replacement-probe-v4.yml
   workflow_dispatch:
 
@@ -24,18 +23,104 @@ jobs:
       - name: Check out probe branch
         uses: actions/checkout@v4
 
-      - name: Verify and run corrected bounded probe
+      - name: Run corrected bounded probe inline
         shell: bash
         run: |
           set -euo pipefail
-          PAYLOAD=.github/probes/m04g-residual-replacement-probe-v4.mjs.gz.b64
-          SCRIPT=/tmp/m04g-residual-replacement-probe-v4.mjs
           OUT=qualification/m04g-residual-replacement-probe-v4
-          sha256sum "${PAYLOAD}"
-          base64 --decode "${PAYLOAD}" | gunzip > "${SCRIPT}"
-          echo "0cd6afa403672df650f6bc7911b2743b1d2bc63ab139fc45b339accb87928dc1  ${SCRIPT}" | sha256sum -c -
           rm -rf "${OUT}"
-          node "${SCRIPT}" "${OUT}"
+          mkdir -p "${OUT}/bodies"
+          node --input-type=module - "${OUT}" <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import crypto from 'node:crypto';
+
+          const out=path.resolve(process.argv[2]);
+          const routes=[
+            {route_id:'M04G-GP055',basin_id:'G07-MENA',url:'https://data.gov.il/action/package_search?q=government&rows=5',hosts:['data.gov.il','gov.il'],source_class:'official_israel_government_dataset_api'},
+            {route_id:'M04G-GP080',basin_id:'G10-EAST-ASIA',url:'https://www.archives.go.jp/',hosts:['archives.go.jp'],source_class:'official_japan_archives_repository'},
+            {route_id:'M04G-GP086',basin_id:'G11-SOUTHEAST-ASIA',url:'https://www.gebiz.gov.sg/',hosts:['gebiz.gov.sg'],source_class:'official_singapore_procurement_repository'}
+          ];
+          const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+          const allowed=(url,hosts)=>hosts.some(host=>{const value=new URL(url).hostname.toLowerCase();return value===host||value.endsWith(`.${host}`)});
+          const visible=html=>html.replace(/<(script|style|noscript|svg|template)\b[^>]*>[\s\S]*?<\/\1>/gi,' ').replace(/<!--([\s\S]*?)-->/g,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/\s+/g,' ').trim();
+          const challenges=['cf-chl-','cloudflare ray id','just a moment','access denied','request blocked','captcha','incapsula'];
+
+          async function readBounded(response,maxBytes,controller){
+            const chunks=[];
+            let total=0;
+            for await(const chunk of response.body){
+              const buffer=Buffer.from(chunk);
+              total+=buffer.length;
+              if(total>maxBytes){controller.abort();throw Object.assign(new Error('response exceeded byte ceiling'),{failure:'oversized_response'})}
+              chunks.push(buffer);
+            }
+            return Buffer.concat(chunks);
+          }
+
+          async function probe(route){
+            let current=route.url;
+            const redirects=[];
+            for(let count=0;count<=5;count++){
+              const controller=new AbortController();
+              const timer=setTimeout(()=>controller.abort(),30000);
+              let response;
+              try{
+                response=await fetch(current,{redirect:'manual',signal:controller.signal,headers:{'user-agent':'CliffordNumber-M04G/2.8 bounded official replacement probe (+https://github.com/BigBirdReturns/clifford-number; contact through repository issues)','accept':'application/json,text/html,application/xml,text/xml,*/*;q=.1'}});
+              }catch(error){
+                clearTimeout(timer);
+                return {...route,success:false,failure:String(error).includes('Abort')?'timeout':'transport_failure',error:String(error)};
+              }
+              clearTimeout(timer);
+              if(response.status>=300&&response.status<400){
+                const location=response.headers.get('location');
+                if(!location)return {...route,success:false,status:response.status,failure:'redirect_unresolved'};
+                const next=new URL(location,current).toString();
+                if(!next.startsWith('https://'))return {...route,success:false,status:response.status,failure:'https_downgrade_refused'};
+                if(!allowed(next,route.hosts))return {...route,success:false,status:response.status,failure:'redirect_outside_official_host',redirect_target:next};
+                redirects.push({status:response.status,from:current,to:next});
+                current=next;
+                continue;
+              }
+              if(response.status!==200)return {...route,success:false,status:response.status,final_url:current,failure:response.status===403?'access_blocked':'http_failure'};
+              let body;
+              const bodyTimer=setTimeout(()=>controller.abort(),30000);
+              try{body=await readBounded(response,4194304,controller)}catch(error){return {...route,success:false,status:response.status,final_url:current,failure:error.failure||'read_failure',error:String(error)}}finally{clearTimeout(bodyTimer)}
+              const content_type=String(response.headers.get('content-type')||'').toLowerCase();
+              const decoded=body.toString('utf8').trim();
+              const lower=decoded.toLowerCase();
+              const challenge=challenges.find(marker=>lower.includes(marker));
+              let success=false;
+              let failure=null;
+              let visible_characters=null;
+              if(challenge){failure='challenge_or_access_page'}
+              else if(content_type.includes('json')||/^[\[{]/.test(decoded)){
+                try{const parsed=JSON.parse(decoded);success=Array.isArray(parsed)?parsed.length>0:Boolean(parsed&&Object.keys(parsed).length);if(!success)failure='insufficient_content'}catch{failure='parse_failure'}
+              }else{
+                const text=visible(decoded);
+                visible_characters=text.length;
+                success=text.length>=300;
+                if(!success)failure='insufficient_visible_content';
+              }
+              const body_sha256=sha(body);
+              const body_path=path.join(out,'bodies',`${route.route_id}-${body_sha256}.${content_type.includes('json')?'json':'html'}`);
+              fs.writeFileSync(body_path,body);
+              return {...route,status:response.status,final_url:current,redirects,bytes:body.length,content_type,body_sha256,body_path:path.relative(out,body_path),visible_characters,success,failure};
+            }
+            return {...route,success:false,failure:'redirect_limit_exceeded'};
+          }
+
+          const results=[];
+          for(const route of routes){results.push(await probe(route));await new Promise(resolve=>setTimeout(resolve,1000))}
+          const selected=results.filter(row=>row.success);
+          const failures={};
+          for(const row of results.filter(row=>!row.success))failures[row.failure]=(failures[row.failure]||0)+1;
+          const core={schema_version:'m04g-residual-replacement-probe@4',generated_at:new Date().toISOString(),workflow_run_id:process.env.GITHUB_RUN_ID||null,commit_sha:process.env.GITHUB_SHA||null,branch:process.env.GITHUB_REF_NAME||null,product_files_modified:false,candidate_write_enabled:false,summary:{routes_probed:routes.length,route_successes:selected.length,failure_counts:failures,candidate_authorized:selected.length>0},selected,routes:results,boundaries:{denominator_changed:false,route_identity_changed:false,thresholds_changed:false,metadata_fallback_counts_as_content:false}};
+          const ledger={...core,proof_sha256:sha(JSON.stringify(core))};
+          fs.writeFileSync(path.join(out,'ledger.json'),`${JSON.stringify(ledger,null,2)}\n`);
+          fs.writeFileSync(path.join(out,'summary.md'),['# M-04G residual replacement probe v4','',`- Routes probed: ${routes.length}`,`- Substantive successes: ${selected.length}`,`- Candidate authorized: ${selected.length>0}`,`- Proof SHA-256: ${ledger.proof_sha256}`,'',...selected.map(row=>`- \`${row.route_id}\`: \`${row.final_url}\` (${row.bytes} bytes, \`${row.body_sha256}\`)`)].join('\n')+'\n');
+          console.log(JSON.stringify(ledger.summary,null,2));
+          NODE
 
       - name: Publish receipt summary
         if: always()
