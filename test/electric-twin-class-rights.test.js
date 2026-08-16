@@ -29,6 +29,15 @@ if (pdfRun.status !== 0) {
 }
 assert.equal(pdfRun.status, 0, 'Electric Twin register-request PDF custody test failed');
 
+const dispatchRun = spawnSync(process.execPath, ['test/electric-twin-register-request-dispatch.test.js'], {
+  encoding: 'utf8',
+});
+if (dispatchRun.status !== 0) {
+  console.error(dispatchRun.stdout);
+  console.error(dispatchRun.stderr);
+}
+assert.equal(dispatchRun.status, 0, 'Electric Twin register-request dispatch custody test failed');
+
 const receipts = fs.readFileSync('data/ledger/receipts.jsonl', 'utf8')
   .split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
 const surfaces = fs.readFileSync('data/ledger/surfaces.jsonl', 'utf8')

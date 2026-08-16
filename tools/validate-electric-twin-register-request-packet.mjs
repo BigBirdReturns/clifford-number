@@ -13,6 +13,10 @@ import {
   TEMPLATE_PATH,
   validatePrivateInput,
 } from './lib/electric-twin-register-request-core.mjs';
+import {
+  DISPATCH_INPUT_SCHEMA,
+  validateDispatchInput,
+} from './lib/electric-twin-register-request-dispatch-core.mjs';
 
 function readUtf8(filePath) {
   return fs.readFileSync(filePath, 'utf8');
@@ -50,6 +54,7 @@ export function validateTrackedElectricTwinRequestPacket() {
   const custody = readJson(`${PACKET_ROOT}/custody-manifest.json`);
   const adjudication = readJson(`${PACKET_ROOT}/adjudication-rules.json`);
   const example = readJson(EXAMPLE_INPUT_PATH);
+  const dispatchExample = readJson(`${PACKET_ROOT}/dispatch-input.example.json`);
   const ledger = parseJsonl(`${PACKET_ROOT}/response-ledger.jsonl`);
   const template = readUtf8(TEMPLATE_PATH);
   const readme = readUtf8(`${PACKET_ROOT}/README.md`);
@@ -59,6 +64,7 @@ export function validateTrackedElectricTwinRequestPacket() {
   assert.equal(custody.acquisition_id, ACQUISITION_ID);
   assert.equal(adjudication.acquisition_id, ACQUISITION_ID);
   assert.equal(example.acquisition_id, ACQUISITION_ID);
+  assert.equal(dispatchExample.acquisition_id, ACQUISITION_ID);
   assert.equal(request.status, 'prepared_not_sent');
   assert.equal(custody.status, 'prepared_not_sent');
   assert.equal(request.graph_effect, 'none');
@@ -87,12 +93,18 @@ export function validateTrackedElectricTwinRequestPacket() {
   assert.equal(outboundArtifacts.get('statutory_request_rendered_pdf')?.sha256_required, true);
   assert.equal(outboundArtifacts.get('voluntary_request_rendered_pdf')?.required, true);
   assert.equal(outboundArtifacts.get('voluntary_request_rendered_pdf')?.sha256_required, true);
+  assert.equal(outboundArtifacts.get('postal_proof_of_dispatch')?.required, true);
+  assert.equal(outboundArtifacts.get('postal_proof_of_dispatch')?.sha256_required, true);
+  assert.equal(outboundArtifacts.get('postal_delivery_confirmation')?.required, true);
+  assert.equal(outboundArtifacts.get('postal_delivery_confirmation')?.sha256_required, true);
 
   for (const token of REQUIRED_TEMPLATE_TOKENS) assert.ok(template.includes(token));
   for (const heading of REQUIRED_TEMPLATE_HEADINGS) assert.ok(template.includes(heading));
   assert.match(template, /No follow-up, public escalation, or source-subject contact is authorized/u);
   assert.match(readme, /tools\/finalize-electric-twin-register-request\.mjs/u);
   assert.match(readme, /tools\/render-electric-twin-register-request-pdfs\.mjs/u);
+  assert.match(readme, /tools\/record-electric-twin-register-request-dispatch\.mjs/u);
+  assert.match(readme, /postal_dispatch_evidence_recorded_delivery_unconfirmed/u);
   assert.match(readme, /does not make either request dispatch-ready/u);
   assert.match(gitignore, /^data\/local\/$/mu);
   assert.match(gitignore, /^build\/source-acquisition\/$/mu);
@@ -102,6 +114,11 @@ export function validateTrackedElectricTwinRequestPacket() {
   assert.equal(example.authorization.statutory_dispatch_authorized, false);
   assert.equal(example.authorization.voluntary_dispatch_authorized, false);
   assert.throws(() => validatePrivateInput(example), /placeholder|finalization_authorized/u);
+
+  assert.equal(dispatchExample.schema_version, DISPATCH_INPUT_SCHEMA);
+  assert.equal(dispatchExample.channel, 'statutory_register_request');
+  assert.equal(dispatchExample.method, 'postal_service');
+  assert.throws(() => validateDispatchInput(dispatchExample), /placeholder/u);
 
   assertNoNetworkSurface('tools/lib/electric-twin-register-request-core.mjs', new Set([
     'node:assert/strict', 'node:crypto', 'node:fs', 'node:path',
@@ -123,9 +140,20 @@ export function validateTrackedElectricTwinRequestPacket() {
     'node:assert/strict', 'node:path', 'node:url',
     './lib/electric-twin-register-request-pdf-core.mjs',
   ]));
+  assertNoNetworkSurface('tools/lib/electric-twin-register-request-dispatch-core.mjs', new Set([
+    'node:assert/strict', 'node:crypto', 'node:fs', 'node:path',
+    './electric-twin-register-request-core.mjs',
+    './electric-twin-register-request-pdf-core.mjs',
+  ]));
+  assertNoNetworkSurface('tools/record-electric-twin-register-request-dispatch.mjs', new Set([
+    'node:assert/strict', 'node:path', 'node:url',
+    './lib/electric-twin-register-request-dispatch-core.mjs',
+  ]));
   assertNoWallClock('tools/lib/deterministic-text-pdf.mjs');
   assertNoWallClock('tools/lib/electric-twin-register-request-pdf-core.mjs');
   assertNoWallClock('tools/render-electric-twin-register-request-pdfs.mjs');
+  assertNoWallClock('tools/lib/electric-twin-register-request-dispatch-core.mjs');
+  assertNoWallClock('tools/record-electric-twin-register-request-dispatch.mjs');
 
   return {
     acquisition_id: ACQUISITION_ID,
