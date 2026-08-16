@@ -47,10 +47,23 @@
       "tide_id": "GDELT-GLOBAL-SERIAL",
       "match": "gdelt",
       "mode": "globally_serialized",
+      "expected_routes": 12,
+      "expected_basins": 12,
       "max_concurrency": 1,
       "minimum_interval_ms": 6500,
+      "timeout_ms": 30000,
+      "heartbeat_minutes": 15,
+      "publication_guard_minutes": 15,
+      "heartbeat_offset_minutes": 1,
+      "url_template": "https://storage.googleapis.com/data.gdeltproject.org/gdeltv5/weblegacy/ngrams/{timestamp}.toc.json.gz",
+      "record_format": "jsonl_gzip",
+      "minimum_locator_records": 1,
+      "max_compressed_bytes": 16777216,
+      "max_decompressed_bytes": 67108864,
       "deduplicate_identical_requests": true,
-      "route_results_back_to_original_basins": true
+      "route_results_back_to_original_basins": true,
+      "fallback_to_original_routes": false,
+      "promotion_ceiling": "locator_only"
     }
   ],
   "host_policies": [
