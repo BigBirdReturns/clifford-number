@@ -1,0 +1,141 @@
+{
+  "schema_version": "m05-answerable-power-s03-l7-five-domain-state-composition-repair@1",
+  "object_class": "bounded_cross_domain_state_composition_repair",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-03",
+  "leg_id": "S03-L7",
+  "issue": 345,
+  "as_of": "2026-08-17",
+  "status": "five_domain_state_composition_repair_frozen",
+  "title": "Preserve the Robodebt implementation state in the five-domain claim-evidence composition",
+  "question": "Can the merged five-domain claim-evidence denominator be recomposed from the already-authorized Robodebt pre-action implementation state, rather than from the earlier claim-promotion baseline, while changing no source object, claim, promotion, answer dimension other than the previously authorized Robodebt transition, graph state, or issue disposition?",
+  "canonical_base": {
+    "branch": "main",
+    "sha": "f67ea1abd09f18f5e02dd1f8b34887a1f863aa0e",
+    "tree_sha": "a2710a47a87241160c3692932348712fdb599446",
+    "merge_pull_request": 2161
+  },
+  "defect": {
+    "defect_class": "deterministic_state_composition_regression",
+    "target_path": "tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.mjs",
+    "mechanism": "The five-domain reconciliation reapplies the three earlier claim-evidence promotions directly to the original evidence-state contract, then adds the Intel and Homes for Ukraine promotions. That composition path does not apply the separately merged Robodebt pre-action implementation receipt, so its derived Robodebt observation returns pre_action_timing to false even though the canonical implementation receipt authorizes true.",
+    "prior_five_domain_robodebt_pre_action_timing": false,
+    "canonical_robodebt_implementation_after": true,
+    "repair_rule": "Apply the bound Robodebt implementation receipt first, then apply only the two additional Intel and Homes for Ukraine claim promotions to that derived contract.",
+    "empirical_claim_changed": false,
+    "promotion_authority_changed": false,
+    "answer_authority_created": false
+  },
+  "bindings": {
+    "official_receipt_packet": {
+      "path": "data/project/m05-cross-domain-official-receipt-candidates.json",
+      "blob_sha": "1c17549a39b826853435d3726596bf41d0fc7de9",
+      "schema_version": "m05-cross-domain-official-receipt-candidates@1",
+      "pull_request": 2151,
+      "merge_commit": "204fb917a6fcef3d3a6fcf09186bf9c2de7ed2f0"
+    },
+    "prior_promotion_adjudication": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.json",
+      "blob_sha": "e64f24fb74094b99e717c2cd03af8e0620d23f15",
+      "schema_version": "m05-answerable-power-s03-l7-claim-evidence-promotion-adjudication@1",
+      "pull_request": 2153,
+      "merge_commit": "49d1f3617132248484647eca4ddfa4fa49db40fb"
+    },
+    "evidence_state_contract": {
+      "path": "data/project/m05-source-health-evidence-state-regression.json",
+      "blob_sha": "72f7ce6c711e07c5f8c72355d2b2c491a4dc7a33",
+      "schema_version": "m05-source-health-evidence-state-regression@1",
+      "minimum_domains": 3,
+      "minimum_jurisdictions": 2
+    },
+    "robodebt_pre_action_implementation_receipt": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.json",
+      "blob_sha": "a31d7ea7a1432a169de31035c153210b8975e217",
+      "schema_version": "m05-answerable-power-s03-l7-robodebt-pre-action-implementation-receipt@1",
+      "pull_request": 2155,
+      "merge_commit": "3e9132f1628fe96989b931f56a302bf69907ef99"
+    },
+    "five_domain_reconciliation": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.json",
+      "blob_sha": "f2784666aa55fcf92d4523ee01765f1b623fcb35",
+      "schema_version": "m05-answerable-power-s03-l7-five-domain-claim-evidence-reconciliation@1",
+      "pull_request": 2161,
+      "merge_commit": "f67ea1abd09f18f5e02dd1f8b34887a1f863aa0e"
+    },
+    "intel_receipt_candidate": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json",
+      "blob_sha": "ff88d6d3cd6ae021f7ecbbe596026b82f15ce58a",
+      "schema_version": "m05-answerable-power-s03-l7-intel-chips-equity-receipt-candidate@1"
+    },
+    "hfu_receipt_candidate": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.json",
+      "blob_sha": "8d864b004f3319dae39a5b74b746581d42d768d1",
+      "schema_version": "m05-answerable-power-s03-l7-hfu-share-exit-receipt-candidate@1"
+    }
+  },
+  "authority": {
+    "authority_class": "repository_owner_directed_state_composition_repair",
+    "repository_owner": "BigBirdReturns",
+    "authorization_basis": "The repository owner directed continuation after the five-domain reconciliation merged. This repair preserves the result of the already-merged Robodebt implementation adjudication while retaining all five exact claim-evidence promotions and every unresolved answer deficit.",
+    "effective_event": "merge_to_main",
+    "authorized_state_change": "restore the previously authorized Robodebt pre_action_timing value in the composed five-domain derived contract",
+    "authorized_evidence_scope": "none beyond the five already admitted exact claims",
+    "authorized_answer_scope": "the previously authorized Robodebt pre_action_timing transition only",
+    "authorized_graph_effect": "none",
+    "human_review_claimed": false,
+    "independent_external_review_claimed": false,
+    "legal_or_fact_finding_authority_claimed": false
+  },
+  "target": {
+    "receipt_id": "M05-RC-ADMIN-AU-ROBODEBT",
+    "domain_id": "APC-ADMIN-01",
+    "jurisdiction": "AU",
+    "dimension": "pre_action_timing",
+    "five_domain_composition_before": false,
+    "canonical_implementation_state": true,
+    "composed_after": true,
+    "durability_after": false,
+    "composed_durable_answer_after": false
+  },
+  "expected_result": {
+    "audited_domains": 5,
+    "claim_evidence_admissible": 5,
+    "repository_promotion_allowed": 5,
+    "advanced_answer_dimensions": 1,
+    "robodebt_pre_action_timing": true,
+    "robodebt_durability": false,
+    "effective_answers": 0,
+    "qualifying_jurisdictions": 0,
+    "evidentiary_sufficiency": true,
+    "answer_effectiveness": false,
+    "cross_domain_regression_completed": false,
+    "issue_345_may_close": false
+  },
+  "scope_note": "The repair corrects composition order only. The three prior exact claims, the Intel and Homes for Ukraine exact claims, their source objects, their promotion authority, and their answer deficits remain unchanged. Five admitted claims still do not establish a composed durable answer, and the restored Robodebt pre-action dimension does not establish durability or close issue #345.",
+  "boundaries": {
+    "changes_official_receipt_packet": false,
+    "changes_prior_promotion_adjudication": false,
+    "changes_evidence_state_contract": false,
+    "changes_robodebt_implementation_receipt": false,
+    "changes_five_domain_reconciliation": false,
+    "changes_intel_candidate": false,
+    "changes_hfu_candidate": false,
+    "changes_claim_text": false,
+    "changes_promotion_denominator": false,
+    "changes_source_health_state": false,
+    "changes_observed_outcome": false,
+    "changes_any_dimension_other_than_robodebt_pre_action_timing": false,
+    "creates_new_empirical_receipt": false,
+    "claims_robodebt_durability": false,
+    "claims_composed_durable_answer": false,
+    "claims_answer_effectiveness": false,
+    "claims_cross_domain_completion": false,
+    "claims_independent_external_review": false,
+    "claims_human_review": false,
+    "issue_345_may_close": false,
+    "promotes_to": "candidate_state_composition_repair",
+    "graph_effect": "none",
+    "conclusion_generated": false,
+    "project_complete": false
+  }
+}
