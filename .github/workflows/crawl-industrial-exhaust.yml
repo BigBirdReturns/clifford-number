@@ -10,6 +10,16 @@ on:
       - 'tools/crawl-industrial-exhaust.mjs'
       - 'tools/lib/industrial-exhaust.mjs'
       - 'test/industrial-exhaust.test.js'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/crawl-industrial-exhaust.yml'
+      - 'data/exhaust/README.md'
+      - 'data/exhaust/sources.json'
+      - 'data/exhaust/watch-terms.json'
+      - 'tools/crawl-industrial-exhaust.mjs'
+      - 'tools/lib/industrial-exhaust.mjs'
+      - 'test/industrial-exhaust.test.js'
   schedule:
     - cron: '41 8 * * *'
   workflow_dispatch:
