@@ -1,0 +1,68 @@
+name: Temporary PR 2156 review-fix materializer
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-intel-chips-review-fix-materializer-v1
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify carrier boundary
+        run: |
+          set -euo pipefail
+          test "$(git branch --show-current)" = "agent/m05-s03-l7-intel-chips-review-fix-materializer-v1"
+          test -f .github/tmp/pr2156-review-fix-payload.tgz
+          echo "043e95f9e96f0232d7b7fd01d2abb69792e62935275a0afbb007494f7a285e9a  .github/tmp/pr2156-review-fix-payload.tgz" | sha256sum -c -
+          test -z "$(git status --porcelain)"
+      - name: Materialize review fixes
+        run: |
+          set -euo pipefail
+          tar -xzf .github/tmp/pr2156-review-fix-payload.tgz -C .
+          git diff --check
+          mapfile -t changed < <(git diff --name-only | sort)
+          expected=(
+            data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json
+            test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
+            tools/lib/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
+            tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
+          )
+          printf '%s\n' "${changed[@]}" > /tmp/changed
+          printf '%s\n' "${expected[@]}" | sort > /tmp/expected
+          diff -u /tmp/expected /tmp/changed
+      - name: Qualify repaired product
+        run: |
+          set -euo pipefail
+          node --check tools/lib/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
+          npm run release:check
+          git restore --staged --worktree build dist pages reports estates gametrails 2>/dev/null || true
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
+          git diff --check
+      - name: Publish repaired four-file staging commit
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json \
+            tools/lib/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs \
+            tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs \
+            test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
+          git diff --cached --check
+          git commit -m "Repair Intel CHIPS receipt review findings"
+          git push origin HEAD
