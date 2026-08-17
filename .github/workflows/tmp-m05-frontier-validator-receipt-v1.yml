@@ -1,0 +1,60 @@
+name: Temporary M-05 frontier validator receipt patch
+
+on:
+  push:
+    branches:
+      - agent/tmp-m05-frontier-validator-receipt-v1
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/m05-s03-l7-five-domain-state-composition-product-v1
+          fetch-depth: 0
+      - name: Verify and patch frontier validator
+        env:
+          EXPECTED_HEAD: ab6f31ea68c558923ad5a4e49524768ee6933dde
+          TARGET_BRANCH: agent/m05-s03-l7-five-domain-state-composition-product-v1
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          python - <<'PY'
+          from pathlib import Path
+
+          target = Path('tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier-base.mjs')
+          text = target.read_text()
+          old = """const reconciliationSummary=summarizeFiveDomainClaimEvidenceReconciliation({
+            officialPacket,
+            priorAdjudication,
+            contract,
+            intelCandidate,
+            hfuCandidate,
+            reconciliation
+          });"""
+          new = """const reconciliationSummary=summarizeFiveDomainClaimEvidenceReconciliation({
+            officialPacket,
+            priorAdjudication,
+            contract,
+            robodebtImplementationReceipt:robodebtReceipt,
+            intelCandidate,
+            hfuCandidate,
+            reconciliation
+          });"""
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one reconciliation call, found {text.count(old)}')
+          target.write_text(text.replace(old, new))
+          PY
+          git diff --check
+          git diff --exit-code --quiet && { echo 'patch produced no change'; exit 1; }
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier-base.mjs
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier-base.mjs
+          git commit -m "Pass Robodebt receipt into frontier reconciliation validation"
+          git push origin "HEAD:${TARGET_BRANCH}"
