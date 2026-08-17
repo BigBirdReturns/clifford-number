@@ -1,0 +1,81 @@
+name: First-party industrial-exhaust intake
+
+# Capture and triage only. Corporate publications remain attributed first-party
+# statements and cannot mutate canonical graph, claim, score, case, or actor state.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/crawl-industrial-exhaust.yml'
+      - 'data/exhaust/**'
+      - 'tools/crawl-industrial-exhaust.mjs'
+      - 'tools/lib/industrial-exhaust.mjs'
+      - 'test/industrial-exhaust.test.js'
+  schedule:
+    - cron: '41 8 * * *'
+  workflow_dispatch:
+    inputs:
+      source:
+        description: Optional exact source id
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: first-party-industrial-exhaust-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax and adversarial intake tests
+        run: |
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node test/industrial-exhaust.test.js
+      - name: Audit configured first-party feeds
+        run: node tools/crawl-industrial-exhaust.mjs --audit
+      - name: Live read-only feed smoke test
+        env:
+          EXHAUST_TIMEOUT_MS: '30000'
+          EXHAUST_MAX_FEED_BYTES: '5000000'
+        run: node tools/crawl-industrial-exhaust.mjs --dry-run --strict
+
+  crawl:
+    if: github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Harvest immutable first-party feed observations
+        env:
+          EXHAUST_TIMEOUT_MS: '30000'
+          EXHAUST_MAX_FEED_BYTES: '5000000'
+        run: |
+          SOURCE_ARG=''
+          if [ -n "${{ inputs.source || '' }}" ]; then SOURCE_ARG="--source=${{ inputs.source }}"; fi
+          node tools/crawl-industrial-exhaust.mjs --strict $SOURCE_ARG
+      - name: Re-run intake firewall
+        run: node test/industrial-exhaust.test.js
+      - name: Commit intake only
+        run: |
+          git config user.name "clifford-exhaust-bot"
+          git config user.email "clifford-exhaust-bot@users.noreply.github.com"
+          git add data/exhaust receipts/exhaust
+          git diff --cached --quiet && exit 0
+          git commit -m "crawl: first-party industrial exhaust ($(date -u +%F))"
+          for i in 1 2 3; do git pull --rebase --autostash origin main && git push && exit 0 || sleep $((i*3)); done
+          echo "push failed after retries"; exit 1
