@@ -1,0 +1,67 @@
+name: M-05 Intel CHIPS equity receipt candidate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js'
+      - '.github/workflows/m05-intel-chips-equity-receipt-candidate.yml'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-real-receipt-admission-audit.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.json'
+      - 'data/project/m05-cross-domain-official-receipt-candidates.json'
+      - 'data/project/m05-source-health-evidence-state-regression.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-06-value-recovery-transfer.json'
+      - 'data/intake/m05-answerable-power-sprint-03-leg-06-value-recovery-sources.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.mjs'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.mjs'
+      - 'tools/lib/m05-source-health-evidence-state-regression.mjs'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js'
+      - '.github/workflows/m05-intel-chips-equity-receipt-candidate.yml'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-real-receipt-admission-audit.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.json'
+      - 'data/project/m05-cross-domain-official-receipt-candidates.json'
+      - 'data/project/m05-source-health-evidence-state-regression.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-06-value-recovery-transfer.json'
+      - 'data/intake/m05-answerable-power-sprint-03-leg-06-value-recovery-sources.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.mjs'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.mjs'
+      - 'tools/lib/m05-source-health-evidence-state-regression.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate bounded Intel CHIPS equity receipt candidate
+        run: |
+          node --check tools/lib/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic focused state
+        run: |
+          git restore --staged --worktree .
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
+          git diff --exit-code
