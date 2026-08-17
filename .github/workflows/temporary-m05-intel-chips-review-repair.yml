@@ -39,7 +39,16 @@ jobs:
           node --check test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
 
       - name: Run corrected focused validator
-        run: node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
+        run: |
+          set +e
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs > /tmp/validator.out 2>&1
+          status=$?
+          cat /tmp/validator.out
+          if [ "$status" -ne 0 ]; then
+            message=$(tail -n 20 /tmp/validator.out | tr '\n' ' ' | sed 's/%/%25/g; s/\r/%0D/g; s/\n/%0A/g')
+            echo "::error title=Intel focused validator failure::$message"
+            exit "$status"
+          fi
 
       - name: Run corrected focused adversarial test
         run: node test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
