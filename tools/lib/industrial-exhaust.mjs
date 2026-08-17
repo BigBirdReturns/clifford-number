@@ -68,18 +68,25 @@ export function redactContactData(value) {
     .replace(/(?<!\w)(?:\+?\d[\d().\s-]{7,}\d)(?!\w)/gu, '[contact omitted]');
 }
 
-export function cleanText(value, max = 1600) {
+function cleanXmlScalar(value, max = 4000) {
   const withoutCdata = String(value ?? '').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/giu, '$1');
   const decoded = decodeXmlEntities(withoutCdata)
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/giu, ' ')
     .replace(/<style\b[^>]*>[\s\S]*?<\/style>/giu, ' ')
     .replace(/<(?:br|hr)\b[^>]*\/?>/giu, ' ')
     .replace(/<[^>]+>/gu, ' ');
-  return redactContactData(decoded).replace(/\s+/gu, ' ').trim().slice(0, max);
+  return decoded.replace(/\s+/gu, ' ').trim().slice(0, max);
+}
+
+export function cleanText(value, max = 1600) {
+  return redactContactData(cleanXmlScalar(value, Math.max(max * 2, max)))
+    .replace(/\s+/gu, ' ')
+    .trim()
+    .slice(0, max);
 }
 
 export function canonicalizeUrl(value, baseUrl) {
-  const raw = cleanText(value, 4000);
+  const raw = cleanXmlScalar(value, 4000);
   if (!raw) return null;
   try {
     const url = new URL(raw, baseUrl);
@@ -133,7 +140,7 @@ function extractAtomLink(block) {
 }
 
 function normalizeDate(value) {
-  const raw = cleanText(value, 200);
+  const raw = cleanXmlScalar(value, 200);
   if (!raw) return { iso: null, raw: null };
   const timestamp = Date.parse(raw);
   return Number.isFinite(timestamp)
@@ -168,7 +175,7 @@ function normalizeItem(itemBlock, source) {
   const rdfAbout = extractAttribute(itemAttributes, 'rdf:about') ?? extractAttribute(itemAttributes, 'about');
   const link = canonicalizeUrl(atomLink ?? rssLink ?? rdfAbout, source.feed_url);
 
-  const guid = cleanText(extractElementRaw(raw, 'guid') ?? extractElementRaw(raw, 'id'), 1000) || null;
+  const guid = cleanXmlScalar(extractElementRaw(raw, 'guid') ?? extractElementRaw(raw, 'id'), 1000) || null;
   const published = normalizeDate(
     extractElementRaw(raw, 'pubDate')
       ?? extractElementRaw(raw, 'published')

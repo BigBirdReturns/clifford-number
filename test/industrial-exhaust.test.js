@@ -100,6 +100,21 @@ assert.equal(rdfParsed.items[0].published_at, '2026-07-18T00:00:00.000Z');
 assert.ok(classifyEventHints(rdfParsed.items[0]).includes('leadership_role'));
 
 assert.equal(canonicalizeUrl('http://Example.TEST/a?utm_medium=rss&z=2&a=1#frag', source.feed_url), 'https://example.test/a?a=1&z=2');
+assert.equal(
+  canonicalizeUrl('https://www.dentsu.co.jp/en/news/release/2026/0817020000.html', source.feed_url),
+  'https://www.dentsu.co.jp/en/news/release/2026/0817020000.html'
+);
+const numericIdentityRss = `<?xml version="1.0"?><rss version="2.0"><channel><title>Numeric identities</title>
+<item><title>First</title><link>https://www.dentsu.co.jp/en/news/release/2026/0817020000.html</link><guid>0817020000</guid></item>
+<item><title>Second</title><link>https://www.dentsu.co.jp/en/news/release/2026/0817010000.html</link><guid>0817010000</guid></item>
+</channel></rss>`;
+const numericIdentityParsed = parseFeed(numericIdentityRss, source);
+assert.equal(numericIdentityParsed.item_count, 2);
+assert.deepEqual(
+  numericIdentityParsed.items.map(item => item.source_record_id).sort(),
+  ['0817010000', '0817020000']
+);
+assert.equal(new Set(numericIdentityParsed.items.map(item => item.source_record_key)).size, 2);
 assert.equal(cleanText('<p>Hello&nbsp;world</p>'), 'Hello world');
 
 assert.throws(() => validateRegistry({
