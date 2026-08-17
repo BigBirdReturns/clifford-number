@@ -1,0 +1,98 @@
+name: Temporary M-05 HFU Share exit receipt materializer
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-hfu-share-exit-materializer-v1
+    paths:
+      - '.github/tmp/m05-hfu-share-exit-product.tar.gz.b64'
+      - '.github/workflows/tmp-m05-hfu-share-exit-materializer.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    env:
+      EXPECTED_BASE: 92c65737a5743a26ff61665e25508bfab478b875
+      EXPECTED_ARCHIVE_SHA256: ccb464c3f8f40631ce98cfee808735e2ca1592ce65f69c779e0b43e07569288a
+      PRODUCT_BRANCH: agent/m05-s03-l7-hfu-share-exit-staging-v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify carrier boundary
+        run: |
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_BASE"
+          mapfile -t changed < <(git diff --name-only HEAD^ HEAD | sort)
+          expected=(
+            ".github/tmp/m05-hfu-share-exit-product.tar.gz.b64"
+            ".github/workflows/tmp-m05-hfu-share-exit-materializer.yml"
+          )
+          printf '%s\n' "${expected[@]}" | sort > /tmp/expected
+          printf '%s\n' "${changed[@]}" | sort > /tmp/actual
+          diff -u /tmp/expected /tmp/actual
+      - name: Decode bounded product
+        run: |
+          base64 --decode .github/tmp/m05-hfu-share-exit-product.tar.gz.b64 > /tmp/hfu-product.tar.gz
+          echo "$EXPECTED_ARCHIVE_SHA256  /tmp/hfu-product.tar.gz" | sha256sum --check
+          tar -xzf /tmp/hfu-product.tar.gz
+      - name: Qualify product
+        run: |
+          node --check tools/lib/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.test.js
+          git diff --check
+          npm run release:check
+      - name: Restore deterministic product
+        run: |
+          git restore --staged --worktree .
+          git clean -fd
+          tar -xzf /tmp/hfu-product.tar.gz
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.test.js
+          git diff --check
+      - name: Publish clean staging commit
+        run: |
+          product_paths=(
+            ".github/workflows/m05-hfu-share-exit-receipt-candidate.yml"
+            "data/project/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.json"
+            "test/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.test.js"
+            "tools/lib/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs"
+            "tools/validate-m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs"
+          )
+          mkdir -p /tmp/hfu-product
+          cp /tmp/hfu-product.tar.gz /tmp/hfu-product/
+          git checkout --detach "$EXPECTED_BASE"
+          git clean -fd
+          tar -xzf /tmp/hfu-product.tar.gz
+          git add "${product_paths[@]}"
+          git diff --cached --name-only | sort > /tmp/hfu-product/changed-paths.txt
+          printf '%s\n' "${product_paths[@]}" | sort > /tmp/hfu-product/expected-paths.txt
+          diff -u /tmp/hfu-product/expected-paths.txt /tmp/hfu-product/changed-paths.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "[M-05 S03-L7] Freeze HFU Share exit receipt candidate"
+          PRODUCT_COMMIT="$(git rev-parse HEAD)"
+          PRODUCT_TREE="$(git rev-parse HEAD^{tree})"
+          {
+            echo "base=$EXPECTED_BASE"
+            echo "commit=$PRODUCT_COMMIT"
+            echo "tree=$PRODUCT_TREE"
+            echo "archive_sha256=$EXPECTED_ARCHIVE_SHA256"
+            echo "changed_paths=5"
+          } > /tmp/hfu-product/outcome.env
+          git ls-tree -r "$PRODUCT_COMMIT" -- "${product_paths[@]}" > /tmp/hfu-product/git-objects.txt
+          sha256sum "${product_paths[@]}" > /tmp/hfu-product/file-sha256.txt
+          git push --force origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: m05-hfu-share-exit-receipt-candidate
+          path: /tmp/hfu-product
+          if-no-files-found: error
