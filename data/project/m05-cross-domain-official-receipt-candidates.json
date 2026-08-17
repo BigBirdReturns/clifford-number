@@ -1,0 +1,393 @@
+{
+  "schema_version": "m05-cross-domain-official-receipt-candidates@1",
+  "object_class": "bounded_cross_domain_official_receipt_candidate_set",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-03",
+  "issue": 345,
+  "as_of": "2026-08-16",
+  "status": "candidate_repository_receipts",
+  "title": "Cross-domain official receipt candidates",
+  "question": "Which official primary or adjudicative records can be bound to three answerable-power domains across at least two jurisdictions without treating official hosting, orders, or source health as proof of durable answer effectiveness?",
+  "canonical_gate": {
+    "path": "data/project/m05-source-health-evidence-state-regression.json",
+    "merge_pull_request": 2150,
+    "merge_commit": "cb528c25deef376995123e1c6a35455568b90ec3",
+    "product_head": "16df7e9c4182489f23569aec431159806c62223a",
+    "minimum_domains": 3,
+    "minimum_jurisdictions": 2
+  },
+  "candidate_count": 3,
+  "jurisdictions": [
+    "AU",
+    "NL",
+    "IT"
+  ],
+  "domain_ids": [
+    "APC-ADMIN-01",
+    "APC-COERCION-01",
+    "APC-WORK-01"
+  ],
+  "records": [
+    {
+      "receipt_id": "M05-RC-ADMIN-AU-ROBODEBT",
+      "domain_id": "APC-ADMIN-01",
+      "jurisdiction": "AU",
+      "title": "Robodebt administrative review, remedy, and implementation record",
+      "claim_binding": {
+        "identity_scope": "Australian social-security recipients and group members affected by the Commonwealth Robodebt scheme, together with the agencies and review institutions responsible for debt creation, recovery, review, and remediation.",
+        "temporal_scope": "The unlawful scheme and its consequences from 2015 through the Royal Commission report in 2023, the Administrative Review Tribunal commencement in 2024, and implementation and settlement records published through 2025.",
+        "predicate_scope": "Whether the official record establishes review before or during recovery, intelligible explanation, independent scrutiny, accessible challenge, remediation, and a durable governance response to automated public-debt decisions.",
+        "claim": "The official record establishes unlawful automated debt administration, a funded government response, an operating independent review architecture, an advocate channel, and compensation processes, while leaving pre-action implementation and long-term durability insufficiently observed for M-05 answer promotion."
+      },
+      "sources": [
+        {
+          "source_id": "AU-ROBODEBT-RC-REPORT",
+          "authority": "Royal Commission into the Robodebt Scheme",
+          "record_type": "official_primary_record",
+          "published_at": "2023-07-07",
+          "url": "https://robodebt.royalcommission.gov.au/publications/report",
+          "locator": [
+            "Recommendations 17.1 and 17.2 on review, explanation, algorithm scrutiny, and audit",
+            "Recommendation 18.1 on pausing recovery while a debt is reviewed or disputed",
+            "Recommendation 20.5 on reinstating the Administrative Review Council"
+          ]
+        },
+        {
+          "source_id": "AU-ROBODEBT-GOV-RESPONSE",
+          "authority": "Australian Government ministers",
+          "record_type": "official_primary_record",
+          "published_at": "2023-11-13",
+          "url": "https://ministers.finance.gov.au/financeminister/media-release/2023/11/13/government-response-robodebt-royal-commission",
+          "locator": [
+            "Agreement or agreement in principle to all 56 recommendations",
+            "Implementation funding and Administrative Review Council funding"
+          ]
+        },
+        {
+          "source_id": "AU-ROBODEBT-ART-IMPLEMENTATION",
+          "authority": "Attorney-General's Department",
+          "record_type": "official_primary_record",
+          "published_at": "2024-10-14",
+          "url": "https://www.ag.gov.au/legal-system/new-system-federal-administrative-review/overview-administrative-review-tribunal-legislation",
+          "locator": [
+            "Administrative Review Tribunal Acts commenced on 14 October 2024",
+            "Administrative Review Council and systemic-issue reporting functions",
+            "Accessible review and publication of significant decisions"
+          ]
+        },
+        {
+          "source_id": "AU-ROBODEBT-ADVOCATES-CHANNEL",
+          "authority": "Services Australia",
+          "record_type": "official_primary_record",
+          "published_at": "2025-08-26",
+          "url": "https://www.servicesaustralia.gov.au/legal-advocates-channel-improving-outcomes-for-customers",
+          "locator": [
+            "Nearly 3,000 complex or crisis inquiries resolved",
+            "Eighteen community legal services and 119 registered users"
+          ]
+        },
+        {
+          "source_id": "AU-ROBODEBT-SETTLEMENT",
+          "authority": "Attorney-General's portfolio",
+          "record_type": "official_primary_record",
+          "published_at": "2025-09-04",
+          "url": "https://ministers.ag.gov.au/media-centre/robodebt-class-action-appeal-settlement-04-09-2025",
+          "locator": [
+            "Proposed 475 million Australian dollar appeal settlement",
+            "Settlement remained subject to Federal Court approval"
+          ]
+        }
+      ],
+      "observation": {
+        "domain_id": "APC-ADMIN-01",
+        "jurisdiction": "AU",
+        "observation_class": "official_primary_record_candidate_with_unresolved_pre_action_and_durability",
+        "fixture_only": false,
+        "promotes_to": "none",
+        "source_health": {
+          "coverage_healthy": true,
+          "route_healthy": true,
+          "content_healthy": true
+        },
+        "evidence": {
+          "source_class": "official_primary_record",
+          "promotion_ceiling": "repository_content",
+          "source_addressed_receipt": true,
+          "exact_claim_binding": true,
+          "identity_scope_bound": true,
+          "temporal_scope_bound": true,
+          "predicate_scope_bound": true,
+          "substantive_content": true,
+          "counterevidence_reviewed": true,
+          "promotion_authority": false
+        },
+        "answer": {
+          "observed_domains": 3,
+          "observed_jurisdictions": 3,
+          "observed_outcome": true,
+          "composed_durable_answer": false,
+          "dimensions": {
+            "pre_action_timing": false,
+            "evidence_access": true,
+            "independent_authority": true,
+            "effective_remedy": true,
+            "durability": false,
+            "practical_exit_or_governance": true
+          }
+        },
+        "expected": {
+          "claim_evidence_admissible": false,
+          "answer_effective": false
+        }
+      },
+      "deficits": [
+        "promotion_authority",
+        "composed_durable_answer",
+        "dimension:pre_action_timing",
+        "dimension:durability"
+      ],
+      "assessment": {
+        "evidence_tier": "official primary and implementation records",
+        "venue": "Australian Royal Commission, executive implementation, administrative review, service-delivery, and settlement records",
+        "target": "administrative benefits and debt",
+        "upside": "The record binds unlawful automation to review, independent oversight, accessible advocacy, and compensation mechanisms.",
+        "downside": "Recommendations, institutional creation, and a proposed settlement do not by themselves prove that every affected person receives a pre-action stay or durable remediation.",
+        "failure_mode": "Promoting a funded response or formal review architecture as a completed answer without observing pre-action application and sustained implementation."
+      }
+    },
+    {
+      "receipt_id": "M05-RC-COERCION-NL-SYRI",
+      "domain_id": "APC-COERCION-01",
+      "jurisdiction": "NL",
+      "title": "SyRI judicial invalidation and government cessation record",
+      "claim_binding": {
+        "identity_scope": "Individuals and communities exposed to the Netherlands System Risk Indication framework, the civil-society and individual claimants, and the Dutch state actors responsible for fraud-risk enforcement.",
+        "temporal_scope": "The Hague District Court judgment and immediate government response in February 2020, followed by the April 2020 parliamentary implementation letter.",
+        "predicate_scope": "Whether an independent authority could test a secretive public risk system, halt its legal operation, and produce a durable cessation while preserving a route to evidence access and contest.",
+        "claim": "The official record establishes that the SyRI framework was insufficiently transparent and verifiable, was declared without binding effect, ceased to be usable for enforcement, attracted no appeal, and had no active or newly accepted projects, while leaving an individual evidence-access mechanism unestablished."
+      },
+      "sources": [
+        {
+          "source_id": "NL-SYRI-JUDGMENT",
+          "authority": "The Hague District Court",
+          "record_type": "official_adjudicative_record",
+          "published_at": "2020-02-13",
+          "url": "https://www.rechtspraak.nl/organisatie-en-contact/organisatie/rechtbanken/rechtbank-den-haag/nieuws/2020/02/syri-legislation-in-breach-of-european-convention-on-human-rights",
+          "locator": [
+            "ECLI:NL:RBDHA:2020:865",
+            "Article 8 ECHR fair-balance analysis",
+            "Insufficient transparency and verifiability; no binding effect"
+          ]
+        },
+        {
+          "source_id": "NL-SYRI-MINISTRY-RESPONSE",
+          "authority": "Netherlands Ministry of Social Affairs and Employment",
+          "record_type": "official_primary_record",
+          "published_at": "2020-02-05",
+          "url": "https://www.rijksoverheid.nl/actueel/nieuws/2020/02/05/reactie-ministerie-van-sociale-zaken-en-werkgelegenheid-op-uitspraak-rechter-over-inzet-syri",
+          "locator": [
+            "Ministry acknowledged that SyRI could no longer be used for enforcement"
+          ]
+        },
+        {
+          "source_id": "NL-SYRI-PARLIAMENTARY-LETTER",
+          "authority": "State Secretary of Social Affairs and Employment",
+          "record_type": "official_primary_record",
+          "published_at": "2020-04-29",
+          "url": "https://zoek.officielebekendmakingen.nl/kst-17050-593.html",
+          "locator": [
+            "Letter dated 23 April 2020",
+            "No active SyRI projects and no new applications",
+            "Government did not appeal the judgment"
+          ]
+        }
+      ],
+      "observation": {
+        "domain_id": "APC-COERCION-01",
+        "jurisdiction": "NL",
+        "observation_class": "official_adjudicative_record_candidate_with_unresolved_evidence_access",
+        "fixture_only": false,
+        "promotes_to": "none",
+        "source_health": {
+          "coverage_healthy": true,
+          "route_healthy": true,
+          "content_healthy": true
+        },
+        "evidence": {
+          "source_class": "official_adjudicative_record",
+          "promotion_ceiling": "repository_content",
+          "source_addressed_receipt": true,
+          "exact_claim_binding": true,
+          "identity_scope_bound": true,
+          "temporal_scope_bound": true,
+          "predicate_scope_bound": true,
+          "substantive_content": true,
+          "counterevidence_reviewed": true,
+          "promotion_authority": false
+        },
+        "answer": {
+          "observed_domains": 3,
+          "observed_jurisdictions": 3,
+          "observed_outcome": true,
+          "composed_durable_answer": false,
+          "dimensions": {
+            "pre_action_timing": true,
+            "evidence_access": false,
+            "independent_authority": true,
+            "effective_remedy": true,
+            "durability": true,
+            "practical_exit_or_governance": true
+          }
+        },
+        "expected": {
+          "claim_evidence_admissible": false,
+          "answer_effective": false
+        }
+      },
+      "deficits": [
+        "promotion_authority",
+        "composed_durable_answer",
+        "dimension:evidence_access"
+      ],
+      "assessment": {
+        "evidence_tier": "official adjudicative and implementation records",
+        "venue": "The Hague District Court, national ministry, and parliamentary publication system",
+        "target": "surveillance and enforcement",
+        "upside": "The record demonstrates independent review, legal invalidation, non-use, and a no-appeal implementation response.",
+        "downside": "System-level invalidation does not create a person-level right to inspect the inputs, risk signal, or reasoning that affected an individual.",
+        "failure_mode": "Treating cessation of one system as a complete contestability architecture despite the unresolved evidence-access mechanism."
+      }
+    },
+    {
+      "receipt_id": "M05-RC-WORK-IT-FOODINHO",
+      "domain_id": "APC-WORK-01",
+      "jurisdiction": "IT",
+      "title": "Foodinho rider algorithm enforcement and recurrence record",
+      "claim_binding": {
+        "identity_scope": "Foodinho and Glovo platform riders in Italy whose work allocation, rating, account access, identity verification, and geolocation were processed through automated platform systems.",
+        "temporal_scope": "The Italian Data Protection Authority's 2021 enforcement order and implementation deadlines, followed by its 2024 inspection, renewed sanction, and corrective prescriptions.",
+        "predicate_scope": "Whether workers received intelligible algorithmic information, access to contest and human intervention, protection against discriminatory ranking, an effective independent remedy, and durable implementation.",
+        "claim": "The official record establishes two enforcement cycles requiring transparency, accuracy, human intervention, contestability, account-restoration information, and anti-discrimination controls, while the 2024 recurrence after the 2021 order leaves pre-action protection and durable compliance unproven."
+      },
+      "sources": [
+        {
+          "source_id": "IT-FOODINHO-2021-ORDER",
+          "authority": "Garante per la protezione dei dati personali",
+          "record_type": "official_adjudicative_record",
+          "published_at": "2021-06-10",
+          "url": "https://www.garanteprivacy.it/home/docweb/-/docweb-display/docweb/9675440",
+          "locator": [
+            "Ordinanza ingiunzione nei confronti di Foodinho s.r.l., Doc-Web 9675440"
+          ]
+        },
+        {
+          "source_id": "IT-FOODINHO-2021-RELEASE",
+          "authority": "Garante per la protezione dei dati personali",
+          "record_type": "official_adjudicative_record",
+          "published_at": "2021-07-05",
+          "url": "https://www.garanteprivacy.it/home/docweb/-/docweb-display/docweb/9677377",
+          "locator": [
+            "2.6 million euro fine",
+            "Human intervention, worker viewpoint, and contest rights",
+            "Sixty-day and ninety-day implementation deadlines"
+          ]
+        },
+        {
+          "source_id": "IT-FOODINHO-2024-ORDER",
+          "authority": "Garante per la protezione dei dati personali",
+          "record_type": "official_adjudicative_record",
+          "published_at": "2024-11-13",
+          "url": "https://www.garanteprivacy.it/web/guest/home/docweb/-/docweb-display/docweb/10074601",
+          "locator": [
+            "Provvedimento del 13 novembre 2024, Doc-Web 10074601"
+          ]
+        },
+        {
+          "source_id": "IT-FOODINHO-2024-RELEASE",
+          "authority": "Garante per la protezione dei dati personali",
+          "record_type": "official_adjudicative_record",
+          "published_at": "2024-11-22",
+          "url": "https://www.garanteprivacy.it/web/guest/home/docweb/-/docweb-display/docweb/10074840",
+          "locator": [
+            "5 million euro fine after prior 2021 sanction",
+            "Generic deactivation message omitted contest and restoration information",
+            "Required trained human verification, GPS controls, and anti-discrimination measures"
+          ]
+        }
+      ],
+      "observation": {
+        "domain_id": "APC-WORK-01",
+        "jurisdiction": "IT",
+        "observation_class": "official_adjudicative_record_candidate_with_unresolved_pre_action_and_durability",
+        "fixture_only": false,
+        "promotes_to": "none",
+        "source_health": {
+          "coverage_healthy": true,
+          "route_healthy": true,
+          "content_healthy": true
+        },
+        "evidence": {
+          "source_class": "official_adjudicative_record",
+          "promotion_ceiling": "repository_content",
+          "source_addressed_receipt": true,
+          "exact_claim_binding": true,
+          "identity_scope_bound": true,
+          "temporal_scope_bound": true,
+          "predicate_scope_bound": true,
+          "substantive_content": true,
+          "counterevidence_reviewed": true,
+          "promotion_authority": false
+        },
+        "answer": {
+          "observed_domains": 3,
+          "observed_jurisdictions": 3,
+          "observed_outcome": true,
+          "composed_durable_answer": false,
+          "dimensions": {
+            "pre_action_timing": false,
+            "evidence_access": true,
+            "independent_authority": true,
+            "effective_remedy": true,
+            "durability": false,
+            "practical_exit_or_governance": true
+          }
+        },
+        "expected": {
+          "claim_evidence_admissible": false,
+          "answer_effective": false
+        }
+      },
+      "deficits": [
+        "promotion_authority",
+        "composed_durable_answer",
+        "dimension:pre_action_timing",
+        "dimension:durability"
+      ],
+      "assessment": {
+        "evidence_tier": "official adjudicative enforcement records",
+        "venue": "Italian Data Protection Authority orders, inspections, sanctions, and corrective prescriptions",
+        "target": "workplace monitoring and algorithmic management",
+        "upside": "The record binds worker ranking, assignment, deactivation, geolocation, and contest rights to independent enforcement and concrete sanctions.",
+        "downside": "Repeated violations after the first order show that prescribed human intervention and transparency do not establish durable worker control.",
+        "failure_mode": "Promoting a sanction or required human review as an effective answer before pre-action protection and sustained compliance are observed."
+      }
+    }
+  ],
+  "expected_state": {
+    "source_addressed_candidates": 3,
+    "candidate_jurisdictions": 3,
+    "claim_evidence_admissible": 0,
+    "effective_answers": 0,
+    "cross_domain_regression_completed": false
+  },
+  "boundaries": {
+    "candidate_receipt_is_claim_evidence": false,
+    "official_record_alone_is_promotion_authority": false,
+    "observed_order_proves_implementation": false,
+    "observed_cessation_proves_general_solution": false,
+    "issue_345_closes": false,
+    "sprint03_advances": false,
+    "promotes_to": "repository_content",
+    "graph_effect": "none"
+  }
+}

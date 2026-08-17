@@ -10,6 +10,10 @@ import {
   evaluateObservation,
   evaluateRegression
 } from './lib/m05-source-health-evidence-state-regression.mjs';
+import {
+  summarizeOfficialReceiptCandidates,
+  validateOfficialReceiptCandidates
+} from './lib/m05-cross-domain-official-receipt-candidates.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const read=(rel)=>JSON.parse(fs.readFileSync(path.isAbsolute(rel)?rel:path.join(root,rel),'utf8'));
@@ -17,6 +21,7 @@ const fail=(message)=>{throw new Error(message)};
 const same=(left,right)=>JSON.stringify(left)===JSON.stringify(right);
 const contract=read('data/project/m05-source-health-evidence-state-regression.json');
 const audit=read(process.env.M05_REAL_RECEIPT_AUDIT_PATH||'data/project/m05-answerable-power-sprint-03-leg-07-real-receipt-admission-audit.json');
+const officialCandidates=read('data/project/m05-cross-domain-official-receipt-candidates.json');
 
 if(contract.schema_version!=='m05-source-health-evidence-state-regression@1')fail('regression schema drift');
 if(contract.object_class!=='bounded_cross_domain_evidence_state_regression')fail('object class drift');
@@ -247,4 +252,17 @@ for(const [key,value] of Object.entries(audit.boundaries)){
 }
 if(audit.boundaries.promotes_to!=='candidate_only'||audit.boundaries.graph_effect!=='none')fail('audit promotion boundary drift');
 
-console.log('validate-m05-source-health-evidence-state-regression: OK (5 source-health observations and 5 canonical pilot bindings remain below claim admission; the synthetic complete receipt remains discriminating; issue #345 remains open)');
+const officialCandidateErrors=validateOfficialReceiptCandidates(officialCandidates,contract);
+if(officialCandidateErrors.length){
+  fail(`official receipt candidate validation failed:\n- ${officialCandidateErrors.join('\n- ')}`);
+}
+const officialCandidateSummary=summarizeOfficialReceiptCandidates(officialCandidates,contract);
+if(officialCandidateSummary.source_addressed_candidates!==3||officialCandidateSummary.candidate_jurisdictions!==3)fail('official receipt candidate denominator drift');
+if(officialCandidateSummary.claim_evidence_admissible!==0||officialCandidateSummary.effective_answers!==0||officialCandidateSummary.cross_domain_regression_completed!==false)fail('official receipt candidates escaped the repository-content boundary');
+for(const candidate of officialCandidates.records){
+  if(!auditDomainIds.includes(candidate.domain_id))fail(`${candidate.receipt_id} is outside the frozen audit domain denominator`);
+  const auditedDomain=audit.domain_audits.find((row)=>row.domain_id===candidate.domain_id);
+  if(!auditedDomain||auditedDomain.current_state.claim_evidence_admissible!==false||auditedDomain.current_state.answer_effective!==false)fail(`${candidate.receipt_id} conflicts with the frozen audit state`);
+}
+
+console.log('validate-m05-source-health-evidence-state-regression: OK (5 source-health observations and 5 canonical pilot bindings remain below claim admission; 3 official source-addressed candidates across 3 jurisdictions remain repository content; the synthetic complete receipt remains discriminating; issue #345 remains open)');

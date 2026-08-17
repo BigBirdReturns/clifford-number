@@ -13,10 +13,17 @@ import {
   evaluateObservation,
   evaluateRegression
 } from '../tools/lib/m05-source-health-evidence-state-regression.mjs';
+import {
+  OFFICIAL_RECEIPT_DIMENSION_GAPS,
+  OFFICIAL_RECEIPT_IDS,
+  summarizeOfficialReceiptCandidates,
+  validateOfficialReceiptCandidates
+} from '../tools/lib/m05-cross-domain-official-receipt-candidates.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const contract=JSON.parse(fs.readFileSync(path.join(root,'data/project/m05-source-health-evidence-state-regression.json'),'utf8'));
 const audit=JSON.parse(fs.readFileSync(path.join(root,'data/project/m05-answerable-power-sprint-03-leg-07-real-receipt-admission-audit.json'),'utf8'));
+const officialCandidates=JSON.parse(fs.readFileSync(path.join(root,'data/project/m05-cross-domain-official-receipt-candidates.json'),'utf8'));
 const runValidator=(auditPath)=>spawnSync(process.execPath,['tools/validate-m05-source-health-evidence-state-regression.mjs'],{
   cwd:root,
   encoding:'utf8',
@@ -152,6 +159,61 @@ assert.equal(promoted.admissible_domain_evidence_records,4);
 assert.equal(promoted.effective_domain_answers,3);
 assert.equal(promoted.cross_domain_regression_completed,false,'an ineffective answer must not supply a qualifying jurisdiction');
 
+assert.deepEqual(validateOfficialReceiptCandidates(officialCandidates,contract),[]);
+assert.deepEqual(summarizeOfficialReceiptCandidates(officialCandidates,contract),officialCandidates.expected_state);
+assert.deepEqual(officialCandidates.records.map((row)=>row.receipt_id),OFFICIAL_RECEIPT_IDS);
+
+for(const row of officialCandidates.records){
+  const evaluation=evaluateObservation(row.observation,contract);
+  assert.equal(evaluation.claim_evidence_admissible,false,`${row.receipt_id} must remain below claim evidence`);
+  assert.equal(evaluation.answer_effective,false,`${row.receipt_id} must remain below answer effectiveness`);
+  assert.equal(evaluation.repository_promotion_allowed,false,`${row.receipt_id} must remain repository content`);
+  const observedGaps=ANSWER_DIMENSIONS.filter((dimension)=>row.observation.answer.dimensions[dimension]===false);
+  assert.deepEqual(observedGaps,OFFICIAL_RECEIPT_DIMENSION_GAPS[row.receipt_id],`${row.receipt_id} dimension-gap ledger drift`);
+
+  const authorityOnly=structuredClone(row.observation);
+  authorityOnly.evidence.promotion_authority=true;
+  assert.equal(evaluateObservation(authorityOnly,contract).claim_evidence_admissible,false,`${row.receipt_id} must not promote while the ceiling remains repository_content`);
+
+  const claimBound=structuredClone(row.observation);
+  claimBound.evidence.promotion_authority=true;
+  claimBound.evidence.promotion_ceiling='claim_evidence';
+  claimBound.promotes_to='candidate_evidence';
+  const claimBoundEvaluation=evaluateObservation(claimBound,contract);
+  assert.equal(claimBoundEvaluation.claim_evidence_admissible,true,`${row.receipt_id} complete evidence gates should remain discriminating`);
+  assert.equal(claimBoundEvaluation.answer_effective,false,`${row.receipt_id} missing answer dimensions must still fail closed`);
+  assert.equal(claimBoundEvaluation.repository_promotion_allowed,true,`${row.receipt_id} synthetic promotion mutation should reach only candidate evidence`);
+}
+
+const insecureUrl=structuredClone(officialCandidates);
+insecureUrl.records[0].sources[0].url=insecureUrl.records[0].sources[0].url.replace('https://','http://');
+assert.ok(validateOfficialReceiptCandidates(insecureUrl,contract).some((error)=>error.includes('must use HTTPS')));
+
+const foreignHost=structuredClone(officialCandidates);
+foreignHost.records[1].sources[0].url='https://example.com/syri';
+assert.ok(validateOfficialReceiptCandidates(foreignHost,contract).some((error)=>error.includes('outside the official host boundary')));
+
+const missingLocator=structuredClone(officialCandidates);
+missingLocator.records[2].sources[0].locator=[];
+assert.ok(validateOfficialReceiptCandidates(missingLocator,contract).some((error)=>error.includes('lacks a locator')));
+
+const duplicateSource=structuredClone(officialCandidates);
+duplicateSource.records[2].sources[0].source_id=duplicateSource.records[1].sources[0].source_id;
+assert.ok(validateOfficialReceiptCandidates(duplicateSource,contract).includes('duplicate official source identifier'));
+
+const promotedOfficialContract=structuredClone(contract);
+promotedOfficialContract.domain_observations=officialCandidates.records.map((row)=>{
+  const observation=structuredClone(row.observation);
+  observation.evidence.promotion_authority=true;
+  observation.evidence.promotion_ceiling='claim_evidence';
+  observation.promotes_to='candidate_evidence';
+  return observation;
+});
+promoted=evaluateRegression(promotedOfficialContract);
+assert.equal(promoted.admissible_domain_evidence_records,3);
+assert.equal(promoted.effective_domain_answers,0);
+assert.equal(promoted.cross_domain_regression_completed,false,'three official claim-bound records with unresolved answer deficits must not complete the regression');
+
 const repository=evaluateRegression(contract);
 assert.equal(repository.source_health_healthy,true);
 assert.equal(repository.domain_observations_evaluated,5);
@@ -234,4 +296,4 @@ expectAuditFailure('canonical pilot observation substitution',(row)=>{
   row.domain_audits[0].source_observation_id='PC-OBSERVED-DURABLE-ANSWER';
 },/APC-ADMIN-01 source observation binding drift/u);
 
-console.log(`m05-source-health-evidence-state-regression.test: OK (${EVIDENCE_BOOLEAN_GATES.length} evidence-gate mutations; ${EVIDENCE_SUFFICIENCY_GUARDS.length+ANSWER_SUFFICIENCY_GUARDS.length} fail-closed contract guards; ${ANSWER_DIMENSIONS.length} answer-dimension mutations; 3 completion-path regressions; 5 bound pilot audits; 16 real-receipt audit mutations)`);
+console.log(`m05-source-health-evidence-state-regression.test: OK (${EVIDENCE_BOOLEAN_GATES.length} evidence-gate mutations; ${EVIDENCE_SUFFICIENCY_GUARDS.length+ANSWER_SUFFICIENCY_GUARDS.length} fail-closed contract guards; ${ANSWER_DIMENSIONS.length} answer-dimension mutations; 3 completion-path regressions; ${OFFICIAL_RECEIPT_IDS.length} official receipt candidates with 4 boundary attacks; 5 bound pilot audits; 16 real-receipt audit mutations)`);
