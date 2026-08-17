@@ -22,14 +22,24 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Reconstruct corrected five-path product over current main
+      - name: Reconstruct known-good corrected product over current main
         run: |
           set -euo pipefail
-          cp .github/materializers/m05-intel-product-v2.tar.gz.b64 /tmp/product.b64
+          git show fb5b04c7bdd710c5248fa32240e9146d362d8c6d:.github/materializers/m05-intel-product-v2.tar.gz.b64 > /tmp/product.b64
+          base64 -d /tmp/product.b64 > /tmp/product.tar.gz
+          gzip -t /tmp/product.tar.gz
           git fetch origin main
           git reset --hard origin/main
-          base64 -d /tmp/product.b64 > /tmp/product.tar.gz
           tar -xzf /tmp/product.tar.gz
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tools/lib/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs')
+          text = path.read_text(encoding='utf-8')
+          old = 'implementationLedger?.current_result?.effective_answers===0'
+          new = 'implementationLedger?.expected_result?.effective_answers===0'
+          assert text.count(old) == 1, 'expected exactly one implementation-gap assertion to repair'
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
 
       - name: Check corrected JavaScript syntax
         run: |
@@ -39,16 +49,7 @@ jobs:
           node --check test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
 
       - name: Run corrected focused validator
-        run: |
-          set +e
-          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs > /tmp/validator.out 2>&1
-          status=$?
-          cat /tmp/validator.out
-          if [ "$status" -ne 0 ]; then
-            message=$(tail -n 20 /tmp/validator.out | tr '\n' ' ' | sed 's/%/%25/g; s/\r/%0D/g; s/\n/%0A/g')
-            echo "::error title=Intel focused validator failure::$message"
-            exit "$status"
-          fi
+        run: node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
 
       - name: Run corrected focused adversarial test
         run: node test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
@@ -56,14 +57,12 @@ jobs:
       - name: Run complete repository release gate
         run: npm run release:check
 
-      - name: Restore deterministic outputs
-        run: git restore --staged --worktree .
-
-      - name: Repeat corrected focused validator
-        run: node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
-
-      - name: Repeat corrected focused adversarial test
-        run: node test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
+      - name: Restore deterministic outputs and repeat focused qualification
+        run: |
+          set -euo pipefail
+          git restore --staged --worktree .
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
 
       - name: Enforce exact five-path boundary
         run: |
@@ -88,7 +87,7 @@ jobs:
           git fetch origin main
           test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
 
-      - name: Construct one clean repair commit
+      - name: Construct one clean review-repair commit
         run: |
           set -euo pipefail
           git config user.name 'BigBirdReturns'
