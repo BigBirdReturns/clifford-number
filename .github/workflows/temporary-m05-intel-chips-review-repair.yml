@@ -1,0 +1,80 @@
+name: Temporary M-05 Intel CHIPS review repair
+
+on:
+  push:
+    branches:
+      - 'agent/m05-s03-l7-intel-chips-equity-receipt-materializer'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out transport branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Reconstruct corrected five-path product over current main
+        run: |
+          set -euo pipefail
+          cp .github/materializers/m05-intel-product-v2.tar.gz.b64 /tmp/product.b64
+          git fetch origin main
+          git reset --hard origin/main
+          base64 -d /tmp/product.b64 > /tmp/product.tar.gz
+          tar -xzf /tmp/product.tar.gz
+
+      - name: Qualify focused repair
+        run: |
+          set -euo pipefail
+          node --check tools/lib/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
+
+      - name: Run complete repository release gate
+        run: npm run release:check
+
+      - name: Restore deterministic outputs and repeat focused repair
+        run: |
+          set -euo pipefail
+          git restore --staged --worktree .
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
+
+      - name: Enforce exact five-path boundary
+        run: |
+          set -euo pipefail
+          product_paths=(
+            '.github/workflows/m05-intel-chips-equity-receipt-candidate.yml'
+            'data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json'
+            'tools/lib/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs'
+            'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs'
+            'test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js'
+          )
+          git add -- "${product_paths[@]}"
+          git diff --cached --check
+          mapfile -t actual < <(git diff --cached --name-only | sort)
+          mapfile -t expected < <(printf '%s\n' "${product_paths[@]}" | sort)
+          test "${#actual[@]}" -eq 5
+          test "$(printf '%s\n' "${actual[@]}")" = "$(printf '%s\n' "${expected[@]}")"
+
+      - name: Recheck canonical parent and construct one clean commit
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+          git config user.name 'BigBirdReturns'
+          git config user.email 'bigbirdreturns@proton.me'
+          git commit -m '[M-05 S03-L7] Repair Intel CHIPS equity receipt review findings'
+
+      - name: Publish corrected product objects
+        run: git push --force origin "HEAD:refs/heads/agent/m05-s03-l7-intel-chips-equity-receipt-candidate"
