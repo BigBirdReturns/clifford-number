@@ -1,0 +1,58 @@
+name: M-05 Robodebt pre-action implementation receipt
+
+on:
+  pull_request:
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.test.js'
+      - '.github/workflows/m05-robodebt-pre-action-implementation-receipt.yml'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.json'
+      - 'data/project/m05-cross-domain-official-receipt-candidates.json'
+      - 'data/project/m05-source-health-evidence-state-regression.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.mjs'
+      - 'tools/lib/m05-cross-domain-official-receipt-candidates.mjs'
+      - 'tools/lib/m05-source-health-evidence-state-regression.mjs'
+  push:
+    branches:
+      - main
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.test.js'
+      - '.github/workflows/m05-robodebt-pre-action-implementation-receipt.yml'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.json'
+      - 'data/project/m05-cross-domain-official-receipt-candidates.json'
+      - 'data/project/m05-source-health-evidence-state-regression.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.mjs'
+      - 'tools/lib/m05-cross-domain-official-receipt-candidates.mjs'
+      - 'tools/lib/m05-source-health-evidence-state-regression.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate bounded Robodebt pre-action implementation receipt
+        run: |
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic focused state
+        run: |
+          git diff --check
+          git diff --exit-code -- \
+            data/project/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.json \
+            tools/lib/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.mjs \
+            tools/validate-m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.mjs \
+            test/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.test.js \
+            .github/workflows/m05-robodebt-pre-action-implementation-receipt.yml
