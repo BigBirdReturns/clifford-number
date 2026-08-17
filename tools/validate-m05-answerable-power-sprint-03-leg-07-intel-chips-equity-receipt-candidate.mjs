@@ -32,6 +32,14 @@ const promotionPath=resolvePath(
   'M05_CLAIM_PROMOTION_ADJUDICATION_PATH',
   'data/project/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.json'
 );
+const implementationGapLedgerPath=resolvePath(
+  'M05_IMPLEMENTATION_GAP_LEDGER_PATH',
+  'data/project/m05-answerable-power-sprint-03-leg-07-implementation-gap-probe-ledger.json'
+);
+const robodebtReceiptPath=resolvePath(
+  'M05_ROBODEBT_PRE_ACTION_RECEIPT_PATH',
+  'data/project/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.json'
+);
 const packetPath=resolvePath(
   'M05_OFFICIAL_RECEIPT_PACKET_PATH',
   'data/project/m05-cross-domain-official-receipt-candidates.json'
@@ -55,6 +63,10 @@ const auditRaw=readRaw(auditPath);
 const audit=JSON.parse(auditRaw.toString('utf8'));
 const promotionRaw=readRaw(promotionPath);
 const promotion=JSON.parse(promotionRaw.toString('utf8'));
+const implementationGapLedgerRaw=readRaw(implementationGapLedgerPath);
+const implementationGapLedger=JSON.parse(implementationGapLedgerRaw.toString('utf8'));
+const robodebtReceiptRaw=readRaw(robodebtReceiptPath);
+const robodebtReceipt=JSON.parse(robodebtReceiptRaw.toString('utf8'));
 const packetRaw=readRaw(packetPath);
 const packet=JSON.parse(packetRaw.toString('utf8'));
 const contractRaw=readRaw(contractPath);
@@ -69,14 +81,20 @@ if(candidateRaw.toString('utf8')!==`${JSON.stringify(candidate,null,2)}\n`){
 }
 
 if(candidate.canonical_base?.branch!=='main')fail('Intel canonical branch drift');
-if(candidate.canonical_base?.sha!=='49d1f3617132248484647eca4ddfa4fa49db40fb'){
+if(candidate.canonical_base?.sha!=='3e9132f1628fe96989b931f56a302bf69907ef99'){
   fail('Intel canonical base drift');
 }
-if(candidate.canonical_base?.tree_sha!=='c715de12ddc83354b8f957345e368487e7ee16c6'){
+if(candidate.canonical_base?.tree_sha!=='7f2706edbc084b01b07d6abb3cf7fc9d413880c4'){
   fail('Intel canonical tree drift');
 }
 if(candidate.canonical_base?.claim_promotion_pull_request!==2153){
   fail('Intel canonical promotion pull-request binding drift');
+}
+if(candidate.canonical_base?.implementation_gap_pull_request!==2154){
+  fail('Intel canonical implementation-gap pull-request binding drift');
+}
+if(candidate.canonical_base?.robodebt_pre_action_pull_request!==2155){
+  fail('Intel canonical Robodebt pull-request binding drift');
 }
 
 const expectedBindings={
@@ -93,6 +111,20 @@ const expectedBindings={
     schema_version:'m05-answerable-power-s03-l7-claim-evidence-promotion-adjudication@1',
     pull_request:2153,
     merge_commit:'49d1f3617132248484647eca4ddfa4fa49db40fb'
+  },
+  implementation_gap_ledger:{
+    path:'data/project/m05-answerable-power-sprint-03-leg-07-implementation-gap-probe-ledger.json',
+    blob_sha:'ec0f9e68804c54ad487eb08a8ec8691bbd4db2bf',
+    schema_version:'m05-answerable-power-s03-l7-implementation-gap-probe-ledger@1',
+    pull_request:2154,
+    merge_commit:'1933ce675fe0a5965218ca13cdf12050ea3162c4'
+  },
+  robodebt_pre_action_receipt:{
+    path:'data/project/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.json',
+    blob_sha:'a31d7ea7a1432a169de31035c153210b8975e217',
+    schema_version:'m05-answerable-power-s03-l7-robodebt-pre-action-implementation-receipt@1',
+    pull_request:2155,
+    merge_commit:'3e9132f1628fe96989b931f56a302bf69907ef99'
   },
   official_receipt_packet:{
     path:'data/project/m05-cross-domain-official-receipt-candidates.json',
@@ -123,6 +155,8 @@ if(!same(candidate.bindings,expectedBindings))fail('Intel source-custody binding
 const boundObjects=[
   ['real_receipt_audit',auditRaw,audit],
   ['claim_promotion_adjudication',promotionRaw,promotion],
+  ['implementation_gap_ledger',implementationGapLedgerRaw,implementationGapLedger],
+  ['robodebt_pre_action_receipt',robodebtReceiptRaw,robodebtReceipt],
   ['official_receipt_packet',packetRaw,packet],
   ['evidence_state_contract',contractRaw,contract],
   ['value_recovery_pilot',valuePilotRaw,valuePilot],
@@ -137,6 +171,8 @@ for(const [key,raw,parsed] of boundObjects){
 const before={
   audit:JSON.stringify(audit),
   promotion:JSON.stringify(promotion),
+  implementationGapLedger:JSON.stringify(implementationGapLedger),
+  robodebtReceipt:JSON.stringify(robodebtReceipt),
   packet:JSON.stringify(packet),
   contract:JSON.stringify(contract),
   valuePilot:JSON.stringify(valuePilot),
@@ -145,18 +181,33 @@ const before={
 
 const errors=validateIntelChipsEquityReceiptCandidate(
   candidate,
-  {audit,promotion,packet,contract,valuePilot,valueSources}
+  {
+    audit,
+    promotion,
+    packet,
+    contract,
+    valuePilot,
+    valueSources,
+    implementationGapLedger,
+    robodebtReceipt
+  }
 );
 if(errors.length>0){
   fail(`Intel candidate validation failed:\n- ${errors.join('\n- ')}`);
 }
 const summary=summarizeIntelChipsEquityReceiptCandidate(
   candidate,
-  {audit,promotion,packet,contract}
+  {audit,promotion,packet,contract,robodebtReceipt}
 );
 
 if(JSON.stringify(audit)!==before.audit)fail('Intel validation mutated the audit');
 if(JSON.stringify(promotion)!==before.promotion)fail('Intel validation mutated the promotion adjudication');
+if(JSON.stringify(implementationGapLedger)!==before.implementationGapLedger){
+  fail('Intel validation mutated the implementation-gap ledger');
+}
+if(JSON.stringify(robodebtReceipt)!==before.robodebtReceipt){
+  fail('Intel validation mutated the Robodebt pre-action receipt');
+}
 if(JSON.stringify(packet)!==before.packet)fail('Intel validation mutated the official receipt packet');
 if(JSON.stringify(contract)!==before.contract)fail('Intel validation mutated the evidence-state contract');
 if(JSON.stringify(valuePilot)!==before.valuePilot)fail('Intel validation mutated the value-recovery pilot');
@@ -165,6 +216,8 @@ if(JSON.stringify(valueSources)!==before.valueSources)fail('Intel validation mut
 const computed={
   existing_promoted_claims:summary.existing_promoted_claims,
   existing_effective_answers:summary.existing_effective_answers,
+  existing_advanced_answer_dimensions:summary.existing_advanced_answer_dimensions,
+  existing_robodebt_pre_action_timing:summary.existing_robodebt_pre_action_timing,
   intel_source_addressed_candidates:summary.intel_source_addressed_candidates,
   intel_claim_evidence_admissible:summary.intel_claim_evidence_admissible,
   intel_repository_promotion_allowed:summary.intel_repository_promotion_allowed,
@@ -181,5 +234,8 @@ console.log(JSON.stringify({
   domain_id:candidate.receipt.domain_id,
   jurisdiction:candidate.receipt.jurisdiction,
   sources:candidate.receipt.sources.length,
+  registered_common_shares:candidate.receipt.instrument_quantities.resale_registered_common_shares,
+  cumulative_escrow_releases_approx:
+    candidate.receipt.instrument_quantities.escrowed_shares_released_cumulative_approx,
   ...computed
 },null,2));

@@ -4,14 +4,14 @@ import {
   evaluateObservation
 } from './m05-source-health-evidence-state-regression.mjs';
 import {
-  summarizeClaimEvidencePromotionAdjudication
-} from './m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.mjs';
+  summarizeRobodebtPreActionImplementationReceipt
+} from './m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.mjs';
 
 export const INTEL_CHIPS_RECEIPT_ID='M05-RC-VALUE-US-INTEL-CHIPS-EQUITY';
 export const INTEL_CHIPS_DOMAIN_ID='APC-VALUE-01';
 export const INTEL_CHIPS_JURISDICTION='US';
 
-export const INTEL_CHIPS_AUTHORIZED_CLAIM='The official record establishes that the United States Department of Commerce exchanged $8.8698 billion of accelerated CHIPS and Secure Enclave disbursement authority for an executed Intel common-stock, escrowed-share, and conditional-warrant package; closing issued 274,583,000 shares and a warrant for up to 240,516,150 shares, and later Secure Enclave payments released 13 million escrowed shares by 27 June 2026, while no sale, dividend, warrant exercise, realized federal cash receipt, or public or affected-party distribution is observed in the bounded record.';
+export const INTEL_CHIPS_AUTHORIZED_CLAIM='The official record establishes that the United States Department of Commerce exchanged $8.8698 billion of accelerated CHIPS and Secure Enclave disbursement authority for an executed Intel common-stock, escrowed-share, and conditional-warrant package; closing issued 274,583,000 shares and a warrant for up to 240,516,150 shares; the resale registration covered 673,839,150 common shares plus the warrant; and Secure Enclave payments released approximately 16 million escrowed shares cumulatively by 27 June 2026, including 13 million during the six months then ended, leaving approximately 143 million in escrow, while no sale, dividend, warrant exercise, realized federal cash receipt, or public or affected-party distribution is observed in the bounded record.';
 
 export const INTEL_CHIPS_SOURCE_IDS=[
   'US-INTEL-CHIPS-AGREEMENT-8K',
@@ -25,6 +25,33 @@ export const INTEL_CHIPS_SOURCE_IDS=[
 ];
 
 export const INTEL_CHIPS_SOURCE_HOSTS=['www.sec.gov','www.commerce.gov'];
+
+export const INTEL_CHIPS_RESALE_REGISTRATION_LOCATORS=[
+  'Potential resale registration covers one warrant to purchase up to 240,516,150 common shares and 673,839,150 common shares.',
+  'The 673,839,150 registered common shares comprise 274,583,000 delivered shares, 158,740,000 escrowed shares, and 240,516,150 warrant shares.',
+  'Registration architecture does not itself establish a sale or federal cash receipt.'
+];
+
+export const INTEL_CHIPS_Q2_2026_LOCATORS=[
+  'Note 4, United States Government Agreements',
+  'Seven million escrowed shares released in the quarter and 13 million during the six months ended 27 June 2026',
+  'Approximately 143 million escrowed shares remained and the warrant was not expected to become exercisable',
+  '$13.6 billion six-month fair-value loss and $15.6 billion derivative liability demonstrate valuation exposure rather than a public cash receipt'
+];
+
+export const INTEL_CHIPS_QUANTITIES={
+  total_disbursement_authority_usd:8869800000,
+  closing_common_shares:274583000,
+  escrowed_common_shares_at_closing:158740000,
+  new_common_shares_total:433323000,
+  conditional_warrant_shares:240516150,
+  resale_registered_common_shares:673839150,
+  resale_registered_warrant_shares:240516150,
+  escrowed_shares_released_by_fy2025_approx:3000000,
+  escrowed_shares_released_six_months_2026:13000000,
+  escrowed_shares_released_cumulative_approx:16000000,
+  escrowed_shares_remaining_q2_2026_approx:143000000
+};
 
 export const INTEL_CHIPS_DEFICITS=[
   'promotion_authority',
@@ -45,14 +72,21 @@ const clone=(value)=>JSON.parse(JSON.stringify(value));
 
 export function summarizeIntelChipsEquityReceiptCandidate(
   candidate,
-  {audit,promotion,packet,contract}
+  {audit,promotion,packet,contract,robodebtReceipt}
 ){
-  const existing=summarizeClaimEvidencePromotionAdjudication(packet,promotion,contract);
+  const existing=summarizeRobodebtPreActionImplementationReceipt(
+    packet,
+    promotion,
+    robodebtReceipt,
+    contract
+  );
   const observation=candidate?.receipt?.observation||{};
   const intel=evaluateObservation(observation,contract);
   return {
     existing_promoted_claims:existing.repository_promotion_allowed,
     existing_effective_answers:existing.effective_answers,
+    existing_advanced_answer_dimensions:existing.advanced_answer_dimensions,
+    existing_robodebt_pre_action_timing:existing.robodebt_pre_action_timing,
     intel_source_addressed_candidates:
       observation?.evidence?.source_addressed_receipt===true&&
       Array.isArray(candidate?.receipt?.sources)&&
@@ -74,7 +108,16 @@ export function summarizeIntelChipsEquityReceiptCandidate(
 
 export function validateIntelChipsEquityReceiptCandidate(
   candidate,
-  {audit,promotion,packet,contract,valuePilot,valueSources}
+  {
+    audit,
+    promotion,
+    packet,
+    contract,
+    valuePilot,
+    valueSources,
+    implementationGapLedger,
+    robodebtReceipt
+  }
 ){
   const errors=[];
   const fail=(message)=>errors.push(message);
@@ -104,6 +147,21 @@ export function validateIntelChipsEquityReceiptCandidate(
   check(
     text(candidate?.title,40)&&text(candidate?.question,120),
     'Intel candidate title or question is under-specified'
+  );
+
+  check(
+    implementationGapLedger?.schema_version===
+      'm05-answerable-power-s03-l7-implementation-gap-probe-ledger@1'&&
+      implementationGapLedger?.status==='implementation_gaps_researched_no_answer_promotion',
+    'implementation-gap ledger semantic binding drift'
+  );
+  check(
+    robodebtReceipt?.schema_version===
+      'm05-answerable-power-s03-l7-robodebt-pre-action-implementation-receipt@1'&&
+      robodebtReceipt?.target?.receipt_id==='M05-RC-ADMIN-AU-ROBODEBT'&&
+      robodebtReceipt?.target?.dimension==='pre_action_timing'&&
+      robodebtReceipt?.target?.after===true,
+    'Robodebt pre-action receipt semantic binding drift'
   );
 
   const receipt=candidate?.receipt||{};
@@ -157,6 +215,53 @@ export function validateIntelChipsEquityReceiptCandidate(
       check(text(locator,20),`${prefix} contains an under-specified locator`);
     }
   }
+
+  const sourcesById=new Map(sources.map((row)=>[row.source_id,row]));
+  check(
+    same(
+      sourcesById.get('US-INTEL-CHIPS-RESALE-REGISTRATION')?.locator,
+      INTEL_CHIPS_RESALE_REGISTRATION_LOCATORS
+    ),
+    'Intel resale-registration locator or quantity drift'
+  );
+  check(
+    same(
+      sourcesById.get('US-INTEL-CHIPS-Q2-2026-10Q')?.locator,
+      INTEL_CHIPS_Q2_2026_LOCATORS
+    ),
+    'Intel Q2 2026 escrow locator drift'
+  );
+
+  const quantities=receipt.instrument_quantities||{};
+  check(same(quantities,INTEL_CHIPS_QUANTITIES),'Intel instrument quantity ledger drift');
+  check(
+    quantities.closing_common_shares+quantities.escrowed_common_shares_at_closing===
+      quantities.new_common_shares_total,
+    'Intel new-common-share arithmetic drift'
+  );
+  check(
+    quantities.new_common_shares_total+quantities.conditional_warrant_shares===
+      quantities.resale_registered_common_shares,
+    'Intel resale-registration common-share arithmetic drift'
+  );
+  check(
+    quantities.conditional_warrant_shares===quantities.resale_registered_warrant_shares,
+    'Intel registered warrant quantity drift'
+  );
+  check(
+    quantities.escrowed_shares_released_by_fy2025_approx+
+      quantities.escrowed_shares_released_six_months_2026===
+      quantities.escrowed_shares_released_cumulative_approx,
+    'Intel cumulative escrow-release arithmetic drift'
+  );
+  check(
+    Math.abs(
+      quantities.escrowed_common_shares_at_closing-
+      quantities.escrowed_shares_released_cumulative_approx-
+      quantities.escrowed_shares_remaining_q2_2026_approx
+    )<=500000,
+    'Intel rounded remaining-escrow reconciliation drift'
+  );
 
   const chain=receipt.instrument_chain||{};
   for(const field of [
@@ -282,9 +387,17 @@ export function validateIntelChipsEquityReceiptCandidate(
     'Intel receipt silently rewrote the frozen value-recovery pilot'
   );
 
-  const existing=summarizeClaimEvidencePromotionAdjudication(packet,promotion,contract);
+  const existing=summarizeRobodebtPreActionImplementationReceipt(
+    packet,
+    promotion,
+    robodebtReceipt,
+    contract
+  );
   check(existing.audited_domains===5,'existing promotion five-domain denominator drift');
   check(existing.repository_promotion_allowed===3,'existing promotion count drift');
+  check(existing.advanced_answer_dimensions===1,'existing answer-dimension advancement drift');
+  check(existing.robodebt_pre_action_timing===true,'Robodebt pre-action advancement rolled back');
+  check(existing.robodebt_durability===false,'Robodebt durability boundary drift');
   check(existing.effective_answers===0,'existing effective-answer state drift');
   check(existing.answer_effectiveness===false,'existing answer effectiveness drift');
   check(
@@ -294,7 +407,7 @@ export function validateIntelChipsEquityReceiptCandidate(
 
   const summary=summarizeIntelChipsEquityReceiptCandidate(
     candidate,
-    {audit,promotion,packet,contract}
+    {audit,promotion,packet,contract,robodebtReceipt}
   );
   for(const [key,value] of Object.entries(candidate?.expected_state||{})){
     check(summary[key]===value,`Intel expected state ${key} drift`);
@@ -304,6 +417,9 @@ export function validateIntelChipsEquityReceiptCandidate(
   for(const key of [
     'changes_original_official_receipt_packet',
     'changes_existing_claim_promotion_adjudication',
+    'changes_implementation_gap_ledger',
+    'changes_robodebt_pre_action_receipt',
+    'rolls_back_robodebt_pre_action_timing',
     'inherits_prior_promotion_authority',
     'market_value_is_realized_return',
     'share_issuance_is_public_distribution',

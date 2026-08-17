@@ -11,9 +11,11 @@
   "question": "Does the executed Intel CHIPS equity, escrow, and warrant package establish an operated public residual right while still lacking a realized federal cash receipt and a transparent public or affected-party distribution event?",
   "canonical_base": {
     "branch": "main",
-    "sha": "49d1f3617132248484647eca4ddfa4fa49db40fb",
-    "tree_sha": "c715de12ddc83354b8f957345e368487e7ee16c6",
-    "claim_promotion_pull_request": 2153
+    "sha": "3e9132f1628fe96989b931f56a302bf69907ef99",
+    "tree_sha": "7f2706edbc084b01b07d6abb3cf7fc9d413880c4",
+    "claim_promotion_pull_request": 2153,
+    "implementation_gap_pull_request": 2154,
+    "robodebt_pre_action_pull_request": 2155
   },
   "bindings": {
     "real_receipt_audit": {
@@ -29,6 +31,20 @@
       "schema_version": "m05-answerable-power-s03-l7-claim-evidence-promotion-adjudication@1",
       "pull_request": 2153,
       "merge_commit": "49d1f3617132248484647eca4ddfa4fa49db40fb"
+    },
+    "implementation_gap_ledger": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-implementation-gap-probe-ledger.json",
+      "blob_sha": "ec0f9e68804c54ad487eb08a8ec8691bbd4db2bf",
+      "schema_version": "m05-answerable-power-s03-l7-implementation-gap-probe-ledger@1",
+      "pull_request": 2154,
+      "merge_commit": "1933ce675fe0a5965218ca13cdf12050ea3162c4"
+    },
+    "robodebt_pre_action_receipt": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.json",
+      "blob_sha": "a31d7ea7a1432a169de31035c153210b8975e217",
+      "schema_version": "m05-answerable-power-s03-l7-robodebt-pre-action-implementation-receipt@1",
+      "pull_request": 2155,
+      "merge_commit": "3e9132f1628fe96989b931f56a302bf69907ef99"
     },
     "official_receipt_packet": {
       "path": "data/project/m05-cross-domain-official-receipt-candidates.json",
@@ -63,7 +79,7 @@
       "identity_scope": "The United States Department of Commerce as public contributor and securities holder; Intel Corporation as funding recipient and issuer; the Secure Enclave program as the performance-linked disbursement channel; federal taxpayers and the public account as putative residual beneficiaries; and Intel shareholders exposed to dilution.",
       "temporal_scope": "The executed agreement announced and filed in August 2025, closing in August 2025, escrow releases reported through Intel's quarter ended 27 June 2026, and the Department of Commerce valuation statement published in January 2026.",
       "predicate_scope": "Whether a named public contribution created and operated an enforceable equity or contingent-upside right, whether that right produced a realized federal receipt, and whether any realized value was transparently allocated to a public account or affected population.",
-      "claim": "The official record establishes that the United States Department of Commerce exchanged $8.8698 billion of accelerated CHIPS and Secure Enclave disbursement authority for an executed Intel common-stock, escrowed-share, and conditional-warrant package; closing issued 274,583,000 shares and a warrant for up to 240,516,150 shares, and later Secure Enclave payments released 13 million escrowed shares by 27 June 2026, while no sale, dividend, warrant exercise, realized federal cash receipt, or public or affected-party distribution is observed in the bounded record."
+      "claim": "The official record establishes that the United States Department of Commerce exchanged $8.8698 billion of accelerated CHIPS and Secure Enclave disbursement authority for an executed Intel common-stock, escrowed-share, and conditional-warrant package; closing issued 274,583,000 shares and a warrant for up to 240,516,150 shares; the resale registration covered 673,839,150 common shares plus the warrant; and Secure Enclave payments released approximately 16 million escrowed shares cumulatively by 27 June 2026, including 13 million during the six months then ended, leaving approximately 143 million in escrow, while no sale, dividend, warrant exercise, realized federal cash receipt, or public or affected-party distribution is observed in the bounded record."
     },
     "sources": [
       {
@@ -109,9 +125,9 @@
         "published_at": "2025-09-05",
         "url": "https://www.sec.gov/Archives/edgar/data/50863/000005086325000147/intc-20250905.htm",
         "locator": [
-          "Registration of potential resale by the United States Department of Commerce",
-          "Coverage of issued shares, escrowed shares, the warrant, and warrant shares",
-          "Registration architecture does not itself establish a sale or federal cash receipt"
+          "Potential resale registration covers one warrant to purchase up to 240,516,150 common shares and 673,839,150 common shares.",
+          "The 673,839,150 registered common shares comprise 274,583,000 delivered shares, 158,740,000 escrowed shares, and 240,516,150 warrant shares.",
+          "Registration architecture does not itself establish a sale or federal cash receipt."
         ]
       },
       {
@@ -134,7 +150,7 @@
         "url": "https://www.sec.gov/Archives/edgar/data/50863/000005086326000011/intc-20251227.htm",
         "locator": [
           "Note 4, United States Government Agreements",
-          "Three million escrowed shares released by fiscal year-end",
+          "Approximately three million escrowed shares released by fiscal year-end",
           "$1.8 billion fair-value change recognized in 2025 without a reported public cash realization"
         ]
       },
@@ -159,11 +175,24 @@
         "locator": [
           "Note 4, United States Government Agreements",
           "Seven million escrowed shares released in the quarter and 13 million during the six months ended 27 June 2026",
-          "143 million escrowed shares remained and the warrant was not expected to become exercisable",
+          "Approximately 143 million escrowed shares remained and the warrant was not expected to become exercisable",
           "$13.6 billion six-month fair-value loss and $15.6 billion derivative liability demonstrate valuation exposure rather than a public cash receipt"
         ]
       }
     ],
+    "instrument_quantities": {
+      "total_disbursement_authority_usd": 8869800000,
+      "closing_common_shares": 274583000,
+      "escrowed_common_shares_at_closing": 158740000,
+      "new_common_shares_total": 433323000,
+      "conditional_warrant_shares": 240516150,
+      "resale_registered_common_shares": 673839150,
+      "resale_registered_warrant_shares": 240516150,
+      "escrowed_shares_released_by_fy2025_approx": 3000000,
+      "escrowed_shares_released_six_months_2026": 13000000,
+      "escrowed_shares_released_cumulative_approx": 16000000,
+      "escrowed_shares_remaining_q2_2026_approx": 143000000
+    },
     "instrument_chain": {
       "public_contribution_named": true,
       "recipient_legal_entity_named": true,
@@ -230,10 +259,10 @@
       "transparent_public_or_affected_party_distribution"
     ],
     "assessment": {
-      "evidence_tier": "SEC-filed executed agreement, closing and periodic issuer filings, plus an official Commerce valuation statement",
+      "evidence_tier": "SEC-filed executed agreement, closing, resale-registration, and periodic issuer filings, plus an official Commerce valuation statement",
       "venue": "United States Securities and Exchange Commission filing system, Department of Commerce, the M-05 value-recovery pilot, and issue 345",
       "target": "public contribution to enforceable residual right, observed operation, realized value, and transparent distribution",
-      "upside": "The record joins a named public contribution to issued shares, a conditional warrant, and performance-linked escrow releases under an executed instrument.",
+      "upside": "The record joins a named public contribution to issued shares, a conditional warrant, exact resale-registration quantities, and performance-linked escrow releases under an executed instrument.",
       "downside": "The located record reports no sale, dividend, warrant exercise, federal cash receipt, public-account booking, or affected-party distribution.",
       "failure_mode": "Treating share issuance, escrow release, resale registration, or a market-value statement as realized and distributed public value."
     }
@@ -241,6 +270,8 @@
   "expected_state": {
     "existing_promoted_claims": 3,
     "existing_effective_answers": 0,
+    "existing_advanced_answer_dimensions": 1,
+    "existing_robodebt_pre_action_timing": true,
     "intel_source_addressed_candidates": 1,
     "intel_claim_evidence_admissible": 0,
     "intel_repository_promotion_allowed": 0,
@@ -252,6 +283,9 @@
   "boundaries": {
     "changes_original_official_receipt_packet": false,
     "changes_existing_claim_promotion_adjudication": false,
+    "changes_implementation_gap_ledger": false,
+    "changes_robodebt_pre_action_receipt": false,
+    "rolls_back_robodebt_pre_action_timing": false,
     "inherits_prior_promotion_authority": false,
     "market_value_is_realized_return": false,
     "share_issuance_is_public_distribution": false,

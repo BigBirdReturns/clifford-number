@@ -9,7 +9,9 @@ import {evaluateObservation} from '../tools/lib/m05-source-health-evidence-state
 import {
   INTEL_CHIPS_AUTHORIZED_CLAIM,
   INTEL_CHIPS_DEFICITS,
+  INTEL_CHIPS_QUANTITIES,
   INTEL_CHIPS_RECEIPT_ID,
+  INTEL_CHIPS_RESALE_REGISTRATION_LOCATORS,
   INTEL_CHIPS_SOURCE_IDS,
   summarizeIntelChipsEquityReceiptCandidate,
   validateIntelChipsEquityReceiptCandidate
@@ -26,6 +28,12 @@ const audit=read(
 const promotion=read(
   'data/project/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.json'
 );
+const implementationGapLedger=read(
+  'data/project/m05-answerable-power-sprint-03-leg-07-implementation-gap-probe-ledger.json'
+);
+const robodebtReceipt=read(
+  'data/project/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.json'
+);
 const packet=read('data/project/m05-cross-domain-official-receipt-candidates.json');
 const contract=read('data/project/m05-source-health-evidence-state-regression.json');
 const valuePilot=read(
@@ -34,6 +42,17 @@ const valuePilot=read(
 const valueSources=read(
   'data/intake/m05-answerable-power-sprint-03-leg-06-value-recovery-sources.json'
 );
+
+const dependencies={
+  audit,
+  promotion,
+  packet,
+  contract,
+  valuePilot,
+  valueSources,
+  implementationGapLedger,
+  robodebtReceipt
+};
 
 const runValidator=(extraEnv={})=>spawnSync(
   process.execPath,
@@ -53,20 +72,19 @@ if(initial.status!==0){
 }
 
 assert.deepEqual(
-  validateIntelChipsEquityReceiptCandidate(
-    candidate,
-    {audit,promotion,packet,contract,valuePilot,valueSources}
-  ),
+  validateIntelChipsEquityReceiptCandidate(candidate,dependencies),
   []
 );
 const summary=summarizeIntelChipsEquityReceiptCandidate(
   candidate,
-  {audit,promotion,packet,contract}
+  {audit,promotion,packet,contract,robodebtReceipt}
 );
 assert.deepEqual(
   {
     existing_promoted_claims:summary.existing_promoted_claims,
     existing_effective_answers:summary.existing_effective_answers,
+    existing_advanced_answer_dimensions:summary.existing_advanced_answer_dimensions,
+    existing_robodebt_pre_action_timing:summary.existing_robodebt_pre_action_timing,
     intel_source_addressed_candidates:summary.intel_source_addressed_candidates,
     intel_claim_evidence_admissible:summary.intel_claim_evidence_admissible,
     intel_repository_promotion_allowed:summary.intel_repository_promotion_allowed,
@@ -81,7 +99,20 @@ assert.equal(candidate.receipt.receipt_id,INTEL_CHIPS_RECEIPT_ID);
 assert.equal(candidate.receipt.claim_binding.claim,INTEL_CHIPS_AUTHORIZED_CLAIM);
 assert.deepEqual(candidate.receipt.sources.map((row)=>row.source_id),INTEL_CHIPS_SOURCE_IDS);
 assert.deepEqual(candidate.receipt.deficits,INTEL_CHIPS_DEFICITS);
+assert.deepEqual(candidate.receipt.instrument_quantities,INTEL_CHIPS_QUANTITIES);
+assert.deepEqual(
+  candidate.receipt.sources.find(
+    (row)=>row.source_id==='US-INTEL-CHIPS-RESALE-REGISTRATION'
+  ).locator,
+  INTEL_CHIPS_RESALE_REGISTRATION_LOCATORS
+);
 assert.equal(summary.existing_summary.repository_promotion_allowed,3);
+assert.equal(summary.existing_summary.advanced_answer_dimensions,1);
+assert.equal(summary.existing_summary.robodebt_pre_action_timing,true);
+assert.equal(
+  summary.existing_summary.applied.after_observation.answer.dimensions.pre_action_timing,
+  true
+);
 assert.equal(summary.existing_summary.effective_answers,0);
 assert.equal(summary.existing_summary.cross_domain_regression_completed,false);
 
@@ -163,6 +194,25 @@ expectCandidateFailure(
   /duplicate Intel source identifier/u
 );
 expectCandidateFailure(
+  'resale-registration quantity locator',
+  (row)=>{
+    row.receipt.sources.find(
+      (source)=>source.source_id==='US-INTEL-CHIPS-RESALE-REGISTRATION'
+    ).locator[0]='Potential resale registration covers unquantified securities.';
+  },
+  /Intel resale-registration locator or quantity drift/u
+);
+expectCandidateFailure(
+  'registered common quantity',
+  (row)=>{row.receipt.instrument_quantities.resale_registered_common_shares-=1},
+  /Intel instrument quantity ledger drift/u
+);
+expectCandidateFailure(
+  'cumulative escrow-release quantity',
+  (row)=>{row.receipt.instrument_quantities.escrowed_shares_released_cumulative_approx=13000000},
+  /Intel instrument quantity ledger drift/u
+);
+expectCandidateFailure(
   'promotion authority',
   (row)=>{row.receipt.observation.evidence.promotion_authority=true},
   /Intel evidence gate promotion_authority drift/u
@@ -196,6 +246,16 @@ expectCandidateFailure(
   'market-value sufficiency',
   (row)=>{row.boundaries.market_value_is_realized_return=true},
   /Intel boundary market_value_is_realized_return weakened/u
+);
+expectCandidateFailure(
+  'Robodebt rollback boundary',
+  (row)=>{row.boundaries.rolls_back_robodebt_pre_action_timing=true},
+  /Intel boundary rolls_back_robodebt_pre_action_timing weakened/u
+);
+expectCandidateFailure(
+  'expected Robodebt rollback',
+  (row)=>{row.expected_state.existing_robodebt_pre_action_timing=false},
+  /Intel expected state existing_robodebt_pre_action_timing drift/u
 );
 expectCandidateFailure(
   'durability promotion',
@@ -237,6 +297,24 @@ expectBoundObjectFailure(
   /claim_promotion_adjudication Git object drift/u
 );
 
+const changedImplementationGapLedger=structuredClone(implementationGapLedger);
+changedImplementationGapLedger.status='mutated';
+expectBoundObjectFailure(
+  'implementation-gap ledger',
+  'M05_IMPLEMENTATION_GAP_LEDGER_PATH',
+  changedImplementationGapLedger,
+  /implementation_gap_ledger Git object drift/u
+);
+
+const changedRobodebtReceipt=structuredClone(robodebtReceipt);
+changedRobodebtReceipt.target.after=false;
+expectBoundObjectFailure(
+  'Robodebt pre-action receipt',
+  'M05_ROBODEBT_PRE_ACTION_RECEIPT_PATH',
+  changedRobodebtReceipt,
+  /robodebt_pre_action_receipt Git object drift/u
+);
+
 const changedPacket=structuredClone(packet);
 changedPacket.records[0].claim_binding.claim+=' Mutated.';
 expectBoundObjectFailure(
@@ -249,6 +327,6 @@ expectBoundObjectFailure(
 console.log(
   `m05-answerable-power-s03-l7-intel-chips-equity-receipt-candidate.test: OK `+
   `(${INTEL_CHIPS_SOURCE_IDS.length} official sources; `+
-  `3 preserved candidate-evidence claims; 20 fail-closed mutations; `+
-  `Intel realization and distribution remain unresolved)`
+  `3 preserved candidate-evidence claims; 1 preserved Robodebt advancement; `+
+  `27 fail-closed mutations; Intel realization and distribution remain unresolved)`
 );
