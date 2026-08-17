@@ -1,0 +1,125 @@
+name: Temporary M-05 official locator checksum-custody repair v1
+
+on:
+  push:
+    branches:
+      - candidate/m05-cross-domain-official-receipt-candidates-v1
+    paths:
+      - .github/materializers/m05-official-locator-checksum-custody-repair-v1.py
+      - .github/workflows/temporary-m05-official-locator-checksum-custody-repair-v1.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repair carrier
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: candidate/m05-cross-domain-official-receipt-candidates-v1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Verify lineage, current main, and bounded transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          ORIGINAL_HEAD=e7a97f24d78a207a51211c440dd6c45a2072a417
+          MAIN_SHA=cc20bf5720ccb22036351e7aa009590cc6dc6081
+          MAIN_TREE=c33d7b7c0cd79a8c36d36289b28f02d773844aae
+          test "$(git rev-parse HEAD^)" = "$ORIGINAL_HEAD"
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$MAIN_SHA"
+          test "$(git rev-parse "$MAIN_SHA^{tree}")" = "$MAIN_TREE"
+          test "$(git rev-parse "$ORIGINAL_HEAD:data/project/m05-cross-domain-official-receipt-candidates.json")" = "1c17549a39b826853435d3726596bf41d0fc7de9"
+          test "$(git rev-parse "$ORIGINAL_HEAD:tools/lib/m05-cross-domain-official-receipt-candidates.mjs")" = "e111ab2a26f0dd79d427e8ff76e7847b516c45b2"
+          mapfile -t transport_paths < <(git diff --name-only HEAD^ HEAD | sort)
+          expected_transport=(
+            ".github/materializers/m05-official-locator-checksum-custody-repair-v1.py"
+            ".github/workflows/temporary-m05-official-locator-checksum-custody-repair-v1.yml"
+          )
+          test "${transport_paths[*]}" = "${expected_transport[*]}"
+          mapfile -t original_product_paths < <(git diff --name-only "$MAIN_SHA...$ORIGINAL_HEAD" | sort)
+          expected_product=(
+            "data/project/m05-cross-domain-official-receipt-candidates.json"
+            "test/m05-source-health-evidence-state-regression.test.js"
+            "tools/lib/m05-cross-domain-official-receipt-candidates.mjs"
+            "tools/validate-m05-source-health-evidence-state-regression.mjs"
+          )
+          test "${original_product_paths[*]}" = "${expected_product[*]}"
+
+      - name: Materialize rebased checksum-custody repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          ORIGINAL_HEAD=e7a97f24d78a207a51211c440dd6c45a2072a417
+          MAIN_SHA=cc20bf5720ccb22036351e7aa009590cc6dc6081
+          cp .github/materializers/m05-official-locator-checksum-custody-repair-v1.py /tmp/materializer.py
+          git checkout --detach "$MAIN_SHA"
+          git checkout "$ORIGINAL_HEAD" -- \
+            data/project/m05-cross-domain-official-receipt-candidates.json \
+            tools/lib/m05-cross-domain-official-receipt-candidates.mjs
+          python3 /tmp/materializer.py
+          mapfile -t product_paths < <(git status --short | sed -E 's/^.. //' | sort)
+          expected_product=(
+            "data/project/m05-cross-domain-official-receipt-candidates.json"
+            "test/m05-source-health-evidence-state-regression.test.js"
+            "tools/lib/m05-cross-domain-official-receipt-candidates.mjs"
+            "tools/validate-m05-source-health-evidence-state-regression.mjs"
+          )
+          test "${product_paths[*]}" = "${expected_product[*]}"
+
+      - name: Qualify rebased official-locator product
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e "JSON.parse(require('fs').readFileSync('data/project/m05-cross-domain-official-receipt-candidates.json','utf8'))"
+          node --check tools/lib/m05-cross-domain-official-receipt-candidates.mjs
+          node --check tools/validate-m05-source-health-evidence-state-regression.mjs
+          node --check test/m05-source-health-evidence-state-regression.test.js
+          node tools/validate-m05-source-health-evidence-state-regression.mjs
+          node test/m05-source-health-evidence-state-regression.test.js
+          npm run release:check
+          mapfile -t qualified_paths < <(git status --short | sed -E 's/^.. //' | sort)
+          expected_product=(
+            "data/project/m05-cross-domain-official-receipt-candidates.json"
+            "test/m05-source-health-evidence-state-regression.test.js"
+            "tools/lib/m05-cross-domain-official-receipt-candidates.mjs"
+            "tools/validate-m05-source-health-evidence-state-regression.mjs"
+          )
+          test "${qualified_paths[*]}" = "${expected_product[*]}"
+
+      - name: Construct exact one-parent product commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "BigBirdReturns"
+          git config user.email "bigbirdreturns@proton.me"
+          git add \
+            data/project/m05-cross-domain-official-receipt-candidates.json \
+            test/m05-source-health-evidence-state-regression.test.js \
+            tools/lib/m05-cross-domain-official-receipt-candidates.mjs \
+            tools/validate-m05-source-health-evidence-state-regression.mjs
+          git commit -m "Research: bind official locators to checksum custody audit" \
+            -m "Rebase the three official-record locator candidates onto the canonical real-receipt audit, require exact byte and SHA-256 custody before source-addressed receipt status, preserve all answer deficits, and keep claim and repository promotion blocked."
+          test "$(git rev-parse HEAD^)" = "cc20bf5720ccb22036351e7aa009590cc6dc6081"
+          test "$(git diff --name-only HEAD^ HEAD | sort | tr '\n' ' ')" = "data/project/m05-cross-domain-official-receipt-candidates.json test/m05-source-health-evidence-state-regression.test.js tools/lib/m05-cross-domain-official-receipt-candidates.mjs tools/validate-m05-source-health-evidence-state-regression.mjs "
+          test -z "$(git status --porcelain)"
+
+      - name: Recheck exact product and publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/validate-m05-source-health-evidence-state-regression.mjs
+          node test/m05-source-health-evidence-state-regression.test.js
+          npm run release:check
+          test -z "$(git status --porcelain)"
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "cc20bf5720ccb22036351e7aa009590cc6dc6081"
+          git push --force origin HEAD:candidate/m05-cross-domain-official-receipt-candidates-v1
