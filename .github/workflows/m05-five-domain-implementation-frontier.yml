@@ -14,9 +14,16 @@ on:
       - 'data/project/m05-cross-domain-official-receipt-candidates.json'
       - 'data/project/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.json'
       - 'data/project/m05-source-health-evidence-state-regression.json'
+      - 'tools/lib/m05-cross-domain-official-receipt-candidates.mjs'
+      - 'tools/lib/m05-source-health-evidence-state-regression.mjs'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.mjs'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.mjs'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.mjs'
       - 'tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.mjs'
       - 'tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier-guardrails.mjs'
       - 'test/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.test.js'
+      - 'test/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier-guardrails.test.js'
       - '.github/workflows/m05-five-domain-implementation-frontier.yml'
   push:
     branches: [main]
@@ -31,9 +38,16 @@ on:
       - 'data/project/m05-cross-domain-official-receipt-candidates.json'
       - 'data/project/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.json'
       - 'data/project/m05-source-health-evidence-state-regression.json'
+      - 'tools/lib/m05-cross-domain-official-receipt-candidates.mjs'
+      - 'tools/lib/m05-source-health-evidence-state-regression.mjs'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.mjs'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.mjs'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.mjs'
       - 'tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.mjs'
       - 'tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier-guardrails.mjs'
       - 'test/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.test.js'
+      - 'test/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier-guardrails.test.js'
       - '.github/workflows/m05-five-domain-implementation-frontier.yml'
   workflow_dispatch:
 
@@ -54,14 +68,20 @@ jobs:
         run: |
           node --check tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.mjs
           node --check tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.mjs
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier-guardrails.mjs
           node --check test/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.test.js
+          node --check test/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier-guardrails.test.js
           node tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.mjs
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier-guardrails.mjs
           node test/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.test.js
+          node test/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier-guardrails.test.js
       - name: Run complete repository release gate
         run: npm run release:check
       - name: Prove deterministic focused state
         run: |
           git restore --staged --worktree .
           node tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.mjs
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier-guardrails.mjs
           node test/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.test.js
+          node test/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier-guardrails.test.js
           git diff --exit-code
