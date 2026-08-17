@@ -31,24 +31,30 @@ jobs:
           base64 -d /tmp/product.b64 > /tmp/product.tar.gz
           tar -xzf /tmp/product.tar.gz
 
-      - name: Qualify focused repair
+      - name: Check corrected JavaScript syntax
         run: |
           set -euo pipefail
           node --check tools/lib/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
           node --check tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
           node --check test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
-          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
-          node test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
+
+      - name: Run corrected focused validator
+        run: node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
+
+      - name: Run corrected focused adversarial test
+        run: node test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
 
       - name: Run complete repository release gate
         run: npm run release:check
 
-      - name: Restore deterministic outputs and repeat focused repair
-        run: |
-          set -euo pipefail
-          git restore --staged --worktree .
-          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
-          node test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
+      - name: Restore deterministic outputs
+        run: git restore --staged --worktree .
+
+      - name: Repeat corrected focused validator
+        run: node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.mjs
+
+      - name: Repeat corrected focused adversarial test
+        run: node test/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.test.js
 
       - name: Enforce exact five-path boundary
         run: |
@@ -67,11 +73,15 @@ jobs:
           test "${#actual[@]}" -eq 5
           test "$(printf '%s\n' "${actual[@]}")" = "$(printf '%s\n' "${expected[@]}")"
 
-      - name: Recheck canonical parent and construct one clean commit
+      - name: Recheck canonical parent
         run: |
           set -euo pipefail
           git fetch origin main
           test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+
+      - name: Construct one clean repair commit
+        run: |
+          set -euo pipefail
           git config user.name 'BigBirdReturns'
           git config user.email 'bigbirdreturns@proton.me'
           git commit -m '[M-05 S03-L7] Repair Intel CHIPS equity receipt review findings'
