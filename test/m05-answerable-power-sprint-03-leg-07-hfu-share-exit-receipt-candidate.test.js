@@ -82,6 +82,21 @@ assertMutationFails((row)=>{row.bindings.external_service_repository.tree_sha='0
   'external repository tree drift');
 assertMutationFails((row)=>{row.bindings.external_service_repository.changelog_blob_sha='0'.repeat(40);},
   'external repository changelog blob drift');
+assertMutationFails((row)=>{
+  row.receipt.sources[0].url='https://www.nao.org.uk/reports/substituted';
+},'same-host source substitution');
+assertMutationFails((row)=>{
+  row.receipt.sources[0].locator[0]+=' Substantive locator drift.';
+},'substantive locator drift');
+assertMutationFails((row)=>{
+  row.bindings.real_receipt_audit.pull_request=999999;
+},'binding metadata drift');
+assertMutationFails((row)=>{
+  delete row.expected_state.hfu_durability;
+},'expected-state field deletion');
+assertMutationFails((row)=>{
+  row.receipt.assessment.upside+=' Unreviewed widening.';
+},'assessment drift');
 
 for(let index=0;index<candidate.receipt.sources.length;index+=1){
   assertMutationFails((row)=>{
@@ -203,7 +218,8 @@ console.log(JSON.stringify({
     HFU_SHARE_TRUE_CHAIN_FIELDS.length+HFU_SHARE_FALSE_CHAIN_FIELDS.length,
   evidence_mutations:EVIDENCE_BOOLEAN_GATES.length+2,
   answer_mutations:ANSWER_DIMENSIONS.length+2,
-  custody_mutations:5,
+  custody_mutations:11,
+  exact_object_guard_mutations:5,
   synthetic_claim_admission:syntheticEvaluation.claim_evidence_admissible,
   synthetic_repository_promotion:syntheticEvaluation.repository_promotion_allowed,
   synthetic_answer_effective:syntheticEvaluation.answer_effective

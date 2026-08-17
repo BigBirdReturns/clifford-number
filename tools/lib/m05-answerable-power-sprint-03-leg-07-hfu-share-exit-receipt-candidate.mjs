@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import {
   ANSWER_DIMENSIONS,
   EVIDENCE_BOOLEAN_GATES,
@@ -7,6 +8,7 @@ import {
 export const HFU_SHARE_RECEIPT_ID='M05-RC-EXIT-UK-HFU-SHARE';
 export const HFU_SHARE_DOMAIN_ID='APC-EXIT-01';
 export const HFU_SHARE_JURISDICTION='UK';
+export const HFU_SHARE_CANDIDATE_JSON_SHA256='254b694ac0fe881f611133bf4a54b2bded0486c8102ca338088668896f4b7f91';
 
 export const HFU_SHARE_AUTHORIZED_CLAIM='Official records establish that MHCLG began building Share in summer 2024, migrated three years of operational data, delivered the service in September 2025, exited the former supplier contract, and continued operating and modifying Share through at least 17 August 2026; current guidance and grant conditions require councils to use Share for safeguarding, accommodation, and reporting workflows, while a public MHCLG repository at commit 120e42a871937c2f8f34d1f84c24cd194791551b provides runnable source, automated tests, MIT-licensed MHCLG code custody, and release history through version 2.10.0. The same bounded record identifies Made Tech support and London-hosted cloud infrastructure and does not establish independent end-to-end migration assurance, a Palantir deletion certificate or residual-copy inventory, supplier-free or cloud-independent operation, affected-party governance, or independently reconciled savings and service performance.';
 
@@ -99,6 +101,7 @@ const same=(left,right)=>JSON.stringify(left)===JSON.stringify(right);
 const text=(value,min=1)=>typeof value==='string'&&value.trim().length>=min;
 const unique=(values)=>new Set(values).size===values.length;
 const clone=(value)=>JSON.parse(JSON.stringify(value));
+const digest=(value)=>crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
 export function summarizeHfuShareExitReceiptCandidate(
   candidate,
@@ -168,6 +171,10 @@ export function validateHfuShareExitReceiptCandidate(
   check(
     candidate?.status==='repository_content_candidate_frozen',
     'HFU candidate status drift'
+  );
+  check(
+    digest(candidate)===HFU_SHARE_CANDIDATE_JSON_SHA256,
+    'HFU candidate exact-object custody drift'
   );
   check(text(candidate?.title,50)&&text(candidate?.question,140),
     'HFU candidate title or question is under-specified');

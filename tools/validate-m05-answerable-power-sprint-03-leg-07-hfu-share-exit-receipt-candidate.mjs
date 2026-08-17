@@ -33,12 +33,25 @@ const gitBlobSha=(bytes)=>{
 
 const sha256=(bytes)=>crypto.createHash('sha256').update(bytes).digest('hex');
 
+const EXPECTED_HFU_CANDIDATE_GIT_BLOB_SHA='8d864b004f3319dae39a5b74b746581d42d768d1';
+const EXPECTED_HFU_CANDIDATE_SHA256='d7aec6f289a33583948b4f200c70feba430ddc72ccbc29db387ecc478007ddc1';
+
 const candidateFile=read(PATHS.candidate);
 const auditFile=read(PATHS.audit);
 const exitPilotFile=read(PATHS.exitPilot);
 const sourceRegistryFile=read(PATHS.sourceRegistry);
 const intelFile=read(PATHS.intelCandidate);
 const contractFile=read(PATHS.contract);
+
+const candidateGitBlobSha=gitBlobSha(candidateFile.bytes);
+const candidateSha256Digest=sha256(candidateFile.bytes);
+if(
+  candidateGitBlobSha!==EXPECTED_HFU_CANDIDATE_GIT_BLOB_SHA||
+  candidateSha256Digest!==EXPECTED_HFU_CANDIDATE_SHA256
+){
+  console.error('HFU Share exit receipt candidate raw-byte custody drift');
+  process.exit(1);
+}
 
 const dependencyBlobShas={
   real_receipt_audit:gitBlobSha(auditFile.bytes),
@@ -71,8 +84,8 @@ const summary=summarizeHfuShareExitReceiptCandidate(candidateFile.json,{
 console.log(JSON.stringify({
   status:'validated',
   candidate_path:PATHS.candidate,
-  candidate_git_blob_sha:gitBlobSha(candidateFile.bytes),
-  candidate_sha256:sha256(candidateFile.bytes),
+  candidate_git_blob_sha:candidateGitBlobSha,
+  candidate_sha256:candidateSha256Digest,
   source_records:candidateFile.json.receipt.sources.length,
   external_repository_commit:
     candidateFile.json.bindings.external_service_repository.commit_sha,
