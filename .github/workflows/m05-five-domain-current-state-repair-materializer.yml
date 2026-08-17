@@ -1,0 +1,61 @@
+name: Materialize M-05 five-domain current-state repair
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-five-domain-current-state-repair-materializer-v1
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Materialize and qualify exact five-path repair
+        env:
+          PAYLOAD_BLOB_SHA: 08f9bc33c9c0520a5f876ed1c0cbe12b9c0313a2
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          target='agent/m05-s03-l7-five-domain-current-state-repair-v1'
+          git switch -c "$target"
+
+          curl -fsSL \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/blobs/$PAYLOAD_BLOB_SHA" \
+            | python -c 'import base64,json,sys; sys.stdout.buffer.write(base64.b64decode(json.load(sys.stdin)["content"]))' \
+            > "$RUNNER_TEMP/m05-five-domain-repair.txz"
+          tar -xJf "$RUNNER_TEMP/m05-five-domain-repair.txz"
+
+          node --check tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.mjs
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.test.js
+          npm run release:check
+
+          git add -- \
+            data/project/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.json \
+            tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.mjs \
+            tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.mjs \
+            test/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.test.js \
+            .github/workflows/m05-five-domain-claim-evidence-reconciliation.yml
+          git diff --cached --check
+          git restore --worktree .
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.test.js
+          git diff --exit-code
+
+          git config user.name 'BigBirdReturns'
+          git config user.email 'bigbirdreturns@proton.me'
+          git commit -m '[M-05 S03-L7] Preserve Robodebt state in five-domain reconciliation'
+          git push --force origin "HEAD:refs/heads/$target"
