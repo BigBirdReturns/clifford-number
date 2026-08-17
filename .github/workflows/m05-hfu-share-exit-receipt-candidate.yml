@@ -1,0 +1,61 @@
+name: M-05 HFU Share exit receipt candidate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-real-receipt-admission-audit.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-05-public-platform-exit.json'
+      - 'data/intake/m05-answerable-power-sprint-01-sources.json'
+      - 'data/project/m05-source-health-evidence-state-regression.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json'
+      - 'tools/lib/m05-source-health-evidence-state-regression.mjs'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.test.js'
+      - '.github/workflows/m05-hfu-share-exit-receipt-candidate.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-real-receipt-admission-audit.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-05-public-platform-exit.json'
+      - 'data/intake/m05-answerable-power-sprint-01-sources.json'
+      - 'data/project/m05-source-health-evidence-state-regression.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json'
+      - 'tools/lib/m05-source-health-evidence-state-regression.mjs'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.test.js'
+      - '.github/workflows/m05-hfu-share-exit-receipt-candidate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate bounded HFU Share exit receipt candidate
+        run: |
+          node --check tools/lib/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic focused state
+        run: |
+          git restore --staged --worktree .
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.test.js
+          git diff --exit-code
