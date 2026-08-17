@@ -1,0 +1,460 @@
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+
+export const EXHAUST_SCHEMA_VERSION = 1;
+export const SOURCE_CLASS = 'first_party_corporate_publication';
+export const GRAPH_EFFECT = 'none';
+
+const TRACKING_PARAMS = new Set([
+  'fbclid', 'gclid', 'dclid', 'mc_cid', 'mc_eid', 'msclkid', '_hsenc', '_hsmi'
+]);
+
+const EVENT_RULES = [
+  ['product_launch', /\b(launch(?:es|ed|ing)?|unveil(?:s|ed|ing)?|introduc(?:e|es|ed|ing)|release(?:s|d|ing)?|new (?:product|service|solution|platform|tool|model|capability))\b/iu],
+  ['partnership_vendor', /\b(partner(?:s|ed|ing|ship)?|collaborat(?:e|es|ed|ion)|alliance|vendor|supplier|integration)\b/iu],
+  ['client_customer', /\b(client|customer|advertiser|brand partner|deployment)\b/iu],
+  ['leadership_role', /\b(appoint(?:s|ed|ment)?|president|chief executive|\bceo\b|managing director|executive officer|leadership|director)\b/iu],
+  ['geography_rollout', /\b(global rollout|rollout|first market|launch market|international expansion|regional expansion|across markets)\b/iu],
+  ['dataset_input', /\b(dataset|panel data|audience data|first-party data|third-party data|intent data|identity data|\bccs\b)\b/iu],
+  ['validation_metric', /\b(validation|validate|benchmark|correlation|accuracy|holdout|confidence interval|metric|percent|percentage)\b/iu],
+  ['acquisition_investment', /\b(acquir(?:e|es|ed|ing)|acquisition|invest(?:s|ed|ment)|funding|stake|divest(?:s|ed|ment))\b/iu],
+  ['ir_capital', /\b(financial results|earnings|dividend|share buyback|repurchase|capital allocation|securities|investor relations|mid-term management plan)\b/iu],
+  ['governance_privacy', /\b(governance|privacy|data protection|responsible ai|ethics|compliance|audit|assurance|security)\b/iu],
+  ['regulatory_incident', /\b(regulator|regulatory|investigation|breach|incident|fine|sanction|enforcement|complaint)\b/iu]
+];
+
+export function stableJson(value) {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+export function sha256(value) {
+  return crypto.createHash('sha256').update(typeof value === 'string' ? value : stableJson(value)).digest('hex');
+}
+
+export function contentId(prefix, ...parts) {
+  return `${prefix}_${sha256(parts.map(part => String(part ?? '')).join('|')).slice(0, 24)}`;
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export function decodeXmlEntities(value) {
+  const named = {
+    amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+    ndash: '–', mdash: '—', hellip: '…', copy: '©', reg: '®', trade: '™'
+  };
+  return String(value ?? '').replace(/&(#x[0-9a-f]+|#\d+|[a-z][a-z0-9]+);/giu, (match, entity) => {
+    if (entity[0] === '#') {
+      const hex = entity[1]?.toLowerCase() === 'x';
+      const codePoint = Number.parseInt(entity.slice(hex ? 2 : 1), hex ? 16 : 10);
+      if (Number.isInteger(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff) {
+        try { return String.fromCodePoint(codePoint); } catch { return match; }
+      }
+      return match;
+    }
+    return Object.hasOwn(named, entity.toLowerCase()) ? named[entity.toLowerCase()] : match;
+  });
+}
+
+export function redactContactData(value) {
+  return String(value ?? '')
+    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/giu, '[contact omitted]')
+    .replace(/(?<!\w)(?:\+?\d[\d().\s-]{7,}\d)(?!\w)/gu, '[contact omitted]');
+}
+
+export function cleanText(value, max = 1600) {
+  const withoutCdata = String(value ?? '').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/giu, '$1');
+  const decoded = decodeXmlEntities(withoutCdata)
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/giu, ' ')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/giu, ' ')
+    .replace(/<(?:br|hr)\b[^>]*\/?>/giu, ' ')
+    .replace(/<[^>]+>/gu, ' ');
+  return redactContactData(decoded).replace(/\s+/gu, ' ').trim().slice(0, max);
+}
+
+export function canonicalizeUrl(value, baseUrl) {
+  const raw = cleanText(value, 4000);
+  if (!raw) return null;
+  try {
+    const url = new URL(raw, baseUrl);
+    if (!['http:', 'https:'].includes(url.protocol)) return null;
+    if (url.protocol === 'http:') url.protocol = 'https:';
+    url.hash = '';
+    for (const key of [...url.searchParams.keys()]) {
+      if (key.toLowerCase().startsWith('utm_') || TRACKING_PARAMS.has(key.toLowerCase())) {
+        url.searchParams.delete(key);
+      }
+    }
+    const sorted = [...url.searchParams.entries()].sort(([aKey, aVal], [bKey, bVal]) =>
+      aKey.localeCompare(bKey) || aVal.localeCompare(bVal));
+    url.search = '';
+    for (const [key, val] of sorted) url.searchParams.append(key, val);
+    return url.href;
+  } catch {
+    return null;
+  }
+}
+
+function extractElementRaw(block, localName) {
+  const name = escapeRegExp(localName);
+  const pattern = new RegExp(`<(?:(?:[\\w.-]+):)?${name}\\b[^>]*>([\\s\\S]*?)<\\/(?:(?:[\\w.-]+):)?${name}\\s*>`, 'iu');
+  return block.match(pattern)?.[1] ?? null;
+}
+
+function extractOpenTag(block, localName) {
+  const name = escapeRegExp(localName);
+  return block.match(new RegExp(`<(?:(?:[\\w.-]+):)?${name}\\b([^>]*)>`, 'iu'))?.[1] ?? null;
+}
+
+function extractAttribute(attributes, name) {
+  if (!attributes) return null;
+  const escaped = escapeRegExp(name);
+  const quoted = attributes.match(new RegExp(`(?:^|\\s)${escaped}\\s*=\\s*(["'])([\\s\\S]*?)\\1`, 'iu'));
+  if (quoted) return decodeXmlEntities(quoted[2]).trim();
+  const bare = attributes.match(new RegExp(`(?:^|\\s)${escaped}\\s*=\\s*([^\\s>]+)`, 'iu'));
+  return bare ? decodeXmlEntities(bare[1]).trim() : null;
+}
+
+function extractAtomLink(block) {
+  const tags = [...block.matchAll(/<(?:(?:[\w.-]+):)?link\b([^>]*)\/?\s*>/giu)];
+  const candidates = tags.map(match => ({
+    href: extractAttribute(match[1], 'href'),
+    rel: extractAttribute(match[1], 'rel')
+  })).filter(item => item.href);
+  return candidates.find(item => !item.rel || item.rel.toLowerCase() === 'alternate')?.href
+    ?? candidates[0]?.href
+    ?? null;
+}
+
+function normalizeDate(value) {
+  const raw = cleanText(value, 200);
+  if (!raw) return { iso: null, raw: null };
+  const timestamp = Date.parse(raw);
+  return Number.isFinite(timestamp)
+    ? { iso: new Date(timestamp).toISOString(), raw }
+    : { iso: null, raw };
+}
+
+function splitFeedItems(xml) {
+  const rssItems = [...xml.matchAll(/<(?:(?:[\w.-]+):)?item\b[^>]*>[\s\S]*?<\/(?:(?:[\w.-]+):)?item\s*>/giu)].map(match => ({
+    kind: 'rss', raw: match[0]
+  }));
+  if (rssItems.length) return rssItems;
+  return [...xml.matchAll(/<(?:(?:[\w.-]+):)?entry\b[^>]*>[\s\S]*?<\/(?:(?:[\w.-]+):)?entry\s*>/giu)].map(match => ({
+    kind: 'atom', raw: match[0]
+  }));
+}
+
+function normalizeItem(itemBlock, source) {
+  const { raw, kind } = itemBlock;
+  const title = cleanText(extractElementRaw(raw, 'title'), 500);
+  const summary = cleanText(
+    extractElementRaw(raw, 'encoded')
+      ?? extractElementRaw(raw, 'description')
+      ?? extractElementRaw(raw, 'summary')
+      ?? extractElementRaw(raw, 'content'),
+    1800
+  );
+
+  const rssLink = extractElementRaw(raw, 'link');
+  const atomLink = kind === 'atom' ? extractAtomLink(raw) : null;
+  const itemAttributes = extractOpenTag(raw, kind === 'atom' ? 'entry' : 'item');
+  const rdfAbout = extractAttribute(itemAttributes, 'rdf:about') ?? extractAttribute(itemAttributes, 'about');
+  const link = canonicalizeUrl(atomLink ?? rssLink ?? rdfAbout, source.feed_url);
+
+  const guid = cleanText(extractElementRaw(raw, 'guid') ?? extractElementRaw(raw, 'id'), 1000) || null;
+  const published = normalizeDate(
+    extractElementRaw(raw, 'pubDate')
+      ?? extractElementRaw(raw, 'published')
+      ?? extractElementRaw(raw, 'date')
+  );
+  const updated = normalizeDate(
+    extractElementRaw(raw, 'updated')
+      ?? extractElementRaw(raw, 'modified')
+  );
+
+  if (!title && !link && !guid) throw new Error(`feed item from ${source.id} lacks title, link, and identifier`);
+
+  const identity = link ?? guid ?? sha256(`${title}|${published.raw ?? ''}`);
+  const sourceRecordKey = sha256(`${source.id}|${identity}`);
+  const normalizedForHash = {
+    title,
+    summary,
+    canonical_url: link,
+    guid,
+    published_at: published.iso,
+    published_raw: published.raw,
+    updated_at: updated.iso,
+    updated_raw: updated.raw
+  };
+
+  return {
+    source_record_key: sourceRecordKey,
+    source_record_id: guid ?? link ?? sourceRecordKey,
+    canonical_url: link,
+    title,
+    summary,
+    published_at: published.iso,
+    published_raw: published.raw,
+    updated_at: updated.iso,
+    updated_raw: updated.raw,
+    content_sha256: sha256(normalizedForHash),
+    raw_item_sha256: sha256(raw),
+    raw_xml: raw
+  };
+}
+
+export function parseFeed(xml, source) {
+  if (typeof xml !== 'string' || !xml.trim()) throw new Error(`empty feed body for ${source.id}`);
+  if (Buffer.byteLength(xml, 'utf8') > Number(source.max_bytes ?? 5_000_000)) {
+    throw new Error(`feed body for ${source.id} exceeds configured maximum`);
+  }
+  if (!/<(?:rss|feed|rdf:RDF)\b/iu.test(xml)) throw new Error(`unrecognized XML feed root for ${source.id}`);
+
+  const blocks = splitFeedItems(xml);
+  if (!blocks.length) throw new Error(`feed ${source.id} contains no RSS items or Atom entries`);
+
+  const items = blocks.map(block => normalizeItem(block, source));
+  const duplicates = new Set();
+  for (const item of items) {
+    if (duplicates.has(item.source_record_key)) {
+      throw new Error(`feed ${source.id} repeats source record ${item.source_record_id}`);
+    }
+    duplicates.add(item.source_record_key);
+  }
+
+  items.sort((a, b) =>
+    String(a.published_at ?? '').localeCompare(String(b.published_at ?? ''))
+      || a.source_record_key.localeCompare(b.source_record_key));
+
+  return {
+    feed_title: cleanText(extractElementRaw(xml, 'title'), 500),
+    feed_updated_at: normalizeDate(extractElementRaw(xml, 'lastBuildDate') ?? extractElementRaw(xml, 'updated')).iso,
+    feed_sha256: sha256(xml),
+    item_count: items.length,
+    items
+  };
+}
+
+export function validateRegistry(registry) {
+  if (!registry || registry.schema_version !== EXHAUST_SCHEMA_VERSION || !Array.isArray(registry.sources)) {
+    throw new Error('industrial-exhaust source registry must have schema_version 1 and sources[]');
+  }
+  const ids = new Set();
+  const urls = new Set();
+  for (const source of registry.sources) {
+    if (!/^[a-z0-9][a-z0-9_-]{2,80}$/u.test(source.id ?? '')) throw new Error(`invalid source id: ${source.id}`);
+    if (ids.has(source.id)) throw new Error(`duplicate source id: ${source.id}`);
+    ids.add(source.id);
+    let url;
+    try { url = new URL(source.feed_url); } catch { throw new Error(`invalid feed URL for ${source.id}`); }
+    if (url.protocol !== 'https:') throw new Error(`feed URL for ${source.id} must use https`);
+    if (urls.has(url.href)) throw new Error(`duplicate feed URL: ${url.href}`);
+    urls.add(url.href);
+    if (source.source_class !== SOURCE_CLASS) throw new Error(`source ${source.id} must remain ${SOURCE_CLASS}`);
+    if (source.graph_effect !== GRAPH_EFFECT) throw new Error(`source ${source.id} must have graph_effect none`);
+    if (!source.publisher || !source.surface) throw new Error(`source ${source.id} lacks publisher or surface`);
+    if (source.enabled !== true && source.enabled !== false) throw new Error(`source ${source.id} must declare enabled boolean`);
+  }
+  return registry;
+}
+
+export function validateWatchTerms(config) {
+  if (!config || config.schema_version !== EXHAUST_SCHEMA_VERSION || !Array.isArray(config.terms)) {
+    throw new Error('industrial-exhaust watch registry must have schema_version 1 and terms[]');
+  }
+  const ids = new Set();
+  for (const term of config.terms) {
+    if (!/^[a-z0-9][a-z0-9_-]{1,80}$/u.test(term.id ?? '')) throw new Error(`invalid watch-term id: ${term.id}`);
+    if (ids.has(term.id)) throw new Error(`duplicate watch-term id: ${term.id}`);
+    ids.add(term.id);
+    if (!Array.isArray(term.patterns) || !term.patterns.length || term.patterns.some(pattern => !String(pattern).trim())) {
+      throw new Error(`watch term ${term.id} must have non-empty literal patterns`);
+    }
+  }
+  return config;
+}
+
+export function matchWatchTerms(record, config) {
+  const haystack = `${record.title ?? ''}\n${record.summary ?? ''}`.normalize('NFKC').toLocaleLowerCase('en');
+  return config.terms.filter(term => term.patterns.some(pattern =>
+    haystack.includes(String(pattern).normalize('NFKC').toLocaleLowerCase('en'))
+  )).map(term => term.id).sort();
+}
+
+export function classifyEventHints(record) {
+  const text = `${record.title ?? ''}\n${record.summary ?? ''}`;
+  const hints = EVENT_RULES.filter(([, pattern]) => pattern.test(text)).map(([hint]) => hint);
+  return hints.length ? hints : ['unknown'];
+}
+
+function latestObservationIndex(observations) {
+  const index = new Map();
+  for (const observation of observations) {
+    const current = index.get(observation.source_record_key);
+    if (!current || Number(observation.revision_number ?? 0) > Number(current.revision_number ?? 0)) {
+      index.set(observation.source_record_key, observation);
+    }
+  }
+  return index;
+}
+
+export function mergeFeedItems({ observations, source, parsedFeed, capturedAt, feedReceiptPath }) {
+  const merged = [...observations];
+  const latest = latestObservationIndex(merged.filter(item => item.source_id === source.id));
+  const added = [];
+
+  for (const item of parsedFeed.items) {
+    const previous = latest.get(item.source_record_key) ?? null;
+    if (previous?.content_sha256 === item.content_sha256) continue;
+    const revisionNumber = previous ? Number(previous.revision_number ?? 1) + 1 : 1;
+    const observation = {
+      schema_version: EXHAUST_SCHEMA_VERSION,
+      observation_id: contentId('xobs', source.id, item.source_record_key, item.content_sha256),
+      source_id: source.id,
+      source_class: SOURCE_CLASS,
+      publisher: source.publisher,
+      surface: source.surface,
+      source_feed_url: source.feed_url,
+      source_record_key: item.source_record_key,
+      source_record_id: item.source_record_id,
+      canonical_url: item.canonical_url,
+      title: item.title,
+      summary: item.summary,
+      published_at: item.published_at,
+      published_raw: item.published_raw,
+      updated_at: item.updated_at,
+      updated_raw: item.updated_raw,
+      captured_at: capturedAt,
+      feed_receipt_path: feedReceiptPath,
+      feed_sha256: parsedFeed.feed_sha256,
+      raw_item_sha256: item.raw_item_sha256,
+      content_sha256: item.content_sha256,
+      revision_of: previous?.observation_id ?? null,
+      revision_number: revisionNumber,
+      evidence_class: 'first_party_attributed_statement',
+      evidentiary_scope: 'publisher_publication_only',
+      graph_effect: GRAPH_EFFECT,
+      promotion_authority: false,
+      canonical_mutation_authorized: false
+    };
+    merged.push(observation);
+    latest.set(item.source_record_key, observation);
+    added.push(observation);
+  }
+
+  merged.sort((a, b) => a.observation_id.localeCompare(b.observation_id));
+  return { observations: merged, added };
+}
+
+export function buildAlerts(observations, watchConfig) {
+  const latest = latestObservationIndex(observations);
+  const alerts = [];
+  for (const observation of latest.values()) {
+    const matched = matchWatchTerms(observation, watchConfig);
+    if (!matched.length) continue;
+    alerts.push({
+      schema_version: EXHAUST_SCHEMA_VERSION,
+      alert_id: contentId('xalert', observation.observation_id, matched.join(',')),
+      observation_id: observation.observation_id,
+      source_id: observation.source_id,
+      publisher: observation.publisher,
+      title: observation.title,
+      canonical_url: observation.canonical_url,
+      published_at: observation.published_at,
+      revision_number: observation.revision_number,
+      matched_terms: matched,
+      event_hints: classifyEventHints(observation),
+      evidence_class: 'first_party_attributed_statement',
+      review_status: 'queued',
+      graph_effect: GRAPH_EFFECT,
+      promotion_authority: false,
+      canonical_mutation_authorized: false,
+      forbidden_inferences: [
+        'publisher statement independently proves the statement',
+        'shared product category proves a commercial relationship',
+        'feed omission proves withdrawal or discontinuation',
+        'profile attention establishes motive or corporate direction'
+      ]
+    });
+  }
+  return alerts.sort((a, b) => a.alert_id.localeCompare(b.alert_id));
+}
+
+export function readJson(filePath, fallback) {
+  if (!fs.existsSync(filePath)) return fallback;
+  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+}
+
+export function readJsonl(filePath) {
+  if (!fs.existsSync(filePath)) return [];
+  return fs.readFileSync(filePath, 'utf8').split(/\r?\n/u).filter(Boolean).map((line, index) => {
+    try { return JSON.parse(line); } catch (error) { throw new Error(`${filePath}:${index + 1}: ${error.message}`); }
+  });
+}
+
+export function writeAtomic(filePath, content) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  const tempPath = `${filePath}.${process.pid}.tmp`;
+  fs.writeFileSync(tempPath, content);
+  fs.renameSync(tempPath, filePath);
+}
+
+export function writeJson(filePath, value) {
+  writeAtomic(filePath, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+export function writeJsonl(filePath, records) {
+  writeAtomic(filePath, records.length ? `${records.map(record => JSON.stringify(record)).join('\n')}\n` : '');
+}
+
+export function feedReceiptPath(rootDir, sourceId, feedHash) {
+  return path.join(rootDir, 'receipts', 'exhaust', sourceId, `${feedHash}.json`);
+}
+
+export function writeFeedReceipt({ rootDir, source, parsedFeed, xml, capturedAt, responseHeaders = {} }) {
+  const receiptPath = feedReceiptPath(rootDir, source.id, parsedFeed.feed_sha256);
+  if (!fs.existsSync(receiptPath)) {
+    writeJson(receiptPath, {
+      schema_version: EXHAUST_SCHEMA_VERSION,
+      receipt_type: 'first_party_feed_snapshot',
+      source_id: source.id,
+      source_class: SOURCE_CLASS,
+      publisher: source.publisher,
+      feed_url: source.feed_url,
+      captured_at: capturedAt,
+      feed_sha256: parsedFeed.feed_sha256,
+      feed_title: parsedFeed.feed_title,
+      item_count: parsedFeed.item_count,
+      response_headers: {
+        content_type: responseHeaders.content_type ?? null,
+        etag: responseHeaders.etag ?? null,
+        last_modified: responseHeaders.last_modified ?? null
+      },
+      body_encoding: 'utf-8',
+      body: xml,
+      graph_effect: GRAPH_EFFECT,
+      promotion_authority: false,
+      canonical_mutation_authorized: false
+    });
+  }
+  return path.relative(rootDir, receiptPath).split(path.sep).join('/');
+}
+
+export function emptyState() {
+  return {
+    schema_version: EXHAUST_SCHEMA_VERSION,
+    lane: 'first_party_industrial_exhaust',
+    last_run_at: null,
+    sources: {},
+    graph_effect: GRAPH_EFFECT,
+    promotion_authority: false,
+    canonical_mutation_authorized: false
+  };
+}

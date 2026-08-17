@@ -1,0 +1,141 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {
+  buildAlerts,
+  canonicalizeUrl,
+  cleanText,
+  classifyEventHints,
+  mergeFeedItems,
+  parseFeed,
+  readJson,
+  validateRegistry,
+  validateWatchTerms,
+  writeFeedReceipt
+} from '../tools/lib/industrial-exhaust.mjs';
+
+const source = {
+  id: 'dentsu_test_feed',
+  publisher: 'Dentsu Inc.',
+  surface: 'Test releases',
+  feed_url: 'https://example.test/news.xml',
+  source_class: 'first_party_corporate_publication',
+  enabled: true,
+  graph_effect: 'none'
+};
+
+const watch = validateWatchTerms({
+  schema_version: 1,
+  terms: [
+    { id: 'evidenza', patterns: ['Evidenza'] },
+    { id: 'synthetic_audience', patterns: ['synthetic audience'] },
+    { id: 'b2b', patterns: ['B2B'] }
+  ]
+});
+
+const rss = `<?xml version="1.0"?>
+<rss version="2.0"><channel><title>Dentsu test releases</title><lastBuildDate>Tue, 14 Jul 2026 08:00:00 GMT</lastBuildDate>
+<item><title>Dentsu partners with Evidenza on synthetic audiences</title><link>http://example.test/releases/1?utm_source=rss&amp;b=2&amp;a=1#top</link><guid isPermaLink="false">release-1</guid><pubDate>Mon, 13 Jul 2026 08:00:00 GMT</pubDate><description><![CDATA[Uses B2B planning. Contact jane@example.test or +81 3 1234 5678.]]></description></item>
+<item><title>Unexpected new operating capability</title><link>https://example.test/releases/2</link><guid>release-2</guid><pubDate>Tue, 14 Jul 2026 08:00:00 GMT</pubDate><description>No configured watch term is required for capture.</description></item>
+</channel></rss>`;
+
+const parsed = parseFeed(rss, source);
+assert.equal(parsed.item_count, 2, 'RSS intake must capture all entries, not only watch-term matches');
+assert.equal(parsed.items[0].canonical_url, 'https://example.test/releases/1?a=1&b=2');
+assert.match(parsed.items[0].summary, /\[contact omitted\]/u);
+assert.doesNotMatch(parsed.items[0].summary, /example\.test|1234/u);
+
+const firstMerge = mergeFeedItems({
+  observations: [], source, parsedFeed: parsed, capturedAt: '2026-07-14T09:00:00.000Z',
+  feedReceiptPath: `receipts/exhaust/${source.id}/${parsed.feed_sha256}.json`
+});
+assert.equal(firstMerge.added.length, 2);
+for (const observation of firstMerge.observations) {
+  assert.equal(observation.source_class, 'first_party_corporate_publication');
+  assert.equal(observation.evidence_class, 'first_party_attributed_statement');
+  assert.equal(observation.graph_effect, 'none');
+  assert.equal(observation.promotion_authority, false);
+  assert.equal(observation.canonical_mutation_authorized, false);
+  assert.equal('viewer' in observation, false);
+  assert.equal('motive' in observation, false);
+}
+
+const unchangedMerge = mergeFeedItems({
+  observations: firstMerge.observations, source, parsedFeed: parsed, capturedAt: '2026-07-15T09:00:00.000Z',
+  feedReceiptPath: `receipts/exhaust/${source.id}/${parsed.feed_sha256}.json`
+});
+assert.equal(unchangedMerge.added.length, 0, 'unchanged entries must deduplicate');
+
+const revisedRss = rss.replace('Uses B2B planning.', 'Uses B2B planning and media activation.');
+const revised = parseFeed(revisedRss, source);
+const revisionMerge = mergeFeedItems({
+  observations: firstMerge.observations, source, parsedFeed: revised, capturedAt: '2026-07-16T09:00:00.000Z',
+  feedReceiptPath: `receipts/exhaust/${source.id}/${revised.feed_sha256}.json`
+});
+assert.equal(revisionMerge.added.length, 1);
+assert.equal(revisionMerge.added[0].revision_number, 2);
+assert.equal(revisionMerge.added[0].revision_of, firstMerge.observations.find(item => item.source_record_id === 'release-1').observation_id);
+
+const alerts = buildAlerts(revisionMerge.observations, watch);
+assert.equal(alerts.length, 1, 'unmatched entries remain captured without becoming alerts');
+assert.deepEqual(alerts[0].matched_terms, ['b2b', 'evidenza', 'synthetic_audience']);
+assert.equal(alerts[0].revision_number, 2, 'alerts must point to the latest revision only');
+assert.ok(alerts[0].event_hints.includes('partnership_vendor'));
+assert.ok(alerts[0].event_hints.includes('dataset_input') === false);
+assert.equal(alerts[0].graph_effect, 'none');
+assert.equal(alerts[0].canonical_mutation_authorized, false);
+
+const atom = `<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><title>Atom feed</title>
+<entry><id>tag:example.test,2026:3</id><title>AI For Growth update</title><link rel="alternate" href="https://example.test/atom/3?utm_campaign=x"/><published>2026-07-17T10:30:00Z</published><summary type="html">&lt;p&gt;Simulation update&lt;/p&gt;</summary></entry></feed>`;
+const atomParsed = parseFeed(atom, source);
+assert.equal(atomParsed.item_count, 1);
+assert.equal(atomParsed.items[0].canonical_url, 'https://example.test/atom/3');
+assert.equal(atomParsed.items[0].summary, 'Simulation update');
+
+const rdf = `<?xml version="1.0"?><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://purl.org/rss/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>RDF feed</title></channel><item rdf:about="https://example.test/rdf/4"><title>Leadership appointment</title><link>https://example.test/rdf/4</link><dc:date>2026-07-18T00:00:00Z</dc:date><description>President appointed</description></item></rdf:RDF>`;
+const rdfParsed = parseFeed(rdf, source);
+assert.equal(rdfParsed.item_count, 1);
+assert.equal(rdfParsed.items[0].published_at, '2026-07-18T00:00:00.000Z');
+assert.ok(classifyEventHints(rdfParsed.items[0]).includes('leadership_role'));
+
+assert.equal(canonicalizeUrl('http://Example.TEST/a?utm_medium=rss&z=2&a=1#frag', source.feed_url), 'https://example.test/a?a=1&z=2');
+assert.equal(cleanText('<p>Hello&nbsp;world</p>'), 'Hello world');
+
+assert.throws(() => validateRegistry({
+  schema_version: 1,
+  sources: [{ ...source, feed_url: 'http://example.test/news.xml' }]
+}), /must use https/u);
+assert.throws(() => validateRegistry({ schema_version: 1, sources: [source, source] }), /duplicate source id/u);
+
+const repoRoot = path.resolve(import.meta.dirname, '..');
+const actualRegistry = validateRegistry(readJson(path.join(repoRoot, 'data/exhaust/sources.json'), null));
+assert.deepEqual(actualRegistry.sources.map(item => item.id), [
+  'dentsu_inc_en_news', 'dentsu_inc_jp_news',
+  'dentsu_group_en_releases', 'dentsu_group_jp_releases',
+  'dentsu_group_en_ir', 'dentsu_group_jp_ir'
+]);
+for (const item of actualRegistry.sources) {
+  assert.equal(item.source_class, 'first_party_corporate_publication');
+  assert.equal(item.graph_effect, 'none');
+}
+validateWatchTerms(readJson(path.join(repoRoot, 'data/exhaust/watch-terms.json'), null));
+
+const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'industrial-exhaust-'));
+const receiptOne = writeFeedReceipt({
+  rootDir: tempRoot, source, parsedFeed: parsed, xml: rss, capturedAt: '2026-07-14T09:00:00.000Z',
+  responseHeaders: { content_type: 'application/rss+xml', etag: '"one"' }
+});
+const receiptTwo = writeFeedReceipt({
+  rootDir: tempRoot, source, parsedFeed: parsed, xml: rss, capturedAt: '2026-07-15T09:00:00.000Z',
+  responseHeaders: { content_type: 'application/rss+xml', etag: '"two"' }
+});
+assert.equal(receiptOne, receiptTwo, 'same immutable feed body must resolve to one receipt');
+const receipt = JSON.parse(fs.readFileSync(path.join(tempRoot, receiptOne), 'utf8'));
+assert.equal(receipt.body, rss);
+assert.equal(receipt.feed_sha256, parsed.feed_sha256);
+assert.equal(receipt.graph_effect, 'none');
+assert.equal(receipt.canonical_mutation_authorized, false);
+fs.rmSync(tempRoot, { recursive: true, force: true });
+
+console.log('industrial-exhaust tests passed');
