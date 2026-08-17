@@ -48,6 +48,13 @@ jobs:
       - name: Run complete repository release gate
         run: npm run release:check
 
+      - name: Restore clean base and rematerialize exact product
+        run: |
+          set -euo pipefail
+          git reset --hard HEAD
+          git clean -fd
+          tar -xJf "$RUNNER_TEMP/m05-five-domain-repair.txz"
+
       - name: Prove exact boundary and publish clean product branch
         run: |
           set -euo pipefail
