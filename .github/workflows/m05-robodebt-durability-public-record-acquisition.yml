@@ -1,0 +1,53 @@
+name: M-05 Robodebt durability public-record acquisition
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-robodebt-durability-public-record-acquisition.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-robodebt-durability-public-record-acquisition.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-robodebt-durability-public-record-acquisition.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-robodebt-durability-public-record-acquisition.test.js'
+      - '.github/workflows/m05-robodebt-durability-public-record-acquisition.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-robodebt-durability-public-record-acquisition.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-robodebt-durability-public-record-acquisition.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-robodebt-durability-public-record-acquisition.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-robodebt-durability-public-record-acquisition.test.js'
+      - '.github/workflows/m05-robodebt-durability-public-record-acquisition.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate Robodebt durability public-record acquisition
+        run: |
+          node --check tools/lib/m05-answerable-power-sprint-03-leg-07-robodebt-durability-public-record-acquisition.mjs
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-robodebt-durability-public-record-acquisition.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-robodebt-durability-public-record-acquisition.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-robodebt-durability-public-record-acquisition.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-robodebt-durability-public-record-acquisition.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic focused state
+        run: |
+          git restore --staged --worktree .
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-robodebt-durability-public-record-acquisition.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-robodebt-durability-public-record-acquisition.test.js
+          git diff --exit-code

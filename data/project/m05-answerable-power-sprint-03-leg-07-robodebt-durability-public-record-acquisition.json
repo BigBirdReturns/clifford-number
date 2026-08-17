@@ -1,0 +1,250 @@
+{
+  "schema_version": "m05-answerable-power-s03-l7-robodebt-durability-public-record-acquisition@1",
+  "object_class": "bounded_public_record_acquisition_result",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-03",
+  "leg_id": "S03-L7",
+  "issue": 345,
+  "as_of": "2026-08-17",
+  "status": "robodebt_durability_public_record_acquisition_frozen",
+  "title": "Robodebt durability public-record acquisition result",
+  "question": "Does the currently available official record supply a published annual debt-management-program review, a published independent-assurance result, or a subject-level pause-and-remedy chain sufficient to change the frozen Robodebt durability dimension?",
+  "canonical_base": {
+    "branch": "main",
+    "sha": "01e3f154ef8a86baa90a89dc250adb9c362ba9ee",
+    "tree_sha": "65b89b877332c76ed1905be4e88a742c7e9163a1",
+    "implementation_frontier_pull_request": 2162
+  },
+  "bindings": {
+    "implementation_frontier": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.json",
+      "blob_sha": "34fa8d54c3a6ea9b993c3b650f4b737dcbbc756c",
+      "schema_version": "m05-answerable-power-s03-l7-five-domain-implementation-frontier@1",
+      "pull_request": 2162,
+      "merge_commit": "01e3f154ef8a86baa90a89dc250adb9c362ba9ee"
+    },
+    "robodebt_pre_action_implementation_receipt": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.json",
+      "blob_sha": "a31d7ea7a1432a169de31035c153210b8975e217",
+      "schema_version": "m05-answerable-power-s03-l7-robodebt-pre-action-implementation-receipt@1",
+      "pull_request": 2155,
+      "merge_commit": "3e9132f1628fe96989b931f56a302bf69907ef99"
+    }
+  },
+  "target": {
+    "frontier_id": "M05-IF-ADMIN-AU-ROBODEBT-DURABILITY",
+    "receipt_id": "M05-RC-ADMIN-AU-ROBODEBT",
+    "domain_id": "APC-ADMIN-01",
+    "jurisdiction": "AU",
+    "route_class": "active_public_record_acquisition",
+    "dimension": "durability",
+    "before": false,
+    "after": false
+  },
+  "acquisition_protocol": {
+    "executed_at": "2026-08-17",
+    "official_hosts": [
+      "www.servicesaustralia.gov.au",
+      "www.anao.gov.au",
+      "ministers.finance.gov.au",
+      "www.aph.gov.au",
+      "formerministers.dss.gov.au",
+      "ministers.dss.gov.au"
+    ],
+    "query_families": [
+      "annual debt-management-program review and operated denominator",
+      "external independent assurance result and tested recommendations",
+      "subject-level debt decision, contest, pre-collection pause, outcome, correction, waiver or refund, and follow-up"
+    ],
+    "allowed_source_classes": [
+      "official_primary_record",
+      "official_audit_work_program_record",
+      "official_adjudicative_record",
+      "source_native_primary_record"
+    ],
+    "search_exhaustiveness_claimed": false,
+    "access_controls_bypassed": false,
+    "direct_voice_bulk_polling_allowed": false,
+    "metadata_counts_as_substantive_content": false,
+    "adjacent_case_transfer_allowed": false,
+    "failed_and_nonqualifying_routes_preserved": true
+  },
+  "source_records": [
+    {
+      "source_id": "AU-ROBODEBT-SA-ANNUAL-REPORT-2024-25",
+      "authority": "Services Australia",
+      "record_type": "official_primary_record",
+      "published_at": "2025-11-11",
+      "url": "https://www.servicesaustralia.gov.au/sites/default/files/2025-10/annual-report-2024-25.pdf",
+      "locators": [
+        "Section 6.10 reports implementation of a debt management program and records 1,400,365 social-security debts raised in 2024–25, $2.4 billion raised, and $1.6 billion recovered.",
+        "Section 7.1 reports that, as at 30 June 2025, 21 of 26 Services Australia-led Robodebt recommendations were fully implemented, two were partially implemented, and three were undergoing an external independent assurance process.",
+        "Section 7.1 states that the debt management program developed in 2024–25 will be reviewed annually, but the report does not publish that annual review or the independent-assurance result."
+      ],
+      "source_role": "supports_denominator_and_status_only",
+      "qualifies_as_durability_receipt": false
+    },
+    {
+      "source_id": "AU-ROBODEBT-ANAO-DEBT-AUDIT-POTENTIAL-2027-29",
+      "authority": "Australian National Audit Office",
+      "record_type": "official_audit_work_program_record",
+      "observed_at": "2026-08-17",
+      "url": "https://www.anao.gov.au/work/potential-topic/management-and-recovery-of-debt-services-australia",
+      "locators": [
+        "The ANAO lists management and recovery of debt by Services Australia as a potential 2027–29 audit topic rather than a completed audit.",
+        "The work-program record repeats the 2024–25 denominator of 1,400,365 social-security debts valued at $2.4 billion and $1.6 billion recovered.",
+        "The record states that Services Australia developed a new debt management program in 2024–25 and plans to review it annually; the proposed future audit may test governance, quality assurance, performance measurement, monitoring, workforce capability and other debt-management controls."
+      ],
+      "source_role": "opens_future_independent_audit_route",
+      "qualifies_as_durability_receipt": false
+    },
+    {
+      "source_id": "AU-ROBODEBT-DEBT-SUPPORT-2026",
+      "authority": "Services Australia",
+      "record_type": "official_primary_record",
+      "published_at": "2026-05-26",
+      "url": "https://www.servicesaustralia.gov.au/improving-how-we-support-people-with-centrelink-debts",
+      "locators": [
+        "Services Australia reports operation from 20 March 2026 of an indexed automatic waiver for debts under $250 and expanded special-circumstances waiver settings.",
+        "The page reports refund or credit treatment where an older repaid debt is later waived.",
+        "The implementation page does not publish an annual program review, an independent-assurance result, a subject-level pre-collection pause chain, or a successor nonrecurrence denominator."
+      ],
+      "source_role": "inherited_current_implementation_without_durability",
+      "qualifies_as_durability_receipt": false
+    }
+  ],
+  "route_ledger": [
+    {
+      "route_id": "AU-RD-DUR-01",
+      "host": "www.servicesaustralia.gov.au",
+      "surface": "annual reports and current debt-management publications",
+      "result_class": "substantive_nonqualifying_content",
+      "observed_source_ids": [
+        "AU-ROBODEBT-SA-ANNUAL-REPORT-2024-25",
+        "AU-ROBODEBT-DEBT-SUPPORT-2026"
+      ],
+      "qualifying_receipt_found": false,
+      "preserved_reason": "Denominator, implementation and assurance-status records were located, but no published annual review, assurance result or subject-level durability chain was located."
+    },
+    {
+      "route_id": "AU-RD-DUR-02",
+      "host": "www.anao.gov.au",
+      "surface": "performance audits and annual audit work program",
+      "result_class": "future_audit_route_only",
+      "observed_source_ids": [
+        "AU-ROBODEBT-ANAO-DEBT-AUDIT-POTENTIAL-2027-29"
+      ],
+      "qualifying_receipt_found": false,
+      "preserved_reason": "The located record is a potential 2027–29 audit topic, not an operated independent-assurance result."
+    },
+    {
+      "route_id": "AU-RD-DUR-03",
+      "host": "ministers.finance.gov.au",
+      "surface": "Minister for Government Services releases and advisory-board records",
+      "result_class": "no_qualifying_result_located",
+      "observed_source_ids": [],
+      "qualifying_receipt_found": false,
+      "preserved_reason": "No published annual debt-program review, recommendation-level assurance result or subject-level chain was located in the bounded official search."
+    },
+    {
+      "route_id": "AU-RD-DUR-04",
+      "host": "www.aph.gov.au",
+      "surface": "committee records, government responses and parliamentary material",
+      "result_class": "no_qualifying_result_located",
+      "observed_source_ids": [],
+      "qualifying_receipt_found": false,
+      "preserved_reason": "Located Robodebt oversight and legislative records did not supply the required program review, assurance report or subject-level durability chain."
+    },
+    {
+      "route_id": "AU-RD-DUR-05",
+      "host": "formerministers.dss.gov.au",
+      "surface": "former ministerial implementation statement",
+      "result_class": "inherited_implementation_statement_only",
+      "observed_source_ids": [],
+      "qualifying_receipt_found": false,
+      "preserved_reason": "The December 2024 implementation statement remains a status claim and annual-review promise, not the review or assurance result itself."
+    },
+    {
+      "route_id": "AU-RD-DUR-06",
+      "host": "ministers.dss.gov.au",
+      "surface": "current social-services debt policy releases",
+      "result_class": "substantive_nonqualifying_content",
+      "observed_source_ids": [],
+      "qualifying_receipt_found": false,
+      "preserved_reason": "Current waiver-policy changes do not establish program durability, independent assurance or a source-addressed subject chain."
+    }
+  ],
+  "observed_state": {
+    "debt_management_program_reported_implemented": true,
+    "operated_2024_25_debt_denominator_published": true,
+    "annual_review_commitment_published": true,
+    "published_annual_review_result_located": false,
+    "external_assurance_process_reported": true,
+    "published_external_assurance_result_located": false,
+    "future_anao_audit_route_identified": true,
+    "source_addressed_subject_level_pause_and_remedy_chain_located": false,
+    "successor_system_nonrecurrence_denominator_located": false,
+    "durability_supported": false
+  },
+  "finding": {
+    "finding_class": "denominator_and_assurance_status_observed_without_qualifying_durability_receipt",
+    "source_records": 3,
+    "new_source_records": 2,
+    "qualifying_durability_receipts": 0,
+    "routes_executed": 6,
+    "routes_with_substantive_content": 4,
+    "routes_with_qualifying_receipt": 0,
+    "deficits_closed": [],
+    "deficits_preserved": [
+      "composed_durable_answer",
+      "dimension:durability"
+    ],
+    "answer_changes_authorized": false,
+    "repository_effect": "repository_content_only",
+    "next_required_receipts": [
+      "The first published annual debt-management-program review with its operated denominator, findings, exceptions, corrective actions and successor-system nonrecurrence evidence.",
+      "The external independent-assurance report identifying the recommendations tested, evidence inspected, implementation exceptions and unresolved residual risk.",
+      "A source-addressed subject-level case joining one debt decision to contest, pause before collection, independent outcome, correction, waiver or refund, and follow-up."
+    ]
+  },
+  "assessment": {
+    "evidence_tier": "Official Services Australia annual reporting and implementation publications, plus an ANAO audit-work-program record.",
+    "venue": "Services Australia, the Australian National Audit Office, Parliament of Australia, Finance and Social Services ministerial records, issue 345, and the M-05 answer-effectiveness gate.",
+    "target": "The transition from reported implementation and annual-review intent to observed review, independent assurance, subject-level operation and successor nonrecurrence.",
+    "upside": "The record now supplies a large operated debt denominator, recommendation-level assurance status as at 30 June 2025, current waiver operations, and a defined future independent audit route.",
+    "downside": "The bounded official search did not locate the annual review, the independent-assurance report, a subject-level pre-collection pause chain, or a successor nonrecurrence denominator.",
+    "failure_mode": "Treating an implementation statement, a published denominator, an annual-review promise, a future audit topic, requestable debt pauses, or current waiver changes as proof of durable operation."
+  },
+  "expected_state": {
+    "existing_candidate_evidence_records": 5,
+    "existing_repository_promotions": 5,
+    "existing_advanced_answer_dimensions": 1,
+    "robodebt_pre_action_timing": true,
+    "robodebt_durability": false,
+    "new_source_records": 2,
+    "qualifying_durability_receipts": 0,
+    "effective_answers": 0,
+    "qualifying_jurisdictions": 0,
+    "cross_domain_regression_completed": false,
+    "issue_345_may_close": false
+  },
+  "boundaries": {
+    "changes_implementation_frontier": false,
+    "changes_prior_robodebt_receipt": false,
+    "search_exhaustiveness_claimed": false,
+    "implementation_statement_is_assurance_result": false,
+    "annual_review_commitment_is_review_result": false,
+    "future_audit_topic_is_completed_audit": false,
+    "published_denominator_is_nonrecurrence_proof": false,
+    "current_waiver_changes_are_durability": false,
+    "requestable_pause_is_observed_pause": false,
+    "adjacent_case_transfer_allowed": false,
+    "answer_effectiveness_claimed": false,
+    "cross_domain_regression_completed": false,
+    "issue_345_may_close": false,
+    "promotes_to": "repository_content",
+    "graph_effect": "none",
+    "conclusion_generated": false,
+    "project_complete": false
+  }
+}
