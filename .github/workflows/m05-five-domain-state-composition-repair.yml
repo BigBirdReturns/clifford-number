@@ -1,0 +1,71 @@
+name: M-05 five-domain state composition repair
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-five-domain-state-composition-repair.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-state-composition-repair.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-state-composition-repair.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-five-domain-state-composition-repair.test.js'
+      - '.github/workflows/m05-five-domain-state-composition-repair.yml'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.mjs'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.mjs'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.mjs'
+      - 'data/project/m05-cross-domain-official-receipt-candidates.json'
+      - 'data/project/m05-source-health-evidence-state-regression.json'
+      - 'tools/lib/m05-source-health-evidence-state-regression.mjs'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.json'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-five-domain-state-composition-repair.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-state-composition-repair.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-state-composition-repair.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-five-domain-state-composition-repair.test.js'
+      - '.github/workflows/m05-five-domain-state-composition-repair.yml'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.mjs'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-robodebt-pre-action-implementation-receipt.mjs'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.mjs'
+      - 'data/project/m05-cross-domain-official-receipt-candidates.json'
+      - 'data/project/m05-source-health-evidence-state-regression.json'
+      - 'tools/lib/m05-source-health-evidence-state-regression.mjs'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate five-domain state composition repair
+        run: |
+          node --check tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-state-composition-repair.mjs
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-state-composition-repair.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-five-domain-state-composition-repair.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-state-composition-repair.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-five-domain-state-composition-repair.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic focused state
+        run: |
+          git restore --staged --worktree .
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-state-composition-repair.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-five-domain-state-composition-repair.test.js
+          git diff --exit-code
