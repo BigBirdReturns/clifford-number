@@ -202,6 +202,7 @@ const reconciliationSummary=summarizeFiveDomainClaimEvidenceReconciliation({
   officialPacket,
   priorAdjudication,
   contract,
+  robodebtImplementationReceipt:robodebtReceipt,
   intelCandidate,
   hfuCandidate,
   reconciliation

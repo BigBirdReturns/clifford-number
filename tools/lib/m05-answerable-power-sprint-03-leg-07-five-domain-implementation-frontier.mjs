@@ -38,9 +38,11 @@ export const IMPLEMENTATION_ROUTE_CLASSES=[
   'future_time_gated_monitoring'
 ];
 
+const ROBODEBT_RECEIPT_ID='M05-RC-ADMIN-AU-ROBODEBT';
 const ROBODEBT_DOMAIN_ID='APC-ADMIN-01';
 const ROBODEBT_DIMENSION='pre_action_timing';
 const clone=(value)=>JSON.parse(JSON.stringify(value));
+const same=(left,right)=>JSON.stringify(left)===JSON.stringify(right);
 
 export function applyFiveDomainImplementationFrontier({
   officialPacket,
@@ -57,23 +59,23 @@ export function applyFiveDomainImplementationFrontier({
     officialPacket,
     priorAdjudication,
     contract,
+    robodebtImplementationReceipt:robodebtReceipt,
     intelCandidate,
     hfuCandidate,
     reconciliation
   });
   const derivedContract=clone(reconciled.derived_contract);
-  const robodebtIndex=derivedContract.domain_observations.findIndex(
-    (row)=>row.domain_id===ROBODEBT_DOMAIN_ID
-  );
-  if(robodebtIndex<0)throw new Error('missing Robodebt observation');
-
-  const beforeRobodebt=clone(derivedContract.domain_observations[robodebtIndex]);
+  const beforeRobodebt=clone(reconciled.robodebt_applied.before_observation);
+  const afterRobodebt=clone(reconciled.robodebt_applied.after_observation);
   if(beforeRobodebt.answer?.dimensions?.[ROBODEBT_DIMENSION]!==false){
     throw new Error('Robodebt pre-action dimension is not false before implementation receipt');
   }
+  if(afterRobodebt.answer?.dimensions?.[ROBODEBT_DIMENSION]!==true){
+    throw new Error('Robodebt pre-action dimension is not true after implementation receipt');
+  }
   const target=robodebtReceipt?.target||{};
   if(
-    target.receipt_id!=='M05-RC-ADMIN-AU-ROBODEBT'||
+    target.receipt_id!==ROBODEBT_RECEIPT_ID||
     target.domain_id!==ROBODEBT_DOMAIN_ID||
     target.jurisdiction!=='AU'||
     target.dimension!==ROBODEBT_DIMENSION||
@@ -82,13 +84,27 @@ export function applyFiveDomainImplementationFrontier({
   ){
     throw new Error('Robodebt implementation target drift');
   }
-  const afterRobodebt=clone(beforeRobodebt);
-  afterRobodebt.answer.dimensions[ROBODEBT_DIMENSION]=true;
-  afterRobodebt.expected={
-    claim_evidence_admissible:true,
-    answer_effective:false
-  };
-  derivedContract.domain_observations[robodebtIndex]=afterRobodebt;
+  const finalRobodebt=derivedContract.domain_observations.find(
+    (row)=>row.domain_id===ROBODEBT_DOMAIN_ID
+  );
+  if(!finalRobodebt||!same(finalRobodebt,afterRobodebt)){
+    throw new Error('frontier lost canonical Robodebt implementation state');
+  }
+  const reconciledRobodebt=reconciled.all_promoted_records.find(
+    (row)=>row.receipt_id===ROBODEBT_RECEIPT_ID
+  );
+  if(!reconciledRobodebt){
+    throw new Error('frontier lost reconciled Robodebt record');
+  }
+  if(!same(
+    reconciledRobodebt.preserved_deficits,
+    robodebtReceipt?.retained_deficits
+  )){
+    throw new Error('frontier retained a resolved Robodebt deficit');
+  }
+  if(reconciledRobodebt.preserved_deficits.includes('dimension:pre_action_timing')){
+    throw new Error('frontier exposed resolved Robodebt pre-action work');
+  }
 
   const observationsByDomain=new Map(
     derivedContract.domain_observations.map((row)=>[row.domain_id,row])
