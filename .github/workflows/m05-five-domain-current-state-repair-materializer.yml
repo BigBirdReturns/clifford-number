@@ -26,8 +26,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          target='agent/m05-s03-l7-five-domain-current-state-repair-v1'
-          git switch -c "$target"
+          git switch -c agent/m05-s03-l7-five-domain-current-state-repair-v1
           curl -fsSL \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H 'Accept: application/vnd.github+json' \
@@ -55,10 +54,9 @@ jobs:
           git clean -fd
           tar -xJf "$RUNNER_TEMP/m05-five-domain-repair.txz"
 
-      - name: Prove exact boundary and publish clean product branch
+      - name: Stage and prove exact five-path boundary
         run: |
           set -euo pipefail
-          target='agent/m05-s03-l7-five-domain-current-state-repair-v1'
           git add -- \
             .github/workflows/m05-five-domain-claim-evidence-reconciliation.yml \
             data/project/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.json \
@@ -66,20 +64,29 @@ jobs:
             tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.mjs \
             tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.mjs
           git diff --cached --check
-          cat > "$RUNNER_TEMP/expected-paths" <<'EOF'
-          .github/workflows/m05-five-domain-claim-evidence-reconciliation.yml
-          data/project/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.json
-          test/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.test.js
-          tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.mjs
-          tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.mjs
-          EOF
+          printf '%s\n' \
+            .github/workflows/m05-five-domain-claim-evidence-reconciliation.yml \
+            data/project/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.json \
+            test/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.test.js \
+            tools/lib/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.mjs \
+            tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.mjs \
+            | sort > "$RUNNER_TEMP/expected-paths"
           git diff --cached --name-only | sort > "$RUNNER_TEMP/actual-paths"
-          sort -o "$RUNNER_TEMP/expected-paths" "$RUNNER_TEMP/expected-paths"
           diff -u "$RUNNER_TEMP/expected-paths" "$RUNNER_TEMP/actual-paths"
+
+      - name: Prove focused state is deterministic
+        run: |
+          set -euo pipefail
           node tools/validate-m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.mjs
           node test/m05-answerable-power-sprint-03-leg-07-five-domain-claim-evidence-reconciliation.test.js
           git diff --exit-code
+
+      - name: Commit exact product
+        run: |
+          set -euo pipefail
           git config user.name 'BigBirdReturns'
           git config user.email 'bigbirdreturns@proton.me'
           git commit -m '[M-05 S03-L7] Preserve Robodebt state in five-domain reconciliation'
-          git push --force origin "HEAD:refs/heads/$target"
+
+      - name: Publish clean product branch
+        run: git push --force origin HEAD:refs/heads/agent/m05-s03-l7-five-domain-current-state-repair-v1
