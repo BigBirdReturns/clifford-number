@@ -80,11 +80,20 @@ jobs:
           test "${#actual[@]}" -eq 5
           test "$(printf '%s\n' "${actual[@]}")" = "$(printf '%s\n' "${expected[@]}")"
 
-      - name: Publish one-parent five-path product
+      - name: Recheck current canonical parent
         run: |
           set -euo pipefail
+          git fetch origin main
           test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+
+      - name: Construct one-parent five-path product commit
+        run: |
+          set -euo pipefail
           git config user.name 'BigBirdReturns'
           git config user.email 'bigbirdreturns@proton.me'
           git commit -m '[M-05 S03-L7] Freeze Intel CHIPS equity receipt candidate'
+
+      - name: Publish exact product branch
+        run: |
+          set -euo pipefail
           git push --force origin "HEAD:refs/heads/agent/m05-s03-l7-intel-chips-equity-receipt-candidate"
