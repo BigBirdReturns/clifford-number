@@ -1,0 +1,332 @@
+{
+  "schema_version": "m05-answerable-power-s03-l7-implementation-gap-probe-ledger@1",
+  "object_class": "bounded_implementation_gap_probe_ledger",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-03",
+  "leg_id": "S03-L7",
+  "issue": 345,
+  "as_of": "2026-08-16",
+  "status": "implementation_gaps_researched_no_answer_promotion",
+  "title": "Implementation-gap probe ledger for three promoted candidate-evidence claims",
+  "question": "Which source-addressed implementation records narrow the remaining Robodebt, SyRI, and Foodinho answer deficits, and do any of those records justify changing a frozen answer dimension or completing the cross-domain regression?",
+  "canonical_base": {
+    "branch": "main",
+    "sha": "49d1f3617132248484647eca4ddfa4fa49db40fb",
+    "tree_sha": "c715de12ddc83354b8f957345e368487e7ee16c6"
+  },
+  "source_candidate_packet": {
+    "path": "data/project/m05-cross-domain-official-receipt-candidates.json",
+    "blob_sha": "1c17549a39b826853435d3726596bf41d0fc7de9",
+    "schema_version": "m05-cross-domain-official-receipt-candidates@1",
+    "pull_request": 2151,
+    "merge_commit": "204fb917a6fcef3d3a6fcf09186bf9c2de7ed2f0"
+  },
+  "claim_promotion_adjudication": {
+    "path": "data/project/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.json",
+    "blob_sha": "e64f24fb74094b99e717c2cd03af8e0620d23f15",
+    "schema_version": "m05-answerable-power-s03-l7-claim-evidence-promotion-adjudication@1",
+    "pull_request": 2153,
+    "merge_commit": "49d1f3617132248484647eca4ddfa4fa49db40fb"
+  },
+  "evidence_state_contract": {
+    "path": "data/project/m05-source-health-evidence-state-regression.json",
+    "blob_sha": "72f7ce6c711e07c5f8c72355d2b2c491a4dc7a33",
+    "schema_version": "m05-source-health-evidence-state-regression@1"
+  },
+  "probe_count": 3,
+  "probes": [
+    {
+      "probe_id": "M05-IP-ADMIN-AU-ROBODEBT-PRE-ACTION-DURABILITY",
+      "receipt_id": "M05-RC-ADMIN-AU-ROBODEBT",
+      "domain_id": "APC-ADMIN-01",
+      "jurisdiction": "AU",
+      "issue_comment_id": 5311303325,
+      "title": "Robodebt pre-action pause and successor-durability probe",
+      "target_deficits": [
+        "composed_durable_answer",
+        "dimension:pre_action_timing",
+        "dimension:durability"
+      ],
+      "allowed_hosts": [
+        "www.servicesaustralia.gov.au",
+        "formerministers.dss.gov.au",
+        "ministers.dss.gov.au",
+        "www.ombudsman.gov.au"
+      ],
+      "source_records": [
+        {
+          "source_id": "AU-ROBODEBT-REVIEW-PAUSE-INSTRUCTIONS",
+          "authority": "Services Australia",
+          "record_type": "official_primary_record",
+          "url": "https://www.servicesaustralia.gov.au/explanations-and-formal-reviews-centrelink-decision",
+          "locator": [
+            "A person may request a debt-repayment pause while awaiting an explanation or formal review.",
+            "The agency instruction states that a pause generally runs for six months and may be extended when review takes longer.",
+            "A person may request that repayments remain paused until Administrative Review Tribunal review is complete."
+          ],
+          "source_role": "supports_partial_implementation"
+        },
+        {
+          "source_id": "AU-ROBODEBT-IMPLEMENTATION-2024",
+          "authority": "Australian Government Department of Social Services ministers",
+          "record_type": "official_primary_record",
+          "url": "https://formerministers.dss.gov.au/20588/reforms-repairing-robodebt-wreckage/",
+          "locator": [
+            "The implementation statement records 25 of 26 Services Australia recommendations as implemented.",
+            "It records an annually reviewed debt-management program and independent final assurance for selected recommendations."
+          ],
+          "source_role": "supports_partial_implementation"
+        },
+        {
+          "source_id": "AU-ROBODEBT-WAIVER-2025",
+          "authority": "Australian Government Department of Social Services ministers",
+          "record_type": "official_primary_record",
+          "url": "https://ministers.dss.gov.au/media-releases/18386",
+          "locator": [
+            "The announcement ties expanded special-circumstances waiver powers to considering a person's circumstances before recovery begins."
+          ],
+          "source_role": "supports_partial_implementation"
+        },
+        {
+          "source_id": "AU-ROBODEBT-DEBT-SUPPORT-2026",
+          "authority": "Services Australia",
+          "record_type": "official_primary_record",
+          "url": "https://www.servicesaustralia.gov.au/improving-how-we-support-people-with-centrelink-debts",
+          "locator": [
+            "The implementation page records operation of indexed automatic waiver and expanded special-circumstances waiver settings from March 2026.",
+            "It records refund or credit treatment where an older repaid debt is later waived."
+          ],
+          "source_role": "supports_partial_implementation"
+        },
+        {
+          "source_id": "AU-ROBODEBT-OMBUDSMAN-ADJACENT-CASE",
+          "authority": "Commonwealth Ombudsman",
+          "record_type": "official_adjudicative_record",
+          "url": "https://www.ombudsman.gov.au/complaints/case-studies/child-support-debt-relief",
+          "locator": [
+            "A deidentified Services Australia debt case records review delay followed by a full waiver after Ombudsman inquiry.",
+            "The case is adjacent to, but does not identify, a Robodebt group member or a pause entered before collection."
+          ],
+          "source_role": "preserves_counterevidence"
+        }
+      ],
+      "observed_state": {
+        "current_agency_review_route": true,
+        "requestable_repayment_pause": true,
+        "automatic_stay_before_recovery": false,
+        "observed_pause_entered_before_collection": false,
+        "published_annual_review_result": false,
+        "published_independent_assurance_result": false,
+        "longitudinal_nonrecurrence_denominator": false
+      },
+      "probe_result": {
+        "finding_class": "partial_implementation_receipts_deficits_remain_open",
+        "deficits_closed": [],
+        "deficits_preserved": [
+          "composed_durable_answer",
+          "dimension:pre_action_timing",
+          "dimension:durability"
+        ],
+        "promotion_changes_authorized": false,
+        "answer_changes_authorized": false,
+        "repository_effect": "none",
+        "next_required_receipts": [
+          "A source-addressed case joining one debt decision to review request, pause entry before collection, independent outcome, correction, waiver or refund, and follow-up.",
+          "A published annual debt-program review or independent-assurance result with an operated denominator and successor nonrecurrence evidence."
+        ]
+      }
+    },
+    {
+      "probe_id": "M05-IP-COERCION-NL-SYRI-EVIDENCE-ACCESS",
+      "receipt_id": "M05-RC-COERCION-NL-SYRI",
+      "domain_id": "APC-COERCION-01",
+      "jurisdiction": "NL",
+      "issue_comment_id": 5311266093,
+      "title": "SyRI person-level evidence-access probe",
+      "target_deficits": [
+        "composed_durable_answer",
+        "dimension:evidence_access"
+      ],
+      "allowed_hosts": [
+        "zoek.officielebekendmakingen.nl"
+      ],
+      "source_records": [
+        {
+          "source_id": "NL-SYRI-ACCESS-MEMORANDUM",
+          "authority": "Tweede Kamer der Staten-Generaal",
+          "record_type": "official_primary_record",
+          "url": "https://zoek.officielebekendmakingen.nl/kst-33579-3.html",
+          "locator": [
+            "The legislative memorandum describes a right to request access and correction under the then-applicable data-protection law.",
+            "It also states that fulfillment depended on a concrete enforcement-interest assessment and did not supply personal notice."
+          ],
+          "source_role": "supports_partial_implementation"
+        },
+        {
+          "source_id": "NL-SYRI-RISK-REGISTER-DECREE",
+          "authority": "Kingdom of the Netherlands",
+          "record_type": "official_primary_record",
+          "url": "https://zoek.officielebekendmakingen.nl/stb-2014-320.html",
+          "locator": [
+            "Article 5a.5 creates a register used to inform subjects on request whether their data appeared in the risk-report register.",
+            "The framework permits withholding where disclosure would expose active enforcement methods."
+          ],
+          "source_role": "supports_partial_implementation"
+        },
+        {
+          "source_id": "NL-SYRI-DATA-DESTRUCTION-ANSWER",
+          "authority": "Tweede Kamer der Staten-Generaal",
+          "record_type": "official_primary_record",
+          "url": "https://zoek.officielebekendmakingen.nl/kst-31066-1051.html",
+          "locator": [
+            "Parliamentary answer 19 records that responsible public bodies made no decisions on the basis of SyRI-derived data.",
+            "The answer records destruction of the data processed in connection with SyRI, supporting cessation but not a fulfilled person-level access event."
+          ],
+          "source_role": "supports_negative_finding"
+        }
+      ],
+      "observed_state": {
+        "formal_access_and_correction_route": true,
+        "queryable_risk_report_register": true,
+        "named_requester": false,
+        "granted_subject_access_response": false,
+        "disclosed_inputs_or_risk_indication": false,
+        "disclosed_reasoning_or_recipients": false,
+        "observed_correction_or_contest_outcome": false,
+        "later_data_destruction": true
+      },
+      "probe_result": {
+        "finding_class": "formal_access_route_without_fulfillment_event",
+        "deficits_closed": [],
+        "deficits_preserved": [
+          "composed_durable_answer",
+          "dimension:evidence_access"
+        ],
+        "promotion_changes_authorized": false,
+        "answer_changes_authorized": false,
+        "repository_effect": "none",
+        "next_required_receipts": [
+          "An archived subject-access request and response, litigation exhibit, ombudsman file, or administrative record joining one person to the SyRI inputs, risk indication, reasoning, recipients, and correction or contest outcome."
+        ]
+      }
+    },
+    {
+      "probe_id": "M05-IP-WORK-IT-FOODINHO-PRE-ACTION-DURABILITY",
+      "receipt_id": "M05-RC-WORK-IT-FOODINHO",
+      "domain_id": "APC-WORK-01",
+      "jurisdiction": "IT",
+      "issue_comment_id": 5311308897,
+      "title": "Foodinho pre-action protection and post-order durability probe",
+      "target_deficits": [
+        "composed_durable_answer",
+        "dimension:pre_action_timing",
+        "dimension:durability"
+      ],
+      "allowed_hosts": [
+        "www.garanteprivacy.it",
+        "garanteprivacy.it"
+      ],
+      "source_records": [
+        {
+          "source_id": "IT-FOODINHO-2021-ORDER-RELEASE",
+          "authority": "Garante per la protezione dei dati personali",
+          "record_type": "official_adjudicative_record",
+          "url": "https://www.garanteprivacy.it/home/docweb/-/docweb-display/docweb/9677377",
+          "locator": [
+            "The 2021 order required human intervention, rider viewpoint and contest rights, algorithmic accuracy and fairness checks, and anti-discrimination safeguards.",
+            "The order imposed staged implementation deadlines rather than documenting an already operated pre-action safeguard."
+          ],
+          "source_role": "supports_partial_implementation"
+        },
+        {
+          "source_id": "IT-FOODINHO-2024-ORDER",
+          "authority": "Garante per la protezione dei dati personali",
+          "record_type": "official_adjudicative_record",
+          "url": "https://www.garanteprivacy.it/home/docweb/-/docweb-display/docweb/10074601",
+          "locator": [
+            "The 2024 order records renewed serious violations after the 2021 enforcement cycle.",
+            "It prescribes trained human verification, algorithm checks, biometric deletion, geolocation controls, and anti-discrimination measures."
+          ],
+          "source_role": "preserves_counterevidence"
+        },
+        {
+          "source_id": "IT-FOODINHO-2024-ORDER-RELEASE",
+          "authority": "Garante per la protezione dei dati personali",
+          "record_type": "official_adjudicative_record",
+          "url": "https://www.garanteprivacy.it/web/guest/home/docweb/-/docweb-display/docweb/10074840",
+          "locator": [
+            "The public enforcement release records a five-million-euro sanction and corrective requirements affecting more than 35,000 riders."
+          ],
+          "source_role": "supports_partial_implementation"
+        },
+        {
+          "source_id": "IT-FOODINHO-2024-EXTENSION",
+          "authority": "Garante per la protezione dei dati personali",
+          "record_type": "official_adjudicative_record",
+          "url": "https://www.garanteprivacy.it/home/docweb/-/docweb-display/docweb/10105535",
+          "locator": [
+            "The December 2024 follow-up records non-appeal, intended compliance, a ninety-day implementation extension, and a required documented response.",
+            "Closure remained conditional on actual observance, so the timetable does not itself establish completed or durable compliance."
+          ],
+          "source_role": "supports_partial_implementation"
+        }
+      ],
+      "observed_state": {
+        "binding_corrective_orders": true,
+        "recurrent_violations_after_prior_order": true,
+        "no_appeal_and_compliance_intention_recorded": true,
+        "extended_implementation_timetable": true,
+        "documented_implementation_response_required": true,
+        "published_foodinho_specific_closure_finding": false,
+        "independent_technical_compliance_audit": false,
+        "rider_level_human_review_outcome": false,
+        "recurrence_free_post_change_denominator": false
+      },
+      "probe_result": {
+        "finding_class": "supervised_implementation_timetable_without_verified_compliance",
+        "deficits_closed": [],
+        "deficits_preserved": [
+          "composed_durable_answer",
+          "dimension:pre_action_timing",
+          "dimension:durability"
+        ],
+        "promotion_changes_authorized": false,
+        "answer_changes_authorized": false,
+        "repository_effect": "none",
+        "next_required_receipts": [
+          "A later regulator closure determination, documented compliance response, or independent technical audit proving the ordered controls operated.",
+          "A source-addressed rider case joining one automated assignment or deactivation to pre-action human intervention, disclosed reasons, successful contest or correction, and later nonrecurrence."
+        ]
+      }
+    }
+  ],
+  "expected_result": {
+    "probe_records": 3,
+    "source_records": 12,
+    "deficit_entries_examined": 8,
+    "deficit_entries_closed": 0,
+    "deficit_entries_preserved": 8,
+    "claim_evidence_admissible": 3,
+    "repository_promotion_allowed": 3,
+    "effective_answers": 0,
+    "qualifying_jurisdictions": 0,
+    "answer_effectiveness": false,
+    "cross_domain_regression_completed": false,
+    "issue_345_may_close": false
+  },
+  "boundaries": {
+    "changes_source_health_contract": false,
+    "changes_candidate_claims": false,
+    "changes_claim_promotion_authority": false,
+    "closes_any_answer_dimension": false,
+    "claims_source_body_checksums": false,
+    "claims_independent_external_review": false,
+    "claims_answer_effectiveness": false,
+    "claims_cross_domain_completion": false,
+    "issue_345_may_close": false,
+    "promotes_to": "candidate_only",
+    "graph_effect": "none",
+    "conclusion_generated": false,
+    "project_complete": false
+  }
+}

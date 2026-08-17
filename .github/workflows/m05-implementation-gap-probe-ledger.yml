@@ -1,0 +1,57 @@
+name: M-05 implementation-gap probe ledger
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-implementation-gap-probe-ledger.json'
+      - 'data/project/m05-cross-domain-official-receipt-candidates.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.json'
+      - 'data/project/m05-source-health-evidence-state-regression.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-implementation-gap-probe-ledger.mjs'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.mjs'
+      - 'tools/lib/m05-source-health-evidence-state-regression.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-implementation-gap-probe-ledger.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-implementation-gap-probe-ledger.test.js'
+      - '.github/workflows/m05-implementation-gap-probe-ledger.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-implementation-gap-probe-ledger.json'
+      - 'data/project/m05-cross-domain-official-receipt-candidates.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.json'
+      - 'data/project/m05-source-health-evidence-state-regression.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-implementation-gap-probe-ledger.mjs'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.mjs'
+      - 'tools/lib/m05-source-health-evidence-state-regression.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-implementation-gap-probe-ledger.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-implementation-gap-probe-ledger.test.js'
+      - '.github/workflows/m05-implementation-gap-probe-ledger.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate bounded implementation-gap probe ledger
+        run: |
+          node --check tools/lib/m05-answerable-power-sprint-03-leg-07-implementation-gap-probe-ledger.mjs
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-implementation-gap-probe-ledger.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-implementation-gap-probe-ledger.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-implementation-gap-probe-ledger.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-implementation-gap-probe-ledger.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic focused state
+        run: |
+          git restore --staged --worktree .
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-implementation-gap-probe-ledger.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-implementation-gap-probe-ledger.test.js
+          git diff --exit-code
