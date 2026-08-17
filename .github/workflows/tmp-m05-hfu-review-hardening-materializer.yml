@@ -1,0 +1,95 @@
+name: tmp M-05 HFU review hardening materializer
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-hfu-review-hardening-materializer-v1
+    paths:
+      - '.github/tmp/m05-hfu-review-hardening.mjs'
+      - '.github/workflows/tmp-m05-hfu-review-hardening-materializer.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out bounded carrier
+        uses: actions/checkout@v4
+        with:
+          ref: agent/m05-s03-l7-hfu-review-hardening-materializer-v1
+          fetch-depth: 0
+          path: carrier
+
+      - name: Check out qualified HFU product branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/m05-s03-l7-hfu-share-exit-staging-v1
+          fetch-depth: 0
+          path: product
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify carrier and target boundaries
+        run: |
+          test "$(git -C product rev-parse HEAD)" = "51475c3d82845d710a3a7477e62bdf30fc5005b4"
+          mapfile -t carrier_changed < <(git -C carrier diff --name-only 92c65737a5743a26ff61665e25508bfab478b875 HEAD | sort)
+          expected_carrier=(
+            ".github/tmp/m05-hfu-review-hardening.mjs"
+            ".github/workflows/tmp-m05-hfu-review-hardening-materializer.yml"
+          )
+          printf '%s\n' "${expected_carrier[@]}" | sort > /tmp/expected-carrier
+          printf '%s\n' "${carrier_changed[@]}" | sort > /tmp/actual-carrier
+          diff -u /tmp/expected-carrier /tmp/actual-carrier
+
+      - name: Apply exact-object custody hardening
+        run: |
+          node carrier/.github/tmp/m05-hfu-review-hardening.mjs product
+          mapfile -t changed < <(git -C product diff --name-only | sort)
+          expected=(
+            "test/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.test.js"
+            "tools/lib/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs"
+            "tools/validate-m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs"
+          )
+          printf '%s\n' "${expected[@]}" | sort > /tmp/expected-product
+          printf '%s\n' "${changed[@]}" | sort > /tmp/actual-product
+          diff -u /tmp/expected-product /tmp/actual-product
+          git -C product diff --binary > /tmp/hfu-review-hardening.patch
+
+      - name: Qualify repaired product
+        working-directory: product
+        run: |
+          node --check tools/lib/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.test.js
+          git diff --check
+          npm run release:check
+
+      - name: Restore deterministic repaired product
+        working-directory: product
+        run: |
+          git restore --staged --worktree .
+          git clean -fd
+          git apply /tmp/hfu-review-hardening.patch
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.test.js
+          git diff --check
+          mapfile -t changed < <(git diff --name-only | sort)
+          diff -u /tmp/expected-product <(printf '%s\n' "${changed[@]}" | sort)
+
+      - name: Commit and publish repaired head
+        working-directory: product
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            test/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.test.js \
+            tools/lib/m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs \
+            tools/validate-m05-answerable-power-sprint-03-leg-07-hfu-share-exit-receipt-candidate.mjs
+          git commit -m "Harden HFU receipt exact-object custody"
+          git push origin HEAD:agent/m05-s03-l7-hfu-share-exit-staging-v1
