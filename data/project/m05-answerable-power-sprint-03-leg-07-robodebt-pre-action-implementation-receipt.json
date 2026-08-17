@@ -1,0 +1,152 @@
+{
+  "schema_version": "m05-answerable-power-s03-l7-robodebt-pre-action-implementation-receipt@1",
+  "object_class": "bounded_answer_dimension_implementation_receipt",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-03",
+  "leg_id": "S03-L7",
+  "issue": 345,
+  "as_of": "2026-08-16",
+  "status": "robodebt_pre_action_implementation_receipt_frozen",
+  "title": "Robodebt pre-action implementation receipt",
+  "question": "Does the official Robodebt implementation record support a bounded transition of the administrative-benefits pre_action_timing dimension from false to true while preserving the unresolved durability and composed-answer gates?",
+  "canonical_base": {
+    "branch": "main",
+    "sha": "49d1f3617132248484647eca4ddfa4fa49db40fb",
+    "tree_sha": "c715de12ddc83354b8f957345e368487e7ee16c6"
+  },
+  "source_candidate_packet": {
+    "path": "data/project/m05-cross-domain-official-receipt-candidates.json",
+    "blob_sha": "1c17549a39b826853435d3726596bf41d0fc7de9",
+    "schema_version": "m05-cross-domain-official-receipt-candidates@1",
+    "pull_request": 2151,
+    "merge_commit": "204fb917a6fcef3d3a6fcf09186bf9c2de7ed2f0"
+  },
+  "promotion_adjudication": {
+    "path": "data/project/m05-answerable-power-sprint-03-leg-07-claim-evidence-promotion-adjudication.json",
+    "blob_sha": "e64f24fb74094b99e717c2cd03af8e0620d23f15",
+    "schema_version": "m05-answerable-power-s03-l7-claim-evidence-promotion-adjudication@1",
+    "pull_request": 2153,
+    "merge_commit": "49d1f3617132248484647eca4ddfa4fa49db40fb"
+  },
+  "evidence_state_contract": {
+    "path": "data/project/m05-source-health-evidence-state-regression.json",
+    "blob_sha": "72f7ce6c711e07c5f8c72355d2b2c491a4dc7a33",
+    "schema_version": "m05-source-health-evidence-state-regression@1",
+    "minimum_domains": 3,
+    "minimum_jurisdictions": 2
+  },
+  "target": {
+    "receipt_id": "M05-RC-ADMIN-AU-ROBODEBT",
+    "domain_id": "APC-ADMIN-01",
+    "jurisdiction": "AU",
+    "dimension": "pre_action_timing",
+    "before": false,
+    "after": true
+  },
+  "existing_source_bindings": [
+    "AU-ROBODEBT-RC-REPORT",
+    "AU-ROBODEBT-ADVOCATES-CHANNEL"
+  ],
+  "implementation_sources": [
+    {
+      "source_id": "AU-ROBODEBT-RC-REC-18-1",
+      "authority": "Royal Commission into the Robodebt Scheme",
+      "record_type": "official_primary_record",
+      "published_at": "2023-07-07",
+      "url": "https://robodebt.royalcommission.gov.au/publications/report",
+      "evidence_role": "normative_requirement",
+      "locator": [
+        "Recommendation 18.1 requires circumstances to be considered before recovery action starts.",
+        "Recommendation 18.1 requires recovery to stop while a debt is reviewed or disputed, subject to express legal authority.",
+        "Recommendation 18.1 requires ample opportunities to challenge, review, and seek guidance before referral for recovery."
+      ]
+    },
+    {
+      "source_id": "AU-ROBODEBT-SA-IMPLEMENTATION-2024",
+      "authority": "Australian Government and Services Australia",
+      "record_type": "official_primary_record",
+      "published_at": "2024-12-09",
+      "url": "https://ministers.dss.gov.au/media-releases/17076",
+      "evidence_role": "implementation_observation",
+      "locator": [
+        "Services Australia reported 25 of 26 assigned recommendations implemented and identified the only partially implemented recommendation as data-matching governance.",
+        "The implementation ledger places recommendation 18.1 in the debt-policy theme.",
+        "A new debt-management program provides clear and transparent principles and is to be reviewed yearly.",
+        "Individual circumstances, including capacity to repay, are taken into account before recovery.",
+        "External independent assurance was engaged to oversee implementation of the Royal Commission response."
+      ]
+    },
+    {
+      "source_id": "AU-ARC-IMPLEMENTATION-STATEMENT-2026",
+      "authority": "Administrative Review Council",
+      "record_type": "official_primary_record",
+      "published_at": "2026-06-23",
+      "url": "https://www.ag.gov.au/legal-system/publications/arc-statement-position",
+      "evidence_role": "durability_support",
+      "locator": [
+        "Agencies must comply with court and tribunal decisions as a matter of law.",
+        "An agency that disagrees must appeal, seek review, seek a stay, or pause other affected cases while review proceeds.",
+        "Absent those steps, agencies are expected to apply the law as determined by the court or tribunal."
+      ]
+    }
+  ],
+  "implementation_inference": {
+    "inference_class": "bounded_official_implementation_inference",
+    "basis": "The Royal Commission defines the pre-action safeguard in recommendation 18.1. The later official implementation ledger identifies recommendation 18.1 as debt policy, reports all but one assigned recommendation implemented, identifies the only partial item as unrelated data-matching governance, and describes the operating debt-management program, annual review, individual-circumstance assessment, and external assurance.",
+    "pre_action_timing_supported": true,
+    "durability_supported": false,
+    "direct_independent_assurance_result_published": false,
+    "public_annual_review_result_published": false,
+    "subject_level_pre_action_case_receipt_present": false,
+    "counterevidence": "The 2026 Administrative Review Council family-assistance-debt inquiry shows that adjacent recovery practices and review rights remain under systemic examination; the public record does not establish recurrence-free operation across successor systems."
+  },
+  "dimension_adjudication": {
+    "authorized_dimension": "pre_action_timing",
+    "before": false,
+    "after": true,
+    "authorized_answer_scope": "one dimension on the exact Robodebt candidate only",
+    "changes_claim_text": false,
+    "changes_evidence_scope": false,
+    "changes_source_health_state": false,
+    "changes_observed_outcome": false,
+    "changes_other_answer_dimensions": false,
+    "claims_answer_effectiveness": false
+  },
+  "retained_deficits": [
+    "composed_durable_answer",
+    "dimension:durability"
+  ],
+  "expected_result": {
+    "audited_domains": 5,
+    "adjudicated_receipts": 3,
+    "claim_evidence_admissible": 3,
+    "repository_promotion_allowed": 3,
+    "advanced_answer_dimensions": 1,
+    "robodebt_pre_action_timing": true,
+    "robodebt_durability": false,
+    "effective_answers": 0,
+    "qualifying_jurisdictions": 0,
+    "evidentiary_sufficiency": true,
+    "answer_effectiveness": false,
+    "cross_domain_regression_completed": false,
+    "issue_345_may_close": false
+  },
+  "boundaries": {
+    "changes_original_candidate_packet": false,
+    "changes_promotion_adjudication": false,
+    "changes_evidence_state_contract": false,
+    "changes_claim_text": false,
+    "claims_independent_assurance_result": false,
+    "claims_public_annual_review_result": false,
+    "claims_subject_level_pre_action_case": false,
+    "claims_durability": false,
+    "claims_composed_durable_answer": false,
+    "claims_answer_effectiveness": false,
+    "claims_cross_domain_completion": false,
+    "issue_345_may_close": false,
+    "promotes_to": "candidate_answer_dimension",
+    "graph_effect": "none",
+    "conclusion_generated": false,
+    "project_complete": false
+  }
+}
