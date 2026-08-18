@@ -1,0 +1,153 @@
+{
+  "schema_version": "m05-answerable-power-s03-l7-intel-realization-date-gate-monitor@1",
+  "object_class": "bounded_future_time_gated_monitor",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-03",
+  "leg_id": "S03-L7",
+  "issue": 345,
+  "as_of": "2026-08-17",
+  "status": "intel_realization_waiting_for_ordinary_gate",
+  "title": "Intel CHIPS equity realization date-gate monitor",
+  "question": "When may the ordinary Intel realization acquisition lane open, which official records could establish a sale, federal receipt, public-account booking, or distribution, and which nonfindings must remain closed until source-addressed receipts exist?",
+  "canonical_base": {
+    "branch": "main",
+    "sha": "34dd125446f9b2fa7beadef16c8f68afacb09a61",
+    "tree_sha": "232d0d49835f0d198a5d4ab5cf652154b1c55efe",
+    "latest_controlled_acquisition_pull_request": 2171
+  },
+  "bindings": {
+    "implementation_frontier": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.json",
+      "blob_sha": "34fa8d54c3a6ea9b993c3b650f4b737dcbbc756c",
+      "schema_version": "m05-answerable-power-s03-l7-five-domain-implementation-frontier@1",
+      "pull_request": 2162,
+      "merge_commit": "01e3f154ef8a86baa90a89dc250adb9c362ba9ee"
+    },
+    "intel_receipt_candidate": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json",
+      "blob_sha": "ff88d6d3cd6ae021f7ecbbe596026b82f15ce58a",
+      "schema_version": "m05-answerable-power-s03-l7-intel-chips-equity-receipt-candidate@1",
+      "pull_request": 2156,
+      "merge_commit": "3e13165dcd033f4c0b7a983af7b8a613622a1896"
+    },
+    "latest_controlled_acquisition": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-syri-subject-access-public-record-acquisition.json",
+      "blob_sha": "69b6dee5c5ee6548ccb4997606be397e473a417c",
+      "schema_version": "m05-answerable-power-s03-l7-syri-subject-access-public-record-acquisition@1",
+      "pull_request": 2171,
+      "merge_commit": "34dd125446f9b2fa7beadef16c8f68afacb09a61"
+    }
+  },
+  "target": {
+    "frontier_id": "M05-IF-VALUE-US-INTEL-REALIZATION",
+    "receipt_id": "M05-RC-VALUE-US-INTEL-CHIPS-EQUITY",
+    "domain_id": "APC-VALUE-01",
+    "jurisdiction": "US",
+    "route_class": "future_time_gated_monitoring",
+    "ordinary_gate_utc": "2026-08-27T00:00:00Z",
+    "ordinary_route_open_as_of_record": false,
+    "bilateral_exception_receipt_located": false,
+    "monitor_state": "waiting_for_gate"
+  },
+  "activation_policy": {
+    "first_ordinary_eligible_date": "2026-08-27",
+    "earlier_activation_requires_source_addressed_bilateral_agreement": true,
+    "passage_of_time_is_realization": false,
+    "gate_open_is_sale": false,
+    "gate_open_is_federal_receipt": false,
+    "gate_open_is_distribution": false,
+    "scheduled_clock_check": true,
+    "scheduled_clock_check_cron_utc": "17 12 * * *",
+    "scheduled_failure_after_gate_requires_new_acquisition": true
+  },
+  "official_routes": [
+    {
+      "route_id": "US-INTEL-REALIZATION-01",
+      "authority": "United States Securities and Exchange Commission",
+      "host": "www.sec.gov",
+      "surface": "Intel issuer filings and prospectus supplements for a sale, transfer, warrant exercise, or other disposition",
+      "qualifying_source_classes": ["official_primary_record", "source_native_primary_record"],
+      "receipt_required": "A filing or source-native record identifying the transaction date, security or right, quantity, disposition mechanism, and selling securityholder.",
+      "qualifying_receipt_found": false
+    },
+    {
+      "route_id": "US-INTEL-REALIZATION-02",
+      "authority": "Intel Corporation",
+      "host": "www.intc.com",
+      "surface": "Investor-relations filings and announcements concerning Commerce-held shares, warrants, dividends, or transfers",
+      "qualifying_source_classes": ["source_native_primary_record"],
+      "receipt_required": "A source-native transaction record consistent with the SEC filing chain and exact instrument quantities.",
+      "qualifying_receipt_found": false
+    },
+    {
+      "route_id": "US-INTEL-REALIZATION-03",
+      "authority": "United States Department of Commerce",
+      "host": "www.commerce.gov",
+      "surface": "CHIPS program and departmental records concerning an exception agreement, disposition, proceeds, or retained rights",
+      "qualifying_source_classes": ["official_primary_record"],
+      "receipt_required": "An official record identifying an exception agreement or completed disposition and the resulting federal right or proceeds.",
+      "qualifying_receipt_found": false
+    },
+    {
+      "route_id": "US-INTEL-REALIZATION-04",
+      "authority": "United States Department of the Treasury",
+      "host": "fiscaldata.treasury.gov",
+      "surface": "Federal accounting records capable of establishing a cash receipt or public-account booking",
+      "qualifying_source_classes": ["official_primary_record"],
+      "receipt_required": "A source-addressed federal accounting entry that identifies the amount, date, account, and transaction relationship to the Intel instrument.",
+      "qualifying_receipt_found": false
+    },
+    {
+      "route_id": "US-INTEL-REALIZATION-05",
+      "authority": "United States Government public-spending and program authorities",
+      "host": "www.usaspending.gov",
+      "surface": "Public program records capable of establishing an authorized distribution or affected-party allocation",
+      "qualifying_source_classes": ["official_primary_record"],
+      "receipt_required": "An official distribution ledger joining realized federal value to an authorized public account, program, or affected-party recipient.",
+      "qualifying_receipt_found": false
+    }
+  ],
+  "required_event_chain": {
+    "source_addressed_sale_transfer_dividend_or_warrant_exercise": false,
+    "transaction_quantity_and_date_bound": false,
+    "identified_federal_cash_receipt": false,
+    "public_account_booking": false,
+    "transparent_public_or_affected_party_distribution": false,
+    "qualifying_realization_receipt": false
+  },
+  "observed_receipts": [],
+  "guardrails": {
+    "registration_is_completed_sale": false,
+    "escrow_release_is_federal_cash_receipt": false,
+    "mark_to_market_value_is_realized_return": false,
+    "issuer_receives_no_proceeds_means_federal_receives_no_proceeds": false,
+    "ordinary_gate_open_is_transaction": false,
+    "elapsed_date_is_distribution": false,
+    "bounded_search_is_exhaustive_nonexistence_finding": false
+  },
+  "expected_result": {
+    "official_routes": 5,
+    "qualifying_receipts": 0,
+    "ordinary_gate_open_as_of_record": false,
+    "monitor_state": "waiting_for_gate",
+    "realization_supported": false,
+    "federal_receipt_supported": false,
+    "distribution_supported": false,
+    "answer_changes_authorized": false,
+    "effective_answers": 0,
+    "qualifying_jurisdictions": 0,
+    "cross_domain_regression_completed": false,
+    "graph_effect": "none",
+    "issue_345_may_close": false
+  },
+  "boundaries": {
+    "search_exhaustiveness_claimed": false,
+    "current_public_nonexistence_claimed": false,
+    "answer_changes_authorized": false,
+    "promotion_changes_authorized": false,
+    "graph_effect": "none",
+    "conclusion_generated": false,
+    "estate_completion_claimed": false,
+    "issue_345_may_close": false
+  }
+}
