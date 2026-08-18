@@ -188,7 +188,7 @@ assert.equal(
   'a short valid international span must stop before a formatted numeric observation'
 );
 for (const trailingObservation of [
-  '123 people', '1234 impressions', '3.14', '1,234', '10-20', '12:30', '2026', '2026-08-17'
+  '123 people', '1234 impressions', '3.14', '1,234', '10-20', '12:30', '2026-08-17'
 ]) {
   assert.equal(
     redactContactData(`+81 3 6216 5111 ${trailingObservation}`),
@@ -328,6 +328,31 @@ assert.equal(
   'Tel: [contact omitted] ext [contact omitted]. 2026 results improved.',
   'a sentence-separated year after a grouped extension must remain intact'
 );
+assert.equal(
+  redactContactData('Contact +672 1234. (2026) results improved.'),
+  'Contact [contact omitted]. (2026) results improved.',
+  'a parenthesized sentence-separated year after a short phone must remain intact'
+);
+assert.equal(
+  redactContactData('Contact +672 1234. （2026） results improved.'),
+  'Contact [contact omitted]. （2026） results improved.',
+  'a fullwidth-parenthesized sentence-separated year must remain intact'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 1234 5678. (2026) results improved.'),
+  'Tel: [contact omitted] ext [contact omitted]. (2026) results improved.',
+  'a parenthesized sentence-separated year after a grouped extension must remain intact'
+);
+assert.equal(
+  redactContactData('Contact +672 1234 (2026) results improved.'),
+  'Contact [contact omitted] results improved.',
+  'without a narrative boundary, a year-like terminal group remains part of the contact span'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 1234. (2026) results improved.'),
+  'Tel: [contact omitted] ext [contact omitted]. (2026) results improved.',
+  'a single-group extension must preserve a sentence-separated parenthesized year'
+);
 for (const [input, expected] of [
   [
     'referenceA+81 3 6216 5111 (03) 6216 5111',
@@ -364,7 +389,9 @@ assert.equal(
 );
 for (const completeYearEndingPhone of [
   '+86 138 0013 2026',
-  '+358 100 0000 2000'
+  '+358 100 0000 2000',
+  '+62 812 34 5678 2026',
+  '+81 3 6216 5111 2026'
 ]) {
   assert.equal(
     redactContactData(completeYearEndingPhone),
