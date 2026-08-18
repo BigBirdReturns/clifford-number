@@ -133,6 +133,8 @@ assert.equal(
 assert.equal(redactContactData('(03) 6216 5111'), '[contact omitted]');
 assert.equal(redactContactData('電話番号：０３６２１６８０４１'), '電話番号：[contact omitted]');
 assert.equal(redactContactData('＋８１ ３ ６２１６ ５１１１'), '[contact omitted]');
+assert.equal(redactContactData('Tel: + 81 3 6216 5111'), 'Tel: [contact omitted]');
+assert.equal(redactContactData('＋ ８１ ３ ６２１６ ５１１１'), '[contact omitted]');
 assert.equal(redactContactData('+33 1 42 68 53 00'), '[contact omitted]');
 assert.equal(
   redactContactData('+81 3 6216 5111 90 people'),

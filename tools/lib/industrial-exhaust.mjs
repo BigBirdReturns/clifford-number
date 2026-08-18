@@ -10,7 +10,7 @@ const TRACKING_PARAMS = new Set([
   'fbclid', 'gclid', 'dclid', 'mc_cid', 'mc_eid', 'msclkid', '_hsenc', '_hsmi'
 ]);
 
-const PHONE_SPAN_PATTERN = /(?<![\p{L}\p{N}])(?:[+＋](?=[0-9０-９])|[（(](?=\s*[0-9０-９]))?\s*[0-9０-９][0-9０-９().\s\-‐‑‒–—−－．（）]{5,}[0-9０-９](?:\s*[)）])?(?![\p{L}\p{N}])/gu;
+const PHONE_SPAN_PATTERN = /(?<![\p{L}\p{N}])(?:[+＋](?=\s*[0-9０-９])|[（(](?=\s*[0-9０-９]))?\s*[0-9０-９][0-9０-９().\s\-‐‑‒–—−－．（）]{5,}[0-9０-９](?:\s*[)）])?(?![\p{L}\p{N}])/gu;
 const PHONE_LABEL_PATTERN = /(?:(?:^|\b)(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)\s*(?:number\s*)?(?:is\s*)?[:.]?\s*|(?:電話(?:番号)?|携帯(?:電話)?|ファックス|連絡先|お問い合わせ先)\s*[:.]?\s*)$/iu;
 const DATE_LIKE_PATTERN = /^(?:\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4})$/u;
 const DIGIT_RUN_PATTERN = /[0-9０-９]+/gu;
