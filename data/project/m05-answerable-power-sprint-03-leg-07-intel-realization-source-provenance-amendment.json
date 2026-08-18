@@ -1,0 +1,263 @@
+{
+  "schema_version": "m05-answerable-power-s03-l7-intel-realization-source-provenance-amendment@1",
+  "object_class": "bounded_admission_source_provenance_authenticity_amendment",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-03",
+  "leg_id": "S03-L7",
+  "issue": 345,
+  "as_of": "2026-08-18",
+  "status": "intel_realization_source_provenance_amendment_frozen",
+  "title": "Intel realization official-origin and acquisition-provenance amendment",
+  "question": "Which official-origin, acquisition-receipt, and hash-reconciliation fields must accompany exact source-body custody before any Intel transaction, federal cash, public-account, or distribution receipt may advance?",
+  "canonical_base": {
+    "branch": "main",
+    "sha": "d1c78109fcc30ddee5bdce7056d6a9e889bd7df4",
+    "tree_sha": "1e1ba686fb719d81208ebe0c7b3a215dc2239a0b",
+    "preceding_pull_request": 2182,
+    "preceding_merge_commit": "05c5e06da4743c0d93d278b8022730f6fba201a0"
+  },
+  "bindings": {
+    "realization_source_custody_amendment": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-source-custody-amendment.json",
+      "blob_sha": "592a2056e9682e410938f5007b27396b85424b5b",
+      "semantic_sha256": "50083404a4380378faa0e3bf01368b8dcf5b88992a12c368ab1ad1caf9f88adc",
+      "schema_version": "m05-answerable-power-s03-l7-intel-realization-source-custody-amendment@1",
+      "pull_request": 2182,
+      "merge_commit": "05c5e06da4743c0d93d278b8022730f6fba201a0"
+    },
+    "realization_source_custody_validator": {
+      "path": "tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-source-custody-amendment.mjs",
+      "blob_sha": "80971d4085a88f791c9fda42776e244f8179306c",
+      "control_class": "independent_source_custody_git_blob_and_semantic_checksum_validator",
+      "pull_request": 2182,
+      "merge_commit": "05c5e06da4743c0d93d278b8022730f6fba201a0"
+    },
+    "realization_accounting_admission_contract": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-accounting-admission-contract.json",
+      "blob_sha": "4d59d3e93af806e97fde862daadf7194d3498790",
+      "semantic_sha256": "3924a4bfd18e98cacbd4b551e2ec4816de57bfa6eb5afb39089980081f2ab6c6",
+      "schema_version": "m05-answerable-power-s03-l7-intel-realization-accounting-admission-contract@1",
+      "pull_request": 2180,
+      "merge_commit": "fc6303e1791904e6ad999f63b49030c083e1a94e"
+    },
+    "realization_accounting_admission_validator": {
+      "path": "tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-accounting-admission-contract.mjs",
+      "blob_sha": "f61d464feec46fbd32ec6152ec83205ab2ee9b08",
+      "control_class": "independent_contract_git_blob_and_semantic_checksum_validator",
+      "pull_request": 2181,
+      "merge_commit": "a63235f8642ae0e878cc36210779d8c1f8cf9233"
+    }
+  },
+  "predecessor_gap": {
+    "gap_class": "exact_body_custody_without_official_origin_authentication",
+    "exact_source_body_custody_required": true,
+    "repository_blob_allowed_as_custody_mode": true,
+    "source_authority_required": false,
+    "source_record_class_required": false,
+    "official_origin_verification_mode_required": false,
+    "origin_acquisition_receipt_required": false,
+    "repository_blob_alone_authenticates_official_origin": false
+  },
+  "effective_stage_source_provenance": {
+    "transaction": {
+      "requires_contract_stage": "transaction",
+      "required_fields": [
+        "source_authority",
+        "source_authority_identifier",
+        "source_record_class",
+        "source_origin_url",
+        "source_origin_observed_at_utc",
+        "source_origin_content_type",
+        "source_origin_body_sha256",
+        "origin_verification_mode",
+        "origin_evidence_sha256",
+        "acquisition_method",
+        "acquisition_receipt_sha256",
+        "source_custody_mode",
+        "source_custody_locator",
+        "source_custody_body_sha256",
+        "repository_blob_sha_if_used"
+      ],
+      "official_origin_required": true,
+      "origin_body_hash_must_equal_custody_body_hash": true,
+      "repository_blob_alone_qualifies": false,
+      "mutable_origin_without_acquisition_receipt_qualifies": false
+    },
+    "federal_cash_custody": {
+      "requires_contract_stage": "federal_cash_custody",
+      "required_fields": [
+        "source_authority",
+        "source_authority_identifier",
+        "source_record_class",
+        "source_origin_url",
+        "source_origin_observed_at_utc",
+        "source_origin_content_type",
+        "source_origin_body_sha256",
+        "origin_verification_mode",
+        "origin_evidence_sha256",
+        "acquisition_method",
+        "acquisition_receipt_sha256",
+        "source_custody_mode",
+        "source_custody_locator",
+        "source_custody_body_sha256",
+        "repository_blob_sha_if_used"
+      ],
+      "official_origin_required": true,
+      "origin_body_hash_must_equal_custody_body_hash": true,
+      "repository_blob_alone_qualifies": false,
+      "mutable_origin_without_acquisition_receipt_qualifies": false
+    },
+    "public_account_booking": {
+      "requires_contract_stage": "public_account_booking",
+      "required_fields": [
+        "source_authority",
+        "source_authority_identifier",
+        "source_record_class",
+        "source_origin_url",
+        "source_origin_observed_at_utc",
+        "source_origin_content_type",
+        "source_origin_body_sha256",
+        "origin_verification_mode",
+        "origin_evidence_sha256",
+        "acquisition_method",
+        "acquisition_receipt_sha256",
+        "source_custody_mode",
+        "source_custody_locator",
+        "source_custody_body_sha256",
+        "repository_blob_sha_if_used"
+      ],
+      "official_origin_required": true,
+      "origin_body_hash_must_equal_custody_body_hash": true,
+      "repository_blob_alone_qualifies": false,
+      "mutable_origin_without_acquisition_receipt_qualifies": false
+    },
+    "distribution": {
+      "requires_contract_stage": "distribution",
+      "required_fields": [
+        "source_authority",
+        "source_authority_identifier",
+        "source_record_class",
+        "source_origin_url",
+        "source_origin_observed_at_utc",
+        "source_origin_content_type",
+        "source_origin_body_sha256",
+        "origin_verification_mode",
+        "origin_evidence_sha256",
+        "acquisition_method",
+        "acquisition_receipt_sha256",
+        "source_custody_mode",
+        "source_custody_locator",
+        "source_custody_body_sha256",
+        "repository_blob_sha_if_used"
+      ],
+      "official_origin_required": true,
+      "origin_body_hash_must_equal_custody_body_hash": true,
+      "repository_blob_alone_qualifies": false,
+      "mutable_origin_without_acquisition_receipt_qualifies": false
+    }
+  },
+  "provenance_rules": {
+    "allowed_source_record_classes": [
+      "official_primary_record",
+      "source_native_primary_record",
+      "official_financial_record",
+      "positive_law_official_record",
+      "official_adjudicative_record"
+    ],
+    "allowed_origin_verification_modes": [
+      "official_https_retrieval_with_transport_receipt",
+      "official_immutable_record_identifier",
+      "official_archive_capture",
+      "source_native_signature_or_digest",
+      "cross_published_official_record"
+    ],
+    "allowed_acquisition_methods": [
+      "direct_official_retrieval",
+      "official_api_or_feed",
+      "official_document_repository",
+      "official_archive_retrieval",
+      "source_native_filing_system"
+    ],
+    "origin_evidence_hash_algorithm": "sha256",
+    "acquisition_receipt_hash_algorithm": "sha256",
+    "hash_encoding": "lowercase_hex",
+    "hash_length": 64,
+    "acquisition_receipt_required_fields": [
+      "requested_url",
+      "resolved_url",
+      "redirect_chain",
+      "response_status",
+      "response_headers_sha256",
+      "observed_at_utc",
+      "content_type",
+      "body_length_bytes",
+      "source_origin_body_sha256"
+    ],
+    "source_authority_must_match_official_origin_or_publication_chain": true,
+    "source_record_class_must_be_allowed": true,
+    "origin_verification_mode_must_be_allowed": true,
+    "acquisition_method_must_be_allowed": true,
+    "origin_body_hash_must_equal_custody_body_hash": true,
+    "repository_blob_requires_official_origin_receipt": true,
+    "repository_blob_sha_required_when_repository_custody_used": true,
+    "multiple_origin_bodies_each_require_independent_provenance": true,
+    "mirror_requires_source_addressed_official_publication_chain": true,
+    "hostname_alone_authenticates_official_record": false,
+    "matching_body_hash_alone_authenticates_publisher": false,
+    "repository_blob_alone_authenticates_official_origin": false
+  },
+  "observed_receipts": [],
+  "observed_state": {
+    "transaction_admissible": false,
+    "federal_cash_custody_admissible": false,
+    "public_account_booking_admissible": false,
+    "distribution_admissible": false,
+    "answer_change_authorized": false
+  },
+  "guardrails": {
+    "repository_blob_is_official_origin": false,
+    "matching_body_hash_is_publisher_authentication": false,
+    "official_looking_hostname_is_record_authentication": false,
+    "source_url_and_locator_are_complete_provenance": false,
+    "mirror_without_official_publication_chain_is_admissible": false,
+    "screenshot_or_ocr_without_parent_body_is_admissible": false,
+    "self_declared_acquisition_receipt_is_authentication": false,
+    "provenance_amendment_is_empirical_receipt": false,
+    "provenance_amendment_is_answer_effectiveness": false
+  },
+  "expected_result": {
+    "amended_stages": 4,
+    "stages_requiring_official_origin_authentication": 4,
+    "stages_requiring_acquisition_receipt": 4,
+    "observed_receipts": 0,
+    "transaction_admissible": false,
+    "federal_cash_custody_admissible": false,
+    "public_account_booking_admissible": false,
+    "distribution_admissible": false,
+    "candidate_evidence_records": 5,
+    "repository_promotions": 5,
+    "advanced_answer_dimensions": 1,
+    "effective_answers": 0,
+    "qualifying_jurisdictions": 0,
+    "answer_effectiveness": false,
+    "cross_domain_regression_completed": false,
+    "graph_effect": "none",
+    "issue_345_may_close": false
+  },
+  "boundaries": {
+    "changes_predecessor_contract_bytes": false,
+    "changes_source_custody_amendment_bytes": false,
+    "creates_new_empirical_receipt": false,
+    "claims_intel_transaction": false,
+    "claims_federal_cash_receipt": false,
+    "claims_public_account_booking": false,
+    "claims_public_or_affected_party_distribution": false,
+    "claims_answer_effectiveness": false,
+    "claims_cross_domain_completion": false,
+    "graph_effect": "none",
+    "conclusion_generated": false,
+    "project_complete": false,
+    "issue_345_may_close": false
+  },
+  "provenance_amendment_sha256": "4cdd9995e964073b830ab006b5f4a660009535b5420f0b6cb67bb4c4d94e1444"
+}
