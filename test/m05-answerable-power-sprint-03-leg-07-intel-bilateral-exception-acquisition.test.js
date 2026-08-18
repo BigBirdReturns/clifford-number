@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -16,6 +17,7 @@ const paths={
 };
 const read=(target)=>JSON.parse(fs.readFileSync(target,'utf8'));
 const clone=(value)=>JSON.parse(JSON.stringify(value));
+const semanticHash=(value)=>crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const data=Object.fromEntries(Object.entries(paths).map(([key,target])=>[key,read(target)]));
 const tempRoot=fs.mkdtempSync(path.join(os.tmpdir(),'m05-intel-bilateral-exception-'));
 const runValidator=(env={})=>spawnSync(process.execPath,['tools/validate-m05-answerable-power-sprint-03-leg-07-intel-bilateral-exception-acquisition.mjs'],{cwd:root,encoding:'utf8',env:{...process.env,...env}});
@@ -66,6 +68,15 @@ expectAcquisitionFailure('cross-domain-completion',(row)=>{row.expected_result.c
 expectAcquisitionFailure('graph-effect',(row)=>{row.boundaries.graph_effect='candidate_graph'});
 expectAcquisitionFailure('issue-closure',(row)=>{row.boundaries.issue_345_may_close=true});
 expectAcquisitionFailure('project-completion',(row)=>{row.boundaries.project_complete=true});
+expectAcquisitionFailure('coordinated-content-checksum-rewrite',(row)=>{
+  row.recheck_routes[0].surface='Mutated acquisition surface with internally recomputed checksums';
+  const routeCopy=clone(row.recheck_routes[0]);
+  delete routeCopy.route_sha256;
+  row.recheck_routes[0].route_sha256=semanticHash(routeCopy);
+  const acquisitionCopy=clone(row);
+  delete acquisitionCopy.acquisition_sha256;
+  row.acquisition_sha256=semanticHash(acquisitionCopy);
+});
 expectAcquisitionFailure('checksum-rewrite',(row)=>{row.acquisition_sha256='0'.repeat(64)});
 
 expectFailure('historical-source-substitution','M05_INTEL_PRE_ELIGIBILITY_MONITOR_PATH',data.historical,(row)=>{row.source_records[0].url='https://www.sec.gov/substituted'});
