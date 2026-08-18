@@ -1,0 +1,65 @@
+name: PR 2176 final redaction repair
+
+on:
+  push:
+    branches:
+      - agent/dentsu-industrial-exhaust-review-fixes
+    paths:
+      - .github/workflows/pr2176-final-redaction-repair.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pr2176-final-redaction-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Apply, verify, test, and commit the final redaction repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git pull --ff-only origin "$GITHUB_REF_NAME"
+
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "6b31c000cacfe29cb7fa0414c50e7263d4cd901f"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "bd1282b025d03c61ac6f0b4ba1d99273ae35d53d"
+          test "$(git hash-object tools/crawl-industrial-exhaust.mjs)" = "22c4cc8a53058bbb128d064850c2a7c71a4367de"
+          test "$(git ls-files -s tools/crawl-industrial-exhaust.mjs | awk '{print $1}')" = "100755"
+
+          cat > /tmp/pr2176.patch.gz.b64 <<'PATCH_B64'
+          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
+          PATCH_B64
+          base64 --decode /tmp/pr2176.patch.gz.b64 > /tmp/pr2176.patch.gz
+          gzip --decompress --stdout /tmp/pr2176.patch.gz > /tmp/pr2176.patch
+          echo "f6055ddba218603a8a04dffd798f2f9ed1318864e4776cc4ddafeba0cfc2d93c  /tmp/pr2176.patch" | sha256sum --check --strict
+
+          git apply --check /tmp/pr2176.patch
+          git apply /tmp/pr2176.patch
+          git diff --check
+
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "c98415430662d782e44352f9a8f4f9918743e0f8"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "57049258534c23553bb1aeb19d58d10d6b7d2443"
+          test "$(git hash-object tools/crawl-industrial-exhaust.mjs)" = "22c4cc8a53058bbb128d064850c2a7c71a4367de"
+          test "$(git ls-files -s tools/crawl-industrial-exhaust.mjs | awk '{print $1}')" = "100755"
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node test/industrial-exhaust.test.js
+
+          rm .github/workflows/pr2176-final-redaction-repair.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js .github/workflows/pr2176-final-redaction-repair.yml
+          git commit -m "fix(crawler): cover international dialing boundaries"
+          git push origin "HEAD:$GITHUB_REF_NAME"
