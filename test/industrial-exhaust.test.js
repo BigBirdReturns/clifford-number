@@ -360,6 +360,16 @@ assert.equal(
   'parenthesized sentence-separated numeric prose after a phone must remain intact'
 );
 assert.equal(
+  redactContactData('Contact +81 3 6216 5111. -42 attendees joined.'),
+  'Contact [contact omitted]. -42 attendees joined.',
+  'signed sentence-separated numeric prose after a phone must remain intact'
+);
+assert.equal(
+  redactContactData('Contact +81 3 6216 5111. (+42) attendees joined.'),
+  'Contact [contact omitted]. (+42) attendees joined.',
+  'parenthesized signed numeric prose after a phone must remain intact'
+);
+assert.equal(
   redactContactData('Tel: +44 20 7123 4567 ext 1234 5678. 2026 results improved.'),
   'Tel: [contact omitted] ext [contact omitted]. 2026 results improved.',
   'a sentence-separated year after a grouped extension must remain intact'
@@ -373,6 +383,16 @@ assert.equal(
   redactContactData('Tel: +44 20 7123 4567 ext 1234. (42) attendees joined.'),
   'Tel: [contact omitted] ext [contact omitted]. (42) attendees joined.',
   'parenthesized sentence-separated numeric prose after an extension must remain intact'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 1234. −42 attendees joined.'),
+  'Tel: [contact omitted] ext [contact omitted]. −42 attendees joined.',
+  'Unicode-signed numeric prose after an extension must remain intact'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 1234. （－４２） attendees joined.'),
+  'Tel: [contact omitted] ext [contact omitted]. （－４２） attendees joined.',
+  'fullwidth parenthesized signed numeric prose after an extension must remain intact'
 );
 assert.equal(
   redactContactData('Contact +672 1234. (2026) results improved.'),
