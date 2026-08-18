@@ -10,7 +10,11 @@ const TRACKING_PARAMS = new Set([
   'fbclid', 'gclid', 'dclid', 'mc_cid', 'mc_eid', 'msclkid', '_hsenc', '_hsmi'
 ]);
 
-const PHONE_SPAN_PATTERN = /(?:[+＋](?=\s*[0-9０-９])|[（(](?=\s*[0-9０-９]))?\s*[0-9０-９][0-9０-９().\s\-‐‑‒–—−－．（）]{5,}[0-9０-９](?:\s*[)）])?(?![\p{L}\p{N}])/gu;
+const PHONE_SPAN_PATTERN = /(?:[+＋](?=\s*[0-9０-９])|[（(](?=\s*[0-9０-９]))?\s*[0-9０-９][0-9０-９()./／\s\-‐‑‒–—−－．（）]{5,}[0-9０-９](?:\s*[)）])?(?=$|[^\p{L}\p{N}]|[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]|(?:(?:ext(?:ension)?\.?|x)\s*[.:#：＃]?\s*[0-9０-９]))/giu;
+const PHONE_EXTENSION_PATTERN = /(\[contact omitted\][\s,;:()（）\-–—]*(?:(?:ext(?:ension)?|x)\s*[.:#：＃]?\s*|内線(?:番号)?\s*[:：#＃]?\s*))[0-9０-９]{1,8}/giu;
+const FORMATTED_NUMERIC_OBSERVATION_PATTERN = /^(?:\d{1,9}\.\d{1,6}|\d{1,3}(?:,\d{3})+(?:\.\d{1,6})?|\d{1,3},\d{1,2}|\d{1,9}\s*[-–—]\s*\d{1,9}|\d{1,2}:\d{2}(?::\d{2})?)(?=$|[^0-9])/u;
+const NUMERIC_OBSERVATION_PATTERN = /^\d{1,9}(?:,\d{3})*(?:\.\d{1,6})?(?:\s*[-–—]\s*\d{1,9}(?:,\d{3})*(?:\.\d{1,6})?)?\s*(?:(?:people|persons?|users?|customers?|employees?|impressions?|views?|visits?|clicks?|downloads?|yen|dollars?|pounds?|euros?|percent(?:age)?|million|billion|thousand|points?|basis points?|countries|markets|offices|stores|years?|months?|days?|hours?)(?=$|[^\p{L}\p{N}])|(?:人|名|件|回|円|社|国|地域|市場|拠点|店舗|%|％))/iu;
+const YEAR_LIKE_PATTERN = /^(?:19|20)\d{2}$/u;
 const PHONE_LABEL_PATTERN = /(?:(?:^|\b)(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)\s*(?:number\s*)?(?:is\s*)?[:.]?\s*|(?:電話(?:番号)?|携帯(?:電話)?|ファックス|連絡先|お問い合わせ先)\s*[:.]?\s*)$/iu;
 const DATE_LIKE_PATTERN = /^(?:\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4})$/u;
 const DIGIT_RUN_PATTERN = /[0-9０-９]+/gu;
@@ -114,11 +118,39 @@ function phoneCandidateScore(candidate, prefix) {
   const accessPrefixDigits = normalized.startsWith('00') ? 2 : 0;
   const trunkPrefixDigits = /^(?:\+|00)\s*\d{1,3}\s*\(\s*0\s*\)/u.test(normalized) ? 1 : 0;
   const effectiveDigitLength = digits.length - accessPrefixDigits - trunkPrefixDigits;
-  const targetDigits = international ? 11 : 10;
-  const digitFit = 44 - Math.abs(effectiveDigitLength - targetDigits) * 4;
+  const idealMinimum = international ? 8 : 7;
+  const idealMaximum = international ? 15 : 11;
+  const distanceFromBand = effectiveDigitLength < idealMinimum
+    ? idealMinimum - effectiveDigitLength
+    : Math.max(0, effectiveDigitLength - idealMaximum);
+  const digitFit = 44 - distanceFromBand * 6;
   const lastLength = groups.at(-1).length;
   const terminalBonus = lastLength === 4 ? 12 : lastLength === 3 ? 8 : lastLength === 2 ? 4 : 0;
   return base + digitFit + terminalBonus - groups.length * 2;
+}
+
+function trailingObservationGroup(candidate, groups, externalPrefix, externalSuffix) {
+  const normalizedSuffix = externalSuffix.normalize('NFKC').slice(0, 64);
+  const normalizedCandidate = candidate.normalize('NFKC');
+  const international = /^\s*(?:\+|00)/u.test(normalizedCandidate);
+  const minimumPriorDigits = international ? 10 : 7;
+
+  for (let index = 1; index < groups.length && index <= MAX_PHONE_DIGIT_GROUPS; index += 1) {
+    const start = groups[index].index;
+    const previousEnd = groups[index - 1].index + groups[index - 1][0].length;
+    if (!/\s/u.test(candidate.slice(previousEnd, start))) continue;
+
+    const phonePrefix = candidate.slice(0, start).trimEnd();
+    const priorDigits = phonePrefix.normalize('NFKC').replace(/\D/gu, '').length;
+    if (priorDigits < minimumPriorDigits || !phoneCandidateScore(phonePrefix, externalPrefix)) continue;
+
+    const tail = candidate.slice(start).trim().normalize('NFKC');
+    const contextualTail = `${candidate.slice(start).trimStart()}${normalizedSuffix}`.normalize('NFKC');
+    if (DATE_LIKE_PATTERN.test(tail) || YEAR_LIKE_PATTERN.test(tail)
+        || FORMATTED_NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
+        || NUMERIC_OBSERVATION_PATTERN.test(contextualTail)) return index;
+  }
+  return groups.length;
 }
 
 function phoneWindowBounds(candidate, groups, first, last) {
@@ -134,9 +166,20 @@ function phoneWindowBounds(candidate, groups, first, last) {
   return { start, end };
 }
 
-function redactPhoneSubspans(candidate, externalPrefix, allowInitialGroup = true) {
+function redactPhoneSubspans(candidate, externalPrefix, externalSuffix, allowInitialGroup = true) {
   const groups = [...candidate.matchAll(DIGIT_RUN_PATTERN)];
   if (!groups.length) return candidate;
+
+  const observationGroup = trailingObservationGroup(candidate, groups, externalPrefix, externalSuffix);
+  const normalizedCandidate = candidate.trim().normalize('NFKC');
+  const wholeSpanIsAffirmative = /^(?:\+|00)/u.test(normalizedCandidate) || hasPhoneLabelPrefix(externalPrefix);
+  if (wholeSpanIsAffirmative && observationGroup > 0) {
+    const { start, end } = phoneWindowBounds(candidate, groups, 0, observationGroup - 1);
+    const completePhoneSpan = candidate.slice(start, end);
+    if (phoneCandidateScore(completePhoneSpan, `${externalPrefix}${candidate.slice(0, start)}`)) {
+      return `${candidate.slice(0, start)}[contact omitted]${candidate.slice(end)}`;
+    }
+  }
 
   const intervals = Array.from({ length: groups.length }, () => []);
   for (let first = 0; first < groups.length; first += 1) {
@@ -148,8 +191,15 @@ function redactPhoneSubspans(candidate, externalPrefix, allowInitialGroup = true
     for (let last = first; last < groups.length && last < first + MAX_PHONE_DIGIT_GROUPS; last += 1) {
       const { start, end } = phoneWindowBounds(candidate, groups, first, last);
       const slice = candidate.slice(start, end);
-      const score = phoneCandidateScore(slice, `${externalPrefix}${candidate.slice(0, start)}`);
-      if (score) intervals[first].push({ first, last, start, end, score, slice });
+      let score = phoneCandidateScore(slice, `${externalPrefix}${candidate.slice(0, start)}`);
+      if (!score) continue;
+
+      if (first < observationGroup && last >= observationGroup) continue;
+      if (last === observationGroup - 1) score += 32;
+      else if (last === groups.length - 1) score += 24;
+      else score -= 24;
+
+      if (score > 0) intervals[first].push({ first, last, start, end, score, slice });
     }
   }
 
@@ -188,12 +238,14 @@ function redactPhoneSubspans(candidate, externalPrefix, allowInitialGroup = true
 export function redactContactData(value) {
   const emailRedacted = String(value ?? '')
     .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/giu, '[contact omitted]');
-  return emailRedacted.replace(PHONE_SPAN_PATTERN, (candidate, offset, input) => {
+  const phoneRedacted = emailRedacted.replace(PHONE_SPAN_PATTERN, (candidate, offset, input) => {
     const prefix = input.slice(Math.max(0, offset - 64), offset);
+    const suffix = input.slice(offset + candidate.length, offset + candidate.length + 64);
     const previousCharacter = Array.from(prefix).at(-1) ?? '';
     const allowInitialGroup = !/[\p{L}\p{N}]/u.test(previousCharacter) || hasPhoneLabelPrefix(prefix);
-    return redactPhoneSubspans(candidate, prefix, allowInitialGroup);
+    return redactPhoneSubspans(candidate, prefix, suffix, allowInitialGroup);
   });
+  return phoneRedacted.replace(PHONE_EXTENSION_PATTERN, '$1[contact omitted]');
 }
 
 export async function readBoundedUtf8Body(response, maxBytes) {

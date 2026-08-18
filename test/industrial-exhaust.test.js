@@ -170,7 +170,9 @@ assert.equal(
   '[contact omitted] 90 people',
   'a trailing numeric metric must not be absorbed into the phone span'
 );
-for (const trailingObservation of ['123 people', '1234 impressions', '2026', '2026-08-17']) {
+for (const trailingObservation of [
+  '123 people', '1234 impressions', '3.14', '1,234', '10-20', '12:30', '2026', '2026-08-17'
+]) {
   assert.equal(
     redactContactData(`+81 3 6216 5111 ${trailingObservation}`),
     `[contact omitted] ${trailingObservation}`,
@@ -186,6 +188,33 @@ assert.equal(
   redactContactData('+81 3 6216 5111 +81 90 1234 5678'),
   '[contact omitted] [contact omitted]',
   'adjacent international telephone numbers must be segmented independently'
+);
+for (const completeInternational of [
+  '+86 138 0013 8000',
+  '+882 13 123 456 7890',
+  '+49 (0)30 / 1234-5678',
+  '+1 212 555 2026'
+]) {
+  assert.equal(
+    redactContactData(completeInternational),
+    '[contact omitted]',
+    'complete international spans must not be truncated to a shorter target length'
+  );
+}
+assert.equal(
+  redactContactData('電話番号03-6216-8041内線1234'),
+  '電話番号[contact omitted]内線[contact omitted]',
+  'compact Japanese phone and extension digits must both be redacted'
+);
+assert.equal(
+  redactContactData('Tel:+86 138 0013 8000x123'),
+  'Tel:[contact omitted]x[contact omitted]',
+  'an attached extension marker must not suppress the final phone group or expose extension digits'
+);
+assert.equal(
+  redactContactData('+86 138 0013 8000担当'),
+  '[contact omitted]担当',
+  'Japanese narrative text attached after a number must not force truncation of the phone span'
 );
 
 const numericMetricRss = value => `<?xml version="1.0"?><rss version="2.0"><channel><title>Metric revisions</title>
