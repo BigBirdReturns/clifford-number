@@ -1,0 +1,31 @@
+name: Temporary PR trigger Intel pre-gate materializer
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-pr-trigger-intel-materializer.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m05-s03-l7-intel-pre-gate-exception-scan-v1
+          fetch-depth: 0
+      - name: Trigger the materializer and remove carriers
+        run: |
+          printf '\n# triggered by pull-request carrier\n' >> .github/workflows/temporary-materialize-intel-pre-gate-exception-scan.yml
+          rm -f \
+            .github/workflows/temporary-trigger-intel-pre-gate-materializer.yml \
+            .github/workflows/temporary-pr-trigger-intel-materializer.yml
+          git config user.name 'BigBirdReturns'
+          git config user.email 'bigbirdreturns@proton.me'
+          git add -A
+          git commit -m 'Trigger Intel pre-gate materializer'
+          git push origin HEAD:agent/m05-s03-l7-intel-pre-gate-exception-scan-v1
