@@ -179,6 +179,24 @@ const rematchedAlerts = buildArtifactAlerts(artifactMerge.artifacts, {
   candidates: discoveryCandidates
 });
 assert.ok(rematchedAlerts[0].artifact_matched_terms.includes('leadership_copy'));
+const retiredSeedArtifact = {
+  ...artifactMerge.added,
+  title: 'No current watch match',
+  normalized_text: 'The current registry does not match this body.',
+  seed_matched_terms: ['retired_term'],
+  artifact_matched_terms: [],
+  matched_terms: ['retired_term']
+};
+const currentRegistryAlerts = buildArtifactAlerts([retiredSeedArtifact], {
+  watchConfig: {
+    schema_version: 1,
+    terms: [{ id: 'current_term', patterns: ['current phrase'] }]
+  },
+  candidates: []
+});
+assert.deepEqual(currentRegistryAlerts, []);
+const historicalRegistryAlerts = buildArtifactAlerts([retiredSeedArtifact]);
+assert.deepEqual(historicalRegistryAlerts[0].seed_matched_terms, ['retired_term']);
 
 const fairnessCandidates = [
   { canonical_url: 'https://www.dentsu.com/news-releases/already-seen' },
@@ -191,6 +209,35 @@ const fairSelection = selectHydrationCandidates(fairnessCandidates, {
 assert.deepEqual(fairSelection.map(row => row.canonical_url), [
   'https://www.dentsu.com/news-releases/new-one',
   'https://www.dentsu.com/news-releases/new-two'
+]);
+
+const rotatingCandidates = [
+  { canonical_url: 'https://www.dentsu.com/news-releases/success-one' },
+  { canonical_url: 'https://www.dentsu.com/news-releases/success-two' },
+  { canonical_url: 'https://www.dentsu.com/news-releases/success-three' }
+];
+const rotatingSuccessSelection = selectHydrationCandidates(rotatingCandidates, {
+  pages: {
+    'https://www.dentsu.com/news-releases/success-one': { last_status: 'ok', last_checked_at: '2026-08-18T03:00:00.000Z' },
+    'https://www.dentsu.com/news-releases/success-two': { last_status: 'ok', last_checked_at: '2026-08-18T02:00:00.000Z' },
+    'https://www.dentsu.com/news-releases/success-three': { last_status: 'ok', last_checked_at: '2026-08-18T01:00:00.000Z' }
+  }
+}, 2);
+assert.deepEqual(rotatingSuccessSelection.map(row => row.canonical_url), [
+  'https://www.dentsu.com/news-releases/success-three',
+  'https://www.dentsu.com/news-releases/success-two'
+]);
+
+const rotatingFailureSelection = selectHydrationCandidates(rotatingCandidates, {
+  pages: {
+    'https://www.dentsu.com/news-releases/success-one': { last_status: 'error', last_checked_at: '2026-08-18T03:00:00.000Z' },
+    'https://www.dentsu.com/news-releases/success-two': { last_status: 'error', last_checked_at: '2026-08-18T02:00:00.000Z' },
+    'https://www.dentsu.com/news-releases/success-three': { last_status: 'error', last_checked_at: '2026-08-18T01:00:00.000Z' }
+  }
+}, 2);
+assert.deepEqual(rotatingFailureSelection.map(row => row.canonical_url), [
+  'https://www.dentsu.com/news-releases/success-three',
+  'https://www.dentsu.com/news-releases/success-two'
 ]);
 
 const receiptRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'industrial-exhaust-artifact-receipts-'));
