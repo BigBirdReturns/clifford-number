@@ -1,0 +1,124 @@
+name: Temporary PR2176 numeric sentence boundary repair
+
+on:
+  push:
+    branches:
+      - agent/dentsu-industrial-exhaust-review-fixes
+    paths:
+      - '.github/workflows/temporary-pr2176-sentence-boundary-repair.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-pr2176-numeric-sentence-boundary-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/dentsu-industrial-exhaust-review-fixes
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify exact entry state
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "0a008ac901356e3d64d7229143b2c2ddb4388aef"
+          test "$(git diff --name-only HEAD^ HEAD)" = ".github/workflows/temporary-pr2176-sentence-boundary-repair.yml"
+      - name: Apply numeric sentence boundary repair and regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          library_path = Path('tools/lib/industrial-exhaust.mjs')
+          library = library_path.read_text(encoding='utf-8')
+          old_helper = r'''function isSentenceSeparatedYear(value, separator) {
+            return YEAR_LIKE_PATTERN.test(normalizedWrappedNumericTail(value))
+              && /[.!?。！？]\s*(?:\(\s*)?$/u.test(separator.normalize('NFKC'));
+          }'''
+          new_helper = r'''function isSentenceSeparatedNumericTail(value, separator) {
+            return /^\d/u.test(normalizedWrappedNumericTail(value))
+              && /[.!?。！？]\s*(?:\(\s*)?$/u.test(separator.normalize('NFKC'));
+          }'''
+          if library.count(old_helper) != 1:
+              raise SystemExit('sentence-boundary helper anchor did not match exactly once')
+          library = library.replace(old_helper, new_helper, 1)
+          if library.count('isSentenceSeparatedYear(tail, separator)') != 2:
+              raise SystemExit('expected exactly two sentence-boundary call sites')
+          library = library.replace(
+              'isSentenceSeparatedYear(tail, separator)',
+              'isSentenceSeparatedNumericTail(tail, separator)'
+          )
+          library_path.write_text(library, encoding='utf-8')
+
+          test_path = Path('test/industrial-exhaust.test.js')
+          tests = test_path.read_text(encoding='utf-8')
+          phone_anchor = r'''assert.equal(
+            redactContactData('Contact +672 1234. 2026 results improved.'),
+            'Contact [contact omitted]. 2026 results improved.',
+            'a sentence-separated year after a seven-digit international phone must remain intact'
+          );'''
+          phone_replacement = phone_anchor + r'''
+          assert.equal(
+            redactContactData('Contact +81 3 6216 5111. 90 attendees joined.'),
+            'Contact [contact omitted]. 90 attendees joined.',
+            'sentence-separated numeric prose after a phone must remain intact regardless of its noun'
+          );
+          assert.equal(
+            redactContactData('Contact +81 3 6216 5111. (90) attendees joined.'),
+            'Contact [contact omitted]. (90) attendees joined.',
+            'parenthesized sentence-separated numeric prose after a phone must remain intact'
+          );'''
+          if tests.count(phone_anchor) != 1:
+              raise SystemExit('phone numeric-sentence test anchor did not match exactly once')
+          tests = tests.replace(phone_anchor, phone_replacement, 1)
+
+          extension_anchor = r'''assert.equal(
+            redactContactData('Tel: +44 20 7123 4567 ext 1234 5678. 2026 results improved.'),
+            'Tel: [contact omitted] ext [contact omitted]. 2026 results improved.',
+            'a sentence-separated year after a grouped extension must remain intact'
+          );'''
+          extension_replacement = extension_anchor + r'''
+          assert.equal(
+            redactContactData('Tel: +44 20 7123 4567 ext 1234. 42 attendees joined.'),
+            'Tel: [contact omitted] ext [contact omitted]. 42 attendees joined.',
+            'sentence-separated numeric prose after an extension must remain intact regardless of its noun'
+          );
+          assert.equal(
+            redactContactData('Tel: +44 20 7123 4567 ext 1234. (42) attendees joined.'),
+            'Tel: [contact omitted] ext [contact omitted]. (42) attendees joined.',
+            'parenthesized sentence-separated numeric prose after an extension must remain intact'
+          );'''
+          if tests.count(extension_anchor) != 1:
+              raise SystemExit('extension numeric-sentence test anchor did not match exactly once')
+          tests = tests.replace(extension_anchor, extension_replacement, 1)
+          test_path.write_text(tests, encoding='utf-8')
+          PY
+      - name: Validate focused and repository gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node test/industrial-exhaust.test.js
+          git diff --check
+      - name: Publish repaired exact head and remove temporary runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected_remote_head="$(git rev-parse HEAD)"
+          rm .github/workflows/temporary-pr2176-sentence-boundary-repair.yml
+          git config user.name "BigBirdReturns"
+          git config user.email "bigbirdreturns@proton.me"
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js .github/workflows/temporary-pr2176-sentence-boundary-repair.yml
+          git diff --cached --check
+          git commit -m "Preserve numeric prose after redacted contacts"
+          git push --force-with-lease=refs/heads/agent/dentsu-industrial-exhaust-review-fixes:${expected_remote_head} origin HEAD:refs/heads/agent/dentsu-industrial-exhaust-review-fixes
