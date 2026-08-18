@@ -1,0 +1,317 @@
+{
+  "schema_version": "m05-answerable-power-s03-l7-intel-issuer-offering-disambiguation@1",
+  "object_class": "bounded_official_record_false_positive_adjudication",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-03",
+  "leg_id": "S03-L7",
+  "issue": 345,
+  "as_of": "2026-08-18",
+  "status": "intel_issuer_offering_disambiguation_frozen",
+  "title": "Intel issuer offering disambiguation from federal equity realization",
+  "question": "Do Intel's August 2026 issuer offering, option exercise, and expected issuer proceeds establish a Department of Commerce disposition, bilateral exception, realized federal cash receipt, public-account booking, or transparent public or affected-party distribution sufficient to change the frozen Intel answer state?",
+  "canonical_base": {
+    "branch": "main",
+    "sha": "f798a6dea21431a9b225b157e3235929381aa085",
+    "tree_sha": "35c90d7419276af914fb22e2cccee49e01fe2c7c",
+    "latest_intel_date_gate_pull_request": 2173
+  },
+  "bindings": {
+    "date_gate_monitor": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.json",
+      "blob_sha": "b4643f2131cf7ebb27e53765fec31f86447d6b8f",
+      "schema_version": "m05-answerable-power-s03-l7-intel-realization-date-gate-monitor@1",
+      "pull_request": 2173,
+      "merge_commit": "f798a6dea21431a9b225b157e3235929381aa085"
+    },
+    "implementation_frontier": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.json",
+      "blob_sha": "34fa8d54c3a6ea9b993c3b650f4b737dcbbc756c",
+      "schema_version": "m05-answerable-power-s03-l7-five-domain-implementation-frontier@1",
+      "pull_request": 2162,
+      "merge_commit": "01e3f154ef8a86baa90a89dc250adb9c362ba9ee"
+    },
+    "intel_receipt_candidate": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json",
+      "blob_sha": "ff88d6d3cd6ae021f7ecbbe596026b82f15ce58a",
+      "schema_version": "m05-answerable-power-s03-l7-intel-chips-equity-receipt-candidate@1",
+      "pull_request": 2156,
+      "merge_commit": "3e13165dcd033f4c0b7a983af7b8a613622a1896"
+    },
+    "latest_controlled_acquisition": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-syri-subject-access-public-record-acquisition.json",
+      "blob_sha": "58ac18ec5841982d8ffc1be75aee6269e5f40dc9",
+      "schema_version": "m05-answerable-power-s03-l7-syri-subject-access-public-record-acquisition@1",
+      "pull_request": 2171,
+      "merge_commit": "34dd125446f9b2fa7beadef16c8f68afacb09a61"
+    }
+  },
+  "target": {
+    "frontier_id": "M05-IF-VALUE-US-INTEL-REALIZATION",
+    "receipt_id": "M05-RC-VALUE-US-INTEL-CHIPS-EQUITY",
+    "domain_id": "APC-VALUE-01",
+    "jurisdiction": "US",
+    "route_class": "future_time_gated_monitoring",
+    "ordinary_gate_utc": "2026-08-27T00:00:00Z",
+    "monitor_state": "waiting_for_gate",
+    "adjudication_class": "issuer_offering_false_positive_control"
+  },
+  "acquisition_protocol": {
+    "executed_at": "2026-08-18",
+    "official_hosts": [
+      "www.sec.gov",
+      "www.intc.com",
+      "www.commerce.gov",
+      "fiscaldata.treasury.gov",
+      "www.usaspending.gov"
+    ],
+    "query_families": [
+      "Intel August 2026 issuer offering, underwriting agreement, option exercise, and use of proceeds",
+      "Department of Commerce bilateral exception, sale, transfer, dividend, or warrant exercise",
+      "federal cash receipt and public-account booking linked to the Commerce-held Intel instrument",
+      "transparent public or affected-party distribution of realized Intel instrument value"
+    ],
+    "allowed_source_classes": [
+      "official_primary_record",
+      "source_native_primary_record"
+    ],
+    "search_exhaustiveness_claimed": false,
+    "current_public_nonexistence_claimed": false,
+    "registration_counts_as_sale": false,
+    "issuer_offering_counts_as_commerce_disposition": false,
+    "issuer_proceeds_count_as_federal_receipt": false,
+    "option_exercise_counts_as_commerce_warrant_exercise": false,
+    "market_valuation_counts_as_realization": false,
+    "bounded_search_counts_as_distribution_nonexistence": false,
+    "failed_and_nonqualifying_routes_preserved": true
+  },
+  "source_records": [
+    {
+      "source_id": "US-INTEL-COMMERCE-RESALE-GATE-2026-01-23",
+      "authority": "Intel Corporation and the United States Securities and Exchange Commission",
+      "record_type": "source_native_primary_record",
+      "published_at": "2026-01-23",
+      "url": "https://www.sec.gov/Archives/edgar/data/50863/000005086326000027/a01232026424b7.htm",
+      "accession_number": "0000050863-26-000027",
+      "source_role": "commerce_selling_securityholder_gate_and_non_sale_control",
+      "locators": [
+        "The prospectus registers securities for offer and sale by the selling securityholder and states that, unless Intel and the selling securityholder agree otherwise, an offer or sale may occur only on or after August 27, 2026.",
+        "The prospectus states that registration does not necessarily mean the selling securityholder will offer or sell securities and that Intel will receive no proceeds from any selling-securityholder sale.",
+        "This record defines the Commerce realization lane and prevents issuer financing activity from being substituted for a Department of Commerce disposition."
+      ],
+      "facts": {
+        "ordinary_sale_not_before": "2026-08-27",
+        "bilateral_exception_possible": true,
+        "registration_is_sale": false,
+        "issuer_receives_selling_securityholder_sale_proceeds": false,
+        "selling_securityholder_sale_observed": false
+      },
+      "qualifies_as_commerce_realization_receipt": false,
+      "source_sha256": "90bd0481dd2c4d0c949d16407342c8012c1526180ef414c78337dc859941f3ea"
+    },
+    {
+      "source_id": "US-INTEL-ISSUER-OFFERING-424B5-2026-08-10",
+      "authority": "Intel Corporation",
+      "record_type": "source_native_primary_record",
+      "published_at": "2026-08-10",
+      "url": "https://www.intc.com/filings-reports/all-sec-filings/content/0001193125-26-345221/d98483d424b5.htm",
+      "accession_number": "0001193125-26-345221",
+      "source_role": "issuer_primary_offering_and_expected_issuer_proceeds",
+      "locators": [
+        "Intel offers 210,526,315 newly issued common shares at a public offering price of $95.00 per share and grants underwriters an option to purchase up to 31,578,947 additional newly issued shares.",
+        "The prospectus identifies Intel Corporation as the issuer and expected recipient of approximately $19.67 billion in net proceeds, or approximately $22.62 billion if the option is exercised in full.",
+        "The prospectus separately excludes 143 million shares held in escrow for the benefit of Commerce and 241 million Commerce warrant shares from its immediate post-offering outstanding-share calculation."
+      ],
+      "facts": {
+        "issuer": "Intel Corporation",
+        "base_shares": 210526315,
+        "option_shares": 31578947,
+        "public_offering_price_usd": 95,
+        "base_gross_proceeds_usd": 19999999925,
+        "base_net_proceeds_before_expenses_usd": 19669999926,
+        "full_option_net_proceeds_approx_usd": 22620000000,
+        "proceeds_recipient": "Intel Corporation",
+        "commerce_escrowed_shares_excluded": 143000000,
+        "commerce_warrant_shares_excluded": 241000000,
+        "commerce_selling_securityholder": false
+      },
+      "qualifies_as_commerce_realization_receipt": false,
+      "source_sha256": "d49a394dd24696c7d899d706fcfa050774d023b5ae829f7fef122b9eb0ee7231"
+    },
+    {
+      "source_id": "US-INTEL-ISSUER-OFFERING-8K-2026-08-12",
+      "authority": "Intel Corporation",
+      "record_type": "source_native_primary_record",
+      "published_at": "2026-08-12",
+      "url": "https://www.intc.com/filings-reports/all-sec-filings/content/0001193125-26-346806/d117670d8k.htm",
+      "accession_number": "0001193125-26-346806",
+      "source_role": "issuer_underwriting_agreement_and_full_option_exercise",
+      "locators": [
+        "Intel reports an underwriting agreement under which Intel agreed to issue and sell 210,526,315 common shares at $95.00 per share.",
+        "Intel reports that the underwriters exercised in full their option to purchase an additional 31,578,947 Intel-issued shares.",
+        "The filing names Intel as the issuing company; it does not identify Commerce as the selling securityholder, does not record federal cash custody, and does not record public distribution."
+      ],
+      "facts": {
+        "underwriting_agreement_date": "2026-08-10",
+        "issuer": "Intel Corporation",
+        "base_shares": 210526315,
+        "option_shares": 31578947,
+        "option_exercised_in_full": true,
+        "total_issuer_shares_subject_to_agreement": 242105262,
+        "commerce_selling_securityholder": false,
+        "federal_cash_receipt_recorded": false,
+        "public_distribution_recorded": false
+      },
+      "qualifies_as_commerce_realization_receipt": false,
+      "source_sha256": "7a7972bcd105a1715001406f023faef38f3f9e232470ce07812fd685e84994cc"
+    },
+    {
+      "source_id": "US-COMMERCE-INTEL-VALUATION-2026-01",
+      "authority": "United States Department of Commerce",
+      "record_type": "official_primary_record",
+      "published_at": "2026-01",
+      "url": "https://www.commerce.gov/news/press-releases/2026/01/first-year-accomplishments-under-secretary-howard-w-lutnick",
+      "source_role": "official_market_valuation_without_realization_or_distribution",
+      "locators": [
+        "Commerce describes the Intel strategic stake as having an estimated value of $22.5 billion and characterizes the change from the original contribution as a taxpayer gain.",
+        "The page supplies an official mark-to-market statement but does not identify a sale, transfer, dividend, warrant exercise, federal cash receipt, public-account booking, or distribution.",
+        "Market value and reported gain therefore remain distinct from realized and transparently allocated public value."
+      ],
+      "facts": {
+        "reported_stake_value_usd": 22500000000,
+        "reported_net_gain_over_usd": 10000000000,
+        "sale_recorded": false,
+        "federal_cash_receipt_recorded": false,
+        "public_distribution_recorded": false
+      },
+      "qualifies_as_commerce_realization_receipt": false,
+      "source_sha256": "4cdceb66f39f6d574bcd10843f5aafbc0fa352ad25798ed16ae59c86a8784874"
+    }
+  ],
+  "route_ledger": [
+    {
+      "route_id": "US-INTEL-REALIZATION-01",
+      "host": "www.sec.gov",
+      "surface": "SEC filing surface for selling-securityholder or issuer transactions",
+      "result_class": "substantive_nonqualifying_issuer_offering",
+      "observed_source_ids": [
+        "US-INTEL-COMMERCE-RESALE-GATE-2026-01-23",
+        "US-INTEL-ISSUER-OFFERING-424B5-2026-08-10",
+        "US-INTEL-ISSUER-OFFERING-8K-2026-08-12"
+      ],
+      "qualifying_receipt_found": false,
+      "preserved_reason": "The SEC record distinguishes Intel-issued primary shares from Commerce-held registered securities; no Commerce disposition or federal receipt is recorded.",
+      "route_sha256": "19a19f69d60bca524c0e83a1093f51441b0b5677be1d9b9aae1fb189c7fb4619"
+    },
+    {
+      "route_id": "US-INTEL-REALIZATION-02",
+      "host": "www.intc.com",
+      "surface": "Intel investor-relations filing surface for the August issuer offering",
+      "result_class": "substantive_nonqualifying_issuer_offering",
+      "observed_source_ids": [
+        "US-INTEL-ISSUER-OFFERING-424B5-2026-08-10",
+        "US-INTEL-ISSUER-OFFERING-8K-2026-08-12"
+      ],
+      "qualifying_receipt_found": false,
+      "preserved_reason": "Intel is the issuer and expected proceeds recipient; the record does not identify Commerce as seller or the federal government as cash recipient.",
+      "route_sha256": "e920e1ca918343df6c9fa31a86bca7faee54d3088f85479d95458589d909eb9a"
+    },
+    {
+      "route_id": "US-INTEL-REALIZATION-03",
+      "host": "www.commerce.gov",
+      "surface": "Commerce CHIPS and strategic-equity record surface",
+      "result_class": "valuation_only_without_exception_or_disposition_receipt",
+      "observed_source_ids": [
+        "US-COMMERCE-INTEL-VALUATION-2026-01"
+      ],
+      "qualifying_receipt_found": false,
+      "preserved_reason": "Commerce reports a market valuation, but the bounded surface supplies no source-addressed bilateral exception, disposition, or realized federal receipt.",
+      "route_sha256": "60a96a8c2bbb115c6d0a78f507b47cd3221b94961fc9057b1718077eb30b079e"
+    },
+    {
+      "route_id": "US-INTEL-REALIZATION-04",
+      "host": "fiscaldata.treasury.gov",
+      "surface": "Treasury fiscal-accounting surface for a federal cash receipt or public-account booking",
+      "result_class": "no_qualifying_federal_account_receipt_located",
+      "observed_source_ids": [],
+      "qualifying_receipt_found": false,
+      "preserved_reason": "The bounded scan did not identify an account entry linked to a Commerce Intel disposition; this is not an exhaustive nonexistence claim.",
+      "route_sha256": "c318540933900b1a9921ecc0e527b43f1f407e0756a8bc5baa365b546d83e6fb"
+    },
+    {
+      "route_id": "US-INTEL-REALIZATION-05",
+      "host": "www.usaspending.gov",
+      "surface": "Federal public-program surface for transparent distribution of realized value",
+      "result_class": "no_qualifying_distribution_receipt_located",
+      "observed_source_ids": [],
+      "qualifying_receipt_found": false,
+      "preserved_reason": "The bounded scan did not identify a distribution ledger linked to realized Intel instrument value; this is not an exhaustive nonexistence claim.",
+      "route_sha256": "b73fa52c08217b755f396fa7a3a96dcef6acbb56847ab795f33d7d5206ccaf26"
+    }
+  ],
+  "instrument_disambiguation": {
+    "issuer_offering_base_shares": 210526315,
+    "issuer_offering_option_shares": 31578947,
+    "issuer_offering_total_shares": 242105262,
+    "issuer_offering_price_usd": 95,
+    "issuer_base_gross_proceeds_usd": 19999999925,
+    "issuer_base_net_proceeds_before_expenses_usd": 19669999926,
+    "issuer_full_option_net_proceeds_approx_usd": 22620000000,
+    "issuer_proceeds_recipient": "Intel Corporation",
+    "underwriter_option_exercised_in_full": true,
+    "offering_closing_confirmed_by_frozen_records": false,
+    "commerce_selling_securityholder_in_august_offering": false,
+    "commerce_bilateral_exception_record_located": false,
+    "commerce_disposition_record_located": false,
+    "federal_cash_receipt_record_located": false,
+    "public_account_booking_record_located": false,
+    "public_or_affected_party_distribution_record_located": false,
+    "dilution_effect_quantified": false
+  },
+  "required_event_chain": {
+    "source_addressed_commerce_sale_transfer_dividend_or_warrant_exercise": false,
+    "transaction_quantity_and_date_bound_to_commerce": false,
+    "identified_federal_cash_receipt": false,
+    "public_account_booking": false,
+    "transparent_public_or_affected_party_distribution": false,
+    "qualifying_realization_receipt": false
+  },
+  "guardrails": {
+    "issuer_primary_offering_is_commerce_disposition": false,
+    "issuer_option_exercise_is_commerce_warrant_exercise": false,
+    "issuer_proceeds_are_federal_cash_receipt": false,
+    "newly_issued_shares_are_sale_of_commerce_held_shares": false,
+    "commerce_market_valuation_is_realized_return": false,
+    "registration_is_completed_sale": false,
+    "ordinary_gate_open_is_transaction": false,
+    "bounded_search_is_exhaustive_nonexistence_finding": false,
+    "unquantified_dilution_is_answer_effectiveness": false
+  },
+  "expected_result": {
+    "official_source_records": 4,
+    "executed_routes": 5,
+    "substantive_nonqualifying_routes": 3,
+    "bounded_search_routes_without_qualifier": 2,
+    "issuer_offering_total_shares": 242105262,
+    "qualifying_commerce_realization_receipts": 0,
+    "commerce_disposition_supported": false,
+    "federal_receipt_supported": false,
+    "public_account_booking_supported": false,
+    "distribution_supported": false,
+    "answer_changes_authorized": false,
+    "effective_answers": 0,
+    "qualifying_jurisdictions": 0,
+    "cross_domain_regression_completed": false,
+    "graph_effect": "none",
+    "issue_345_may_close": false
+  },
+  "boundaries": {
+    "search_exhaustiveness_claimed": false,
+    "current_public_nonexistence_claimed": false,
+    "answer_changes_authorized": false,
+    "promotion_changes_authorized": false,
+    "graph_effect": "none",
+    "conclusion_generated": false,
+    "estate_completion_claimed": false,
+    "issue_345_may_close": false
+  }
+}

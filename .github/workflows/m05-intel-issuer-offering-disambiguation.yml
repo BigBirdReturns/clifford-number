@@ -1,0 +1,63 @@
+name: M-05 Intel issuer-offering disambiguation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-issuer-offering-disambiguation.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-syri-subject-access-public-record-acquisition.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-intel-issuer-offering-disambiguation.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-issuer-offering-disambiguation.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-issuer-offering-disambiguation.test.js'
+      - '.github/workflows/m05-intel-issuer-offering-disambiguation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-issuer-offering-disambiguation.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-syri-subject-access-public-record-acquisition.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-intel-issuer-offering-disambiguation.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-issuer-offering-disambiguation.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-issuer-offering-disambiguation.test.js'
+      - '.github/workflows/m05-intel-issuer-offering-disambiguation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m05-intel-issuer-offering-disambiguation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate Intel issuer-offering disambiguation
+        run: |
+          node --check tools/lib/m05-answerable-power-sprint-03-leg-07-intel-issuer-offering-disambiguation.mjs
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-intel-issuer-offering-disambiguation.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-intel-issuer-offering-disambiguation.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-issuer-offering-disambiguation.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-issuer-offering-disambiguation.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic focused state
+        run: |
+          git restore --staged --worktree .
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-issuer-offering-disambiguation.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-issuer-offering-disambiguation.test.js
+          git diff --exit-code
