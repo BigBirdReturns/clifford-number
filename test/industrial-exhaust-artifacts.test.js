@@ -1,0 +1,232 @@
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {
+  assertAllowedArtifactUrl,
+  buildArtifactAlerts,
+  buildHydrationCandidates,
+  extractHtmlArtifact,
+  mergeArtifactProjection,
+  mergeDiscoveryRecords,
+  parseHtmlLinkIndex,
+  selectHydrationCandidates,
+  validateArtifactConfig,
+  writeArtifactReceipt
+} from '../tools/lib/industrial-exhaust-artifacts.mjs';
+import { matchWatchTerms } from '../tools/lib/industrial-exhaust.mjs';
+
+const config = validateArtifactConfig({
+  schema_version: 1,
+  lane: 'first_party_industrial_exhaust_artifact_hydration',
+  graph_effect: 'none',
+  promotion_authority: false,
+  canonical_mutation_authorized: false,
+  indexes: [{
+    id: 'dentsu_global_news_sitemap',
+    publisher: 'dentsu global website',
+    publisher_resolution: 'brand_surface_not_legal_entity',
+    surface: 'Global news-release sitemap',
+    index_url: 'https://www.dentsu.com/sitemap',
+    index_format: 'html_link_index',
+    include_path_prefixes: ['/news-releases/'],
+    enabled: true,
+    source_class: 'first_party_corporate_publication',
+    graph_effect: 'none'
+  }],
+  hydration: {
+    allowed_hosts: ['www.dentsu.com', 'www.dentsu.co.jp'],
+    default_limit: 50,
+    max_bytes: 6000000,
+    max_normalized_chars: 60000,
+    request_delay_ms: 0
+  }
+});
+
+const watchConfig = {
+  schema_version: 1,
+  terms: [
+    { id: 'evidenza', patterns: ['Evidenza'] },
+    { id: 'generative_audiences', patterns: ['Generative Audiences'] },
+    { id: 'b2b', patterns: ['B2B'] },
+    { id: 'intent_data', patterns: ['intent data'] },
+    { id: 'tsuyoshi_george_komuro', patterns: ['Tsuyoshi George Komuro', '小室'] }
+  ]
+};
+
+const indexHtml = `<!doctype html><html><head><title>dentsu sitemap</title></head><body>
+<a href="/news-releases/dentsu-partners-with-evidenza-to-integrate-synthetic-audiences-into-next-gen-media-planning">Dentsu Partners With Evidenza To Integrate Synthetic Audiences</a>
+<a href="https://www.dentsu.com/news-releases/dentsu-launches-generative-audiences-ai-powered-growth-intelligence-that-thinks-like-consumers?utm_source=rss">Dentsu Launches Generative Audiences</a>
+<a href="/news-releases/dentsu-launches-generative-audiences-ai-powered-growth-intelligence-that-thinks-like-consumers">Dentsu Launches Generative Audiences duplicate</a>
+<a href="/blog/not-in-scope">Unrelated blog</a>
+<a href="https://outside.example/news-releases/not-owned">Outside host</a>
+</body></html>`;
+const parsedIndex = parseHtmlLinkIndex(indexHtml, config.indexes[0]);
+assert.equal(parsedIndex.item_count, 2);
+assert.equal(parsedIndex.items[0].canonical_url.startsWith('https://www.dentsu.com/news-releases/'), true);
+assert.equal(new Set(parsedIndex.items.map(item => item.source_record_key)).size, 2);
+
+const firstMerge = mergeDiscoveryRecords({
+  records: [],
+  source: config.indexes[0],
+  parsedIndex,
+  capturedAt: '2026-08-17T00:00:00.000Z',
+  indexReceiptPath: 'receipts/index.json'
+});
+assert.equal(firstMerge.added.length, 2);
+const secondMerge = mergeDiscoveryRecords({
+  records: firstMerge.records,
+  source: config.indexes[0],
+  parsedIndex,
+  capturedAt: '2026-08-18T00:00:00.000Z',
+  indexReceiptPath: 'receipts/index.json'
+});
+assert.equal(secondMerge.added.length, 0);
+
+const articleHtml = `<!doctype html><html><head>
+<title>Dentsu B2B</title><meta property="article:published_time" content="2024-08-26T07:00:00Z">
+<meta name="description" content="Dentsu B2B intent data service">
+</head><body>
+<header>Electric Twin navigation decoy</header>
+<main><h1>Marketing For Growth B2B</h1><p>Tsuyoshi George Komuro leads work using intent data.</p>
+<p>Business contact: george@example.com, +81 3 1234 5678.</p></main>
+<footer>Evidenza footer decoy</footer>
+</body></html>`;
+const projection = extractHtmlArtifact(articleHtml, 'https://www.dentsu.co.jp/en/news/release/2024/0826-010767.html');
+assert.equal(projection.title, 'Marketing For Growth B2B');
+assert.match(projection.normalized_text, /Tsuyoshi George Komuro/u);
+assert.match(projection.normalized_text, /intent data/u);
+assert.doesNotMatch(projection.normalized_text, /Electric Twin/u);
+assert.doesNotMatch(projection.normalized_text, /Evidenza/u);
+assert.doesNotMatch(projection.normalized_text, /george@example\.com/u);
+assert.doesNotMatch(projection.description, /george@example\.com/u);
+assert.match(projection.normalized_text, /\[contact omitted\]/u);
+assert.throws(
+  () => extractHtmlArtifact('<html><head><title>Just a moment...</title></head><body><div class="cf-chl-test">Enable JavaScript and cookies to continue</div></body></html>', 'https://www.dentsu.com/news-releases/challenge'),
+  /access-control challenge/u
+);
+assert.equal(projection.published_at, '2024-08-26T07:00:00.000Z');
+assert.deepEqual(matchWatchTerms({ title: projection.title, summary: projection.normalized_text }, watchConfig), [
+  'b2b', 'intent_data', 'tsuyoshi_george_komuro'
+]);
+
+const discoveryCandidates = buildHydrationCandidates({
+  baseAlerts: [{
+    observation_id: 'xobs_b2b', source_id: 'dentsu_inc_en_news', publisher: 'Dentsu Inc.',
+    title: 'Marketing For Growth B2B', canonical_url: 'https://www.dentsu.co.jp/en/news/release/2024/0826-010767.html',
+    matched_terms: ['b2b']
+  }],
+  discoveryRecords: firstMerge.records,
+  watchConfig
+});
+assert.equal(discoveryCandidates.length, 3);
+assert.equal(discoveryCandidates[0].seed_matched_terms.some(term => ['evidenza', 'generative_audiences'].includes(term)), true);
+
+const candidate = discoveryCandidates.find(item => item.canonical_url.includes('0826-010767'));
+const artifactMerge = mergeArtifactProjection({
+  artifacts: [],
+  candidate,
+  sourceProjection: projection,
+  capturedAt: '2026-08-17T00:00:00.000Z',
+  bodyReceiptPath: 'receipts/article.json',
+  bodySha256: 'a'.repeat(64),
+  responseHeaders: { content_type: 'text/html', etag: 'x', last_modified: null, watch_config: watchConfig }
+});
+assert.ok(artifactMerge.added);
+assert.deepEqual(artifactMerge.added.matched_terms, ['b2b', 'intent_data', 'tsuyoshi_george_komuro']);
+assert.equal(artifactMerge.added.graph_effect, 'none');
+assert.equal(artifactMerge.added.canonical_mutation_authorized, false);
+const unchangedMerge = mergeArtifactProjection({
+  artifacts: artifactMerge.artifacts,
+  candidate,
+  sourceProjection: projection,
+  capturedAt: '2026-08-18T00:00:00.000Z',
+  bodyReceiptPath: 'receipts/article.json',
+  bodySha256: 'a'.repeat(64),
+  responseHeaders: { content_type: 'text/html', etag: 'x', last_modified: null, watch_config: watchConfig }
+});
+assert.equal(unchangedMerge.added, null);
+assert.equal(unchangedMerge.artifacts.length, 1);
+const routingOnlyCandidate = {
+  ...candidate,
+  seed_matched_terms: [...candidate.seed_matched_terms, 'evidenza'],
+  linked_records: [...candidate.linked_records, { record_type: 'index_discovery', record_id: 'xdiscover_new' }]
+};
+const routingOnlyMerge = mergeArtifactProjection({
+  artifacts: artifactMerge.artifacts,
+  candidate: routingOnlyCandidate,
+  sourceProjection: projection,
+  capturedAt: '2026-08-19T00:00:00.000Z',
+  bodyReceiptPath: 'receipts/article.json',
+  bodySha256: 'a'.repeat(64),
+  responseHeaders: { content_type: 'text/html', etag: 'x', last_modified: null, watch_config: watchConfig }
+});
+assert.equal(routingOnlyMerge.added, null);
+assert.equal(routingOnlyMerge.artifacts.length, 1);
+
+const alerts = buildArtifactAlerts(artifactMerge.artifacts, { watchConfig, candidates: discoveryCandidates });
+assert.equal(alerts.length, 1);
+assert.equal(alerts[0].match_scope, 'hydrated_publisher_artifact');
+assert.equal(alerts[0].promotion_authority, false);
+assert.ok(alerts[0].forbidden_inferences.some(item => item.includes('actor or relationship edge')));
+const expandedWatchConfig = {
+  ...watchConfig,
+  terms: [...watchConfig.terms, { id: 'leadership_copy', patterns: ['leads work'] }]
+};
+const rematchedAlerts = buildArtifactAlerts(artifactMerge.artifacts, {
+  watchConfig: expandedWatchConfig,
+  candidates: discoveryCandidates
+});
+assert.ok(rematchedAlerts[0].artifact_matched_terms.includes('leadership_copy'));
+
+const fairnessCandidates = [
+  { canonical_url: 'https://www.dentsu.com/news-releases/already-seen' },
+  { canonical_url: 'https://www.dentsu.com/news-releases/new-one' },
+  { canonical_url: 'https://www.dentsu.com/news-releases/new-two' }
+];
+const fairSelection = selectHydrationCandidates(fairnessCandidates, {
+  pages: { 'https://www.dentsu.com/news-releases/already-seen': { last_status: 'ok' } }
+}, 2);
+assert.deepEqual(fairSelection.map(row => row.canonical_url), [
+  'https://www.dentsu.com/news-releases/new-one',
+  'https://www.dentsu.com/news-releases/new-two'
+]);
+
+const receiptRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'industrial-exhaust-artifact-receipts-'));
+try {
+  const sharedBody = Buffer.from('<html><body>same body</body></html>', 'utf8');
+  const sharedHash = crypto.createHash('sha256').update(sharedBody).digest('hex');
+  const firstReceipt = writeArtifactReceipt({
+    rootDir: receiptRoot,
+    canonicalUrl: 'https://www.dentsu.com/news-releases/one',
+    body: sharedBody,
+    bodySha256: sharedHash,
+    capturedAt: '2026-08-17T00:00:00.000Z',
+    responseHeaders: { content_type: 'text/html', final_url: 'https://www.dentsu.com/news-releases/one', redirect_chain: [] }
+  });
+  const secondReceipt = writeArtifactReceipt({
+    rootDir: receiptRoot,
+    canonicalUrl: 'https://www.dentsu.com/news-releases/two',
+    body: sharedBody,
+    bodySha256: sharedHash,
+    capturedAt: '2026-08-17T00:00:00.000Z',
+    responseHeaders: { content_type: 'text/html', final_url: 'https://www.dentsu.com/news-releases/two', redirect_chain: [] }
+  });
+  assert.notEqual(firstReceipt, secondReceipt);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(receiptRoot, firstReceipt), 'utf8')).canonical_url, 'https://www.dentsu.com/news-releases/one');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(receiptRoot, secondReceipt), 'utf8')).canonical_url, 'https://www.dentsu.com/news-releases/two');
+} finally {
+  fs.rmSync(receiptRoot, { recursive: true, force: true });
+}
+
+assert.equal(
+  assertAllowedArtifactUrl('https://www.dentsu.com/news-releases/example#fragment', config),
+  'https://www.dentsu.com/news-releases/example'
+);
+assert.throws(() => assertAllowedArtifactUrl('https://example.com/news-releases/example', config), /not allowlisted/u);
+assert.throws(() => assertAllowedArtifactUrl('https://www.dentsu.com:8443/news-releases/example', config), /standard HTTPS port/u);
+assert.throws(() => assertAllowedArtifactUrl('https://user@www.dentsu.com/news-releases/example', config), /credentials/u);
+assert.throws(() => validateArtifactConfig({ ...config, graph_effect: 'edge' }), /may not authorize/u);
+
+console.log('industrial-exhaust artifact tests passed');

@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "lane": "first_party_industrial_exhaust_artifact_hydration",
+  "graph_effect": "none",
+  "promotion_authority": false,
+  "canonical_mutation_authorized": false,
+  "indexes": [
+    {
+      "id": "dentsu_global_news_sitemap",
+      "publisher": "dentsu global website",
+      "publisher_resolution": "brand_surface_not_legal_entity",
+      "surface": "Global news-release sitemap",
+      "index_url": "https://www.dentsu.com/sitemap",
+      "index_format": "html_link_index",
+      "include_path_prefixes": [
+        "/news-releases/"
+      ],
+      "enabled": true,
+      "source_class": "first_party_corporate_publication",
+      "graph_effect": "none",
+      "research_context": [
+        "electric_twin_comparator",
+        "issue_39",
+        "issue_594"
+      ]
+    }
+  ],
+  "hydration": {
+    "allowed_hosts": [
+      "www.dentsu.com",
+      "www.dentsu.co.jp",
+      "www.group.dentsu.com",
+      "ssl4.eir-parts.net"
+    ],
+    "default_limit": 50,
+    "max_bytes": 6000000,
+    "max_normalized_chars": 60000,
+    "request_delay_ms": 350
+  }
+}
