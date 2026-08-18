@@ -139,6 +139,18 @@ assert.equal(
   '[contact omitted] 90 people',
   'a trailing numeric metric must not be absorbed into the phone span'
 );
+for (const trailingObservation of ['123 people', '1234 impressions', '2026', '2026-08-17']) {
+  assert.equal(
+    redactContactData(`+81 3 6216 5111 ${trailingObservation}`),
+    `[contact omitted] ${trailingObservation}`,
+    'phone redaction must stop before an adjacent three- or four-digit observation'
+  );
+}
+assert.equal(
+  redactContactData('0081-3-6216-5111'),
+  '[contact omitted]',
+  'an international access prefix must be excluded from effective phone-length scoring'
+);
 assert.equal(
   redactContactData('+81 3 6216 5111 +81 90 1234 5678'),
   '[contact omitted] [contact omitted]',

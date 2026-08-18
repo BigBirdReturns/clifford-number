@@ -101,8 +101,12 @@ function phoneCandidateScore(candidate, prefix) {
   if (domesticGrouped || northAmericanGrouped) base = Math.max(base, 550);
   if (!base) return 0;
 
+  const effectiveDigitLength = normalized.startsWith('00') ? digits.length - 2 : digits.length;
+  const targetDigits = international ? 11 : 10;
+  const digitFit = 44 - Math.abs(effectiveDigitLength - targetDigits) * 4;
   const lastLength = groups.at(-1).length;
-  return base + digits.length * 4 - groups.length * 3 + Math.min(lastLength, 4) * 3;
+  const terminalBonus = lastLength === 4 ? 12 : lastLength === 3 ? 8 : lastLength === 2 ? 4 : 0;
+  return base + digitFit + terminalBonus - groups.length * 2;
 }
 
 function phoneWindowBounds(candidate, groups, first, last) {
@@ -145,7 +149,7 @@ function redactPhoneSubspans(candidate, externalPrefix) {
         ranges: [interval, ...tail.ranges]
       };
       if (proposal.score > choice.score
-          || (proposal.score === choice.score && proposal.redactedDigits > choice.redactedDigits)) {
+          || (proposal.score === choice.score && proposal.redactedDigits < choice.redactedDigits)) {
         choice = proposal;
       }
     }
