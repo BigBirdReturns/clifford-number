@@ -1,0 +1,44 @@
+name: Temporary fix Intel monitor schema binding
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-intel-pre-eligibility-monitor-v1
+    paths:
+      - '.github/workflows/temporary-fix-intel-monitor-schema.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m05-s03-l7-intel-pre-eligibility-monitor-v1
+          fetch-depth: 0
+      - name: Correct canonical Intel schema binding
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          old = 'm05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate@1'
+          new = 'm05-answerable-power-s03-l7-intel-chips-equity-receipt-candidate@1'
+          targets = [
+              Path('data/project/m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.json'),
+              Path('tools/validate-m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.mjs'),
+          ]
+          for target in targets:
+              text = target.read_text(encoding='utf-8')
+              if text.count(old) != 1:
+                  raise SystemExit(f'{target}: expected exactly one stale schema binding')
+              target.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+          git diff --check
+          git config user.name 'BigBirdReturns'
+          git config user.email 'bigbirdreturns@proton.me'
+          git add \
+            data/project/m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.json \
+            tools/validate-m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.mjs
+          git commit -m '[M-05 S03-L7] Correct Intel monitor schema binding'
+          git push origin HEAD:agent/m05-s03-l7-intel-pre-eligibility-monitor-v1
