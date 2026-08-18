@@ -1,0 +1,293 @@
+{
+  "schema_version": "m05-answerable-power-s03-l7-intel-realization-accounting-admission-contract@1",
+  "object_class": "bounded_post_gate_realization_accounting_admission_contract",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-03",
+  "leg_id": "S03-L7",
+  "issue": 345,
+  "as_of": "2026-08-18",
+  "status": "intel_realization_accounting_admission_contract_frozen",
+  "title": "Intel CHIPS realization, federal-receipt, public-account, and distribution admission contract",
+  "question": "Which source-addressed transaction, federal cash-custody, public-account, cost-denominator, and distribution fields must be joined before the operated Intel CHIPS equity instrument can advance beyond candidate evidence after the ordinary resale gate opens?",
+  "canonical_base": {
+    "branch": "main",
+    "sha": "a7f46edcb8053c083198bbd15248db5d928f00d8",
+    "tree_sha": "fc2da2d3e2262b60072ba390edad9859418cf2ea",
+    "preceding_pull_request": 2179,
+    "preceding_merge_commit": "a7f46edcb8053c083198bbd15248db5d928f00d8"
+  },
+  "bindings": {
+    "bilateral_exception_acquisition": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-bilateral-exception-acquisition.json",
+      "blob_sha": "de9e9f9069386385ba765af283dc5a505e9bea7b",
+      "schema_version": "m05-answerable-power-s03-l7-intel-bilateral-exception-acquisition@1",
+      "pull_request": 2178,
+      "merge_commit": "0848f2dcfb319eec921157e0e5cba8584866b419"
+    },
+    "realization_date_gate_monitor": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.json",
+      "blob_sha": "b4643f2131cf7ebb27e53765fec31f86447d6b8f",
+      "schema_version": "m05-answerable-power-s03-l7-intel-realization-date-gate-monitor@1",
+      "pull_request": 2173,
+      "merge_commit": "f798a6dea21431a9b225b157e3235929381aa085"
+    },
+    "implementation_frontier": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.json",
+      "blob_sha": "34fa8d54c3a6ea9b993c3b650f4b737dcbbc756c",
+      "schema_version": "m05-answerable-power-s03-l7-five-domain-implementation-frontier@1",
+      "pull_request": 2162,
+      "merge_commit": "01e3f154ef8a86baa90a89dc250adb9c362ba9ee"
+    },
+    "intel_receipt_candidate": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json",
+      "blob_sha": "ff88d6d3cd6ae021f7ecbbe596026b82f15ce58a",
+      "schema_version": "m05-answerable-power-s03-l7-intel-chips-equity-receipt-candidate@1",
+      "pull_request": 2156,
+      "merge_commit": "3e13165dcd033f4c0b7a983af7b8a613622a1896"
+    }
+  },
+  "control_sources": [
+    {
+      "source_id": "US-INTEL-2026-RESALE-PROSPECTUS",
+      "authority": "Intel Corporation, filed with the United States Securities and Exchange Commission",
+      "record_type": "source_native_primary_record",
+      "url": "https://www.sec.gov/Archives/edgar/data/50863/000005086326000027/a01232026424b7.htm",
+      "locator": [
+        "Commerce is the selling securityholder for the registered common shares and warrant.",
+        "Absent an Intel-Commerce agreement otherwise, an offer, sale, or transfer may occur only on or after 27 August 2026.",
+        "Intel receives no proceeds from a Commerce sale; Commerce is responsible for applicable underwriting discounts, commissions, or agent compensation.",
+        "A later offering supplement, when required, must identify the amount offered, intermediaries, discounts, commissions, and other offering terms."
+      ],
+      "control_effect": {
+        "ordinary_gate_utc": "2026-08-27T00:00:00Z",
+        "earlier_transaction_requires_bilateral_exception": true,
+        "registration_is_transaction": false,
+        "issuer_nonreceipt_is_federal_nonreceipt": false,
+        "selling_costs_must_be_separately_classified": true
+      }
+    },
+    {
+      "source_id": "US-MISCELLANEOUS-RECEIPTS-31-USC-3302",
+      "authority": "United States Congress, published by the United States Government Publishing Office",
+      "record_type": "positive_law_official_record",
+      "url": "https://www.govinfo.gov/app/details/USCODE-2023-title31/USCODE-2023-title31-subtitleIII-chap33-subchapI-sec3302",
+      "locator": [
+        "31 U.S.C. 3302(b) requires money received for the Government from any source to be deposited in the Treasury as soon as practicable without deduction for a charge or claim, except as otherwise provided by law.",
+        "31 U.S.C. 3302(c) separately governs prompt deposit of public money."
+      ],
+      "control_effect": {
+        "gross_receipts_analysis_required": true,
+        "deposit_without_deduction_is_default_rule": true,
+        "specific_retention_or_credit_authority_must_be_identified": true,
+        "treasury_deposit_alone_is_public_distribution": false
+      }
+    },
+    {
+      "source_id": "US-GAO-B-305402-STOCK-PROCEEDS",
+      "authority": "United States Government Accountability Office",
+      "record_type": "official_adjudicative_record",
+      "url": "https://www.gao.gov/products/b-305402",
+      "locator": [
+        "GAO held that government-benefit stock-sale proceeds could not be retained or credited to an agency appropriation without applicable authority and had to be deposited as miscellaneous receipts.",
+        "The decision distinguishes specific retention authority and qualifying repayments from ordinary miscellaneous receipts.",
+        "The decision is an analogous appropriations-law control and does not itself adjudicate the Intel instrument or identify Commerce's governing account."
+      ],
+      "control_effect": {
+        "stock_sale_proceeds_require_account_authority_analysis": true,
+        "appropriation_recredit_cannot_be_inferred": true,
+        "analogy_is_intel_specific_legal_determination": false
+      }
+    },
+    {
+      "source_id": "US-TREASURY-CARS-TAS-BETC",
+      "authority": "United States Department of the Treasury, Bureau of the Fiscal Service",
+      "record_type": "official_financial_record",
+      "url": "https://fiscal.treasury.gov/accounting/central-accounting-reporting-system-cars/treasury-account-symbol-reporting",
+      "locator": [
+        "A Treasury Account Symbol and Business Event Type Code must accompany every CARS transaction to update the Fund Balance with Treasury accurately.",
+        "Component TAS identifies the account and BETC identifies the reported business event."
+      ],
+      "control_effect": {
+        "tas_required_for_public_account_booking": true,
+        "betc_required_for_public_account_booking": true,
+        "amount_and_account_classification_must_reconcile": true,
+        "unclassified_treasury_deposit_is_complete_booking_receipt": false
+      }
+    }
+  ],
+  "activation": {
+    "ordinary_gate_utc": "2026-08-27T00:00:00Z",
+    "ordinary_route_active_as_of_contract": false,
+    "bilateral_exception_receipt_located": false,
+    "earlier_activation_requires_source_addressed_bilateral_exception": true,
+    "passage_of_time_only_opens_acquisition_route": true,
+    "gate_open_is_transaction": false,
+    "gate_open_is_federal_receipt": false,
+    "gate_open_is_public_account_booking": false,
+    "gate_open_is_distribution": false
+  },
+  "stage_order": [
+    "transaction",
+    "federal_cash_custody",
+    "public_account_booking",
+    "distribution"
+  ],
+  "admission_stages": {
+    "transaction": {
+      "allowed_event_types": [
+        "common_share_sale",
+        "warrant_sale",
+        "warrant_exercise",
+        "dividend",
+        "other_source_addressed_monetization"
+      ],
+      "required_fields": [
+        "event_type",
+        "selling_securityholder",
+        "security_or_right",
+        "quantity",
+        "trade_or_declaration_date",
+        "settlement_or_payment_date",
+        "sale_or_payment_method",
+        "counterparty_or_intermediaries",
+        "gross_consideration",
+        "currency",
+        "source_url",
+        "source_locator",
+        "source_body_sha256"
+      ],
+      "all_required_fields_must_be_source_addressed": true,
+      "transaction_quantity_and_date_must_reconcile_to_frozen_instrument": true,
+      "registration_or_eligibility_alone_qualifies": false
+    },
+    "federal_cash_custody": {
+      "requires_stage": "transaction",
+      "required_fields": [
+        "gross_amount_received_for_government",
+        "receipt_date",
+        "deposit_date",
+        "receiving_federal_entity",
+        "deposit_or_collection_identifier",
+        "gross_vs_net_treatment",
+        "registration_expenses",
+        "underwriting_discounts",
+        "broker_or_agent_commissions",
+        "stock_transfer_taxes",
+        "holder_counsel_and_other_selling_costs",
+        "authority_for_any_deduction",
+        "authority_for_any_retention_or_appropriation_credit",
+        "miscellaneous_receipts_or_other_account_classification",
+        "source_url",
+        "source_locator"
+      ],
+      "gross_receipt_must_reconcile_to_transaction": true,
+      "selling_costs_must_not_be_silently_netted": true,
+      "treasury_deposit_without_account_classification_qualifies": false
+    },
+    "public_account_booking": {
+      "requires_stage": "federal_cash_custody",
+      "required_fields": [
+        "treasury_account_symbol",
+        "business_event_type_code",
+        "agency_location_code_or_equivalent_origin",
+        "cars_or_source_system_transaction_identifier",
+        "booking_date",
+        "booked_amount",
+        "fund_balance_with_treasury_effect",
+        "retention_or_miscellaneous_receipts_authority",
+        "appropriation_recredit_authority_if_claimed",
+        "source_url",
+       "source_locator"
+      ],
+      "tas_and_betc_required": true,
+      "booked_amount_must_reconcile_to_gross_receipt_and_cost_ledger": true,
+      "general_fund_or_unclassified_receipt_is_affected_party_distribution": false
+    },
+    "distribution": {
+      "requires_stage": "public_account_booking",
+      "required_fields": [
+        "distribution_authority",
+        "public_account_or_program",
+        "recipient_or_affected_party_class",
+        "allocation_rule",
+        "distribution_date",
+        "distributed_amount",
+        "residual_balance",
+        "administrative_and_delivery_costs",
+        "source_url",
+       "source_locator",
+        "public_ledger_identifier"
+      ],
+      "distributed_amount_plus_residual_and_costs_must_reconcile_to_booked_value": true,
+      "general_fund_deposit_alone_qualifies": false,
+      "mark_to_market_value_alone_qualifies": false
+    }
+  },
+  "complete_denominator": {
+    "public_contribution_authority_usd": 8869800000,
+    "security_quantity_and_instrument_state_required": true,
+    "gross_consideration_required": true,
+    "registration_expenses_required": true,
+    "selling_expenses_required": true,
+    "dilution_and_remaining_security_inventory_required": true,
+    "realized_loss_or_gain_required": true,
+    "fees_and_taxes_required": true,
+    "opportunity_cost_required": true,
+    "public_account_residual_required": true,
+    "distribution_delivery_cost_required": true
+  },
+  "observed_receipts": [],
+  "observed_state": {
+    "transaction_admissible": false,
+    "federal_cash_custody_admissible": false,
+    "public_account_booking_admissible": false,
+    "distribution_admissible": false,
+    "answer_change_authorized": false
+  },
+  "guardrails": {
+    "registration_is_completed_sale": false,
+    "eligibility_date_is_completed_sale": false,
+    "escrow_release_is_federal_cash_receipt": false,
+    "issuer_nonreceipt_is_federal_nonreceipt": false,
+    "mark_to_market_value_is_realized_return": false,
+    "net_proceeds_without_gross_ledger_are_complete": false,
+    "treasury_deposit_without_tas_betc_is_complete_booking": false,
+    "miscellaneous_receipts_deposit_is_affected_party_distribution": false,
+    "repository_admission_is_answer_effectiveness": false,
+    "bounded_search_is_exhaustive_nonexistence_finding": false
+  },
+  "expected_result": {
+    "control_sources": 4,
+    "admission_stages": 4,
+    "observed_receipts": 0,
+    "transaction_admissible": false,
+    "federal_cash_custody_admissible": false,
+    "public_account_booking_admissible": false,
+    "distribution_admissible": false,
+    "candidate_evidence_records": 5,
+    "repository_promotions": 5,
+    "advanced_answer_dimensions": 1,
+    "effective_answers": 0,
+    "qualifying_jurisdictions": 0,
+    "answer_effectiveness": false,
+    "cross_domain_regression_completed": false,
+    "graph_effect": "none",
+    "issue_345_may_close": false
+  },
+  "boundaries": {
+    "creates_new_empirical_receipt": false,
+    "claims_intel_transaction": false,
+    "claims_federal_cash_receipt": false,
+    "claims_public_account_booking": false,
+    "claims_public_or_affected_party_distribution": false,
+    "claims_chips_appropriation_replenishment": false,
+    "claims_intel_specific_miscellaneous_receipts_determination": false,
+    "claims_answer_effectiveness": false,
+    "claims_cross_domain_completion": false,
+    "graph_effect": "none",
+    "conclusion_generated": false,
+    "project_complete": false,
+    "issue_345_may_close": false
+  },
+  "contract_sha256": "3924a4bfd18e98cacbd4b551e2ec4816de57bfa6eb5afb39089980081f2ab6c6"
+}
