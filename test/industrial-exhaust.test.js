@@ -125,6 +125,25 @@ assert.match(metricRedaction, /123456789 impressions/u);
 assert.match(metricRedaction, /987654321 yen/u);
 assert.match(metricRedaction, /2026-08-17/u);
 assert.equal((metricRedaction.match(/\[contact omitted\]/gu) ?? []).length, 2);
+assert.equal(
+  cleanText('<p>2026-08-17</p><p>03-6216-5111</p><p>090-1234-5678</p>'),
+  '2026-08-17 [contact omitted] [contact omitted]',
+  'dates and adjacent phone spans must be segmented independently after HTML cleanup'
+);
+assert.equal(redactContactData('(03) 6216 5111'), '[contact omitted]');
+assert.equal(redactContactData('電話番号：０３６２１６８０４１'), '電話番号：[contact omitted]');
+assert.equal(redactContactData('＋８１ ３ ６２１６ ５１１１'), '[contact omitted]');
+assert.equal(redactContactData('+33 1 42 68 53 00'), '[contact omitted]');
+assert.equal(
+  redactContactData('+81 3 6216 5111 90 people'),
+  '[contact omitted] 90 people',
+  'a trailing numeric metric must not be absorbed into the phone span'
+);
+assert.equal(
+  redactContactData('+81 3 6216 5111 +81 90 1234 5678'),
+  '[contact omitted] [contact omitted]',
+  'adjacent international telephone numbers must be segmented independently'
+);
 
 const numericMetricRss = value => `<?xml version="1.0"?><rss version="2.0"><channel><title>Metric revisions</title>
 <item><title>Audience metric</title><link>https://example.test/releases/metric</link><guid>metric-release</guid><description>Dentsu measured ${value} people. Contact +81 3 6216 5111.</description></item>
@@ -177,7 +196,6 @@ assert.equal(boundedTracker.cancelled, true, 'the oversized response stream must
 assert.equal(boundedTracker.released, true, 'the response reader lock must be released');
 
 assert.equal(cleanText('<p>Hello&nbsp;world</p>'), 'Hello world');
-
 assert.throws(() => validateRegistry({
   schema_version: 1,
   sources: [{ ...source, feed_url: 'http://example.test/news.xml' }]
