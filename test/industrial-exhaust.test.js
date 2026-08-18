@@ -281,6 +281,43 @@ assert.equal(
   'Japanese narrative text attached after a number must not force truncation of the phone span'
 );
 
+assert.equal(
+  redactContactData('+672 1234 90 people'),
+  '[contact omitted] 90 people',
+  'seven-digit international numbers must stop before a unit-labelled observation'
+);
+assert.equal(
+  redactContactData('+672 1234 12:30'),
+  '[contact omitted] 12:30',
+  'seven-digit international numbers must stop before a formatted observation'
+);
+assert.equal(
+  redactContactData('+672 1234 2026-08-17'),
+  '[contact omitted] 2026-08-17',
+  'seven-digit international numbers must stop before an adjacent date'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 1234 5678'),
+  'Tel: [contact omitted] ext [contact omitted]',
+  'whitespace-grouped extension digits must be redacted as one marked extension'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 1234 5678 90 people'),
+  'Tel: [contact omitted] ext [contact omitted] 90 people',
+  'marked extension redaction must stop before a following unit-labelled observation'
+);
+for (const attachedInternationalIdentifier of [
+  'referenceA+81 3 6216 5111',
+  'referenceA+1 212 555 1234',
+  'revisionA0081-3-6216-5111'
+]) {
+  assert.equal(
+    redactContactData(attachedInternationalIdentifier),
+    attachedInternationalIdentifier,
+    'international-looking identifiers attached to unrelated labels must remain intact'
+  );
+}
+
 const numericMetricRss = value => `<?xml version="1.0"?><rss version="2.0"><channel><title>Metric revisions</title>
 <item><title>Audience metric</title><link>https://example.test/releases/metric</link><guid>metric-release</guid><description>Dentsu measured ${value} people. Contact +81 3 6216 5111.</description></item>
 </channel></rss>`;
