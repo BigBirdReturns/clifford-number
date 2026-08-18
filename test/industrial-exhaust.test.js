@@ -318,6 +318,61 @@ for (const attachedInternationalIdentifier of [
   );
 }
 
+assert.equal(
+  redactContactData('Contact +672 1234. 2026 results improved.'),
+  'Contact [contact omitted]. 2026 results improved.',
+  'a sentence-separated year after a seven-digit international phone must remain intact'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 1234 5678. 2026 results improved.'),
+  'Tel: [contact omitted] ext [contact omitted]. 2026 results improved.',
+  'a sentence-separated year after a grouped extension must remain intact'
+);
+for (const [input, expected] of [
+  [
+    'referenceA+81 3 6216 5111 (03) 6216 5111',
+    'referenceA+81 3 6216 5111 [contact omitted]'
+  ],
+  [
+    'referenceA+81 3 6216 5111 03-6216-8041',
+    'referenceA+81 3 6216 5111 [contact omitted]'
+  ],
+  [
+    'referenceB+81 3 0037 0053 (03) 0071 0089',
+    'referenceB+81 3 0037 0053 [contact omitted]'
+  ],
+  [
+    'referenceC+81 3 0074 0106 03-0142-0178',
+    'referenceC+81 3 0074 0106 [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'an attached international-looking identifier must remain intact while a later phone is redacted'
+  );
+}
+assert.equal(
+  redactContactData('+81 3 6216 5111 03-6216-8041'),
+  '[contact omitted] [contact omitted]',
+  'an affirmative phone shortcut must rescan and redact a later domestic phone'
+);
+assert.equal(
+  redactContactData('+81 3 6216 5111 03-6216-8041 090-1234-5678'),
+  '[contact omitted] [contact omitted] [contact omitted]',
+  'recursive suffix classification must redact every independently affirmative phone'
+);
+for (const completeYearEndingPhone of [
+  '+86 138 0013 2026',
+  '+358 100 0000 2000'
+]) {
+  assert.equal(
+    redactContactData(completeYearEndingPhone),
+    '[contact omitted]',
+    'a plausible complete phone ending in a year-like group must remain fully redacted'
+  );
+}
+
 const numericMetricRss = value => `<?xml version="1.0"?><rss version="2.0"><channel><title>Metric revisions</title>
 <item><title>Audience metric</title><link>https://example.test/releases/metric</link><guid>metric-release</guid><description>Dentsu measured ${value} people. Contact +81 3 6216 5111.</description></item>
 </channel></rss>`;
