@@ -132,10 +132,39 @@ assert.equal(
 );
 assert.equal(redactContactData('(03) 6216 5111'), '[contact omitted]');
 assert.equal(redactContactData('電話番号：０３６２１６８０４１'), '電話番号：[contact omitted]');
+assert.equal(redactContactData('電話番号03-6216-8041'), '電話番号[contact omitted]');
+assert.equal(redactContactData('携帯電話090-1234-5678'), '携帯電話[contact omitted]');
+assert.equal(
+  redactContactData('referenceA03-6216-8041'),
+  'referenceA03-6216-8041',
+  'phone-like identifiers joined to an unrelated label must remain intact'
+);
+assert.equal(
+  redactContactData('referenceA1 03-6216-8041'),
+  'referenceA1 [contact omitted]',
+  'an attached identifier must not suppress a later independently bounded phone number'
+);
+assert.equal(
+  redactContactData('GUID2026-08-17-03-6216-8041'),
+  'GUID2026-08-17-03-6216-8041',
+  'hyphenated identifier suffixes must not be reclassified as independently bounded phone numbers'
+);
 assert.equal(redactContactData('＋８１ ３ ６２１６ ５１１１'), '[contact omitted]');
 assert.equal(redactContactData('Tel: + 81 3 6216 5111'), 'Tel: [contact omitted]');
 assert.equal(redactContactData('＋ ８１ ３ ６２１６ ５１１１'), '[contact omitted]');
 assert.equal(redactContactData('+33 1 42 68 53 00'), '[contact omitted]');
+assert.equal(redactContactData('+44 (0)20 7123 4567'), '[contact omitted]');
+assert.equal(redactContactData('+33 (0)1 42 68 53 00'), '[contact omitted]');
+assert.equal(
+  redactContactData('+44 (0)20 7123 4567 90 people'),
+  '[contact omitted] 90 people',
+  'an international trunk prefix must not cause the final phone group to be truncated or absorb a metric'
+);
+assert.equal(
+  redactContactData('+33 (0)1 42 68 53 00 2026-08-17'),
+  '[contact omitted] 2026-08-17',
+  'a terminal 00 phone group must not become a second access prefix that absorbs a following date'
+);
 assert.equal(
   redactContactData('+81 3 6216 5111 90 people'),
   '[contact omitted] 90 people',

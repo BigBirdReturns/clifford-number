@@ -10,10 +10,11 @@ const TRACKING_PARAMS = new Set([
   'fbclid', 'gclid', 'dclid', 'mc_cid', 'mc_eid', 'msclkid', '_hsenc', '_hsmi'
 ]);
 
-const PHONE_SPAN_PATTERN = /(?<![\p{L}\p{N}])(?:[+＋](?=\s*[0-9０-９])|[（(](?=\s*[0-9０-９]))?\s*[0-9０-９][0-9０-９().\s\-‐‑‒–—−－．（）]{5,}[0-9０-９](?:\s*[)）])?(?![\p{L}\p{N}])/gu;
+const PHONE_SPAN_PATTERN = /(?:[+＋](?=\s*[0-9０-９])|[（(](?=\s*[0-9０-９]))?\s*[0-9０-９][0-9０-９().\s\-‐‑‒–—−－．（）]{5,}[0-9０-９](?:\s*[)）])?(?![\p{L}\p{N}])/gu;
 const PHONE_LABEL_PATTERN = /(?:(?:^|\b)(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)\s*(?:number\s*)?(?:is\s*)?[:.]?\s*|(?:電話(?:番号)?|携帯(?:電話)?|ファックス|連絡先|お問い合わせ先)\s*[:.]?\s*)$/iu;
 const DATE_LIKE_PATTERN = /^(?:\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4})$/u;
 const DIGIT_RUN_PATTERN = /[0-9０-９]+/gu;
+const MAX_PHONE_DIGIT_GROUPS = 7;
 
 const EVENT_RULES = [
   ['product_launch', /\b(launch(?:es|ed|ing)?|unveil(?:s|ed|ing)?|introduc(?:e|es|ed|ing)|release(?:s|d|ing)?|new (?:product|service|solution|platform|tool|model|capability))\b/iu],
@@ -71,6 +72,10 @@ function normalizedDigitGroups(value) {
   return value.normalize('NFKC').match(/\d+/gu) ?? [];
 }
 
+function hasPhoneLabelPrefix(prefix) {
+  return PHONE_LABEL_PATTERN.test(prefix.normalize('NFKC').slice(-48));
+}
+
 function phoneCandidateScore(candidate, prefix) {
   const normalized = candidate.trim().normalize('NFKC');
   const digits = normalized.replace(/\D/gu, '');
@@ -80,9 +85,14 @@ function phoneCandidateScore(candidate, prefix) {
   if (pluses.length > 1 || (pluses.length === 1 && !normalized.startsWith('+'))) return 0;
 
   const groups = normalizedDigitGroups(normalized);
-  if (!groups.length || groups.length > 6) return 0;
+  if (!groups.length || groups.length > MAX_PHONE_DIGIT_GROUPS) return 0;
+  if (normalized.startsWith('00')) {
+    const accessGroup = groups[0];
+    const countryGroup = accessGroup === '00' ? groups[1] : accessGroup.slice(2);
+    if (!/^[1-9]\d{0,2}$/u.test(countryGroup ?? '')) return 0;
+  }
 
-  const labelled = PHONE_LABEL_PATTERN.test(prefix.normalize('NFKC').slice(-48));
+  const labelled = hasPhoneLabelPrefix(prefix);
   const international = /^(?:\+|00)/u.test(normalized);
   const parenthesized = /\(\s*\d{1,5}\s*\)/u.test(normalized);
   const domesticGrouped = groups.length === 3
@@ -101,7 +111,9 @@ function phoneCandidateScore(candidate, prefix) {
   if (domesticGrouped || northAmericanGrouped) base = Math.max(base, 550);
   if (!base) return 0;
 
-  const effectiveDigitLength = normalized.startsWith('00') ? digits.length - 2 : digits.length;
+  const accessPrefixDigits = normalized.startsWith('00') ? 2 : 0;
+  const trunkPrefixDigits = /^(?:\+|00)\s*\d{1,3}\s*\(\s*0\s*\)/u.test(normalized) ? 1 : 0;
+  const effectiveDigitLength = digits.length - accessPrefixDigits - trunkPrefixDigits;
   const targetDigits = international ? 11 : 10;
   const digitFit = 44 - Math.abs(effectiveDigitLength - targetDigits) * 4;
   const lastLength = groups.at(-1).length;
@@ -122,13 +134,18 @@ function phoneWindowBounds(candidate, groups, first, last) {
   return { start, end };
 }
 
-function redactPhoneSubspans(candidate, externalPrefix) {
+function redactPhoneSubspans(candidate, externalPrefix, allowInitialGroup = true) {
   const groups = [...candidate.matchAll(DIGIT_RUN_PATTERN)];
   if (!groups.length) return candidate;
 
   const intervals = Array.from({ length: groups.length }, () => []);
   for (let first = 0; first < groups.length; first += 1) {
-    for (let last = first; last < groups.length && last < first + 6; last += 1) {
+    if (!allowInitialGroup) {
+      if (first === 0) continue;
+      const previousEnd = groups[first - 1].index + groups[first - 1][0].length;
+      if (!/\s/u.test(candidate.slice(previousEnd, groups[first].index))) continue;
+    }
+    for (let last = first; last < groups.length && last < first + MAX_PHONE_DIGIT_GROUPS; last += 1) {
       const { start, end } = phoneWindowBounds(candidate, groups, first, last);
       const slice = candidate.slice(start, end);
       const score = phoneCandidateScore(slice, `${externalPrefix}${candidate.slice(0, start)}`);
@@ -173,7 +190,9 @@ export function redactContactData(value) {
     .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/giu, '[contact omitted]');
   return emailRedacted.replace(PHONE_SPAN_PATTERN, (candidate, offset, input) => {
     const prefix = input.slice(Math.max(0, offset - 64), offset);
-    return redactPhoneSubspans(candidate, prefix);
+    const previousCharacter = Array.from(prefix).at(-1) ?? '';
+    const allowInitialGroup = !/[\p{L}\p{N}]/u.test(previousCharacter) || hasPhoneLabelPrefix(prefix);
+    return redactPhoneSubspans(candidate, prefix, allowInitialGroup);
   });
 }
 
