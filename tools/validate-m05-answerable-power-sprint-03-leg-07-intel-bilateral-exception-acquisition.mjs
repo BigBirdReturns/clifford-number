@@ -13,6 +13,7 @@ const paths={
   frontier:resolvePath('M05_FIVE_DOMAIN_IMPLEMENTATION_FRONTIER_PATH','data/project/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.json'),
   syri:resolvePath('M05_SYRI_SUBJECT_ACCESS_ACQUISITION_PATH','data/project/m05-answerable-power-sprint-03-leg-07-syri-subject-access-public-record-acquisition.json')
 };
+const EXPECTED_ACQUISITION_SHA256='2ac2b88f14187c3bd3f9ab7ee82ee0f23ac5eb0802a14c17cbf8f731a5f9f2b7';
 const readRaw=(target)=>fs.readFileSync(target);
 const gitBlobSha=(buffer)=>crypto.createHash('sha1').update(Buffer.from(`blob ${buffer.length}\0`,'utf8')).update(buffer).digest('hex');
 const semanticHash=(value)=>crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -111,6 +112,7 @@ const expectedResult={historical_source_records:3,historical_route_records:6,rec
 if(!same(acquisition.expected_result,expectedResult))fail('expected result drift');
 
 const acquisitionCopy=clone(acquisition),declaredAcquisitionHash=acquisitionCopy.acquisition_sha256;delete acquisitionCopy.acquisition_sha256;
-if(semanticHash(acquisitionCopy)!==declaredAcquisitionHash)fail('acquisition checksum drift');
+if(declaredAcquisitionHash!==EXPECTED_ACQUISITION_SHA256)fail('acquisition declared checksum drift');
+if(semanticHash(acquisitionCopy)!==EXPECTED_ACQUISITION_SHA256)fail('acquisition checksum drift');
 
 console.log(JSON.stringify({validator:'m05-intel-bilateral-exception-acquisition',historical_sources:3,historical_routes:6,recheck_routes:3,qualifying_receipts:0,ordinary_gate:'2026-08-27T00:00:00Z',effective_answers:0,issue_345_may_close:false},null,2));
