@@ -1,0 +1,290 @@
+name: PR 2176 recursive boundary repair
+
+on:
+  push:
+    branches:
+      - agent/dentsu-industrial-exhaust-review-fixes
+    paths:
+      - .github/workflows/pr2176-recursive-boundary-repair.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pr2176-recursive-boundary-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Apply and validate recursive contact boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          git pull --ff-only origin "$GITHUB_REF_NAME"
+
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "ad19024745efac10a3c75eee5a6002e5d6187a60"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "51771f79ed0a407e9bf53e7d1eac007a7e439b94"
+          test "$(git hash-object tools/crawl-industrial-exhaust.mjs)" = "22c4cc8a53058bbb128d064850c2a7c71a4367de"
+          test "$(git ls-files -s tools/crawl-industrial-exhaust.mjs | awk '{print $1}')" = "100755"
+
+          python <<'PY'
+          from pathlib import Path
+
+          source_path = Path('tools/lib/industrial-exhaust.mjs')
+          source = source_path.read_text()
+
+          def replace_once(old, new, label):
+              global source
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, found {count}')
+              source = source.replace(old, new)
+
+          replace_once(
+              "    const start = groups[index].index;\n    const previousEnd = groups[index - 1].index + groups[index - 1][0].length;\n    if (!/\\s/u.test(candidate.slice(previousEnd, start))) continue;\n\n    const phonePrefix = candidate.slice(0, start).trimEnd();",
+              "    const start = groups[index].index;\n    const previousEnd = groups[index - 1].index + groups[index - 1][0].length;\n    const separator = candidate.slice(previousEnd, start);\n    if (!/\\s/u.test(separator)) continue;\n\n    const phonePrefix = candidate.slice(0, start).trimEnd();",
+              'candidate separator'
+          )
+
+          replace_once(
+              "    if (YEAR_LIKE_PATTERN.test(tail)) {\n      const prefixTerminalLength = normalizedDigitGroups(phonePrefix).at(-1)?.length ?? 0;\n      const completeScore = phoneCandidateScore(candidate.trim(), externalPrefix);\n      if ((prefixTerminalLength === 3 || prefixTerminalLength === 4) && prefixScore >= completeScore) return index;\n    }",
+              "    if (YEAR_LIKE_PATTERN.test(tail)) {\n      if (/[.!?。！？]\\s*$/u.test(separator)) return index;\n      const normalizedPhonePrefix = phonePrefix.normalize('NFKC').trim();\n      const prefixAccessDigits = normalizedPhonePrefix.startsWith('+')\n        ? 0\n        : internationalAccessPrefixLength(normalizedPhonePrefix);\n      const prefixTrunkDigits = hasInternationalTrunkPrefix(normalizedPhonePrefix, prefixAccessDigits) ? 1 : 0;\n      const effectivePrefixDigits = priorDigits - prefixAccessDigits - prefixTrunkDigits;\n      const prefixGroups = normalizedDigitGroups(phonePrefix);\n      const prefixTerminalLength = prefixGroups.at(-1)?.length ?? 0;\n      const completeScore = phoneCandidateScore(candidate.trim(), externalPrefix);\n      if (effectivePrefixDigits >= 10\n          && prefixGroups.length >= 4\n          && prefixTerminalLength === 4\n          && prefixScore >= completeScore) return index;\n    }",
+              'year boundary'
+          )
+
+          replace_once(
+              "    const start = groups[index].index;\n    const previousEnd = groups[index - 1].index + groups[index - 1][0].length;\n    if (!/\\s/u.test(extension.slice(previousEnd, start))) continue;\n\n    const tail = extension.slice(start).trim().normalize('NFKC');\n    const contextualTail = `${extension.slice(start).trimStart()}${normalizedSuffix}`.normalize('NFKC');\n    if (DATE_LIKE_PATTERN.test(tail)\n        || FORMATTED_NUMERIC_OBSERVATION_PATTERN.test(contextualTail)\n        || NUMERIC_OBSERVATION_PATTERN.test(contextualTail)) {",
+              "    const start = groups[index].index;\n    const previousEnd = groups[index - 1].index + groups[index - 1][0].length;\n    const separator = extension.slice(previousEnd, start);\n    if (!/\\s/u.test(separator)) continue;\n\n    const tail = extension.slice(start).trim().normalize('NFKC');\n    const contextualTail = `${extension.slice(start).trimStart()}${normalizedSuffix}`.normalize('NFKC');\n    if ((YEAR_LIKE_PATTERN.test(tail) && /[.!?。！？]\\s*$/u.test(separator))\n        || DATE_LIKE_PATTERN.test(tail)\n        || FORMATTED_NUMERIC_OBSERVATION_PATTERN.test(contextualTail)\n        || NUMERIC_OBSERVATION_PATTERN.test(contextualTail)) {",
+              'extension year boundary'
+          )
+
+          helper_anchor = "function redactPhoneSubspans(candidate, externalPrefix, externalSuffix, allowInitialGroup = true) {"
+          helper = r'''function canStartIndependentPhone(candidate, groups, first, externalPrefix) {
+            const firstBounds = phoneWindowBounds(candidate, groups, first, first);
+            const hasExplicitMarker = firstBounds.start < groups[first].index;
+            let lastLimit = Math.min(groups.length - 1, first + MAX_PHONE_DIGIT_GROUPS - 1);
+
+            if (!hasExplicitMarker) {
+              for (let index = first + 1; index <= lastLimit; index += 1) {
+                const bounds = phoneWindowBounds(candidate, groups, index, index);
+                if (bounds.start < groups[index].index) {
+                  lastLimit = index - 1;
+                  break;
+                }
+              }
+            }
+
+            for (let last = first; last <= lastLimit; last += 1) {
+              const { start, end } = phoneWindowBounds(candidate, groups, first, last);
+              const slice = candidate.slice(start, end);
+              if (phoneCandidateScore(slice, `${externalPrefix}${candidate.slice(0, start)}`)) return true;
+            }
+            return false;
+          }
+
+          function redactAttachedInternationalSuffix(candidate, groups, externalPrefix, externalSuffix) {
+            let best = null;
+            for (let index = 1; index < groups.length; index += 1) {
+              const previousEnd = groups[index - 1].index + groups[index - 1][0].length;
+              if (!/\s/u.test(candidate.slice(previousEnd, groups[index].index))) continue;
+              if (!canStartIndependentPhone(candidate, groups, index, externalPrefix)) continue;
+
+              const { start } = phoneWindowBounds(candidate, groups, index, index);
+              const protectedPrefix = candidate.slice(0, start);
+              const normalizedPrefix = protectedPrefix.trim().normalize('NFKC');
+              if (!isInternationalPhoneCandidate(normalizedPrefix)) continue;
+              const prefixScore = phoneCandidateScore(protectedPrefix.trimEnd(), externalPrefix);
+              if (!prefixScore) continue;
+
+              const suffix = candidate.slice(start);
+              const redactedSuffix = redactPhoneSubspans(
+                suffix,
+                `${externalPrefix}${protectedPrefix}`,
+                externalSuffix,
+                true
+              );
+              if (redactedSuffix === suffix) continue;
+
+              const protectedDigits = normalizedPrefix.replace(/\D/gu, '').length;
+              const proposal = {
+                prefixScore,
+                protectedDigits,
+                output: `${protectedPrefix}${redactedSuffix}`
+              };
+              if (!best
+                  || proposal.protectedDigits > best.protectedDigits
+                  || (proposal.protectedDigits === best.protectedDigits
+                    && proposal.prefixScore > best.prefixScore)) {
+                best = proposal;
+              }
+            }
+            return best?.output ?? candidate;
+          }
+
+          '''
+          if source.count(helper_anchor) != 1:
+              raise SystemExit('recursive helper anchor is missing or ambiguous')
+          source = source.replace(helper_anchor, helper + helper_anchor)
+
+          replace_once(
+              "  if (!allowInitialGroup && isInternationalPhoneCandidate(normalizedCandidate)) return candidate;",
+              "  if (!allowInitialGroup && isInternationalPhoneCandidate(normalizedCandidate)) {\n    return redactAttachedInternationalSuffix(candidate, groups, externalPrefix, externalSuffix);\n  }",
+              'attached identifier recursion'
+          )
+
+          replace_once(
+              "      return `${candidate.slice(0, start)}[contact omitted]${candidate.slice(end)}`;",
+              "      const remainder = candidate.slice(end);\n      const redactedRemainder = redactPhoneSubspans(\n        remainder,\n        `${externalPrefix}${candidate.slice(0, start)}[contact omitted]`,\n        externalSuffix,\n        true\n      );\n      return `${candidate.slice(0, start)}[contact omitted]${redactedRemainder}`;",
+              'affirmative suffix recursion'
+          )
+
+          source_path.write_text(source)
+
+          test_path = Path('test/industrial-exhaust.test.js')
+          tests = test_path.read_text()
+          test_anchor = "const numericMetricRss = value => `<?xml version=\"1.0\"?><rss version=\"2.0\"><channel><title>Metric revisions</title>"
+          test_block = r'''assert.equal(
+            redactContactData('Contact +672 1234. 2026 results improved.'),
+            'Contact [contact omitted]. 2026 results improved.',
+            'a sentence-separated year after a seven-digit international phone must remain intact'
+          );
+          assert.equal(
+            redactContactData('Tel: +44 20 7123 4567 ext 1234 5678. 2026 results improved.'),
+            'Tel: [contact omitted] ext [contact omitted]. 2026 results improved.',
+            'a sentence-separated year after a grouped extension must remain intact'
+          );
+          for (const [input, expected] of [
+            [
+              'referenceA+81 3 6216 5111 (03) 6216 5111',
+              'referenceA+81 3 6216 5111 [contact omitted]'
+            ],
+            [
+              'referenceA+81 3 6216 5111 03-6216-8041',
+              'referenceA+81 3 6216 5111 [contact omitted]'
+            ],
+            [
+              'referenceB+81 3 0037 0053 (03) 0071 0089',
+              'referenceB+81 3 0037 0053 [contact omitted]'
+            ],
+            [
+              'referenceC+81 3 0074 0106 03-0142-0178',
+              'referenceC+81 3 0074 0106 [contact omitted]'
+            ]
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'an attached international-looking identifier must remain intact while a later phone is redacted'
+            );
+          }
+          assert.equal(
+            redactContactData('+81 3 6216 5111 03-6216-8041'),
+            '[contact omitted] [contact omitted]',
+            'an affirmative phone shortcut must rescan and redact a later domestic phone'
+          );
+          assert.equal(
+            redactContactData('+81 3 6216 5111 03-6216-8041 090-1234-5678'),
+            '[contact omitted] [contact omitted] [contact omitted]',
+            'recursive suffix classification must redact every independently affirmative phone'
+          );
+          for (const completeYearEndingPhone of [
+            '+86 138 0013 2026',
+            '+358 100 0000 2000'
+          ]) {
+            assert.equal(
+              redactContactData(completeYearEndingPhone),
+              '[contact omitted]',
+              'a plausible complete phone ending in a year-like group must remain fully redacted'
+            );
+          }
+
+          '''
+          if tests.count(test_anchor) != 1:
+              raise SystemExit('test insertion anchor is missing or ambiguous')
+          tests = tests.replace(test_anchor, test_block + test_anchor)
+          test_path.write_text(tests)
+          PY
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node test/industrial-exhaust.test.js
+          git diff --check
+
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          function fourDigits(value) {
+            return String(value).padStart(4, '0');
+          }
+
+          let generatedCases = 0;
+          for (const country of ['1', '33', '44', '49', '81', '86', '358', '672', '882']) {
+            for (let index = 0; index < 250; index += 1) {
+              const area = String(100 + ((index * 17) % 900));
+              const subscriber = fourDigits((index * 7919) % 10000);
+              const year = String(2000 + (index % 27));
+              const complete = `+${country} ${area} ${subscriber} ${year}`;
+              const completeDigits = complete.replace(/\D/gu, '').length;
+              if (completeDigits >= 7 && completeDigits <= 15) {
+                assert.equal(redactContactData(complete), '[contact omitted]', complete);
+                generatedCases += 1;
+              }
+
+              const phone = `+${country} ${area} ${subscriber}`;
+              const phoneDigits = phone.replace(/\D/gu, '').length;
+              if (phoneDigits >= 7 && phoneDigits <= 15) {
+                const narrative = `Contact ${phone}. ${year} results improved.`;
+                assert.equal(
+                  redactContactData(narrative),
+                  `Contact [contact omitted]. ${year} results improved.`,
+                  narrative
+                );
+                generatedCases += 1;
+              }
+            }
+          }
+
+          for (let index = 0; index < 1000; index += 1) {
+            const identifier = `reference${String.fromCharCode(65 + (index % 26))}+81 3 ${fourDigits((index * 37) % 10000)} ${fourDigits((index * 53) % 10000)}`;
+            const phone = index % 2
+              ? `(03) ${fourDigits((index * 71) % 10000)} ${fourDigits((index * 89) % 10000)}`
+              : `03-${fourDigits((index * 71) % 10000)}-${fourDigits((index * 89) % 10000)}`;
+            assert.equal(
+              redactContactData(`${identifier} ${phone}`),
+              `${identifier} [contact omitted]`
+            );
+            generatedCases += 1;
+          }
+
+          for (let index = 0; index < 1000; index += 1) {
+            const first = `+81 3 ${fourDigits((index * 37) % 10000)} ${fourDigits((index * 53) % 10000)}`;
+            const second = index % 2
+              ? `(03) ${fourDigits((index * 71) % 10000)} ${fourDigits((index * 89) % 10000)}`
+              : `03-${fourDigits((index * 71) % 10000)}-${fourDigits((index * 89) % 10000)}`;
+            assert.equal(
+              redactContactData(`${first} ${second}`),
+              '[contact omitted] [contact omitted]'
+            );
+            generatedCases += 1;
+          }
+
+          console.log(`generated recursive boundary suite passed: ${generatedCases} cases`);
+          NODE
+
+          rm .github/workflows/pr2176-recursive-boundary-repair.yml
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js .github/workflows/pr2176-recursive-boundary-repair.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "fix(crawler): close recursive redaction boundaries"
+          git push origin "HEAD:$GITHUB_REF_NAME"
