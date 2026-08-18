@@ -84,8 +84,8 @@ function normalizedWrappedNumericTail(value) {
     .replace(/\s*\)$/u, '');
 }
 
-function isSentenceSeparatedYear(value, separator) {
-  return YEAR_LIKE_PATTERN.test(normalizedWrappedNumericTail(value))
+function isSentenceSeparatedNumericTail(value, separator) {
+  return /^\d/u.test(normalizedWrappedNumericTail(value))
     && /[.!?。！？]\s*(?:\(\s*)?$/u.test(separator.normalize('NFKC'));
 }
 
@@ -206,7 +206,7 @@ function trailingObservationGroup(candidate, groups, externalPrefix, externalSuf
         if (DATE_LIKE_PATTERN.test(normalizedTail)
             || FORMATTED_NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
             || NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
-            || isSentenceSeparatedYear(tail, separator)) return index;
+            || isSentenceSeparatedNumericTail(tail, separator)) return index;
       }
       return groups.length;
     }
@@ -242,7 +242,7 @@ function redactPhoneExtensionCandidate(candidate, marker, offset, input) {
         const tail = extension.slice(start).trim().normalize('NFKC');
         const normalizedTail = normalizedWrappedNumericTail(tail);
         const contextualTail = `${extension.slice(start).trimStart()}${normalizedSuffix}`.normalize('NFKC');
-        if (isSentenceSeparatedYear(tail, separator)
+        if (isSentenceSeparatedNumericTail(tail, separator)
             || DATE_LIKE_PATTERN.test(normalizedTail)
             || FORMATTED_NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
             || NUMERIC_OBSERVATION_PATTERN.test(contextualTail)) {
