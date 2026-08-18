@@ -131,6 +131,13 @@ assert.equal(
   'dates and adjacent phone spans must be segmented independently after HTML cleanup'
 );
 assert.equal(redactContactData('(03) 6216 5111'), '[contact omitted]');
+for (const twoGroupDomestic of ['03-62165111', '050-12345678', '030 12345678']) {
+  assert.equal(
+    redactContactData(twoGroupDomestic),
+    '[contact omitted]',
+    'two-group domestic telephone formats must be redacted at clean token boundaries'
+  );
+}
 assert.equal(redactContactData('電話番号：０３６２１６８０４１'), '電話番号：[contact omitted]');
 assert.equal(redactContactData('電話番号03-6216-8041'), '電話番号[contact omitted]');
 assert.equal(redactContactData('携帯電話090-1234-5678'), '携帯電話[contact omitted]');
@@ -166,9 +173,19 @@ assert.equal(
   'a terminal 00 phone group must not become a second access prefix that absorbs a following date'
 );
 assert.equal(
+  redactContactData('+882 13 123 456 2026'),
+  '[contact omitted]',
+  'a plausible maximum-length international number ending in a year-like group must remain fully redacted'
+);
+assert.equal(
   redactContactData('+81 3 6216 5111 90 people'),
   '[contact omitted] 90 people',
   'a trailing numeric metric must not be absorbed into the phone span'
+);
+assert.equal(
+  redactContactData('+672 12345 12:30'),
+  '[contact omitted] 12:30',
+  'a short valid international span must stop before a formatted numeric observation'
 );
 for (const trailingObservation of [
   '123 people', '1234 impressions', '3.14', '1,234', '10-20', '12:30', '2026', '2026-08-17'
@@ -184,6 +201,27 @@ assert.equal(
   '[contact omitted]',
   'an international access prefix must be excluded from effective phone-length scoring'
 );
+for (const regionalAccessNumber of [
+  '011 44 20 7123 4567',
+  '010 44 20 7123 4567',
+  '0011 44 20 7123 4567'
+]) {
+  assert.equal(
+    redactContactData(regionalAccessNumber),
+    '[contact omitted]',
+    'regional international access prefixes must establish an affirmative phone span'
+  );
+}
+assert.equal(
+  redactContactData('011 672 (0) 12345 12:30'),
+  '[contact omitted] 12:30',
+  'a short access-prefixed phone must not be truncated when a formatted observation follows'
+);
+assert.equal(
+  redactContactData('0011 672 (0) 12345 x123456789'),
+  '[contact omitted] x[contact omitted]',
+  'an access-prefixed phone and long extension must be redacted as complete spans'
+);
 assert.equal(
   redactContactData('+81 3 6216 5111 +81 90 1234 5678'),
   '[contact omitted] [contact omitted]',
@@ -192,6 +230,12 @@ assert.equal(
 for (const completeInternational of [
   '+86 138 0013 8000',
   '+882 13 123 456 7890',
+  '+1 2 3 4 5 6 7 8',
+  '+1 2 3 4 5 6 7 8 9 0 1 2 3 4 5',
+  '00 882 13 123 456 7890',
+  '00 44123 456 7890',
+  '+44 (0)123 456 7890 123',
+  '00 44 (0)123 456 7890 123',
   '+49 (0)30 / 1234-5678',
   '+1 212 555 2026'
 ]) {
@@ -210,6 +254,26 @@ assert.equal(
   redactContactData('Tel:+86 138 0013 8000x123'),
   'Tel:[contact omitted]x[contact omitted]',
   'an attached extension marker must not suppress the final phone group or expose extension digits'
+);
+assert.equal(
+  redactContactData('Tel:+86 138 0013 8000x123456789'),
+  'Tel:[contact omitted]x[contact omitted]',
+  'a long extension must be redacted as one complete span rather than leaking its final digits'
+);
+assert.equal(
+  redactContactData('電話番号03-6216-8041内線１２３－４５６'),
+  '電話番号[contact omitted]内線[contact omitted]',
+  'a fullwidth grouped extension must be redacted as one complete span'
+);
+assert.equal(
+  redactContactData('Tel:+1 212 555 2026 #1234'),
+  'Tel:[contact omitted] #[contact omitted]',
+  'a hash-marked extension must be redacted even without an extension word'
+);
+assert.equal(
+  redactContactData('Tel: +882 13 123 456 2026 #1234'),
+  'Tel: [contact omitted] #[contact omitted]',
+  'an extension marker must disambiguate a year-like final phone group as part of the contact span'
 );
 assert.equal(
   redactContactData('+86 138 0013 8000担当'),
