@@ -1,0 +1,161 @@
+name: PR 2176 final boundary repair
+
+on:
+  push:
+    branches:
+      - agent/dentsu-industrial-exhaust-review-fixes
+    paths:
+      - .github/workflows/pr2176-final-boundary-repair.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pr2176-final-boundary-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Apply and validate the final boundary repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git pull --ff-only origin "$GITHUB_REF_NAME"
+
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "c98415430662d782e44352f9a8f4f9918743e0f8"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "57049258534c23553bb1aeb19d58d10d6b7d2443"
+          test "$(git hash-object tools/crawl-industrial-exhaust.mjs)" = "22c4cc8a53058bbb128d064850c2a7c71a4367de"
+          test "$(git ls-files -s tools/crawl-industrial-exhaust.mjs | awk '{print $1}')" = "100755"
+
+          python <<'PY'
+          from pathlib import Path
+
+          source_path = Path('tools/lib/industrial-exhaust.mjs')
+          source = source_path.read_text()
+
+          replacements = [
+              (
+                  "const PHONE_EXTENSION_PATTERN = /(\\[contact omitted\\][\\s,;:()（）\\-–—]*(?:(?:(?:ext(?:ension)?|x)\\s*[.:#：＃]?\\s*)|(?:内線(?:番号)?\\s*[:：#＃]?\\s*)|(?:[#＃]\\s*)))[0-9０-９]+(?:[\\-‐‑‒–—−－][0-9０-９]+)*/giu;",
+                  "const PHONE_EXTENSION_PATTERN = /(\\[contact omitted\\][\\s,;:()（）\\-–—]*(?:(?:(?:ext(?:ension)?|x)\\s*[.:#：＃]?\\s*)|(?:内線(?:番号)?\\s*[:：#＃]?\\s*)|(?:[#＃]\\s*)))[0-9０-９]+(?:[()./／\\s\\-‐‑‒–—−－．（）]+[0-9０-９]+)*/giu;"
+              ),
+              (
+                  "  const minimumPriorDigits = international ? 8 : 7;",
+                  "  const minimumPriorDigits = 7;"
+              ),
+              (
+                  "  const wholeSpanIsAffirmative = isInternationalPhoneCandidate(normalizedCandidate) || hasPhoneLabelPrefix(externalPrefix);\n  if (wholeSpanIsAffirmative && observationGroup > 0) {",
+                  "  const wholeSpanIsAffirmative = isInternationalPhoneCandidate(normalizedCandidate) || hasPhoneLabelPrefix(externalPrefix);\n  if (!allowInitialGroup && isInternationalPhoneCandidate(normalizedCandidate)) return candidate;\n  if (wholeSpanIsAffirmative && allowInitialGroup && observationGroup > 0) {"
+              ),
+              (
+                  "  return phoneRedacted.replace(PHONE_EXTENSION_PATTERN, '$1[contact omitted]');",
+                  "  return phoneRedacted.replace(PHONE_EXTENSION_PATTERN, (candidate, marker, offset, input) =>\n    redactPhoneExtensionCandidate(candidate, marker, offset, input));"
+              )
+          ]
+          for old, new in replacements:
+              if source.count(old) != 1:
+                  raise SystemExit(f'expected one source match, found {source.count(old)}: {old[:80]}')
+              source = source.replace(old, new)
+
+          helper_anchor = "function redactPhoneSubspans(candidate, externalPrefix, externalSuffix, allowInitialGroup = true) {"
+          helper = r'''function redactPhoneExtensionCandidate(candidate, marker, offset, input) {
+            const extension = candidate.slice(marker.length);
+            const groups = [...extension.matchAll(DIGIT_RUN_PATTERN)];
+            if (!groups.length) return candidate;
+
+            const normalizedSuffix = input
+              .slice(offset + candidate.length, offset + candidate.length + 64)
+              .normalize('NFKC');
+            let lastGroup = groups.length - 1;
+            for (let index = 1; index < groups.length; index += 1) {
+              const start = groups[index].index;
+              const previousEnd = groups[index - 1].index + groups[index - 1][0].length;
+              if (!/\s/u.test(extension.slice(previousEnd, start))) continue;
+
+              const tail = extension.slice(start).trim().normalize('NFKC');
+              const contextualTail = `${extension.slice(start).trimStart()}${normalizedSuffix}`.normalize('NFKC');
+              if (DATE_LIKE_PATTERN.test(tail)
+                  || FORMATTED_NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
+                  || NUMERIC_OBSERVATION_PATTERN.test(contextualTail)) {
+                lastGroup = index - 1;
+                break;
+              }
+            }
+
+            const redactionEnd = groups[lastGroup].index + groups[lastGroup][0].length;
+            return `${marker}[contact omitted]${extension.slice(redactionEnd)}`;
+          }
+
+          '''
+          if source.count(helper_anchor) != 1:
+              raise SystemExit('redaction helper anchor is missing or ambiguous')
+          source = source.replace(helper_anchor, helper + helper_anchor)
+          source_path.write_text(source)
+
+          test_path = Path('test/industrial-exhaust.test.js')
+          tests = test_path.read_text()
+          test_anchor = "const numericMetricRss = value => `<?xml version=\"1.0\"?><rss version=\"2.0\"><channel><title>Metric revisions</title>"
+          test_block = r'''assert.equal(
+            redactContactData('+672 1234 90 people'),
+            '[contact omitted] 90 people',
+            'seven-digit international numbers must stop before a unit-labelled observation'
+          );
+          assert.equal(
+            redactContactData('+672 1234 12:30'),
+            '[contact omitted] 12:30',
+            'seven-digit international numbers must stop before a formatted observation'
+          );
+          assert.equal(
+            redactContactData('+672 1234 2026-08-17'),
+            '[contact omitted] 2026-08-17',
+            'seven-digit international numbers must stop before an adjacent date'
+          );
+          assert.equal(
+            redactContactData('Tel: +44 20 7123 4567 ext 1234 5678'),
+            'Tel: [contact omitted] ext [contact omitted]',
+            'whitespace-grouped extension digits must be redacted as one marked extension'
+          );
+          assert.equal(
+            redactContactData('Tel: +44 20 7123 4567 ext 1234 5678 90 people'),
+            'Tel: [contact omitted] ext [contact omitted] 90 people',
+            'marked extension redaction must stop before a following unit-labelled observation'
+          );
+          for (const attachedInternationalIdentifier of [
+            'referenceA+81 3 6216 5111',
+            'referenceA+1 212 555 1234',
+            'revisionA0081-3-6216-5111'
+          ]) {
+            assert.equal(
+              redactContactData(attachedInternationalIdentifier),
+              attachedInternationalIdentifier,
+              'international-looking identifiers attached to unrelated labels must remain intact'
+            );
+          }
+
+          '''
+          if tests.count(test_anchor) != 1:
+              raise SystemExit('test insertion anchor is missing or ambiguous')
+          tests = tests.replace(test_anchor, test_block + test_anchor)
+          test_path.write_text(tests)
+          PY
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node test/industrial-exhaust.test.js
+          git diff --check
+
+          rm .github/workflows/pr2176-final-boundary-repair.yml
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js .github/workflows/pr2176-final-boundary-repair.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "fix(crawler): close final contact boundaries"
+          git push origin "HEAD:$GITHUB_REF_NAME"
