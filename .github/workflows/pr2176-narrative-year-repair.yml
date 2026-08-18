@@ -1,0 +1,243 @@
+name: PR 2176 narrative-year boundary repair
+
+on:
+  push:
+    branches:
+      - agent/dentsu-industrial-exhaust-review-fixes
+    paths:
+      - .github/workflows/pr2176-narrative-year-repair.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pr2176-narrative-year-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Apply and validate narrative-year boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          git pull --ff-only origin "$GITHUB_REF_NAME"
+
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = "481bf57cd956235ff142928024761a848b3273e1"
+          test "$(git hash-object test/industrial-exhaust.test.js)" = "07c8aba58a32c409820eb477c7f590ef8f8ea2c2"
+          test "$(git hash-object tools/crawl-industrial-exhaust.mjs)" = "22c4cc8a53058bbb128d064850c2a7c71a4367de"
+          test "$(git ls-files -s tools/crawl-industrial-exhaust.mjs | awk '{print $1}')" = "100755"
+
+          python <<'PY'
+          from pathlib import Path
+
+          source_path = Path('tools/lib/industrial-exhaust.mjs')
+          source = source_path.read_text()
+
+          def replace_once(old, new, label):
+              global source
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, found {count}')
+              source = source.replace(old, new)
+
+          digit_groups = r'''function normalizedDigitGroups(value) {
+            return value.normalize('NFKC').match(/\d+/gu) ?? [];
+          }
+          '''
+          year_helpers = r'''
+          function normalizedWrappedNumericTail(value) {
+            return value.normalize('NFKC').trim()
+              .replace(/^\(\s*/u, '')
+              .replace(/\s*\)$/u, '');
+          }
+
+          function isSentenceSeparatedYear(value, separator) {
+            return YEAR_LIKE_PATTERN.test(normalizedWrappedNumericTail(value))
+              && /[.!?。！？]\s*(?:\(\s*)?$/u.test(separator.normalize('NFKC'));
+          }
+          '''
+          replace_once(digit_groups, digit_groups + year_helpers, 'year helper insertion')
+
+          replace_once(
+              r'''  const normalizedCandidate = candidate.normalize('NFKC').trimStart();
+            const international = isInternationalPhoneCandidate(normalizedCandidate);
+            const minimumPriorDigits = 7;''',
+              r'''  const minimumPriorDigits = 7;''',
+              'remove score-based year context'
+          )
+
+          replace_once(
+              r'''    const tail = candidate.slice(start).trim().normalize('NFKC');
+            const contextualTail = `${candidate.slice(start).trimStart()}${normalizedSuffix}`.normalize('NFKC');
+            if (DATE_LIKE_PATTERN.test(tail)
+                || FORMATTED_NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
+                || NUMERIC_OBSERVATION_PATTERN.test(contextualTail)) return index;
+            if (YEAR_LIKE_PATTERN.test(tail)) {
+              if (/[.!?。！？]\s*$/u.test(separator)) return index;
+              const normalizedPhonePrefix = phonePrefix.normalize('NFKC').trim();
+              const prefixAccessDigits = normalizedPhonePrefix.startsWith('+')
+                ? 0
+                : internationalAccessPrefixLength(normalizedPhonePrefix);
+              const prefixTrunkDigits = hasInternationalTrunkPrefix(normalizedPhonePrefix, prefixAccessDigits) ? 1 : 0;
+              const effectivePrefixDigits = priorDigits - prefixAccessDigits - prefixTrunkDigits;
+              const prefixGroups = normalizedDigitGroups(phonePrefix);
+              const prefixTerminalLength = prefixGroups.at(-1)?.length ?? 0;
+              const completeScore = phoneCandidateScore(candidate.trim(), externalPrefix);
+              if (effectivePrefixDigits >= 10
+                  && prefixGroups.length >= 4
+                  && prefixTerminalLength === 4
+                  && prefixScore >= completeScore) return index;
+            }''',
+              r'''    const tail = candidate.slice(start).trim().normalize('NFKC');
+            const normalizedTail = normalizedWrappedNumericTail(tail);
+            const contextualTail = `${candidate.slice(start).trimStart()}${normalizedSuffix}`.normalize('NFKC');
+            if (DATE_LIKE_PATTERN.test(normalizedTail)
+                || FORMATTED_NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
+                || NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
+                || isSentenceSeparatedYear(tail, separator)) return index;''',
+              'narrative year classification'
+          )
+
+          replace_once(
+              r'''    const tail = extension.slice(start).trim().normalize('NFKC');
+            const contextualTail = `${extension.slice(start).trimStart()}${normalizedSuffix}`.normalize('NFKC');
+            if ((YEAR_LIKE_PATTERN.test(tail) && /[.!?。！？]\s*$/u.test(separator))
+                || DATE_LIKE_PATTERN.test(tail)
+                || FORMATTED_NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
+                || NUMERIC_OBSERVATION_PATTERN.test(contextualTail)) {''',
+              r'''    const tail = extension.slice(start).trim().normalize('NFKC');
+            const normalizedTail = normalizedWrappedNumericTail(tail);
+            const contextualTail = `${extension.slice(start).trimStart()}${normalizedSuffix}`.normalize('NFKC');
+            if (isSentenceSeparatedYear(tail, separator)
+                || DATE_LIKE_PATTERN.test(normalizedTail)
+                || FORMATTED_NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
+                || NUMERIC_OBSERVATION_PATTERN.test(contextualTail)) {''',
+              'extension narrative year classification'
+          )
+
+          source_path.write_text(source)
+
+          test_path = Path('test/industrial-exhaust.test.js')
+          tests = test_path.read_text()
+
+          old_observations = r'''  '123 people', '1234 impressions', '3.14', '1,234', '10-20', '12:30', '2026', '2026-08-17'
+          '''
+          new_observations = r'''  '123 people', '1234 impressions', '3.14', '1,234', '10-20', '12:30', '2026-08-17'
+          '''
+          if tests.count(old_observations) != 1:
+              raise SystemExit('trailing observation list is missing or ambiguous')
+          tests = tests.replace(old_observations, new_observations)
+
+          old_year_phone_list = r'''for (const completeYearEndingPhone of [
+            '+86 138 0013 2026',
+            '+358 100 0000 2000'
+          ]) {'''
+          new_year_phone_list = r'''for (const completeYearEndingPhone of [
+            '+86 138 0013 2026',
+            '+358 100 0000 2000',
+            '+62 812 34 5678 2026',
+            '+81 3 6216 5111 2026'
+          ]) {'''
+          if tests.count(old_year_phone_list) != 1:
+              raise SystemExit('complete year-ending phone list is missing or ambiguous')
+          tests = tests.replace(old_year_phone_list, new_year_phone_list)
+
+          extension_year_anchor = r'''assert.equal(
+            redactContactData('Tel: +44 20 7123 4567 ext 1234 5678. 2026 results improved.'),
+            'Tel: [contact omitted] ext [contact omitted]. 2026 results improved.',
+            'a sentence-separated year after a grouped extension must remain intact'
+          );
+          '''
+          parenthesized_year_tests = r'''assert.equal(
+            redactContactData('Contact +672 1234. (2026) results improved.'),
+            'Contact [contact omitted]. (2026) results improved.',
+            'a parenthesized sentence-separated year after a short phone must remain intact'
+          );
+          assert.equal(
+            redactContactData('Contact +672 1234. （2026） results improved.'),
+            'Contact [contact omitted]. （2026） results improved.',
+            'a fullwidth-parenthesized sentence-separated year must remain intact'
+          );
+          assert.equal(
+            redactContactData('Tel: +44 20 7123 4567 ext 1234 5678. (2026) results improved.'),
+            'Tel: [contact omitted] ext [contact omitted]. (2026) results improved.',
+            'a parenthesized sentence-separated year after a grouped extension must remain intact'
+          );
+          '''
+          if tests.count(extension_year_anchor) != 1:
+              raise SystemExit('parenthesized year insertion anchor is missing or ambiguous')
+          tests = tests.replace(extension_year_anchor, extension_year_anchor + parenthesized_year_tests)
+          test_path.write_text(tests)
+          PY
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node test/industrial-exhaust.test.js
+          git diff --check
+
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          assert.equal(redactContactData('+62 812 34 5678 2026'), '[contact omitted]');
+          assert.equal(
+            redactContactData('Contact +672 1234. (2026) results improved.'),
+            'Contact [contact omitted]. (2026) results improved.'
+          );
+          assert.equal(
+            redactContactData('Tel: +44 20 7123 4567 ext 1234 5678. (2026) results improved.'),
+            'Tel: [contact omitted] ext [contact omitted]. (2026) results improved.'
+          );
+
+          let generatedCases = 0;
+          for (let year = 2000; year <= 2026; year += 1) {
+            for (const completePhone of [
+              `+62 812 34 5678 ${year}`,
+              `+81 3 6216 5111 ${year}`,
+              `+86 138 0013 ${year}`
+            ]) {
+              assert.equal(redactContactData(completePhone), '[contact omitted]', completePhone);
+              generatedCases += 1;
+            }
+
+            for (const [input, expected] of [
+              [
+                `Contact +672 1234. ${year} results improved.`,
+                `Contact [contact omitted]. ${year} results improved.`
+              ],
+              [
+                `Contact +672 1234. (${year}) results improved.`,
+                `Contact [contact omitted]. (${year}) results improved.`
+              ],
+              [
+                `Contact +672 1234. （${year}） results improved.`,
+                `Contact [contact omitted]. （${year}） results improved.`
+              ],
+              [
+                `Tel: +44 20 7123 4567 ext 1234 5678. (${year}) results improved.`,
+                `Tel: [contact omitted] ext [contact omitted]. (${year}) results improved.`
+              ]
+            ]) {
+              assert.equal(redactContactData(input), expected, input);
+              generatedCases += 1;
+            }
+          }
+          console.log(`generated narrative-year suite passed: ${generatedCases} cases`);
+          NODE
+
+          rm .github/workflows/pr2176-narrative-year-repair.yml
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js .github/workflows/pr2176-narrative-year-repair.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "fix(crawler): require narrative year boundaries"
+          git push origin "HEAD:$GITHUB_REF_NAME"
