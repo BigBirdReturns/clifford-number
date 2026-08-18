@@ -1,0 +1,177 @@
+{
+  "schema_version": "m05-answerable-power-s03-l7-intel-realization-source-custody-amendment@1",
+  "object_class": "bounded_admission_source_custody_amendment",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-03",
+  "leg_id": "S03-L7",
+  "issue": 345,
+  "as_of": "2026-08-18",
+  "status": "intel_realization_source_custody_amendment_frozen",
+  "title": "Intel realization source-body and archival-custody amendment",
+  "question": "Which exact-body custody fields must every transaction, federal cash-custody, public-account-booking, and distribution receipt carry before the Intel realization chain may advance?",
+  "canonical_base": {
+    "branch": "main",
+    "sha": "a63235f8642ae0e878cc36210779d8c1f8cf9233",
+    "tree_sha": "f5a72b563abb772086480c7aae936018aba3861d",
+    "preceding_pull_request": 2181,
+    "preceding_merge_commit": "a63235f8642ae0e878cc36210779d8c1f8cf9233"
+  },
+  "bindings": {
+    "realization_accounting_admission_contract": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-accounting-admission-contract.json",
+      "blob_sha": "4d59d3e93af806e97fde862daadf7194d3498790",
+      "semantic_sha256": "3924a4bfd18e98cacbd4b551e2ec4816de57bfa6eb5afb39089980081f2ab6c6",
+      "schema_version": "m05-answerable-power-s03-l7-intel-realization-accounting-admission-contract@1",
+      "pull_request": 2180,
+      "merge_commit": "fc6303e1791904e6ad999f63b49030c083e1a94e"
+    },
+    "realization_accounting_contract_validator": {
+      "path": "tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-accounting-admission-contract.mjs",
+      "blob_sha": "f61d464feec46fbd32ec6152ec83205ab2ee9b08",
+      "control_class": "independent_contract_git_blob_and_semantic_checksum_validator",
+      "pull_request": 2181,
+      "merge_commit": "a63235f8642ae0e878cc36210779d8c1f8cf9233"
+    }
+  },
+  "predecessor_gap": {
+    "gap_class": "downstream_source_custody_asymmetry",
+    "transaction_already_requires_source_body_sha256": true,
+    "federal_cash_custody_requires_source_body_sha256": false,
+    "public_account_booking_requires_source_body_sha256": false,
+    "distribution_requires_source_body_sha256": false,
+    "source_url_and_locator_are_exact_body_custody": false
+  },
+  "effective_stage_source_custody": {
+    "transaction": {
+      "requires_contract_stage": "transaction",
+      "source_body_sha256_inherited_from_predecessor": true,
+      "additional_required_fields": [
+        "source_record_identifier",
+        "source_observed_at_utc",
+        "source_content_type",
+        "source_custody_mode",
+        "source_custody_locator"
+      ],
+      "all_source_receipts_must_be_exact_body_addressed": true,
+      "source_url_and_locator_only_qualifies": false,
+      "unhashed_or_unarchived_source_qualifies": false
+    },
+    "federal_cash_custody": {
+      "requires_contract_stage": "federal_cash_custody",
+      "source_body_sha256_inherited_from_predecessor": false,
+      "additional_required_fields": [
+        "source_record_identifier",
+        "source_observed_at_utc",
+        "source_content_type",
+        "source_body_sha256",
+        "source_custody_mode",
+        "source_custody_locator"
+      ],
+      "all_source_receipts_must_be_exact_body_addressed": true,
+      "source_url_and_locator_only_qualifies": false,
+      "unhashed_or_unarchived_source_qualifies": false
+    },
+    "public_account_booking": {
+      "requires_contract_stage": "public_account_booking",
+      "source_body_sha256_inherited_from_predecessor": false,
+      "additional_required_fields": [
+        "source_record_identifier",
+        "source_observed_at_utc",
+        "source_content_type",
+        "source_body_sha256",
+        "source_custody_mode",
+        "source_custody_locator"
+      ],
+      "all_source_receipts_must_be_exact_body_addressed": true,
+      "source_url_and_locator_only_qualifies": false,
+      "unhashed_or_unarchived_source_qualifies": false
+    },
+    "distribution": {
+      "requires_contract_stage": "distribution",
+      "source_body_sha256_inherited_from_predecessor": false,
+      "additional_required_fields": [
+        "source_record_identifier",
+        "source_observed_at_utc",
+        "source_content_type",
+        "source_body_sha256",
+        "source_custody_mode",
+        "source_custody_locator"
+      ],
+      "all_source_receipts_must_be_exact_body_addressed": true,
+      "source_url_and_locator_only_qualifies": false,
+      "unhashed_or_unarchived_source_qualifies": false
+    }
+  },
+  "custody_rules": {
+    "hash_algorithm": "sha256",
+    "hash_encoding": "lowercase_hex",
+    "hash_length": 64,
+    "hash_scope": "exact_source_body_bytes",
+    "allowed_custody_modes": [
+      "source_native_immutable_record",
+      "official_archive",
+      "repository_blob",
+      "dual_source_and_repository_custody"
+    ],
+    "source_record_identifier_required": true,
+    "retrieval_timestamp_required": true,
+    "content_type_required": true,
+    "custody_locator_required": true,
+    "locator_must_resolve_within_hashed_body": true,
+    "multiple_source_bodies_each_require_independent_hash": true,
+    "mutable_live_url_without_hashed_body_is_admissible": false,
+    "source_excerpt_without_parent_body_hash_is_admissible": false,
+    "self_declared_hash_without_retrievable_or_repository_custody_is_admissible": false
+  },
+  "observed_receipts": [],
+  "observed_state": {
+    "transaction_admissible": false,
+    "federal_cash_custody_admissible": false,
+    "public_account_booking_admissible": false,
+    "distribution_admissible": false,
+    "answer_change_authorized": false
+  },
+  "guardrails": {
+    "source_url_is_exact_body_custody": false,
+    "source_locator_is_exact_body_custody": false,
+    "content_hash_without_custody_locator_is_complete": false,
+    "custody_locator_without_content_hash_is_complete": false,
+    "single_hash_may_cover_multiple_distinct_source_bodies": false,
+    "repository_admission_is_empirical_receipt": false,
+    "custody_amendment_is_answer_effectiveness": false
+  },
+  "expected_result": {
+    "amended_stages": 4,
+    "stages_requiring_exact_body_hash": 4,
+    "downstream_stages_newly_requiring_source_body_sha256": 3,
+    "observed_receipts": 0,
+    "transaction_admissible": false,
+    "federal_cash_custody_admissible": false,
+    "public_account_booking_admissible": false,
+    "distribution_admissible": false,
+    "candidate_evidence_records": 5,
+    "repository_promotions": 5,
+    "advanced_answer_dimensions": 1,
+    "effective_answers": 0,
+    "qualifying_jurisdictions": 0,
+    "answer_effectiveness": false,
+    "cross_domain_regression_completed": false,
+    "graph_effect": "none",
+    "issue_345_may_close": false
+  },
+  "boundaries": {
+    "changes_predecessor_contract_bytes": false,
+    "creates_new_empirical_receipt": false,
+    "claims_intel_transaction": false,
+    "claims_federal_cash_receipt": false,
+    "claims_public_account_booking": false,
+    "claims_public_or_affected_party_distribution": false,
+    "claims_answer_effectiveness": false,
+    "claims_cross_domain_completion": false,
+    "graph_effect": "none",
+    "conclusion_generated": false,
+    "project_complete": false,
+    "issue_345_may_close": false
+  },
+  "amendment_sha256": "50083404a4380378faa0e3bf01368b8dcf5b88992a12c368ab1ad1caf9f88adc"
+}
