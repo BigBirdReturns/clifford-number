@@ -38,6 +38,12 @@ assert.equal(data.contract.expected_result.distribution_admissible,false);
 assert.equal(data.contract.expected_result.issue_345_may_close,false);
 
 let mutationIndex=0;
+const writeRawMutation=(content,label)=>{
+  mutationIndex+=1;
+  const target=path.join(tempRoot,`${String(mutationIndex).padStart(2,'0')}-${label}.json`);
+  fs.writeFileSync(target,content);
+  return target;
+};
 const writeMutation=(value,label)=>{
   mutationIndex+=1;
   const target=path.join(tempRoot,`${String(mutationIndex).padStart(2,'0')}-${label}.json`);
@@ -49,6 +55,11 @@ const expectFailure=(label,envName,source,mutate)=>{
   mutate(changed);
   const target=writeMutation(changed,label);
   const result=runValidator({[envName]:target});
+  assert.notEqual(result.status,0,`${label} unexpectedly passed\n${result.stdout}\n${result.stderr}`);
+};
+const expectRawContractFailure=(label,content)=>{
+  const target=writeRawMutation(content,label);
+  const result=runValidator({M05_INTEL_REALIZATION_ACCOUNTING_ADMISSION_CONTRACT_PATH:target});
   assert.notEqual(result.status,0,`${label} unexpectedly passed\n${result.stdout}\n${result.stderr}`);
 };
 const expectContractFailure=(label,mutate)=>expectFailure(
@@ -96,6 +107,9 @@ expectContractFailure('coordinated-content-checksum-rewrite',(row)=>{
   row.contract_sha256=semanticHash(copy);
 });
 expectContractFailure('checksum-rewrite',(row)=>{row.contract_sha256='0'.repeat(64)});
+const semanticEquivalentContract=`${JSON.stringify(data.contract)}\n`;
+assert.deepEqual(JSON.parse(semanticEquivalentContract),data.contract);
+expectRawContractFailure('semantic-equivalent-byte-rewrite',semanticEquivalentContract);
 
 expectFailure(
   'bilateral-acquisition-sale-overclaim',

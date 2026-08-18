@@ -29,6 +29,7 @@ const paths={
   )
 };
 
+const EXPECTED_CONTRACT_BLOB_SHA='4d59d3e93af806e97fde862daadf7194d3498790';
 const EXPECTED_CONTRACT_SHA256='3924a4bfd18e98cacbd4b551e2ec4816de57bfa6eb5afb39089980081f2ab6c6';
 const readRaw=(target)=>fs.readFileSync(target);
 const gitBlobSha=(buffer)=>crypto
@@ -56,6 +57,7 @@ const recursiveValues=(value,key,found=[])=>{
 const containsAll=(values,required)=>Array.isArray(values)&&required.every((value)=>values.includes(value));
 
 const raw=Object.fromEntries(Object.entries(paths).map(([key,target])=>[key,readRaw(target)]));
+if(gitBlobSha(raw.contract)!==EXPECTED_CONTRACT_BLOB_SHA)fail('contract Git object drift');
 const data=Object.fromEntries(
   Object.entries(raw).map(([key,buffer])=>[key,JSON.parse(buffer.toString('utf8'))])
 );
