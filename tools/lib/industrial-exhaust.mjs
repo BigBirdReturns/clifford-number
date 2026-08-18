@@ -11,8 +11,8 @@ const TRACKING_PARAMS = new Set([
 ]);
 
 const PHONE_SPAN_PATTERN = /(?:[+＋](?=\s*[0-9０-９])|[（(](?=\s*[0-9０-９]))?\s*[0-9０-９][0-9０-９()./／\s\-‐‑‒–—−－．（）]{5,}[0-9０-９](?:\s*[)）])?(?=$|[^\p{L}\p{N}]|[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]|(?:(?:ext(?:ension)?\.?|x)\s*[.:#：＃]?\s*[0-9０-９]))/giu;
-const PHONE_EXTENSION_PATTERN = /(\[contact omitted\][\s,;:()（）\-–—]*(?:(?:(?:ext(?:ension)?|x)\s*[.:#：＃]?\s*)|(?:内線(?:番号)?\s*[:：#＃]?\s*)|(?:[#＃]\s*)))[0-9０-９]+(?:[()./／\s\-‐‑‒–—−－．（）]+[0-9０-９]+)*/giu;
-const PHONE_EXTENSION_SUFFIX_PATTERN = /^\s*[,;:()（）\-–—]*(?:(?:ext(?:ension)?|x)\s*[.:#：＃]?|内線(?:番号)?\s*[:：#＃]?|[#＃])\s*[0-9０-９]/iu;
+const PHONE_EXTENSION_PATTERN = /(\[contact omitted\][\s,;:()（）\-–—]*(?:(?:(?:ext(?:ension)?|x)\s*[.:#：＃]?\s*)|(?:内線(?:番号)?\s*[:：#＃]?\s*)|(?:[#＃]\s*))(?:[（(]\s*)?)[0-9０-９]+(?:[()./／\s\-‐‑‒–—−－．（）]+[0-9０-９]+)*/giu;
+const PHONE_EXTENSION_SUFFIX_PATTERN = /^\s*[,;:()（）\-–—]*(?:(?:ext(?:ension)?|x)\s*[.:#：＃]?|内線(?:番号)?\s*[:：#＃]?|[#＃])\s*(?:[（(]\s*)?[0-9０-９]/iu;
 const FORMATTED_NUMERIC_OBSERVATION_PATTERN = /^(?:\d{1,9}\.\d{1,6}|\d{1,3}(?:,\d{3})+(?:\.\d{1,6})?|\d{1,3},\d{1,2}|\d{1,9}\s*[-–—]\s*\d{1,9}|\d{1,2}:\d{2}(?::\d{2})?)(?=$|[^0-9])/u;
 const NUMERIC_OBSERVATION_PATTERN = /^\d{1,9}(?:,\d{3})*(?:\.\d{1,6})?(?:\s*[-–—]\s*\d{1,9}(?:,\d{3})*(?:\.\d{1,6})?)?\s*(?:(?:people|persons?|users?|customers?|employees?|impressions?|views?|visits?|clicks?|downloads?|yen|dollars?|pounds?|euros?|percent(?:age)?|million|billion|thousand|points?|basis points?|countries|markets|offices|stores|years?|months?|days?|hours?)(?=$|[^\p{L}\p{N}])|(?:人|名|件|回|円|社|国|地域|市場|拠点|店舗|%|％))/iu;
 const YEAR_LIKE_PATTERN = /^(?:19|20)\d{2}$/u;
@@ -141,13 +141,18 @@ function phoneCandidateScore(candidate, prefix) {
   const labelled = hasPhoneLabelPrefix(prefix);
   const international = isInternationalPhoneCandidate(normalized);
   const parenthesized = /\(\s*\d{1,5}\s*\)/u.test(normalized);
-  const domesticGrouped = (groups.length === 2
+  const domesticPairGrouped = groups.length >= 4
+      && groups.length <= 6
+      && /^0\d$/u.test(groups[0])
+      && groups.slice(1).every(group => /^\d{2}$/u.test(group));
+    const domesticGrouped = (groups.length === 2
       && /^0\d{1,4}$/u.test(groups[0])
       && /^\d{6,8}$/u.test(groups[1]))
     || (groups.length === 3
       && /^0\d{1,4}$/u.test(groups[0])
       && /^\d{2,5}$/u.test(groups[1])
-      && /^\d{3,5}$/u.test(groups[2]));
+      && /^\d{3,5}$/u.test(groups[2]))
+    || domesticPairGrouped;
   const northAmericanGrouped = (groups.length === 3
       && groups[0].length === 3 && groups[1].length === 3 && groups[2].length === 4)
     || (groups.length === 4 && groups[0] === '1'

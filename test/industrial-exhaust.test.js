@@ -138,6 +138,22 @@ for (const twoGroupDomestic of ['03-62165111', '050-12345678', '030 12345678']) 
     'two-group domestic telephone formats must be redacted at clean token boundaries'
   );
 }
+for (const multiGroupDomestic of [
+  '01 42 68 53 00',
+  '01 42 68 53',
+  '０１ ４２ ６８ ５３ ００'
+]) {
+  assert.equal(
+    redactContactData(multiGroupDomestic),
+    '[contact omitted]',
+    'four-or-more-group domestic telephone formats must be redacted at clean token boundaries'
+  );
+}
+assert.equal(
+  redactContactData('01 2026 08 17'),
+  '01 2026 08 17',
+  'a spaced numeric sequence containing a year must not be treated as a pair-grouped domestic phone'
+);
 assert.equal(redactContactData('電話番号：０３６２１６８０４１'), '電話番号：[contact omitted]');
 assert.equal(redactContactData('電話番号03-6216-8041'), '電話番号[contact omitted]');
 assert.equal(redactContactData('携帯電話090-1234-5678'), '携帯電話[contact omitted]');
@@ -300,6 +316,16 @@ assert.equal(
   redactContactData('Tel: +44 20 7123 4567 ext 1234 5678'),
   'Tel: [contact omitted] ext [contact omitted]',
   'whitespace-grouped extension digits must be redacted as one marked extension'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext. (1234 5678)'),
+  'Tel: [contact omitted] ext. ([contact omitted])',
+  'parenthesized grouped extension digits must be fully redacted'
+);
+assert.equal(
+  redactContactData('電話番号03-6216-8041内線（１２３４ ５６７８）'),
+  '電話番号[contact omitted]内線（[contact omitted]）',
+  'fullwidth-parenthesized grouped extension digits must be fully redacted'
 );
 assert.equal(
   redactContactData('Tel: +44 20 7123 4567 ext 1234 5678 90 people'),
