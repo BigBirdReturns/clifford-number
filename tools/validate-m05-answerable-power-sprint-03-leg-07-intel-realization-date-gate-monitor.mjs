@@ -103,7 +103,7 @@ const bindingDefinitions={
   latest_controlled_acquisition:{
     dataKey:'syri',
     path:'data/project/m05-answerable-power-sprint-03-leg-07-syri-subject-access-public-record-acquisition.json',
-    blob:'69b6dee5c5ee6548ccb4997606be397e473a417c',
+    blob:'58ac18ec5841982d8ffc1be75aee6269e5f40dc9',
     schema:'m05-answerable-power-s03-l7-syri-subject-access-public-record-acquisition@1',
     pullRequest:2171,
     mergeCommit:'34dd125446f9b2fa7beadef16c8f68afacb09a61'
