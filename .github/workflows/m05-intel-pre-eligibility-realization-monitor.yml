@@ -1,0 +1,55 @@
+name: M-05 Intel pre-eligibility realization monitor
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-syri-subject-access-public-record-acquisition.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.test.js'
+      - '.github/workflows/m05-intel-pre-eligibility-realization-monitor.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-syri-subject-access-public-record-acquisition.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.test.js'
+      - '.github/workflows/m05-intel-pre-eligibility-realization-monitor.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate Intel pre-eligibility realization monitor
+        run: |
+          node --check tools/lib/m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.mjs
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic focused state
+        run: |
+          git restore --staged --worktree .
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.test.js
+          git diff --exit-code

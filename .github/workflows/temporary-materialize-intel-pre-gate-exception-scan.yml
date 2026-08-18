@@ -1,0 +1,194 @@
+name: Temporary materialize Intel pre-gate exception scan
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-intel-pre-gate-exception-scan-v1
+    paths:
+      - '.github/workflows/temporary-materialize-intel-pre-gate-exception-scan.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m05-s03-l7-intel-pre-gate-exception-scan-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Rebind and harden the bounded scan
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_exact(path, old, new, count=1):
+              target = Path(path)
+              text = target.read_text(encoding='utf-8')
+              observed = text.count(old)
+              if observed != count:
+                  raise SystemExit(
+                      f'{path}: expected {count} occurrences, observed {observed}: {old!r}'
+                  )
+              target.write_text(text.replace(old, new), encoding='utf-8')
+
+          data = 'data/project/m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.json'
+          validator = 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.mjs'
+          test = 'test/m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.test.js'
+          workflow = '.github/workflows/m05-intel-pre-eligibility-realization-monitor.yml'
+          temporary = Path('.github/workflows/temporary-materialize-intel-pre-gate-exception-scan.yml')
+
+          replace_exact(data, '"as_of": "2026-08-17"', '"as_of": "2026-08-18"')
+          replace_exact(
+              data,
+              '"sha": "34dd125446f9b2fa7beadef16c8f68afacb09a61"',
+              '"sha": "f798a6dea21431a9b225b157e3235929381aa085"'
+          )
+          replace_exact(
+              data,
+              '"tree_sha": "232d0d49835f0d198a5d4ab5cf652154b1c55efe"',
+              '"tree_sha": "35c90d7419276af914fb22e2cccee49e01fe2c7c"'
+          )
+          replace_exact(data, '"observed_at": "2026-08-17"', '"observed_at": "2026-08-18"')
+          replace_exact(
+              data,
+              '"calendar_days_before_standard_window": 10',
+              '"calendar_days_before_standard_window": 9'
+          )
+          replace_exact(data, '"executed_at": "2026-08-17"', '"executed_at": "2026-08-18"')
+
+          replace_exact(
+              validator,
+              "m.as_of!=='2026-08-17'",
+              "m.as_of!=='2026-08-18'"
+          )
+          replace_exact(
+              validator,
+              "sha:'34dd125446f9b2fa7beadef16c8f68afacb09a61',tree_sha:'232d0d49835f0d198a5d4ab5cf652154b1c55efe'",
+              "sha:'f798a6dea21431a9b225b157e3235929381aa085',tree_sha:'35c90d7419276af914fb22e2cccee49e01fe2c7c'"
+          )
+          replace_exact(
+              validator,
+              "'m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate@1'",
+              "'m05-answerable-power-s03-l7-intel-chips-equity-receipt-candidate@1'"
+          )
+          replace_exact(
+              validator,
+              "observed_at:'2026-08-17',calendar_days_before_standard_window:10",
+              "observed_at:'2026-08-18',calendar_days_before_standard_window:9"
+          )
+          replace_exact(
+              validator,
+              "Date.parse('2026-08-27')-Date.parse('2026-08-17'))/86400000)!==10",
+              "Date.parse('2026-08-27')-Date.parse('2026-08-18'))/86400000)!==9"
+          )
+          replace_exact(
+              validator,
+              "if(!same(proto.official_hosts,",
+              "if(proto.executed_at!=='2026-08-18'||!same(proto.official_hosts,"
+          )
+          old_terminal = (
+              "if(m.boundaries?.graph_effect!=='none'||m.expected_result?.effective_answers!==0||"
+              "m.expected_result?.cross_domain_regression_completed!==false||"
+              "m.expected_result?.issue_345_may_close!==false)fail('terminal boundary drift');"
+          )
+          new_terminal = (
+              "const EB={claims_early_exception:false,claims_completed_sale:false,"
+              "claims_dividend:false,claims_warrant_exercise:false,"
+              "claims_federal_cash_receipt:false,claims_public_account_booking:false,"
+              "claims_public_or_affected_party_distribution:false,"
+              "claims_answer_effectiveness:false,claims_cross_domain_completion:false,"
+              "graph_effect:'none',conclusion_generated:false,project_complete:false,"
+              "issue_345_may_close:false};"
+              "if(!same(m.boundaries,EB))fail('terminal boundary drift');"
+              "const ER={source_records:3,new_source_records:0,routes_executed:6,"
+              "routes_with_substantive_nonqualifying_content:3,"
+              "bounded_search_routes_without_qualifier:3,routes_with_qualifying_receipt:0,"
+              "standard_route_active:false,bilateral_exception_public_record_located:false,"
+              "completed_sale_observed:false,identified_federal_cash_receipt:false,"
+              "transparent_public_or_affected_party_distribution:false,"
+              "candidate_evidence_records:5,repository_promotions:5,"
+              "advanced_answer_dimensions:1,effective_answers:0,"
+              "qualifying_jurisdictions:0,answer_effectiveness:false,"
+              "cross_domain_regression_completed:false,issue_345_may_close:false};"
+              "if(!same(m.expected_result,ER))fail('expected result drift');"
+          )
+          replace_exact(validator, old_terminal, new_terminal)
+
+          replace_exact(
+              test,
+              "row.target.calendar_days_before_standard_window=9",
+              "row.target.calendar_days_before_standard_window=8"
+          )
+          replace_exact(
+              test,
+              "expectMonitorFailure('standard-window-opened-early'",
+              "expectMonitorFailure('protocol-date-drift',(row)=>{"
+              "row.acquisition_protocol.executed_at='2026-08-17'});\n"
+              "expectMonitorFailure('standard-window-opened-early'"
+          )
+          test_anchor = (
+              "expectFailure(\n"
+              "  'frontier-time-gate-drift',"
+          )
+          test_insert = (
+              "const mutateScalar=(value)=>typeof value==='boolean'?!value:"
+              "typeof value==='number'?value+1:`${value}-drift`;\n"
+              "for(const key of Object.keys(data.monitor.boundaries))"
+              "expectMonitorFailure(`boundary-${key}`,(row)=>{"
+              "row.boundaries[key]=mutateScalar(row.boundaries[key])});\n"
+              "for(const key of Object.keys(data.monitor.expected_result))"
+              "expectMonitorFailure(`expected-result-${key}`,(row)=>{"
+              "row.expected_result[key]=mutateScalar(row.expected_result[key])});\n\n"
+              + test_anchor
+          )
+          replace_exact(test, test_anchor, test_insert)
+
+          replace_exact(
+              workflow,
+              "permissions:\n  contents: read\n\njobs:",
+              "permissions:\n  contents: read\n\n"
+              "concurrency:\n"
+              "  group: m05-intel-pre-eligibility-${{ github.workflow }}-${{ github.ref }}\n"
+              "  cancel-in-progress: false\n\n"
+              "jobs:"
+          )
+          replace_exact(
+              workflow,
+              "    runs-on: ubuntu-latest\n    steps:",
+              "    runs-on: ubuntu-latest\n"
+              "    timeout-minutes: 30\n"
+              "    steps:"
+          )
+          replace_exact(
+              workflow,
+              "          fetch-depth: 0\n",
+              "          fetch-depth: 0\n"
+              "          persist-credentials: false\n"
+          )
+
+          temporary.unlink()
+          PY
+
+          git diff --check
+          git config user.name 'BigBirdReturns'
+          git config user.email 'bigbirdreturns@proton.me'
+          git add -A
+          git commit -m '[M-05 S03-L7] Freeze Intel pre-gate exception scan'
+
+          node --check tools/lib/m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.mjs
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.test.js
+          npm run release:check
+          git restore --staged --worktree .
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-pre-eligibility-realization-monitor.test.js
+          git diff --exit-code
+          git push origin HEAD:agent/m05-s03-l7-intel-pre-gate-exception-scan-v1
