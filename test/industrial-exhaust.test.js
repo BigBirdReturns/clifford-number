@@ -370,6 +370,11 @@ assert.equal(
   'parenthesized signed numeric prose after a phone must remain intact'
 );
 assert.equal(
+  redactContactData('Tel: +44 20 7123. 4567'),
+  'Tel: [contact omitted]',
+  'a dotted international phone group without narrative continuation must remain in the phone span'
+);
+assert.equal(
   redactContactData('Tel: +44 20 7123 4567 ext 1234 5678. 2026 results improved.'),
   'Tel: [contact omitted] ext [contact omitted]. 2026 results improved.',
   'a sentence-separated year after a grouped extension must remain intact'
@@ -393,6 +398,11 @@ assert.equal(
   redactContactData('Tel: +44 20 7123 4567 ext 1234. （－４２） attendees joined.'),
   'Tel: [contact omitted] ext [contact omitted]. （－４２） attendees joined.',
   'fullwidth parenthesized signed numeric prose after an extension must remain intact'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 1234. 5678'),
+  'Tel: [contact omitted] ext [contact omitted]',
+  'a dotted grouped extension without narrative continuation must remain in the extension span'
 );
 assert.equal(
   redactContactData('Contact +672 1234. (2026) results improved.'),

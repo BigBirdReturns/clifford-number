@@ -83,11 +83,18 @@ function normalizedWrappedNumericTail(value) {
     .replace(/\s*\)$/u, '');
 }
 
-function isSentenceSeparatedNumericTail(value, separator) {
+function hasNarrativeNumericContinuation(value) {
+  return /^\d+(?:\s*\))?(?:\s+|(?=[\p{L}]))[\p{L}]/u.test(
+    value.normalize('NFKC').trim()
+  );
+}
+
+function isSentenceSeparatedNumericTail(value, separator, contextualTail) {
   return /^\d/u.test(normalizedWrappedNumericTail(value))
     && /[.!?。！？]\s*(?:[+\-−–—]\s*)?(?:\(\s*(?:[+\-−–—]\s*)?)?$/u.test(
       separator.normalize('NFKC')
-    );
+    )
+    && hasNarrativeNumericContinuation(contextualTail);
 }
 
 function internationalAccessPrefixCandidates(value) {
@@ -207,7 +214,7 @@ function trailingObservationGroup(candidate, groups, externalPrefix, externalSuf
         if (DATE_LIKE_PATTERN.test(normalizedTail)
             || FORMATTED_NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
             || NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
-            || isSentenceSeparatedNumericTail(tail, separator)) return index;
+            || isSentenceSeparatedNumericTail(tail, separator, contextualTail)) return index;
       }
       return groups.length;
     }
@@ -243,7 +250,7 @@ function redactPhoneExtensionCandidate(candidate, marker, offset, input) {
         const tail = extension.slice(start).trim().normalize('NFKC');
         const normalizedTail = normalizedWrappedNumericTail(tail);
         const contextualTail = `${extension.slice(start).trimStart()}${normalizedSuffix}`.normalize('NFKC');
-        if (isSentenceSeparatedNumericTail(tail, separator)
+        if (isSentenceSeparatedNumericTail(tail, separator, contextualTail)
             || DATE_LIKE_PATTERN.test(normalizedTail)
             || FORMATTED_NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
             || NUMERIC_OBSERVATION_PATTERN.test(contextualTail)) {
