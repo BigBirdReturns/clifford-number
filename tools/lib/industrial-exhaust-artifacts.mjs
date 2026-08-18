@@ -359,14 +359,17 @@ export function buildHydrationCandidates({ baseAlerts, discoveryRecords, watchCo
 
 export function selectHydrationCandidates(candidates, state, limit) {
   const positions = new Map(candidates.map((candidate, index) => [candidate.canonical_url, index]));
+  const pageFor = candidate => state?.pages?.[candidate.canonical_url] ?? null;
   const rank = candidate => {
-    const page = state?.pages?.[candidate.canonical_url];
+    const page = pageFor(candidate);
     if (!page) return 0;
     if (page.last_status === 'error') return 1;
     return 2;
   };
+  const lastCheckedAt = candidate => String(pageFor(candidate)?.last_checked_at ?? '');
   return [...candidates]
     .sort((left, right) => rank(left) - rank(right)
+      || lastCheckedAt(left).localeCompare(lastCheckedAt(right))
       || Number(positions.get(left.canonical_url)) - Number(positions.get(right.canonical_url)))
     .slice(0, limit);
 }
@@ -442,7 +445,9 @@ export function buildArtifactAlerts(artifacts, { watchConfig = null, candidates 
     const artifactMatchedTerms = watchConfig
       ? matchWatchTerms({ title: artifact.title, summary: artifact.normalized_text }, watchConfig)
       : [...(artifact.artifact_matched_terms ?? [])];
-    const seedMatchedTerms = [...(candidate?.seed_matched_terms ?? artifact.seed_matched_terms ?? [])];
+    const seedMatchedTerms = watchConfig
+      ? [...(candidate?.seed_matched_terms ?? [])]
+      : [...(artifact.seed_matched_terms ?? [])];
     const matchedTerms = [...new Set([...seedMatchedTerms, ...artifactMatchedTerms])].sort();
     if (!matchedTerms.length) continue;
     const linkedRecords = candidate?.linked_records ?? artifact.linked_records;
