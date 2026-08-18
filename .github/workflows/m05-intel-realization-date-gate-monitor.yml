@@ -1,0 +1,62 @@
+name: M-05 Intel realization date-gate monitor
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-syri-subject-access-public-record-acquisition.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.test.js'
+      - '.github/workflows/m05-intel-realization-date-gate-monitor.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-syri-subject-access-public-record-acquisition.json'
+      - 'tools/lib/m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.test.js'
+      - '.github/workflows/m05-intel-realization-date-gate-monitor.yml'
+  schedule:
+    - cron: '17 12 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate Intel realization date-gate monitor
+        run: |
+          node --check tools/lib/m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.mjs
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic focused state
+        run: |
+          git restore --staged --worktree .
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.test.js
+          git diff --exit-code
+      - name: Open the acquisition gate after the ordinary eligibility date
+        if: github.event_name == 'schedule'
+        env:
+          M05_INTEL_MONITOR_ENFORCE_CLOCK: '1'
+        run: node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-date-gate-monitor.mjs
