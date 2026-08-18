@@ -1,0 +1,291 @@
+{
+  "schema_version": "m05-answerable-power-s03-l7-intel-pre-eligibility-realization-monitor@1",
+  "object_class": "bounded_future_time_gated_monitoring_result",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-03",
+  "leg_id": "S03-L7",
+  "issue": 345,
+  "as_of": "2026-08-17",
+  "status": "intel_pre_eligibility_realization_monitor_frozen",
+  "title": "Intel CHIPS pre-eligibility realization and distribution monitor",
+  "question": "Before the ordinary Commerce resale window opens, does the bounded official record establish an early bilateral exception, completed sale, dividend, warrant exercise, realized federal cash receipt, public-account booking, or transparent public or affected-party distribution sufficient to change the frozen Intel answer state?",
+  "canonical_base": {
+    "branch": "main",
+    "sha": "34dd125446f9b2fa7beadef16c8f68afacb09a61",
+    "tree_sha": "232d0d49835f0d198a5d4ab5cf652154b1c55efe",
+    "latest_controlled_acquisition_pull_request": 2171
+  },
+  "bindings": {
+    "implementation_frontier": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-five-domain-implementation-frontier.json",
+      "blob_sha": "34fa8d54c3a6ea9b993c3b650f4b737dcbbc756c",
+      "schema_version": "m05-answerable-power-s03-l7-five-domain-implementation-frontier@1",
+      "pull_request": 2162,
+      "merge_commit": "01e3f154ef8a86baa90a89dc250adb9c362ba9ee"
+    },
+    "intel_receipt_candidate": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-chips-equity-receipt-candidate.json",
+      "blob_sha": "ff88d6d3cd6ae021f7ecbbe596026b82f15ce58a",
+      "schema_version": "m05-answerable-power-s03-l7-intel-chips-equity-receipt-candidate@1",
+      "pull_request": 2156,
+      "merge_commit": "3e13165dcd033f4c0b7a983af7b8a613622a1896"
+    },
+    "latest_syri_acquisition": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-syri-subject-access-public-record-acquisition.json",
+      "blob_sha": "58ac18ec5841982d8ffc1be75aee6269e5f40dc9",
+      "schema_version": "m05-answerable-power-s03-l7-syri-subject-access-public-record-acquisition@1",
+      "pull_request": 2171,
+      "merge_commit": "34dd125446f9b2fa7beadef16c8f68afacb09a61"
+    }
+  },
+  "target": {
+    "frontier_id": "M05-IF-VALUE-US-INTEL-REALIZATION",
+    "receipt_id": "M05-RC-VALUE-US-INTEL-CHIPS-EQUITY",
+    "domain_id": "APC-VALUE-01",
+    "jurisdiction": "US",
+    "route_class": "future_time_gated_monitoring",
+    "monitored_events": [
+      "bilateral_exception_agreement",
+      "sale",
+      "dividend",
+      "warrant_exercise",
+      "federal_cash_receipt",
+      "public_account_booking",
+      "public_or_affected_party_distribution"
+    ],
+    "standard_sale_route_eligible_on": "2026-08-27",
+    "observed_at": "2026-08-17",
+    "calendar_days_before_standard_window": 10
+  },
+  "monitoring_policy": {
+    "standard_route_active": false,
+    "exception_route_active": true,
+    "exception_requires_bilateral_agreement": true,
+    "bilateral_exception_public_record_located": false,
+    "first_standard_window_scan_not_before": "2026-08-27",
+    "exception_scan_may_execute_before_standard_window": true,
+    "search_exhaustiveness_claimed": false,
+    "current_public_nonexistence_claimed": false,
+    "automatic_promotion_allowed": false,
+    "automatic_issue_closure_allowed": false
+  },
+  "acquisition_protocol": {
+    "executed_at": "2026-08-17",
+    "official_hosts": [
+      "www.sec.gov",
+      "www.intc.com",
+      "www.commerce.gov"
+    ],
+    "query_families": [
+      "Intel Commerce bilateral exception agreement before 27 August 2026",
+      "Commerce sale, dividend, warrant exercise, or other monetization",
+      "federal cash receipt and public-account booking",
+      "public or affected-party distribution of realized value"
+    ],
+    "allowed_source_classes": [
+      "source_native_primary_record",
+      "official_primary_record"
+    ],
+    "search_exhaustiveness_claimed": false,
+    "current_public_nonexistence_claimed": false,
+    "registration_counts_as_sale": false,
+    "escrow_release_counts_as_federal_cash_receipt": false,
+    "mark_to_market_value_counts_as_realized_return": false,
+    "government_ownership_counts_as_public_distribution": false,
+    "metadata_counts_as_substantive_content": false,
+    "failed_and_nonqualifying_routes_preserved": true
+  },
+  "source_records": [
+    {
+      "source_id": "US-INTEL-CHIPS-2026-RESALE-TIMING-PROSPECTUS",
+      "authority": "Intel Corporation, filed with the United States Securities and Exchange Commission",
+      "record_type": "source_native_primary_record",
+      "published_at": "2026-01-23",
+      "url": "https://www.sec.gov/Archives/edgar/data/50863/000005086326000027/a01232026424b7.htm",
+      "locators": [
+        "The prospectus identifies the United States Department of Commerce as selling securityholder for the registered common shares and conditional warrant.",
+        "Unless Intel and Commerce agree otherwise, an offer, sale, or transfer may occur only on or after 27 August 2026, the first anniversary of closing.",
+        "The filing states that registration does not establish that Commerce will sell and that Intel will receive no proceeds from a Commerce sale."
+      ],
+      "source_role": "controls_standard_sale_window_and_registration_boundary",
+      "newly_acquired": false,
+      "qualifies_as_realization_receipt": false,
+      "source_sha256": "53d654caa8a7a291465b48a0ba6fbabe12476c064d9f959805aba11de1e82d06"
+    },
+    {
+      "source_id": "US-INTEL-CHIPS-Q2-2026-10Q",
+      "authority": "Intel Corporation, filed with the United States Securities and Exchange Commission",
+      "record_type": "source_native_primary_record",
+      "published_at": "2026-07-24",
+      "url": "https://www.sec.gov/Archives/edgar/data/50863/000005086326000157/intc-20260627.htm",
+      "locators": [
+        "Intel reports approximately seven million escrowed shares released in the quarter and thirteen million during the six months ended 27 June 2026.",
+        "The filing reports approximately 143 million escrowed shares remaining and states that the conditional warrant was not expected to become exercisable.",
+        "Fair-value changes and the derivative liability measure valuation exposure and do not identify a Commerce sale, federal cash receipt, or public distribution."
+      ],
+      "source_role": "latest_periodic_operation_record_without_realization",
+      "newly_acquired": false,
+      "qualifies_as_realization_receipt": false,
+      "source_sha256": "ddfec90d52639dfbcea4d2cc478c7c422268d9a3c0e1666ab2526649ed34e4c5"
+    },
+    {
+      "source_id": "US-COMMERCE-INTEL-VALUATION-CLAIM",
+      "authority": "United States Department of Commerce",
+      "record_type": "official_primary_record",
+      "published_at": "2026-01-20",
+      "url": "https://www.commerce.gov/news/press-releases/2026/01/first-year-accomplishments-under-secretary-howard-w-lutnick",
+      "locators": [
+        "Commerce describes the Intel position as a strategic federal equity stake.",
+        "The Department reports a mark-to-market valuation and claimed gain rather than a completed sale or other monetization event.",
+        "The statement does not identify a federal cash receipt, public-account booking, dividend, warrant exercise, or distribution to an affected population."
+      ],
+      "source_role": "official_mark_to_market_statement_without_realized_receipt",
+      "newly_acquired": false,
+      "qualifies_as_realization_receipt": false,
+      "source_sha256": "1d728017b7b25885998fb52a3c34b4458dc5aa85f39a58ebe324b0ea4493f37f"
+    }
+  ],
+  "route_ledger": [
+    {
+      "route_id": "US-INTEL-MON-01",
+      "host": "www.sec.gov",
+      "surface": "January 2026 resale prospectus and transfer-timing control",
+      "result_class": "substantive_date_gate_control",
+      "observed_source_ids": [
+        "US-INTEL-CHIPS-2026-RESALE-TIMING-PROSPECTUS"
+      ],
+      "qualifying_receipt_found": false,
+      "preserved_reason": "The prospectus opens an ordinary sale route only on or after 27 August 2026 unless a bilateral exception is agreed; registration and eligibility are not realization.",
+      "route_sha256": "940e8b2d717ec813638d79941f36ac3b9a9312a583d39b377e5fb92bdd0dedda"
+    },
+    {
+      "route_id": "US-INTEL-MON-02",
+      "host": "www.sec.gov",
+      "surface": "Latest bounded Intel periodic filing through the quarter ended 27 June 2026",
+      "result_class": "substantive_operation_without_realization",
+      "observed_source_ids": [
+        "US-INTEL-CHIPS-Q2-2026-10Q"
+      ],
+      "qualifying_receipt_found": false,
+      "preserved_reason": "Escrow releases and fair-value accounting establish continued instrument operation but do not identify a sale, dividend, warrant exercise, federal cash receipt, or distribution.",
+      "route_sha256": "04995d97ef36f9e9e1e7d5f97a00ea3e0fd1d02079358d702507d8dd01a91544"
+    },
+    {
+      "route_id": "US-INTEL-MON-03",
+      "host": "www.commerce.gov",
+      "surface": "Commerce strategic-equity valuation statement",
+      "result_class": "mark_to_market_only",
+      "observed_source_ids": [
+        "US-COMMERCE-INTEL-VALUATION-CLAIM"
+      ],
+      "qualifying_receipt_found": false,
+      "preserved_reason": "A reported market value and claimed gain are valuation statements, not completed realization, cash custody, public-account booking, or distribution.",
+      "route_sha256": "f735471b0573723f24e3f16ee760178e430ca3f29123d56ca03268fa25dca0f4"
+    },
+    {
+      "route_id": "US-INTEL-MON-04",
+      "host": "www.sec.gov",
+      "surface": "Bounded SEC filing search for an early bilateral exception, Commerce sale, dividend, or warrant exercise",
+      "result_class": "no_qualifying_event_located_in_bounded_search",
+      "observed_source_ids": [],
+      "qualifying_receipt_found": false,
+      "preserved_reason": "The bounded official filing search located no qualifying event; the result is not exhaustive and does not establish that no bilateral agreement or nonpublic preparation exists.",
+      "route_sha256": "ddfd9adc5fcf2acbcfe0f9a217b2555eb1124a05739b99627916cc3a3df9941d"
+    },
+    {
+      "route_id": "US-INTEL-MON-05",
+      "host": "www.intc.com",
+      "surface": "Bounded Intel investor-relations filing and release search",
+      "result_class": "no_qualifying_event_located_in_bounded_search",
+      "observed_source_ids": [],
+      "qualifying_receipt_found": false,
+      "preserved_reason": "The bounded issuer search located no qualifying Commerce realization or distribution event and is preserved as a nonexhaustive monitoring result.",
+      "route_sha256": "45b4f1fc2a42f234480092dfddc1de1561475396b15027f37f7ec6ee23ae7937"
+    },
+    {
+      "route_id": "US-INTEL-MON-06",
+      "host": "www.commerce.gov",
+      "surface": "Bounded Commerce news search for sale, exercise, federal receipt, or distribution",
+      "result_class": "no_qualifying_event_located_in_bounded_search",
+      "observed_source_ids": [],
+      "qualifying_receipt_found": false,
+      "preserved_reason": "The bounded Department search located valuation and instrument descriptions but no qualifying cash-realization or distribution record; absence from this search is not a nonexistence finding.",
+      "route_sha256": "8d83b2303125bca5e4331ba951d549415bd3ea29c66820b8567f0d1c7c1ebcad"
+    }
+  ],
+  "observed_state": {
+    "ordinary_sale_window_open": false,
+    "bilateral_exception_publicly_evidenced": false,
+    "resale_registration_effective": true,
+    "performance_linked_escrow_operated": true,
+    "warrant_expected_to_be_exercisable_in_latest_periodic_record": false,
+    "completed_sale_observed": false,
+    "dividend_to_commerce_observed": false,
+    "warrant_exercise_observed": false,
+    "identified_federal_cash_receipt": false,
+    "public_account_booking_observed": false,
+    "transparent_public_or_affected_party_distribution": false,
+    "mark_to_market_valuation_statement_observed": true,
+    "qualifying_realization_receipt_found": false
+  },
+  "finding": {
+    "finding_class": "pre_eligibility_date_gate_and_nonqualifying_monitoring_recorded",
+    "source_records": 3,
+    "new_source_records": 0,
+    "routes_executed": 6,
+    "routes_with_substantive_nonqualifying_content": 3,
+    "bounded_search_routes_without_qualifier": 3,
+    "routes_with_qualifying_receipt": 0,
+    "date_gate_preserved": true,
+    "deficits_closed": [],
+    "deficits_preserved": [
+      "composed_durable_answer",
+      "dimension:independent_authority",
+      "dimension:effective_remedy",
+      "dimension:durability",
+      "dimension:practical_exit_or_governance",
+      "realized_sale_dividend_or_warrant_exercise",
+      "identified_federal_cash_receipt",
+      "transparent_public_or_affected_party_distribution"
+    ],
+    "answer_changes_authorized": false,
+    "repository_effect": "monitoring_contract_only",
+    "next_standard_scan_date": "2026-08-27"
+  },
+  "boundaries": {
+    "claims_early_exception": false,
+    "claims_completed_sale": false,
+    "claims_dividend": false,
+    "claims_warrant_exercise": false,
+    "claims_federal_cash_receipt": false,
+    "claims_public_account_booking": false,
+    "claims_public_or_affected_party_distribution": false,
+    "claims_answer_effectiveness": false,
+    "claims_cross_domain_completion": false,
+    "graph_effect": "none",
+    "conclusion_generated": false,
+    "project_complete": false,
+    "issue_345_may_close": false
+  },
+  "expected_result": {
+    "source_records": 3,
+    "new_source_records": 0,
+    "routes_executed": 6,
+    "routes_with_substantive_nonqualifying_content": 3,
+    "bounded_search_routes_without_qualifier": 3,
+    "routes_with_qualifying_receipt": 0,
+    "standard_route_active": false,
+    "bilateral_exception_public_record_located": false,
+    "completed_sale_observed": false,
+    "identified_federal_cash_receipt": false,
+    "transparent_public_or_affected_party_distribution": false,
+    "candidate_evidence_records": 5,
+    "repository_promotions": 5,
+    "advanced_answer_dimensions": 1,
+    "effective_answers": 0,
+    "qualifying_jurisdictions": 0,
+    "answer_effectiveness": false,
+    "cross_domain_regression_completed": false,
+    "issue_345_may_close": false
+  }
+}
