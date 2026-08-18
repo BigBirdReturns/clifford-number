@@ -9,7 +9,9 @@ import {
   classifyEventHints,
   mergeFeedItems,
   parseFeed,
+  readBoundedUtf8Body,
   readJson,
+  redactContactData,
   validateRegistry,
   validateWatchTerms,
   writeFeedReceipt
@@ -115,6 +117,65 @@ assert.deepEqual(
   ['0817010000', '0817020000']
 );
 assert.equal(new Set(numericIdentityParsed.items.map(item => item.source_record_key)).size, 2);
+
+const metricRedaction = redactContactData(
+  'Dentsu reported 123456789 impressions and 987654321 yen on 2026-08-17. Tel: 03 6216 5111. International: +81 3 6216 5111.'
+);
+assert.match(metricRedaction, /123456789 impressions/u);
+assert.match(metricRedaction, /987654321 yen/u);
+assert.match(metricRedaction, /2026-08-17/u);
+assert.equal((metricRedaction.match(/\[contact omitted\]/gu) ?? []).length, 2);
+
+const numericMetricRss = value => `<?xml version="1.0"?><rss version="2.0"><channel><title>Metric revisions</title>
+<item><title>Audience metric</title><link>https://example.test/releases/metric</link><guid>metric-release</guid><description>Dentsu measured ${value} people. Contact +81 3 6216 5111.</description></item>
+</channel></rss>`;
+const firstMetric = parseFeed(numericMetricRss('123456789'), source).items[0];
+const secondMetric = parseFeed(numericMetricRss('987654321'), source).items[0];
+assert.match(firstMetric.summary, /123456789 people/u);
+assert.match(secondMetric.summary, /987654321 people/u);
+assert.notEqual(firstMetric.content_sha256, secondMetric.content_sha256, 'numeric metric revisions must remain distinguishable');
+
+const encoder = new TextEncoder();
+function responseFromChunks(chunks, tracker = {}) {
+  let index = 0;
+  return {
+    body: {
+      getReader() {
+        return {
+          async read() {
+            tracker.reads = (tracker.reads ?? 0) + 1;
+            if (index >= chunks.length) return { done: true, value: undefined };
+            return { done: false, value: chunks[index++] };
+          },
+          async cancel() {
+            tracker.cancelled = true;
+          },
+          releaseLock() {
+            tracker.released = true;
+          }
+        };
+      }
+    }
+  };
+}
+
+const utf8Body = encoder.encode('A€B');
+assert.equal(
+  await readBoundedUtf8Body(responseFromChunks([utf8Body.slice(0, 2), utf8Body.slice(2)]), utf8Body.byteLength),
+  'A€B',
+  'incremental decoding must preserve split UTF-8 code points'
+);
+const boundedTracker = {};
+await assert.rejects(
+  readBoundedUtf8Body(responseFromChunks([
+    encoder.encode('1234'), encoder.encode('5678'), encoder.encode('must-not-be-read')
+  ], boundedTracker), 6),
+  /body exceeds 6 bytes/u
+);
+assert.equal(boundedTracker.reads, 2, 'the reader must stop immediately after the limit-crossing chunk');
+assert.equal(boundedTracker.cancelled, true, 'the oversized response stream must be cancelled');
+assert.equal(boundedTracker.released, true, 'the response reader lock must be released');
+
 assert.equal(cleanText('<p>Hello&nbsp;world</p>'), 'Hello world');
 
 assert.throws(() => validateRegistry({

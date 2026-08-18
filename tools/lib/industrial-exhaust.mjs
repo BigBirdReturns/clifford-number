@@ -10,6 +10,10 @@ const TRACKING_PARAMS = new Set([
   'fbclid', 'gclid', 'dclid', 'mc_cid', 'mc_eid', 'msclkid', '_hsenc', '_hsmi'
 ]);
 
+const PHONE_CANDIDATE_PATTERN = /(?<![\p{L}\p{N}])(?:\+?\d[\d().\s-]{5,}\d)(?![\p{L}\p{N}])/gu;
+const PHONE_LABEL_PATTERN = /(?:^|\b)(?:tel(?:ephone)?|phone|mobile|cell|fax)\s*:?\s*$/iu;
+const DATE_LIKE_PATTERN = /^(?:\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4})$/u;
+
 const EVENT_RULES = [
   ['product_launch', /\b(launch(?:es|ed|ing)?|unveil(?:s|ed|ing)?|introduc(?:e|es|ed|ing)|release(?:s|d|ing)?|new (?:product|service|solution|platform|tool|model|capability))\b/iu],
   ['partnership_vendor', /\b(partner(?:s|ed|ing|ship)?|collaborat(?:e|es|ed|ion)|alliance|vendor|supplier|integration)\b/iu],
@@ -62,10 +66,55 @@ export function decodeXmlEntities(value) {
   });
 }
 
+function looksLikePhoneNumber(candidate, prefix) {
+  const trimmed = candidate.trim();
+  const digits = trimmed.replace(/\D/gu, '');
+  if (digits.length < 7 || digits.length > 15 || DATE_LIKE_PATTERN.test(trimmed)) return false;
+
+  const labelled = PHONE_LABEL_PATTERN.test(prefix.slice(-32));
+  const international = /^(?:\+|00)/u.test(trimmed);
+  const parenthesized = /\(\s*\d{1,5}\s*\)/u.test(trimmed);
+  const domesticGrouped = /^0\d{1,4}(?:[\s.-]+\d{2,5}){2,}$/u.test(trimmed);
+  const northAmericanGrouped = /^(?:1[\s.-]+)?\d{3}[\s.-]+\d{3}[\s.-]+\d{4}$/u.test(trimmed);
+  return labelled || international || parenthesized || domesticGrouped || northAmericanGrouped;
+}
+
 export function redactContactData(value) {
-  return String(value ?? '')
-    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/giu, '[contact omitted]')
-    .replace(/(?<!\w)(?:\+?\d[\d().\s-]{7,}\d)(?!\w)/gu, '[contact omitted]');
+  const emailRedacted = String(value ?? '')
+    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/giu, '[contact omitted]');
+  return emailRedacted.replace(PHONE_CANDIDATE_PATTERN, (candidate, offset, input) => {
+    const prefix = input.slice(Math.max(0, offset - 32), offset);
+    return looksLikePhoneNumber(candidate, prefix) ? '[contact omitted]' : candidate;
+  });
+}
+
+export async function readBoundedUtf8Body(response, maxBytes) {
+  const limit = Number(maxBytes);
+  if (!Number.isSafeInteger(limit) || limit < 0) throw new Error('body byte limit must be a non-negative safe integer');
+  if (!response?.body || typeof response.body.getReader !== 'function') throw new Error('response body is unavailable');
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  const pieces = [];
+  let receivedBytes = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = value instanceof Uint8Array ? value : new Uint8Array(value);
+      receivedBytes += chunk.byteLength;
+      if (receivedBytes > limit) {
+        try { await reader.cancel(`body exceeds ${limit} bytes`); } catch {}
+        throw new Error(`body exceeds ${limit} bytes`);
+      }
+      pieces.push(decoder.decode(chunk, { stream: true }));
+    }
+    pieces.push(decoder.decode());
+    return pieces.join('');
+  } finally {
+    try { reader.releaseLock(); } catch {}
+  }
 }
 
 function cleanXmlScalar(value, max = 4000) {
