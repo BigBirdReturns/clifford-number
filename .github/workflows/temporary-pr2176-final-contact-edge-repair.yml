@@ -1,0 +1,182 @@
+name: Temporary PR2176 final contact edge repair
+
+on:
+  push:
+    branches:
+      - agent/dentsu-industrial-exhaust-review-fixes
+    paths:
+      - '.github/workflows/temporary-pr2176-final-contact-edge-repair.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-pr2176-final-contact-edge-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/dentsu-industrial-exhaust-review-fixes
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify exact entry state
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "6e768cedf804cdfdc30442e6876c8a65e7396423"
+          test "$(git diff --name-only HEAD^ HEAD)" = ".github/workflows/temporary-pr2176-final-contact-edge-repair.yml"
+      - name: Apply sentence-dot extension and pair-group repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label} anchor count was {count}, expected 1')
+              return text.replace(old, new, 1)
+
+          def insert_after_assertion(text, message, block, label):
+              message_index = text.find(message)
+              if message_index < 0:
+                  raise SystemExit(f'{label} message marker was absent')
+              statement_end = text.find('\n);', message_index)
+              if statement_end < 0:
+                  raise SystemExit(f'{label} assertion terminator was absent')
+              insertion = statement_end + len('\n);')
+              return text[:insertion] + '\n' + block + text[insertion:]
+
+          library_path = Path('tools/lib/industrial-exhaust.mjs')
+          library = library_path.read_text(encoding='utf-8')
+
+          old_extension_pattern = r'''const PHONE_EXTENSION_PATTERN = /(\[contact omitted\][\s,;:()（）\-–—]*(?:(?:(?:ext(?:ension)?|x)\s*[.:#：＃]?\s*)|(?:内線(?:番号)?\s*[:：#＃]?\s*)|(?:[#＃]\s*))(?:[（(]\s*)?)[0-9０-９]+(?:[()./／\s\-‐‑‒–—−－．（）]+[0-9０-９]+)*/giu;'''
+          new_extension_pattern = r'''const PHONE_EXTENSION_PATTERN = /(\[contact omitted\][\s,;:()（）.．。\-–—]*(?:(?:(?:ext(?:ension)?|x)\s*[.:#：＃]?\s*)|(?:内線(?:番号)?\s*[:：#＃]?\s*)|(?:[#＃]\s*))(?:[（(]\s*)?)[0-9０-９]+(?:[()./／\s\-‐‑‒–—−－．（）]+[0-9０-９]+)*/giu;'''
+          library = replace_once(
+              library,
+              old_extension_pattern,
+              new_extension_pattern,
+              'extension pattern'
+          )
+
+          old_suffix_pattern = r'''const PHONE_EXTENSION_SUFFIX_PATTERN = /^\s*[,;:()（）\-–—]*(?:(?:ext(?:ension)?|x)\s*[.:#：＃]?|内線(?:番号)?\s*[:：#＃]?|[#＃])\s*(?:[（(]\s*)?[0-9０-９]/iu;'''
+          new_suffix_pattern = r'''const PHONE_EXTENSION_SUFFIX_PATTERN = /^\s*[,;:()（）.．。\-–—]*(?:(?:ext(?:ension)?|x)\s*[.:#：＃]?|内線(?:番号)?\s*[:：#＃]?|[#＃])\s*(?:[（(]\s*)?[0-9０-９]/iu;'''
+          library = replace_once(
+              library,
+              old_suffix_pattern,
+              new_suffix_pattern,
+              'extension suffix pattern'
+          )
+
+          old_dotted_helper = r'''function isDottedContactContinuation(value, separator) {
+            const normalizedTail = normalizedWrappedNumericTail(value);
+            return !/^(?:19|20)\d{2}$/u.test(normalizedTail)
+              && /^\d{3,4}$/u.test(normalizedTail)
+              && /^(?:\s*\)\s*)?\.\s*(?:\(\s*)?$/u.test(separator.normalize('NFKC'));
+          }'''
+          new_dotted_helper = r'''function isDottedContactContinuation(value, separator, groups, index) {
+            const normalizedTail = normalizedWrappedNumericTail(value);
+            if (/^(?:19|20)\d{2}$/u.test(normalizedTail)) return false;
+            if (!/^(?:\s*\)\s*)?\.\s*(?:\(\s*)?$/u.test(separator.normalize('NFKC'))) {
+              return false;
+            }
+            if (/^\d{3,4}$/u.test(normalizedTail)) return true;
+            if (!/^\d{2}$/u.test(normalizedTail) || index < 3) return false;
+
+            return groups.slice(index - 3, index + 1).every(group =>
+              /^\d{2}$/u.test(group[0].normalize('NFKC'))
+            );
+          }'''
+          library = replace_once(
+              library,
+              old_dotted_helper,
+              new_dotted_helper,
+              'dotted continuation helper'
+          )
+
+          call_anchor = 'isDottedContactContinuation(tail, separator)'
+          call_count = library.count(call_anchor)
+          if call_count != 2:
+              raise SystemExit(f'dotted continuation call count was {call_count}, expected 2')
+          library = library.replace(
+              call_anchor,
+              'isDottedContactContinuation(tail, separator, groups, index)'
+          )
+          library_path.write_text(library, encoding='utf-8')
+
+          test_path = Path('test/industrial-exhaust.test.js')
+          tests = test_path.read_text(encoding='utf-8')
+
+          extension_marker_tests = r'''assert.equal(
+            redactContactData('Tel: +44 20 7123 4567. Ext. 1234'),
+            'Tel: [contact omitted]. Ext. [contact omitted]',
+            'an explicit extension marker must retain authority across an ASCII sentence dot'
+          );
+          assert.equal(
+            redactContactData('電話番号03-6216-8041．内線１２３４'),
+            '電話番号[contact omitted]．内線[contact omitted]',
+            'a Japanese extension marker must retain authority across a fullwidth sentence dot'
+          );
+          assert.equal(
+            redactContactData('電話番号03-6216-8041。内線１２３４'),
+            '電話番号[contact omitted]。内線[contact omitted]',
+            'a Japanese extension marker must retain authority across an ideographic full stop'
+          );'''
+          tests = insert_after_assertion(
+              tests,
+              'parenthesized grouped extension digits must be fully redacted',
+              extension_marker_tests,
+              'sentence-dot extension tests'
+          )
+
+          two_digit_tests = r'''assert.equal(
+            redactContactData('Tel: +33 1 42 68 53. 00 office hours apply.'),
+            'Tel: [contact omitted] office hours apply.',
+            'narrative text after a two-digit pair-group phone ending must not expose that group'
+          );
+          assert.equal(
+            redactContactData('Tel: +33 1 42 68 53. 00'),
+            'Tel: [contact omitted]',
+            'a two-digit dotted pair-group ending must remain in the phone span'
+          );
+          assert.equal(
+            redactContactData('Contact +33 1 42 68 53. 00 people attended.'),
+            'Contact [contact omitted]. 00 people attended.',
+            'strong unit-labelled evidence must override a two-digit dotted pair-group tie-break'
+          );'''
+          tests = insert_after_assertion(
+              tests,
+              'narrative text after a three-digit dotted phone group must not expose that group',
+              two_digit_tests,
+              'two-digit dotted phone tests'
+          )
+          test_path.write_text(tests, encoding='utf-8')
+          PY
+      - name: Validate focused repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js
+          git diff --check
+      - name: Publish repaired exact head and remove temporary runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected_remote_head="$(git rev-parse HEAD)"
+          rm .github/workflows/temporary-pr2176-final-contact-edge-repair.yml
+          git config user.name "BigBirdReturns"
+          git config user.email "bigbirdreturns@proton.me"
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js .github/workflows/temporary-pr2176-final-contact-edge-repair.yml
+          git diff --cached --check
+          git commit -m "Redact dotted extensions and pair-group endings"
+          git push --force-with-lease=refs/heads/agent/dentsu-industrial-exhaust-review-fixes:${expected_remote_head} origin HEAD:refs/heads/agent/dentsu-industrial-exhaust-review-fixes
