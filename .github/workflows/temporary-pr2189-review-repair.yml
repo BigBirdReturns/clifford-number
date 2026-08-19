@@ -1,0 +1,211 @@
+name: Temporary PR2189 review repair
+
+on:
+  push:
+    branches:
+      - agent/dentsu-identifier-context-followup
+    paths:
+      - .github/pr2189-review-repair-trigger.txt
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-pr2189-review-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/dentsu-identifier-context-followup
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply P1 review repairs and regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git diff --name-only HEAD^ HEAD)" = ".github/pr2189-review-repair-trigger.txt"
+          git merge-base --is-ancestor 65832f838502a95f06fdfb11bc6e892d315e14cf HEAD
+
+          python - <<'PY'
+          from pathlib import Path
+          from textwrap import dedent
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label} anchor count was {count}, expected 1')
+              return text.replace(old, new, 1)
+
+          library_path = Path('tools/lib/industrial-exhaust.mjs')
+          library = library_path.read_text(encoding='utf-8')
+
+          phone_label = r'''const PHONE_LABEL_PATTERN = /(?:(?:^|\b)(?:tel(?:ephone)?|phone|mobile|cell|fax|contact)\s*(?:number\s*)?(?:is\s*)?[:.]?\s*|(?:電話(?:番号)?|携帯(?:電話)?|ファックス|連絡先|お問い合わせ先)\s*[:.]?\s*)$/iu;'''
+          identifier_label = r'''const EXPLICIT_IDENTIFIER_LABEL_PATTERN = /(?:(?:^|\b)(?:id|guid|identifier|reference|revision|release(?:\s+id)?|record(?:\s+id)?|receipt|sha(?:-?256)?|hash|ticket|case|invoice|order|code)|(?:識別子|参照(?:番号)?|管理番号|受付番号|注文番号|案件番号|コード))\s*[:：=#＃-]?\s*$/iu;'''
+          library = replace_once(
+              library,
+              phone_label,
+              f'{phone_label}\n{identifier_label}',
+              'identifier label constant'
+          )
+
+          old_helpers = dedent('''\
+          function hasPhoneLabelPrefix(prefix) {
+            return PHONE_LABEL_PATTERN.test(prefix.normalize('NFKC').slice(-48));
+          }
+          ''')
+          new_helpers = dedent('''\
+          function explicitIdentifierLabelMatch(normalizedPrefix) {
+            return normalizedPrefix.slice(-128).match(EXPLICIT_IDENTIFIER_LABEL_PATTERN);
+          }
+
+          function hasExplicitIdentifierPrefixNormalized(normalizedPrefix) {
+            return Boolean(explicitIdentifierLabelMatch(normalizedPrefix));
+          }
+
+          function hasPhoneLabelPrefixNormalized(normalizedPrefix) {
+            if (PHONE_LABEL_PATTERN.test(normalizedPrefix.slice(-48))) return true;
+            const identifierMatch = explicitIdentifierLabelMatch(normalizedPrefix);
+            if (!identifierMatch || identifierMatch.index == null) return false;
+            const window = normalizedPrefix.slice(-128);
+            return PHONE_LABEL_PATTERN.test(window.slice(0, identifierMatch.index).slice(-48));
+          }
+
+          function hasPhoneLabelPrefix(prefix) {
+            return hasPhoneLabelPrefixNormalized(prefix.normalize('NFKC'));
+          }
+          ''')
+          library = replace_once(library, old_helpers, new_helpers, 'prefix helpers')
+
+          library = replace_once(
+              library,
+              "  const labelled = PHONE_LABEL_PATTERN.test(normalizedPrefix.slice(-48));",
+              "  const labelled = hasPhoneLabelPrefixNormalized(normalizedPrefix);",
+              'phone label scoring'
+          )
+
+          old_identifier = dedent(r'''\
+            const explicitIdentifierContext = /(?:(?:^|\b)(?:id|guid|identifier|reference|revision|release(?:\s+id)?|record(?:\s+id)?|receipt|sha(?:-?256)?|hash|ticket|case|invoice|order|code)|(?:識別子|参照(?:番号)?|管理番号|受付番号|注文番号|案件番号|コード))\s*[:：=#＃-]?\s*$/iu.test(
+              normalizedPrefix.slice(-80)
+            );
+          ''')
+          new_identifier = "  const explicitIdentifierContext = hasExplicitIdentifierPrefixNormalized(normalizedPrefix);\n"
+          library = replace_once(library, old_identifier, new_identifier, 'identifier scoring')
+
+          subspan_anchor = dedent('''\
+          function redactPhoneSubspans(candidate, externalPrefix, externalSuffix, allowInitialGroup = true) {
+            const groups = [...candidate.matchAll(DIGIT_RUN_PATTERN)];
+            if (!groups.length) return candidate;
+
+            const observationGroup = trailingObservationGroup(candidate, groups, externalPrefix, externalSuffix);
+            const normalizedCandidate = candidate.trim().normalize('NFKC');
+            const wholeSpanIsAffirmative = isInternationalPhoneCandidate(normalizedCandidate) || hasPhoneLabelPrefix(externalPrefix);
+          ''')
+          subspan_replacement = dedent('''\
+          function redactPhoneSubspans(candidate, externalPrefix, externalSuffix, allowInitialGroup = true) {
+            const groups = [...candidate.matchAll(DIGIT_RUN_PATTERN)];
+            if (!groups.length) return candidate;
+
+            const normalizedExternalPrefix = externalPrefix.normalize('NFKC');
+            const phoneLabelContext = hasPhoneLabelPrefixNormalized(normalizedExternalPrefix);
+            if (hasExplicitIdentifierPrefixNormalized(normalizedExternalPrefix) && !phoneLabelContext) {
+              return candidate;
+            }
+
+            const observationGroup = trailingObservationGroup(candidate, groups, externalPrefix, externalSuffix);
+            const normalizedCandidate = candidate.trim().normalize('NFKC');
+            const wholeSpanIsAffirmative = isInternationalPhoneCandidate(normalizedCandidate) || phoneLabelContext;
+          ''')
+          library = replace_once(library, subspan_anchor, subspan_replacement, 'subspan identifier propagation')
+          library_path.write_text(library, encoding='utf-8')
+
+          test_path = Path('test/industrial-exhaust.test.js')
+          tests = test_path.read_text(encoding='utf-8')
+
+          old_identifiers = dedent('''\
+          for (const labelledIdentifier of [
+            'ID: 09012345678',
+            'ＩＤ：０９０１２３４５６７８',
+            'GUID: 03-6216-8041',
+            'reference: +81 3 6216 5111',
+            '管理番号：03-6216-8041',
+            '識別子：+81 3 6216 5111'
+          ]) {
+          ''')
+          new_identifiers = dedent('''\
+          for (const labelledIdentifier of [
+            'ID: 09012345678',
+            'ＩＤ：０９０１２３４５６７８',
+            'ID: +44 (0)20 7123 4567',
+            'GUID: 06012345678',
+            'GUID: 09012345678',
+            'GUID: 03-6216-8041',
+            'release id 0817020000',
+            'reference 0362168041',
+            'reference: +81 3 6216 5111',
+            'reference: +1 212 555 1234',
+            '管理番号：０６０１２３４５６７８',
+            '管理番号：０９０１２３４５６７８',
+            '管理番号：03-6216-8041',
+            '識別子：+81 3 6216 5111'
+          ]) {
+          ''')
+          tests = replace_once(tests, old_identifiers, new_identifiers, 'identifier regressions')
+
+          old_phone_loop = dedent('''\
+          for (const labelledPhone of [
+            'Phone: 09012345678',
+            'Phone: 03-6216-8041',
+            'Phone: +81 3 6216 5111'
+          ]) {
+            assert.equal(
+              redactContactData(labelledPhone),
+              'Phone: [contact omitted]',
+              'phone labels must continue to redact compact, grouped, and international numbers'
+            );
+          }
+          ''')
+          new_phone_loop = dedent('''\
+          for (const [labelledPhone, expected] of [
+            ['Phone: 09012345678', 'Phone: [contact omitted]'],
+            ['Phone: 03-6216-8041', 'Phone: [contact omitted]'],
+            ['Phone: +81 3 6216 5111', 'Phone: [contact omitted]'],
+            ['Phone: ID: 09012345678', 'Phone: ID: [contact omitted]'],
+            ['Phone ID: 09012345678', 'Phone ID: [contact omitted]'],
+            ['電話番号 ＩＤ：０９０１２３４５６７８', '電話番号 ＩＤ：[contact omitted]']
+          ]) {
+            assert.equal(
+              redactContactData(labelledPhone),
+              expected,
+              'an affirmative phone label must override a trailing identifier label'
+            );
+          }
+          ''')
+          tests = replace_once(tests, old_phone_loop, new_phone_loop, 'phone-label precedence regressions')
+          test_path.write_text(tests, encoding='utf-8')
+          PY
+      - name: Validate and publish the clean repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js
+          git diff --check
+
+          rm -f .github/workflows/temporary-pr2189-review-repair.yml
+          rm -f .github/pr2189-review-repair-trigger.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          test "$(git diff --cached --name-only | sort)" = $'.github/pr2189-review-repair-trigger.txt\n.github/workflows/temporary-pr2189-review-repair.yml\ntest/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git commit -m "fix(crawler): propagate identifier and phone-label context"
+          git push origin HEAD:refs/heads/agent/dentsu-identifier-context-followup
