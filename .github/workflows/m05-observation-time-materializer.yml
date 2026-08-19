@@ -1,0 +1,34 @@
+name: M-05 observation-time product materializer
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-observation-time-materializer-v1
+    paths:
+      - '.tmp/m05-observation-time/**'
+      - '.github/workflows/m05-observation-time-materializer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m05-observation-time-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Materialize exact observation-time product
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .tmp/m05-observation-time/materialize.mjs
