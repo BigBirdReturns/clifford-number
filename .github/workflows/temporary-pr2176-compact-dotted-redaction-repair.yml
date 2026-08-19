@@ -1,0 +1,256 @@
+name: Temporary PR2176 compact and dotted redaction repair
+
+on:
+  push:
+    branches:
+      - agent/dentsu-industrial-exhaust-review-fixes
+    paths:
+      - '.github/workflows/temporary-pr2176-compact-dotted-redaction-repair.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-pr2176-compact-dotted-redaction-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/dentsu-industrial-exhaust-review-fixes
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify exact entry state
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "66b50a673b8dfc5932d0a8c68cd3a805b5e7ee8f"
+          test "$(git diff --name-only HEAD^ HEAD)" = ".github/workflows/temporary-pr2176-compact-dotted-redaction-repair.yml"
+      - name: Apply compact domestic and dotted contact repairs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          library_path = Path('tools/lib/industrial-exhaust.mjs')
+          library = library_path.read_text(encoding='utf-8')
+
+          domestic_anchor = r'''  const domesticPairGrouped = groups.length >= 4
+                && groups.length <= 6
+                && /^0\d$/u.test(groups[0])
+                && groups.slice(1).every(group => /^\d{2}$/u.test(group));
+              const domesticGrouped = (groups.length === 2
+                && /^0\d{1,4}$/u.test(groups[0])
+                && /^\d{6,8}$/u.test(groups[1]))
+              || (groups.length === 3
+                && /^0\d{1,4}$/u.test(groups[0])
+                && /^\d{2,5}$/u.test(groups[1])
+                && /^\d{3,5}$/u.test(groups[2]))
+              || domesticPairGrouped;'''
+          domestic_replacement = r'''  const compactIdentifierContext = /(?:^|\b)(?:guid|identifier|reference|revision|release(?:\s+id)?|record(?:\s+id)?|receipt|sha(?:-?256)?|hash|ticket|case|invoice|order|code)\s*[:=#-]?\s*$/iu.test(
+            prefix.normalize('NFKC').slice(-80)
+          );
+          const compactJapaneseDomestic = groups.length === 1
+            && (/^0[1-9]\d{8}$/u.test(groups[0])
+              || /^0(?:20|50|60|70|80|90)\d{8}$/u.test(groups[0]))
+            && !compactIdentifierContext;
+          const domesticPairGrouped = groups.length >= 4
+            && groups.length <= 6
+            && /^0\d$/u.test(groups[0])
+            && groups.slice(1).every(group => /^\d{2}$/u.test(group));
+          const domesticGrouped = (groups.length === 2
+              && /^0\d{1,4}$/u.test(groups[0])
+              && /^\d{6,8}$/u.test(groups[1]))
+            || (groups.length === 3
+              && /^0\d{1,4}$/u.test(groups[0])
+              && /^\d{2,5}$/u.test(groups[1])
+              && /^\d{3,5}$/u.test(groups[2]))
+            || domesticPairGrouped;'''
+          if library.count(domestic_anchor) != 1:
+              raise SystemExit('domestic classification anchor did not match exactly once')
+          library = library.replace(domestic_anchor, domestic_replacement, 1)
+
+          base_anchor = r'''  if (parenthesized) base = Math.max(base, 600);
+          if (domesticGrouped || northAmericanGrouped) base = Math.max(base, 550);'''
+          base_replacement = r'''  if (parenthesized) base = Math.max(base, 600);
+          if (compactJapaneseDomestic) base = Math.max(base, 575);
+          if (domesticGrouped || northAmericanGrouped) base = Math.max(base, 550);'''
+          if library.count(base_anchor) != 1:
+              raise SystemExit('phone score base anchor did not match exactly once')
+          library = library.replace(base_anchor, base_replacement, 1)
+
+          helper_anchor = 'function trailingObservationGroup(candidate, groups, externalPrefix, externalSuffix) {'
+          helper_replacement = r'''function isDottedTerminalContactGroup(groups, index, separator) {
+            if (index !== groups.length - 1) return false;
+            if (!/^[.]\s*$/u.test(separator.normalize('NFKC'))) return false;
+
+            const current = groups[index]?.[0]?.normalize('NFKC') ?? '';
+            const previous = groups[index - 1]?.[0]?.normalize('NFKC') ?? '';
+            if (/^(?:19|20)\d{2}$/u.test(current)) return false;
+
+            const pairRun = index >= 3
+              && groups.slice(index - 3, index + 1)
+                .every(group => /^\d{2}$/u.test(group[0].normalize('NFKC')));
+            return (/^\d{4}$/u.test(current) && /^\d{3,4}$/u.test(previous))
+              || (/^\d{3}$/u.test(current) && /^\d{3}$/u.test(previous))
+              || pairRun;
+          }
+
+          function trailingObservationGroup(candidate, groups, externalPrefix, externalSuffix) {'''
+          if library.count(helper_anchor) != 1:
+              raise SystemExit('trailing observation helper anchor did not match exactly once')
+          library = library.replace(helper_anchor, helper_replacement, 1)
+
+          phone_boundary_anchor = r'''        if (DATE_LIKE_PATTERN.test(normalizedTail)
+                    || FORMATTED_NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
+                    || NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
+                    || isSentenceSeparatedNumericTail(tail, separator, contextualTail)) return index;'''
+          phone_boundary_replacement = r'''        const explicitObservation = DATE_LIKE_PATTERN.test(normalizedTail)
+            || FORMATTED_NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
+            || NUMERIC_OBSERVATION_PATTERN.test(contextualTail);
+          const narrativeObservation = isSentenceSeparatedNumericTail(tail, separator, contextualTail);
+          const dottedContactContinuation = isDottedTerminalContactGroup(groups, index, separator);
+          if (explicitObservation || (narrativeObservation && !dottedContactContinuation)) return index;'''
+          if library.count(phone_boundary_anchor) != 1:
+              raise SystemExit('phone observation boundary anchor did not match exactly once')
+          library = library.replace(phone_boundary_anchor, phone_boundary_replacement, 1)
+
+          extension_boundary_anchor = r'''        if (isSentenceSeparatedNumericTail(tail, separator, contextualTail)
+                    || DATE_LIKE_PATTERN.test(normalizedTail)
+                    || FORMATTED_NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
+                    || NUMERIC_OBSERVATION_PATTERN.test(contextualTail)) {
+                  lastGroup = index - 1;
+                  break;
+                }'''
+          extension_boundary_replacement = r'''        const explicitObservation = DATE_LIKE_PATTERN.test(normalizedTail)
+            || FORMATTED_NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
+            || NUMERIC_OBSERVATION_PATTERN.test(contextualTail);
+          const narrativeObservation = isSentenceSeparatedNumericTail(tail, separator, contextualTail);
+          const dottedContactContinuation = isDottedTerminalContactGroup(groups, index, separator);
+          if (explicitObservation || (narrativeObservation && !dottedContactContinuation)) {
+            lastGroup = index - 1;
+            break;
+          }'''
+          if library.count(extension_boundary_anchor) != 1:
+              raise SystemExit('extension observation boundary anchor did not match exactly once')
+          library = library.replace(extension_boundary_anchor, extension_boundary_replacement, 1)
+          library_path.write_text(library, encoding='utf-8')
+
+          test_path = Path('test/industrial-exhaust.test.js')
+          tests = test_path.read_text(encoding='utf-8')
+
+          compact_anchor = r'''for (const multiGroupDomestic of [
+            '01 42 68 53 00',
+            '01 42 68 53',
+            '０１ ４２ ６８ ５３ ００'
+          ]) {'''
+          compact_replacement = r'''for (const compactJapaneseDomestic of [
+            '09012345678',
+            '05012345678',
+            '0362168041',
+            '０９０１２３４５６７８'
+          ]) {
+            assert.equal(
+              redactContactData(compactJapaneseDomestic),
+              '[contact omitted]',
+              'compact unlabeled Japanese domestic telephone numbers must be redacted'
+            );
+          }
+          for (const compactIdentifier of [
+            'release id 0817020000',
+            'GUID: 09012345678',
+            'reference 0362168041'
+          ]) {
+            assert.equal(
+              redactContactData(compactIdentifier),
+              compactIdentifier,
+              'explicit identifier labels must protect compact numeric identifiers from phone classification'
+            );
+          }
+          for (const multiGroupDomestic of [
+            '01 42 68 53 00',
+            '01 42 68 53',
+            '０１ ４２ ６８ ５３ ００'
+          ]) {'''
+          if tests.count(compact_anchor) != 1:
+              raise SystemExit('compact domestic test anchor did not match exactly once')
+          tests = tests.replace(compact_anchor, compact_replacement, 1)
+
+          dotted_phone_anchor = r'''assert.equal(
+            redactContactData('Tel: +44 20 7123. 4567'),
+            'Tel: [contact omitted]',
+            'a dotted international phone group without narrative continuation must remain in the phone span'
+          );'''
+          dotted_phone_replacement = dotted_phone_anchor + r'''
+          for (const [input, expected] of [
+            [
+              'Tel: +44 20 7123. 4567 office hours apply.',
+              'Tel: [contact omitted] office hours apply.'
+            ],
+            [
+              'Call +1 212 555. 1234 for support.',
+              'Call [contact omitted] for support.'
+            ],
+            [
+              'Tel: +33 1 42 68 53. 00 office hours apply.',
+              'Tel: [contact omitted] office hours apply.'
+            ]
+          ]) {
+            assert.equal(
+              redactContactData(input),
+              expected,
+              'a dotted terminal phone group must remain inside redaction when its grouping is contact-shaped'
+            );
+          }
+          assert.equal(
+            redactContactData('Contact +81 3 6216 5111. 1234 impressions increased.'),
+            'Contact [contact omitted]. 1234 impressions increased.',
+            'an explicit metric after sentence punctuation must remain outside the phone span'
+          );'''
+          if tests.count(dotted_phone_anchor) != 1:
+              raise SystemExit('dotted phone test anchor did not match exactly once')
+          tests = tests.replace(dotted_phone_anchor, dotted_phone_replacement, 1)
+
+          dotted_extension_anchor = r'''assert.equal(
+            redactContactData('Tel: +44 20 7123 4567 ext 1234. 5678'),
+            'Tel: [contact omitted] ext [contact omitted]',
+            'a dotted grouped extension without narrative continuation must remain in the extension span'
+          );'''
+          dotted_extension_replacement = dotted_extension_anchor + r'''
+          assert.equal(
+            redactContactData('Tel: +44 20 7123 4567 ext 1234. 5678 is the extension.'),
+            'Tel: [contact omitted] ext [contact omitted] is the extension.',
+            'a dotted terminal extension group must remain inside redaction despite narrative continuation'
+          );'''
+          if tests.count(dotted_extension_anchor) != 1:
+              raise SystemExit('dotted extension test anchor did not match exactly once')
+          tests = tests.replace(dotted_extension_anchor, dotted_extension_replacement, 1)
+          test_path.write_text(tests, encoding='utf-8')
+          PY
+      - name: Validate focused repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js
+          git diff --check
+      - name: Publish repaired exact head and remove temporary runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected_remote_head="$(git rev-parse HEAD)"
+          rm .github/workflows/temporary-pr2176-compact-dotted-redaction-repair.yml
+          git config user.name "BigBirdReturns"
+          git config user.email "bigbirdreturns@proton.me"
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js .github/workflows/temporary-pr2176-compact-dotted-redaction-repair.yml
+          git diff --cached --check
+          git commit -m "Redact compact and dotted contact formats"
+          git push --force-with-lease=refs/heads/agent/dentsu-industrial-exhaust-review-fixes:${expected_remote_head} origin HEAD:refs/heads/agent/dentsu-industrial-exhaust-review-fixes
