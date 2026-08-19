@@ -9,7 +9,9 @@ import {
   classifyEventHints,
   mergeFeedItems,
   parseFeed,
+  readBoundedUtf8Body,
   readJson,
+  redactContactData,
   validateRegistry,
   validateWatchTerms,
   writeFeedReceipt
@@ -115,8 +117,572 @@ assert.deepEqual(
   ['0817010000', '0817020000']
 );
 assert.equal(new Set(numericIdentityParsed.items.map(item => item.source_record_key)).size, 2);
-assert.equal(cleanText('<p>Hello&nbsp;world</p>'), 'Hello world');
 
+const metricRedaction = redactContactData(
+  'Dentsu reported 123456789 impressions and 987654321 yen on 2026-08-17. Tel: 03 6216 5111. International: +81 3 6216 5111.'
+);
+assert.match(metricRedaction, /123456789 impressions/u);
+assert.match(metricRedaction, /987654321 yen/u);
+assert.match(metricRedaction, /2026-08-17/u);
+assert.equal((metricRedaction.match(/\[contact omitted\]/gu) ?? []).length, 2);
+assert.equal(
+  cleanText('<p>2026-08-17</p><p>03-6216-5111</p><p>090-1234-5678</p>'),
+  '2026-08-17 [contact omitted] [contact omitted]',
+  'dates and adjacent phone spans must be segmented independently after HTML cleanup'
+);
+assert.equal(redactContactData('(03) 6216 5111'), '[contact omitted]');
+for (const twoGroupDomestic of ['03-62165111', '050-12345678', '030 12345678']) {
+  assert.equal(
+    redactContactData(twoGroupDomestic),
+    '[contact omitted]',
+    'two-group domestic telephone formats must be redacted at clean token boundaries'
+  );
+}
+
+for (const compactDomestic of [
+  '0362168041',
+  '05012345678',
+  '06012345678',
+  '07012345678',
+  '08012345678',
+  '09012345678',
+  '０６０１２３４５６７８',
+  '０９０１２３４５６７８'
+]) {
+  assert.equal(
+    redactContactData(compactDomestic),
+    '[contact omitted]',
+    'compact domestic telephone numbers must be redacted at clean token boundaries'
+  );
+}
+
+for (const labelledCompactIdentifier of [
+  'GUID: 06012345678',
+  'GUID: 09012345678',
+  'release id 0817020000',
+  'reference 0362168041',
+  '管理番号：０６０１２３４５６７８',
+  '管理番号：０９０１２３４５６７８'
+]) {
+  assert.equal(
+    redactContactData(labelledCompactIdentifier),
+    labelledCompactIdentifier,
+    'explicit English and Japanese identifier labels must protect compact numeric identifiers'
+  );
+}
+for (const labelledCompactPhone of ['Phone: 06012345678', 'Phone: 09012345678']) {
+  assert.equal(
+    redactContactData(labelledCompactPhone),
+    'Phone: [contact omitted]',
+    'phone labels must continue to redact compact domestic numbers'
+  );
+}
+for (const compactNumericIdentifier of [
+  '1234567890',
+  '00012345678',
+  '2026081701',
+  'release09012345678',
+  'GUID0362168041'
+]) {
+  assert.equal(
+    redactContactData(compactNumericIdentifier),
+    compactNumericIdentifier,
+    'non-domestic or attached compact numeric identifiers must remain intact'
+  );
+}
+for (const multiGroupDomestic of [
+  '01 42 68 53 00',
+  '01 42 68 53',
+  '０１ ４２ ６８ ５３ ００'
+]) {
+  assert.equal(
+    redactContactData(multiGroupDomestic),
+    '[contact omitted]',
+    'four-or-more-group domestic telephone formats must be redacted at clean token boundaries'
+  );
+}
+assert.equal(
+  redactContactData('01 2026 08 17'),
+  '01 2026 08 17',
+  'a spaced numeric sequence containing a year must not be treated as a pair-grouped domestic phone'
+);
+for (const numericUrl of [
+  'https://example.test/01/42/68/53/00',
+  'www.example.test/03/6216/5111',
+  'https://example.test/+44/20/7123/4567'
+]) {
+  assert.equal(
+    redactContactData(numericUrl),
+    numericUrl,
+    'numeric URL paths must remain intact rather than being classified as telephone spans'
+  );
+}
+assert.equal(
+  redactContactData('https://example.test/ 01 42 68 53 00'),
+  'https://example.test/ [contact omitted]',
+  'URL protection must end at whitespace so a later independent phone is still redacted'
+);
+for (const longNumericUrl of [
+  `https://example.test/${'long-segment/'.repeat(12)}01/42/68/53/00`,
+  `www.example.test/${'long-segment/'.repeat(12)}03/6216/5111`,
+  `https://example.test/${'long-segment/'.repeat(12)}+44/20/7123/4567`
+]) {
+  assert.equal(
+    redactContactData(longNumericUrl),
+    longNumericUrl,
+    'numeric URL paths must remain intact when the scheme is more than 64 characters behind the candidate'
+  );
+}
+
+for (const implicitNumericUrl of [
+  'example.test/01/42/68/53/00',
+  '//example.test/03/6216/5111',
+  '192.0.2.1/01/42/68/53/00',
+  `example.test/${'long-segment/'.repeat(12)}01/42/68/53/00`
+]) {
+  assert.equal(
+    redactContactData(implicitNumericUrl),
+    implicitNumericUrl,
+    'bare-domain, scheme-relative, IP-host, and long implicit URL paths must remain intact'
+  );
+}
+assert.equal(redactContactData('電話番号：０３６２１６８０４１'), '電話番号：[contact omitted]');
+assert.equal(redactContactData('電話番号03-6216-8041'), '電話番号[contact omitted]');
+assert.equal(redactContactData('携帯電話090-1234-5678'), '携帯電話[contact omitted]');
+assert.equal(
+  redactContactData('referenceA03-6216-8041'),
+  'referenceA03-6216-8041',
+  'phone-like identifiers joined to an unrelated label must remain intact'
+);
+assert.equal(
+  redactContactData('referenceA1 03-6216-8041'),
+  'referenceA1 [contact omitted]',
+  'an attached identifier must not suppress a later independently bounded phone number'
+);
+assert.equal(
+  redactContactData('GUID2026-08-17-03-6216-8041'),
+  'GUID2026-08-17-03-6216-8041',
+  'hyphenated identifier suffixes must not be reclassified as independently bounded phone numbers'
+);
+assert.equal(redactContactData('＋８１ ３ ６２１６ ５１１１'), '[contact omitted]');
+assert.equal(redactContactData('Tel: + 81 3 6216 5111'), 'Tel: [contact omitted]');
+assert.equal(redactContactData('＋ ８１ ３ ６２１６ ５１１１'), '[contact omitted]');
+assert.equal(redactContactData('+33 1 42 68 53 00'), '[contact omitted]');
+assert.equal(redactContactData('+44 (0)20 7123 4567'), '[contact omitted]');
+assert.equal(redactContactData('+33 (0)1 42 68 53 00'), '[contact omitted]');
+assert.equal(
+  redactContactData('+44 (0)20 7123 4567 90 people'),
+  '[contact omitted] 90 people',
+  'an international trunk prefix must not cause the final phone group to be truncated or absorb a metric'
+);
+assert.equal(
+  redactContactData('+33 (0)1 42 68 53 00 2026-08-17'),
+  '[contact omitted] 2026-08-17',
+  'a terminal 00 phone group must not become a second access prefix that absorbs a following date'
+);
+assert.equal(
+  redactContactData('+882 13 123 456 2026'),
+  '[contact omitted]',
+  'a plausible maximum-length international number ending in a year-like group must remain fully redacted'
+);
+assert.equal(
+  redactContactData('+81 3 6216 5111 90 people'),
+  '[contact omitted] 90 people',
+  'a trailing numeric metric must not be absorbed into the phone span'
+);
+assert.equal(
+  redactContactData('+672 12345 12:30'),
+  '[contact omitted] 12:30',
+  'a short valid international span must stop before a formatted numeric observation'
+);
+for (const trailingObservation of [
+  '123 people', '1234 impressions', '3.14', '1,234', '10-20', '12:30', '2026-08-17'
+]) {
+  assert.equal(
+    redactContactData(`+81 3 6216 5111 ${trailingObservation}`),
+    `[contact omitted] ${trailingObservation}`,
+    'phone redaction must stop before an adjacent three- or four-digit observation'
+  );
+}
+assert.equal(
+  redactContactData('0081-3-6216-5111'),
+  '[contact omitted]',
+  'an international access prefix must be excluded from effective phone-length scoring'
+);
+for (const regionalAccessNumber of [
+  '011 44 20 7123 4567',
+  '010 44 20 7123 4567',
+  '0011 44 20 7123 4567'
+]) {
+  assert.equal(
+    redactContactData(regionalAccessNumber),
+    '[contact omitted]',
+    'regional international access prefixes must establish an affirmative phone span'
+  );
+}
+assert.equal(
+  redactContactData('011 672 (0) 12345 12:30'),
+  '[contact omitted] 12:30',
+  'a short access-prefixed phone must not be truncated when a formatted observation follows'
+);
+assert.equal(
+  redactContactData('0011 672 (0) 12345 x123456789'),
+  '[contact omitted] x[contact omitted]',
+  'an access-prefixed phone and long extension must be redacted as complete spans'
+);
+assert.equal(
+  redactContactData('+81 3 6216 5111 +81 90 1234 5678'),
+  '[contact omitted] [contact omitted]',
+  'adjacent international telephone numbers must be segmented independently'
+);
+for (const completeInternational of [
+  '+86 138 0013 8000',
+  '+882 13 123 456 7890',
+  '+1 2 3 4 5 6 7 8',
+  '+1 2 3 4 5 6 7 8 9 0 1 2 3 4 5',
+  '00 882 13 123 456 7890',
+  '00 44123 456 7890',
+  '+44 (0)123 456 7890 123',
+  '00 44 (0)123 456 7890 123',
+  '+49 (0)30 / 1234-5678',
+  '+1 212 555 2026'
+]) {
+  assert.equal(
+    redactContactData(completeInternational),
+    '[contact omitted]',
+    'complete international spans must not be truncated to a shorter target length'
+  );
+}
+assert.equal(
+  redactContactData('電話番号03-6216-8041内線1234'),
+  '電話番号[contact omitted]内線[contact omitted]',
+  'compact Japanese phone and extension digits must both be redacted'
+);
+assert.equal(
+  redactContactData('Tel:+86 138 0013 8000x123'),
+  'Tel:[contact omitted]x[contact omitted]',
+  'an attached extension marker must not suppress the final phone group or expose extension digits'
+);
+assert.equal(
+  redactContactData('Tel:+86 138 0013 8000x123456789'),
+  'Tel:[contact omitted]x[contact omitted]',
+  'a long extension must be redacted as one complete span rather than leaking its final digits'
+);
+assert.equal(
+  redactContactData('電話番号03-6216-8041内線１２３－４５６'),
+  '電話番号[contact omitted]内線[contact omitted]',
+  'a fullwidth grouped extension must be redacted as one complete span'
+);
+assert.equal(
+  redactContactData('Tel:+1 212 555 2026 #1234'),
+  'Tel:[contact omitted] #[contact omitted]',
+  'a hash-marked extension must be redacted even without an extension word'
+);
+assert.equal(
+  redactContactData('Tel: +882 13 123 456 2026 #1234'),
+  'Tel: [contact omitted] #[contact omitted]',
+  'an extension marker must disambiguate a year-like final phone group as part of the contact span'
+);
+assert.equal(
+  redactContactData('+86 138 0013 8000担当'),
+  '[contact omitted]担当',
+  'Japanese narrative text attached after a number must not force truncation of the phone span'
+);
+
+assert.equal(
+  redactContactData('+672 1234 90 people'),
+  '[contact omitted] 90 people',
+  'seven-digit international numbers must stop before a unit-labelled observation'
+);
+assert.equal(
+  redactContactData('+672 1234 12:30'),
+  '[contact omitted] 12:30',
+  'seven-digit international numbers must stop before a formatted observation'
+);
+assert.equal(
+  redactContactData('+672 1234 2026-08-17'),
+  '[contact omitted] 2026-08-17',
+  'seven-digit international numbers must stop before an adjacent date'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 1234 5678'),
+  'Tel: [contact omitted] ext [contact omitted]',
+  'whitespace-grouped extension digits must be redacted as one marked extension'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext. (1234 5678)'),
+  'Tel: [contact omitted] ext. ([contact omitted])',
+  'parenthesized grouped extension digits must be fully redacted'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567. Ext. 1234'),
+  'Tel: [contact omitted]. Ext. [contact omitted]',
+  'an explicit extension marker must retain authority across an ASCII sentence dot'
+);
+assert.equal(
+  redactContactData('電話番号03-6216-8041．内線１２３４'),
+  '電話番号[contact omitted]．内線[contact omitted]',
+  'a Japanese extension marker must retain authority across a fullwidth sentence dot'
+);
+assert.equal(
+  redactContactData('電話番号03-6216-8041。内線１２３４'),
+  '電話番号[contact omitted]。内線[contact omitted]',
+  'a Japanese extension marker must retain authority across an ideographic full stop'
+);
+assert.equal(
+  redactContactData('電話番号03-6216-8041内線（１２３４ ５６７８）'),
+  '電話番号[contact omitted]内線（[contact omitted]）',
+  'fullwidth-parenthesized grouped extension digits must be fully redacted'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 1234 5678 90 people'),
+  'Tel: [contact omitted] ext [contact omitted] 90 people',
+  'marked extension redaction must stop before a following unit-labelled observation'
+);
+for (const attachedInternationalIdentifier of [
+  'referenceA+81 3 6216 5111',
+  'referenceA+1 212 555 1234',
+  'revisionA0081-3-6216-5111'
+]) {
+  assert.equal(
+    redactContactData(attachedInternationalIdentifier),
+    attachedInternationalIdentifier,
+    'international-looking identifiers attached to unrelated labels must remain intact'
+  );
+}
+
+assert.equal(
+  redactContactData('Contact +672 1234. 2026 results improved.'),
+  'Contact [contact omitted]. 2026 results improved.',
+  'a sentence-separated year after a seven-digit international phone must remain intact'
+);
+assert.equal(
+  redactContactData('Contact +81 3 6216 5111. 90 attendees joined.'),
+  'Contact [contact omitted]. 90 attendees joined.',
+  'sentence-separated numeric prose after a phone must remain intact regardless of its noun'
+);
+assert.equal(
+  redactContactData('Contact +81 3 6216 5111. (90) attendees joined.'),
+  'Contact [contact omitted]. (90) attendees joined.',
+  'parenthesized sentence-separated numeric prose after a phone must remain intact'
+);
+assert.equal(
+  redactContactData('Contact +81 3 6216 5111. -42 attendees joined.'),
+  'Contact [contact omitted]. -42 attendees joined.',
+  'signed sentence-separated numeric prose after a phone must remain intact'
+);
+assert.equal(
+  redactContactData('Contact +81 3 6216 5111. (+42) attendees joined.'),
+  'Contact [contact omitted]. (+42) attendees joined.',
+  'parenthesized signed numeric prose after a phone must remain intact'
+);
+
+for (const acceptedDashSign of ['‐', '‑', '‒']) {
+  assert.equal(
+    redactContactData(`Contact +81 3 6216 5111. ${acceptedDashSign}４２ attendees joined.`),
+    `Contact [contact omitted]. ${acceptedDashSign}４２ attendees joined.`,
+    'every dash accepted by the scanner must also be accepted as a numeric-tail sign'
+  );
+  assert.equal(
+    redactContactData(`Tel: +44 20 7123 4567 ext 1234. (${acceptedDashSign}４２) attendees joined.`),
+    `Tel: [contact omitted] ext [contact omitted]. (${acceptedDashSign}４２) attendees joined.`,
+    'parenthesized numeric prose must preserve every dash accepted by the extension scanner'
+  );
+}
+
+assert.equal(
+  redactContactData('Tel: +44 20 7123. 4567 office hours apply.'),
+  'Tel: [contact omitted] office hours apply.',
+  'narrative text after a four-digit dotted phone group must not expose that group'
+);
+assert.equal(
+  redactContactData('Tel: +49 30 1234. 567 office hours apply.'),
+  'Tel: [contact omitted] office hours apply.',
+  'narrative text after a three-digit dotted phone group must not expose that group'
+);
+assert.equal(
+  redactContactData('Tel: +33 1 42 68 53. 00 office hours apply.'),
+  'Tel: [contact omitted] office hours apply.',
+  'narrative text after a two-digit pair-group phone ending must not expose that group'
+);
+assert.equal(
+  redactContactData('Tel: +33 1 42 68 53. 00'),
+  'Tel: [contact omitted]',
+  'a two-digit dotted pair-group ending must remain in the phone span'
+);
+assert.equal(
+  redactContactData('Contact +33 1 42 68 53. 00 people attended.'),
+  'Contact [contact omitted]. 00 people attended.',
+  'strong unit-labelled evidence must override a two-digit dotted pair-group tie-break'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 1234. 5678 is the extension.'),
+  'Tel: [contact omitted] ext [contact omitted] is the extension.',
+  'narrative text after a dotted extension group must not expose that group'
+);
+assert.equal(
+  redactContactData('Contact +44 20 7123. 4567 people attended.'),
+  'Contact [contact omitted]. 4567 people attended.',
+  'strong unit-labelled observation evidence must override the dotted-contact tie-break'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123. 4567'),
+  'Tel: [contact omitted]',
+  'a dotted international phone group without narrative continuation must remain in the phone span'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 1234 5678. 2026 results improved.'),
+  'Tel: [contact omitted] ext [contact omitted]. 2026 results improved.',
+  'a sentence-separated year after a grouped extension must remain intact'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 1234. 42 attendees joined.'),
+  'Tel: [contact omitted] ext [contact omitted]. 42 attendees joined.',
+  'sentence-separated numeric prose after an extension must remain intact regardless of its noun'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 1234. (42) attendees joined.'),
+  'Tel: [contact omitted] ext [contact omitted]. (42) attendees joined.',
+  'parenthesized sentence-separated numeric prose after an extension must remain intact'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 1234. −42 attendees joined.'),
+  'Tel: [contact omitted] ext [contact omitted]. −42 attendees joined.',
+  'Unicode-signed numeric prose after an extension must remain intact'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 1234. （－４２） attendees joined.'),
+  'Tel: [contact omitted] ext [contact omitted]. （－４２） attendees joined.',
+  'fullwidth parenthesized signed numeric prose after an extension must remain intact'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 1234. 5678'),
+  'Tel: [contact omitted] ext [contact omitted]',
+  'a dotted grouped extension without narrative continuation must remain in the extension span'
+);
+assert.equal(
+  redactContactData('Contact +672 1234. (2026) results improved.'),
+  'Contact [contact omitted]. (2026) results improved.',
+  'a parenthesized sentence-separated year after a short phone must remain intact'
+);
+assert.equal(
+  redactContactData('Contact +672 1234. （2026） results improved.'),
+  'Contact [contact omitted]. （2026） results improved.',
+  'a fullwidth-parenthesized sentence-separated year must remain intact'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 1234 5678. (2026) results improved.'),
+  'Tel: [contact omitted] ext [contact omitted]. (2026) results improved.',
+  'a parenthesized sentence-separated year after a grouped extension must remain intact'
+);
+assert.equal(
+  redactContactData('Contact +672 1234 (2026) results improved.'),
+  'Contact [contact omitted] results improved.',
+  'without a narrative boundary, a year-like terminal group remains part of the contact span'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 1234. (2026) results improved.'),
+  'Tel: [contact omitted] ext [contact omitted]. (2026) results improved.',
+  'a single-group extension must preserve a sentence-separated parenthesized year'
+);
+for (const [input, expected] of [
+  [
+    'referenceA+81 3 6216 5111 (03) 6216 5111',
+    'referenceA+81 3 6216 5111 [contact omitted]'
+  ],
+  [
+    'referenceA+81 3 6216 5111 03-6216-8041',
+    'referenceA+81 3 6216 5111 [contact omitted]'
+  ],
+  [
+    'referenceB+81 3 0037 0053 (03) 0071 0089',
+    'referenceB+81 3 0037 0053 [contact omitted]'
+  ],
+  [
+    'referenceC+81 3 0074 0106 03-0142-0178',
+    'referenceC+81 3 0074 0106 [contact omitted]'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'an attached international-looking identifier must remain intact while a later phone is redacted'
+  );
+}
+assert.equal(
+  redactContactData('+81 3 6216 5111 03-6216-8041'),
+  '[contact omitted] [contact omitted]',
+  'an affirmative phone shortcut must rescan and redact a later domestic phone'
+);
+assert.equal(
+  redactContactData('+81 3 6216 5111 03-6216-8041 090-1234-5678'),
+  '[contact omitted] [contact omitted] [contact omitted]',
+  'recursive suffix classification must redact every independently affirmative phone'
+);
+for (const completeYearEndingPhone of [
+  '+86 138 0013 2026',
+  '+358 100 0000 2000',
+  '+62 812 34 5678 2026',
+  '+81 3 6216 5111 2026'
+]) {
+  assert.equal(
+    redactContactData(completeYearEndingPhone),
+    '[contact omitted]',
+    'a plausible complete phone ending in a year-like group must remain fully redacted'
+  );
+}
+
+const numericMetricRss = value => `<?xml version="1.0"?><rss version="2.0"><channel><title>Metric revisions</title>
+<item><title>Audience metric</title><link>https://example.test/releases/metric</link><guid>metric-release</guid><description>Dentsu measured ${value} people. Contact +81 3 6216 5111.</description></item>
+</channel></rss>`;
+const firstMetric = parseFeed(numericMetricRss('123456789'), source).items[0];
+const secondMetric = parseFeed(numericMetricRss('987654321'), source).items[0];
+assert.match(firstMetric.summary, /123456789 people/u);
+assert.match(secondMetric.summary, /987654321 people/u);
+assert.notEqual(firstMetric.content_sha256, secondMetric.content_sha256, 'numeric metric revisions must remain distinguishable');
+
+const encoder = new TextEncoder();
+function responseFromChunks(chunks, tracker = {}) {
+  let index = 0;
+  return {
+    body: {
+      getReader() {
+        return {
+          async read() {
+            tracker.reads = (tracker.reads ?? 0) + 1;
+            if (index >= chunks.length) return { done: true, value: undefined };
+            return { done: false, value: chunks[index++] };
+          },
+          async cancel() {
+            tracker.cancelled = true;
+          },
+          releaseLock() {
+            tracker.released = true;
+          }
+        };
+      }
+    }
+  };
+}
+
+const utf8Body = encoder.encode('A€B');
+assert.equal(
+  await readBoundedUtf8Body(responseFromChunks([utf8Body.slice(0, 2), utf8Body.slice(2)]), utf8Body.byteLength),
+  'A€B',
+  'incremental decoding must preserve split UTF-8 code points'
+);
+const boundedTracker = {};
+await assert.rejects(
+  readBoundedUtf8Body(responseFromChunks([
+    encoder.encode('1234'), encoder.encode('5678'), encoder.encode('must-not-be-read')
+  ], boundedTracker), 6),
+  /body exceeds 6 bytes/u
+);
+assert.equal(boundedTracker.reads, 2, 'the reader must stop immediately after the limit-crossing chunk');
+assert.equal(boundedTracker.cancelled, true, 'the oversized response stream must be cancelled');
+assert.equal(boundedTracker.released, true, 'the response reader lock must be released');
+
+assert.equal(cleanText('<p>Hello&nbsp;world</p>'), 'Hello world');
 assert.throws(() => validateRegistry({
   schema_version: 1,
   sources: [{ ...source, feed_url: 'http://example.test/news.xml' }]
@@ -152,5 +718,43 @@ assert.equal(receipt.feed_sha256, parsed.feed_sha256);
 assert.equal(receipt.graph_effect, 'none');
 assert.equal(receipt.canonical_mutation_authorized, false);
 fs.rmSync(tempRoot, { recursive: true, force: true });
+
+
+for (const [input, expected] of [
+  ['Call 03-6216-5111', 'Call [contact omitted]'],
+  ['Call 09012345678', 'Call [contact omitted]'],
+  ['Phone: 03 6216 5111 or 090-1234-5678', 'Phone: [contact omitted] or [contact omitted]']
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'phone eligibility must be evaluated at the actual first phone marker rather than leading matched whitespace'
+  );
+}
+assert.equal(
+  redactContactData('release09012345678'),
+  'release09012345678',
+  'a compact phone-shaped identifier attached to prose must remain intact'
+);
+assert.equal(
+  redactContactData('Contact +33 1 42 68 53. (00) attendees joined.'),
+  'Contact [contact omitted]. (00) attendees joined.',
+  'parenthesized narrative evidence must override dotted pair-group continuation'
+);
+assert.equal(
+  redactContactData('Contact +33 1 42 68 53．（００） attendees joined.'),
+  'Contact [contact omitted]．（００） attendees joined.',
+  'fullwidth parenthesized narrative evidence must override dotted pair-group continuation'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 12 34 56 78. (00) attendees joined.'),
+  'Tel: [contact omitted] ext [contact omitted]. (00) attendees joined.',
+  'parenthesized narrative evidence must remain outside a dotted pair-group extension'
+);
+assert.equal(
+  redactContactData('Contact +33 1 42 68 53. (00)'),
+  'Contact [contact omitted]',
+  'a parenthesized two-digit tail without narrative continuation may remain contact formatting'
+);
 
 console.log('industrial-exhaust tests passed');

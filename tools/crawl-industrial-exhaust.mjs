@@ -6,6 +6,7 @@ import {
   emptyState,
   mergeFeedItems,
   parseFeed,
+  readBoundedUtf8Body,
   readJson,
   readJsonl,
   validateRegistry,
@@ -47,8 +48,7 @@ async function fetchText(source, sourceState, maxBytes, timeoutMs) {
     if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
     const contentLength = Number(response.headers.get('content-length'));
     if (Number.isFinite(contentLength) && contentLength > maxBytes) throw new Error(`declared body exceeds ${maxBytes} bytes`);
-    const xml = await response.text();
-    if (Buffer.byteLength(xml, 'utf8') > maxBytes) throw new Error(`body exceeds ${maxBytes} bytes`);
+    const xml = await readBoundedUtf8Body(response, maxBytes);
     return { status: response.status, response, xml };
   } finally {
     clearTimeout(timer);
