@@ -1,0 +1,72 @@
+name: M-05 Intel realization observation time custody amendment
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody-contract.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-registry.json'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.test.js'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.test.js'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.test.js'
+      - '.github/workflows/m05-intel-realization-observation-time-custody-amendment.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody-contract.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-registry.json'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.test.js'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.test.js'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.test.js'
+      - '.github/workflows/m05-intel-realization-observation-time-custody-amendment.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m05-intel-realization-observation-time-custody-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate Intel realization observation-time custody amendment
+        run: |
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic focused state
+        run: |
+          git restore --staged --worktree .
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.mjs
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.mjs
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.test.js
+          git diff --exit-code
