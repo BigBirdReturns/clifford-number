@@ -1,0 +1,103 @@
+name: Temporary PR2176 compact identifier-context repair
+
+on:
+  push:
+    branches:
+      - agent/dentsu-industrial-exhaust-review-fixes
+    paths:
+      - .github/workflows/temporary-pr2176-compact-identifier-context.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-pr2176-compact-identifier-context
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/dentsu-industrial-exhaust-review-fixes
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply, validate, and publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "6e768cedf804cdfdc30442e6876c8a65e7396423"
+          test "$(git diff --name-only HEAD^ HEAD)" = ".github/workflows/temporary-pr2176-compact-identifier-context.yml"
+          expected_remote_head="$(git rev-parse HEAD)"
+
+          python - <<'PY'
+          from pathlib import Path
+          from textwrap import dedent
+
+          library_path = Path('tools/lib/industrial-exhaust.mjs')
+          library = library_path.read_text(encoding='utf-8')
+          old = dedent(r'''\
+            const compactDomestic = groups.length === 1
+              && (/^0[1-9]\d{8}$/u.test(groups[0])
+                || /^0(?:50|70|80|90)\d{8}$/u.test(groups[0]));
+          ''')
+          new = dedent(r'''\
+            const compactIdentifierContext = /(?:(?:^|\b)(?:guid|identifier|reference|revision|release(?:\s+id)?|record(?:\s+id)?|receipt|sha(?:-?256)?|hash|ticket|case|invoice|order|code)|(?:識別子|参照(?:番号)?|管理番号|受付番号|注文番号|案件番号|コード))\s*[:：=#＃-]?\s*$/iu.test(
+              prefix.normalize('NFKC').slice(-80)
+            );
+            const compactDomestic = groups.length === 1
+              && (/^0[1-9]\d{8}$/u.test(groups[0])
+                || /^0(?:50|70|80|90)\d{8}$/u.test(groups[0]))
+              && !compactIdentifierContext;
+          ''')
+          if library.count(old) != 1:
+              raise SystemExit('compact domestic classification anchor did not match exactly once')
+          library = library.replace(old, new, 1)
+          library_path.write_text(library, encoding='utf-8')
+
+          test_path = Path('test/industrial-exhaust.test.js')
+          tests = test_path.read_text(encoding='utf-8')
+          anchor = 'for (const compactNumericIdentifier of ['
+          addition = dedent('''
+          for (const labelledCompactIdentifier of [
+            'GUID: 09012345678',
+            'release id 0817020000',
+            'reference 0362168041',
+            '管理番号：０９０１２３４５６７８'
+          ]) {
+            assert.equal(
+              redactContactData(labelledCompactIdentifier),
+              labelledCompactIdentifier,
+              'explicit English and Japanese identifier labels must protect compact numeric identifiers'
+            );
+          }
+          assert.equal(
+            redactContactData('Phone: 09012345678'),
+            'Phone: [contact omitted]',
+            'phone labels must continue to redact compact domestic numbers'
+          );
+          ''')
+          if tests.count(anchor) != 1:
+              raise SystemExit('compact identifier test anchor did not match exactly once')
+          tests = tests.replace(anchor, addition + anchor, 1)
+          test_path.write_text(tests, encoding='utf-8')
+          PY
+
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js
+          git diff --check
+
+          rm .github/workflows/temporary-pr2176-compact-identifier-context.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js .github/workflows/temporary-pr2176-compact-identifier-context.yml
+          git diff --cached --check
+          git commit -m "fix(crawler): preserve labelled compact identifiers"
+          git push --force-with-lease=refs/heads/agent/dentsu-industrial-exhaust-review-fixes:${expected_remote_head} origin HEAD:refs/heads/agent/dentsu-industrial-exhaust-review-fixes
