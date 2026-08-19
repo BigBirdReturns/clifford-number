@@ -1,0 +1,343 @@
+{
+  "schema_version": "m05-answerable-power-s03-l7-intel-realization-stage-receipt-control-stack-amendment@1",
+  "object_class": "bounded_admission_stage_receipt_control_stack_amendment",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-03",
+  "leg_id": "S03-L7",
+  "issue": 345,
+  "as_of": "2026-08-19",
+  "status": "intel_realization_stage_receipt_control_stack_amendment_frozen",
+  "title": "Intel realization stage-receipt full control-stack binding amendment",
+  "question": "Which reciprocal provenance, peer-authentication, trusted-time, and passing temporal-reconciliation bindings must accompany every stage-registry entry before any Intel realization stage may advance?",
+  "canonical_main": {
+    "branch": "main",
+    "merge_commit": "c68834a20b59ac252c1f4f2620d2e3ca128d56f9",
+    "tree_sha": "5c0233adcd73ce19cd380e6c22d879615b19cb05",
+    "pull_request": 2200,
+    "reviewed_head": "6bb3cdf3e9d77df7d7a0a43013d7123f2513ef28"
+  },
+  "bindings": {
+    "stage_receipt_registry": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-registry.json",
+      "blob_sha": "e8ff7438814f79309964b75805d5f945bd0bcbd8",
+      "schema_version": "m05-answerable-power-s03-l7-intel-realization-stage-receipt-registry@1",
+      "status": "intel_realization_stage_receipt_registry_waiting_for_ordinary_gate"
+    },
+    "provenance_object_custody": {
+      "contract": {
+        "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody-contract.json",
+        "blob_sha": "d1dfb261ff027b624a1da25feb49bbc492fe8a4c",
+        "semantic_sha256": "b775a0253219f33fd5fc04ff79088a178577ea264ee7fa6af38a717d99c8ec74"
+      },
+      "validator": {
+        "path": "tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.mjs",
+        "blob_sha": "09fd1fb7a89840ae5f5189b6c50b5f45fdbdfd14"
+      },
+      "adversarial_test": {
+        "path": "test/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.test.js",
+        "blob_sha": "5be7e14be813accb0dcc8607e87ec9ececb9d0d3"
+      },
+      "focused_workflow": {
+        "path": ".github/workflows/m05-intel-realization-provenance-object-custody.yml",
+        "blob_sha": "fd0c462e959b9285ed56f62c85c0c55aadb87b7f"
+      }
+    },
+    "connection_authentication": {
+      "contract": {
+        "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.json",
+        "blob_sha": "3dc1b9dd8510ad5903f7a1e39abfe051dd36831a",
+        "semantic_sha256": "50a923f64324ddc23cf99d0c98dfec1b3707cd2db701b49c82f45faeafa4dda7"
+      },
+      "validator": {
+        "path": "tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.mjs",
+        "blob_sha": "3dba5e6bcfef164489d630ee3cd5ccaee89ea83f"
+      },
+      "adversarial_test": {
+        "path": "test/m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.test.js",
+        "blob_sha": "a9490d8c2eb4aeaf62a318e98a80311d8145ca4e"
+      },
+      "focused_workflow": {
+        "path": ".github/workflows/m05-intel-realization-connection-authentication-custody-amendment.yml",
+        "blob_sha": "06574978462f8fc8473667e6961a3e994033faef"
+      }
+    },
+    "observation_time_custody": {
+      "contract": {
+        "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.json",
+        "blob_sha": "817f2b571c5f5feb755c6ac97226567630de5c38",
+        "semantic_sha256": "5a334376ca80ce4171f127bc7b357a179cdb824b92a411685b1c55df91a423e9"
+      },
+      "validator": {
+        "path": "tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.mjs",
+        "blob_sha": "e5c2afe704f1589816c6c242ba096430aac38d91"
+      },
+      "adversarial_test": {
+        "path": "test/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.test.js",
+        "blob_sha": "e04c076b0a764b77053db504b94606f3ced44c98"
+      },
+      "focused_workflow": {
+        "path": ".github/workflows/m05-intel-realization-observation-time-custody-amendment.yml",
+        "blob_sha": "d77e5a1a6a0bc2b22801d15850da5de177795641"
+      }
+    },
+    "temporal_reconciliation_admission": {
+      "contract": {
+        "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.json",
+        "blob_sha": "6ea434ab5101e6a0ce0fc1f924eccc5d5225bbf7",
+        "semantic_sha256": "5a0830c77da3b443a8aff7a121fde3b051fc526a72fa5d48f14870a3d4a145c8"
+      },
+      "validator": {
+        "path": "tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.mjs",
+        "blob_sha": "af66f5e21b77f7ce6c3a592f2362e49474b26eff"
+      },
+      "adversarial_test": {
+        "path": "test/m05-answerable-power-sprint-03-leg-07-intel-realization-temporal-reconciliation-admission-amendment.test.js",
+        "blob_sha": "3ea3704fa4e73d48f746f89f9521d1117b8bbe7e"
+      },
+      "focused_workflow": {
+        "path": ".github/workflows/m05-intel-realization-temporal-reconciliation-admission-amendment.yml",
+        "blob_sha": "35cfbdceaf5267f0290890606c5d3e21446e8fc2"
+      }
+    }
+  },
+  "predecessor_gap": {
+    "registry_contract_binding_points_only_to_provenance_object_contract": true,
+    "registry_requires_connection_authentication_receipt": false,
+    "registry_requires_observation_time_receipt": false,
+    "registry_requires_passing_temporal_reconciliation_receipt": false,
+    "downstream_controls_reference_registry": true,
+    "registry_reciprocally_binds_downstream_controls": false,
+    "one_way_downstream_binding_is_complete_stage_admission": false
+  },
+  "stage_order": [
+    "transaction",
+    "federal_cash_custody",
+    "public_account_booking",
+    "distribution"
+  ],
+  "effective_registry_control_stack": {
+    "transaction": {
+      "requires_registry_stage": "transaction",
+      "required_fields": [
+        "control_stack_receipt_id",
+        "registry_receipt_id",
+        "event_chain_id",
+        "stage",
+        "provenance_stage_receipt_binding",
+        "connection_authentication_receipt_binding",
+        "observation_time_receipt_binding",
+        "temporal_reconciliation_receipt_binding",
+        "temporal_reconciliation_result",
+        "all_bindings_valid",
+        "full_control_stack_complete",
+        "stage_admissible",
+        "observed_at_utc"
+      ],
+      "requires_provenance_stage_receipt": true,
+      "requires_connection_authentication_receipt": true,
+      "requires_observation_time_receipt": true,
+      "requires_passing_temporal_reconciliation_receipt": true,
+      "all_receipts_same_event_chain": true,
+      "all_receipts_same_stage": true,
+      "one_receipt_may_not_fill_multiple_control_roles": true,
+      "full_control_stack_complete_must_be_true": true,
+      "stage_admissible_must_remain_false_until_all_bindings_validate": true,
+      "legacy_registry_entry_alone_qualifies": false
+    },
+    "federal_cash_custody": {
+      "requires_registry_stage": "federal_cash_custody",
+      "required_fields": [
+        "control_stack_receipt_id",
+        "registry_receipt_id",
+        "event_chain_id",
+        "stage",
+        "provenance_stage_receipt_binding",
+        "connection_authentication_receipt_binding",
+        "observation_time_receipt_binding",
+        "temporal_reconciliation_receipt_binding",
+        "temporal_reconciliation_result",
+        "all_bindings_valid",
+        "full_control_stack_complete",
+        "stage_admissible",
+        "observed_at_utc"
+      ],
+      "requires_provenance_stage_receipt": true,
+      "requires_connection_authentication_receipt": true,
+      "requires_observation_time_receipt": true,
+      "requires_passing_temporal_reconciliation_receipt": true,
+      "all_receipts_same_event_chain": true,
+      "all_receipts_same_stage": true,
+      "one_receipt_may_not_fill_multiple_control_roles": true,
+      "full_control_stack_complete_must_be_true": true,
+      "stage_admissible_must_remain_false_until_all_bindings_validate": true,
+      "legacy_registry_entry_alone_qualifies": false
+    },
+    "public_account_booking": {
+      "requires_registry_stage": "public_account_booking",
+      "required_fields": [
+        "control_stack_receipt_id",
+        "registry_receipt_id",
+        "event_chain_id",
+        "stage",
+        "provenance_stage_receipt_binding",
+        "connection_authentication_receipt_binding",
+        "observation_time_receipt_binding",
+        "temporal_reconciliation_receipt_binding",
+        "temporal_reconciliation_result",
+        "all_bindings_valid",
+        "full_control_stack_complete",
+        "stage_admissible",
+        "observed_at_utc"
+      ],
+      "requires_provenance_stage_receipt": true,
+      "requires_connection_authentication_receipt": true,
+      "requires_observation_time_receipt": true,
+      "requires_passing_temporal_reconciliation_receipt": true,
+      "all_receipts_same_event_chain": true,
+      "all_receipts_same_stage": true,
+      "one_receipt_may_not_fill_multiple_control_roles": true,
+      "full_control_stack_complete_must_be_true": true,
+      "stage_admissible_must_remain_false_until_all_bindings_validate": true,
+      "legacy_registry_entry_alone_qualifies": false
+    },
+    "distribution": {
+      "requires_registry_stage": "distribution",
+      "required_fields": [
+        "control_stack_receipt_id",
+        "registry_receipt_id",
+        "event_chain_id",
+        "stage",
+        "provenance_stage_receipt_binding",
+        "connection_authentication_receipt_binding",
+        "observation_time_receipt_binding",
+        "temporal_reconciliation_receipt_binding",
+        "temporal_reconciliation_result",
+        "all_bindings_valid",
+        "full_control_stack_complete",
+        "stage_admissible",
+        "observed_at_utc"
+      ],
+      "requires_provenance_stage_receipt": true,
+      "requires_connection_authentication_receipt": true,
+      "requires_observation_time_receipt": true,
+      "requires_passing_temporal_reconciliation_receipt": true,
+      "all_receipts_same_event_chain": true,
+      "all_receipts_same_stage": true,
+      "one_receipt_may_not_fill_multiple_control_roles": true,
+      "full_control_stack_complete_must_be_true": true,
+      "stage_admissible_must_remain_false_until_all_bindings_validate": true,
+      "legacy_registry_entry_alone_qualifies": false
+    }
+  },
+  "control_stack_receipt_contract": {
+    "schema_version": "m05-answerable-power-s03-l7-intel-realization-stage-control-stack-receipt@1",
+    "object_class": "intel_realization_stage_control_stack_receipt",
+    "receipt_object_path_prefix": "receipts/m05/intel-realization/control-stack/",
+    "required_fields": [
+      "control_stack_receipt_id",
+      "registry_receipt_id",
+      "event_chain_id",
+      "stage",
+      "provenance_stage_receipt_binding",
+      "connection_authentication_receipt_binding",
+      "observation_time_receipt_binding",
+      "temporal_reconciliation_receipt_binding",
+      "temporal_reconciliation_result",
+      "all_bindings_valid",
+      "full_control_stack_complete",
+      "stage_admissible",
+      "observed_at_utc"
+    ],
+    "binding_required_fields": [
+      "path",
+      "blob_sha",
+      "body_sha256",
+      "schema_version",
+      "receipt_id",
+      "event_chain_id",
+      "stage"
+    ],
+    "allowed_temporal_reconciliation_results": [
+      "pass",
+      "fail",
+      "indeterminate"
+    ],
+    "temporal_reconciliation_result_must_be_pass": true,
+    "all_bindings_valid_must_be_true": true,
+    "full_control_stack_complete_must_be_true": true,
+    "stage_admissible_may_be_true_only_if_all_controls_pass": true,
+    "one_binding_object_may_not_fill_multiple_control_roles": true,
+    "one_receipt_id_may_not_span_distinct_stages": true,
+    "all_binding_event_chain_ids_must_match": true,
+    "all_binding_stage_values_must_match": true,
+    "immediate_predecessor_stage_receipt_rule_remains_enforced": true,
+    "registry_receipt_without_control_stack_receipt_qualifies": false,
+    "control_stack_receipt_without_registry_receipt_qualifies": false,
+    "field_presence_without_retrievable_binding_qualifies": false,
+    "downstream_contract_reference_without_reciprocal_registry_binding_qualifies": false,
+    "symlinked_control_stack_receipt_qualifies": false
+  },
+  "registry_overlay_rules": {
+    "registry_bytes_remain_frozen": true,
+    "amendment_is_additive_authoritative_overlay": true,
+    "every_future_registry_entry_requires_exactly_one_matching_control_stack_receipt": true,
+    "control_stack_receipt_must_cross_bind_registry_receipt_id": true,
+    "control_stack_receipt_must_cross_bind_event_chain_and_stage": true,
+    "registry_entry_may_not_be_counted_as_admissible_until_overlay_validates": true,
+    "duplicate_control_stack_receipt_ids_allowed": false,
+    "duplicate_event_stage_control_stack_receipts_allowed": false,
+    "receipt_object_paths_must_not_escape_repository_root": true
+  },
+  "observed_receipts": [],
+  "observed_state": {
+    "registered_stage_receipts": 0,
+    "registered_control_stack_receipts": 0,
+    "fully_bound_control_stack_receipts": 0,
+    "passing_temporal_reconciliations": 0,
+    "transaction_admissible": false,
+    "federal_cash_custody_admissible": false,
+    "public_account_booking_admissible": false,
+    "distribution_admissible": false,
+    "answer_change_authorized": false
+  },
+  "guardrails": {
+    "legacy_registry_entry_is_full_control_stack": false,
+    "downstream_reference_is_reciprocal_registry_binding": false,
+    "field_presence_is_retrievable_receipt_custody": false,
+    "indeterminate_temporal_reconciliation_is_stage_admission": false,
+    "control_stack_overlay_is_empirical_receipt": false,
+    "control_stack_overlay_is_answer_effectiveness": false
+  },
+  "expected_result": {
+    "controlled_stages": 4,
+    "stages_requiring_full_control_stack": 4,
+    "registered_stage_receipts": 0,
+    "registered_control_stack_receipts": 0,
+    "fully_bound_control_stack_receipts": 0,
+    "passing_temporal_reconciliations": 0,
+    "transaction_admissible": false,
+    "federal_cash_custody_admissible": false,
+    "public_account_booking_admissible": false,
+    "distribution_admissible": false,
+    "answer_effectiveness": false,
+    "cross_domain_regression_completed": false,
+    "graph_effect": "none",
+    "issue_345_may_close": false
+  },
+  "boundaries": {
+    "changes_stage_registry_bytes": false,
+    "changes_predecessor_control_bytes": false,
+    "creates_new_empirical_receipt": false,
+    "claims_intel_transaction": false,
+    "claims_federal_cash_receipt": false,
+    "claims_public_account_booking": false,
+    "claims_public_or_affected_party_distribution": false,
+    "claims_answer_effectiveness": false,
+    "claims_cross_domain_completion": false,
+    "graph_effect": "none",
+    "conclusion_generated": false,
+    "project_complete": false,
+    "issue_345_may_close": false
+  },
+  "stage_receipt_control_stack_amendment_sha256": "dfaa4d53cc18ebda3f2afb150e7c3f41894b4a1e47af650852859381a66ae63f"
+}

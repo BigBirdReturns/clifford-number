@@ -1,0 +1,164 @@
+{
+  "schema_version": "m05-answerable-power-s03-l7-intel-realization-stage-receipt-live-registry-contract@1",
+  "object_class": "bounded_admission_live_stage_receipt_control_stack_registry_contract",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-03",
+  "leg_id": "S03-L7",
+  "issue": 345,
+  "as_of": "2026-08-19",
+  "status": "intel_realization_stage_receipt_live_registry_contract_frozen",
+  "title": "Intel realization live stage-receipt control-stack registry contract",
+  "question": "How must positive future Intel stage receipts be registered and validated against the complete provenance, connection-authentication, observation-time, and temporal-reconciliation control stack?",
+  "canonical_main": {
+    "branch": "main",
+    "merge_commit": "c68834a20b59ac252c1f4f2620d2e3ca128d56f9",
+    "tree_sha": "5c0233adcd73ce19cd380e6c22d879615b19cb05",
+    "pull_request": 2200
+  },
+  "policy_binding": {
+    "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-amendment.json",
+    "blob_sha": "c874948a3d3c0f17c4cb350b26bc12e17f29213e",
+    "semantic_sha256": "dfaa4d53cc18ebda3f2afb150e7c3f41894b4a1e47af650852859381a66ae63f",
+    "schema_version": "m05-answerable-power-s03-l7-intel-realization-stage-receipt-control-stack-amendment@1"
+  },
+  "legacy_registry_baseline": {
+    "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-registry.json",
+    "blob_sha": "e8ff7438814f79309964b75805d5f945bd0bcbd8",
+    "schema_version": "m05-answerable-power-s03-l7-intel-realization-stage-receipt-registry@1",
+    "bytes_remain_frozen": true
+  },
+  "live_registry": {
+    "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-control-stack-registry.json",
+    "schema_version": "m05-answerable-power-s03-l7-intel-realization-stage-receipt-control-stack-registry@1",
+    "receipt_object_path_prefix": "receipts/m05/intel-realization/control-stack/",
+    "receipt_source_path_prefix": "receipts/m05/intel-realization/",
+    "registry_may_advance_only_under_validator": true,
+    "receipt_files_must_be_regular_repository_files": true,
+    "symlinks_allowed": false,
+    "path_escape_allowed": false
+  },
+  "ordinary_gate_utc": "2026-08-27T00:00:00Z",
+  "stage_order": [
+    "transaction",
+    "federal_cash_custody",
+    "public_account_booking",
+    "distribution"
+  ],
+  "registry_entry_contract": {
+    "required_fields": [
+      "registry_receipt_id",
+      "event_chain_id",
+      "stage",
+      "predecessor_registry_receipt_id",
+      "control_stack_receipt_id",
+      "registered_at_utc"
+    ],
+    "unique_registry_receipt_id_required": true,
+    "unique_event_stage_pair_required": true,
+    "transaction_predecessor_must_be_null": true,
+    "later_stage_requires_immediate_predecessor_in_same_event_chain": true,
+    "registered_at_must_not_precede_ordinary_gate": true
+  },
+  "control_stack_receipt_contract": {
+    "schema_version": "m05-answerable-power-s03-l7-intel-realization-stage-control-stack-receipt@1",
+    "object_class": "intel_realization_stage_control_stack_receipt",
+    "required_fields": [
+      "schema_version",
+      "object_class",
+      "control_stack_receipt_id",
+      "registry_receipt_id",
+      "event_chain_id",
+      "stage",
+      "provenance_stage_receipt_binding",
+      "connection_authentication_receipt_binding",
+      "observation_time_receipt_binding",
+      "temporal_reconciliation_receipt_binding",
+      "temporal_reconciliation_result",
+      "all_bindings_valid",
+      "full_control_stack_complete",
+      "stage_admissible",
+      "observed_at_utc"
+    ],
+    "binding_required_fields": [
+      "path",
+      "blob_sha",
+      "body_sha256",
+      "schema_version",
+      "receipt_id",
+      "event_chain_id",
+      "stage"
+    ],
+    "binding_roles": [
+      "provenance_object_custody",
+      "connection_authentication",
+      "observation_time_custody",
+      "temporal_reconciliation_admission"
+    ],
+    "all_binding_paths_blobs_and_receipt_ids_must_be_distinct": true,
+    "all_binding_event_chain_ids_must_match": true,
+    "all_binding_stage_values_must_match": true,
+    "temporal_reconciliation_result_must_be_pass": true,
+    "all_bindings_valid_must_be_true": true,
+    "full_control_stack_complete_must_be_true": true,
+    "stage_admissible_must_be_true_for_registered_receipt": true
+  },
+  "source_receipt_overlay_fields": {
+    "required_fields": [
+      "receipt_id",
+      "event_chain_id",
+      "stage",
+      "control_role",
+      "control_result"
+    ],
+    "control_result_must_be_pass": true,
+    "provenance_truth_fields": [
+      "provenance_object_custody_complete",
+      "stage_admissible"
+    ],
+    "connection_truth_fields": [
+      "connection_authentication_complete"
+    ],
+    "observation_truth_fields": [
+      "observation_time_custody_complete"
+    ],
+    "temporal_truth_fields": [
+      "temporal_reconciliation_complete"
+    ],
+    "temporal_result_field": "temporal_reconciliation_result"
+  },
+  "positive_validation_rules": {
+    "registry_and_stack_receipts_must_be_one_to_one": true,
+    "orphan_registry_entries_qualify": false,
+    "orphan_stack_receipts_qualify": false,
+    "missing_source_receipt_qualifies": false,
+    "source_receipt_body_sha256_must_equal_exact_bytes": true,
+    "source_receipt_blob_sha_must_equal_exact_git_blob": true,
+    "source_receipt_schema_receipt_event_and_stage_must_match_binding": true,
+    "source_receipt_must_include_predecessor_stage_required_fields": true,
+    "nonpass_source_control_result_qualifies": false,
+    "duplicate_or_cross_role_source_receipt_qualifies": false,
+    "validator_outputs_live_counts_and_stage_state": true,
+    "contract_baseline_zero_snapshot_is_not_live_state": true
+  },
+  "guardrails": {
+    "legacy_registry_entry_is_full_control_stack": false,
+    "field_presence_is_retrievable_binding": false,
+    "self_declared_pass_without_exact_source_receipt_is_admissible": false,
+    "indeterminate_temporal_result_is_admissible": false,
+    "control_stack_policy_is_empirical_receipt": false,
+    "live_registry_entry_is_answer_effectiveness": false
+  },
+  "boundaries": {
+    "creates_new_empirical_receipt": false,
+    "claims_intel_transaction": false,
+    "claims_federal_cash_receipt": false,
+    "claims_public_account_booking": false,
+    "claims_public_or_affected_party_distribution": false,
+    "claims_answer_effectiveness": false,
+    "claims_cross_domain_completion": false,
+    "graph_effect": "none",
+    "project_complete": false,
+    "issue_345_may_close": false
+  },
+  "live_registry_contract_sha256": "95936ed4d6220a62d4f433fa317efc225f0c3e9eab92a22015bff6826ceb1ee3"
+}
