@@ -719,4 +719,42 @@ assert.equal(receipt.graph_effect, 'none');
 assert.equal(receipt.canonical_mutation_authorized, false);
 fs.rmSync(tempRoot, { recursive: true, force: true });
 
+
+for (const [input, expected] of [
+  ['Call 03-6216-5111', 'Call [contact omitted]'],
+  ['Call 09012345678', 'Call [contact omitted]'],
+  ['Phone: 03 6216 5111 or 090-1234-5678', 'Phone: [contact omitted] or [contact omitted]']
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'phone eligibility must be evaluated at the actual first phone marker rather than leading matched whitespace'
+  );
+}
+assert.equal(
+  redactContactData('release09012345678'),
+  'release09012345678',
+  'a compact phone-shaped identifier attached to prose must remain intact'
+);
+assert.equal(
+  redactContactData('Contact +33 1 42 68 53. (00) attendees joined.'),
+  'Contact [contact omitted]. (00) attendees joined.',
+  'parenthesized narrative evidence must override dotted pair-group continuation'
+);
+assert.equal(
+  redactContactData('Contact +33 1 42 68 53．（００） attendees joined.'),
+  'Contact [contact omitted]．（００） attendees joined.',
+  'fullwidth parenthesized narrative evidence must override dotted pair-group continuation'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 12 34 56 78. (00) attendees joined.'),
+  'Tel: [contact omitted] ext [contact omitted]. (00) attendees joined.',
+  'parenthesized narrative evidence must remain outside a dotted pair-group extension'
+);
+assert.equal(
+  redactContactData('Contact +33 1 42 68 53. (00)'),
+  'Contact [contact omitted]',
+  'a parenthesized two-digit tail without narrative continuation may remain contact formatting'
+);
+
 console.log('industrial-exhaust tests passed');

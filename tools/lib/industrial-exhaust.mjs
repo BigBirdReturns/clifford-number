@@ -98,12 +98,13 @@ function isSentenceSeparatedNumericTail(value, separator, contextualTail) {
 }
 
 
-function isDottedContactContinuation(value, separator, groups, index) {
+function isDottedContactContinuation(value, separator, groups, index, contextualTail) {
   const normalizedTail = normalizedWrappedNumericTail(value);
+  const normalizedSeparator = separator.normalize('NFKC');
   if (/^(?:19|20)\d{2}$/u.test(normalizedTail)) return false;
-  if (!/^(?:\s*\)\s*)?\.\s*(?:\(\s*)?$/u.test(separator.normalize('NFKC'))) {
-    return false;
-  }
+  if (!/^(?:\s*\)\s*)?\.\s*(?:\(\s*)?$/u.test(normalizedSeparator)) return false;
+  if (/\(\s*$/u.test(normalizedSeparator)
+      && hasNarrativeNumericContinuation(contextualTail)) return false;
   if (/^\d{3,4}$/u.test(normalizedTail)) return true;
   if (!/^\d{2}$/u.test(normalizedTail) || index < 3) return false;
   return groups.slice(index - 3, index + 1).every(group =>
@@ -224,7 +225,8 @@ function trailingObservationGroup(candidate, groups, externalPrefix, externalSuf
         const start = groups[index].index;
         const previousEnd = groups[index - 1].index + groups[index - 1][0].length;
         const separator = candidate.slice(previousEnd, start);
-        if (!/\s/u.test(separator)) continue;
+        const normalizedSeparator = separator.normalize('NFKC');
+        if (!/\s/u.test(separator) && !/[.!?。！？]/u.test(normalizedSeparator)) continue;
 
         const phonePrefix = candidate.slice(0, start).trimEnd();
         const priorDigits = phonePrefix.normalize('NFKC').replace(/\D/gu, '').length;
@@ -237,7 +239,7 @@ function trailingObservationGroup(candidate, groups, externalPrefix, externalSuf
         const normalizedTail = normalizedWrappedNumericTail(tail);
         const contextualTail = `${candidate.slice(start).trimStart()}${normalizedSuffix}`.normalize('NFKC');
         const contactEnd = groups[index].index + groups[index][0].length;
-        const dottedContactContinuation = isDottedContactContinuation(tail, separator, groups, index)
+        const dottedContactContinuation = isDottedContactContinuation(tail, separator, groups, index, contextualTail)
           && (extensionContext
             || phoneCandidateScore(candidate.slice(0, contactEnd), externalPrefix));
         if (DATE_LIKE_PATTERN.test(normalizedTail)
@@ -275,12 +277,13 @@ function redactPhoneExtensionCandidate(candidate, marker, offset, input) {
         const start = groups[index].index;
         const previousEnd = groups[index - 1].index + groups[index - 1][0].length;
         const separator = extension.slice(previousEnd, start);
-        if (!/\s/u.test(separator)) continue;
+        const normalizedSeparator = separator.normalize('NFKC');
+        if (!/\s/u.test(separator) && !/[.!?。！？]/u.test(normalizedSeparator)) continue;
 
         const tail = extension.slice(start).trim().normalize('NFKC');
         const normalizedTail = normalizedWrappedNumericTail(tail);
         const contextualTail = `${extension.slice(start).trimStart()}${normalizedSuffix}`.normalize('NFKC');
-        const dottedExtensionContinuation = isDottedContactContinuation(tail, separator, groups, index);
+        const dottedExtensionContinuation = isDottedContactContinuation(tail, separator, groups, index, contextualTail);
         if ((!dottedExtensionContinuation
               && isSentenceSeparatedNumericTail(tail, separator, contextualTail))
             || DATE_LIKE_PATTERN.test(normalizedTail)
@@ -448,10 +451,12 @@ export function redactContactData(value) {
   const emailRedacted = String(value ?? '')
     .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/giu, '[contact omitted]');
   const phoneRedacted = emailRedacted.replace(PHONE_SPAN_PATTERN, (candidate, offset, input) => {
-    const prefix = redactionPrefixContext(input, offset);
+    const firstContactCharacter = candidate.search(/[+＋(（0-9０-９]/u);
+    const contactOffset = offset + Math.max(0, firstContactCharacter);
+    const prefix = redactionPrefixContext(input, contactOffset);
     const suffix = input.slice(offset + candidate.length, offset + candidate.length + 64);
-    const previousCharacter = Array.from(prefix).at(-1) ?? '';
-    const allowInitialGroup = !/[\p{L}\p{N}]/u.test(previousCharacter) || hasPhoneLabelPrefix(prefix);
+    const adjacentCharacter = Array.from(input.slice(0, contactOffset)).at(-1) ?? '';
+    const allowInitialGroup = !/[\p{L}\p{N}]/u.test(adjacentCharacter) || hasPhoneLabelPrefix(prefix);
     return redactPhoneSubspans(candidate, prefix, suffix, allowInitialGroup);
   });
   return phoneRedacted.replace(PHONE_EXTENSION_PATTERN, (candidate, marker, offset, input) =>
