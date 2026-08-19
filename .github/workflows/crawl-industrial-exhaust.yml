@@ -1,66 +1,115 @@
 name: First-party industrial-exhaust intake
 
+# Capture and triage only. Corporate publications remain attributed first-party
+# statements and cannot mutate canonical graph, claim, score, case, or actor state.
 on:
   pull_request:
     paths:
       - '.github/workflows/crawl-industrial-exhaust.yml'
-      - 'tools/temporary-pr2190-adjacent-wrapper-repair.py'
+      - 'data/exhaust/**'
+      - 'tools/crawl-industrial-exhaust.mjs'
+      - 'tools/hydrate-industrial-exhaust.mjs'
+      - 'tools/lib/industrial-exhaust.mjs'
+      - 'tools/lib/industrial-exhaust-artifacts.mjs'
+      - 'test/industrial-exhaust.test.js'
+      - 'test/industrial-exhaust-artifacts.test.js'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/crawl-industrial-exhaust.yml'
+      - 'data/exhaust/README.md'
+      - 'data/exhaust/sources.json'
+      - 'data/exhaust/watch-terms.json'
+      - 'data/exhaust/artifact-sources.json'
+      - 'tools/crawl-industrial-exhaust.mjs'
+      - 'tools/hydrate-industrial-exhaust.mjs'
+      - 'tools/lib/industrial-exhaust.mjs'
+      - 'tools/lib/industrial-exhaust-artifacts.mjs'
+      - 'test/industrial-exhaust.test.js'
+      - 'test/industrial-exhaust-artifacts.test.js'
+  schedule:
+    - cron: '41 8 * * *'
+  workflow_dispatch:
+    inputs:
+      source:
+        description: Optional exact source id
+        required: false
+        default: ''
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: first-party-industrial-exhaust-pr2190-repair
+  group: first-party-industrial-exhaust-${{ github.event_name }}
   cancel-in-progress: false
 
 jobs:
-  repair-pr2190-adjacent-wrapper-ownership:
-    if: github.event_name == 'pull_request' && github.head_ref == 'agent/pr2176-postmerge-wrapper-balance-v1'
+  validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: agent/pr2176-postmerge-wrapper-balance-v1
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-      - name: Apply, verify, and publish the clean two-path repair
-        shell: bash
+          node-version: '20'
+      - name: Syntax and adversarial intake tests
         run: |
-          set -euo pipefail
-          target_branch='agent/pr2176-postmerge-wrapper-balance-v1'
-          clean_head='d501cfa7d755cffbb957e84e5cee01717cc607fc'
-          repair_program='tools/temporary-pr2190-adjacent-wrapper-repair.py'
-          temporary_push_workflow='.github/workflows/temporary-pr2190-adjacent-wrapper-repair.yml'
-          expected_remote_head="$(git rev-parse HEAD)"
-
-          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = 'e9dbb36e276c1198d3c59aa2d70759356bb06e99'
-          test "$(git hash-object test/industrial-exhaust.test.js)" = 'a04eae7270d777e7becd74ed6762f37fda9f8d8a'
-          python "${repair_program}"
-
           node --check tools/lib/industrial-exhaust.mjs
           node --check tools/lib/industrial-exhaust-artifacts.mjs
           node --check tools/crawl-industrial-exhaust.mjs
           node --check tools/hydrate-industrial-exhaust.mjs
-          node --check test/industrial-exhaust.test.js
-          node --check test/industrial-exhaust-artifacts.test.js
           node test/industrial-exhaust.test.js
           node test/industrial-exhaust-artifacts.test.js
-          git diff --check
+      - name: Audit configured first-party surfaces
+        run: |
+          node tools/crawl-industrial-exhaust.mjs --audit
+          node tools/hydrate-industrial-exhaust.mjs --audit
+      - name: Live read-only feed and artifact smoke test
+        env:
+          EXHAUST_TIMEOUT_MS: '30000'
+          EXHAUST_MAX_FEED_BYTES: '5000000'
+          EXHAUST_ARTIFACT_MAX_BYTES: '6000000'
+          EXHAUST_ARTIFACT_DELAY_MS: '250'
+        run: |
+          node tools/crawl-industrial-exhaust.mjs --dry-run --strict
+          node tools/hydrate-industrial-exhaust.mjs --dry-run --strict --limit=20
 
-          git checkout "${clean_head}" -- .github/workflows/crawl-industrial-exhaust.yml
-          rm -f "${repair_program}" "${temporary_push_workflow}"
-
-          expected_paths=$'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
-          actual_paths="$(git diff --name-only "${clean_head}" | sort)"
-          test "${actual_paths}" = "${expected_paths}"
-
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          git diff --cached --check
-          git commit -m 'fix(crawler): discard surplus phone wrapper closers'
-          git push --force-with-lease="refs/heads/${target_branch}:${expected_remote_head}" \
-            origin "HEAD:refs/heads/${target_branch}"
+  crawl:
+    if: github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Harvest immutable first-party feed observations
+        env:
+          EXHAUST_TIMEOUT_MS: '30000'
+          EXHAUST_MAX_FEED_BYTES: '5000000'
+        run: |
+          SOURCE_ARG=''
+          if [ -n "${{ inputs.source || '' }}" ]; then SOURCE_ARG="--source=${{ inputs.source }}"; fi
+          node tools/crawl-industrial-exhaust.mjs --strict $SOURCE_ARG
+      - name: Discover and hydrate bounded publisher artifacts
+        env:
+          EXHAUST_TIMEOUT_MS: '30000'
+          EXHAUST_ARTIFACT_MAX_BYTES: '6000000'
+          EXHAUST_ARTIFACT_DELAY_MS: '350'
+        run: node tools/hydrate-industrial-exhaust.mjs --strict --limit=50
+      - name: Re-run intake firewall
+        run: |
+          node test/industrial-exhaust.test.js
+          node test/industrial-exhaust-artifacts.test.js
+      - name: Commit intake only
+        run: |
+          git config user.name "clifford-exhaust-bot"
+          git config user.email "clifford-exhaust-bot@users.noreply.github.com"
+          git add data/exhaust receipts/exhaust
+          git diff --cached --quiet && exit 0
+          git commit -m "crawl: first-party industrial exhaust ($(date -u +%F))"
+          for i in 1 2 3; do git pull --rebase --autostash origin main && git push && exit 0 || sleep $((i*3)); done
+          echo "push failed after retries"; exit 1

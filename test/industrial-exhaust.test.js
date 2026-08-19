@@ -831,4 +831,34 @@ assert.equal(
   'an unchanged attached identifier must retain its original punctuation without synthetic restoration'
 );
 
+
+for (const [input, expected] of [
+  ['Phone (+81 3 6216 5111))', 'Phone ([contact omitted])'],
+  ['電話（＋８１ ３ ６２１６ ５１１１））', '電話（[contact omitted]）'],
+  ['Phone ((+81 3 6216 5111)))', 'Phone (([contact omitted]))'],
+  ['Phone (((+44 (0)20 7123 4567))))', 'Phone ((([contact omitted])))']
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'surplus terminal wrapper closers must be removed after preserving every adjacent owned wrapper'
+  );
+}
+
+for (const [input, expected] of [
+  ['Context (Phone (+81 3 6216 5111))', 'Context (Phone ([contact omitted]))'],
+  ['Context (Phone (+81 3 6216 5111)))', 'Context (Phone ([contact omitted]))'],
+  ['Phone (+81 3 6216 5111)) 90 people', 'Phone ([contact omitted]) 90 people'],
+  [
+    'Context (Phone (+81 3 6216 5111)) 90 people',
+    'Context (Phone ([contact omitted])) 90 people'
+  ]
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'outer context closers and numeric observations must survive surplus-wrapper cleanup'
+  );
+}
+
 console.log('industrial-exhaust tests passed');

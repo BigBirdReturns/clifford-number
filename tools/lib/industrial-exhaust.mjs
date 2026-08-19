@@ -10,7 +10,7 @@ const TRACKING_PARAMS = new Set([
   'fbclid', 'gclid', 'dclid', 'mc_cid', 'mc_eid', 'msclkid', '_hsenc', '_hsmi'
 ]);
 
-const PHONE_SPAN_PATTERN = /(?:[+＋](?=\s*[0-9０-９])|[（(](?=\s*[0-9０-９]))?\s*[0-9０-９][0-9０-９()./／\s\-‐‑‒–—−－．（）]{5,}[0-9０-９](?:\s*[)）])?(?=$|[^\p{L}\p{N}]|[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]|(?:(?:ext(?:ension)?\.?|x)\s*[.:#：＃]?\s*[0-9０-９]))/giu;
+const PHONE_SPAN_PATTERN = /(?:[+＋](?=\s*[0-9０-９])|[（(](?=\s*[0-9０-９]))?\s*[0-9０-９][0-9０-９()./／\s\-‐‑‒–—−－．（）]{5,}[0-9０-９](?:\s*[)）])*(?=$|[^\p{L}\p{N}]|[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]|(?:(?:ext(?:ension)?\.?|x)\s*[.:#：＃]?\s*[0-9０-９]))/giu;
 const PHONE_EXTENSION_PATTERN = /(\[contact omitted\][\s,;:()（）.．。\-–—]*(?:(?:(?:ext(?:ension)?|x)\s*[.:#：＃]?\s*)|(?:内線(?:番号)?\s*[:：#＃]?\s*)|(?:[#＃]\s*))(?:[（(]\s*)?)[0-9０-９]+(?:[()./／\s\-‐‑‒–—−－．（）]+[0-9０-９]+)*/giu;
 const PHONE_EXTENSION_SUFFIX_PATTERN = /^\s*[,;:()（）.．。\-–—]*(?:(?:ext(?:ension)?|x)\s*[.:#：＃]?|内線(?:番号)?\s*[:：#＃]?|[#＃])\s*(?:[（(]\s*)?[0-9０-９]/iu;
 const FORMATTED_NUMERIC_OBSERVATION_PATTERN = /^(?:\d{1,9}\.\d{1,6}|\d{1,3}(?:,\d{3})+(?:\.\d{1,6})?|\d{1,3},\d{1,2}|\d{1,9}\s*[-–—]\s*\d{1,9}|\d{1,2}:\d{2}(?::\d{2})?)(?=$|[^0-9])/u;
@@ -448,31 +448,103 @@ function redactPhoneSubspans(candidate, externalPrefix, externalSuffix, allowIni
 }
 
 
+
+function unmatchedOpeningParenthesisDepth(value) {
+  let depth = 0;
+  for (const character of value) {
+    const normalized = character.normalize('NFKC');
+    if (normalized === '(') depth += 1;
+    else if (normalized === ')' && depth > 0) depth -= 1;
+  }
+  return depth;
+}
+
+function stripUnownedLeadingPhoneClosers(value, availableOuterOpeners) {
+  let preservedClosers = 0;
+  let cursor = 0;
+  let output = '';
+  let pendingWhitespace = '';
+  while (cursor < value.length) {
+    const character = value[cursor];
+    const normalized = character.normalize('NFKC');
+    if (/\s/u.test(character)) {
+      pendingWhitespace += character;
+      cursor += 1;
+      continue;
+    }
+    if (normalized !== ')') break;
+    if (preservedClosers < availableOuterOpeners) {
+      output += `${pendingWhitespace}${character}`;
+      preservedClosers += 1;
+    }
+    pendingWhitespace = '';
+    cursor += 1;
+  }
+  return `${output}${pendingWhitespace}${value.slice(cursor)}`;
+}
+
 function findOwnedNarrativePhoneWrapper(candidate, input, offset, contactOffset) {
   if (!/[+＋]/u.test(input[contactOffset] ?? '')) return null;
 
-  let openerIndex = contactOffset - 1;
-  while (openerIndex >= 0 && /\s/u.test(input[openerIndex])) openerIndex -= 1;
-  if (!/[（(]/u.test(input[openerIndex] ?? '')) return null;
+  let scanIndex = contactOffset - 1;
+  let adjacentOpeners = 0;
+  let firstOpenerIndex = contactOffset;
+  while (scanIndex >= 0) {
+    while (scanIndex >= 0 && /\s/u.test(input[scanIndex])) scanIndex -= 1;
+    if (!/[（(]/u.test(input[scanIndex] ?? '')) break;
+    adjacentOpeners += 1;
+    firstOpenerIndex = scanIndex;
+    scanIndex -= 1;
+  }
+  if (!adjacentOpeners) return null;
 
-  let depth = 1;
+  const availableOuterOpeners = unmatchedOpeningParenthesisDepth(
+    input.slice(0, firstOpenerIndex)
+  );
+  let internalDepth = 0;
   const candidateEnd = offset + candidate.length;
   for (let index = contactOffset; index < candidateEnd; index += 1) {
     const normalized = input[index].normalize('NFKC');
-    if (normalized === '(') depth += 1;
-    else if (normalized === ')') {
-      depth -= 1;
-      if (depth === 0) {
-        return {
-          closeIndex: index - offset,
-          closer: input[index]
-        };
-      }
-      if (depth < 0) return null;
+    if (normalized === '(') {
+      internalDepth += 1;
+      continue;
     }
+    if (normalized !== ')') continue;
+    if (internalDepth > 0) {
+      internalDepth -= 1;
+      continue;
+    }
+
+    const closeIndex = index - offset;
+    let closeEnd = closeIndex;
+    let preservedClosers = 0;
+    let cursor = closeIndex;
+    while (cursor < candidate.length && preservedClosers < adjacentOpeners) {
+      const character = candidate[cursor];
+      const normalizedCharacter = character.normalize('NFKC');
+      if (normalizedCharacter === ')') {
+        preservedClosers += 1;
+        closeEnd = cursor + 1;
+        cursor += 1;
+        continue;
+      }
+      if (/\s/u.test(character)) {
+        cursor += 1;
+        continue;
+      }
+      break;
+    }
+
+    return {
+      closeIndex,
+      closeEnd,
+      closers: candidate.slice(closeIndex, closeEnd),
+      availableOuterOpeners
+    };
   }
   return null;
 }
+
 export function redactContactData(value) {
   const emailRedacted = String(value ?? '')
     .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/giu, '[contact omitted]');
@@ -489,27 +561,29 @@ export function redactContactData(value) {
       offset,
       contactOffset
     );
-    if (ownedWrapper) {
-      const phoneCandidate = candidate.slice(0, ownedWrapper.closeIndex);
-      const afterWrapper = candidate.slice(
-        ownedWrapper.closeIndex + ownedWrapper.closer.length
-      );
-      const redactedPhone = redactPhoneSubspans(
-        phoneCandidate,
-        prefix,
-        `${ownedWrapper.closer}${afterWrapper}${suffix}`,
-        allowInitialGroup
-      );
-      if (redactedPhone !== phoneCandidate) {
-        const redactedAfter = redactPhoneSubspans(
-          afterWrapper,
-          `${prefix}${redactedPhone}${ownedWrapper.closer}`,
-          suffix,
-          true
-        );
-        return `${redactedPhone}${ownedWrapper.closer}${redactedAfter}`;
-      }
-    }
+
+if (ownedWrapper) {
+  const phoneCandidate = candidate.slice(0, ownedWrapper.closeIndex);
+  const afterWrapper = stripUnownedLeadingPhoneClosers(
+    candidate.slice(ownedWrapper.closeEnd),
+    ownedWrapper.availableOuterOpeners
+  );
+  const redactedPhone = redactPhoneSubspans(
+    phoneCandidate,
+    prefix,
+    `${ownedWrapper.closers}${afterWrapper}${suffix}`,
+    allowInitialGroup
+  );
+  if (redactedPhone !== phoneCandidate) {
+    const redactedAfter = redactPhoneSubspans(
+      afterWrapper,
+      `${prefix}${redactedPhone}${ownedWrapper.closers}`,
+      suffix,
+      true
+    );
+    return `${redactedPhone}${ownedWrapper.closers}${redactedAfter}`;
+  }
+}
     return redactPhoneSubspans(candidate, prefix, suffix, allowInitialGroup);
   });
   return phoneRedacted.replace(PHONE_EXTENSION_PATTERN, (candidate, marker, offset, input) =>
