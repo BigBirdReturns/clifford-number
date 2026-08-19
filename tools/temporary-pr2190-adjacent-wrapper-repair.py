@@ -6,44 +6,24 @@ library = library_path.read_text(encoding='utf-8')
 
 old_pattern_tail = r'(?:\s*[)）])?(?=$|'
 new_pattern_tail = r'(?:\s*[)）])*(?=$|'
-if library.count(old_pattern_tail) != 1:
+pattern_count = library.count(old_pattern_tail)
+print(f'phone-span trailing-wrapper pattern count: {pattern_count}')
+if pattern_count != 1:
     raise RuntimeError(
-        f'phone-span trailing-wrapper pattern count was {library.count(old_pattern_tail)}, expected 1'
+        f'phone-span trailing-wrapper pattern count was {pattern_count}, expected 1'
     )
 library = library.replace(old_pattern_tail, new_pattern_tail, 1)
 
-old_helper = dedent(r'''
-
-
-function findOwnedNarrativePhoneWrapper(candidate, input, offset, contactOffset) {
-  if (!/[+＋]/u.test(input[contactOffset] ?? '')) return null;
-
-  let openerIndex = contactOffset - 1;
-  while (openerIndex >= 0 && /\s/u.test(input[openerIndex])) openerIndex -= 1;
-  if (!/[（(]/u.test(input[openerIndex] ?? '')) return null;
-
-  let depth = 1;
-  const candidateEnd = offset + candidate.length;
-  for (let index = contactOffset; index < candidateEnd; index += 1) {
-    const normalized = input[index].normalize('NFKC');
-    if (normalized === '(') depth += 1;
-    else if (normalized === ')') {
-      depth -= 1;
-      if (depth === 0) {
-        return {
-          closeIndex: index - offset,
-          closer: input[index]
-        };
-      }
-      if (depth < 0) return null;
-    }
-  }
-  return null;
-}
-''').rstrip()
+helper_start = library.find('function findOwnedNarrativePhoneWrapper(')
+helper_end = library.find('\nexport function redactContactData(value) {', helper_start)
+print(f'wrapper helper anchors: start={helper_start}, end={helper_end}')
+if helper_start < 0 or helper_end < 0:
+    raise RuntimeError('wrapper helper structural anchors were not found')
+old_helper = library[helper_start:helper_end]
+if 'ownedWrapper' in old_helper or 'closeIndex' not in old_helper or 'closer:' not in old_helper:
+    raise RuntimeError('wrapper helper structural slice did not match the reviewed baseline')
 
 new_helper = dedent(r'''
-
 function unmatchedOpeningParenthesisDepth(value) {
   let depth = 0;
   for (const character of value) {
@@ -57,23 +37,25 @@ function unmatchedOpeningParenthesisDepth(value) {
 function stripUnownedLeadingPhoneClosers(value, availableOuterOpeners) {
   let preservedClosers = 0;
   let cursor = 0;
-  let prefix = '';
+  let output = '';
+  let pendingWhitespace = '';
   while (cursor < value.length) {
     const character = value[cursor];
     const normalized = character.normalize('NFKC');
     if (/\s/u.test(character)) {
-      prefix += character;
+      pendingWhitespace += character;
       cursor += 1;
       continue;
     }
     if (normalized !== ')') break;
     if (preservedClosers < availableOuterOpeners) {
-      prefix += character;
+      output += `${pendingWhitespace}${character}`;
       preservedClosers += 1;
     }
+    pendingWhitespace = '';
     cursor += 1;
   }
-  return `${prefix}${value.slice(cursor)}`;
+  return `${output}${pendingWhitespace}${value.slice(cursor)}`;
 }
 
 function findOwnedNarrativePhoneWrapper(candidate, input, offset, contactOffset) {
@@ -138,34 +120,23 @@ function findOwnedNarrativePhoneWrapper(candidate, input, offset, contactOffset)
   return null;
 }
 ''').rstrip()
+library = f'{library[:helper_start]}{new_helper}\n{library[helper_end:]}'
 
-if library.count(old_helper) != 1:
-    raise RuntimeError(f'old wrapper helper count was {library.count(old_helper)}, expected 1')
-library = library.replace(old_helper, new_helper, 1)
-
-old_callback = dedent(r'''
-    if (ownedWrapper) {
-      const phoneCandidate = candidate.slice(0, ownedWrapper.closeIndex);
-      const afterWrapper = candidate.slice(
-        ownedWrapper.closeIndex + ownedWrapper.closer.length
-      );
-      const redactedPhone = redactPhoneSubspans(
-        phoneCandidate,
-        prefix,
-        `${ownedWrapper.closer}${afterWrapper}${suffix}`,
-        allowInitialGroup
-      );
-      if (redactedPhone !== phoneCandidate) {
-        const redactedAfter = redactPhoneSubspans(
-          afterWrapper,
-          `${prefix}${redactedPhone}${ownedWrapper.closer}`,
-          suffix,
-          true
-        );
-        return `${redactedPhone}${ownedWrapper.closer}${redactedAfter}`;
-      }
-    }
-''').rstrip()
+callback_anchor = library.find('    const ownedWrapper = findOwnedNarrativePhoneWrapper(')
+callback_start = library.find('    if (ownedWrapper) {', callback_anchor)
+callback_end = library.find(
+    '    return redactPhoneSubspans(candidate, prefix, suffix, allowInitialGroup);',
+    callback_start
+)
+print(
+    'wrapper callback anchors: '
+    f'anchor={callback_anchor}, start={callback_start}, end={callback_end}'
+)
+if callback_anchor < 0 or callback_start < 0 or callback_end < 0:
+    raise RuntimeError('wrapper callback structural anchors were not found')
+old_callback = library[callback_start:callback_end]
+if 'ownedWrapper.closer' not in old_callback or 'redactPhoneSubspans' not in old_callback:
+    raise RuntimeError('wrapper callback structural slice did not match the reviewed baseline')
 
 new_callback = dedent(r'''
     if (ownedWrapper) {
@@ -191,19 +162,19 @@ new_callback = dedent(r'''
       }
     }
 ''').rstrip()
-
-if library.count(old_callback) != 1:
-    raise RuntimeError(f'old wrapper callback count was {library.count(old_callback)}, expected 1')
-library = library.replace(old_callback, new_callback, 1)
+library = f'{library[:callback_start]}{new_callback}\n{library[callback_end:]}'
 library_path.write_text(library, encoding='utf-8')
+print('library repair applied')
 
 test_path = Path('test/industrial-exhaust.test.js')
 tests = test_path.read_text(encoding='utf-8')
 marker = "\nconsole.log('industrial-exhaust tests passed');"
 sentinel = 'surplus terminal wrapper closers must be removed after preserving every adjacent owned wrapper'
 if sentinel not in tests:
-    if tests.count(marker) != 1:
-        raise RuntimeError(f'test trailer marker count was {tests.count(marker)}, expected 1')
+    marker_count = tests.count(marker)
+    print(f'test trailer marker count: {marker_count}')
+    if marker_count != 1:
+        raise RuntimeError(f'test trailer marker count was {marker_count}, expected 1')
     block = dedent(r'''
 
     for (const [input, expected] of [
@@ -236,6 +207,9 @@ if sentinel not in tests:
     }
     ''')
     tests = tests.replace(marker, f'{block}{marker}', 1)
-test_path.write_text(tests, encoding='utf-8')
+    test_path.write_text(tests, encoding='utf-8')
+    print('regression fixtures inserted')
+else:
+    print('regression fixtures already present')
 
 print('PR 2190 adjacent-wrapper repair applied')
