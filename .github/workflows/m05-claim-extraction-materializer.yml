@@ -1,0 +1,34 @@
+name: M-05 claim-extraction product materializer
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-claim-extraction-materializer-v1
+    paths:
+      - '.tmp/m05-claim-extraction/**'
+      - '.github/workflows/m05-claim-extraction-materializer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m05-claim-extraction-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Materialize exact claim-extraction product
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .tmp/m05-claim-extraction/materialize.mjs
