@@ -1,0 +1,152 @@
+name: Temporary PR2176 060 prefix repair
+
+on:
+  push:
+    branches:
+      - agent/dentsu-industrial-exhaust-review-fixes
+    paths:
+      - .github/workflows/temporary-pr2176-060-prefix-repair.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-pr2176-060-prefix-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/dentsu-industrial-exhaust-review-fixes
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify the exact entry state
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "6cc284ae4058efdd4ed7badc89e45426fd1fdb86"
+          test "$(git diff --name-only HEAD^ HEAD)" = ".github/workflows/temporary-pr2176-060-prefix-repair.yml"
+
+      - name: Add the designated 060 mobile prefix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          from textwrap import dedent
+
+          library_path = Path('tools/lib/industrial-exhaust.mjs')
+          library = library_path.read_text(encoding='utf-8')
+          old_prefixes = r"      || /^0(?:50|70|80|90)\d{8}$/u.test(groups[0]))"
+          new_prefixes = r"      || /^0(?:50|60|70|80|90)\d{8}$/u.test(groups[0]))"
+          if library.count(old_prefixes) != 1:
+              raise SystemExit('compact mobile prefix anchor did not match exactly once')
+          library = library.replace(old_prefixes, new_prefixes, 1)
+          library_path.write_text(library, encoding='utf-8')
+
+          test_path = Path('test/industrial-exhaust.test.js')
+          tests = test_path.read_text(encoding='utf-8')
+
+          compact_anchor = dedent('''\
+          for (const compactDomestic of [
+            '0362168041',
+            '05012345678',
+            '07012345678',
+            '08012345678',
+            '09012345678',
+            '０９０１２３４５６７８'
+          ]) {
+          ''')
+          compact_replacement = dedent('''\
+          for (const compactDomestic of [
+            '0362168041',
+            '05012345678',
+            '06012345678',
+            '07012345678',
+            '08012345678',
+            '09012345678',
+            '０６０１２３４５６７８',
+            '０９０１２３４５６７８'
+          ]) {
+          ''')
+          if tests.count(compact_anchor) != 1:
+              raise SystemExit('compact domestic test anchor did not match exactly once')
+          tests = tests.replace(compact_anchor, compact_replacement, 1)
+
+          identifier_anchor = dedent('''\
+          for (const labelledCompactIdentifier of [
+            'GUID: 09012345678',
+            'release id 0817020000',
+            'reference 0362168041',
+            '管理番号：０９０１２３４５６７８'
+          ]) {
+          ''')
+          identifier_replacement = dedent('''\
+          for (const labelledCompactIdentifier of [
+            'GUID: 06012345678',
+            'GUID: 09012345678',
+            'release id 0817020000',
+            'reference 0362168041',
+            '管理番号：０６０１２３４５６７８',
+            '管理番号：０９０１２３４５６７８'
+          ]) {
+          ''')
+          if tests.count(identifier_anchor) != 1:
+              raise SystemExit('labelled compact identifier test anchor did not match exactly once')
+          tests = tests.replace(identifier_anchor, identifier_replacement, 1)
+
+          phone_anchor = dedent('''\
+          assert.equal(
+            redactContactData('Phone: 09012345678'),
+            'Phone: [contact omitted]',
+            'phone labels must continue to redact compact domestic numbers'
+          );
+          ''')
+          phone_replacement = dedent('''\
+          for (const labelledCompactPhone of ['Phone: 06012345678', 'Phone: 09012345678']) {
+            assert.equal(
+              redactContactData(labelledCompactPhone),
+              'Phone: [contact omitted]',
+              'phone labels must continue to redact compact domestic numbers'
+            );
+          }
+          ''')
+          if tests.count(phone_anchor) != 1:
+              raise SystemExit('labelled compact phone test anchor did not match exactly once')
+          tests = tests.replace(phone_anchor, phone_replacement, 1)
+          test_path.write_text(tests, encoding='utf-8')
+          PY
+
+      - name: Validate the focused repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js
+          git diff --check
+
+      - name: Publish the verified repair and remove this workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected_remote_head="$(git rev-parse HEAD)"
+          rm .github/workflows/temporary-pr2176-060-prefix-repair.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/lib/industrial-exhaust.mjs test/industrial-exhaust.test.js .github/workflows/temporary-pr2176-060-prefix-repair.yml
+          git diff --cached --check
+          git commit -m "fix(crawler): recognize 060 mobile prefixes"
+          git push --force-with-lease=refs/heads/agent/dentsu-industrial-exhaust-review-fixes:${expected_remote_head} origin HEAD:refs/heads/agent/dentsu-industrial-exhaust-review-fixes
