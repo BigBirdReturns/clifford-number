@@ -1,0 +1,33 @@
+name: M-05 observation-time reconciliation repair materializer
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.tmp/m05-observation-time-reconciliation-v1/**'
+      - '.github/workflows/m05-observation-time-reconciliation-materializer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m05-observation-time-reconciliation-materializer-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Repair and qualify exact product branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash .tmp/m05-observation-time-reconciliation-v1/repair.sh
