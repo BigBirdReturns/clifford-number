@@ -1,0 +1,73 @@
+name: TEMP M-05 Intel provenance object-custody materializer
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-intel-realization-provenance-object-custody-v1
+    paths:
+      - '.m05-materializer/intel-provenance-object-custody.tar.gz.b64'
+      - '.github/workflows/temp-m05-intel-provenance-object-custody-materializer.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-m05-intel-provenance-object-custody-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: >-
+      github.actor == 'BigBirdReturns' &&
+      github.event.head_commit.message == '[M-05 S03-L7] Add temporary provenance object-custody materializer'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Authenticate and materialize exact product files
+        shell: bash
+        run: |
+          set -euo pipefail
+          payload='.m05-materializer/intel-provenance-object-custody.tar.gz.b64'
+          base64 --decode "$payload" > /tmp/m05-intel-object-custody.tar.gz
+          echo 'eaa36db14c63c78fd1c3507971d20926d936d9c3632ecb1c24630fbc443a5cc2  /tmp/m05-intel-object-custody.tar.gz' | sha256sum --check --strict
+          tar --extract --gzip --file /tmp/m05-intel-object-custody.tar.gz
+          rm -rf .m05-materializer
+
+          test "$(git hash-object data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody-contract.json)" = 'd1dfb261ff027b624a1da25feb49bbc492fe8a4c'
+          test "$(git hash-object data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-registry.json)" = 'e8ff7438814f79309964b75805d5f945bd0bcbd8'
+          test "$(git hash-object tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.mjs)" = '09fd1fb7a89840ae5f5189b6c50b5f45fdbdfd14'
+          test "$(git hash-object test/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.test.js)" = '5be7e14be813accb0dcc8607e87ec9ececb9d0d3'
+
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.test.js
+
+          git add -A -- \
+            .m05-materializer \
+            data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody-contract.json \
+            data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-registry.json \
+            tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.mjs \
+            test/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.test.js
+
+          actual="$(git diff --cached --name-only | sort)"
+          expected="$(printf '%s\n' \
+            '.m05-materializer/intel-provenance-object-custody.tar.gz.b64' \
+            'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody-contract.json' \
+            'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-stage-receipt-registry.json' \
+            'test/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.test.js' \
+            'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.mjs' | sort)"
+          test "$actual" = "$expected"
+
+          remote_head="$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}" | cut -f1)"
+          test "$remote_head" = "$GITHUB_SHA"
+          git config user.name 'BigBirdReturns'
+          git config user.email 'bigbirdreturns@proton.me'
+          git commit -m '[M-05 S03-L7] Materialize retrievable provenance objects'
+          git push origin "HEAD:refs/heads/${GITHUB_REF_NAME}"
