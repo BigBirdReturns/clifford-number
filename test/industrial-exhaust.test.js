@@ -409,6 +409,19 @@ assert.equal(
   'Contact [contact omitted]. (+42) attendees joined.',
   'parenthesized signed numeric prose after a phone must remain intact'
 );
+
+for (const acceptedDashSign of ['‐', '‑', '‒']) {
+  assert.equal(
+    redactContactData(`Contact +81 3 6216 5111. ${acceptedDashSign}４２ attendees joined.`),
+    `Contact [contact omitted]. ${acceptedDashSign}４２ attendees joined.`,
+    'every dash accepted by the scanner must also be accepted as a numeric-tail sign'
+  );
+  assert.equal(
+    redactContactData(`Tel: +44 20 7123 4567 ext 1234. (${acceptedDashSign}４２) attendees joined.`),
+    `Tel: [contact omitted] ext [contact omitted]. (${acceptedDashSign}４２) attendees joined.`,
+    'parenthesized numeric prose must preserve every dash accepted by the extension scanner'
+  );
+}
 assert.equal(
   redactContactData('Tel: +44 20 7123. 4567'),
   'Tel: [contact omitted]',

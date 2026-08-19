@@ -91,7 +91,7 @@ function hasNarrativeNumericContinuation(value) {
 
 function isSentenceSeparatedNumericTail(value, separator, contextualTail) {
   return /^\d/u.test(normalizedWrappedNumericTail(value))
-    && /[.!?。！？]\s*(?:[+\-−–—]\s*)?(?:\(\s*(?:[+\-−–—]\s*)?)?$/u.test(
+    && /[.!?。！？]\s*(?:[+\-‐‑‒–—−－]\s*)?(?:\(\s*(?:[+\-‐‑‒–—−－]\s*)?)?$/u.test(
       separator.normalize('NFKC')
     )
     && hasNarrativeNumericContinuation(contextualTail);
