@@ -1,54 +1,23 @@
 name: First-party industrial-exhaust intake
 
-# Capture and triage only. Corporate publications remain attributed first-party
-# statements and cannot mutate canonical graph, claim, score, case, or actor state.
 on:
   pull_request:
     paths:
       - '.github/workflows/crawl-industrial-exhaust.yml'
-      - 'data/exhaust/**'
-      - 'tools/crawl-industrial-exhaust.mjs'
-      - 'tools/hydrate-industrial-exhaust.mjs'
-      - 'tools/lib/industrial-exhaust.mjs'
-      - 'tools/lib/industrial-exhaust-artifacts.mjs'
-      - 'test/industrial-exhaust.test.js'
-      - 'test/industrial-exhaust-artifacts.test.js'
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/crawl-industrial-exhaust.yml'
-      - 'data/exhaust/README.md'
-      - 'data/exhaust/sources.json'
-      - 'data/exhaust/watch-terms.json'
-      - 'data/exhaust/artifact-sources.json'
-      - 'tools/crawl-industrial-exhaust.mjs'
-      - 'tools/hydrate-industrial-exhaust.mjs'
-      - 'tools/lib/industrial-exhaust.mjs'
-      - 'tools/lib/industrial-exhaust-artifacts.mjs'
-      - 'test/industrial-exhaust.test.js'
-      - 'test/industrial-exhaust-artifacts.test.js'
-  schedule:
-    - cron: '41 8 * * *'
-  workflow_dispatch:
-    inputs:
-      source:
-        description: Optional exact source id
-        required: false
-        default: ''
+      - 'tools/temporary-pr2190-adjacent-wrapper-repair.py'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: first-party-industrial-exhaust-${{ github.event_name }}
+  group: first-party-industrial-exhaust-pr2190-repair
   cancel-in-progress: false
 
 jobs:
-  repair-pr2190-surplus-wrapper-v1:
+  repair-pr2190-adjacent-wrapper-ownership:
     if: github.event_name == 'pull_request' && github.head_ref == 'agent/pr2176-postmerge-wrapper-balance-v1'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -57,135 +26,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Apply bounded surplus-wrapper repair and publish clean product head
+      - name: Apply, verify, and publish the clean two-path repair
         shell: bash
         run: |
           set -euo pipefail
           target_branch='agent/pr2176-postmerge-wrapper-balance-v1'
-          clean_workflow_head='d501cfa7d755cffbb957e84e5cee01717cc607fc'
+          clean_head='d501cfa7d755cffbb957e84e5cee01717cc607fc'
+          repair_program='tools/temporary-pr2190-adjacent-wrapper-repair.py'
+          temporary_push_workflow='.github/workflows/temporary-pr2190-adjacent-wrapper-repair.yml'
           expected_remote_head="$(git rev-parse HEAD)"
 
-          python - <<'PY'
-          from pathlib import Path
-          from textwrap import dedent
-
-          source_path = Path('tools/lib/industrial-exhaust.mjs')
-          source = source_path.read_text(encoding='utf-8')
-
-          old_pattern_tail = r'(?:\s*[)）])?(?=$|'
-          new_pattern_tail = r'(?:\s*[)）])*(?=$|'
-          if source.count(old_pattern_tail) != 1:
-              raise RuntimeError(
-                  f'PHONE_SPAN_PATTERN terminal tail count was {source.count(old_pattern_tail)}, expected 1'
-              )
-          source = source.replace(old_pattern_tail, new_pattern_tail, 1)
-
-          helper_start = source.index('\nfunction findOwnedNarrativePhoneWrapper(')
-          helper_end = source.index('\nexport function redactContactData', helper_start)
-          helper = dedent(r'''
-          function findOwnedNarrativePhoneWrapper(candidate, input, offset, contactOffset) {
-            if (!/[+＋]/u.test(input[contactOffset] ?? '')) return null;
-
-            let openerIndex = contactOffset - 1;
-            let openerCount = 0;
-            while (openerIndex >= 0) {
-              while (openerIndex >= 0 && /\s/u.test(input[openerIndex])) openerIndex -= 1;
-              if (!/[（(]/u.test(input[openerIndex] ?? '')) break;
-              openerCount += 1;
-              openerIndex -= 1;
-            }
-            if (!openerCount) return null;
-
-            let depth = 1;
-            const candidateEnd = offset + candidate.length;
-            for (let index = contactOffset; index < candidateEnd; index += 1) {
-              const normalized = input[index].normalize('NFKC');
-              if (normalized === '(') depth += 1;
-              else if (normalized === ')') {
-                depth -= 1;
-                if (depth === 0) {
-                  const firstCloseIndex = index - offset;
-                  const wrapperRun = candidate.slice(firstCloseIndex)
-                    .match(/^[)）](?:\s*[)）])*/u)?.[0] ?? '';
-                  const closeMatches = [...wrapperRun.matchAll(/[)）]/gu)];
-                  const ownedCloseCount = Math.min(openerCount, closeMatches.length);
-                  if (!ownedCloseCount) return null;
-                  const finalOwnedClose = closeMatches[ownedCloseCount - 1];
-                  const ownedEnd = finalOwnedClose.index + finalOwnedClose[0].length;
-                  return {
-                    firstCloseIndex,
-                    afterWrapperIndex: firstCloseIndex + wrapperRun.length,
-                    closers: wrapperRun.slice(0, ownedEnd)
-                  };
-                }
-                if (depth < 0) return null;
-              }
-            }
-            return null;
-          }
-          ''').strip()
-          source = f'{source[:helper_start]}\n{helper}{source[helper_end:]}'
-
-          callback_anchor = source.index('\nexport function redactContactData')
-          callback_start = source.index('    if (ownedWrapper) {', callback_anchor)
-          callback_end = source.index(
-              '    return redactPhoneSubspans(candidate, prefix, suffix, allowInitialGroup);',
-              callback_start
-          )
-          callback = dedent(r'''
-              if (ownedWrapper) {
-                const phoneCandidate = candidate.slice(0, ownedWrapper.firstCloseIndex);
-                const afterWrapper = candidate.slice(ownedWrapper.afterWrapperIndex);
-                const redactedPhone = redactPhoneSubspans(
-                  phoneCandidate,
-                  prefix,
-                  `${ownedWrapper.closers}${afterWrapper}${suffix}`,
-                  allowInitialGroup
-                );
-                if (redactedPhone !== phoneCandidate) {
-                  const redactedAfter = redactPhoneSubspans(
-                    afterWrapper,
-                    `${prefix}${redactedPhone}${ownedWrapper.closers}`,
-                    suffix,
-                    true
-                  );
-                  return `${redactedPhone}${ownedWrapper.closers}${redactedAfter}`;
-                }
-              }
-          ''')
-          source = f'{source[:callback_start]}{callback}{source[callback_end:]}'
-          source_path.write_text(source, encoding='utf-8')
-
-          test_path = Path('test/industrial-exhaust.test.js')
-          tests = test_path.read_text(encoding='utf-8')
-          sentinel = 'surplus terminal phone-format closers must be discarded after preserving the owned wrapper count'
-          if sentinel not in tests:
-              marker = "\nconsole.log('industrial-exhaust tests passed');"
-              if tests.count(marker) != 1:
-                  raise RuntimeError(f'test trailer marker count was {tests.count(marker)}, expected 1')
-              block = dedent(r'''
-
-              for (const [input, expected] of [
-                ['Phone (+81 3 6216 5111))', 'Phone ([contact omitted])'],
-                ['電話（＋８１ ３ ６２１６ ５１１１））', '電話（[contact omitted]）'],
-                ['Phone ((+81 3 6216 5111)))', 'Phone (([contact omitted]))'],
-                ['電話（（＋８１ ３ ６２１６ ５１１１）））', '電話（（[contact omitted]））']
-              ]) {
-                assert.equal(
-                  redactContactData(input),
-                  expected,
-                  'surplus terminal phone-format closers must be discarded after preserving the owned wrapper count'
-                );
-              }
-+             assert.equal(
-+               redactContactData('Phone (((+81 3 6216 5111)))'),
-+               'Phone ((([contact omitted])))',
-+               'every adjacent nested opener must retain its corresponding closer'
-+             );
-              ''').replace('\n+', '\n')
-              tests = tests.replace(marker, f'{block}{marker}', 1)
-              test_path.write_text(tests, encoding='utf-8')
-          PY
+          test "$(git hash-object tools/lib/industrial-exhaust.mjs)" = 'e9dbb36e276c1198d3c59aa2d70759356bb06e99'
+          test "$(git hash-object test/industrial-exhaust.test.js)" = 'a04eae7270d777e7becd74ed6762f37fda9f8d8a'
+          python "${repair_program}"
 
           node --check tools/lib/industrial-exhaust.mjs
           node --check tools/lib/industrial-exhaust-artifacts.mjs
@@ -197,83 +50,17 @@ jobs:
           node test/industrial-exhaust-artifacts.test.js
           git diff --check
 
-          git checkout "${clean_workflow_head}" -- .github/workflows/crawl-industrial-exhaust.yml
+          git checkout "${clean_head}" -- .github/workflows/crawl-industrial-exhaust.yml
+          rm -f "${repair_program}" "${temporary_push_workflow}"
+
+          expected_paths=$'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          actual_paths="$(git diff --name-only "${clean_head}" | sort)"
+          test "${actual_paths}" = "${expected_paths}"
+
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add tools/lib/industrial-exhaust.mjs \
-            test/industrial-exhaust.test.js \
-            .github/workflows/crawl-industrial-exhaust.yml
+          git add -A
           git diff --cached --check
-          git commit -m 'fix(crawler): discard surplus narrative closers'
+          git commit -m 'fix(crawler): discard surplus phone wrapper closers'
           git push --force-with-lease="refs/heads/${target_branch}:${expected_remote_head}" \
             origin "HEAD:refs/heads/${target_branch}"
-
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Syntax and adversarial intake tests
-        run: |
-          node --check tools/lib/industrial-exhaust.mjs
-          node --check tools/lib/industrial-exhaust-artifacts.mjs
-          node --check tools/crawl-industrial-exhaust.mjs
-          node --check tools/hydrate-industrial-exhaust.mjs
-          node test/industrial-exhaust.test.js
-          node test/industrial-exhaust-artifacts.test.js
-      - name: Audit configured first-party surfaces
-        run: |
-          node tools/crawl-industrial-exhaust.mjs --audit
-          node tools/hydrate-industrial-exhaust.mjs --audit
-      - name: Live read-only feed and artifact smoke test
-        env:
-          EXHAUST_TIMEOUT_MS: '30000'
-          EXHAUST_MAX_FEED_BYTES: '5000000'
-          EXHAUST_ARTIFACT_MAX_BYTES: '6000000'
-          EXHAUST_ARTIFACT_DELAY_MS: '250'
-        run: |
-          node tools/crawl-industrial-exhaust.mjs --dry-run --strict
-          node tools/hydrate-industrial-exhaust.mjs --dry-run --strict --limit=20
-
-  crawl:
-    if: github.event_name != 'pull_request'
-    needs: validate
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Harvest immutable first-party feed observations
-        env:
-          EXHAUST_TIMEOUT_MS: '30000'
-          EXHAUST_MAX_FEED_BYTES: '5000000'
-        run: |
-          SOURCE_ARG=''
-          if [ -n "${{ inputs.source || '' }}" ]; then SOURCE_ARG="--source=${{ inputs.source }}"; fi
-          node tools/crawl-industrial-exhaust.mjs --strict $SOURCE_ARG
-      - name: Discover and hydrate bounded publisher artifacts
-        env:
-          EXHAUST_TIMEOUT_MS: '30000'
-          EXHAUST_ARTIFACT_MAX_BYTES: '6000000'
-          EXHAUST_ARTIFACT_DELAY_MS: '350'
-        run: node tools/hydrate-industrial-exhaust.mjs --strict --limit=50
-      - name: Re-run intake firewall
-        run: |
-          node test/industrial-exhaust.test.js
-          node test/industrial-exhaust-artifacts.test.js
-      - name: Commit intake only
-        run: |
-          git config user.name "clifford-exhaust-bot"
-          git config user.email "clifford-exhaust-bot@users.noreply.github.com"
-          git add data/exhaust receipts/exhaust
-          git diff --cached --quiet && exit 0
-          git commit -m "crawl: first-party industrial exhaust ($(date -u +%F))"
-          for i in 1 2 3; do git pull --rebase --autostash origin main && git push && exit 0 || sleep $((i*3)); done
-          echo "push failed after retries"; exit 1
