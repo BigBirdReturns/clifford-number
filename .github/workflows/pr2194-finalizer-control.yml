@@ -1,0 +1,37 @@
+name: PR 2194 exact-head finalizer
+
+on:
+  push:
+    branches:
+      - agent/pr2194-finalizer-control-v1
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: pr2194-exact-head-finalizer
+  cancel-in-progress: false
+
+jobs:
+  finalize:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/pr2194-finalizer-control-v1
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Enforce exact-head review barrier and merge transaction
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python tools/pr2194-finalizer-controller.py
