@@ -97,6 +97,14 @@ function isSentenceSeparatedNumericTail(value, separator, contextualTail) {
     && hasNarrativeNumericContinuation(contextualTail);
 }
 
+
+function isDottedContactContinuation(value, separator) {
+  const normalizedTail = normalizedWrappedNumericTail(value);
+  return !/^(?:19|20)\d{2}$/u.test(normalizedTail)
+    && /^\d{3,4}$/u.test(normalizedTail)
+    && /^(?:\s*\)\s*)?\.\s*(?:\(\s*)?$/u.test(separator.normalize('NFKC'));
+}
+
 function internationalAccessPrefixCandidates(value) {
   const candidates = [];
   for (const prefix of ['0011', '011', '010', '00']) {
@@ -153,6 +161,9 @@ function phoneCandidateScore(candidate, prefix) {
   if (numericUrlContext) return 0;
   const international = isInternationalPhoneCandidate(normalized);
   const parenthesized = /\(\s*\d{1,5}\s*\)/u.test(normalized);
+  const compactDomestic = groups.length === 1
+    && (/^0[1-9]\d{8}$/u.test(groups[0])
+      || /^0(?:50|70|80|90)\d{8}$/u.test(groups[0]));
   const domesticPairGrouped = groups.length >= 4
       && groups.length <= 6
       && /^0\d$/u.test(groups[0])
@@ -174,7 +185,7 @@ function phoneCandidateScore(candidate, prefix) {
   if (labelled) base = Math.max(base, 700);
   if (international) base = Math.max(base, 650);
   if (parenthesized) base = Math.max(base, 600);
-  if (domesticGrouped || northAmericanGrouped) base = Math.max(base, 550);
+  if (compactDomestic || domesticGrouped || northAmericanGrouped) base = Math.max(base, 550);
   if (!base) return 0;
 
   const trunkPrefixDigits = hasInternationalTrunkPrefix(normalized, accessPrefixDigits) ? 1 : 0;
@@ -215,10 +226,15 @@ function trailingObservationGroup(candidate, groups, externalPrefix, externalSuf
         const tail = candidate.slice(start).trim().normalize('NFKC');
         const normalizedTail = normalizedWrappedNumericTail(tail);
         const contextualTail = `${candidate.slice(start).trimStart()}${normalizedSuffix}`.normalize('NFKC');
+        const contactEnd = groups[index].index + groups[index][0].length;
+        const dottedContactContinuation = isDottedContactContinuation(tail, separator)
+          && (extensionContext
+            || phoneCandidateScore(candidate.slice(0, contactEnd), externalPrefix));
         if (DATE_LIKE_PATTERN.test(normalizedTail)
             || FORMATTED_NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
             || NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
-            || isSentenceSeparatedNumericTail(tail, separator, contextualTail)) return index;
+            || (!dottedContactContinuation
+              && isSentenceSeparatedNumericTail(tail, separator, contextualTail))) return index;
       }
       return groups.length;
     }
@@ -254,7 +270,9 @@ function redactPhoneExtensionCandidate(candidate, marker, offset, input) {
         const tail = extension.slice(start).trim().normalize('NFKC');
         const normalizedTail = normalizedWrappedNumericTail(tail);
         const contextualTail = `${extension.slice(start).trimStart()}${normalizedSuffix}`.normalize('NFKC');
-        if (isSentenceSeparatedNumericTail(tail, separator, contextualTail)
+        const dottedExtensionContinuation = isDottedContactContinuation(tail, separator);
+        if ((!dottedExtensionContinuation
+              && isSentenceSeparatedNumericTail(tail, separator, contextualTail))
             || DATE_LIKE_PATTERN.test(normalizedTail)
             || FORMATTED_NUMERIC_OBSERVATION_PATTERN.test(contextualTail)
             || NUMERIC_OBSERVATION_PATTERN.test(contextualTail)) {

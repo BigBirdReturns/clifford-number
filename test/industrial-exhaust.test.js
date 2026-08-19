@@ -138,6 +138,34 @@ for (const twoGroupDomestic of ['03-62165111', '050-12345678', '030 12345678']) 
     'two-group domestic telephone formats must be redacted at clean token boundaries'
   );
 }
+
+for (const compactDomestic of [
+  '0362168041',
+  '05012345678',
+  '07012345678',
+  '08012345678',
+  '09012345678',
+  '０９０１２３４５６７８'
+]) {
+  assert.equal(
+    redactContactData(compactDomestic),
+    '[contact omitted]',
+    'compact domestic telephone numbers must be redacted at clean token boundaries'
+  );
+}
+for (const compactNumericIdentifier of [
+  '1234567890',
+  '00012345678',
+  '2026081701',
+  'release09012345678',
+  'GUID0362168041'
+]) {
+  assert.equal(
+    redactContactData(compactNumericIdentifier),
+    compactNumericIdentifier,
+    'non-domestic or attached compact numeric identifiers must remain intact'
+  );
+}
 for (const multiGroupDomestic of [
   '01 42 68 53 00',
   '01 42 68 53',
@@ -422,6 +450,27 @@ for (const acceptedDashSign of ['‐', '‑', '‒']) {
     'parenthesized numeric prose must preserve every dash accepted by the extension scanner'
   );
 }
+
+assert.equal(
+  redactContactData('Tel: +44 20 7123. 4567 office hours apply.'),
+  'Tel: [contact omitted] office hours apply.',
+  'narrative text after a four-digit dotted phone group must not expose that group'
+);
+assert.equal(
+  redactContactData('Tel: +49 30 1234. 567 office hours apply.'),
+  'Tel: [contact omitted] office hours apply.',
+  'narrative text after a three-digit dotted phone group must not expose that group'
+);
+assert.equal(
+  redactContactData('Tel: +44 20 7123 4567 ext 1234. 5678 is the extension.'),
+  'Tel: [contact omitted] ext [contact omitted] is the extension.',
+  'narrative text after a dotted extension group must not expose that group'
+);
+assert.equal(
+  redactContactData('Contact +44 20 7123. 4567 people attended.'),
+  'Contact [contact omitted]. 4567 people attended.',
+  'strong unit-labelled observation evidence must override the dotted-contact tie-break'
+);
 assert.equal(
   redactContactData('Tel: +44 20 7123. 4567'),
   'Tel: [contact omitted]',
