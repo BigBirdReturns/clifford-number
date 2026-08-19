@@ -36,7 +36,8 @@ jobs:
         run: |
           set -euo pipefail
           target_branch='agent/pr2176-postmerge-wrapper-balance-v1'
-          expected_parent='d501cfa7d755cffbb957e84e5cee01717cc607fc'
+          expected_parent='e25d246efc11d25cfe8b4de16ca5ed31ec484d57'
+          clean_workflow_head='d501cfa7d755cffbb957e84e5cee01717cc607fc'
           self='.github/workflows/temporary-pr2190-adjacent-wrapper-repair.yml'
           expected_remote_head="$(git rev-parse HEAD)"
 
@@ -297,7 +298,12 @@ jobs:
           node test/industrial-exhaust-artifacts.test.js
           git diff --check
 
+          git checkout "${clean_workflow_head}" -- .github/workflows/crawl-industrial-exhaust.yml
           rm "${self}"
+          expected_paths=$'test/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          actual_paths="$(git diff --name-only "${clean_workflow_head}" | sort)"
+          test "${actual_paths}" = "${expected_paths}"
+
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
