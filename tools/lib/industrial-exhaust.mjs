@@ -147,6 +147,7 @@ function hasPhoneLabelPrefix(prefix) {
 
 function phoneCandidateScore(candidate, prefix) {
   const normalized = candidate.trim().normalize('NFKC');
+  const normalizedPrefix = prefix.normalize('NFKC');
   const digits = normalized.replace(/\D/gu, '');
   if (DATE_LIKE_PATTERN.test(normalized)) return 0;
 
@@ -161,20 +162,20 @@ function phoneCandidateScore(candidate, prefix) {
   if (normalized.startsWith('+') && !/^[1-9]/u.test(digits)) return 0;
   if (!normalized.startsWith('+') && accessPrefixCandidates.length && !accessPrefixDigits) return 0;
 
-  const labelled = hasPhoneLabelPrefix(prefix);
+  const labelled = PHONE_LABEL_PATTERN.test(normalizedPrefix.slice(-48));
   const numericUrlContext = /(?:(?:https?:)?\/\/|www\.|(?:[\p{L}\p{N}](?:[\p{L}\p{N}-]*[\p{L}\p{N}])?\.)+(?:[\p{L}]{2,}|xn--[\p{L}\p{N}-]{2,})(?=[:/?#])|(?:\d{1,3}\.){3}\d{1,3}(?=[:/?#]))[^\s]*$/iu.test(
-    prefix.normalize('NFKC')
+    normalizedPrefix
   );
   if (numericUrlContext) return 0;
   const international = isInternationalPhoneCandidate(normalized);
   const parenthesized = /\(\s*\d{1,5}\s*\)/u.test(normalized);
-  const compactIdentifierContext = /(?:(?:^|\b)(?:guid|identifier|reference|revision|release(?:\s+id)?|record(?:\s+id)?|receipt|sha(?:-?256)?|hash|ticket|case|invoice|order|code)|(?:識別子|参照(?:番号)?|管理番号|受付番号|注文番号|案件番号|コード))\s*[:：=#＃-]?\s*$/iu.test(
-    prefix.normalize('NFKC').slice(-80)
+  const explicitIdentifierContext = /(?:(?:^|\b)(?:id|guid|identifier|reference|revision|release(?:\s+id)?|record(?:\s+id)?|receipt|sha(?:-?256)?|hash|ticket|case|invoice|order|code)|(?:識別子|参照(?:番号)?|管理番号|受付番号|注文番号|案件番号|コード))\s*[:：=#＃-]?\s*$/iu.test(
+    normalizedPrefix.slice(-80)
   );
+  if (explicitIdentifierContext && !labelled) return 0;
   const compactDomestic = groups.length === 1
     && (/^0[1-9]\d{8}$/u.test(groups[0])
-      || /^0(?:50|60|70|80|90)\d{8}$/u.test(groups[0]))
-    && !compactIdentifierContext;
+      || /^0(?:50|60|70|80|90)\d{8}$/u.test(groups[0]));
   const domesticPairGrouped = groups.length >= 4
       && groups.length <= 6
       && /^0\d$/u.test(groups[0])

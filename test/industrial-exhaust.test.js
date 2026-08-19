@@ -156,27 +156,36 @@ for (const compactDomestic of [
   );
 }
 
-for (const labelledCompactIdentifier of [
-  'GUID: 06012345678',
-  'GUID: 09012345678',
-  'release id 0817020000',
-  'reference 0362168041',
-  '管理番号：０６０１２３４５６７８',
-  '管理番号：０９０１２３４５６７８'
+for (const labelledIdentifier of [
+  'ID: 09012345678',
+  'ＩＤ：０９０１２３４５６７８',
+  'GUID: 03-6216-8041',
+  'reference: +81 3 6216 5111',
+  '管理番号：03-6216-8041',
+  '識別子：+81 3 6216 5111'
 ]) {
   assert.equal(
-    redactContactData(labelledCompactIdentifier),
-    labelledCompactIdentifier,
-    'explicit English and Japanese identifier labels must protect compact numeric identifiers'
+    redactContactData(labelledIdentifier),
+    labelledIdentifier,
+    'explicit English and Japanese identifier labels must protect phone-shaped identifiers'
   );
 }
-for (const labelledCompactPhone of ['Phone: 06012345678', 'Phone: 09012345678']) {
+for (const labelledPhone of [
+  'Phone: 09012345678',
+  'Phone: 03-6216-8041',
+  'Phone: +81 3 6216 5111'
+]) {
   assert.equal(
-    redactContactData(labelledCompactPhone),
+    redactContactData(labelledPhone),
     'Phone: [contact omitted]',
-    'phone labels must continue to redact compact domestic numbers'
+    'phone labels must continue to redact compact, grouped, and international numbers'
   );
 }
+assert.equal(
+  redactContactData('ID: 09012345678 Phone: 03-6216-8041'),
+  'ID: 09012345678 Phone: [contact omitted]',
+  'identifier protection must not suppress a later independently labelled phone'
+);
 for (const compactNumericIdentifier of [
   '1234567890',
   '00012345678',
