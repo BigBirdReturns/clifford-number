@@ -1,0 +1,84 @@
+name: Retire completed Intel realization refs
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-provenance-stack-materializer-v1
+    paths:
+      - '.github/workflows/m05-retire-completed-intel-realization-refs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: m05-retire-completed-intel-realization-refs
+  cancel-in-progress: false
+
+jobs:
+  retire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      ISSUE: '345'
+    steps:
+      - name: Require every permanent transaction merged and canonical
+        run: |
+          set -euo pipefail
+          for pr in 2187 2188 2189 2190 2191 2192 2193; do
+            state=$(gh pr view "$pr" --repo "$REPO" --json state,mergedAt -q 'if .state=="MERGED" and .mergedAt!=null then "merged" else "not-merged" end')
+            test "$state" = merged
+          done
+          for path in \
+            data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-receipt-custody-amendment.json \
+            data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-transport-body-hash-domain-amendment.json \
+            data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-request-envelope-custody-amendment.json \
+            data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-network-peer-custody-amendment.json \
+            data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.json \
+            data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-publisher-authority-custody-amendment.json \
+            data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-acquisition-provenance-stack.json
+          do
+            gh api "repos/$REPO/contents/$path?ref=main" >/dev/null
+          done
+      - name: Enumerate only completed Intel-realization carrier and product refs
+        run: |
+          set -euo pipefail
+          gh api "repos/$REPO/git/matching-refs/heads/agent/m05-s03-l7" --paginate > /tmp/refs.json
+          node <<'NODE'
+          const fs=require('fs'),rows=JSON.parse(fs.readFileSync('/tmp/refs.json','utf8'));
+          const tokens=['intel-realization','request-envelope','network-peer','observation-time','publisher-authority','provenance-stack'];
+          const names=rows.map(r=>r.ref.replace(/^refs\/heads\//,'')).filter(n=>n.startsWith('agent/m05-s03-l7-')&&tokens.some(t=>n.includes(t))).sort();
+          fs.writeFileSync('/tmp/target-refs.txt',names.join('\n')+(names.length?'\n':''));
+          console.log(JSON.stringify({target_ref_count:names.length,target_refs:names},null,2));
+          NODE
+      - name: Delete only refs with no open pull request
+        run: |
+          set -euo pipefail
+          while IFS= read -r ref; do
+            test -n "$ref" || continue
+            open=$(gh pr list --repo "$REPO" --head "$ref" --state open --json number --jq length)
+            test "$open" = 0
+            encoded=${ref//\//%2F}
+            gh api -X DELETE "repos/$REPO/git/refs/heads/$encoded"
+          done < /tmp/target-refs.txt
+      - name: Prove zero residual target refs and record retirement
+        run: |
+          set -euo pipefail
+          gh api "repos/$REPO/git/matching-refs/heads/agent/m05-s03-l7" --paginate > /tmp/final-refs.json
+          node <<'NODE'
+          const fs=require('fs'),rows=JSON.parse(fs.readFileSync('/tmp/final-refs.json','utf8'));
+          const tokens=['intel-realization','request-envelope','network-peer','observation-time','publisher-authority','provenance-stack'];
+          const residual=rows.map(r=>r.ref.replace(/^refs\/heads\//,'')).filter(n=>n.startsWith('agent/m05-s03-l7-')&&tokens.some(t=>n.includes(t))).sort();
+          if(residual.length)throw new Error(`residual refs ${JSON.stringify(residual)}`);
+          NODE
+          retired=$(grep -c . /tmp/target-refs.txt || true)
+          cat > /tmp/comment.md <<EOF
+The completed Intel-realization publication estate has been retired after canonical merge of PRs #2187 through #2193. The cleanup transaction required every permanent PR to be merged, verified all seven successor product objects on canonical \`main\`, enumerated only \`agent/m05-s03-l7-*\` refs containing the Intel-realization, request-envelope, network-peer, observation-time, publisher-authority, or provenance-stack control names, refused deletion of any ref with an open pull request, deleted \`$retired\` completed refs, and proved a zero-residual target-ref census.
+
+This retirement changes no product byte and creates no sale, receipt, booking, distribution, answer, graph, completion, or issue-closure authority. Issue #345 remains open under the complete nine-layer acquisition-provenance stack and the ordinary gate at \`2026-08-27T00:00:00Z\`.
+EOF
+          gh issue comment "$ISSUE" --repo "$REPO" --body-file /tmp/comment.md
