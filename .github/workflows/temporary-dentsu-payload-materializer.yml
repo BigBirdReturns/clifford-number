@@ -1,0 +1,117 @@
+name: Temporary Dentsu payload materializer
+
+on:
+  push:
+    branches:
+      - agent/dentsu-identifier-context-followup
+    paths:
+      - .github/pr2189-materializer-trigger.txt
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: temporary-dentsu-payload-materializer
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/dentsu-identifier-context-followup
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify entry state and recover signed payloads
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git diff --name-only HEAD^ HEAD)" = ".github/pr2189-materializer-trigger.txt"
+          git merge-base --is-ancestor 69048a82c733fc29515511f2abf99061a6c96ff8 HEAD
+
+          curl -fsSL \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/issues/comments/5337390723" \
+            > /tmp/pr2189-payload-comment.json
+
+          python - <<'PY'
+          import base64
+          import gzip
+          import hashlib
+          import json
+          import re
+          from pathlib import Path
+
+          body = json.loads(Path('/tmp/pr2189-payload-comment.json').read_text(encoding='utf-8'))['body']
+          blocks = re.findall(r'```text\s*\n([A-Za-z0-9+/=\r\n]+?)\n```', body)
+          if len(blocks) != 2:
+              raise SystemExit(f'expected exactly two payload blocks, found {len(blocks)}')
+
+          specs = [
+              {
+                  'path': Path('tools/lib/industrial-exhaust.mjs'),
+                  'bytes': 40231,
+                  'sha256': '9fa1eb3e245ac2e35d4a58c7133aaae11d91afd50490e6c21a895cf1aade9952',
+                  'blob': 'a6be5074fb8e327ff48bb950b274fc7911933201',
+              },
+              {
+                  'path': Path('test/industrial-exhaust.test.js'),
+                  'bytes': 32210,
+                  'sha256': '6bbcadfb7905aa0b4fb16dfc3f2a3ff7ce9be5fe40975491440f4e6b0008afdb',
+                  'blob': 'c66f36330b151f0549cad22107c789287a3dc036',
+              },
+          ]
+
+          for encoded, spec in zip(blocks, specs, strict=True):
+              compressed = base64.b64decode(''.join(encoded.split()), validate=True)
+              data = gzip.decompress(compressed)
+              sha256 = hashlib.sha256(data).hexdigest()
+              blob = hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
+              if len(data) != spec['bytes']:
+                  raise SystemExit(f"{spec['path']}: byte count {len(data)} != {spec['bytes']}")
+              if sha256 != spec['sha256']:
+                  raise SystemExit(f"{spec['path']}: sha256 {sha256} != {spec['sha256']}")
+              if blob != spec['blob']:
+                  raise SystemExit(f"{spec['path']}: blob {blob} != {spec['blob']}")
+              spec['path'].parent.mkdir(parents=True, exist_ok=True)
+              spec['path'].write_bytes(data)
+              print(json.dumps({
+                  'path': str(spec['path']),
+                  'bytes': len(data),
+                  'sha256': sha256,
+                  'blob': blob,
+              }, sort_keys=True))
+          PY
+      - name: Validate, remove temporary machinery, and publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/lib/industrial-exhaust.mjs
+          node --check tools/crawl-industrial-exhaust.mjs
+          node --check test/industrial-exhaust.test.js
+          node test/industrial-exhaust.test.js
+
+          rm -f .github/workflows/temporary-dentsu-identifier-context-audit.yml
+          rm -f .github/workflows/temporary-dentsu-identifier-context-repair.yml
+          rm -f .github/workflows/temporary-dentsu-payload-materializer.yml
+          rm -f .github/pr2189-materializer-trigger.txt
+
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          test "$(git diff --cached --name-only | sort)" = $'.github/pr2189-materializer-trigger.txt\n.github/workflows/temporary-dentsu-identifier-context-audit.yml\n.github/workflows/temporary-dentsu-identifier-context-repair.yml\n.github/workflows/temporary-dentsu-payload-materializer.yml\ntest/industrial-exhaust.test.js\ntools/lib/industrial-exhaust.mjs'
+          git commit -m "fix(crawler): preserve explicit phone-shaped identifiers"
+          git push origin HEAD:refs/heads/agent/dentsu-identifier-context-followup
