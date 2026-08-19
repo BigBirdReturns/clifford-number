@@ -170,6 +170,17 @@ assert.equal(
   'https://example.test/ [contact omitted]',
   'URL protection must end at whitespace so a later independent phone is still redacted'
 );
+for (const longNumericUrl of [
+  `https://example.test/${'long-segment/'.repeat(12)}01/42/68/53/00`,
+  `www.example.test/${'long-segment/'.repeat(12)}03/6216/5111`,
+  `https://example.test/${'long-segment/'.repeat(12)}+44/20/7123/4567`
+]) {
+  assert.equal(
+    redactContactData(longNumericUrl),
+    longNumericUrl,
+    'numeric URL paths must remain intact when the scheme is more than 64 characters behind the candidate'
+  );
+}
 assert.equal(redactContactData('電話番号：０３６２１６８０４１'), '電話番号：[contact omitted]');
 assert.equal(redactContactData('電話番号03-6216-8041'), '電話番号[contact omitted]');
 assert.equal(redactContactData('携帯電話090-1234-5678'), '携帯電話[contact omitted]');

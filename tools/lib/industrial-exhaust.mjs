@@ -329,6 +329,14 @@ function redactAttachedInternationalSuffix(candidate, groups, externalPrefix, ex
   return best?.output ?? candidate;
 }
 
+function redactionPrefixContext(input, offset) {
+  const preceding = input.slice(0, offset);
+  const boundedStart = Math.max(0, preceding.length - 64);
+  const currentToken = preceding.match(/\S+$/u)?.[0] ?? '';
+  const tokenStart = currentToken ? preceding.length - currentToken.length : preceding.length;
+  return preceding.slice(Math.min(boundedStart, tokenStart));
+}
+
 function redactPhoneSubspans(candidate, externalPrefix, externalSuffix, allowInitialGroup = true) {
   const groups = [...candidate.matchAll(DIGIT_RUN_PATTERN)];
   if (!groups.length) return candidate;
@@ -412,7 +420,7 @@ export function redactContactData(value) {
   const emailRedacted = String(value ?? '')
     .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/giu, '[contact omitted]');
   const phoneRedacted = emailRedacted.replace(PHONE_SPAN_PATTERN, (candidate, offset, input) => {
-    const prefix = input.slice(Math.max(0, offset - 64), offset);
+    const prefix = redactionPrefixContext(input, offset);
     const suffix = input.slice(offset + candidate.length, offset + candidate.length + 64);
     const previousCharacter = Array.from(prefix).at(-1) ?? '';
     const allowInitialGroup = !/[\p{L}\p{N}]/u.test(previousCharacter) || hasPhoneLabelPrefix(prefix);
