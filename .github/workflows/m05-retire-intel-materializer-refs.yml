@@ -1,0 +1,66 @@
+name: Retire completed Intel materializer refs
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-publisher-authority-materializer-v1
+    paths:
+      - '.github/workflows/m05-retire-intel-materializer-refs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  retire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Require all permanent transactions merged and canonical
+        run: |
+          set -euo pipefail
+          for pr in 2189 2190 2191 2192; do
+            gh pr view "$pr" --repo "$REPO" --json state,mergedAt -q 'select(.state=="MERGED" and .mergedAt!=null) | .mergedAt' | grep -q .
+          done
+          for path in \
+            data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-request-envelope-custody-amendment.json \
+            data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-network-peer-custody-amendment.json \
+            data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.json \
+            data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-publisher-authority-custody-amendment.json
+          do
+            gh api "repos/$REPO/contents/$path?ref=main" >/dev/null
+          done
+      - name: Delete only the completed allowlisted refs
+        run: |
+          set -euo pipefail
+          refs=(
+            agent/m05-s03-l7-intel-realization-request-envelope-custody-v1
+            agent/m05-s03-l7-intel-realization-network-peer-custody-v1
+            agent/m05-s03-l7-intel-realization-observation-time-custody-v1
+            agent/m05-s03-l7-intel-realization-publisher-authority-custody-v1
+            agent/m05-s03-l7-request-envelope-validator-materializer-v1
+            agent/m05-s03-l7-request-envelope-validator-materializer-v2
+            agent/m05-s03-l7-request-envelope-validator-materializer-v3
+            agent/m05-s03-l7-request-envelope-materializer-v3
+            agent/m05-s03-l7-request-envelope-materializer-final
+            agent/m05-s03-l7-request-envelope-materializer-final2
+            agent/m05-s03-l7-request-envelope-builder
+            agent/m05-s03-l7-request-envelope-builder-v2
+            agent/m05-s03-l7-request-envelope-builder-v3
+            agent/m05-s03-l7-request-envelope-materializer-v4
+            agent/m05-s03-l7-request-envelope-materializer-v5
+            agent/m05-s03-l7-request-envelope-materializer-v6
+            agent/m05-s03-l7-network-peer-materializer-v1
+            agent/m05-s03-l7-observation-time-materializer-v1
+            agent/m05-s03-l7-publisher-authority-materializer-v1
+          )
+          for ref in "${refs[@]}"; do
+            encoded=${ref//\//%2F}
+            if gh api "repos/$REPO/git/ref/heads/$encoded" >/dev/null 2>&1; then
+              gh api -X DELETE "repos/$REPO/git/refs/heads/$encoded"
+            fi
+          done
