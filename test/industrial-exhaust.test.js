@@ -142,9 +142,11 @@ for (const twoGroupDomestic of ['03-62165111', '050-12345678', '030 12345678']) 
 for (const compactDomestic of [
   '0362168041',
   '05012345678',
+  '06012345678',
   '07012345678',
   '08012345678',
   '09012345678',
+  '０６０１２３４５６７８',
   '０９０１２３４５６７８'
 ]) {
   assert.equal(
@@ -155,9 +157,11 @@ for (const compactDomestic of [
 }
 
 for (const labelledCompactIdentifier of [
+  'GUID: 06012345678',
   'GUID: 09012345678',
   'release id 0817020000',
   'reference 0362168041',
+  '管理番号：０６０１２３４５６７８',
   '管理番号：０９０１２３４５６７８'
 ]) {
   assert.equal(
@@ -166,11 +170,13 @@ for (const labelledCompactIdentifier of [
     'explicit English and Japanese identifier labels must protect compact numeric identifiers'
   );
 }
-assert.equal(
-  redactContactData('Phone: 09012345678'),
-  'Phone: [contact omitted]',
-  'phone labels must continue to redact compact domestic numbers'
-);
+for (const labelledCompactPhone of ['Phone: 06012345678', 'Phone: 09012345678']) {
+  assert.equal(
+    redactContactData(labelledCompactPhone),
+    'Phone: [contact omitted]',
+    'phone labels must continue to redact compact domestic numbers'
+  );
+}
 for (const compactNumericIdentifier of [
   '1234567890',
   '00012345678',

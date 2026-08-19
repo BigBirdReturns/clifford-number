@@ -172,7 +172,7 @@ function phoneCandidateScore(candidate, prefix) {
   );
   const compactDomestic = groups.length === 1
     && (/^0[1-9]\d{8}$/u.test(groups[0])
-      || /^0(?:50|70|80|90)\d{8}$/u.test(groups[0]))
+      || /^0(?:50|60|70|80|90)\d{8}$/u.test(groups[0]))
     && !compactIdentifierContext;
   const domesticPairGrouped = groups.length >= 4
       && groups.length <= 6
