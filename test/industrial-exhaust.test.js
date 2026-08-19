@@ -774,4 +774,61 @@ assert.equal(
   'an outer narrative wrapper must remain balanced around a phone with an internal trunk wrapper'
 );
 
+
+for (const [input, expected] of [
+  ['Phone +81 3 6216 5111)', 'Phone [contact omitted]'],
+  ['電話＋８１ ３ ６２１６ ５１１１）', '電話[contact omitted]'],
+  ['Phone +81) 3 6216 (5111)', 'Phone [contact omitted]']
+]) {
+  assert.equal(
+    redactContactData(input),
+    expected,
+    'an unmatched phone-format closer without an adjacent narrative opener must not be restored'
+  );
+}
+
+for (const observation of ['90 people', '2026-08-17', '12:30', '3.14']) {
+  assert.equal(
+    redactContactData(`Phone (+81 3 6216 5111) ${observation}`),
+    `Phone ([contact omitted]) ${observation}`,
+    'an owned narrative close must be preserved before a numeric observation'
+  );
+}
+
+assert.equal(
+  redactContactData('電話（＋８１ ３ ６２１６ ５１１１） ９０ people'),
+  '電話（[contact omitted]） ９０ people',
+  'fullwidth narrative wrappers must remain balanced before a numeric observation'
+);
+assert.equal(
+  redactContactData('Phone ( +81 3 6216 5111 )'),
+  'Phone ( [contact omitted] )',
+  'whitespace between a narrative opener and the plus marker must be preserved'
+);
+assert.equal(
+  redactContactData('Phone ((+81 3 6216 5111))'),
+  'Phone (([contact omitted]))',
+  'nested narrative wrappers must remain balanced'
+);
+assert.equal(
+  redactContactData('Phone (+44 (0)20 7123 4567) 90 people'),
+  'Phone ([contact omitted]) 90 people',
+  'an owned wrapper must remain balanced around internal trunk notation and a trailing observation'
+);
+assert.equal(
+  redactContactData('Phone (+81 3 6216 5111). Ext. 1234'),
+  'Phone ([contact omitted]). Ext. [contact omitted]',
+  'marked extensions after a balanced wrapper must still be redacted'
+);
+assert.equal(
+  redactContactData('Phone (+81 3 6216 5111) or 090-1234-5678'),
+  'Phone ([contact omitted]) or [contact omitted]',
+  'a later independently bounded phone must still be redacted after wrapper preservation'
+);
+assert.equal(
+  redactContactData('referenceA+81 3 6216 5111)'),
+  'referenceA+81 3 6216 5111)',
+  'an unchanged attached identifier must retain its original punctuation without synthetic restoration'
+);
+
 console.log('industrial-exhaust tests passed');

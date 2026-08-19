@@ -447,6 +447,32 @@ function redactPhoneSubspans(candidate, externalPrefix, externalSuffix, allowIni
   return `${output}${candidate.slice(cursor)}`;
 }
 
+
+function findOwnedNarrativePhoneWrapper(candidate, input, offset, contactOffset) {
+  if (!/[+＋]/u.test(input[contactOffset] ?? '')) return null;
+
+  let openerIndex = contactOffset - 1;
+  while (openerIndex >= 0 && /\s/u.test(input[openerIndex])) openerIndex -= 1;
+  if (!/[（(]/u.test(input[openerIndex] ?? '')) return null;
+
+  let depth = 1;
+  const candidateEnd = offset + candidate.length;
+  for (let index = contactOffset; index < candidateEnd; index += 1) {
+    const normalized = input[index].normalize('NFKC');
+    if (normalized === '(') depth += 1;
+    else if (normalized === ')') {
+      depth -= 1;
+      if (depth === 0) {
+        return {
+          closeIndex: index - offset,
+          closer: input[index]
+        };
+      }
+      if (depth < 0) return null;
+    }
+  }
+  return null;
+}
 export function redactContactData(value) {
   const emailRedacted = String(value ?? '')
     .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/giu, '[contact omitted]');
@@ -457,16 +483,34 @@ export function redactContactData(value) {
     const suffix = input.slice(offset + candidate.length, offset + candidate.length + 64);
     const adjacentCharacter = Array.from(input.slice(0, contactOffset)).at(-1) ?? '';
     const allowInitialGroup = !/[\p{L}\p{N}]/u.test(adjacentCharacter) || hasPhoneLabelPrefix(prefix);
-    const redacted = redactPhoneSubspans(candidate, prefix, suffix, allowInitialGroup);
-    const normalizedCandidate = candidate.normalize('NFKC');
-    const openingParentheses = (normalizedCandidate.match(/\(/gu) ?? []).length;
-    const closingParentheses = (normalizedCandidate.match(/\)/gu) ?? []).length;
-    const unmatchedTrailingWrapper = normalizedCandidate.endsWith(')')
-      && closingParentheses > openingParentheses;
-    const trailingWrapper = unmatchedTrailingWrapper ? candidate.at(-1) : '';
-    return trailingWrapper && redacted !== candidate && !redacted.endsWith(trailingWrapper)
-      ? `${redacted}${trailingWrapper}`
-      : redacted;
+    const ownedWrapper = findOwnedNarrativePhoneWrapper(
+      candidate,
+      input,
+      offset,
+      contactOffset
+    );
+    if (ownedWrapper) {
+      const phoneCandidate = candidate.slice(0, ownedWrapper.closeIndex);
+      const afterWrapper = candidate.slice(
+        ownedWrapper.closeIndex + ownedWrapper.closer.length
+      );
+      const redactedPhone = redactPhoneSubspans(
+        phoneCandidate,
+        prefix,
+        `${ownedWrapper.closer}${afterWrapper}${suffix}`,
+        allowInitialGroup
+      );
+      if (redactedPhone !== phoneCandidate) {
+        const redactedAfter = redactPhoneSubspans(
+          afterWrapper,
+          `${prefix}${redactedPhone}${ownedWrapper.closer}`,
+          suffix,
+          true
+        );
+        return `${redactedPhone}${ownedWrapper.closer}${redactedAfter}`;
+      }
+    }
+    return redactPhoneSubspans(candidate, prefix, suffix, allowInitialGroup);
   });
   return phoneRedacted.replace(PHONE_EXTENSION_PATTERN, (candidate, marker, offset, input) =>
     redactPhoneExtensionCandidate(candidate, marker, offset, input));
