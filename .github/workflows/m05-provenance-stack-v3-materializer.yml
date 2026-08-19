@@ -1,0 +1,36 @@
+name: M-05 eleven-layer provenance-stack materializer
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-provenance-stack-v3-materializer-v1
+    paths:
+      - '.tmp/m05-provenance-stack-v3/**'
+      - '.github/workflows/m05-provenance-stack-v3-materializer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: m05-provenance-stack-v3-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Materialize eleven-layer acquisition, claim, and numerical stack
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
+        run: node .tmp/m05-provenance-stack-v3/materialize.mjs
