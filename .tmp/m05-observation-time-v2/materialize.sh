@@ -45,8 +45,15 @@ for rel in "${TARGETS[@]}"; do
   fi
 done
 if git ls-remote --exit-code --heads origin "refs/heads/$PRODUCT_BRANCH" >/dev/null 2>&1; then
-  echo "product branch already exists: $PRODUCT_BRANCH" >&2
-  exit 1
+  git fetch --no-tags origin "$PRODUCT_BRANCH"
+  existing_head="$(git rev-parse "origin/$PRODUCT_BRANCH")"
+  test "$(git rev-parse "$existing_head^")" = "$BASE_SHA"
+  test "$(git rev-parse "$existing_head:$CONTRACT")" = '817f2b571c5f5feb755c6ac97226567630de5c38'
+  test "$(git rev-parse "$existing_head:$VALIDATOR")" = 'e5c2afe704f1589816c6c242ba096430aac38d91'
+  test "$(git rev-parse "$existing_head:$TEST")" = 'e04c076b0a764b77053db504b94606f3ced44c98'
+  test "$(git rev-parse "$existing_head:$WORKFLOW")" = 'd77e5a1a6a0bc2b22801d15850da5de177795641'
+  printf 'product_branch=%s\nproduct_head=%s\nproduct_state=already_exact\n' "$PRODUCT_BRANCH" "$existing_head"
+  exit 0
 fi
 
 git switch --detach "$BASE_SHA"
