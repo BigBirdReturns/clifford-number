@@ -409,6 +409,21 @@ assert.equal(
   'parenthesized grouped extension digits must be fully redacted'
 );
 assert.equal(
+  redactContactData('Tel: +44 20 7123 4567. Ext. 1234'),
+  'Tel: [contact omitted]. Ext. [contact omitted]',
+  'an explicit extension marker must retain authority across an ASCII sentence dot'
+);
+assert.equal(
+  redactContactData('電話番号03-6216-8041．内線１２３４'),
+  '電話番号[contact omitted]．内線[contact omitted]',
+  'a Japanese extension marker must retain authority across a fullwidth sentence dot'
+);
+assert.equal(
+  redactContactData('電話番号03-6216-8041。内線１２３４'),
+  '電話番号[contact omitted]。内線[contact omitted]',
+  'a Japanese extension marker must retain authority across an ideographic full stop'
+);
+assert.equal(
   redactContactData('電話番号03-6216-8041内線（１２３４ ５６７８）'),
   '電話番号[contact omitted]内線（[contact omitted]）',
   'fullwidth-parenthesized grouped extension digits must be fully redacted'
@@ -478,6 +493,21 @@ assert.equal(
   redactContactData('Tel: +49 30 1234. 567 office hours apply.'),
   'Tel: [contact omitted] office hours apply.',
   'narrative text after a three-digit dotted phone group must not expose that group'
+);
+assert.equal(
+  redactContactData('Tel: +33 1 42 68 53. 00 office hours apply.'),
+  'Tel: [contact omitted] office hours apply.',
+  'narrative text after a two-digit pair-group phone ending must not expose that group'
+);
+assert.equal(
+  redactContactData('Tel: +33 1 42 68 53. 00'),
+  'Tel: [contact omitted]',
+  'a two-digit dotted pair-group ending must remain in the phone span'
+);
+assert.equal(
+  redactContactData('Contact +33 1 42 68 53. 00 people attended.'),
+  'Contact [contact omitted]. 00 people attended.',
+  'strong unit-labelled evidence must override a two-digit dotted pair-group tie-break'
 );
 assert.equal(
   redactContactData('Tel: +44 20 7123 4567 ext 1234. 5678 is the extension.'),
