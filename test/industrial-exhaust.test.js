@@ -154,6 +154,22 @@ assert.equal(
   '01 2026 08 17',
   'a spaced numeric sequence containing a year must not be treated as a pair-grouped domestic phone'
 );
+for (const numericUrl of [
+  'https://example.test/01/42/68/53/00',
+  'www.example.test/03/6216/5111',
+  'https://example.test/+44/20/7123/4567'
+]) {
+  assert.equal(
+    redactContactData(numericUrl),
+    numericUrl,
+    'numeric URL paths must remain intact rather than being classified as telephone spans'
+  );
+}
+assert.equal(
+  redactContactData('https://example.test/ 01 42 68 53 00'),
+  'https://example.test/ [contact omitted]',
+  'URL protection must end at whitespace so a later independent phone is still redacted'
+);
 assert.equal(redactContactData('電話番号：０３６２１６８０４１'), '電話番号：[contact omitted]');
 assert.equal(redactContactData('電話番号03-6216-8041'), '電話番号[contact omitted]');
 assert.equal(redactContactData('携帯電話090-1234-5678'), '携帯電話[contact omitted]');

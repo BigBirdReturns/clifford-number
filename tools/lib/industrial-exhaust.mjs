@@ -147,6 +147,10 @@ function phoneCandidateScore(candidate, prefix) {
   if (!normalized.startsWith('+') && accessPrefixCandidates.length && !accessPrefixDigits) return 0;
 
   const labelled = hasPhoneLabelPrefix(prefix);
+  const numericUrlContext = /(?:https?:\/\/|www\.)[^\s]*$/iu.test(
+    prefix.normalize('NFKC')
+  );
+  if (numericUrlContext) return 0;
   const international = isInternationalPhoneCandidate(normalized);
   const parenthesized = /\(\s*\d{1,5}\s*\)/u.test(normalized);
   const domesticPairGrouped = groups.length >= 4
