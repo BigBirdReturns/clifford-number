@@ -1,0 +1,211 @@
+{
+  "schema_version": "m05-answerable-power-s03-l7-cross-domain-source-custody-correction@1",
+  "object_class": "bounded_cross_domain_locator_only_custody_correction",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-03",
+  "leg_id": "S03-L7",
+  "issue": 345,
+  "as_of": "2026-08-18",
+  "status": "cross_domain_locator_only_custody_correction_frozen",
+  "title": "Cross-domain official candidate source-custody correction",
+  "question": "Which exact-body, official-origin, and acquisition-receipt fields remain absent from the three cross-domain official candidate packets, and what effective receipt state must apply until those fields are independently supplied?",
+  "canonical_base": {
+    "branch": "main",
+    "sha": "9f6f700f18c4eb1fcbbbe67f41a23369c5a1db6b",
+    "tree_sha": "d205abcc8d41a41faa12b75d4570fc498e39f20e",
+    "preceding_pull_request": 2184,
+    "preceding_merge_commit": "9f6f700f18c4eb1fcbbbe67f41a23369c5a1db6b"
+  },
+  "bindings": {
+    "official_receipt_candidate_set": {
+      "path": "data/project/m05-cross-domain-official-receipt-candidates.json",
+      "blob_sha": "1c17549a39b826853435d3726596bf41d0fc7de9",
+      "schema_version": "m05-cross-domain-official-receipt-candidates@1",
+      "pull_request": 2151,
+      "merge_commit": "204fb917a6fcef3d3a6fcf09186bf9c2de7ed2f0"
+    },
+    "official_receipt_candidate_helper": {
+      "path": "tools/lib/m05-cross-domain-official-receipt-candidates.mjs",
+      "blob_sha": "e111ab2a26f0dd79d427e8ff76e7847b516c45b2",
+      "control_class": "https_host_locator_repository_content_candidate_validator",
+      "pull_request": 2151,
+      "merge_commit": "204fb917a6fcef3d3a6fcf09186bf9c2de7ed2f0"
+    },
+    "source_health_regression_validator": {
+      "path": "tools/validate-m05-source-health-evidence-state-regression.mjs",
+      "blob_sha": "c874137600a40ecd160993fc4e8f530353678679",
+      "control_class": "cross_domain_evidence_and_answer_gate_validator"
+    },
+    "source_health_regression_adversarial_test": {
+      "path": "test/m05-source-health-evidence-state-regression.test.js",
+      "blob_sha": "e79fcbc05f1d047876c8898fe71cffef3a18d61e",
+      "control_class": "cross_domain_evidence_and_answer_gate_adversarial_suite"
+    },
+    "intel_source_provenance_minimum": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-source-provenance-amendment.json",
+      "blob_sha": "893fbd3a2d50ccfd09a4d357b070af848f66b5d8",
+      "semantic_sha256": "4cdd9995e964073b830ab006b5f4a660009535b5420f0b6cb67bb4c4d94e1444",
+      "schema_version": "m05-answerable-power-s03-l7-intel-realization-source-provenance-amendment@1",
+      "pull_request": 2184,
+      "merge_commit": "9f6f700f18c4eb1fcbbbe67f41a23369c5a1db6b",
+      "reuse_scope": "minimum_source_origin_and_acquisition_custody_fields_only"
+    }
+  },
+  "predecessor_gap": {
+    "gap_class": "locator_addressed_repository_content_mislabeled_as_effective_source_receipt",
+    "candidate_records": 3,
+    "source_records": 12,
+    "https_urls_present": true,
+    "official_host_allowlists_present": true,
+    "substantive_locators_present": true,
+    "historical_source_addressed_receipt_flags_true": 3,
+    "source_body_sha256_fields_present": 0,
+    "source_origin_body_sha256_fields_present": 0,
+    "acquisition_receipt_sha256_fields_present": 0,
+    "source_custody_body_sha256_fields_present": 0,
+    "official_origin_authentication_fields_present": 0,
+    "url_host_and_locator_are_exact_body_custody": false,
+    "historical_source_addressed_receipt_flag_is_effective_without_custody": false
+  },
+  "effective_candidate_receipt_state": [
+    {
+      "receipt_id": "M05-RC-ADMIN-AU-ROBODEBT",
+      "domain_id": "APC-ADMIN-01",
+      "jurisdiction": "AU",
+      "source_records": 5,
+      "locator_addressed_source_records": 5,
+      "exact_body_custodied_source_records": 0,
+      "official_origin_authenticated_source_records": 0,
+      "acquisition_receipts": 0,
+      "historical_source_addressed_receipt_flag": true,
+      "effective_source_addressed_receipt": false,
+      "candidate_body_custody_complete": false,
+      "candidate_official_origin_complete": false,
+      "claim_evidence_admissible": false,
+      "answer_effective": false
+    },
+    {
+      "receipt_id": "M05-RC-COERCION-NL-SYRI",
+      "domain_id": "APC-COERCION-01",
+      "jurisdiction": "NL",
+      "source_records": 3,
+      "locator_addressed_source_records": 3,
+      "exact_body_custodied_source_records": 0,
+      "official_origin_authenticated_source_records": 0,
+      "acquisition_receipts": 0,
+      "historical_source_addressed_receipt_flag": true,
+      "effective_source_addressed_receipt": false,
+      "candidate_body_custody_complete": false,
+      "candidate_official_origin_complete": false,
+      "claim_evidence_admissible": false,
+      "answer_effective": false
+    },
+    {
+      "receipt_id": "M05-RC-WORK-IT-FOODINHO",
+      "domain_id": "APC-WORK-01",
+      "jurisdiction": "IT",
+      "source_records": 4,
+      "locator_addressed_source_records": 4,
+      "exact_body_custodied_source_records": 0,
+      "official_origin_authenticated_source_records": 0,
+      "acquisition_receipts": 0,
+      "historical_source_addressed_receipt_flag": true,
+      "effective_source_addressed_receipt": false,
+      "candidate_body_custody_complete": false,
+      "candidate_official_origin_complete": false,
+      "claim_evidence_admissible": false,
+      "answer_effective": false
+    }
+  ],
+  "required_source_custody": {
+    "required_fields_per_source": [
+      "source_authority",
+      "source_authority_identifier",
+      "source_record_class",
+      "source_origin_url",
+      "source_origin_observed_at_utc",
+      "source_origin_content_type",
+      "source_origin_body_sha256",
+      "origin_verification_mode",
+      "origin_evidence_sha256",
+      "acquisition_method",
+      "acquisition_receipt_sha256",
+      "source_custody_mode",
+      "source_custody_locator",
+      "source_custody_body_sha256",
+      "repository_blob_sha_if_used"
+    ],
+    "acquisition_receipt_required_fields": [
+      "requested_url",
+      "resolved_url",
+      "redirect_chain",
+      "response_status",
+      "response_headers_sha256",
+      "observed_at_utc",
+      "content_type",
+      "body_length_bytes",
+      "source_origin_body_sha256"
+    ],
+    "hash_algorithm": "sha256",
+    "hash_encoding": "lowercase_hex",
+    "hash_length": 64,
+    "origin_body_hash_must_equal_custody_body_hash": true,
+    "each_distinct_source_body_requires_independent_hash": true,
+    "each_distinct_source_body_requires_independent_acquisition_receipt": true,
+    "source_authority_must_match_official_origin_or_publication_chain": true,
+    "repository_blob_requires_official_origin_receipt": true,
+    "locator_only_source_may_count_as_effective_receipt": false,
+    "https_hostname_alone_may_count_as_official_origin": false,
+    "quoted_locator_alone_may_count_as_substantive_body_custody": false,
+    "repository_content_status_may_count_as_claim_evidence": false
+  },
+  "observed_receipts": [],
+  "observed_state": {
+    "locator_addressed_candidates": 3,
+    "effective_source_addressed_candidates": 0,
+    "exact_body_custodied_source_records": 0,
+    "official_origin_authenticated_source_records": 0,
+    "claim_evidence_admissible": 0,
+    "effective_answers": 0,
+    "cross_domain_regression_completed": false,
+    "answer_change_authorized": false
+  },
+  "guardrails": {
+    "https_url_is_exact_body_custody": false,
+    "official_hostname_is_publisher_authentication": false,
+    "locator_text_is_source_body_custody": false,
+    "historical_source_addressed_receipt_flag_controls_effective_state": false,
+    "repository_content_is_claim_evidence": false,
+    "custody_correction_is_empirical_receipt": false,
+    "custody_correction_is_answer_effectiveness": false
+  },
+  "expected_result": {
+    "candidate_records": 3,
+    "source_records": 12,
+    "locator_addressed_source_records": 12,
+    "effective_source_addressed_candidates": 0,
+    "exact_body_custodied_source_records": 0,
+    "official_origin_authenticated_source_records": 0,
+    "claim_evidence_admissible": 0,
+    "effective_answers": 0,
+    "qualifying_jurisdictions": 0,
+    "cross_domain_regression_completed": false,
+    "answer_effectiveness": false,
+    "graph_effect": "none",
+    "issue_345_may_close": false
+  },
+  "boundaries": {
+    "changes_predecessor_candidate_bytes": false,
+    "creates_new_empirical_receipt": false,
+    "claims_exact_body_custody": false,
+    "claims_official_origin_authentication": false,
+    "claims_claim_evidence_admission": false,
+    "claims_answer_effectiveness": false,
+    "claims_cross_domain_completion": false,
+    "graph_effect": "none",
+    "conclusion_generated": false,
+    "project_complete": false,
+    "issue_345_may_close": false
+  },
+  "correction_sha256": "47d4d0ba0fef9a5ad3c699e04981ad1566fa4668c46f90bbc9815bd1fbc264e0"
+}
