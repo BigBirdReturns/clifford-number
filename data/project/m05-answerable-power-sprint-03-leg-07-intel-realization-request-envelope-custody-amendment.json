@@ -1,0 +1,273 @@
+{
+  "schema_version": "m05-answerable-power-s03-l7-intel-realization-request-envelope-custody-amendment@1",
+  "object_class": "bounded_admission_request_envelope_custody_amendment",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-03",
+  "leg_id": "S03-L7",
+  "issue": 345,
+  "as_of": "2026-08-18",
+  "status": "intel_realization_request_envelope_custody_amendment_frozen",
+  "title": "Intel realization exact request-envelope and representation-selection custody amendment",
+  "question": "Which exact request-target, emitted-header, request-body, credential-scope, range, conditional, and Vary-selection objects must accompany each authenticated source response before any Intel realization-stage receipt may advance?",
+  "canonical_base": {
+    "branch": "main",
+    "sha": "88b4d9cefa8b5fc22f646b13bba1e7956bb23f7a",
+    "tree_sha": "cc6e754963b99a86b94e67a3f9fbf54dc26da44d",
+    "preceding_pull_request": 2188,
+    "preceding_merge_commit": "7e4228dd97168bbd2d3df14261bf85a54e758034"
+  },
+  "bindings": {
+    "transport_body_representation_amendment": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-transport-body-representation-amendment.json",
+      "blob_sha": "571e665bfa47eceddf4b12efd53bebe488a61e43",
+      "semantic_sha256": "f089e5d2e599832dbabb3a0cd592f09554bb4b9b435e7f862fbf8e1a0d9cfe84",
+      "schema_version": "m05-answerable-power-s03-l7-intel-realization-transport-body-representation-amendment@1",
+      "pull_request": 2188,
+      "merge_commit": "7e4228dd97168bbd2d3df14261bf85a54e758034"
+    },
+    "transport_body_representation_validator": {
+      "path": "tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-transport-body-representation-amendment.mjs",
+      "blob_sha": "91819b0d44cd2aa070b88ddf46cccb7c285dde03",
+      "control_class": "independent_transport_body_git_blob_and_semantic_checksum_validator",
+      "pull_request": 2188,
+      "merge_commit": "7e4228dd97168bbd2d3df14261bf85a54e758034"
+    },
+    "transport_body_representation_test": {
+      "path": "test/m05-answerable-power-sprint-03-leg-07-intel-realization-transport-body-representation-amendment.test.js",
+      "blob_sha": "75bc7dd5fe491d954c994629bbfbd89480fcabfe",
+      "control_class": "adversarial_transport_body_representation_test",
+      "pull_request": 2188,
+      "merge_commit": "7e4228dd97168bbd2d3df14261bf85a54e758034"
+    },
+    "transport_body_representation_workflow": {
+      "path": ".github/workflows/m05-intel-realization-transport-body-representation-amendment.yml",
+      "blob_sha": "b26572b1d8a4879c518db7a45c7ef133f68bbf5a",
+      "control_class": "read_only_transport_body_qualification_workflow",
+      "pull_request": 2188,
+      "merge_commit": "7e4228dd97168bbd2d3df14261bf85a54e758034"
+    }
+  },
+  "predecessor_gap": {
+    "gap_class": "exact_response_body_without_exact_request_selection_envelope",
+    "requested_and_resolved_urls_required": true,
+    "transport_protocol_and_body_domain_required": true,
+    "request_method_required": false,
+    "exact_request_target_object_required": false,
+    "network_emitted_request_header_object_required": false,
+    "content_negotiation_values_required": false,
+    "conditional_and_range_state_required": false,
+    "request_body_bytes_required": false,
+    "credential_and_cookie_dependency_class_required": false,
+    "response_vary_selection_object_required": false,
+    "same_url_alone_determines_same_representation": false
+  },
+  "stage_order": [
+    "transaction",
+    "federal_cash_custody",
+    "public_account_booking",
+    "distribution"
+  ],
+  "request_envelope_profile": {
+    "profile_id": "m05-source-request-envelope@1",
+    "applies_to_stages": [
+      "transaction",
+      "federal_cash_custody",
+      "public_account_booking",
+      "distribution"
+    ],
+    "required_fields": [
+      "request_envelope_record_identifier",
+      "request_envelope_schema_version",
+      "request_envelope_body_sha256",
+      "request_envelope_custody_locator",
+      "request_method",
+      "request_target_form",
+      "request_scheme",
+      "request_authority",
+      "request_path_and_query",
+      "request_target_body_sha256",
+      "request_target_length_bytes",
+      "request_target_custody_locator",
+      "request_header_capture_mode",
+      "request_header_canonicalization_version",
+      "request_headers_body_sha256",
+      "request_headers_length_bytes",
+      "request_headers_custody_locator",
+      "request_body_present",
+      "request_body_hash_domain",
+      "request_body_sha256_if_present",
+      "request_body_length_bytes",
+      "request_body_custody_mode_if_present",
+      "request_body_custody_locator_if_present",
+      "content_negotiation_headers",
+      "conditional_request_headers",
+      "range_request",
+      "range_reassembly_manifest_body_sha256_if_used",
+      "range_reassembly_manifest_custody_locator_if_used",
+      "credential_scope_class",
+      "credential_scope_identifier_sha256",
+      "cookie_scope_class",
+      "cookie_scope_identifier_sha256",
+      "authorization_material_retained",
+      "cookie_values_retained",
+      "response_vary_headers",
+      "response_vary_star",
+      "vary_key_reconciliation_body_sha256",
+      "vary_key_reconciliation_custody_locator",
+      "effective_request_envelope_sha256",
+      "observed_at_utc"
+    ],
+    "request_envelope_body_sha256_must_hash_exact_envelope_bytes": true,
+    "request_target_and_header_objects_must_be_retrievable": true,
+    "network_emitted_request_headers_must_be_complete": true,
+    "vary_selected_request_values_must_be_bound": true,
+    "anonymous_public_retrieval_required": true,
+    "same_url_without_request_envelope_qualifies": false,
+    "request_header_digest_without_header_body_qualifies": false,
+    "range_without_complete_reassembly_receipt_qualifies": false,
+    "vary_digest_without_reconciliation_body_qualifies": false
+  },
+  "request_envelope_rules": {
+    "hash_algorithm": "sha256",
+    "hash_encoding": "lowercase_hex",
+    "hash_length": 64,
+    "allowed_request_methods": [
+      "GET",
+      "POST"
+    ],
+    "allowed_request_target_forms": [
+      "origin_form",
+      "absolute_form"
+    ],
+    "request_target": {
+      "hash_domain": "exact_network_request_target_octets",
+      "preserve_percent_encoding": true,
+      "preserve_query_pair_order": true,
+      "normalization_before_hash_admissible": false,
+      "body_and_custody_locator_required": true
+    },
+    "request_headers": {
+      "allowed_capture_modes": [
+        "raw_http1_request_header_block_bytes",
+        "canonical_request_header_pairs_v1_after_protocol_decode"
+      ],
+      "canonicalization_version": "canonical_request_header_pairs_v1",
+      "representation": "ordered_array_of_lowercase_name_and_trimmed_value_pairs",
+      "capture_after_client_library_header_synthesis": true,
+      "http2_and_http3_compression_must_be_decoded": true,
+      "network_pair_order_preserved": true,
+      "duplicate_headers_preserved_as_separate_pairs": true,
+      "duplicate_headers_joined_or_collapsed": false,
+      "body_and_custody_locator_required": true,
+      "hidden_client_defaults_admissible": false
+    },
+    "request_body": {
+      "allowed_hash_domains": [
+        "none",
+        "exact_request_payload_octets",
+        "official_api_request_serialization_octets"
+      ],
+      "get_body_must_be_absent": true,
+      "post_body_requires_exact_hash_length_and_custody": true
+    },
+    "privacy_and_scope": {
+      "allowed_credential_scope_classes": [
+        "none"
+      ],
+      "allowed_cookie_scope_classes": [
+        "none"
+      ],
+      "forbidden_sensitive_header_names": [
+        "authorization",
+        "proxy-authorization",
+        "cookie"
+      ],
+      "authorization_material_retained_must_be_false": true,
+      "cookie_values_retained_must_be_false": true,
+      "credential_or_cookie_dependent_response_is_publicly_reproducible": false
+    },
+    "conditional_and_range": {
+      "conditional_header_names": [
+        "if-match",
+        "if-none-match",
+        "if-modified-since",
+        "if-unmodified-since",
+        "if-range"
+      ],
+      "not_modified_without_source_body_cannot_qualify": true,
+      "range_header_name": "range",
+      "range_response_requires_complete_ordered_reassembly_manifest": true,
+      "reassembly_manifest_body_and_custody_locator_required": true
+    },
+    "vary": {
+      "vary_star_disallows_public_reproducibility": true,
+      "each_vary_header_must_resolve_to_exact_request_values": true,
+      "reconciliation_binds_header_values_and_request_body_digest": true,
+      "reconciliation_body_and_custody_locator_required": true
+    }
+  },
+  "observed_receipts": [],
+  "observed_state": {
+    "transaction_admissible": false,
+    "federal_cash_custody_admissible": false,
+    "public_account_booking_admissible": false,
+    "distribution_admissible": false,
+    "answer_change_authorized": false
+  },
+  "guardrails": {
+    "same_url_is_same_representation": false,
+    "client_defaults_are_complete_request_custody": false,
+    "request_header_digest_without_header_body_is_complete": false,
+    "normalized_target_is_exact_target_bytes": false,
+    "conditional_not_modified_response_is_source_body": false,
+    "partial_range_without_reassembly_is_complete_source_body": false,
+    "vary_star_is_publicly_reproducible": false,
+    "vary_digest_without_reconciliation_body_is_complete": false,
+    "credentialed_response_is_anonymous_public_record": false,
+    "cookie_dependent_response_is_anonymous_public_record": false,
+    "request_envelope_amendment_is_empirical_receipt": false,
+    "request_envelope_amendment_is_answer_effectiveness": false
+  },
+  "expected_result": {
+    "amended_stages": 4,
+    "stages_requiring_exact_request_envelope": 4,
+    "stages_requiring_network_header_custody": 4,
+    "stages_requiring_vary_reconciliation": 4,
+    "observed_receipts": 0,
+    "transaction_admissible": false,
+    "federal_cash_custody_admissible": false,
+    "public_account_booking_admissible": false,
+    "distribution_admissible": false,
+    "candidate_evidence_records": 5,
+    "repository_promotions": 5,
+    "advanced_answer_dimensions": 1,
+    "effective_answers": 0,
+    "qualifying_jurisdictions": 0,
+    "answer_effectiveness": false,
+    "cross_domain_regression_completed": false,
+    "graph_effect": "none",
+    "issue_345_may_close": false
+  },
+  "boundaries": {
+    "changes_predecessor_contract_bytes": false,
+    "creates_new_empirical_receipt": false,
+    "claims_intel_transaction": false,
+    "claims_federal_cash_receipt": false,
+    "claims_public_account_booking": false,
+    "claims_public_or_affected_party_distribution": false,
+    "claims_answer_effectiveness": false,
+    "claims_cross_domain_completion": false,
+    "graph_effect": "none",
+    "conclusion_generated": false,
+    "project_complete": false,
+    "issue_345_may_close": false
+  },
+  "contract_serialization": {
+    "encoding": "utf-8",
+    "line_ending": "lf",
+    "indent_spaces": 2,
+    "terminal_newline_required": true,
+    "validator_requires_exact_canonical_bytes": true
+  },
+  "contract_sha256": "4a9dc47f54711fe64b5c58f54961a0433252a851f17d4d4c2f4813f0da09b77b"
+}

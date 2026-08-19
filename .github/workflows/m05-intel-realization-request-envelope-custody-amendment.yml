@@ -1,0 +1,63 @@
+name: M-05 Intel realization request-envelope custody amendment
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-request-envelope-custody-amendment.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-transport-body-representation-amendment.json'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-request-envelope-custody-amendment.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-transport-body-representation-amendment.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-request-envelope-custody-amendment.test.js'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-transport-body-representation-amendment.test.js'
+      - '.github/workflows/m05-intel-realization-request-envelope-custody-amendment.yml'
+      - '.github/workflows/m05-intel-realization-transport-body-representation-amendment.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-request-envelope-custody-amendment.json'
+      - 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-transport-body-representation-amendment.json'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-request-envelope-custody-amendment.mjs'
+      - 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-transport-body-representation-amendment.mjs'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-request-envelope-custody-amendment.test.js'
+      - 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-transport-body-representation-amendment.test.js'
+      - '.github/workflows/m05-intel-realization-request-envelope-custody-amendment.yml'
+      - '.github/workflows/m05-intel-realization-transport-body-representation-amendment.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: m05-intel-realization-request-envelope-custody-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate Intel realization request-envelope custody amendment
+        run: |
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-request-envelope-custody-amendment.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-intel-realization-request-envelope-custody-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-transport-body-representation-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-transport-body-representation-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-request-envelope-custody-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-request-envelope-custody-amendment.test.js
+      - name: Run complete repository release gate
+        run: npm run release:check
+      - name: Prove deterministic focused state
+        run: |
+          git restore --staged --worktree .
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-transport-body-representation-amendment.mjs
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-request-envelope-custody-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-request-envelope-custody-amendment.test.js
+          git diff --exit-code
