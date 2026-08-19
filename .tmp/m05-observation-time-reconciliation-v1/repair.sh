@@ -127,10 +127,17 @@ done
 node "$VALIDATOR"
 node "$TEST"
 git add -- "${TARGETS[@]}"
-mapfile -t actual < <(git diff --cached --name-only | sort)
-mapfile -t expected < <(printf '%s\n' "${TARGETS[@]}" | sort)
-test "${#actual[@]}" -eq 3
-test "$(printf '%s\n' "${actual[@]}")" = "$(printf '%s\n' "${expected[@]}")"
+python - <<'PY'
+import subprocess
+expected = sorted([
+    'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.json',
+    'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.mjs',
+    'test/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.test.js',
+])
+actual = sorted(subprocess.check_output(['git', 'diff', '--cached', '--name-only'], text=True).splitlines())
+if actual != expected:
+    raise SystemExit(f'staged denominator drift: {actual!r}')
+PY
 test "$(git hash-object "$CONTRACT")" = "$NEW_CONTRACT_BLOB"
 test "$(git hash-object "$VALIDATOR")" = "$NEW_VALIDATOR_BLOB"
 test "$(git hash-object "$TEST")" = "$NEW_TEST_BLOB"
