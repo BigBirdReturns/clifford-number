@@ -1,0 +1,38 @@
+name: M-05 legal-authority product materializer
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-legal-authority-materializer-v1
+    paths:
+      - '.tmp/m05-legal-authority/**'
+      - '.github/workflows/m05-legal-authority-materializer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m05-legal-authority-materializer-v1
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Repair the carrier rule-key typo and prove syntax
+        run: |
+          sed -i 's/cross_citations_require_independent_source custody/cross_citations_require_independent_source_custody/' .tmp/m05-legal-authority/materialize.mjs
+          node --check .tmp/m05-legal-authority/materialize.mjs
+      - name: Materialize exact legal-authority product
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .tmp/m05-legal-authority/materialize.mjs
