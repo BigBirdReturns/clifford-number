@@ -1,0 +1,169 @@
+name: M-05 event-lineage exact-head qualifier
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-event-lineage-materializer-v1
+    paths:
+      - '.github/workflows/m05-event-lineage-qualify-and-merge.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: m05-event-lineage-exact-head-qualifier
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-merge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 95
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      PR: '2200'
+      ISSUE: '345'
+      EXPECTED_HEAD_BRANCH: 'agent/m05-s03-l7-intel-realization-event-lineage-custody-v1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Freeze PR identity and four-path denominator
+        id: freeze
+        run: |
+          set -euo pipefail
+          gh pr view "$PR" --repo "$REPO" --json state,headRefName,headRefOid,baseRefName,baseRefOid,mergeable > /tmp/pr.json
+          gh api "repos/$REPO/branches/main" > /tmp/main.json
+          node <<'NODE'
+          const fs=require('fs'),p=JSON.parse(fs.readFileSync('/tmp/pr.json')),m=JSON.parse(fs.readFileSync('/tmp/main.json'));
+          if(p.state!=='OPEN'||p.headRefName!==process.env.EXPECTED_HEAD_BRANCH||p.baseRefName!=='main'||p.baseRefOid!==m.commit.sha)throw new Error(`identity or lease drift ${JSON.stringify({p,main:m.commit.sha})}`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,`head=${p.headRefOid}\nbase=${p.baseRefOid}\n`);
+          NODE
+          gh api "repos/$REPO/pulls/$PR/files?per_page=100" --paginate > /tmp/files.json
+          node <<'NODE'
+          const rows=JSON.parse(require('fs').readFileSync('/tmp/files.json'));
+          const expected=[
+            '.github/workflows/m05-intel-realization-event-lineage-custody-amendment.yml',
+            'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-event-lineage-custody-amendment.json',
+            'test/m05-answerable-power-sprint-03-leg-07-intel-realization-event-lineage-custody-amendment.test.js',
+            'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-event-lineage-custody-amendment.mjs'
+          ].sort(),actual=rows.map(x=>x.filename).sort();
+          if(JSON.stringify(actual)!==JSON.stringify(expected)||rows.some(x=>x.status!=='added'))throw new Error(`path denominator drift ${JSON.stringify(rows.map(x=>({path:x.filename,status:x.status})))}`);
+          NODE
+      - name: Await all exact-head pull-request workflows
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 480); do
+            gh api "repos/$REPO/actions/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100" > /tmp/runs.json
+            if node <<'NODE'
+          const fs=require('fs'),runs=JSON.parse(fs.readFileSync('/tmp/runs.json')).workflow_runs;
+          const expected=['M-05 Intel realization event lineage custody amendment','Release checks','M-05 story ecology and answerable power','Core thesis and estate alignment','No magic human gate'];
+          const latest=new Map();for(const r of runs.filter(r=>expected.includes(r.name))){const old=latest.get(r.name);if(!old||r.id>old.id)latest.set(r.name,r)}
+          const bad=[...latest.values()].filter(r=>r.status==='completed'&&r.conclusion!=='success');if(bad.length){console.error(JSON.stringify(bad.map(r=>({id:r.id,name:r.name,conclusion:r.conclusion}))));process.exit(2)}
+          if(!expected.every(name=>latest.get(name)?.status==='completed'&&latest.get(name)?.conclusion==='success'))process.exit(1);
+          fs.writeFileSync('/tmp/qualified-runs.json',JSON.stringify(expected.map(name=>{const r=latest.get(name);return{name,id:r.id,head_sha:r.head_sha,conclusion:r.conclusion}}),null,2));
+          NODE
+            then break; else code=$?; [ "$code" -eq 2 ] && exit 1; fi
+            [ "$attempt" -eq 480 ] && { echo 'workflow qualification timeout' >&2; exit 1; }
+            sleep 10
+          done
+      - name: Recheck immutable head, live-main lease, and mergeability
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+          BASE_SHA: ${{ steps.freeze.outputs.base }}
+        run: |
+          set -euo pipefail
+          gh pr view "$PR" --repo "$REPO" --json state,headRefOid,baseRefOid,mergeable > /tmp/final-pr.json
+          gh api "repos/$REPO/branches/main" > /tmp/final-main.json
+          node <<'NODE'
+          const fs=require('fs'),p=JSON.parse(fs.readFileSync('/tmp/final-pr.json')),m=JSON.parse(fs.readFileSync('/tmp/final-main.json'));
+          if(p.state!=='OPEN'||p.headRefOid!==process.env.HEAD_SHA||p.baseRefOid!==process.env.BASE_SHA||m.commit.sha!==process.env.BASE_SHA)throw new Error(`final lease drift ${JSON.stringify({p,main:m.commit.sha})}`);
+          if(!['MERGEABLE','UNKNOWN'].includes(p.mergeable))throw new Error(`mergeability ${p.mergeable}`);
+          NODE
+      - name: Record exact qualification and mark ready
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+        run: |
+          set -euo pipefail
+          git fetch origin "$HEAD_SHA"
+          tree=$(git show -s --format=%T "$HEAD_SHA")
+          gh pr view "$PR" --repo "$REPO" --json body -q .body > /tmp/body.md
+          cat >> /tmp/body.md <<EOF
+
+All five applicable pull-request workflows passed on exact head \`$HEAD_SHA\`, tree \`$tree\`:
+
+\`\`\`json
+$(cat /tmp/qualified-runs.json)
+\`\`\`
+
+The focused workflow passed the twelve-layer source-to-authority stack, stable namespace and identifier controls, instrument and actor identity, execution-to-settlement-to-collection-to-booking-to-distribution lineage, append-only lifecycle, correction and reversal custody, duplicate and split adjudication, finality evidence, conservation equations, adversarial mutations, the complete repository release gate, and deterministic replay. The branch remained a four-file additive transaction over the exact canonical base.
+EOF
+          gh pr edit "$PR" --repo "$REPO" --body-file /tmp/body.md
+          gh pr ready "$PR" --repo "$REPO"
+      - name: Merge the exact qualified head
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+        run: |
+          set -euo pipefail
+          gh api -X PUT "repos/$REPO/pulls/$PR/merge" \
+            -f merge_method=merge \
+            -f sha="$HEAD_SHA" \
+            -f commit_title='[M-05 S03-L7] Require exact event-lineage custody (#2200)' \
+            -f commit_message='Bind every Intel realization stage to stable event namespaces, instrument and actor identifiers, transaction, settlement, collection, booking, and distribution IDs, append-only lifecycle, correction and reversal chains, duplicate and split adjudication, finality evidence, and exact cross-system joins while preserving zero observed receipts, no answer change, no graph effect, and issue #345 as open.' \
+            > /tmp/merge.json
+          node -e "const x=require('/tmp/merge.json');if(!x.merged)throw new Error(JSON.stringify(x))"
+      - name: Verify exact canonical merge and replay controls
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+          BASE_SHA: ${{ steps.freeze.outputs.base }}
+        run: |
+          set -euo pipefail
+          merge=$(node -p "require('/tmp/merge.json').sha")
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$merge"
+          head_tree=$(git show -s --format=%T "$HEAD_SHA")
+          merge_tree=$(git show -s --format=%T "$merge")
+          test "$head_tree" = "$merge_tree"
+          test "$(git show -s --format=%P "$merge")" = "$BASE_SHA $HEAD_SHA"
+          git switch --detach "$merge"
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-acquisition-provenance-stack-v4.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-acquisition-provenance-stack-v4.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-event-lineage-custody-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-event-lineage-custody-amendment.test.js
+          npm run release:check
+          echo "$merge" > /tmp/merge-sha
+          echo "$merge_tree" > /tmp/merge-tree
+      - name: Record the canonical transaction on issue 345
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+          BASE_SHA: ${{ steps.freeze.outputs.base }}
+        run: |
+          set -euo pipefail
+          merge=$(cat /tmp/merge-sha); tree=$(cat /tmp/merge-tree)
+          cat > /tmp/comment.md <<EOF
+PR #2200 is now the canonical stable event-identity, lifecycle, correction, reversal, duplicate, finality, and cross-system lineage control for the Intel realization chain. It merged exact qualified head \`$HEAD_SHA\` into \`main\` through merge commit \`$merge\`, preserving product tree \`$tree\` and exact parent order \`$BASE_SHA $HEAD_SHA\`.
+
+Every transaction, federal-cash, public-account, and distribution stage must now bind the twelve-layer source-to-authority stack to an authority-governed event namespace, stable event and version identifiers, idempotency key, instrument and lot identity, actor, counterparty, and intermediary identifiers, distinct order, execution, settlement, payment, collection, booking, and distribution identifiers, append-only lifecycle state, observation, effective and finality times, correction and reversal chain, duplicate adjudication, split or aggregation mapping, exact amount and quantity conservation, and one cross-system lineage reconciliation digest.
+
+Announcements, registration, and eligibility are not execution finality; execution is not settlement; collection is not booking; booking is not distribution. Corrections and reversals preserve the original event. Amount, date, actor, description, or name similarity cannot prove identity, duplication, or a cross-system join. One identifier cannot stand for all stages.
+
+All five pull-request workflows passed on the exact head:
+
+\`\`\`json
+$(cat /tmp/qualified-runs.json)
+\`\`\`
+
+The controller replayed the twelve-layer stack validator and adversarial suite, the event-lineage validator and adversarial suite, and the complete repository release gate on the canonical merge commit.
+
+This remains an admission-control transaction. It establishes no Intel sale, transfer, dividend, warrant exercise, federal cash receipt, TAS/BETC booking, distribution ledger, effective answer, graph effect, cross-domain completion, project completion, or issue-closure authority. The ordinary acquisition gate remains \`2026-08-27T00:00:00Z\`.
+
+The evidentiary ledger is exact source-to-authority custody, stable namespace and event identifiers, instrument and actor identity, stage-specific source-system IDs, append-only lifecycle, correction and reversal chains, duplicate and split adjudication, source-addressed finality, cross-system joins, conservation equations, deterministic validation, and adversarial byte-rewrite testing; the venue is PRs #2180 through #2200, canonical \`main\`, and this issue; the target is the gap between a fully supported stage record and proof that the same event persists across execution, settlement, federal collection, public-account booking, and distribution systems; the upside is cross-system event and finality reproducibility; the downside is zero empirical Intel realization or distribution receipts; and the failure mode is joining records through amount, date, name, actor, or description similarity, silently losing corrections or reversals, or treating a nonfinal event as settled, booked, or distributed. The controlling question is whether the first post-gate Intel event can preserve one exact append-only identity and lifecycle chain across all four stages before advancing transaction, gross federal receipt, TAS/BETC booking, complete-denominator, distribution, answer, graph, completion, or issue-closure state.
+EOF
+          gh issue comment "$ISSUE" --repo "$REPO" --body-file /tmp/comment.md
