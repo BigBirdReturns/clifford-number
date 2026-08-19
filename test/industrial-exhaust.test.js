@@ -181,6 +181,19 @@ for (const longNumericUrl of [
     'numeric URL paths must remain intact when the scheme is more than 64 characters behind the candidate'
   );
 }
+
+for (const implicitNumericUrl of [
+  'example.test/01/42/68/53/00',
+  '//example.test/03/6216/5111',
+  '192.0.2.1/01/42/68/53/00',
+  `example.test/${'long-segment/'.repeat(12)}01/42/68/53/00`
+]) {
+  assert.equal(
+    redactContactData(implicitNumericUrl),
+    implicitNumericUrl,
+    'bare-domain, scheme-relative, IP-host, and long implicit URL paths must remain intact'
+  );
+}
 assert.equal(redactContactData('電話番号：０３６２１６８０４１'), '電話番号：[contact omitted]');
 assert.equal(redactContactData('電話番号03-6216-8041'), '電話番号[contact omitted]');
 assert.equal(redactContactData('携帯電話090-1234-5678'), '携帯電話[contact omitted]');

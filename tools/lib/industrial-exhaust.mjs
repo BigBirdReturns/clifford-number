@@ -147,7 +147,7 @@ function phoneCandidateScore(candidate, prefix) {
   if (!normalized.startsWith('+') && accessPrefixCandidates.length && !accessPrefixDigits) return 0;
 
   const labelled = hasPhoneLabelPrefix(prefix);
-  const numericUrlContext = /(?:https?:\/\/|www\.)[^\s]*$/iu.test(
+  const numericUrlContext = /(?:(?:https?:)?\/\/|www\.|(?:[\p{L}\p{N}](?:[\p{L}\p{N}-]*[\p{L}\p{N}])?\.)+(?:[\p{L}]{2,}|xn--[\p{L}\p{N}-]{2,})(?=[:/?#])|(?:\d{1,3}\.){3}\d{1,3}(?=[:/?#]))[^\s]*$/iu.test(
     prefix.normalize('NFKC')
   );
   if (numericUrlContext) return 0;
