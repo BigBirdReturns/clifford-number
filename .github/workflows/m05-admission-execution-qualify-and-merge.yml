@@ -1,0 +1,169 @@
+name: M-05 admission-execution exact-head qualifier
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-admission-execution-materializer-v1
+    paths:
+      - '.github/workflows/m05-admission-execution-qualify-and-merge.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: m05-admission-execution-exact-head-qualifier
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-merge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 115
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      PR: '2202'
+      ISSUE: '345'
+      EXPECTED_HEAD_BRANCH: 'agent/m05-s03-l7-intel-realization-admission-execution-custody-v1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Freeze PR identity and four-path denominator
+        id: freeze
+        run: |
+          set -euo pipefail
+          gh pr view "$PR" --repo "$REPO" --json state,headRefName,headRefOid,baseRefName,baseRefOid,mergeable > /tmp/pr.json
+          gh api "repos/$REPO/branches/main" > /tmp/main.json
+          node <<'NODE'
+          const fs=require('fs'),p=JSON.parse(fs.readFileSync('/tmp/pr.json')),m=JSON.parse(fs.readFileSync('/tmp/main.json'));
+          if(p.state!=='OPEN'||p.headRefName!==process.env.EXPECTED_HEAD_BRANCH||p.baseRefName!=='main'||p.baseRefOid!==m.commit.sha)throw new Error(`identity or lease drift ${JSON.stringify({p,main:m.commit.sha})}`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,`head=${p.headRefOid}\nbase=${p.baseRefOid}\n`);
+          NODE
+          gh api "repos/$REPO/pulls/$PR/files?per_page=100" --paginate > /tmp/files.json
+          node <<'NODE'
+          const rows=JSON.parse(require('fs').readFileSync('/tmp/files.json'));
+          const expected=[
+            '.github/workflows/m05-intel-realization-admission-execution-custody-amendment.yml',
+            'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-admission-execution-custody-amendment.json',
+            'test/m05-answerable-power-sprint-03-leg-07-intel-realization-admission-execution-custody-amendment.test.js',
+            'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-admission-execution-custody-amendment.mjs'
+          ].sort(),actual=rows.map(x=>x.filename).sort();
+          if(JSON.stringify(actual)!==JSON.stringify(expected)||rows.some(x=>x.status!=='added'))throw new Error(`path denominator drift ${JSON.stringify(rows.map(x=>({path:x.filename,status:x.status})))}`);
+          NODE
+      - name: Await all exact-head pull-request workflows
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 600); do
+            gh api "repos/$REPO/actions/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100" > /tmp/runs.json
+            if node <<'NODE'
+          const fs=require('fs'),runs=JSON.parse(fs.readFileSync('/tmp/runs.json')).workflow_runs;
+          const expected=['M-05 Intel realization admission execution custody amendment','Release checks','M-05 story ecology and answerable power','Core thesis and estate alignment','No magic human gate'];
+          const latest=new Map();for(const r of runs.filter(r=>expected.includes(r.name))){const old=latest.get(r.name);if(!old||r.id>old.id)latest.set(r.name,r)}
+          const bad=[...latest.values()].filter(r=>r.status==='completed'&&r.conclusion!=='success');if(bad.length){console.error(JSON.stringify(bad.map(r=>({id:r.id,name:r.name,conclusion:r.conclusion}))));process.exit(2)}
+          if(!expected.every(name=>latest.get(name)?.status==='completed'&&latest.get(name)?.conclusion==='success'))process.exit(1);
+          fs.writeFileSync('/tmp/qualified-runs.json',JSON.stringify(expected.map(name=>{const r=latest.get(name);return{name,id:r.id,head_sha:r.head_sha,conclusion:r.conclusion}}),null,2));
+          NODE
+            then break; else code=$?; [ "$code" -eq 2 ] && exit 1; fi
+            [ "$attempt" -eq 600 ] && { echo 'workflow qualification timeout' >&2; exit 1; }
+            sleep 10
+          done
+      - name: Recheck immutable head, live-main lease, and mergeability
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+          BASE_SHA: ${{ steps.freeze.outputs.base }}
+        run: |
+          set -euo pipefail
+          gh pr view "$PR" --repo "$REPO" --json state,headRefOid,baseRefOid,mergeable > /tmp/final-pr.json
+          gh api "repos/$REPO/branches/main" > /tmp/final-main.json
+          node <<'NODE'
+          const fs=require('fs'),p=JSON.parse(fs.readFileSync('/tmp/final-pr.json')),m=JSON.parse(fs.readFileSync('/tmp/final-main.json'));
+          if(p.state!=='OPEN'||p.headRefOid!==process.env.HEAD_SHA||p.baseRefOid!==process.env.BASE_SHA||m.commit.sha!==process.env.BASE_SHA)throw new Error(`final lease drift ${JSON.stringify({p,main:m.commit.sha})}`);
+          if(!['MERGEABLE','UNKNOWN'].includes(p.mergeable))throw new Error(`mergeability ${p.mergeable}`);
+          NODE
+      - name: Record exact qualification and mark ready
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+        run: |
+          set -euo pipefail
+          git fetch origin "$HEAD_SHA"
+          tree=$(git show -s --format=%T "$HEAD_SHA")
+          gh pr view "$PR" --repo "$REPO" --json body -q .body > /tmp/body.md
+          cat >> /tmp/body.md <<EOF
+
+All five applicable pull-request workflows passed on exact head \`$HEAD_SHA\`, tree \`$tree\`:
+
+\`\`\`json
+$(cat /tmp/qualified-runs.json)
+\`\`\`
+
+The focused workflow passed the thirteen-layer source-to-event stack, the empty production baseline, a complete positive synthetic candidate with retrievable layer bodies and all exact joins, candidate checksum and stage-dependency checks, synthetic and empirical separation, diagnostics and nonpromotion controls, adversarial mutations, the complete repository release gate, and deterministic replay. The branch remained a four-file additive transaction over the exact canonical base.
+EOF
+          gh pr edit "$PR" --repo "$REPO" --body-file /tmp/body.md
+          gh pr ready "$PR" --repo "$REPO"
+      - name: Merge the exact qualified head
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+        run: |
+          set -euo pipefail
+          gh api -X PUT "repos/$REPO/pulls/$PR/merge" \
+            -f merge_method=merge \
+            -f sha="$HEAD_SHA" \
+            -f commit_title='[M-05 S03-L7] Require exact admission-execution custody (#2202)' \
+            -f commit_message='Bind every Intel realization-stage candidate to the exact bundle bytes, canonical thirteen-layer stack, evaluator artifact and configuration, runtime, referenced layer bodies, join and field evaluation, diagnostics, deterministic replay, clean state, and a nonpromoting execution receipt while preserving zero observed receipts, no answer change, no graph effect, and issue #345 as open.' \
+            > /tmp/merge.json
+          node -e "const x=require('/tmp/merge.json');if(!x.merged)throw new Error(JSON.stringify(x))"
+      - name: Verify exact canonical merge and replay controls
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+          BASE_SHA: ${{ steps.freeze.outputs.base }}
+        run: |
+          set -euo pipefail
+          merge=$(node -p "require('/tmp/merge.json').sha")
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$merge"
+          head_tree=$(git show -s --format=%T "$HEAD_SHA")
+          merge_tree=$(git show -s --format=%T "$merge")
+          test "$head_tree" = "$merge_tree"
+          test "$(git show -s --format=%P "$merge")" = "$BASE_SHA $HEAD_SHA"
+          git switch --detach "$merge"
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-acquisition-provenance-stack-v5.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-acquisition-provenance-stack-v5.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-admission-execution-custody-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-admission-execution-custody-amendment.test.js
+          npm run release:check
+          echo "$merge" > /tmp/merge-sha
+          echo "$merge_tree" > /tmp/merge-tree
+      - name: Record the canonical transaction on issue 345
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+          BASE_SHA: ${{ steps.freeze.outputs.base }}
+        run: |
+          set -euo pipefail
+          merge=$(cat /tmp/merge-sha); tree=$(cat /tmp/merge-tree)
+          cat > /tmp/comment.md <<EOF
+PR #2202 is now the canonical exact candidate-bundle admission-execution custody control for the Intel realization chain. It merged exact qualified head \`$HEAD_SHA\` into \`main\` through merge commit \`$merge\`, preserving product tree \`$tree\` and exact parent order \`$BASE_SHA $HEAD_SHA\`.
+
+Every transaction, federal-cash, public-account, and distribution candidate must now bind the exact candidate bytes and checksum, canonical thirteen-layer stack, evaluator artifact and configuration, runtime, execution interval, retrievable and recomputed layer bodies, exact ordered joins, complete required-field ledger, validation result, failed-control and diagnostic ledgers, stdout and stderr hashes, deterministic replay, clean-state result, synthetic-test state, and one execution-receipt digest.
+
+The evaluator proves an empty production baseline and a complete positive synthetic candidate. Synthetic fixtures require explicit test mode and can never authorize empirical admission. A structurally valid empirical candidate remains nonpromoting pending separate canonical stage adjudication. Missing layers, joins, fields, bodies, hashes, diagnostics, replay, or clean state fail closed. Validator success cannot authorize an answer change, graph effect, finality, or issue closure.
+
+All five pull-request workflows passed on the exact head:
+
+\`\`\`json
+$(cat /tmp/qualified-runs.json)
+\`\`\`
+
+The controller replayed the thirteen-layer stack validator and adversarial suite, the admission-execution validator and positive and adversarial suite, and the complete repository release gate on the canonical merge commit.
+
+This remains an admission-control transaction. It establishes no Intel sale, transfer, dividend, warrant exercise, federal cash receipt, TAS/BETC booking, distribution ledger, effective answer, graph effect, cross-domain completion, project completion, or issue-closure authority. The ordinary acquisition gate remains \`2026-08-27T00:00:00Z\`.
+
+The evidentiary ledger is exact candidate-bundle bytes, canonical stack binding, evaluator and runtime custody, retrievable layer-body verification, executable layer, join, and field checks, diagnostics, deterministic replay, clean-state proof, synthetic and empirical separation, and adversarial byte-rewrite testing; the venue is PRs #2180 through #2202, canonical \`main\`, and this issue; the target is the gap between a complete declarative stack and proof that one exact candidate was actually evaluated against it; the upside is executable admission reproducibility; the downside is zero empirical Intel candidate bundles and zero stage admissions; and the failure mode is accepting a candidate because a file exists or a validator exited successfully without the exact bundle, stack, runtime, diagnostics, replay, and nonpromotion receipt. The controlling question is whether the first post-gate Intel candidate can produce one exact deterministic execution receipt over the complete thirteen-layer stack before advancing transaction, gross federal receipt, TAS/BETC booking, complete-denominator, distribution, answer, graph, completion, or issue-closure state.
+EOF
+          gh issue comment "$ISSUE" --repo "$REPO" --body-file /tmp/comment.md
