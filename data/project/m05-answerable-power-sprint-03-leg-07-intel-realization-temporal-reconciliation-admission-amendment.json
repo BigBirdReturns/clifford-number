@@ -1,0 +1,168 @@
+{
+  "schema_version": "m05-answerable-power-s03-l7-intel-realization-temporal-reconciliation-admission-amendment@1",
+  "object_class": "bounded_admission_temporal_reconciliation_result_amendment",
+  "program_id": "M-05",
+  "sprint_id": "M05-SPRINT-03",
+  "leg_id": "S03-L7",
+  "issue": 345,
+  "as_of": "2026-08-19",
+  "status": "intel_realization_temporal_reconciliation_admission_amendment_frozen",
+  "title": "Intel realization temporal-reconciliation result admission amendment",
+  "question": "Which temporal-reconciliation result must each Intel realization stage present before stage admission may advance?",
+  "canonical_base": {
+    "branch": "main",
+    "sha": "46b2cb3bcd611f85c49088acc453fe81c32699a0",
+    "tree_sha": "dff78bb3d2b1c681bb8f4ea487e6be1d203b91d3"
+  },
+  "predecessor": {
+    "pull_request": 2200,
+    "head_commit": "f97e8ee7e5c9cbba5d0d45ab79e0e6cc003d5f5e",
+    "head_tree": "86e3da20d8d4279aaf3a5872a24d27cceaf33189",
+    "contract": {
+      "path": "data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.json",
+      "blob_sha": "817f2b571c5f5feb755c6ac97226567630de5c38",
+      "semantic_sha256": "5a334376ca80ce4171f127bc7b357a179cdb824b92a411685b1c55df91a423e9"
+    },
+    "validator": {
+      "path": "tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.mjs",
+      "blob_sha": "e5c2afe704f1589816c6c242ba096430aac38d91"
+    },
+    "adversarial_test": {
+      "path": "test/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.test.js",
+      "blob_sha": "e04c076b0a764b77053db504b94606f3ced44c98"
+    },
+    "focused_workflow": {
+      "path": ".github/workflows/m05-intel-realization-observation-time-custody-amendment.yml",
+      "blob_sha": "d77e5a1a6a0bc2b22801d15850da5de177795641"
+    }
+  },
+  "review_finding": {
+    "review_thread": "PRRT_kwDOTGqftc6alpbW",
+    "priority": "P2",
+    "gap_class": "temporal_reconciliation_field_without_passing_result_requirement",
+    "overlapping_intervals_remain_indeterminate": true,
+    "field_presence_alone_may_admit_stage_in_predecessor": true,
+    "repair_class": "additive_fail_closed_successor_admission_rule"
+  },
+  "stage_order": [
+    "transaction",
+    "federal_cash_custody",
+    "public_account_booking",
+    "distribution"
+  ],
+  "effective_stage_temporal_reconciliation": {
+    "transaction": {
+      "requires_observation_time_stage": "transaction",
+      "required_field": "temporal_order_reconciliation",
+      "allowed_results": [
+        "pass",
+        "fail",
+        "indeterminate"
+      ],
+      "temporal_reconciliation_result_must_be_pass": true,
+      "failed_result_qualifies": false,
+      "indeterminate_result_qualifies": false,
+      "omitted_result_qualifies": false,
+      "definite_contradiction_qualifies": false
+    },
+    "federal_cash_custody": {
+      "requires_observation_time_stage": "federal_cash_custody",
+      "required_field": "temporal_order_reconciliation",
+      "allowed_results": [
+        "pass",
+        "fail",
+        "indeterminate"
+      ],
+      "temporal_reconciliation_result_must_be_pass": true,
+      "failed_result_qualifies": false,
+      "indeterminate_result_qualifies": false,
+      "omitted_result_qualifies": false,
+      "definite_contradiction_qualifies": false
+    },
+    "public_account_booking": {
+      "requires_observation_time_stage": "public_account_booking",
+      "required_field": "temporal_order_reconciliation",
+      "allowed_results": [
+        "pass",
+        "fail",
+        "indeterminate"
+      ],
+      "temporal_reconciliation_result_must_be_pass": true,
+      "failed_result_qualifies": false,
+      "indeterminate_result_qualifies": false,
+      "omitted_result_qualifies": false,
+      "definite_contradiction_qualifies": false
+    },
+    "distribution": {
+      "requires_observation_time_stage": "distribution",
+      "required_field": "temporal_order_reconciliation",
+      "allowed_results": [
+        "pass",
+        "fail",
+        "indeterminate"
+      ],
+      "temporal_reconciliation_result_must_be_pass": true,
+      "failed_result_qualifies": false,
+      "indeterminate_result_qualifies": false,
+      "omitted_result_qualifies": false,
+      "definite_contradiction_qualifies": false
+    }
+  },
+  "cross_object_rules": {
+    "predecessor_contract_bytes_remain_frozen": true,
+    "predecessor_validator_bytes_remain_frozen": true,
+    "predecessor_test_bytes_remain_frozen": true,
+    "predecessor_workflow_bytes_remain_frozen": true,
+    "successor_rule_controls_stage_admission": true,
+    "temporal_reconciliation_field_must_resolve_to_named_result": true,
+    "one_result_may_not_stand_for_distinct_stage_reconciliations": true,
+    "temporal_reconciliation_admission_is_empirical_stage_receipt": false
+  },
+  "observed_receipts": [],
+  "observed_state": {
+    "registered_temporal_reconciliations": 0,
+    "passing_temporal_reconciliations": 0,
+    "transaction_admissible": false,
+    "federal_cash_custody_admissible": false,
+    "public_account_booking_admissible": false,
+    "distribution_admissible": false,
+    "answer_change_authorized": false
+  },
+  "guardrails": {
+    "field_presence_is_passing_reconciliation": false,
+    "indeterminate_reconciliation_is_stage_admission": false,
+    "failed_reconciliation_is_stage_admission": false,
+    "overlapping_intervals_may_be_promoted_to_ordered": false,
+    "successor_amendment_is_empirical_receipt": false,
+    "successor_amendment_is_answer_effectiveness": false
+  },
+  "expected_result": {
+    "amended_stages": 4,
+    "stages_requiring_passing_temporal_reconciliation": 4,
+    "registered_temporal_reconciliations": 0,
+    "passing_temporal_reconciliations": 0,
+    "transaction_admissible": false,
+    "federal_cash_custody_admissible": false,
+    "public_account_booking_admissible": false,
+    "distribution_admissible": false,
+    "answer_effectiveness": false,
+    "cross_domain_regression_completed": false,
+    "graph_effect": "none",
+    "issue_345_may_close": false
+  },
+  "boundaries": {
+    "changes_predecessor_contract_bytes": false,
+    "changes_predecessor_validator_bytes": false,
+    "creates_new_empirical_receipt": false,
+    "claims_intel_transaction": false,
+    "claims_federal_cash_receipt": false,
+    "claims_public_account_booking": false,
+    "claims_public_or_affected_party_distribution": false,
+    "claims_answer_effectiveness": false,
+    "claims_cross_domain_completion": false,
+    "graph_effect": "none",
+    "project_complete": false,
+    "issue_345_may_close": false
+  },
+  "temporal_reconciliation_admission_amendment_sha256": "5a0830c77da3b443a8aff7a121fde3b051fc526a72fa5d48f14870a3d4a145c8"
+}
