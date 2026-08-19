@@ -1,0 +1,170 @@
+name: M-05 eleven-layer provenance-stack exact-head qualifier
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-provenance-stack-v3-materializer-v1
+    paths:
+      - '.github/workflows/m05-provenance-stack-v3-qualify-and-merge.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: m05-provenance-stack-v3-exact-head-qualifier
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-merge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      PR: '2197'
+      ISSUE: '345'
+      EXPECTED_HEAD_BRANCH: 'agent/m05-s03-l7-intel-realization-acquisition-provenance-stack-v3'
+      STACK_PATH: 'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-acquisition-provenance-stack-v3.json'
+      STACK_VALIDATOR: 'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-acquisition-provenance-stack-v3.mjs'
+      STACK_TEST: 'test/m05-answerable-power-sprint-03-leg-07-intel-realization-acquisition-provenance-stack-v3.test.js'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Freeze PR identity and exact four-path denominator
+        id: freeze
+        run: |
+          set -euo pipefail
+          gh pr view "$PR" --repo "$REPO" --json state,headRefName,headRefOid,baseRefName,baseRefOid,mergeable > /tmp/pr.json
+          gh api "repos/$REPO/branches/main" > /tmp/main.json
+          node <<'NODE'
+          const fs=require('fs'),p=JSON.parse(fs.readFileSync('/tmp/pr.json')),m=JSON.parse(fs.readFileSync('/tmp/main.json'));
+          if(p.state!=='OPEN'||p.headRefName!==process.env.EXPECTED_HEAD_BRANCH||p.baseRefName!=='main'||p.baseRefOid!==m.commit.sha)throw new Error(`identity or lease drift ${JSON.stringify({p,main:m.commit.sha})}`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,`head=${p.headRefOid}\nbase=${p.baseRefOid}\n`);
+          NODE
+          gh api "repos/$REPO/pulls/$PR/files?per_page=100" --paginate > /tmp/files.json
+          node <<'NODE'
+          const rows=JSON.parse(require('fs').readFileSync('/tmp/files.json'));
+          const expected=[
+            '.github/workflows/m05-intel-realization-acquisition-provenance-stack-v3.yml',
+            'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-acquisition-provenance-stack-v3.json',
+            'test/m05-answerable-power-sprint-03-leg-07-intel-realization-acquisition-provenance-stack-v3.test.js',
+            'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-acquisition-provenance-stack-v3.mjs'
+          ].sort(),actual=rows.map(x=>x.filename).sort();
+          if(JSON.stringify(actual)!==JSON.stringify(expected)||rows.some(x=>x.status!=='added'))throw new Error(`path denominator drift ${JSON.stringify(rows.map(x=>({path:x.filename,status:x.status})))}`);
+          NODE
+      - name: Await all exact-head PR workflows
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 360); do
+            gh api "repos/$REPO/actions/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100" > /tmp/runs.json
+            if node <<'NODE'
+          const fs=require('fs'),runs=JSON.parse(fs.readFileSync('/tmp/runs.json')).workflow_runs;
+          const expected=['M-05 Intel realization acquisition provenance stack v3','Release checks','M-05 story ecology and answerable power','Core thesis and estate alignment','No magic human gate'];
+          const latest=new Map();for(const r of runs.filter(r=>expected.includes(r.name))){const old=latest.get(r.name);if(!old||r.id>old.id)latest.set(r.name,r)}
+          const bad=[...latest.values()].filter(r=>r.status==='completed'&&r.conclusion!=='success');if(bad.length){console.error(JSON.stringify(bad));process.exit(2)}
+          if(!expected.every(n=>latest.get(n)?.status==='completed'&&latest.get(n)?.conclusion==='success'))process.exit(1);
+          fs.writeFileSync('/tmp/qualified-runs.json',JSON.stringify(expected.map(n=>{const r=latest.get(n);return{name:n,id:r.id,head_sha:r.head_sha,conclusion:r.conclusion}}),null,2));
+          NODE
+            then break; else code=$?; [ "$code" -eq 2 ] && exit 1; fi
+            [ "$attempt" -eq 360 ] && { echo timeout >&2; exit 1; }
+            sleep 10
+          done
+      - name: Recheck immutable head and main lease
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+          BASE_SHA: ${{ steps.freeze.outputs.base }}
+        run: |
+          set -euo pipefail
+          gh pr view "$PR" --repo "$REPO" --json state,headRefOid,baseRefOid,mergeable > /tmp/final.json
+          gh api "repos/$REPO/branches/main" > /tmp/main-final.json
+          node <<'NODE'
+          const fs=require('fs'),p=JSON.parse(fs.readFileSync('/tmp/final.json')),m=JSON.parse(fs.readFileSync('/tmp/main-final.json'));
+          if(p.state!=='OPEN'||p.headRefOid!==process.env.HEAD_SHA||p.baseRefOid!==process.env.BASE_SHA||m.commit.sha!==process.env.BASE_SHA)throw new Error('final lease drift');
+          if(!['MERGEABLE','UNKNOWN'].includes(p.mergeable))throw new Error(`mergeability ${p.mergeable}`);
+          NODE
+      - name: Record qualification and mark ready
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+        run: |
+          set -euo pipefail
+          git fetch origin "$HEAD_SHA"
+          tree=$(git show -s --format=%T "$HEAD_SHA")
+          gh pr view "$PR" --repo "$REPO" --json body -q .body > /tmp/body.md
+          cat >> /tmp/body.md <<EOF
+
+All five applicable pull-request workflows passed on exact head \`$HEAD_SHA\`, tree \`$tree\`:
+
+\`\`\`json
+$(cat /tmp/qualified-runs.json)
+\`\`\`
+
+The focused workflow independently validated all eleven component layers and their adversarial suites, the predecessor ten-layer stack, the successor eleven-layer stack, every source-to-field-to-numerical-to-accounting join, the complete repository release gate, and deterministic replay. The branch remained a four-file additive transaction over the exact canonical base.
+EOF
+          gh pr edit "$PR" --repo "$REPO" --body-file /tmp/body.md
+          gh pr ready "$PR" --repo "$REPO"
+      - name: Merge exact head
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+        run: |
+          set -euo pipefail
+          gh api -X PUT "repos/$REPO/pulls/$PR/merge" -f merge_method=merge -f sha="$HEAD_SHA" \
+            -f commit_title='[M-05 S03-L7] Freeze eleven-layer provenance stack v3 (#2197)' \
+            -f commit_message='Require every Intel realization-stage source receipt to carry the complete eleven-layer acquisition, claim-extraction, and exact numerical-reconciliation stack with all source-to-field-to-accounting joins, while preserving zero observed receipts, no answer change, no graph effect, and issue #345 as open.' > /tmp/merge.json
+          node -e "const x=require('/tmp/merge.json');if(!x.merged)throw new Error(JSON.stringify(x))"
+      - name: Verify canonical merge and replay complete eleven-layer stack
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+          BASE_SHA: ${{ steps.freeze.outputs.base }}
+        run: |
+          set -euo pipefail
+          merge=$(node -p "require('/tmp/merge.json').sha")
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$merge"
+          head_tree=$(git show -s --format=%T "$HEAD_SHA")
+          merge_tree=$(git show -s --format=%T "$merge")
+          test "$head_tree" = "$merge_tree"
+          test "$(git show -s --format=%P "$merge")" = "$BASE_SHA $HEAD_SHA"
+          git switch --detach "$merge"
+          node <<'NODE'
+          const fs=require('fs'),{spawnSync}=require('child_process'),stack=JSON.parse(fs.readFileSync(process.env.STACK_PATH,'utf8'));
+          for(const layer of stack.layers){for(const target of [layer.validator.path,layer.test.path]){const r=spawnSync(process.execPath,[target],{stdio:'inherit'});if(r.status!==0)process.exit(r.status||1)}}
+          for(const target of ['tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-acquisition-provenance-stack-v2.mjs','test/m05-answerable-power-sprint-03-leg-07-intel-realization-acquisition-provenance-stack-v2.test.js',process.env.STACK_VALIDATOR,process.env.STACK_TEST]){const r=spawnSync(process.execPath,[target],{stdio:'inherit'});if(r.status!==0)process.exit(r.status||1)}
+          NODE
+          npm run release:check
+          echo "$merge" > /tmp/merge-sha
+          echo "$merge_tree" > /tmp/merge-tree
+      - name: Record canonical transaction on issue 345
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+          BASE_SHA: ${{ steps.freeze.outputs.base }}
+        run: |
+          set -euo pipefail
+          merge=$(cat /tmp/merge-sha); tree=$(cat /tmp/merge-tree)
+          cat > /tmp/comment.md <<EOF
+PR #2197 is now the canonical eleven-layer acquisition, claim-extraction, and exact numerical-reconciliation stack for the Intel realization chain. It merged exact qualified head \`$HEAD_SHA\` into \`main\` through merge commit \`$merge\`, preserving product tree \`$tree\` and exact parent order \`$BASE_SHA $HEAD_SHA\`.
+
+The successor manifest preserves the ten acquisition, publisher-authority, and claim-extraction layers and makes exact numerical reconciliation layer eleven. Every asserted transaction, federal-cash, public-account, and distribution field and amount must now carry the exact source segment, parser and transformation chain, exact decimal or rational value, deterministic arithmetic engine, explicit units, currencies, rounding and conversion ledgers, full gross-net-cost-booking-distribution equations, variance custody, inventory, dilution, gain or loss, opportunity cost, residuals, delivery costs, and complete-denominator coverage. The manifest contains eleven ordered layers and eleven exact cross-layer joins.
+
+Partial numerical reconciliation, binary floating-point canonical amounts, unexplained tolerance or variance, hidden conversions, early rounding, silent netting, incomplete equations, orphan layers, dangling digests, or layer-order mutation fail closed. Claim extraction joins to numerical reconciliation, and numerical reconciliation joins to the accounting stage and stage receipt.
+
+All five pull-request workflows passed on the exact head:
+
+\`\`\`json
+$(cat /tmp/qualified-runs.json)
+\`\`\`
+
+The controller replayed all eleven component validators and adversarial suites, the predecessor ten-layer stack, the successor eleven-layer stack, and the complete repository release gate on the canonical merge commit.
+
+This remains an admission-control transaction. It establishes no Intel sale, transfer, dividend, warrant exercise, federal cash receipt, TAS/BETC booking, distribution ledger, effective answer, graph effect, cross-domain completion, project completion, or issue-closure authority. The ordinary acquisition gate remains \`2026-08-27T00:00:00Z\`.
+
+The evidentiary ledger is exact Git-object and semantic custody for eleven layers, exact source-segment and parser custody, raw-to-normalized transformations, exact decimal and rational arithmetic, deterministic engine and conversion custody, complete accounting equations and denominator coverage, eleven cross-layer joins, deterministic validation, and adversarial partial-stack, numerical, coordinated-rewrite, and byte-rewrite testing; the venue is PRs #2180 through #2197, canonical \`main\`, and this issue; the target is the gap between exact source-to-field provenance and the exact accounting arithmetic asserted from those fields; the upside is mechanically complete source-to-field-to-amount custody; the downside is zero empirical Intel realization or distribution receipts; and the failure mode is treating a valid source and claim stack without exact numerical reconciliation as a complete accounting receipt. The controlling question is whether the first post-gate Intel source can satisfy the complete eleven-layer stack and every source-to-field-to-accounting equation before advancing transaction, gross federal receipt, TAS/BETC booking, complete-denominator, distribution, answer, graph, completion, or issue-closure state.
+EOF
+          gh issue comment "$ISSUE" --repo "$REPO" --body-file /tmp/comment.md
