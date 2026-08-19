@@ -6,6 +6,11 @@ on:
       - agent/m05-s03-l7-observation-time-materializer-v2
     paths:
       - '.tmp/m05-observation-time-v2/READY'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.tmp/m05-observation-time-v2/**'
+      - '.github/workflows/m05-observation-time-v2-materializer.yml'
   workflow_dispatch:
 
 permissions:
