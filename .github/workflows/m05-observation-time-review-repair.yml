@@ -1,0 +1,151 @@
+name: M-05 observation-time review repair carrier
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/m05-observation-time-review-repair.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: m05-observation-time-review-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/m05-s03-l7-intel-realization-observation-time-custody-v2
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Apply bounded temporal-reconciliation admission repair
+        shell: bash
+        env:
+          EXPECTED_HEAD: f97e8ee7e5c9cbba5d0d45ab79e0e6cc003d5f5e
+          PRODUCT_BRANCH: agent/m05-s03-l7-intel-realization-observation-time-custody-v2
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          node <<'NODE'
+          const crypto=require('node:crypto');
+          const fs=require('node:fs');
+
+          const contractPath='data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.json';
+          const validatorPath='tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.mjs';
+          const testPath='test/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.test.js';
+          const oldSemantic='5a334376ca80ce4171f127bc7b357a179cdb824b92a411685b1c55df91a423e9';
+          const oldBlob='817f2b571c5f5feb755c6ac97226567630de5c38';
+
+          const count=(text,needle)=>text.split(needle).length-1;
+          const replaceExact=(text,needle,replacement,expected,label)=>{
+            const actual=count(text,needle);
+            if(actual!==expected)throw new Error(`${label}: expected ${expected} matches, found ${actual}`);
+            return text.split(needle).join(replacement);
+          };
+          const sha256=(value)=>crypto.createHash('sha256').update(value).digest('hex');
+          const gitBlob=(buffer)=>crypto.createHash('sha1')
+            .update(Buffer.from(`blob ${buffer.length}\0`,'utf8'))
+            .update(buffer)
+            .digest('hex');
+
+          let contractText=fs.readFileSync(contractPath,'utf8');
+          contractText=replaceExact(
+            contractText,
+            '      "freshness_result_must_be_pass": true,\n      "temporal_order_contradiction_qualifies": false',
+            '      "freshness_result_must_be_pass": true,\n      "temporal_reconciliation_result_must_be_pass": true,\n      "temporal_order_contradiction_qualifies": false',
+            4,
+            'stage pass requirement insertion'
+          );
+          contractText=replaceExact(
+            contractText,
+            '    "ambiguous_or_overlapping_order_remains_indeterminate": true\n  },\n  "freshness_policy_rules"',
+            '    "ambiguous_or_overlapping_order_remains_indeterminate": true,\n    "indeterminate_temporal_reconciliation_qualifies": false\n  },\n  "freshness_policy_rules"',
+            1,
+            'global indeterminate rejection insertion'
+          );
+          const contract=JSON.parse(contractText);
+          delete contract.observation_time_amendment_sha256;
+          const semantic=sha256(JSON.stringify(contract));
+          contract.observation_time_amendment_sha256=semantic;
+          const contractBytes=Buffer.from(`${JSON.stringify(contract,null,2)}\n`,'utf8');
+          const contractBlob=gitBlob(contractBytes);
+          fs.writeFileSync(contractPath,contractBytes);
+
+          let validator=fs.readFileSync(validatorPath,'utf8');
+          validator=replaceExact(validator,`amendmentBlob:'${oldBlob}'`,`amendmentBlob:'${contractBlob}'`,1,'validator contract blob update');
+          validator=replaceExact(validator,`amendmentSemantic:'${oldSemantic}'`,`amendmentSemantic:'${semantic}'`,1,'validator semantic update');
+          validator=replaceExact(
+            validator,
+            "'freshness_policy_and_result_required','freshness_result_must_be_pass'",
+            "'freshness_policy_and_result_required','freshness_result_must_be_pass','temporal_reconciliation_result_must_be_pass'",
+            1,
+            'validator stage pass assertion'
+          );
+          validator=replaceExact(
+            validator,
+            "\n\nconst freshness=amendment.freshness_policy_rules||{};",
+            "\nrequireFalse(temporal.indeterminate_temporal_reconciliation_qualifies,'indeterminate temporal reconciliation admitted');\n\nconst freshness=amendment.freshness_policy_rules||{};",
+            1,
+            'validator global indeterminate assertion'
+          );
+          fs.writeFileSync(validatorPath,validator);
+
+          let test=fs.readFileSync(testPath,'utf8');
+          test=replaceExact(
+            test,
+            'stage.trusted_clock_source_required!==true||stage.bounded_uncertainty_interval_required!==true||stage.freshness_result_must_be_pass!==true',
+            'stage.trusted_clock_source_required!==true||stage.bounded_uncertainty_interval_required!==true||stage.freshness_result_must_be_pass!==true||stage.temporal_reconciliation_result_must_be_pass!==true',
+            1,
+            'test stage pass assertion'
+          );
+          test=replaceExact(
+            test,
+            "  if(row.temporal_reconciliation_rules?.ambiguous_or_overlapping_order_remains_indeterminate!==true)throw Error('ambiguous order promoted');",
+            "  if(row.temporal_reconciliation_rules?.ambiguous_or_overlapping_order_remains_indeterminate!==true)throw Error('ambiguous order promoted');\n  if(row.temporal_reconciliation_rules?.indeterminate_temporal_reconciliation_qualifies!==false)throw Error('indeterminate temporal reconciliation admitted');",
+            1,
+            'test global indeterminate assertion'
+          );
+          test=replaceExact(test,oldSemantic,semantic,1,'test semantic update');
+          test=replaceExact(
+            test,
+            "  ['ambiguous-order-promotion',(row)=>{row.temporal_reconciliation_rules.ambiguous_or_overlapping_order_remains_indeterminate=false}],",
+            "  ['ambiguous-order-promotion',(row)=>{row.temporal_reconciliation_rules.ambiguous_or_overlapping_order_remains_indeterminate=false}],\n  ['stage-indeterminate-reconciliation-admission',(row)=>{row.effective_stage_observation_time_custody.transaction.temporal_reconciliation_result_must_be_pass=false}],\n  ['global-indeterminate-reconciliation-admission',(row)=>{row.temporal_reconciliation_rules.indeterminate_temporal_reconciliation_qualifies=true}],",
+            1,
+            'test adversarial cases'
+          );
+          fs.writeFileSync(testPath,test);
+
+          console.log(JSON.stringify({semantic,contractBlob},null,2));
+          NODE
+
+          git diff --check
+          node --check tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.mjs
+          node --check test/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-provenance-object-custody.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-connection-authentication-custody-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.test.js
+          npm run release:check
+
+          git add -- \
+            data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.json \
+            tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.mjs \
+            test/m05-answerable-power-sprint-03-leg-07-intel-realization-observation-time-custody-amendment.test.js
+          test "$(git diff --cached --name-only | wc -l)" -eq 3
+          git config user.name 'BigBirdReturns'
+          git config user.email 'bigbirdreturns@proton.me'
+          git commit -m '[M-05 S03-L7] Require passing temporal reconciliation'
+          remote_head="$(git ls-remote origin "refs/heads/$PRODUCT_BRANCH" | cut -f1)"
+          test "$remote_head" = "$EXPECTED_HEAD"
+          git push origin "HEAD:refs/heads/$PRODUCT_BRANCH"
+          git show --stat --oneline --decorate HEAD
