@@ -1,0 +1,168 @@
+name: M-05 network-peer exact-head qualifier
+
+on:
+  push:
+    branches:
+      - agent/m05-s03-l7-network-peer-materializer-v1
+    paths:
+      - '.github/workflows/m05-network-peer-qualify-and-merge.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: m05-network-peer-exact-head-qualifier
+  cancel-in-progress: false
+
+jobs:
+  qualify-and-merge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      PR: '2190'
+      ISSUE: '345'
+      EXPECTED_HEAD_BRANCH: 'agent/m05-s03-l7-intel-realization-network-peer-custody-v1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Freeze PR identity and exact four-path denominator
+        id: freeze
+        run: |
+          set -euo pipefail
+          gh pr view "$PR" --repo "$REPO" --json state,headRefName,headRefOid,baseRefName,baseRefOid,mergeable > /tmp/pr.json
+          gh api "repos/$REPO/branches/main" > /tmp/main.json
+          node <<'NODE'
+          const fs=require('fs'),p=JSON.parse(fs.readFileSync('/tmp/pr.json')),m=JSON.parse(fs.readFileSync('/tmp/main.json'));
+          if(p.state!=='OPEN')throw new Error(`state ${p.state}`);
+          if(p.headRefName!==process.env.EXPECTED_HEAD_BRANCH)throw new Error(`head ${p.headRefName}`);
+          if(p.baseRefName!=='main'||p.baseRefOid!==m.commit.sha)throw new Error(`base lease ${p.baseRefOid} != ${m.commit.sha}`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,`head=${p.headRefOid}\nbase=${p.baseRefOid}\n`);
+          NODE
+          gh api "repos/$REPO/pulls/$PR/files?per_page=100" --paginate > /tmp/files.json
+          node <<'NODE'
+          const rows=JSON.parse(require('fs').readFileSync('/tmp/files.json'));
+          const expected=[
+            '.github/workflows/m05-intel-realization-network-peer-custody-amendment.yml',
+            'data/project/m05-answerable-power-sprint-03-leg-07-intel-realization-network-peer-custody-amendment.json',
+            'test/m05-answerable-power-sprint-03-leg-07-intel-realization-network-peer-custody-amendment.test.js',
+            'tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-network-peer-custody-amendment.mjs'
+          ].sort(),actual=rows.map(x=>x.filename).sort();
+          if(JSON.stringify(actual)!==JSON.stringify(expected))throw new Error(`paths ${JSON.stringify(actual)}`);
+          if(rows.some(x=>x.status!=='added'))throw new Error('non-additive path');
+          NODE
+      - name: Await all exact-head PR workflows
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 150); do
+            gh api "repos/$REPO/actions/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100" > /tmp/runs.json
+            if node <<'NODE'
+          const fs=require('fs'),runs=JSON.parse(fs.readFileSync('/tmp/runs.json')).workflow_runs;
+          const expected=['M-05 Intel realization network peer custody amendment','Release checks','M-05 story ecology and answerable power','Core thesis and estate alignment','No magic human gate'];
+          const latest=new Map();for(const r of runs.filter(r=>expected.includes(r.name))){const old=latest.get(r.name);if(!old||r.id>old.id)latest.set(r.name,r)}
+          const bad=[...latest.values()].filter(r=>r.status==='completed'&&r.conclusion!=='success');if(bad.length){console.error(JSON.stringify(bad));process.exit(2)}
+          if(!expected.every(n=>latest.get(n)?.status==='completed'&&latest.get(n)?.conclusion==='success'))process.exit(1);
+          fs.writeFileSync('/tmp/qualified-runs.json',JSON.stringify(expected.map(n=>{const r=latest.get(n);return{name:n,id:r.id,head_sha:r.head_sha,conclusion:r.conclusion}}),null,2));
+          NODE
+            then break; else code=$?; [ "$code" -eq 2 ] && exit 1; fi
+            [ "$attempt" -eq 150 ] && { echo timeout >&2; exit 1; }
+            sleep 10
+          done
+      - name: Recheck immutable head, main lease, and mergeability
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+          BASE_SHA: ${{ steps.freeze.outputs.base }}
+        run: |
+          set -euo pipefail
+          gh pr view "$PR" --repo "$REPO" --json state,headRefOid,baseRefOid,mergeable > /tmp/final.json
+          gh api "repos/$REPO/branches/main" > /tmp/main-final.json
+          node <<'NODE'
+          const fs=require('fs'),p=JSON.parse(fs.readFileSync('/tmp/final.json')),m=JSON.parse(fs.readFileSync('/tmp/main-final.json'));
+          if(p.state!=='OPEN'||p.headRefOid!==process.env.HEAD_SHA||p.baseRefOid!==process.env.BASE_SHA||m.commit.sha!==process.env.BASE_SHA)throw new Error(`lease drift ${JSON.stringify({p,m:m.commit.sha})}`);
+          if(!['MERGEABLE','UNKNOWN'].includes(p.mergeable))throw new Error(`mergeability ${p.mergeable}`);
+          NODE
+      - name: Record qualification and mark ready
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+        run: |
+          set -euo pipefail
+          git fetch origin "$HEAD_SHA"
+          tree=$(git show -s --format=%T "$HEAD_SHA")
+          body=$(gh pr view "$PR" --repo "$REPO" --json body -q .body)
+          printf '%s' "$body" > /tmp/body.md
+          cat >> /tmp/body.md <<EOF
+
+All five applicable pull-request workflows passed on exact head \`$HEAD_SHA\`, tree \`$tree\`:
+
+\`\`\`json
+$(cat /tmp/qualified-runs.json)
+\`\`\`
+
+The focused workflow passed predecessor request-envelope validation, DNS and selected-endpoint custody validation, TLS-peer and certificate-chain custody validation, adversarial mutations, the complete repository release gate, and deterministic replay. The branch remained a four-file additive transaction over the exact canonical base.
+EOF
+          gh pr edit "$PR" --repo "$REPO" --body-file /tmp/body.md
+          gh pr ready "$PR" --repo "$REPO"
+      - name: Merge exact head
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+        run: |
+          set -euo pipefail
+          gh api -X PUT "repos/$REPO/pulls/$PR/merge" -f merge_method=merge -f sha="$HEAD_SHA" \
+            -f commit_title='[M-05 S03-L7] Require exact network-peer custody (#2190)' \
+            -f commit_message='Bind every Intel realization-stage request envelope to DNS resolution, the selected remote endpoint, proxy or CDN mediation, SNI, TLS peer and certificate custody, negotiated protocol, and redirect-hop transport identity while preserving zero observed receipts, no answer change, no graph effect, and issue #345 as open.' > /tmp/merge.json
+          node -e "const x=require('/tmp/merge.json');if(!x.merged)throw new Error(JSON.stringify(x))"
+      - name: Verify canonical merge and replay controls
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+          BASE_SHA: ${{ steps.freeze.outputs.base }}
+        run: |
+          set -euo pipefail
+          merge=$(node -p "require('/tmp/merge.json').sha")
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$merge"
+          head_tree=$(git show -s --format=%T "$HEAD_SHA")
+          merge_tree=$(git show -s --format=%T "$merge")
+          test "$head_tree" = "$merge_tree"
+          test "$(git show -s --format=%P "$merge")" = "$BASE_SHA $HEAD_SHA"
+          git switch --detach "$merge"
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-request-envelope-custody-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-request-envelope-custody-amendment.test.js
+          node tools/validate-m05-answerable-power-sprint-03-leg-07-intel-realization-network-peer-custody-amendment.mjs
+          node test/m05-answerable-power-sprint-03-leg-07-intel-realization-network-peer-custody-amendment.test.js
+          npm run release:check
+          echo "$merge" > /tmp/merge-sha
+          echo "$merge_tree" > /tmp/merge-tree
+      - name: Record canonical transaction on issue 345
+        env:
+          HEAD_SHA: ${{ steps.freeze.outputs.head }}
+          BASE_SHA: ${{ steps.freeze.outputs.base }}
+        run: |
+          set -euo pipefail
+          merge=$(cat /tmp/merge-sha); tree=$(cat /tmp/merge-tree)
+          cat > /tmp/comment.md <<EOF
+PR #2190 is now the canonical DNS, selected-endpoint, TLS-peer, certificate-chain, and transport-intermediary custody control for the Intel realization chain. It merged exact qualified head \`$HEAD_SHA\` into \`main\` through merge commit \`$merge\`, preserving product tree \`$tree\` and exact parent order \`$BASE_SHA $HEAD_SHA\`.
+
+Every transaction, federal-cash, public-account, and distribution receipt must now bind the exact request-envelope digest to DNS question and response custody, resolver and DNSSEC state, the complete resolved-address set and selected endpoint, proxy or CDN classification, SNI, TLS version and cipher, ALPN, exact DER leaf certificate and SPKI digests, ordered certificate-chain custody, hostname and validity evaluation, revocation and transparency state, HTTP protocol, redirect-hop identity, and one transport-endpoint reconciliation digest. Private VPNs, enterprise interception proxies, private forward proxies, and custom private trust roots cannot qualify as publicly reproducible transport. Hostname, DNS, IP, certificate, CDN, or gateway identity does not independently authenticate the official publisher.
+
+All five pull-request workflows passed on the exact head:
+
+\`\`\`json
+$(cat /tmp/qualified-runs.json)
+\`\`\`
+
+The controller replayed the predecessor request-envelope validator and adversarial suite, the network-peer validator and adversarial suite, and the complete repository release gate on the canonical merge commit.
+
+This remains an admission-control transaction. It establishes no Intel sale, transfer, dividend, warrant exercise, federal cash receipt, TAS/BETC booking, distribution ledger, effective answer, graph effect, cross-domain completion, project completion, or issue-closure authority. The ordinary acquisition gate remains \`2026-08-27T00:00:00Z\`.
+
+The evidentiary ledger is exact predecessor Git-object custody, DNS and selected-endpoint custody, explicit proxy and CDN classification, SNI and TLS negotiation, exact certificate and chain custody, redirect-hop transport identity, deterministic validation, and adversarial byte-rewrite testing; the venue is PRs #2180 through #2190, canonical \`main\`, and this issue; the target is the gap between an exact request-response pair and the network peer that delivered it; the upside is transport-level reproducibility; the downside is zero empirical Intel realization or distribution receipts; and the failure mode is treating a hostname, IP address, certificate, CDN edge, or gateway as sufficient publisher or record authentication. The controlling question is whether the first post-gate Intel record can reproduce the official origin, exact request, exact response, and exact transport peer and then satisfy transaction, gross federal receipt, TAS/BETC booking, complete-denominator, distribution, answer, graph, completion, and issue-closure controls.
+EOF
+          gh issue comment "$ISSUE" --repo "$REPO" --body-file /tmp/comment.md
