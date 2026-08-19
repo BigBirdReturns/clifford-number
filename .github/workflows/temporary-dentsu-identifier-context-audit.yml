@@ -1,0 +1,54 @@
+name: Temporary Dentsu identifier-context audit
+
+on:
+  push:
+    branches:
+      - agent/dentsu-identifier-context-followup
+    paths:
+      - .github/workflows/temporary-dentsu-identifier-context-audit.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/dentsu-identifier-context-followup
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify explicit identifier and phone-label boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { redactContactData } from './tools/lib/industrial-exhaust.mjs';
+
+          const cases = [
+            ['ID: 09012345678', 'ID: 09012345678'],
+            ['GUID: 03-6216-8041', 'GUID: 03-6216-8041'],
+            ['reference: +81 3 6216 5111', 'reference: +81 3 6216 5111'],
+            ['管理番号：03-6216-8041', '管理番号：03-6216-8041'],
+            ['識別子：+81 3 6216 5111', '識別子：+81 3 6216 5111'],
+            ['Phone: 09012345678', 'Phone: [contact omitted]'],
+            [
+              'GUID: 03-6216-8041 Phone: 09012345678',
+              'GUID: 03-6216-8041 Phone: [contact omitted]'
+            ]
+          ];
+
+          let failures = 0;
+          for (const [input, expected] of cases) {
+            const actual = redactContactData(input);
+            console.log(JSON.stringify({ input, expected, actual, pass: actual === expected }));
+            if (actual !== expected) failures += 1;
+          }
+          if (failures) {
+            console.error(`${failures} identifier-boundary case(s) failed`);
+            process.exit(1);
+          }
+          NODE
